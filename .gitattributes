@@ -1,0 +1,10 @@
+# Keep source rendering intact while presenting the repository as Gleam in
+# GitHub's language summary.
+*.css linguist-detectable=false
+*.html linguist-detectable=false
+*.js linguist-detectable=false
+*.rs linguist-detectable=false
+*.sh linguist-detectable=false
+*.ts linguist-detectable=false
+*.tsx linguist-detectable=false
+*.gleam linguist-detectable=true
