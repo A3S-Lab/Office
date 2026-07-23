@@ -1,16 +1,11 @@
 import {
   ArrowRight,
-  Bot,
   Braces,
   CheckCircle2,
-  ExternalLink,
   Eye,
   FileSearch,
   Github,
-  Layers3,
   Package,
-  Play,
-  ShieldCheck,
   SquareTerminal,
   WandSparkles,
 } from 'lucide-react';
@@ -43,9 +38,8 @@ export function CliDocsPage({
   return (
     <article className="playground-doc-page">
       <PageHeader
-        eyebrow="开发者工具"
-        title="A3S Office CLI"
-        description="在本地检查、创建、修改和验证 Word、Excel 与 PowerPoint 文件。无需启动桌面 Office，也不会把文件上传到服务器。"
+        eyebrow="A3S Office"
+        title="Office CLI"
         sidebarOpen={sidebarOpen}
         onOpenSidebar={onOpenSidebar}
         actions={
@@ -58,7 +52,6 @@ export function CliDocsPage({
             >
               <Github size={15} />
               源代码
-              <ExternalLink size={12} />
             </a>
             <button
               type="button"
@@ -66,77 +59,65 @@ export function CliDocsPage({
               onClick={onOpenSkill}
             >
               <Package size={15} />
-              下载 CLI Skill
+              CLI Skill
             </button>
           </>
         }
       />
 
       <div className="playground-doc-content">
-        <section className="playground-cli-hero">
-          <div>
-            <span className="playground-feature-badge">
-              <ShieldCheck size={14} />
-              Rust 原生 · 本地执行
-            </span>
-            <h2>让人和 AI 都能可靠地操作 Office 文件</h2>
-            <p>
-              同一套能力同时提供命令行、标准 MCP 和 Agent
-              Skill。所有修改都经过文件格式检查，无法安全处理的操作会明确失败。
-            </p>
-          </div>
-          <div className="playground-terminal-card">
-            <header>
-              <span />
-              <span />
-              <span />
-              <strong>Terminal</strong>
-            </header>
-            <pre>
-              <code>
-                <span>$</span> a3s-office view report.docx outline --json
-                {'\n'}
-                <i>{'{'}</i>
-                {'\n  '}
-                <b>"ok"</b>: true,
-                {'\n  '}
-                <b>"headings"</b>: 6{'\n'}
-                <i>{'}'}</i>
-              </code>
-            </pre>
-          </div>
-        </section>
-
         <section
-          className="playground-doc-section"
-          aria-labelledby="cli-install-title"
+          className="playground-doc-group"
+          aria-labelledby="cli-start-title"
         >
-          <div className="playground-doc-section-heading">
-            <span>
-              <SquareTerminal size={17} />
-            </span>
+          <div className="playground-section-heading">
             <div>
-              <h2 id="cli-install-title">安装</h2>
-              <p>需要 Rust 1.85 或更高版本。</p>
+              <h2 id="cli-start-title">开始使用</h2>
+              <span>在本地读取、修改和验证 Office 文件</span>
             </div>
           </div>
-          <CodeBlock code={installCommand} label="从 GitHub 安装" />
-          <CodeBlock code="a3s-office --version" label="确认安装" />
+          <div className="playground-cli-start-grid">
+            <div className="playground-doc-card playground-cli-summary">
+              <span className="playground-doc-card-icon">
+                <SquareTerminal size={20} />
+              </span>
+              <div>
+                <h3>本地命令行工具</h3>
+                <p>
+                  支持 Word、Excel 和 PowerPoint。文件只在本机处理，无需启动桌面
+                  Office。
+                </p>
+                <ul
+                  className="playground-inline-meta"
+                  aria-label="支持的文件格式"
+                >
+                  <li>Word · .docx</li>
+                  <li>Excel · .xlsx</li>
+                  <li>PowerPoint · .pptx</li>
+                </ul>
+              </div>
+            </div>
+            <div className="playground-doc-card playground-install-card">
+              <div className="playground-card-heading">
+                <div>
+                  <h3>安装</h3>
+                  <p>需要 Rust 1.85 或更高版本</p>
+                </div>
+              </div>
+              <CodeBlock code={installCommand} label="从 GitHub 安装" />
+              <CodeBlock code="a3s-office --version" label="确认安装" />
+            </div>
+          </div>
         </section>
 
         <section
-          className="playground-doc-section"
+          className="playground-doc-group"
           aria-labelledby="cli-capabilities-title"
         >
-          <div className="playground-doc-section-heading">
-            <span>
-              <Layers3 size={17} />
-            </span>
+          <div className="playground-section-heading">
             <div>
-              <h2 id="cli-capabilities-title">核心能力</h2>
-              <p>
-                从读取、修改到预览与自动化，使用一致的文件路径和 JSON 输出。
-              </p>
+              <h2 id="cli-capabilities-title">常用任务</h2>
+              <span>按要完成的操作选择命令</span>
             </div>
           </div>
           <div className="playground-capability-grid">
@@ -148,66 +129,63 @@ export function CliDocsPage({
             />
             <CapabilityCard
               icon={<WandSparkles size={18} />}
-              title="安全修改"
+              title="修改内容"
               description="修改文字、格式、表格、公式、幻灯片与常用结构。"
               commands="set · add · remove · batch"
             />
             <CapabilityCard
               icon={<Eye size={18} />}
               title="预览与监听"
-              description="生成 HTML、SVG、PNG，并在保存后自动刷新本机预览。"
+              description="生成预览，并在文件保存后自动刷新本机页面。"
               commands="view · screenshot · watch"
             />
             <CapabilityCard
-              icon={<Bot size={18} />}
-              title="Agent 接入"
-              description="通过标准 MCP 和 CLI Skill 让 Agent 使用同一套能力。"
-              commands="mcp · skills"
+              icon={<Braces size={18} />}
+              title="自动化接入"
+              description="通过 JSON 输出、MCP 和 CLI Skill 接入现有流程。"
+              commands="--json · mcp · skills"
             />
           </div>
         </section>
 
         <section
-          className="playground-doc-section"
-          aria-labelledby="cli-first-workflow-title"
+          className="playground-doc-group"
+          aria-labelledby="cli-workflow-title"
         >
-          <div className="playground-doc-section-heading">
-            <span>
-              <Play size={17} />
-            </span>
+          <div className="playground-section-heading">
             <div>
-              <h2 id="cli-first-workflow-title">第一个工作流</h2>
-              <p>先检查，再修改，最后验证结果。</p>
+              <h2 id="cli-workflow-title">推荐流程</h2>
+              <span>先检查，再修改，最后验证结果</span>
             </div>
           </div>
-          <div className="playground-workflow">
+          <div className="playground-doc-card playground-workflow">
             <ol>
               <li>
                 <span>1</span>
                 <div>
-                  <strong>确认文件可读</strong>
-                  <small>validate 会在修改前发现损坏或不支持的结构。</small>
+                  <strong>检查文件</strong>
+                  <small>确认文件完整，并查看是否存在不支持的结构。</small>
                 </div>
               </li>
               <li>
                 <span>2</span>
                 <div>
-                  <strong>读取目标内容</strong>
-                  <small>使用 outline、get 或 query 找到准确路径。</small>
+                  <strong>定位内容</strong>
+                  <small>使用 outline、get 或 query 找到准确位置。</small>
                 </div>
               </li>
               <li>
                 <span>3</span>
                 <div>
-                  <strong>执行有范围的修改</strong>
-                  <small>保持路径尽可能具体，必要时使用新输出文件。</small>
+                  <strong>执行修改</strong>
+                  <small>限定修改范围，重要文件建议输出到新路径。</small>
                 </div>
               </li>
               <li>
                 <span>4</span>
                 <div>
-                  <strong>重新检查结果</strong>
-                  <small>读取目标位置并再次运行 issues 或 validate。</small>
+                  <strong>验证结果</strong>
+                  <small>重新读取目标位置，并再次运行检查。</small>
                 </div>
               </li>
             </ol>
@@ -215,63 +193,85 @@ export function CliDocsPage({
           </div>
         </section>
 
-        <section className="playground-doc-split">
-          <div className="playground-doc-section compact">
-            <div className="playground-doc-section-heading">
-              <span>
-                <Eye size={17} />
-              </span>
-              <div>
-                <h2>实时预览</h2>
-                <p>前台运行，按 Ctrl+C 停止。</p>
-              </div>
+        <section
+          className="playground-doc-group"
+          aria-labelledby="cli-more-title"
+        >
+          <div className="playground-section-heading">
+            <div>
+              <h2 id="cli-more-title">更多用法</h2>
+              <span>需要时再启用预览或标准工具接口</span>
             </div>
-            <CodeBlock code={previewCommand} />
           </div>
-          <div className="playground-doc-section compact">
-            <div className="playground-doc-section-heading">
-              <span>
-                <Braces size={17} />
-              </span>
-              <div>
-                <h2>标准 MCP</h2>
-                <p>为 Agent 提供有类型的会话工具。</p>
+          <div className="playground-doc-split">
+            <div className="playground-doc-card playground-usage-card">
+              <div className="playground-card-heading">
+                <span>
+                  <Eye size={17} />
+                </span>
+                <div>
+                  <h3>实时预览</h3>
+                  <p>前台运行，按 Ctrl+C 停止</p>
+                </div>
               </div>
+              <CodeBlock code={previewCommand} />
             </div>
-            <CodeBlock code={mcpCommand} />
+            <div className="playground-doc-card playground-usage-card">
+              <div className="playground-card-heading">
+                <span>
+                  <Braces size={17} />
+                </span>
+                <div>
+                  <h3>工具接口（MCP）</h3>
+                  <p>通过标准输入输出提供 Office 工具</p>
+                </div>
+              </div>
+              <CodeBlock code={mcpCommand} />
+            </div>
           </div>
         </section>
 
-        <section className="playground-format-strip" aria-label="支持的格式">
-          <div>
-            <CheckCircle2 size={17} />
-            <span>
-              <strong>Word</strong>
-              <small>.docx</small>
-            </span>
+        <section
+          className="playground-doc-group"
+          aria-labelledby="cli-formats-title"
+        >
+          <div className="playground-section-heading">
+            <div>
+              <h2 id="cli-formats-title">支持格式</h2>
+              <span>完整能力以命令参考为准</span>
+            </div>
           </div>
-          <div>
-            <CheckCircle2 size={17} />
-            <span>
-              <strong>Spreadsheet</strong>
-              <small>.xlsx</small>
-            </span>
+          <div className="playground-format-strip">
+            <div>
+              <CheckCircle2 size={17} />
+              <span>
+                <strong>Word</strong>
+                <small>.docx</small>
+              </span>
+            </div>
+            <div>
+              <CheckCircle2 size={17} />
+              <span>
+                <strong>Excel</strong>
+                <small>.xlsx</small>
+              </span>
+            </div>
+            <div>
+              <CheckCircle2 size={17} />
+              <span>
+                <strong>PowerPoint</strong>
+                <small>.pptx</small>
+              </span>
+            </div>
+            <a
+              href="https://github.com/A3S-Lab/Office/blob/main/docs/cli-reference.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看命令参考
+              <ArrowRight size={14} />
+            </a>
           </div>
-          <div>
-            <CheckCircle2 size={17} />
-            <span>
-              <strong>Presentation</strong>
-              <small>.pptx</small>
-            </span>
-          </div>
-          <a
-            href="https://github.com/A3S-Lab/Office/blob/main/docs/cli-reference.md"
-            target="_blank"
-            rel="noreferrer"
-          >
-            查看完整命令参考
-            <ArrowRight size={14} />
-          </a>
         </section>
       </div>
     </article>
@@ -290,11 +290,13 @@ function CapabilityCard({
   commands: string;
 }) {
   return (
-    <section>
+    <article className="playground-capability-card">
       <span>{icon}</span>
-      <h3>{title}</h3>
-      <p>{description}</p>
-      <code>{commands}</code>
-    </section>
+      <div>
+        <h3>{title}</h3>
+        <p>{description}</p>
+        <code>{commands}</code>
+      </div>
+    </article>
   );
 }

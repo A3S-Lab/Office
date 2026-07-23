@@ -11,7 +11,7 @@ export function PageHeader({
 }: {
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   sidebarOpen: boolean;
   actions?: ReactNode;
   onOpenSidebar: () => void;
@@ -33,7 +33,7 @@ export function PageHeader({
         <div>
           <span>{eyebrow}</span>
           <h1>{title}</h1>
-          <p>{description}</p>
+          {description && <p>{description}</p>}
         </div>
       </div>
       {actions && <div className="playground-page-actions">{actions}</div>}

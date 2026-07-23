@@ -96,12 +96,6 @@ export function SiteSidebar({
           </span>
           <span>文字</span>
         </button>
-        <button type="button" onClick={() => onCreate('blank-markdown')}>
-          <span className="quick-create-icon markdown">
-            <FileCode2 size={15} />
-          </span>
-          <span>Markdown</span>
-        </button>
         <button type="button" onClick={() => onCreate('blank-spreadsheet')}>
           <span className="quick-create-icon spreadsheet">
             <FileSpreadsheet size={15} />
@@ -120,6 +114,12 @@ export function SiteSidebar({
           </span>
           <span>PDF</span>
           <small>打开</small>
+        </button>
+        <button type="button" onClick={() => onCreate('blank-markdown')}>
+          <span className="quick-create-icon markdown">
+            <FileCode2 size={15} />
+          </span>
+          <span>Markdown</span>
         </button>
       </section>
 
