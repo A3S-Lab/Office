@@ -1,18 +1,23 @@
 # A3S Office
 
-Open-source browser editors for documents, spreadsheets, presentations, and
-PDFs. The same editor engine used by A3S Web is packaged with
+Open-source browser editors for documents, Markdown, spreadsheets,
+presentations, and PDFs. The same editor engine used by A3S Web is packaged with
 [Rslib](https://rslib.rs/) for React, Vue 3, Web Components, and framework-free
 file workflows.
 
 [![CI](https://github.com/A3S-Lab/Office/actions/workflows/ci.yml/badge.svg)](https://github.com/A3S-Lab/Office/actions/workflows/ci.yml)
+[![Playground](https://github.com/A3S-Lab/Office/actions/workflows/pages.yml/badge.svg)](https://a3s-lab.github.io/Office/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+Try the editors in the
+[online Playground](https://a3s-lab.github.io/Office/).
 
 ## What is included
 
 | Editor | Main capabilities |
 | --- | --- |
 | Document | Rich text, sections, page layout, headers and footers, comments, tracked changes, citations, notes, captions, cross-references, DOCX import/export, and PDF export |
+| Markdown | TipTap editing, source and split views, headings, lists, quotes, links, images, code, native Markdown import/export, and read-only preview |
 | Spreadsheet | Multiple sheets, formulas, charts, conditional formatting, pivot tables, comments, validation, protection, print settings, XLS/XLSX/ODS/CSV import, XLSX export, and PDF export |
 | Presentation | Slides, masters and layouts, rich text, shapes, images, tables, charts, notes, comments, transitions, presenter view, PPTX import/export, and PDF export |
 | PDF | Rendering, search, annotations, forms, redaction tools, and saving an edited copy |
@@ -77,6 +82,7 @@ export function App() {
 The React entry exports:
 
 - `DocumentEditor`
+- `MarkdownEditor`
 - `SpreadsheetEditor`
 - `PresentationEditor`
 - `PdfViewer`
@@ -85,6 +91,27 @@ The React entry exports:
 
 Set `preview` for a read-only representation. Use `theme="light"`,
 `theme="dark"`, or `theme="system"`.
+
+### Markdown
+
+`MarkdownEditor` is powered by TipTap and keeps Markdown source as its
+controlled value. Visual, source, and split editing all update the same
+`MarkdownContent` model:
+
+```tsx
+import { useState } from 'react';
+import type { MarkdownContent } from '@a3s-lab/office/core';
+import { MarkdownEditor } from '@a3s-lab/office/react';
+
+export function Notes() {
+  const [content, setContent] = useState<MarkdownContent>({
+    type: 'markdown',
+    markdown: '# Notes\n\nStart writing here.',
+  });
+
+  return <MarkdownEditor content={content} onChange={setContent} />;
+}
+```
 
 ### PDF
 
@@ -131,12 +158,13 @@ const content = ref(artifact.content as SpreadsheetContent);
 </template>
 ```
 
-Vue adapters emit `change`, `agent-request`, and, for presentations,
+Vue content editors emit `change` and `update:content`. Document, spreadsheet,
+and presentation editors also emit `agent-request`; presentations emit
 `start-slideshow`.
 
 ## Web Components
 
-Register four custom elements once:
+Register five custom elements once:
 
 ```ts
 import {
@@ -162,6 +190,7 @@ editor.addEventListener('change', (event) => {
 Available tags are:
 
 - `a3s-document-editor`
+- `a3s-markdown-editor`
 - `a3s-spreadsheet-editor`
 - `a3s-presentation-editor`
 - `a3s-pdf-viewer`
@@ -190,13 +219,15 @@ const blankDeck = createArtifact('blank-presentation');
 
 Supported imports:
 
-- DOCX, HTML, plain text, and Markdown
+- DOCX, HTML, and plain text
+- Markdown (`.md` and `.markdown`)
 - XLSX, XLS, ODS, and CSV
 - PPTX
 - PDF
 
-Native exports are DOCX, XLSX, PPTX, and PDF. `downloadArtifact` starts a browser
-download; `createArtifactBlob` returns a Blob for application-managed storage.
+Native exports are DOCX, Markdown, XLSX, PPTX, and PDF. `downloadArtifact`
+starts a browser download; `createArtifactBlob` returns a Blob for
+application-managed storage.
 
 The package emits `pptxgen.bundle.js` beside `core.js` and loads it only when a
 presentation is exported. If package assets are hosted elsewhere, provide an
@@ -302,6 +333,12 @@ bun run playground
 
 `bun run playground` starts an interactive React host that can create and import
 all supported editor types. Production output is generated in `dist/`.
+`bun run playground:build` creates the static Playground in
+`playground-dist/`.
+
+Pushes to `main` deploy that static build to GitHub Pages through
+`.github/workflows/pages.yml`. The workflow uses the Pages-provided base path,
+so assets also resolve correctly from the project-site URL.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and
 [SECURITY.md](SECURITY.md) for private vulnerability reporting.

@@ -24,6 +24,13 @@ export const WORK_TEMPLATES: WorkTemplate[] = [
     accent: '#536de2',
   },
   {
+    id: 'blank-markdown',
+    kind: 'markdown',
+    name: '空白 Markdown',
+    description: '用轻量标记编写结构化内容',
+    accent: '#586574',
+  },
+  {
     id: 'blank-spreadsheet',
     kind: 'spreadsheet',
     name: '空白表格',
@@ -86,6 +93,7 @@ function initialTitle(templateId: string, kind: WorkArtifactKind): string {
   };
   if (titles[templateId]) return titles[templateId];
   if (kind === 'document') return '无标题文字';
+  if (kind === 'markdown') return '无标题 Markdown';
   if (kind === 'spreadsheet') return '无标题表格';
   return '无标题演示';
 }
@@ -118,6 +126,9 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   }
   if (templateId === 'blank-spreadsheet') {
     return { type: 'spreadsheet', sheets: [blankSheet()] };
+  }
+  if (templateId === 'blank-markdown') {
+    return { type: 'markdown', markdown: '' };
   }
   if (templateId === 'blank-presentation') {
     return { type: 'presentation', slides: [blankSlide()] };

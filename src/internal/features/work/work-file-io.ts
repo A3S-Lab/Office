@@ -5,6 +5,10 @@ import {
   importWorkDocumentFile,
 } from './work-document-file-io';
 import {
+  createWorkMarkdownBlob,
+  importWorkMarkdownFile,
+} from './work-markdown-file-io';
+import {
   downloadBlob,
   fileNameWithoutExtension,
   safeFileName,
@@ -58,14 +62,8 @@ import {
 } from './work-xlsx-pivots';
 import { editableSpreadsheetFormula } from './work-spreadsheet-formulas';
 
-const DOCUMENT_EXTENSIONS = new Set([
-  'docx',
-  'html',
-  'htm',
-  'txt',
-  'md',
-  'markdown',
-]);
+const DOCUMENT_EXTENSIONS = new Set(['docx', 'html', 'htm', 'txt']);
+const MARKDOWN_EXTENSIONS = new Set(['md', 'markdown']);
 const SPREADSHEET_EXTENSIONS = new Set(['xlsx', 'xls', 'csv', 'ods']);
 const PRESENTATION_EXTENSIONS = new Set(['pptx']);
 const PDF_EXTENSIONS = new Set(['pdf']);
@@ -82,12 +80,14 @@ export const WORK_IMPORT_ACCEPT = [
   '.htm',
   '.txt',
   '.md',
+  '.markdown',
 ].join(',');
 
 export type WorkArtifactExportOptions = WorkPresentationExportOptions;
 
 export async function importWorkFile(file: File): Promise<WorkArtifact> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (MARKDOWN_EXTENSIONS.has(extension)) return importWorkMarkdownFile(file);
   if (DOCUMENT_EXTENSIONS.has(extension))
     return importWorkDocumentFile(file, extension);
   if (SPREADSHEET_EXTENSIONS.has(extension))
@@ -116,6 +116,7 @@ export async function createWorkArtifactBlob(
   options?: WorkArtifactExportOptions,
 ): Promise<Blob> {
   if (artifact.kind === 'document') return createWorkDocumentBlob(artifact);
+  if (artifact.kind === 'markdown') return createWorkMarkdownBlob(artifact);
   if (artifact.kind === 'spreadsheet') return createSpreadsheetBlob(artifact);
   if (artifact.kind === 'presentation')
     return createWorkPresentationBlob(artifact, options);
@@ -639,6 +640,7 @@ function spreadsheetColor(value: string | undefined): string | undefined {
 
 export function workKindForFile(file: File): WorkArtifactKind | null {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (MARKDOWN_EXTENSIONS.has(extension)) return 'markdown';
   if (DOCUMENT_EXTENSIONS.has(extension)) return 'document';
   if (SPREADSHEET_EXTENSIONS.has(extension)) return 'spreadsheet';
   if (PRESENTATION_EXTENSIONS.has(extension)) return 'presentation';

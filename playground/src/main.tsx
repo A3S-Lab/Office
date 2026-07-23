@@ -8,12 +8,14 @@ import {
   readSourceBlob,
   registerSourceBlob,
   type DocumentContent,
+  type MarkdownContent,
   type OfficeArtifact,
   type PresentationContent,
   type SpreadsheetContent,
 } from '@a3s-lab/office/core';
 import {
   DocumentEditor,
+  MarkdownEditor,
   PdfViewer,
   PresentationEditor,
   SpreadsheetEditor,
@@ -21,10 +23,11 @@ import {
 import '@a3s-lab/office/styles.css';
 import './playground.css';
 
-type EditableKind = 'document' | 'spreadsheet' | 'presentation';
+type EditableKind = 'document' | 'markdown' | 'spreadsheet' | 'presentation';
 
 const templateByKind: Record<EditableKind, string> = {
   document: 'blank-document',
+  markdown: 'blank-markdown',
   presentation: 'blank-presentation',
   spreadsheet: 'blank-spreadsheet',
 };
@@ -44,7 +47,11 @@ function Playground() {
   };
 
   const replaceContent = (
-    content: DocumentContent | SpreadsheetContent | PresentationContent,
+    content:
+      | DocumentContent
+      | MarkdownContent
+      | SpreadsheetContent
+      | PresentationContent,
   ) => {
     setArtifact((current) => ({
       ...current,
@@ -76,6 +83,8 @@ function Playground() {
     },
     [artifact.id],
   );
+  const playgroundAssetUrl = (fileName: string) =>
+    new URL(fileName, document.baseURI).href;
 
   return (
     <main className="playground-shell">
@@ -87,6 +96,9 @@ function Playground() {
         <nav aria-label="Create an editor">
           <button type="button" onClick={() => newArtifact('document')}>
             Document
+          </button>
+          <button type="button" onClick={() => newArtifact('markdown')}>
+            Markdown
           </button>
           <button type="button" onClick={() => newArtifact('spreadsheet')}>
             Spreadsheet
@@ -120,7 +132,14 @@ function Playground() {
           <button
             type="button"
             onClick={() =>
-              void downloadArtifact(artifact).catch((error: unknown) =>
+              void downloadArtifact(
+                artifact,
+                artifact.kind === 'presentation'
+                  ? {
+                      pptxRuntimeUrl: playgroundAssetUrl('pptxgen.bundle.js'),
+                    }
+                  : undefined,
+              ).catch((error: unknown) =>
                 setMessage(
                   error instanceof Error ? error.message : 'Export failed',
                 ),
@@ -147,6 +166,13 @@ function Playground() {
             preview={preview}
           />
         )}
+        {artifact.content.type === 'markdown' && (
+          <MarkdownEditor
+            content={artifact.content}
+            onChange={replaceContent}
+            preview={preview}
+          />
+        )}
         {artifact.content.type === 'presentation' && (
           <PresentationEditor
             content={artifact.content}
@@ -161,6 +187,7 @@ function Playground() {
             loadSource={loadPdf}
             onSave={savePdf}
             sourceKey={`${artifact.id}:${artifact.revision}`}
+            wasmUrl={playgroundAssetUrl('pdfium.wasm')}
           />
         )}
       </section>

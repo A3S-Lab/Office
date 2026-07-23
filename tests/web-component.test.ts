@@ -2,6 +2,7 @@ import { expect, test } from '@rstest/core';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
+  A3SMarkdownEditorElement,
   defineA3SOfficeElements,
 } from '../src/web-component';
 
@@ -11,6 +12,9 @@ test('registers every custom element idempotently', async () => {
 
   expect(customElements.get(A3S_OFFICE_ELEMENT_NAMES.document)).toBe(
     A3SDocumentEditorElement,
+  );
+  expect(customElements.get(A3S_OFFICE_ELEMENT_NAMES.markdown)).toBe(
+    A3SMarkdownEditorElement,
   );
 
   const element = document.createElement(A3S_OFFICE_ELEMENT_NAMES.document);

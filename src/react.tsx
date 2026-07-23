@@ -3,6 +3,10 @@ import {
   type DocumentEditorProps as InternalDocumentEditorProps,
 } from './internal/features/work/editors/document-editor';
 import {
+  MarkdownEditor as InternalMarkdownEditor,
+  type MarkdownEditorProps as InternalMarkdownEditorProps,
+} from './internal/features/work/editors/markdown-editor';
+import {
   PdfViewer as InternalPdfViewer,
   type PdfViewerProps as InternalPdfViewerProps,
 } from './internal/features/work/editors/pdf-viewer';
@@ -51,6 +55,26 @@ export function DocumentEditor({
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <InternalDocumentEditor {...editorProps} preview={preview} />
+    </OfficeSurface>
+  );
+}
+
+export interface MarkdownEditorProps
+  extends Omit<InternalMarkdownEditorProps, 'preview'>,
+    OfficeSurfaceProps {
+  preview?: boolean;
+}
+
+export function MarkdownEditor({
+  className,
+  preview = false,
+  style,
+  theme,
+  ...editorProps
+}: MarkdownEditorProps) {
+  return (
+    <OfficeSurface className={className} style={style} theme={theme}>
+      <InternalMarkdownEditor {...editorProps} preview={preview} />
     </OfficeSurface>
   );
 }

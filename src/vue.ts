@@ -2,6 +2,7 @@ import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
   DocumentEditor as ReactDocumentEditor,
+  MarkdownEditor as ReactMarkdownEditor,
   type OfficeFileAction,
   PdfViewer as ReactPdfViewer,
   PresentationEditor as ReactPresentationEditor,
@@ -10,6 +11,7 @@ import {
 import type {
   DocumentContent,
   EditorAgentRequest,
+  MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -85,6 +87,42 @@ export const DocumentEditor = defineComponent({
         content: props.content,
         fileActions: props.fileActions,
         onAgentRequest: (request) => emit('agentRequest', request),
+        onChange: (content) => {
+          emit('update:content', content);
+          emit('change', content);
+        },
+        preview: props.preview,
+        saveStatus: props.saveStatus,
+        theme: props.theme,
+      }),
+    );
+  },
+});
+
+export const MarkdownEditor = defineComponent({
+  name: 'A3SMarkdownEditor',
+  props: {
+    content: {
+      required: true,
+      type: Object as PropType<MarkdownContent>,
+    },
+    fileActions: fileActionsProp,
+    preview: {
+      default: false,
+      type: Boolean,
+    },
+    saveStatus: String,
+    theme: themeProp,
+  },
+  emits: {
+    change: (_content: MarkdownContent) => true,
+    'update:content': (_content: MarkdownContent) => true,
+  },
+  setup(props, { emit }) {
+    return createReactRenderer(() =>
+      createElement(ReactMarkdownEditor, {
+        content: props.content,
+        fileActions: props.fileActions,
         onChange: (content) => {
           emit('update:content', content);
           emit('change', content);
@@ -206,6 +244,7 @@ export const PdfViewer = defineComponent({
 
 export {
   DocumentEditor as A3SDocumentEditor,
+  MarkdownEditor as A3SMarkdownEditor,
   PdfViewer as A3SPdfViewer,
   PresentationEditor as A3SPresentationEditor,
   SpreadsheetEditor as A3SSpreadsheetEditor,

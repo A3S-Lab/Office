@@ -1,10 +1,11 @@
 {
   "name": "@a3s-lab/office",
   "version": "0.1.0",
-  "description": "Open-source browser editors for documents, spreadsheets, presentations, and PDFs.",
+  "description": "Open-source browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
     "document-editor",
+    "markdown-editor",
     "spreadsheet",
     "presentation",
     "pdf",
@@ -91,6 +92,7 @@
     "@tiptap/extension-text-align": "3.28.0",
     "@tiptap/extension-text-style": "3.28.0",
     "@tiptap/extension-underline": "3.28.0",
+    "@tiptap/markdown": "3.28.0",
     "@tiptap/pm": "3.28.0",
     "@tiptap/react": "3.28.0",
     "@tiptap/starter-kit": "3.28.0",

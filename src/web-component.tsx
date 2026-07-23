@@ -3,11 +3,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import type {
   DocumentContent,
   EditorAgentRequest,
+  MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
 import {
   DocumentEditor,
+  MarkdownEditor,
   type OfficeFileAction,
   PdfViewer,
   PresentationEditor,
@@ -78,7 +80,11 @@ function dispatchDetail<T>(target: EventTarget, type: string, detail: T): void {
 }
 
 abstract class A3SContentEditorElement<
-  TContent extends DocumentContent | SpreadsheetContent | PresentationContent,
+  TContent extends
+    | DocumentContent
+    | MarkdownContent
+    | SpreadsheetContent
+    | PresentationContent,
 > extends A3SOfficeElement {
   #content: TContent | undefined;
   #fileActions: readonly OfficeFileAction[] | undefined;
@@ -148,6 +154,24 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
       content: this.content,
       fileActions: this.fileActions,
       onAgentRequest: (request) => this.requestAgent(request),
+      onChange: (content) => this.changeContent(content),
+      preview: this.preview,
+      saveStatus: this.saveStatus,
+      theme: this.theme,
+    });
+  }
+}
+
+export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownContent> {
+  static get observedAttributes() {
+    return ['preview', 'save-status', 'theme'];
+  }
+
+  protected editorNode(): ReactNode {
+    if (!this.content) return missingContent('Markdown', this.theme);
+    return createElement(MarkdownEditor, {
+      content: this.content,
+      fileActions: this.fileActions,
       onChange: (content) => this.changeContent(content),
       preview: this.preview,
       saveStatus: this.saveStatus,
@@ -247,6 +271,7 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
 
 export const A3S_OFFICE_ELEMENT_NAMES = {
   document: 'a3s-document-editor',
+  markdown: 'a3s-markdown-editor',
   pdf: 'a3s-pdf-viewer',
   presentation: 'a3s-presentation-editor',
   spreadsheet: 'a3s-spreadsheet-editor',
@@ -262,6 +287,7 @@ export function defineA3SOfficeElements(
 
   const elements = [
     [A3S_OFFICE_ELEMENT_NAMES.document, A3SDocumentEditorElement],
+    [A3S_OFFICE_ELEMENT_NAMES.markdown, A3SMarkdownEditorElement],
     [A3S_OFFICE_ELEMENT_NAMES.spreadsheet, A3SSpreadsheetEditorElement],
     [A3S_OFFICE_ELEMENT_NAMES.presentation, A3SPresentationEditorElement],
     [A3S_OFFICE_ELEMENT_NAMES.pdf, A3SPdfViewerElement],
@@ -275,6 +301,7 @@ export function defineA3SOfficeElements(
 declare global {
   interface HTMLElementTagNameMap {
     'a3s-document-editor': A3SDocumentEditorElement;
+    'a3s-markdown-editor': A3SMarkdownEditorElement;
     'a3s-pdf-viewer': A3SPdfViewerElement;
     'a3s-presentation-editor': A3SPresentationEditorElement;
     'a3s-spreadsheet-editor': A3SSpreadsheetEditorElement;

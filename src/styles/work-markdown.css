@@ -1,0 +1,316 @@
+.work-markdown-editor {
+  --work-office-accent: #586574;
+  --work-markdown-zoom: 100;
+
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  background: var(--a3s-bg);
+}
+
+.work-markdown-ribbon {
+  --work-office-accent: #586574;
+}
+
+.work-markdown-workspace {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.work-markdown-workspace.split {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+}
+
+.work-markdown-pane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.work-markdown-pane + .work-markdown-pane {
+  border-left: 1px solid var(--a3s-line);
+}
+
+.work-markdown-pane-label {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  height: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: color-mix(in srgb, var(--a3s-panel) 94%, transparent);
+  color: var(--a3s-faint);
+  font-size: 9px;
+  font-weight: 620;
+  backdrop-filter: blur(10px);
+}
+
+.work-markdown-pane.source {
+  background: var(--a3s-panel);
+}
+
+.work-markdown-pane.source textarea {
+  width: 100%;
+  min-height: 100%;
+  flex: 1;
+  resize: none;
+  padding: 34px clamp(24px, 5vw, 72px) 72px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-ink);
+  font-family: var(--font-mono);
+  font-size: calc(13px * var(--work-markdown-zoom) / 100);
+  line-height: 1.75;
+  tab-size: 2;
+}
+
+.work-markdown-workspace.split .work-markdown-pane.source textarea {
+  min-height: calc(100% - 28px);
+  padding: 26px clamp(20px, 3vw, 44px) 60px;
+}
+
+.work-markdown-pane.visual {
+  background: var(--a3s-bg);
+}
+
+.work-markdown-canvas {
+  width: min(900px, calc(100% - 48px));
+  min-height: calc(100% - 48px);
+  margin: 24px auto;
+  border: 1px solid var(--a3s-line);
+  border-radius: 9px;
+  background: var(--a3s-panel);
+  box-shadow: 0 8px 28px rgb(22 28 40 / 7%);
+}
+
+.work-markdown-workspace.split .work-markdown-canvas {
+  width: calc(100% - 28px);
+  min-height: calc(100% - 28px - 28px);
+  margin: 14px;
+}
+
+.work-markdown-canvas > div {
+  min-height: 100%;
+}
+
+.work-markdown-canvas .tiptap {
+  min-height: 100%;
+  padding: 48px clamp(34px, 7vw, 82px) 90px;
+  outline: 0;
+  color: var(--a3s-ink);
+  font-size: calc(15px * var(--work-markdown-zoom) / 100);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.work-markdown-workspace.split .work-markdown-canvas .tiptap {
+  padding: 34px clamp(24px, 4vw, 48px) 68px;
+}
+
+.work-markdown-canvas .tiptap > :first-child {
+  margin-top: 0;
+}
+
+.work-markdown-canvas .tiptap > :last-child {
+  margin-bottom: 0;
+}
+
+.work-markdown-canvas .tiptap h1,
+.work-markdown-canvas .tiptap h2,
+.work-markdown-canvas .tiptap h3,
+.work-markdown-canvas .tiptap h4,
+.work-markdown-canvas .tiptap h5,
+.work-markdown-canvas .tiptap h6 {
+  margin: 1.4em 0 0.55em;
+  color: var(--a3s-ink);
+  font-weight: 720;
+  line-height: 1.28;
+}
+
+.work-markdown-canvas .tiptap h1 {
+  padding-bottom: 0.28em;
+  border-bottom: 1px solid var(--a3s-line);
+  font-size: 2em;
+}
+
+.work-markdown-canvas .tiptap h2 {
+  padding-bottom: 0.24em;
+  border-bottom: 1px solid var(--a3s-line);
+  font-size: 1.55em;
+}
+
+.work-markdown-canvas .tiptap h3 {
+  font-size: 1.25em;
+}
+
+.work-markdown-canvas .tiptap p {
+  margin: 0.75em 0;
+}
+
+.work-markdown-canvas .tiptap ul,
+.work-markdown-canvas .tiptap ol {
+  margin: 0.8em 0;
+  padding-left: 1.7em;
+}
+
+.work-markdown-canvas .tiptap li + li {
+  margin-top: 0.25em;
+}
+
+.work-markdown-canvas .tiptap li > p {
+  margin: 0;
+}
+
+.work-markdown-canvas .tiptap blockquote {
+  margin: 1em 0;
+  padding: 0.1em 0 0.1em 1em;
+  border-left: 3px solid var(--a3s-line-strong);
+  color: var(--a3s-muted);
+}
+
+.work-markdown-canvas .tiptap code {
+  padding: 0.15em 0.34em;
+  border-radius: 4px;
+  background: var(--a3s-panel-soft);
+  color: color-mix(in srgb, var(--a3s-red) 82%, var(--a3s-ink));
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.work-markdown-canvas .tiptap pre {
+  margin: 1em 0;
+  padding: 16px 18px;
+  overflow: auto;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+  line-height: 1.6;
+}
+
+.work-markdown-canvas .tiptap pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.88em;
+}
+
+.work-markdown-canvas .tiptap a {
+  color: var(--a3s-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.work-markdown-canvas .tiptap hr {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid var(--a3s-line-strong);
+}
+
+.work-markdown-canvas .tiptap img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.5em 0;
+  border-radius: 7px;
+  vertical-align: middle;
+}
+
+.work-markdown-canvas .tiptap table {
+  width: 100%;
+  margin: 1.25em 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.work-markdown-canvas .tiptap th,
+.work-markdown-canvas .tiptap td {
+  position: relative;
+  min-width: 80px;
+  padding: 8px 10px;
+  border: 1px solid var(--a3s-line-strong);
+  vertical-align: top;
+}
+
+.work-markdown-canvas .tiptap th {
+  background: var(--a3s-panel-soft);
+  font-weight: 680;
+  text-align: left;
+}
+
+.work-markdown-canvas .tiptap th > p,
+.work-markdown-canvas .tiptap td > p {
+  margin: 0;
+}
+
+.work-markdown-canvas .tiptap .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--a3s-blue) 10%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.work-markdown-canvas .tiptap p.is-editor-empty:first-child::before {
+  float: left;
+  height: 0;
+  color: var(--a3s-faint);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.work-markdown-editor.preview .work-markdown-canvas {
+  border-color: transparent;
+}
+
+.work-markdown-editor.preview .work-markdown-canvas .tiptap {
+  cursor: default;
+}
+
+.work-markdown-status .work-office-status-info {
+  gap: 14px;
+}
+
+@media (max-width: 760px) {
+  .work-markdown-workspace.split {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(220px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane + .work-markdown-pane {
+    border-top: 1px solid var(--a3s-line);
+  }
+
+  .work-markdown-pane + .work-markdown-pane {
+    border-left: 0;
+  }
+
+  .work-markdown-canvas {
+    width: calc(100% - 24px);
+    margin: 12px;
+  }
+
+  .work-markdown-canvas .tiptap {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .work-markdown-status .work-office-save-status {
+    display: none;
+  }
+}

@@ -3,6 +3,7 @@ import type { WorkSpreadsheetChartLayout } from './work-spreadsheet-chart-layout
 
 export type WorkArtifactKind =
   | 'document'
+  | 'markdown'
   | 'spreadsheet'
   | 'presentation'
   | 'pdf';
@@ -85,6 +86,11 @@ export interface WorkDocumentContent {
   trackChanges?: boolean;
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;
+}
+
+export interface WorkMarkdownContent {
+  type: 'markdown';
+  markdown: string;
 }
 
 export type WorkDocumentCitationStyle = 'apa' | 'mla' | 'chicago' | 'ieee';
@@ -1066,6 +1072,7 @@ export interface WorkPdfContent {
 
 export type WorkArtifactContent =
   | WorkDocumentContent
+  | WorkMarkdownContent
   | WorkSpreadsheetContent
   | WorkPresentationContent
   | WorkPdfContent;
@@ -1133,6 +1140,7 @@ export interface WorkTemplate {
 
 export function workArtifactExtension(kind: WorkArtifactKind): string {
   if (kind === 'document') return 'docx';
+  if (kind === 'markdown') return 'md';
   if (kind === 'spreadsheet') return 'xlsx';
   if (kind === 'presentation') return 'pptx';
   return 'pdf';
@@ -1140,6 +1148,7 @@ export function workArtifactExtension(kind: WorkArtifactKind): string {
 
 export function workArtifactKindLabel(kind: WorkArtifactKind): string {
   if (kind === 'document') return '文字';
+  if (kind === 'markdown') return 'Markdown';
   if (kind === 'spreadsheet') return '表格';
   if (kind === 'presentation') return '演示';
   return 'PDF';

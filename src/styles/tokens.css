@@ -117,6 +117,7 @@
 .a3s-office
   > :where(
     .work-document-editor,
+    .work-markdown-editor,
     .work-spreadsheet-editor,
     .work-presentation-editor,
     .work-pdf-viewer
@@ -140,6 +141,7 @@
 }
 
 a3s-document-editor,
+a3s-markdown-editor,
 a3s-spreadsheet-editor,
 a3s-presentation-editor,
 a3s-pdf-viewer {

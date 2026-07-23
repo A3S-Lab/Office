@@ -56,6 +56,7 @@ export type {
   WorkCompatibilityIssue as CompatibilityIssue,
   WorkCompatibilityReport as CompatibilityReport,
   WorkDocumentContent as DocumentContent,
+  WorkMarkdownContent as MarkdownContent,
   WorkPdfContent as PdfContent,
   WorkPresentationContent as PresentationContent,
   WorkSourceFile as SourceFile,

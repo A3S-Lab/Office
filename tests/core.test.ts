@@ -4,6 +4,7 @@ import {
   createArtifact,
   createArtifactBlob,
   defaultPptxRuntimeUrl,
+  importOfficeFile,
   OFFICE_FILE_ACCEPT,
   officeKindForFile,
 } from '../src/core';
@@ -11,11 +12,14 @@ import {
 describe('office core', () => {
   test('creates complete blank artifacts', () => {
     const document = createArtifact('blank-document');
+    const markdown = createArtifact('blank-markdown');
     const spreadsheet = createArtifact('blank-spreadsheet');
     const presentation = createArtifact('blank-presentation');
 
     expect(document.kind).toBe('document');
     expect(document.content.type).toBe('document');
+    expect(markdown.kind).toBe('markdown');
+    expect(markdown.content).toEqual({ type: 'markdown', markdown: '' });
     expect(spreadsheet.kind).toBe('spreadsheet');
     expect(spreadsheet.content.type).toBe('spreadsheet');
     expect(presentation.kind).toBe('presentation');
@@ -25,6 +29,8 @@ describe('office core', () => {
 
   test('detects supported files without reading their contents', () => {
     expect(officeKindForFile(new File([], 'proposal.docx'))).toBe('document');
+    expect(officeKindForFile(new File([], 'readme.md'))).toBe('markdown');
+    expect(officeKindForFile(new File([], 'notes.markdown'))).toBe('markdown');
     expect(officeKindForFile(new File([], 'forecast.xlsx'))).toBe(
       'spreadsheet',
     );
@@ -32,7 +38,24 @@ describe('office core', () => {
     expect(officeKindForFile(new File([], 'contract.pdf'))).toBe('pdf');
     expect(officeKindForFile(new File([], 'archive.zip'))).toBeNull();
     expect(OFFICE_FILE_ACCEPT).toContain('.docx');
+    expect(OFFICE_FILE_ACCEPT).toContain('.md');
     expect(OFFICE_FILE_ACCEPT).toContain('.pdf');
+  });
+
+  test('imports and exports Markdown without converting its source', async () => {
+    const source = '# Release notes\n\n- Fast\n- Controlled\n';
+    const artifact = await importOfficeFile(
+      new File([source], 'release-notes.md', { type: 'text/markdown' }),
+    );
+
+    expect(artifact.kind).toBe('markdown');
+    expect(artifact.title).toBe('release-notes');
+    expect(artifact.content).toEqual({ type: 'markdown', markdown: source });
+    expect(artifactExtension(artifact.kind)).toBe('md');
+
+    const output = await createArtifactBlob(artifact);
+    expect(output.type).toContain('text/markdown');
+    expect(await output.text()).toBe(source);
   });
 
   test('exports a blank spreadsheet as a real workbook blob', async () => {
