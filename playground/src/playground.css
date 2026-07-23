@@ -1,0 +1,108 @@
+:root {
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  min-width: 900px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #d9dce2;
+  border-radius: 7px;
+  background: #fff;
+  color: #2d3036;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: #9da3ad;
+  background: #f8f9fa;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.playground-shell {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: 52px minmax(0, 1fr) 28px;
+}
+
+.playground-header {
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e0e2e6;
+  background: #fff;
+}
+
+.playground-header > div:first-child {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  line-height: 17px;
+}
+
+.playground-header strong {
+  color: #1f2328;
+  font-size: 13px;
+}
+
+.playground-header span {
+  overflow: hidden;
+  color: #757b85;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playground-header nav,
+.playground-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.playground-actions {
+  margin-left: auto;
+}
+
+.playground-editor {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.playground-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid #e0e2e6;
+  background: #fff;
+  color: #737984;
+  font-size: 10px;
+}

@@ -1,0 +1,196 @@
+:root {
+  --a3s-bg: #f7f7f8;
+  --a3s-panel: #ffffff;
+  --a3s-panel-soft: #f2f3f5;
+  --a3s-panel-strong: #e9ebef;
+  --a3s-ink: #17181a;
+  --a3s-muted: #71757d;
+  --a3s-subtle: #8b9098;
+  --a3s-faint: #a1a5ad;
+  --a3s-line: #e2e4e8;
+  --a3s-line-strong: #d3d6dc;
+  --a3s-action: #242424;
+  --a3s-action-hover: #111111;
+  --a3s-action-ink: #ffffff;
+  --a3s-blue: #2864e8;
+  --a3s-purple: #5420bd;
+  --a3s-green: #14a675;
+  --a3s-red: #d84b4f;
+  --a3s-warning: #c97816;
+  --a3s-shadow: 0 24px 64px rgb(20 24 40 / 18%);
+  --a3s-shadow-soft: 0 14px 36px rgb(20 24 40 / 12%);
+  --a3s-radius: 16px;
+  --a3s-radius-sm: 9px;
+  --a3s-ui-font:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.a3s-office {
+  color-scheme: light;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
+  font-size: 13px;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  --a3s-bg: #f7f7f8;
+  --a3s-panel: #ffffff;
+  --a3s-panel-soft: #f2f3f5;
+  --a3s-panel-strong: #e9ebef;
+  --a3s-ink: #17181a;
+  --a3s-muted: #71757d;
+  --a3s-subtle: #8b9098;
+  --a3s-faint: #a1a5ad;
+  --a3s-line: #e2e4e8;
+  --a3s-line-strong: #d3d6dc;
+  --a3s-action: #242424;
+  --a3s-action-hover: #111111;
+  --a3s-action-ink: #ffffff;
+  --a3s-blue: #2864e8;
+  --a3s-purple: #5420bd;
+  --a3s-green: #14a675;
+  --a3s-red: #d84b4f;
+  --a3s-warning: #c97816;
+  --a3s-shadow: 0 24px 64px rgb(20 24 40 / 18%);
+  --a3s-shadow-soft: 0 14px 36px rgb(20 24 40 / 12%);
+  --a3s-radius: 16px;
+  --a3s-radius-sm: 9px;
+  --a3s-ui-font:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.a3s-office[data-theme="dark"] {
+  color-scheme: dark;
+  --a3s-bg: #101118;
+  --a3s-panel: #171820;
+  --a3s-panel-soft: #1e2028;
+  --a3s-panel-strong: #282b35;
+  --a3s-ink: #f2f3f5;
+  --a3s-muted: #a4a8b2;
+  --a3s-subtle: #8d929e;
+  --a3s-faint: #727783;
+  --a3s-line: #2a2d35;
+  --a3s-line-strong: #3a3d48;
+  --a3s-action: #f2f3f5;
+  --a3s-action-hover: #ffffff;
+  --a3s-action-ink: #17181a;
+  --a3s-blue: #6ca3ff;
+  --a3s-green: #3ccf91;
+  --a3s-red: #f27777;
+  --a3s-warning: #eda94c;
+  --a3s-shadow: 0 22px 70px rgb(0 0 0 / 35%);
+  --a3s-shadow-soft: 0 9px 30px rgb(0 0 0 / 24%);
+}
+
+.a3s-office *,
+.a3s-office *::before,
+.a3s-office *::after {
+  box-sizing: border-box;
+}
+
+.a3s-office button,
+.a3s-office input,
+.a3s-office textarea,
+.a3s-office select {
+  font: inherit;
+}
+
+.a3s-office button {
+  color: inherit;
+}
+
+.a3s-office :where(button, input, textarea, select, a):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 75%, white);
+  outline-offset: 2px;
+}
+
+.a3s-office
+  > :where(
+    .work-document-editor,
+    .work-spreadsheet-editor,
+    .work-presentation-editor,
+    .work-pdf-viewer
+  ) {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.a3s-office-empty {
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--a3s-muted);
+  text-align: center;
+}
+
+.a3s-office-vue-host {
+  display: block;
+}
+
+a3s-document-editor,
+a3s-spreadsheet-editor,
+a3s-presentation-editor,
+a3s-pdf-viewer {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 480px;
+}
+
+.a3s-office .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  white-space: nowrap;
+}
+
+.a3s-office .spin {
+  animation: a3s-office-spin 0.9s linear infinite;
+}
+
+@keyframes a3s-office-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .a3s-office[data-theme="system"] {
+    color-scheme: dark;
+    --a3s-bg: #101118;
+    --a3s-panel: #171820;
+    --a3s-panel-soft: #1e2028;
+    --a3s-panel-strong: #282b35;
+    --a3s-ink: #f2f3f5;
+    --a3s-muted: #a4a8b2;
+    --a3s-subtle: #8d929e;
+    --a3s-faint: #727783;
+    --a3s-line: #2a2d35;
+    --a3s-line-strong: #3a3d48;
+    --a3s-action: #f2f3f5;
+    --a3s-action-hover: #ffffff;
+    --a3s-action-ink: #17181a;
+    --a3s-blue: #6ca3ff;
+    --a3s-green: #3ccf91;
+    --a3s-red: #f27777;
+    --a3s-warning: #eda94c;
+    --a3s-shadow: 0 22px 70px rgb(0 0 0 / 35%);
+    --a3s-shadow-soft: 0 9px 30px rgb(0 0 0 / 24%);
+  }
+}

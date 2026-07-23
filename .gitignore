@@ -1,0 +1,19 @@
+# Local
+.DS_Store
+*.local
+*.log*
+
+# Dist
+node_modules
+dist/
+playground-dist/
+storybook-static
+doc_build/
+coverage/
+*.tgz
+target/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea

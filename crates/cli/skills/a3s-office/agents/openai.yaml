@@ -1,0 +1,4 @@
+interface:
+  display_name: "A3S Office"
+  short_description: "Create and edit Office files with A3S Use"
+  default_prompt: "Use $a3s-office to inspect and safely edit this Office document."

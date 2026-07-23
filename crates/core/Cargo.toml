@@ -1,0 +1,25 @@
+[package]
+name = "a3s-office"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Native OOXML document operations for A3S Office"
+
+[dependencies]
+a3s-use-core.workspace = true
+async-trait.workspace = true
+base64.workspace = true
+fs2.workspace = true
+quick-xml.workspace = true
+regex.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+url.workspace = true
+zip.workspace = true

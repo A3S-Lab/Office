@@ -1,0 +1,42 @@
+[package]
+name = "a3s-office-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Command-line interface for native A3S Office document operations"
+
+[lib]
+name = "a3s_office_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "a3s-office"
+path = "src/main.rs"
+
+[features]
+default = ["browser"]
+browser = ["dep:a3s-use-browser"]
+
+[dependencies]
+a3s-office = { path = "../core", version = "0.1.0" }
+a3s-use-browser = { workspace = true, optional = true }
+a3s-use-core.workspace = true
+axum.workspace = true
+base64.workspace = true
+futures-util.workspace = true
+getrandom.workspace = true
+rmcp.workspace = true
+schemars.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+async-trait.workspace = true
+reqwest.workspace = true

@@ -1,0 +1,26 @@
+extension "a3s/office" {
+  schema_version = 2
+  version        = "0.1.0"
+  route          = "office"
+  requires_use   = ">=0.2.0, <0.3.0"
+  actions        = ["read", "mutate", "download", "execute"]
+
+  repository {
+    url = "https://github.com/A3S-Lab/Office"
+  }
+
+  cli {
+    executable  = "bin/a3s-office"
+    json_output = true
+  }
+
+  mcp {
+    executable = "bin/a3s-office"
+    args       = ["mcp"]
+    transport  = "stdio"
+  }
+
+  skill {
+    path = "skills/a3s-office/SKILL.md"
+  }
+}
