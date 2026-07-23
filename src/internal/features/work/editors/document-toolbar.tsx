@@ -1,9 +1,5 @@
 import type { Editor } from '@tiptap/core';
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Bold,
   BookOpen,
   CheckCheck,
   Columns3,
@@ -12,24 +8,14 @@ import {
   FileText,
   Globe2,
   Hash,
-  Highlighter,
   Image as ImageIcon,
-  Italic,
   Link2,
-  List,
   ListChecks,
-  ListOrdered,
   MessageSquarePlus,
   MessagesSquare,
-  Redo2,
   RefreshCw,
-  Replace,
-  Search,
   Settings2,
-  Strikethrough,
   Table2,
-  Underline as UnderlineIcon,
-  Undo2,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -37,11 +23,8 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
-import {
-  OfficeColorPicker,
-  OfficeSelect,
-  useOfficeDialog,
-} from './office-controls';
+import { DocumentHomeRibbon } from './document-home-ribbon';
+import { OfficeSelect, useOfficeDialog } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
@@ -284,200 +267,10 @@ export function DocumentToolbar({
         toolbarClassName="document-toolbar"
         panels={{
           home: (
-            <>
-              <RibbonGroup label="撤销">
-                <ToolbarButton
-                  label="撤销"
-                  shortcut="Cmd/Ctrl+Z"
-                  disabled={!editor.can().chain().focus().undo().run()}
-                  onClick={() => editor.chain().focus().undo().run()}
-                >
-                  <Undo2 size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="重做"
-                  shortcut="Cmd/Ctrl+Shift+Z"
-                  disabled={!editor.can().chain().focus().redo().run()}
-                  onClick={() => editor.chain().focus().redo().run()}
-                >
-                  <Redo2 size={16} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="样式">
-                <OfficeSelect
-                  ariaLabel="段落样式"
-                  value={
-                    editor.isActive('heading', { level: 1 })
-                      ? 'h1'
-                      : editor.isActive('heading', { level: 2 })
-                        ? 'h2'
-                        : editor.isActive('heading', { level: 3 })
-                          ? 'h3'
-                          : 'paragraph'
-                  }
-                  options={[
-                    { value: 'paragraph', label: '正文' },
-                    { value: 'h1', label: '标题 1' },
-                    { value: 'h2', label: '标题 2' },
-                    { value: 'h3', label: '标题 3' },
-                  ]}
-                  onValueChange={(value) => {
-                    if (value === 'paragraph')
-                      editor.chain().focus().setParagraph().run();
-                    else
-                      editor
-                        .chain()
-                        .focus()
-                        .toggleHeading({
-                          level: Number(value.slice(1)) as 1 | 2 | 3,
-                        })
-                        .run();
-                  }}
-                />
-              </RibbonGroup>
-              <RibbonGroup label="字体">
-                <ToolbarButton
-                  label="加粗"
-                  shortcut="Cmd/Ctrl+B"
-                  active={editor.isActive('bold')}
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                >
-                  <Bold size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="斜体"
-                  shortcut="Cmd/Ctrl+I"
-                  active={editor.isActive('italic')}
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                >
-                  <Italic size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="下划线"
-                  shortcut="Cmd/Ctrl+U"
-                  active={editor.isActive('underline')}
-                  onClick={() => editor.chain().focus().toggleUnderline().run()}
-                >
-                  <UnderlineIcon size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="删除线"
-                  active={editor.isActive('strike')}
-                  onClick={() => editor.chain().focus().toggleStrike().run()}
-                >
-                  <Strikethrough size={16} />
-                </ToolbarButton>
-                <OfficeColorPicker
-                  compact
-                  className="work-color-tool"
-                  value={editor.getAttributes('textStyle').color ?? '#172033'}
-                  ariaLabel="文字颜色"
-                  onValueChange={(color) =>
-                    editor.chain().focus().setColor(color).run()
-                  }
-                />
-                <ToolbarButton
-                  label="突出显示"
-                  active={editor.isActive('highlight')}
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .toggleHighlight({ color: '#fff0a6' })
-                      .run()
-                  }
-                >
-                  <Highlighter size={16} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="段落">
-                <ToolbarButton
-                  label="项目符号"
-                  active={editor.isActive('bulletList')}
-                  onClick={() =>
-                    editor.chain().focus().toggleBulletList().run()
-                  }
-                >
-                  <List size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="编号"
-                  active={editor.isActive('orderedList')}
-                  onClick={() =>
-                    editor.chain().focus().toggleOrderedList().run()
-                  }
-                >
-                  <ListOrdered size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="左对齐"
-                  active={editor.isActive({ textAlign: 'left' })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign('left').run()
-                  }
-                >
-                  <AlignLeft size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="居中"
-                  active={editor.isActive({ textAlign: 'center' })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign('center').run()
-                  }
-                >
-                  <AlignCenter size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="右对齐"
-                  active={editor.isActive({ textAlign: 'right' })}
-                  onClick={() =>
-                    editor.chain().focus().setTextAlign('right').run()
-                  }
-                >
-                  <AlignRight size={16} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="编辑">
-                <ToolbarButton
-                  label="查找"
-                  shortcut="Cmd/Ctrl+F"
-                  onClick={() => void findText(false)}
-                >
-                  <Search size={16} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="替换"
-                  shortcut="Cmd/Ctrl+H"
-                  onClick={() => void findText(true)}
-                >
-                  <Replace size={16} />
-                </ToolbarButton>
-              </RibbonGroup>
-              {editor.isActive('table') && (
-                <RibbonGroup label="表格">
-                  <ToolbarButton
-                    label="添加行"
-                    onClick={() => editor.chain().focus().addRowAfter().run()}
-                  >
-                    + 行
-                  </ToolbarButton>
-                  <ToolbarButton
-                    label="添加列"
-                    onClick={() =>
-                      editor.chain().focus().addColumnAfter().run()
-                    }
-                  >
-                    + 列
-                  </ToolbarButton>
-                  <ToolbarButton
-                    label="删除表格"
-                    onClick={() => editor.chain().focus().deleteTable().run()}
-                  >
-                    × 表
-                  </ToolbarButton>
-                </RibbonGroup>
-              )}
-            </>
+            <DocumentHomeRibbon
+              editor={editor}
+              onFindText={(replace) => void findText(replace)}
+            />
           ),
           insert: (
             <>

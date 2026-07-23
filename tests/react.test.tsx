@@ -70,6 +70,15 @@ test('keeps document pagination available under React strict effects', async () 
     'data-pagination-engine',
     'javascript',
   );
+  expect(screen.getByRole('combobox', { name: '字体' })).toHaveTextContent(
+    '默认字体',
+  );
+  expect(screen.getByRole('combobox', { name: '字号' })).toHaveTextContent(
+    '10.5',
+  );
+  expect(screen.getByRole('combobox', { name: '行距' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '增加缩进' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '两端对齐' })).toBeInTheDocument();
 });
 
 test('renders controlled Markdown content with the TipTap editor', async () => {

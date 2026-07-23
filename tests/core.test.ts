@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@rstest/core';
+import JSZip from 'jszip';
 import {
   artifactExtension,
   createArtifact,
@@ -75,5 +76,29 @@ describe('office core', () => {
     expect(new URL(defaultPptxRuntimeUrl).pathname).toMatch(
       /\/pptxgen\.bundle\.js$/,
     );
+  });
+
+  test('keeps document typography and paragraph layout in DOCX export', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document')
+      throw new Error('Expected a document artifact.');
+    artifact.content.html = [
+      '<p style="text-align: justify; line-height: 1.5; margin-left: 24px;"',
+      ' data-office-indent-level="1">',
+      '<span style="font-family: Arial; font-size: 12pt;">A3S Office</span>',
+      '</p>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = await archive.file('word/document.xml')?.async('string');
+
+    expect(xml).toBeDefined();
+    expect(xml).toContain('<w:rFonts w:ascii="Arial"');
+    expect(xml).toContain('w:hAnsi="Arial"');
+    expect(xml).toContain('<w:sz w:val="24"/>');
+    expect(xml).toContain('<w:jc w:val="both"/>');
+    expect(xml).toContain('<w:spacing w:after="120" w:line="360"/>');
+    expect(xml).toContain('<w:ind w:left="360"/>');
   });
 });

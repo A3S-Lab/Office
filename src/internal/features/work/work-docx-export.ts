@@ -327,8 +327,11 @@ async function blockToFileChild(
     children: runs.length ? runs : [new docx.TextRun('')],
     heading,
     alignment: paragraphAlignment(element, docx),
-    spacing: { after: heading ? 180 : 120, line: 320 },
-    indent: tag === 'blockquote' ? { left: 540 } : undefined,
+    spacing: {
+      after: heading ? 180 : 120,
+      line: paragraphLineSpacing(element) ?? 320,
+    },
+    indent: paragraphIndent(element, tag),
   });
 }
 
@@ -443,6 +446,8 @@ async function inlineRuns(
       subScript: inherited.subScript || tag === 'sub',
       superScript: inherited.superScript || tag === 'sup',
       color: cssColorToHex(node.style.color) ?? inherited.color,
+      font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
+      size: cssFontSize(node.style.fontSize) ?? inherited.size,
     };
     if (tag === 'br') {
       return [new docx.TextRun({ ...style, break: 1 })];
@@ -790,6 +795,62 @@ function paragraphAlignment(element: HTMLElement, docx: typeof import('docx')) {
   if (alignment === 'left' || alignment === 'start')
     return docx.AlignmentType.LEFT;
   return undefined;
+}
+
+function paragraphLineSpacing(element: HTMLElement): number | undefined {
+  const value = element.style.lineHeight.trim();
+  if (!value || value === 'normal') return undefined;
+  const percentage = /^(\d+(?:\.\d+)?)%$/.exec(value);
+  if (percentage) return Math.round((Number(percentage[1]) / 100) * 240);
+  const unitless = /^(\d+(?:\.\d+)?)$/.exec(value);
+  if (unitless) return Math.round(Number(unitless[1]) * 240);
+  const points = cssLengthToPoints(value);
+  return points ? Math.round(points * 20) : undefined;
+}
+
+function paragraphIndent(
+  element: HTMLElement,
+  tag: string,
+): { left: number } | undefined {
+  const blockquoteIndent = tag === 'blockquote' ? 540 : 0;
+  const level = Number(element.dataset.officeIndentLevel);
+  const explicitIndent =
+    Number.isFinite(level) && level > 0
+      ? Math.round(level * 360)
+      : cssLengthToTwips(element.style.marginLeft);
+  const left = blockquoteIndent + explicitIndent;
+  return left > 0 ? { left } : undefined;
+}
+
+function cssFontFamily(value: string): string | undefined {
+  const family = value
+    .split(',')[0]
+    ?.trim()
+    .replace(/^(['"])(.*)\1$/, '$2');
+  return family || undefined;
+}
+
+function cssFontSize(value: string): number | undefined {
+  const points = cssLengthToPoints(value);
+  return points ? Math.max(1, Math.round(points * 2)) : undefined;
+}
+
+function cssLengthToTwips(value: string): number {
+  const points = cssLengthToPoints(value);
+  return points ? Math.max(0, Math.round(points * 20)) : 0;
+}
+
+function cssLengthToPoints(value: string): number | undefined {
+  const match = /^(-?\d+(?:\.\d+)?)(px|pt|in|cm|mm)$/i.exec(value.trim());
+  if (!match) return undefined;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return undefined;
+  const unit = match[2]?.toLowerCase();
+  if (unit === 'px') return amount * 0.75;
+  if (unit === 'in') return amount * 72;
+  if (unit === 'cm') return (amount * 72) / 2.54;
+  if (unit === 'mm') return (amount * 72) / 25.4;
+  return amount;
 }
 
 function cssColorToHex(source: string): string | undefined {

@@ -9,6 +9,72 @@
   background: var(--a3s-bg);
 }
 
+.work-document-font-tools,
+.work-document-paragraph-tools {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 2px;
+}
+
+.work-document-font-selects,
+.work-document-font-actions,
+.work-document-paragraph-actions,
+.work-document-alignment-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.work-document-ribbon
+  .work-document-font-tools
+  .work-office-select
+  > button[role="combobox"],
+.work-document-ribbon
+  .work-document-paragraph-tools
+  .work-office-select
+  > button[role="combobox"] {
+  height: 24px;
+  min-width: 0;
+  padding-inline: 7px 5px;
+}
+
+.work-document-ribbon .work-document-font-family-select {
+  width: 126px;
+}
+
+.work-document-ribbon .work-document-font-size-select {
+  width: 64px;
+}
+
+.work-document-ribbon .work-document-line-height-select {
+  width: 82px;
+}
+
+.work-document-ribbon .work-document-font-tools button:not([role="combobox"]),
+.work-document-ribbon
+  .work-document-paragraph-tools
+  button:not([role="combobox"]) {
+  width: 26px;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 5px;
+}
+
+.work-document-ribbon .work-document-font-actions .work-color-tool {
+  width: 26px;
+  height: 24px;
+  flex-basis: 26px;
+}
+
+.work-document-ribbon .work-document-font-actions .work-office-color-trigger {
+  width: 26px;
+  min-width: 26px;
+  height: 24px;
+  padding: 0;
+}
+
 .work-document-changes-panel {
   display: flex;
   max-height: 230px;
@@ -523,9 +589,9 @@
   min-height: 820px;
   outline: 0;
   color: #20232b;
-  font-family: Georgia, "Songti SC", "STSong", serif;
-  font-size: 15px;
-  line-height: 1.82;
+  font-family: "Times New Roman", "Songti SC", "STSong", serif;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .work-document-page.landscape .tiptap {
@@ -631,20 +697,20 @@
 }
 
 .work-document-page .tiptap h1 {
-  margin: 0 0 24px;
+  margin: 0 0 18px;
   color: #172033;
   font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 730;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.025em;
   line-height: 1.32;
 }
 
 .work-document-page .tiptap h2 {
-  margin: 32px 0 12px;
+  margin: 24px 0 10px;
   color: #1b263d;
   font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 690;
   line-height: 1.4;
 }
@@ -658,7 +724,7 @@
 }
 
 .work-document-page .tiptap p {
-  margin: 0 0 13px;
+  margin: 0 0 8px;
 }
 
 .work-document-page .tiptap ul,
@@ -884,6 +950,12 @@
   .work-document-status-detail,
   .work-document-save-status {
     display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .work-document-scroll {
+    padding: 20px 12px 60px;
   }
 }
 
