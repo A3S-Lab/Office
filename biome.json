@@ -53,7 +53,7 @@
       }
     },
     {
-      "includes": ["src/styles/**"],
+      "includes": ["src/styles/**", "playground/src/*.css"],
       "linter": {
         "rules": {
           "complexity": {

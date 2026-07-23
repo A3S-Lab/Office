@@ -27,6 +27,14 @@ export default defineConfig({
         from: '../node_modules/pptxgenjs/LICENSE',
         to: 'pptxgen.LICENSE.txt',
       },
+      {
+        from: './generated/a3s-office-skill.tar.gz',
+        to: 'downloads/a3s-office-skill.tar.gz',
+      },
+      {
+        from: '../crates/cli/skills/a3s-office',
+        to: 'downloads/a3s-office-skill',
+      },
     ],
     distPath: {
       root: '../playground-dist',

@@ -7,6 +7,7 @@
 node_modules
 dist/
 playground-dist/
+playground/generated/
 storybook-static
 doc_build/
 coverage/

@@ -1,3 +1,11 @@
+.work-file-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .work-office-field {
   display: grid;
   min-width: 0;

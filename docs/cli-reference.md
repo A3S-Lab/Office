@@ -287,10 +287,10 @@ watch provides full saved-revision refresh for all three formats without a
 resident pipe or mutation endpoint. `mcp serve office-native` exposes the same
 editor, annotated/issue analysis, and screenshot composition through typed
 standard MCP tools and bounded in-memory sessions.
-The packaged `a3s-use-office` Skill exposes the same product boundaries to
+The packaged `a3s-office` Skill exposes the same product boundaries to
 agents without starting OfficeCLI. Discover its metadata with
 `office skills list`, read only its `SKILL.md` with
-`office skills get a3s-use-office`, append its four format/MCP references with
+`office skills get a3s-office`, append its four format/MCP references with
 `--full`, or locate the installed directory with `office skills path`. The
 capability snapshot binds the Skill path and lowercase SHA-256 so a resident
 host can verify the bytes before loading them. Resident Code hosts receive the

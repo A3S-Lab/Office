@@ -331,14 +331,19 @@ cargo test --workspace
 bun run playground
 ```
 
-`bun run playground` starts an interactive React host that can create and import
-all supported editor types. Production output is generated in `dist/`.
-`bun run playground:build` creates the static Playground in
-`playground-dist/`.
+`bun run playground` starts the A3S Office product Playground. It includes the
+Office-style workspace, document, Markdown, Spreadsheet, Presentation, and PDF
+editors, the Office CLI introduction, and the downloadable `a3s-office` Skill.
+Production output is generated in `dist/`. `bun run playground:build` packages
+the Skill and creates the static Playground in `playground-dist/`.
 
 Pushes to `main` deploy that static build to GitHub Pages through
 `.github/workflows/pages.yml`. The workflow uses the Pages-provided base path,
 so assets also resolve correctly from the project-site URL.
+
+- [Office Playground](https://a3s-lab.github.io/Office/#office)
+- [Office CLI guide](https://a3s-lab.github.io/Office/#cli)
+- [Office CLI Skill](https://a3s-lab.github.io/Office/#skill)
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow and
 [SECURITY.md](SECURITY.md) for private vulnerability reporting.
