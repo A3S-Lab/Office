@@ -145,7 +145,16 @@ abstract class A3SContentEditorElement<
 
 export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentContent> {
   static get observedAttributes() {
-    return ['preview', 'save-status', 'theme'];
+    return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
+  }
+
+  get kernelWasmUrl(): string | undefined {
+    return this.getAttribute('kernel-wasm-url') ?? undefined;
+  }
+
+  set kernelWasmUrl(value: string | undefined) {
+    if (value === undefined) this.removeAttribute('kernel-wasm-url');
+    else this.setAttribute('kernel-wasm-url', value);
   }
 
   protected editorNode(): ReactNode {
@@ -153,6 +162,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     return createElement(DocumentEditor, {
       content: this.content,
       fileActions: this.fileActions,
+      kernelWasmUrl: this.kernelWasmUrl,
       onAgentRequest: (request) => this.requestAgent(request),
       onChange: (content) => this.changeContent(content),
       preview: this.preview,

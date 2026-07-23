@@ -1,11 +1,13 @@
 import { expect, test } from '@rstest/core';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import {
   createArtifact,
   type DocumentContent,
   type MarkdownContent,
 } from '../src/core';
 import {
+  defaultOfficeKernelWasmUrl,
   defaultPdfiumWasmUrl,
   DocumentEditor,
   MarkdownEditor,
@@ -32,6 +34,37 @@ test('renders the React document editor in preview mode', () => {
 
 test('publishes a colocated default PDFium URL', () => {
   expect(new URL(defaultPdfiumWasmUrl).pathname).toMatch(/\/pdfium\.wasm$/);
+});
+
+test('publishes a colocated default Office kernel URL', () => {
+  expect(new URL(defaultOfficeKernelWasmUrl).pathname).toMatch(
+    /\/office-kernel\.wasm$/,
+  );
+});
+
+test('keeps document pagination available under React strict effects', async () => {
+  const artifact = createArtifact('blank-document');
+
+  render(
+    <StrictMode>
+      <DocumentEditor
+        content={artifact.content as DocumentContent}
+        onChange={() => undefined}
+        theme="light"
+      />
+    </StrictMode>,
+  );
+
+  await waitFor(() => {
+    expect(screen.getByLabelText('文档正文')).toHaveAttribute(
+      'data-pagination-state',
+      'ready',
+    );
+  });
+  expect(screen.getByLabelText('文档正文')).toHaveAttribute(
+    'data-pagination-engine',
+    'javascript',
+  );
 });
 
 test('renders controlled Markdown content with the TipTap editor', () => {

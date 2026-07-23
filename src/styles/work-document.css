@@ -585,6 +585,47 @@
   letter-spacing: 0.08em;
 }
 
+.work-document-page.paginated .tiptap {
+  min-height: 0;
+}
+
+.work-document-page.paginated .tiptap > .work-document-section:first-child {
+  min-height: 0;
+}
+
+.work-document-page .tiptap .work-document-auto-page-break {
+  position: relative;
+  display: block;
+  width: calc(
+    100% +
+    var(--work-document-page-margin-left) +
+    var(--work-document-page-margin-right)
+  );
+  height: var(--work-document-page-spacer-height);
+  clear: both;
+  column-span: all;
+  margin-right: calc(-1 * var(--work-document-page-margin-right));
+  margin-left: calc(-1 * var(--work-document-page-margin-left));
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-document-page .tiptap .work-document-auto-page-break::before {
+  position: absolute;
+  top: var(--work-document-page-gap-offset);
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  height: var(--work-document-page-gap-height);
+  border-top: 1px solid color-mix(in srgb, var(--a3s-line) 80%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--a3s-line) 80%, transparent);
+  background: color-mix(in srgb, var(--a3s-bg) 80%, #dfe3e9);
+  box-shadow:
+    inset 0 5px 8px -8px rgb(30 38 55 / 48%),
+    inset 0 -5px 8px -8px rgb(30 38 55 / 42%);
+  content: "";
+}
+
 .work-document-page .tiptap > *:first-child {
   margin-top: 0;
 }

@@ -46,6 +46,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "a3s-office-web-kernel"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "a3s-use-browser"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

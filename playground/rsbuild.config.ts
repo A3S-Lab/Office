@@ -16,6 +16,10 @@ export default defineConfig({
         to: 'pdfium.wasm',
       },
       {
+        from: '../generated/office-kernel.wasm',
+        to: 'office-kernel.wasm',
+      },
+      {
         from: '../node_modules/@embedpdf/pdfium/LICENSE.pdfium',
         to: 'pdfium.LICENSE.txt',
       },

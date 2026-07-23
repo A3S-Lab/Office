@@ -26,10 +26,15 @@ import {
 } from './office-surface';
 
 const PDFIUM_WASM_FILE_NAME = 'pdfium.wasm';
+const OFFICE_KERNEL_WASM_FILE_NAME = 'office-kernel.wasm';
 
 export const defaultPdfiumWasmUrl = siblingAssetUrl(
   import.meta.url,
   PDFIUM_WASM_FILE_NAME,
+);
+export const defaultOfficeKernelWasmUrl = siblingAssetUrl(
+  import.meta.url,
+  OFFICE_KERNEL_WASM_FILE_NAME,
 );
 
 function siblingAssetUrl(moduleUrl: string, fileName: string): string {
@@ -47,6 +52,7 @@ export interface DocumentEditorProps
 
 export function DocumentEditor({
   className,
+  kernelWasmUrl = defaultOfficeKernelWasmUrl,
   preview = false,
   style,
   theme,
@@ -54,7 +60,11 @@ export function DocumentEditor({
 }: DocumentEditorProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <InternalDocumentEditor {...editorProps} preview={preview} />
+      <InternalDocumentEditor
+        {...editorProps}
+        kernelWasmUrl={kernelWasmUrl}
+        preview={preview}
+      />
     </OfficeSurface>
   );
 }

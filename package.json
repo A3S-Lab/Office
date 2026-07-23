@@ -50,6 +50,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "docs/browser-editor-architecture.md",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
@@ -65,14 +66,16 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "rslib",
-    "dev": "rslib --watch",
+    "build": "bun run kernel:build && rslib",
+    "dev": "bun run kernel:build && rslib --watch",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
+    "kernel:build": "bash scripts/build-office-kernel.sh",
+    "kernel:test": "bun run kernel:build && bun scripts/smoke-office-kernel.ts",
     "playground": "bun run playground:assets && rsbuild dev --config playground/rsbuild.config.ts",
-    "playground:assets": "bash scripts/package-office-skill.sh",
+    "playground:assets": "bun run build && bash scripts/package-office-skill.sh",
     "playground:build": "bun run playground:assets && rsbuild build --config playground/rsbuild.config.ts",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "test": "rstest",

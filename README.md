@@ -25,6 +25,15 @@ Try the editors in the
 The editors run entirely in the browser. A server is optional and remains in
 control of persistence, collaboration, authentication, and AI requests.
 
+The browser architecture is editor-specific rather than forcing every product
+through one abstraction. Documents use one logical TipTap/ProseMirror tree;
+automatic page layout runs in a Worker backed by the Rust WebAssembly kernel
+and returns non-history page decorations. Spreadsheet and Presentation keep
+their grid and scene models, using TipTap only for rich text where appropriate.
+PDF rendering remains on PDFium. See
+[Browser editor architecture](docs/browser-editor-architecture.md) for the
+current fidelity boundary and migration plan.
+
 The repository also contains the native `a3s-office` Rust CLI, its standard
 MCP server, the Office Skill, and the OOXML engine used for deterministic
 document automation. These surfaces can run directly or as an external
@@ -87,10 +96,28 @@ The React entry exports:
 - `PresentationEditor`
 - `PdfViewer`
 - their Props types, `OfficeFileAction`, `OfficeTheme`, and
-  `defaultPdfiumWasmUrl`
+  `defaultOfficeKernelWasmUrl` and `defaultPdfiumWasmUrl`
 
 Set `preview` for a read-only representation. Use `theme="light"`,
 `theme="dark"`, or `theme="system"`.
+
+### Document layout kernel
+
+`DocumentEditor` resolves `office-kernel.wasm` beside `react.js` and runs page
+layout in its dedicated Worker. If assets are hosted elsewhere, pass an
+absolute `kernelWasmUrl`:
+
+```tsx
+<DocumentEditor
+  content={content}
+  kernelWasmUrl="https://cdn.example.com/a3s-office/office-kernel.wasm"
+  onChange={setContent}
+/>
+```
+
+The current kernel provides automatic block-boundary pagination. Exact Word or
+WPS line layout, floating objects, and multi-column flow remain explicit
+fidelity gates rather than implied compatibility.
 
 ### Markdown
 
@@ -197,7 +224,7 @@ Available tags are:
 
 Complex values such as `content`, `fileActions`, `loadSource`, and `onSave` are
 JavaScript properties. Simple values such as `preview`, `theme`, `save-status`,
-and `wasm-url` are attributes or properties.
+`kernel-wasm-url`, and `wasm-url` are attributes or properties.
 
 ## Core API
 
@@ -308,9 +335,9 @@ Editors fill their container. Give the container an explicit height:
 The stylesheet uses `--a3s-*` custom properties. Override them on the editor
 container to match the host product.
 
-The published package contains a 4.6 MB PDFium WebAssembly file and the browser
-build of PptxGenJS. Configure the CDN or static server to return `.wasm` as
-`application/wasm`.
+The published package contains the browser Office layout Worker and WebAssembly
+kernel, a 4.6 MB PDFium WebAssembly file, and the browser build of PptxGenJS.
+Configure the CDN or static server to return `.wasm` as `application/wasm`.
 
 ## Development
 
@@ -324,6 +351,7 @@ Requirements:
 bun install
 bun run typecheck
 bun run test
+bun run kernel:test
 bun run build
 cargo fmt --all -- --check
 cargo check --workspace --all-targets

@@ -82,6 +82,10 @@ import {
 } from '../work-document-note-nodes';
 import { DocumentPageBreak } from '../work-document-page-break';
 import {
+  documentPageMetrics,
+  DocumentPagination,
+} from '../work-document-pagination';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
   updateDocumentPageChromeVariant,
@@ -114,11 +118,13 @@ import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
 } from './work-office-chrome';
+import { useDocumentPagination } from './use-document-pagination';
 
 export interface DocumentEditorProps {
   content: WorkDocumentContent;
   preview: boolean;
   saveStatus?: string;
+  kernelWasmUrl?: string;
   fileActions?: readonly WorkOfficeFileAction[];
   onChange: (content: WorkDocumentContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
@@ -139,6 +145,7 @@ export function DocumentEditor({
   content,
   preview,
   saveStatus = '已自动保存',
+  kernelWasmUrl,
   fileActions,
   onChange,
   onAgentRequest,
@@ -169,7 +176,7 @@ export function DocumentEditor({
     from: number;
     to: number;
   } | null>(null);
-  const [, setSelectionVersion] = useState(0);
+  const [selectionVersion, setSelectionVersion] = useState(0);
   contentRef.current = content;
   trackChangesRef.current = Boolean(content.trackChanges);
   const editorExtensions = useMemo(
@@ -210,6 +217,7 @@ export function DocumentEditor({
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: '在这里开始输入…' }),
       DocumentPageBreak,
+      DocumentPagination,
       DocumentChange.configure({
         isTracking: () => trackChangesRef.current,
         createChange: createTrackedDocumentChange,
@@ -272,22 +280,54 @@ export function DocumentEditor({
     editor.commands.setContent(normalizedContent, { emitUpdate: false });
   }, [content, editor, normalizedContent]);
 
-  if (!editor) {
-    return <WorkEditorLoadingState title="正在准备文字编辑器" />;
-  }
-
-  const section = activeDocumentSection(editor);
+  const section = editor ? activeDocumentSection(editor) : null;
   const layout = section?.layout ?? documentInitialSectionLayout(content);
   const margins = documentMargins({
     ...content,
     pageSize: layout.pageSize,
     margins: layout.margins,
   });
-  const pageCount = documentPageCount(editor);
-  const currentPage = Math.min(pageCount, documentCurrentPage(editor));
-  const pageStart = Math.max(1, layout.pageNumberStart ?? 1);
   const pageChrome = normalizeDocumentPageChrome(layout.pageChrome, layout);
   const defaultChrome = pageChrome.default;
+  const kernelPage = useMemo(
+    () => documentPageMetrics(layout),
+    [
+      layout.margins.bottom,
+      layout.margins.left,
+      layout.margins.right,
+      layout.margins.top,
+      layout.orientation,
+      layout.pageSize,
+    ],
+  );
+  const pagination = useDocumentPagination({
+    editor,
+    enabled: Boolean(editor && !preview && viewMode === 'page'),
+    layoutKey: [
+      layout.breakAfter,
+      layout.columns.count,
+      layout.columns.spacing,
+      layout.columns.separator,
+      layoutOpen,
+      defaultChrome.footerHtml,
+      defaultChrome.headerHtml,
+      defaultChrome.showPageNumber,
+    ].join(':'),
+    page: kernelPage,
+    selectionVersion,
+    wasmUrl: kernelWasmUrl,
+  });
+
+  if (!editor) {
+    return <WorkEditorLoadingState title="正在准备文字编辑器" />;
+  }
+
+  const pageCount = pagination.pageCount ?? documentPageCount(editor);
+  const currentPage = Math.min(
+    pageCount,
+    pagination.currentPage ?? documentCurrentPage(editor),
+  );
+  const pageStart = Math.max(1, layout.pageNumberStart ?? 1);
   const changes = collectDocumentChanges(editor.state.doc);
   const commentAnchors = collectDocumentCommentAnchors(editor.state.doc);
   const comments = documentCommentViews(content.comments ?? [], commentAnchors);
@@ -592,7 +632,7 @@ export function DocumentEditor({
           }
         >
           <article
-            className={`work-document-page ${layout.pageSize} ${layout.orientation}`}
+            className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}`}
             aria-label={preview ? '文字预览' : '文字页面'}
             style={{
               padding: `${millimetersToPixels(margins.top)}px ${millimetersToPixels(
@@ -657,7 +697,7 @@ export function DocumentEditor({
                 )}
                 {defaultChrome.showPageNumber && (
                   <span>
-                    {pageStart} / {pageStart + pageCount - 1}
+                    {pageStart + currentPage - 1} / {pageStart + pageCount - 1}
                   </span>
                 )}
               </footer>

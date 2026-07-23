@@ -227,6 +227,7 @@ export function EditorWorkspace({
             <DocumentEditor
               content={artifact.content}
               fileActions={fileActions}
+              kernelWasmUrl={assetUrl('office-kernel.wasm')}
               onAgentRequest={onAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
               preview={preview}

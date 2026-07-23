@@ -29,6 +29,11 @@ jobs:
         with:
           bun-version: 1.3.14
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v6

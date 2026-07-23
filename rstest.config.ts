@@ -3,6 +3,6 @@ import { defineConfig } from '@rstest/core';
 
 export default defineConfig({
   environment: 'happy-dom',
-  extends: withRslibConfig(),
+  extends: withRslibConfig({ libId: 'library' }),
   setupFiles: ['./rstest.setup.ts'],
 });

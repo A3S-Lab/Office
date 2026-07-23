@@ -27,9 +27,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
+          targets: wasm32-unknown-unknown
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Test Office kernel ABI
+        run: bun run kernel:test
 
       - name: Check formatting
         run: bun run format:check

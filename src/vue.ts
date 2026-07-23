@@ -69,6 +69,7 @@ export const DocumentEditor = defineComponent({
       type: Object as PropType<DocumentContent>,
     },
     fileActions: fileActionsProp,
+    kernelWasmUrl: String,
     preview: {
       default: false,
       type: Boolean,
@@ -86,6 +87,7 @@ export const DocumentEditor = defineComponent({
       createElement(ReactDocumentEditor, {
         content: props.content,
         fileActions: props.fileActions,
+        kernelWasmUrl: props.kernelWasmUrl,
         onAgentRequest: (request) => emit('agentRequest', request),
         onChange: (content) => {
           emit('update:content', content);

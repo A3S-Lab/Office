@@ -23,5 +23,11 @@ test('registers every custom element idempotently', async () => {
 
   expect(element.textContent).toContain("Set the element's content property");
 
+  const documentEditor = element as A3SDocumentEditorElement;
+  documentEditor.kernelWasmUrl = '/assets/office-kernel.wasm';
+  expect(documentEditor.getAttribute('kernel-wasm-url')).toBe(
+    '/assets/office-kernel.wasm',
+  );
+
   element.remove();
 });
