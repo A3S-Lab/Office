@@ -56,6 +56,9 @@ jobs:
       - name: Build playground
         run: bun run playground:build
 
+      - name: Check playground bundle budget
+        run: bun run playground:bundle-check
+
       - name: Check Rust formatting
         run: cargo fmt --all -- --check
 

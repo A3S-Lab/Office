@@ -77,6 +77,7 @@
     "playground": "bun run playground:assets && rsbuild dev --config playground/rsbuild.config.ts",
     "playground:assets": "bun run build && bash scripts/package-office-skill.sh",
     "playground:build": "bun run playground:assets && rsbuild build --config playground/rsbuild.config.ts",
+    "playground:bundle-check": "bun scripts/check-playground-bundle.ts",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
     "test": "rstest",
     "test:watch": "rstest --watch",

@@ -136,7 +136,7 @@ function contentForTemplate(templateId: string): WorkArtifactContent {
   return {
     type: 'document',
     pageSize: 'a4',
-    html: '<h1></h1><p></p>',
+    html: '<p></p>',
   };
 }
 

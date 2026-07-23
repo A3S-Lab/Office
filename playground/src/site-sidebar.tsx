@@ -12,7 +12,15 @@ import {
   PanelLeftClose,
   Presentation,
 } from 'lucide-react';
+import {
+  type OfficeEditorKind,
+  preloadOfficeEditor,
+} from '@a3s-lab/office/react';
 import type { SiteRoute } from './playground-types';
+
+function warmOfficeEditor(kind: OfficeEditorKind): void {
+  void preloadOfficeEditor(kind).catch(() => undefined);
+}
 
 export function SiteSidebar({
   route,
@@ -90,32 +98,57 @@ export function SiteSidebar({
 
       <section className="playground-quick-create" aria-label="快速新建">
         <span className="playground-sidebar-label">快速新建</span>
-        <button type="button" onClick={() => onCreate('blank-document')}>
+        <button
+          type="button"
+          onFocus={() => warmOfficeEditor('document')}
+          onClick={() => onCreate('blank-document')}
+          onPointerEnter={() => warmOfficeEditor('document')}
+        >
           <span className="quick-create-icon document">
             <FileText size={15} />
           </span>
           <span>文字</span>
         </button>
-        <button type="button" onClick={() => onCreate('blank-spreadsheet')}>
+        <button
+          type="button"
+          onFocus={() => warmOfficeEditor('spreadsheet')}
+          onClick={() => onCreate('blank-spreadsheet')}
+          onPointerEnter={() => warmOfficeEditor('spreadsheet')}
+        >
           <span className="quick-create-icon spreadsheet">
             <FileSpreadsheet size={15} />
           </span>
           <span>表格</span>
         </button>
-        <button type="button" onClick={() => onCreate('blank-presentation')}>
+        <button
+          type="button"
+          onFocus={() => warmOfficeEditor('presentation')}
+          onClick={() => onCreate('blank-presentation')}
+          onPointerEnter={() => warmOfficeEditor('presentation')}
+        >
           <span className="quick-create-icon presentation">
             <Presentation size={15} />
           </span>
           <span>演示</span>
         </button>
-        <button type="button" onClick={onOpenPdf}>
+        <button
+          type="button"
+          onFocus={() => warmOfficeEditor('pdf')}
+          onClick={onOpenPdf}
+          onPointerEnter={() => warmOfficeEditor('pdf')}
+        >
           <span className="quick-create-icon pdf">
             <FileType2 size={15} />
           </span>
           <span>PDF</span>
           <small>打开</small>
         </button>
-        <button type="button" onClick={() => onCreate('blank-markdown')}>
+        <button
+          type="button"
+          onFocus={() => warmOfficeEditor('markdown')}
+          onClick={() => onCreate('blank-markdown')}
+          onPointerEnter={() => warmOfficeEditor('markdown')}
+        >
           <span className="quick-create-icon markdown">
             <FileCode2 size={15} />
           </span>

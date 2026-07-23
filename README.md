@@ -101,6 +101,29 @@ The React entry exports:
 Set `preview` for a read-only representation. Use `theme="light"`,
 `theme="dark"`, or `theme="system"`.
 
+Each editor engine is an independent asynchronous chunk. Importing the React
+entry does not download TipTap, Fortune Sheet, PDF, or Presentation code until
+that editor is rendered. Applications can warm the selected engine from a
+hover or keyboard-focus intent without mounting it:
+
+```tsx
+import { preloadOfficeEditor } from '@a3s-lab/office/react';
+
+<button
+  onPointerEnter={() =>
+    void preloadOfficeEditor('document').catch(() => undefined)
+  }
+  onFocus={() =>
+    void preloadOfficeEditor('document').catch(() => undefined)
+  }
+>
+  New document
+</button>;
+```
+
+The component displays the shared Office loading state if the chunk is not
+already available.
+
 ### Document layout kernel
 
 `DocumentEditor` resolves `office-kernel.wasm` beside `react.js` and runs page

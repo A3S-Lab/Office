@@ -190,8 +190,8 @@ export function DocumentToolbar({
   );
 
   useEffect(() => {
-    const root = editor.view.dom.closest<HTMLElement>('.work-document-editor');
-    if (!root) return;
+    let editorDom: HTMLElement | null = null;
+    let root: HTMLElement | null = null;
     const onKeyDown = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
@@ -204,7 +204,8 @@ export function DocumentToolbar({
       }
       const key = event.key.toLowerCase();
       const insideEditor =
-        event.target instanceof Node && editor.view.dom.contains(event.target);
+        event.target instanceof Node &&
+        Boolean(editorDom?.contains(event.target));
       if (insideEditor && key === 'z') {
         event.preventDefault();
         const command = event.shiftKey
@@ -245,8 +246,26 @@ export function DocumentToolbar({
       event.preventDefault();
       editor.chain().focus().insertContent({ type: 'pageBreak' }).run();
     };
-    root.addEventListener('keydown', onKeyDown);
-    return () => root.removeEventListener('keydown', onKeyDown);
+    const detach = () => {
+      root?.removeEventListener('keydown', onKeyDown);
+      root = null;
+      editorDom = null;
+    };
+    const attach = () => {
+      detach();
+      if (editor.isDestroyed) return;
+      editorDom = editor.view.dom;
+      root = editorDom.closest<HTMLElement>('.work-document-editor');
+      root?.addEventListener('keydown', onKeyDown);
+    };
+    attach();
+    editor.on('mount', attach);
+    editor.on('unmount', detach);
+    return () => {
+      editor.off('mount', attach);
+      editor.off('unmount', detach);
+      detach();
+    };
   }, [editor, findText, toggleLink]);
 
   return (

@@ -99,6 +99,13 @@ interoperability evidence before it can be described as fidelity-complete.
 ## Performance and safety rules
 
 - Editing and selection stay on the main thread; parsing and layout do not.
+- The public React entry loads editor engines as independent asynchronous
+  chunks. `preloadOfficeEditor` may warm one engine from hover or keyboard
+  focus without mounting it.
+- Spreadsheet formula-language metadata loads with Spreadsheet diagnostics and
+  editing, never with the empty Office workspace.
+- The Playground initial JavaScript budget is 220 KiB gzip and is enforced in
+  CI against the scripts referenced by the generated `index.html`.
 - One active layout request exists per editor. A newer revision cancels the
   previous request.
 - Requests reject invalid dimensions and more than 10,000 layout blocks.
@@ -123,4 +130,11 @@ Run the focused kernel checks with:
 ```bash
 bun run kernel:test
 cargo test -p a3s-office-web-kernel
+```
+
+Build and verify the Playground performance boundary with:
+
+```bash
+bun run playground:build
+bun run playground:bundle-check
 ```

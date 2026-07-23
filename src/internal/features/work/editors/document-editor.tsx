@@ -258,11 +258,29 @@ export function DocumentEditor({
   });
 
   useEffect(() => {
-    editor?.setEditable(!preview);
+    if (!editor) return;
+    const applyEditableState = () => {
+      if (!editor.isDestroyed) editor.setEditable(!preview);
+    };
+    applyEditableState();
+    editor.on('mount', applyEditableState);
+    return () => {
+      editor.off('mount', applyEditableState);
+    };
   }, [editor, preview]);
 
   useEffect(() => {
-    editor?.view.dom.setAttribute('spellcheck', String(spellcheckEnabled));
+    if (!editor) return;
+    const applySpellcheckState = () => {
+      if (!editor.isDestroyed) {
+        editor.view.dom.setAttribute('spellcheck', String(spellcheckEnabled));
+      }
+    };
+    applySpellcheckState();
+    editor.on('mount', applySpellcheckState);
+    return () => {
+      editor.off('mount', applySpellcheckState);
+    };
   }, [editor, spellcheckEnabled]);
 
   useEffect(() => {

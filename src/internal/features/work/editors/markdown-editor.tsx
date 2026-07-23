@@ -138,15 +138,23 @@ export function MarkdownEditor({
 
   useEffect(() => {
     if (!editor) return;
-    editor.setEditable(!preview);
-    editor.view.dom.setAttribute(
-      'aria-label',
-      preview ? 'Markdown 预览' : 'Markdown 编辑区',
-    );
-    editor.view.dom.setAttribute('aria-readonly', String(preview));
-    editor.view.dom.setAttribute('role', preview ? 'document' : 'textbox');
-    if (preview) editor.view.dom.removeAttribute('aria-multiline');
-    else editor.view.dom.setAttribute('aria-multiline', 'true');
+    const applyViewState = () => {
+      if (editor.isDestroyed) return;
+      editor.setEditable(!preview);
+      editor.view.dom.setAttribute(
+        'aria-label',
+        preview ? 'Markdown 预览' : 'Markdown 编辑区',
+      );
+      editor.view.dom.setAttribute('aria-readonly', String(preview));
+      editor.view.dom.setAttribute('role', preview ? 'document' : 'textbox');
+      if (preview) editor.view.dom.removeAttribute('aria-multiline');
+      else editor.view.dom.setAttribute('aria-multiline', 'true');
+    };
+    applyViewState();
+    editor.on('mount', applyViewState);
+    return () => {
+      editor.off('mount', applyViewState);
+    };
   }, [editor, preview]);
 
   useEffect(() => {

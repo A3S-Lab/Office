@@ -13,12 +13,17 @@ import {
   type OfficeArtifactKind,
   type OfficeTemplate,
 } from '@a3s-lab/office/core';
+import { preloadOfficeEditor } from '@a3s-lab/office/react';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 
 const templateCellIds = Array.from(
   { length: 20 },
   (_, index) => `cell-${index + 1}`,
 );
+
+function warmOfficeEditor(kind: OfficeArtifactKind): void {
+  void preloadOfficeEditor(kind).catch(() => undefined);
+}
 
 export function WorkspaceHome({
   artifacts,
@@ -112,7 +117,9 @@ export function WorkspaceHome({
           <button
             type="button"
             className="playground-template-card pdf"
+            onFocus={() => warmOfficeEditor('pdf')}
             onClick={onOpenPdf}
+            onPointerEnter={() => warmOfficeEditor('pdf')}
           >
             <span className="playground-template-preview pdf">
               <span className="template-document-sheet">
@@ -157,7 +164,9 @@ export function WorkspaceHome({
                 type="button"
                 className={`playground-artifact-card ${artifact.kind}`}
                 key={artifact.id}
+                onFocus={() => warmOfficeEditor(artifact.kind)}
                 onClick={() => onOpen(artifact.id)}
+                onPointerEnter={() => warmOfficeEditor(artifact.kind)}
               >
                 <ArtifactPreview kind={artifact.kind} />
                 <span className="playground-artifact-copy">
@@ -211,7 +220,9 @@ function TemplateCard({
           '--template-accent': template.accent,
         } as React.CSSProperties
       }
+      onFocus={() => warmOfficeEditor(template.kind)}
       onClick={onCreate}
+      onPointerEnter={() => warmOfficeEditor(template.kind)}
     >
       <span className={`playground-template-preview ${template.kind}`}>
         <TemplateArtwork kind={template.kind} />

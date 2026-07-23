@@ -17,7 +17,11 @@ describe('office core', () => {
     const presentation = createArtifact('blank-presentation');
 
     expect(document.kind).toBe('document');
-    expect(document.content.type).toBe('document');
+    expect(document.content).toEqual({
+      type: 'document',
+      pageSize: 'a4',
+      html: '<p></p>',
+    });
     expect(markdown.kind).toBe('markdown');
     expect(markdown.content).toEqual({ type: 'markdown', markdown: '' });
     expect(spreadsheet.kind).toBe('spreadsheet');

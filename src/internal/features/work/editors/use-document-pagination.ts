@@ -46,6 +46,7 @@ export function useDocumentPagination({
   wasmUrl,
 }: UseDocumentPaginationOptions): UseDocumentPaginationValue {
   const client = useOfficeKernelClient(wasmUrl);
+  const editorMounted = useEditorMounted(editor);
   const revision = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
   const [pagination, setPagination] = useState<DocumentPaginationResult | null>(
@@ -54,25 +55,33 @@ export function useDocumentPagination({
   const pageKey = pageMetricsKey(page);
 
   useEffect(() => {
-    if (!editor || !enabled || !client) {
+    if (
+      !editor ||
+      !editorMounted ||
+      editor.isDestroyed ||
+      !enabled ||
+      !client
+    ) {
       const nextRevision = ++revision.current;
       activeRequest.current?.abort();
       activeRequest.current = null;
-      if (editor) {
+      if (editor && editorMounted && !editor.isDestroyed) {
+        const editorDom = editor.view.dom;
         clearDocumentPagination(editor, nextRevision);
-        editor.view.dom.dataset.paginationState =
+        editorDom.dataset.paginationState =
           enabled && !client ? 'initializing' : 'disabled';
         if (!enabled) {
-          delete editor.view.dom.dataset.paginationBlocks;
-          delete editor.view.dom.dataset.paginationEngine;
-          delete editor.view.dom.dataset.paginationError;
-          delete editor.view.dom.dataset.paginationPages;
+          delete editorDom.dataset.paginationBlocks;
+          delete editorDom.dataset.paginationEngine;
+          delete editorDom.dataset.paginationError;
+          delete editorDom.dataset.paginationPages;
         }
       }
       setPagination(null);
       return;
     }
 
+    const editorDom = editor.view.dom;
     let disposed = false;
     let frame = 0;
     let observedElements: HTMLElement[] = [];
@@ -110,13 +119,13 @@ export function useDocumentPagination({
       const controller = new AbortController();
       activeRequest.current = controller;
       clearDocumentPagination(editor, nextRevision);
-      editor.view.dom.dataset.paginationState = 'measuring';
-      delete editor.view.dom.dataset.paginationError;
+      editorDom.dataset.paginationState = 'measuring';
+      delete editorDom.dataset.paginationError;
       const snapshot = measureDocumentLayoutBlocks(editor);
-      editor.view.dom.dataset.paginationBlocks = String(snapshot.blocks.length);
+      editorDom.dataset.paginationBlocks = String(snapshot.blocks.length);
       observeBlocks(snapshot.blocks);
       if (snapshot.unsupportedLayout || !snapshot.blocks.length) {
-        editor.view.dom.dataset.paginationState = snapshot.unsupportedLayout
+        editorDom.dataset.paginationState = snapshot.unsupportedLayout
           ? 'unsupported'
           : 'empty';
         setPagination(null);
@@ -128,7 +137,7 @@ export function useDocumentPagination({
         ...documentPageChromeHeights(editor),
       };
       try {
-        editor.view.dom.dataset.paginationState = 'layout';
+        editorDom.dataset.paginationState = 'layout';
         const layout = await client.layout(
           {
             revision: nextRevision,
@@ -158,10 +167,10 @@ export function useDocumentPagination({
               : [];
           }),
         );
-        editor.view.dom.dataset.paginationEngine = layout.engine;
-        editor.view.dom.dataset.paginationPages = String(layout.pages.length);
-        editor.view.dom.dataset.paginationState = 'ready';
-        delete editor.view.dom.dataset.paginationError;
+        editorDom.dataset.paginationEngine = layout.engine;
+        editorDom.dataset.paginationPages = String(layout.pages.length);
+        editorDom.dataset.paginationState = 'ready';
+        delete editorDom.dataset.paginationError;
         setPagination({
           layout,
           blocks: snapshot.blocks,
@@ -181,8 +190,8 @@ export function useDocumentPagination({
         ) {
           return;
         }
-        editor.view.dom.dataset.paginationState = 'error';
-        editor.view.dom.dataset.paginationError =
+        editorDom.dataset.paginationState = 'error';
+        editorDom.dataset.paginationError =
           error instanceof Error
             ? `${error.name}: ${error.message}`
             : 'UnknownError';
@@ -201,7 +210,7 @@ export function useDocumentPagination({
     const handleLoadedAsset = () => schedule();
     const fonts = document.fonts;
     editor.on('update', handleDocumentUpdate);
-    editor.view.dom.addEventListener('load', handleLoadedAsset, true);
+    editorDom.addEventListener('load', handleLoadedAsset, true);
     fonts?.addEventListener('loadingdone', schedule);
     window.addEventListener('resize', schedule);
     schedule();
@@ -211,13 +220,13 @@ export function useDocumentPagination({
       if (frame) cancelAnimationFrame(frame);
       observer?.disconnect();
       editor.off('update', handleDocumentUpdate);
-      editor.view.dom.removeEventListener('load', handleLoadedAsset, true);
+      editorDom.removeEventListener('load', handleLoadedAsset, true);
       fonts?.removeEventListener('loadingdone', schedule);
       window.removeEventListener('resize', schedule);
       activeRequest.current?.abort();
       activeRequest.current = null;
     };
-  }, [client, editor, enabled, layoutKey, pageKey]);
+  }, [client, editor, editorMounted, enabled, layoutKey, pageKey]);
 
   return useMemo(
     () => ({
@@ -231,6 +240,31 @@ export function useDocumentPagination({
     }),
     [editor, enabled, pagination, selectionVersion],
   );
+}
+
+function useEditorMounted(editor: Editor | null): boolean {
+  const [mounted, setMounted] = useState(() =>
+    Boolean(editor && !editor.isDestroyed),
+  );
+
+  useEffect(() => {
+    if (!editor) {
+      setMounted(false);
+      return;
+    }
+
+    const handleMount = () => setMounted(true);
+    const handleUnmount = () => setMounted(false);
+    setMounted(!editor.isDestroyed);
+    editor.on('mount', handleMount);
+    editor.on('unmount', handleUnmount);
+    return () => {
+      editor.off('mount', handleMount);
+      editor.off('unmount', handleUnmount);
+    };
+  }, [editor]);
+
+  return mounted;
 }
 
 function useOfficeKernelClient(

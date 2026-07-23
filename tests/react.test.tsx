@@ -11,9 +11,10 @@ import {
   defaultPdfiumWasmUrl,
   DocumentEditor,
   MarkdownEditor,
+  preloadOfficeEditor,
 } from '../src/react';
 
-test('renders the React document editor in preview mode', () => {
+test('renders the React document editor in preview mode', async () => {
   const artifact = createArtifact('blank-document');
 
   render(
@@ -25,11 +26,15 @@ test('renders the React document editor in preview mode', () => {
     />,
   );
 
-  expect(screen.getByLabelText('文字预览')).toBeInTheDocument();
+  expect(await screen.findByLabelText('文字预览')).toBeInTheDocument();
   expect(document.querySelector('[data-a3s-office]')).toHaveAttribute(
     'data-theme',
     'light',
   );
+});
+
+test('preloads an editor without mounting it', async () => {
+  await expect(preloadOfficeEditor('document')).resolves.toBeUndefined();
 });
 
 test('publishes a colocated default PDFium URL', () => {
@@ -67,7 +72,7 @@ test('keeps document pagination available under React strict effects', async () 
   );
 });
 
-test('renders controlled Markdown content with the TipTap editor', () => {
+test('renders controlled Markdown content with the TipTap editor', async () => {
   const artifact = createArtifact('blank-markdown');
 
   render(
@@ -92,7 +97,7 @@ test('renders controlled Markdown content with the TipTap editor', () => {
     />,
   );
 
-  expect(screen.getByLabelText('Markdown 预览')).toHaveTextContent(
+  expect(await screen.findByLabelText('Markdown 预览')).toHaveTextContent(
     'A3S Office',
   );
   expect(screen.getByRole('table')).toHaveTextContent('Tables');

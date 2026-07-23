@@ -57,6 +57,9 @@ jobs:
         env:
           A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/
 
+      - name: Check playground bundle budget
+        run: bun run playground:bundle-check
+
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

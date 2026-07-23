@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { waitFor } from '@testing-library/dom';
 import { createApp, h, nextTick } from 'vue';
 import {
   createArtifact,
@@ -48,7 +49,9 @@ test('mounts the Vue Markdown adapter', async () => {
   await nextTick();
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  expect(target.querySelector('[aria-label="Markdown 预览"]')).not.toBeNull();
+  await waitFor(() => {
+    expect(target.querySelector('[aria-label="Markdown 预览"]')).not.toBeNull();
+  });
 
   app.unmount();
   target.remove();

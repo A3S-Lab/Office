@@ -5,9 +5,9 @@ import {
   formulaHasStructuredReference,
   spreadsheetCellAddress,
   spreadsheetFormulaRangeConflict,
-  unsupportedSpreadsheetFormulaFunctions,
   volatileSpreadsheetFormulaFunctions,
 } from './work-spreadsheet-formulas';
+import { unsupportedSpreadsheetFormulaFunctions } from './work-spreadsheet-formula-support';
 import type { WorkSpreadsheetContent } from './work-types';
 
 export interface SpreadsheetFormulaSummary {

@@ -1,4 +1,3 @@
-import { locale } from '@fortune-sheet/core';
 import type {
   WorkSpreadsheetCalculationSettings,
   WorkSpreadsheetFormulaRange,
@@ -65,12 +64,6 @@ const FUTURE_FUNCTIONS = new Set([
   'XLOOKUP',
   'XMATCH',
 ]);
-
-const FORTUNE_SUPPORTED_FUNCTIONS = new Set(
-  locale({ lang: 'en' } as Parameters<typeof locale>[0]).functionlist.map(
-    (item) => item.n.toUpperCase(),
-  ),
-);
 
 const FUTURE_FUNCTION_PREFIXES = new Map<string, string>([
   ['FILTER', '_xlfn._xlws.'],
@@ -214,14 +207,6 @@ export function formulaHasStructuredReference(formula: string): boolean {
   return (
     /\[(?:@|#)[^\]]+\]/i.test(withoutExternalReferences) ||
     /\b[A-Z_\\][A-Z0-9_.]*\s*\[[^\]]+\]/i.test(withoutExternalReferences)
-  );
-}
-
-export function unsupportedSpreadsheetFormulaFunctions(
-  formula: string,
-): string[] {
-  return spreadsheetFormulaFunctions(formula).filter(
-    (name) => !FORTUNE_SUPPORTED_FUNCTIONS.has(name),
   );
 }
 

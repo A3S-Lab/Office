@@ -1,9 +1,9 @@
 import {
   formulaHasExternalReference,
   formulaHasStructuredReference,
-  unsupportedSpreadsheetFormulaFunctions,
   volatileSpreadsheetFormulaFunctions,
 } from './work-spreadsheet-formulas';
+import { unsupportedSpreadsheetFormulaFunctions } from './work-spreadsheet-formula-support';
 import { readXlsxFormulaFeaturesFromPackage } from './work-xlsx-formulas';
 import type { OoxmlPackage } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
