@@ -1,5 +1,6 @@
 import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
 import { alignOfficePresentationInJavaScript } from './office-kernel-presentation-fallback';
+import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
 import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
 import {
   isOfficeKernelResponse,
@@ -7,6 +8,7 @@ import {
   type OfficeKernelLayoutRequest,
   type OfficeKernelPresentationGeometryRequest,
   type OfficeKernelResponse,
+  type OfficeKernelSpreadsheetCalculationRequest,
   type OfficeKernelTextLayoutRequest,
   type OfficeKernelWorkerRequest,
   type OfficeKernelWorkerResponse,
@@ -29,6 +31,10 @@ interface OfficeKernelWasmExports {
     dataPointer: number,
     dataLength: number,
   ) => number;
+  office_kernel_spreadsheet_calculation: (
+    pointer: number,
+    length: number,
+  ) => number;
   office_kernel_text_layout: (pointer: number, length: number) => number;
   office_kernel_result_pointer: () => number;
   office_kernel_result_length: () => number;
@@ -41,6 +47,7 @@ interface KernelWorkerScope {
 
 const scope = globalThis as unknown as KernelWorkerScope;
 const cancelledRequests = new Set<number>();
+const inFlightRequests = new Set<number>();
 const MAX_FONT_BYTES = 32 * 1024 * 1024;
 const MAX_REGISTERED_FONTS = 16;
 let wasmInitialization: Promise<OfficeKernelWasmExports | null> =
@@ -57,18 +64,28 @@ scope.onmessage = (event) => {
     return;
   }
   if (message.kind === 'cancel') {
-    cancelledRequests.add(message.requestId);
+    if (inFlightRequests.has(message.requestId)) {
+      cancelledRequests.add(message.requestId);
+    }
     return;
   }
   if (message.kind === 'layout') {
+    inFlightRequests.add(message.request.requestId);
     void respondToLayout(message.request);
     return;
   }
   if (message.kind === 'presentationGeometry') {
+    inFlightRequests.add(message.request.requestId);
     void respondToPresentationGeometry(message.request);
     return;
   }
-  void respondToTextLayout(message.request);
+  if (message.kind === 'textLayout') {
+    inFlightRequests.add(message.request.requestId);
+    void respondToTextLayout(message.request);
+    return;
+  }
+  inFlightRequests.add(message.request.requestId);
+  void respondToSpreadsheetCalculation(message.request);
 };
 
 async function respondToLayout(
@@ -101,8 +118,7 @@ async function respondToLayout(
       },
     };
   }
-  if (cancelledRequests.delete(request.requestId)) return;
-  scope.postMessage({ kind: 'response', response });
+  completeRequest(request.requestId, response);
 }
 
 async function respondToPresentationGeometry(
@@ -117,8 +133,7 @@ async function respondToPresentationGeometry(
   } catch (error) {
     response = errorResponse(request, error);
   }
-  if (cancelledRequests.delete(request.requestId)) return;
-  scope.postMessage({ kind: 'response', response });
+  completeRequest(request.requestId, response);
 }
 
 async function respondToTextLayout(
@@ -133,7 +148,30 @@ async function respondToTextLayout(
   } catch {
     response = layoutOfficeTextInJavaScript(request);
   }
-  if (cancelledRequests.delete(request.requestId)) return;
+  completeRequest(request.requestId, response);
+}
+
+async function respondToSpreadsheetCalculation(
+  request: OfficeKernelSpreadsheetCalculationRequest,
+): Promise<void> {
+  let response: OfficeKernelResponse;
+  try {
+    const wasm = await wasmInitialization;
+    response = wasm
+      ? spreadsheetCalculationWithWasm(wasm, request)
+      : await calculateSpreadsheetInJavaScript(request);
+  } catch (error) {
+    response = errorResponse(request, error);
+  }
+  completeRequest(request.requestId, response);
+}
+
+function completeRequest(
+  requestId: number,
+  response: OfficeKernelResponse,
+): void {
+  inFlightRequests.delete(requestId);
+  if (cancelledRequests.delete(requestId)) return;
   scope.postMessage({ kind: 'response', response });
 }
 
@@ -183,6 +221,7 @@ async function loadOfficeKernelWasm(
     exports.office_kernel_abi_version() !== OFFICE_KERNEL_PROTOCOL_VERSION ||
     typeof exports.office_kernel_presentation_geometry !== 'function' ||
     typeof exports.office_kernel_register_font !== 'function' ||
+    typeof exports.office_kernel_spreadsheet_calculation !== 'function' ||
     typeof exports.office_kernel_text_layout !== 'function'
   ) {
     throw new Error('Office kernel WebAssembly ABI is incompatible.');
@@ -267,11 +306,32 @@ function textLayoutWithWasm(
     : response;
 }
 
+function spreadsheetCalculationWithWasm(
+  wasm: OfficeKernelWasmExports,
+  request: OfficeKernelSpreadsheetCalculationRequest,
+): OfficeKernelResponse {
+  const response = requestWithWasm(
+    wasm,
+    request,
+    wasm.office_kernel_spreadsheet_calculation,
+  );
+  if (
+    response.kind !== 'spreadsheetCalculationResult' &&
+    response.kind !== 'error'
+  ) {
+    throw new Error(
+      'Office Spreadsheet kernel returned an unexpected response.',
+    );
+  }
+  return response;
+}
+
 function requestWithWasm(
   wasm: OfficeKernelWasmExports,
   request:
     | OfficeKernelLayoutRequest
     | OfficeKernelPresentationGeometryRequest
+    | OfficeKernelSpreadsheetCalculationRequest
     | OfficeKernelTextLayoutRequest,
   execute: (pointer: number, length: number) => number,
 ): OfficeKernelResponse {
@@ -301,6 +361,7 @@ function errorResponse(
   request:
     | OfficeKernelLayoutRequest
     | OfficeKernelPresentationGeometryRequest
+    | OfficeKernelSpreadsheetCalculationRequest
     | OfficeKernelTextLayoutRequest,
   error: unknown,
 ): OfficeKernelResponse {

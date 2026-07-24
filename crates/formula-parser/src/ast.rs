@@ -1,10 +1,10 @@
 /// Maximum number of Unicode scalar values accepted in one cell formula.
 pub const MAX_SPREADSHEET_FORMULA_CHARACTERS: usize = 8_192;
 
-/// Maximum nesting depth accepted by the native formula parser.
+/// Maximum nesting depth accepted by the shared formula parser.
 pub const MAX_SPREADSHEET_FORMULA_DEPTH: usize = 128;
 
-/// Maximum number of AST nodes accepted by the native formula parser.
+/// Maximum number of AST nodes accepted by the shared formula parser.
 pub const MAX_SPREADSHEET_FORMULA_NODES: usize = 8_192;
 
 /// Maximum disjoint reference areas retained while graphing or calculating
@@ -48,7 +48,7 @@ pub struct SpreadsheetFormulaExpression {
     pub kind: SpreadsheetFormulaExpressionKind,
 }
 
-/// Closed expression variants produced by the native Spreadsheet parser.
+/// Closed expression variants produced by the shared Spreadsheet parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpreadsheetFormulaExpressionKind {
     Literal(SpreadsheetFormulaLiteral),

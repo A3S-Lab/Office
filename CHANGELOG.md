@@ -14,3 +14,10 @@ All notable changes to A3S Office will be documented in this file.
   Rslib packaging.
 - Added GFM task lists, coalesced source-to-visual Markdown updates,
   synchronized split-pane scrolling, and dedicated compatibility tests.
+- Added a shared bounded Rust Spreadsheet formula parser plus a cancellable
+  Worker/WebAssembly scalar calculation kernel with sparse requests,
+  deterministic dependency order, cross-sheet references, target-only
+  recalculation, bounded dependency depth, JavaScript parity fallback,
+  dependency-failure propagation, and ordered cell-scoped Fortune fallback.
+- Added `kernelWasmUrl` support for Spreadsheet in React and Vue and the
+  matching `kernel-wasm-url` Web Component attribute.

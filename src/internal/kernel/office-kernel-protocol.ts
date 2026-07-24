@@ -1,4 +1,22 @@
-export const OFFICE_KERNEL_PROTOCOL_VERSION = 11 as const;
+import { isOfficeKernelSpreadsheetCalculationResult } from './office-kernel-spreadsheet-protocol';
+import { OFFICE_KERNEL_PROTOCOL_VERSION } from './office-kernel-version';
+
+export { OFFICE_KERNEL_PROTOCOL_VERSION };
+export type {
+  OfficeKernelSpreadsheetCalculatedCell,
+  OfficeKernelSpreadsheetCalculationIssue,
+  OfficeKernelSpreadsheetCalculationRequest,
+  OfficeKernelSpreadsheetCalculationResult,
+  OfficeKernelSpreadsheetCoordinate,
+  OfficeKernelSpreadsheetError,
+  OfficeKernelSpreadsheetInputCell,
+  OfficeKernelSpreadsheetInputSheet,
+  OfficeKernelSpreadsheetValue,
+} from './office-kernel-spreadsheet-protocol';
+import type {
+  OfficeKernelSpreadsheetCalculationRequest,
+  OfficeKernelSpreadsheetCalculationResult,
+} from './office-kernel-spreadsheet-protocol';
 
 export type OfficeKernelEngine = 'wasm' | 'javascript';
 
@@ -216,6 +234,7 @@ export interface OfficeKernelErrorResponse {
 export type OfficeKernelResponse =
   | OfficeKernelLayoutResult
   | OfficeKernelPresentationGeometryResult
+  | OfficeKernelSpreadsheetCalculationResult
   | OfficeKernelTextLayoutResult
   | OfficeKernelErrorResponse;
 
@@ -238,6 +257,10 @@ export type OfficeKernelWorkerRequest =
       request: OfficeKernelTextLayoutRequest;
     }
   | {
+      kind: 'spreadsheetCalculation';
+      request: OfficeKernelSpreadsheetCalculationRequest;
+    }
+  | {
       kind: 'cancel';
       requestId: number;
     };
@@ -256,6 +279,7 @@ export function isOfficeKernelResponse(
     candidate.protocol !== OFFICE_KERNEL_PROTOCOL_VERSION ||
     (candidate.kind !== 'layoutResult' &&
       candidate.kind !== 'presentationGeometryResult' &&
+      candidate.kind !== 'spreadsheetCalculationResult' &&
       candidate.kind !== 'textLayoutResult' &&
       candidate.kind !== 'error')
   ) {
@@ -292,6 +316,9 @@ export function isOfficeKernelResponse(
         (id) => typeof id === 'string' && id.length > 0,
       )
     );
+  }
+  if (candidate.kind === 'spreadsheetCalculationResult') {
+    return isOfficeKernelSpreadsheetCalculationResult(candidate);
   }
   return (
     isNonNegativeInteger(candidate.startPageIndex) &&

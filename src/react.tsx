@@ -231,6 +231,7 @@ export interface SpreadsheetEditorProps
 
 export function SpreadsheetEditor({
   className,
+  kernelWasmUrl = defaultOfficeKernelWasmUrl,
   preview = false,
   style,
   theme,
@@ -239,7 +240,11 @@ export function SpreadsheetEditor({
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader title="正在打开表格编辑器">
-        <LazySpreadsheetEditor {...editorProps} preview={preview} />
+        <LazySpreadsheetEditor
+          {...editorProps}
+          kernelWasmUrl={kernelWasmUrl}
+          preview={preview}
+        />
       </OfficeEditorLoader>
     </OfficeSurface>
   );

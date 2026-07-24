@@ -151,6 +151,7 @@ export const SpreadsheetEditor = defineComponent({
       type: Object as PropType<SpreadsheetContent>,
     },
     fileActions: fileActionsProp,
+    kernelWasmUrl: String,
     preview: {
       default: false,
       type: Boolean,
@@ -168,6 +169,7 @@ export const SpreadsheetEditor = defineComponent({
       createElement(ReactSpreadsheetEditor, {
         content: props.content,
         fileActions: props.fileActions,
+        kernelWasmUrl: props.kernelWasmUrl,
         onAgentRequest: (request) => emit('agentRequest', request),
         onChange: (content) => {
           emit('update:content', content);

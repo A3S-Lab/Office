@@ -1,18 +1,16 @@
+use a3s_office_formula_parser::SpreadsheetFormulaParseError;
 use a3s_use_core::{UseError, UseResult};
 
 use crate::discovery::office_error;
 use crate::spreadsheet_reference::{column_name, MAX_COLUMNS, MAX_ROWS};
 
-mod ast;
 mod evaluate;
 mod graph;
-mod lexer;
-mod parser;
 mod registry;
 mod structured_reference;
 mod value;
 
-pub use ast::{
+pub use a3s_office_formula_parser::{
     SpreadsheetFormula, SpreadsheetFormulaBinaryOperator, SpreadsheetFormulaErrorLiteral,
     SpreadsheetFormulaExpression, SpreadsheetFormulaExpressionKind, SpreadsheetFormulaLiteral,
     SpreadsheetFormulaPostfixOperator, SpreadsheetFormulaQualifier, SpreadsheetFormulaReference,
@@ -42,98 +40,34 @@ pub use value::{
     SpreadsheetFormulaCalculatedCell, SpreadsheetFormulaCalculation, SpreadsheetFormulaValue,
 };
 
-#[derive(Debug)]
-struct FormulaParseFailure {
-    byte_offset: usize,
-    reason: String,
-}
-
-impl FormulaParseFailure {
-    fn new(byte_offset: usize, reason: impl Into<String>) -> Self {
-        Self {
-            byte_offset,
-            reason: reason.into(),
-        }
-    }
-}
-
 /// Parses one Spreadsheet formula into a bounded, source-spanned typed AST.
 ///
 /// Callers may provide a formula-bar leading `=`. Spans and parse-error
 /// positions address the normalized formula body after that optional marker.
 pub fn parse_spreadsheet_formula(formula: &str) -> UseResult<SpreadsheetFormula> {
-    let normalized = formula.strip_prefix('=').unwrap_or(formula);
-    parse_normalized_formula(normalized)
+    a3s_office_formula_parser::parse_spreadsheet_formula(formula).map_err(parse_error)
 }
 
 pub(crate) fn validate_and_normalize_formula(formula: &str) -> UseResult<&str> {
     let normalized = formula.strip_prefix('=').unwrap_or(formula);
-    parse_normalized_formula(normalized)?;
+    a3s_office_formula_parser::parse_spreadsheet_formula(formula).map_err(parse_error)?;
     Ok(normalized)
 }
 
-fn parse_normalized_formula(formula: &str) -> UseResult<SpreadsheetFormula> {
-    validate_formula_bounds(formula)?;
-    let tokens = lexer::lex(formula).map_err(|failure| parse_error(formula, failure))?;
-    parser::parse(formula, tokens).map_err(|failure| parse_error(formula, failure))
-}
-
-fn validate_formula_bounds(formula: &str) -> UseResult<()> {
-    let characters = formula.chars().count();
-    if formula.is_empty() || characters > MAX_SPREADSHEET_FORMULA_CHARACTERS {
-        return Err(office_error(
-            "use.office.spreadsheet_formula_invalid",
-            format!(
-                "Spreadsheet formulas must contain 1-{MAX_SPREADSHEET_FORMULA_CHARACTERS} characters."
-            ),
-        )
-        .with_detail("characterOffset", characters)
-        .with_detail("byteOffset", formula.len())
-        .with_detail("reason", "Formula length is outside supported limits."));
-    }
-    if let Some((byte_offset, _)) = formula
-        .char_indices()
-        .find(|(_, character)| character.is_control())
-    {
-        let character_offset = formula[..byte_offset].chars().count();
-        return Err(office_error(
-            "use.office.spreadsheet_formula_invalid",
-            format!(
-                "Spreadsheet formula is invalid at character {}: control characters are not supported.",
-                character_offset + 1
-            ),
-        )
-        .with_detail("characterOffset", character_offset)
-        .with_detail("byteOffset", byte_offset)
-        .with_detail(
-            "reason",
-            "Formula contains an unsupported control character.",
-        ));
-    }
-    Ok(())
-}
-
-fn parse_error(formula: &str, failure: FormulaParseFailure) -> UseError {
-    let byte_offset = nearest_character_boundary(formula, failure.byte_offset.min(formula.len()));
-    let character_offset = formula[..byte_offset].chars().count();
+fn parse_error(failure: SpreadsheetFormulaParseError) -> UseError {
+    let byte_offset = failure.byte_offset();
+    let character_offset = failure.character_offset();
     office_error(
         "use.office.spreadsheet_formula_invalid",
         format!(
             "Spreadsheet formula is invalid at character {}: {}",
             character_offset + 1,
-            failure.reason
+            failure.reason()
         ),
     )
     .with_detail("characterOffset", character_offset)
     .with_detail("byteOffset", byte_offset)
-    .with_detail("reason", failure.reason)
-}
-
-fn nearest_character_boundary(value: &str, mut offset: usize) -> usize {
-    while offset > 0 && !value.is_char_boundary(offset) {
-        offset -= 1;
-    }
-    offset
+    .with_detail("reason", failure.reason())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

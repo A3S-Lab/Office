@@ -5,8 +5,8 @@ use a3s_use_core::{UseError, UseResult};
 
 use crate::discovery::office_error;
 
-use super::super::lexer::{self, FormulaTokenKind};
 use super::super::parse_error;
+use a3s_office_formula_parser::{tokenize_spreadsheet_formula, SpreadsheetFormulaTokenKind};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LocalStructuredReferenceContext {
@@ -84,11 +84,11 @@ impl StructuredReferenceRewritePlan {
         }
         let body_offset = usize::from(formula.starts_with('='));
         let body = &formula[body_offset..];
-        let tokens = lexer::lex(body).map_err(|failure| parse_error(body, failure))?;
+        let tokens = tokenize_spreadsheet_formula(body).map_err(parse_error)?;
         let mut replacements = Vec::<(Range<usize>, String)>::new();
         let mut matched = false;
         for token in tokens {
-            let FormulaTokenKind::StructuredReference {
+            let SpreadsheetFormulaTokenKind::StructuredReference {
                 qualifier,
                 reference,
             } = token.kind

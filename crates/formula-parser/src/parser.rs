@@ -1,4 +1,4 @@
-use crate::spreadsheet_reference::{MAX_COLUMNS, MAX_ROWS};
+use crate::{MAX_COLUMNS, MAX_ROWS};
 
 use super::{
     ast::{
@@ -9,7 +9,7 @@ use super::{
         MAX_SPREADSHEET_FORMULA_DEPTH, MAX_SPREADSHEET_FORMULA_NODES,
     },
     lexer::{FormulaToken, FormulaTokenKind},
-    FormulaParseFailure,
+    SpreadsheetFormulaParseError,
 };
 
 const MAX_FUNCTION_ARGUMENTS: usize = 255;
@@ -28,7 +28,7 @@ const BINDING_RANGE: u8 = 100;
 pub(super) fn parse(
     source: &str,
     tokens: Vec<FormulaToken>,
-) -> Result<SpreadsheetFormula, FormulaParseFailure> {
+) -> Result<SpreadsheetFormula, SpreadsheetFormulaParseError> {
     FormulaParser::new(source, tokens).parse()
 }
 
@@ -62,12 +62,12 @@ impl<'a> FormulaParser<'a> {
         }
     }
 
-    fn parse(mut self) -> Result<SpreadsheetFormula, FormulaParseFailure> {
+    fn parse(mut self) -> Result<SpreadsheetFormula, SpreadsheetFormulaParseError> {
         let expression = self.parse_expression(0, true, 1)?;
         self.skip_spaces();
         let trailing = self.current()?.clone();
         if !matches!(trailing.kind, FormulaTokenKind::End) {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 trailing.span.start,
                 format!(
                     "Unexpected {}; expected end of formula.",
@@ -86,7 +86,7 @@ impl<'a> FormulaParser<'a> {
         minimum_binding: u8,
         allow_union: bool,
         call_depth: usize,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         self.check_call_depth(call_depth)?;
         let mut left = self.parse_prefix(allow_union, call_depth)?;
         loop {
@@ -103,7 +103,7 @@ impl<'a> FormulaParser<'a> {
                     FormulaTokenKind::Percent => SpreadsheetFormulaPostfixOperator::Percent,
                     FormulaTokenKind::Hash => SpreadsheetFormulaPostfixOperator::Spill,
                     _ => {
-                        return Err(FormulaParseFailure::new(
+                        return Err(SpreadsheetFormulaParseError::new(
                             token.span.start,
                             "Unsupported postfix operator.",
                         ));
@@ -112,7 +112,7 @@ impl<'a> FormulaParser<'a> {
                 if matches!(operator, SpreadsheetFormulaPostfixOperator::Spill)
                     && !left.reference_like
                 {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         token.span.start,
                         "The spill operator requires a reference expression.",
                     ));
@@ -161,7 +161,7 @@ impl<'a> FormulaParser<'a> {
         &mut self,
         allow_union: bool,
         call_depth: usize,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         self.skip_spaces();
         let token = self.current()?.clone();
         self.cursor += 1;
@@ -241,7 +241,7 @@ impl<'a> FormulaParser<'a> {
                     FormulaTokenKind::Minus => SpreadsheetFormulaUnaryOperator::Negative,
                     FormulaTokenKind::At => SpreadsheetFormulaUnaryOperator::ImplicitIntersection,
                     _ => {
-                        return Err(FormulaParseFailure::new(
+                        return Err(SpreadsheetFormulaParseError::new(
                             token.span.start,
                             "Unsupported prefix operator.",
                         ));
@@ -257,7 +257,7 @@ impl<'a> FormulaParser<'a> {
                     SpreadsheetFormulaUnaryOperator::ImplicitIntersection
                 ) && !operand.reference_like
                 {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         token.span.start,
                         "Implicit intersection requires a reference expression.",
                     ));
@@ -293,7 +293,7 @@ impl<'a> FormulaParser<'a> {
                 )
             }
             FormulaTokenKind::LeftBrace => self.parse_array(token.span, call_depth),
-            other => Err(FormulaParseFailure::new(
+            other => Err(SpreadsheetFormulaParseError::new(
                 token.span.start,
                 format!("Expected an expression but found {}.", other.description()),
             )),
@@ -306,7 +306,7 @@ impl<'a> FormulaParser<'a> {
         name: String,
         name_span: SpreadsheetFormulaSpan,
         call_depth: usize,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         self.cursor += 1;
         let mut arguments = Vec::new();
         let mut last_was_separator = false;
@@ -319,7 +319,7 @@ impl<'a> FormulaParser<'a> {
                     arguments.push(None);
                 }
                 if arguments.len() > MAX_FUNCTION_ARGUMENTS {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         token.span.start,
                         format!(
                             "Function calls accept at most {MAX_FUNCTION_ARGUMENTS} arguments."
@@ -344,7 +344,7 @@ impl<'a> FormulaParser<'a> {
                 );
             }
             if matches!(token.kind, FormulaTokenKind::End) {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     token.span.start,
                     "Function call is not closed with `)`.",
                 ));
@@ -366,13 +366,13 @@ impl<'a> FormulaParser<'a> {
                     }
                     FormulaTokenKind::RightParen => {}
                     FormulaTokenKind::Semicolon => {
-                        return Err(FormulaParseFailure::new(
+                        return Err(SpreadsheetFormulaParseError::new(
                             separator.span.start,
                             "SpreadsheetML function arguments use `,`, not `;`.",
                         ));
                     }
                     _ => {
-                        return Err(FormulaParseFailure::new(
+                        return Err(SpreadsheetFormulaParseError::new(
                             separator.span.start,
                             format!(
                                 "Expected `,` or `)` after a function argument, found {}.",
@@ -383,7 +383,7 @@ impl<'a> FormulaParser<'a> {
                 }
             }
             if arguments.len() >= MAX_FUNCTION_ARGUMENTS && last_was_separator {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     self.current()?.span.start,
                     format!("Function calls accept at most {MAX_FUNCTION_ARGUMENTS} arguments."),
                 ));
@@ -395,7 +395,7 @@ impl<'a> FormulaParser<'a> {
         &mut self,
         open_span: SpreadsheetFormulaSpan,
         call_depth: usize,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         let mut rows = Vec::<Vec<SpreadsheetFormulaExpression>>::new();
         let mut row = Vec::new();
         let mut last_was_column_separator = false;
@@ -404,7 +404,7 @@ impl<'a> FormulaParser<'a> {
             let token = self.current()?.clone();
             if matches!(token.kind, FormulaTokenKind::RightBrace) {
                 if row.is_empty() || last_was_column_separator {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         token.span.start,
                         "Array constants cannot contain an empty row.",
                     ));
@@ -413,7 +413,7 @@ impl<'a> FormulaParser<'a> {
                 self.cursor += 1;
                 let width = rows.first().map_or(0, Vec::len);
                 if rows.iter().any(|value| value.len() != width) {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         token.span.start,
                         "Array constant rows must have equal widths.",
                     ));
@@ -432,14 +432,14 @@ impl<'a> FormulaParser<'a> {
                 );
             }
             if matches!(token.kind, FormulaTokenKind::End) {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     token.span.start,
                     "Array constant is not closed with `}`.",
                 ));
             }
             let value = self.parse_expression(0, false, call_depth.saturating_add(1))?;
             if !is_array_constant(&value.expression) {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     value.span().start,
                     "Array constants may contain only scalar literals.",
                 ));
@@ -456,7 +456,7 @@ impl<'a> FormulaParser<'a> {
                 FormulaTokenKind::Semicolon => {
                     self.cursor += 1;
                     if row.is_empty() {
-                        return Err(FormulaParseFailure::new(
+                        return Err(SpreadsheetFormulaParseError::new(
                             separator.span.start,
                             "Array constants cannot contain an empty row.",
                         ));
@@ -466,7 +466,7 @@ impl<'a> FormulaParser<'a> {
                 }
                 FormulaTokenKind::RightBrace => {}
                 _ => {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         separator.span.start,
                         format!(
                             "Expected `,`, `;`, or `}}` in an array constant, found {}.",
@@ -484,7 +484,7 @@ impl<'a> FormulaParser<'a> {
         mut right: ParsedExpression,
         operator: SpreadsheetFormulaBinaryOperator,
         operator_span: SpreadsheetFormulaSpan,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         if matches!(operator, SpreadsheetFormulaBinaryOperator::Range) {
             left = coerce_range_endpoint(left, operator_span.start)?;
             right = coerce_range_endpoint(right, operator_span.start)?;
@@ -493,7 +493,7 @@ impl<'a> FormulaParser<'a> {
                 reference_axis(&right.expression),
             ) {
                 if left_axis != right_axis {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         operator_span.start,
                         "Range endpoints must both be cells, columns, or rows.",
                     ));
@@ -505,7 +505,7 @@ impl<'a> FormulaParser<'a> {
                 | SpreadsheetFormulaBinaryOperator::Union
         ) && !(left.reference_like && right.reference_like)
         {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 operator_span.start,
                 "Reference operators require reference expressions on both sides.",
             ));
@@ -536,16 +536,16 @@ impl<'a> FormulaParser<'a> {
         span: SpreadsheetFormulaSpan,
         depth: usize,
         reference_like: bool,
-    ) -> Result<ParsedExpression, FormulaParseFailure> {
+    ) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
         if depth > MAX_SPREADSHEET_FORMULA_DEPTH {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 span.start,
                 format!("Formula AST depth exceeds {MAX_SPREADSHEET_FORMULA_DEPTH}."),
             ));
         }
         self.nodes = self.nodes.saturating_add(1);
         if self.nodes > MAX_SPREADSHEET_FORMULA_NODES {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 span.start,
                 format!("Formula AST contains more than {MAX_SPREADSHEET_FORMULA_NODES} nodes."),
             ));
@@ -561,10 +561,10 @@ impl<'a> FormulaParser<'a> {
         &mut self,
         expected: FormulaTokenKind,
         description: &str,
-    ) -> Result<FormulaToken, FormulaParseFailure> {
+    ) -> Result<FormulaToken, SpreadsheetFormulaParseError> {
         let token = self.current()?.clone();
         if std::mem::discriminant(&token.kind) != std::mem::discriminant(&expected) {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 token.span.start,
                 format!(
                     "Expected {description}, found {}.",
@@ -576,9 +576,9 @@ impl<'a> FormulaParser<'a> {
         Ok(token)
     }
 
-    fn current(&self) -> Result<&FormulaToken, FormulaParseFailure> {
+    fn current(&self) -> Result<&FormulaToken, SpreadsheetFormulaParseError> {
         self.tokens.get(self.cursor).ok_or_else(|| {
-            FormulaParseFailure::new(
+            SpreadsheetFormulaParseError::new(
                 self.source.len(),
                 "Formula token stream ended unexpectedly.",
             )
@@ -613,9 +613,9 @@ impl<'a> FormulaParser<'a> {
         Some(start.through(end))
     }
 
-    fn check_call_depth(&self, depth: usize) -> Result<(), FormulaParseFailure> {
+    fn check_call_depth(&self, depth: usize) -> Result<(), SpreadsheetFormulaParseError> {
         if depth > MAX_SPREADSHEET_FORMULA_DEPTH {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 self.current()
                     .map_or(self.source.len(), |token| token.span.start),
                 format!("Formula parse nesting exceeds {MAX_SPREADSHEET_FORMULA_DEPTH}."),
@@ -733,7 +733,7 @@ fn token_starts_reference_expression(token: &FormulaTokenKind) -> bool {
 fn coerce_range_endpoint(
     mut value: ParsedExpression,
     position: usize,
-) -> Result<ParsedExpression, FormulaParseFailure> {
+) -> Result<ParsedExpression, SpreadsheetFormulaParseError> {
     let replacement = match &value.expression.kind {
         SpreadsheetFormulaExpressionKind::Name { qualifier, name } => {
             if name.bytes().all(|byte| byte.is_ascii_alphabetic()) {
@@ -772,7 +772,7 @@ fn coerce_range_endpoint(
         value.reference_like = true;
     }
     if !value.reference_like {
-        return Err(FormulaParseFailure::new(
+        return Err(SpreadsheetFormulaParseError::new(
             position,
             "Range operator requires reference endpoints.",
         ));
@@ -825,24 +825,26 @@ fn reference_axis(expression: &SpreadsheetFormulaExpression) -> Option<Reference
 fn validate_axis_references(
     expression: &SpreadsheetFormulaExpression,
     range_endpoint: bool,
-) -> Result<(), FormulaParseFailure> {
+) -> Result<(), SpreadsheetFormulaParseError> {
     match &expression.kind {
         SpreadsheetFormulaExpressionKind::Reference(SpreadsheetFormulaReference {
             kind:
                 SpreadsheetFormulaReferenceKind::Column { .. }
                 | SpreadsheetFormulaReferenceKind::Row { .. },
             ..
-        }) if !range_endpoint => Err(FormulaParseFailure::new(
+        }) if !range_endpoint => Err(SpreadsheetFormulaParseError::new(
             expression.span.start,
             "Whole-row and whole-column references must be used in a range.",
         )),
         SpreadsheetFormulaExpressionKind::Name {
             qualifier: Some(_),
             name,
-        } if name.bytes().all(|byte| byte.is_ascii_digit()) => Err(FormulaParseFailure::new(
-            expression.span.start,
-            "Qualified row references must include a range operator.",
-        )),
+        } if name.bytes().all(|byte| byte.is_ascii_digit()) => {
+            Err(SpreadsheetFormulaParseError::new(
+                expression.span.start,
+                "Qualified row references must include a range operator.",
+            ))
+        }
         SpreadsheetFormulaExpressionKind::Unary { operand, .. }
         | SpreadsheetFormulaExpressionKind::Postfix { operand, .. }
         | SpreadsheetFormulaExpressionKind::Parenthesized(operand) => {

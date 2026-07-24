@@ -6,6 +6,7 @@ version = 4
 name = "a3s-office"
 version = "0.1.0"
 dependencies = [
+ "a3s-office-formula-parser",
  "a3s-use-core",
  "async-trait",
  "base64",
@@ -46,9 +47,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "a3s-office-formula-parser"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "a3s-office-web-kernel"
 version = "0.1.0"
 dependencies = [
+ "a3s-office-formula-parser",
  "rustybuzz",
  "serde",
  "serde_json",

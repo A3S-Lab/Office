@@ -1,23 +1,23 @@
-use crate::spreadsheet_reference::{MAX_COLUMNS, MAX_ROWS};
+use crate::{MAX_COLUMNS, MAX_ROWS};
 
 use super::{
     ast::{
         SpreadsheetFormulaErrorLiteral, SpreadsheetFormulaQualifier, SpreadsheetFormulaReference,
         SpreadsheetFormulaReferenceKind, SpreadsheetFormulaSpan, MAX_SPREADSHEET_FORMULA_NODES,
     },
-    FormulaParseFailure,
+    SpreadsheetFormulaParseError,
 };
 
 const MAX_LEXICAL_TOKENS: usize = MAX_SPREADSHEET_FORMULA_NODES * 2 + 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct FormulaToken {
-    pub(super) kind: FormulaTokenKind,
-    pub(super) span: SpreadsheetFormulaSpan,
+pub struct FormulaToken {
+    pub kind: FormulaTokenKind,
+    pub span: SpreadsheetFormulaSpan,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum FormulaTokenKind {
+pub enum FormulaTokenKind {
     Number(String),
     Text(String),
     Error(SpreadsheetFormulaErrorLiteral),
@@ -93,7 +93,7 @@ impl FormulaTokenKind {
     }
 }
 
-pub(super) fn lex(source: &str) -> Result<Vec<FormulaToken>, FormulaParseFailure> {
+pub fn lex(source: &str) -> Result<Vec<FormulaToken>, SpreadsheetFormulaParseError> {
     FormulaLexer::new(source).lex()
 }
 
@@ -112,11 +112,14 @@ impl<'a> FormulaLexer<'a> {
         }
     }
 
-    fn lex(mut self) -> Result<Vec<FormulaToken>, FormulaParseFailure> {
+    fn lex(mut self) -> Result<Vec<FormulaToken>, SpreadsheetFormulaParseError> {
         while self.cursor < self.source.len() {
             let start = self.cursor;
             let character = self.current_character().ok_or_else(|| {
-                FormulaParseFailure::new(self.cursor, "Formula contains invalid UTF-8 boundaries.")
+                SpreadsheetFormulaParseError::new(
+                    self.cursor,
+                    "Formula contains invalid UTF-8 boundaries.",
+                )
             })?;
             if character.is_whitespace() {
                 self.consume_while(char::is_whitespace);
@@ -130,7 +133,7 @@ impl<'a> FormulaLexer<'a> {
             }
             if character == '\'' {
                 let token = self.lex_qualified_atom()?.ok_or_else(|| {
-                    FormulaParseFailure::new(start, "Worksheet qualifier is invalid.")
+                    SpreadsheetFormulaParseError::new(start, "Worksheet qualifier is invalid.")
                 })?;
                 self.push_token(token)?;
                 continue;
@@ -218,7 +221,7 @@ impl<'a> FormulaLexer<'a> {
                     }
                 }
                 _ => {
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         start,
                         format!("Unexpected character `{character}`."),
                     ));
@@ -230,13 +233,16 @@ impl<'a> FormulaLexer<'a> {
         Ok(self.tokens)
     }
 
-    fn lex_text(&mut self) -> Result<FormulaToken, FormulaParseFailure> {
+    fn lex_text(&mut self) -> Result<FormulaToken, SpreadsheetFormulaParseError> {
         let start = self.cursor;
         self.cursor += 1;
         let mut value = String::new();
         while self.cursor < self.source.len() {
             let character = self.current_character().ok_or_else(|| {
-                FormulaParseFailure::new(self.cursor, "String literal has an invalid boundary.")
+                SpreadsheetFormulaParseError::new(
+                    self.cursor,
+                    "String literal has an invalid boundary.",
+                )
             })?;
             if character == '"' {
                 self.cursor += 1;
@@ -253,20 +259,20 @@ impl<'a> FormulaLexer<'a> {
             value.push(character);
             self.cursor += character.len_utf8();
         }
-        Err(FormulaParseFailure::new(
+        Err(SpreadsheetFormulaParseError::new(
             self.source.len(),
             "String literal is not closed.",
         ))
     }
 
-    fn lex_qualified_atom(&mut self) -> Result<Option<FormulaToken>, FormulaParseFailure> {
+    fn lex_qualified_atom(&mut self) -> Result<Option<FormulaToken>, SpreadsheetFormulaParseError> {
         let start = self.cursor;
         let Some((qualifier, target_start)) = self.scan_qualifier()? else {
             return Ok(None);
         };
         self.cursor = target_start;
         if self.cursor >= self.source.len() {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 self.cursor,
                 "Worksheet qualifier must be followed by a reference or name.",
             ));
@@ -294,17 +300,20 @@ impl<'a> FormulaLexer<'a> {
 
     fn scan_qualifier(
         &self,
-    ) -> Result<Option<(SpreadsheetFormulaQualifier, usize)>, FormulaParseFailure> {
+    ) -> Result<Option<(SpreadsheetFormulaQualifier, usize)>, SpreadsheetFormulaParseError> {
         let start = self.cursor;
         let character = self.source[start..].chars().next().ok_or_else(|| {
-            FormulaParseFailure::new(start, "Worksheet qualifier has an invalid boundary.")
+            SpreadsheetFormulaParseError::new(start, "Worksheet qualifier has an invalid boundary.")
         })?;
         if character == '\'' {
             let mut cursor = start + 1;
             let mut decoded = String::new();
             while cursor < self.source.len() {
                 let current = self.source[cursor..].chars().next().ok_or_else(|| {
-                    FormulaParseFailure::new(cursor, "Worksheet qualifier is not valid UTF-8.")
+                    SpreadsheetFormulaParseError::new(
+                        cursor,
+                        "Worksheet qualifier is not valid UTF-8.",
+                    )
                 })?;
                 if current == '\'' {
                     let after = cursor + 1;
@@ -317,7 +326,7 @@ impl<'a> FormulaLexer<'a> {
                         let qualifier = parse_qualifier_value(decoded, start)?;
                         return Ok(Some((qualifier, after + 1)));
                     }
-                    return Err(FormulaParseFailure::new(
+                    return Err(SpreadsheetFormulaParseError::new(
                         after,
                         "A quoted worksheet qualifier must be followed by `!`.",
                     ));
@@ -325,7 +334,7 @@ impl<'a> FormulaLexer<'a> {
                 decoded.push(current);
                 cursor += current.len_utf8();
             }
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 self.source.len(),
                 "Quoted worksheet qualifier is not closed.",
             ));
@@ -337,7 +346,10 @@ impl<'a> FormulaLexer<'a> {
         let mut cursor = start;
         while cursor < self.source.len() {
             let current = self.source[cursor..].chars().next().ok_or_else(|| {
-                FormulaParseFailure::new(cursor, "Worksheet qualifier has an invalid boundary.")
+                SpreadsheetFormulaParseError::new(
+                    cursor,
+                    "Worksheet qualifier has an invalid boundary.",
+                )
             })?;
             if current == '!' {
                 if cursor == start {
@@ -360,7 +372,7 @@ impl<'a> FormulaLexer<'a> {
         start: usize,
         qualifier: Option<SpreadsheetFormulaQualifier>,
         qualified: bool,
-    ) -> Result<Option<(SpreadsheetFormulaReference, usize)>, FormulaParseFailure> {
+    ) -> Result<Option<(SpreadsheetFormulaReference, usize)>, SpreadsheetFormulaParseError> {
         let bytes = self.source.as_bytes();
         let mut cursor = start;
         let absolute_column = bytes.get(cursor) == Some(&b'$');
@@ -396,14 +408,20 @@ impl<'a> FormulaLexer<'a> {
         let column = parse_ascii_column(&self.source[column_start..column_start + column_length])
             .filter(|value| *value <= MAX_COLUMNS)
             .ok_or_else(|| {
-                FormulaParseFailure::new(column_start, "Cell reference column is outside A:XFD.")
+                SpreadsheetFormulaParseError::new(
+                    column_start,
+                    "Cell reference column is outside A:XFD.",
+                )
             })?;
         let row = self.source[row_start..cursor]
             .parse::<u32>()
             .ok()
             .filter(|value| (1..=MAX_ROWS).contains(value))
             .ok_or_else(|| {
-                FormulaParseFailure::new(row_start, "Cell reference row is outside 1:1048576.")
+                SpreadsheetFormulaParseError::new(
+                    row_start,
+                    "Cell reference row is outside 1:1048576.",
+                )
             })?;
         Ok(Some((
             SpreadsheetFormulaReference {
@@ -422,11 +440,11 @@ impl<'a> FormulaLexer<'a> {
     fn lex_absolute_axis(
         &self,
         qualifier: Option<SpreadsheetFormulaQualifier>,
-    ) -> Result<(SpreadsheetFormulaReference, usize), FormulaParseFailure> {
+    ) -> Result<(SpreadsheetFormulaReference, usize), SpreadsheetFormulaParseError> {
         let start = self.cursor;
         let after_dollar = start + 1;
         let Some(character) = self.source[after_dollar..].chars().next() else {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 start,
                 "Absolute reference marker must be followed by a row or column.",
             ));
@@ -447,7 +465,7 @@ impl<'a> FormulaLexer<'a> {
                 .and_then(|value| value.chars().next())
                 .is_some_and(is_name_continue)
             {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     cursor,
                     "Absolute column reference has invalid trailing characters.",
                 ));
@@ -455,7 +473,10 @@ impl<'a> FormulaLexer<'a> {
             let column = parse_ascii_column(&self.source[after_dollar..cursor])
                 .filter(|value| *value <= MAX_COLUMNS)
                 .ok_or_else(|| {
-                    FormulaParseFailure::new(after_dollar, "Column reference is outside A:XFD.")
+                    SpreadsheetFormulaParseError::new(
+                        after_dollar,
+                        "Column reference is outside A:XFD.",
+                    )
                 })?;
             return Ok((
                 SpreadsheetFormulaReference {
@@ -483,7 +504,10 @@ impl<'a> FormulaLexer<'a> {
                 .ok()
                 .filter(|value| (1..=MAX_ROWS).contains(value))
                 .ok_or_else(|| {
-                    FormulaParseFailure::new(after_dollar, "Row reference is outside 1:1048576.")
+                    SpreadsheetFormulaParseError::new(
+                        after_dollar,
+                        "Row reference is outside 1:1048576.",
+                    )
                 })?;
             return Ok((
                 SpreadsheetFormulaReference {
@@ -496,13 +520,13 @@ impl<'a> FormulaLexer<'a> {
                 cursor,
             ));
         }
-        Err(FormulaParseFailure::new(
+        Err(SpreadsheetFormulaParseError::new(
             after_dollar,
             "Absolute reference marker must be followed by an ASCII row or column.",
         ))
     }
 
-    fn lex_number(&mut self) -> Result<FormulaToken, FormulaParseFailure> {
+    fn lex_number(&mut self) -> Result<FormulaToken, SpreadsheetFormulaParseError> {
         let start = self.cursor;
         let bytes = self.source.as_bytes();
         while bytes.get(self.cursor).is_some_and(u8::is_ascii_digit) {
@@ -525,7 +549,7 @@ impl<'a> FormulaLexer<'a> {
                 self.cursor += 1;
             }
             if self.cursor == digits {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     exponent,
                     "Numeric exponent has no digits.",
                 ));
@@ -537,14 +561,14 @@ impl<'a> FormulaLexer<'a> {
             .and_then(|value| value.chars().next())
             .is_some_and(is_name_continue)
         {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 self.cursor,
                 "Numeric literal has invalid trailing characters.",
             ));
         }
         let raw = &self.source[start..self.cursor];
         if !raw.parse::<f64>().ok().is_some_and(f64::is_finite) {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 start,
                 "Numeric literal must be finite.",
             ));
@@ -559,19 +583,19 @@ impl<'a> FormulaLexer<'a> {
         &mut self,
         qualifier: Option<SpreadsheetFormulaQualifier>,
         span_start: usize,
-    ) -> Result<FormulaToken, FormulaParseFailure> {
+    ) -> Result<FormulaToken, SpreadsheetFormulaParseError> {
         let name_start = self.cursor;
         if self.source[self.cursor..].starts_with('[') {
             self.scan_bracket_groups()?;
         } else {
             let Some(first) = self.current_character() else {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     self.cursor,
                     "Expected a formula name.",
                 ));
             };
             if !(is_name_start(first) || (qualifier.is_some() && first.is_ascii_digit())) {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     self.cursor,
                     "Worksheet qualifier must be followed by a reference or name.",
                 ));
@@ -586,7 +610,7 @@ impl<'a> FormulaLexer<'a> {
         }
         let name = self.source[name_start..self.cursor].to_string();
         if name.is_empty() {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 name_start,
                 "Formula name is empty.",
             ));
@@ -605,13 +629,13 @@ impl<'a> FormulaLexer<'a> {
         })
     }
 
-    fn scan_bracket_groups(&mut self) -> Result<(), FormulaParseFailure> {
+    fn scan_bracket_groups(&mut self) -> Result<(), SpreadsheetFormulaParseError> {
         while self.source[self.cursor..].starts_with('[') {
             let start = self.cursor;
             let mut depth = 0_usize;
             while self.cursor < self.source.len() {
                 let character = self.current_character().ok_or_else(|| {
-                    FormulaParseFailure::new(
+                    SpreadsheetFormulaParseError::new(
                         self.cursor,
                         "Structured reference has an invalid boundary.",
                     )
@@ -619,7 +643,7 @@ impl<'a> FormulaLexer<'a> {
                 self.cursor += character.len_utf8();
                 if character == '\'' {
                     let escaped = self.current_character().ok_or_else(|| {
-                        FormulaParseFailure::new(
+                        SpreadsheetFormulaParseError::new(
                             self.cursor,
                             "Structured reference escape has no following character.",
                         )
@@ -639,7 +663,7 @@ impl<'a> FormulaLexer<'a> {
                 }
             }
             if depth != 0 {
-                return Err(FormulaParseFailure::new(
+                return Err(SpreadsheetFormulaParseError::new(
                     start,
                     "Structured reference bracket is not closed.",
                 ));
@@ -648,7 +672,7 @@ impl<'a> FormulaLexer<'a> {
         Ok(())
     }
 
-    fn lex_error_literal(&mut self) -> Result<Option<FormulaToken>, FormulaParseFailure> {
+    fn lex_error_literal(&mut self) -> Result<Option<FormulaToken>, SpreadsheetFormulaParseError> {
         const ERRORS: &[SpreadsheetFormulaErrorLiteral] = &[
             SpreadsheetFormulaErrorLiteral::GettingData,
             SpreadsheetFormulaErrorLiteral::DivisionByZero,
@@ -705,9 +729,9 @@ impl<'a> FormulaLexer<'a> {
         }
     }
 
-    fn push_token(&mut self, token: FormulaToken) -> Result<(), FormulaParseFailure> {
+    fn push_token(&mut self, token: FormulaToken) -> Result<(), SpreadsheetFormulaParseError> {
         if self.tokens.len() >= MAX_LEXICAL_TOKENS {
-            return Err(FormulaParseFailure::new(
+            return Err(SpreadsheetFormulaParseError::new(
                 token.span.start,
                 "Formula contains too many lexical tokens.",
             ));
@@ -721,7 +745,7 @@ impl<'a> FormulaLexer<'a> {
         kind: FormulaTokenKind,
         start: usize,
         end: usize,
-    ) -> Result<(), FormulaParseFailure> {
+    ) -> Result<(), SpreadsheetFormulaParseError> {
         self.push_token(FormulaToken {
             kind,
             span: SpreadsheetFormulaSpan::new(start, end),
@@ -732,9 +756,9 @@ impl<'a> FormulaLexer<'a> {
 fn parse_qualifier_value(
     value: String,
     position: usize,
-) -> Result<SpreadsheetFormulaQualifier, FormulaParseFailure> {
+) -> Result<SpreadsheetFormulaQualifier, SpreadsheetFormulaParseError> {
     if value.is_empty() {
-        return Err(FormulaParseFailure::new(
+        return Err(SpreadsheetFormulaParseError::new(
             position,
             "Worksheet qualifier is empty.",
         ));
@@ -746,7 +770,7 @@ fn parse_qualifier_value(
         )
     });
     if worksheets.is_empty() {
-        return Err(FormulaParseFailure::new(
+        return Err(SpreadsheetFormulaParseError::new(
             position,
             "Worksheet qualifier has no worksheet name.",
         ));
@@ -755,7 +779,7 @@ fn parse_qualifier_value(
         .split_once(':')
         .map_or((worksheets, None), |(start, end)| (start, Some(end)));
     if worksheet.is_empty() || worksheet_end.is_some_and(str::is_empty) {
-        return Err(FormulaParseFailure::new(
+        return Err(SpreadsheetFormulaParseError::new(
             position,
             "Three-dimensional worksheet qualifier has an empty endpoint.",
         ));

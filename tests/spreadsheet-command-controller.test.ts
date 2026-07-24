@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@rstest/core';
 import {
   executeSpreadsheetEditorCommand,
+  type SpreadsheetCalculationCommandPort,
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
   type SpreadsheetWorkbookCommandPort,
@@ -44,6 +45,12 @@ describe('spreadsheet command controller', () => {
         scope: 'selection',
       }),
     ).toBe(true);
+    expect(
+      executeSpreadsheetEditorCommand(fixture.context, {
+        type: 'formula.recalculate',
+        scope: 'workbook',
+      }),
+    ).toBe(true);
 
     expect(fixture.workbook.merges).toEqual([
       {
@@ -51,11 +58,13 @@ describe('spreadsheet command controller', () => {
         sheetId: 'sheet-1',
       },
     ]);
-    expect(fixture.workbook.calculations).toEqual([
+    expect(fixture.calculation.requests).toEqual([
       {
+        scope: 'selection',
         range: { row: [2, 4], column: [1, 3] },
         sheetId: 'sheet-1',
       },
+      { scope: 'workbook' },
     ]);
   });
 
@@ -84,6 +93,7 @@ describe('spreadsheet command controller', () => {
 
 function commandFixture(): {
   changes: WorkSpreadsheetContent[];
+  calculation: RecordingSpreadsheetCalculation;
   context: SpreadsheetCommandContext;
   workbook: RecordingSpreadsheetWorkbook;
 } {
@@ -99,12 +109,15 @@ function commandFixture(): {
     ],
   } satisfies WorkSpreadsheetContent;
   const changes: WorkSpreadsheetContent[] = [];
+  const calculation = new RecordingSpreadsheetCalculation();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
+    calculation,
     changes,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
+      calculation,
       content,
       fallbackRange: { row: [0, 1], column: [0, 2] },
       onChange: (next) => changes.push(next),
@@ -122,10 +135,6 @@ function commandFixture(): {
 }
 
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
-  calculations: Array<{
-    sheetId: string | undefined;
-    range: SpreadsheetCommandRange | undefined;
-  }> = [];
   formats: Array<{
     attribute: string;
     range: SpreadsheetCommandRange;
@@ -137,10 +146,6 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     sheetId: string | undefined;
   }> = [];
   selection: SpreadsheetCommandRange[] | undefined;
-
-  calculateFormula(sheetId?: string, range?: SpreadsheetCommandRange): void {
-    this.calculations.push({ sheetId, range });
-  }
 
   cancelMerge(
     ranges: SpreadsheetCommandRange[],
@@ -179,5 +184,18 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
       sheetId: options?.id,
       value,
     });
+  }
+}
+
+class RecordingSpreadsheetCalculation
+  implements SpreadsheetCalculationCommandPort
+{
+  requests: Parameters<SpreadsheetCalculationCommandPort['recalculate']>[0][] =
+    [];
+
+  recalculate(
+    request: Parameters<SpreadsheetCalculationCommandPort['recalculate']>[0],
+  ): void {
+    this.requests.push(request);
   }
 }

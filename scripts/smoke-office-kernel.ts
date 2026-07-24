@@ -16,9 +16,21 @@ interface OfficeKernelWasmExports {
     dataPointer: number,
     dataLength: number,
   ) => number;
+  office_kernel_spreadsheet_calculation: (
+    pointer: number,
+    length: number,
+  ) => number;
   office_kernel_text_layout: (pointer: number, length: number) => number;
   office_kernel_result_pointer: () => number;
   office_kernel_result_length: () => number;
+}
+
+interface SpreadsheetSmokeResult {
+  engine?: string;
+  kind?: string;
+  cells?: Array<{ value?: { kind?: string; value?: number } }>;
+  calculationOrder?: unknown[];
+  issues?: Array<{ code?: string }>;
 }
 
 const wasm = await WebAssembly.instantiate(
@@ -518,7 +530,106 @@ assert(
   'Office text layout did not explicitly fall back for a tab paragraph containing resolved RTL text.',
 );
 
+const spreadsheetRequest = {
+  protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+  kind: 'spreadsheetCalculation',
+  requestId: 24,
+  revision: 37,
+  documentRevision: 58,
+  sheets: [
+    {
+      id: 'sheet-1',
+      name: 'Sheet 1',
+      cells: [
+        { row: 0, column: 0, value: { kind: 'number', value: 2 } },
+        { row: 1, column: 0, value: { kind: 'number', value: 3 } },
+        {
+          row: 0,
+          column: 1,
+          formula: '=SUM(A1:A2)',
+          value: { kind: 'blank' },
+        },
+        {
+          row: 1,
+          column: 1,
+          formula: '=B1*2',
+          value: { kind: 'blank' },
+        },
+      ],
+    },
+  ],
+};
+const spreadsheetResult = calculateSpreadsheetWithWasm(spreadsheetRequest);
+assert(
+  spreadsheetResult.kind === 'spreadsheetCalculationResult',
+  'Office Spreadsheet response kind was not preserved.',
+);
+assert(
+  spreadsheetResult.engine === 'wasm',
+  'Office Spreadsheet calculation did not use the WASM engine.',
+);
+assert(
+  spreadsheetResult.cells?.[0]?.value?.value === 5 &&
+    spreadsheetResult.cells?.[1]?.value?.value === 10,
+  'Office Spreadsheet dependency calculation returned incorrect values.',
+);
+assert(
+  spreadsheetResult.calculationOrder?.length === 2 &&
+    spreadsheetResult.issues?.length === 0,
+  'Office Spreadsheet calculation did not preserve deterministic diagnostics.',
+);
+
+const deepSpreadsheetResult = calculateSpreadsheetWithWasm({
+  ...spreadsheetRequest,
+  requestId: 25,
+  sheets: [
+    {
+      id: 'sheet-1',
+      name: 'Sheet 1',
+      cells: Array.from({ length: 80 }, (_, row) => ({
+        row,
+        column: 0,
+        formula: row === 0 ? '=1' : `=A${row}+1`,
+        value: { kind: 'number', value: row + 1 },
+      })),
+    },
+  ],
+  targets: [{ sheetId: 'sheet-1', row: 79, column: 0 }],
+});
+assert(
+  deepSpreadsheetResult.issues?.some(
+    (issue) =>
+      issue.code === 'office.kernel.spreadsheet.dependency_depth_exceeded',
+  ),
+  'Office Spreadsheet dependency depth was not bounded inside WASM.',
+);
+
 console.log('Office kernel WASM ABI smoke test passed.');
+
+function calculateSpreadsheetWithWasm(
+  request: unknown,
+): SpreadsheetSmokeResult {
+  const input = new TextEncoder().encode(JSON.stringify(request));
+  const pointer = exports.office_kernel_alloc(input.byteLength);
+  try {
+    new Uint8Array(exports.memory.buffer, pointer, input.byteLength).set(input);
+    assert(
+      exports.office_kernel_spreadsheet_calculation(
+        pointer,
+        input.byteLength,
+      ) === 0,
+      'Office kernel Spreadsheet calculation call failed.',
+    );
+  } finally {
+    exports.office_kernel_dealloc(pointer, input.byteLength);
+  }
+  const output = new Uint8Array(
+    exports.memory.buffer,
+    exports.office_kernel_result_pointer(),
+    exports.office_kernel_result_length(),
+  ).slice();
+  return JSON.parse(new TextDecoder().decode(output)) as SpreadsheetSmokeResult;
+}
 
 async function registerFont(id: string, url: URL): Promise<void> {
   const encodedId = new TextEncoder().encode(id);

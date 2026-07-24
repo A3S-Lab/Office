@@ -3,6 +3,7 @@ import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
   A3SMarkdownEditorElement,
+  type A3SSpreadsheetEditorElement,
   defineA3SOfficeElements,
 } from '../src/web-component';
 
@@ -36,6 +37,14 @@ test('registers every custom element idempotently', async () => {
     },
   ];
   expect(documentEditor.layoutFonts?.[0]?.id).toBe('host-font');
+
+  const spreadsheetEditor = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.spreadsheet,
+  ) as A3SSpreadsheetEditorElement;
+  spreadsheetEditor.kernelWasmUrl = '/assets/spreadsheet-kernel.wasm';
+  expect(spreadsheetEditor.getAttribute('kernel-wasm-url')).toBe(
+    '/assets/spreadsheet-kernel.wasm',
+  );
 
   element.remove();
 });

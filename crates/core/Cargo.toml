@@ -9,6 +9,7 @@ rust-version.workspace = true
 description = "Native OOXML document operations for A3S Office"
 
 [dependencies]
+a3s-office-formula-parser.workspace = true
 a3s-use-core.workspace = true
 async-trait.workspace = true
 base64.workspace = true

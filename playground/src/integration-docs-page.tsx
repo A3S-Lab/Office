@@ -12,6 +12,11 @@ import { PageHeader } from './page-header';
 type Framework = 'react' | 'vue' | 'web-component';
 
 const installCommand = 'bun add @a3s-lab/office';
+const spreadsheetKernelExample = `<SpreadsheetEditor
+  content={content}
+  onChange={setContent}
+  kernelWasmUrl="/office-assets/office-kernel.wasm"
+/>`;
 
 const frameworkExamples: Record<
   Framework,
@@ -176,6 +181,21 @@ export function IntegrationDocsPage({
                 内容由宿主项目持有
               </span>
             </div>
+          </div>
+        </section>
+
+        <section
+          className="playground-doc-group"
+          aria-labelledby="integration-spreadsheet-kernel-title"
+        >
+          <div className="playground-section-heading">
+            <div>
+              <h2 id="integration-spreadsheet-kernel-title">表格计算资源</h2>
+              <span>默认随包加载；使用独立静态资源域名时再设置地址</span>
+            </div>
+          </div>
+          <div className="playground-doc-card">
+            <CodeBlock code={spreadsheetKernelExample} label="React" />
           </div>
         </section>
 

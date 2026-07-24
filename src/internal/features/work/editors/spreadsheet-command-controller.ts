@@ -3,7 +3,6 @@ import type { WorkSpreadsheetContent } from '../work-types';
 import { spreadsheetSingleRange } from './spreadsheet-editor-support';
 
 export interface SpreadsheetWorkbookCommandPort {
-  calculateFormula: (sheetId?: string, range?: SpreadsheetCommandRange) => void;
   cancelMerge: (
     ranges: SpreadsheetCommandRange[],
     options?: { id?: string },
@@ -32,6 +31,18 @@ export interface SpreadsheetCommandSelection {
   selection: Selection;
 }
 
+export type SpreadsheetCalculationCommand =
+  | { scope: 'workbook' }
+  | {
+      scope: 'selection';
+      sheetId: string;
+      range: SpreadsheetCommandRange;
+    };
+
+export interface SpreadsheetCalculationCommandPort {
+  recalculate: (request: SpreadsheetCalculationCommand) => void;
+}
+
 export type SpreadsheetEditorCommand =
   | {
       type: 'cell.format';
@@ -57,6 +68,7 @@ export type SpreadsheetEditorCommand =
 
 export interface SpreadsheetCommandContext {
   activeSheetId: string;
+  calculation: SpreadsheetCalculationCommandPort | null;
   content: WorkSpreadsheetContent;
   fallbackRange: SpreadsheetCommandRange;
   onChange: (content: WorkSpreadsheetContent) => void;
@@ -115,16 +127,17 @@ function recalculateSpreadsheet(
   context: SpreadsheetCommandContext,
   scope: 'selection' | 'workbook',
 ): boolean {
-  if (!context.workbook) return false;
+  if (!context.calculation) return false;
   if (scope === 'workbook') {
-    context.workbook.calculateFormula();
+    context.calculation.recalculate({ scope: 'workbook' });
     return true;
   }
   if (!context.selection) return false;
-  context.workbook.calculateFormula(
-    context.selection.sheetId,
-    spreadsheetSingleRange(context.selection.selection),
-  );
+  context.calculation.recalculate({
+    scope: 'selection',
+    sheetId: context.selection.sheetId,
+    range: spreadsheetSingleRange(context.selection.selection),
+  });
   return true;
 }
 

@@ -47,7 +47,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
-| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell and a typed command boundary for selected-range formatting, merge state, recalculation, gridlines, and zoom | Native Office formula and OOXML primitives exist outside the browser kernel; no browser calculation kernel yet | Dedicated virtual grid and Worker/WASM dependency graph, calculation, and print layout |
+| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, controlled sparse-workbook projection, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM scalar calculation using the shared bounded Rust formula parser, deterministic dependency order, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, persistent incremental dirty graph, broader Excel formula semantics, number-format ownership, and print layout |
 | Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
@@ -62,7 +62,16 @@ pre-shaped following-segment widths in the kernel. Glyphs missing from the
 complete stack, unsupported OpenType behavior, inline objects, tab paragraphs
 that resolve any right-to-left run, and unregistered faces deliberately retain
 browser line measurement.
-Spreadsheet does not yet use a browser Rust/WASM calculation kernel.
+Spreadsheet now uses the first browser Rust/WASM calculation slice. The editor
+projects populated cells into a bounded sparse request, cancels superseded
+revisions, rejects stale responses, applies successful scalar results without
+adding undo history, refreshes known grouped formulas before their dependents,
+and propagates unresolved dependencies into an ordered, cell-scoped Fortune
+Sheet compatibility pass. The shared Rust parser handles the same bounded
+formula grammar in the native core and browser kernel. This slice is not a
+complete Excel engine: it does not retain a persistent dirty dependency graph,
+materialize whole-row or whole-column ranges, calculate arrays, spills,
+structured references, external workbooks, or own print layout.
 Presentation uses Rust/WASM only for alignment to slide bounds; the remaining
 geometry and layout operations stay on the main thread until the later stages
 below.
@@ -299,6 +308,7 @@ small raw WebAssembly ABI:
 - `office_kernel_layout`
 - `office_kernel_text_layout`
 - `office_kernel_presentation_geometry`
+- `office_kernel_spreadsheet_calculation`
 - `office_kernel_result_pointer` and `office_kernel_result_length`
 
 The protocol is versioned and carries independent layout and document
@@ -318,6 +328,20 @@ implementations preserve editing if Worker or WebAssembly loading is
 unavailable. The JavaScript text fallback explicitly reports unsupported
 paragraphs so the editor uses DOM line measurement instead of estimated font
 metrics.
+
+Spreadsheet requests carry populated cells only, zero-based coordinates,
+cached scalar values, formulas, and optional calculation targets. The kernel
+recursively resolves dependencies in deterministic order and returns successful
+cells separately from cell-scoped issues. Its first scalar function set covers
+common arithmetic, comparison, concatenation, aggregation, logical, and numeric
+operations. The JavaScript fallback loads its parser only when needed and
+conforms to the same scalar fixtures. Unsupported formula structures remain
+unchanged so a host never loses the source formula or cached value.
+Rust/WASM remains the canonical calculation path. If Worker or WebAssembly
+loading fails, the Fortune-based fallback keeps the workbook editable but may
+use Fortune coercion and eager-branch evaluation for formulas beyond the
+shared parity fixtures; this is an explicit first-slice compatibility limit,
+not a cross-engine equivalence claim.
 
 The browser pagination implementation is split by capability instead of
 accumulating in one editor module. `work-document-pagination.ts` owns only the
@@ -438,6 +462,14 @@ through Microsoft Word and WPS without losing unsupported package parts.
 - Keep viewport rendering independent from workbook size and retain a typed
   value for every cell.
 
+The first calculation slice is implemented: a sparse calculation projection,
+shared bounded Rust formula grammar, Worker/WASM scalar dependency evaluation,
+revision cancellation, stale-result rejection, target-only recalculation, and
+JavaScript and cell-scoped Fortune fallbacks. The canonical grid is still
+Fortune Sheet, and dependency state is rebuilt per request. The A3S-owned
+virtual viewport, persistent dirty graph, complete formula semantics, kernel
+number formatting, and print pagination remain open work in this stage.
+
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX
 fixtures preserve formulas, styles, names, validation, conditional formatting,
@@ -527,6 +559,11 @@ repeatable fixtures. The targets below are release gates, not current claims:
   They accept at most 16,384 contiguous runs, with no more than 4,096 in one
   paragraph and no more than eight ordered faces per run. Font registration is
   bounded to 16 faces and 32 MiB per face.
+- Spreadsheet calculation requests are bounded to 1,024 sheets, 100,000
+  populated cells, 100,000 targets, 8,192 Unicode characters per formula,
+  100,000 materialized range cells cumulatively per formula, 64 nested formula
+  dependencies, Excel's XFD1048576
+  coordinate boundary, and 32,767 UTF-8 bytes per text value.
 - Glyphs missing from the complete registered stack, ambiguous font stacks,
   and unsupported inline structures retain DOM measurement instead of
   accepting approximate line boxes.
@@ -541,12 +578,15 @@ repeatable fixtures. The targets below are release gates, not current claims:
 The browser kernel is covered at four boundaries:
 
 1. Rust unit tests for deterministic pagination, Unicode line breaking,
-   grapheme-safe emergency wrapping, whitespace modes, and validation.
-2. JavaScript fallback tests for protocol parity, safe page-prefix reuse, and
-   no-Worker operation.
+   grapheme-safe emergency wrapping, whitespace modes, shared formula parsing,
+   scalar dependency calculation, cycles, targets, and validation.
+2. JavaScript fallback tests for protocol parity, safe page-prefix reuse,
+   no-Worker operation, cancellation, sparse Spreadsheet calculation, and the
+   shared Spreadsheet parity fixtures.
 3. A raw generated-WASM ABI smoke test that registers both shipped fonts,
    proves the Latin face lacks CJK glyphs, resolves them through the ordered
-   fallback face, and verifies mixed-face line metrics.
+   fallback face, verifies mixed-face line metrics, and calculates a dependent
+   Spreadsheet formula chain.
 4. Browser checks for real Worker/WASM/font loading, shaped-line parity with
    browser line boxes at non-100% zoom, real per-grapheme fallback diagnostics,
    explicit unresolved-glyph fallback, page-view reflow, web-view clearing,

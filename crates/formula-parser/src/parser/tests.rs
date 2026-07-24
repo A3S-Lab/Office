@@ -1,5 +1,5 @@
 use super::*;
-use crate::spreadsheet_formula::lexer;
+use crate::lexer;
 
 fn parse_formula(source: &str) -> SpreadsheetFormula {
     let tokens = lexer::lex(source).unwrap();

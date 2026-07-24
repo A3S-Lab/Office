@@ -119,22 +119,6 @@ export function spreadsheetSheetsForFortune(
   });
 }
 
-export function spreadsheetFormulaInitializationKey(
-  content: WorkSpreadsheetContent,
-): string {
-  return content.sheets
-    .flatMap((sheet) =>
-      (sheet.data ?? []).flatMap((row, rowIndex) =>
-        row.flatMap((cell, columnIndex) =>
-          cell?.f
-            ? [`${sheet.id ?? sheet.name}:${rowIndex}:${columnIndex}:${cell.f}`]
-            : [],
-        ),
-      ),
-    )
-    .join('|');
-}
-
 export function finiteSpreadsheetSelection(
   selection: Selection | undefined,
 ): Selection {

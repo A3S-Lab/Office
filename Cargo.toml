@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/core", "crates/cli", "crates/web-kernel"]
+members = [
+  "crates/cli",
+  "crates/core",
+  "crates/formula-parser",
+  "crates/web-kernel",
+]
 resolver = "2"
 
 [workspace.package]
@@ -13,6 +18,7 @@ rust-version = "1.85"
 [workspace.dependencies]
 a3s-use-browser = "0.2.0"
 a3s-use-core = "0.2.0"
+a3s-office-formula-parser = { path = "crates/formula-parser" }
 async-trait = "0.1"
 axum = "0.8"
 base64 = "0.22"

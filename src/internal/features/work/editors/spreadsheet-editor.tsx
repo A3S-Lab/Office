@@ -67,7 +67,6 @@ import {
   spreadsheetCellAt,
   spreadsheetFontSizeOptions,
   spreadsheetFormulaBarSelectAllTarget,
-  spreadsheetFormulaInitializationKey,
   spreadsheetSelectionReference,
   spreadsheetSheetsForFortune,
   spreadsheetSheetsWithFiniteSelections,
@@ -79,6 +78,7 @@ import {
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
 import { useOfficeHistory } from './use-office-history';
+import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
@@ -103,6 +103,7 @@ type SpreadsheetRibbonTabId = (typeof spreadsheetRibbonTabs)[number]['id'];
 
 export interface SpreadsheetEditorProps {
   content: WorkSpreadsheetContent;
+  kernelWasmUrl?: string;
   preview: boolean;
   saveStatus?: string;
   fileActions?: readonly WorkOfficeFileAction[];
@@ -123,6 +124,7 @@ interface SpreadsheetAgentMenuState {
 
 export function SpreadsheetEditor({
   content,
+  kernelWasmUrl,
   preview,
   saveStatus = '已自动保存',
   fileActions,
@@ -137,6 +139,11 @@ export function SpreadsheetEditor({
   const onChangeRef = useRef(onChange);
   const previewRef = useRef(preview);
   const workbookRef = useRef<WorkbookInstance>(null);
+  const calculation = useSpreadsheetCalculation({
+    content: materializedContent,
+    kernelWasmUrl,
+    workbookRef,
+  });
   const [ribbonTab, setRibbonTab] = useState<SpreadsheetRibbonTabId>('home');
   const [panel, setPanel] = useState<SpreadsheetWorkbookPanelView | null>(null);
   const [selectionState, setSelectionState] =
@@ -258,10 +265,6 @@ export function SpreadsheetEditor({
     () => spreadsheetFormulaCount(materializedContent),
     [materializedContent],
   );
-  const formulaInitializationKey = useMemo(
-    () => spreadsheetFormulaInitializationKey(materializedContent),
-    [materializedContent],
-  );
   const pivotCount = useMemo(
     () => spreadsheetPivotCount(materializedContent),
     [materializedContent],
@@ -289,14 +292,6 @@ export function SpreadsheetEditor({
   );
   const workbookSheetsRef = useRef(workbookSheets);
   workbookSheetsRef.current = displayedWorkbookSheets;
-  useEffect(() => {
-    if (!formulaInitializationKey) return;
-    const timeout = window.setTimeout(
-      () => workbookRef.current?.calculateFormula(),
-      0,
-    );
-    return () => window.clearTimeout(timeout);
-  }, [formulaInitializationKey]);
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
       if (
@@ -364,6 +359,7 @@ export function SpreadsheetEditor({
     return executeSpreadsheetEditorCommand(
       {
         activeSheetId,
+        calculation,
         content: contentRef.current,
         fallbackRange: selectedRange,
         onChange: (next) => {

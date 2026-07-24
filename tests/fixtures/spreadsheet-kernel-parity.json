@@ -1,0 +1,523 @@
+[
+  {
+    "name": "cross-sheet reference",
+    "sheets": [
+      {
+        "id": "data",
+        "name": "Data",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "number", "value": 4 }
+          }
+        ]
+      },
+      {
+        "id": "totals",
+        "name": "Totals",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=Data!A1*3",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "totals",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 12 }
+      }
+    ],
+    "expectedOrder": [{ "sheetId": "totals", "row": 0, "column": 0 }],
+    "expectedIssues": []
+  },
+  {
+    "name": "scalar range coercion",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "number", "value": 4 }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "value": { "kind": "number", "value": 5 }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=A1:A2",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 4 }
+      }
+    ],
+    "expectedOrder": [{ "sheetId": "sheet-1", "row": 0, "column": 1 }],
+    "expectedIssues": []
+  },
+  {
+    "name": "arithmetic error value",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=1/0",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "error", "value": "#DIV/0!" }
+      }
+    ],
+    "expectedOrder": [{ "sheetId": "sheet-1", "row": 0, "column": 0 }],
+    "expectedIssues": []
+  },
+  {
+    "name": "error-like text literals",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=\"#N/A\"",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=IFERROR(\"#N/A\",7)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "text", "value": "#N/A" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "text", "value": "#N/A" }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 0 },
+      { "sheetId": "sheet-1", "row": 0, "column": 1 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "unknown function",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=A3S_UNKNOWN(1)",
+            "value": { "kind": "number", "value": 41 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      }
+    ]
+  },
+  {
+    "name": "complete circular reference",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=B1",
+            "value": { "kind": "number", "value": 1 }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=A1",
+            "value": { "kind": "number", "value": 2 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.circular_reference"
+      },
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 1 },
+        "code": "office.kernel.spreadsheet.circular_reference"
+      }
+    ]
+  },
+  {
+    "name": "target-only dependency calculation",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "value": { "kind": "number", "value": 2 }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=A1+1",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "formula": "=B1*2",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 3,
+            "formula": "=A1+100",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [{ "sheetId": "sheet-1", "row": 0, "column": 2 }],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 3 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 2,
+        "value": { "kind": "number", "value": 6 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 0, "column": 2 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "unsupported dependency propagation",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=A3S_UNKNOWN(1)",
+            "value": { "kind": "number", "value": 41 }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=A1+1",
+            "value": { "kind": "number", "value": 42 }
+          }
+        ]
+      }
+    ],
+    "targets": [{ "sheetId": "sheet-1", "row": 0, "column": 1 }],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      },
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 1 },
+        "code": "office.kernel.spreadsheet.dependency_unresolved"
+      }
+    ]
+  },
+  {
+    "name": "range dependency short circuit",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=A3S_UNKNOWN(1)",
+            "value": { "kind": "number", "value": 41 }
+          },
+          {
+            "row": 1,
+            "column": 0,
+            "formula": "=1",
+            "value": { "kind": "number", "value": 1 }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=SUM(A1:A2)",
+            "value": { "kind": "number", "value": 42 }
+          }
+        ]
+      }
+    ],
+    "targets": [{ "sheetId": "sheet-1", "row": 0, "column": 1 }],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      },
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 1 },
+        "code": "office.kernel.spreadsheet.dependency_unresolved"
+      }
+    ]
+  },
+  {
+    "name": "logical numeric and text functions",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=IF(TRUE(),ROUND(SQRT(9)+ABS(-2),0),0)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 1,
+            "formula": "=IFERROR(1/0,7)",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 0,
+            "column": 2,
+            "formula": "=CONCAT(\"A\",1)&IF(FALSE,\"X\",\"B\")",
+            "value": { "kind": "blank" }
+          },
+          {
+            "row": 2,
+            "column": 2,
+            "formula": "=ROW()+COLUMN()",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 5 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 1,
+        "value": { "kind": "number", "value": 7 }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 2,
+        "value": { "kind": "text", "value": "A1B" }
+      },
+      {
+        "sheetId": "sheet-1",
+        "row": 2,
+        "column": 2,
+        "value": { "kind": "number", "value": 6 }
+      }
+    ],
+    "expectedOrder": [
+      { "sheetId": "sheet-1", "row": 0, "column": 0 },
+      { "sheetId": "sheet-1", "row": 0, "column": 1 },
+      { "sheetId": "sheet-1", "row": 0, "column": 2 },
+      { "sheetId": "sheet-1", "row": 2, "column": 2 }
+    ],
+    "expectedIssues": []
+  },
+  {
+    "name": "prefixed compatibility functions",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=_xlfn.SUM(1,2)+_xlws.ABS(-1)",
+            "value": { "kind": "blank" }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [
+      {
+        "sheetId": "sheet-1",
+        "row": 0,
+        "column": 0,
+        "value": { "kind": "number", "value": 4 }
+      }
+    ],
+    "expectedOrder": [{ "sheetId": "sheet-1", "row": 0, "column": 0 }],
+    "expectedIssues": []
+  },
+  {
+    "name": "missing worksheet reference",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=Missing!A1+1",
+            "value": { "kind": "number", "value": 9 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      }
+    ]
+  },
+  {
+    "name": "oversized materialized range",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 0,
+            "column": 0,
+            "formula": "=SUM(A1:XFD1048576)",
+            "value": { "kind": "number", "value": 11 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": { "sheetId": "sheet-1", "row": 0, "column": 0 },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      }
+    ]
+  },
+  {
+    "name": "cumulative materialized range limit",
+    "sheets": [
+      {
+        "id": "sheet-1",
+        "name": "Sheet 1",
+        "cells": [
+          {
+            "row": 4,
+            "column": 16383,
+            "formula": "=SUM(A1:XFD4,A1:XFD4)",
+            "value": { "kind": "number", "value": 11 }
+          }
+        ]
+      }
+    ],
+    "targets": [],
+    "expectedCells": [],
+    "expectedOrder": [],
+    "expectedIssues": [
+      {
+        "cell": {
+          "sheetId": "sheet-1",
+          "row": 4,
+          "column": 16383
+        },
+        "code": "office.kernel.spreadsheet.formula_unsupported"
+      }
+    ]
+  }
+]

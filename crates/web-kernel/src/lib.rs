@@ -9,11 +9,17 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 mod presentation_geometry;
+mod spreadsheet_calculation;
 mod text_layout;
 
 pub use presentation_geometry::{
     align_presentation_to_slide, PresentationAlignment, PresentationGeometryElement,
     PresentationGeometryOperation, PresentationGeometryRequest, PresentationGeometryResult,
+};
+pub use spreadsheet_calculation::{
+    calculate_spreadsheet, SpreadsheetCalculatedCell, SpreadsheetCalculationIssue,
+    SpreadsheetCalculationRequest, SpreadsheetCalculationResult, SpreadsheetCoordinate,
+    SpreadsheetInputCell, SpreadsheetInputSheet, SpreadsheetValue,
 };
 pub use text_layout::{
     layout_text, validate_font, FontRegistry, TextDirection, TextLayoutLine, TextLayoutParagraph,
@@ -21,7 +27,7 @@ pub use text_layout::{
     TextTabAlignment, TextTabLayout, TextTabStop, TextWhiteSpace,
 };
 
-pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 11;
+pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 12;
 const MAX_LAYOUT_BLOCKS: usize = 10_000;
 const MAX_LAYOUT_EXTENT: f64 = 1_000_000.0;
 const MAX_LAYOUT_PAGE_INDEX: u32 = 1_000_000;
@@ -683,9 +689,10 @@ mod wasm_abi {
     use std::cell::RefCell;
 
     use super::{
-        align_presentation_to_slide, layout_document, layout_text, validate_font, FontRegistry,
-        KernelError, KernelErrorResponse, LayoutRequest, PresentationGeometryRequest,
-        TextLayoutRequest, OFFICE_KERNEL_PROTOCOL_VERSION,
+        align_presentation_to_slide, calculate_spreadsheet, layout_document, layout_text,
+        validate_font, FontRegistry, KernelError, KernelErrorResponse, LayoutRequest,
+        PresentationGeometryRequest, SpreadsheetCalculationRequest, TextLayoutRequest,
+        OFFICE_KERNEL_PROTOCOL_VERSION,
     };
 
     thread_local! {
@@ -878,6 +885,58 @@ mod wasm_abi {
                     KernelError {
                         code: "office.kernel.request_invalid".into(),
                         message: format!("The text layout request is not valid JSON: {error}"),
+                    },
+                )),
+            ),
+        };
+        LAST_RESULT.with(|result| {
+            *result.borrow_mut() = output.unwrap_or_else(|error| {
+                format!(
+                    "{{\"protocol\":{},\"kind\":\"error\",\"requestId\":0,\"revision\":0,\"documentRevision\":0,\"engine\":\"wasm\",\"error\":{{\"code\":\"office.kernel.serialization_failed\",\"message\":{:?}}}}}",
+                    OFFICE_KERNEL_PROTOCOL_VERSION,
+                    error.to_string()
+                )
+                .into_bytes()
+            });
+        });
+        status
+    }
+
+    #[no_mangle]
+    pub unsafe extern "C" fn office_kernel_spreadsheet_calculation(
+        pointer: *const u8,
+        length: usize,
+    ) -> i32 {
+        let input = if pointer.is_null() {
+            &[]
+        } else {
+            std::slice::from_raw_parts(pointer, length)
+        };
+        let parsed = serde_json::from_slice::<SpreadsheetCalculationRequest>(input);
+        let (status, output) = match parsed {
+            Ok(request) => match calculate_spreadsheet(&request) {
+                Ok(result) => (0, serde_json::to_vec(&result)),
+                Err(error) => (
+                    1,
+                    serde_json::to_vec(&error_response(
+                        request.request_id,
+                        request.revision,
+                        request.document_revision,
+                        error,
+                    )),
+                ),
+            },
+            Err(error) => (
+                1,
+                serde_json::to_vec(&error_response(
+                    0,
+                    0,
+                    0,
+                    KernelError {
+                        code: "office.kernel.request_invalid".into(),
+                        message: format!(
+                            "The Spreadsheet calculation request is not valid JSON: {error}"
+                        ),
                     },
                 )),
             ),
