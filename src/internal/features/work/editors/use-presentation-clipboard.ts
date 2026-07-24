@@ -29,6 +29,7 @@ export function usePresentationClipboard({
   targetId,
   selectedSlide,
   editingElementId,
+  groupSelection,
   selectedElements,
   onChange,
   onSelectSlide,
@@ -39,6 +40,7 @@ export function usePresentationClipboard({
   onRedo,
   onAddSlide,
   onStartSlideshow,
+  ungroupSelection,
 }: {
   content: WorkPresentationContent;
   preview: boolean;
@@ -46,6 +48,7 @@ export function usePresentationClipboard({
   targetId: string | undefined;
   selectedSlide: WorkSlide | undefined;
   editingElementId: string | null;
+  groupSelection: () => boolean;
   selectedElements: readonly WorkSlideElement[];
   onChange: (content: WorkPresentationContent) => void;
   onSelectSlide: (id: string) => void;
@@ -56,6 +59,7 @@ export function usePresentationClipboard({
   onRedo: () => boolean;
   onAddSlide: () => void;
   onStartSlideshow?: () => void;
+  ungroupSelection: () => boolean;
 }) {
   const selectedElement = selectedElements.at(-1) ?? null;
   const copySelection = useCallback((): boolean => {
@@ -272,6 +276,7 @@ export function usePresentationClipboard({
     deleteSelection: deleteSelectedElement,
     duplicateSelection,
     editingElementId,
+    groupSelection,
     nudgeSelection,
     onAddSlide,
     onEditElement,
@@ -285,6 +290,7 @@ export function usePresentationClipboard({
     selectedElement,
     selectedElementCount: selectedElements.length,
     toggleBold,
+    ungroupSelection,
   });
 
   return { copySelection, cutSelection, pasteSelection };

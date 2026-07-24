@@ -1,4 +1,5 @@
 import { createWorkId } from './work-templates';
+import { remapPresentationGroupPaths } from './work-presentation-groups';
 import type { WorkSlide, WorkSlideElement } from './work-types';
 
 export type WorkPresentationClipboardPayload =
@@ -62,7 +63,7 @@ export function clonePresentationElementForPaste(
   element: WorkSlideElement,
   offset: number,
 ): WorkSlideElement {
-  const copy = structuredCopy(element);
+  const copy = remapPresentationGroupPaths([structuredCopy(element)])[0];
   return {
     ...copy,
     id: createWorkId('element'),
@@ -85,13 +86,15 @@ export function clonePresentationElementsForPaste(
   );
   const offsetX = clamp(offset, 0, Math.max(0, 100 - right));
   const offsetY = clamp(offset, 0, Math.max(0, 100 - bottom));
-  return structuredCopy(elements).map((element) => ({
-    ...element,
-    id: createWorkId('element'),
-    x: element.x + offsetX,
-    y: element.y + offsetY,
-    placeholder: undefined,
-  }));
+  return remapPresentationGroupPaths(structuredCopy(elements)).map(
+    (element) => ({
+      ...element,
+      id: createWorkId('element'),
+      x: element.x + offsetX,
+      y: element.y + offsetY,
+      placeholder: undefined,
+    }),
+  );
 }
 
 export function clonePresentationSlideForPaste(slide: WorkSlide): WorkSlide {
@@ -100,7 +103,7 @@ export function clonePresentationSlideForPaste(slide: WorkSlide): WorkSlide {
     ...copy,
     id: createWorkId('slide'),
     name: `${slide.name} 副本`,
-    elements: copy.elements.map((element) => ({
+    elements: remapPresentationGroupPaths(copy.elements).map((element) => ({
       ...element,
       id: createWorkId('element'),
     })),

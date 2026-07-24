@@ -2,6 +2,7 @@ import { expect, test } from '@rstest/core';
 import {
   clearPresentationClipboard,
   clonePresentationElementsForPaste,
+  clonePresentationSlideForPaste,
   copyPresentationElements,
   takePresentationClipboard,
 } from '../src/internal/features/work/work-presentation-clipboard';
@@ -29,6 +30,40 @@ test('copies and offsets a presentation object set without changing its layout',
   expect(copies[1].id).not.toBe(elements[1].id);
   expect(copies[1].x - copies[0].x).toBe(30);
   expect(copies[1].y - copies[0].y).toBe(30);
+});
+
+test('clones presentation group paths without linking the copy to its source', () => {
+  const elements = [
+    {
+      ...presentationElement('first', 10, 20),
+      groupIds: ['outer', 'inner'],
+    },
+    {
+      ...presentationElement('second', 40, 50),
+      groupIds: ['outer', 'inner'],
+    },
+    {
+      ...presentationElement('third', 60, 20),
+      groupIds: ['outer'],
+    },
+  ];
+
+  const copies = clonePresentationElementsForPaste(elements, 2);
+  expect(copies[0].groupIds?.[0]).toBe(copies[1].groupIds?.[0]);
+  expect(copies[0].groupIds?.[0]).toBe(copies[2].groupIds?.[0]);
+  expect(copies[0].groupIds?.[1]).toBe(copies[1].groupIds?.[1]);
+  expect(copies[0].groupIds).not.toEqual(elements[0].groupIds);
+
+  const slideCopy = clonePresentationSlideForPaste({
+    id: 'slide',
+    name: 'Grouped slide',
+    background: '#ffffff',
+    elements,
+  });
+  expect(slideCopy.elements[0].groupIds?.[0]).toBe(
+    slideCopy.elements[2].groupIds?.[0],
+  );
+  expect(slideCopy.elements[0].groupIds).not.toEqual(elements[0].groupIds);
 });
 
 function presentationElement(

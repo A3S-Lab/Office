@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import type { WorkSlideElement } from '../work-types';
+import { expandPresentationGroupSelection } from '../work-presentation-groups';
 import { clamp } from './presentation-editor-operations';
 import { presentationSelectionBounds } from './presentation-selection';
 import type { PresentationGeometryController } from './use-presentation-geometry';
@@ -226,9 +227,13 @@ export function usePresentationTransform({
       generationRef.current += 1;
       requestSequenceRef.current += 1;
       const selected = new Set(selectedElementIds);
+      const clickedUnit = new Set(
+        expandPresentationGroupSelection(elements, [element.id]),
+      );
+      const moving = selected.has(element.id) ? selected : clickedUnit;
       const dragElements =
-        mode === 'move' && selected.has(element.id)
-          ? elements.filter((candidate) => selected.has(candidate.id))
+        mode === 'move'
+          ? elements.filter((candidate) => moving.has(candidate.id))
           : [element];
       dragRef.current = {
         element,

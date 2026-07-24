@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { expandPresentationGroupSelection } from '../work-presentation-groups';
 import type { WorkSlideElement } from '../work-types';
-import { selectPresentationElement } from './presentation-selection';
+import { selectPresentationElementUnit } from './presentation-selection';
 
 export interface PresentationSelectionController {
   clear: () => void;
@@ -23,17 +24,27 @@ export function usePresentationSelection(
     setEditingElementId(null);
   }, []);
 
-  const edit = useCallback((elementId: string) => {
-    setSelectedElementIds([elementId]);
-    setEditingElementId(elementId);
-  }, []);
+  const edit = useCallback(
+    (elementId: string) => {
+      setSelectedElementIds(
+        expandPresentationGroupSelection(elements, [elementId]),
+      );
+      setEditingElementId(elementId);
+    },
+    [elements],
+  );
 
   const exitEditing = useCallback(() => setEditingElementId(null), []);
 
-  const replace = useCallback((elementIds: readonly string[]) => {
-    setSelectedElementIds([...new Set(elementIds)]);
-    setEditingElementId(null);
-  }, []);
+  const replace = useCallback(
+    (elementIds: readonly string[]) => {
+      setSelectedElementIds(
+        expandPresentationGroupSelection(elements, elementIds),
+      );
+      setEditingElementId(null);
+    },
+    [elements],
+  );
 
   const select = useCallback(
     (elementId: string | null, additive = false) => {
@@ -42,17 +53,20 @@ export function usePresentationSelection(
         return;
       }
       setSelectedElementIds((current) =>
-        selectPresentationElement(current, elementId, additive),
+        selectPresentationElementUnit(elements, current, elementId, additive),
       );
       setEditingElementId(null);
     },
-    [clear],
+    [clear, elements],
   );
 
   useEffect(() => {
     const validIds = new Set(elements.map((element) => element.id));
     setSelectedElementIds((current) => {
-      const next = current.filter((id) => validIds.has(id));
+      const next = expandPresentationGroupSelection(
+        elements,
+        current.filter((id) => validIds.has(id)),
+      );
       return sameStringArray(current, next) ? current : next;
     });
     setEditingElementId((current) =>

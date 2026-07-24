@@ -24,10 +24,12 @@ export type PresentationEditorCommand =
       type: 'element.distribute';
       direction: PresentationDistribution;
     }
+  | { type: 'element.group' }
   | {
       type: 'element.reorder';
       direction: -1 | 1;
     }
+  | { type: 'element.ungroup' }
   | {
       type: 'element.update';
       patch: Partial<WorkSlideElement>;
@@ -68,6 +70,7 @@ export interface PresentationCommandHandlers {
     direction: PresentationDistribution,
   ) => PresentationCommandResult;
   duplicateSlide: () => PresentationCommandResult;
+  groupElements: () => PresentationCommandResult;
   pasteSelection: () => PresentationCommandResult;
   redo: () => PresentationCommandResult;
   reorderElement: (direction: -1 | 1) => PresentationCommandResult;
@@ -80,6 +83,7 @@ export interface PresentationCommandHandlers {
   startSlideshow: () => PresentationCommandResult;
   toggleComments: () => PresentationCommandResult;
   toggleDesign: () => PresentationCommandResult;
+  ungroupElements: () => PresentationCommandResult;
   undo: () => PresentationCommandResult;
   updateElement: (
     patch: Partial<WorkSlideElement>,
@@ -116,8 +120,12 @@ export function createPresentationCommandDispatcher(
         return handlers.alignElement(command.alignment);
       case 'element.distribute':
         return handlers.distributeElements(command.direction);
+      case 'element.group':
+        return handlers.groupElements();
       case 'element.reorder':
         return handlers.reorderElement(command.direction);
+      case 'element.ungroup':
+        return handlers.ungroupElements();
       case 'element.update':
         return handlers.updateElement(command.patch, {
           restoreTextFocus: command.restoreTextFocus,

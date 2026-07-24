@@ -243,6 +243,52 @@ test('previews and commits a multi-object move as one transaction', async () => 
   ]);
 });
 
+test('moves a persistent group on the first member drag', async () => {
+  const first = { ...presentationElement(), groupIds: ['group'] };
+  const second = {
+    ...presentationElement(),
+    id: 'element-2',
+    x: 40,
+    y: 30,
+    groupIds: ['group'],
+  };
+  const selections: string[] = [];
+  const commitBatches: unknown[][] = [];
+  const canvas = document.createElement('div');
+  canvas.getBoundingClientRect = () =>
+    ({
+      height: 500,
+      width: 1_000,
+    }) as DOMRect;
+  const { result } = renderHook(() =>
+    usePresentationTransform({
+      canvasRef: { current: canvas },
+      elements: [first, second],
+      geometry: presentationGeometry(() => null),
+      onCommit: (changes) => commitBatches.push([...changes]),
+      onSelect: (elementId) => selections.push(elementId),
+      selectedElementIds: [],
+      snapTargets: [first, second],
+    }),
+  );
+
+  act(() => {
+    result.current.beginDrag(pointer(100, 100), second, 'move');
+    result.current.continueDrag(pointer(200, 150));
+  });
+  await waitFor(() => {
+    expect(result.current.displayElements).toMatchObject([
+      { id: first.id, x: 20, y: 20 },
+      { id: second.id, x: 50, y: 40 },
+    ]);
+  });
+  expect(selections).toEqual([second.id]);
+
+  act(() => result.current.endDrag(pointer(200, 150)));
+  await waitFor(() => expect(commitBatches).toHaveLength(1));
+  expect(commitBatches[0]).toHaveLength(2);
+});
+
 function presentationElement(): WorkSlideElement {
   return {
     id: 'element-1',

@@ -9,6 +9,7 @@ export function usePresentationShortcuts({
   deleteSelection,
   duplicateSelection,
   editingElementId,
+  groupSelection,
   nudgeSelection,
   onAddSlide,
   onEditElement,
@@ -22,12 +23,14 @@ export function usePresentationShortcuts({
   selectedElement,
   selectedElementCount,
   toggleBold,
+  ungroupSelection,
 }: {
   copySelection: () => boolean;
   cutSelection: () => boolean;
   deleteSelection: () => boolean;
   duplicateSelection: () => boolean;
   editingElementId: string | null;
+  groupSelection: () => boolean;
   nudgeSelection: (key: string, distance: number) => boolean;
   onAddSlide: () => void;
   onEditElement: (id: string) => void;
@@ -41,6 +44,7 @@ export function usePresentationShortcuts({
   selectedElement: WorkSlideElement | null;
   selectedElementCount: number;
   toggleBold: () => boolean;
+  ungroupSelection: () => boolean;
 }) {
   useEffect(() => {
     if (preview) return;
@@ -107,6 +111,15 @@ export function usePresentationShortcuts({
       ) {
         onEditElement(selectedElement.id);
         handled = true;
+      } else if (
+        !event.repeat &&
+        commandKey &&
+        !event.altKey &&
+        key === 'g' &&
+        selectedElementCount > 0 &&
+        isPresentationObjectKeyboardTarget(event.target)
+      ) {
+        handled = event.shiftKey ? ungroupSelection() : groupSelection();
       } else if (
         !event.repeat &&
         commandKey &&
@@ -203,6 +216,7 @@ export function usePresentationShortcuts({
     deleteSelection,
     duplicateSelection,
     editingElementId,
+    groupSelection,
     nudgeSelection,
     onAddSlide,
     onEditElement,
@@ -216,6 +230,7 @@ export function usePresentationShortcuts({
     selectedElement,
     selectedElementCount,
     toggleBold,
+    ungroupSelection,
   ]);
 }
 

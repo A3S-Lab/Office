@@ -9,6 +9,7 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
+import { presentationSelectionUnits } from '../work-presentation-groups';
 import { OfficeTextArea } from './office-controls';
 import { SlideChart } from './presentation-chart-canvas';
 import type { PresentationDesignMode } from './presentation-design-panel';
@@ -125,6 +126,10 @@ export function PresentationWorkspace({
 }: PresentationWorkspaceProps) {
   const selectedElementSet = new Set(selectedElementIds);
   const selectedElements = selectedPresentationElements(
+    activeElements,
+    selectedElementIds,
+  );
+  const selectionUnits = presentationSelectionUnits(
     activeElements,
     selectedElementIds,
   );
@@ -273,6 +278,11 @@ export function PresentationWorkspace({
                 // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support object commands.
                 tabIndex={0}
                 data-slide-element-id={element.id}
+                data-slide-element-group-path={
+                  element.groupIds?.length
+                    ? element.groupIds.join('/')
+                    : undefined
+                }
                 data-slide-element-origin={designMode}
                 data-slide-element-selected={selected ? 'true' : 'false'}
                 style={slideElementStyle(element)}
@@ -434,7 +444,10 @@ export function PresentationWorkspace({
               <>
                 {' · '}
                 <span aria-live="polite">
-                  已选择 {selectedElements.length} 个对象
+                  {presentationSelectionStatus(
+                    selectedElements.length,
+                    selectionUnits,
+                  )}
                 </span>
               </>
             )}
@@ -458,4 +471,17 @@ export function PresentationWorkspace({
       </div>
     </div>
   );
+}
+
+function presentationSelectionStatus(
+  selectedElementCount: number,
+  units: ReturnType<typeof presentationSelectionUnits>,
+): string {
+  if (units.length === 1 && units[0].groupId && selectedElementCount > 1) {
+    return `已选择 1 组，共 ${selectedElementCount} 个对象`;
+  }
+  if (units.length === selectedElementCount) {
+    return `已选择 ${selectedElementCount} 个对象`;
+  }
+  return `已选择 ${units.length} 项，共 ${selectedElementCount} 个对象`;
 }

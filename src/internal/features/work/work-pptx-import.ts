@@ -76,6 +76,7 @@ interface PptxDesignRegistry {
 }
 
 interface GroupTransform {
+  groupIds: string[];
   map: (box: PptxRawBox) => PptxRawBox;
 }
 
@@ -574,13 +575,31 @@ async function parseSlideNode(
   context: PptxImportContext,
   transform?: GroupTransform,
 ): Promise<WorkSlideElement[]> {
-  if (node.localName === 'sp') return [parseShape(node, context, transform)];
+  if (node.localName === 'sp')
+    return [
+      withImportedGroupPath(parseShape(node, context, transform), transform),
+    ];
   if (node.localName === 'pic')
-    return [await parsePicture(node, context, transform)];
+    return [
+      withImportedGroupPath(
+        await parsePicture(node, context, transform),
+        transform,
+      ),
+    ];
   if (node.localName === 'graphicFrame')
-    return [await parseGraphicFrame(node, context, transform)];
+    return [
+      withImportedGroupPath(
+        await parseGraphicFrame(node, context, transform),
+        transform,
+      ),
+    ];
   if (node.localName === 'cxnSp')
-    return [parseConnector(node, context, transform)];
+    return [
+      withImportedGroupPath(
+        parseConnector(node, context, transform),
+        transform,
+      ),
+    ];
   if (node.localName === 'grpSp') return parseGroup(node, context, transform);
   if (['contentPart', 'oleObj'].includes(node.localName)) {
     addIssue(
@@ -896,7 +915,7 @@ async function parseGroup(
     context,
     'pptx.group',
     'Grouped objects',
-    'Grouped objects are imported as independently editable elements.',
+    'Grouped objects retain their nested browser-editing selection paths. PPTX export currently emits the flattened visual objects.',
   );
   const xfrm = childPath(node, 'grpSpPr', 'xfrm');
   const offset = directChild(xfrm ?? node, 'off');
@@ -916,6 +935,10 @@ async function parseGroup(
     height: numberAttribute(childExtent, 'cy', group.height),
   };
   const transform: GroupTransform = {
+    groupIds: [
+      ...(parentTransform?.groupIds ?? []),
+      createWorkId('element-group'),
+    ],
     map: (box) => {
       const mapped = {
         ...box,
@@ -936,6 +959,15 @@ async function parseGroup(
     elements.push(...(await parseSlideNode(child, context, transform)));
   }
   return elements;
+}
+
+function withImportedGroupPath(
+  element: WorkSlideElement,
+  transform?: GroupTransform,
+): WorkSlideElement {
+  return transform?.groupIds.length
+    ? { ...element, groupIds: [...transform.groupIds] }
+    : element;
 }
 
 function parseText(

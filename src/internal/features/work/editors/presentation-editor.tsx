@@ -14,6 +14,14 @@ import {
   presentationSlideView,
   withPresentationDesign,
 } from '../work-presentation-layouts';
+import {
+  canGroupPresentationElements,
+  canUngroupPresentationElements,
+  groupPresentationElements,
+  presentationSelectionUnits,
+  remapPresentationGroupPaths,
+  ungroupPresentationElements,
+} from '../work-presentation-groups';
 import { createWorkId } from '../work-templates';
 import type {
   WorkPresentationLayout,
@@ -125,6 +133,10 @@ export function PresentationEditor({
         : (selectedSlide?.elements ?? []);
   const selection = usePresentationSelection(activeElements);
   const selectedElements = selectedPresentationElements(
+    activeElements,
+    selection.selectedElementIds,
+  );
+  const selectionUnits = presentationSelectionUnits(
     activeElements,
     selection.selectedElementIds,
   );
@@ -281,6 +293,70 @@ export function PresentationEditor({
     },
   });
 
+  const groupSelection = useCallback((): boolean => {
+    if (
+      !activeTargetId ||
+      !canGroupPresentationElements(
+        activeElements,
+        selection.selectedElementIds,
+      )
+    ) {
+      return false;
+    }
+    updatePresentationElements(
+      contentRef.current,
+      designMode,
+      activeTargetId,
+      (elements) =>
+        groupPresentationElements(
+          elements,
+          selection.selectedElementIds,
+          createWorkId('element-group'),
+        ),
+      (next) => {
+        contentRef.current = next;
+        onChange(next);
+      },
+    );
+    return true;
+  }, [
+    activeElements,
+    activeTargetId,
+    designMode,
+    onChange,
+    selection.selectedElementIds,
+  ]);
+
+  const ungroupSelection = useCallback((): boolean => {
+    if (
+      !activeTargetId ||
+      !canUngroupPresentationElements(
+        activeElements,
+        selection.selectedElementIds,
+      )
+    ) {
+      return false;
+    }
+    updatePresentationElements(
+      contentRef.current,
+      designMode,
+      activeTargetId,
+      (elements) =>
+        ungroupPresentationElements(elements, selection.selectedElementIds),
+      (next) => {
+        contentRef.current = next;
+        onChange(next);
+      },
+    );
+    return true;
+  }, [
+    activeElements,
+    activeTargetId,
+    designMode,
+    onChange,
+    selection.selectedElementIds,
+  ]);
+
   const clipboard = usePresentationClipboard({
     content,
     preview,
@@ -288,6 +364,7 @@ export function PresentationEditor({
     targetId: activeTargetId,
     selectedSlide,
     editingElementId: selection.editingElementId,
+    groupSelection,
     selectedElements,
     onChange,
     onSelectSlide: setSelectedSlideId,
@@ -298,6 +375,7 @@ export function PresentationEditor({
     onRedo: history.redo,
     onAddSlide: addSlide,
     onStartSlideshow,
+    ungroupSelection,
   });
 
   if (preview) {
@@ -447,10 +525,12 @@ export function PresentationEditor({
       ...structuredCopy(selectedSlide),
       id: createWorkId('slide'),
       name: `${selectedSlide.name} 副本`,
-      elements: selectedSlide.elements.map((element) => ({
-        ...structuredCopy(element),
-        id: createWorkId('element'),
-      })),
+      elements: remapPresentationGroupPaths(selectedSlide.elements).map(
+        (element) => ({
+          ...structuredCopy(element),
+          id: createWorkId('element'),
+        }),
+      ),
     };
     const index = content.slides.findIndex(
       (slide) => slide.id === selectedSlide.id,
@@ -535,10 +615,12 @@ export function PresentationEditor({
           ...structuredCopy(selectedLayout),
           id,
           name: `${selectedLayout.name} 副本`,
-          elements: selectedLayout.elements.map((element) => ({
-            ...structuredCopy(element),
-            id: createWorkId('element'),
-          })),
+          elements: remapPresentationGroupPaths(selectedLayout.elements).map(
+            (element) => ({
+              ...structuredCopy(element),
+              id: createWorkId('element'),
+            }),
+          ),
         }
       : {
           id,
@@ -645,6 +727,7 @@ export function PresentationEditor({
     cutSelection: clipboard.cutSelection,
     deleteSlide,
     duplicateSlide,
+    groupElements: groupSelection,
     pasteSelection: clipboard.pasteSelection,
     redo: history.redo,
     reorderElement: arrangement.reorder,
@@ -661,6 +744,7 @@ export function PresentationEditor({
     startSlideshow: () => onStartSlideshow?.(),
     toggleComments: () => setCommentsOpen((value) => !value),
     toggleDesign: toggleDesignPanel,
+    ungroupElements: ungroupSelection,
     undo: history.undo,
     updateElement: (patch, options) => {
       if (
@@ -699,7 +783,15 @@ export function PresentationEditor({
         selectedSlide={selectedSlide}
         fileActions={fileActions}
         selectedElement={toolbarSelectedElement}
-        selectedElementCount={selectedElements.length}
+        selectedUnitCount={selectionUnits.length}
+        canGroup={canGroupPresentationElements(
+          activeElements,
+          selection.selectedElementIds,
+        )}
+        canUngroup={canUngroupPresentationElements(
+          activeElements,
+          selection.selectedElementIds,
+        )}
         textFormattingAvailable={
           selectedElements.length > 0 &&
           selectedElements.every(presentationElementSupportsTextFormatting)

@@ -16,6 +16,8 @@ describe('presentation command controller', () => {
     });
     dispatch({ type: 'element.align', alignment: 'center' });
     dispatch({ type: 'element.distribute', direction: 'horizontal' });
+    dispatch({ type: 'element.group' });
+    dispatch({ type: 'element.ungroup' });
     dispatch({ type: 'element.reorder', direction: 1 });
     dispatch({ type: 'view.set', mode: 'sorter' });
 
@@ -23,6 +25,8 @@ describe('presentation command controller', () => {
       'element.update:bold:true:false',
       'element.align:center',
       'element.distribute:horizontal',
+      'element.group',
+      'element.ungroup',
       'element.reorder:1',
       'view.set:sorter',
     ]);
@@ -68,6 +72,7 @@ function handlers(calls: string[]): PresentationCommandHandlers {
     distributeElements: (direction) =>
       calls.push(`element.distribute:${direction}`),
     duplicateSlide: () => calls.push('slide.duplicate'),
+    groupElements: () => calls.push('element.group'),
     pasteSelection: () => calls.push('clipboard.paste'),
     redo: () => calls.push('history.redo'),
     reorderElement: (direction) => calls.push(`element.reorder:${direction}`),
@@ -79,6 +84,7 @@ function handlers(calls: string[]): PresentationCommandHandlers {
     startSlideshow: () => calls.push('slideshow.start'),
     toggleComments: () => calls.push('comments.toggle'),
     toggleDesign: () => calls.push('design.toggle'),
+    ungroupElements: () => calls.push('element.ungroup'),
     undo: () => calls.push('history.undo'),
     updateElement: (patch, options) =>
       calls.push(

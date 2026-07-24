@@ -516,6 +516,84 @@ test('presentation keeps object selection separate from text editing', async ({
   await expect(title).toBeFocused();
 });
 
+test('presentation groups remain atomic across selection and history', async ({
+  page,
+}) => {
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const canvas = page.locator('.work-slide-canvas.interactive');
+  const elements = canvas.locator(':scope > .work-slide-element');
+  const accent = elements.nth(0);
+  const title = elements.nth(1);
+  const group = page.getByRole('button', { name: '组合', exact: true });
+  const ungroup = page.getByRole('button', { name: '取消组合', exact: true });
+  const undo = page.getByRole('button', { name: '撤销', exact: true });
+  const redo = page.getByRole('button', { name: '重做', exact: true });
+
+  await accent.click();
+  await title.click({ modifiers: ['Shift'] });
+  await expect(group).toBeEnabled();
+  await expect(ungroup).toBeDisabled();
+  await group.click();
+
+  const groupedPaths = await elements.evaluateAll((nodes) =>
+    nodes
+      .slice(0, 2)
+      .map((node) => node.getAttribute('data-slide-element-group-path')),
+  );
+  expect(groupedPaths[0]).toBeTruthy();
+  expect(groupedPaths[1]).toBe(groupedPaths[0]);
+  const groupedStatus = page.getByText('已选择 1 组，共 2 个对象');
+  await expect(groupedStatus).toBeVisible();
+  await expect(groupedStatus).toHaveAttribute('aria-live', 'polite');
+  await expect(group).toBeDisabled();
+  await expect(ungroup).toBeEnabled();
+
+  await undo.click();
+  await expect(accent).not.toHaveAttribute('data-slide-element-group-path');
+  await expect(title).not.toHaveAttribute('data-slide-element-group-path');
+  await expect(redo).toBeEnabled();
+  await redo.click();
+  await expect(accent).toHaveAttribute(
+    'data-slide-element-group-path',
+    groupedPaths[0] ?? '',
+  );
+  await expect(title).toHaveAttribute(
+    'data-slide-element-group-path',
+    groupedPaths[0] ?? '',
+  );
+
+  await canvas.click({ position: { x: 4, y: 4 } });
+  await expect(accent).toHaveAttribute('data-slide-element-selected', 'false');
+  await expect(title).toHaveAttribute('data-slide-element-selected', 'false');
+  await title.click();
+  await expect(accent).toHaveAttribute('data-slide-element-selected', 'true');
+  await expect(title).toHaveAttribute('data-slide-element-selected', 'true');
+
+  await title.press('Control+Shift+G');
+  await expect(accent).not.toHaveAttribute('data-slide-element-group-path');
+  await expect(title).not.toHaveAttribute('data-slide-element-group-path');
+  await expect(page.getByText('已选择 2 个对象')).toBeVisible();
+
+  await undo.click();
+  await expect(accent).toHaveAttribute(
+    'data-slide-element-group-path',
+    groupedPaths[0] ?? '',
+  );
+  await expect(title).toHaveAttribute(
+    'data-slide-element-group-path',
+    groupedPaths[0] ?? '',
+  );
+  await expect(page.getByText('已选择 1 组，共 2 个对象')).toBeVisible();
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {

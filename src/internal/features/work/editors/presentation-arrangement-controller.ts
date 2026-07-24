@@ -1,11 +1,14 @@
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import type { WorkPresentationContent, WorkSlideElement } from '../work-types';
+import { presentationSelectionUnits } from '../work-presentation-groups';
 import type { PresentationDesignMode } from './presentation-design-panel';
 import { updatePresentationElements } from './presentation-editor-operations';
 import {
   alignPresentationSelection,
   distributePresentationSelection,
+  presentationSelectionBounds,
   reorderPresentationSelection,
+  translatePresentationSelection,
   type PresentationDistribution,
 } from './presentation-selection';
 import type { PresentationGeometryController } from './use-presentation-geometry';
@@ -37,7 +40,11 @@ export function createPresentationArrangementController({
     align: async (alignment) => {
       const selectedElement = selectedElements.at(-1);
       if (!selectedElement || !targetId) return;
-      if (selectedElements.length > 1) {
+      const selectionUnits = presentationSelectionUnits(
+        selectedElements,
+        selectedElementIds,
+      );
+      if (selectionUnits.length > 1) {
         updatePresentationElements(
           getContent(),
           mode,
@@ -48,23 +55,42 @@ export function createPresentationArrangementController({
         );
         return;
       }
-      const aligned = await geometry.alignElement(selectedElement, alignment);
+      const selectionBounds = presentationSelectionBounds(selectedElements);
+      if (!selectionBounds) return;
+      const alignmentTarget: WorkSlideElement =
+        selectedElements.length > 1
+          ? {
+              ...selectedElement,
+              x: selectionBounds.left,
+              y: selectionBounds.top,
+              width: selectionBounds.width,
+              height: selectionBounds.height,
+            }
+          : selectedElement;
+      const aligned = await geometry.alignElement(alignmentTarget, alignment);
       if (!aligned) return;
       updatePresentationElements(
         getContent(),
         mode,
         targetId,
         (elements) =>
-          elements.map((element) =>
-            element.id === selectedElement.id
-              ? { ...element, x: aligned.x, y: aligned.y }
-              : element,
+          translatePresentationSelection(
+            elements,
+            selectedElementIds,
+            aligned.x - selectionBounds.left,
+            aligned.y - selectionBounds.top,
           ),
         onChange,
       );
     },
     distribute: (direction) => {
-      if (selectedElements.length < 3 || !targetId) return;
+      if (
+        presentationSelectionUnits(selectedElements, selectedElementIds)
+          .length < 3 ||
+        !targetId
+      ) {
+        return;
+      }
       updatePresentationElements(
         getContent(),
         mode,

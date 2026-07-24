@@ -49,7 +49,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
-| Presentation | Scene canvas with ordered typed multi-selection, a separate object/content editing state, one on-demand TipTap instance, collective move/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, one typed dispatcher for ribbon commands, and frame-coalesced transactional move/resize previews that commit once on pointer release | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Persistent grouping, connectors, theme resolution, text fitting, thumbnail virtualization, and slide serialization |
+| Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, a separate object/content editing state, one on-demand TipTap instance, collective move/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, and frame-coalesced transactional move/resize previews that commit once on pointer release | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Native PPTX group-node serialization and round trips, group-scale transforms, connectors, theme resolution, text fitting, thumbnail virtualization, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
 The table is a fidelity statement, not a marketing capability list. The
@@ -96,9 +96,19 @@ responses. The Worker returns snapped slide-relative geometry and at most one
 typed guide per axis. Pointer movement never mutates the controlled document;
 pointer release emits one host change for every moved object, while
 cancellation emits none. Selection-only clicks mount no editor, Shift-click
-toggles membership, and double-click or Enter opens content editing. Grouping,
-connector routing, text fitting, theme resolution, and thumbnail layout remain
-later-stage work.
+toggles membership, and double-click or Enter opens content editing.
+
+Presentation elements may carry an outermost-first `groupIds` path. The
+top-level path segment defines the current logical selection unit: selecting or
+dragging one member selects or moves every member, while alignment,
+distribution, layer movement, clipboard operations, deletion, and history
+operate on the complete unit. Group and ungroup commands add or remove one path
+level in one controlled update. Copying objects, slides, or layouts remaps every
+group ID without linking the copy to its source. PPTX import retains nested
+group paths after mapping child geometry into slide coordinates. The current
+PPTX export still emits flattened visual objects; native group-node
+serialization, group-scale transforms, connector routing, text fitting, theme
+resolution, and thumbnail layout remain later fidelity gates.
 
 Spreadsheet, Presentation, and PDF commands cross explicit typed boundaries.
 The shell never searches visible labels, scrapes rendered text, or synthesizes
@@ -543,8 +553,15 @@ lookup. Shift-click toggles membership; a plain canvas click clears it;
 double-click or Enter opens content editing; and Escape returns focus to object
 mode. Multi-object move, arrow-key nudge, copy, cut, paste, duplicate, delete,
 layer movement, alignment, and distribution each publish one controlled value
-and therefore one undo record. Persistent group nodes and PPTX group
-round-tripping remain a separate fidelity gate.
+and therefore one undo record.
+
+The first persistent-grouping slice is implemented. Nested, outermost-first
+group paths survive controlled browser edits and PPTX group import. A top-level
+group is one selection and arrangement unit; group and ungroup commands,
+`Ctrl`/`Command` + `G`, and `Ctrl`/`Command` + `Shift` + `G` each publish one
+controlled value. Object, slide, and layout copies receive independent group
+IDs. Native PPTX group-node export and round-trip preservation, group-scale
+transforms, and kernel-owned group geometry remain separate fidelity gates.
 
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,

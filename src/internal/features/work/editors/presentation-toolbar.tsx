@@ -11,6 +11,7 @@ import {
   ClipboardPaste,
   Copy,
   Grid2X2,
+  Group,
   Image,
   Italic,
   LayoutTemplate,
@@ -28,6 +29,7 @@ import {
   Type,
   Undo2,
   Underline,
+  Ungroup,
 } from 'lucide-react';
 import type {
   WorkSlide,
@@ -80,7 +82,9 @@ const presentationAlignmentOptions = [
 export function PresentationToolbar({
   selectedSlide,
   selectedElement,
-  selectedElementCount,
+  selectedUnitCount,
+  canGroup,
+  canUngroup,
   textFormattingAvailable,
   slideCount,
   canUndo,
@@ -98,7 +102,9 @@ export function PresentationToolbar({
 }: {
   selectedSlide: WorkSlide;
   selectedElement: WorkSlideElement | null;
-  selectedElementCount: number;
+  selectedUnitCount: number;
+  canGroup: boolean;
+  canUngroup: boolean;
   textFormattingAvailable: boolean;
   slideCount: number;
   canUndo: boolean;
@@ -318,7 +324,7 @@ export function PresentationToolbar({
                   <WorkOfficeRibbonGroup label="排列">
                     <OfficeSelect
                       ariaLabel={
-                        selectedElementCount > 1
+                        selectedUnitCount > 1
                           ? '对齐所选对象'
                           : '元素对齐到幻灯片'
                       }
@@ -332,7 +338,7 @@ export function PresentationToolbar({
                         });
                       }}
                     />
-                    {selectedElementCount >= 3 && (
+                    {selectedUnitCount >= 3 && (
                       <>
                         <WorkOfficeRibbonButton
                           label="横向均匀分布"
@@ -360,6 +366,24 @@ export function PresentationToolbar({
                         </WorkOfficeRibbonButton>
                       </>
                     )}
+                    <WorkOfficeRibbonButton
+                      label="组合"
+                      title="组合（⌘/Ctrl+G）"
+                      aria-keyshortcuts="Control+G Meta+G"
+                      disabled={!canGroup}
+                      onClick={() => onCommand({ type: 'element.group' })}
+                    >
+                      <Group size={19} />
+                    </WorkOfficeRibbonButton>
+                    <WorkOfficeRibbonButton
+                      label="取消组合"
+                      title="取消组合（⌘/Ctrl+Shift+G）"
+                      aria-keyshortcuts="Control+Shift+G Meta+Shift+G"
+                      disabled={!canUngroup}
+                      onClick={() => onCommand({ type: 'element.ungroup' })}
+                    >
+                      <Ungroup size={19} />
+                    </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
                       label="下移一层"
                       onClick={() =>

@@ -536,6 +536,8 @@ export interface WorkSlideTransition {
 export interface WorkSlideElement {
   id: string;
   type: WorkSlideElementType;
+  /** Persistent scene-group path ordered from the outermost group inward. */
+  groupIds?: string[];
   x: number;
   y: number;
   width: number;
