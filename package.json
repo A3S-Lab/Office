@@ -78,12 +78,19 @@
     "playground:assets": "bun run build && bash scripts/package-office-skill.sh",
     "playground:build": "bun run playground:assets && rsbuild build --config playground/rsbuild.config.ts",
     "playground:bundle-check": "bun scripts/check-playground-bundle.ts",
+    "playground:preview": "rsbuild preview --config playground/rsbuild.config.ts --host 127.0.0.1 --port 4175 --strict-port",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
+    "playground:visual": "playwright test --config playwright.config.ts",
+    "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "test": "rstest",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@embedpdf/fonts-arabic": "1.0.0",
+    "@embedpdf/fonts-hebrew": "1.0.0",
+    "@embedpdf/fonts-latin": "1.0.0",
+    "@embedpdf/fonts-sc": "1.0.0",
     "@embedpdf/pdfium": "2.14.3",
     "@embedpdf/react-pdf-viewer": "2.14.3",
     "@fortune-sheet/core": "^1.0.4",
@@ -122,6 +129,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
+    "@playwright/test": "1.61.1",
     "@rsbuild/core": "^2.1.5",
     "@rsbuild/plugin-react": "^2.1.0",
     "@rslib/core": "^0.23.2",

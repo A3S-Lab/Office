@@ -10,6 +10,7 @@ import {
   Copy,
   Grid2X2,
   Image,
+  Italic,
   LayoutTemplate,
   Link2,
   MessageSquarePlus,
@@ -24,18 +25,20 @@ import {
   Trash2,
   Type,
   Undo2,
+  Underline,
 } from 'lucide-react';
 import type {
   WorkSlide,
   WorkSlideElement,
   WorkSlideTextAlign,
-  WorkSlideTransition,
 } from '../work-types';
 import {
   OfficeColorPicker,
   OfficeNumberField,
+  OfficeSelect,
   useOfficeDialog,
 } from './office-controls';
+import type { PresentationCommandDispatcher } from './presentation-command-controller';
 import { PresentationTransitionPanel } from './presentation-transition-panel';
 import {
   type WorkOfficeFileAction,
@@ -54,78 +57,56 @@ const presentationRibbonTabs = [
   { id: 'view', label: '视图' },
 ] as const;
 
+const presentationFontFamilyOptions = [
+  { value: 'Aptos', label: 'Aptos' },
+  { value: '"Microsoft YaHei"', label: '微软雅黑' },
+  { value: 'SimSun', label: '宋体' },
+  { value: 'Arial', label: 'Arial' },
+  { value: '"Times New Roman"', label: 'Times New Roman' },
+] as const;
+
+const presentationAlignmentOptions = [
+  { value: 'none', label: '对齐到幻灯片', disabled: true },
+  { value: 'left', label: '左对齐' },
+  { value: 'center', label: '水平居中' },
+  { value: 'right', label: '右对齐' },
+  { value: 'top', label: '顶端对齐' },
+  { value: 'middle', label: '垂直居中' },
+  { value: 'bottom', label: '底端对齐' },
+] as const;
+
 export function PresentationToolbar({
   selectedSlide,
   selectedElement,
   slideCount,
-  onAddSlide,
-  onDuplicateSlide,
-  onDeleteSlide,
-  onCopySelection,
-  onCutSelection,
-  onPasteSelection,
   canUndo,
   canRedo,
-  onUndo,
-  onRedo,
-  onAddElement,
-  onRequestImage,
-  onAddTable,
-  onAddChart,
-  onAddComment,
   commentsOpen,
   commentCount,
-  onToggleComments,
-  onUpdateElement,
-  onReorderElement,
-  onSetBackground,
   designOpen,
   editingDesign,
-  onToggleDesign,
   background,
   transition,
-  onTransitionChange,
-  onApplyTransitionToAll,
-  onStartSlideshow,
+  canStartSlideshow,
   fileActions,
   viewMode = 'normal',
-  onViewModeChange,
+  onCommand,
 }: {
   selectedSlide: WorkSlide;
   selectedElement: WorkSlideElement | null;
   slideCount: number;
-  onAddSlide: () => void;
-  onDuplicateSlide: () => void;
-  onDeleteSlide: () => void;
-  onCopySelection: () => void;
-  onCutSelection: () => void;
-  onPasteSelection: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  onUndo: () => boolean;
-  onRedo: () => boolean;
-  onAddElement: (type: 'text' | 'shape') => void;
-  onRequestImage: () => void;
-  onAddTable: () => void;
-  onAddChart: () => void;
-  onAddComment: () => void;
   commentsOpen: boolean;
   commentCount: number;
-  onToggleComments: () => void;
-  onUpdateElement: (patch: Partial<WorkSlideElement>) => void;
-  onReorderElement: (direction: -1 | 1) => void;
-  onSetBackground: (color: string) => void;
   designOpen: boolean;
   editingDesign: boolean;
-  onToggleDesign: () => void;
   background?: string;
-  transition: WorkSlideTransition | undefined;
-  onTransitionChange: (transition: WorkSlideTransition | undefined) => void;
-  onApplyTransitionToAll: () => void;
-  onStartSlideshow?: () => void;
+  transition: WorkSlide['transition'];
+  canStartSlideshow: boolean;
   fileActions?: readonly WorkOfficeFileAction[];
   viewMode?: 'normal' | 'sorter';
-  onViewModeChange?: (mode: 'normal' | 'sorter') => void;
+  onCommand: PresentationCommandDispatcher;
 }) {
   const officeDialog = useOfficeDialog();
   return (
@@ -145,7 +126,7 @@ export function PresentationToolbar({
                   label="撤销"
                   title="撤销（Cmd/Ctrl+Z）"
                   disabled={!canUndo}
-                  onClick={onUndo}
+                  onClick={() => onCommand({ type: 'history.undo' })}
                 >
                   <Undo2 size={19} />
                 </WorkOfficeRibbonButton>
@@ -153,7 +134,7 @@ export function PresentationToolbar({
                   label="重做"
                   title="重做（Cmd/Ctrl+Shift+Z）"
                   disabled={!canRedo}
-                  onClick={onRedo}
+                  onClick={() => onCommand({ type: 'history.redo' })}
                 >
                   <Redo2 size={19} />
                 </WorkOfficeRibbonButton>
@@ -163,20 +144,20 @@ export function PresentationToolbar({
                   label="新建幻灯片"
                   title="新建幻灯片（Ctrl+M / ⌘⇧N）"
                   aria-keyshortcuts="Control+M Meta+Shift+N"
-                  onClick={onAddSlide}
+                  onClick={() => onCommand({ type: 'slide.add' })}
                 >
                   <Plus size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="复制幻灯片"
-                  onClick={onDuplicateSlide}
+                  onClick={() => onCommand({ type: 'slide.duplicate' })}
                 >
                   <Copy size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="删除幻灯片"
                   disabled={slideCount === 1}
-                  onClick={onDeleteSlide}
+                  onClick={() => onCommand({ type: 'slide.delete' })}
                 >
                   <Trash2 size={19} />
                 </WorkOfficeRibbonButton>
@@ -185,54 +166,107 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="复制"
                   title="复制（⌘/Ctrl+C）"
-                  onClick={onCopySelection}
+                  onClick={() => onCommand({ type: 'clipboard.copy' })}
                 >
                   <Copy size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="剪切"
                   title="剪切（⌘/Ctrl+X）"
-                  onClick={onCutSelection}
+                  onClick={() => onCommand({ type: 'clipboard.cut' })}
                 >
                   <Scissors size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="粘贴"
                   title="粘贴（⌘/Ctrl+V）"
-                  onClick={onPasteSelection}
+                  onClick={() => onCommand({ type: 'clipboard.paste' })}
                 >
                   <ClipboardPaste size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
               {selectedElement && (
                 <>
-                  <WorkOfficeRibbonGroup label="字体">
-                    <div className="presentation-number-field work-office-field">
-                      <span>字号</span>
-                      <OfficeNumberField
-                        ariaLabel="演示字号"
-                        min={8}
-                        max={96}
-                        value={selectedElement.fontSize}
-                        onValueChange={(value) =>
-                          onUpdateElement({ fontSize: Number(value) || 8 })
+                  {isPresentationTextElement(selectedElement) && (
+                    <WorkOfficeRibbonGroup label="字体">
+                      <OfficeSelect
+                        ariaLabel="演示字体"
+                        value={selectedElement.fontFamily ?? 'Aptos'}
+                        options={presentationFontFamilyOptions}
+                        onValueChange={(fontFamily) =>
+                          onCommand({
+                            type: 'element.update',
+                            patch: { fontFamily },
+                            restoreTextFocus: false,
+                          })
                         }
                       />
-                    </div>
-                    <WorkOfficeRibbonButton
-                      label="加粗"
-                      title="加粗（Cmd/Ctrl+B）"
-                      aria-keyshortcuts="Control+B Meta+B"
-                      displayLabel={false}
-                      active={Boolean(selectedElement.bold)}
-                      onClick={() =>
-                        onUpdateElement({ bold: !selectedElement.bold })
-                      }
-                    >
-                      <Bold size={15} />
-                    </WorkOfficeRibbonButton>
-                    {(['left', 'center', 'right'] as WorkSlideTextAlign[]).map(
-                      (align) => (
+                      <div className="presentation-number-field work-office-field">
+                        <span>字号</span>
+                        <OfficeNumberField
+                          ariaLabel="演示字号"
+                          min={8}
+                          max={96}
+                          value={selectedElement.fontSize}
+                          onValueChange={(value) =>
+                            onCommand({
+                              type: 'element.update',
+                              patch: { fontSize: Number(value) || 8 },
+                              restoreTextFocus: false,
+                            })
+                          }
+                        />
+                      </div>
+                      <WorkOfficeRibbonButton
+                        label="加粗"
+                        title="加粗（Cmd/Ctrl+B）"
+                        aria-keyshortcuts="Control+B Meta+B"
+                        displayLabel={false}
+                        active={Boolean(selectedElement.bold)}
+                        onClick={() =>
+                          onCommand({
+                            type: 'element.update',
+                            patch: { bold: !selectedElement.bold },
+                          })
+                        }
+                      >
+                        <Bold size={15} />
+                      </WorkOfficeRibbonButton>
+                      <WorkOfficeRibbonButton
+                        label="斜体"
+                        title="斜体（Cmd/Ctrl+I）"
+                        aria-keyshortcuts="Control+I Meta+I"
+                        displayLabel={false}
+                        active={Boolean(selectedElement.italic)}
+                        onClick={() =>
+                          onCommand({
+                            type: 'element.update',
+                            patch: { italic: !selectedElement.italic },
+                          })
+                        }
+                      >
+                        <Italic size={15} />
+                      </WorkOfficeRibbonButton>
+                      <WorkOfficeRibbonButton
+                        label="下划线"
+                        title="下划线（Cmd/Ctrl+U）"
+                        aria-keyshortcuts="Control+U Meta+U"
+                        displayLabel={false}
+                        active={Boolean(selectedElement.underline)}
+                        onClick={() =>
+                          onCommand({
+                            type: 'element.update',
+                            patch: {
+                              underline: !selectedElement.underline,
+                            },
+                          })
+                        }
+                      >
+                        <Underline size={15} />
+                      </WorkOfficeRibbonButton>
+                      {(
+                        ['left', 'center', 'right'] as WorkSlideTextAlign[]
+                      ).map((align) => (
                         <WorkOfficeRibbonButton
                           label={
                             align === 'left'
@@ -244,7 +278,12 @@ export function PresentationToolbar({
                           displayLabel={false}
                           active={selectedElement.align === align}
                           key={align}
-                          onClick={() => onUpdateElement({ align })}
+                          onClick={() =>
+                            onCommand({
+                              type: 'element.update',
+                              patch: { align },
+                            })
+                          }
                         >
                           {align === 'left' ? (
                             <AlignLeft size={15} />
@@ -254,26 +293,54 @@ export function PresentationToolbar({
                             <AlignRight size={15} />
                           )}
                         </WorkOfficeRibbonButton>
-                      ),
-                    )}
-                    <OfficeColorPicker
-                      compact
-                      className="work-color-tool"
-                      value={selectedElement.color}
-                      ariaLabel="演示文字颜色"
-                      onValueChange={(color) => onUpdateElement({ color })}
-                    />
-                  </WorkOfficeRibbonGroup>
+                      ))}
+                      <OfficeColorPicker
+                        compact
+                        className="work-color-tool"
+                        value={selectedElement.color}
+                        ariaLabel="演示文字颜色"
+                        onValueChange={(color) =>
+                          onCommand({
+                            type: 'element.update',
+                            patch: { color },
+                            restoreTextFocus: false,
+                          })
+                        }
+                      />
+                    </WorkOfficeRibbonGroup>
+                  )}
                   <WorkOfficeRibbonGroup label="排列">
+                    <OfficeSelect
+                      ariaLabel="元素对齐到幻灯片"
+                      value="none"
+                      options={presentationAlignmentOptions}
+                      onValueChange={(alignment) => {
+                        if (alignment === 'none') return;
+                        onCommand({
+                          type: 'element.align',
+                          alignment,
+                        });
+                      }}
+                    />
                     <WorkOfficeRibbonButton
                       label="下移一层"
-                      onClick={() => onReorderElement(-1)}
+                      onClick={() =>
+                        onCommand({
+                          type: 'element.reorder',
+                          direction: -1,
+                        })
+                      }
                     >
                       <ArrowDownToLine size={19} />
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
                       label="上移一层"
-                      onClick={() => onReorderElement(1)}
+                      onClick={() =>
+                        onCommand({
+                          type: 'element.reorder',
+                          direction: 1,
+                        })
+                      }
                     >
                       <ArrowUpToLine size={19} />
                     </WorkOfficeRibbonButton>
@@ -287,27 +354,46 @@ export function PresentationToolbar({
               <WorkOfficeRibbonGroup label="文本与形状">
                 <WorkOfficeRibbonButton
                   label="文本框"
-                  onClick={() => onAddElement('text')}
+                  onClick={() =>
+                    onCommand({
+                      type: 'element.add',
+                      elementType: 'text',
+                    })
+                  }
                 >
                   <Type size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="形状"
-                  onClick={() => onAddElement('shape')}
+                  onClick={() =>
+                    onCommand({
+                      type: 'element.add',
+                      elementType: 'shape',
+                    })
+                  }
                 >
                   <Square size={19} />
                 </WorkOfficeRibbonButton>
               </WorkOfficeRibbonGroup>
               <WorkOfficeRibbonGroup label="内容">
-                <WorkOfficeRibbonButton label="图片" onClick={onRequestImage}>
+                <WorkOfficeRibbonButton
+                  label="图片"
+                  onClick={() => onCommand({ type: 'image.request' })}
+                >
                   <Image size={19} />
                 </WorkOfficeRibbonButton>
                 {!editingDesign && (
                   <>
-                    <WorkOfficeRibbonButton label="表格" onClick={onAddTable}>
+                    <WorkOfficeRibbonButton
+                      label="表格"
+                      onClick={() => onCommand({ type: 'table.add' })}
+                    >
                       <Table2 size={19} />
                     </WorkOfficeRibbonButton>
-                    <WorkOfficeRibbonButton label="图表" onClick={onAddChart}>
+                    <WorkOfficeRibbonButton
+                      label="图表"
+                      onClick={() => onCommand({ type: 'chart.add' })}
+                    >
                       <BarChart3 size={19} />
                     </WorkOfficeRibbonButton>
                   </>
@@ -330,8 +416,11 @@ export function PresentationToolbar({
                           })
                           .then((href) => {
                             if (href !== null)
-                              onUpdateElement({
-                                href: href.trim() || undefined,
+                              onCommand({
+                                type: 'element.update',
+                                patch: {
+                                  href: href.trim() || undefined,
+                                },
                               });
                           })
                       }
@@ -348,7 +437,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="母版和版式"
                   active={designOpen}
-                  onClick={onToggleDesign}
+                  onClick={() => onCommand({ type: 'design.toggle' })}
                 >
                   <LayoutTemplate size={19} />
                 </WorkOfficeRibbonButton>
@@ -359,7 +448,9 @@ export function PresentationToolbar({
                   className="work-color-tool slide-background-tool"
                   value={background ?? selectedSlide.background}
                   ariaLabel={editingDesign ? '设计背景颜色' : '幻灯片背景颜色'}
-                  onValueChange={onSetBackground}
+                  onValueChange={(color) =>
+                    onCommand({ type: 'slide.background.set', color })
+                  }
                 />
               </WorkOfficeRibbonGroup>
             </>
@@ -367,8 +458,13 @@ export function PresentationToolbar({
           transitions: (
             <PresentationTransitionPanel
               transition={transition}
-              onChange={onTransitionChange}
-              onApplyToAll={onApplyTransitionToAll}
+              onChange={(nextTransition) =>
+                onCommand({
+                  type: 'transition.set',
+                  transition: nextTransition,
+                })
+              }
+              onApplyToAll={() => onCommand({ type: 'transition.applyToAll' })}
             />
           ),
           slideshow: (
@@ -377,8 +473,8 @@ export function PresentationToolbar({
                 label="从头开始放映"
                 title="从头开始放映（F5）"
                 aria-keyshortcuts="F5"
-                disabled={!onStartSlideshow}
-                onClick={onStartSlideshow}
+                disabled={!canStartSlideshow}
+                onClick={() => onCommand({ type: 'slideshow.start' })}
               >
                 <Play size={19} />
               </WorkOfficeRibbonButton>
@@ -389,7 +485,7 @@ export function PresentationToolbar({
               <WorkOfficeRibbonButton
                 label="新建批注"
                 disabled={editingDesign}
-                onClick={onAddComment}
+                onClick={() => onCommand({ type: 'comment.add' })}
               >
                 <MessageSquarePlus size={19} />
               </WorkOfficeRibbonButton>
@@ -397,7 +493,7 @@ export function PresentationToolbar({
                 label={`查看批注${commentCount ? `（${commentCount}）` : ''}`}
                 disabled={editingDesign}
                 active={commentsOpen}
-                onClick={onToggleComments}
+                onClick={() => onCommand({ type: 'comments.toggle' })}
               >
                 <MessagesSquare size={19} />
               </WorkOfficeRibbonButton>
@@ -409,16 +505,18 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="普通视图"
                   active={viewMode === 'normal'}
-                  disabled={!onViewModeChange}
-                  onClick={() => onViewModeChange?.('normal')}
+                  onClick={() =>
+                    onCommand({ type: 'view.set', mode: 'normal' })
+                  }
                 >
                   <PanelsTopLeft size={19} />
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="幻灯片浏览"
                   active={viewMode === 'sorter'}
-                  disabled={!onViewModeChange}
-                  onClick={() => onViewModeChange?.('sorter')}
+                  onClick={() =>
+                    onCommand({ type: 'view.set', mode: 'sorter' })
+                  }
                 >
                   <Grid2X2 size={19} />
                 </WorkOfficeRibbonButton>
@@ -427,7 +525,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="母版视图"
                   active={designOpen}
-                  onClick={onToggleDesign}
+                  onClick={() => onCommand({ type: 'design.toggle' })}
                 >
                   <LayoutTemplate size={19} />
                 </WorkOfficeRibbonButton>
@@ -438,5 +536,13 @@ export function PresentationToolbar({
       />
       {officeDialog.dialog}
     </>
+  );
+}
+
+function isPresentationTextElement(element: WorkSlideElement): boolean {
+  return (
+    element.type === 'text' ||
+    element.type === 'shape' ||
+    Boolean(element.text || element.textRuns?.length)
   );
 }

@@ -46,7 +46,6 @@ export function EditorWorkspace({
   assistantOpen,
   assistantWidth,
   lastAgentRequest,
-  assetUrl,
   onOpenSidebar,
   onBack,
   onChange,
@@ -62,7 +61,6 @@ export function EditorWorkspace({
   assistantOpen: boolean;
   assistantWidth: number;
   lastAgentRequest: EditorAgentRequest | null;
-  assetUrl: (fileName: string) => string;
   onOpenSidebar: () => void;
   onBack: () => void;
   onChange: (content: OfficeArtifactContent) => void;
@@ -81,12 +79,7 @@ export function EditorWorkspace({
     if (exporting) return;
     setExporting(true);
     try {
-      await downloadArtifact(
-        artifact,
-        artifact.kind === 'presentation'
-          ? { pptxRuntimeUrl: assetUrl('pptxgen.bundle.js') }
-          : undefined,
-      );
+      await downloadArtifact(artifact);
       onNotice(
         `${artifact.title}.${extension.toLocaleLowerCase()} 已下载`,
         'success',
@@ -227,7 +220,6 @@ export function EditorWorkspace({
             <DocumentEditor
               content={artifact.content}
               fileActions={fileActions}
-              kernelWasmUrl={assetUrl('office-kernel.wasm')}
               onAgentRequest={onAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
               preview={preview}
@@ -278,7 +270,6 @@ export function EditorWorkspace({
               onSave={savePdf}
               sourceKey={`${artifact.id}:${artifact.revision}`}
               theme="light"
-              wasmUrl={assetUrl('pdfium.wasm')}
             />
           )}
         </section>

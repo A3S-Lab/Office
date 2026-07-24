@@ -83,6 +83,78 @@ export function newSlide(number: number): WorkSlide {
   };
 }
 
+export function newPresentationElement(
+  type: 'shape' | 'text',
+): WorkSlideElement {
+  return {
+    id: createWorkId('element'),
+    type,
+    x: 30,
+    y: 34,
+    width: 40,
+    height: type === 'text' ? 14 : 20,
+    text: type === 'text' ? '输入文字' : '',
+    fontSize: type === 'text' ? 24 : 14,
+    color: '#172033',
+    fill: type === 'text' ? 'transparent' : '#dce6fb',
+    bold: false,
+    align: 'center',
+    radius: type === 'shape' ? 3 : 0,
+  };
+}
+
+export function newPresentationTableElement(): WorkSlideElement {
+  return {
+    id: createWorkId('element'),
+    type: 'table',
+    x: 15,
+    y: 24,
+    width: 70,
+    height: 42,
+    text: '',
+    fontSize: 14,
+    color: '#172033',
+    fill: '#ffffff',
+    bold: false,
+    align: 'left',
+    borderColor: '#cbd2de',
+    borderWidth: 1,
+    table: {
+      headerRows: 1,
+      rows: [
+        ['标题 1', '标题 2', '标题 3'],
+        ['内容', '内容', '内容'],
+        ['内容', '内容', '内容'],
+      ],
+    },
+  };
+}
+
+export async function newPresentationImageElement(
+  file: File,
+): Promise<WorkSlideElement> {
+  return {
+    id: createWorkId('element'),
+    type: 'image',
+    x: 20,
+    y: 20,
+    width: 60,
+    height: 55,
+    text: '',
+    fontSize: 12,
+    color: '#172033',
+    fill: 'transparent',
+    bold: false,
+    align: 'center',
+    altText: file.name,
+    image: {
+      dataUrl: await fileToDataUrl(file),
+      contentType: file.type || 'application/octet-stream',
+      name: file.name,
+    },
+  };
+}
+
 export function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }

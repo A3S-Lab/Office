@@ -189,7 +189,6 @@ function Playground() {
             <EditorWorkspace
               key={activeArtifact.id}
               artifact={activeArtifact}
-              assetUrl={assetUrl}
               assistantOpen={assistantOpen}
               assistantWidth={assistantWidth}
               lastAgentRequest={lastAgentRequest}

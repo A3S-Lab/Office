@@ -225,6 +225,7 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     ? element.style.textAlign
     : '';
   const color = element.style.color;
+  const direction = element.getAttribute('dir')?.trim().toLowerCase();
   element.removeAttribute('style');
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
@@ -239,13 +240,25 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     const source = element.getAttribute('src')?.trim() ?? '';
     if (!/^(?:https?:|blob:|data:image\/)/i.test(source))
       element.removeAttribute('src');
+  } else if (tag === 'ol') {
+    const start = Number(element.getAttribute('start'));
+    if (!Number.isSafeInteger(start) || start <= 0)
+      element.removeAttribute('start');
+    const type = element.getAttribute('type');
+    if (type && !['1', 'A', 'a', 'I', 'i'].includes(type))
+      element.removeAttribute('type');
   }
+  if (direction === 'ltr' || direction === 'rtl')
+    element.setAttribute('dir', direction);
+  else element.removeAttribute('dir');
   const allowed =
     tag === 'a'
-      ? new Set(['href', 'title', 'style'])
+      ? new Set(['dir', 'href', 'title', 'style'])
       : tag === 'img'
-        ? new Set(['src', 'alt', 'title', 'width', 'height', 'style'])
-        : new Set(['colspan', 'rowspan', 'style']);
+        ? new Set(['dir', 'src', 'alt', 'title', 'width', 'height', 'style'])
+        : tag === 'ol'
+          ? new Set(['dir', 'start', 'style', 'type'])
+          : new Set(['colspan', 'dir', 'rowspan', 'style']);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);

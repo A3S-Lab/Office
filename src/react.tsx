@@ -7,13 +7,20 @@ import type { PresentationEditorProps as InternalPresentationEditorProps } from 
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';
 import {
+  OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_FAMILY,
+  OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_FONT_FAMILY,
+  OFFICE_DOCUMENT_LAYOUT_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_FAMILY,
+  OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_FAMILY,
+  OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID,
+} from './internal/features/work/work-document-fonts';
+import {
   OfficeSurface,
   type OfficeSurfaceProps,
   type OfficeTheme,
 } from './office-surface';
-
-const PDFIUM_WASM_FILE_NAME = 'pdfium.wasm';
-const OFFICE_KERNEL_WASM_FILE_NAME = 'office-kernel.wasm';
 
 const loadDocumentEditor = () =>
   import(
@@ -84,18 +91,68 @@ export async function preloadOfficeEditor(
   await officeEditorLoaders[kind]();
 }
 
-export const defaultPdfiumWasmUrl = siblingAssetUrl(
+export const defaultPdfiumWasmUrl = new URL(
+  /* webpackIgnore: true */ './pdfium.wasm',
   import.meta.url,
-  PDFIUM_WASM_FILE_NAME,
-);
-export const defaultOfficeKernelWasmUrl = siblingAssetUrl(
+).href;
+export const defaultOfficeKernelWasmUrl = new URL(
+  /* webpackIgnore: true */ './office-kernel.wasm',
   import.meta.url,
-  OFFICE_KERNEL_WASM_FILE_NAME,
-);
-
-function siblingAssetUrl(moduleUrl: string, fileName: string): string {
-  return `${moduleUrl.slice(0, moduleUrl.lastIndexOf('/') + 1)}${fileName}`;
+).href;
+export const defaultDocumentLayoutFontUrl = new URL(
+  /* webpackIgnore: true */ './noto-sans-hans-regular.otf',
+  import.meta.url,
+).href;
+export const defaultDocumentLatinLayoutFontUrl = new URL(
+  /* webpackIgnore: true */ './noto-sans-regular.ttf',
+  import.meta.url,
+).href;
+export const defaultDocumentArabicLayoutFontUrl = new URL(
+  /* webpackIgnore: true */ './noto-naskh-arabic-regular.ttf',
+  import.meta.url,
+).href;
+export const defaultDocumentHebrewLayoutFontUrl = new URL(
+  /* webpackIgnore: true */ './noto-sans-hebrew-regular.ttf',
+  import.meta.url,
+).href;
+export interface DocumentLayoutFont {
+  id: string;
+  family: string;
+  url: string;
+  weight?: number;
+  style?: 'normal' | 'italic';
 }
+
+export const defaultDocumentLayoutFonts: readonly DocumentLayoutFont[] = [
+  {
+    id: OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID,
+    family: OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_FAMILY,
+    url: defaultDocumentLatinLayoutFontUrl,
+    weight: 400,
+    style: 'normal',
+  },
+  {
+    id: OFFICE_DOCUMENT_LAYOUT_FONT_ID,
+    family: OFFICE_DOCUMENT_LAYOUT_FONT_FAMILY,
+    url: defaultDocumentLayoutFontUrl,
+    weight: 400,
+    style: 'normal',
+  },
+  {
+    id: OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID,
+    family: OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_FAMILY,
+    url: defaultDocumentArabicLayoutFontUrl,
+    weight: 400,
+    style: 'normal',
+  },
+  {
+    id: OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID,
+    family: OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_FAMILY,
+    url: defaultDocumentHebrewLayoutFontUrl,
+    weight: 400,
+    style: 'normal',
+  },
+];
 
 export type { WorkOfficeFileAction as OfficeFileAction };
 export type { OfficeSurfaceProps, OfficeTheme };
@@ -115,14 +172,16 @@ function OfficeEditorLoader({
 }
 
 export interface DocumentEditorProps
-  extends Omit<InternalDocumentEditorProps, 'preview'>,
+  extends Omit<InternalDocumentEditorProps, 'layoutFonts' | 'preview'>,
     OfficeSurfaceProps {
   preview?: boolean;
+  layoutFonts?: readonly DocumentLayoutFont[];
 }
 
 export function DocumentEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
+  layoutFonts = defaultDocumentLayoutFonts,
   preview = false,
   style,
   theme,
@@ -134,6 +193,7 @@ export function DocumentEditor({
         <LazyDocumentEditor
           {...editorProps}
           kernelWasmUrl={kernelWasmUrl}
+          layoutFonts={layoutFonts}
           preview={preview}
         />
       </OfficeEditorLoader>
@@ -193,6 +253,7 @@ export interface PresentationEditorProps
 
 export function PresentationEditor({
   className,
+  kernelWasmUrl = defaultOfficeKernelWasmUrl,
   preview = false,
   style,
   theme,
@@ -201,7 +262,11 @@ export function PresentationEditor({
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
       <OfficeEditorLoader title="正在打开演示编辑器">
-        <LazyPresentationEditor {...editorProps} preview={preview} />
+        <LazyPresentationEditor
+          {...editorProps}
+          kernelWasmUrl={kernelWasmUrl}
+          preview={preview}
+        />
       </OfficeEditorLoader>
     </OfficeSurface>
   );

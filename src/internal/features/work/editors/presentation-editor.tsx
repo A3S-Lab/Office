@@ -1,9 +1,8 @@
-import { Plus } from 'lucide-react';
+import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { presentationAgentMenuItems } from '../components/work-editor-agent-menus';
 import { applyPresentationAgentProposalChanges } from '../work-agent-proposal-apply';
-import type { WorkEditorAgentRequest } from '../work-agent-request';
 import {
   presentationAgentProposalTargets,
   presentationAgentSelection,
@@ -17,19 +16,14 @@ import {
 } from '../work-presentation-layouts';
 import { createWorkId } from '../work-templates';
 import type {
-  WorkPresentationContent,
   WorkPresentationLayout,
   WorkPresentationMaster,
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import {
-  OfficeFileInput,
-  OfficeTextArea,
-  useOfficeDialog,
-} from './office-controls';
-import { SlideChart } from './presentation-chart-canvas';
+import { OfficeFileInput, useOfficeDialog } from './office-controls';
 import { PresentationChartPanel } from './presentation-chart-panel';
+import { createPresentationCommandDispatcher } from './presentation-command-controller';
 import {
   PresentationCommentsPanel,
   presentationCommentCount,
@@ -40,70 +34,45 @@ import {
 } from './presentation-design-panel';
 import {
   clamp,
-  fileToDataUrl,
+  newPresentationElement,
+  newPresentationImageElement,
+  newPresentationTableElement,
   newSlide,
   structuredCopy,
   updatePresentationElements,
   updateSlide,
 } from './presentation-editor-operations';
+import type {
+  PresentationAgentMenuState,
+  PresentationDragState,
+  PresentationEditorProps,
+} from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
-import {
-  EditableSlideTable,
-  RichEditableText,
-  SlideElementPreview,
-  slideElementStyle,
-  slideTextStyle,
-} from './presentation-slide-canvas';
-import { PresentationSlideThumbnail } from './presentation-slide-thumbnail';
 import { PresentationStatusBar } from './presentation-status-bar';
+import {
+  applyPresentationTextFormatting,
+  type PresentationTextValue,
+  presentationTextToolbarState,
+} from './presentation-text-editor';
 import {
   applyPresentationElementFormattingPatch,
   presentationElementToolbarState,
 } from './presentation-text-formatting';
 import { PresentationToolbar } from './presentation-toolbar';
+import { PresentationWorkspace } from './presentation-workspace';
 import { usePresentationClipboard } from './use-presentation-clipboard';
+import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
-import {
-  type WorkOfficeFileAction,
-  WorkOfficePreviewBar,
-} from './work-office-chrome';
+import { WorkOfficePreviewBar } from './work-office-chrome';
 
-export interface PresentationEditorProps {
-  content: WorkPresentationContent;
-  preview: boolean;
-  saveStatus?: string;
-  fileActions?: readonly WorkOfficeFileAction[];
-  onChange: (content: WorkPresentationContent) => void;
-  onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
-  onStartSlideshow?: () => void;
-}
-
-interface DragState {
-  elementId: string;
-  mode: 'move' | 'resize';
-  pointerId: number;
-  startX: number;
-  startY: number;
-  originX: number;
-  originY: number;
-  originWidth: number;
-  originHeight: number;
-}
-
-interface PresentationAgentMenuState {
-  x: number;
-  y: number;
-  selection: string;
-  target: 'slide' | 'element';
-  slideId: string;
-  elementId: string | null;
-}
+export type { PresentationEditorProps } from './presentation-editor-types';
 
 export function PresentationEditor({
   content,
   preview,
   saveStatus = '已自动保存',
   fileActions,
+  kernelWasmUrl,
   onChange,
   onAgentRequest,
   onStartSlideshow,
@@ -115,6 +84,11 @@ export function PresentationEditor({
   const [selectedElementId, setSelectedElementId] = useState<string | null>(
     null,
   );
+  const [activeTextEditor, setActiveTextEditor] = useState<{
+    elementId: string;
+    editor: Editor;
+  } | null>(null);
+  const [, setTextSelectionVersion] = useState(0);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const [designMode, setDesignMode] = useState<PresentationDesignMode>('slide');
@@ -127,7 +101,8 @@ export function PresentationEditor({
   const officeDialog = useOfficeDialog();
   const canvasRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const dragRef = useRef<DragState | null>(null);
+  const dragRef = useRef<PresentationDragState | null>(null);
+  const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
   const designContent = withPresentationDesign(content);
   const selectedSlide =
     designContent.slides.find((slide) => slide.id === selectedSlideId) ??
@@ -148,8 +123,15 @@ export function PresentationEditor({
         : (selectedSlide?.elements ?? []);
   const selectedElement =
     activeElements.find((element) => element.id === selectedElementId) ?? null;
+  const selectedTextEditor =
+    activeTextEditor?.elementId === selectedElementId &&
+    !activeTextEditor.editor.isDestroyed
+      ? activeTextEditor.editor
+      : null;
   const toolbarSelectedElement = selectedElement
-    ? presentationElementToolbarState(selectedElement)
+    ? selectedTextEditor && !selectedTextEditor.state.selection.empty
+      ? presentationTextToolbarState(selectedTextEditor, selectedElement)
+      : presentationElementToolbarState(selectedElement)
     : null;
   const slideView = selectedSlide
     ? presentationSlideView(designContent, selectedSlide)
@@ -285,7 +267,7 @@ export function PresentationEditor({
   const updateElement = (patch: Partial<WorkSlideElement>) => {
     if (!selectedElementId || !activeTargetId) return;
     updatePresentationElements(
-      content,
+      contentRef.current,
       designMode,
       activeTargetId,
       (elements) =>
@@ -294,26 +276,36 @@ export function PresentationEditor({
             ? applyPresentationElementFormattingPatch(element, patch)
             : element,
         ),
-      onChange,
+      (next) => {
+        contentRef.current = next;
+        onChange(next);
+      },
+    );
+  };
+
+  const updateTextElement = (
+    elementId: string,
+    value: PresentationTextValue,
+  ) => {
+    if (!activeTargetId) return;
+    updatePresentationElements(
+      contentRef.current,
+      designMode,
+      activeTargetId,
+      (elements) =>
+        elements.map((element) =>
+          element.id === elementId ? { ...element, ...value } : element,
+        ),
+      (next) => {
+        contentRef.current = next;
+        onChange(next);
+      },
     );
   };
 
   const addElement = (type: WorkSlideElement['type']) => {
-    const element: WorkSlideElement = {
-      id: createWorkId('element'),
-      type,
-      x: 30,
-      y: 34,
-      width: 40,
-      height: type === 'text' ? 14 : 20,
-      text: type === 'text' ? '输入文字' : '',
-      fontSize: type === 'text' ? 24 : 14,
-      color: '#172033',
-      fill: type === 'text' ? 'transparent' : '#dce6fb',
-      bold: false,
-      align: 'center',
-      radius: type === 'shape' ? 3 : 0,
-    };
+    if (type !== 'text' && type !== 'shape') return;
+    const element = newPresentationElement(type);
     if (!activeTargetId) return;
     updatePresentationElements(
       content,
@@ -326,30 +318,7 @@ export function PresentationEditor({
   };
 
   const addTable = () => {
-    const element: WorkSlideElement = {
-      id: createWorkId('element'),
-      type: 'table',
-      x: 15,
-      y: 24,
-      width: 70,
-      height: 42,
-      text: '',
-      fontSize: 14,
-      color: '#172033',
-      fill: '#ffffff',
-      bold: false,
-      align: 'left',
-      borderColor: '#cbd2de',
-      borderWidth: 1,
-      table: {
-        headerRows: 1,
-        rows: [
-          ['标题 1', '标题 2', '标题 3'],
-          ['内容', '内容', '内容'],
-          ['内容', '内容', '内容'],
-        ],
-      },
-    };
+    const element = newPresentationTableElement();
     updatePresentationElements(
       content,
       designMode,
@@ -373,26 +342,7 @@ export function PresentationEditor({
   };
 
   const addImage = async (file: File) => {
-    const element: WorkSlideElement = {
-      id: createWorkId('element'),
-      type: 'image',
-      x: 20,
-      y: 20,
-      width: 60,
-      height: 55,
-      text: '',
-      fontSize: 12,
-      color: '#172033',
-      fill: 'transparent',
-      bold: false,
-      align: 'center',
-      altText: file.name,
-      image: {
-        dataUrl: await fileToDataUrl(file),
-        contentType: file.type || 'application/octet-stream',
-        name: file.name,
-      },
-    };
+    const element = await newPresentationImageElement(file);
     if (!activeTargetId) return;
     updatePresentationElements(
       content,
@@ -494,7 +444,7 @@ export function PresentationEditor({
   const beginDrag = (
     event: React.PointerEvent,
     element: WorkSlideElement,
-    mode: DragState['mode'],
+    mode: PresentationDragState['mode'],
   ) => {
     if (event.button !== 0) return;
     event.stopPropagation();
@@ -682,9 +632,83 @@ export function PresentationEditor({
     );
     setSelectedElementId(element.id);
   };
+  const presentationCommands = createPresentationCommandDispatcher({
+    addChart,
+    addComment,
+    addElement,
+    addSlide,
+    addTable,
+    alignElement: async (alignment) => {
+      if (!selectedElement || !activeTargetId) return;
+      const elementId = selectedElement.id;
+      const targetId = activeTargetId;
+      const targetMode = designMode;
+      const aligned = await geometry.alignElement(selectedElement, alignment);
+      if (!aligned) return;
+      updatePresentationElements(
+        contentRef.current,
+        targetMode,
+        targetId,
+        (elements) =>
+          elements.map((element) =>
+            element.id === elementId
+              ? { ...element, x: aligned.x, y: aligned.y }
+              : element,
+          ),
+        onChange,
+      );
+    },
+    applyTransitionToAll: () =>
+      onChange({
+        ...content,
+        slides: content.slides.map((slide) => ({
+          ...slide,
+          transition: selectedSlide.transition
+            ? structuredCopy(selectedSlide.transition)
+            : undefined,
+        })),
+      }),
+    copySelection: clipboard.copySelection,
+    cutSelection: clipboard.cutSelection,
+    deleteSlide,
+    duplicateSlide,
+    pasteSelection: clipboard.pasteSelection,
+    redo: history.redo,
+    reorderElement,
+    requestImage: () => imageInputRef.current?.click(),
+    setBackground: setActiveBackground,
+    setTransition: (transition) =>
+      updateSlide(
+        content,
+        selectedSlide.id,
+        (slide) => ({ ...slide, transition }),
+        onChange,
+      ),
+    setViewMode,
+    startSlideshow: () => onStartSlideshow?.(),
+    toggleComments: () => setCommentsOpen((value) => !value),
+    toggleDesign: toggleDesignPanel,
+    undo: history.undo,
+    updateElement: (patch, options) => {
+      if (
+        selectedTextEditor &&
+        !selectedTextEditor.state.selection.empty &&
+        applyPresentationTextFormatting(selectedTextEditor, patch, {
+          restoreFocus: options.restoreTextFocus,
+        })
+      ) {
+        return;
+      }
+      updateElement(patch);
+    },
+  });
 
   return (
-    <section className="work-presentation-editor">
+    <section
+      className="work-presentation-editor"
+      data-presentation-geometry-engine={geometry.engine ?? undefined}
+      data-presentation-geometry-state={geometry.pending ? 'running' : 'idle'}
+    >
       <OfficeFileInput
         ref={imageInputRef}
         accept="image/*"
@@ -700,54 +724,17 @@ export function PresentationEditor({
         fileActions={fileActions}
         selectedElement={toolbarSelectedElement}
         slideCount={content.slides.length}
-        onAddSlide={addSlide}
-        onDuplicateSlide={duplicateSlide}
-        onDeleteSlide={deleteSlide}
-        onCopySelection={clipboard.copySelection}
-        onCutSelection={clipboard.cutSelection}
-        onPasteSelection={clipboard.pasteSelection}
         canUndo={history.canUndo}
         canRedo={history.canRedo}
-        onUndo={history.undo}
-        onRedo={history.redo}
-        onAddElement={addElement}
-        onRequestImage={() => imageInputRef.current?.click()}
-        onAddTable={addTable}
-        onAddChart={addChart}
-        onAddComment={addComment}
         commentsOpen={commentsOpen}
         commentCount={presentationCommentCount(content.slides)}
-        onToggleComments={() => setCommentsOpen((value) => !value)}
-        onUpdateElement={updateElement}
-        onReorderElement={reorderElement}
-        onSetBackground={setActiveBackground}
         designOpen={designOpen}
         editingDesign={designMode !== 'slide'}
-        onToggleDesign={toggleDesignPanel}
         background={activeBackground}
         transition={selectedSlide.transition}
-        onTransitionChange={(transition) =>
-          updateSlide(
-            content,
-            selectedSlide.id,
-            (slide) => ({ ...slide, transition }),
-            onChange,
-          )
-        }
-        onApplyTransitionToAll={() =>
-          onChange({
-            ...content,
-            slides: content.slides.map((slide) => ({
-              ...slide,
-              transition: selectedSlide.transition
-                ? structuredCopy(selectedSlide.transition)
-                : undefined,
-            })),
-          })
-        }
-        onStartSlideshow={onStartSlideshow}
+        canStartSlideshow={Boolean(onStartSlideshow)}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onCommand={presentationCommands}
       />
       {designOpen && selectedLayout && selectedMaster && (
         <PresentationDesignPanel
@@ -879,292 +866,82 @@ export function PresentationEditor({
             onClose={() => setSelectedElementId(null)}
           />
         )}
-      {viewMode === 'normal' ? (
-        <div className="work-presentation-layout">
-          <aside className="work-slide-strip" aria-label="幻灯片">
-            {content.slides.map((slide, index) => (
-              <PresentationSlideThumbnail
-                key={slide.id}
-                content={designContent}
-                slide={slide}
-                index={index}
-                selected={slide.id === selectedSlide.id}
-                aspectRatio={aspectRatio}
-                variant="strip"
-                onSelect={() => {
-                  setSelectedSlideId(slide.id);
-                  setSelectedElementId(null);
-                  setDesignMode('slide');
-                }}
-                onDelete={() => deleteSlideById(slide.id)}
-                onContextMenu={(event) => {
-                  setSelectedSlideId(slide.id);
-                  setSelectedElementId(null);
-                  openAgentMenu(event, slide, index);
-                }}
-              />
-            ))}
-            <button type="button" className="work-slide-add" onClick={addSlide}>
-              <Plus size={15} />
-              添加幻灯片
-            </button>
-          </aside>
-
-          <div
-            className="work-slide-stage"
-            onPointerMove={continueDrag}
-            onPointerUp={() => (dragRef.current = null)}
-          >
-            <section
-              ref={canvasRef}
-              className="work-slide-canvas interactive"
-              aria-label={canvasName}
-              style={{
-                background: activeBackground,
-                aspectRatio,
-                width: `${zoom}%`,
-                maxWidth: `${(1050 * zoom) / 100}px`,
-              }}
-              onPointerDown={() => setSelectedElementId(null)}
-              onContextMenu={(event) => {
-                if (designMode !== 'slide') return;
-                openAgentMenu(
-                  event,
-                  selectedSlide,
-                  content.slides.findIndex(
-                    (slide) => slide.id === selectedSlide.id,
-                  ),
-                );
-              }}
-            >
-              {inheritedElements.map((element) => (
-                <SlideElementPreview
-                  element={element}
-                  key={`inherited:${element.id}`}
-                  origin="inherited"
-                />
-              ))}
-              {placeholderGuides.map((definition) => (
-                <button
-                  type="button"
-                  className="work-slide-placeholder-guide"
-                  key={`placeholder:${definition.placeholder?.key ?? definition.id}`}
-                  style={slideElementStyle(definition)}
-                  aria-label={`添加${definition.placeholder?.type === 'title' ? '标题' : '内容'}占位符`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    const element: WorkSlideElement = {
-                      ...structuredCopy(definition),
-                      id: createWorkId('element'),
-                      text: '',
-                      textRuns: undefined,
-                    };
-                    updatePresentationElements(
-                      designContent,
-                      'slide',
-                      selectedSlide.id,
-                      (elements) => [...elements, element],
-                      onChange,
-                    );
-                    setSelectedElementId(element.id);
-                  }}
-                >
-                  {definition.placeholder?.prompt ?? '单击添加内容'}
-                </button>
-              ))}
-              {activeElements.map((element) => {
-                return (
-                  <fieldset
-                    key={element.id}
-                    className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
-                      element.id === selectedElementId ? 'selected' : ''
-                    }`}
-                    // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support editing shortcuts.
-                    tabIndex={0}
-                    data-slide-element-origin={designMode}
-                    style={slideElementStyle(element)}
-                    onFocus={() => setSelectedElementId(element.id)}
-                    onContextMenu={(event) => {
-                      setSelectedElementId(element.id);
-                      if (designMode !== 'slide') return;
-                      openAgentMenu(
-                        event,
-                        selectedSlide,
-                        content.slides.findIndex(
-                          (slide) => slide.id === selectedSlide.id,
-                        ),
-                        element,
-                      );
-                    }}
-                    onPointerDown={(event) => {
-                      if (
-                        event.target instanceof HTMLTextAreaElement ||
-                        (event.target instanceof HTMLElement &&
-                          event.target.closest('[data-slide-editor]'))
-                      ) {
-                        setSelectedElementId(element.id);
-                        event.stopPropagation();
-                        return;
-                      }
-                      beginDrag(event, element, 'move');
-                    }}
-                  >
-                    <legend className="sr-only">
-                      {element.altText?.trim() ||
-                        element.text?.trim() ||
-                        '幻灯片元素'}
-                    </legend>
-                    {element.type === 'image' && element.image ? (
-                      <img
-                        src={element.image.dataUrl}
-                        alt={element.altText ?? element.image.name}
-                        draggable={false}
-                      />
-                    ) : element.type === 'table' && element.table ? (
-                      <EditableSlideTable
-                        element={element}
-                        onChange={(rows) =>
-                          updateElement({ table: { ...element.table, rows } })
-                        }
-                      />
-                    ) : element.type === 'chart' && element.chart ? (
-                      <SlideChart
-                        chart={element.chart}
-                        label={element.altText ?? element.chart.title ?? '图表'}
-                      />
-                    ) : element.textRuns?.length ? (
-                      <RichEditableText
-                        element={element}
-                        onCommit={(text) =>
-                          updateElement({ text, textRuns: undefined })
-                        }
-                      />
-                    ) : element.text ||
-                      element.type === 'text' ||
-                      element.type === 'shape' ? (
-                      <OfficeTextArea
-                        value={element.text}
-                        aria-label="幻灯片文本"
-                        placeholder={element.placeholder?.prompt}
-                        spellCheck
-                        style={slideTextStyle(element)}
-                        onFocus={() => setSelectedElementId(element.id)}
-                        onChange={(event) => {
-                          setSelectedElementId(element.id);
-                          updateElement({
-                            text: event.target.value,
-                            textRuns: undefined,
-                          });
-                        }}
-                      />
-                    ) : null}
-                    {element.id === selectedElementId && (
-                      <>
-                        <span
-                          className="work-slide-move-handle"
-                          aria-hidden="true"
-                          onPointerDown={(event) =>
-                            beginDrag(event, element, 'move')
-                          }
-                        />
-                        <span
-                          className="work-slide-resize-handle"
-                          aria-hidden="true"
-                          onPointerDown={(event) =>
-                            beginDrag(event, element, 'resize')
-                          }
-                        />
-                      </>
-                    )}
-                  </fieldset>
-                );
-              })}
-              {designMode === 'slide' &&
-                (selectedSlide.comments ?? []).map((comment, index) => (
-                  <button
-                    type="button"
-                    className={`work-presentation-comment-pin ${comment.id === activeCommentId ? 'active' : ''}`}
-                    key={comment.id}
-                    aria-label={`打开演示批注 ${index + 1}`}
-                    style={{ left: `${comment.x}%`, top: `${comment.y}%` }}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setActiveCommentId(comment.id);
-                      setCommentsOpen(true);
-                    }}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
-            </section>
-            <footer>
-              <span>
-                {designMode === 'layout'
-                  ? `布局：${selectedLayout?.name ?? ''}`
-                  : designMode === 'master'
-                    ? `母版：${selectedMaster?.name ?? ''}`
-                    : `幻灯片 ${
-                        content.slides.findIndex(
-                          (slide) => slide.id === selectedSlide.id,
-                        ) + 1
-                      } / ${content.slides.length}`}
-              </span>
-              <span>
-                {(content.width ?? 13.333).toFixed(2)} ×{' '}
-                {(content.height ?? 7.5).toFixed(2)}
-              </span>
-            </footer>
-            {designMode === 'slide' && (
-              <div className="work-slide-notes">
-                <span>演讲者备注</span>
-                <OfficeTextArea
-                  aria-label="演讲者备注"
-                  value={selectedSlide.notes ?? ''}
-                  placeholder="添加演讲者备注"
-                  onChange={(event) =>
-                    updateSlide(
-                      content,
-                      selectedSlide.id,
-                      (slide) => ({ ...slide, notes: event.target.value }),
-                      onChange,
-                    )
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <section
-          className="work-presentation-sorter"
-          aria-label="幻灯片浏览视图"
-          style={
-            {
-              '--work-presentation-sorter-width': `${Math.round(220 * (zoom / 100))}px`,
-            } as React.CSSProperties
-          }
-        >
-          {content.slides.map((slide, index) => (
-            <PresentationSlideThumbnail
-              key={slide.id}
-              content={designContent}
-              slide={slide}
-              index={index}
-              selected={slide.id === selectedSlide.id}
-              aspectRatio={aspectRatio}
-              variant="sorter"
-              onSelect={() => {
-                setSelectedSlideId(slide.id);
-                setSelectedElementId(null);
-              }}
-              onDelete={() => deleteSlideById(slide.id)}
-              onDoubleClick={() => setViewMode('normal')}
-            />
-          ))}
-        </section>
-      )}
+      <PresentationWorkspace
+        activeBackground={activeBackground}
+        activeCommentId={activeCommentId}
+        activeElements={activeElements}
+        aspectRatio={aspectRatio}
+        canvasName={canvasName}
+        canvasRef={canvasRef}
+        content={content}
+        designContent={designContent}
+        designMode={designMode}
+        inheritedElements={inheritedElements}
+        placeholderGuides={placeholderGuides}
+        selectedElementId={selectedElementId}
+        selectedLayout={selectedLayout}
+        selectedMaster={selectedMaster}
+        selectedSlide={selectedSlide}
+        viewMode={viewMode}
+        zoom={zoom}
+        onAddSlide={addSlide}
+        onBeginDrag={beginDrag}
+        onContinueDrag={continueDrag}
+        onDeleteSlide={deleteSlideById}
+        onDragEnd={() => {
+          dragRef.current = null;
+        }}
+        onInstantiatePlaceholder={(definition) => {
+          const element: WorkSlideElement = {
+            ...structuredCopy(definition),
+            id: createWorkId('element'),
+            text: '',
+            textRuns: undefined,
+          };
+          updatePresentationElements(
+            designContent,
+            'slide',
+            selectedSlide.id,
+            (elements) => [...elements, element],
+            onChange,
+          );
+          setSelectedElementId(element.id);
+        }}
+        onOpenAgentMenu={openAgentMenu}
+        onOpenComment={(commentId) => {
+          setActiveCommentId(commentId);
+          setCommentsOpen(true);
+        }}
+        onSelectElement={setSelectedElementId}
+        onSelectSlide={(slideId, returnToSlideMode) => {
+          setSelectedSlideId(slideId);
+          setSelectedElementId(null);
+          if (returnToSlideMode) setDesignMode('slide');
+        }}
+        onTextEditorChange={(elementId, editor) =>
+          setActiveTextEditor((current) =>
+            editor
+              ? { elementId, editor }
+              : current?.elementId === elementId
+                ? null
+                : current,
+          )
+        }
+        onTextSelectionChange={() =>
+          setTextSelectionVersion((version) => version + 1)
+        }
+        onUpdateElement={updateElement}
+        onUpdateNotes={(notes) =>
+          updateSlide(
+            content,
+            selectedSlide.id,
+            (slide) => ({ ...slide, notes }),
+            onChange,
+          )
+        }
+        onUpdateTextElement={updateTextElement}
+        onViewModeChange={setViewMode}
+      />
       <PresentationStatusBar
         content={content}
         selectedSlide={selectedSlide}

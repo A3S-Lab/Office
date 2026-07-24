@@ -15,6 +15,7 @@ import {
   parseDocumentPageChrome,
   serializeDocumentPageChrome,
 } from './work-document-page-chrome';
+import { documentModelForHtml } from './work-document-model';
 import type {
   WorkDocumentContent,
   WorkDocumentSectionBreakType,
@@ -304,8 +305,12 @@ export function syncDocumentContentFromHtml(
   const first =
     documentSections({ ...content, html: normalized })[0]?.layout ??
     documentInitialSectionLayout(content);
+  const nextContent = { ...content };
+  const model = documentModelForHtml(content.model, normalized);
+  if (model) nextContent.model = model;
+  else delete nextContent.model;
   return {
-    ...content,
+    ...nextContent,
     html: normalized,
     pageSize: first.pageSize,
     orientation: first.orientation,

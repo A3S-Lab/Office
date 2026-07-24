@@ -1,82 +1,3 @@
-.work-pdf-viewer {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-  background: #32363f;
-}
-
-.work-pdf-integration-bar {
-  display: flex;
-  min-width: 0;
-  min-height: 38px;
-  flex: 0 0 38px;
-  align-items: center;
-  gap: 12px;
-  padding: 0 10px 0 13px;
-  border-bottom: 1px solid var(--a3s-line);
-  background: var(--a3s-panel);
-  color: var(--a3s-faint);
-  font-size: 8px;
-}
-
-.work-pdf-integration-bar output {
-  display: inline-flex;
-  min-width: 94px;
-  margin-left: auto;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-}
-
-.work-pdf-integration-bar output .ds-status-badge {
-  padding: 2px 7px;
-  font-size: 8px;
-}
-
-.work-pdf-integration-bar > .ds-button {
-  min-height: 27px;
-  gap: 5px;
-  padding-inline: 9px;
-  font-size: 9px;
-}
-
-.work-pdf-integration-bar > .ds-button:disabled {
-  cursor: wait;
-}
-
-.work-pdf-embed,
-.work-pdf-native-viewer {
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-}
-
-.work-pdf-embed {
-  display: flex;
-  overflow: hidden;
-}
-
-.work-pdf-state.ds-state-view {
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-  padding: 24px;
-  background: var(--a3s-bg);
-}
-
-.work-pdf-state.ds-state-view h2 {
-  font-size: 13px;
-}
-
-.work-pdf-state.ds-state-view > p {
-  max-width: 520px;
-}
-
 .work-pdf-export-surface {
   position: fixed;
   z-index: -1000;
@@ -457,7 +378,14 @@
   min-height: 1123px;
   flex-direction: column;
   padding: 72px 82px 88px;
-  font-family: Georgia, "Songti SC", "STSong", serif;
+  font-family: var(
+    --a3s-document-font-family,
+    "A3S Office Noto Sans",
+    "A3S Office Noto Sans Hans",
+    "A3S Office Noto Naskh Arabic",
+    "A3S Office Noto Sans Hebrew",
+    sans-serif
+  );
   font-size: 15px;
   line-height: 1.8;
 }

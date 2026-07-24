@@ -1,6 +1,7 @@
 import type {
   FileChild,
   ICommentOptions,
+  INumberingOptions,
   IRunOptions,
   ISectionOptions,
   ParagraphChild,
@@ -23,6 +24,21 @@ import {
 } from './work-docx-citation-export';
 import { docxSectionColumns } from './work-docx-column-export';
 import { docxDocumentFieldRun } from './work-docx-field-export';
+import {
+  cssColorToHex,
+  cssFontFamily,
+  cssFontSize,
+  dataBoolean,
+  domDirection,
+  paragraphAlignment,
+  paragraphBidirectional,
+  paragraphDirectionOptions,
+  paragraphIndent,
+  paragraphPaginationOptions,
+  paragraphSpacingOptions,
+  paragraphTabStops,
+} from './work-docx-export-formatting';
+import { imageToDocx } from './work-docx-export-image';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
 import { documentSections } from './work-document-section';
 import type {
@@ -39,6 +55,8 @@ interface DocxNoteContext {
   commentIds: Map<string, number>;
   commentRangeCounts: Map<string, number>;
   commentRangeSeen: Map<string, number>;
+  numbering: Array<INumberingOptions['config'][number]>;
+  nextNumberingReference: number;
 }
 
 interface DocxTextRevision {
@@ -65,6 +83,8 @@ export async function createDocxBlob(
     commentIds: new Map(),
     commentRangeCounts: documentCommentRangeCounts(content.html),
     commentRangeSeen: new Map(),
+    numbering: [],
+    nextNumberingReference: 1,
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -78,7 +98,7 @@ export async function createDocxBlob(
     for (const node of parsed.body.children) {
       const element = node as HTMLElement;
       if (element.hasAttribute('data-document-note')) continue;
-      children.push(await blockToFileChild(element, docx, noteContext));
+      children.push(...(await blockToFileChildren(element, docx, noteContext)));
     }
     if (!children.length) children.push(new docx.Paragraph(''));
     const pageChrome = normalizeDocumentPageChrome(
@@ -112,6 +132,9 @@ export async function createDocxBlob(
     footnotes: Object.keys(footnotes).length ? footnotes : undefined,
     endnotes: Object.keys(endnotes).length ? endnotes : undefined,
     comments: commentRecords.length ? { children: commentRecords } : undefined,
+    numbering: noteContext.numbering.length
+      ? { config: noteContext.numbering }
+      : undefined,
     evenAndOddHeaderAndFooters: usesOddEvenPageChrome,
     features: {
       trackRevisions: Boolean(
@@ -277,42 +300,41 @@ function docxSectionType(
   return docx.SectionType.NEXT_PAGE;
 }
 
-async function blockToFileChild(
+async function blockToFileChildren(
   element: HTMLElement,
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
-): Promise<FileChild> {
+): Promise<FileChild[]> {
   const tag = element.tagName.toLowerCase();
   if (element.hasAttribute('data-page-break')) {
-    return new docx.Paragraph({ children: [new docx.PageBreak()] });
+    return [new docx.Paragraph({ children: [new docx.PageBreak()] })];
   }
   if (element.hasAttribute('data-document-bibliography')) {
-    return docxBibliographyParagraph(element, docx);
+    return [
+      docxBibliographyParagraph(element, docx, paragraphBidirectional(element)),
+    ];
   }
   if (element.hasAttribute('data-document-caption')) {
-    return docxCaptionParagraph(
-      element,
-      await inlineRuns(element, docx, noteContext),
-      docx,
-    );
+    return [
+      docxCaptionParagraph(
+        element,
+        await inlineRuns(element, docx, noteContext),
+        docx,
+        paragraphBidirectional(element),
+      ),
+    ];
   }
   if (tag === 'table')
-    return tableToDocx(element as HTMLTableElement, docx, noteContext);
+    return [await tableToDocx(element as HTMLTableElement, docx, noteContext)];
+  if (tag === 'img') {
+    return [
+      new docx.Paragraph({
+        children: [await imageToDocx(element as HTMLImageElement, docx)],
+      }),
+    ];
+  }
   if (tag === 'ul' || tag === 'ol') {
-    const children: ParagraphChild[] = [];
-    for (const [index, item] of Array.from(
-      element.querySelectorAll(':scope > li'),
-    ).entries()) {
-      if (index > 0) children.push(new docx.TextRun({ break: 1 }));
-      children.push(
-        ...(await inlineRuns(item as HTMLElement, docx, noteContext)),
-      );
-    }
-    return new docx.Paragraph({
-      children: children.length ? children : [new docx.TextRun('')],
-      bullet: tag === 'ul' ? { level: 0 } : undefined,
-      alignment: paragraphAlignment(element, docx),
-    });
+    return listToDocxParagraphs(element, docx, noteContext);
   }
   const runs = await inlineRuns(element, docx, noteContext);
   const heading =
@@ -323,16 +345,169 @@ async function blockToFileChild(
         : tag === 'h3'
           ? docx.HeadingLevel.HEADING_3
           : undefined;
-  return new docx.Paragraph({
-    children: runs.length ? runs : [new docx.TextRun('')],
-    heading,
-    alignment: paragraphAlignment(element, docx),
-    spacing: {
-      after: heading ? 180 : 120,
-      line: paragraphLineSpacing(element) ?? 320,
-    },
-    indent: paragraphIndent(element, tag),
+  return [
+    new docx.Paragraph({
+      children: runs.length ? runs : [new docx.TextRun('')],
+      heading,
+      alignment: paragraphAlignment(element, docx),
+      spacing: paragraphSpacingOptions(element, Boolean(heading), docx),
+      indent: paragraphIndent(element, tag),
+      tabStops: paragraphTabStops(element, docx),
+      ...paragraphPaginationOptions(element),
+      ...paragraphDirectionOptions(element),
+    }),
+  ];
+}
+
+async function listToDocxParagraphs(
+  list: HTMLElement,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+  depth = 0,
+): Promise<Array<InstanceType<typeof docx.Paragraph>>> {
+  const paragraphs: Array<InstanceType<typeof docx.Paragraph>> = [];
+  const level = Math.min(8, Math.max(0, depth));
+  const ordered = list.tagName.toLowerCase() === 'ol';
+  const numbering = ordered
+    ? registerOrderedListNumbering(list, level, docx, noteContext)
+    : undefined;
+  const items = Array.from(list.children).filter(
+    (child): child is HTMLElement =>
+      child instanceof HTMLElement && child.tagName.toLowerCase() === 'li',
+  );
+  for (const item of items) {
+    const directBlocks = Array.from(item.children).filter(
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement &&
+        child.tagName.toLowerCase() !== 'ol' &&
+        child.tagName.toLowerCase() !== 'ul',
+    );
+    const contentBlocks = directBlocks.length
+      ? directBlocks
+      : [directListItemContentRoot(item)];
+    for (const [blockIndex, block] of contentBlocks.entries()) {
+      const tag = block.tagName.toLowerCase();
+      const heading =
+        tag === 'h1'
+          ? docx.HeadingLevel.HEADING_1
+          : tag === 'h2'
+            ? docx.HeadingLevel.HEADING_2
+            : tag === 'h3'
+              ? docx.HeadingLevel.HEADING_3
+              : undefined;
+      const runs = await inlineRuns(block, docx, noteContext);
+      paragraphs.push(
+        new docx.Paragraph({
+          children: runs.length ? runs : [new docx.TextRun('')],
+          heading,
+          ...(blockIndex === 0
+            ? ordered
+              ? { numbering }
+              : { bullet: { level } }
+            : {
+                indent: paragraphIndent(block, tag) ?? {
+                  left: (level + 1) * 720,
+                },
+              }),
+          alignment: paragraphAlignment(block, docx),
+          spacing: paragraphSpacingOptions(block, Boolean(heading), docx),
+          ...(blockIndex === 0 ? { indent: paragraphIndent(block, tag) } : {}),
+          tabStops: paragraphTabStops(block, docx),
+          ...paragraphPaginationOptions(block),
+          ...paragraphDirectionOptions(block),
+        }),
+      );
+    }
+    for (const nested of Array.from(item.children).filter(
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement &&
+        (child.tagName.toLowerCase() === 'ol' ||
+          child.tagName.toLowerCase() === 'ul'),
+    )) {
+      paragraphs.push(
+        ...(await listToDocxParagraphs(nested, docx, noteContext, depth + 1)),
+      );
+    }
+  }
+  return paragraphs;
+}
+
+function registerOrderedListNumbering(
+  list: HTMLElement,
+  level: number,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+): { reference: string; level: number } {
+  const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
+  noteContext.nextNumberingReference += 1;
+  noteContext.numbering.push({
+    reference,
+    levels: Array.from({ length: 9 }, (_, currentLevel) => ({
+      level: currentLevel,
+      format:
+        currentLevel === level
+          ? orderedListLevelFormat(list, currentLevel, docx)
+          : defaultOrderedListLevelFormat(currentLevel, docx),
+      text: `%${currentLevel + 1}.`,
+      start: currentLevel === level ? orderedListStart(list) : 1,
+      suffix: docx.LevelSuffix.TAB,
+      style: {
+        paragraph: {
+          indent: {
+            left: (currentLevel + 1) * 720,
+            hanging: 360,
+          },
+        },
+      },
+    })),
   });
+  return { reference, level };
+}
+
+function orderedListLevelFormat(
+  list: HTMLElement,
+  level: number,
+  docx: typeof import('docx'),
+) {
+  const type = list.getAttribute('type');
+  if (type === 'A') return docx.LevelFormat.UPPER_LETTER;
+  if (type === 'a') return docx.LevelFormat.LOWER_LETTER;
+  if (type === 'I') return docx.LevelFormat.UPPER_ROMAN;
+  if (type === 'i') return docx.LevelFormat.LOWER_ROMAN;
+  return defaultOrderedListLevelFormat(level, docx);
+}
+
+function defaultOrderedListLevelFormat(
+  level: number,
+  docx: typeof import('docx'),
+) {
+  if (level % 3 === 1) return docx.LevelFormat.LOWER_LETTER;
+  if (level % 3 === 2) return docx.LevelFormat.LOWER_ROMAN;
+  return docx.LevelFormat.DECIMAL;
+}
+
+function orderedListStart(list: HTMLElement): number {
+  const value = Number(list.getAttribute('start'));
+  return Number.isSafeInteger(value) && value > 0
+    ? Math.min(value, 2_147_483_647)
+    : 1;
+}
+
+function directListItemContentRoot(item: HTMLElement): HTMLElement {
+  const root = item.ownerDocument.createElement('span');
+  const direction = item.getAttribute('dir');
+  if (direction) root.setAttribute('dir', direction);
+  for (const child of item.childNodes) {
+    if (
+      child instanceof HTMLElement &&
+      (child.tagName.toLowerCase() === 'ol' ||
+        child.tagName.toLowerCase() === 'ul')
+    ) {
+      continue;
+    }
+    root.append(child.cloneNode(true));
+  }
+  return root;
 }
 
 function millimetersToTwips(value: number): number {
@@ -352,18 +527,21 @@ async function pageChromeBlocks(
     InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
   > = [];
   for (const element of Array.from(document.body.children)) {
-    const block = await blockToFileChild(
+    const blocks = await blockToFileChildren(
       element as HTMLElement,
       docx,
       noteContext,
     );
-    if (block instanceof docx.Paragraph || block instanceof docx.Table)
-      children.push(block);
+    for (const block of blocks) {
+      if (block instanceof docx.Paragraph || block instanceof docx.Table)
+        children.push(block);
+    }
   }
   if (!children.length && document.body.textContent?.trim()) {
     children.push(
       new docx.Paragraph({
         children: await inlineRuns(document.body, docx, noteContext),
+        ...paragraphDirectionOptions(document.body),
       }),
     );
   }
@@ -409,6 +587,7 @@ async function inlineRuns(
     }
     if (!(node instanceof HTMLElement)) return [];
     const tag = node.tagName.toLowerCase();
+    if (node.hasAttribute('data-document-tab')) return [new docx.Tab()];
     if (node.hasAttribute('data-document-citation'))
       return [docxCitationRun(node, docx)];
     if (node.hasAttribute('data-document-field'))
@@ -437,6 +616,8 @@ async function inlineRuns(
     const commentBoundary = node.hasAttribute('data-document-comment')
       ? nextDocxCommentBoundary(node.dataset.commentId, noteContext)
       : null;
+    const backgroundColor = cssColorToHex(node.style.backgroundColor);
+    const direction = domDirection(node);
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
@@ -448,6 +629,9 @@ async function inlineRuns(
       color: cssColorToHex(node.style.color) ?? inherited.color,
       font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
+      shading: backgroundColor ? { fill: backgroundColor } : inherited.shading,
+      rightToLeft:
+        direction === undefined ? inherited.rightToLeft : direction === 'rtl',
     };
     if (tag === 'br') {
       return [new docx.TextRun({ ...style, break: 1 })];
@@ -480,7 +664,11 @@ async function inlineRuns(
         : []),
     ];
   };
-  for (const node of root.childNodes) runs.push(...(await visit(node)));
+  const direction = domDirection(root);
+  const inheritedDirection: IRunOptions =
+    direction === undefined ? {} : { rightToLeft: direction === 'rtl' };
+  for (const node of root.childNodes)
+    runs.push(...(await visit(node, inheritedDirection)));
   return runs;
 }
 
@@ -626,37 +814,40 @@ async function tableToDocx(
   noteContext: DocxNoteContext,
 ): Promise<InstanceType<typeof docx.Table>> {
   const rows: InstanceType<typeof docx.TableRow>[] = [];
+  let inferLeadingHeader = true;
   for (const row of Array.from(element.rows)) {
     const cells: InstanceType<typeof docx.TableCell>[] = [];
     for (const cell of Array.from(row.cells)) {
-      const paragraphs: InstanceType<typeof docx.Paragraph>[] = [];
-      const blocks = Array.from(cell.children).filter(
-        (child) => child.tagName.toLowerCase() !== 'table',
-      );
+      const children: Array<
+        InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
+      > = [];
+      const blocks = Array.from(cell.children);
       if (blocks.length) {
         for (const block of blocks) {
-          paragraphs.push(
-            new docx.Paragraph({
-              children: await inlineRuns(
-                block as HTMLElement,
-                docx,
-                noteContext,
-              ),
-              alignment: paragraphAlignment(block as HTMLElement, docx),
-              spacing: { after: 60 },
-            }),
-          );
+          for (const child of await blockToFileChildren(
+            block as HTMLElement,
+            docx,
+            noteContext,
+          )) {
+            if (
+              child instanceof docx.Paragraph ||
+              child instanceof docx.Table
+            ) {
+              children.push(child);
+            }
+          }
         }
       } else {
-        paragraphs.push(
+        children.push(
           new docx.Paragraph({
             children: await inlineRuns(cell, docx, noteContext),
+            ...paragraphDirectionOptions(cell),
           }),
         );
       }
       cells.push(
         new docx.TableCell({
-          children: paragraphs,
+          children: children.length ? children : [new docx.Paragraph('')],
           columnSpan: cell.colSpan > 1 ? cell.colSpan : undefined,
           rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
           shading:
@@ -667,7 +858,22 @@ async function tableToDocx(
         }),
       );
     }
-    rows.push(new docx.TableRow({ children: cells }));
+    const explicitHeader = dataBoolean(row.dataset.officeRepeatHeader);
+    const inferredHeader =
+      inferLeadingHeader &&
+      row.cells.length > 0 &&
+      Array.from(row.cells).every(
+        (cell) => cell.tagName.toLowerCase() === 'th',
+      );
+    const tableHeader = explicitHeader ?? inferredHeader;
+    if (!tableHeader) inferLeadingHeader = false;
+    rows.push(
+      new docx.TableRow({
+        children: cells,
+        cantSplit: dataBoolean(row.dataset.officeCantSplit),
+        tableHeader: tableHeader ? true : undefined,
+      }),
+    );
   }
   return new docx.Table({
     rows,
@@ -707,14 +913,9 @@ async function noteParagraphs(
     const element = child as HTMLElement;
     const tag = element.tagName.toLowerCase();
     if (tag === 'ul' || tag === 'ol') {
-      for (const item of Array.from(element.querySelectorAll(':scope > li'))) {
-        paragraphs.push(
-          new docx.Paragraph({
-            children: await inlineRuns(item as HTMLElement, docx, noteContext),
-            bullet: tag === 'ul' ? { level: 0 } : undefined,
-          }),
-        );
-      }
+      paragraphs.push(
+        ...(await listToDocxParagraphs(element, docx, noteContext)),
+      );
       continue;
     }
     if (tag === 'table') {
@@ -724,6 +925,7 @@ async function noteParagraphs(
             text: Array.from(row.cells)
               .map((cell) => cell.textContent?.trim() ?? '')
               .join(' · '),
+            ...paragraphDirectionOptions(row),
           }),
         );
       }
@@ -732,176 +934,9 @@ async function noteParagraphs(
     paragraphs.push(
       new docx.Paragraph({
         children: await inlineRuns(element, docx, noteContext),
+        ...paragraphDirectionOptions(element),
       }),
     );
   }
   return paragraphs.length ? paragraphs : [new docx.Paragraph('')];
-}
-
-async function imageToDocx(
-  element: HTMLImageElement,
-  docx: typeof import('docx'),
-): Promise<ParagraphChild> {
-  const source = element.getAttribute('src');
-  const alt =
-    element.getAttribute('alt') || element.getAttribute('title') || 'Image';
-  if (!source) return new docx.TextRun(`[${alt}]`);
-  try {
-    const blob = await fetch(source).then((response) => {
-      if (!response.ok)
-        throw new Error(`Image request failed with HTTP ${response.status}`);
-      return response.blob();
-    });
-    const type = docxImageType(blob.type, source);
-    if (!type) return new docx.TextRun(`[${alt}]`);
-    const dimensions =
-      element.width > 0 && element.height > 0
-        ? { width: element.width, height: element.height }
-        : await imageDimensions(blob);
-    const maximumWidth = 520;
-    const scale = Math.min(1, maximumWidth / Math.max(1, dimensions.width));
-    return new docx.ImageRun({
-      type,
-      data: await blob.arrayBuffer(),
-      transformation: {
-        width: Math.max(24, Math.round(dimensions.width * scale)),
-        height: Math.max(24, Math.round(dimensions.height * scale)),
-      },
-      altText: { name: alt, description: alt, title: alt },
-    });
-  } catch {
-    return new docx.TextRun(`[${alt}]`);
-  }
-}
-
-function docxImageType(
-  contentType: string,
-  source: string,
-): 'jpg' | 'png' | 'gif' | 'bmp' | null {
-  const value = `${contentType} ${source}`.toLowerCase();
-  if (value.includes('png')) return 'png';
-  if (value.includes('jpeg') || value.includes('jpg')) return 'jpg';
-  if (value.includes('gif')) return 'gif';
-  if (value.includes('bmp')) return 'bmp';
-  return null;
-}
-
-function paragraphAlignment(element: HTMLElement, docx: typeof import('docx')) {
-  const alignment = element.style.textAlign;
-  if (alignment === 'center') return docx.AlignmentType.CENTER;
-  if (alignment === 'right' || alignment === 'end')
-    return docx.AlignmentType.RIGHT;
-  if (alignment === 'justify') return docx.AlignmentType.JUSTIFIED;
-  if (alignment === 'left' || alignment === 'start')
-    return docx.AlignmentType.LEFT;
-  return undefined;
-}
-
-function paragraphLineSpacing(element: HTMLElement): number | undefined {
-  const value = element.style.lineHeight.trim();
-  if (!value || value === 'normal') return undefined;
-  const percentage = /^(\d+(?:\.\d+)?)%$/.exec(value);
-  if (percentage) return Math.round((Number(percentage[1]) / 100) * 240);
-  const unitless = /^(\d+(?:\.\d+)?)$/.exec(value);
-  if (unitless) return Math.round(Number(unitless[1]) * 240);
-  const points = cssLengthToPoints(value);
-  return points ? Math.round(points * 20) : undefined;
-}
-
-function paragraphIndent(
-  element: HTMLElement,
-  tag: string,
-): { left: number } | undefined {
-  const blockquoteIndent = tag === 'blockquote' ? 540 : 0;
-  const level = Number(element.dataset.officeIndentLevel);
-  const explicitIndent =
-    Number.isFinite(level) && level > 0
-      ? Math.round(level * 360)
-      : cssLengthToTwips(element.style.marginLeft);
-  const left = blockquoteIndent + explicitIndent;
-  return left > 0 ? { left } : undefined;
-}
-
-function cssFontFamily(value: string): string | undefined {
-  const family = value
-    .split(',')[0]
-    ?.trim()
-    .replace(/^(['"])(.*)\1$/, '$2');
-  return family || undefined;
-}
-
-function cssFontSize(value: string): number | undefined {
-  const points = cssLengthToPoints(value);
-  return points ? Math.max(1, Math.round(points * 2)) : undefined;
-}
-
-function cssLengthToTwips(value: string): number {
-  const points = cssLengthToPoints(value);
-  return points ? Math.max(0, Math.round(points * 20)) : 0;
-}
-
-function cssLengthToPoints(value: string): number | undefined {
-  const match = /^(-?\d+(?:\.\d+)?)(px|pt|in|cm|mm)$/i.exec(value.trim());
-  if (!match) return undefined;
-  const amount = Number(match[1]);
-  if (!Number.isFinite(amount) || amount <= 0) return undefined;
-  const unit = match[2]?.toLowerCase();
-  if (unit === 'px') return amount * 0.75;
-  if (unit === 'in') return amount * 72;
-  if (unit === 'cm') return (amount * 72) / 2.54;
-  if (unit === 'mm') return (amount * 72) / 25.4;
-  return amount;
-}
-
-function cssColorToHex(source: string): string | undefined {
-  const value = source.trim();
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value)?.[1];
-  if (hex) {
-    return (
-      hex.length === 3
-        ? [...hex].map((character) => character.repeat(2)).join('')
-        : hex
-    ).toUpperCase();
-  }
-  const rgb =
-    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,[^)]*)?\)$/i.exec(
-      value,
-    );
-  if (!rgb) return undefined;
-  return rgb
-    .slice(1, 4)
-    .map((channel) =>
-      Math.min(255, Number(channel)).toString(16).padStart(2, '0'),
-    )
-    .join('')
-    .toUpperCase();
-}
-
-function imageDimensions(
-  blob: Blob,
-): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const image = new window.Image();
-    image.addEventListener(
-      'load',
-      () => {
-        URL.revokeObjectURL(url);
-        resolve({
-          width: image.naturalWidth || 640,
-          height: image.naturalHeight || 360,
-        });
-      },
-      { once: true },
-    );
-    image.addEventListener(
-      'error',
-      () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('Image dimensions could not be read'));
-      },
-      { once: true },
-    );
-    image.src = url;
-  });
 }

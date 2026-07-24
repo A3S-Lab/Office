@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { millimetersToPixels } from '../work-document-layout';
 import {
   documentColumnGridTemplate,
@@ -14,6 +15,7 @@ import type {
   WorkDocumentNote,
   WorkDocumentNoteKind,
 } from '../work-document-notes';
+import { layoutDocumentTabs } from '../work-document-tab-node';
 import type { WorkDocumentContent } from '../work-types';
 
 export function WorkDocumentPdfPages({
@@ -51,6 +53,7 @@ function DocumentPage({
   title?: string;
   mode: 'pdf' | 'preview';
 }) {
+  const pageRef = useRef<HTMLElement>(null);
   const layout = page.layout;
   const pageChrome = resolveDocumentPageChrome(
     layout,
@@ -61,8 +64,32 @@ function DocumentPage({
     mode === 'pdf'
       ? `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`
       : `work-document-preview-page ${layout.pageSize} ${layout.orientation}`;
+  useLayoutEffect(() => {
+    const element = pageRef.current;
+    if (!element) return;
+    let frame: number | null = null;
+    const schedule = () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        if (element.isConnected) layoutDocumentTabs(element);
+      });
+    };
+    layoutDocumentTabs(element);
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(schedule);
+    observer?.observe(element);
+    void document.fonts?.ready.then(schedule);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
+  }, [page]);
   return (
     <section
+      ref={pageRef}
       className={pageClass}
       data-work-pdf-page={mode === 'pdf' ? '' : undefined}
       data-pdf-orientation={mode === 'pdf' ? layout.orientation : undefined}

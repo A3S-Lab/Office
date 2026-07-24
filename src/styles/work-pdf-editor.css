@@ -1,0 +1,281 @@
+.work-pdf-viewer {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  background: #32363f;
+}
+
+.work-pdf-toolbar {
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-pdf-toolbar-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.work-pdf-toolbar .ds-icon-button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 5px;
+}
+
+.work-pdf-toolbar .ds-icon-button:disabled,
+.work-pdf-fit-button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.work-pdf-history {
+  padding-right: 5px;
+  border-right: 1px solid var(--a3s-line);
+}
+
+.work-pdf-annotation {
+  margin: 0;
+  padding-right: 5px;
+  padding-left: 0;
+  border: 0;
+  border-right: 1px solid var(--a3s-line);
+}
+
+.work-pdf-search {
+  display: flex;
+  width: clamp(180px, 24vw, 300px);
+  min-width: 150px;
+  height: 29px;
+  align-items: center;
+  gap: 1px;
+  padding-left: 8px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+}
+
+.work-pdf-search > form {
+  display: contents;
+}
+
+.work-pdf-search:focus-within {
+  border-color: var(--a3s-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-blue) 14%, transparent);
+}
+
+.work-pdf-search > form > svg {
+  flex: 0 0 auto;
+  color: var(--a3s-faint);
+}
+
+.work-pdf-search .work-office-text-field {
+  width: 100%;
+  height: 27px;
+  min-width: 40px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.work-pdf-search .work-office-text-field::-webkit-search-cancel-button {
+  display: none;
+}
+
+.work-pdf-search .ds-icon-button {
+  width: 24px;
+  height: 24px;
+  flex-basis: 24px;
+}
+
+.work-pdf-search-state {
+  display: inline-flex;
+  min-width: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--a3s-faint);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.work-pdf-page-controls {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.work-pdf-page-field.work-office-text-field {
+  width: 38px;
+  height: 26px;
+  padding: 0 5px;
+  text-align: center;
+}
+
+.work-pdf-page-total {
+  min-width: 28px;
+  margin-right: 2px;
+  color: var(--a3s-faint);
+  white-space: nowrap;
+}
+
+.work-pdf-zoom-controls {
+  padding-left: 6px;
+  border-left: 1px solid var(--a3s-line);
+}
+
+.work-pdf-zoom-controls > output {
+  width: 38px;
+  color: var(--a3s-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.work-pdf-fit-button {
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.work-pdf-fit-button:hover:not(:disabled),
+.work-pdf-fit-button[aria-pressed="true"] {
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-pdf-fit-button[aria-pressed="true"] {
+  color: var(--a3s-blue);
+}
+
+.work-pdf-save {
+  min-height: 29px;
+  margin-left: 3px;
+  padding-left: 8px;
+  border-left: 1px solid var(--a3s-line);
+}
+
+.work-pdf-save > output {
+  min-width: 57px;
+  text-align: right;
+}
+
+.work-pdf-save .ds-status-badge {
+  padding: 2px 6px;
+  font-size: 9px;
+}
+
+.work-pdf-save .ds-button {
+  min-height: 28px;
+  gap: 5px;
+  padding: 0 9px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+.work-pdf-embed,
+.work-pdf-native-viewer {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.work-pdf-embed {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+}
+
+.work-pdf-loading {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--a3s-bg) 88%, transparent);
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-pdf-state.ds-state-view {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  padding: 24px;
+  background: var(--a3s-bg);
+}
+
+.work-pdf-state.ds-state-view h2 {
+  font-size: 13px;
+}
+
+.work-pdf-state.ds-state-view > p {
+  max-width: 520px;
+}
+
+@media (max-width: 980px) {
+  .work-pdf-search {
+    width: min(220px, 28vw);
+  }
+
+  .work-pdf-annotation-optional,
+  .work-pdf-fit-button {
+    display: none;
+  }
+
+  .work-pdf-save > output {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .work-pdf-toolbar {
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  .work-pdf-history,
+  .work-pdf-zoom-controls > output {
+    display: none;
+  }
+
+  .work-pdf-search {
+    width: min(190px, 35vw);
+    min-width: 112px;
+  }
+
+  .work-pdf-search-state,
+  .work-pdf-search .ds-icon-button:not(.work-pdf-search-clear) {
+    display: none;
+  }
+
+  .work-pdf-page-controls {
+    margin-left: 0;
+  }
+
+  .work-pdf-save {
+    margin-left: auto;
+  }
+}

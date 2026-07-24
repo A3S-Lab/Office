@@ -45,9 +45,64 @@ import {
   placeMammothDocumentNotes,
 } from './work-docx-note-import';
 import {
+  applyImportedDocxListMarkers,
+  hasImportedDocxListMarkers,
+  markDocxLists,
+  type ImportedDocxListMarkers,
+} from './work-docx-list-import';
+import {
+  applyImportedDocxImageLayoutMarkers,
+  hasImportedDocxImageLayoutMarkers,
+  markDocxImageLayouts,
+  type ImportedDocxImageLayoutMarkers,
+} from './work-docx-image-layout-import';
+import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
 } from './work-docx-page-chrome-import';
+import {
+  applyImportedDocxParagraphDirectionMarkers,
+  hasImportedDocxParagraphDirectionMarkers,
+  markDocxParagraphDirections,
+  type ImportedDocxParagraphDirectionMarkers,
+} from './work-docx-paragraph-direction-import';
+import {
+  applyImportedDocxParagraphIndentMarkers,
+  hasImportedDocxParagraphIndentMarkers,
+  markDocxParagraphIndents,
+  type ImportedDocxParagraphIndentMarkers,
+} from './work-docx-paragraph-indent-import';
+import {
+  applyImportedDocxParagraphPaginationMarkers,
+  hasImportedDocxParagraphPaginationMarkers,
+  markDocxParagraphPagination,
+  type ImportedDocxParagraphPaginationMarkers,
+} from './work-docx-paragraph-pagination-import';
+import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
+import {
+  applyImportedDocxParagraphSpacingMarkers,
+  hasImportedDocxParagraphSpacingMarkers,
+  markDocxParagraphSpacing,
+  type ImportedDocxParagraphSpacingMarkers,
+} from './work-docx-paragraph-spacing-import';
+import {
+  applyImportedDocxRunFormattingMarkers,
+  hasImportedDocxRunFormattingMarkers,
+  markDocxRunFormatting,
+  type ImportedDocxRunFormattingMarkers,
+} from './work-docx-run-formatting-import';
+import {
+  applyImportedDocxParagraphTabStopMarkers,
+  hasImportedDocxParagraphTabStopMarkers,
+  markDocxParagraphTabStops,
+  type ImportedDocxParagraphTabStopMarkers,
+} from './work-docx-tab-stop-import';
+import {
+  applyImportedDocxTableRowMarkers,
+  hasImportedDocxTableRowMarkers,
+  markDocxTableRows,
+  type ImportedDocxTableRowMarkers,
+} from './work-docx-table-row-import';
 import {
   attribute,
   descendants,
@@ -71,6 +126,15 @@ export interface PreparedDocxImport {
   commentMarkers: ImportedDocxCommentMarkers;
   fieldMarkers: ImportedDocxFieldMarkers;
   citationMarkers: ImportedDocxCitationMarkers;
+  listMarkers: ImportedDocxListMarkers;
+  imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
+  paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
+  paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
+  paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers;
+  paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers;
+  runFormattingMarkers: ImportedDocxRunFormattingMarkers;
+  tabStopMarkers: ImportedDocxParagraphTabStopMarkers;
+  tableRowMarkers: ImportedDocxTableRowMarkers;
   bibliography?: WorkDocumentContent['bibliography'];
   trackChanges: boolean;
 }
@@ -99,17 +163,64 @@ export async function prepareDocxImport(
       commentMarkers: { comments: [], ranges: [] },
       fieldMarkers: { fields: [] },
       citationMarkers: { citations: [], bibliographies: [] },
+      listMarkers: { lists: [] },
+      imageLayoutMarkers: { images: [] },
+      paragraphDirectionMarkers: { paragraphs: [] },
+      paragraphIndentMarkers: { paragraphs: [] },
+      paragraphPaginationMarkers: { paragraphs: [] },
+      paragraphSpacingMarkers: { paragraphs: [] },
+      runFormattingMarkers: { runs: [] },
+      tabStopMarkers: { paragraphs: [], inlineTabs: [] },
+      tableRowMarkers: { rows: [] },
       bibliography,
       trackChanges: false,
     };
   }
 
   const document = await archive.xml('word/document.xml');
+  const numbering = archive.has('word/numbering.xml')
+    ? await archive.xml('word/numbering.xml')
+    : null;
   const commentMarkers = await markDocxComments(document, archive);
   const changeMarkers = markDocxTextChanges(document);
   const captionMarkers = markDocxCaptionFields(document);
   const citationMarkers = markDocxCitationFields(document);
   const fieldMarkers = markDocxBodyFields(document);
+  const listMarkers = markDocxLists(document, numbering);
+  const imageLayoutMarkers = markDocxImageLayouts(document);
+  const paragraphStylesDocument = archive.has('word/styles.xml')
+    ? await archive.xml('word/styles.xml')
+    : null;
+  const paragraphStyles = createDocxParagraphStyleResolver(
+    paragraphStylesDocument,
+  );
+  const paragraphDirectionMarkers = markDocxParagraphDirections(
+    document,
+    paragraphStyles,
+  );
+  const paragraphIndentMarkers = markDocxParagraphIndents(
+    document,
+    paragraphStyles,
+  );
+  const paragraphSpacingMarkers = markDocxParagraphSpacing(
+    document,
+    paragraphStyles,
+  );
+  const paragraphPaginationMarkers = markDocxParagraphPagination(
+    document,
+    paragraphStyles,
+  );
+  const themePath = archive
+    .paths('word/theme/')
+    .find((path) => /\/theme\d*\.xml$/i.test(path));
+  const themeDocument = themePath ? await archive.xml(themePath) : null;
+  const runFormattingMarkers = markDocxRunFormatting(
+    document,
+    paragraphStyles,
+    themeDocument,
+  );
+  const tabStopMarkers = markDocxParagraphTabStops(document, paragraphStyles);
+  const tableRowMarkers = markDocxTableRows(document);
   const settings = archive.has('word/settings.xml')
     ? await archive.xml('word/settings.xml')
     : null;
@@ -124,7 +235,16 @@ export async function prepareDocxImport(
         hasImportedDocxChangeMarkers(changeMarkers) ||
         hasImportedDocxCommentMarkers(commentMarkers) ||
         hasImportedDocxCitationMarkers(citationMarkers) ||
-        hasImportedDocxFieldMarkers(fieldMarkers)
+        hasImportedDocxFieldMarkers(fieldMarkers) ||
+        hasImportedDocxListMarkers(listMarkers) ||
+        hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+        hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
+        hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
+        hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+        hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
+        hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
+        hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
+        hasImportedDocxTableRowMarkers(tableRowMarkers)
           ? await writeDocumentXml(buffer, document)
           : buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
@@ -133,6 +253,15 @@ export async function prepareDocxImport(
       commentMarkers,
       fieldMarkers,
       citationMarkers,
+      listMarkers,
+      imageLayoutMarkers,
+      paragraphDirectionMarkers,
+      paragraphIndentMarkers,
+      paragraphPaginationMarkers,
+      paragraphSpacingMarkers,
+      runFormattingMarkers,
+      tabStopMarkers,
+      tableRowMarkers,
       bibliography,
       trackChanges,
     };
@@ -160,7 +289,16 @@ export async function prepareDocxImport(
       hasImportedDocxChangeMarkers(changeMarkers) ||
       hasImportedDocxCommentMarkers(commentMarkers) ||
       hasImportedDocxCitationMarkers(citationMarkers) ||
-      hasImportedDocxFieldMarkers(fieldMarkers)
+      hasImportedDocxFieldMarkers(fieldMarkers) ||
+      hasImportedDocxListMarkers(listMarkers) ||
+      hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+      hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
+      hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
+      hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+      hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
+      hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
+      hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
+      hasImportedDocxTableRowMarkers(tableRowMarkers)
         ? await writeDocumentXml(buffer, document)
         : buffer,
     sections,
@@ -169,6 +307,15 @@ export async function prepareDocxImport(
     commentMarkers,
     fieldMarkers,
     citationMarkers,
+    listMarkers,
+    imageLayoutMarkers,
+    paragraphDirectionMarkers,
+    paragraphIndentMarkers,
+    paragraphPaginationMarkers,
+    paragraphSpacingMarkers,
+    runFormattingMarkers,
+    tabStopMarkers,
+    tableRowMarkers,
     bibliography,
     trackChanges,
   };
@@ -185,12 +332,49 @@ export function applyDocxSectionsToHtml(
     citations: [],
     bibliographies: [],
   },
+  listMarkers: ImportedDocxListMarkers = { lists: [] },
+  imageLayoutMarkers: ImportedDocxImageLayoutMarkers = { images: [] },
+  runFormattingMarkers: ImportedDocxRunFormattingMarkers = {
+    runs: [],
+  },
+  paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers = {
+    paragraphs: [],
+  },
+  paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers = {
+    paragraphs: [],
+  },
+  paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers = {
+    paragraphs: [],
+  },
+  paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers = {
+    paragraphs: [],
+  },
   bibliography?: WorkDocumentContent['bibliography'],
+  tabStopMarkers: ImportedDocxParagraphTabStopMarkers = {
+    paragraphs: [],
+    inlineTabs: [],
+  },
+  tableRowMarkers: ImportedDocxTableRowMarkers = { rows: [] },
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
+  applyImportedDocxRunFormattingMarkers(document, runFormattingMarkers);
   applyImportedDocxCaptionMarkers(document, captionMarkers);
   applyImportedDocxCitationMarkers(document, citationMarkers);
   applyImportedDocxFieldMarkers(document, fieldMarkers);
+  applyImportedDocxListMarkers(document, listMarkers);
+  applyImportedDocxImageLayoutMarkers(document, imageLayoutMarkers);
+  applyImportedDocxParagraphDirectionMarkers(
+    document,
+    paragraphDirectionMarkers,
+  );
+  applyImportedDocxParagraphIndentMarkers(document, paragraphIndentMarkers);
+  applyImportedDocxParagraphSpacingMarkers(document, paragraphSpacingMarkers);
+  applyImportedDocxParagraphPaginationMarkers(
+    document,
+    paragraphPaginationMarkers,
+  );
+  applyImportedDocxParagraphTabStopMarkers(document, tabStopMarkers);
+  applyImportedDocxTableRowMarkers(document, tableRowMarkers);
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);
   const notes = extractMammothDocumentNotes(document);

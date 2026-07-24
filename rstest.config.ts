@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   environment: 'happy-dom',
+  exclude: ['visual-tests/**'],
   extends: withRslibConfig({ libId: 'library' }),
   resolve: {
     alias: {

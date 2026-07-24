@@ -12,5 +12,9 @@ description = "Browser-safe layout kernel for A3S Office"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+rustybuzz.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+unicode-bidi.workspace = true
+unicode-linebreak.workspace = true
+unicode-segmentation.workspace = true

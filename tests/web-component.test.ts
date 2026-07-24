@@ -28,6 +28,14 @@ test('registers every custom element idempotently', async () => {
   expect(documentEditor.getAttribute('kernel-wasm-url')).toBe(
     '/assets/office-kernel.wasm',
   );
+  documentEditor.layoutFonts = [
+    {
+      family: 'Host Font',
+      id: 'host-font',
+      url: '/assets/host-font.woff2',
+    },
+  ];
+  expect(documentEditor.layoutFonts?.[0]?.id).toBe('host-font');
 
   element.remove();
 });

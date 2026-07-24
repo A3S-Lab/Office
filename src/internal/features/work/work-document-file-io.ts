@@ -5,7 +5,7 @@ import {
   safeFileName,
 } from './work-file-download';
 import { createWorkArtifact } from './work-templates';
-import type { WorkArtifact } from './work-types';
+import type { WorkArtifact, WorkDocumentContent } from './work-types';
 
 export async function importWorkDocumentFile(
   file: File,
@@ -37,7 +37,16 @@ export async function importWorkDocumentFile(
           prepared.commentMarkers,
           prepared.fieldMarkers,
           prepared.citationMarkers,
+          prepared.listMarkers,
+          prepared.imageLayoutMarkers,
+          prepared.runFormattingMarkers,
+          prepared.paragraphDirectionMarkers,
+          prepared.paragraphIndentMarkers,
+          prepared.paragraphSpacingMarkers,
+          prepared.paragraphPaginationMarkers,
           prepared.bibliography,
+          prepared.tabStopMarkers,
+          prepared.tableRowMarkers,
         )
       : result.value;
     const layout = prepared
@@ -50,7 +59,7 @@ export async function importWorkDocumentFile(
     );
     const artifact = createWorkArtifact('blank-document');
     artifact.title = fileNameWithoutExtension(file.name);
-    artifact.content = {
+    artifact.content = await withStructuredDocumentModel({
       type: 'document',
       html,
       ...layout,
@@ -61,7 +70,7 @@ export async function importWorkDocumentFile(
       ...(prepared?.bibliography
         ? { bibliography: prepared.bibliography }
         : {}),
-    };
+    });
     artifact.compatibility = await analyzeDocxCompatibility(
       file,
       result.messages,
@@ -74,7 +83,11 @@ export async function importWorkDocumentFile(
     extension === 'html' || extension === 'htm' ? source : textToHtml(source);
   const artifact = createWorkArtifact('blank-document');
   artifact.title = fileNameWithoutExtension(file.name);
-  artifact.content = { type: 'document', html, pageSize: 'a4' };
+  artifact.content = await withStructuredDocumentModel({
+    type: 'document',
+    html,
+    pageSize: 'a4',
+  });
   return artifact;
 }
 
@@ -92,8 +105,11 @@ export async function createWorkDocumentBlob(
 ): Promise<Blob> {
   if (artifact.content.type !== 'document')
     throw new Error('当前文件不是文档。');
+  const { materializeWorkDocumentContent } = await import(
+    './work-document-model-codec'
+  );
   const { createDocxBlob } = await import('./work-docx-export');
-  return createDocxBlob(artifact.content);
+  return createDocxBlob(materializeWorkDocumentContent(artifact.content));
 }
 
 function textToHtml(source: string): string {
@@ -111,6 +127,15 @@ function textToHtml(source: string): string {
       return `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`;
     })
     .join('');
+}
+
+async function withStructuredDocumentModel(
+  content: WorkDocumentContent,
+): Promise<WorkDocumentContent> {
+  const { createWorkDocumentModelFromContent } = await import(
+    './work-document-model-codec'
+  );
+  return createWorkDocumentModelFromContent(content);
 }
 
 function escapeHtml(value: string): string {

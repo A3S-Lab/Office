@@ -9,6 +9,7 @@ import type {
 } from './core';
 import {
   DocumentEditor,
+  type DocumentLayoutFont,
   MarkdownEditor,
   type OfficeFileAction,
   PdfViewer,
@@ -144,6 +145,8 @@ abstract class A3SContentEditorElement<
 }
 
 export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentContent> {
+  #layoutFonts: readonly DocumentLayoutFont[] | undefined;
+
   static get observedAttributes() {
     return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
   }
@@ -157,12 +160,22 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     else this.setAttribute('kernel-wasm-url', value);
   }
 
+  get layoutFonts(): readonly DocumentLayoutFont[] | undefined {
+    return this.#layoutFonts;
+  }
+
+  set layoutFonts(value: readonly DocumentLayoutFont[] | undefined) {
+    this.#layoutFonts = value;
+    this.requestRender();
+  }
+
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('document', this.theme);
     return createElement(DocumentEditor, {
       content: this.content,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,
+      layoutFonts: this.layoutFonts,
       onAgentRequest: (request) => this.requestAgent(request),
       onChange: (content) => this.changeContent(content),
       preview: this.preview,

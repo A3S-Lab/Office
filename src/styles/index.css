@@ -5,7 +5,9 @@
 @import "./work-office-controls.css";
 @import "./work-office-chrome.css";
 @import "./work-editor.css";
-@import "./work-document.css";
+@import "./work-document-controls.css";
+@import "./work-document-layout.css";
+@import "./work-document-page.css";
 @import "./work-document-sections.css";
 @import "./work-document-captions.css";
 @import "./work-document-citations.css";
@@ -19,4 +21,5 @@
 @import "./work-presentation-content.css";
 @import "./work-presentation-player.css";
 @import "./work-presentation-print.css";
-@import "./work-pdf.css";
+@import "./work-pdf-editor.css";
+@import "./work-pdf-export.css";

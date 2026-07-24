@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { presentationSlideView } from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
@@ -71,61 +70,10 @@ export function SlideElementPreview({
           chart={element.chart}
           label={element.altText ?? element.chart.title ?? '图表'}
         />
-      ) : element.textRuns?.length ? (
-        <RichSlideText element={element} />
-      ) : element.text ? (
-        <span style={slideTextStyle(element)}>{element.text}</span>
+      ) : element.textRuns?.length || element.text ? (
+        <SlideElementTextPreview element={element} />
       ) : null}
     </span>
-  );
-}
-
-export function RichEditableText({
-  element,
-  onCommit,
-}: {
-  element: WorkSlideElement;
-  onCommit: (text: string) => void;
-}) {
-  const dirtyRef = useRef(false);
-  return (
-    // biome-ignore lint/a11y/useSemanticElements: A contentEditable surface preserves imported rich-text runs until the user edits them.
-    <div
-      className="work-slide-rich-editor"
-      data-slide-editor
-      contentEditable
-      suppressContentEditableWarning
-      tabIndex={0}
-      role="textbox"
-      aria-label="幻灯片富文本"
-      style={slideTextStyle(element)}
-      onInput={() => {
-        dirtyRef.current = true;
-      }}
-      onBlur={(event) => {
-        if (!dirtyRef.current) return;
-        dirtyRef.current = false;
-        onCommit(event.currentTarget.innerText);
-      }}
-    >
-      {element.textRuns?.map((run, index) => (
-        <span
-          key={`${index}-${run.text}`}
-          style={{
-            color: run.color,
-            fontFamily: run.fontFamily,
-            fontSize: run.fontSize
-              ? `clamp(6px, ${run.fontSize / 10}cqw, ${run.fontSize}px)`
-              : undefined,
-            fontStyle: run.italic ? 'italic' : undefined,
-            fontWeight: run.bold ? 700 : undefined,
-            textDecoration: run.underline ? 'underline' : undefined,
-          }}
-        >
-          {run.text}
-        </span>
-      ))}
-    </div>
   );
 }
 
@@ -218,8 +166,12 @@ export function slideTextStyle(element: WorkSlideElement): React.CSSProperties {
   };
 }
 
-function RichSlideText({ element }: { element: WorkSlideElement }) {
-  const content = (
+export function SlideElementTextPreview({
+  element,
+}: {
+  element: WorkSlideElement;
+}) {
+  const content = element.textRuns?.length ? (
     <span className="work-slide-rich-text" style={slideTextStyle(element)}>
       {element.textRuns?.map((run, index) => {
         const style: React.CSSProperties = {
@@ -228,9 +180,19 @@ function RichSlideText({ element }: { element: WorkSlideElement }) {
           fontSize: run.fontSize
             ? `clamp(6px, ${run.fontSize / 10}cqw, ${run.fontSize}px)`
             : undefined,
-          fontStyle: run.italic ? 'italic' : undefined,
-          fontWeight: run.bold ? 700 : undefined,
-          textDecoration: run.underline ? 'underline' : undefined,
+          fontStyle:
+            run.italic === undefined
+              ? undefined
+              : run.italic
+                ? 'italic'
+                : 'normal',
+          fontWeight: run.bold === undefined ? undefined : run.bold ? 700 : 400,
+          textDecoration:
+            run.underline === undefined
+              ? undefined
+              : run.underline
+                ? 'underline'
+                : 'none',
         };
         return run.href ? (
           <a
@@ -249,6 +211,8 @@ function RichSlideText({ element }: { element: WorkSlideElement }) {
         );
       })}
     </span>
+  ) : (
+    <span style={slideTextStyle(element)}>{element.text}</span>
   );
   return element.href ? (
     <a

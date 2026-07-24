@@ -14,6 +14,8 @@ import {
   Italic,
   List,
   ListOrdered,
+  PilcrowLeft,
+  PilcrowRight,
   Redo2,
   Replace,
   Search,
@@ -25,8 +27,15 @@ import type { ReactNode } from 'react';
 import {
   changeDocumentIndent,
   clearDocumentFormatting,
+  documentParagraphDirection,
+  setDocumentParagraphDirection,
   setDocumentLineHeight,
 } from '../work-document-paragraph-formatting';
+import {
+  canSetDocumentTableRowRepeatHeader,
+  documentTableRowOptions,
+  setDocumentTableRowOptions,
+} from '../work-document-table-row';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
@@ -77,6 +86,7 @@ export function DocumentHomeRibbon({
   editor: Editor;
   onFindText: (replace: boolean) => void;
 }) {
+  const tableRow = documentTableRowOptions(editor);
   return (
     <>
       <RibbonGroup label="撤销">
@@ -305,6 +315,20 @@ export function DocumentHomeRibbon({
             >
               <AlignJustify size={16} />
             </ToolbarButton>
+            <ToolbarButton
+              label="从左向右"
+              active={documentParagraphDirection(editor) === 'ltr'}
+              onClick={() => setDocumentParagraphDirection(editor, 'ltr')}
+            >
+              <PilcrowRight size={16} />
+            </ToolbarButton>
+            <ToolbarButton
+              label="从右向左"
+              active={documentParagraphDirection(editor) === 'rtl'}
+              onClick={() => setDocumentParagraphDirection(editor, 'rtl')}
+            >
+              <PilcrowLeft size={16} />
+            </ToolbarButton>
           </div>
         </div>
       </RibbonGroup>
@@ -333,10 +357,47 @@ export function DocumentHomeRibbon({
             + 行
           </ToolbarButton>
           <ToolbarButton
+            label="删除行"
+            onClick={() => editor.chain().focus().deleteRow().run()}
+          >
+            − 行
+          </ToolbarButton>
+          <ToolbarButton
             label="添加列"
             onClick={() => editor.chain().focus().addColumnAfter().run()}
           >
             + 列
+          </ToolbarButton>
+          <ToolbarButton
+            label="删除列"
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+          >
+            − 列
+          </ToolbarButton>
+          <ToolbarButton
+            label="重复标题行"
+            active={tableRow.repeatHeader}
+            disabled={!canSetDocumentTableRowRepeatHeader(editor)}
+            onClick={() =>
+              setDocumentTableRowOptions(editor, {
+                ...tableRow,
+                repeatHeader: !tableRow.repeatHeader,
+              })
+            }
+          >
+            表头
+          </ToolbarButton>
+          <ToolbarButton
+            label="整行换页"
+            active={tableRow.cantSplit}
+            onClick={() =>
+              setDocumentTableRowOptions(editor, {
+                ...tableRow,
+                cantSplit: !tableRow.cantSplit,
+              })
+            }
+          >
+            整行
           </ToolbarButton>
           <ToolbarButton
             label="删除表格"

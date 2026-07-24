@@ -8,6 +8,7 @@ export function docxCaptionParagraph(
   element: HTMLElement,
   titleChildren: ParagraphChild[],
   docx: typeof import('docx'),
+  bidirectional?: boolean,
 ): InstanceType<typeof docx.Paragraph> {
   const kind = documentCaptionKind(element.dataset.captionKind) ?? 'figure';
   const number = positiveInteger(element.dataset.captionNumber);
@@ -15,6 +16,7 @@ export function docxCaptionParagraph(
     element.dataset.captionId ?? `${kind}-${number}`,
   );
   return new docx.Paragraph({
+    bidirectional,
     alignment: docx.AlignmentType.CENTER,
     spacing: { after: 160, line: 300 },
     children: [

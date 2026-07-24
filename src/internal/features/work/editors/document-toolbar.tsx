@@ -24,6 +24,13 @@ import type { WorkDocumentCaptionKind } from '../work-document-captions';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import { DocumentHomeRibbon } from './document-home-ribbon';
+import {
+  type DocumentPageChromeEditingPart,
+  DocumentPageChromeRibbon,
+} from './document-page-chrome-ribbon';
+import { DocumentParagraphSpacingPopover } from './document-paragraph-spacing-popover';
+import { DocumentPaginationPopover } from './document-pagination-popover';
+import { DocumentPictureRibbon } from './document-picture-ribbon';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
@@ -42,7 +49,16 @@ const documentRibbonTabs = [
   { id: 'view', label: '视图' },
 ] as const;
 
-type DocumentRibbonTabId = (typeof documentRibbonTabs)[number]['id'];
+const documentPictureRibbonTab = { id: 'picture', label: '图片' } as const;
+const documentPageChromeRibbonTab = {
+  id: 'pageChrome',
+  label: '页眉和页脚',
+} as const;
+
+type DocumentRibbonTabId =
+  | (typeof documentRibbonTabs)[number]['id']
+  | typeof documentPictureRibbonTab.id
+  | typeof documentPageChromeRibbonTab.id;
 export type DocumentViewMode = 'page' | 'web';
 
 interface DocumentToolbarProps {
@@ -52,7 +68,13 @@ interface DocumentToolbarProps {
   spellcheckEnabled: boolean;
   viewMode: DocumentViewMode;
   zoom: number;
+  pageChromeEditor: Editor | null;
+  pageChromeEditingPart: DocumentPageChromeEditingPart | null;
+  pageChromeShowPageNumber: boolean;
   onRequestImage: () => void;
+  onPageChromeEditingPartChange: (part: DocumentPageChromeEditingPart) => void;
+  onClosePageChrome: () => void;
+  onTogglePageChromePageNumber: () => void;
   onToggleLayout: () => void;
   onTogglePageNumbers: () => void;
   onToggleSpellcheck: () => void;
@@ -88,7 +110,13 @@ export function DocumentToolbar({
   spellcheckEnabled,
   viewMode,
   zoom,
+  pageChromeEditor,
+  pageChromeEditingPart,
+  pageChromeShowPageNumber,
   onRequestImage,
+  onPageChromeEditingPartChange,
+  onClosePageChrome,
+  onTogglePageChromePageNumber,
   onToggleLayout,
   onTogglePageNumbers,
   onToggleSpellcheck,
@@ -120,6 +148,12 @@ export function DocumentToolbar({
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
   const notice = officeDialog.notice;
+  const imageSelected = editor.isActive('image');
+  const ribbonTabs = pageChromeEditor
+    ? [...documentRibbonTabs, documentPageChromeRibbonTab]
+    : imageSelected
+      ? [...documentRibbonTabs, documentPictureRibbonTab]
+      : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
@@ -171,6 +205,16 @@ export function DocumentToolbar({
     },
     [editor, notice, onReplaceText, prompt],
   );
+
+  useEffect(() => {
+    setActiveTab((current) => {
+      if (pageChromeEditor) return 'pageChrome';
+      if (imageSelected) return 'picture';
+      return current === 'picture' || current === 'pageChrome'
+        ? 'home'
+        : current;
+    });
+  }, [imageSelected, pageChromeEditor]);
 
   useEffect(() => {
     let editorDom: HTMLElement | null = null;
@@ -255,7 +299,7 @@ export function DocumentToolbar({
     <>
       <WorkOfficeRibbon
         ariaLabel="文字功能区"
-        tabs={documentRibbonTabs}
+        tabs={ribbonTabs}
         defaultTab="home"
         activeTab={activeTab}
         onTabChange={(tab) => {
@@ -290,6 +334,7 @@ export function DocumentToolbar({
                       .chain()
                       .focus()
                       .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                      .updateAttributes('tableRow', { repeatHeader: true })
                       .run()
                   }
                 >
@@ -330,6 +375,10 @@ export function DocumentToolbar({
           ),
           page: (
             <>
+              <RibbonGroup label="段落">
+                <DocumentParagraphSpacingPopover editor={editor} />
+                <DocumentPaginationPopover editor={editor} />
+              </RibbonGroup>
               <RibbonGroup label="页面设置">
                 <ToolbarButton
                   label="页面设置"
@@ -530,6 +579,20 @@ export function DocumentToolbar({
               </RibbonGroup>
             </>
           ),
+          picture: imageSelected ? (
+            <DocumentPictureRibbon editor={editor} />
+          ) : null,
+          pageChrome:
+            pageChromeEditor && pageChromeEditingPart ? (
+              <DocumentPageChromeRibbon
+                editor={pageChromeEditor}
+                editingPart={pageChromeEditingPart}
+                showPageNumber={pageChromeShowPageNumber}
+                onEditingPartChange={onPageChromeEditingPartChange}
+                onTogglePageNumber={onTogglePageChromePageNumber}
+                onClose={onClosePageChrome}
+              />
+            ) : null,
         }}
       />
       {officeDialog.dialog}

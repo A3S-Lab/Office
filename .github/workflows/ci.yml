@@ -12,7 +12,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -58,6 +58,28 @@ jobs:
 
       - name: Check playground bundle budget
         run: bun run playground:bundle-check
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install visual-test browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Check editor visual contracts
+        run: bun run playground:visual
+
+      - name: Upload visual-test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: office-visual-test-diagnostics
+          path: |
+            playwright-report
+            test-results/visual
+          if-no-files-found: ignore
 
       - name: Check Rust formatting
         run: cargo fmt --all -- --check

@@ -1,4 +1,4 @@
-import type { Cell, Hooks, Selection } from '@fortune-sheet/core';
+import type { Hooks, Selection } from '@fortune-sheet/core';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import {
   AlignCenter,
@@ -55,7 +55,24 @@ import {
 import type { WorkSpreadsheetContent } from '../work-types';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
+import {
+  executeSpreadsheetEditorCommand,
+  type SpreadsheetEditorCommand,
+} from './spreadsheet-command-controller';
 import { managedConditionalFormatCount } from './spreadsheet-conditional-format-panel';
+import {
+  finiteSpreadsheetSelection,
+  isSpreadsheetNativeTextUndoTarget,
+  sameSpreadsheetWorkbookState,
+  spreadsheetCellAt,
+  spreadsheetFontSizeOptions,
+  spreadsheetFormulaBarSelectAllTarget,
+  spreadsheetFormulaInitializationKey,
+  spreadsheetSelectionReference,
+  spreadsheetSheetsForFortune,
+  spreadsheetSheetsWithFiniteSelections,
+  spreadsheetSingleRange,
+} from './spreadsheet-editor-support';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import {
   SpreadsheetWorkbookPanel,
@@ -83,10 +100,6 @@ const spreadsheetRibbonTabs = [
 ] as const;
 
 type SpreadsheetRibbonTabId = (typeof spreadsheetRibbonTabs)[number]['id'];
-
-const spreadsheetFontSizes = [
-  9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, 72,
-] as const;
 
 export interface SpreadsheetEditorProps {
   content: WorkSpreadsheetContent;
@@ -329,56 +342,6 @@ export function SpreadsheetEditor({
   }, [preview, zoom]);
   const gridLinesVisible =
     activeSheet?.showGridLines !== false && activeSheet?.showGridLines !== 0;
-  const updateActiveSheet = (
-    update: (
-      sheet: WorkSpreadsheetContent['sheets'][number],
-    ) => WorkSpreadsheetContent['sheets'][number],
-  ) => {
-    if (!activeSheetId) return;
-    const next = {
-      ...contentRef.current,
-      sheets: contentRef.current.sheets.map((sheet) =>
-        sheet.id === activeSheetId ? update(sheet) : sheet,
-      ),
-    };
-    contentRef.current = next;
-    onChange(next);
-  };
-  const recalculate = (scope: 'workbook' | 'selection'): boolean => {
-    const workbook = workbookRef.current;
-    if (!workbook) return false;
-    if (scope === 'workbook') {
-      workbook.calculateFormula();
-      return true;
-    }
-    if (!selectionState) return false;
-    if (
-      selectionState.selection.row.length < 2 ||
-      selectionState.selection.column.length < 2
-    )
-      return false;
-    const rowStart = Math.min(
-      selectionState.selection.row[0],
-      selectionState.selection.row[1],
-    );
-    const rowEnd = Math.max(
-      selectionState.selection.row[0],
-      selectionState.selection.row[1],
-    );
-    const columnStart = Math.min(
-      selectionState.selection.column[0],
-      selectionState.selection.column[1],
-    );
-    const columnEnd = Math.max(
-      selectionState.selection.column[0],
-      selectionState.selection.column[1],
-    );
-    workbook.calculateFormula(selectionState.sheetId, {
-      row: [rowStart, rowEnd],
-      column: [columnStart, columnEnd],
-    });
-    return true;
-  };
   const toolbarSheetId = selectionState?.sheetId ?? activeSheetId;
   const toolbarSheet = workbookSheets.find(
     (sheet) => sheet.id === toolbarSheetId,
@@ -395,15 +358,23 @@ export function SpreadsheetEditor({
   const multipleCellsSelected =
     selectedRange.row[0] !== selectedRange.row[1] ||
     selectedRange.column[0] !== selectedRange.column[1];
-  const applyCellFormat = (attribute: keyof Cell, value: unknown) => {
-    const workbook = workbookRef.current;
-    if (!workbook || !toolbarSheetId) return;
-    const liveSelection = workbook.getSelection()?.at(-1);
-    workbook.setCellFormatByRange(
-      attribute,
-      value,
-      liveSelection ? spreadsheetSingleRange(liveSelection) : selectedRange,
-      { id: toolbarSheetId },
+  const dispatchSpreadsheetCommand = (
+    command: SpreadsheetEditorCommand,
+  ): boolean => {
+    return executeSpreadsheetEditorCommand(
+      {
+        activeSheetId,
+        content: contentRef.current,
+        fallbackRange: selectedRange,
+        onChange: (next) => {
+          contentRef.current = next;
+          onChange(next);
+        },
+        selection: selectionState,
+        targetSheetId: toolbarSheetId,
+        workbook: workbookRef.current,
+      },
+      command,
     );
   };
   const handleHistoryShortcut = (event: React.KeyboardEvent<HTMLElement>) => {
@@ -507,7 +478,11 @@ export function SpreadsheetEditor({
                     value={String(toolbarCell?.fs ?? 10)}
                     options={spreadsheetFontSizeOptions(toolbarCell?.fs)}
                     onValueChange={(value) =>
-                      applyCellFormat('fs', Number(value))
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'fs',
+                        value: Number(value),
+                      })
                     }
                   />
                   <WorkOfficeRibbonButton
@@ -516,10 +491,11 @@ export function SpreadsheetEditor({
                     displayLabel={false}
                     active={Number(toolbarCell?.bl) === 1}
                     onClick={() =>
-                      applyCellFormat(
-                        'bl',
-                        Number(toolbarCell?.bl) === 1 ? 0 : 1,
-                      )
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'bl',
+                        value: Number(toolbarCell?.bl) === 1 ? 0 : 1,
+                      })
                     }
                   >
                     <Bold size={15} />
@@ -530,10 +506,11 @@ export function SpreadsheetEditor({
                     displayLabel={false}
                     active={Number(toolbarCell?.it) === 1}
                     onClick={() =>
-                      applyCellFormat(
-                        'it',
-                        Number(toolbarCell?.it) === 1 ? 0 : 1,
-                      )
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'it',
+                        value: Number(toolbarCell?.it) === 1 ? 0 : 1,
+                      })
                     }
                   >
                     <Italic size={15} />
@@ -544,10 +521,11 @@ export function SpreadsheetEditor({
                     displayLabel={false}
                     active={Number(toolbarCell?.un) === 1}
                     onClick={() =>
-                      applyCellFormat(
-                        'un',
-                        Number(toolbarCell?.un) === 1 ? 0 : 1,
-                      )
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'un',
+                        value: Number(toolbarCell?.un) === 1 ? 0 : 1,
+                      })
                     }
                   >
                     <Underline size={15} />
@@ -561,7 +539,13 @@ export function SpreadsheetEditor({
                         ? toolbarCell.fc
                         : '#172033'
                     }
-                    onValueChange={(value) => applyCellFormat('fc', value)}
+                    onValueChange={(value) =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'fc',
+                        value,
+                      })
+                    }
                   />
                   <OfficeColorPicker
                     compact
@@ -572,7 +556,13 @@ export function SpreadsheetEditor({
                         ? toolbarCell.bg
                         : '#ffffff'
                     }
-                    onValueChange={(value) => applyCellFormat('bg', value)}
+                    onValueChange={(value) =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'bg',
+                        value,
+                      })
+                    }
                   />
                 </WorkOfficeRibbonGroup>
                 <WorkOfficeRibbonGroup label="对齐">
@@ -580,7 +570,13 @@ export function SpreadsheetEditor({
                     label="左对齐"
                     displayLabel={false}
                     active={String(toolbarCell?.ht ?? '1') === '1'}
-                    onClick={() => applyCellFormat('ht', '1')}
+                    onClick={() =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'ht',
+                        value: '1',
+                      })
+                    }
                   >
                     <AlignLeft size={15} />
                   </WorkOfficeRibbonButton>
@@ -588,7 +584,13 @@ export function SpreadsheetEditor({
                     label="居中"
                     displayLabel={false}
                     active={String(toolbarCell?.ht) === '0'}
-                    onClick={() => applyCellFormat('ht', '0')}
+                    onClick={() =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'ht',
+                        value: '0',
+                      })
+                    }
                   >
                     <AlignCenter size={15} />
                   </WorkOfficeRibbonButton>
@@ -596,7 +598,13 @@ export function SpreadsheetEditor({
                     label="右对齐"
                     displayLabel={false}
                     active={String(toolbarCell?.ht) === '2'}
-                    onClick={() => applyCellFormat('ht', '2')}
+                    onClick={() =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.format',
+                        attribute: 'ht',
+                        value: '2',
+                      })
+                    }
                   >
                     <AlignRight size={15} />
                   </WorkOfficeRibbonButton>
@@ -605,22 +613,12 @@ export function SpreadsheetEditor({
                   <WorkOfficeRibbonButton
                     label={toolbarCell?.mc ? '取消合并' : '合并单元格'}
                     disabled={!toolbarCell?.mc && !multipleCellsSelected}
-                    onClick={() => {
-                      const workbook = workbookRef.current;
-                      if (!workbook || !toolbarSheetId) return;
-                      const range =
-                        workbook.getSelection()?.at(-1) ?? selectedRange;
-                      if (toolbarCell?.mc)
-                        workbook.cancelMerge([spreadsheetSingleRange(range)], {
-                          id: toolbarSheetId,
-                        });
-                      else
-                        workbook.mergeCells(
-                          [spreadsheetSingleRange(range)],
-                          'merge-all',
-                          { id: toolbarSheetId },
-                        );
-                    }}
+                    onClick={() =>
+                      dispatchSpreadsheetCommand({
+                        type: 'cell.merge.toggle',
+                        merged: Boolean(toolbarCell?.mc),
+                      })
+                    }
                   >
                     <Merge size={19} />
                   </WorkOfficeRibbonButton>
@@ -737,10 +735,10 @@ export function SpreadsheetEditor({
                   visibleLabel="网格线"
                   active={gridLinesVisible}
                   onClick={() =>
-                    updateActiveSheet((sheet) => ({
-                      ...sheet,
-                      showGridLines: !gridLinesVisible,
-                    }))
+                    dispatchSpreadsheetCommand({
+                      type: 'sheet.gridLines.set',
+                      visible: !gridLinesVisible,
+                    })
                   }
                 >
                   <Grid3X3 size={19} />
@@ -761,7 +759,12 @@ export function SpreadsheetEditor({
               : undefined
           }
           onChange={onChange}
-          onRecalculate={recalculate}
+          onRecalculate={(scope) =>
+            dispatchSpreadsheetCommand({
+              type: 'formula.recalculate',
+              scope,
+            })
+          }
           onClose={() => setPanel(null)}
         />
       )}
@@ -830,10 +833,10 @@ export function SpreadsheetEditor({
               onChange={(nextZoom) => {
                 if (preview) setPreviewZoom(nextZoom);
                 else
-                  updateActiveSheet((sheet) => ({
-                    ...sheet,
-                    zoomRatio: nextZoom / 100,
-                  }));
+                  dispatchSpreadsheetCommand({
+                    type: 'sheet.zoom.set',
+                    percent: nextZoom,
+                  });
               }}
             />
           </>
@@ -905,228 +908,4 @@ function SpreadsheetRibbonTool({
       {icon}
     </WorkOfficeRibbonButton>
   );
-}
-
-function spreadsheetSelectionReference(selection: Selection): string {
-  const rowStart = Math.min(
-    selection.row[0] ?? 0,
-    selection.row[1] ?? selection.row[0] ?? 0,
-  );
-  const rowEnd = Math.max(
-    selection.row[0] ?? 0,
-    selection.row[1] ?? selection.row[0] ?? 0,
-  );
-  const columnStart = Math.min(
-    selection.column[0] ?? 0,
-    selection.column[1] ?? selection.column[0] ?? 0,
-  );
-  const columnEnd = Math.max(
-    selection.column[0] ?? 0,
-    selection.column[1] ?? selection.column[0] ?? 0,
-  );
-  const start = `${spreadsheetColumnLabel(columnStart)}${rowStart + 1}`;
-  const end = `${spreadsheetColumnLabel(columnEnd)}${rowEnd + 1}`;
-  return start === end ? start : `${start}:${end}`;
-}
-
-function spreadsheetSingleRange(selection: Pick<Selection, 'row' | 'column'>): {
-  row: number[];
-  column: number[];
-} {
-  return {
-    row: finiteSpreadsheetSelectionAxis(selection.row),
-    column: finiteSpreadsheetSelectionAxis(selection.column),
-  };
-}
-
-function spreadsheetCellAt(
-  sheet: WorkSpreadsheetContent['sheets'][number] | undefined,
-  row: number | undefined,
-  column: number | undefined,
-): Cell | null {
-  if (!sheet) return null;
-  const safeRow = finiteSpreadsheetIndex(row, 0);
-  const safeColumn = finiteSpreadsheetIndex(column, 0);
-  return (
-    sheet.data?.[safeRow]?.[safeColumn] ??
-    sheet.celldata?.find(
-      (entry) => entry.r === safeRow && entry.c === safeColumn,
-    )?.v ??
-    null
-  );
-}
-
-function spreadsheetFontSizeOptions(
-  current: number | undefined,
-): { value: string; label: string }[] {
-  const values: number[] = [...spreadsheetFontSizes];
-  if (current && !values.includes(current)) values.push(current);
-  return values
-    .sort((left, right) => left - right)
-    .map((value) => ({ value: String(value), label: String(value) }));
-}
-
-function spreadsheetColumnLabel(column: number): string {
-  let value = Math.max(0, column) + 1;
-  let label = '';
-  while (value > 0) {
-    value -= 1;
-    label = String.fromCharCode(65 + (value % 26)) + label;
-    value = Math.floor(value / 26);
-  }
-  return label;
-}
-
-function spreadsheetSheetsWithFiniteSelections(
-  sheets: WorkSpreadsheetContent['sheets'],
-): WorkSpreadsheetContent['sheets'] {
-  return sheets.map((sheet) => ({
-    ...sheet,
-    luckysheet_select_save: (sheet.luckysheet_select_save?.length
-      ? sheet.luckysheet_select_save
-      : [undefined]
-    ).map(finiteSpreadsheetSelection),
-  }));
-}
-
-function spreadsheetSheetsForFortune(
-  sheets: WorkSpreadsheetContent['sheets'],
-): WorkSpreadsheetContent['sheets'] {
-  return structuredClone(sheets).map((sheet) => {
-    for (const merge of Object.values(sheet.config?.merge ?? {})) {
-      for (
-        let rowIndex = merge.r;
-        rowIndex < merge.r + merge.rs;
-        rowIndex += 1
-      ) {
-        const row = sheet.data?.[rowIndex];
-        if (!row) continue;
-        for (
-          let columnIndex = merge.c;
-          columnIndex < merge.c + merge.cs;
-          columnIndex += 1
-        ) {
-          row[columnIndex] = {
-            ...(row[columnIndex] ?? {}),
-            mc:
-              rowIndex === merge.r && columnIndex === merge.c
-                ? { ...merge }
-                : { r: merge.r, c: merge.c },
-          };
-        }
-      }
-    }
-    return {
-      ...sheet,
-      celldata: sheet.data
-        ? sheet.data.flatMap((row, rowIndex) =>
-            row.flatMap((cell, columnIndex) =>
-              cell == null ? [] : [{ r: rowIndex, c: columnIndex, v: cell }],
-            ),
-          )
-        : (sheet.celldata ?? []),
-    };
-  });
-}
-
-function spreadsheetFormulaInitializationKey(
-  content: WorkSpreadsheetContent,
-): string {
-  return content.sheets
-    .flatMap((sheet) =>
-      (sheet.data ?? []).flatMap((row, rowIndex) =>
-        row.flatMap((cell, columnIndex) =>
-          cell?.f
-            ? [`${sheet.id ?? sheet.name}:${rowIndex}:${columnIndex}:${cell.f}`]
-            : [],
-        ),
-      ),
-    )
-    .join('|');
-}
-
-function finiteSpreadsheetSelection(
-  selection: Selection | undefined,
-): Selection {
-  const row = finiteSpreadsheetSelectionAxis(selection?.row);
-  const column = finiteSpreadsheetSelectionAxis(selection?.column);
-  const normalized: Selection = {
-    ...selection,
-    row,
-    column,
-    row_focus: finiteSpreadsheetFocus(selection?.row_focus, row),
-    column_focus: finiteSpreadsheetFocus(selection?.column_focus, column),
-  };
-  return normalized;
-}
-
-function finiteSpreadsheetSelectionAxis(axis: number[] | undefined): number[] {
-  const first = finiteSpreadsheetIndex(axis?.[0], 0);
-  const second = finiteSpreadsheetIndex(axis?.[1], first);
-  return [Math.min(first, second), Math.max(first, second)];
-}
-
-function finiteSpreadsheetFocus(value: unknown, axis: number[]): number {
-  const focus = finiteSpreadsheetIndex(value, axis[0] ?? 0);
-  return Math.min(axis[1] ?? focus, Math.max(axis[0] ?? focus, focus));
-}
-
-function finiteSpreadsheetIndex(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value)
-    ? Math.max(0, Math.trunc(value))
-    : fallback;
-}
-
-function sameSpreadsheetWorkbookState(
-  changed: WorkSpreadsheetContent['sheets'],
-  rendered: WorkSpreadsheetContent['sheets'],
-): boolean {
-  return (
-    JSON.stringify(changed.map(spreadsheetSheetWithoutTransientSelection)) ===
-    JSON.stringify(rendered.map(spreadsheetSheetWithoutTransientSelection))
-  );
-}
-
-function spreadsheetSheetWithoutTransientSelection(
-  sheet: WorkSpreadsheetContent['sheets'][number],
-) {
-  const {
-    celldata: _cellData,
-    luckysheet_select_save: _selection,
-    luckysheet_selection_range: _range,
-    ...content
-  } = sheet;
-  return content;
-}
-
-function isSpreadsheetNativeTextUndoTarget(
-  target: EventTarget | null,
-): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  if (target.closest('.fortune-container')) return false;
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable ||
-    Boolean(target.closest('[contenteditable="true"]'))
-  );
-}
-
-function spreadsheetFormulaBarSelectAllTarget(
-  event: React.KeyboardEvent<HTMLElement>,
-): HTMLElement | null {
-  if (
-    event.defaultPrevented ||
-    event.repeat ||
-    event.altKey ||
-    event.shiftKey ||
-    !(event.metaKey || event.ctrlKey) ||
-    event.key.toLocaleLowerCase() !== 'a' ||
-    !(event.target instanceof Element)
-  ) {
-    return null;
-  }
-  const formulaBar = event.target.closest('.fortune-fx-input');
-  return formulaBar instanceof HTMLElement ? formulaBar : null;
 }

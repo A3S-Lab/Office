@@ -25,6 +25,7 @@ export function docxCitationRun(
 export function docxBibliographyParagraph(
   element: HTMLElement,
   docx: typeof import('docx'),
+  bidirectional?: boolean,
 ): InstanceType<typeof docx.Paragraph> {
   const instruction =
     element.dataset.bibliographyInstruction?.trim() || 'BIBLIOGRAPHY \\l 2052';
@@ -35,6 +36,7 @@ export function docxBibliographyParagraph(
     .filter(Boolean)
     .join('\n');
   return new docx.Paragraph({
+    bidirectional,
     children: [new docx.SimpleField(instruction, cached || '参考文献')],
     spacing: { before: 240, after: 120, line: 320 },
   });

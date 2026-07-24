@@ -2,6 +2,7 @@ import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
   DocumentEditor as ReactDocumentEditor,
+  type DocumentLayoutFont,
   MarkdownEditor as ReactMarkdownEditor,
   type OfficeFileAction,
   PdfViewer as ReactPdfViewer,
@@ -70,6 +71,10 @@ export const DocumentEditor = defineComponent({
     },
     fileActions: fileActionsProp,
     kernelWasmUrl: String,
+    layoutFonts: {
+      default: undefined,
+      type: Array as PropType<readonly DocumentLayoutFont[]>,
+    },
     preview: {
       default: false,
       type: Boolean,
@@ -88,6 +93,7 @@ export const DocumentEditor = defineComponent({
         content: props.content,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,
+        layoutFonts: props.layoutFonts,
         onAgentRequest: (request) => emit('agentRequest', request),
         onChange: (content) => {
           emit('update:content', content);

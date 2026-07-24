@@ -12,6 +12,8 @@ playground/generated/
 storybook-static
 doc_build/
 coverage/
+playwright-report/
+test-results/
 *.tgz
 target/
 

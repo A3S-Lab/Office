@@ -70,6 +70,42 @@ export function updateActiveDocumentSection(
 ): boolean {
   const section = activeDocumentSection(editor);
   if (!section) return false;
+  return updateDocumentSection(editor, section.id, layout);
+}
+
+export function documentSectionById(
+  editor: Editor,
+  sectionId: string,
+): ActiveDocumentSection | null {
+  const sections = directDocumentSections(editor.state.doc);
+  const index = sections.findIndex(({ node }, candidateIndex) => {
+    const id =
+      typeof node.attrs.id === 'string' && node.attrs.id
+        ? node.attrs.id
+        : `document-section-${candidateIndex + 1}`;
+    return id === sectionId;
+  });
+  const section = sections[index];
+  if (!section) return null;
+  return {
+    id: sectionId,
+    index,
+    count: sections.length,
+    position: section.position,
+    node: section.node,
+    layout: documentSectionLayoutFromNodeAttributes(
+      section.node.attrs as Partial<DocumentSectionNodeAttributes>,
+    ),
+  };
+}
+
+export function updateDocumentSection(
+  editor: Editor,
+  sectionId: string,
+  layout: WorkDocumentSectionLayout,
+): boolean {
+  const section = documentSectionById(editor, sectionId);
+  if (!section) return false;
   const transaction = editor.state.tr.setNodeMarkup(
     section.position,
     undefined,

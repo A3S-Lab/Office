@@ -52,6 +52,90 @@
   width: 82px;
 }
 
+.work-document-pagination-popover {
+  display: flex;
+  align-items: center;
+}
+
+.work-document-paragraph-spacing-popover {
+  display: flex;
+  align-items: center;
+}
+
+.work-document-pagination-panel {
+  width: 238px;
+  padding: 10px 12px 12px;
+}
+
+.work-document-paragraph-spacing-panel {
+  width: 228px;
+  padding: 10px 12px 12px;
+}
+
+.work-document-pagination-panel fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-paragraph-spacing-panel fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-pagination-panel legend {
+  margin-bottom: 2px;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.work-document-paragraph-spacing-panel legend {
+  margin-bottom: 2px;
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.work-document-paragraph-spacing-field {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 7px;
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-document-paragraph-spacing-panel .work-office-number-field {
+  width: 100%;
+}
+
+.work-document-paragraph-spacing-reset {
+  justify-self: end;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--a3s-blue);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.work-document-paragraph-spacing-reset:hover {
+  background: color-mix(in srgb, var(--a3s-blue) 8%, transparent);
+}
+
+.work-document-paragraph-spacing-reset:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 65%, transparent);
+  outline-offset: 1px;
+}
+
 .work-document-ribbon .work-document-font-tools button:not([role="combobox"]),
 .work-document-ribbon
   .work-document-paragraph-tools
@@ -482,490 +566,4 @@
   background: #fff0ee;
   color: #b9483d;
   text-decoration-thickness: 1px;
-}
-
-.work-document-scroll {
-  min-height: 0;
-  flex: 1;
-  padding: 28px max(28px, calc((100% - 850px) / 2)) 70px;
-  overflow: auto;
-  background: color-mix(in srgb, var(--a3s-bg) 80%, #dfe3e9);
-  scroll-behavior: smooth;
-}
-
-.work-document-scroll.web {
-  padding: 18px 22px 54px;
-}
-
-.work-document-page-stage {
-  width: max-content;
-  margin: 0 auto;
-  zoom: var(--work-document-zoom, 1);
-}
-
-.work-document-page-stage.web {
-  width: 100%;
-}
-
-.work-document-layout-panel {
-  display: flex;
-  min-width: 0;
-  min-height: 46px;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px 12px;
-  margin: 0;
-  padding: 7px 12px;
-  border: 0;
-  border-bottom: 1px solid var(--a3s-line);
-  background: var(--a3s-panel);
-  color: var(--a3s-muted);
-  font-size: 9px;
-}
-
-.work-document-layout-panel > .work-office-field,
-.work-document-layout-panel fieldset,
-.work-document-layout-panel fieldset .work-office-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.work-document-layout-panel fieldset {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.work-document-layout-panel legend {
-  float: left;
-  margin-right: 5px;
-}
-
-.work-document-layout-panel .work-office-number-field {
-  width: 47px;
-}
-
-.work-document-layout-panel
-  .work-document-page-number-option.work-office-checkbox {
-  min-height: 25px;
-}
-
-.work-document-page {
-  box-sizing: border-box;
-  width: 794px;
-  min-height: 1123px;
-  margin: 0 auto;
-  padding: 86px 88px 96px;
-  border: 1px solid var(--a3s-line);
-  background: #ffffff;
-  box-shadow: 0 8px 28px rgb(30 38 55 / 10%);
-  color: #20232b;
-}
-
-.work-document-page.letter {
-  width: 816px;
-  min-height: 1056px;
-}
-
-.work-document-page.a4.landscape {
-  width: 1123px;
-  min-height: 794px;
-}
-
-.work-document-page.letter.landscape {
-  width: 1056px;
-  min-height: 816px;
-}
-
-.work-document-page-stage.web .work-document-page {
-  width: 100%;
-  min-height: 100%;
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.work-document-page .tiptap {
-  min-height: 820px;
-  outline: 0;
-  color: #20232b;
-  font-family: "Times New Roman", "Songti SC", "STSong", serif;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.work-document-page.landscape .tiptap {
-  min-height: 520px;
-}
-
-.work-document-page-header,
-.work-document-page-footer {
-  display: flex;
-  min-height: 20px;
-  align-items: center;
-  justify-content: center;
-  color: #7a8395;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 9px;
-  line-height: 1.4;
-  white-space: pre-wrap;
-}
-
-.work-document-page-header {
-  margin-bottom: 22px;
-  padding-bottom: 7px;
-  border-bottom: 1px solid #e1e5ec;
-}
-
-.work-document-page-footer {
-  justify-content: space-between;
-  margin-top: 24px;
-  padding-top: 7px;
-  border-top: 1px solid #e1e5ec;
-}
-
-.work-document-page-footer > span:only-child {
-  margin: 0 auto;
-}
-
-.work-document-page .tiptap .work-page-break {
-  position: relative;
-  height: 26px;
-  margin: 38px 0;
-  border-top: 1px dashed #9ea8b9;
-  border-bottom: 1px dashed #9ea8b9;
-  background: #f5f7fa;
-  break-after: page;
-  cursor: default;
-}
-
-.work-document-page .tiptap .work-page-break::after {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #778196;
-  content: "分页符";
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.work-document-page.paginated .tiptap {
-  min-height: 0;
-}
-
-.work-document-page.paginated .tiptap > .work-document-section:first-child {
-  min-height: 0;
-}
-
-.work-document-page .tiptap .work-document-auto-page-break {
-  position: relative;
-  display: block;
-  width: calc(
-    100% +
-    var(--work-document-page-margin-left) +
-    var(--work-document-page-margin-right)
-  );
-  height: var(--work-document-page-spacer-height);
-  clear: both;
-  column-span: all;
-  margin-right: calc(-1 * var(--work-document-page-margin-right));
-  margin-left: calc(-1 * var(--work-document-page-margin-left));
-  pointer-events: none;
-  user-select: none;
-}
-
-.work-document-page .tiptap .work-document-auto-page-break::before {
-  position: absolute;
-  top: var(--work-document-page-gap-offset);
-  right: 0;
-  left: 0;
-  box-sizing: border-box;
-  height: var(--work-document-page-gap-height);
-  border-top: 1px solid color-mix(in srgb, var(--a3s-line) 80%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--a3s-line) 80%, transparent);
-  background: color-mix(in srgb, var(--a3s-bg) 80%, #dfe3e9);
-  box-shadow:
-    inset 0 5px 8px -8px rgb(30 38 55 / 48%),
-    inset 0 -5px 8px -8px rgb(30 38 55 / 42%);
-  content: "";
-}
-
-.work-document-page .tiptap > *:first-child {
-  margin-top: 0;
-}
-
-.work-document-page .tiptap h1 {
-  margin: 0 0 18px;
-  color: #172033;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 24px;
-  font-weight: 730;
-  letter-spacing: -0.025em;
-  line-height: 1.32;
-}
-
-.work-document-page .tiptap h2 {
-  margin: 24px 0 10px;
-  color: #1b263d;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 20px;
-  font-weight: 690;
-  line-height: 1.4;
-}
-
-.work-document-page .tiptap h3 {
-  margin: 25px 0 9px;
-  color: #24304a;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 17px;
-  font-weight: 670;
-}
-
-.work-document-page .tiptap p {
-  margin: 0 0 8px;
-}
-
-.work-document-page .tiptap ul,
-.work-document-page .tiptap ol {
-  margin: 9px 0 17px;
-  padding-left: 26px;
-}
-
-.work-document-page .tiptap li p {
-  margin: 4px 0;
-}
-
-.work-document-page .tiptap blockquote {
-  margin: 18px 0 24px;
-  padding: 12px 16px;
-  border-left: 3px solid #3974e8;
-  background: #f4f7fd;
-  color: #4f5a70;
-}
-
-.work-document-page .tiptap blockquote p {
-  margin: 0;
-}
-
-.work-document-page .tiptap code {
-  padding: 2px 4px;
-  border-radius: 4px;
-  background: #f0f2f5;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.88em;
-}
-
-.work-document-page .tiptap pre {
-  padding: 14px 16px;
-  overflow: auto;
-  border-radius: 7px;
-  background: #202635;
-  color: #eef2fa;
-}
-
-.work-document-page .tiptap a {
-  color: #2868d7;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-
-.work-document-page .tiptap img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: 18px auto;
-  border-radius: 4px;
-}
-
-.work-document-page .tiptap .ProseMirror-selectednode {
-  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 75%, transparent);
-  outline-offset: 3px;
-}
-
-.work-document-page .tiptap .tableWrapper {
-  margin: 18px 0 22px;
-  overflow-x: auto;
-}
-
-.work-document-page .tiptap table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-}
-
-.work-document-page .tiptap th,
-.work-document-page .tiptap td {
-  position: relative;
-  min-width: 80px;
-  padding: 7px 9px;
-  border: 1px solid #cfd5df;
-  vertical-align: top;
-}
-
-.work-document-page .tiptap th {
-  background: #f1f4f9;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-weight: 680;
-}
-
-.work-document-page .tiptap td > p,
-.work-document-page .tiptap th > p {
-  margin: 0;
-}
-
-.work-document-page .tiptap .selectedCell::after {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--a3s-blue) 10%, transparent);
-  content: "";
-  pointer-events: none;
-}
-
-.work-document-page .tiptap .column-resize-handle {
-  position: absolute;
-  top: 0;
-  right: -2px;
-  bottom: -2px;
-  width: 4px;
-  background: var(--a3s-blue);
-  pointer-events: none;
-}
-
-.work-document-page .tiptap p.is-editor-empty:first-child::before,
-.work-document-page .tiptap h1.is-editor-empty:first-child::before {
-  float: left;
-  height: 0;
-  color: #afb4be;
-  content: attr(data-placeholder);
-  pointer-events: none;
-}
-
-.work-document-editor.preview .work-document-page {
-  border-color: transparent;
-  box-shadow: 0 8px 30px rgb(30 38 55 / 7%);
-}
-
-.work-document-status {
-  display: flex;
-  height: 29px;
-  flex: 0 0 29px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 9px 0 13px;
-  border-top: 1px solid var(--a3s-line);
-  background: var(--a3s-panel);
-  color: var(--a3s-faint);
-  font-size: 9px;
-}
-
-.work-document-status-info,
-.work-document-status-view {
-  display: flex;
-  min-width: 0;
-  height: 100%;
-  align-items: center;
-  gap: 12px;
-}
-
-.work-document-status-info {
-  overflow: hidden;
-}
-
-.work-document-status-info > output {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.work-document-status button {
-  display: inline-flex;
-  height: 22px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 0 5px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.work-document-status button:hover:not(:disabled),
-.work-document-status button[aria-pressed="true"] {
-  background: var(--a3s-panel-soft);
-  color: var(--a3s-ink);
-}
-
-.work-document-status button:disabled {
-  cursor: default;
-  opacity: 0.35;
-}
-
-.work-document-save-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: color-mix(in srgb, #159469 78%, var(--a3s-muted));
-}
-
-.work-document-status-view {
-  flex: 0 0 auto;
-  gap: 3px;
-}
-
-.work-document-status-divider {
-  width: 1px;
-  height: 14px;
-  margin: 0 4px;
-  background: var(--a3s-line);
-}
-
-.work-document-status-view output {
-  width: 34px;
-  color: var(--a3s-muted);
-  text-align: center;
-}
-
-.work-document-status-view .work-office-status-slider {
-  width: 84px;
-  margin: 0 3px;
-}
-
-@media (max-width: 1080px) {
-  .work-export-button {
-    padding: 0 9px;
-  }
-
-  .work-document-page {
-    padding-right: 62px;
-    padding-left: 62px;
-  }
-
-  .work-document-status-detail,
-  .work-document-save-status {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .work-document-scroll {
-    padding: 20px 12px 60px;
-  }
-}
-
-@media (max-width: 760px) {
-  .work-document-status-info [aria-label="分节状态"],
-  .work-document-status-info button {
-    display: none;
-  }
-
-  .work-document-status-view .work-office-status-slider {
-    width: 58px;
-  }
 }

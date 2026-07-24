@@ -1,16 +1,6 @@
-import Color from '@tiptap/extension-color';
-import Highlight from '@tiptap/extension-highlight';
-import Image from '@tiptap/extension-image';
+import type { Editor } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
-import { TableKit } from '@tiptap/extension-table';
-import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import FontFamily from '@tiptap/extension-text-style/font-family';
-import FontSize from '@tiptap/extension-text-style/font-size';
-import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { CheckCheck, Cloud, FileText, Globe2, Minus, Plus } from 'lucide-react';
 import {
   type CSSProperties,
   useEffect,
@@ -27,42 +17,39 @@ import {
   insertDocumentCaption,
   insertDocumentCrossReference,
 } from '../work-document-caption-editor';
-import {
-  DocumentCaption,
-  DocumentCrossReference,
-} from '../work-document-caption-nodes';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   collectDocumentChanges,
-  DocumentChange,
   replaceDocumentTextWithTrackedChange,
   type WorkDocumentChangeKind,
 } from '../work-document-changes';
 import { documentCitationCount } from '../work-document-citation-editor';
 import {
-  DocumentBibliography,
-  DocumentCitation,
-} from '../work-document-citation-nodes';
-import {
   collectDocumentCommentAnchors,
-  DocumentComment,
   documentCommentViews,
   insertDocumentComment,
   removeDocumentComment,
   retainAnchoredDocumentComments,
 } from '../work-document-comments';
+import { createWorkDocumentExtensions } from '../work-document-extensions';
 import {
   insertDocumentField,
   refreshDocumentFields,
 } from '../work-document-field-editor';
-import { DocumentField } from '../work-document-field-node';
 import { documentMargins, millimetersToPixels } from '../work-document-layout';
+import {
+  createWorkDocumentModel,
+  resolveWorkDocumentEditorInput,
+} from '../work-document-model';
 import { insertDocumentNote } from '../work-document-note-editor';
 import {
-  DocumentNote,
-  DocumentNoteReference,
-} from '../work-document-note-nodes';
-import { DocumentPageBreak } from '../work-document-page-break';
-import { DocumentParagraphFormatting } from '../work-document-paragraph-formatting';
+  documentParagraphIndent,
+  setDocumentParagraphIndent,
+} from '../work-document-paragraph-formatting';
+import {
+  documentParagraphTabStops,
+  setDocumentParagraphTabStops,
+} from '../work-document-tab-stops';
 import {
   documentPageMetrics,
   DocumentPagination,
@@ -79,13 +66,19 @@ import {
 } from '../work-document-section';
 import {
   activeDocumentSection,
+  documentSectionById,
   insertDocumentSection,
   mergeDocumentSectionWithPrevious,
   updateActiveDocumentSection,
+  updateDocumentSection,
 } from '../work-document-section-editor';
-import { DocumentSection } from '../work-document-section-node';
 import { createWorkId } from '../work-templates';
-import type { WorkDocumentContent } from '../work-types';
+import type {
+  WorkDocumentContent,
+  WorkDocumentNode,
+  WorkDocumentPageChromeContent,
+  WorkDocumentPageChromeVariant,
+} from '../work-types';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
@@ -96,31 +89,42 @@ import {
   documentPageCount,
   documentWordCount,
   fileToDataUrl,
-  MAX_DOCUMENT_ZOOM,
-  MIN_DOCUMENT_ZOOM,
   plainTextAsHtml,
 } from './document-editor-support';
+import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import { DocumentLayoutPanel } from './document-layout-panel';
+import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
+import type { DocumentPageChromeEditingPart } from './document-page-chrome-ribbon';
+import { DocumentRuler } from './document-ruler';
+import { DocumentStatusBar } from './document-status-bar';
 import { DocumentToolbar, type DocumentViewMode } from './document-toolbar';
-import {
-  OfficeFileInput,
-  OfficeSlider,
-  useOfficeDialog,
-} from './office-controls';
+import { DocumentVerticalRuler } from './document-vertical-ruler';
+import { OfficeFileInput, useOfficeDialog } from './office-controls';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
+  WorkOfficeStatusBar,
 } from './work-office-chrome';
 import { useDocumentPagination } from './use-document-pagination';
+import { useDocumentLayoutFonts } from './use-document-layout-fonts';
 
 export interface DocumentEditorProps {
   content: WorkDocumentContent;
   preview: boolean;
   saveStatus?: string;
   kernelWasmUrl?: string;
+  layoutFonts?: readonly WorkDocumentLayoutFont[];
   fileActions?: readonly WorkOfficeFileAction[];
   onChange: (content: WorkDocumentContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
+}
+
+const EMPTY_DOCUMENT_LAYOUT_FONTS: readonly WorkDocumentLayoutFont[] = [];
+
+interface DocumentPageChromeEditingState {
+  part: DocumentPageChromeEditingPart;
+  sectionId: string;
+  variant: WorkDocumentPageChromeVariant;
 }
 
 function createTrackedDocumentChange(_kind: WorkDocumentChangeKind) {
@@ -136,20 +140,26 @@ export function DocumentEditor({
   preview,
   saveStatus = '已自动保存',
   kernelWasmUrl,
+  layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
   fileActions,
   onChange,
   onAgentRequest,
 }: DocumentEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pageHeaderRef = useRef<HTMLElement>(null);
+  const pageFooterRef = useRef<HTMLElement>(null);
   const contentRef = useRef(content);
   const trackChangesRef = useRef(Boolean(content.trackChanges));
   const normalizedContent = useMemo(
     () => normalizeDocumentHtml(content),
     [content],
   );
-  const initialContentRef = useRef(normalizedContent);
-  const appliedContentRef = useRef(normalizedContent);
-  const receivedContentRef = useRef(content);
+  const editorInput = useMemo(
+    () => resolveWorkDocumentEditorInput(content, normalizedContent),
+    [content, normalizedContent],
+  );
+  const initialContentRef = useRef(editorInput.source);
+  const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const [layoutOpen, setLayoutOpen] = useState(false);
   const [changesOpen, setChangesOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -157,6 +167,9 @@ export function DocumentEditor({
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<DocumentViewMode>('page');
   const [zoom, setZoom] = useState(90);
+  const [pageChromeEditing, setPageChromeEditing] =
+    useState<DocumentPageChromeEditingState | null>(null);
+  const [pageChromeEditor, setPageChromeEditor] = useState<Editor | null>(null);
   const officeDialog = useOfficeDialog();
   const [agentMenu, setAgentMenu] = useState<{
     x: number;
@@ -167,54 +180,17 @@ export function DocumentEditor({
     to: number;
   } | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   contentRef.current = content;
   trackChangesRef.current = Boolean(content.trackChanges);
   const editorExtensions = useMemo(
     () => [
-      StarterKit.configure({
-        link: {
-          autolink: true,
-          defaultProtocol: 'https',
-          openOnClick: false,
-        },
-        underline: false,
-      }),
-      DocumentSection,
-      DocumentCaption,
-      DocumentCrossReference,
-      DocumentCitation,
-      DocumentBibliography,
-      DocumentField,
-      DocumentComment,
-      DocumentNoteReference,
-      DocumentNote,
-      Underline,
-      Image.configure({
-        allowBase64: true,
-        resize: {
-          enabled: true,
-          alwaysPreserveAspectRatio: true,
-          minWidth: 60,
-          minHeight: 40,
-        },
-      }),
-      TableKit.configure({
-        table: { resizable: true, allowTableNodeSelection: true },
-      }),
-      TextStyle,
-      FontFamily,
-      FontSize,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      DocumentParagraphFormatting,
-      Placeholder.configure({ placeholder: '在这里开始输入…' }),
-      DocumentPageBreak,
-      DocumentPagination,
-      DocumentChange.configure({
+      ...createWorkDocumentExtensions({
         isTracking: () => trackChangesRef.current,
         createChange: createTrackedDocumentChange,
       }),
+      Placeholder.configure({ placeholder: '在这里开始输入…' }),
+      DocumentPagination,
     ],
     [],
   );
@@ -236,14 +212,24 @@ export function DocumentEditor({
     editorProps,
     onUpdate: ({ editor: current }) => {
       const anchors = collectDocumentCommentAnchors(current.state.doc);
-      const next = {
-        ...syncDocumentContentFromHtml(contentRef.current, current.getHTML()),
+      const synchronized = syncDocumentContentFromHtml(
+        contentRef.current,
+        current.getHTML(),
+      );
+      const model = createWorkDocumentModel(
+        synchronized.html,
+        current.getJSON() as unknown as WorkDocumentNode,
+        contentRef.current.model,
+      );
+      const next: WorkDocumentContent = {
+        ...synchronized,
+        model,
         comments: retainAnchoredDocumentComments(
           contentRef.current.comments ?? [],
           anchors,
         ),
       };
-      appliedContentRef.current = next.html;
+      appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
       contentRef.current = next;
       onChange(next);
     },
@@ -277,19 +263,28 @@ export function DocumentEditor({
   }, [editor, spellcheckEnabled]);
 
   useEffect(() => {
-    if (!editor || receivedContentRef.current === content) return;
-    receivedContentRef.current = content;
+    if (viewMode === 'page') return;
+    setPageChromeEditing(null);
+    setPageChromeEditor(null);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (!editor || appliedSourceKeyRef.current === editorInput.sourceKey)
+      return;
     const currentContent = normalizeDocumentHtml({
       ...content,
       html: editor.getHTML(),
     });
-    if (currentContent === normalizedContent) {
-      appliedContentRef.current = normalizedContent;
+    if (
+      typeof editorInput.source === 'string' &&
+      currentContent === normalizedContent
+    ) {
+      appliedSourceKeyRef.current = editorInput.sourceKey;
       return;
     }
-    appliedContentRef.current = normalizedContent;
-    editor.commands.setContent(normalizedContent, { emitUpdate: false });
-  }, [content, editor, normalizedContent]);
+    appliedSourceKeyRef.current = editorInput.sourceKey;
+    editor.commands.setContent(editorInput.source, { emitUpdate: false });
+  }, [content, editor, editorInput, normalizedContent]);
 
   const section = editor ? activeDocumentSection(editor) : null;
   const layout = section?.layout ?? documentInitialSectionLayout(content);
@@ -298,8 +293,13 @@ export function DocumentEditor({
     pageSize: layout.pageSize,
     margins: layout.margins,
   });
+  const marginPixels = {
+    top: millimetersToPixels(margins.top),
+    right: millimetersToPixels(margins.right),
+    bottom: millimetersToPixels(margins.bottom),
+    left: millimetersToPixels(margins.left),
+  };
   const pageChrome = normalizeDocumentPageChrome(layout.pageChrome, layout);
-  const defaultChrome = pageChrome.default;
   const kernelPage = useMemo(
     () => documentPageMetrics(layout),
     [
@@ -313,6 +313,7 @@ export function DocumentEditor({
   );
   const pagination = useDocumentPagination({
     editor,
+    documentRevision: editorInput.revision,
     enabled: Boolean(editor && !preview && viewMode === 'page'),
     layoutKey: [
       layout.breakAfter,
@@ -320,13 +321,13 @@ export function DocumentEditor({
       layout.columns.spacing,
       layout.columns.separator,
       layoutOpen,
-      defaultChrome.footerHtml,
-      defaultChrome.headerHtml,
-      defaultChrome.showPageNumber,
+      JSON.stringify(pageChrome),
     ].join(':'),
     page: kernelPage,
     selectionVersion,
     wasmUrl: kernelWasmUrl,
+    layoutFonts,
+    loadedLayoutFontIds,
   });
 
   if (!editor) {
@@ -338,14 +339,101 @@ export function DocumentEditor({
     pageCount,
     pagination.currentPage ?? documentCurrentPage(editor),
   );
-  const pageStart = Math.max(1, layout.pageNumberStart ?? 1);
+  const currentPageDescriptor =
+    pagination.currentPageDescriptor ??
+    fallbackPaginationPageDescriptor(
+      section?.id,
+      section?.index,
+      layout,
+      currentPage,
+    );
+  const firstPageDescriptor =
+    pagination.pages[0] ??
+    fallbackPaginationPageDescriptor(section?.id, section?.index, layout, 1);
+  const lastPageDescriptor = pagination.pages.at(-1) ?? currentPageDescriptor;
+  const editingSection = pageChromeEditing
+    ? documentSectionById(editor, pageChromeEditing.sectionId)
+    : null;
+  const editingChrome = pageChromeEditing
+    ? normalizeDocumentPageChrome(
+        editingSection?.layout.pageChrome,
+        editingSection?.layout,
+      )[pageChromeEditing.variant]
+    : null;
+  const visibleChrome = editingChrome ?? currentPageDescriptor.pageChrome;
+  const headerChrome =
+    pageChromeEditing?.part === 'header'
+      ? visibleChrome
+      : firstPageDescriptor.pageChrome;
+  const footerChrome =
+    pageChromeEditing?.part === 'footer'
+      ? visibleChrome
+      : lastPageDescriptor.pageChrome;
+  const finalPageNumber =
+    pagination.pages.at(-1)?.pageNumber ??
+    Math.max(1, layout.pageNumberStart ?? 1) + pageCount - 1;
   const changes = collectDocumentChanges(editor.state.doc);
   const commentAnchors = collectDocumentCommentAnchors(editor.state.doc);
   const comments = documentCommentViews(content.comments ?? [], commentAnchors);
   const citationCount = documentCitationCount(editor);
+  const paragraphIndent = documentParagraphIndent(editor);
+  const paragraphTabStops = documentParagraphTabStops(editor);
   const updateLayout = (next: typeof layout) => {
     updateActiveDocumentSection(editor, next);
   };
+  const updateVisiblePageChrome = (
+    patch: Partial<WorkDocumentPageChromeContent>,
+  ) => {
+    const target =
+      pageChromeEditing ??
+      ({
+        part: 'header',
+        sectionId: currentPageDescriptor.sectionId,
+        variant: currentPageDescriptor.pageChrome.variant,
+      } satisfies DocumentPageChromeEditingState);
+    const targetSection = documentSectionById(editor, target.sectionId);
+    const targetLayout = targetSection?.layout ?? layout;
+    const targetPageChrome = normalizeDocumentPageChrome(
+      targetLayout.pageChrome,
+      targetLayout,
+    );
+    const nextPageChrome = updateDocumentPageChromeVariant(
+      targetPageChrome,
+      target.variant,
+      patch,
+    );
+    updateDocumentSection(editor, target.sectionId, {
+      ...targetLayout,
+      pageChrome: nextPageChrome,
+      ...documentPageChromeLegacyFields(nextPageChrome),
+    });
+  };
+  const editPageChrome = (part: DocumentPageChromeEditingPart) => {
+    const target = part === 'header' ? firstPageDescriptor : lastPageDescriptor;
+    setLayoutOpen(false);
+    setPageChromeEditor(null);
+    setPageChromeEditing({
+      part,
+      sectionId: target.sectionId,
+      variant: target.pageChrome.variant,
+    });
+    requestAnimationFrame(() => {
+      const element =
+        part === 'header' ? pageHeaderRef.current : pageFooterRef.current;
+      element?.scrollIntoView?.({ block: 'center' });
+    });
+  };
+  const closePageChrome = () => {
+    setPageChromeEditing(null);
+    setPageChromeEditor(null);
+    requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.commands.focus();
+    });
+  };
+  const toggleVisiblePageNumber = () =>
+    updateVisiblePageChrome({
+      showPageNumber: !visibleChrome.showPageNumber,
+    });
   const addSection = () => {
     insertDocumentSection(editor, layout.breakAfter);
   };
@@ -361,10 +449,10 @@ export function DocumentEditor({
           className="work-document-ribbon"
         />
         <WorkDocumentPreview content={content} />
-        <footer className="work-document-status">
-          <span>{pageCount} 页</span>
-          <span>{section?.count ?? 1} 节</span>
-        </footer>
+        <WorkOfficeStatusBar className="work-document-footer">
+          <output aria-label="页数状态">{pageCount} 页</output>
+          <output aria-label="分节状态">{section?.count ?? 1} 节</output>
+        </WorkOfficeStatusBar>
       </section>
     );
   }
@@ -399,29 +487,26 @@ export function DocumentEditor({
         editor={editor}
         fileActions={fileActions}
         layoutOpen={layoutOpen}
-        showPageNumbers={defaultChrome.showPageNumber}
+        showPageNumbers={visibleChrome.showPageNumber}
         spellcheckEnabled={spellcheckEnabled}
         viewMode={viewMode}
         zoom={zoom}
+        pageChromeEditor={pageChromeEditor}
+        pageChromeEditingPart={pageChromeEditing?.part ?? null}
+        pageChromeShowPageNumber={visibleChrome.showPageNumber}
         onRequestImage={() => imageInputRef.current?.click()}
-        onToggleLayout={() => setLayoutOpen((value) => !value)}
+        onPageChromeEditingPartChange={editPageChrome}
+        onClosePageChrome={closePageChrome}
+        onTogglePageChromePageNumber={toggleVisiblePageNumber}
+        onToggleLayout={() => {
+          setPageChromeEditing(null);
+          setPageChromeEditor(null);
+          setLayoutOpen((value) => !value);
+        }}
         onToggleSpellcheck={() => setSpellcheckEnabled((value) => !value)}
         onViewModeChange={setViewMode}
         onZoomChange={(nextZoom) => setZoom(clampDocumentZoom(nextZoom))}
-        onTogglePageNumbers={() => {
-          const nextPageChrome = updateDocumentPageChromeVariant(
-            pageChrome,
-            'default',
-            {
-              showPageNumber: !defaultChrome.showPageNumber,
-            },
-          );
-          updateLayout({
-            ...layout,
-            pageChrome: nextPageChrome,
-            ...documentPageChromeLegacyFields(nextPageChrome),
-          });
-        }}
+        onTogglePageNumbers={toggleVisiblePageNumber}
         onInsertSection={addSection}
         onInsertNote={(kind) => insertDocumentNote(editor, kind)}
         onInsertCaption={(kind) =>
@@ -642,161 +727,201 @@ export function DocumentEditor({
             { '--work-document-zoom': String(zoom / 100) } as CSSProperties
           }
         >
-          <article
-            className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}`}
-            aria-label={preview ? '文字预览' : '文字页面'}
-            style={{
-              padding: `${millimetersToPixels(margins.top)}px ${millimetersToPixels(
-                margins.right,
-              )}px ${millimetersToPixels(margins.bottom)}px ${millimetersToPixels(margins.left)}px`,
-            }}
-          >
-            {(defaultChrome.headerHtml || layoutOpen) && (
-              <header className="work-document-page-header">
-                {defaultChrome.headerHtml ? (
-                  <div
-                    className="work-document-page-chrome-html"
-                    dangerouslySetInnerHTML={{
-                      __html: defaultChrome.headerHtml,
-                    }}
-                  />
-                ) : (
-                  '页眉'
-                )}
-              </header>
+          {viewMode === 'page' && (
+            <DocumentRuler
+              layout={layout}
+              paragraphIndent={paragraphIndent}
+              tabStops={paragraphTabStops}
+              onParagraphIndentChange={(nextParagraphIndent) =>
+                setDocumentParagraphIndent(editor, nextParagraphIndent, {
+                  restoreFocus: false,
+                })
+              }
+              onTabStopsChange={(nextTabStops) =>
+                setDocumentParagraphTabStops(editor, nextTabStops, {
+                  restoreFocus: false,
+                })
+              }
+              onLayoutChange={updateLayout}
+            />
+          )}
+          <div className="work-document-page-frame">
+            {viewMode === 'page' && (
+              <DocumentVerticalRuler
+                layout={layout}
+                onLayoutChange={updateLayout}
+              />
             )}
-            <section
-              className={`work-document-editable ${viewMode}`}
-              aria-label="文档内容编辑区域"
-              onContextMenu={(event) => {
-                if (!onAgentRequest) return;
-                const { from, to, empty } = editor.state.selection;
-                if (empty) return;
-                const rawSelection = editor.state.doc.textBetween(
-                  from,
-                  to,
-                  '\n',
-                );
-                const selection = rawSelection.trim();
-                if (!selection) return;
-                event.preventDefault();
-                setAgentMenu({
-                  x: event.clientX,
-                  y: event.clientY,
-                  selection,
-                  rawSelection,
-                  from,
-                  to,
-                });
-              }}
+            <article
+              className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${pageChromeEditing ? ' page-chrome-editing' : ''}${layoutOpen ? ' page-chrome-panel-open' : ''}`}
+              aria-label={preview ? '文字预览' : '文字页面'}
+              style={
+                {
+                  padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
+                  '--work-document-page-margin-left': `${marginPixels.left}px`,
+                  '--work-document-page-margin-right': `${marginPixels.right}px`,
+                  '--work-document-page-header-offset': `${Math.max(
+                    8,
+                    (marginPixels.top - 28) / 2,
+                  )}px`,
+                  '--work-document-page-footer-offset': `${Math.max(
+                    8,
+                    (marginPixels.bottom - 28) / 2,
+                  )}px`,
+                } as CSSProperties
+              }
             >
-              <EditorContent editor={editor} />
-            </section>
-            {(defaultChrome.footerHtml ||
-              defaultChrome.showPageNumber ||
-              layoutOpen) && (
-              <footer className="work-document-page-footer">
-                {defaultChrome.footerHtml ? (
-                  <div
-                    className="work-document-page-chrome-html"
-                    dangerouslySetInnerHTML={{
-                      __html: defaultChrome.footerHtml,
-                    }}
-                  />
-                ) : (
-                  <span>{layoutOpen ? '页脚' : ''}</span>
-                )}
-                {defaultChrome.showPageNumber && (
-                  <span>
-                    {pageStart + currentPage - 1} / {pageStart + pageCount - 1}
-                  </span>
-                )}
-              </footer>
-            )}
-          </article>
+              {viewMode === 'page' && (
+                <header
+                  ref={pageHeaderRef}
+                  className={`work-document-page-header${headerChrome.headerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
+                  data-document-page-chrome={
+                    firstPageDescriptor.pageChrome.variant
+                  }
+                >
+                  {pageChromeEditing?.part === 'header' ? (
+                    <DocumentPageChromeRichTextEditor
+                      key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-header`}
+                      autoFocus
+                      className="work-document-page-chrome-inline-editor"
+                      label="页内页眉"
+                      value={headerChrome.headerHtml}
+                      showToolbar={false}
+                      onChange={(headerHtml) =>
+                        updateVisiblePageChrome({ headerHtml })
+                      }
+                      onEditorChange={setPageChromeEditor}
+                      onExit={closePageChrome}
+                    />
+                  ) : (
+                    <>
+                      {headerChrome.headerHtml ? (
+                        <div
+                          className="work-document-page-chrome-html"
+                          dangerouslySetInnerHTML={{
+                            __html: headerChrome.headerHtml,
+                          }}
+                        />
+                      ) : (
+                        <span className="work-document-page-chrome-placeholder">
+                          页眉
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="work-document-page-chrome-activate"
+                        aria-label="编辑页眉"
+                        title="编辑页眉"
+                        onClick={() => editPageChrome('header')}
+                      />
+                    </>
+                  )}
+                </header>
+              )}
+              <section
+                className={`work-document-editable ${viewMode}`}
+                aria-label="文档内容编辑区域"
+                onDoubleClick={() => {
+                  if (pageChromeEditing) closePageChrome();
+                }}
+                onContextMenu={(event) => {
+                  if (!onAgentRequest) return;
+                  const { from, to, empty } = editor.state.selection;
+                  if (empty) return;
+                  const rawSelection = editor.state.doc.textBetween(
+                    from,
+                    to,
+                    '\n',
+                  );
+                  const selection = rawSelection.trim();
+                  if (!selection) return;
+                  event.preventDefault();
+                  setAgentMenu({
+                    x: event.clientX,
+                    y: event.clientY,
+                    selection,
+                    rawSelection,
+                    from,
+                    to,
+                  });
+                }}
+              >
+                <EditorContent editor={editor} />
+              </section>
+              {viewMode === 'page' && (
+                <footer
+                  ref={pageFooterRef}
+                  className={`work-document-page-footer${footerChrome.footerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
+                  data-document-page-chrome={
+                    lastPageDescriptor.pageChrome.variant
+                  }
+                >
+                  <div className="work-document-page-footer-content">
+                    {pageChromeEditing?.part === 'footer' ? (
+                      <DocumentPageChromeRichTextEditor
+                        key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-footer`}
+                        autoFocus
+                        className="work-document-page-chrome-inline-editor"
+                        label="页内页脚"
+                        value={footerChrome.footerHtml}
+                        showToolbar={false}
+                        onChange={(footerHtml) =>
+                          updateVisiblePageChrome({ footerHtml })
+                        }
+                        onEditorChange={setPageChromeEditor}
+                        onExit={closePageChrome}
+                      />
+                    ) : (
+                      <>
+                        {footerChrome.footerHtml ? (
+                          <div
+                            className="work-document-page-chrome-html"
+                            dangerouslySetInnerHTML={{
+                              __html: footerChrome.footerHtml,
+                            }}
+                          />
+                        ) : (
+                          <span className="work-document-page-chrome-placeholder">
+                            页脚
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="work-document-page-chrome-activate"
+                          aria-label="编辑页脚"
+                          title="编辑页脚"
+                          onClick={() => editPageChrome('footer')}
+                        />
+                      </>
+                    )}
+                  </div>
+                  {footerChrome.showPageNumber && (
+                    <span className="work-document-page-number">
+                      {lastPageDescriptor.pageNumber} / {finalPageNumber}
+                    </span>
+                  )}
+                </footer>
+              )}
+            </article>
+          </div>
         </div>
       </div>
-      <footer className="work-document-status">
-        <div className="work-document-status-info">
-          <output aria-label="页码状态">
-            第 {currentPage} 页，共 {pageCount} 页
-          </output>
-          <output aria-label="分节状态">
-            第 {(section?.index ?? 0) + 1} 节，共 {section?.count ?? 1} 节
-          </output>
-          <output aria-label="字数统计">
-            字数：{documentWordCount(editor.getText())}
-          </output>
-          <button
-            type="button"
-            aria-label={`校对：${spellcheckEnabled ? '已开启' : '已关闭'}`}
-            aria-pressed={spellcheckEnabled}
-            onClick={() => setSpellcheckEnabled((value) => !value)}
-          >
-            <CheckCheck size={12} />
-            校对：{spellcheckEnabled ? '已开启' : '已关闭'}
-          </button>
-          <output aria-label="引用状态" className="work-document-status-detail">
-            {content.bibliography?.sources.length ?? 0} 条文献 · {citationCount}{' '}
-            处引文
-          </output>
-          <output
-            aria-label="文档保存状态"
-            className="work-document-save-status"
-          >
-            <Cloud size={12} />
-            {saveStatus}
-          </output>
-        </div>
-        <div className="work-document-status-view">
-          <button
-            type="button"
-            aria-label="页面视图"
-            title="页面视图"
-            aria-pressed={viewMode === 'page'}
-            onClick={() => setViewMode('page')}
-          >
-            <FileText size={13} />
-          </button>
-          <button
-            type="button"
-            aria-label="网页视图"
-            title="网页视图"
-            aria-pressed={viewMode === 'web'}
-            onClick={() => setViewMode('web')}
-          >
-            <Globe2 size={13} />
-          </button>
-          <span className="work-document-status-divider" />
-          <button
-            type="button"
-            aria-label="缩小文档"
-            title="缩小文档"
-            disabled={zoom <= MIN_DOCUMENT_ZOOM}
-            onClick={() => setZoom((value) => clampDocumentZoom(value - 10))}
-          >
-            <Minus size={13} />
-          </button>
-          <output aria-label="文档缩放比例">{zoom}%</output>
-          <OfficeSlider
-            min={MIN_DOCUMENT_ZOOM}
-            max={MAX_DOCUMENT_ZOOM}
-            step={5}
-            value={zoom}
-            ariaLabel="文档缩放"
-            onValueChange={(value) => setZoom(clampDocumentZoom(value))}
-          />
-          <button
-            type="button"
-            aria-label="放大文档"
-            title="放大文档"
-            disabled={zoom >= MAX_DOCUMENT_ZOOM}
-            onClick={() => setZoom((value) => clampDocumentZoom(value + 10))}
-          >
-            <Plus size={13} />
-          </button>
-        </div>
-      </footer>
+      <DocumentStatusBar
+        bibliographyCount={content.bibliography?.sources.length ?? 0}
+        citationCount={citationCount}
+        currentPage={currentPage}
+        pageCount={pageCount}
+        saveStatus={saveStatus}
+        sectionCount={section?.count ?? 1}
+        sectionIndex={section?.index ?? 0}
+        spellcheckEnabled={spellcheckEnabled}
+        viewMode={viewMode}
+        wordCount={documentWordCount(editor.getText())}
+        zoom={zoom}
+        onSpellcheckChange={setSpellcheckEnabled}
+        onViewModeChange={setViewMode}
+        onZoomChange={setZoom}
+      />
       {agentMenu && onAgentRequest && (
         <WorkspaceContextMenu
           label="选中文本 AI 操作"

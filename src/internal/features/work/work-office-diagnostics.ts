@@ -111,7 +111,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.tables',
             'Tables',
-            'Table content is editable; advanced borders, cell widths, and repeated headers may be normalized.',
+            'Table rows, non-splitting rows, and repeated headers remain editable; advanced borders, exact cell widths, nested tables, and rows that split internally may be normalized.',
           ),
         );
       }
@@ -123,7 +123,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.images',
             'Images',
-            'Images remain embedded; floating position, crop, and text wrapping are converted to inline placement.',
+            'Inline images and supported square or top-and-bottom floating images remain embedded with editable size, alternative text, alignment, and wrap distance. Precise offsets, crop, contour wrapping, layering, and unsupported drawing types may be normalized.',
           ),
         );
       }

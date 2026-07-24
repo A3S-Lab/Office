@@ -1,0 +1,471 @@
+.work-document-scroll {
+  min-height: 0;
+  flex: 1;
+  padding: 28px max(28px, calc((100% - 850px) / 2)) 70px;
+  overflow: auto;
+  background: color-mix(in srgb, var(--a3s-bg) 80%, #dfe3e9);
+  scroll-behavior: smooth;
+}
+
+.work-document-scroll.web {
+  padding: 18px 22px 54px;
+}
+
+.work-document-page-stage {
+  width: max-content;
+  margin: 0 auto;
+  zoom: var(--work-document-zoom, 1);
+}
+
+.work-document-page-stage.web {
+  width: 100%;
+}
+
+.work-document-page-frame {
+  position: relative;
+}
+
+.work-document-ruler-shell {
+  position: sticky;
+  z-index: 6;
+  top: 8px;
+  box-sizing: border-box;
+  height: 30px;
+  margin: 0 auto 12px;
+  padding: 4px 0;
+  border: 1px solid color-mix(in srgb, var(--a3s-line) 88%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--a3s-panel) 96%, #f4f6f9);
+  box-shadow: 0 2px 7px rgb(31 39 55 / 10%);
+  color: var(--a3s-faint);
+  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-size: 7px;
+  user-select: none;
+}
+
+.work-document-ruler {
+  position: relative;
+  height: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+}
+
+.work-document-ruler-margin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background:
+    linear-gradient(rgb(255 255 255 / 18%), transparent),
+    color-mix(in srgb, var(--a3s-line) 68%, #cbd1da);
+  box-shadow: inset 0 0 0 1px rgb(54 65 84 / 5%);
+  pointer-events: none;
+}
+
+.work-document-ruler-margin.left {
+  left: 0;
+  width: var(--work-document-ruler-margin-left);
+  border-radius: 3px 0 0 3px;
+}
+
+.work-document-ruler-margin.right {
+  right: 0;
+  width: var(--work-document-ruler-margin-right);
+  border-radius: 0 3px 3px 0;
+}
+
+.work-document-ruler-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(
+    to right,
+    transparent var(--work-document-ruler-margin-left),
+    rgb(255 255 255 / 82%) var(--work-document-ruler-margin-left),
+    rgb(255 255 255 / 82%) calc(100% - var(--work-document-ruler-margin-right)),
+    transparent calc(100% - var(--work-document-ruler-margin-right))
+  );
+  pointer-events: none;
+}
+
+.work-document-ruler-track > span {
+  position: absolute;
+  bottom: 2px;
+  width: 1px;
+  height: 4px;
+  border-left: 1px solid #98a1b1;
+  color: #6f7889;
+  line-height: 1;
+  text-indent: 3px;
+  white-space: nowrap;
+}
+
+.work-document-ruler-track > span.major {
+  height: 7px;
+  border-color: #7d8798;
+}
+
+.work-document-ruler-tab-track {
+  --work-document-ruler-tab-track-left: 0px;
+  --work-document-ruler-tab-track-width: 0px;
+
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: var(--work-document-ruler-tab-track-left);
+  width: var(--work-document-ruler-tab-track-width);
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: crosshair;
+}
+
+.work-document-ruler-tab-track:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 60%, transparent);
+  outline-offset: -2px;
+}
+
+.work-document-ruler-tab-stop {
+  --work-document-ruler-tab-position: 0px;
+
+  position: absolute;
+  z-index: 3;
+  top: 1px;
+  left: var(--work-document-ruler-tab-position);
+  display: grid;
+  width: 14px;
+  min-width: 14px;
+  height: 10px;
+  padding: 0;
+  transform: translateX(-7px);
+  place-items: center;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: #405f9f;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.work-document-ruler-tab-stop > span {
+  position: relative;
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-bottom: 2px solid currentcolor;
+}
+
+.work-document-ruler-tab-stop.left > span {
+  border-left: 2px solid currentcolor;
+}
+
+.work-document-ruler-tab-stop.right > span {
+  border-right: 2px solid currentcolor;
+}
+
+.work-document-ruler-tab-stop.center > span {
+  width: 8px;
+  border-right: 2px solid currentcolor;
+  border-left: 2px solid currentcolor;
+}
+
+.work-document-ruler-tab-stop.decimal > span {
+  border-left: 2px solid currentcolor;
+}
+
+.work-document-ruler-tab-stop.decimal > span::after {
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: currentcolor;
+  content: "";
+}
+
+.work-document-ruler-tab-stop:hover {
+  background: color-mix(in srgb, var(--a3s-blue) 10%, transparent);
+  color: var(--a3s-blue);
+}
+
+.work-document-ruler-tab-stop:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-ruler-handle {
+  --work-document-ruler-handle-position: 0px;
+
+  position: absolute;
+  z-index: 2;
+  left: var(--work-document-ruler-handle-position);
+  display: grid;
+  width: 18px;
+  min-width: 18px;
+  height: 12px;
+  padding: 0;
+  transform: translateX(-9px);
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #566174;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.work-document-ruler-handle > span {
+  display: block;
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.work-document-ruler-handle.page-left-margin,
+.work-document-ruler-handle.page-right-margin {
+  top: 2px;
+  z-index: 1;
+  color: #7d8798;
+}
+
+.work-document-ruler-handle.page-left-margin > span,
+.work-document-ruler-handle.page-right-margin > span {
+  width: 3px;
+  height: 16px;
+  border: 0;
+  border-radius: 2px;
+  background: currentcolor;
+  opacity: 0.52;
+}
+
+.work-document-ruler-handle.left-indent,
+.work-document-ruler-handle.right-indent {
+  top: 9px;
+  z-index: 4;
+  color: var(--a3s-blue);
+}
+
+.work-document-ruler-handle.left-indent > span,
+.work-document-ruler-handle.right-indent > span {
+  border-right-width: 3px;
+  border-bottom: 6px solid currentcolor;
+  border-left-width: 3px;
+}
+
+.work-document-ruler-handle.left-indent::after {
+  position: absolute;
+  top: 8px;
+  width: 7px;
+  height: 3px;
+  border-radius: 1px;
+  background: currentcolor;
+  content: "";
+}
+
+.work-document-ruler-handle.first-line-indent {
+  top: -2px;
+  z-index: 5;
+  color: var(--a3s-blue);
+}
+
+.work-document-ruler-handle.first-line-indent > span {
+  border-top: 6px solid currentcolor;
+}
+
+.work-document-ruler-handle:hover {
+  background: color-mix(in srgb, var(--a3s-blue) 10%, transparent);
+  color: var(--a3s-blue);
+}
+
+.work-document-ruler-handle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-vertical-ruler-shell {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 10px);
+  z-index: 5;
+  box-sizing: border-box;
+  width: 30px;
+  padding: 0 4px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--a3s-line) 88%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--a3s-panel) 96%, #f4f6f9);
+  box-shadow: 0 2px 7px rgb(31 39 55 / 10%);
+  color: var(--a3s-faint);
+  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-size: 7px;
+  user-select: none;
+}
+
+.work-document-vertical-ruler {
+  position: relative;
+  width: 20px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+}
+
+.work-document-vertical-ruler-margin {
+  position: absolute;
+  right: 0;
+  left: 0;
+  background:
+    linear-gradient(to right, rgb(255 255 255 / 18%), transparent),
+    color-mix(in srgb, var(--a3s-line) 68%, #cbd1da);
+  box-shadow: inset 0 0 0 1px rgb(54 65 84 / 5%);
+  pointer-events: none;
+}
+
+.work-document-vertical-ruler-margin.top {
+  top: 0;
+  height: var(--work-document-vertical-ruler-margin-top);
+  border-radius: 3px 3px 0 0;
+}
+
+.work-document-vertical-ruler-margin.bottom {
+  bottom: 0;
+  height: var(--work-document-vertical-ruler-margin-bottom);
+  border-radius: 0 0 3px 3px;
+}
+
+.work-document-vertical-ruler-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    to bottom,
+    transparent var(--work-document-vertical-ruler-margin-top),
+    rgb(255 255 255 / 82%) var(--work-document-vertical-ruler-margin-top),
+    rgb(255 255 255 / 82%)
+      calc(100% - var(--work-document-vertical-ruler-margin-bottom)),
+    transparent calc(100% - var(--work-document-vertical-ruler-margin-bottom))
+  );
+  pointer-events: none;
+}
+
+.work-document-vertical-ruler-track > span {
+  position: absolute;
+  right: 2px;
+  width: 5px;
+  height: 1px;
+  border-top: 1px solid #98a1b1;
+  color: #6f7889;
+  line-height: 1;
+  text-indent: -8px;
+  white-space: nowrap;
+}
+
+.work-document-vertical-ruler-track > span.major {
+  width: 8px;
+  border-color: #7d8798;
+}
+
+.work-document-vertical-ruler-handle {
+  --work-document-vertical-ruler-handle-position: 0px;
+
+  position: absolute;
+  z-index: 3;
+  top: var(--work-document-vertical-ruler-handle-position);
+  left: 1px;
+  display: grid;
+  width: 18px;
+  min-width: 18px;
+  height: 14px;
+  padding: 0;
+  transform: translateY(-7px);
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #697487;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.work-document-vertical-ruler-handle > span {
+  display: block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentcolor;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 72%);
+  opacity: 0.72;
+}
+
+.work-document-vertical-ruler-handle:hover {
+  background: color-mix(in srgb, var(--a3s-blue) 10%, transparent);
+  color: var(--a3s-blue);
+}
+
+.work-document-vertical-ruler-handle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 72%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-layout-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 46px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+  margin: 0;
+  padding: 7px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-document-layout-panel > .work-office-field,
+.work-document-layout-panel fieldset,
+.work-document-layout-panel fieldset .work-office-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.work-document-layout-panel > .work-office-field,
+.work-document-layout-panel fieldset .work-office-field {
+  flex: 0 0 auto;
+}
+
+.work-document-layout-panel .work-office-field > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.work-document-layout-panel fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-layout-panel legend {
+  float: left;
+  margin-right: 5px;
+}
+
+.work-document-layout-panel .work-office-number-field {
+  width: 47px;
+}
+
+.work-document-layout-panel
+  .work-document-page-number-option.work-office-checkbox {
+  min-height: 25px;
+}

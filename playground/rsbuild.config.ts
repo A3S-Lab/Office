@@ -12,20 +12,8 @@ export default defineConfig({
     cleanDistPath: true,
     copy: [
       {
-        from: '../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
-        to: 'pdfium.wasm',
-      },
-      {
-        from: '../generated/office-kernel.wasm',
-        to: 'office-kernel.wasm',
-      },
-      {
         from: '../node_modules/@embedpdf/pdfium/LICENSE.pdfium',
         to: 'pdfium.LICENSE.txt',
-      },
-      {
-        from: '../node_modules/pptxgenjs/dist/pptxgen.bundle.js',
-        to: 'pptxgen.bundle.js',
       },
       {
         from: '../node_modules/pptxgenjs/LICENSE',

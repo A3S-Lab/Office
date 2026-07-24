@@ -18,6 +18,38 @@ export default defineConfig({
             to: 'office-kernel.wasm',
           },
           {
+            from: './node_modules/@embedpdf/fonts-sc/fonts/NotoSansHans-Regular.otf',
+            to: 'noto-sans-hans-regular.otf',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-latin/fonts/NotoSans-Regular.ttf',
+            to: 'noto-sans-regular.ttf',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-arabic/fonts/NotoNaskhArabic-Regular.ttf',
+            to: 'noto-naskh-arabic-regular.ttf',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-hebrew/fonts/NotoSansHebrew-Regular.ttf',
+            to: 'noto-sans-hebrew-regular.ttf',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-sc/LICENSE',
+            to: 'noto-sans-hans.LICENSE.txt',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-latin/LICENSE',
+            to: 'noto-sans.LICENSE.txt',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-arabic/LICENSE',
+            to: 'noto-naskh-arabic.LICENSE.txt',
+          },
+          {
+            from: './node_modules/@embedpdf/fonts-hebrew/LICENSE',
+            to: 'noto-sans-hebrew.LICENSE.txt',
+          },
+          {
             from: './node_modules/@embedpdf/pdfium/LICENSE.pdfium',
             to: 'pdfium.LICENSE.txt',
           },

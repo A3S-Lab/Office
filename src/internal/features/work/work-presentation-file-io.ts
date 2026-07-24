@@ -6,8 +6,6 @@ import {
 import { createWorkArtifact } from './work-templates';
 import type { WorkArtifact } from './work-types';
 
-const PPTX_RUNTIME_FILE_NAME = 'pptxgen.bundle.js';
-
 type PptxConstructor = typeof import('pptxgenjs').default;
 
 const presentationRuntimePromises = new Map<string, Promise<PptxConstructor>>();
@@ -22,10 +20,10 @@ export interface WorkPresentationExportOptions {
   pptxRuntimeUrl?: string;
 }
 
-export const defaultPptxRuntimeUrl = siblingAssetUrl(
+export const defaultPptxRuntimeUrl = new URL(
+  /* webpackIgnore: true */ './pptxgen.bundle.js',
   import.meta.url,
-  PPTX_RUNTIME_FILE_NAME,
-);
+).href;
 
 export async function importWorkPresentationFile(
   file: File,
@@ -110,8 +108,4 @@ function loadPresentationRuntime(runtimeUrl: string): Promise<PptxConstructor> {
   });
   presentationRuntimePromises.set(resolvedUrl, runtime);
   return runtime;
-}
-
-function siblingAssetUrl(moduleUrl: string, fileName: string): string {
-  return `${moduleUrl.slice(0, moduleUrl.lastIndexOf('/') + 1)}${fileName}`;
 }
