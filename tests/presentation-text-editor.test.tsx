@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import {
   applyPresentationTextFormatting,
   createPresentationTextEditorExtensions,
@@ -127,6 +127,34 @@ test('mounts one TipTap-backed presentation text surface', async () => {
   expect(
     await screen.findByRole('textbox', { name: '幻灯片文本' }),
   ).toHaveAttribute('data-presentation-text-engine', 'tiptap');
+});
+
+test('returns Escape from text editing to its slide object', async () => {
+  let exits = 0;
+  render(
+    <fieldset
+      data-slide-element-origin="slide"
+      data-testid="slide-object"
+      // biome-ignore lint/a11y/noNoninteractiveTabindex: Mirrors the keyboard-selectable slide object wrapper.
+      tabIndex={0}
+    >
+      <legend>Slide object</legend>
+      <PresentationTextEditor
+        element={textElement({ text: 'Editable slide text' })}
+        onChange={() => undefined}
+        onExitEditing={() => {
+          exits += 1;
+        }}
+      />
+    </fieldset>,
+  );
+
+  const textbox = await screen.findByRole('textbox', {
+    name: '幻灯片文本',
+  });
+  fireEvent.keyDown(textbox, { key: 'Escape' });
+  expect(exits).toBe(1);
+  await waitFor(() => expect(screen.getByTestId('slide-object')).toHaveFocus());
 });
 
 test('keeps form control focus while formatting a text selection', async () => {

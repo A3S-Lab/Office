@@ -6,7 +6,7 @@ import {
   PanelsTopLeft,
 } from 'lucide-react';
 import { useState } from 'react';
-import { CodeBlock } from './code-block';
+import { CodeBlock, type PlaygroundCodeLanguage } from './code-block';
 import { PageHeader } from './page-header';
 
 type Framework = 'react' | 'vue' | 'web-component';
@@ -20,11 +20,17 @@ const spreadsheetKernelExample = `<SpreadsheetEditor
 
 const frameworkExamples: Record<
   Framework,
-  { label: string; fileName: string; code: string }
+  {
+    label: string;
+    fileName: string;
+    language: PlaygroundCodeLanguage;
+    code: string;
+  }
 > = {
   react: {
     label: 'React',
     fileName: 'DocumentPage.tsx',
+    language: 'tsx',
     code: `import { useState } from 'react';
 import type { DocumentContent } from '@a3s-lab/office/core';
 import { DocumentEditor } from '@a3s-lab/office/react';
@@ -53,6 +59,7 @@ export function DocumentPage() {
   vue: {
     label: 'Vue',
     fileName: 'DocumentPage.vue',
+    language: 'markup',
     code: `<script setup lang="ts">
 import { ref } from 'vue';
 import type { DocumentContent } from '@a3s-lab/office/core';
@@ -82,6 +89,7 @@ const content = ref<DocumentContent>({
   'web-component': {
     label: 'Web Component',
     fileName: 'document-editor.ts',
+    language: 'typescript',
     code: `import {
   defineA3SOfficeElements,
 } from '@a3s-lab/office/web-component';
@@ -165,7 +173,11 @@ export function IntegrationDocsPage({
           </div>
           <div className="playground-integration-start">
             <div className="playground-doc-card playground-install-card">
-              <CodeBlock code={installCommand} label="项目目录" />
+              <CodeBlock
+                code={installCommand}
+                label="项目目录"
+                language="bash"
+              />
             </div>
             <div className="playground-doc-card playground-integration-notes">
               <span>
@@ -195,7 +207,11 @@ export function IntegrationDocsPage({
             </div>
           </div>
           <div className="playground-doc-card">
-            <CodeBlock code={spreadsheetKernelExample} label="React" />
+            <CodeBlock
+              code={spreadsheetKernelExample}
+              label="React"
+              language="tsx"
+            />
           </div>
         </section>
 
@@ -229,7 +245,7 @@ export function IntegrationDocsPage({
               ))}
               <span>{example.fileName}</span>
             </div>
-            <CodeBlock code={example.code} />
+            <CodeBlock code={example.code} language={example.language} />
           </div>
         </section>
 

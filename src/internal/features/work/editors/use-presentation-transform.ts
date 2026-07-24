@@ -10,6 +10,7 @@ import {
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import type { WorkSlideElement } from '../work-types';
 import { clamp } from './presentation-editor-operations';
+import { presentationSelectionBounds } from './presentation-selection';
 import type { PresentationGeometryController } from './use-presentation-geometry';
 
 const PRESENTATION_SNAP_DISTANCE_PIXELS = 6;
@@ -23,6 +24,8 @@ interface PresentationFrame {
 
 export interface PresentationTransformDrag {
   element: WorkSlideElement;
+  elements?: readonly WorkSlideElement[];
+  frame?: WorkSlideElement;
   mode: 'move' | 'resize';
   pointerId: number;
   startX: number;
@@ -46,6 +49,11 @@ export interface PresentationTransformPatch {
   height: number;
 }
 
+export interface PresentationTransformCommit {
+  elementId: string;
+  patch: PresentationTransformPatch;
+}
+
 export interface PresentationTransformController {
   cancelDrag: () => void;
   displayElements: WorkSlideElement[];
@@ -66,13 +74,15 @@ export function usePresentationTransform({
   geometry,
   onCommit,
   onSelect,
+  selectedElementIds,
   snapTargets,
 }: {
   canvasRef: RefObject<HTMLElement | null>;
   elements: WorkSlideElement[];
   geometry: PresentationGeometryController;
-  onCommit: (elementId: string, patch: PresentationTransformPatch) => void;
+  onCommit: (changes: readonly PresentationTransformCommit[]) => void;
   onSelect: (elementId: string) => void;
+  selectedElementIds: readonly string[];
   snapTargets: WorkSlideElement[];
 }): PresentationTransformController {
   const dragRef = useRef<PresentationTransformDrag | null>(null);
@@ -83,7 +93,7 @@ export function usePresentationTransform({
   const pendingPointRef = useRef<PresentationTransformPoint | null>(null);
   const generationRef = useRef(0);
   const requestSequenceRef = useRef(0);
-  const [preview, setPreview] = useState<WorkSlideElement | null>(null);
+  const [preview, setPreview] = useState<WorkSlideElement[] | null>(null);
   const [guides, setGuides] = useState<OfficeKernelPresentationSnapGuide[]>([]);
   const cancelGeometry = geometry.cancel;
   const snapElement = geometry.snapElement;
@@ -116,14 +126,19 @@ export function usePresentationTransform({
     ): void => {
       const bounds = canvasRef.current?.getBoundingClientRect();
       if (!bounds?.width || !bounds.height) return;
-      const candidate = presentationTransformCandidate(drag, point, bounds);
-      if (commit && samePresentationTransform(candidate, drag.element)) {
+      const frame = drag.frame ?? drag.element;
+      const candidate = presentationTransformCandidate(
+        { ...drag, element: frame },
+        point,
+        bounds,
+      );
+      if (commit && samePresentationTransform(candidate, frame)) {
         setPreview(null);
         setGuides([]);
         return;
       }
       const requestSequence = ++requestSequenceRef.current;
-      setPreview(candidate);
+      setPreview(presentationTransformPreview(drag, candidate));
       if (!commit) setGuides([]);
       const threshold = {
         x: Math.min(
@@ -137,7 +152,12 @@ export function usePresentationTransform({
       };
       void snapElement(
         candidate,
-        snapTargetsRef.current,
+        snapTargetsRef.current.filter(
+          (target) =>
+            !(drag.elements ?? [drag.element]).some(
+              (element) => element.id === target.id,
+            ),
+        ),
         drag.mode,
         threshold,
       ).then((resolution) => {
@@ -156,25 +176,35 @@ export function usePresentationTransform({
               height: resolution.element.height,
             }
           : candidate;
-        setPreview(resolved);
+        const resolvedElements = presentationTransformPreview(drag, resolved);
+        setPreview(resolvedElements);
         setGuides(resolution?.guides ?? []);
         if (!commit) return;
-        const current = elementsRef.current.find(
-          (element) => element.id === drag.element.id,
+        const originals = drag.elements ?? [drag.element];
+        const current = originals.map((original) =>
+          elementsRef.current.find((element) => element.id === original.id),
         );
         if (
-          !current ||
-          !samePresentationTransform(current, drag.element) ||
-          samePresentationTransform(resolved, drag.element)
+          current.some(
+            (element, index) =>
+              !element || !samePresentationTransform(element, originals[index]),
+          ) ||
+          samePresentationTransform(resolved, frame)
         ) {
           setPreview(null);
           setGuides([]);
           return;
         }
-        onCommitRef.current(
-          drag.element.id,
-          presentationTransformPatch(resolved),
-        );
+        const changes = resolvedElements
+          .filter(
+            (element, index) =>
+              !samePresentationTransform(element, originals[index]),
+          )
+          .map((element) => ({
+            elementId: element.id,
+            patch: presentationTransformPatch(element),
+          }));
+        if (changes.length) onCommitRef.current(changes);
         setPreview(null);
         setGuides([]);
       });
@@ -195,18 +225,25 @@ export function usePresentationTransform({
       cancelGeometry();
       generationRef.current += 1;
       requestSequenceRef.current += 1;
+      const selected = new Set(selectedElementIds);
+      const dragElements =
+        mode === 'move' && selected.has(element.id)
+          ? elements.filter((candidate) => selected.has(candidate.id))
+          : [element];
       dragRef.current = {
         element,
+        elements: dragElements,
+        frame: presentationTransformFrame(dragElements, element),
         mode,
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
       };
-      setPreview(element);
+      setPreview(dragElements);
       setGuides([]);
-      onSelect(element.id);
+      if (!selected.has(element.id)) onSelect(element.id);
     },
-    [cancelGeometry, clearFrame, onSelect],
+    [cancelGeometry, clearFrame, elements, onSelect, selectedElementIds],
   );
 
   const continueDrag = useCallback(
@@ -257,8 +294,13 @@ export function usePresentationTransform({
   useEffect(() => {
     const drag = dragRef.current;
     if (!drag) return;
-    const current = elements.find((element) => element.id === drag.element.id);
-    if (!current || !samePresentationTransform(current, drag.element)) {
+    const originals = drag.elements ?? [drag.element];
+    if (
+      originals.some((original) => {
+        const current = elements.find((element) => element.id === original.id);
+        return !current || !samePresentationTransform(current, original);
+      })
+    ) {
       cancelDrag();
     }
   }, [cancelDrag, elements]);
@@ -273,15 +315,11 @@ export function usePresentationTransform({
     [clearFrame],
   );
 
-  const displayElements = useMemo(
-    () =>
-      preview
-        ? elements.map((element) =>
-            element.id === preview.id ? preview : element,
-          )
-        : elements,
-    [elements, preview],
-  );
+  const displayElements = useMemo(() => {
+    if (!preview) return elements;
+    const previews = new Map(preview.map((element) => [element.id, element]));
+    return elements.map((element) => previews.get(element.id) ?? element);
+  }, [elements, preview]);
 
   return {
     beginDrag,
@@ -313,6 +351,37 @@ export function presentationTransformCandidate(
     width: clamp(drag.element.width + dx, 4, 100 - drag.element.x),
     height: clamp(drag.element.height + dy, 4, 100 - drag.element.y),
   };
+}
+
+function presentationTransformFrame(
+  elements: readonly WorkSlideElement[],
+  fallback: WorkSlideElement,
+): WorkSlideElement {
+  const bounds = presentationSelectionBounds(elements);
+  if (!bounds) return fallback;
+  return {
+    ...fallback,
+    x: bounds.left,
+    y: bounds.top,
+    width: bounds.width,
+    height: bounds.height,
+  };
+}
+
+function presentationTransformPreview(
+  drag: PresentationTransformDrag,
+  frame: WorkSlideElement,
+): WorkSlideElement[] {
+  const originals = drag.elements ?? [drag.element];
+  const originalFrame = drag.frame ?? drag.element;
+  if (drag.mode === 'resize') return [frame];
+  const deltaX = frame.x - originalFrame.x;
+  const deltaY = frame.y - originalFrame.y;
+  return originals.map((element) => ({
+    ...element,
+    x: element.x + deltaX,
+    y: element.y + deltaY,
+  }));
 }
 
 function presentationTransformPatch(

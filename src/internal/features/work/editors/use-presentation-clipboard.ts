@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { showToast } from '../../../state/app-state';
 import {
   clonePresentationElementForPaste,
+  clonePresentationElementsForPaste,
   clonePresentationSlideForPaste,
-  copyPresentationElement,
+  copyPresentationElements,
   copyPresentationSlide,
   takePresentationClipboard,
 } from '../work-presentation-clipboard';
@@ -13,8 +14,9 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import { isOfficeShortcutBlocked } from './office-shortcuts';
 import type { PresentationDesignMode } from './presentation-design-panel';
+import { translatePresentationSelection } from './presentation-selection';
+import { usePresentationShortcuts } from './use-presentation-shortcuts';
 import {
   applyPresentationElementFormattingPatch,
   presentationElementToolbarState,
@@ -26,10 +28,13 @@ export function usePresentationClipboard({
   mode,
   targetId,
   selectedSlide,
-  selectedElement,
+  editingElementId,
+  selectedElements,
   onChange,
   onSelectSlide,
-  onSelectElement,
+  onEditElement,
+  onExitEditing,
+  onSelectElements,
   onUndo,
   onRedo,
   onAddSlide,
@@ -40,43 +45,58 @@ export function usePresentationClipboard({
   mode: PresentationDesignMode;
   targetId: string | undefined;
   selectedSlide: WorkSlide | undefined;
-  selectedElement: WorkSlideElement | null;
+  editingElementId: string | null;
+  selectedElements: readonly WorkSlideElement[];
   onChange: (content: WorkPresentationContent) => void;
   onSelectSlide: (id: string) => void;
-  onSelectElement: (id: string | null) => void;
+  onEditElement: (id: string) => void;
+  onExitEditing: () => void;
+  onSelectElements: (ids: readonly string[]) => void;
   onUndo: () => boolean;
   onRedo: () => boolean;
   onAddSlide: () => void;
   onStartSlideshow?: () => void;
 }) {
+  const selectedElement = selectedElements.at(-1) ?? null;
   const copySelection = useCallback((): boolean => {
-    if (selectedElement) {
-      copyPresentationElement(selectedElement);
-      showToast('已复制演示元素', 'success');
+    if (selectedElements.length) {
+      copyPresentationElements(selectedElements);
+      showToast(
+        selectedElements.length > 1
+          ? `已复制 ${selectedElements.length} 个对象`
+          : '已复制演示元素',
+        'success',
+      );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
     copyPresentationSlide(selectedSlide);
     showToast('已复制幻灯片', 'success');
     return true;
-  }, [mode, selectedElement, selectedSlide]);
+  }, [mode, selectedElements, selectedSlide]);
 
   const deleteSelectedElement = useCallback((): boolean => {
-    if (!selectedElement || !targetId) return false;
+    if (!selectedElements.length || !targetId) return false;
+    const selectedIds = new Set(selectedElements.map((element) => element.id));
     const next = updateTargetElements(content, mode, targetId, (elements) =>
-      elements.filter((element) => element.id !== selectedElement.id),
+      elements.filter((element) => !selectedIds.has(element.id)),
     );
     if (!next) return false;
     onChange(next);
-    onSelectElement(null);
+    onSelectElements([]);
     return true;
-  }, [content, mode, onChange, onSelectElement, selectedElement, targetId]);
+  }, [content, mode, onChange, onSelectElements, selectedElements, targetId]);
 
   const cutSelection = useCallback((): boolean => {
-    if (selectedElement) {
-      copyPresentationElement(selectedElement);
+    if (selectedElements.length) {
+      copyPresentationElements(selectedElements);
       if (!deleteSelectedElement()) return false;
-      showToast('已剪切演示元素', 'success');
+      showToast(
+        selectedElements.length > 1
+          ? `已剪切 ${selectedElements.length} 个对象`
+          : '已剪切演示元素',
+        'success',
+      );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
@@ -93,7 +113,7 @@ export function usePresentationClipboard({
     );
     onChange({ ...content, slides });
     onSelectSlide(slides[Math.min(index, slides.length - 1)].id);
-    onSelectElement(null);
+    onSelectElements([]);
     showToast('已剪切幻灯片', 'success');
     return true;
   }, [
@@ -101,9 +121,9 @@ export function usePresentationClipboard({
     deleteSelectedElement,
     mode,
     onChange,
-    onSelectElement,
+    onSelectElements,
     onSelectSlide,
-    selectedElement,
+    selectedElements,
     selectedSlide,
   ]);
 
@@ -113,20 +133,34 @@ export function usePresentationClipboard({
       showToast('没有可粘贴的演示内容。', 'info');
       return true;
     }
-    if (clipboard.payload.kind === 'element') {
+    if (
+      clipboard.payload.kind === 'element' ||
+      clipboard.payload.kind === 'elements'
+    ) {
       if (!targetId) return false;
-      const pasted = clonePresentationElementForPaste(
-        clipboard.payload.element,
-        clipboard.offset,
-      );
+      const pasted =
+        clipboard.payload.kind === 'element'
+          ? [
+              clonePresentationElementForPaste(
+                clipboard.payload.element,
+                clipboard.offset,
+              ),
+            ]
+          : clonePresentationElementsForPaste(
+              clipboard.payload.elements,
+              clipboard.offset,
+            );
       const next = updateTargetElements(content, mode, targetId, (elements) => [
         ...elements,
-        pasted,
+        ...pasted,
       ]);
       if (!next) return false;
       onChange(next);
-      onSelectElement(pasted.id);
-      showToast('已粘贴演示元素', 'success');
+      onSelectElements(pasted.map((element) => element.id));
+      showToast(
+        pasted.length > 1 ? `已粘贴 ${pasted.length} 个对象` : '已粘贴演示元素',
+        'success',
+      );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) {
@@ -141,30 +175,33 @@ export function usePresentationClipboard({
     slides.splice(index + 1, 0, pasted);
     onChange({ ...content, slides });
     onSelectSlide(pasted.id);
-    onSelectElement(null);
+    onSelectElements([]);
     showToast('已粘贴幻灯片', 'success');
     return true;
   }, [
     content,
     mode,
     onChange,
-    onSelectElement,
+    onSelectElements,
     onSelectSlide,
     selectedSlide,
     targetId,
   ]);
 
   const duplicateSelection = useCallback((): boolean => {
-    if (selectedElement && targetId) {
-      const copy = clonePresentationElementForPaste(selectedElement, 2);
+    if (selectedElements.length && targetId) {
+      const copies = clonePresentationElementsForPaste(selectedElements, 2);
       const next = updateTargetElements(content, mode, targetId, (elements) => [
         ...elements,
-        copy,
+        ...copies,
       ]);
       if (!next) return false;
       onChange(next);
-      onSelectElement(copy.id);
-      showToast('已复制演示元素', 'success');
+      onSelectElements(copies.map((element) => element.id));
+      showToast(
+        copies.length > 1 ? `已复制 ${copies.length} 个对象` : '已复制演示元素',
+        'success',
+      );
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
@@ -176,58 +213,50 @@ export function usePresentationClipboard({
     slides.splice(index + 1, 0, copy);
     onChange({ ...content, slides });
     onSelectSlide(copy.id);
-    onSelectElement(null);
+    onSelectElements([]);
     showToast('已复制幻灯片', 'success');
     return true;
   }, [
     content,
     mode,
     onChange,
-    onSelectElement,
+    onSelectElements,
     onSelectSlide,
-    selectedElement,
+    selectedElements,
     selectedSlide,
     targetId,
   ]);
 
   const nudgeSelection = useCallback(
     (key: string, distance: number): boolean => {
-      if (!selectedElement || !targetId) return false;
+      if (!selectedElements.length || !targetId) return false;
       const horizontal =
         key === 'ArrowLeft' ? -distance : key === 'ArrowRight' ? distance : 0;
       const vertical =
         key === 'ArrowUp' ? -distance : key === 'ArrowDown' ? distance : 0;
       if (!horizontal && !vertical) return false;
       const next = updateTargetElements(content, mode, targetId, (elements) =>
-        elements.map((element) =>
-          element.id === selectedElement.id
-            ? {
-                ...element,
-                x: clampPresentationPosition(
-                  element.x + horizontal,
-                  element.width,
-                ),
-                y: clampPresentationPosition(
-                  element.y + vertical,
-                  element.height,
-                ),
-              }
-            : element,
+        translatePresentationSelection(
+          elements,
+          selectedElements.map((element) => element.id),
+          horizontal,
+          vertical,
         ),
       );
       if (!next) return false;
       onChange(next);
       return true;
     },
-    [content, mode, onChange, selectedElement, targetId],
+    [content, mode, onChange, selectedElements, targetId],
   );
 
   const toggleBold = useCallback((): boolean => {
-    if (!selectedElement || !targetId) return false;
+    if (!selectedElement || !selectedElements.length || !targetId) return false;
     const bold = !presentationElementToolbarState(selectedElement).bold;
+    const selectedIds = new Set(selectedElements.map((element) => element.id));
     const next = updateTargetElements(content, mode, targetId, (elements) =>
       elements.map((element) =>
-        element.id === selectedElement.id
+        selectedIds.has(element.id)
           ? applyPresentationElementFormattingPatch(element, { bold })
           : element,
       ),
@@ -235,128 +264,30 @@ export function usePresentationClipboard({
     if (!next) return false;
     onChange(next);
     return true;
-  }, [content, mode, onChange, selectedElement, targetId]);
+  }, [content, mode, onChange, selectedElement, selectedElements, targetId]);
 
-  useEffect(() => {
-    if (preview) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-      const commandKey = event.metaKey || event.ctrlKey;
-      const key = event.key.toLocaleLowerCase();
-      const addSlideShortcut =
-        !event.repeat &&
-        !event.altKey &&
-        ((event.ctrlKey && !event.metaKey && !event.shiftKey && key === 'm') ||
-          (event.metaKey && !event.ctrlKey && event.shiftKey && key === 'n'));
-      if (isOfficeShortcutBlocked(event.target)) {
-        if (
-          !event.repeat &&
-          !commandKey &&
-          !event.altKey &&
-          !event.shiftKey &&
-          key === 'f5' &&
-          onStartSlideshow
-        ) {
-          event.preventDefault();
-        }
-        return;
-      }
-      const historyEditingTarget = isPresentationHistoryEditingTarget(
-        event.target,
-      );
-      let handled = false;
-      if (
-        !event.repeat &&
-        !commandKey &&
-        !event.altKey &&
-        !event.shiftKey &&
-        key === 'f5' &&
-        onStartSlideshow
-      ) {
-        onStartSlideshow();
-        handled = true;
-      } else if (addSlideShortcut) {
-        onAddSlide();
-        handled = true;
-      } else if (
-        !event.repeat &&
-        commandKey &&
-        !event.altKey &&
-        !event.shiftKey &&
-        key === 'b' &&
-        selectedElement &&
-        isPresentationObjectKeyboardTarget(event.target)
-      ) {
-        handled = toggleBold();
-      } else if (
-        historyEditingTarget &&
-        commandKey &&
-        !event.altKey &&
-        key === 'z'
-      ) {
-        handled = event.shiftKey ? onRedo() : onUndo();
-      } else if (
-        historyEditingTarget &&
-        commandKey &&
-        !event.altKey &&
-        !event.shiftKey &&
-        key === 'y'
-      ) {
-        handled = onRedo();
-      } else if (isPresentationTextEditingTarget(event.target)) {
-        return;
-      } else if (commandKey && !event.altKey && key === 'z')
-        handled = event.shiftKey ? onRedo() : onUndo();
-      else if (commandKey && !event.altKey && !event.shiftKey && key === 'y')
-        handled = onRedo();
-      else if (commandKey && !event.altKey && !event.shiftKey && key === 'c')
-        handled = copySelection();
-      else if (commandKey && !event.altKey && !event.shiftKey && key === 'x')
-        handled = cutSelection();
-      else if (commandKey && !event.altKey && !event.shiftKey && key === 'v')
-        handled = pasteSelection();
-      else if (commandKey && !event.altKey && !event.shiftKey && key === 'd')
-        handled = duplicateSelection();
-      else if (
-        !commandKey &&
-        !event.altKey &&
-        selectedElement &&
-        event.key.startsWith('Arrow') &&
-        isPresentationObjectKeyboardTarget(event.target)
-      ) {
-        handled = nudgeSelection(event.key, event.shiftKey ? 5 : 1);
-      } else if (
-        (event.key === 'Delete' || event.key === 'Backspace') &&
-        selectedElement &&
-        isPresentationObjectKeyboardTarget(event.target)
-      ) {
-        handled = deleteSelectedElement();
-      }
-      if (handled) event.preventDefault();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [
+  usePresentationShortcuts({
     copySelection,
     cutSelection,
-    deleteSelectedElement,
+    deleteSelection: deleteSelectedElement,
     duplicateSelection,
+    editingElementId,
     nudgeSelection,
     onAddSlide,
+    onEditElement,
+    onExitEditing,
     onRedo,
+    onSelectElements,
     onStartSlideshow,
     onUndo,
     pasteSelection,
     preview,
     selectedElement,
+    selectedElementCount: selectedElements.length,
     toggleBold,
-  ]);
+  });
 
   return { copySelection, cutSelection, pasteSelection };
-}
-
-function clampPresentationPosition(value: number, size: number): number {
-  return Math.min(Math.max(value, 0), Math.max(0, 100 - size));
 }
 
 function updateTargetElements(
@@ -399,41 +330,6 @@ function updateTargetElements(
         : master,
     ),
   };
-}
-
-function isPresentationTextEditingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    target.isContentEditable ||
-    Boolean(target.closest('[data-slide-editor]'))
-  );
-}
-
-function isPresentationHistoryEditingTarget(
-  target: EventTarget | null,
-): boolean {
-  if (
-    !(
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement
-    )
-  ) {
-    return false;
-  }
-  return Boolean(target.closest('.work-presentation-editor'));
-}
-
-function isPresentationObjectKeyboardTarget(
-  target: EventTarget | null,
-): boolean {
-  return (
-    target instanceof HTMLElement &&
-    Boolean(target.closest('[data-slide-element-origin]'))
-  );
 }
 
 function structuredCopy<T>(value: T): T {

@@ -97,7 +97,7 @@ export function App() {
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
-| Presentation | Scene graph + TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
+| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, collective move and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
 ### Package matrix
@@ -273,7 +273,7 @@ const blankDeck = createArtifact('blank-presentation');
 
 See the online
 [component integration guide](https://a3s-lab.github.io/Office/#guide) for
-copyable React, Vue, and Web Component examples.
+syntax-highlighted, copyable React, Vue, and Web Component examples.
 
 ## Editor Model
 

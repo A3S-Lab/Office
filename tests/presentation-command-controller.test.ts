@@ -15,12 +15,14 @@ describe('presentation command controller', () => {
       restoreTextFocus: false,
     });
     dispatch({ type: 'element.align', alignment: 'center' });
+    dispatch({ type: 'element.distribute', direction: 'horizontal' });
     dispatch({ type: 'element.reorder', direction: 1 });
     dispatch({ type: 'view.set', mode: 'sorter' });
 
     expect(calls).toEqual([
       'element.update:bold:true:false',
       'element.align:center',
+      'element.distribute:horizontal',
       'element.reorder:1',
       'view.set:sorter',
     ]);
@@ -63,6 +65,8 @@ function handlers(calls: string[]): PresentationCommandHandlers {
     copySelection: () => calls.push('clipboard.copy'),
     cutSelection: () => calls.push('clipboard.cut'),
     deleteSlide: () => calls.push('slide.delete'),
+    distributeElements: (direction) =>
+      calls.push(`element.distribute:${direction}`),
     duplicateSlide: () => calls.push('slide.duplicate'),
     pasteSelection: () => calls.push('clipboard.paste'),
     redo: () => calls.push('history.redo'),

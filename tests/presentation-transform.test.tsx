@@ -89,8 +89,9 @@ test('commits one snapped controlled value when a pointer drag ends', async () =
       canvasRef: { current: canvas },
       elements: [element],
       geometry,
-      onCommit: (elementId, patch) => commits.push({ elementId, patch }),
+      onCommit: (changes) => commits.push(...changes),
       onSelect: () => undefined,
+      selectedElementIds: [],
       snapTargets: [element],
     }),
   );
@@ -136,6 +137,7 @@ test('previews a snapped transform without mutating the controlled value', async
       geometry,
       onCommit: (...values) => commits.push(values),
       onSelect: () => undefined,
+      selectedElementIds: [],
       snapTargets: [element],
     }),
   );
@@ -181,6 +183,7 @@ test('selecting without moving does not create a controlled change', async () =>
       geometry,
       onCommit: (...values) => commits.push(values),
       onSelect: () => undefined,
+      selectedElementIds: [],
       snapTargets: [element],
     }),
   );
@@ -192,6 +195,52 @@ test('selecting without moving does not create a controlled change', async () =>
   await waitFor(() => expect(result.current.dragging).toBe(false));
   expect(snapRequests).toEqual([]);
   expect(commits).toEqual([]);
+});
+
+test('previews and commits a multi-object move as one transaction', async () => {
+  const first = presentationElement();
+  const second = {
+    ...presentationElement(),
+    id: 'element-2',
+    x: 40,
+    y: 30,
+  };
+  const commitBatches: unknown[][] = [];
+  const canvas = document.createElement('div');
+  canvas.getBoundingClientRect = () =>
+    ({
+      height: 500,
+      width: 1_000,
+    }) as DOMRect;
+  const { result } = renderHook(() =>
+    usePresentationTransform({
+      canvasRef: { current: canvas },
+      elements: [first, second],
+      geometry: presentationGeometry(() => null),
+      onCommit: (changes) => commitBatches.push([...changes]),
+      onSelect: () => undefined,
+      selectedElementIds: [first.id, second.id],
+      snapTargets: [first, second],
+    }),
+  );
+
+  act(() => {
+    result.current.beginDrag(pointer(100, 100), second, 'move');
+    result.current.continueDrag(pointer(200, 150));
+  });
+  await waitFor(() => {
+    expect(result.current.displayElements).toMatchObject([
+      { id: first.id, x: 20, y: 20 },
+      { id: second.id, x: 50, y: 40 },
+    ]);
+  });
+
+  act(() => result.current.endDrag(pointer(200, 150)));
+  await waitFor(() => expect(commitBatches).toHaveLength(1));
+  expect(commitBatches[0]).toMatchObject([
+    { elementId: first.id, patch: { x: 20, y: 20 } },
+    { elementId: second.id, patch: { x: 50, y: 40 } },
+  ]);
 });
 
 function presentationElement(): WorkSlideElement {

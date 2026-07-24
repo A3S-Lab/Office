@@ -22,6 +22,7 @@ import type {
   WorkSlideElement,
 } from '../work-types';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
+import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
 import { createPresentationCommandDispatcher } from './presentation-command-controller';
 import {
@@ -42,6 +43,10 @@ import {
   updatePresentationElements,
   updateSlide,
 } from './presentation-editor-operations';
+import {
+  presentationElementSupportsTextFormatting,
+  selectedPresentationElements,
+} from './presentation-selection';
 import type {
   PresentationAgentMenuState,
   PresentationEditorProps,
@@ -62,6 +67,7 @@ import { PresentationWorkspace } from './presentation-workspace';
 import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
+import { usePresentationSelection } from './use-presentation-selection';
 import { usePresentationTransform } from './use-presentation-transform';
 import { WorkOfficePreviewBar } from './work-office-chrome';
 
@@ -80,9 +86,6 @@ export function PresentationEditor({
   const contentRef = useRef(content);
   const [selectedSlideId, setSelectedSlideId] = useState(
     content.slides[0]?.id ?? '',
-  );
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(
-    null,
   );
   const [activeTextEditor, setActiveTextEditor] = useState<{
     elementId: string;
@@ -120,10 +123,18 @@ export function PresentationEditor({
       : designMode === 'master'
         ? (selectedMaster?.elements ?? [])
         : (selectedSlide?.elements ?? []);
+  const selection = usePresentationSelection(activeElements);
+  const selectedElements = selectedPresentationElements(
+    activeElements,
+    selection.selectedElementIds,
+  );
+  const selectedElementId = selection.selectedElementIds.at(-1) ?? null;
   const selectedElement =
     activeElements.find((element) => element.id === selectedElementId) ?? null;
+  const singleSelectedElement =
+    selectedElements.length === 1 ? selectedElement : null;
   const selectedTextEditor =
-    activeTextEditor?.elementId === selectedElementId &&
+    activeTextEditor?.elementId === selection.editingElementId &&
     !activeTextEditor.editor.isDestroyed
       ? activeTextEditor.editor
       : null;
@@ -172,18 +183,24 @@ export function PresentationEditor({
         : selectedSlide?.id;
   const commitElementTransform = useCallback(
     (
-      elementId: string,
-      patch: Pick<WorkSlideElement, 'height' | 'width' | 'x' | 'y'>,
+      changes: readonly {
+        elementId: string;
+        patch: Pick<WorkSlideElement, 'height' | 'width' | 'x' | 'y'>;
+      }[],
     ) => {
-      if (!activeTargetId) return;
+      if (!activeTargetId || !changes.length) return;
+      const patches = new Map(
+        changes.map((change) => [change.elementId, change.patch]),
+      );
       updatePresentationElements(
         contentRef.current,
         designMode,
         activeTargetId,
         (elements) =>
-          elements.map((element) =>
-            element.id === elementId ? { ...element, ...patch } : element,
-          ),
+          elements.map((element) => {
+            const patch = patches.get(element.id);
+            return patch ? { ...element, ...patch } : element;
+          }),
         (next) => {
           contentRef.current = next;
           onChange(next);
@@ -197,7 +214,8 @@ export function PresentationEditor({
     elements: activeElements,
     geometry,
     onCommit: commitElementTransform,
-    onSelect: setSelectedElementId,
+    onSelect: (elementId) => selection.select(elementId),
+    selectedElementIds: selection.selectedElementIds,
     snapTargets: [
       ...inheritedElements,
       ...placeholderGuides,
@@ -242,16 +260,16 @@ export function PresentationEditor({
   useEffect(() => {
     if (!content.slides.some((slide) => slide.id === selectedSlideId)) {
       setSelectedSlideId(content.slides[0]?.id ?? '');
-      setSelectedElementId(null);
+      selection.clear();
     }
-  }, [content.slides, selectedSlideId]);
+  }, [content.slides, selectedSlideId, selection.clear]);
 
   const addSlide = useCallback(() => {
     const slide = newSlide(content.slides.length + 1);
     onChange({ ...content, slides: [...content.slides, slide] });
     setSelectedSlideId(slide.id);
-    setSelectedElementId(null);
-  }, [content, onChange]);
+    selection.clear();
+  }, [content, onChange, selection.clear]);
 
   const history = usePresentationHistory({
     content,
@@ -259,7 +277,7 @@ export function PresentationEditor({
     selectedSlideId,
     onSelectSlide: (slideId) => {
       setSelectedSlideId(slideId);
-      setSelectedElementId(null);
+      selection.clear();
     },
   });
 
@@ -269,10 +287,13 @@ export function PresentationEditor({
     mode: designMode,
     targetId: activeTargetId,
     selectedSlide,
-    selectedElement,
+    editingElementId: selection.editingElementId,
+    selectedElements,
     onChange,
     onSelectSlide: setSelectedSlideId,
-    onSelectElement: setSelectedElementId,
+    onEditElement: selection.edit,
+    onExitEditing: selection.exitEditing,
+    onSelectElements: selection.replace,
     onUndo: history.undo,
     onRedo: history.redo,
     onAddSlide: addSlide,
@@ -298,14 +319,15 @@ export function PresentationEditor({
   if (!selectedSlide) return null;
 
   const updateElement = (patch: Partial<WorkSlideElement>) => {
-    if (!selectedElementId || !activeTargetId) return;
+    if (!selectedElements.length || !activeTargetId) return;
+    const selectedIds = new Set(selectedElements.map((element) => element.id));
     updatePresentationElements(
       contentRef.current,
       designMode,
       activeTargetId,
       (elements) =>
         elements.map((element) =>
-          element.id === selectedElementId
+          selectedIds.has(element.id)
             ? applyPresentationElementFormattingPatch(element, patch)
             : element,
         ),
@@ -347,7 +369,8 @@ export function PresentationEditor({
       (elements) => [...elements, element],
       onChange,
     );
-    setSelectedElementId(element.id);
+    if (type === 'text') selection.edit(element.id);
+    else selection.replace([element.id]);
   };
 
   const addTable = () => {
@@ -359,7 +382,7 @@ export function PresentationEditor({
       (elements) => [...elements, element],
       onChange,
     );
-    setSelectedElementId(element.id);
+    selection.replace([element.id]);
   };
 
   const addChart = () => {
@@ -371,7 +394,7 @@ export function PresentationEditor({
       (elements) => [...elements, element],
       onChange,
     );
-    setSelectedElementId(element.id);
+    selection.replace([element.id]);
   };
 
   const addImage = async (file: File) => {
@@ -384,30 +407,7 @@ export function PresentationEditor({
       (elements) => [...elements, element],
       onChange,
     );
-    setSelectedElementId(element.id);
-  };
-
-  const reorderElement = (direction: -1 | 1) => {
-    if (!selectedElementId || !activeTargetId) return;
-    updatePresentationElements(
-      content,
-      designMode,
-      activeTargetId,
-      (current) => {
-        const elements = [...current];
-        const index = elements.findIndex(
-          (element) => element.id === selectedElementId,
-        );
-        const target = clamp(index + direction, 0, elements.length - 1);
-        if (index < 0 || index === target) return current;
-        [elements[index], elements[target]] = [
-          elements[target],
-          elements[index],
-        ];
-        return elements;
-      },
-      onChange,
-    );
+    selection.replace([element.id]);
   };
 
   const addComment = () => {
@@ -459,7 +459,7 @@ export function PresentationEditor({
     slides.splice(index + 1, 0, copy);
     onChange({ ...content, slides });
     setSelectedSlideId(copy.id);
-    setSelectedElementId(null);
+    selection.clear();
   };
 
   const deleteSlideById = (slideId: string): boolean => {
@@ -469,7 +469,7 @@ export function PresentationEditor({
     const slides = content.slides.filter((slide) => slide.id !== slideId);
     onChange({ ...content, slides });
     setSelectedSlideId(slides[Math.min(index, slides.length - 1)].id);
-    setSelectedElementId(null);
+    selection.clear();
     return true;
   };
   const deleteSlide = () => deleteSlideById(selectedSlide.id);
@@ -478,7 +478,7 @@ export function PresentationEditor({
     if (designOpen) {
       setDesignOpen(false);
       setDesignMode('slide');
-      setSelectedElementId(null);
+      selection.clear();
       return;
     }
     onChange(designContent);
@@ -556,7 +556,7 @@ export function PresentationEditor({
     );
     onChange(next);
     setDesignMode('layout');
-    setSelectedElementId(null);
+    selection.clear();
   };
 
   const deleteLayout = () => {
@@ -577,7 +577,7 @@ export function PresentationEditor({
       ),
     });
     setDesignMode('slide');
-    setSelectedElementId(null);
+    selection.clear();
   };
 
   const addPlaceholder = (type: 'title' | 'body') => {
@@ -612,34 +612,25 @@ export function PresentationEditor({
       (elements) => [...elements, element],
       onChange,
     );
-    setSelectedElementId(element.id);
+    selection.edit(element.id);
   };
+  const arrangement = createPresentationArrangementController({
+    getContent: () => contentRef.current,
+    geometry,
+    mode: designMode,
+    onChange,
+    selectedElementIds: selection.selectedElementIds,
+    selectedElements,
+    targetId: activeTargetId,
+  });
   const presentationCommands = createPresentationCommandDispatcher({
     addChart,
     addComment,
     addElement,
     addSlide,
     addTable,
-    alignElement: async (alignment) => {
-      if (!selectedElement || !activeTargetId) return;
-      const elementId = selectedElement.id;
-      const targetId = activeTargetId;
-      const targetMode = designMode;
-      const aligned = await geometry.alignElement(selectedElement, alignment);
-      if (!aligned) return;
-      updatePresentationElements(
-        contentRef.current,
-        targetMode,
-        targetId,
-        (elements) =>
-          elements.map((element) =>
-            element.id === elementId
-              ? { ...element, x: aligned.x, y: aligned.y }
-              : element,
-          ),
-        onChange,
-      );
-    },
+    alignElement: arrangement.align,
+    distributeElements: arrangement.distribute,
     applyTransitionToAll: () =>
       onChange({
         ...content,
@@ -656,7 +647,7 @@ export function PresentationEditor({
     duplicateSlide,
     pasteSelection: clipboard.pasteSelection,
     redo: history.redo,
-    reorderElement,
+    reorderElement: arrangement.reorder,
     requestImage: () => imageInputRef.current?.click(),
     setBackground: setActiveBackground,
     setTransition: (transition) =>
@@ -708,6 +699,11 @@ export function PresentationEditor({
         selectedSlide={selectedSlide}
         fileActions={fileActions}
         selectedElement={toolbarSelectedElement}
+        selectedElementCount={selectedElements.length}
+        textFormattingAvailable={
+          selectedElements.length > 0 &&
+          selectedElements.every(presentationElementSupportsTextFormatting)
+        }
         slideCount={content.slides.length}
         canUndo={history.canUndo}
         canRedo={history.canRedo}
@@ -737,7 +733,7 @@ export function PresentationEditor({
               ),
             );
             setDesignMode('slide');
-            setSelectedElementId(null);
+            selection.clear();
           }}
           onToggleLayoutBackground={(enabled) =>
             updateSlide(
@@ -749,11 +745,11 @@ export function PresentationEditor({
           }
           onEditLayout={() => {
             setDesignMode('layout');
-            setSelectedElementId(null);
+            selection.clear();
           }}
           onEditMaster={() => {
             setDesignMode('master');
-            setSelectedElementId(null);
+            selection.clear();
           }}
           onCreateLayout={() => createLayout(false)}
           onDuplicateLayout={() => createLayout(true)}
@@ -779,12 +775,12 @@ export function PresentationEditor({
           onAddPlaceholder={addPlaceholder}
           onReturnToSlide={() => {
             setDesignMode('slide');
-            setSelectedElementId(null);
+            selection.clear();
           }}
           onClose={() => {
             setDesignOpen(false);
             setDesignMode('slide');
-            setSelectedElementId(null);
+            selection.clear();
           }}
         />
       )}
@@ -794,7 +790,7 @@ export function PresentationEditor({
           activeCommentId={activeCommentId}
           onLocate={(slideId, commentId) => {
             setSelectedSlideId(slideId);
-            setSelectedElementId(null);
+            selection.clear();
             setActiveCommentId(commentId);
           }}
           onChange={(slideId, commentId, text) =>
@@ -828,10 +824,10 @@ export function PresentationEditor({
         />
       )}
       {designMode === 'slide' &&
-        selectedElement?.type === 'chart' &&
-        selectedElement.chart && (
+        singleSelectedElement?.type === 'chart' &&
+        singleSelectedElement.chart && (
           <PresentationChartPanel
-            chart={selectedElement.chart}
+            chart={singleSelectedElement.chart}
             onChange={(chart) =>
               updateElement({ chart, altText: chart.title || '演示图表' })
             }
@@ -842,13 +838,13 @@ export function PresentationEditor({
                 selectedSlide.id,
                 (elements) =>
                   elements.filter(
-                    (element) => element.id !== selectedElement.id,
+                    (element) => element.id !== singleSelectedElement.id,
                   ),
                 onChange,
               );
-              setSelectedElementId(null);
+              selection.clear();
             }}
-            onClose={() => setSelectedElementId(null)}
+            onClose={selection.clear}
           />
         )}
       <PresentationWorkspace
@@ -861,9 +857,10 @@ export function PresentationEditor({
         content={content}
         designContent={designContent}
         designMode={designMode}
+        editingElementId={selection.editingElementId}
         inheritedElements={inheritedElements}
         placeholderGuides={placeholderGuides}
-        selectedElementId={selectedElementId}
+        selectedElementIds={selection.selectedElementIds}
         selectedLayout={selectedLayout}
         selectedMaster={selectedMaster}
         selectedSlide={selectedSlide}
@@ -876,6 +873,8 @@ export function PresentationEditor({
         onDeleteSlide={deleteSlideById}
         onDragCancel={transform.cancelDrag}
         onDragEnd={transform.endDrag}
+        onEditElement={selection.edit}
+        onExitEditing={selection.exitEditing}
         onInstantiatePlaceholder={(definition) => {
           const element: WorkSlideElement = {
             ...structuredCopy(definition),
@@ -890,17 +889,17 @@ export function PresentationEditor({
             (elements) => [...elements, element],
             onChange,
           );
-          setSelectedElementId(element.id);
+          selection.edit(element.id);
         }}
         onOpenAgentMenu={openAgentMenu}
         onOpenComment={(commentId) => {
           setActiveCommentId(commentId);
           setCommentsOpen(true);
         }}
-        onSelectElement={setSelectedElementId}
+        onSelectElement={selection.select}
         onSelectSlide={(slideId, returnToSlideMode) => {
           setSelectedSlideId(slideId);
-          setSelectedElementId(null);
+          selection.clear();
           if (returnToSlideMode) setDesignMode('slide');
         }}
         onTextEditorChange={(elementId, editor) =>

@@ -27,9 +27,10 @@ model:
    behavior.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
-3. Interactive editing stays on the main thread. Only the active TipTap text
-   surface is mounted in Presentation; inactive text boxes use lightweight
-   scene previews.
+3. Interactive editing stays on the main thread. Presentation keeps object
+   selection separate from content editing and mounts TipTap only for the text
+   box explicitly opened with double-click or Enter; inactive text boxes use
+   lightweight scene previews.
 4. A versioned Worker client schedules bounded jobs, cancels superseded jobs,
    and rejects stale responses.
 5. Rust WebAssembly kernels own deterministic calculation: layout, formulas,
@@ -48,7 +49,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
-| Presentation | Scene canvas with one TipTap instance for the selected text box, one typed dispatcher for ribbon commands, and frame-coalesced transactional move/resize previews that commit once on pointer release | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object snapping with typed visual guides and a JavaScript fallback | Multi-selection, grouping, connectors, theme resolution, text fitting, thumbnail virtualization, and slide serialization |
+| Presentation | Scene canvas with ordered typed multi-selection, a separate object/content editing state, one on-demand TipTap instance, collective move/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, one typed dispatcher for ribbon commands, and frame-coalesced transactional move/resize previews that commit once on pointer release | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Persistent grouping, connectors, theme resolution, text fitting, thumbnail virtualization, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
 The table is a fidelity statement, not a marketing capability list. The
@@ -89,12 +90,15 @@ run on the main thread, and the kernel does not materialize whole-row or
 whole-column ranges, calculate arrays, spills, structured references or
 external workbooks, own number formatting, or own print layout.
 Presentation sends alignment plus move and resize snapping to Rust/WASM. The
-main thread calculates the pointer candidate, paints at most one transient
-preview per animation frame, and ignores stale geometry responses. The Worker
-returns snapped slide-relative geometry and at most one typed guide per axis.
-Pointer movement never mutates the controlled document; pointer release emits
-one host change, while cancellation emits none. Grouping, connector routing,
-text fitting, theme resolution, and thumbnail layout remain later-stage work.
+main thread treats an ordered selection as one bounded geometry frame, paints
+at most one transient preview per animation frame, and ignores stale geometry
+responses. The Worker returns snapped slide-relative geometry and at most one
+typed guide per axis. Pointer movement never mutates the controlled document;
+pointer release emits one host change for every moved object, while
+cancellation emits none. Selection-only clicks mount no editor, Shift-click
+toggles membership, and double-click or Enter opens content editing. Grouping,
+connector routing, text fitting, theme resolution, and thumbnail layout remain
+later-stage work.
 
 Spreadsheet, Presentation, and PDF commands cross explicit typed boundaries.
 The shell never searches visible labels, scrapes rendered text, or synthesizes
@@ -532,6 +536,15 @@ content value, so the complete gesture occupies one undo step. Pointer cancel,
 selection-only clicks, stale responses, and superseded gestures do not create
 history. A short timer fallback preserves progress when a browser temporarily
 suspends animation frames.
+
+The object-selection slice is also implemented. Selection is an ordered set
+owned by the Presentation editor rather than a DOM class or visible-label
+lookup. Shift-click toggles membership; a plain canvas click clears it;
+double-click or Enter opens content editing; and Escape returns focus to object
+mode. Multi-object move, arrow-key nudge, copy, cut, paste, duplicate, delete,
+layer movement, alignment, and distribution each publish one controlled value
+and therefore one undo record. Persistent group nodes and PPTX group
+round-tripping remain a separate fidelity gate.
 
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,

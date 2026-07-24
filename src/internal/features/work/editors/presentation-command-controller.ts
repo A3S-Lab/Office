@@ -1,5 +1,6 @@
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import type { WorkSlideElement, WorkSlideTransition } from '../work-types';
+import type { PresentationDistribution } from './presentation-selection';
 
 export type PresentationViewMode = 'normal' | 'sorter';
 
@@ -18,6 +19,10 @@ export type PresentationEditorCommand =
   | {
       type: 'element.align';
       alignment: OfficeKernelPresentationAlignment;
+    }
+  | {
+      type: 'element.distribute';
+      direction: PresentationDistribution;
     }
   | {
       type: 'element.reorder';
@@ -59,6 +64,9 @@ export interface PresentationCommandHandlers {
   copySelection: () => PresentationCommandResult;
   cutSelection: () => PresentationCommandResult;
   deleteSlide: () => PresentationCommandResult;
+  distributeElements: (
+    direction: PresentationDistribution,
+  ) => PresentationCommandResult;
   duplicateSlide: () => PresentationCommandResult;
   pasteSelection: () => PresentationCommandResult;
   redo: () => PresentationCommandResult;
@@ -106,6 +114,8 @@ export function createPresentationCommandDispatcher(
         return handlers.addElement(command.elementType);
       case 'element.align':
         return handlers.alignElement(command.alignment);
+      case 'element.distribute':
+        return handlers.distributeElements(command.direction);
       case 'element.reorder':
         return handlers.reorderElement(command.direction);
       case 'element.update':

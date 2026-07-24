@@ -16,27 +16,33 @@ export interface PresentationTextValue {
 }
 
 export interface PresentationTextEditorProps {
+  autoFocus?: boolean;
   element: WorkSlideElement;
   onChange: (value: PresentationTextValue) => void;
   onEditorChange?: (editor: Editor | null) => void;
+  onExitEditing?: () => void;
   onSelectionChange?: () => void;
 }
 
 export function PresentationTextEditor({
+  autoFocus = false,
   element,
   onChange,
   onEditorChange,
+  onExitEditing,
   onSelectionChange,
 }: PresentationTextEditorProps) {
   const elementRef = useRef(element);
   const onChangeRef = useRef(onChange);
   const onEditorChangeRef = useRef(onEditorChange);
+  const onExitEditingRef = useRef(onExitEditing);
   const onSelectionChangeRef = useRef(onSelectionChange);
   const appliedSignatureRef = useRef(presentationTextElementSignature(element));
   const initialContentRef = useRef(presentationTextElementHtml(element));
   elementRef.current = element;
   onChangeRef.current = onChange;
   onEditorChangeRef.current = onEditorChange;
+  onExitEditingRef.current = onExitEditing;
   onSelectionChangeRef.current = onSelectionChange;
   const extensions = useMemo(
     () =>
@@ -56,6 +62,16 @@ export function PresentationTextEditor({
         'data-slide-editor': 'true',
         role: 'textbox',
         spellcheck: 'true',
+      },
+      handleKeyDown: (view, event) => {
+        if (event.key !== 'Escape' || !onExitEditingRef.current) return false;
+        const object = view.dom.closest<HTMLElement>(
+          '[data-slide-element-origin]',
+        );
+        event.preventDefault();
+        onExitEditingRef.current();
+        window.requestAnimationFrame(() => object?.focus());
+        return true;
       },
     },
     onCreate: ({ editor: current }) => {
@@ -79,6 +95,14 @@ export function PresentationTextEditor({
     onEditorChangeRef.current?.(editor);
     return () => onEditorChangeRef.current?.(null);
   }, [editor]);
+
+  useEffect(() => {
+    if (!autoFocus || !editor || editor.isDestroyed) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.commands.focus('end');
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [autoFocus, editor]);
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;

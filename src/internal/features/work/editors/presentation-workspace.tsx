@@ -16,8 +16,14 @@ import {
   EditableSlideTable,
   SlideElementPreview,
   SlideElementTextPreview,
+  SlideTablePreview,
   slideElementStyle,
 } from './presentation-slide-canvas';
+import {
+  presentationElementCanEditContent,
+  presentationSelectionBounds,
+  selectedPresentationElements,
+} from './presentation-selection';
 import { PresentationSlideThumbnail } from './presentation-slide-thumbnail';
 import {
   PresentationTextEditor,
@@ -36,7 +42,8 @@ export interface PresentationWorkspaceProps {
   designMode: PresentationDesignMode;
   inheritedElements: WorkSlideElement[];
   placeholderGuides: WorkSlideElement[];
-  selectedElementId: string | null;
+  editingElementId: string | null;
+  selectedElementIds: readonly string[];
   selectedLayout: WorkPresentationLayout | undefined;
   selectedMaster: WorkPresentationMaster | undefined;
   selectedSlide: WorkSlide;
@@ -53,6 +60,8 @@ export interface PresentationWorkspaceProps {
   onDeleteSlide: (slideId: string) => boolean;
   onDragCancel: () => void;
   onDragEnd: (event: PointerEvent) => void;
+  onEditElement: (elementId: string) => void;
+  onExitEditing: () => void;
   onInstantiatePlaceholder: (definition: WorkSlideElement) => void;
   onOpenAgentMenu: (
     event: MouseEvent,
@@ -61,7 +70,7 @@ export interface PresentationWorkspaceProps {
     element?: WorkSlideElement | null,
   ) => void;
   onOpenComment: (commentId: string) => void;
-  onSelectElement: (elementId: string | null) => void;
+  onSelectElement: (elementId: string | null, additive: boolean) => void;
   onSelectSlide: (slideId: string, returnToSlideMode: boolean) => void;
   onTextEditorChange: (elementId: string, editor: Editor | null) => void;
   onTextSelectionChange: () => void;
@@ -86,7 +95,8 @@ export function PresentationWorkspace({
   designMode,
   inheritedElements,
   placeholderGuides,
-  selectedElementId,
+  editingElementId,
+  selectedElementIds,
   selectedLayout,
   selectedMaster,
   selectedSlide,
@@ -99,6 +109,8 @@ export function PresentationWorkspace({
   onDeleteSlide,
   onDragCancel,
   onDragEnd,
+  onEditElement,
+  onExitEditing,
   onInstantiatePlaceholder,
   onOpenAgentMenu,
   onOpenComment,
@@ -111,6 +123,12 @@ export function PresentationWorkspace({
   onUpdateTextElement,
   onViewModeChange,
 }: PresentationWorkspaceProps) {
+  const selectedElementSet = new Set(selectedElementIds);
+  const selectedElements = selectedPresentationElements(
+    activeElements,
+    selectedElementIds,
+  );
+  const selectionBounds = presentationSelectionBounds(selectedElements);
   if (viewMode === 'sorter') {
     return (
       <section
@@ -185,7 +203,7 @@ export function PresentationWorkspace({
             width: `${zoom}%`,
             maxWidth: `${(1050 * zoom) / 100}px`,
           }}
-          onPointerDown={() => onSelectElement(null)}
+          onPointerDown={() => onSelectElement(null, false)}
           onContextMenu={(event) => {
             if (designMode !== 'slide') return;
             onOpenAgentMenu(event, selectedSlide, selectedSlideIndex);
@@ -228,102 +246,165 @@ export function PresentationWorkspace({
               }
             />
           ))}
-          {activeElements.map((element) => (
-            <fieldset
-              key={element.id}
-              className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
-                element.id === selectedElementId ? 'selected' : ''
-              }`}
-              // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support editing shortcuts.
-              tabIndex={0}
-              data-slide-element-origin={designMode}
-              style={slideElementStyle(element)}
-              onFocus={() => onSelectElement(element.id)}
-              onContextMenu={(event) => {
-                onSelectElement(element.id);
-                if (designMode !== 'slide') return;
-                onOpenAgentMenu(
-                  event,
-                  selectedSlide,
-                  selectedSlideIndex,
-                  element,
-                );
+          {selectionBounds && selectedElements.length > 1 && (
+            <span
+              aria-hidden="true"
+              className="work-slide-selection-frame"
+              data-presentation-selection-frame
+              style={{
+                left: `${selectionBounds.left}%`,
+                top: `${selectionBounds.top}%`,
+                width: `${selectionBounds.width}%`,
+                height: `${selectionBounds.height}%`,
               }}
-              onPointerDown={(event) => {
-                if (
-                  event.target instanceof HTMLTextAreaElement ||
-                  (event.target instanceof HTMLElement &&
-                    event.target.closest('[data-slide-editor]'))
-                ) {
-                  onSelectElement(element.id);
-                  event.stopPropagation();
-                  return;
-                }
-                onBeginDrag(event, element, 'move');
-              }}
-            >
-              <legend className="sr-only">
-                {element.altText?.trim() ||
-                  element.text?.trim() ||
-                  '幻灯片元素'}
-              </legend>
-              {element.type === 'image' && element.image ? (
-                <img
-                  src={element.image.dataUrl}
-                  alt={element.altText ?? element.image.name}
-                  draggable={false}
-                />
-              ) : element.type === 'table' && element.table ? (
-                <EditableSlideTable
-                  element={element}
-                  onChange={(rows) =>
-                    onUpdateElement({
-                      table: { ...element.table, rows },
-                    })
+            />
+          )}
+          {activeElements.map((element) => {
+            const selected = selectedElementSet.has(element.id);
+            const editing = editingElementId === element.id;
+            const label =
+              element.altText?.trim() || element.text?.trim() || '幻灯片元素';
+            return (
+              <fieldset
+                key={element.id}
+                className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
+                  selected ? 'selected' : ''
+                } ${editing ? 'editing' : ''}`}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support object commands.
+                tabIndex={0}
+                data-slide-element-id={element.id}
+                data-slide-element-origin={designMode}
+                data-slide-element-selected={selected ? 'true' : 'false'}
+                style={slideElementStyle(element)}
+                onClick={(event) => {
+                  if (
+                    !editing &&
+                    event.target instanceof HTMLElement &&
+                    event.target.closest('a')
+                  ) {
+                    event.preventDefault();
                   }
-                />
-              ) : element.type === 'chart' && element.chart ? (
-                <SlideChart
-                  chart={element.chart}
-                  label={element.altText ?? element.chart.title ?? '图表'}
-                />
-              ) : element.textRuns?.length ||
-                element.text ||
-                element.type === 'text' ||
-                element.type === 'shape' ? (
-                element.id === selectedElementId ? (
-                  <PresentationTextEditor
-                    element={element}
-                    onChange={(value) => onUpdateTextElement(element.id, value)}
-                    onEditorChange={(editor) =>
-                      onTextEditorChange(element.id, editor)
-                    }
-                    onSelectionChange={onTextSelectionChange}
+                }}
+                onDoubleClick={(event) => {
+                  if (!presentationElementCanEditContent(element)) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onEditElement(element.id);
+                }}
+                onFocus={(event) => {
+                  if (event.currentTarget !== event.target || selected) return;
+                  onSelectElement(element.id, false);
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key !== 'Enter' ||
+                    editing ||
+                    !presentationElementCanEditContent(element)
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onEditElement(element.id);
+                }}
+                onContextMenu={(event) => {
+                  if (!selected) onSelectElement(element.id, false);
+                  if (designMode !== 'slide') return;
+                  onOpenAgentMenu(
+                    event,
+                    selectedSlide,
+                    selectedSlideIndex,
+                    element,
+                  );
+                }}
+                onPointerDown={(event) => {
+                  if (
+                    event.target instanceof HTMLTextAreaElement ||
+                    (event.target instanceof HTMLElement &&
+                      event.target.closest('[data-slide-editor]'))
+                  ) {
+                    event.stopPropagation();
+                    return;
+                  }
+                  if (event.shiftKey) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onSelectElement(element.id, true);
+                    return;
+                  }
+                  event.stopPropagation();
+                  onBeginDrag(event, element, 'move');
+                }}
+              >
+                <legend className="sr-only">{label}</legend>
+                {element.type === 'image' && element.image ? (
+                  <img
+                    src={element.image.dataUrl}
+                    alt={element.altText ?? element.image.name}
+                    draggable={false}
                   />
-                ) : (
-                  <SlideElementTextPreview element={element} />
-                )
-              ) : null}
-              {element.id === selectedElementId && (
-                <>
-                  <span
-                    className="work-slide-move-handle"
-                    aria-hidden="true"
-                    onPointerDown={(event) =>
-                      onBeginDrag(event, element, 'move')
-                    }
+                ) : element.type === 'table' && element.table ? (
+                  editing ? (
+                    <EditableSlideTable
+                      element={element}
+                      onChange={(rows) =>
+                        onUpdateElement({
+                          table: { ...element.table, rows },
+                        })
+                      }
+                    />
+                  ) : (
+                    <SlideTablePreview element={element} />
+                  )
+                ) : element.type === 'chart' && element.chart ? (
+                  <SlideChart
+                    chart={element.chart}
+                    label={element.altText ?? element.chart.title ?? '图表'}
                   />
-                  <span
-                    className="work-slide-resize-handle"
-                    aria-hidden="true"
-                    onPointerDown={(event) =>
-                      onBeginDrag(event, element, 'resize')
-                    }
-                  />
-                </>
-              )}
-            </fieldset>
-          ))}
+                ) : element.textRuns?.length ||
+                  element.text ||
+                  element.type === 'text' ||
+                  element.type === 'shape' ? (
+                  editing ? (
+                    <PresentationTextEditor
+                      autoFocus
+                      element={element}
+                      onChange={(value) =>
+                        onUpdateTextElement(element.id, value)
+                      }
+                      onEditorChange={(editor) =>
+                        onTextEditorChange(element.id, editor)
+                      }
+                      onExitEditing={onExitEditing}
+                      onSelectionChange={onTextSelectionChange}
+                    />
+                  ) : (
+                    <SlideElementTextPreview element={element} />
+                  )
+                ) : null}
+                {selected && !editing && (
+                  <>
+                    <span
+                      className="work-slide-move-handle"
+                      aria-hidden="true"
+                      onPointerDown={(event) =>
+                        onBeginDrag(event, element, 'move')
+                      }
+                    />
+                    {selectedElements.length === 1 && (
+                      <span
+                        className="work-slide-resize-handle"
+                        aria-hidden="true"
+                        onPointerDown={(event) =>
+                          onBeginDrag(event, element, 'resize')
+                        }
+                      />
+                    )}
+                  </>
+                )}
+              </fieldset>
+            );
+          })}
           {designMode === 'slide' &&
             (selectedSlide.comments ?? []).map((comment, index) => (
               <button
@@ -349,6 +430,14 @@ export function PresentationWorkspace({
               : designMode === 'master'
                 ? `母版：${selectedMaster?.name ?? ''}`
                 : `幻灯片 ${selectedSlideIndex + 1} / ${content.slides.length}`}
+            {selectedElements.length > 0 && (
+              <>
+                {' · '}
+                <span aria-live="polite">
+                  已选择 {selectedElements.length} 个对象
+                </span>
+              </>
+            )}
           </span>
           <span>
             {(content.width ?? 13.333).toFixed(2)} ×{' '}

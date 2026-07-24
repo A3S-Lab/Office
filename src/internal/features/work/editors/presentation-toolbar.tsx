@@ -1,7 +1,9 @@
 import {
   AlignCenter,
+  AlignHorizontalSpaceBetween,
   AlignLeft,
   AlignRight,
+  AlignVerticalSpaceBetween,
   ArrowDownToLine,
   ArrowUpToLine,
   BarChart3,
@@ -66,7 +68,7 @@ const presentationFontFamilyOptions = [
 ] as const;
 
 const presentationAlignmentOptions = [
-  { value: 'none', label: '对齐到幻灯片', disabled: true },
+  { value: 'none', label: '对象对齐', disabled: true },
   { value: 'left', label: '左对齐' },
   { value: 'center', label: '水平居中' },
   { value: 'right', label: '右对齐' },
@@ -78,6 +80,8 @@ const presentationAlignmentOptions = [
 export function PresentationToolbar({
   selectedSlide,
   selectedElement,
+  selectedElementCount,
+  textFormattingAvailable,
   slideCount,
   canUndo,
   canRedo,
@@ -94,6 +98,8 @@ export function PresentationToolbar({
 }: {
   selectedSlide: WorkSlide;
   selectedElement: WorkSlideElement | null;
+  selectedElementCount: number;
+  textFormattingAvailable: boolean;
   slideCount: number;
   canUndo: boolean;
   canRedo: boolean;
@@ -187,7 +193,7 @@ export function PresentationToolbar({
               </WorkOfficeRibbonGroup>
               {selectedElement && (
                 <>
-                  {isPresentationTextElement(selectedElement) && (
+                  {textFormattingAvailable && (
                     <WorkOfficeRibbonGroup label="字体">
                       <OfficeSelect
                         ariaLabel="演示字体"
@@ -311,7 +317,11 @@ export function PresentationToolbar({
                   )}
                   <WorkOfficeRibbonGroup label="排列">
                     <OfficeSelect
-                      ariaLabel="元素对齐到幻灯片"
+                      ariaLabel={
+                        selectedElementCount > 1
+                          ? '对齐所选对象'
+                          : '元素对齐到幻灯片'
+                      }
                       value="none"
                       options={presentationAlignmentOptions}
                       onValueChange={(alignment) => {
@@ -322,6 +332,34 @@ export function PresentationToolbar({
                         });
                       }}
                     />
+                    {selectedElementCount >= 3 && (
+                      <>
+                        <WorkOfficeRibbonButton
+                          label="横向均匀分布"
+                          displayLabel={false}
+                          onClick={() =>
+                            onCommand({
+                              type: 'element.distribute',
+                              direction: 'horizontal',
+                            })
+                          }
+                        >
+                          <AlignHorizontalSpaceBetween size={17} />
+                        </WorkOfficeRibbonButton>
+                        <WorkOfficeRibbonButton
+                          label="纵向均匀分布"
+                          displayLabel={false}
+                          onClick={() =>
+                            onCommand({
+                              type: 'element.distribute',
+                              direction: 'vertical',
+                            })
+                          }
+                        >
+                          <AlignVerticalSpaceBetween size={17} />
+                        </WorkOfficeRibbonButton>
+                      </>
+                    )}
                     <WorkOfficeRibbonButton
                       label="下移一层"
                       onClick={() =>
@@ -536,13 +574,5 @@ export function PresentationToolbar({
       />
       {officeDialog.dialog}
     </>
-  );
-}
-
-function isPresentationTextElement(element: WorkSlideElement): boolean {
-  return (
-    element.type === 'text' ||
-    element.type === 'shape' ||
-    Boolean(element.text || element.textRuns?.length)
   );
 }

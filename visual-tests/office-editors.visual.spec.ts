@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { jsPDF } from 'jspdf';
 
 const visualDifferenceProbe =
@@ -162,6 +162,27 @@ test.describe('Office editor context menu contracts', () => {
       await expect(menu).toBeHidden();
     });
   }
+});
+
+test('component guide highlights framework examples by language', async ({
+  page,
+}) => {
+  await page.goto('/#guide');
+  await expect(page.getByRole('heading', { name: '组件接入' })).toBeVisible();
+
+  const example = page.locator(
+    '.playground-framework-example .playground-code-block pre',
+  );
+  await expect(example).toHaveAttribute('data-code-language', 'tsx');
+  await expect(example.locator('.token.keyword').first()).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Vue' }).click();
+  await expect(example).toHaveAttribute('data-code-language', 'markup');
+  await expect(example.locator('.token.tag').first()).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Web Component' }).click();
+  await expect(example).toHaveAttribute('data-code-language', 'typescript');
+  await expect(example.locator('.token.keyword').first()).toBeVisible();
 });
 
 test('document comments align with their review rail', async ({
@@ -408,6 +429,93 @@ test('presentation transforms snap visually and commit one undo step', async ({
   await expect(redo).toBeEnabled();
 });
 
+test('presentation keeps object selection separate from text editing', async ({
+  page,
+}) => {
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const canvas = page.locator('.work-slide-canvas.interactive');
+  const elements = canvas.locator(':scope > .work-slide-element');
+  const accent = elements.nth(0);
+  const title = elements.nth(1);
+  const editor = page.locator('.work-presentation-editor');
+  const undo = page.getByRole('button', { name: '撤销', exact: true });
+
+  await accent.click();
+  await expect(accent).toHaveAttribute('data-slide-element-selected', 'true');
+  await expect(canvas.getByRole('textbox', { name: '幻灯片文本' })).toHaveCount(
+    0,
+  );
+
+  await title.click({ modifiers: ['Shift'] });
+  await expect(accent).toHaveAttribute('data-slide-element-selected', 'true');
+  await expect(title).toHaveAttribute('data-slide-element-selected', 'true');
+  await expect(
+    canvas.locator('[data-presentation-selection-frame]'),
+  ).toBeVisible();
+  await expect(page.getByText('已选择 2 个对象')).toBeVisible();
+  await expect(canvas.getByRole('textbox', { name: '幻灯片文本' })).toHaveCount(
+    0,
+  );
+
+  const accentBefore = await presentationElementPosition(accent);
+  const titleBefore = await presentationElementPosition(title);
+  const titleBox = await title.boundingBox();
+  if (!titleBox) throw new Error('Presentation title geometry is unavailable.');
+  await page.mouse.move(
+    titleBox.x + titleBox.width / 2,
+    titleBox.y + titleBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    titleBox.x + titleBox.width / 2 + 28,
+    titleBox.y + titleBox.height / 2 + 18,
+  );
+  await page.mouse.up();
+  await expect(editor).toHaveAttribute(
+    'data-presentation-transform-state',
+    'idle',
+  );
+  const accentAfter = await presentationElementPosition(accent);
+  const titleAfter = await presentationElementPosition(title);
+  expect(accentAfter.x - accentBefore.x).toBeCloseTo(
+    titleAfter.x - titleBefore.x,
+    4,
+  );
+  expect(accentAfter.y - accentBefore.y).toBeCloseTo(
+    titleAfter.y - titleBefore.y,
+    4,
+  );
+
+  await undo.click();
+  await expect
+    .poll(() => presentationElementPosition(accent))
+    .toEqual(accentBefore);
+  await expect
+    .poll(() => presentationElementPosition(title))
+    .toEqual(titleBefore);
+
+  await title.dblclick();
+  await expect(accent).toHaveAttribute('data-slide-element-selected', 'false');
+  await expect(title).toHaveAttribute('data-slide-element-selected', 'true');
+  await expect(
+    canvas.getByRole('textbox', { name: '幻灯片文本' }),
+  ).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(canvas.getByRole('textbox', { name: '幻灯片文本' })).toHaveCount(
+    0,
+  );
+  await expect(title).toBeFocused();
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {
@@ -424,6 +532,15 @@ test('PDF workspace card uses a single, legible file mark', async ({
   await expect(mark).toHaveCSS('color', 'rgb(255, 255, 255)');
   await expect(mark).toHaveCSS('background-color', 'rgb(200, 64, 64)');
 });
+
+async function presentationElementPosition(
+  element: Locator,
+): Promise<{ x: number; y: number }> {
+  return element.evaluate((node) => ({
+    x: Number.parseFloat((node as HTMLElement).style.left),
+    y: Number.parseFloat((node as HTMLElement).style.top),
+  }));
+}
 
 async function stabilizeVisualSurface(page: Page): Promise<void> {
   await page.addStyleTag({

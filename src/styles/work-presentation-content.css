@@ -380,6 +380,16 @@
   transform: translateY(-0.5px);
 }
 
+.work-slide-selection-frame {
+  position: absolute;
+  z-index: 16;
+  display: block;
+  border: 1px dashed color-mix(in srgb, #3478f6 82%, #ffffff);
+  outline: 1px solid color-mix(in srgb, #3478f6 18%, transparent);
+  outline-offset: 2px;
+  pointer-events: none;
+}
+
 .work-slide-canvas:not(.interactive) .work-slide-element {
   overflow: hidden;
 }
@@ -524,6 +534,11 @@
 .work-slide-element.selected {
   outline: 1.5px solid #3478f6;
   outline-offset: 1px;
+}
+
+.work-slide-element.editing {
+  outline-style: solid;
+  outline-width: 2px;
 }
 
 .work-slide-element.selected::before,

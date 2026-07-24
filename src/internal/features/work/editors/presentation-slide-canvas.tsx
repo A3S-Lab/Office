@@ -64,7 +64,7 @@ export function SlideElementPreview({
           alt={element.altText ?? element.image.name}
         />
       ) : element.type === 'table' && element.table ? (
-        <SlideTable element={element} />
+        <SlideTablePreview element={element} />
       ) : element.type === 'chart' && element.chart ? (
         <SlideChart
           chart={element.chart}
@@ -228,7 +228,7 @@ export function SlideElementTextPreview({
   );
 }
 
-function SlideTable({ element }: { element: WorkSlideElement }) {
+export function SlideTablePreview({ element }: { element: WorkSlideElement }) {
   const table = element.table;
   if (!table) return null;
   return (

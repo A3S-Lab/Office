@@ -1,5 +1,13 @@
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy,
+  StrictMode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   createArtifact,
@@ -10,20 +18,33 @@ import {
   type OfficeArtifactContent,
 } from '@a3s-lab/office/core';
 import '@a3s-lab/office/styles.css';
-import { CliDocsPage } from './cli-docs-page';
 import { EditorWorkspace } from './editor-workspace';
-import { IntegrationDocsPage } from './integration-docs-page';
 import type {
   NoticeTone,
   PlaygroundNotice,
   SiteRoute,
 } from './playground-types';
 import { SiteSidebar } from './site-sidebar';
-import { SkillDownloadPage } from './skill-download-page';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
 import './docs-pages.css';
+
+const CliDocsPage = lazy(() =>
+  import('./cli-docs-page').then((module) => ({
+    default: module.CliDocsPage,
+  })),
+);
+const IntegrationDocsPage = lazy(() =>
+  import('./integration-docs-page').then((module) => ({
+    default: module.IntegrationDocsPage,
+  })),
+);
+const SkillDownloadPage = lazy(() =>
+  import('./skill-download-page').then((module) => ({
+    default: module.SkillDownloadPage,
+  })),
+);
 
 function Playground() {
   const [route, setRoute] = useState<SiteRoute>(readRoute);
@@ -247,32 +268,46 @@ function Playground() {
               onOpenSidebar={() => setSidebarOpen(true)}
             />
           ))}
-        {route === 'cli' && (
-          <CliDocsPage
-            sidebarOpen={sidebarOpen}
-            onOpenSidebar={() => setSidebarOpen(true)}
-            onOpenSkill={() => navigate('skill')}
-          />
-        )}
-        {route === 'guide' && (
-          <IntegrationDocsPage
-            sidebarOpen={sidebarOpen}
-            onOpenSidebar={() => setSidebarOpen(true)}
-          />
-        )}
-        {route === 'skill' && (
-          <SkillDownloadPage
-            rawSkillUrl={assetUrl('downloads/a3s-office-skill/SKILL.md')}
-            sidebarOpen={sidebarOpen}
-            skillDownloadUrl={assetUrl('downloads/a3s-office-skill.tar.gz')}
-            onOpenCli={() => navigate('cli')}
-            onOpenSidebar={() => setSidebarOpen(true)}
-          />
-        )}
+        <Suspense fallback={<PlaygroundRouteLoading />}>
+          {route === 'cli' && (
+            <CliDocsPage
+              sidebarOpen={sidebarOpen}
+              onOpenSidebar={() => setSidebarOpen(true)}
+              onOpenSkill={() => navigate('skill')}
+            />
+          )}
+          {route === 'guide' && (
+            <IntegrationDocsPage
+              sidebarOpen={sidebarOpen}
+              onOpenSidebar={() => setSidebarOpen(true)}
+            />
+          )}
+          {route === 'skill' && (
+            <SkillDownloadPage
+              rawSkillUrl={assetUrl('downloads/a3s-office-skill/SKILL.md')}
+              sidebarOpen={sidebarOpen}
+              skillDownloadUrl={assetUrl('downloads/a3s-office-skill.tar.gz')}
+              onOpenCli={() => navigate('cli')}
+              onOpenSidebar={() => setSidebarOpen(true)}
+            />
+          )}
+        </Suspense>
       </section>
 
       {notice && <PlaygroundToast key={notice.id} notice={notice} />}
     </main>
+  );
+}
+
+function PlaygroundRouteLoading() {
+  return (
+    <section
+      className="playground-route-loading"
+      role="status"
+      aria-label="正在加载页面"
+    >
+      <span aria-hidden="true" />
+    </section>
   );
 }
 

@@ -3,6 +3,7 @@ import type { WorkSlide, WorkSlideElement } from './work-types';
 
 export type WorkPresentationClipboardPayload =
   | { kind: 'element'; element: WorkSlideElement }
+  | { kind: 'elements'; elements: WorkSlideElement[] }
   | { kind: 'slide'; slide: WorkSlide };
 
 export interface WorkPresentationClipboardRead {
@@ -21,6 +22,19 @@ export function copyPresentationElement(element: WorkSlideElement): void {
     pasteCount: 0,
   };
   writeSystemClipboardText(presentationElementPlainText(element));
+}
+
+export function copyPresentationElements(
+  elements: readonly WorkSlideElement[],
+): void {
+  if (!elements.length) return;
+  clipboard = {
+    payload: { kind: 'elements', elements: structuredCopy([...elements]) },
+    pasteCount: 0,
+  };
+  writeSystemClipboardText(
+    elements.map(presentationElementPlainText).filter(Boolean).join('\n'),
+  );
 }
 
 export function copyPresentationSlide(slide: WorkSlide): void {
@@ -56,6 +70,28 @@ export function clonePresentationElementForPaste(
     y: clamp(copy.y + offset, 0, Math.max(0, 100 - copy.height)),
     placeholder: undefined,
   };
+}
+
+export function clonePresentationElementsForPaste(
+  elements: readonly WorkSlideElement[],
+  offset: number,
+): WorkSlideElement[] {
+  if (!elements.length) return [];
+  const right = Math.max(
+    ...elements.map((element) => element.x + element.width),
+  );
+  const bottom = Math.max(
+    ...elements.map((element) => element.y + element.height),
+  );
+  const offsetX = clamp(offset, 0, Math.max(0, 100 - right));
+  const offsetY = clamp(offset, 0, Math.max(0, 100 - bottom));
+  return structuredCopy(elements).map((element) => ({
+    ...element,
+    id: createWorkId('element'),
+    x: element.x + offsetX,
+    y: element.y + offsetY,
+    placeholder: undefined,
+  }));
 }
 
 export function clonePresentationSlideForPaste(slide: WorkSlide): WorkSlide {
