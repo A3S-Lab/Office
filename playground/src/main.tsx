@@ -12,6 +12,7 @@ import {
 import '@a3s-lab/office/styles.css';
 import { CliDocsPage } from './cli-docs-page';
 import { EditorWorkspace } from './editor-workspace';
+import { IntegrationDocsPage } from './integration-docs-page';
 import type {
   NoticeTone,
   PlaygroundNotice,
@@ -253,6 +254,12 @@ function Playground() {
             onOpenSkill={() => navigate('skill')}
           />
         )}
+        {route === 'guide' && (
+          <IntegrationDocsPage
+            sidebarOpen={sidebarOpen}
+            onOpenSidebar={() => setSidebarOpen(true)}
+          />
+        )}
         {route === 'skill' && (
           <SkillDownloadPage
             rawSkillUrl={assetUrl('downloads/a3s-office-skill/SKILL.md')}
@@ -286,7 +293,7 @@ function PlaygroundToast({ notice }: { notice: PlaygroundNotice }) {
 
 function readRoute(): SiteRoute {
   const route = window.location.hash.slice(1).split('/')[0];
-  if (route === 'cli' || route === 'skill') return route;
+  if (route === 'guide' || route === 'cli' || route === 'skill') return route;
   return 'office';
 }
 

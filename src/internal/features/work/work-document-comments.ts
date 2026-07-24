@@ -6,7 +6,10 @@ import {
   Slice,
 } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import type { WorkDocumentComment } from './work-types';
+import type {
+  WorkDocumentComment,
+  WorkDocumentCommentReply,
+} from './work-types';
 
 export interface WorkDocumentCommentAnchor {
   id: string;
@@ -156,6 +159,37 @@ export function retainAnchoredDocumentComments(
   return comments
     .filter((comment) => ids.has(comment.id))
     .map(normalizeDocumentComment);
+}
+
+export function appendDocumentCommentReply(
+  comments: readonly WorkDocumentComment[],
+  id: string,
+  reply: WorkDocumentCommentReply,
+): WorkDocumentComment[] {
+  return comments.map((comment) =>
+    comment.id === id
+      ? {
+          ...comment,
+          replies: [...(comment.replies ?? []), reply],
+        }
+      : comment,
+  );
+}
+
+export function toggleDocumentCommentResolved(
+  comments: readonly WorkDocumentComment[],
+  id: string,
+): WorkDocumentComment[] {
+  return comments.map((comment) =>
+    comment.id === id ? { ...comment, resolved: !comment.resolved } : comment,
+  );
+}
+
+export function removeDocumentCommentRecord(
+  comments: readonly WorkDocumentComment[],
+  id: string,
+): WorkDocumentComment[] {
+  return comments.filter((comment) => comment.id !== id);
 }
 
 export function stripDocumentCommentsFromSlice(

@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CodeXml,
   ExternalLink,
   FileCode2,
   FileSpreadsheet,
@@ -75,6 +76,15 @@ export function SiteSidebar({
         >
           <FolderOpen size={16} />
           <span>编辑器</span>
+        </button>
+        <button
+          type="button"
+          className={route === 'guide' ? 'active' : ''}
+          aria-current={route === 'guide' ? 'page' : undefined}
+          onClick={() => onNavigate('guide')}
+        >
+          <CodeXml size={16} />
+          <span>接入文档</span>
         </button>
         <button
           type="button"

@@ -164,6 +164,102 @@ test.describe('Office editor context menu contracts', () => {
   }
 });
 
+test('document comments align with their review rail', async ({
+  page,
+}, testInfo) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
+  if (!fixture) throw new Error('Missing document visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  await page
+    .locator('.work-document-editable .ProseMirror')
+    .evaluate((root) => {
+      const paragraph = root.querySelectorAll('p')[1];
+      const text = paragraph?.firstChild;
+      if (!(text instanceof Text)) {
+        throw new Error('Document comment fixture text is unavailable.');
+      }
+      const range = document.createRange();
+      range.setStart(text, 0);
+      range.setEnd(text, Math.min(12, text.length));
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+    });
+  await page.getByRole('tab', { name: '审阅' }).click();
+  await page.getByRole('button', { name: '添加批注' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByRole('textbox', { name: '批注内容' })
+    .fill('这里需要补充可衡量的验收标准。');
+  await dialog.getByRole('button', { name: '添加批注' }).click();
+
+  const panel = page.getByRole('complementary', { name: '批注审阅' });
+  const mark = page.locator('[data-document-comment]');
+  const connector = page.locator('.work-document-comment-connectors path');
+  await expect(panel).toBeVisible();
+  await expect(mark).toHaveCount(1);
+  await expect(mark).toHaveClass(/is-active-comment/);
+  await expect(connector).toHaveCount(1);
+  await expect(page.getByText('这里需要补充可衡量的验收标准。')).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>(
+      '.work-document-comments-panel',
+    );
+    const pageElement = document.querySelector<HTMLElement>(
+      '.work-document-page',
+    );
+    if (!panel || !pageElement) {
+      throw new Error('Document review geometry is unavailable.');
+    }
+    const panelRect = panel.getBoundingClientRect();
+    const pageRect = pageElement.getBoundingClientRect();
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      panelLeft: panelRect.left,
+      panelRight: panelRect.right,
+      panelWidth: panelRect.width,
+      pageRight: pageRect.right,
+    };
+  });
+  if (testInfo.project.name === 'compact-768') {
+    expect(geometry.panelLeft).toBeGreaterThanOrEqual(
+      geometry.viewportWidth - geometry.panelWidth - 16,
+    );
+  } else {
+    expect(geometry.panelLeft).toBeGreaterThanOrEqual(geometry.pageRight - 1);
+  }
+  expect(geometry.panelRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
+  expect(geometry.panelWidth).toBeGreaterThanOrEqual(270);
+
+  await stabilizeVisualSurface(page);
+  await expect(page).toHaveScreenshot('document-comments.png');
+});
+
+test('component guide provides framework-specific examples', async ({
+  page,
+}) => {
+  await page.goto('/#guide');
+  await expect(
+    page.getByRole('heading', { name: '组件接入', level: 1 }),
+  ).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'React' })).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Vue' }).click();
+  await expect(page.locator('.playground-framework-example pre')).toContainText(
+    'v-model:content',
+  );
+
+  await page.getByRole('tab', { name: 'Web Component' }).click();
+  await expect(page.locator('.playground-framework-example pre')).toContainText(
+    'defineA3SOfficeElements',
+  );
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {
@@ -300,10 +396,12 @@ async function verifySharedEditorGeometry(
   }
 
   if (kind !== 'pdf') {
-    await expect(page.getByRole('tab', { name: '开始' })).toHaveCSS(
-      'color',
-      'rgb(255, 255, 255)',
-    );
+    const startTab = page.getByRole('tab', { name: '开始' });
+    await expect(startTab).toHaveAttribute('aria-selected', 'true');
+    await expect(startTab).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(
+      page.getByRole('button', { name: '文件', exact: true }),
+    ).toHaveCount(0);
   }
 }
 

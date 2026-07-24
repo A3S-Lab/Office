@@ -1,6 +1,6 @@
 import type { OfficeArtifactKind } from '@a3s-lab/office/core';
 
-export type SiteRoute = 'office' | 'cli' | 'skill';
+export type SiteRoute = 'office' | 'guide' | 'cli' | 'skill';
 
 export type EditableOfficeKind = Exclude<OfficeArtifactKind, 'pdf'>;
 

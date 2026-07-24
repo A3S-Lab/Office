@@ -1,4 +1,11 @@
-import { ChevronLeft, ChevronRight, Eye, Minus, Plus } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Minus,
+  Plus,
+} from 'lucide-react';
 import {
   type ButtonHTMLAttributes,
   Fragment,
@@ -291,7 +298,8 @@ function WorkOfficeFileMenu({
             else focusRequestedAction();
           }}
         >
-          文件
+          <span>文件</span>
+          <ChevronDown size={12} aria-hidden="true" />
         </button>
       )}
     >

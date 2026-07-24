@@ -29,7 +29,6 @@ import {
 import {
   DocumentEditor,
   MarkdownEditor,
-  type OfficeFileAction,
   PdfViewer,
   PresentationEditor,
   SpreadsheetEditor,
@@ -93,19 +92,6 @@ export function EditorWorkspace({
       setExporting(false);
     }
   };
-
-  const fileActions: readonly OfficeFileAction[] =
-    artifact.kind === 'pdf'
-      ? []
-      : [
-          {
-            id: 'download',
-            label: `下载 ${extension}`,
-            icon: <Download size={16} />,
-            disabled: exporting,
-            onSelect: () => void exportArtifact(),
-          },
-        ];
 
   const savePdf = useCallback(
     async (pdf: Blob) => {
@@ -219,7 +205,6 @@ export function EditorWorkspace({
           {artifact.content.type === 'document' && (
             <DocumentEditor
               content={artifact.content}
-              fileActions={fileActions}
               onAgentRequest={onAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
               preview={preview}
@@ -230,7 +215,6 @@ export function EditorWorkspace({
           {artifact.content.type === 'markdown' && (
             <MarkdownEditor
               content={artifact.content}
-              fileActions={fileActions}
               onChange={(content: MarkdownContent) => onChange(content)}
               preview={preview}
               saveStatus="本次会话已保存"
@@ -240,7 +224,6 @@ export function EditorWorkspace({
           {artifact.content.type === 'spreadsheet' && (
             <SpreadsheetEditor
               content={artifact.content}
-              fileActions={fileActions}
               onAgentRequest={onAgentRequest}
               onChange={(content: SpreadsheetContent) => onChange(content)}
               preview={preview}
@@ -251,7 +234,6 @@ export function EditorWorkspace({
           {artifact.content.type === 'presentation' && (
             <PresentationEditor
               content={artifact.content}
-              fileActions={fileActions}
               onAgentRequest={onAgentRequest}
               onChange={(content: PresentationContent) => onChange(content)}
               onStartSlideshow={() => setPreview(true)}

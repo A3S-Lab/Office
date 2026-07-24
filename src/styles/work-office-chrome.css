@@ -108,28 +108,24 @@
 
 .work-office-ribbon-tabs > button:focus-visible {
   border-radius: 4px;
-  box-shadow: inset 0 0 0 1px var(--a3s-blue);
+  box-shadow: inset 0 0 0 1px var(--work-office-accent);
 }
 
 .work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"] {
-  align-self: center;
-  min-height: 28px;
-  border-radius: 6px;
-  background: var(--work-office-accent);
-  box-shadow: 0 2px 6px
-    color-mix(in srgb, var(--work-office-accent) 22%, transparent);
-  color: #fff;
+  background: transparent;
+  box-shadow: none;
+  color: var(--work-office-accent);
   font-weight: 680;
 }
 
 .work-office-ribbon-tabs.ds-tabs
   > button[aria-selected="true"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--work-office-accent) 92%, black);
-  color: #fff;
+  background: color-mix(in srgb, var(--work-office-accent) 6%, transparent);
+  color: var(--work-office-accent);
 }
 
 .work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"]::after {
-  background: transparent;
+  background: var(--work-office-accent);
 }
 
 .work-office-file-menu {
@@ -137,17 +133,21 @@
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  margin-left: 10px;
+  border-right: 1px solid var(--a3s-line);
 }
 
 .work-office-file-trigger {
-  width: 56px;
-  height: 28px;
-  padding: 0;
+  display: inline-flex;
+  min-width: 62px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 6px;
-  background: var(--work-office-accent);
-  color: #fff;
+  border-radius: 0;
+  background: transparent;
+  color: var(--work-office-accent);
   font: inherit;
   font-size: 12px;
   font-weight: 680;
@@ -156,7 +156,11 @@
 
 .work-office-file-trigger:hover,
 .work-office-file-trigger[aria-expanded="true"] {
-  filter: brightness(0.94);
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
 }
 
 .work-office-file-trigger:focus-visible {

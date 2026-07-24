@@ -25,11 +25,14 @@ import {
 } from '../work-document-changes';
 import { documentCitationCount } from '../work-document-citation-editor';
 import {
+  appendDocumentCommentReply,
   collectDocumentCommentAnchors,
   documentCommentViews,
   insertDocumentComment,
   removeDocumentComment,
+  removeDocumentCommentRecord,
   retainAnchoredDocumentComments,
+  toggleDocumentCommentResolved,
 } from '../work-document-comments';
 import { createWorkDocumentExtensions } from '../work-document-extensions';
 import {
@@ -148,6 +151,7 @@ export function DocumentEditor({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pageHeaderRef = useRef<HTMLElement>(null);
   const pageFooterRef = useRef<HTMLElement>(null);
+  const reviewSurfaceRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef(content);
   const trackChangesRef = useRef(Boolean(content.trackChanges));
   const normalizedContent = useMemo(
@@ -378,6 +382,36 @@ export function DocumentEditor({
   const citationCount = documentCitationCount(editor);
   const paragraphIndent = documentParagraphIndent(editor);
   const paragraphTabStops = documentParagraphTabStops(editor);
+  const commitComments = (nextComments: WorkDocumentContent['comments']) => {
+    const next = { ...contentRef.current, comments: nextComments };
+    contentRef.current = next;
+    onChange(next);
+  };
+  const replyToComment = (id: string, text: string) => {
+    commitComments(
+      appendDocumentCommentReply(contentRef.current.comments ?? [], id, {
+        id: createWorkId('comment-reply'),
+        author: 'A3S Work 用户',
+        date: new Date().toISOString(),
+        text,
+      }),
+    );
+  };
+  const toggleResolvedComment = (id: string) =>
+    commitComments(
+      toggleDocumentCommentResolved(contentRef.current.comments ?? [], id),
+    );
+  const deleteComment = (id: string) => {
+    const next = {
+      ...contentRef.current,
+      comments: removeDocumentCommentRecord(
+        contentRef.current.comments ?? [],
+        id,
+      ),
+    };
+    contentRef.current = next;
+    if (!removeDocumentComment(editor, id)) onChange(next);
+  };
   const updateLayout = (next: typeof layout) => {
     updateActiveDocumentSection(editor, next);
   };
@@ -650,58 +684,6 @@ export function DocumentEditor({
           onClose={() => setCitationsOpen(false)}
         />
       )}
-      {commentsOpen && (
-        <DocumentCommentsPanel
-          editor={editor}
-          comments={comments}
-          onReply={(id, text) => {
-            const next = {
-              ...contentRef.current,
-              comments: (contentRef.current.comments ?? []).map((comment) =>
-                comment.id === id
-                  ? {
-                      ...comment,
-                      replies: [
-                        ...(comment.replies ?? []),
-                        {
-                          id: createWorkId('comment-reply'),
-                          author: 'A3S Work 用户',
-                          date: new Date().toISOString(),
-                          text,
-                        },
-                      ],
-                    }
-                  : comment,
-              ),
-            };
-            contentRef.current = next;
-            onChange(next);
-          }}
-          onToggleResolved={(id) => {
-            const next = {
-              ...contentRef.current,
-              comments: (contentRef.current.comments ?? []).map((comment) =>
-                comment.id === id
-                  ? { ...comment, resolved: !comment.resolved }
-                  : comment,
-              ),
-            };
-            contentRef.current = next;
-            onChange(next);
-          }}
-          onDelete={(id) => {
-            const next = {
-              ...contentRef.current,
-              comments: (contentRef.current.comments ?? []).filter(
-                (comment) => comment.id !== id,
-              ),
-            };
-            contentRef.current = next;
-            if (!removeDocumentComment(editor, id)) onChange(next);
-          }}
-          onClose={() => setCommentsOpen(false)}
-        />
-      )}
       {changesOpen && (
         <DocumentChangesPanel
           editor={editor}
@@ -721,189 +703,205 @@ export function DocumentEditor({
       )}
       <div className={`work-document-scroll ${viewMode}`}>
         <div
-          className={`work-document-page-stage ${layout.pageSize} ${layout.orientation} ${viewMode}`}
-          data-testid="document-page-stage"
-          style={
-            { '--work-document-zoom': String(zoom / 100) } as CSSProperties
-          }
+          ref={reviewSurfaceRef}
+          className={`work-document-review-surface${commentsOpen ? ' comments-open' : ''}`}
         >
-          {viewMode === 'page' && (
-            <DocumentRuler
-              layout={layout}
-              paragraphIndent={paragraphIndent}
-              tabStops={paragraphTabStops}
-              onParagraphIndentChange={(nextParagraphIndent) =>
-                setDocumentParagraphIndent(editor, nextParagraphIndent, {
-                  restoreFocus: false,
-                })
-              }
-              onTabStopsChange={(nextTabStops) =>
-                setDocumentParagraphTabStops(editor, nextTabStops, {
-                  restoreFocus: false,
-                })
-              }
-              onLayoutChange={updateLayout}
-            />
-          )}
-          <div className="work-document-page-frame">
+          <div
+            className={`work-document-page-stage ${layout.pageSize} ${layout.orientation} ${viewMode}`}
+            data-testid="document-page-stage"
+            style={
+              { '--work-document-zoom': String(zoom / 100) } as CSSProperties
+            }
+          >
             {viewMode === 'page' && (
-              <DocumentVerticalRuler
+              <DocumentRuler
                 layout={layout}
+                paragraphIndent={paragraphIndent}
+                tabStops={paragraphTabStops}
+                onParagraphIndentChange={(nextParagraphIndent) =>
+                  setDocumentParagraphIndent(editor, nextParagraphIndent, {
+                    restoreFocus: false,
+                  })
+                }
+                onTabStopsChange={(nextTabStops) =>
+                  setDocumentParagraphTabStops(editor, nextTabStops, {
+                    restoreFocus: false,
+                  })
+                }
                 onLayoutChange={updateLayout}
               />
             )}
-            <article
-              className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${pageChromeEditing ? ' page-chrome-editing' : ''}${layoutOpen ? ' page-chrome-panel-open' : ''}`}
-              aria-label={preview ? '文字预览' : '文字页面'}
-              style={
-                {
-                  padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
-                  '--work-document-page-margin-left': `${marginPixels.left}px`,
-                  '--work-document-page-margin-right': `${marginPixels.right}px`,
-                  '--work-document-page-header-offset': `${Math.max(
-                    8,
-                    (marginPixels.top - 28) / 2,
-                  )}px`,
-                  '--work-document-page-footer-offset': `${Math.max(
-                    8,
-                    (marginPixels.bottom - 28) / 2,
-                  )}px`,
-                } as CSSProperties
-              }
-            >
+            <div className="work-document-page-frame">
               {viewMode === 'page' && (
-                <header
-                  ref={pageHeaderRef}
-                  className={`work-document-page-header${headerChrome.headerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
-                  data-document-page-chrome={
-                    firstPageDescriptor.pageChrome.variant
-                  }
-                >
-                  {pageChromeEditing?.part === 'header' ? (
-                    <DocumentPageChromeRichTextEditor
-                      key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-header`}
-                      autoFocus
-                      className="work-document-page-chrome-inline-editor"
-                      label="页内页眉"
-                      value={headerChrome.headerHtml}
-                      showToolbar={false}
-                      onChange={(headerHtml) =>
-                        updateVisiblePageChrome({ headerHtml })
-                      }
-                      onEditorChange={setPageChromeEditor}
-                      onExit={closePageChrome}
-                    />
-                  ) : (
-                    <>
-                      {headerChrome.headerHtml ? (
-                        <div
-                          className="work-document-page-chrome-html"
-                          dangerouslySetInnerHTML={{
-                            __html: headerChrome.headerHtml,
-                          }}
-                        />
-                      ) : (
-                        <span className="work-document-page-chrome-placeholder">
-                          页眉
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        className="work-document-page-chrome-activate"
-                        aria-label="编辑页眉"
-                        title="编辑页眉"
-                        onClick={() => editPageChrome('header')}
-                      />
-                    </>
-                  )}
-                </header>
+                <DocumentVerticalRuler
+                  layout={layout}
+                  onLayoutChange={updateLayout}
+                />
               )}
-              <section
-                className={`work-document-editable ${viewMode}`}
-                aria-label="文档内容编辑区域"
-                onDoubleClick={() => {
-                  if (pageChromeEditing) closePageChrome();
-                }}
-                onContextMenu={(event) => {
-                  if (!onAgentRequest) return;
-                  const { from, to, empty } = editor.state.selection;
-                  if (empty) return;
-                  const rawSelection = editor.state.doc.textBetween(
-                    from,
-                    to,
-                    '\n',
-                  );
-                  const selection = rawSelection.trim();
-                  if (!selection) return;
-                  event.preventDefault();
-                  setAgentMenu({
-                    x: event.clientX,
-                    y: event.clientY,
-                    selection,
-                    rawSelection,
-                    from,
-                    to,
-                  });
-                }}
+              <article
+                className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${pageChromeEditing ? ' page-chrome-editing' : ''}${layoutOpen ? ' page-chrome-panel-open' : ''}`}
+                aria-label={preview ? '文字预览' : '文字页面'}
+                style={
+                  {
+                    padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
+                    '--work-document-page-margin-left': `${marginPixels.left}px`,
+                    '--work-document-page-margin-right': `${marginPixels.right}px`,
+                    '--work-document-page-header-offset': `${Math.max(
+                      8,
+                      (marginPixels.top - 28) / 2,
+                    )}px`,
+                    '--work-document-page-footer-offset': `${Math.max(
+                      8,
+                      (marginPixels.bottom - 28) / 2,
+                    )}px`,
+                  } as CSSProperties
+                }
               >
-                <EditorContent editor={editor} />
-              </section>
-              {viewMode === 'page' && (
-                <footer
-                  ref={pageFooterRef}
-                  className={`work-document-page-footer${footerChrome.footerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
-                  data-document-page-chrome={
-                    lastPageDescriptor.pageChrome.variant
-                  }
-                >
-                  <div className="work-document-page-footer-content">
-                    {pageChromeEditing?.part === 'footer' ? (
+                {viewMode === 'page' && (
+                  <header
+                    ref={pageHeaderRef}
+                    className={`work-document-page-header${headerChrome.headerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
+                    data-document-page-chrome={
+                      firstPageDescriptor.pageChrome.variant
+                    }
+                  >
+                    {pageChromeEditing?.part === 'header' ? (
                       <DocumentPageChromeRichTextEditor
-                        key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-footer`}
+                        key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-header`}
                         autoFocus
                         className="work-document-page-chrome-inline-editor"
-                        label="页内页脚"
-                        value={footerChrome.footerHtml}
+                        label="页内页眉"
+                        value={headerChrome.headerHtml}
                         showToolbar={false}
-                        onChange={(footerHtml) =>
-                          updateVisiblePageChrome({ footerHtml })
+                        onChange={(headerHtml) =>
+                          updateVisiblePageChrome({ headerHtml })
                         }
                         onEditorChange={setPageChromeEditor}
                         onExit={closePageChrome}
                       />
                     ) : (
                       <>
-                        {footerChrome.footerHtml ? (
+                        {headerChrome.headerHtml ? (
                           <div
                             className="work-document-page-chrome-html"
                             dangerouslySetInnerHTML={{
-                              __html: footerChrome.footerHtml,
+                              __html: headerChrome.headerHtml,
                             }}
                           />
                         ) : (
                           <span className="work-document-page-chrome-placeholder">
-                            页脚
+                            页眉
                           </span>
                         )}
                         <button
                           type="button"
                           className="work-document-page-chrome-activate"
-                          aria-label="编辑页脚"
-                          title="编辑页脚"
-                          onClick={() => editPageChrome('footer')}
+                          aria-label="编辑页眉"
+                          title="编辑页眉"
+                          onClick={() => editPageChrome('header')}
                         />
                       </>
                     )}
-                  </div>
-                  {footerChrome.showPageNumber && (
-                    <span className="work-document-page-number">
-                      {lastPageDescriptor.pageNumber} / {finalPageNumber}
-                    </span>
-                  )}
-                </footer>
-              )}
-            </article>
+                  </header>
+                )}
+                <section
+                  className={`work-document-editable ${viewMode}`}
+                  aria-label="文档内容编辑区域"
+                  onDoubleClick={() => {
+                    if (pageChromeEditing) closePageChrome();
+                  }}
+                  onContextMenu={(event) => {
+                    if (!onAgentRequest) return;
+                    const { from, to, empty } = editor.state.selection;
+                    if (empty) return;
+                    const rawSelection = editor.state.doc.textBetween(
+                      from,
+                      to,
+                      '\n',
+                    );
+                    const selection = rawSelection.trim();
+                    if (!selection) return;
+                    event.preventDefault();
+                    setAgentMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      selection,
+                      rawSelection,
+                      from,
+                      to,
+                    });
+                  }}
+                >
+                  <EditorContent editor={editor} />
+                </section>
+                {viewMode === 'page' && (
+                  <footer
+                    ref={pageFooterRef}
+                    className={`work-document-page-footer${footerChrome.footerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
+                    data-document-page-chrome={
+                      lastPageDescriptor.pageChrome.variant
+                    }
+                  >
+                    <div className="work-document-page-footer-content">
+                      {pageChromeEditing?.part === 'footer' ? (
+                        <DocumentPageChromeRichTextEditor
+                          key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-footer`}
+                          autoFocus
+                          className="work-document-page-chrome-inline-editor"
+                          label="页内页脚"
+                          value={footerChrome.footerHtml}
+                          showToolbar={false}
+                          onChange={(footerHtml) =>
+                            updateVisiblePageChrome({ footerHtml })
+                          }
+                          onEditorChange={setPageChromeEditor}
+                          onExit={closePageChrome}
+                        />
+                      ) : (
+                        <>
+                          {footerChrome.footerHtml ? (
+                            <div
+                              className="work-document-page-chrome-html"
+                              dangerouslySetInnerHTML={{
+                                __html: footerChrome.footerHtml,
+                              }}
+                            />
+                          ) : (
+                            <span className="work-document-page-chrome-placeholder">
+                              页脚
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            className="work-document-page-chrome-activate"
+                            aria-label="编辑页脚"
+                            title="编辑页脚"
+                            onClick={() => editPageChrome('footer')}
+                          />
+                        </>
+                      )}
+                    </div>
+                    {footerChrome.showPageNumber && (
+                      <span className="work-document-page-number">
+                        {lastPageDescriptor.pageNumber} / {finalPageNumber}
+                      </span>
+                    )}
+                  </footer>
+                )}
+              </article>
+            </div>
           </div>
+          {commentsOpen && (
+            <DocumentCommentsPanel
+              editor={editor}
+              comments={comments}
+              surfaceRef={reviewSurfaceRef}
+              onReply={replyToComment}
+              onToggleResolved={toggleResolvedComment}
+              onDelete={deleteComment}
+              onClose={() => setCommentsOpen(false)}
+            />
+          )}
         </div>
       </div>
       <DocumentStatusBar
