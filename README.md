@@ -17,7 +17,7 @@ Try the editors in the
 | Editor | Main capabilities |
 | --- | --- |
 | Document | Rich text, sections, page layout, headers and footers, contextual image wrapping, comments, tracked changes, citations, notes, captions, cross-references, DOCX import/export, and PDF export |
-| Markdown | TipTap editing, source and split views, headings, lists, quotes, links, images, code, native Markdown import/export, and read-only preview |
+| Markdown | TipTap editing with a source-and-preview split view by default, optional visual or source-only views, headings, lists, quotes, links, images, code, native Markdown import/export, and read-only preview |
 | Spreadsheet | Multiple sheets, formulas, charts, conditional formatting, pivot tables, comments, validation, protection, print settings, XLS/XLSX/ODS/CSV import, XLSX export, and PDF export |
 | Presentation | Slides, masters and layouts, rich text, shapes, images, tables, charts, notes, comments, transitions, presenter view, PPTX import/export, and PDF export |
 | PDF | PDFium rendering, navigation, search, form filling, basic annotations, undo and redo, and saving an edited copy |

@@ -74,7 +74,7 @@ export function MarkdownEditor({
   const receivedContentRef = useRef(content);
   const appliedMarkdownRef = useRef(content.markdown);
   const initialMarkdownRef = useRef(content.markdown);
-  const [viewMode, setViewMode] = useState<MarkdownViewMode>('visual');
+  const [viewMode, setViewMode] = useState<MarkdownViewMode>('split');
   const [zoom, setZoom] = useState(100);
   const [, setSelectionVersion] = useState(0);
   contentRef.current = content;

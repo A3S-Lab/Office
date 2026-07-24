@@ -331,3 +331,24 @@ test('renders controlled Markdown content with the TipTap editor', async () => {
   expect(screen.getByRole('table')).toHaveTextContent('Tables');
   expect(artifact.content.type).toBe('markdown');
 });
+
+test('opens Markdown in source-and-preview split mode by default', async () => {
+  const artifact = createArtifact('blank-markdown');
+  if (artifact.content.type !== 'markdown') {
+    throw new Error('Expected a Markdown artifact.');
+  }
+
+  const { container } = render(
+    <MarkdownEditor
+      content={artifact.content}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  expect(await screen.findByLabelText('Markdown 源码')).toBeInTheDocument();
+  expect(screen.getByLabelText('Markdown 编辑区')).toBeInTheDocument();
+  expect(
+    container.querySelector('.work-markdown-workspace.split'),
+  ).toBeInTheDocument();
+});

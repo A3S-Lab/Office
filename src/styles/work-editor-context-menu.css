@@ -1,0 +1,104 @@
+.workspace-context-menu {
+  position: fixed;
+  z-index: 2147483000;
+  display: grid;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  padding: 5px;
+  overflow: auto;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--a3s-panel) 98%, transparent);
+  box-shadow:
+    0 18px 44px rgb(16 24 40 / 20%),
+    0 2px 7px rgb(16 24 40 / 8%);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
+  font-size: 11px;
+  line-height: 1.25;
+  overscroll-behavior: contain;
+  backdrop-filter: blur(18px);
+}
+
+.workspace-context-menu > button {
+  display: grid;
+  width: 100%;
+  min-height: 32px;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.workspace-context-menu > button:hover:not(:disabled),
+.workspace-context-menu > button:focus-visible {
+  background: var(--a3s-panel-soft);
+  box-shadow: none;
+}
+
+.workspace-context-menu > button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--a3s-blue) 58%, var(--a3s-line));
+  outline-offset: -1px;
+}
+
+.workspace-context-menu > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.workspace-context-menu > button.danger {
+  color: var(--a3s-red);
+}
+
+.workspace-context-menu > button > svg {
+  width: 15px;
+  height: 15px;
+  color: var(--a3s-muted);
+  pointer-events: none;
+}
+
+.workspace-context-menu > button.danger > svg {
+  color: currentcolor;
+}
+
+.workspace-context-menu > button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-context-menu kbd {
+  margin-left: 8px;
+  color: var(--a3s-faint);
+  font: inherit;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.workspace-context-menu-separator {
+  height: 1px;
+  margin: 4px 7px;
+  border: 0;
+  background: var(--a3s-line);
+}
+
+@media (forced-colors: active) {
+  .workspace-context-menu {
+    border-color: CanvasText;
+  }
+
+  .workspace-context-menu > button:focus-visible {
+    outline: 2px solid Highlight;
+  }
+}

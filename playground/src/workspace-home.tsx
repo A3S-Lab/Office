@@ -1,7 +1,6 @@
 import {
   ArrowRight,
   FilePlus2,
-  FileType2,
   PanelLeftOpen,
   Search,
   Upload,
@@ -123,8 +122,7 @@ export function WorkspaceHome({
           >
             <span className="playground-template-preview pdf">
               <span className="template-document-sheet">
-                <FileType2 size={28} />
-                <b>PDF</b>
+                <b className="template-pdf-mark">PDF</b>
               </span>
               <span className="template-open-badge">打开</span>
             </span>
@@ -302,8 +300,7 @@ function ArtifactPreview({ kind }: { kind: OfficeArtifactKind }) {
     return (
       <span className="artifact-preview">
         <span className="template-document-sheet pdf">
-          <FileType2 size={25} />
-          <b>PDF</b>
+          <b className="template-pdf-mark">PDF</b>
         </span>
       </span>
     );

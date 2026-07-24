@@ -23,7 +23,8 @@ The products share infrastructure without sharing a false universal document
 model:
 
 1. The Office shell owns the ribbon, status bar, dialogs, keyboard routing,
-   accessibility, file actions, theming, and responsive behavior.
+   accessibility, file actions, anchored context menus, theming, and responsive
+   behavior.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Only the active TipTap text
@@ -45,7 +46,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Product | Implemented browser surface | Implemented kernel boundary | Next fidelity gate |
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
-| Markdown | TipTap visual editing with source and split views | No kernel required for normal editing | CommonMark/GFM compatibility fixtures and large-file profiling |
+| Markdown | TipTap visual editing with a source-and-preview split view by default, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark/GFM compatibility fixtures and large-file profiling |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell and a typed command boundary for selected-range formatting, merge state, recalculation, gridlines, and zoom | Native Office formula and OOXML primitives exist outside the browser kernel; no browser calculation kernel yet | Dedicated virtual grid and Worker/WASM dependency graph, calculation, and print layout |
 | Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |

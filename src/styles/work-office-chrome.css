@@ -111,9 +111,25 @@
   box-shadow: inset 0 0 0 1px var(--a3s-blue);
 }
 
-.work-office-ribbon-tabs > button[aria-selected="true"] {
-  color: var(--work-office-accent);
+.work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"] {
+  align-self: center;
+  min-height: 28px;
+  border-radius: 6px;
+  background: var(--work-office-accent);
+  box-shadow: 0 2px 6px
+    color-mix(in srgb, var(--work-office-accent) 22%, transparent);
+  color: #fff;
   font-weight: 680;
+}
+
+.work-office-ribbon-tabs.ds-tabs
+  > button[aria-selected="true"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--work-office-accent) 92%, black);
+  color: #fff;
+}
+
+.work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"]::after {
+  background: transparent;
 }
 
 .work-office-file-menu {

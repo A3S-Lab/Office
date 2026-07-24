@@ -283,18 +283,23 @@
 .template-document-sheet.pdf {
   align-items: center;
   justify-content: center;
-  gap: 7px;
   padding: 9px;
   color: #c84040;
 }
 
-.template-document-sheet.pdf > b {
-  width: auto;
-  height: auto;
-  background: transparent;
-  color: currentColor;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+.template-document-sheet > .template-pdf-mark {
+  display: grid;
+  width: 40px;
+  height: 24px;
+  place-items: center;
+  border-radius: 3px;
+  background: #c84040;
+  box-shadow: 0 3px 8px rgb(200 64 64 / 18%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: 0.06em;
+  line-height: 1;
 }
 
 .template-open-badge {

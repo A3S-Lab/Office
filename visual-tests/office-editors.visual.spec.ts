@@ -27,9 +27,15 @@ const fixtures: VisualFixture[] = [
         })
         .click(),
     ready: async (page) => {
-      await page
-        .locator('.ProseMirror[data-pagination-state="ready"]')
-        .waitFor();
+      const editor = page.locator(
+        '.ProseMirror[data-pagination-state="ready"]',
+      );
+      await editor.waitFor();
+      await expect(editor).toHaveAttribute('data-pagination-engine', 'wasm');
+      await expect(editor).toHaveAttribute(
+        'data-pagination-text-engine',
+        'wasm',
+      );
     },
   },
   {
@@ -110,6 +116,69 @@ test.describe('Office editor visual contracts', () => {
       await expect(page).toHaveScreenshot(`${fixture.kind}.png`);
     });
   }
+});
+
+test.describe('Office editor context menu contracts', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  for (const kind of ['document', 'spreadsheet', 'presentation'] as const) {
+    test(`${kind} context menu`, async ({ page }) => {
+      const fixture = fixtures.find((candidate) => candidate.kind === kind);
+      if (!fixture) throw new Error(`Missing ${kind} visual fixture.`);
+
+      await page.goto('/');
+      await fixture.open(page);
+      await fixture.ready(page);
+      await openEditorContextMenu(page, kind);
+
+      const menu = page.getByRole('menu');
+      await expect(menu).toBeVisible();
+      await expect(menu.getByRole('menuitem').first()).toBeFocused();
+
+      const geometry = await menu.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          position: getComputedStyle(element).position,
+          viewportWidth: document.documentElement.clientWidth,
+          viewportHeight: document.documentElement.clientHeight,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+      expect(geometry.position).toBe('fixed');
+      expect(geometry.left).toBeGreaterThanOrEqual(8);
+      expect(geometry.top).toBeGreaterThanOrEqual(8);
+      expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 8);
+      expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight - 8);
+      expect(geometry.width).toBeGreaterThanOrEqual(200);
+      expect(geometry.width).toBeLessThanOrEqual(320);
+      expect(geometry.height).toBeGreaterThan(40);
+
+      await page.keyboard.press('Escape');
+      await expect(menu).toBeHidden();
+    });
+  }
+});
+
+test('PDF workspace card uses a single, legible file mark', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const card = page.getByRole('button', {
+    name: 'PDF 编辑器 查看、批注并保存 PDF',
+  });
+  const sheet = card.locator('.template-document-sheet');
+  const mark = sheet.locator('.template-pdf-mark');
+
+  await expect(card).toBeVisible();
+  await expect(mark).toHaveText('PDF');
+  await expect(sheet.locator('svg')).toHaveCount(0);
+  await expect(mark).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(mark).toHaveCSS('background-color', 'rgb(200, 64, 64)');
 });
 
 async function stabilizeVisualSurface(page: Page): Promise<void> {
@@ -229,6 +298,55 @@ async function verifySharedEditorGeometry(
       page.getByRole('button', { name: '展开办公侧边栏' }),
     ).toBeVisible();
   }
+
+  if (kind !== 'pdf') {
+    await expect(page.getByRole('tab', { name: '开始' })).toHaveCSS(
+      'color',
+      'rgb(255, 255, 255)',
+    );
+  }
+}
+
+async function openEditorContextMenu(
+  page: Page,
+  kind: 'document' | 'spreadsheet' | 'presentation',
+): Promise<void> {
+  if (kind === 'document') {
+    await page
+      .locator('.work-document-editable .ProseMirror')
+      .evaluate((editor) => {
+        const text = editor.querySelector('h1')?.firstChild;
+        if (!(text instanceof Text)) {
+          throw new Error('Document context-menu text is unavailable.');
+        }
+        const range = document.createRange();
+        range.setStart(text, 0);
+        range.setEnd(text, Math.min(4, text.length));
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        (editor as HTMLElement).focus();
+        document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+        editor.dispatchEvent(
+          new MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: 420,
+            clientY: 520,
+          }),
+        );
+      });
+    return;
+  }
+
+  const target =
+    kind === 'spreadsheet'
+      ? page.locator('.work-spreadsheet-canvas')
+      : page.locator('.work-slide-canvas.interactive');
+  await target.click({
+    button: 'right',
+    position: kind === 'spreadsheet' ? { x: 280, y: 180 } : undefined,
+  });
 }
 
 function visualPdf(): Buffer {
