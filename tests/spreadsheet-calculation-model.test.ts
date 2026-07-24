@@ -1,12 +1,16 @@
 import { describe, expect, test } from '@rstest/core';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 import {
-  createSpreadsheetKernelWorkbook,
   spreadsheetCalculationFallbackCells,
   spreadsheetCalculationOps,
   spreadsheetCalculationSessionUpdate,
   spreadsheetCalculationTargets,
 } from '../src/internal/features/work/editors/spreadsheet-calculation-model';
+import {
+  createSpreadsheetKernelWorkbook,
+  projectSpreadsheetKernelWorkbookOperations,
+  spreadsheetOperationsMayChangeCalculation,
+} from '../src/internal/features/work/editors/spreadsheet-calculation-projection';
 
 describe('Spreadsheet calculation model', () => {
   test('creates a deterministic sparse workbook and ignores presentation-only cells', () => {
@@ -278,6 +282,168 @@ describe('Spreadsheet calculation model', () => {
       kind: 'replace',
       sheets: current.sheets,
     });
+  });
+
+  test('projects exact Fortune cell operations without rebuilding the workbook', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const changed = workbook();
+    const input = changed.sheets[0]?.data?.[0]?.[0];
+    if (!previous || !input) throw new Error('Workbook fixture is incomplete.');
+    input.v = 3;
+    input.m = '3';
+
+    const projection = projectSpreadsheetKernelWorkbookOperations(
+      previous,
+      changed.sheets,
+      [
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 0, 0],
+          value: input,
+        },
+      ],
+    );
+    const compiled = createSpreadsheetKernelWorkbook(changed);
+
+    expect(projection?.sourceChanged).toBe(true);
+    expect(projection?.changes).toEqual([
+      {
+        kind: 'upsert',
+        sheetId: 'sheet-1',
+        row: 0,
+        column: 0,
+        value: { kind: 'number', value: 3 },
+      },
+    ]);
+    expect(projection?.workbook.sheets).toEqual(compiled?.sheets);
+    expect(projection?.workbook.sourceKey).toBe(compiled?.sourceKey);
+  });
+
+  test('ignores formula result caches and presentation-only operations', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const changed = workbook();
+    const formula = changed.sheets[0]?.data?.[0]?.[1];
+    if (!previous || !formula)
+      throw new Error('Workbook fixture is incomplete.');
+    formula.v = 999;
+    formula.m = '999';
+    formula.bg = '#fee2e2';
+
+    const projection = projectSpreadsheetKernelWorkbookOperations(
+      previous,
+      changed.sheets,
+      [
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 0, 1],
+          value: formula,
+        },
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 0, 1, 'bg'],
+          value: '#fee2e2',
+        },
+      ],
+    );
+
+    expect(projection).toMatchObject({
+      changes: [],
+      sourceChanged: false,
+    });
+    expect(projection?.workbook).toBe(previous);
+    expect(
+      spreadsheetOperationsMayChangeCalculation(
+        [
+          {
+            id: 'sheet-1',
+            op: 'replace',
+            path: ['data', 0, 1],
+            value: formula,
+          },
+        ],
+        previous,
+      ),
+    ).toBe(false);
+    expect(
+      spreadsheetOperationsMayChangeCalculation(
+        [
+          {
+            id: 'sheet-1',
+            op: 'replace',
+            path: ['data', 0, 0],
+            value: { v: 8, m: '8' },
+          },
+        ],
+        previous,
+      ),
+    ).toBe(true);
+  });
+
+  test('falls back to replacement for structural or broad data operations', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const changed = workbook();
+    if (!previous) throw new Error('Workbook did not compile.');
+
+    expect(
+      projectSpreadsheetKernelWorkbookOperations(previous, changed.sheets, [
+        {
+          id: 'sheet-1',
+          op: 'insertRowCol',
+          path: [],
+          value: {
+            type: 'row',
+            index: 0,
+            count: 1,
+            direction: 'rightbottom',
+            id: 'sheet-1',
+          },
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      projectSpreadsheetKernelWorkbookOperations(previous, changed.sheets, [
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 0],
+          value: changed.sheets[0]?.data?.[0],
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      spreadsheetOperationsMayChangeCalculation([
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 0, 0, 'bg'],
+          value: '#ffffff',
+        },
+      ]),
+    ).toBe(false);
+  });
+
+  test('falls back to replacement when incremental edits exceed the kernel cell limit', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const changed = workbook();
+    if (!previous) throw new Error('Workbook did not compile.');
+    previous.sourceState.cellCount = 100_000;
+    const row = changed.sheets[0]?.data?.[2];
+    if (!row) throw new Error('Workbook fixture is incomplete.');
+    row[0] = { v: 9, m: '9' };
+
+    expect(
+      projectSpreadsheetKernelWorkbookOperations(previous, changed.sheets, [
+        {
+          id: 'sheet-1',
+          op: 'replace',
+          path: ['data', 2, 0],
+          value: { v: 9, m: '9' },
+        },
+      ]),
+    ).toBeNull();
   });
 });
 

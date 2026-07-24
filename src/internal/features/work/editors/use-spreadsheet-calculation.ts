@@ -1,22 +1,30 @@
+import type { Op } from '@fortune-sheet/core';
 import type { WorkbookInstance } from '@fortune-sheet/react';
 import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
 import {
   createOfficeKernelClient,
   type OfficeKernelClient,
 } from '../../../kernel/office-kernel-client';
-import type { OfficeKernelSpreadsheetCalculationIssue } from '../../../kernel/office-kernel-protocol';
+import type {
+  OfficeKernelSpreadsheetCalculationIssue,
+  OfficeKernelSpreadsheetSessionCellChange,
+} from '../../../kernel/office-kernel-protocol';
 import { effectiveSpreadsheetCalculationSettings } from '../work-spreadsheet-formulas';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
-  createSpreadsheetKernelWorkbook,
-  refreshSpreadsheetKernelWorkbook,
   spreadsheetCalculationFallbackCells,
   spreadsheetCalculationOps,
   spreadsheetCalculationSessionUpdate,
-  spreadsheetCalculationSourceKey,
   spreadsheetCalculationTargets,
-  type SpreadsheetKernelWorkbook,
 } from './spreadsheet-calculation-model';
+import {
+  createSpreadsheetKernelWorkbook,
+  projectSpreadsheetKernelWorkbookOperations,
+  refreshSpreadsheetKernelWorkbook,
+  spreadsheetOperationsMayChangeCalculation,
+  type SpreadsheetKernelOperationProjection,
+  type SpreadsheetKernelWorkbook,
+} from './spreadsheet-calculation-projection';
 import type {
   SpreadsheetCalculationCommand,
   SpreadsheetCalculationCommandPort,
@@ -32,7 +40,6 @@ interface ActiveCalculation {
   controller: AbortController;
   documentRevision: number;
   revision: number;
-  sourceKey: string;
 }
 
 interface KernelSessionSnapshot {
@@ -40,34 +47,65 @@ interface KernelSessionSnapshot {
   workbook: SpreadsheetKernelWorkbook;
 }
 
+interface PreparedSessionPatch {
+  baseSession: KernelSessionSnapshot;
+  changes: OfficeKernelSpreadsheetSessionCellChange[];
+}
+
+interface SynchronizeSnapshotOptions {
+  baseWorkbook?: SpreadsheetKernelWorkbook;
+  forceCalculation?: boolean;
+  projection?: SpreadsheetKernelOperationProjection;
+  sourceChanged?: boolean;
+}
+
+export interface SpreadsheetCalculationController
+  extends SpreadsheetCalculationCommandPort {
+  hasPendingResultPatches: () => boolean;
+  notifyWorkbookOperations: (operations: readonly Op[]) => void;
+  synchronizeWorkbook: (
+    content: WorkSpreadsheetContent,
+    operations: readonly Op[],
+  ) => void;
+}
+
 export function useSpreadsheetCalculation({
   content,
   kernelWasmUrl,
   workbookRef,
-}: UseSpreadsheetCalculationOptions): SpreadsheetCalculationCommandPort {
-  const compiled = useMemo(
-    () => createSpreadsheetKernelWorkbook(content),
-    [content],
-  );
-  const compiledRef = useRef(compiled);
+}: UseSpreadsheetCalculationOptions): SpreadsheetCalculationController {
+  const latestContentRef = useRef(content);
+  const snapshotRef = useRef<SpreadsheetKernelWorkbook | null>(null);
   const clientRef = useRef<OfficeKernelClient | null>(null);
   const sessionRef = useRef<KernelSessionSnapshot | null>(null);
   const activeRef = useRef<ActiveCalculation | null>(null);
+  const acceptedContentRef = useRef<WorkSpreadsheetContent | null>(null);
+  const resultOperationsRef = useRef<Op[]>([]);
+  const pendingOperationCancellationRef = useRef(false);
+  const automaticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revisionRef = useRef(0);
   const documentRevisionRef = useRef(0);
-  compiledRef.current = compiled;
+  const calculationSettingsKeyRef = useRef<string | null>(null);
+  latestContentRef.current = content;
 
   useEffect(() => {
     const client = createOfficeKernelClient(kernelWasmUrl);
     clientRef.current = client;
     sessionRef.current = null;
+    snapshotRef.current = null;
+    acceptedContentRef.current = null;
+    resultOperationsRef.current = [];
+    pendingOperationCancellationRef.current = false;
+    calculationSettingsKeyRef.current = null;
     return () => {
       activeRef.current?.controller.abort();
       activeRef.current = null;
-      clearFallbackTimer(fallbackTimerRef);
+      clearTimer(automaticTimerRef);
+      clearTimer(fallbackTimerRef);
       clientRef.current = null;
       sessionRef.current = null;
+      snapshotRef.current = null;
       client.dispose();
     };
   }, [kernelWasmUrl]);
@@ -79,6 +117,7 @@ export function useSpreadsheetCalculation({
       documentRevision: number,
       includeDataTables = true,
       automatic = false,
+      preparedPatch?: PreparedSessionPatch,
     ): void => {
       const client = clientRef.current;
       if (!client) {
@@ -87,7 +126,7 @@ export function useSpreadsheetCalculation({
       }
       activeRef.current?.controller.abort();
       activeRef.current = null;
-      clearFallbackTimer(fallbackTimerRef);
+      clearTimer(fallbackTimerRef);
       let calculationSnapshot = snapshot;
       let forceSessionReplace = false;
       const compatibilityCells = spreadsheetCalculationFallbackCells(
@@ -113,6 +152,7 @@ export function useSpreadsheetCalculation({
           return;
         }
         calculationSnapshot = refreshed;
+        snapshotRef.current = refreshed;
         forceSessionReplace = true;
       }
       const targets = spreadsheetCalculationTargets(
@@ -131,16 +171,24 @@ export function useSpreadsheetCalculation({
         controller: new AbortController(),
         documentRevision,
         revision: ++revisionRef.current,
-        sourceKey: calculationSnapshot.sourceKey,
       };
       activeRef.current = active;
       const previousSession = sessionRef.current;
-      const update = spreadsheetCalculationSessionUpdate(
-        previousSession?.workbook ?? null,
-        calculationSnapshot,
-        previousSession?.documentRevision ?? 0,
-        forceSessionReplace,
-      );
+      const update =
+        !forceSessionReplace &&
+        previousSession &&
+        preparedPatch?.baseSession === previousSession
+          ? {
+              kind: 'patch' as const,
+              baseDocumentRevision: previousSession.documentRevision,
+              changes: preparedPatch.changes,
+            }
+          : spreadsheetCalculationSessionUpdate(
+              previousSession?.workbook ?? null,
+              calculationSnapshot,
+              previousSession?.documentRevision ?? 0,
+              forceSessionReplace,
+            );
       const calculation =
         command.scope === 'selection'
           ? { kind: 'targets' as const, targets: targets ?? [] }
@@ -171,18 +219,15 @@ export function useSpreadsheetCalculation({
             return;
           }
           const workbook = workbookRef.current;
-          if (
-            !workbook ||
-            spreadsheetCalculationSourceKey(workbook.getAllSheets()) !==
-              active.sourceKey
-          ) {
-            return;
-          }
+          if (!workbook) return;
           const ops = spreadsheetCalculationOps(
             workbook.getAllSheets(),
             result.cells,
           );
-          if (ops.length) workbook.applyOp(ops);
+          if (ops.length) {
+            resultOperationsRef.current.push(...ops);
+            workbook.applyOp(ops);
+          }
           scheduleIssueFallback(
             workbookRef,
             result.issues,
@@ -203,14 +248,7 @@ export function useSpreadsheetCalculation({
           ) {
             sessionRef.current = null;
           }
-          const workbook = workbookRef.current;
-          if (
-            workbook &&
-            spreadsheetCalculationSourceKey(workbook.getAllSheets()) ===
-              active.sourceKey
-          ) {
-            fallbackWithFortune(workbook, command);
-          }
+          fallbackWithFortune(workbookRef.current, command);
         })
         .finally(() => {
           if (isCurrentCalculation(activeRef.current, active)) {
@@ -221,47 +259,150 @@ export function useSpreadsheetCalculation({
     [workbookRef],
   );
 
-  useEffect(() => {
-    const documentRevision = ++documentRevisionRef.current;
-    activeRef.current?.controller.abort();
-    activeRef.current = null;
-    clearFallbackTimer(fallbackTimerRef);
-    const settings = effectiveSpreadsheetCalculationSettings(
-      content.calculation,
-    );
-    if (settings.mode === 'manual') return;
-    const timer = setTimeout(() => {
-      if (!compiled) {
-        fallbackWithFortune(workbookRef.current, { scope: 'workbook' });
+  const synchronizeSnapshot = useCallback(
+    (
+      nextContent: WorkSpreadsheetContent,
+      nextSnapshot: SpreadsheetKernelWorkbook | null,
+      options: SynchronizeSnapshotOptions = {},
+    ): void => {
+      const settings = effectiveSpreadsheetCalculationSettings(
+        nextContent.calculation,
+      );
+      const settingsKey = settings.mode;
+      const previousSnapshot = snapshotRef.current;
+      const sourceChanged =
+        options.sourceChanged ??
+        previousSnapshot?.sourceKey !== nextSnapshot?.sourceKey;
+      const settingsChanged = calculationSettingsKeyRef.current !== settingsKey;
+      const calculationSnapshot =
+        !sourceChanged && previousSnapshot ? previousSnapshot : nextSnapshot;
+      calculationSettingsKeyRef.current = settingsKey;
+      snapshotRef.current = calculationSnapshot;
+      if (!sourceChanged && !settingsChanged && !options.forceCalculation) {
         return;
       }
+
+      activeRef.current?.controller.abort();
+      activeRef.current = null;
+      clearTimer(automaticTimerRef);
+      clearTimer(fallbackTimerRef);
+      const documentRevision = ++documentRevisionRef.current;
+      if (settings.mode === 'manual') return;
+
+      const baseSession = sessionRef.current;
+      const preparedPatch =
+        options.projection?.sourceChanged &&
+        options.baseWorkbook &&
+        baseSession?.workbook === options.baseWorkbook
+          ? {
+              baseSession,
+              changes: options.projection.changes,
+            }
+          : undefined;
+      automaticTimerRef.current = setTimeout(() => {
+        automaticTimerRef.current = null;
+        if (documentRevisionRef.current !== documentRevision) return;
+        if (!calculationSnapshot) {
+          fallbackWithFortune(workbookRef.current, { scope: 'workbook' });
+          return;
+        }
+        if (
+          !calculationSnapshot.fallbackCells.length &&
+          !calculationSnapshot.sheets.some((sheet) =>
+            sheet.cells.some((cell) => cell.formula),
+          )
+        ) {
+          return;
+        }
+        runCalculation(
+          { scope: 'workbook' },
+          calculationSnapshot,
+          documentRevision,
+          settings.mode !== 'automatic-except-data-tables',
+          true,
+          preparedPatch,
+        );
+      }, 0);
+    },
+    [runCalculation, workbookRef],
+  );
+
+  const synchronizeWorkbook = useCallback(
+    (nextContent: WorkSpreadsheetContent, operations: readonly Op[]): void => {
+      acceptedContentRef.current = nextContent;
+      const resultOperations = resultOperationsRef.current.splice(0);
+      const combinedOperations = [...resultOperations, ...operations];
+      const baseWorkbook = snapshotRef.current;
+      const forceCalculation = pendingOperationCancellationRef.current;
+      pendingOperationCancellationRef.current = false;
+      const canProject =
+        Boolean(baseWorkbook) &&
+        combinedOperations.length > 0 &&
+        !nextContent.sheets.some((sheet) => sheet.pivotTables?.length);
+      const projection =
+        canProject && baseWorkbook
+          ? projectSpreadsheetKernelWorkbookOperations(
+              baseWorkbook,
+              nextContent.sheets,
+              combinedOperations,
+            )
+          : null;
+      if (projection) {
+        synchronizeSnapshot(nextContent, projection.workbook, {
+          baseWorkbook: baseWorkbook ?? undefined,
+          forceCalculation,
+          projection,
+          sourceChanged: projection.sourceChanged,
+        });
+        return;
+      }
+      synchronizeSnapshot(
+        nextContent,
+        createSpreadsheetKernelWorkbook(nextContent),
+        { forceCalculation },
+      );
+    },
+    [synchronizeSnapshot],
+  );
+
+  const notifyWorkbookOperations = useCallback(
+    (operations: readonly Op[]): void => {
       if (
-        !compiled.fallbackCells.length &&
-        !compiled.sheets.some((sheet) =>
-          sheet.cells.some((cell) => cell.formula),
+        !spreadsheetOperationsMayChangeCalculation(
+          operations,
+          snapshotRef.current,
         )
       ) {
         return;
       }
-      runCalculation(
-        { scope: 'workbook' },
-        compiled,
-        documentRevision,
-        settings.mode !== 'automatic-except-data-tables',
-        true,
-      );
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [
-    compiled?.sourceKey,
-    content.calculation?.mode,
-    runCalculation,
-    workbookRef,
-  ]);
+      pendingOperationCancellationRef.current = true;
+      activeRef.current?.controller.abort();
+      activeRef.current = null;
+      clearTimer(automaticTimerRef);
+      clearTimer(fallbackTimerRef);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (acceptedContentRef.current === content) {
+      acceptedContentRef.current = null;
+      return;
+    }
+    acceptedContentRef.current = null;
+    resultOperationsRef.current = [];
+    pendingOperationCancellationRef.current = false;
+    synchronizeSnapshot(content, createSpreadsheetKernelWorkbook(content));
+  }, [content, kernelWasmUrl, synchronizeSnapshot]);
 
   const recalculate = useCallback(
     (command: SpreadsheetCalculationCommand): void => {
-      const snapshot = compiledRef.current;
+      clearTimer(automaticTimerRef);
+      let snapshot = snapshotRef.current;
+      if (!snapshot) {
+        snapshot = createSpreadsheetKernelWorkbook(latestContentRef.current);
+        snapshotRef.current = snapshot;
+      }
       if (!snapshot) {
         fallbackWithFortune(workbookRef.current, command);
         return;
@@ -271,7 +412,25 @@ export function useSpreadsheetCalculation({
     [runCalculation, workbookRef],
   );
 
-  return useMemo(() => ({ recalculate }), [recalculate]);
+  const hasPendingResultPatches = useCallback(
+    (): boolean => resultOperationsRef.current.length > 0,
+    [],
+  );
+
+  return useMemo(
+    () => ({
+      hasPendingResultPatches,
+      notifyWorkbookOperations,
+      recalculate,
+      synchronizeWorkbook,
+    }),
+    [
+      hasPendingResultPatches,
+      notifyWorkbookOperations,
+      recalculate,
+      synchronizeWorkbook,
+    ],
+  );
 }
 
 function scheduleIssueFallback(
@@ -282,7 +441,7 @@ function scheduleIssueFallback(
   timerRef: RefObject<ReturnType<typeof setTimeout> | null>,
 ): void {
   if (!issues.length) return;
-  clearFallbackTimer(timerRef);
+  clearTimer(timerRef);
   timerRef.current = setTimeout(() => {
     timerRef.current = null;
     if (
@@ -314,7 +473,7 @@ function fallbackWithFortune(
   }
 }
 
-function clearFallbackTimer(
+function clearTimer(
   timerRef: RefObject<ReturnType<typeof setTimeout> | null>,
 ): void {
   if (timerRef.current !== null) clearTimeout(timerRef.current);
@@ -328,7 +487,6 @@ function isCurrentCalculation(
   return (
     current?.revision === expected.revision &&
     current.documentRevision === expected.documentRevision &&
-    current.sourceKey === expected.sourceKey &&
     !expected.controller.signal.aborted
   );
 }

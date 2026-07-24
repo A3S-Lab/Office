@@ -47,7 +47,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
-| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, controlled sparse-workbook projection, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving sparse projection and diffing off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
+| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
 | Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
@@ -64,20 +64,30 @@ that resolve any right-to-left run, and unregistered faces deliberately retain
 browser line measurement.
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell
-patches for later controlled values, and requests only the dirty dependency
-subgraph during automatic calculation. Rust retains parsed formula ASTs plus
-forward and reverse dependency edges; references to blank cells, dependency
-rewiring, unresolved formulas, partial target calculation, cancellation, and
-stale patch revisions have explicit tests. Successful scalar results are
-applied without adding undo history, known grouped formulas refresh before
-their dependents, and unresolved dependencies enter an ordered, cell-scoped
-Fortune Sheet compatibility pass. The shared Rust parser handles the same
-bounded formula grammar in the native core and browser kernel. This is not a
-complete Excel engine: Fortune Sheet remains the canonical grid, sparse
-projection and diffing still run on the main thread, and the kernel does not
-materialize whole-row or whole-column ranges, calculate arrays, spills,
-structured references or external workbooks, own number formatting, or own
-print layout.
+patches from stable Fortune cell operations, and requests only the dirty
+dependency subgraph during automatic calculation. One-cell edits read only
+their changed coordinates; row, column, sheet, broad data, pivot, and
+unrecognized operations take the checked replacement path. Manual mode keeps
+an independent current projection while the last submitted session remains an
+immutable diff baseline. No-history calculation result patches are consumed as
+projection updates without returning formula caches as user input or creating
+a separate undo step. Fortune does not apply later `data` props to a populated
+workbook, so external, history, panel, and agent-controlled values use a
+guarded remount; a value already emitted by the live workbook does not remount
+or lose its interaction state.
+
+Rust retains parsed formula ASTs plus forward and reverse dependency edges;
+references to blank cells, dependency rewiring, unresolved formulas, partial
+target calculation, cancellation, and stale patch revisions have explicit
+tests. Successful scalar results are applied without adding undo history,
+known grouped formulas refresh before their dependents, and unresolved
+dependencies enter an ordered, cell-scoped Fortune Sheet compatibility pass.
+The shared Rust parser handles the same bounded formula grammar in the native
+core and browser kernel. This is not a complete Excel engine: Fortune Sheet
+remains the canonical grid, initial and replacement sparse projection still
+run on the main thread, and the kernel does not materialize whole-row or
+whole-column ranges, calculate arrays, spills, structured references or
+external workbooks, own number formatting, or own print layout.
 Presentation uses Rust/WASM only for alignment to slide bounds; the remaining
 geometry and layout operations stay on the main thread until the later stages
 below.
@@ -482,10 +492,14 @@ revision cancellation, stale-result rejection, target-only recalculation, and
 JavaScript and cell-scoped Fortune fallbacks. Persistent Worker/WASM sessions
 now retain parsed formulas and bounded forward/reverse dependency graphs;
 stable workbook edits use cell patches and automatic calculation evaluates only
-the affected transitive formula subgraph. The canonical grid is still Fortune
-Sheet. The A3S-owned virtual viewport, moving sparse projection and diffing off
-the main thread, complete formula semantics, kernel number formatting, and
-print pagination remain open work in this stage.
+the affected transitive formula subgraph. Stable Fortune cell operations now
+produce those patches directly without a dense workbook scan. Structural and
+external controlled changes use a replacement projection, and controlled
+values that did not originate from the live grid remount the Fortune surface
+so the visible workbook cannot diverge from the host value. The canonical grid
+is still Fortune Sheet. The A3S-owned virtual viewport, moving initial and
+replacement projection off the main thread, complete formula semantics, kernel
+number formatting, and print pagination remain open work in this stage.
 
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX

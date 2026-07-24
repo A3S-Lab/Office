@@ -26,7 +26,7 @@ describe('Spreadsheet calculation hook', () => {
     const workbookRef = { current: workbook as unknown as WorkbookInstance };
 
     try {
-      const { rerender, unmount } = renderHook(
+      const { result, rerender, unmount } = renderHook(
         ({ value }) =>
           useSpreadsheetCalculation({
             content: value,
@@ -44,6 +44,11 @@ describe('Spreadsheet calculation hook', () => {
 
       const latest = content(3);
       workbook.sheets = latest.sheets;
+      const operations = inputOperations(latest);
+      act(() => {
+        result.current.notifyWorkbookOperations(operations);
+        result.current.synchronizeWorkbook(latest, operations);
+      });
       rerender({ value: latest });
       await waitFor(() =>
         expect(RecordingKernelWorker.sessionRequests).toHaveLength(2),
@@ -103,7 +108,7 @@ describe('Spreadsheet calculation hook', () => {
     const workbookRef = { current: workbook as unknown as WorkbookInstance };
 
     try {
-      const { rerender, unmount } = renderHook(
+      const { result, rerender, unmount } = renderHook(
         ({ value }) =>
           useSpreadsheetCalculation({
             content: value,
@@ -117,6 +122,11 @@ describe('Spreadsheet calculation hook', () => {
 
       const latest = content(3);
       workbook.sheets = latest.sheets;
+      const operations = inputOperations(latest);
+      act(() => {
+        result.current.notifyWorkbookOperations(operations);
+        result.current.synchronizeWorkbook(latest, operations);
+      });
       rerender({ value: latest });
       await waitFor(() =>
         expect(DeferredKernelWorker.sessionRequests).toHaveLength(2),
@@ -361,6 +371,271 @@ describe('Spreadsheet calculation hook', () => {
       range: { row: [0, 0], column: [1, 1] },
     });
     unmount();
+  });
+
+  test('projects a normal edit from its operation without scanning unrelated rows', async () => {
+    const workerDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'Worker',
+    );
+    RecordingKernelWorker.reset();
+    Object.defineProperty(globalThis, 'Worker', {
+      configurable: true,
+      value: RecordingKernelWorker as unknown as typeof Worker,
+    });
+    const initial = content(2);
+    initial.sheets[0]?.data?.push([{ v: 7, m: '7' }]);
+    const workbook = new RecordingWorkbook(initial.sheets);
+    const workbookRef = { current: workbook as unknown as WorkbookInstance };
+
+    try {
+      const { result, rerender, unmount } = renderHook(
+        ({ value }) =>
+          useSpreadsheetCalculation({
+            content: value,
+            workbookRef,
+          }),
+        { initialProps: { value: initial } },
+      );
+      await waitFor(() =>
+        expect(RecordingKernelWorker.completedResponses).toBe(1),
+      );
+
+      const latest = structuredClone(initial);
+      const input = latest.sheets[0]?.data?.[0]?.[0];
+      const data = latest.sheets[0]?.data;
+      if (!input || !data) throw new Error('Workbook fixture is incomplete.');
+      input.v = 3;
+      input.m = '3';
+      Object.defineProperty(data, 1, {
+        configurable: true,
+        get: () => {
+          throw new Error('Unrelated row was scanned.');
+        },
+      });
+      const operations = inputOperations(latest);
+      workbook.sheets = latest.sheets;
+      act(() => {
+        result.current.notifyWorkbookOperations(operations);
+        result.current.synchronizeWorkbook(latest, operations);
+      });
+      rerender({ value: latest });
+
+      await waitFor(() =>
+        expect(RecordingKernelWorker.sessionRequests).toHaveLength(2),
+      );
+      expect(RecordingKernelWorker.sessionRequests[1]?.update).toEqual({
+        kind: 'patch',
+        baseDocumentRevision: 1,
+        changes: [
+          {
+            kind: 'upsert',
+            sheetId: 'sheet-1',
+            row: 0,
+            column: 0,
+            value: { kind: 'number', value: 3 },
+          },
+        ],
+      });
+      unmount();
+    } finally {
+      if (workerDescriptor) {
+        Object.defineProperty(globalThis, 'Worker', workerDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'Worker');
+      }
+    }
+  });
+
+  test('retains manual edits until explicit recalculation', async () => {
+    const workerDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'Worker',
+    );
+    RecordingKernelWorker.reset();
+    Object.defineProperty(globalThis, 'Worker', {
+      configurable: true,
+      value: RecordingKernelWorker as unknown as typeof Worker,
+    });
+    const initial = content(2);
+    initial.calculation = manualCalculationSettings();
+    const workbook = new RecordingWorkbook(initial.sheets);
+    const workbookRef = { current: workbook as unknown as WorkbookInstance };
+
+    try {
+      const { result, rerender, unmount } = renderHook(
+        ({ value }) =>
+          useSpreadsheetCalculation({
+            content: value,
+            workbookRef,
+          }),
+        { initialProps: { value: initial } },
+      );
+      act(() => result.current.recalculate({ scope: 'workbook' }));
+      await waitFor(() =>
+        expect(RecordingKernelWorker.sessionRequests).toHaveLength(1),
+      );
+      await waitFor(() =>
+        expect(RecordingKernelWorker.completedResponses).toBe(1),
+      );
+
+      for (const input of [3, 4]) {
+        const latest = content(input);
+        latest.calculation = manualCalculationSettings();
+        workbook.sheets = latest.sheets;
+        const operations = inputOperations(latest);
+        act(() => {
+          result.current.notifyWorkbookOperations(operations);
+          result.current.synchronizeWorkbook(latest, operations);
+        });
+        rerender({ value: latest });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(RecordingKernelWorker.sessionRequests).toHaveLength(1);
+
+      act(() => result.current.recalculate({ scope: 'workbook' }));
+      await waitFor(() =>
+        expect(RecordingKernelWorker.sessionRequests).toHaveLength(2),
+      );
+      expect(RecordingKernelWorker.sessionRequests[1]).toMatchObject({
+        documentRevision: 3,
+        update: {
+          kind: 'patch',
+          baseDocumentRevision: 1,
+          changes: [
+            {
+              kind: 'upsert',
+              sheetId: 'sheet-1',
+              row: 0,
+              column: 0,
+              value: { kind: 'number', value: 4 },
+            },
+          ],
+        },
+        calculation: { kind: 'workbook' },
+      });
+      unmount();
+    } finally {
+      if (workerDescriptor) {
+        Object.defineProperty(globalThis, 'Worker', workerDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'Worker');
+      }
+    }
+  });
+
+  test('replaces the calculation session after a structural operation', async () => {
+    const workerDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'Worker',
+    );
+    RecordingKernelWorker.reset();
+    Object.defineProperty(globalThis, 'Worker', {
+      configurable: true,
+      value: RecordingKernelWorker as unknown as typeof Worker,
+    });
+    const initial = content(2);
+    const workbook = new RecordingWorkbook(initial.sheets);
+    const workbookRef = { current: workbook as unknown as WorkbookInstance };
+
+    try {
+      const { result, rerender, unmount } = renderHook(
+        ({ value }) =>
+          useSpreadsheetCalculation({
+            content: value,
+            workbookRef,
+          }),
+        { initialProps: { value: initial } },
+      );
+      await waitFor(() =>
+        expect(RecordingKernelWorker.completedResponses).toBe(1),
+      );
+
+      const latest = structuredClone(initial);
+      const addedSheet: Sheet = {
+        id: 'sheet-2',
+        name: 'Sheet 2',
+        data: [[{ v: 9, m: '9' }]],
+      };
+      latest.sheets.push(addedSheet);
+      workbook.sheets = latest.sheets;
+      const operations: Op[] = [
+        {
+          id: 'sheet-2',
+          op: 'addSheet',
+          path: [],
+          value: addedSheet,
+        },
+      ];
+      act(() => {
+        result.current.notifyWorkbookOperations(operations);
+        result.current.synchronizeWorkbook(latest, operations);
+      });
+      rerender({ value: latest });
+
+      await waitFor(() =>
+        expect(RecordingKernelWorker.sessionRequests).toHaveLength(2),
+      );
+      expect(RecordingKernelWorker.sessionRequests[1]).toMatchObject({
+        update: { kind: 'replace' },
+        calculation: { kind: 'workbook' },
+      });
+      unmount();
+    } finally {
+      if (workerDescriptor) {
+        Object.defineProperty(globalThis, 'Worker', workerDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'Worker');
+      }
+    }
+  });
+
+  test('does not feed no-history result patches back into calculation', async () => {
+    const workerDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'Worker',
+    );
+    RecordingKernelWorker.reset();
+    Object.defineProperty(globalThis, 'Worker', {
+      configurable: true,
+      value: RecordingKernelWorker as unknown as typeof Worker,
+    });
+    const initial = content(2);
+    const initialFormula = initial.sheets[0]?.data?.[0]?.[1];
+    if (!initialFormula) throw new Error('Formula fixture is missing.');
+    initialFormula.v = 0;
+    initialFormula.m = '0';
+    const workbook = new RecordingWorkbook(initial.sheets);
+    const workbookRef = { current: workbook as unknown as WorkbookInstance };
+
+    try {
+      const { result, rerender, unmount } = renderHook(
+        ({ value }) =>
+          useSpreadsheetCalculation({
+            content: value,
+            workbookRef,
+          }),
+        { initialProps: { value: initial } },
+      );
+      await waitFor(() => expect(workbook.ops).toHaveLength(1));
+      expect(result.current.hasPendingResultPatches()).toBe(true);
+
+      const persisted = content(2);
+      workbook.sheets = persisted.sheets;
+      act(() => result.current.synchronizeWorkbook(persisted, []));
+      rerender({ value: persisted });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      expect(result.current.hasPendingResultPatches()).toBe(false);
+      expect(RecordingKernelWorker.sessionRequests).toHaveLength(1);
+      unmount();
+    } finally {
+      if (workerDescriptor) {
+        Object.defineProperty(globalThis, 'Worker', workerDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'Worker');
+      }
+    }
   });
 });
 
@@ -646,5 +921,32 @@ function content(input: number): WorkSpreadsheetContent {
         ],
       },
     ],
+  };
+}
+
+function inputOperations(value: WorkSpreadsheetContent): Op[] {
+  const input = value.sheets[0]?.data?.[0]?.[0];
+  if (!input) throw new Error('Workbook input is missing.');
+  return [
+    {
+      id: 'sheet-1',
+      op: 'replace',
+      path: ['data', 0, 0],
+      value: input,
+    },
+  ];
+}
+
+function manualCalculationSettings(): NonNullable<
+  WorkSpreadsheetContent['calculation']
+> {
+  return {
+    mode: 'manual',
+    fullCalculationOnLoad: false,
+    forceFullCalculation: false,
+    iterativeCalculation: false,
+    maximumIterations: 100,
+    maximumChange: 0.001,
+    fullPrecision: true,
   };
 }

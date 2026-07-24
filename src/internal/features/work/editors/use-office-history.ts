@@ -11,9 +11,11 @@ interface OfficeHistoryState<Content> {
 export function useOfficeHistory<Content>({
   content,
   onChange,
+  sameValue = sameOfficeHistoryValue,
 }: {
   content: Content;
   onChange: (content: Content) => void;
+  sameValue?: (left: Content, right: Content) => boolean;
 }) {
   const historyRef = useRef<OfficeHistoryState<Content>>({
     past: [],
@@ -33,7 +35,7 @@ export function useOfficeHistory<Content>({
       setVersion((value) => value + 1);
       return;
     }
-    if (sameOfficeHistoryValue(content, history.present)) {
+    if (sameValue(content, history.present)) {
       history.present = content;
       return;
     }
@@ -44,7 +46,7 @@ export function useOfficeHistory<Content>({
     history.present = content;
     history.future = [];
     setVersion((value) => value + 1);
-  }, [content]);
+  }, [content, sameValue]);
 
   const undo = useCallback((): boolean => {
     const history = historyRef.current;

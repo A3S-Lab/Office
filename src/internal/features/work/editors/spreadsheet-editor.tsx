@@ -1,4 +1,4 @@
-import type { Hooks, Selection } from '@fortune-sheet/core';
+import type { Hooks, Op, Selection } from '@fortune-sheet/core';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import {
   AlignCenter,
@@ -63,6 +63,7 @@ import { managedConditionalFormatCount } from './spreadsheet-conditional-format-
 import {
   finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
+  sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
   spreadsheetCellAt,
   spreadsheetFontSizeOptions,
@@ -79,6 +80,7 @@ import {
 } from './spreadsheet-workbook-panel';
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
+import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
@@ -139,6 +141,12 @@ export function SpreadsheetEditor({
   const onChangeRef = useRef(onChange);
   const previewRef = useRef(preview);
   const workbookRef = useRef<WorkbookInstance>(null);
+  const {
+    acceptContent: acceptWorkbookContent,
+    mountRevision: workbookMountRevision,
+    recordOperations: recordWorkbookOperations,
+    takeOperations: takeWorkbookOperations,
+  } = useSpreadsheetWorkbookSync(materializedContent);
   const calculation = useSpreadsheetCalculation({
     content: materializedContent,
     kernelWasmUrl,
@@ -152,7 +160,11 @@ export function SpreadsheetEditor({
     null,
   );
   const [previewZoom, setPreviewZoom] = useState(100);
-  const history = useOfficeHistory({ content, onChange });
+  const history = useOfficeHistory({
+    content,
+    onChange,
+    sameValue: sameSpreadsheetHistoryContent,
+  });
   const activeSheetId =
     content.sheets.find((sheet) => sheet.status === 1)?.id ??
     content.sheets.find((sheet) => !sheet.hide)?.id ??
@@ -294,9 +306,12 @@ export function SpreadsheetEditor({
   workbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
+      const operations = takeWorkbookOperations();
       if (
         previewRef.current ||
-        sameSpreadsheetWorkbookState(sheets, workbookSheetsRef.current)
+        (!operations.length &&
+          !calculation.hasPendingResultPatches() &&
+          sameSpreadsheetWorkbookState(sheets, workbookSheetsRef.current))
       )
         return;
       const withCharts = reconcileSpreadsheetChartPreviews(
@@ -308,9 +323,18 @@ export function SpreadsheetEditor({
         withCharts.sheets,
       );
       contentRef.current = next;
+      acceptWorkbookContent(next);
+      calculation.synchronizeWorkbook(next, operations);
       onChangeRef.current(next);
     },
-    [],
+    [acceptWorkbookContent, calculation, takeWorkbookOperations],
+  );
+  const handleWorkbookOperations = useCallback(
+    (operations: Op[]) => {
+      recordWorkbookOperations(operations);
+      calculation.notifyWorkbookOperations(operations);
+    },
+    [calculation, recordWorkbookOperations],
   );
   const chartPreviewKey = workbookSheets
     .flatMap((sheet) =>
@@ -792,7 +816,7 @@ export function SpreadsheetEditor({
       >
         <Workbook
           ref={workbookRef}
-          key={`spreadsheet:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
+          key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
           data={displayedWorkbookSheets}
           lang="zh"
           allowEdit={!preview}
@@ -805,6 +829,7 @@ export function SpreadsheetEditor({
           defaultColWidth={96}
           hooks={workbookHooks}
           onChange={handleWorkbookChange}
+          onOp={handleWorkbookOperations}
         />
       </div>
       <WorkOfficeStatusBar
