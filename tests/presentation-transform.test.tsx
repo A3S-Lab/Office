@@ -243,6 +243,94 @@ test('previews and commits a multi-object move as one transaction', async () => 
   ]);
 });
 
+test('previews and commits a multi-object resize as one transaction', async () => {
+  const first = {
+    ...presentationElement(),
+    borderWidth: 2,
+    fontSize: 20,
+    text: 'Rich text',
+    textRuns: [{ text: 'Rich', fontSize: 18 }, { text: ' text' }],
+  };
+  const second = {
+    ...presentationElement(),
+    id: 'element-2',
+    x: 40,
+    y: 30,
+  };
+  const commitBatches: unknown[][] = [];
+  const canvas = document.createElement('div');
+  canvas.getBoundingClientRect = () =>
+    ({
+      height: 500,
+      width: 1_000,
+    }) as DOMRect;
+  const { result } = renderHook(() =>
+    usePresentationTransform({
+      canvasRef: { current: canvas },
+      elements: [first, second],
+      geometry: presentationGeometry(() => null),
+      onCommit: (changes) => commitBatches.push([...changes]),
+      onSelect: () => undefined,
+      selectedElementIds: [first.id, second.id],
+      snapTargets: [first, second],
+    }),
+  );
+
+  act(() => {
+    result.current.beginDrag(pointer(100, 100), second, 'resize');
+    result.current.continueDrag(pointer(200, 150));
+  });
+  await waitFor(() => {
+    expect(result.current.displayElements).toMatchObject([
+      {
+        id: first.id,
+        x: 10,
+        y: 10,
+        width: 24,
+        height: 25,
+        borderWidth: 2.4,
+        fontSize: 24,
+        textRuns: [{ text: 'Rich', fontSize: 21.6 }, { text: ' text' }],
+      },
+      {
+        id: second.id,
+        x: 46,
+        y: 35,
+        width: 24,
+        height: 25,
+        fontSize: 16.8,
+      },
+    ]);
+  });
+
+  act(() => result.current.endDrag(pointer(200, 150)));
+  await waitFor(() => expect(commitBatches).toHaveLength(1));
+  expect(commitBatches[0]).toMatchObject([
+    {
+      elementId: first.id,
+      patch: {
+        x: 10,
+        y: 10,
+        width: 24,
+        height: 25,
+        borderWidth: 2.4,
+        fontSize: 24,
+        textRuns: [{ text: 'Rich', fontSize: 21.6 }, { text: ' text' }],
+      },
+    },
+    {
+      elementId: second.id,
+      patch: {
+        x: 46,
+        y: 35,
+        width: 24,
+        height: 25,
+        fontSize: 16.8,
+      },
+    },
+  ]);
+});
+
 test('moves a persistent group on the first member drag', async () => {
   const first = { ...presentationElement(), groupIds: ['group'] };
   const second = {

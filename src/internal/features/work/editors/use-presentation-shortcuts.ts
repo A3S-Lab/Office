@@ -270,6 +270,8 @@ function presentationObjectKeyboardTarget(
   target: EventTarget | null,
 ): HTMLElement | null {
   return target instanceof HTMLElement
-    ? target.closest<HTMLElement>('[data-slide-element-origin]')
+    ? target.closest<HTMLElement>(
+        '[data-slide-element-origin], [data-presentation-selection-control]',
+      )
     : null;
 }

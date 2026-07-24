@@ -49,7 +49,9 @@ test('separates additive object selection from content editing', () => {
       viewMode="normal"
       zoom={90}
       onAddSlide={() => undefined}
-      onBeginDrag={(_event, element) => drags.push(element.id)}
+      onBeginDrag={(_event, element, mode) =>
+        drags.push(`${element.id}:${mode}`)
+      }
       onContinueDrag={() => undefined}
       onDeleteSlide={() => false}
       onDragCancel={() => undefined}
@@ -72,13 +74,13 @@ test('separates additive object selection from content editing', () => {
 
   fireEvent.pointerDown(screen.getByRole('group', { name: 'Accent' }));
   expect(selections).toEqual([]);
-  expect(drags).toEqual(['accent']);
+  expect(drags).toEqual(['accent:move']);
 
   fireEvent.pointerDown(screen.getByRole('group', { name: 'Title' }), {
     shiftKey: true,
   });
   expect(selections).toEqual([{ id: 'title', additive: true }]);
-  expect(drags).toEqual(['accent']);
+  expect(drags).toEqual(['accent:move']);
   expect(screen.queryByRole('textbox', { name: '幻灯片文本' })).toBeNull();
 
   fireEvent.doubleClick(screen.getByRole('group', { name: 'Title' }));
@@ -106,7 +108,9 @@ test('separates additive object selection from content editing', () => {
       viewMode="normal"
       zoom={90}
       onAddSlide={() => undefined}
-      onBeginDrag={() => undefined}
+      onBeginDrag={(_event, element, mode) =>
+        drags.push(`${element.id}:${mode}`)
+      }
       onContinueDrag={() => undefined}
       onDeleteSlide={() => false}
       onDragCancel={() => undefined}
@@ -129,6 +133,8 @@ test('separates additive object selection from content editing', () => {
   expect(screen.getByText('已选择 2 个对象')).toBeVisible();
   expect(screen.getByRole('group', { name: 'Accent' })).toHaveClass('selected');
   expect(screen.getByRole('group', { name: 'Title' })).toHaveClass('selected');
+  fireEvent.pointerDown(screen.getByRole('button', { name: '缩放所选对象' }));
+  expect(drags).toEqual(['accent:move', 'title:resize']);
 });
 
 function presentationElement(id: string, text: string): WorkSlideElement {

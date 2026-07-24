@@ -97,7 +97,7 @@ export function App() {
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
-| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, collective move and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
+| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
 ### Package matrix
@@ -335,9 +335,9 @@ Unsupported OOXML semantics, arbitrary floating-object layout, complete font
 substitution, modern threaded comments, Spreadsheet arrays, spills, structured
 references, external-workbook refresh, kernel-owned number formatting and print
 pagination, the A3S-owned virtual grid, moving sparse projection work off the
-main thread, Presentation group-scale transforms, native PPTX group-node
-serialization and round-trip preservation, and the remaining presentation
-scene features stay explicit fidelity gates. Rust/WASM is the canonical
+main thread, native PPTX group-node serialization and transform round-trip
+preservation, and the remaining presentation scene features stay explicit
+fidelity gates. Rust/WASM is the canonical
 Spreadsheet calculation path; if Worker or WebAssembly loading fails, the
 Fortune-based JavaScript fallback keeps editing available but may follow
 Fortune coercion and eager-branch semantics on formulas outside the shared
@@ -409,8 +409,11 @@ slide-relative alignment and snapping through a cancellable Worker/Rust-WASM
 geometry boundary. Drag and resize remain transient until pointer release, so
 the host receives one controlled update per gesture. Nested browser group paths
 make top-level groups atomic for selection, movement, arrangement, clipboard,
-and history while keeping every scene element independently serializable. PDF
-commands call typed PDFium capabilities directly.
+and history while keeping every scene element independently serializable. A
+shared selection frame scales member geometry, typography, rich-text run sizes,
+and border weights in one controlled update; native PPTX group transforms
+remain a separate serialization boundary. PDF commands call typed PDFium
+capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

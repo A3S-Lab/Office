@@ -390,6 +390,26 @@
   pointer-events: none;
 }
 
+.work-slide-selection-resize-handle {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border: 1px solid #3478f6;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(23 32 51 / 18%);
+  cursor: nwse-resize;
+  pointer-events: auto;
+}
+
+.work-slide-selection-resize-handle:focus-visible {
+  outline: 2px solid color-mix(in srgb, #3478f6 55%, #ffffff);
+  outline-offset: 2px;
+}
+
 .work-slide-canvas:not(.interactive) .work-slide-element {
   overflow: hidden;
 }
@@ -562,6 +582,11 @@
 .work-slide-element.selected::after {
   right: -5px;
   bottom: -5px;
+}
+
+.work-slide-element.multi-selected::before,
+.work-slide-element.multi-selected::after {
+  display: none;
 }
 
 .work-slide-move-handle {

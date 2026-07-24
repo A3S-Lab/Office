@@ -441,11 +441,11 @@ test('presentation keeps object selection separate from text editing', async ({
   await fixture.open(page);
   await fixture.ready(page);
 
+  const editor = page.locator('.work-presentation-editor');
   const canvas = page.locator('.work-slide-canvas.interactive');
   const elements = canvas.locator(':scope > .work-slide-element');
   const accent = elements.nth(0);
   const title = elements.nth(1);
-  const editor = page.locator('.work-presentation-editor');
   const undo = page.getByRole('button', { name: '撤销', exact: true });
 
   await accent.click();
@@ -528,6 +528,7 @@ test('presentation groups remain atomic across selection and history', async ({
   await fixture.open(page);
   await fixture.ready(page);
 
+  const editor = page.locator('.work-presentation-editor');
   const canvas = page.locator('.work-slide-canvas.interactive');
   const elements = canvas.locator(':scope > .work-slide-element');
   const accent = elements.nth(0);
@@ -569,6 +570,61 @@ test('presentation groups remain atomic across selection and history', async ({
     'data-slide-element-group-path',
     groupedPaths[0] ?? '',
   );
+
+  const resizeHandle = page.getByRole('button', {
+    name: '缩放所选组合',
+    exact: true,
+  });
+  await expect(resizeHandle).toBeVisible();
+  const accentBeforeResize = await presentationElementGeometry(accent);
+  const titleBeforeResize = await presentationElementGeometry(title);
+  const titleFontBeforeResize = await presentationElementFontSize(title);
+  const resizeHandleBox = await resizeHandle.boundingBox();
+  if (!resizeHandleBox) {
+    throw new Error('Presentation selection resize handle is unavailable.');
+  }
+  await page.mouse.move(
+    resizeHandleBox.x + resizeHandleBox.width / 2,
+    resizeHandleBox.y + resizeHandleBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    resizeHandleBox.x + resizeHandleBox.width / 2 + 36,
+    resizeHandleBox.y + resizeHandleBox.height / 2 + 24,
+  );
+  await page.mouse.up();
+  await expect(editor).toHaveAttribute(
+    'data-presentation-transform-state',
+    'idle',
+  );
+  const accentAfterResize = await presentationElementGeometry(accent);
+  const titleAfterResize = await presentationElementGeometry(title);
+  const titleFontAfterResize = await presentationElementFontSize(title);
+  expect(accentAfterResize.width).toBeGreaterThan(accentBeforeResize.width);
+  expect(accentAfterResize.height).toBeGreaterThan(accentBeforeResize.height);
+  expect(titleAfterResize.width).toBeGreaterThan(titleBeforeResize.width);
+  expect(titleAfterResize.height).toBeGreaterThan(titleBeforeResize.height);
+  expect(titleFontAfterResize).toBeGreaterThan(titleFontBeforeResize);
+  expect(titleAfterResize.x - accentAfterResize.x).toBeCloseTo(
+    (titleBeforeResize.x - accentBeforeResize.x) *
+      (accentAfterResize.width / accentBeforeResize.width),
+    3,
+  );
+  expect(titleAfterResize.y - accentAfterResize.y).toBeCloseTo(
+    (titleBeforeResize.y - accentBeforeResize.y) *
+      (accentAfterResize.height / accentBeforeResize.height),
+    3,
+  );
+  await undo.click();
+  await expect
+    .poll(() => presentationElementGeometry(accent))
+    .toEqual(accentBeforeResize);
+  await expect
+    .poll(() => presentationElementGeometry(title))
+    .toEqual(titleBeforeResize);
+  await expect
+    .poll(() => presentationElementFontSize(title))
+    .toBe(titleFontBeforeResize);
 
   await canvas.click({ position: { x: 4, y: 4 } });
   await expect(accent).toHaveAttribute('data-slide-element-selected', 'false');
@@ -618,6 +674,28 @@ async function presentationElementPosition(
     x: Number.parseFloat((node as HTMLElement).style.left),
     y: Number.parseFloat((node as HTMLElement).style.top),
   }));
+}
+
+async function presentationElementGeometry(
+  element: Locator,
+): Promise<{ height: number; width: number; x: number; y: number }> {
+  return element.evaluate((node) => {
+    const style = (node as HTMLElement).style;
+    return {
+      height: Number.parseFloat(style.height),
+      width: Number.parseFloat(style.width),
+      x: Number.parseFloat(style.left),
+      y: Number.parseFloat(style.top),
+    };
+  });
+}
+
+async function presentationElementFontSize(element: Locator): Promise<number> {
+  return element.evaluate((node) => {
+    const text = node.querySelector<HTMLElement>('[style*="font-size"]');
+    if (!text) throw new Error('Presentation text style is unavailable.');
+    return Number.parseFloat(getComputedStyle(text).fontSize);
+  });
 }
 
 async function stabilizeVisualSurface(page: Page): Promise<void> {

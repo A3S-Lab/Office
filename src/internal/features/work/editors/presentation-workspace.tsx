@@ -134,6 +134,11 @@ export function PresentationWorkspace({
     selectedElementIds,
   );
   const selectionBounds = presentationSelectionBounds(selectedElements);
+  const selectionTransformAnchor = selectedElements.at(-1);
+  const selectionResizeLabel =
+    selectionUnits.length === 1 && selectionUnits[0]?.groupId
+      ? '缩放所选组合'
+      : '缩放所选对象';
   if (viewMode === 'sorter') {
     return (
       <section
@@ -253,7 +258,6 @@ export function PresentationWorkspace({
           ))}
           {selectionBounds && selectedElements.length > 1 && (
             <span
-              aria-hidden="true"
               className="work-slide-selection-frame"
               data-presentation-selection-frame
               style={{
@@ -262,7 +266,19 @@ export function PresentationWorkspace({
                 width: `${selectionBounds.width}%`,
                 height: `${selectionBounds.height}%`,
               }}
-            />
+            >
+              <button
+                type="button"
+                aria-label={selectionResizeLabel}
+                title={selectionResizeLabel}
+                className="work-slide-selection-resize-handle"
+                data-presentation-selection-control
+                onPointerDown={(event) => {
+                  if (!selectionTransformAnchor) return;
+                  onBeginDrag(event, selectionTransformAnchor, 'resize');
+                }}
+              />
+            </span>
           )}
           {activeElements.map((element) => {
             const selected = selectedElementSet.has(element.id);
@@ -274,6 +290,10 @@ export function PresentationWorkspace({
                 key={element.id}
                 className={`work-slide-element ${element.type} ${element.placeholder ? 'placeholder' : ''} ${
                   selected ? 'selected' : ''
+                } ${
+                  selected && selectedElements.length > 1
+                    ? 'multi-selected'
+                    : ''
                 } ${editing ? 'editing' : ''}`}
                 // biome-ignore lint/a11y/noNoninteractiveTabindex: Slide objects are keyboard-selectable and support object commands.
                 tabIndex={0}

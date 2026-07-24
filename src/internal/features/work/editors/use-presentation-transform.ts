@@ -48,6 +48,9 @@ export interface PresentationTransformPatch {
   y: number;
   width: number;
   height: number;
+  borderWidth?: number;
+  fontSize?: number;
+  textRuns?: WorkSlideElement['textRuns'];
 }
 
 export interface PresentationTransformCommit {
@@ -201,9 +204,9 @@ export function usePresentationTransform({
             (element, index) =>
               !samePresentationTransform(element, originals[index]),
           )
-          .map((element) => ({
+          .map((element, index) => ({
             elementId: element.id,
-            patch: presentationTransformPatch(element),
+            patch: presentationTransformPatch(element, originals[index]),
           }));
         if (changes.length) onCommitRef.current(changes);
         setPreview(null);
@@ -230,11 +233,10 @@ export function usePresentationTransform({
       const clickedUnit = new Set(
         expandPresentationGroupSelection(elements, [element.id]),
       );
-      const moving = selected.has(element.id) ? selected : clickedUnit;
-      const dragElements =
-        mode === 'move'
-          ? elements.filter((candidate) => moving.has(candidate.id))
-          : [element];
+      const transforming = selected.has(element.id) ? selected : clickedUnit;
+      const dragElements = elements.filter((candidate) =>
+        transforming.has(candidate.id),
+      );
       dragRef.current = {
         element,
         elements: dragElements,
@@ -379,7 +381,22 @@ function presentationTransformPreview(
 ): WorkSlideElement[] {
   const originals = drag.elements ?? [drag.element];
   const originalFrame = drag.frame ?? drag.element;
-  if (drag.mode === 'resize') return [frame];
+  if (drag.mode === 'resize') {
+    if (originals.length === 1) return [frame];
+    const scaleX =
+      originalFrame.width > 0 ? frame.width / originalFrame.width : 1;
+    const scaleY =
+      originalFrame.height > 0 ? frame.height / originalFrame.height : 1;
+    const visualScale = Math.min(scaleX, scaleY);
+    return originals.map((element) => ({
+      ...element,
+      x: frame.x + (element.x - originalFrame.x) * scaleX,
+      y: frame.y + (element.y - originalFrame.y) * scaleY,
+      width: element.width * scaleX,
+      height: element.height * scaleY,
+      ...presentationScaledVisuals(element, visualScale),
+    }));
+  }
   const deltaX = frame.x - originalFrame.x;
   const deltaY = frame.y - originalFrame.y;
   return originals.map((element) => ({
@@ -391,13 +408,81 @@ function presentationTransformPreview(
 
 function presentationTransformPatch(
   element: WorkSlideElement,
+  original: WorkSlideElement,
 ): PresentationTransformPatch {
   return {
     x: element.x,
     y: element.y,
     width: element.width,
     height: element.height,
+    ...(element.borderWidth !== original.borderWidth
+      ? { borderWidth: element.borderWidth }
+      : {}),
+    ...(element.fontSize !== original.fontSize
+      ? { fontSize: element.fontSize }
+      : {}),
+    ...(element.textRuns !== original.textRuns
+      ? { textRuns: element.textRuns }
+      : {}),
   };
+}
+
+function presentationScaledVisuals(
+  element: WorkSlideElement,
+  scale: number,
+): Pick<WorkSlideElement, 'fontSize'> &
+  Partial<Pick<WorkSlideElement, 'borderWidth' | 'textRuns'>> {
+  const fontSize = presentationElementScalesTypography(element)
+    ? scaledPresentationFontSize(element.fontSize, scale)
+    : element.fontSize;
+  const borderWidth =
+    element.borderWidth === undefined
+      ? undefined
+      : scaledPresentationBorderWidth(element.borderWidth, scale);
+  const textRuns = scaledPresentationTextRuns(element, scale);
+  return {
+    fontSize,
+    ...(borderWidth !== undefined ? { borderWidth } : {}),
+    ...(textRuns !== element.textRuns ? { textRuns } : {}),
+  };
+}
+
+function presentationElementScalesTypography(
+  element: WorkSlideElement,
+): boolean {
+  return (
+    element.type === 'text' ||
+    element.type === 'shape' ||
+    element.type === 'table' ||
+    Boolean(element.text || element.textRuns?.length)
+  );
+}
+
+function scaledPresentationTextRuns(
+  element: WorkSlideElement,
+  scale: number,
+): WorkSlideElement['textRuns'] {
+  if (!element.textRuns?.some((run) => run.fontSize !== undefined)) {
+    return element.textRuns;
+  }
+  return element.textRuns.map((run) =>
+    run.fontSize === undefined
+      ? run
+      : { ...run, fontSize: scaledPresentationFontSize(run.fontSize, scale) },
+  );
+}
+
+function scaledPresentationFontSize(value: number, scale: number): number {
+  return roundedPresentationMetric(clamp(value * scale, 1, 400));
+}
+
+function scaledPresentationBorderWidth(value: number, scale: number): number {
+  if (value === 0) return 0;
+  return roundedPresentationMetric(Math.max(0.1, value * scale));
+}
+
+function roundedPresentationMetric(value: number): number {
+  return Math.round(value * 1_000) / 1_000;
 }
 
 function samePresentationTransform(

@@ -76,7 +76,10 @@ import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
 import { usePresentationSelection } from './use-presentation-selection';
-import { usePresentationTransform } from './use-presentation-transform';
+import {
+  type PresentationTransformCommit,
+  usePresentationTransform,
+} from './use-presentation-transform';
 import { WorkOfficePreviewBar } from './work-office-chrome';
 
 export type { PresentationEditorProps } from './presentation-editor-types';
@@ -194,12 +197,7 @@ export function PresentationEditor({
         ? selectedMaster?.id
         : selectedSlide?.id;
   const commitElementTransform = useCallback(
-    (
-      changes: readonly {
-        elementId: string;
-        patch: Pick<WorkSlideElement, 'height' | 'width' | 'x' | 'y'>;
-      }[],
-    ) => {
+    (changes: readonly PresentationTransformCommit[]) => {
       if (!activeTargetId || !changes.length) return;
       const patches = new Map(
         changes.map((change) => [change.elementId, change.patch]),
