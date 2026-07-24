@@ -129,16 +129,26 @@ const geometryRequest = {
   revision: 35,
   documentRevision: 56,
   operation: {
-    type: 'alignToSlide',
-    alignment: 'right',
+    type: 'snapElement',
+    movingElementId: 'shape',
+    mode: 'move',
+    thresholdX: 1,
+    thresholdY: 1,
   },
   elements: [
     {
       id: 'shape',
-      x: 12,
+      x: 29.4,
       y: 18,
-      width: 25,
+      width: 40,
       height: 20,
+    },
+    {
+      id: 'target',
+      x: 72,
+      y: 61,
+      width: 18,
+      height: 12,
     },
   ],
 };
@@ -169,6 +179,7 @@ const geometryResult = JSON.parse(new TextDecoder().decode(geometryOutput)) as {
   engine?: string;
   kind?: string;
   elements?: Array<{ x?: number }>;
+  guides?: Array<{ axis?: string; position?: number; source?: string }>;
 };
 assert(
   geometryResult.kind === 'presentationGeometryResult',
@@ -179,8 +190,14 @@ assert(
   'Office presentation geometry did not use the WASM engine.',
 );
 assert(
-  geometryResult.elements?.[0]?.x === 75,
-  'Office presentation alignment result was incorrect.',
+  geometryResult.elements?.[0]?.x === 30,
+  'Office presentation snap result was incorrect.',
+);
+assert(
+  geometryResult.guides?.[0]?.axis === 'x' &&
+    geometryResult.guides[0].position === 50 &&
+    geometryResult.guides[0].source === 'slide',
+  'Office presentation snap guide was incorrect.',
 );
 
 await registerFont(

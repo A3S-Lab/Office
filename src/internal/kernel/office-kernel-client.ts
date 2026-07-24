@@ -1,5 +1,5 @@
 import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
-import { alignOfficePresentationInJavaScript } from './office-kernel-presentation-fallback';
+import { resolveOfficePresentationGeometryInJavaScript } from './office-kernel-presentation-fallback';
 import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
 import { calculateSpreadsheetSessionInJavaScript } from './office-kernel-spreadsheet-session-fallback';
 import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
@@ -159,7 +159,7 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       return fallbackRequest(
         request,
         signal,
-        alignOfficePresentationInJavaScript,
+        resolveOfficePresentationGeometryInJavaScript,
       );
     }
     return new Promise((resolve, reject) => {
@@ -429,7 +429,7 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       void fallbackRequest(
         pending.request,
         pending.signal,
-        alignOfficePresentationInJavaScript,
+        resolveOfficePresentationGeometryInJavaScript,
       ).then(pending.resolve, pending.reject);
     }
     for (const pending of textLayoutRequests) {

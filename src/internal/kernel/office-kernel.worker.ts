@@ -1,5 +1,5 @@
 import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
-import { alignOfficePresentationInJavaScript } from './office-kernel-presentation-fallback';
+import { resolveOfficePresentationGeometryInJavaScript } from './office-kernel-presentation-fallback';
 import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
 import { JavaScriptSpreadsheetCalculationSession } from './office-kernel-spreadsheet-session-fallback';
 import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
@@ -147,7 +147,7 @@ async function respondToPresentationGeometry(
     const wasm = await wasmInitialization;
     response = wasm
       ? presentationGeometryWithWasm(wasm, request)
-      : alignOfficePresentationInJavaScript(request);
+      : resolveOfficePresentationGeometryInJavaScript(request);
   } catch (error) {
     response = errorResponse(request, error);
   }

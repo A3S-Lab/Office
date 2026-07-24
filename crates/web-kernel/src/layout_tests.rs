@@ -47,10 +47,7 @@ fn presentation_request(alignment: PresentationAlignment) -> PresentationGeometr
         request_id: 9,
         revision: 3,
         document_revision: 2,
-        operation: PresentationGeometryOperation {
-            kind: "alignToSlide".into(),
-            alignment,
-        },
+        operation: PresentationGeometryOperation::AlignToSlide { alignment },
         elements: vec![PresentationGeometryElement {
             id: "title".into(),
             x: 17.0,
@@ -63,16 +60,102 @@ fn presentation_request(alignment: PresentationAlignment) -> PresentationGeometr
 
 #[test]
 fn aligns_presentation_elements_to_the_slide() {
-    let center = align_presentation_to_slide(&presentation_request(PresentationAlignment::Center))
-        .expect("center alignment");
-    let bottom = align_presentation_to_slide(&presentation_request(PresentationAlignment::Bottom))
-        .expect("bottom alignment");
+    let center =
+        resolve_presentation_geometry(&presentation_request(PresentationAlignment::Center))
+            .expect("center alignment");
+    let bottom =
+        resolve_presentation_geometry(&presentation_request(PresentationAlignment::Bottom))
+            .expect("bottom alignment");
 
     assert_eq!(center.elements[0].x, 30.0);
     assert_eq!(center.elements[0].y, 23.0);
+    assert!(center.guides.is_empty());
     assert_eq!(bottom.elements[0].x, 17.0);
     assert_eq!(bottom.elements[0].y, 80.0);
     assert_eq!(bottom.document_revision, 2);
+}
+
+#[test]
+fn snaps_presentation_moves_and_resizes_with_stable_guides() {
+    let mut request = presentation_request(PresentationAlignment::Center);
+    request.elements = vec![
+        PresentationGeometryElement {
+            id: "moving".into(),
+            x: 29.4,
+            y: 10.0,
+            width: 40.0,
+            height: 20.0,
+        },
+        PresentationGeometryElement {
+            id: "target".into(),
+            x: 72.0,
+            y: 61.0,
+            width: 18.0,
+            height: 12.0,
+        },
+    ];
+    request.operation = PresentationGeometryOperation::SnapElement {
+        moving_element_id: "moving".into(),
+        mode: PresentationTransformMode::Move,
+        threshold_x: 1.0,
+        threshold_y: 1.0,
+    };
+
+    let moved = resolve_presentation_geometry(&request).expect("move snap");
+    assert_eq!(moved.elements[0].x, 30.0);
+    assert_eq!(
+        moved.guides,
+        vec![PresentationSnapGuide {
+            axis: PresentationSnapGuideAxis::X,
+            position: 50.0,
+            source: PresentationSnapGuideSource::Slide,
+            target_id: None,
+        }]
+    );
+
+    request.elements[0].x = 10.0;
+    request.elements[0].width = 39.4;
+    request.operation = PresentationGeometryOperation::SnapElement {
+        moving_element_id: "moving".into(),
+        mode: PresentationTransformMode::Resize,
+        threshold_x: 1.0,
+        threshold_y: 0.0,
+    };
+    let resized = resolve_presentation_geometry(&request).expect("resize snap");
+    assert_eq!(resized.elements[0].width, 40.0);
+    assert_eq!(resized.guides[0].position, 50.0);
+
+    request.elements[0].x = 69.4;
+    request.elements[0].width = 2.0;
+    request.operation = PresentationGeometryOperation::SnapElement {
+        moving_element_id: "moving".into(),
+        mode: PresentationTransformMode::Move,
+        threshold_x: 1.0,
+        threshold_y: 0.0,
+    };
+    let sibling = resolve_presentation_geometry(&request).expect("sibling snap");
+    assert_eq!(sibling.elements[0].x, 70.0);
+    assert_eq!(
+        sibling.guides,
+        vec![PresentationSnapGuide {
+            axis: PresentationSnapGuideAxis::X,
+            position: 72.0,
+            source: PresentationSnapGuideSource::Element,
+            target_id: Some("target".into()),
+        }]
+    );
+
+    request.elements[0].x = 0.0;
+    request.elements[0].width = 1.0;
+    request.operation = PresentationGeometryOperation::SnapElement {
+        moving_element_id: "moving".into(),
+        mode: PresentationTransformMode::Resize,
+        threshold_x: 1.0,
+        threshold_y: 0.0,
+    };
+    let preserved = resolve_presentation_geometry(&request).expect("non-collapsing resize");
+    assert_eq!(preserved.elements[0].width, 1.0);
+    assert!(preserved.guides.is_empty());
 }
 
 #[test]

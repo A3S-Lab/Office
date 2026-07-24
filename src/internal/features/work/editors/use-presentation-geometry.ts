@@ -7,16 +7,32 @@ import type {
   OfficeKernelEngine,
   OfficeKernelPresentationAlignment,
   OfficeKernelPresentationGeometryElement,
+  OfficeKernelPresentationGeometryOperation,
+  OfficeKernelPresentationGeometryResult,
+  OfficeKernelPresentationSnapGuide,
+  OfficeKernelPresentationTransformMode,
 } from '../../../kernel/office-kernel-protocol';
 import type { WorkSlideElement } from '../work-types';
+
+export interface PresentationSnapResolution {
+  element: OfficeKernelPresentationGeometryElement;
+  guides: OfficeKernelPresentationSnapGuide[];
+}
 
 export interface PresentationGeometryController {
   alignElement: (
     element: WorkSlideElement,
     alignment: OfficeKernelPresentationAlignment,
   ) => Promise<OfficeKernelPresentationGeometryElement | null>;
+  cancel: () => void;
   engine: OfficeKernelEngine | null;
   pending: boolean;
+  snapElement: (
+    element: WorkSlideElement,
+    elements: readonly WorkSlideElement[],
+    mode: OfficeKernelPresentationTransformMode,
+    threshold: { x: number; y: number },
+  ) => Promise<PresentationSnapResolution | null>;
 }
 
 export function usePresentationGeometry(
@@ -44,11 +60,18 @@ export function usePresentationGeometry(
     };
   }, [enabled, wasmUrl]);
 
-  const alignElement = useCallback(
+  const cancel = useCallback(() => {
+    revision.current += 1;
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    setPending(false);
+  }, []);
+
+  const resolveGeometry = useCallback(
     async (
-      element: WorkSlideElement,
-      alignment: OfficeKernelPresentationAlignment,
-    ): Promise<OfficeKernelPresentationGeometryElement | null> => {
+      operation: OfficeKernelPresentationGeometryOperation,
+      elements: readonly WorkSlideElement[],
+    ): Promise<OfficeKernelPresentationGeometryResult | null> => {
       const client = clientRef.current;
       if (!client) return null;
       const requestRevision = ++revision.current;
@@ -61,16 +84,8 @@ export function usePresentationGeometry(
           {
             revision: requestRevision,
             documentRevision: requestRevision,
-            operation: { type: 'alignToSlide', alignment },
-            elements: [
-              {
-                id: element.id,
-                x: element.x,
-                y: element.y,
-                width: element.width,
-                height: element.height,
-              },
-            ],
+            operation,
+            elements: elements.map(presentationGeometryElement),
           },
           controller.signal,
         );
@@ -78,10 +93,7 @@ export function usePresentationGeometry(
           return null;
         }
         setEngine(result.engine);
-        return (
-          result.elements.find((candidate) => candidate.id === element.id) ??
-          null
-        );
+        return result;
       } catch (error) {
         if (
           controller.signal.aborted ||
@@ -101,5 +113,74 @@ export function usePresentationGeometry(
     [],
   );
 
-  return { alignElement, engine, pending };
+  const alignElement = useCallback(
+    async (
+      element: WorkSlideElement,
+      alignment: OfficeKernelPresentationAlignment,
+    ): Promise<OfficeKernelPresentationGeometryElement | null> => {
+      const result = await resolveGeometry(
+        { type: 'alignToSlide', alignment },
+        [element],
+      );
+      return (
+        result?.elements.find((candidate) => candidate.id === element.id) ??
+        null
+      );
+    },
+    [resolveGeometry],
+  );
+
+  const snapElement = useCallback(
+    async (
+      element: WorkSlideElement,
+      elements: readonly WorkSlideElement[],
+      mode: OfficeKernelPresentationTransformMode,
+      threshold: { x: number; y: number },
+    ): Promise<PresentationSnapResolution | null> => {
+      const candidates = uniquePresentationGeometryElements(element, elements);
+      const result = await resolveGeometry(
+        {
+          type: 'snapElement',
+          movingElementId: element.id,
+          mode,
+          thresholdX: threshold.x,
+          thresholdY: threshold.y,
+        },
+        candidates,
+      );
+      const resolved = result?.elements.find(
+        (candidate) => candidate.id === element.id,
+      );
+      return resolved
+        ? {
+            element: resolved,
+            guides: result?.guides ?? [],
+          }
+        : null;
+    },
+    [resolveGeometry],
+  );
+
+  return { alignElement, cancel, engine, pending, snapElement };
+}
+
+function presentationGeometryElement(
+  element: WorkSlideElement,
+): OfficeKernelPresentationGeometryElement {
+  return {
+    id: element.id,
+    x: element.x,
+    y: element.y,
+    width: element.width,
+    height: element.height,
+  };
+}
+
+function uniquePresentationGeometryElements(
+  moving: WorkSlideElement,
+  elements: readonly WorkSlideElement[],
+): WorkSlideElement[] {
+  const unique = new Map(elements.map((element) => [element.id, element]));
+  unique.set(moving.id, moving);
+  return [...unique.values()];
 }

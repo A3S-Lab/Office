@@ -118,16 +118,35 @@ export interface OfficeKernelPresentationGeometryElement {
   height: number;
 }
 
+export type OfficeKernelPresentationTransformMode = 'move' | 'resize';
+
+export type OfficeKernelPresentationGeometryOperation =
+  | {
+      type: 'alignToSlide';
+      alignment: OfficeKernelPresentationAlignment;
+    }
+  | {
+      type: 'snapElement';
+      movingElementId: string;
+      mode: OfficeKernelPresentationTransformMode;
+      thresholdX: number;
+      thresholdY: number;
+    };
+
+export interface OfficeKernelPresentationSnapGuide {
+  axis: 'x' | 'y';
+  position: number;
+  source: 'element' | 'slide';
+  targetId?: string;
+}
+
 export interface OfficeKernelPresentationGeometryRequest {
   protocol: typeof OFFICE_KERNEL_PROTOCOL_VERSION;
   kind: 'presentationGeometry';
   requestId: number;
   revision: number;
   documentRevision: number;
-  operation: {
-    type: 'alignToSlide';
-    alignment: OfficeKernelPresentationAlignment;
-  };
+  operation: OfficeKernelPresentationGeometryOperation;
   elements: OfficeKernelPresentationGeometryElement[];
 }
 
@@ -139,6 +158,7 @@ export interface OfficeKernelPresentationGeometryResult {
   documentRevision: number;
   engine: OfficeKernelEngine;
   elements: OfficeKernelPresentationGeometryElement[];
+  guides: OfficeKernelPresentationSnapGuide[];
 }
 
 export type OfficeKernelTextDirection = 'auto' | 'ltr' | 'rtl';
@@ -321,7 +341,9 @@ export function isOfficeKernelResponse(
   if (candidate.kind === 'presentationGeometryResult') {
     return (
       Array.isArray(candidate.elements) &&
-      candidate.elements.every(isPresentationGeometryElement)
+      candidate.elements.every(isPresentationGeometryElement) &&
+      Array.isArray(candidate.guides) &&
+      candidate.guides.every(isPresentationSnapGuide)
     );
   }
   if (candidate.kind === 'textLayoutResult') {
@@ -405,6 +427,19 @@ function isPresentationGeometryElement(value: unknown): boolean {
     isNonNegativeNumber(element.y) &&
     isNonNegativeNumber(element.width) &&
     isNonNegativeNumber(element.height)
+  );
+}
+
+function isPresentationSnapGuide(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const guide = value as Record<string, unknown>;
+  return (
+    (guide.axis === 'x' || guide.axis === 'y') &&
+    isNonNegativeNumber(guide.position) &&
+    Number(guide.position) <= 100 &&
+    (guide.source === 'element' || guide.source === 'slide') &&
+    (guide.targetId === undefined ||
+      (typeof guide.targetId === 'string' && guide.targetId.length > 0))
   );
 }
 

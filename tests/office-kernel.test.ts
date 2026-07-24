@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@rstest/core';
 import { createOfficeKernelClient } from '../src/internal/kernel/office-kernel-client';
 import { layoutOfficeDocumentInJavaScript } from '../src/internal/kernel/office-kernel-fallback';
-import { alignOfficePresentationInJavaScript } from '../src/internal/kernel/office-kernel-presentation-fallback';
+import { resolveOfficePresentationGeometryInJavaScript } from '../src/internal/kernel/office-kernel-presentation-fallback';
 import { layoutOfficeTextInJavaScript } from '../src/internal/kernel/office-kernel-text-fallback';
 import {
   isOfficeKernelResponse,
@@ -51,7 +51,7 @@ describe('Office layout kernel', () => {
   });
 
   test('aligns presentation geometry relative to the slide', () => {
-    const result = alignOfficePresentationInJavaScript({
+    const result = resolveOfficePresentationGeometryInJavaScript({
       protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
       kind: 'presentationGeometry',
       requestId: 8,
@@ -77,6 +77,102 @@ describe('Office layout kernel', () => {
       width: 40,
       height: 20,
     });
+    expect(result.guides).toEqual([]);
+  });
+
+  test('snaps presentation moves and resizes to slide and element guides', () => {
+    const moved = resolveOfficePresentationGeometryInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'presentationGeometry',
+      requestId: 9,
+      revision: 4,
+      documentRevision: 3,
+      operation: {
+        type: 'snapElement',
+        movingElementId: 'moving',
+        mode: 'move',
+        thresholdX: 1,
+        thresholdY: 1,
+      },
+      elements: [
+        { id: 'moving', x: 29.4, y: 10, width: 40, height: 20 },
+        { id: 'target', x: 72, y: 61, width: 18, height: 12 },
+      ],
+    });
+
+    expect(moved.elements[0]).toMatchObject({ x: 30, y: 10 });
+    expect(moved.guides).toEqual([
+      { axis: 'x', position: 50, source: 'slide' },
+    ]);
+
+    const resized = resolveOfficePresentationGeometryInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'presentationGeometry',
+      requestId: 10,
+      revision: 5,
+      documentRevision: 4,
+      operation: {
+        type: 'snapElement',
+        movingElementId: 'moving',
+        mode: 'resize',
+        thresholdX: 1,
+        thresholdY: 0,
+      },
+      elements: [
+        { id: 'moving', x: 10, y: 10, width: 39.4, height: 20 },
+        { id: 'target', x: 72, y: 61, width: 18, height: 12 },
+      ],
+    });
+    expect(resized.elements[0]?.width).toBe(40);
+    expect(resized.guides).toEqual([
+      { axis: 'x', position: 50, source: 'slide' },
+    ]);
+
+    const sibling = resolveOfficePresentationGeometryInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'presentationGeometry',
+      requestId: 11,
+      revision: 6,
+      documentRevision: 5,
+      operation: {
+        type: 'snapElement',
+        movingElementId: 'moving',
+        mode: 'move',
+        thresholdX: 1,
+        thresholdY: 0,
+      },
+      elements: [
+        { id: 'moving', x: 69.4, y: 10, width: 2, height: 20 },
+        { id: 'target', x: 72, y: 61, width: 18, height: 12 },
+      ],
+    });
+    expect(sibling.elements[0]?.x).toBe(70);
+    expect(sibling.guides).toEqual([
+      {
+        axis: 'x',
+        position: 72,
+        source: 'element',
+        targetId: 'target',
+      },
+    ]);
+
+    const preserved = resolveOfficePresentationGeometryInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'presentationGeometry',
+      requestId: 12,
+      revision: 7,
+      documentRevision: 6,
+      operation: {
+        type: 'snapElement',
+        movingElementId: 'moving',
+        mode: 'resize',
+        thresholdX: 1,
+        thresholdY: 0,
+      },
+      elements: [{ id: 'moving', x: 0, y: 10, width: 1, height: 20 }],
+    });
+    expect(preserved.elements[0]?.width).toBe(1);
+    expect(preserved.guides).toEqual([]);
   });
 
   test('lays out a suffix with absolute page indices', () => {

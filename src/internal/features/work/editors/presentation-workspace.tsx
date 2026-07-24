@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { Plus } from 'lucide-react';
 import type { CSSProperties, MouseEvent, PointerEvent, RefObject } from 'react';
+import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -39,6 +40,7 @@ export interface PresentationWorkspaceProps {
   selectedLayout: WorkPresentationLayout | undefined;
   selectedMaster: WorkPresentationMaster | undefined;
   selectedSlide: WorkSlide;
+  snapGuides: OfficeKernelPresentationSnapGuide[];
   viewMode: 'normal' | 'sorter';
   zoom: number;
   onAddSlide: () => void;
@@ -49,7 +51,8 @@ export interface PresentationWorkspaceProps {
   ) => void;
   onContinueDrag: (event: PointerEvent) => void;
   onDeleteSlide: (slideId: string) => boolean;
-  onDragEnd: () => void;
+  onDragCancel: () => void;
+  onDragEnd: (event: PointerEvent) => void;
   onInstantiatePlaceholder: (definition: WorkSlideElement) => void;
   onOpenAgentMenu: (
     event: MouseEvent,
@@ -87,12 +90,14 @@ export function PresentationWorkspace({
   selectedLayout,
   selectedMaster,
   selectedSlide,
+  snapGuides,
   viewMode,
   zoom,
   onAddSlide,
   onBeginDrag,
   onContinueDrag,
   onDeleteSlide,
+  onDragCancel,
   onDragEnd,
   onInstantiatePlaceholder,
   onOpenAgentMenu,
@@ -168,6 +173,7 @@ export function PresentationWorkspace({
         className="work-slide-stage"
         onPointerMove={onContinueDrag}
         onPointerUp={onDragEnd}
+        onPointerCancel={onDragCancel}
       >
         <section
           ref={canvasRef}
@@ -207,6 +213,20 @@ export function PresentationWorkspace({
             >
               {definition.placeholder?.prompt ?? '单击添加内容'}
             </button>
+          ))}
+          {snapGuides.map((guide) => (
+            <span
+              aria-hidden="true"
+              className={`work-slide-snap-guide ${guide.axis === 'x' ? 'vertical' : 'horizontal'}`}
+              data-presentation-snap-guide={guide.axis}
+              data-presentation-snap-source={guide.source}
+              key={guide.axis}
+              style={
+                guide.axis === 'x'
+                  ? { left: `${guide.position}%` }
+                  : { top: `${guide.position}%` }
+              }
+            />
           ))}
           {activeElements.map((element) => (
             <fieldset

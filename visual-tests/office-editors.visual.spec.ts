@@ -320,6 +320,94 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
     .toBeGreaterThan(0);
 });
 
+test('presentation transforms snap visually and commit one undo step', async ({
+  page,
+}) => {
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const editor = page.locator('.work-presentation-editor');
+  const canvas = page.locator('.work-slide-canvas.interactive');
+  const title = canvas.locator(':scope > .work-slide-element').nth(1);
+  const undo = page.getByRole('button', { name: '撤销', exact: true });
+  const redo = page.getByRole('button', { name: '重做', exact: true });
+  const canvasBox = await canvas.boundingBox();
+  const titleBox = await title.boundingBox();
+  if (!canvasBox || !titleBox) {
+    throw new Error('Presentation transform geometry is unavailable.');
+  }
+
+  await page.mouse.move(
+    titleBox.x + titleBox.width / 2,
+    titleBox.y + titleBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    canvasBox.x + canvasBox.width / 2,
+    titleBox.y + titleBox.height / 2,
+  );
+
+  await expect(editor).toHaveAttribute(
+    'data-presentation-transform-state',
+    'dragging',
+  );
+  await expect(editor).toHaveAttribute(
+    'data-presentation-geometry-engine',
+    'wasm',
+  );
+  const guide = canvas.locator('[data-presentation-snap-guide="x"]');
+  await expect(guide).toHaveAttribute('data-presentation-snap-source', 'slide');
+  await expect
+    .poll(() =>
+      title.evaluate((element) =>
+        Number.parseFloat((element as HTMLElement).style.left),
+      ),
+    )
+    .toBe(14);
+  await expect(undo).toBeDisabled();
+
+  const guideGeometry = await guide.evaluate((element) => {
+    const guideRect = element.getBoundingClientRect();
+    const canvasRect = element.parentElement?.getBoundingClientRect();
+    if (!canvasRect) throw new Error('Presentation guide canvas is missing.');
+    return {
+      centerOffset:
+        guideRect.left +
+        guideRect.width / 2 -
+        (canvasRect.left + canvasRect.width / 2),
+      heightDifference: Math.abs(guideRect.height - canvasRect.height),
+    };
+  });
+  expect(Math.abs(guideGeometry.centerOffset)).toBeLessThanOrEqual(1);
+  expect(guideGeometry.heightDifference).toBeLessThanOrEqual(2);
+
+  await page.mouse.up();
+  await expect(editor).toHaveAttribute(
+    'data-presentation-transform-state',
+    'idle',
+  );
+  await expect(guide).toHaveCount(0);
+  await expect(undo).toBeEnabled();
+  await expect(redo).toBeDisabled();
+
+  await undo.click();
+  await expect
+    .poll(() =>
+      title.evaluate((element) =>
+        Number.parseFloat((element as HTMLElement).style.left),
+      ),
+    )
+    .toBe(8);
+  await expect(undo).toBeDisabled();
+  await expect(redo).toBeEnabled();
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {

@@ -13,18 +13,6 @@ export interface PresentationEditorProps {
   onStartSlideshow?: () => void;
 }
 
-export interface PresentationDragState {
-  elementId: string;
-  mode: 'move' | 'resize';
-  pointerId: number;
-  startX: number;
-  startY: number;
-  originX: number;
-  originY: number;
-  originWidth: number;
-  originHeight: number;
-}
-
 export interface PresentationAgentMenuState {
   x: number;
   y: number;

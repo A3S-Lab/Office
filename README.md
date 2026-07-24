@@ -97,7 +97,7 @@ export function App() {
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
-| Presentation | Scene graph + TipTap text editing | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view | PPTX import/export, PDF export |
+| Presentation | Scene graph + TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
 ### Package matrix
@@ -305,8 +305,11 @@ Superseded requests retain revision order inside the Worker, known grouped
 formulas are refreshed before their dependents, and unsupported dependencies
 enter an ordered cell-scoped compatibility pass. The package includes
 deterministic Latin, Simplified Chinese, Arabic, and Hebrew layout fonts.
-Presentation alignment uses the same kernel. PDF rendering uses `pdfium.wasm`,
-while presentation export loads the browser PptxGenJS runtime only when needed.
+Presentation alignment and snapped object transforms use the same kernel.
+Pointer movement updates a frame-coalesced preview; releasing the pointer emits
+one controlled value and therefore one undo step. PDF rendering uses
+`pdfium.wasm`, while presentation export loads the browser PptxGenJS runtime
+only when needed.
 
 Applications serving package assets from a separate CDN can pass explicit
 `kernelWasmUrl`, `layoutFonts`, `wasmUrl`, or `pptxRuntimeUrl` values. Static
@@ -397,8 +400,11 @@ grid canonical while a sparse, revisioned Worker/WASM session retains parsed
 formulas and an incremental dependency graph for its bounded scalar formula
 slice. Stable cell operations update that projection directly; structural and
 external changes use the checked replacement path. Presentation keeps a slide
-scene graph and mounts TipTap only for selected rich text. PDF commands call
-typed PDFium capabilities directly.
+scene graph, mounts TipTap only for selected rich text, and resolves
+slide-relative alignment and snapping through a cancellable Worker/Rust-WASM
+geometry boundary. Drag and resize remain transient until pointer release, so
+the host receives one controlled update per gesture. PDF commands call typed
+PDFium capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

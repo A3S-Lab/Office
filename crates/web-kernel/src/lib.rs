@@ -13,8 +13,10 @@ mod spreadsheet_calculation;
 mod text_layout;
 
 pub use presentation_geometry::{
-    align_presentation_to_slide, PresentationAlignment, PresentationGeometryElement,
+    resolve_presentation_geometry, PresentationAlignment, PresentationGeometryElement,
     PresentationGeometryOperation, PresentationGeometryRequest, PresentationGeometryResult,
+    PresentationSnapGuide, PresentationSnapGuideAxis, PresentationSnapGuideSource,
+    PresentationTransformMode,
 };
 pub use spreadsheet_calculation::{
     calculate_spreadsheet, calculate_spreadsheet_session, SpreadsheetCalculatedCell,
@@ -31,7 +33,7 @@ pub use text_layout::{
     TextTabAlignment, TextTabLayout, TextTabStop, TextWhiteSpace,
 };
 
-pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 13;
+pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 14;
 const MAX_LAYOUT_BLOCKS: usize = 10_000;
 const MAX_LAYOUT_EXTENT: f64 = 1_000_000.0;
 const MAX_LAYOUT_PAGE_INDEX: u32 = 1_000_000;
@@ -693,8 +695,8 @@ mod wasm_abi {
     use std::cell::RefCell;
 
     use super::{
-        align_presentation_to_slide, calculate_spreadsheet, calculate_spreadsheet_session,
-        layout_document, layout_text, validate_font, FontRegistry, KernelError,
+        calculate_spreadsheet, calculate_spreadsheet_session, layout_document, layout_text,
+        resolve_presentation_geometry, validate_font, FontRegistry, KernelError,
         KernelErrorResponse, LayoutRequest, PresentationGeometryRequest,
         SpreadsheetCalculationRequest, SpreadsheetCalculationSession,
         SpreadsheetCalculationSessionRequest, TextLayoutRequest, OFFICE_KERNEL_PROTOCOL_VERSION,
@@ -822,7 +824,7 @@ mod wasm_abi {
         };
         let parsed = serde_json::from_slice::<PresentationGeometryRequest>(input);
         let (status, output) = match parsed {
-            Ok(request) => match align_presentation_to_slide(&request) {
+            Ok(request) => match resolve_presentation_geometry(&request) {
                 Ok(result) => (0, serde_json::to_vec(&result)),
                 Err(error) => (
                     1,

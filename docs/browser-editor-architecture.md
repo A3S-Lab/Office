@@ -48,7 +48,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
-| Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
+| Presentation | Scene canvas with one TipTap instance for the selected text box, one typed dispatcher for ribbon commands, and frame-coalesced transactional move/resize previews that commit once on pointer release | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object snapping with typed visual guides and a JavaScript fallback | Multi-selection, grouping, connectors, theme resolution, text fitting, thumbnail virtualization, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
 The table is a fidelity statement, not a marketing capability list. The
@@ -88,9 +88,13 @@ remains the canonical grid, initial and replacement sparse projection still
 run on the main thread, and the kernel does not materialize whole-row or
 whole-column ranges, calculate arrays, spills, structured references or
 external workbooks, own number formatting, or own print layout.
-Presentation uses Rust/WASM only for alignment to slide bounds; the remaining
-geometry and layout operations stay on the main thread until the later stages
-below.
+Presentation sends alignment plus move and resize snapping to Rust/WASM. The
+main thread calculates the pointer candidate, paints at most one transient
+preview per animation frame, and ignores stale geometry responses. The Worker
+returns snapped slide-relative geometry and at most one typed guide per axis.
+Pointer movement never mutates the controlled document; pointer release emits
+one host change, while cancellation emits none. Grouping, connector routing,
+text fitting, theme resolution, and thumbnail layout remain later-stage work.
 
 Spreadsheet, Presentation, and PDF commands cross explicit typed boundaries.
 The shell never searches visible labels, scrapes rendered text, or synthesizes
@@ -339,12 +343,15 @@ intersection of direction, style, and registered font. Unicode line breaking
 and grapheme-safe emergency breaks span run boundaries and produce UTF-16
 offsets that map directly to ProseMirror.
 Presentation geometry requests carry stable element IDs, slide-relative
-coordinates, and an explicit alignment enum. The Worker suppresses cancelled
-responses, and the React integration ignores stale results. Matching
-JavaScript implementations preserve editing if Worker or WebAssembly loading
-is unavailable. The JavaScript text fallback explicitly reports unsupported
-paragraphs so the editor uses DOM line measurement instead of estimated font
-metrics.
+coordinates, and a tagged operation for slide alignment or object snapping.
+Snap operations identify the moving element, transform mode, and independent
+horizontal and vertical thresholds derived from a six-pixel visual distance.
+Results return the resolved geometry plus typed slide or element guides. The
+Worker suppresses cancelled responses, and the React integration accepts only
+the newest request in the active gesture. Matching JavaScript implementations
+preserve editing if Worker or WebAssembly loading is unavailable. The
+JavaScript text fallback explicitly reports unsupported paragraphs so the
+editor uses DOM line measurement instead of estimated font metrics.
 
 Spreadsheet requests carry populated cells only, zero-based coordinates,
 cached scalar values, formulas, and optional calculation targets. The kernel
@@ -515,6 +522,17 @@ and unknown package parts within the declared support boundary.
 - Add stable object IDs so selection, history, comments, animation, and OOXML
   relationships survive import and export.
 
+The first transform slice is implemented. Move and resize gestures keep their
+starting object immutable, coalesce pointer events into a transient preview,
+and submit only the latest candidate to the cancellable geometry Worker. The
+Rust/WASM kernel resolves slide-edge, slide-center, and sibling-object anchors;
+the canvas paints the returned horizontal or vertical guide without adding
+text or persistent scene objects. Pointer release submits one controlled
+content value, so the complete gesture occupies one undo step. Pointer cancel,
+selection-only clicks, stale responses, and superseded gestures do not create
+history. A short timer fallback preserves progress when a browser temporarily
+suspends animation frames.
+
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,
 themes, tables, charts, links, and notes have compatibility fixtures for
@@ -581,6 +599,9 @@ repeatable fixtures. The targets below are release gates, not current claims:
   focus without mounting it.
 - Spreadsheet formula-language metadata loads with Spreadsheet diagnostics and
   editing, never with the empty Office workspace.
+- Presentation pointer movement schedules at most one preview request per
+  animation frame, never calls the host `onChange`, cancels superseded geometry
+  work, and commits once when the pointer is released.
 - The Playground initial JavaScript budget is 220 KiB gzip and is enforced in
   CI against the scripts referenced by the generated `index.html`.
 - One active layout request exists per editor. A newer revision cancels the

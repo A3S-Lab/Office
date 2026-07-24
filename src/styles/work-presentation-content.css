@@ -357,6 +357,29 @@
   background: color-mix(in srgb, #3478f6 9%, transparent);
 }
 
+.work-slide-snap-guide {
+  position: absolute;
+  z-index: 18;
+  display: block;
+  background: color-mix(in srgb, #db3f71 88%, #ffffff);
+  box-shadow: 0 0 0 0.5px rgb(255 255 255 / 72%);
+  pointer-events: none;
+}
+
+.work-slide-snap-guide.vertical {
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  transform: translateX(-0.5px);
+}
+
+.work-slide-snap-guide.horizontal {
+  right: -1px;
+  left: -1px;
+  height: 1px;
+  transform: translateY(-0.5px);
+}
+
 .work-slide-canvas:not(.interactive) .work-slide-element {
   overflow: hidden;
 }

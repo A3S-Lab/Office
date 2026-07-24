@@ -44,7 +44,6 @@ import {
 } from './presentation-editor-operations';
 import type {
   PresentationAgentMenuState,
-  PresentationDragState,
   PresentationEditorProps,
 } from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
@@ -63,6 +62,7 @@ import { PresentationWorkspace } from './presentation-workspace';
 import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
+import { usePresentationTransform } from './use-presentation-transform';
 import { WorkOfficePreviewBar } from './work-office-chrome';
 
 export type { PresentationEditorProps } from './presentation-editor-types';
@@ -101,7 +101,6 @@ export function PresentationEditor({
   const officeDialog = useOfficeDialog();
   const canvasRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const dragRef = useRef<PresentationDragState | null>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
   const designContent = withPresentationDesign(content);
   const selectedSlide =
@@ -171,6 +170,40 @@ export function PresentationEditor({
       : designMode === 'master'
         ? selectedMaster?.id
         : selectedSlide?.id;
+  const commitElementTransform = useCallback(
+    (
+      elementId: string,
+      patch: Pick<WorkSlideElement, 'height' | 'width' | 'x' | 'y'>,
+    ) => {
+      if (!activeTargetId) return;
+      updatePresentationElements(
+        contentRef.current,
+        designMode,
+        activeTargetId,
+        (elements) =>
+          elements.map((element) =>
+            element.id === elementId ? { ...element, ...patch } : element,
+          ),
+        (next) => {
+          contentRef.current = next;
+          onChange(next);
+        },
+      );
+    },
+    [activeTargetId, designMode, onChange],
+  );
+  const transform = usePresentationTransform({
+    canvasRef,
+    elements: activeElements,
+    geometry,
+    onCommit: commitElementTransform,
+    onSelect: setSelectedElementId,
+    snapTargets: [
+      ...inheritedElements,
+      ...placeholderGuides,
+      ...activeElements,
+    ],
+  });
   const agentMenuSlide = agentMenu
     ? (content.slides.find((slide) => slide.id === agentMenu.slideId) ?? null)
     : null;
@@ -441,57 +474,6 @@ export function PresentationEditor({
   };
   const deleteSlide = () => deleteSlideById(selectedSlide.id);
 
-  const beginDrag = (
-    event: React.PointerEvent,
-    element: WorkSlideElement,
-    mode: PresentationDragState['mode'],
-  ) => {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setSelectedElementId(element.id);
-    dragRef.current = {
-      elementId: element.id,
-      mode,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: element.x,
-      originY: element.y,
-      originWidth: element.width,
-      originHeight: element.height,
-    };
-  };
-
-  const continueDrag = (event: React.PointerEvent) => {
-    const drag = dragRef.current;
-    const bounds = canvasRef.current?.getBoundingClientRect();
-    if (!drag || !bounds || drag.pointerId !== event.pointerId) return;
-    const dx = ((event.clientX - drag.startX) / bounds.width) * 100;
-    const dy = ((event.clientY - drag.startY) / bounds.height) * 100;
-    const patch =
-      drag.mode === 'move'
-        ? {
-            x: clamp(drag.originX + dx, 0, 100 - drag.originWidth),
-            y: clamp(drag.originY + dy, 0, 100 - drag.originHeight),
-          }
-        : {
-            width: clamp(drag.originWidth + dx, 4, 100 - drag.originX),
-            height: clamp(drag.originHeight + dy, 4, 100 - drag.originY),
-          };
-    if (!activeTargetId) return;
-    updatePresentationElements(
-      content,
-      designMode,
-      activeTargetId,
-      (elements) =>
-        elements.map((element) =>
-          element.id === drag.elementId ? { ...element, ...patch } : element,
-        ),
-      onChange,
-    );
-  };
-
   const toggleDesignPanel = () => {
     if (designOpen) {
       setDesignOpen(false);
@@ -708,6 +690,9 @@ export function PresentationEditor({
       className="work-presentation-editor"
       data-presentation-geometry-engine={geometry.engine ?? undefined}
       data-presentation-geometry-state={geometry.pending ? 'running' : 'idle'}
+      data-presentation-transform-state={
+        transform.dragging ? 'dragging' : 'idle'
+      }
     >
       <OfficeFileInput
         ref={imageInputRef}
@@ -869,7 +854,7 @@ export function PresentationEditor({
       <PresentationWorkspace
         activeBackground={activeBackground}
         activeCommentId={activeCommentId}
-        activeElements={activeElements}
+        activeElements={transform.displayElements}
         aspectRatio={aspectRatio}
         canvasName={canvasName}
         canvasRef={canvasRef}
@@ -885,12 +870,12 @@ export function PresentationEditor({
         viewMode={viewMode}
         zoom={zoom}
         onAddSlide={addSlide}
-        onBeginDrag={beginDrag}
-        onContinueDrag={continueDrag}
+        snapGuides={transform.guides}
+        onBeginDrag={transform.beginDrag}
+        onContinueDrag={transform.continueDrag}
         onDeleteSlide={deleteSlideById}
-        onDragEnd={() => {
-          dragRef.current = null;
-        }}
+        onDragCancel={transform.cancelDrag}
+        onDragEnd={transform.endDrag}
         onInstantiatePlaceholder={(definition) => {
           const element: WorkSlideElement = {
             ...structuredCopy(definition),
