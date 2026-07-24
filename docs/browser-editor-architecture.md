@@ -46,7 +46,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Product | Implemented browser surface | Implemented kernel boundary | Next fidelity gate |
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
-| Markdown | TipTap visual editing with a source-and-preview split view by default, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark/GFM compatibility fixtures and large-file profiling |
+| Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell and a typed command boundary for selected-range formatting, merge state, recalculation, gridlines, and zoom | Native Office formula and OOXML primitives exist outside the browser kernel; no browser calculation kernel yet | Dedicated virtual grid and Worker/WASM dependency graph, calculation, and print layout |
 | Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
@@ -71,6 +71,36 @@ Spreadsheet, Presentation, and PDF commands cross explicit typed boundaries.
 The shell never searches visible labels, scrapes rendered text, or synthesizes
 clicks to infer product intent. This keeps localized UI copy independent from
 behavior and gives Worker/WASM operations a stable request contract.
+
+## Markdown editing flow
+
+```text
+Controlled Markdown source
+            |
+ immediate source textarea + host onChange
+            |
+ trailing 160 ms coalescing boundary
+            |
+ TipTap Markdown parser and visual tree
+            |
+ GFM table / task / link / strike surface
+```
+
+Markdown source remains the persistence boundary. Source keystrokes update the
+controlled value immediately, while the visual tree consumes only the latest
+queued value after a short trailing delay. Moving focus into the visual pane or
+switching from source-only mode flushes the newest source first, so the user can
+never edit a stale preview. Visual edits serialize back to Markdown and cancel
+any pending source parse.
+
+The split panes synchronize by normalized scroll progress rather than raw
+pixels because source lines and rendered blocks have different heights. Status
+counts use React deferred work so code-point counting does not compete with
+high-priority typing. GFM compatibility fixtures cover tables, strikethrough,
+autolinks, task-state round trips, controlled host replacement, and coalesced
+source updates. Parsing remains on the main thread for now; moving it to a
+Worker is a measured follow-up for multi-megabyte inputs, not an assumed
+abstraction.
 
 ## Document editing flow
 

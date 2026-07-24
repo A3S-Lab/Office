@@ -1,0 +1,150 @@
+import type { Editor } from '@tiptap/core';
+import { EditorContent } from '@tiptap/react';
+import { type UIEvent, useCallback, useEffect, useRef } from 'react';
+
+export type MarkdownViewMode = 'visual' | 'source' | 'split';
+
+export function proportionalMarkdownScrollTop(
+  sourceScrollTop: number,
+  sourceScrollHeight: number,
+  sourceClientHeight: number,
+  targetScrollHeight: number,
+  targetClientHeight: number,
+): number {
+  const sourceRange = Math.max(0, sourceScrollHeight - sourceClientHeight);
+  const targetRange = Math.max(0, targetScrollHeight - targetClientHeight);
+  if (!sourceRange || !targetRange) return 0;
+
+  const progress = Math.min(1, Math.max(0, sourceScrollTop / sourceRange));
+  return progress * targetRange;
+}
+
+export function MarkdownWorkspace({
+  editor,
+  markdown,
+  mode,
+  readOnly = false,
+  onSourceChange,
+  onVisualIntent,
+}: {
+  editor: Editor;
+  markdown: string;
+  mode: MarkdownViewMode;
+  readOnly?: boolean;
+  onSourceChange: (markdown: string) => void;
+  onVisualIntent?: () => void;
+}) {
+  const sourceRef = useRef<HTMLTextAreaElement>(null);
+  const visualRef = useRef<HTMLElement>(null);
+  const synchronizedTargetRef = useRef<'source' | 'visual' | null>(null);
+  const releaseFrameRef = useRef<number | null>(null);
+  const showSource = !readOnly && mode !== 'visual';
+  const showVisual = readOnly || mode !== 'source';
+
+  const releaseScrollLock = useCallback(() => {
+    if (releaseFrameRef.current !== null) {
+      cancelAnimationFrame(releaseFrameRef.current);
+    }
+    releaseFrameRef.current = requestAnimationFrame(() => {
+      synchronizedTargetRef.current = null;
+      releaseFrameRef.current = null;
+    });
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (releaseFrameRef.current !== null) {
+        cancelAnimationFrame(releaseFrameRef.current);
+      }
+    },
+    [],
+  );
+
+  const handleSourceScroll = useCallback(
+    (event: UIEvent<HTMLTextAreaElement>) => {
+      if (mode !== 'split') return;
+      if (synchronizedTargetRef.current === 'source') {
+        synchronizedTargetRef.current = null;
+        return;
+      }
+
+      const source = event.currentTarget;
+      const target = visualRef.current;
+      if (!target) return;
+      synchronizedTargetRef.current = 'visual';
+      target.scrollTop = proportionalMarkdownScrollTop(
+        source.scrollTop,
+        source.scrollHeight,
+        source.clientHeight,
+        target.scrollHeight,
+        target.clientHeight,
+      );
+      releaseScrollLock();
+    },
+    [mode, releaseScrollLock],
+  );
+
+  const handleVisualScroll = useCallback(
+    (event: UIEvent<HTMLElement>) => {
+      if (mode !== 'split') return;
+      if (synchronizedTargetRef.current === 'visual') {
+        synchronizedTargetRef.current = null;
+        return;
+      }
+
+      const source = event.currentTarget;
+      const target = sourceRef.current;
+      if (!target) return;
+      synchronizedTargetRef.current = 'source';
+      target.scrollTop = proportionalMarkdownScrollTop(
+        source.scrollTop,
+        source.scrollHeight,
+        source.clientHeight,
+        target.scrollHeight,
+        target.clientHeight,
+      );
+      releaseScrollLock();
+    },
+    [mode, releaseScrollLock],
+  );
+
+  return (
+    <div className={`work-markdown-workspace ${mode}`}>
+      {showSource && (
+        <section
+          aria-label="Markdown 源码窗格"
+          className="work-markdown-pane source"
+        >
+          {mode === 'split' && (
+            <header className="work-markdown-pane-label">源码</header>
+          )}
+          <textarea
+            ref={sourceRef}
+            aria-label="Markdown 源码"
+            value={markdown}
+            spellCheck
+            onChange={(event) => onSourceChange(event.target.value)}
+            onScroll={handleSourceScroll}
+          />
+        </section>
+      )}
+      {showVisual && (
+        <section
+          ref={visualRef}
+          aria-label={readOnly ? 'Markdown 预览窗格' : 'Markdown 编辑结果窗格'}
+          className="work-markdown-pane visual"
+          onFocusCapture={onVisualIntent}
+          onPointerDownCapture={onVisualIntent}
+          onScroll={handleVisualScroll}
+        >
+          {mode === 'split' && (
+            <header className="work-markdown-pane-label">编辑结果</header>
+          )}
+          <div className="work-markdown-canvas">
+            <EditorContent editor={editor} />
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

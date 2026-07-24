@@ -305,8 +305,25 @@ function createInitialArtifacts(): OfficeArtifact[] {
   markdown.title = '产品说明';
   markdown.content = {
     type: 'markdown',
-    markdown:
-      '# A3S Office\n\n一套可嵌入 React、Vue 和 Web Component 的在线 Office 编辑器。\n',
+    markdown: [
+      '# A3S Office',
+      '',
+      '一套可嵌入 React、Vue 和 Web Component 的在线 Office 编辑器。',
+      '',
+      '## 接入检查',
+      '',
+      '- [x] 安装 `@a3s-lab/office`',
+      '- [x] 引入全局样式',
+      '- [ ] 接入宿主应用的持久化',
+      '',
+      '## 编辑器',
+      '',
+      '| 类型 | 组件 |',
+      '| --- | --- |',
+      '| 文字 | `DocumentEditor` |',
+      '| Markdown | `MarkdownEditor` |',
+      '',
+    ].join('\n'),
   };
   const now = Date.now();
   return [

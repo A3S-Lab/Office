@@ -94,7 +94,7 @@ export function App() {
 | Editor | Editing engine | Main capabilities | Native files |
 | --- | --- | --- | --- |
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
-| Markdown | TipTap + Markdown source model | Source and preview split view, visual editing, headings, lists, links, images, code | MD import/export |
+| Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + typed workbook model | Multiple sheets, formulas, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
 | Presentation | Scene graph + TipTap text editing | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
@@ -362,10 +362,11 @@ React / Vue / Web Components
 ```
 
 Documents use one logical TipTap/ProseMirror tree and non-history pagination
-decorations. Markdown keeps source as its controlled value. Spreadsheet keeps
-the workbook grid canonical. Presentation keeps a slide scene graph and mounts
-TipTap only for selected rich text. PDF commands call typed PDFium
-capabilities directly.
+decorations. Markdown keeps source as its controlled value, coalesces source
+edits before rebuilding the visual tree, and supports the GFM table,
+strikethrough, autolink, and task-list surface. Spreadsheet keeps the workbook
+grid canonical. Presentation keeps a slide scene graph and mounts TipTap only
+for selected rich text. PDF commands call typed PDFium capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

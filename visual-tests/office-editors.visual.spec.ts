@@ -260,6 +260,56 @@ test('component guide provides framework-specific examples', async ({
   );
 });
 
+test('Markdown GFM source and visual panes stay synchronized', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'markdown');
+  if (!fixture) throw new Error('Missing Markdown visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  const source = page.getByRole('textbox', { name: 'Markdown 源码' });
+  await source.fill('# Intermediate title');
+  const longDocument = [
+    '# Synchronized Markdown',
+    '',
+    '- [ ] Review the synchronized preview',
+    '',
+    ...Array.from({ length: 80 }, (_, index) => [
+      `## Section ${index + 1}`,
+      '',
+      `Paragraph ${index + 1} keeps both panes independently scrollable.`,
+      '',
+    ]).flat(),
+  ].join('\n');
+  await source.fill(longDocument);
+
+  await expect(
+    page.getByRole('heading', { name: 'Synchronized Markdown' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Intermediate title' }),
+  ).toHaveCount(0);
+  const task = page.getByRole('checkbox', {
+    name: '未完成：Review the synchronized preview',
+  });
+  await task.click();
+  await expect(source).toHaveValue(/- \[x\] Review the synchronized preview/);
+
+  await source.evaluate((element) => {
+    element.scrollTop = (element.scrollHeight - element.clientHeight) * 0.55;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect
+    .poll(() =>
+      page
+        .getByRole('region', { name: 'Markdown 编辑结果窗格' })
+        .evaluate((element) => element.scrollTop),
+    )
+    .toBeGreaterThan(0);
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {

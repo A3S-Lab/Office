@@ -35,6 +35,8 @@
   flex: 1;
   flex-direction: column;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .work-markdown-pane + .work-markdown-pane {
@@ -63,6 +65,7 @@
 }
 
 .work-markdown-pane.source textarea {
+  box-sizing: border-box;
   width: 100%;
   min-height: 100%;
   flex: 1;
@@ -75,6 +78,8 @@
   font-family: var(--font-mono);
   font-size: calc(13px * var(--work-markdown-zoom) / 100);
   line-height: 1.75;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   tab-size: 2;
 }
 
@@ -173,6 +178,73 @@
 
 .work-markdown-canvas .tiptap li > p {
   margin: 0;
+}
+
+.work-markdown-canvas .tiptap ul[data-type="taskList"] {
+  padding-left: 0;
+  list-style: none;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] + li {
+  margin-top: 0.35em;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] > label {
+  display: inline-flex;
+  width: 18px;
+  height: calc(1.75em - 1px);
+  flex: 0 0 18px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.work-markdown-editor.preview
+  .work-markdown-canvas
+  .tiptap
+  li[data-type="taskItem"]
+  > label {
+  cursor: default;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] > label input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--work-office-accent);
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] > div > p {
+  margin: 0;
+}
+
+.work-markdown-canvas
+  .tiptap
+  li[data-type="taskItem"][data-checked="true"]
+  > div {
+  color: var(--a3s-muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--a3s-muted) 65%, transparent);
+}
+
+.work-markdown-canvas
+  .tiptap
+  li[data-type="taskItem"]
+  ul[data-type="taskList"] {
+  margin: 0.35em 0 0;
+  padding-left: 1.6em;
 }
 
 .work-markdown-canvas .tiptap blockquote {

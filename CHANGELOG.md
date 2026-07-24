@@ -12,3 +12,5 @@ All notable changes to A3S Office will be documented in this file.
 - Added a colocated PDFium WebAssembly asset with an overridable URL.
 - Added an interactive React playground, type checks, integration tests, and
   Rslib packaging.
+- Added GFM task lists, coalesced source-to-visual Markdown updates,
+  synchronized split-pane scrolling, and dedicated compatibility tests.

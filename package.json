@@ -99,6 +99,7 @@
     "@tiptap/extension-color": "3.28.0",
     "@tiptap/extension-highlight": "3.28.0",
     "@tiptap/extension-image": "3.28.0",
+    "@tiptap/extension-list": "3.28.0",
     "@tiptap/extension-placeholder": "3.28.0",
     "@tiptap/extension-table": "3.28.0",
     "@tiptap/extension-text-align": "3.28.0",
