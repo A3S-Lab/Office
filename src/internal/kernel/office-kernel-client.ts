@@ -1,7 +1,16 @@
 import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
 import { alignOfficePresentationInJavaScript } from './office-kernel-presentation-fallback';
 import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
+import { calculateSpreadsheetSessionInJavaScript } from './office-kernel-spreadsheet-session-fallback';
 import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
+import type {
+  OfficeKernelClient,
+  OfficeKernelLayoutInput,
+  OfficeKernelPresentationGeometryInput,
+  OfficeKernelSpreadsheetCalculationInput,
+  OfficeKernelSpreadsheetSessionCalculationInput,
+  OfficeKernelTextLayoutInput,
+} from './office-kernel-client-types';
 import {
   type OfficeKernelFontSource,
   type OfficeKernelLayoutRequest,
@@ -10,11 +19,22 @@ import {
   type OfficeKernelPresentationGeometryResult,
   type OfficeKernelSpreadsheetCalculationRequest,
   type OfficeKernelSpreadsheetCalculationResult,
+  type OfficeKernelSpreadsheetSessionCalculationRequest,
+  type OfficeKernelSpreadsheetSessionCalculationResult,
   type OfficeKernelTextLayoutRequest,
   type OfficeKernelTextLayoutResult,
   type OfficeKernelWorkerResponse,
   OFFICE_KERNEL_PROTOCOL_VERSION,
 } from './office-kernel-protocol';
+
+export type {
+  OfficeKernelClient,
+  OfficeKernelLayoutInput,
+  OfficeKernelPresentationGeometryInput,
+  OfficeKernelSpreadsheetCalculationInput,
+  OfficeKernelSpreadsheetSessionCalculationInput,
+  OfficeKernelTextLayoutInput,
+} from './office-kernel-client-types';
 
 interface PendingRequest {
   reject: (error: Error) => void;
@@ -43,52 +63,10 @@ interface PendingSpreadsheetCalculation extends PendingRequest {
   resolve: (result: OfficeKernelSpreadsheetCalculationResult) => void;
 }
 
-export interface OfficeKernelLayoutInput {
-  revision: number;
-  documentRevision: number;
-  startPageIndex?: number;
-  page: OfficeKernelLayoutRequest['page'];
-  blocks: OfficeKernelLayoutRequest['blocks'];
-}
-
-export interface OfficeKernelPresentationGeometryInput {
-  revision: number;
-  documentRevision: number;
-  operation: OfficeKernelPresentationGeometryRequest['operation'];
-  elements: OfficeKernelPresentationGeometryRequest['elements'];
-}
-
-export interface OfficeKernelTextLayoutInput {
-  revision: number;
-  documentRevision: number;
-  paragraphs: OfficeKernelTextLayoutRequest['paragraphs'];
-}
-
-export interface OfficeKernelSpreadsheetCalculationInput {
-  revision: number;
-  documentRevision: number;
-  sheets: OfficeKernelSpreadsheetCalculationRequest['sheets'];
-  targets?: OfficeKernelSpreadsheetCalculationRequest['targets'];
-}
-
-export interface OfficeKernelClient {
-  layout(
-    input: OfficeKernelLayoutInput,
-    signal?: AbortSignal,
-  ): Promise<OfficeKernelLayoutResult>;
-  presentationGeometry(
-    input: OfficeKernelPresentationGeometryInput,
-    signal?: AbortSignal,
-  ): Promise<OfficeKernelPresentationGeometryResult>;
-  textLayout(
-    input: OfficeKernelTextLayoutInput,
-    signal?: AbortSignal,
-  ): Promise<OfficeKernelTextLayoutResult>;
-  spreadsheetCalculation(
-    input: OfficeKernelSpreadsheetCalculationInput,
-    signal?: AbortSignal,
-  ): Promise<OfficeKernelSpreadsheetCalculationResult>;
-  dispose(): void;
+interface PendingSpreadsheetSessionCalculation extends PendingRequest {
+  request: OfficeKernelSpreadsheetSessionCalculationRequest;
+  fallbackSheets: OfficeKernelSpreadsheetCalculationRequest['sheets'];
+  resolve: (result: OfficeKernelSpreadsheetSessionCalculationResult) => void;
 }
 
 const OFFICE_KERNEL_WORKER_TIMEOUT_MS = 10_000;
@@ -112,6 +90,10 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
   private pendingSpreadsheetCalculations = new Map<
     number,
     PendingSpreadsheetCalculation
+  >();
+  private pendingSpreadsheetSessionCalculations = new Map<
+    number,
+    PendingSpreadsheetSessionCalculation
   >();
   private disposed = false;
 
@@ -252,6 +234,47 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
     });
   }
 
+  spreadsheetSessionCalculation(
+    input: OfficeKernelSpreadsheetSessionCalculationInput,
+    signal?: AbortSignal,
+  ): Promise<OfficeKernelSpreadsheetSessionCalculationResult> {
+    if (this.disposed) return Promise.reject(disposedError());
+    const request: OfficeKernelSpreadsheetSessionCalculationRequest = {
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'spreadsheetSessionCalculation',
+      requestId: this.nextRequestId++,
+      revision: input.revision,
+      documentRevision: input.documentRevision,
+      update: input.update,
+      calculation: input.calculation,
+    };
+    if (signal?.aborted) return Promise.reject(abortError());
+    if (!this.worker) {
+      return fallbackSpreadsheetSessionCalculation(
+        request,
+        input.fallbackSheets,
+        signal,
+      );
+    }
+    return new Promise((resolve, reject) => {
+      const pending: PendingSpreadsheetSessionCalculation = {
+        request,
+        fallbackSheets: input.fallbackSheets,
+        resolve,
+        reject,
+      };
+      this.attachPendingRequest(
+        this.pendingSpreadsheetSessionCalculations,
+        pending,
+        signal,
+      );
+      this.worker?.postMessage({
+        kind: 'spreadsheetSessionCalculation',
+        request,
+      });
+    });
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -267,6 +290,10 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
     this.rejectPendingRequests(this.pendingTextLayouts, disposedError());
     this.rejectPendingRequests(
       this.pendingSpreadsheetCalculations,
+      disposedError(),
+    );
+    this.rejectPendingRequests(
+      this.pendingSpreadsheetSessionCalculations,
       disposedError(),
     );
   }
@@ -320,12 +347,20 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
     const spreadsheetCalculation = this.pendingSpreadsheetCalculations.get(
       response.requestId,
     );
-    const pending = layout ?? geometry ?? textLayout ?? spreadsheetCalculation;
+    const spreadsheetSessionCalculation =
+      this.pendingSpreadsheetSessionCalculations.get(response.requestId);
+    const pending =
+      layout ??
+      geometry ??
+      textLayout ??
+      spreadsheetCalculation ??
+      spreadsheetSessionCalculation;
     if (!pending) return;
     this.pendingLayouts.delete(response.requestId);
     this.pendingPresentationGeometry.delete(response.requestId);
     this.pendingTextLayouts.delete(response.requestId);
     this.pendingSpreadsheetCalculations.delete(response.requestId);
+    this.pendingSpreadsheetSessionCalculations.delete(response.requestId);
     releasePendingRequest(pending);
     if (response.kind === 'error') {
       pending.reject(
@@ -354,6 +389,13 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       spreadsheetCalculation.resolve(response);
       return;
     }
+    if (
+      response.kind === 'spreadsheetSessionCalculationResult' &&
+      spreadsheetSessionCalculation
+    ) {
+      spreadsheetSessionCalculation.resolve(response);
+      return;
+    }
     pending.reject(new Error('Office kernel response kind did not match.'));
   };
 
@@ -364,10 +406,14 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
     const spreadsheetCalculations = [
       ...this.pendingSpreadsheetCalculations.values(),
     ];
+    const spreadsheetSessionCalculations = [
+      ...this.pendingSpreadsheetSessionCalculations.values(),
+    ];
     this.pendingLayouts.clear();
     this.pendingPresentationGeometry.clear();
     this.pendingTextLayouts.clear();
     this.pendingSpreadsheetCalculations.clear();
+    this.pendingSpreadsheetSessionCalculations.clear();
     this.worker?.terminate();
     this.worker = null;
     for (const pending of layouts) {
@@ -402,7 +448,28 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
         calculateSpreadsheetInJavaScript,
       ).then(pending.resolve, pending.reject);
     }
+    for (const pending of spreadsheetSessionCalculations) {
+      releasePendingRequest(pending);
+      void fallbackSpreadsheetSessionCalculation(
+        pending.request,
+        pending.fallbackSheets,
+        pending.signal,
+      ).then(pending.resolve, pending.reject);
+    }
   };
+}
+
+async function fallbackSpreadsheetSessionCalculation(
+  request: OfficeKernelSpreadsheetSessionCalculationRequest,
+  sheets: OfficeKernelSpreadsheetCalculationRequest['sheets'],
+  signal?: AbortSignal,
+): Promise<OfficeKernelSpreadsheetSessionCalculationResult> {
+  return fallbackRequest(
+    { request, sheets },
+    signal,
+    ({ request: fallbackRequest, sheets: fallbackSheets }) =>
+      calculateSpreadsheetSessionInJavaScript(fallbackRequest, fallbackSheets),
+  );
 }
 
 async function fallbackRequest<Request, Result>(

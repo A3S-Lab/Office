@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use a3s_office_formula_parser::{
-    parse_spreadsheet_formula, SpreadsheetFormulaErrorLiteral, MAX_SPREADSHEET_FORMULA_CHARACTERS,
+    parse_spreadsheet_formula, SpreadsheetFormula, SpreadsheetFormulaErrorLiteral,
+    MAX_SPREADSHEET_FORMULA_CHARACTERS,
 };
 use serde::{Deserialize, Serialize};
 
@@ -9,10 +11,18 @@ use crate::{KernelError, OFFICE_KERNEL_PROTOCOL_VERSION};
 
 mod evaluate;
 mod functions;
+mod session;
 mod value;
 
+pub use session::{
+    calculate_spreadsheet_session, SpreadsheetCalculationSession,
+    SpreadsheetCalculationSessionCellChange, SpreadsheetCalculationSessionRequest,
+    SpreadsheetCalculationSessionResult, SpreadsheetCalculationSessionScope,
+    SpreadsheetCalculationSessionStats, SpreadsheetCalculationSessionUpdate,
+};
+
 const MAX_SPREADSHEET_SHEETS: usize = 1_024;
-const MAX_SPREADSHEET_CELLS: usize = 100_000;
+pub(super) const MAX_SPREADSHEET_CELLS: usize = 100_000;
 const MAX_SPREADSHEET_DEPENDENCY_DEPTH: usize = 64;
 const MAX_SPREADSHEET_ROWS: u32 = 1_048_576;
 const MAX_SPREADSHEET_COLUMNS: u32 = 16_384;
@@ -134,16 +144,39 @@ pub struct SpreadsheetCalculationResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct CellKey {
-    sheet: usize,
-    row: u32,
-    column: u32,
+pub(super) struct CellKey {
+    pub(super) sheet: usize,
+    pub(super) row: u32,
+    pub(super) column: u32,
 }
 
 #[derive(Debug, Clone)]
-struct IndexedCell {
+pub(super) struct IndexedCell {
     formula: Option<String>,
+    parsed_formula: Option<Result<Arc<SpreadsheetFormula>, EvaluationFailure>>,
     value: SpreadsheetValue,
+}
+
+impl IndexedCell {
+    pub(super) fn new(cell: &SpreadsheetInputCell) -> Self {
+        let parsed_formula = cell.formula.as_deref().map(|formula| {
+            parse_spreadsheet_formula(formula)
+                .map(Arc::new)
+                .map_err(|error| EvaluationFailure {
+                    code: "office.kernel.spreadsheet.formula_invalid",
+                    message: error.to_string(),
+                })
+        });
+        Self {
+            formula: cell.formula.clone(),
+            parsed_formula,
+            value: cell.value.clone(),
+        }
+    }
+
+    pub(super) fn is_formula(&self) -> bool {
+        self.formula.is_some()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -153,7 +186,7 @@ struct CellState {
 }
 
 #[derive(Debug, Clone)]
-struct EvaluationFailure {
+pub(super) struct EvaluationFailure {
     code: &'static str,
     message: String,
 }
@@ -181,75 +214,99 @@ impl EvaluationFailure {
             ),
         }
     }
+
+    pub(super) fn dependency_limit_exceeded() -> Self {
+        Self {
+            code: "office.kernel.spreadsheet.dependency_limit_exceeded",
+            message: "Spreadsheet formula dependency graph exceeds 1000000 edges.".into(),
+        }
+    }
 }
 
-struct SpreadsheetEvaluator<'request> {
-    request: &'request SpreadsheetCalculationRequest,
-    cells: BTreeMap<CellKey, IndexedCell>,
-    sheet_ids: BTreeMap<String, usize>,
-    sheet_names: BTreeMap<String, usize>,
+pub(super) struct SpreadsheetEvaluator<'session> {
+    session: &'session mut session::SpreadsheetSessionWorkbook,
+    targets: Vec<CellKey>,
+    dirty: BTreeSet<CellKey>,
+    force_dependencies: bool,
     states: BTreeMap<CellKey, CellState>,
     stack: Vec<CellKey>,
     materialized_range_cells: Vec<usize>,
     calculation_order: Vec<CellKey>,
     issues: Vec<SpreadsheetCalculationIssue>,
+    reused_formulas: BTreeSet<CellKey>,
+}
+
+pub(super) struct SpreadsheetEvaluationOutcome {
+    cells: Vec<SpreadsheetCalculatedCell>,
+    calculation_order: Vec<SpreadsheetCoordinate>,
+    issues: Vec<SpreadsheetCalculationIssue>,
+    dirty_formula_cell_count: usize,
+    evaluated_formula_cell_count: usize,
+    reused_formula_cell_count: usize,
 }
 
 pub fn calculate_spreadsheet(
     request: &SpreadsheetCalculationRequest,
 ) -> Result<SpreadsheetCalculationResult, KernelError> {
     validate_request(request)?;
-    Ok(SpreadsheetEvaluator::new(request).calculate())
+    let mut session = SpreadsheetCalculationSession::default();
+    let calculation = if request.targets.is_empty() {
+        SpreadsheetCalculationSessionScope::Workbook
+    } else {
+        SpreadsheetCalculationSessionScope::Targets {
+            targets: request.targets.clone(),
+        }
+    };
+    let result = calculate_spreadsheet_session(
+        &mut session,
+        &SpreadsheetCalculationSessionRequest {
+            protocol: request.protocol,
+            kind: "spreadsheetSessionCalculation".into(),
+            request_id: request.request_id,
+            revision: request.revision,
+            document_revision: request.document_revision,
+            update: SpreadsheetCalculationSessionUpdate::Replace {
+                sheets: request.sheets.clone(),
+            },
+            calculation,
+        },
+    )?;
+    Ok(SpreadsheetCalculationResult {
+        protocol: result.protocol,
+        kind: "spreadsheetCalculationResult".into(),
+        request_id: result.request_id,
+        revision: result.revision,
+        document_revision: result.document_revision,
+        engine: result.engine,
+        cells: result.cells,
+        calculation_order: result.calculation_order,
+        issues: result.issues,
+    })
 }
 
-impl<'request> SpreadsheetEvaluator<'request> {
-    fn new(request: &'request SpreadsheetCalculationRequest) -> Self {
-        let mut cells = BTreeMap::new();
-        let mut sheet_ids = BTreeMap::new();
-        let mut sheet_names = BTreeMap::new();
-        for (sheet_index, sheet) in request.sheets.iter().enumerate() {
-            sheet_ids.insert(sheet.id.clone(), sheet_index);
-            sheet_names.insert(sheet.name.to_lowercase(), sheet_index);
-            for cell in &sheet.cells {
-                cells.insert(
-                    CellKey {
-                        sheet: sheet_index,
-                        row: cell.row,
-                        column: cell.column,
-                    },
-                    IndexedCell {
-                        formula: cell.formula.clone(),
-                        value: cell.value.clone(),
-                    },
-                );
-            }
-        }
+impl<'session> SpreadsheetEvaluator<'session> {
+    fn new(
+        session: &'session mut session::SpreadsheetSessionWorkbook,
+        targets: Vec<CellKey>,
+        dirty: BTreeSet<CellKey>,
+        force_dependencies: bool,
+    ) -> Self {
         Self {
-            request,
-            cells,
-            sheet_ids,
-            sheet_names,
+            session,
+            targets,
+            dirty,
+            force_dependencies,
             states: BTreeMap::new(),
             stack: Vec::new(),
             materialized_range_cells: Vec::new(),
             calculation_order: Vec::new(),
             issues: Vec::new(),
+            reused_formulas: BTreeSet::new(),
         }
     }
 
-    fn calculate(mut self) -> SpreadsheetCalculationResult {
-        let targets = if self.request.targets.is_empty() {
-            self.cells
-                .iter()
-                .filter_map(|(key, cell)| cell.formula.as_ref().map(|_| key.clone()))
-                .collect::<Vec<_>>()
-        } else {
-            self.request
-                .targets
-                .iter()
-                .filter_map(|coordinate| self.key_for_coordinate(coordinate))
-                .collect()
-        };
+    fn calculate(mut self) -> SpreadsheetEvaluationOutcome {
+        let targets = self.targets.clone();
         for target in targets {
             self.evaluate_cell(&target);
         }
@@ -257,12 +314,12 @@ impl<'request> SpreadsheetEvaluator<'request> {
             .calculation_order
             .iter()
             .filter(|key| self.states.get(*key).is_some_and(|state| state.successful))
-            .map(|key| self.coordinate(key))
+            .map(|key| self.session.coordinate(key))
             .collect::<Vec<_>>();
         let cells = calculation_order
             .iter()
             .filter_map(|coordinate| {
-                let key = self.key_for_coordinate(coordinate)?;
+                let key = self.session.key_for_coordinate(coordinate)?;
                 let state = self.states.get(&key)?;
                 Some(SpreadsheetCalculatedCell {
                     sheet_id: coordinate.sheet_id.clone(),
@@ -272,16 +329,13 @@ impl<'request> SpreadsheetEvaluator<'request> {
                 })
             })
             .collect();
-        SpreadsheetCalculationResult {
-            protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
-            kind: "spreadsheetCalculationResult".into(),
-            request_id: self.request.request_id,
-            revision: self.request.revision,
-            document_revision: self.request.document_revision,
-            engine: "wasm".into(),
+        SpreadsheetEvaluationOutcome {
             cells,
             calculation_order,
             issues: self.issues,
+            dirty_formula_cell_count: self.dirty.len(),
+            evaluated_formula_cell_count: self.states.len(),
+            reused_formula_cell_count: self.reused_formulas.len(),
         }
     }
 
@@ -289,12 +343,16 @@ impl<'request> SpreadsheetEvaluator<'request> {
         if let Some(state) = self.states.get(key) {
             return state.value.clone();
         }
-        let Some(cell) = self.cells.get(key).cloned() else {
+        let Some(cell) = self.session.cells.get(key).cloned() else {
             return SpreadsheetValue::Blank;
         };
-        let Some(formula) = cell.formula.as_deref() else {
+        let Some(parsed_formula) = cell.parsed_formula.clone() else {
             return cell.value;
         };
+        if !self.force_dependencies && !self.dirty.contains(key) {
+            self.reused_formulas.insert(key.clone());
+            return cell.value;
+        }
         if let Some(position) = self.stack.iter().position(|candidate| candidate == key) {
             self.mark_cycle(position);
             return cell.value;
@@ -308,14 +366,11 @@ impl<'request> SpreadsheetEvaluator<'request> {
             );
         }
 
+        self.session.clear_dependencies(key);
         self.stack.push(key.clone());
         self.materialized_range_cells.push(0);
-        let evaluation = parse_spreadsheet_formula(formula)
-            .map_err(|error| EvaluationFailure {
-                code: "office.kernel.spreadsheet.formula_invalid",
-                message: error.to_string(),
-            })
-            .and_then(|formula| self.evaluate_expression(&formula.root, key));
+        let evaluation =
+            parsed_formula.and_then(|formula| self.evaluate_expression(&formula.root, key));
         self.materialized_range_cells.pop();
         self.stack.pop();
         if let Some(state) = self.states.get(key) {
@@ -331,8 +386,13 @@ impl<'request> SpreadsheetEvaluator<'request> {
         &mut self,
         key: &CellKey,
     ) -> Result<SpreadsheetValue, EvaluationFailure> {
+        if let Some(formula) = self.stack.last().cloned() {
+            self.session.record_dependency(&formula, key)?;
+        }
         let value = self.evaluate_cell(key);
-        if self.states.get(key).is_some_and(|state| !state.successful) {
+        if self.states.get(key).is_some_and(|state| !state.successful)
+            || self.session.unresolved_formulas.contains(key)
+        {
             return Err(EvaluationFailure::dependency_unresolved());
         }
         Ok(value)
@@ -342,6 +402,7 @@ impl<'request> SpreadsheetEvaluator<'request> {
         let cycle = self.stack[start..].to_vec();
         for key in cycle {
             let cached = self
+                .session
                 .cells
                 .get(&key)
                 .map_or(SpreadsheetValue::Blank, |cell| cell.value.clone());
@@ -376,30 +437,22 @@ impl<'request> SpreadsheetEvaluator<'request> {
             },
         );
         self.calculation_order.push(key.clone());
+        if successful {
+            self.session.unresolved_formulas.remove(key);
+            if let Some(cell) = self.session.cells.get_mut(key) {
+                cell.value = value.clone();
+            }
+        } else {
+            self.session.unresolved_formulas.insert(key.clone());
+        }
         if let Some(failure) = failure {
             self.issues.push(SpreadsheetCalculationIssue {
-                cell: self.coordinate(key),
+                cell: self.session.coordinate(key),
                 code: failure.code.into(),
                 message: failure.message,
             });
         }
         value
-    }
-
-    fn coordinate(&self, key: &CellKey) -> SpreadsheetCoordinate {
-        SpreadsheetCoordinate {
-            sheet_id: self.request.sheets[key.sheet].id.clone(),
-            row: key.row,
-            column: key.column,
-        }
-    }
-
-    fn key_for_coordinate(&self, coordinate: &SpreadsheetCoordinate) -> Option<CellKey> {
-        Some(CellKey {
-            sheet: *self.sheet_ids.get(&coordinate.sheet_id)?,
-            row: coordinate.row,
-            column: coordinate.column,
-        })
     }
 }
 
@@ -419,14 +472,6 @@ fn validate_request(request: &SpreadsheetCalculationRequest) -> Result<(), Kerne
             "The Spreadsheet kernel only accepts calculation requests.",
         ));
     }
-    if request.sheets.len() > MAX_SPREADSHEET_SHEETS {
-        return Err(KernelError::invalid(
-            "office.kernel.spreadsheet.sheet_limit_exceeded",
-            format!(
-                "A Spreadsheet calculation request may contain at most {MAX_SPREADSHEET_SHEETS} sheets."
-            ),
-        ));
-    }
     if request.targets.len() > MAX_SPREADSHEET_CELLS {
         return Err(KernelError::invalid(
             "office.kernel.spreadsheet.target_limit_exceeded",
@@ -435,10 +480,42 @@ fn validate_request(request: &SpreadsheetCalculationRequest) -> Result<(), Kerne
             ),
         ));
     }
+    validate_spreadsheet_sheets(&request.sheets)?;
+    let ids = request
+        .sheets
+        .iter()
+        .map(|sheet| sheet.id.as_str())
+        .collect::<BTreeSet<_>>();
+    for target in &request.targets {
+        validate_spreadsheet_coordinate(target.row, target.column)?;
+        if !ids.contains(target.sheet_id.as_str()) {
+            return Err(KernelError::invalid(
+                "office.kernel.spreadsheet.target_invalid",
+                format!(
+                    "Spreadsheet calculation target references missing sheet '{}'.",
+                    target.sheet_id
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+pub(super) fn validate_spreadsheet_sheets(
+    sheets: &[SpreadsheetInputSheet],
+) -> Result<(), KernelError> {
+    if sheets.len() > MAX_SPREADSHEET_SHEETS {
+        return Err(KernelError::invalid(
+            "office.kernel.spreadsheet.sheet_limit_exceeded",
+            format!(
+                "A Spreadsheet calculation request may contain at most {MAX_SPREADSHEET_SHEETS} sheets."
+            ),
+        ));
+    }
     let mut ids = BTreeSet::new();
     let mut names = BTreeSet::new();
     let mut cell_count = 0_usize;
-    for sheet in &request.sheets {
+    for sheet in sheets {
         validate_identifier("sheet ID", &sheet.id)?;
         validate_identifier("sheet name", &sheet.name)?;
         if !ids.insert(sheet.id.as_str()) || !names.insert(sheet.name.to_lowercase()) {
@@ -449,25 +526,14 @@ fn validate_request(request: &SpreadsheetCalculationRequest) -> Result<(), Kerne
         }
         let mut coordinates = BTreeSet::new();
         for cell in &sheet.cells {
-            validate_coordinate(cell.row, cell.column)?;
+            validate_spreadsheet_coordinate(cell.row, cell.column)?;
             if !coordinates.insert((cell.row, cell.column)) {
                 return Err(KernelError::invalid(
                     "office.kernel.spreadsheet.cell_invalid",
                     "Spreadsheet cells require unique row and column coordinates.",
                 ));
             }
-            cell.value.validate()?;
-            if let Some(formula) = &cell.formula {
-                let count = formula.chars().count();
-                if formula.is_empty() || count > MAX_SPREADSHEET_FORMULA_CHARACTERS {
-                    return Err(KernelError::invalid(
-                        "office.kernel.spreadsheet.formula_invalid",
-                        format!(
-                            "Spreadsheet formulas must contain 1-{MAX_SPREADSHEET_FORMULA_CHARACTERS} characters."
-                        ),
-                    ));
-                }
-            }
+            validate_spreadsheet_input_cell(cell)?;
         }
         cell_count = cell_count
             .checked_add(sheet.cells.len())
@@ -476,14 +542,21 @@ fn validate_request(request: &SpreadsheetCalculationRequest) -> Result<(), Kerne
             return Err(cell_limit_error());
         }
     }
-    for target in &request.targets {
-        validate_coordinate(target.row, target.column)?;
-        if !ids.contains(target.sheet_id.as_str()) {
+    Ok(())
+}
+
+pub(super) fn validate_spreadsheet_input_cell(
+    cell: &SpreadsheetInputCell,
+) -> Result<(), KernelError> {
+    validate_spreadsheet_coordinate(cell.row, cell.column)?;
+    cell.value.validate()?;
+    if let Some(formula) = &cell.formula {
+        let count = formula.chars().count();
+        if formula.is_empty() || count > MAX_SPREADSHEET_FORMULA_CHARACTERS {
             return Err(KernelError::invalid(
-                "office.kernel.spreadsheet.target_invalid",
+                "office.kernel.spreadsheet.formula_invalid",
                 format!(
-                    "Spreadsheet calculation target references missing sheet '{}'.",
-                    target.sheet_id
+                    "Spreadsheet formulas must contain 1-{MAX_SPREADSHEET_FORMULA_CHARACTERS} characters."
                 ),
             ));
         }
@@ -503,7 +576,7 @@ fn validate_identifier(kind: &str, value: &str) -> Result<(), KernelError> {
     Ok(())
 }
 
-fn validate_coordinate(row: u32, column: u32) -> Result<(), KernelError> {
+pub(super) fn validate_spreadsheet_coordinate(row: u32, column: u32) -> Result<(), KernelError> {
     if row >= MAX_SPREADSHEET_ROWS || column >= MAX_SPREADSHEET_COLUMNS {
         return Err(KernelError::invalid(
             "office.kernel.spreadsheet.cell_invalid",

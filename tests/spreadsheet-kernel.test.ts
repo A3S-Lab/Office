@@ -2,6 +2,7 @@ import { describe, expect, test } from '@rstest/core';
 import parityFixtures from './fixtures/spreadsheet-kernel-parity.json';
 import { createOfficeKernelClient } from '../src/internal/kernel/office-kernel-client';
 import { calculateSpreadsheetInJavaScript } from '../src/internal/kernel/office-kernel-spreadsheet-fallback';
+import { JavaScriptSpreadsheetCalculationSession } from '../src/internal/kernel/office-kernel-spreadsheet-session-fallback';
 import {
   isOfficeKernelResponse,
   type OfficeKernelSpreadsheetCalculatedCell,
@@ -284,6 +285,37 @@ describe('Spreadsheet calculation kernel', () => {
     ).toBe(false);
   });
 
+  test('validates persistent session statistics at the Worker boundary', () => {
+    const response = {
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'spreadsheetSessionCalculationResult',
+      requestId: 7,
+      revision: 3,
+      documentRevision: 2,
+      engine: 'wasm',
+      cells: [],
+      calculationOrder: [],
+      issues: [],
+      stats: {
+        updateKind: 'patch',
+        calculationScope: 'dirty',
+        formulaCellCount: 10,
+        dirtyFormulaCellCount: 2,
+        evaluatedFormulaCellCount: 2,
+        reusedFormulaCellCount: 1,
+        dependencyEdgeCount: 12,
+      },
+    };
+
+    expect(isOfficeKernelResponse(response)).toBe(true);
+    expect(
+      isOfficeKernelResponse({
+        ...response,
+        stats: { ...response.stats, dependencyEdgeCount: 1_000_001 },
+      }),
+    ).toBe(false);
+  });
+
   test('uses the JavaScript calculation boundary when Worker is unavailable', async () => {
     const workerDescriptor = Object.getOwnPropertyDescriptor(
       globalThis,
@@ -314,6 +346,156 @@ describe('Spreadsheet calculation kernel', () => {
         Reflect.deleteProperty(globalThis, 'Worker');
       }
     }
+  });
+
+  test('keeps session requests recoverable when Worker is unavailable', async () => {
+    const workerDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'Worker',
+    );
+    Object.defineProperty(globalThis, 'Worker', {
+      configurable: true,
+      value: undefined,
+    });
+    const client = createOfficeKernelClient();
+    const sheets = request().sheets;
+
+    try {
+      const initial = await client.spreadsheetSessionCalculation({
+        revision: 1,
+        documentRevision: 1,
+        update: { kind: 'replace', sheets },
+        calculation: { kind: 'workbook' },
+        fallbackSheets: sheets,
+      });
+      expect(initial.engine).toBe('javascript');
+      expect(initial.stats).toMatchObject({
+        updateKind: 'replace',
+        calculationScope: 'workbook',
+        formulaCellCount: 2,
+      });
+
+      const changed = structuredClone(sheets);
+      const input = changed[0]?.cells.find(
+        (cell) => cell.row === 0 && cell.column === 0,
+      );
+      if (!input) throw new Error('Spreadsheet input fixture is missing.');
+      input.value = { kind: 'number', value: 4 };
+      const patched = await client.spreadsheetSessionCalculation({
+        revision: 2,
+        documentRevision: 2,
+        update: {
+          kind: 'patch',
+          baseDocumentRevision: 1,
+          changes: [
+            {
+              kind: 'upsert',
+              sheetId: 'sheet-1',
+              row: 0,
+              column: 0,
+              value: { kind: 'number', value: 4 },
+            },
+          ],
+        },
+        calculation: { kind: 'dirty' },
+        fallbackSheets: changed,
+      });
+      expect(patched.cells.at(-1)?.value).toEqual({
+        kind: 'number',
+        value: 14,
+      });
+    } finally {
+      client.dispose();
+      if (workerDescriptor) {
+        Object.defineProperty(globalThis, 'Worker', workerDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, 'Worker');
+      }
+    }
+  });
+
+  test('keeps the Worker JavaScript session revisioned and atomic', async () => {
+    const session = new JavaScriptSpreadsheetCalculationSession();
+    const sheets = request().sheets;
+    await session.calculate({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'spreadsheetSessionCalculation',
+      requestId: 1,
+      revision: 1,
+      documentRevision: 1,
+      update: { kind: 'replace', sheets },
+      calculation: { kind: 'workbook' },
+    });
+
+    await expect(
+      session.calculate({
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: 'spreadsheetSessionCalculation',
+        requestId: 2,
+        revision: 2,
+        documentRevision: 2,
+        update: {
+          kind: 'patch',
+          baseDocumentRevision: 0,
+          changes: [
+            {
+              kind: 'upsert',
+              sheetId: 'sheet-1',
+              row: 0,
+              column: 0,
+              value: { kind: 'number', value: 99 },
+            },
+          ],
+        },
+        calculation: { kind: 'dirty' },
+      }),
+    ).rejects.toMatchObject({
+      code: 'office.kernel.spreadsheet.session_revision_mismatch',
+    });
+
+    await expect(
+      session.calculate({
+        protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+        kind: 'spreadsheetSessionCalculation',
+        requestId: 3,
+        revision: 3,
+        documentRevision: 0,
+        update: {
+          kind: 'patch',
+          baseDocumentRevision: 1,
+          changes: [],
+        },
+        calculation: { kind: 'dirty' },
+      }),
+    ).rejects.toMatchObject({
+      code: 'office.kernel.spreadsheet.session_revision_invalid',
+    });
+
+    const result = await session.calculate({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'spreadsheetSessionCalculation',
+      requestId: 4,
+      revision: 4,
+      documentRevision: 2,
+      update: {
+        kind: 'patch',
+        baseDocumentRevision: 1,
+        changes: [
+          {
+            kind: 'upsert',
+            sheetId: 'sheet-1',
+            row: 0,
+            column: 0,
+            value: { kind: 'number', value: 4 },
+          },
+        ],
+      },
+      calculation: { kind: 'dirty' },
+    });
+    expect(result.cells.at(-1)?.value).toEqual({
+      kind: 'number',
+      value: 14,
+    });
   });
 
   test('rejects an already-cancelled fallback calculation', async () => {

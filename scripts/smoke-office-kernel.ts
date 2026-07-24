@@ -20,6 +20,10 @@ interface OfficeKernelWasmExports {
     pointer: number,
     length: number,
   ) => number;
+  office_kernel_spreadsheet_session_calculation: (
+    pointer: number,
+    length: number,
+  ) => number;
   office_kernel_text_layout: (pointer: number, length: number) => number;
   office_kernel_result_pointer: () => number;
   office_kernel_result_length: () => number;
@@ -31,6 +35,14 @@ interface SpreadsheetSmokeResult {
   cells?: Array<{ value?: { kind?: string; value?: number } }>;
   calculationOrder?: unknown[];
   issues?: Array<{ code?: string }>;
+  stats?: {
+    updateKind?: string;
+    calculationScope?: string;
+    formulaCellCount?: number;
+    dirtyFormulaCellCount?: number;
+    evaluatedFormulaCellCount?: number;
+    dependencyEdgeCount?: number;
+  };
 }
 
 const wasm = await WebAssembly.instantiate(
@@ -579,6 +591,55 @@ assert(
   'Office Spreadsheet calculation did not preserve deterministic diagnostics.',
 );
 
+const spreadsheetSessionResult = calculateSpreadsheetSessionWithWasm({
+  protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+  kind: 'spreadsheetSessionCalculation',
+  requestId: 26,
+  revision: 1,
+  documentRevision: 1,
+  update: {
+    kind: 'replace',
+    sheets: spreadsheetRequest.sheets,
+  },
+  calculation: { kind: 'workbook' },
+});
+assert(
+  spreadsheetSessionResult.kind === 'spreadsheetSessionCalculationResult' &&
+    spreadsheetSessionResult.stats?.updateKind === 'replace' &&
+    spreadsheetSessionResult.stats?.evaluatedFormulaCellCount === 2 &&
+    spreadsheetSessionResult.stats?.dependencyEdgeCount === 3,
+  'Office Spreadsheet session did not initialize its dependency graph.',
+);
+const spreadsheetPatchResult = calculateSpreadsheetSessionWithWasm({
+  protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+  kind: 'spreadsheetSessionCalculation',
+  requestId: 27,
+  revision: 2,
+  documentRevision: 2,
+  update: {
+    kind: 'patch',
+    baseDocumentRevision: 1,
+    changes: [
+      {
+        kind: 'upsert',
+        sheetId: 'sheet-1',
+        row: 0,
+        column: 0,
+        value: { kind: 'number', value: 4 },
+      },
+    ],
+  },
+  calculation: { kind: 'dirty' },
+});
+assert(
+  spreadsheetPatchResult.cells?.[0]?.value?.value === 7 &&
+    spreadsheetPatchResult.cells?.[1]?.value?.value === 14 &&
+    spreadsheetPatchResult.stats?.updateKind === 'patch' &&
+    spreadsheetPatchResult.stats?.dirtyFormulaCellCount === 2 &&
+    spreadsheetPatchResult.stats?.evaluatedFormulaCellCount === 2,
+  'Office Spreadsheet session did not limit recalculation to the dirty dependency subgraph.',
+);
+
 const deepSpreadsheetResult = calculateSpreadsheetWithWasm({
   ...spreadsheetRequest,
   requestId: 25,
@@ -629,6 +690,36 @@ function calculateSpreadsheetWithWasm(
     exports.office_kernel_result_length(),
   ).slice();
   return JSON.parse(new TextDecoder().decode(output)) as SpreadsheetSmokeResult;
+}
+
+function calculateSpreadsheetSessionWithWasm(
+  request: unknown,
+): SpreadsheetSmokeResult {
+  const input = new TextEncoder().encode(JSON.stringify(request));
+  const pointer = exports.office_kernel_alloc(input.byteLength);
+  let status = 1;
+  try {
+    new Uint8Array(exports.memory.buffer, pointer, input.byteLength).set(input);
+    status = exports.office_kernel_spreadsheet_session_calculation(
+      pointer,
+      input.byteLength,
+    );
+  } finally {
+    exports.office_kernel_dealloc(pointer, input.byteLength);
+  }
+  const output = new Uint8Array(
+    exports.memory.buffer,
+    exports.office_kernel_result_pointer(),
+    exports.office_kernel_result_length(),
+  ).slice();
+  const result = JSON.parse(
+    new TextDecoder().decode(output),
+  ) as SpreadsheetSmokeResult;
+  assert(
+    status === 0,
+    `Office kernel Spreadsheet session calculation call failed: ${JSON.stringify(result)}`,
+  );
+  return result;
 }
 
 async function registerFont(id: string, url: URL): Promise<void> {

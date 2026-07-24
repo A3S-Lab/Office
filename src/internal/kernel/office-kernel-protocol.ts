@@ -1,4 +1,7 @@
-import { isOfficeKernelSpreadsheetCalculationResult } from './office-kernel-spreadsheet-protocol';
+import {
+  isOfficeKernelSpreadsheetCalculationResult,
+  isOfficeKernelSpreadsheetSessionCalculationResult,
+} from './office-kernel-spreadsheet-protocol';
 import { OFFICE_KERNEL_PROTOCOL_VERSION } from './office-kernel-version';
 
 export { OFFICE_KERNEL_PROTOCOL_VERSION };
@@ -11,11 +14,19 @@ export type {
   OfficeKernelSpreadsheetError,
   OfficeKernelSpreadsheetInputCell,
   OfficeKernelSpreadsheetInputSheet,
+  OfficeKernelSpreadsheetSessionCalculationRequest,
+  OfficeKernelSpreadsheetSessionCalculationResult,
+  OfficeKernelSpreadsheetSessionCalculationScope,
+  OfficeKernelSpreadsheetSessionCalculationStats,
+  OfficeKernelSpreadsheetSessionCellChange,
+  OfficeKernelSpreadsheetSessionUpdate,
   OfficeKernelSpreadsheetValue,
 } from './office-kernel-spreadsheet-protocol';
 import type {
   OfficeKernelSpreadsheetCalculationRequest,
   OfficeKernelSpreadsheetCalculationResult,
+  OfficeKernelSpreadsheetSessionCalculationRequest,
+  OfficeKernelSpreadsheetSessionCalculationResult,
 } from './office-kernel-spreadsheet-protocol';
 
 export type OfficeKernelEngine = 'wasm' | 'javascript';
@@ -235,6 +246,7 @@ export type OfficeKernelResponse =
   | OfficeKernelLayoutResult
   | OfficeKernelPresentationGeometryResult
   | OfficeKernelSpreadsheetCalculationResult
+  | OfficeKernelSpreadsheetSessionCalculationResult
   | OfficeKernelTextLayoutResult
   | OfficeKernelErrorResponse;
 
@@ -261,6 +273,10 @@ export type OfficeKernelWorkerRequest =
       request: OfficeKernelSpreadsheetCalculationRequest;
     }
   | {
+      kind: 'spreadsheetSessionCalculation';
+      request: OfficeKernelSpreadsheetSessionCalculationRequest;
+    }
+  | {
       kind: 'cancel';
       requestId: number;
     };
@@ -280,6 +296,7 @@ export function isOfficeKernelResponse(
     (candidate.kind !== 'layoutResult' &&
       candidate.kind !== 'presentationGeometryResult' &&
       candidate.kind !== 'spreadsheetCalculationResult' &&
+      candidate.kind !== 'spreadsheetSessionCalculationResult' &&
       candidate.kind !== 'textLayoutResult' &&
       candidate.kind !== 'error')
   ) {
@@ -319,6 +336,9 @@ export function isOfficeKernelResponse(
   }
   if (candidate.kind === 'spreadsheetCalculationResult') {
     return isOfficeKernelSpreadsheetCalculationResult(candidate);
+  }
+  if (candidate.kind === 'spreadsheetSessionCalculationResult') {
+    return isOfficeKernelSpreadsheetSessionCalculationResult(candidate);
   }
   return (
     isNonNegativeInteger(candidate.startPageIndex) &&

@@ -96,7 +96,7 @@ export function App() {
 | --- | --- | --- | --- |
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
-| Spreadsheet | Fortune Sheet + sparse Worker/Rust-WASM calculation | Multiple sheets, bounded scalar formulas, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
+| Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
 | Presentation | Scene graph + TipTap text editing | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
@@ -292,12 +292,15 @@ invalidates an older model safely.
 
 Document pagination and Spreadsheet scalar calculation run in a dedicated
 Worker backed by `office-kernel.wasm`. Spreadsheet jobs use sparse populated
-cells, cancel superseded revisions, refresh known grouped formulas before
-calculating their dependents, and propagate unsupported dependencies into an
-ordered cell-scoped compatibility pass. The package includes deterministic
-Latin, Simplified Chinese, Arabic, and Hebrew layout fonts. Presentation
-alignment uses the same kernel. PDF rendering uses `pdfium.wasm`, while
-presentation export loads the browser PptxGenJS runtime only when needed.
+cells and one persistent calculation session per editor. The first request
+replaces the session workbook; later edits send bounded cell patches and
+recalculate only the dirty dependency subgraph. Superseded requests retain
+revision order inside the Worker, known grouped formulas are refreshed before
+their dependents, and unsupported dependencies enter an ordered cell-scoped
+compatibility pass. The package includes deterministic Latin, Simplified
+Chinese, Arabic, and Hebrew layout fonts. Presentation alignment uses the same
+kernel. PDF rendering uses `pdfium.wasm`, while presentation export loads the
+browser PptxGenJS runtime only when needed.
 
 Applications serving package assets from a separate CDN can pass explicit
 `kernelWasmUrl`, `layoutFonts`, `wasmUrl`, or `pptxRuntimeUrl` values. Static
@@ -319,12 +322,13 @@ A3S Office aims for predictable browser editing and native file preservation;
 it does not claim pixel parity with every Microsoft Office or WPS feature.
 Unsupported OOXML semantics, arbitrary floating-object layout, complete font
 substitution, modern threaded comments, Spreadsheet arrays, spills, structured
-references, external-workbook refresh, incremental dirty graphs, and the
-remaining presentation scene features stay explicit fidelity gates. Rust/WASM
-is the canonical Spreadsheet calculation path; if Worker or WebAssembly
-loading fails, the Fortune-based JavaScript fallback keeps editing available
-but may follow Fortune coercion and eager-branch semantics on formulas outside
-the shared parity fixtures.
+references, external-workbook refresh, kernel-owned number formatting and print
+pagination, the A3S-owned virtual grid, moving sparse projection work off the
+main thread, and the remaining presentation scene features stay explicit
+fidelity gates. Rust/WASM is the canonical Spreadsheet calculation path; if
+Worker or WebAssembly loading fails, the Fortune-based JavaScript fallback
+keeps editing available but may follow Fortune coercion and eager-branch
+semantics on formulas outside the shared parity fixtures.
 
 See [Browser editor architecture](docs/browser-editor-architecture.md) for
 engine ownership, Worker/WASM boundaries, delivery stages, and performance
@@ -383,10 +387,10 @@ Documents use one logical TipTap/ProseMirror tree and non-history pagination
 decorations. Markdown keeps source as its controlled value, coalesces source
 edits before rebuilding the visual tree, and supports the GFM table,
 strikethrough, autolink, and task-list surface. Spreadsheet keeps the workbook
-grid canonical while a sparse, revisioned Worker/WASM calculation projection
-handles its first scalar formula slice. Presentation keeps a slide scene graph
-and mounts TipTap only for selected rich text. PDF commands call typed PDFium
-capabilities directly.
+grid canonical while a sparse, revisioned Worker/WASM session retains parsed
+formulas and an incremental dependency graph for its bounded scalar formula
+slice. Presentation keeps a slide scene graph and mounts TipTap only for
+selected rich text. PDF commands call typed PDFium capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

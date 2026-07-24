@@ -1,6 +1,7 @@
 import { layoutOfficeDocumentInJavaScript } from './office-kernel-fallback';
 import { alignOfficePresentationInJavaScript } from './office-kernel-presentation-fallback';
 import { calculateSpreadsheetInJavaScript } from './office-kernel-spreadsheet-fallback';
+import { JavaScriptSpreadsheetCalculationSession } from './office-kernel-spreadsheet-session-fallback';
 import { layoutOfficeTextInJavaScript } from './office-kernel-text-fallback';
 import {
   isOfficeKernelResponse,
@@ -9,6 +10,7 @@ import {
   type OfficeKernelPresentationGeometryRequest,
   type OfficeKernelResponse,
   type OfficeKernelSpreadsheetCalculationRequest,
+  type OfficeKernelSpreadsheetSessionCalculationRequest,
   type OfficeKernelTextLayoutRequest,
   type OfficeKernelWorkerRequest,
   type OfficeKernelWorkerResponse,
@@ -35,6 +37,10 @@ interface OfficeKernelWasmExports {
     pointer: number,
     length: number,
   ) => number;
+  office_kernel_spreadsheet_session_calculation: (
+    pointer: number,
+    length: number,
+  ) => number;
   office_kernel_text_layout: (pointer: number, length: number) => number;
   office_kernel_result_pointer: () => number;
   office_kernel_result_length: () => number;
@@ -52,6 +58,9 @@ const MAX_FONT_BYTES = 32 * 1024 * 1024;
 const MAX_REGISTERED_FONTS = 16;
 let wasmInitialization: Promise<OfficeKernelWasmExports | null> =
   Promise.resolve(null);
+const javascriptSpreadsheetSession =
+  new JavaScriptSpreadsheetCalculationSession();
+let spreadsheetSessionQueue = Promise.resolve();
 
 scope.onmessage = (event) => {
   const message = event.data;
@@ -82,6 +91,15 @@ scope.onmessage = (event) => {
   if (message.kind === 'textLayout') {
     inFlightRequests.add(message.request.requestId);
     void respondToTextLayout(message.request);
+    return;
+  }
+  if (message.kind === 'spreadsheetSessionCalculation') {
+    inFlightRequests.add(message.request.requestId);
+    // Cancelled session requests still execute in order because later patches
+    // use the earlier request's document revision as their base.
+    spreadsheetSessionQueue = spreadsheetSessionQueue.then(() =>
+      respondToSpreadsheetSessionCalculation(message.request),
+    );
     return;
   }
   inFlightRequests.add(message.request.requestId);
@@ -166,6 +184,21 @@ async function respondToSpreadsheetCalculation(
   completeRequest(request.requestId, response);
 }
 
+async function respondToSpreadsheetSessionCalculation(
+  request: OfficeKernelSpreadsheetSessionCalculationRequest,
+): Promise<void> {
+  let response: OfficeKernelResponse;
+  try {
+    const wasm = await wasmInitialization;
+    response = wasm
+      ? spreadsheetSessionCalculationWithWasm(wasm, request)
+      : await javascriptSpreadsheetSession.calculate(request);
+  } catch (error) {
+    response = errorResponse(request, error);
+  }
+  completeRequest(request.requestId, response);
+}
+
 function completeRequest(
   requestId: number,
   response: OfficeKernelResponse,
@@ -222,6 +255,8 @@ async function loadOfficeKernelWasm(
     typeof exports.office_kernel_presentation_geometry !== 'function' ||
     typeof exports.office_kernel_register_font !== 'function' ||
     typeof exports.office_kernel_spreadsheet_calculation !== 'function' ||
+    typeof exports.office_kernel_spreadsheet_session_calculation !==
+      'function' ||
     typeof exports.office_kernel_text_layout !== 'function'
   ) {
     throw new Error('Office kernel WebAssembly ABI is incompatible.');
@@ -326,12 +361,33 @@ function spreadsheetCalculationWithWasm(
   return response;
 }
 
+function spreadsheetSessionCalculationWithWasm(
+  wasm: OfficeKernelWasmExports,
+  request: OfficeKernelSpreadsheetSessionCalculationRequest,
+): OfficeKernelResponse {
+  const response = requestWithWasm(
+    wasm,
+    request,
+    wasm.office_kernel_spreadsheet_session_calculation,
+  );
+  if (
+    response.kind !== 'spreadsheetSessionCalculationResult' &&
+    response.kind !== 'error'
+  ) {
+    throw new Error(
+      'Office Spreadsheet session kernel returned an unexpected response.',
+    );
+  }
+  return response;
+}
+
 function requestWithWasm(
   wasm: OfficeKernelWasmExports,
   request:
     | OfficeKernelLayoutRequest
     | OfficeKernelPresentationGeometryRequest
     | OfficeKernelSpreadsheetCalculationRequest
+    | OfficeKernelSpreadsheetSessionCalculationRequest
     | OfficeKernelTextLayoutRequest,
   execute: (pointer: number, length: number) => number,
 ): OfficeKernelResponse {
@@ -362,6 +418,7 @@ function errorResponse(
     | OfficeKernelLayoutRequest
     | OfficeKernelPresentationGeometryRequest
     | OfficeKernelSpreadsheetCalculationRequest
+    | OfficeKernelSpreadsheetSessionCalculationRequest
     | OfficeKernelTextLayoutRequest,
   error: unknown,
 ): OfficeKernelResponse {

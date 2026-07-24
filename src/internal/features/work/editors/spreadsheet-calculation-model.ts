@@ -10,6 +10,7 @@ import type {
   OfficeKernelSpreadsheetCoordinate,
   OfficeKernelSpreadsheetInputCell,
   OfficeKernelSpreadsheetInputSheet,
+  OfficeKernelSpreadsheetSessionUpdate,
   OfficeKernelSpreadsheetValue,
 } from '../../../kernel/office-kernel-protocol';
 import {
@@ -30,6 +31,7 @@ const SPREADSHEET_KERNEL_MAX_CELLS = 100_000;
 const SPREADSHEET_KERNEL_MAX_FORMULA_CHARACTERS = 8_192;
 const SPREADSHEET_KERNEL_MAX_IDENTIFIER_BYTES = 256;
 const SPREADSHEET_KERNEL_MAX_SHEETS = 1_024;
+const SPREADSHEET_KERNEL_MAX_PATCH_CELLS = 10_000;
 const textEncoder = new TextEncoder();
 
 export interface SpreadsheetKernelWorkbook {
@@ -109,6 +111,74 @@ export function spreadsheetCalculationTargets(
       ? [{ sheetId: sheet.id, row: cell.row, column: cell.column }]
       : [],
   );
+}
+
+export function spreadsheetCalculationSessionUpdate(
+  previous: SpreadsheetKernelWorkbook | null,
+  current: SpreadsheetKernelWorkbook,
+  baseDocumentRevision: number,
+  forceReplace = false,
+): OfficeKernelSpreadsheetSessionUpdate {
+  if (
+    forceReplace ||
+    !previous ||
+    !sameSpreadsheetStructure(previous.sheets, current.sheets)
+  ) {
+    return { kind: 'replace', sheets: current.sheets };
+  }
+  const changes: Extract<
+    OfficeKernelSpreadsheetSessionUpdate,
+    { kind: 'patch' }
+  >['changes'] = [];
+  for (
+    let sheetIndex = 0;
+    sheetIndex < current.sheets.length;
+    sheetIndex += 1
+  ) {
+    const currentSheet = current.sheets[sheetIndex];
+    const previousSheet = previous.sheets[sheetIndex];
+    if (!currentSheet || !previousSheet) {
+      return { kind: 'replace', sheets: current.sheets };
+    }
+    const previousCells = new Map(
+      previousSheet.cells.map((cell) => [spreadsheetCellKey(cell), cell]),
+    );
+    for (const cell of currentSheet.cells) {
+      const key = spreadsheetCellKey(cell);
+      const previousCell = previousCells.get(key);
+      previousCells.delete(key);
+      if (previousCell && sameSpreadsheetInputCell(previousCell, cell)) {
+        continue;
+      }
+      changes.push({
+        kind: 'upsert',
+        sheetId: currentSheet.id,
+        row: cell.row,
+        column: cell.column,
+        formula: cell.formula,
+        value: cell.value,
+      });
+      if (changes.length > SPREADSHEET_KERNEL_MAX_PATCH_CELLS) {
+        return { kind: 'replace', sheets: current.sheets };
+      }
+    }
+    for (const cell of previousCells.values()) {
+      changes.push({
+        kind: 'remove',
+        sheetId: currentSheet.id,
+        row: cell.row,
+        column: cell.column,
+      });
+      if (changes.length > SPREADSHEET_KERNEL_MAX_PATCH_CELLS) {
+        return { kind: 'replace', sheets: current.sheets };
+      }
+    }
+  }
+  return {
+    kind: 'patch',
+    baseDocumentRevision,
+    changes,
+  };
 }
 
 export function spreadsheetCalculationFallbackCells(
@@ -230,6 +300,49 @@ function compileSpreadsheetKernelWorkbook(
 
 function cellKey(sheetId: string, row: number, column: number): string {
   return `${sheetId}\u0000${row}\u0000${column}`;
+}
+
+function spreadsheetCellKey(
+  cell: Pick<OfficeKernelSpreadsheetInputCell, 'row' | 'column'>,
+): string {
+  return `${cell.row}:${cell.column}`;
+}
+
+function sameSpreadsheetStructure(
+  previous: readonly OfficeKernelSpreadsheetInputSheet[],
+  current: readonly OfficeKernelSpreadsheetInputSheet[],
+): boolean {
+  return (
+    previous.length === current.length &&
+    previous.every(
+      (sheet, index) =>
+        sheet.id === current[index]?.id && sheet.name === current[index]?.name,
+    )
+  );
+}
+
+function sameSpreadsheetInputCell(
+  previous: OfficeKernelSpreadsheetInputCell,
+  current: OfficeKernelSpreadsheetInputCell,
+): boolean {
+  if (previous.formula && previous.formula === current.formula) {
+    return true;
+  }
+  return (
+    previous.formula === current.formula &&
+    sameSpreadsheetValue(previous.value, current.value)
+  );
+}
+
+function sameSpreadsheetValue(
+  previous: OfficeKernelSpreadsheetValue,
+  current: OfficeKernelSpreadsheetValue,
+): boolean {
+  if (previous.kind !== current.kind) return false;
+  if (previous.kind === 'blank' || current.kind === 'blank') {
+    return previous.kind === current.kind;
+  }
+  return previous.value === current.value;
 }
 
 function spreadsheetFormulaCoordinates(

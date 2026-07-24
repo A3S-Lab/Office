@@ -58,6 +58,45 @@ export interface OfficeKernelSpreadsheetCalculationRequest {
   targets?: OfficeKernelSpreadsheetCoordinate[];
 }
 
+export type OfficeKernelSpreadsheetSessionCellChange =
+  | (OfficeKernelSpreadsheetCoordinate & {
+      kind: 'upsert';
+      formula?: string;
+      value: OfficeKernelSpreadsheetValue;
+    })
+  | (OfficeKernelSpreadsheetCoordinate & {
+      kind: 'remove';
+    });
+
+export type OfficeKernelSpreadsheetSessionUpdate =
+  | {
+      kind: 'replace';
+      sheets: OfficeKernelSpreadsheetInputSheet[];
+    }
+  | {
+      kind: 'patch';
+      baseDocumentRevision: number;
+      changes: OfficeKernelSpreadsheetSessionCellChange[];
+    };
+
+export type OfficeKernelSpreadsheetSessionCalculationScope =
+  | { kind: 'workbook' }
+  | { kind: 'dirty' }
+  | {
+      kind: 'targets';
+      targets: OfficeKernelSpreadsheetCoordinate[];
+    };
+
+export interface OfficeKernelSpreadsheetSessionCalculationRequest {
+  protocol: typeof OFFICE_KERNEL_PROTOCOL_VERSION;
+  kind: 'spreadsheetSessionCalculation';
+  requestId: number;
+  revision: number;
+  documentRevision: number;
+  update: OfficeKernelSpreadsheetSessionUpdate;
+  calculation: OfficeKernelSpreadsheetSessionCalculationScope;
+}
+
 export interface OfficeKernelSpreadsheetCalculatedCell
   extends OfficeKernelSpreadsheetCoordinate {
   value: OfficeKernelSpreadsheetValue;
@@ -79,6 +118,22 @@ export interface OfficeKernelSpreadsheetCalculationResult {
   cells: OfficeKernelSpreadsheetCalculatedCell[];
   calculationOrder: OfficeKernelSpreadsheetCoordinate[];
   issues: OfficeKernelSpreadsheetCalculationIssue[];
+}
+
+export interface OfficeKernelSpreadsheetSessionCalculationStats {
+  updateKind: 'replace' | 'patch';
+  calculationScope: 'workbook' | 'dirty' | 'targets';
+  formulaCellCount: number;
+  dirtyFormulaCellCount: number;
+  evaluatedFormulaCellCount: number;
+  reusedFormulaCellCount: number;
+  dependencyEdgeCount: number;
+}
+
+export interface OfficeKernelSpreadsheetSessionCalculationResult
+  extends Omit<OfficeKernelSpreadsheetCalculationResult, 'kind'> {
+  kind: 'spreadsheetSessionCalculationResult';
+  stats: OfficeKernelSpreadsheetSessionCalculationStats;
 }
 
 const spreadsheetErrors = new Set<OfficeKernelSpreadsheetError>([
@@ -113,6 +168,20 @@ export function isOfficeKernelSpreadsheetError(
 export function isOfficeKernelSpreadsheetCalculationResult(
   value: unknown,
 ): value is OfficeKernelSpreadsheetCalculationResult {
+  return isOfficeKernelSpreadsheetCalculationResultShape(value);
+}
+
+export function isOfficeKernelSpreadsheetSessionCalculationResult(
+  value: unknown,
+): value is OfficeKernelSpreadsheetSessionCalculationResult {
+  if (!isOfficeKernelSpreadsheetCalculationResultShape(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return isSessionCalculationStats(candidate.stats);
+}
+
+function isOfficeKernelSpreadsheetCalculationResultShape(
+  value: unknown,
+): boolean {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Record<string, unknown>;
   return (
@@ -122,6 +191,22 @@ export function isOfficeKernelSpreadsheetCalculationResult(
     candidate.calculationOrder.every(isCoordinate) &&
     Array.isArray(candidate.issues) &&
     candidate.issues.every(isCalculationIssue)
+  );
+}
+
+function isSessionCalculationStats(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const stats = value as Record<string, unknown>;
+  return (
+    (stats.updateKind === 'replace' || stats.updateKind === 'patch') &&
+    (stats.calculationScope === 'workbook' ||
+      stats.calculationScope === 'dirty' ||
+      stats.calculationScope === 'targets') &&
+    isBoundedInteger(stats.formulaCellCount, 100_000) &&
+    isBoundedInteger(stats.dirtyFormulaCellCount, 100_000) &&
+    isBoundedInteger(stats.evaluatedFormulaCellCount, 100_000) &&
+    isBoundedInteger(stats.reusedFormulaCellCount, 100_000) &&
+    isBoundedInteger(stats.dependencyEdgeCount, 1_000_000)
   );
 }
 

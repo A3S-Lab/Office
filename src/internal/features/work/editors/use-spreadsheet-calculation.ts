@@ -12,6 +12,7 @@ import {
   refreshSpreadsheetKernelWorkbook,
   spreadsheetCalculationFallbackCells,
   spreadsheetCalculationOps,
+  spreadsheetCalculationSessionUpdate,
   spreadsheetCalculationSourceKey,
   spreadsheetCalculationTargets,
   type SpreadsheetKernelWorkbook,
@@ -34,6 +35,11 @@ interface ActiveCalculation {
   sourceKey: string;
 }
 
+interface KernelSessionSnapshot {
+  documentRevision: number;
+  workbook: SpreadsheetKernelWorkbook;
+}
+
 export function useSpreadsheetCalculation({
   content,
   kernelWasmUrl,
@@ -45,6 +51,7 @@ export function useSpreadsheetCalculation({
   );
   const compiledRef = useRef(compiled);
   const clientRef = useRef<OfficeKernelClient | null>(null);
+  const sessionRef = useRef<KernelSessionSnapshot | null>(null);
   const activeRef = useRef<ActiveCalculation | null>(null);
   const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revisionRef = useRef(0);
@@ -54,11 +61,13 @@ export function useSpreadsheetCalculation({
   useEffect(() => {
     const client = createOfficeKernelClient(kernelWasmUrl);
     clientRef.current = client;
+    sessionRef.current = null;
     return () => {
       activeRef.current?.controller.abort();
       activeRef.current = null;
       clearFallbackTimer(fallbackTimerRef);
       clientRef.current = null;
+      sessionRef.current = null;
       client.dispose();
     };
   }, [kernelWasmUrl]);
@@ -69,6 +78,7 @@ export function useSpreadsheetCalculation({
       snapshot: SpreadsheetKernelWorkbook,
       documentRevision: number,
       includeDataTables = true,
+      automatic = false,
     ): void => {
       const client = clientRef.current;
       if (!client) {
@@ -79,6 +89,7 @@ export function useSpreadsheetCalculation({
       activeRef.current = null;
       clearFallbackTimer(fallbackTimerRef);
       let calculationSnapshot = snapshot;
+      let forceSessionReplace = false;
       const compatibilityCells = spreadsheetCalculationFallbackCells(
         snapshot,
         command,
@@ -102,6 +113,7 @@ export function useSpreadsheetCalculation({
           return;
         }
         calculationSnapshot = refreshed;
+        forceSessionReplace = true;
       }
       const targets = spreadsheetCalculationTargets(
         calculationSnapshot,
@@ -122,13 +134,31 @@ export function useSpreadsheetCalculation({
         sourceKey: calculationSnapshot.sourceKey,
       };
       activeRef.current = active;
+      const previousSession = sessionRef.current;
+      const update = spreadsheetCalculationSessionUpdate(
+        previousSession?.workbook ?? null,
+        calculationSnapshot,
+        previousSession?.documentRevision ?? 0,
+        forceSessionReplace,
+      );
+      const calculation =
+        command.scope === 'selection'
+          ? { kind: 'targets' as const, targets: targets ?? [] }
+          : automatic && update.kind === 'patch'
+            ? { kind: 'dirty' as const }
+            : { kind: 'workbook' as const };
+      sessionRef.current = {
+        documentRevision: active.documentRevision,
+        workbook: calculationSnapshot,
+      };
       void client
-        .spreadsheetCalculation(
+        .spreadsheetSessionCalculation(
           {
             revision: active.revision,
             documentRevision: active.documentRevision,
-            sheets: calculationSnapshot.sheets,
-            targets,
+            update,
+            calculation,
+            fallbackSheets: calculationSnapshot.sheets,
           },
           active.controller.signal,
         )
@@ -167,6 +197,11 @@ export function useSpreadsheetCalculation({
             !isCurrentCalculation(activeRef.current, active)
           ) {
             return;
+          }
+          if (
+            sessionRef.current?.documentRevision === active.documentRevision
+          ) {
+            sessionRef.current = null;
           }
           const workbook = workbookRef.current;
           if (
@@ -213,6 +248,7 @@ export function useSpreadsheetCalculation({
         compiled,
         documentRevision,
         settings.mode !== 'automatic-except-data-tables',
+        true,
       );
     }, 0);
     return () => clearTimeout(timer);

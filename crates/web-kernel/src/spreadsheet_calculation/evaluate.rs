@@ -203,6 +203,7 @@ impl SpreadsheetEvaluator<'_> {
                 ));
             }
             Some(qualifier) => *self
+                .session
                 .sheet_names
                 .get(&qualifier.worksheet.to_lowercase())
                 .ok_or_else(|| {

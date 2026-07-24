@@ -1,1 +1,1 @@
-export const OFFICE_KERNEL_PROTOCOL_VERSION = 12 as const;
+export const OFFICE_KERNEL_PROTOCOL_VERSION = 13 as const;

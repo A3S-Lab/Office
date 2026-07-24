@@ -4,6 +4,7 @@ import {
   createSpreadsheetKernelWorkbook,
   spreadsheetCalculationFallbackCells,
   spreadsheetCalculationOps,
+  spreadsheetCalculationSessionUpdate,
   spreadsheetCalculationTargets,
 } from '../src/internal/features/work/editors/spreadsheet-calculation-model';
 
@@ -200,6 +201,83 @@ describe('Spreadsheet calculation model', () => {
         false,
       ),
     ).toHaveLength(1);
+  });
+
+  test('emits bounded cell patches for stable workbook sessions', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const changed = workbook();
+    const input = changed.sheets[0]?.data?.[0]?.[0];
+    const formula = changed.sheets[0]?.data?.[0]?.[1];
+    const removed = changed.sheets[0]?.data?.[1];
+    if (!input || !formula || !removed) {
+      throw new Error('Workbook fixture is incomplete.');
+    }
+    input.v = 3;
+    input.m = '3';
+    formula.f = '=A1*3';
+    formula.v = 9;
+    formula.m = '9';
+    removed[0] = null;
+    const current = createSpreadsheetKernelWorkbook(changed);
+    if (!previous || !current) throw new Error('Workbook did not compile.');
+
+    expect(spreadsheetCalculationSessionUpdate(previous, current, 7)).toEqual({
+      kind: 'patch',
+      baseDocumentRevision: 7,
+      changes: [
+        {
+          kind: 'upsert',
+          sheetId: 'sheet-1',
+          row: 0,
+          column: 0,
+          value: { kind: 'number', value: 3 },
+        },
+        {
+          kind: 'upsert',
+          sheetId: 'sheet-1',
+          row: 0,
+          column: 1,
+          formula: '=A1*3',
+          value: { kind: 'number', value: 9 },
+        },
+        {
+          kind: 'remove',
+          sheetId: 'sheet-1',
+          row: 1,
+          column: 0,
+        },
+      ],
+    });
+  });
+
+  test('does not send formula result caches back to the calculation session', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const recalculated = workbook();
+    const formula = recalculated.sheets[0]?.data?.[0]?.[1];
+    if (!formula) throw new Error('Formula fixture is missing.');
+    formula.v = 999;
+    formula.m = '999';
+    const current = createSpreadsheetKernelWorkbook(recalculated);
+    if (!previous || !current) throw new Error('Workbook did not compile.');
+
+    expect(spreadsheetCalculationSessionUpdate(previous, current, 4)).toEqual({
+      kind: 'patch',
+      baseDocumentRevision: 4,
+      changes: [],
+    });
+  });
+
+  test('replaces the session when worksheet structure changes', () => {
+    const previous = createSpreadsheetKernelWorkbook(workbook());
+    const renamed = workbook();
+    renamed.sheets[0].name = 'Renamed';
+    const current = createSpreadsheetKernelWorkbook(renamed);
+    if (!previous || !current) throw new Error('Workbook did not compile.');
+
+    expect(spreadsheetCalculationSessionUpdate(previous, current, 3)).toEqual({
+      kind: 'replace',
+      sheets: current.sheets,
+    });
   });
 });
 

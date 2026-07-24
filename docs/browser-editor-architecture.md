@@ -47,7 +47,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
-| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, controlled sparse-workbook projection, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM scalar calculation using the shared bounded Rust formula parser, deterministic dependency order, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, persistent incremental dirty graph, broader Excel formula semantics, number-format ownership, and print layout |
+| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, controlled sparse-workbook projection, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving sparse projection and diffing off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
 | Presentation | Scene canvas with one TipTap instance for the selected text box and one typed dispatcher for ribbon commands | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment with a JavaScript fallback | Snapping, guides, grouping, connectors, theme resolution, text fitting, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
@@ -62,16 +62,22 @@ pre-shaped following-segment widths in the kernel. Glyphs missing from the
 complete stack, unsupported OpenType behavior, inline objects, tab paragraphs
 that resolve any right-to-left run, and unregistered faces deliberately retain
 browser line measurement.
-Spreadsheet now uses the first browser Rust/WASM calculation slice. The editor
-projects populated cells into a bounded sparse request, cancels superseded
-revisions, rejects stale responses, applies successful scalar results without
-adding undo history, refreshes known grouped formulas before their dependents,
-and propagates unresolved dependencies into an ordered, cell-scoped Fortune
-Sheet compatibility pass. The shared Rust parser handles the same bounded
-formula grammar in the native core and browser kernel. This slice is not a
-complete Excel engine: it does not retain a persistent dirty dependency graph,
+Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
+editor initializes it with a sparse workbook replacement, sends bounded cell
+patches for later controlled values, and requests only the dirty dependency
+subgraph during automatic calculation. Rust retains parsed formula ASTs plus
+forward and reverse dependency edges; references to blank cells, dependency
+rewiring, unresolved formulas, partial target calculation, cancellation, and
+stale patch revisions have explicit tests. Successful scalar results are
+applied without adding undo history, known grouped formulas refresh before
+their dependents, and unresolved dependencies enter an ordered, cell-scoped
+Fortune Sheet compatibility pass. The shared Rust parser handles the same
+bounded formula grammar in the native core and browser kernel. This is not a
+complete Excel engine: Fortune Sheet remains the canonical grid, sparse
+projection and diffing still run on the main thread, and the kernel does not
 materialize whole-row or whole-column ranges, calculate arrays, spills,
-structured references, external workbooks, or own print layout.
+structured references or external workbooks, own number formatting, or own
+print layout.
 Presentation uses Rust/WASM only for alignment to slide bounds; the remaining
 geometry and layout operations stay on the main thread until the later stages
 below.
@@ -309,6 +315,7 @@ small raw WebAssembly ABI:
 - `office_kernel_text_layout`
 - `office_kernel_presentation_geometry`
 - `office_kernel_spreadsheet_calculation`
+- `office_kernel_spreadsheet_session_calculation`
 - `office_kernel_result_pointer` and `office_kernel_result_length`
 
 The protocol is versioned and carries independent layout and document
@@ -322,10 +329,10 @@ intersection of direction, style, and registered font. Unicode line breaking
 and grapheme-safe emergency breaks span run boundaries and produce UTF-16
 offsets that map directly to ProseMirror.
 Presentation geometry requests carry stable element IDs, slide-relative
-coordinates, and an explicit alignment enum. The Worker ignores cancelled
-requests, and the React integration ignores stale results. Matching JavaScript
-implementations preserve editing if Worker or WebAssembly loading is
-unavailable. The JavaScript text fallback explicitly reports unsupported
+coordinates, and an explicit alignment enum. The Worker suppresses cancelled
+responses, and the React integration ignores stale results. Matching
+JavaScript implementations preserve editing if Worker or WebAssembly loading
+is unavailable. The JavaScript text fallback explicitly reports unsupported
 paragraphs so the editor uses DOM line measurement instead of estimated font
 metrics.
 
@@ -334,9 +341,16 @@ cached scalar values, formulas, and optional calculation targets. The kernel
 recursively resolves dependencies in deterministic order and returns successful
 cells separately from cell-scoped issues. Its first scalar function set covers
 common arithmetic, comparison, concatenation, aggregation, logical, and numeric
-operations. The JavaScript fallback loads its parser only when needed and
-conforms to the same scalar fixtures. Unsupported formula structures remain
-unchanged so a host never loses the source formula or cached value.
+operations. Persistent requests begin with `replace`, then use revisioned
+`patch` updates plus `dirty`, `targets`, or `workbook` calculation scopes.
+Formula ASTs and dependency edges survive between requests, while patches
+rewire only changed formula nodes and mark their transitive dependents dirty.
+Cancelled requests still execute in the serialized Worker queue so the next
+patch always observes its declared base revision; only their responses are
+discarded. The JavaScript fallback loads its parser only when needed and
+recalculates from the supplied full sparse snapshot. Unsupported formula
+structures remain unchanged and conservatively dirty so a host never loses the
+source formula or cached value.
 Rust/WASM remains the canonical calculation path. If Worker or WebAssembly
 loading fails, the Fortune-based fallback keeps the workbook editable but may
 use Fortune coercion and eager-branch evaluation for formulas beyond the
@@ -465,10 +479,13 @@ through Microsoft Word and WPS without losing unsupported package parts.
 The first calculation slice is implemented: a sparse calculation projection,
 shared bounded Rust formula grammar, Worker/WASM scalar dependency evaluation,
 revision cancellation, stale-result rejection, target-only recalculation, and
-JavaScript and cell-scoped Fortune fallbacks. The canonical grid is still
-Fortune Sheet, and dependency state is rebuilt per request. The A3S-owned
-virtual viewport, persistent dirty graph, complete formula semantics, kernel
-number formatting, and print pagination remain open work in this stage.
+JavaScript and cell-scoped Fortune fallbacks. Persistent Worker/WASM sessions
+now retain parsed formulas and bounded forward/reverse dependency graphs;
+stable workbook edits use cell patches and automatic calculation evaluates only
+the affected transitive formula subgraph. The canonical grid is still Fortune
+Sheet. The A3S-owned virtual viewport, moving sparse projection and diffing off
+the main thread, complete formula semantics, kernel number formatting, and
+print pagination remain open work in this stage.
 
 Exit criteria: scrolling and selection do not scale with total row count;
 incremental recalculation touches only affected dependency subgraphs; XLSX
@@ -562,8 +579,10 @@ repeatable fixtures. The targets below are release gates, not current claims:
 - Spreadsheet calculation requests are bounded to 1,024 sheets, 100,000
   populated cells, 100,000 targets, 8,192 Unicode characters per formula,
   100,000 materialized range cells cumulatively per formula, 64 nested formula
-  dependencies, Excel's XFD1048576
-  coordinate boundary, and 32,767 UTF-8 bytes per text value.
+  dependencies, 100,000 patch cells, 1,000,000 dependency edges, Excel's
+  XFD1048576 coordinate boundary, and 32,767 UTF-8 bytes per text value. The
+  editor replaces rather than diffs a session when one controlled update
+  changes more than 10,000 populated cells.
 - Glyphs missing from the complete registered stack, ambiguous font stacks,
   and unsupported inline structures retain DOM measurement instead of
   accepting approximate line boxes.
@@ -581,12 +600,12 @@ The browser kernel is covered at four boundaries:
    grapheme-safe emergency wrapping, whitespace modes, shared formula parsing,
    scalar dependency calculation, cycles, targets, and validation.
 2. JavaScript fallback tests for protocol parity, safe page-prefix reuse,
-   no-Worker operation, cancellation, sparse Spreadsheet calculation, and the
-   shared Spreadsheet parity fixtures.
+   no-Worker operation, cancellation, sparse Spreadsheet calculation,
+   revisioned session fallback, and the shared Spreadsheet parity fixtures.
 3. A raw generated-WASM ABI smoke test that registers both shipped fonts,
    proves the Latin face lacks CJK glyphs, resolves them through the ordered
-   fallback face, verifies mixed-face line metrics, and calculates a dependent
-   Spreadsheet formula chain.
+   fallback face, verifies mixed-face line metrics, initializes a Spreadsheet
+   session, and recalculates a dirty formula chain from a cell patch.
 4. Browser checks for real Worker/WASM/font loading, shaped-line parity with
    browser line boxes at non-100% zoom, real per-grapheme fallback diagnostics,
    explicit unresolved-glyph fallback, page-view reflow, web-view clearing,
