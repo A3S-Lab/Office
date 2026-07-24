@@ -269,6 +269,16 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
   await page.goto('/');
   await fixture.open(page);
   await fixture.ready(page);
+  await expect(
+    page.getByRole('checkbox', {
+      name: '已完成：安装 @a3s-lab/office',
+    }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('checkbox', {
+      name: '未完成：接入宿主应用的持久化',
+    }),
+  ).not.toBeChecked();
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
   await source.fill('# Intermediate title');
   const longDocument = [

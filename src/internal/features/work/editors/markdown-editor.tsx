@@ -79,10 +79,7 @@ export function MarkdownEditor({
           'data-type': 'taskItem',
         },
         a11y: {
-          checkboxLabel: (node, checked) => {
-            const label = node.textContent.trim() || '任务';
-            return `${checked ? '已完成' : '未完成'}：${label}`;
-          },
+          checkboxLabel: markdownTaskCheckboxLabel,
         },
       }),
       Image.configure({
@@ -329,4 +326,12 @@ function markdownMetrics(markdown: string): {
       : 1,
     characterCount: Array.from(markdown).length,
   };
+}
+
+export function markdownTaskCheckboxLabel(node: {
+  attrs: { checked?: boolean };
+  textContent: string;
+}): string {
+  const label = node.textContent.trim() || '任务';
+  return `${node.attrs.checked ? '已完成' : '未完成'}：${label}`;
 }

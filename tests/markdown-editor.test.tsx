@@ -1,8 +1,24 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MarkdownContent } from '../src/core';
+import { markdownTaskCheckboxLabel } from '../src/internal/features/work/editors/markdown-editor';
 import { proportionalMarkdownScrollTop } from '../src/internal/features/work/editors/markdown-workspace';
 import { MarkdownEditor } from '../src/react';
+
+test('derives the Markdown task label from canonical node state', () => {
+  expect(
+    markdownTaskCheckboxLabel({
+      attrs: { checked: true },
+      textContent: 'Publish the package',
+    }),
+  ).toBe('已完成：Publish the package');
+  expect(
+    markdownTaskCheckboxLabel({
+      attrs: { checked: false },
+      textContent: 'Review the API',
+    }),
+  ).toBe('未完成：Review the API');
+});
 
 test('renders the GFM compatibility surface in preview mode', async () => {
   const content: MarkdownContent = {
