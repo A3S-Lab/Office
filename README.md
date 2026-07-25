@@ -127,6 +127,79 @@ export function App() {
 | `@a3s-lab/office/core` | Content models, templates, file import, and export |
 | `@a3s-lab/office/styles.css` | Editor and design-system styles |
 
+## Architecture
+
+A3S Office places headless editing engines inside complete, reusable product
+surfaces. In this project, **headless** means that editing behavior and host
+contracts are independent from the surrounding application. It does not mean
+that adopters must rebuild toolbars, dialogs, or document interactions.
+
+### Design characteristics and advantages
+
+The architecture shares contracts and interaction primitives where consistency
+matters, while preserving the native model of each file format:
+
+| Design characteristic                 | How it works                                                                                                                                                                           | Product and engineering advantage                                                                                            |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Headless product boundary             | Editors do not own the host shell, storage, identity, collaboration, authorization, or AI provider; the package still includes complete editor UI                                      | Embed Office editing in an existing product without adopting an A3S backend or rebuilding standard interactions              |
+| Format-native canonical state         | Document uses a TipTap/ProseMirror tree, Markdown keeps GFM source, Spreadsheet owns a workbook, Presentation owns a typed scene graph, and PDF delegates document semantics to PDFium | Preserve format-specific behavior instead of forcing every editor through a lowest-common-denominator model                  |
+| Typed extension and command contracts | Document and Markdown accept public TipTap Extensions; the other editors expose typed command runtimes and stable host callbacks                                                       | Add shortcuts, plugins, file actions, and AI workflows without matching visible labels, simulating clicks, or forking source |
+| Controlled host integration           | The host supplies content and receives typed changes; file operations and service requests use explicit callbacks                                                                      | Connect autosave, versions, permissions, collaboration, and external state replacement predictably                           |
+| Shared Office interaction system      | All surfaces use the same design tokens, shell patterns, ribbons, dialogs, popovers, task panes, focus rules, and responsive contracts                                                 | Give users a consistent Office experience while allowing the host to theme and compose its workspace                         |
+| Worker/WASM compute boundary          | Revisioned and cancellable Workers plus Rust WebAssembly handle bounded layout, formula, and geometry work                                                                             | Keep expensive computation deterministic and away from the primary interaction path without requiring a rendering server     |
+| Framework convergence                 | React, Vue, and Web Components use the same editor engine; the Core entry point owns framework-neutral models and file workflows                                                       | Maintain one behavior and compatibility contract across frontend stacks                                                      |
+| Browser and native execution planes   | Browser components handle interactive editing; the Rust CLI, MCP server, and Office Skill handle deterministic file automation                                                         | Support end-user editing, agents, and CI workflows without exposing filesystem concerns to the browser bundle                |
+| Explicit fidelity boundary            | Compatibility reports and fixture gates make preservation, normalization, and rejection decisions visible                                                                              | Reduce silent file damage and make Microsoft Office/WPS interoperability measurable                                          |
+
+### Layer model
+
+```text
+                          Host product
+       persistence · identity · collaboration · authorization · AI
+                               │
+             ┌─────────────────┴──────────────────┐
+             │                                    │
+     Browser editing plane                Native automation plane
+ React · Vue · Web Components             CLI · MCP · Office Skill
+ framework-neutral Core API                       │
+             │                              native Rust core
+ shared Office shell + design system              │
+             │                                    │
+ controlled editor surfaces                       │
+             │                                    │
+ typed commands + Extensions                      │
+             │                                    │
+ ┌───────────┼──────────────┐                     │
+TipTap    Workbook/scene   PDFium                  │
+             │                                    │
+ Workers + Rust WebAssembly                       │
+             └─────────────────┬──────────────────┘
+                               │
+              DOCX · Markdown · XLSX · PPTX · PDF
+```
+
+### Engine ownership
+
+Each editor owns one canonical state model and delegates only specialized work:
+
+| Editor       | Canonical state                         | Specialized boundary                                                    | Architectural benefit                                                                 |
+| ------------ | --------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Document     | One logical TipTap/ProseMirror document | Non-history pagination decorations and Worker/Rust-WASM layout          | Page calculation does not create duplicate editable trees or pollute undo history     |
+| Markdown     | GFM source                              | Coalesced visual-tree rebuilds and synchronized preview                 | The saved value stays portable while source and visual workflows remain available     |
+| Spreadsheet  | Workbook model                          | Persistent, revisioned Worker/Rust-WASM formula session                 | Incremental recalculation stays off the main interaction path                         |
+| Presentation | Typed slide scene graph                 | On-demand TipTap text editing and cancellable Worker/Rust-WASM geometry | Object operations remain structured while rich text and alignment use focused engines |
+| PDF          | PDFium document model                   | WebAssembly rendering and document commands                             | PDF semantics remain with a dedicated PDF engine instead of an HTML approximation     |
+
+Public framework adapters converge on the same React editor engine, while the
+Core entry point owns framework-neutral models and file workflows. The native
+Rust core and CLI remain a separate automation boundary, so browser bundles do
+not inherit filesystem or OOXML package state.
+
+See [Browser editor architecture](docs/browser-editor-architecture.md) for
+engine protocols, Worker/WASM ownership, fallbacks, and performance gates. See
+[Editor quality roadmap](docs/editor-quality-roadmap.md) for product depth,
+compatibility evidence, and release criteria.
+
 ## Quick Start
 
 ### Installation
@@ -436,91 +509,6 @@ a3s-use component install a3s/office \
 
 See [Native Office engine](docs/native-office-engine.md) and
 [CLI reference](docs/cli-reference.md) for the complete automation contract.
-
-## Architecture
-
-### Architecture principles and advantages
-
-A3S Office separates the host product, editor presentation, editing behavior,
-compute kernels, native-file workflows, and automation. It shares product
-contracts and interaction primitives where consistency matters, while keeping
-the canonical model of each file format independent:
-
-| Characteristic | Design | Integration advantage |
-| --- | --- | --- |
-| Headless product boundary | Editing models and commands do not choose the surrounding shell, storage, identity, collaboration, or AI provider; the package still includes complete editor UI | Embed the editors in an existing product without adopting an A3S backend or rebuilding standard Office interactions |
-| Shared interaction system | All editors use the same design tokens, shell patterns, dialogs, popovers, task panes, focus rules, and responsive layout contracts | Give users one predictable Office experience while allowing the host to theme and compose the surrounding workspace |
-| Extension-driven behavior | Document and Markdown accept public TipTap Extensions; Spreadsheet, Presentation, and PDF use format-specific typed command runtimes and stable host ports until their public Extension contexts are versioned | Add shortcuts, plugins, file actions, and AI workflows without label matching, synthetic clicks, or source forks |
-| Format-native canonical models | Document uses a TipTap/ProseMirror tree, Markdown keeps canonical source, Spreadsheet owns a workbook, Presentation owns a slide scene graph, and PDF delegates document semantics to PDFium | Preserve native interaction and file semantics instead of reducing every format to a lowest-common-denominator JSON model |
-| Controlled host state | The host supplies content and receives typed changes, while file actions and service callbacks remain explicit | Integrate autosave, versions, permissions, collaboration, and external state replacement predictably |
-| Worker/WASM compute boundary | Revisioned, cancellable Workers and Rust WebAssembly own bounded layout, formula, and geometry work | Keep expensive computation deterministic and off the primary interaction path without requiring a rendering server |
-| Framework convergence | React, Vue, and Web Components share the same editor engine; the Core entry point owns framework-neutral models and file workflows | Ship one behavior and compatibility contract across different frontend stacks |
-| Browser and native execution planes | Browser components handle interactive editing; the Rust CLI, MCP server, and Office Skill handle deterministic file automation without launching the UI | Use the same repository for end-user editing and agent or CI workflows without exposing filesystem concerns to the browser bundle |
-| Explicit fidelity boundary | Compatibility reports and fixture gates make preservation, normalization, and rejection decisions visible within the declared support boundary | Reduce silent data loss and make Microsoft Office/WPS interoperability measurable |
-
-### Layer model
-
-Each editor keeps its own canonical model instead of forcing every file type
-through one abstraction:
-
-```text
-                          Host product
-       persistence · identity · collaboration · authorization · AI
-                               │
-             ┌─────────────────┴──────────────────┐
-             │                                    │
-     Browser editing plane                Native automation plane
- React · Vue · Web Components             CLI · MCP · Office Skill
- framework-neutral Core API                       │
-             │                              native Rust core
- shared Office shell + design system              │
-             │                                    │
-  controlled editor surfaces                      │
-             │                                    │
- headless commands + Extensions                   │
-             │                                    │
- ┌───────────┼──────────────┐                     │
-TipTap    Workbook/scene   PDFium                  │
-             │                                    │
- Workers + Rust WebAssembly                       │
-             └─────────────────┬──────────────────┘
-                               │
-              DOCX · Markdown · XLSX · PPTX · PDF
-```
-
-### Engine ownership
-
-Documents use one logical TipTap/ProseMirror tree and non-history pagination
-decorations. Markdown keeps source as its controlled value, coalesces source
-edits before rebuilding the visual tree, and supports the GFM table,
-strikethrough, autolink, and task-list surface. Spreadsheet keeps the workbook
-grid canonical while a sparse, revisioned Worker/WASM session retains parsed
-formulas and an incremental dependency graph for its bounded scalar formula
-slice. Stable cell operations update that projection directly; structural and
-external changes use the checked replacement path. Presentation keeps a slide
-scene graph, mounts TipTap only for selected rich text, and resolves
-slide-relative alignment and snapping through a cancellable Worker/Rust-WASM
-geometry boundary. Drag and resize remain transient until pointer release, so
-the host receives one controlled update per gesture. Nested browser group paths
-make top-level groups atomic for selection, movement, arrangement, clipboard,
-and history while keeping every scene element independently serializable. A
-shared selection frame scales member geometry, typography, rich-text run sizes,
-and border weights in one controlled update. PPTX serialization builds native
-nested group nodes around the generated slide, layout, and master-derived
-objects, using identity child-coordinate transforms calculated from emitted
-geometry. Import applies non-rotated group scale to geometry, typography,
-explicit run sizes, and border weights; arbitrary group rotation and reflection
-remain explicit compatibility boundaries. The slide strip and sorter keep
-short decks fully mounted and window long decks by measured rows.
-Absolute-index keyboard navigation crosses unmounted ranges, while complete
-thumbnail scenes mount only for the selected slide and the current viewport
-overscan. PDF commands call typed PDFium capabilities directly.
-
-Public framework adapters converge on the same React editor engine. The
-framework-neutral Core entry owns models and file workflows. The native Rust
-core and CLI remain a separate automation boundary; the browser WebAssembly
-kernel shares only the bounded formula-parser crate with that native engine,
-not its filesystem or OOXML state.
 
 ## Development
 
