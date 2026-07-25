@@ -271,9 +271,8 @@ const blankDeck = createArtifact('blank-presentation');
 `downloadArtifact` starts a browser download. `createArtifactBlob` returns a
 `Blob` for application-managed persistence.
 
-See the online
-[component integration guide](https://a3s-lab.github.io/Office/#guide) for
-syntax-highlighted, copyable React, Vue, and Web Component examples.
+See the online [integration guide](https://a3s-lab.github.io/Office/#guide) for
+copyable component examples, Office CLI setup, and the optional Codex Skill.
 
 ## Editor Model
 
@@ -467,7 +466,7 @@ The production Playground is generated in `playground-dist/`. Pushes to `main`
 deploy it with GitHub Actions and GitHub Pages.
 
 - [Office Playground](https://a3s-lab.github.io/Office/#office)
-- [Integration guide for components, Office CLI, and CLI Skill](https://a3s-lab.github.io/Office/#guide)
+- [Integration guide](https://a3s-lab.github.io/Office/#guide)
 
 Visual tests cover all five editor shells at 1280 × 800 and 768 × 800. Update
 committed baselines only for intentional UI changes:

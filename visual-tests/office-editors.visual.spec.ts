@@ -281,24 +281,35 @@ test('component guide provides framework-specific examples', async ({
   );
 });
 
-test('unified guide preserves CLI and Skill deep links', async ({ page }) => {
+test('unified guide keeps CLI and Skill setup in one document', async ({
+  page,
+}) => {
   await page.goto('/#cli');
   await expect(
     page.getByRole('heading', { name: '接入文档', level: 1 }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/#guide\/cli$/);
-  await expect(page.getByRole('tab', { name: 'Office CLI' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await expect(page).toHaveURL(/#guide\/automation$/);
   await expect(
-    page.getByRole('heading', { name: 'Office CLI', level: 2 }),
+    page.getByRole('heading', { name: '命令行与 AI', level: 2 }),
   ).toBeVisible();
-
-  await page.getByRole('tab', { name: 'CLI Skill' }).click();
-  await expect(page).toHaveURL(/#guide\/skill$/);
   await expect(
     page.getByRole('link', { name: '下载 CLI Skill' }),
+  ).toBeVisible();
+  await expect(page.getByRole('tablist', { name: '接入内容' })).toHaveCount(0);
+
+  const guideNavigation = page.getByRole('navigation', {
+    name: '接入方式',
+  });
+  await guideNavigation.getByRole('link', { name: '前端组件' }).click();
+  await expect(page).toHaveURL(/#guide\/components$/);
+  await expect(
+    page.getByRole('heading', { name: '前端组件', level: 2 }),
+  ).toBeVisible();
+
+  await guideNavigation.getByRole('link', { name: '命令行与 AI' }).click();
+  await expect(page).toHaveURL(/#guide\/automation$/);
+  await expect(
+    page.getByRole('heading', { name: '安装 CLI Skill', level: 3 }),
   ).toBeVisible();
 
   const openSidebar = page.getByRole('button', {
@@ -310,10 +321,13 @@ test('unified guide preserves CLI and Skill deep links', async ({ page }) => {
     .getByRole('button', { name: '接入文档' })
     .click();
   await expect(page).toHaveURL(/#guide$/);
-  await expect(page.getByRole('tab', { name: '前端组件' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  await expect(guideNavigation).toBeVisible();
+  await expect(
+    guideNavigation.getByRole('link', { name: '前端组件' }),
+  ).toHaveAttribute('href', '#guide/components');
+  await expect(
+    guideNavigation.getByRole('link', { name: '命令行与 AI' }),
+  ).toHaveAttribute('href', '#guide/automation');
 });
 
 test('Markdown GFM source and visual panes stay synchronized', async ({

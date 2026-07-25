@@ -1,5 +1,5 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { IntegrationDocsPage } from '../playground/src/integration-docs-page';
 
 const pageProps = {
@@ -9,7 +9,7 @@ const pageProps = {
   onOpenSidebar: () => undefined,
 };
 
-test('combines component, CLI, and Skill guidance in one document page', () => {
+test('shows component, CLI, and Skill setup in one continuous guide', () => {
   window.history.replaceState(null, '', '#guide');
 
   render(<IntegrationDocsPage {...pageProps} />);
@@ -17,57 +17,48 @@ test('combines component, CLI, and Skill guidance in one document page', () => {
   expect(
     screen.getByRole('heading', { name: '接入文档', level: 1 }),
   ).toBeVisible();
-  const guideNavigation = screen.getByRole('tablist', {
-    name: '接入内容',
+  expect(
+    screen.queryByRole('tablist', { name: '接入内容' }),
+  ).not.toBeInTheDocument();
+
+  const guideNavigation = screen.getByRole('navigation', {
+    name: '接入方式',
   });
   expect(
     within(guideNavigation)
-      .getAllByRole('tab')
-      .map((tab) => tab.textContent),
-  ).toEqual(['前端组件', 'Office CLI', 'CLI Skill']);
+      .getAllByRole('link')
+      .map((link) => link.textContent),
+  ).toEqual(['前端组件', '命令行与 AI']);
   expect(
-    screen.getByRole('heading', { name: '安装组件', level: 2 }),
-  ).toBeVisible();
+    within(guideNavigation).getByRole('link', { name: '前端组件' }),
+  ).toHaveAttribute('href', '#guide/components');
+  expect(
+    within(guideNavigation).getByRole('link', { name: '命令行与 AI' }),
+  ).toHaveAttribute('href', '#guide/automation');
 
-  fireEvent.click(
-    within(guideNavigation).getByRole('tab', { name: 'Office CLI' }),
-  );
-  expect(window.location.hash).toBe('#guide/cli');
   expect(
-    screen.getByRole('heading', { name: 'Office CLI', level: 2 }),
+    screen.getByRole('heading', { name: '前端组件', level: 2 }),
+  ).toBeVisible();
+  expect(screen.getByRole('heading', { name: '安装', level: 3 })).toBeVisible();
+  expect(
+    screen.getByRole('heading', { name: '命令行与 AI', level: 2 }),
   ).toBeVisible();
   expect(
     screen.getByText('a3s-office validate report.docx --json'),
-  ).toBeVisible();
-
-  fireEvent.click(
-    within(guideNavigation).getByRole('tab', { name: 'CLI Skill' }),
-  );
-  expect(window.location.hash).toBe('#guide/skill');
-  expect(
-    screen.getByRole('heading', { name: 'CLI Skill', level: 2 }),
   ).toBeVisible();
   expect(screen.getByRole('link', { name: '下载 CLI Skill' })).toHaveAttribute(
     'href',
     '/downloads/a3s-office-skill.tar.gz',
   );
-
-  window.history.pushState(null, '', '#cli');
-  fireEvent(window, new HashChangeEvent('hashchange'));
-  expect(window.location.hash).toBe('#guide/cli');
-  expect(
-    within(guideNavigation).getByRole('tab', { name: 'Office CLI' }),
-  ).toHaveAttribute('aria-selected', 'true');
 });
 
-test('keeps legacy Skill links working inside the unified guide', () => {
+test('redirects old CLI and Skill links to the combined setup section', async () => {
   window.history.replaceState(null, '', '#skill');
 
   render(<IntegrationDocsPage {...pageProps} />);
 
-  expect(screen.getByRole('tab', { name: 'CLI Skill' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
-  expect(window.location.hash).toBe('#guide/skill');
+  await waitFor(() => expect(window.location.hash).toBe('#guide/automation'));
+  expect(
+    screen.getByRole('heading', { name: '命令行与 AI', level: 2 }),
+  ).toBeVisible();
 });

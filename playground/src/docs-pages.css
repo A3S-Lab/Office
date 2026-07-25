@@ -61,37 +61,27 @@
   box-shadow: 0 3px 12px rgb(25 31 45 / 3%);
 }
 
-.playground-integration-nav > button {
+.playground-integration-nav > a {
   display: inline-flex;
   min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 7px;
   padding: 0 13px;
-  border: 0;
   border-radius: 7px;
   background: transparent;
   color: var(--a3s-muted);
-  font: inherit;
   font-size: 10px;
   font-weight: 620;
-  cursor: pointer;
+  text-decoration: none;
 }
 
-.playground-integration-nav > button:hover {
+.playground-integration-nav > a:hover {
   background: var(--a3s-panel-soft);
   color: var(--a3s-ink);
 }
 
-.playground-integration-nav > button.active {
-  background: var(--a3s-panel);
-  color: var(--a3s-blue);
-  box-shadow:
-    0 0 0 1px var(--a3s-line),
-    0 2px 6px rgb(25 31 45 / 6%);
-}
-
-.playground-integration-nav > button:focus-visible {
+.playground-integration-nav > a:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--a3s-blue) 65%, transparent);
   outline-offset: 2px;
 }
@@ -101,6 +91,60 @@
   min-width: 0;
   flex-direction: column;
   gap: 32px;
+}
+
+.playground-guide-section {
+  scroll-margin-top: 24px;
+}
+
+.playground-guide-section + .playground-guide-section {
+  padding-top: 38px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.playground-guide-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.playground-guide-section-heading > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--a3s-blue) 14%, var(--a3s-line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--a3s-blue) 6%, var(--a3s-panel));
+  color: var(--a3s-blue);
+}
+
+.playground-guide-section-heading > div {
+  min-width: 0;
+}
+
+.playground-guide-section-heading h2 {
+  margin: 0;
+  color: var(--a3s-ink);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.playground-guide-section-heading p {
+  margin: 4px 0 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.playground-doc-page .playground-section-heading h3 {
+  margin: 0;
+  color: var(--a3s-ink);
+  font-size: 14px;
+  font-weight: 680;
 }
 
 .playground-doc-group {
@@ -115,26 +159,7 @@
   box-shadow: 0 5px 16px rgb(25 31 45 / 3%);
 }
 
-.playground-doc-card-icon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--a3s-blue) 15%, var(--a3s-line));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--a3s-blue) 6%, var(--a3s-panel));
-  color: var(--a3s-blue);
-}
-
-.playground-skill-download > div {
-  min-width: 0;
-  flex: 1;
-}
-
-.playground-skill-download h3,
-.playground-card-heading h3,
-.playground-skill-usage-heading h3 {
+.playground-card-heading h3 {
   margin: 0;
   color: var(--a3s-ink);
   font-size: 12px;
@@ -142,9 +167,7 @@
   letter-spacing: -0.015em;
 }
 
-.playground-skill-download p,
-.playground-card-heading p,
-.playground-skill-usage-heading p {
+.playground-card-heading p {
   margin: 5px 0 0;
   color: var(--a3s-muted);
   font-size: 10px;
@@ -152,13 +175,11 @@
 }
 
 .playground-install-card,
-.playground-usage-card,
-.playground-skill-usage {
+.playground-usage-card {
   padding: 18px;
 }
 
-.playground-card-heading,
-.playground-skill-usage-heading {
+.playground-card-heading {
   display: flex;
   min-width: 0;
   align-items: flex-start;
@@ -166,8 +187,7 @@
   margin-bottom: 14px;
 }
 
-.playground-card-heading > span,
-.playground-skill-usage-heading > span {
+.playground-card-heading > span {
   display: grid;
   width: 32px;
   height: 32px;
@@ -178,8 +198,7 @@
   color: var(--a3s-blue);
 }
 
-.playground-card-heading > div,
-.playground-skill-usage-heading > div {
+.playground-card-heading > div {
   min-width: 0;
 }
 
@@ -266,8 +285,8 @@
   font-size: 10px;
 }
 
-.playground-format-strip > a,
-.playground-skill-links > a {
+.playground-guide-links > a,
+.playground-skill-card-actions > a:not(.playground-primary-button) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -277,48 +296,28 @@
   text-decoration: none;
 }
 
-.playground-format-strip > a {
+.playground-guide-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
   margin-left: auto;
 }
 
-.playground-format-strip > a:hover,
-.playground-skill-links > a:hover {
+.playground-guide-links > a:hover,
+.playground-skill-card-actions > a:not(.playground-primary-button):hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.playground-skill-download {
+.playground-skill-card-actions {
   display: flex;
-  min-height: 92px;
   align-items: center;
-  gap: 14px;
-  padding: 18px;
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
-.playground-skill-download > .playground-primary-button {
+.playground-skill-card-actions > .playground-primary-button {
   flex: 0 0 auto;
-}
-
-.playground-skill-usage {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.55fr) minmax(0, 1.45fr);
-  gap: 18px 24px;
-  align-items: center;
-}
-
-.playground-skill-usage-heading {
-  margin: 0;
-}
-
-.playground-skill-usage > .playground-code-block {
-  align-self: stretch;
-}
-
-.playground-skill-links {
-  display: flex;
-  grid-column: 2;
-  align-items: center;
-  gap: 18px;
 }
 
 .playground-integration-start {
@@ -468,6 +467,12 @@
   }
 }
 
+@media (max-width: 900px) {
+  .playground-doc-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   .playground-doc-page {
     padding: 24px 18px 44px;
@@ -477,24 +482,16 @@
     gap: 28px;
   }
 
-  .playground-doc-split,
-  .playground-skill-usage {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .playground-skill-links {
-    grid-column: 1;
-  }
-
   .playground-format-strip {
     align-items: flex-start;
     flex-wrap: wrap;
     gap: 14px 22px;
   }
 
-  .playground-format-strip > a {
+  .playground-guide-links {
     width: 100%;
     margin-left: 0;
+    flex-wrap: wrap;
   }
 
   .playground-integration-notes {
@@ -510,26 +507,22 @@
   .playground-integration-nav {
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .playground-integration-nav > button {
+  .playground-integration-nav > a {
     min-width: 0;
     padding-right: 8px;
     padding-left: 8px;
     white-space: nowrap;
   }
 
-  .playground-skill-download {
+  .playground-skill-card-actions {
     align-items: flex-start;
     flex-wrap: wrap;
   }
 
-  .playground-skill-download > div {
-    min-width: calc(100% - 52px);
-  }
-
-  .playground-skill-download > .playground-primary-button {
+  .playground-skill-card-actions > .playground-primary-button {
     width: 100%;
   }
 
