@@ -1,5 +1,4 @@
 import {
-  BookOpen,
   CodeXml,
   ExternalLink,
   FileCode2,
@@ -9,7 +8,6 @@ import {
   FolderOpen,
   Github,
   HardDrive,
-  Package,
   PanelLeftClose,
   Presentation,
 } from 'lucide-react';
@@ -85,24 +83,6 @@ export function SiteSidebar({
         >
           <CodeXml size={16} />
           <span>接入文档</span>
-        </button>
-        <button
-          type="button"
-          className={route === 'cli' ? 'active' : ''}
-          aria-current={route === 'cli' ? 'page' : undefined}
-          onClick={() => onNavigate('cli')}
-        >
-          <BookOpen size={16} />
-          <span>Office CLI</span>
-        </button>
-        <button
-          type="button"
-          className={route === 'skill' ? 'active' : ''}
-          aria-current={route === 'skill' ? 'page' : undefined}
-          onClick={() => onNavigate('skill')}
-        >
-          <Package size={16} />
-          <span>CLI Skill</span>
         </button>
       </nav>
 

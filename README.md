@@ -467,9 +467,7 @@ The production Playground is generated in `playground-dist/`. Pushes to `main`
 deploy it with GitHub Actions and GitHub Pages.
 
 - [Office Playground](https://a3s-lab.github.io/Office/#office)
-- [Component integration](https://a3s-lab.github.io/Office/#guide)
-- [Office CLI guide](https://a3s-lab.github.io/Office/#cli)
-- [Office CLI Skill](https://a3s-lab.github.io/Office/#skill)
+- [Integration guide for components, Office CLI, and CLI Skill](https://a3s-lab.github.io/Office/#guide)
 
 Visual tests cover all five editor shells at 1280 × 800 and 768 × 800. Update
 committed baselines only for intentional UI changes:

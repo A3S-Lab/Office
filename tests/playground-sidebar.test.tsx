@@ -28,3 +28,31 @@ test('keeps Markdown last in the quick-create list', () => {
   );
   expect(createdTemplates).toEqual(['blank-markdown']);
 });
+
+test('keeps one documentation entry in the product navigation', () => {
+  const routes: string[] = [];
+
+  render(
+    <SiteSidebar
+      route="guide"
+      onCollapse={() => undefined}
+      onNavigate={(route) => routes.push(route)}
+      onCreate={() => undefined}
+      onOpenFile={() => undefined}
+      onOpenPdf={() => undefined}
+    />,
+  );
+
+  const productNavigation = screen.getByRole('navigation', {
+    name: '产品页面',
+  });
+  const items = within(productNavigation)
+    .getAllByRole('button')
+    .map((button) => button.textContent?.trim());
+
+  expect(items).toEqual(['编辑器', '接入文档']);
+  fireEvent.click(
+    within(productNavigation).getByRole('button', { name: '接入文档' }),
+  );
+  expect(routes).toEqual(['guide']);
+});

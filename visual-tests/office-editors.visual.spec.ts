@@ -168,7 +168,7 @@ test('component guide highlights framework examples by language', async ({
   page,
 }) => {
   await page.goto('/#guide');
-  await expect(page.getByRole('heading', { name: '组件接入' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '接入文档' })).toBeVisible();
 
   const example = page.locator(
     '.playground-framework-example .playground-code-block pre',
@@ -266,7 +266,7 @@ test('component guide provides framework-specific examples', async ({
 }) => {
   await page.goto('/#guide');
   await expect(
-    page.getByRole('heading', { name: '组件接入', level: 1 }),
+    page.getByRole('heading', { name: '接入文档', level: 1 }),
   ).toBeVisible();
   await expect(page.getByRole('tab', { name: 'React' })).toBeVisible();
 
@@ -278,6 +278,41 @@ test('component guide provides framework-specific examples', async ({
   await page.getByRole('tab', { name: 'Web Component' }).click();
   await expect(page.locator('.playground-framework-example pre')).toContainText(
     'defineA3SOfficeElements',
+  );
+});
+
+test('unified guide preserves CLI and Skill deep links', async ({ page }) => {
+  await page.goto('/#cli');
+  await expect(
+    page.getByRole('heading', { name: '接入文档', level: 1 }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/#guide\/cli$/);
+  await expect(page.getByRole('tab', { name: 'Office CLI' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(
+    page.getByRole('heading', { name: 'Office CLI', level: 2 }),
+  ).toBeVisible();
+
+  await page.getByRole('tab', { name: 'CLI Skill' }).click();
+  await expect(page).toHaveURL(/#guide\/skill$/);
+  await expect(
+    page.getByRole('link', { name: '下载 CLI Skill' }),
+  ).toBeVisible();
+
+  const openSidebar = page.getByRole('button', {
+    name: '展开办公侧边栏',
+  });
+  if (await openSidebar.isVisible()) await openSidebar.click();
+  await page
+    .getByRole('navigation', { name: '产品页面' })
+    .getByRole('button', { name: '接入文档' })
+    .click();
+  await expect(page).toHaveURL(/#guide$/);
+  await expect(page.getByRole('tab', { name: '前端组件' })).toHaveAttribute(
+    'aria-selected',
+    'true',
   );
 });
 
