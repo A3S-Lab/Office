@@ -1,6 +1,5 @@
 import type { Editor } from '@tiptap/core';
-import { Plus } from 'lucide-react';
-import type { CSSProperties, MouseEvent, PointerEvent, RefObject } from 'react';
+import type { MouseEvent, PointerEvent, RefObject } from 'react';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import type {
   WorkPresentationContent,
@@ -25,12 +24,11 @@ import {
   presentationSelectionBounds,
   selectedPresentationElements,
 } from './presentation-selection';
-import { PresentationSlideThumbnail } from './presentation-slide-thumbnail';
+import { PresentationThumbnailRail } from './presentation-thumbnail-rail';
 import {
   PresentationTextEditor,
   type PresentationTextValue,
 } from './presentation-text-editor';
-import { usePresentationThumbnailVisibility } from './use-presentation-thumbnail-visibility';
 
 export interface PresentationWorkspaceProps {
   activeBackground: string;
@@ -140,41 +138,21 @@ export function PresentationWorkspace({
     selectionUnits.length === 1 && selectionUnits[0]?.groupId
       ? '缩放所选组合'
       : '缩放所选对象';
-  const { viewportRef: thumbnailViewportRef, visibleIds: visibleThumbnailIds } =
-    usePresentationThumbnailVisibility(
-      content.slides.map((slide) => slide.id),
-      viewMode,
-    );
   if (viewMode === 'sorter') {
     return (
-      <section
-        ref={thumbnailViewportRef}
-        className="work-presentation-sorter"
-        aria-label="幻灯片浏览视图"
-        style={
-          {
-            '--work-presentation-sorter-width': `${Math.round(220 * (zoom / 100))}px`,
-          } as CSSProperties
-        }
-      >
-        {content.slides.map((slide, index) => (
-          <PresentationSlideThumbnail
-            key={slide.id}
-            content={designContent}
-            slide={slide}
-            index={index}
-            selected={slide.id === selectedSlide.id}
-            aspectRatio={aspectRatio}
-            variant="sorter"
-            renderPreview={
-              slide.id === selectedSlide.id || visibleThumbnailIds.has(slide.id)
-            }
-            onSelect={() => onSelectSlide(slide.id, false)}
-            onDelete={() => onDeleteSlide(slide.id)}
-            onDoubleClick={() => onViewModeChange('normal')}
-          />
-        ))}
-      </section>
+      <PresentationThumbnailRail
+        aspectRatio={aspectRatio}
+        content={content}
+        designContent={designContent}
+        selectedSlide={selectedSlide}
+        viewMode={viewMode}
+        zoom={zoom}
+        onAddSlide={onAddSlide}
+        onDeleteSlide={onDeleteSlide}
+        onOpenAgentMenu={onOpenAgentMenu}
+        onSelectSlide={onSelectSlide}
+        onViewModeChange={onViewModeChange}
+      />
     );
   }
 
@@ -183,36 +161,19 @@ export function PresentationWorkspace({
   );
   return (
     <div className="work-presentation-layout">
-      <aside
-        ref={thumbnailViewportRef}
-        className="work-slide-strip"
-        aria-label="幻灯片"
-      >
-        {content.slides.map((slide, index) => (
-          <PresentationSlideThumbnail
-            key={slide.id}
-            content={designContent}
-            slide={slide}
-            index={index}
-            selected={slide.id === selectedSlide.id}
-            aspectRatio={aspectRatio}
-            variant="strip"
-            renderPreview={
-              slide.id === selectedSlide.id || visibleThumbnailIds.has(slide.id)
-            }
-            onSelect={() => onSelectSlide(slide.id, true)}
-            onDelete={() => onDeleteSlide(slide.id)}
-            onContextMenu={(event) => {
-              onSelectSlide(slide.id, false);
-              onOpenAgentMenu(event, slide, index);
-            }}
-          />
-        ))}
-        <button type="button" className="work-slide-add" onClick={onAddSlide}>
-          <Plus size={15} />
-          添加幻灯片
-        </button>
-      </aside>
+      <PresentationThumbnailRail
+        aspectRatio={aspectRatio}
+        content={content}
+        designContent={designContent}
+        selectedSlide={selectedSlide}
+        viewMode={viewMode}
+        zoom={zoom}
+        onAddSlide={onAddSlide}
+        onDeleteSlide={onDeleteSlide}
+        onOpenAgentMenu={onOpenAgentMenu}
+        onSelectSlide={onSelectSlide}
+        onViewModeChange={onViewModeChange}
+      />
 
       <div
         className="work-slide-stage"

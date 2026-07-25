@@ -97,12 +97,15 @@ export function clonePresentationElementsForPaste(
   );
 }
 
-export function clonePresentationSlideForPaste(slide: WorkSlide): WorkSlide {
+export function clonePresentationSlideForPaste(
+  slide: WorkSlide,
+  existingSlideNames: readonly string[] = [],
+): WorkSlide {
   const copy = structuredCopy(slide);
   return {
     ...copy,
     id: createWorkId('slide'),
-    name: `${slide.name} 副本`,
+    name: nextPresentationSlideCopyName(slide.name, existingSlideNames),
     elements: remapPresentationGroupPaths(copy.elements).map((element) => ({
       ...element,
       id: createWorkId('element'),
@@ -112,6 +115,43 @@ export function clonePresentationSlideForPaste(slide: WorkSlide): WorkSlide {
       id: createWorkId('slide-comment'),
     })),
   };
+}
+
+export function nextPresentationSlideCopyName(
+  sourceName: string,
+  existingSlideNames: readonly string[],
+): string {
+  const baseName = presentationSlideCopyBaseName(sourceName);
+  let highestOrdinal = 0;
+  for (const existingName of [sourceName, ...existingSlideNames]) {
+    if (existingName === `${baseName} 副本`) {
+      highestOrdinal = Math.max(highestOrdinal, 1);
+      continue;
+    }
+    const prefix = `${baseName} 副本 `;
+    if (!existingName.startsWith(prefix)) continue;
+    const ordinal = Number(existingName.slice(prefix.length));
+    if (Number.isInteger(ordinal) && ordinal > 1) {
+      highestOrdinal = Math.max(highestOrdinal, ordinal);
+    }
+  }
+  return highestOrdinal === 0
+    ? `${baseName} 副本`
+    : `${baseName} 副本 ${highestOrdinal + 1}`;
+}
+
+function presentationSlideCopyBaseName(sourceName: string): string {
+  let baseName = sourceName.trim() || '幻灯片';
+  while (true) {
+    const numberedCopy = baseName.match(/^(.*) 副本 \d+$/);
+    if (numberedCopy?.[1]) {
+      baseName = numberedCopy[1].trim();
+      continue;
+    }
+    const copy = baseName.match(/^(.*) 副本$/);
+    if (!copy?.[1]) return baseName;
+    baseName = copy[1].trim();
+  }
 }
 
 function presentationElementPlainText(element: WorkSlideElement): string {

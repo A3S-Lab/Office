@@ -171,7 +171,10 @@ export function usePresentationClipboard({
       showToast('请返回幻灯片编辑后粘贴整张幻灯片。', 'info');
       return true;
     }
-    const pasted = clonePresentationSlideForPaste(clipboard.payload.slide);
+    const pasted = clonePresentationSlideForPaste(
+      clipboard.payload.slide,
+      content.slides.map((slide) => slide.name),
+    );
     const index = content.slides.findIndex(
       (slide) => slide.id === selectedSlide.id,
     );
@@ -209,7 +212,10 @@ export function usePresentationClipboard({
       return true;
     }
     if (mode !== 'slide' || !selectedSlide) return false;
-    const copy = clonePresentationSlideForPaste(selectedSlide);
+    const copy = clonePresentationSlideForPaste(
+      selectedSlide,
+      content.slides.map((slide) => slide.name),
+    );
     const index = content.slides.findIndex(
       (slide) => slide.id === selectedSlide.id,
     );

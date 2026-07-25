@@ -184,7 +184,15 @@
   background: color-mix(in srgb, var(--a3s-panel-soft) 60%, var(--a3s-panel));
 }
 
-.work-slide-strip > button:not(.work-slide-add) {
+.work-slide-thumbnail-list {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.work-slide-thumbnail-list > button {
   position: relative;
   display: flex;
   width: 100%;
@@ -197,16 +205,16 @@
   cursor: pointer;
 }
 
-.work-slide-strip > button:not(.work-slide-add):hover {
+.work-slide-thumbnail-list > button:hover {
   background: var(--a3s-panel-strong);
 }
 
-.work-slide-strip > button.active {
+.work-slide-thumbnail-list > button.active {
   border-color: color-mix(in srgb, #db663b 72%, var(--a3s-line));
   background: color-mix(in srgb, #db663b 6%, var(--a3s-panel));
 }
 
-.work-slide-strip > button > span:first-child {
+.work-slide-thumbnail-list > button > span:first-child {
   width: 18px;
   flex: 0 0 18px;
   color: var(--a3s-faint);
@@ -224,6 +232,14 @@
 
 .work-slide-thumbnail-placeholder {
   contain: strict;
+  pointer-events: none;
+}
+
+.work-slide-thumbnail-spacer {
+  display: block;
+  min-width: 0;
+  flex: 0 0 auto;
+  grid-column: 1 / -1;
   pointer-events: none;
 }
 

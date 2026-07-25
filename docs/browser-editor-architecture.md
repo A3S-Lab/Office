@@ -49,7 +49,7 @@ CPU-heavy and memory-bounded work away from the UI event loop.
 | Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
-| Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, frame-coalesced transactional move/resize previews that commit once on pointer release, and viewport-overscanned thumbnail scenes | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, full thumbnail-list windowing, and slide serialization |
+| Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, frame-coalesced transactional move/resize previews that commit once on pointer release, and two-level thumbnail node and scene windowing | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
 | PDF | PDFium-backed page rendering with an A3S-owned toolbar and typed capability controllers for navigation, zoom, search, basic annotations, history, and save | PDFium WebAssembly | Annotation styling, forms, redaction review, page organization, and reopen fixtures |
 
 The table is a fidelity statement, not a marketing capability list. The
@@ -113,7 +113,7 @@ layouts, and master-derived artwork. The generated group coordinate maps are
 identity transforms based on emitted OOXML bounds, preserving hierarchy and
 visual geometry after non-rotated, non-reflected transform round trips.
 Arbitrary group rotation or reflection, connector routing, text fitting, theme
-resolution, and thumbnail layout remain later fidelity gates.
+resolution, and kernel-owned thumbnail layout remain later fidelity gates.
 
 Spreadsheet, Presentation, and PDF commands cross explicit typed boundaries.
 The shell never searches visible labels, scrapes rendered text, or synthesizes
@@ -578,15 +578,23 @@ into child geometry and visual metrics. Arbitrary group rotation and
 reflection, source group names, and kernel-owned group geometry remain
 separate fidelity gates.
 
-The first thumbnail-virtualization slice is implemented. The normal slide strip
-and sorter share one root-scoped intersection observer. Every slide retains a
-lightweight button, accessible name, keyboard position, and aspect-ratio
-placeholder so scrolling and `Home`/`End` navigation remain stable. Full
-inherited layouts, images, tables, charts, and text scenes mount only for the
-selected slide and slides inside a bounded viewport overscan, and unmount after
-leaving it. Environments without `IntersectionObserver` retain the complete
-rendering path. Full list-node windowing and kernel-owned thumbnail layout
-remain separate performance gates.
+The thumbnail-virtualization slices are implemented. Short decks retain every
+thumbnail button. Decks above the bounded threshold render a contiguous row
+window plus measured virtual spacers in both the normal strip and sorter, so
+React and DOM node counts depend on the viewport rather than the slide count.
+Keyboard commands use absolute slide indexes instead of querying mounted
+siblings; `Home`, `End`, arrow navigation, and deletion can therefore cross an
+unmounted range. Each mounted button exposes its absolute position and total in
+its accessible name, and an externally selected slide is revealed without
+stealing focus.
+
+The mounted window shares one root-scoped intersection observer. Full inherited
+layouts, images, tables, charts, and text scenes mount only for the selected
+slide and slides inside a bounded viewport overscan, and unmount after leaving
+it. A mutation observer reconnects scene observation as thumbnail windows
+change. Environments without `IntersectionObserver` render complete scenes for
+the bounded mounted window. Kernel-owned thumbnail layout remains a separate
+performance gate.
 
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,
@@ -709,9 +717,10 @@ placeholder materialization, cumulative visual scaling, and unsupported
 rotation/reflection diagnostics.
 
 Presentation thumbnail tests use a controlled intersection observer to prove
-that long decks retain every keyboard target while mounting only selected and
-overscanned scenes, releasing scenes that leave the window, and reconnecting
-the observer when switching between normal and sorter views.
+that long decks retain absolute keyboard reachability while bounding mounted
+buttons and full scenes, releasing scenes that leave the window, preserving
+focus after deletion, and reconnecting the observer when switching between
+normal and sorter views.
 
 Run the focused kernel checks with:
 

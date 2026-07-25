@@ -418,11 +418,11 @@ nested group nodes around the generated slide, layout, and master-derived
 objects, using identity child-coordinate transforms calculated from emitted
 geometry. Import applies non-rotated group scale to geometry, typography,
 explicit run sizes, and border weights; arbitrary group rotation and reflection
-remain explicit compatibility boundaries. The slide strip and sorter retain a
-lightweight, keyboard-reachable target and stable aspect-ratio footprint for
-every slide, but mount complete thumbnail scenes only for the selected slide
-and the current viewport overscan. PDF commands call typed PDFium capabilities
-directly.
+remain explicit compatibility boundaries. The slide strip and sorter keep
+short decks fully mounted and window long decks by measured rows.
+Absolute-index keyboard navigation crosses unmounted ranges, while complete
+thumbnail scenes mount only for the selected slide and the current viewport
+overscan. PDF commands call typed PDFium capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

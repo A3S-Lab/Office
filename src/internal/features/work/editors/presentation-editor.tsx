@@ -22,6 +22,7 @@ import {
   remapPresentationGroupPaths,
   ungroupPresentationElements,
 } from '../work-presentation-groups';
+import { clonePresentationSlideForPaste } from '../work-presentation-clipboard';
 import { createWorkId } from '../work-templates';
 import type {
   WorkPresentationLayout,
@@ -519,17 +520,10 @@ export function PresentationEditor({
   };
 
   const duplicateSlide = () => {
-    const copy: WorkSlide = {
-      ...structuredCopy(selectedSlide),
-      id: createWorkId('slide'),
-      name: `${selectedSlide.name} 副本`,
-      elements: remapPresentationGroupPaths(selectedSlide.elements).map(
-        (element) => ({
-          ...structuredCopy(element),
-          id: createWorkId('element'),
-        }),
-      ),
-    };
+    const copy = clonePresentationSlideForPaste(
+      selectedSlide,
+      content.slides.map((slide) => slide.name),
+    );
     const index = content.slides.findIndex(
       (slide) => slide.id === selectedSlide.id,
     );

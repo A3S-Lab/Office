@@ -7,11 +7,13 @@ export function PresentationSlideThumbnail({
   slide,
   index,
   selected,
+  slideCount,
   aspectRatio,
   variant,
   renderPreview,
   onSelect,
   onDelete,
+  onNavigate,
   onContextMenu,
   onDoubleClick,
 }: {
@@ -19,11 +21,13 @@ export function PresentationSlideThumbnail({
   slide: WorkSlide;
   index: number;
   selected: boolean;
+  slideCount: number;
   aspectRatio: string;
   variant: 'strip' | 'sorter';
   renderPreview: boolean;
   onSelect: () => void;
   onDelete: () => boolean;
+  onNavigate: (index: number) => void;
   onContextMenu?: MouseEventHandler<HTMLButtonElement>;
   onDoubleClick?: () => void;
 }) {
@@ -31,15 +35,18 @@ export function PresentationSlideThumbnail({
     <button
       type="button"
       className={selected ? 'active' : ''}
-      aria-label={`幻灯片 ${index + 1}：${slide.name}`}
+      aria-label={`幻灯片 ${index + 1} / ${slideCount}：${slide.name}`}
       data-slide-thumbnail
       data-slide-id={slide.id}
+      data-slide-index={index}
       data-slide-thumbnail-rendered={renderPreview ? 'true' : 'false'}
       onFocus={onSelect}
       onClick={onSelect}
       onContextMenu={onContextMenu}
       onDoubleClick={onDoubleClick}
-      onKeyDown={(event) => handleThumbnailKey(event, onDelete)}
+      onKeyDown={(event) =>
+        handleThumbnailKey(event, index, slideCount, onDelete, onNavigate)
+      }
     >
       {variant === 'strip' && <span>{index + 1}</span>}
       {renderPreview ? (
@@ -68,29 +75,15 @@ export function PresentationSlideThumbnail({
 
 function handleThumbnailKey(
   event: React.KeyboardEvent<HTMLButtonElement>,
+  index: number,
+  slideCount: number,
   onDelete: () => boolean,
+  onNavigate: (index: number) => void,
 ): void {
-  const parent = event.currentTarget.parentElement;
-  const buttons = [
-    ...(parent?.querySelectorAll<HTMLButtonElement>('[data-slide-thumbnail]') ??
-      []),
-  ];
-  const index = buttons.indexOf(event.currentTarget);
-  if (index < 0) return;
   if (event.key === 'Delete' || event.key === 'Backspace') {
     event.preventDefault();
     event.stopPropagation();
-    const focusId = (buttons[index + 1] ?? buttons[index - 1])?.dataset.slideId;
-    if (!onDelete() || !focusId) return;
-    requestAnimationFrame(() =>
-      [
-        ...(parent?.querySelectorAll<HTMLButtonElement>(
-          '[data-slide-thumbnail]',
-        ) ?? []),
-      ]
-        .find((button) => button.dataset.slideId === focusId)
-        ?.focus(),
-    );
+    onDelete();
     return;
   }
   if (
@@ -110,9 +103,9 @@ function handleThumbnailKey(
     event.key === 'Home'
       ? 0
       : event.key === 'End'
-        ? buttons.length - 1
+        ? slideCount - 1
         : event.key === 'ArrowUp' || event.key === 'ArrowLeft'
           ? Math.max(0, index - 1)
-          : Math.min(buttons.length - 1, index + 1);
-  buttons[nextIndex]?.focus();
+          : Math.min(slideCount - 1, index + 1);
+  onNavigate(nextIndex);
 }

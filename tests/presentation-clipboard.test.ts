@@ -66,6 +66,22 @@ test('clones presentation group paths without linking the copy to its source', (
   expect(slideCopy.elements[0].groupIds).not.toEqual(elements[0].groupIds);
 });
 
+test('numbers repeated slide copies without growing the source label', () => {
+  const source = {
+    id: 'slide',
+    name: '封面 副本',
+    background: '#ffffff',
+    elements: [],
+  };
+  const copy = clonePresentationSlideForPaste(source, [
+    '封面',
+    '封面 副本',
+    '封面 副本 2',
+  ]);
+
+  expect(copy.name).toBe('封面 副本 3');
+});
+
 function presentationElement(
   id: string,
   x: number,

@@ -668,11 +668,40 @@ test('presentation keeps long-deck thumbnail scenes inside a viewport window', a
   });
   const thumbnails = page.locator('[data-slide-thumbnail]');
   const initialCount = await thumbnails.count();
-  for (let index = 0; index < 24; index += 1) {
+  for (let index = 0; index < 72; index += 1) {
     await duplicate.click();
   }
-  const slideCount = initialCount + 24;
-  await expect(thumbnails).toHaveCount(slideCount);
+  const slideCount = initialCount + 72;
+  const thumbnailViewport = page.locator('[data-slide-count]');
+  await expect(thumbnailViewport).toHaveAttribute(
+    'data-slide-count',
+    String(slideCount),
+  );
+  await expect(thumbnailViewport).toHaveAttribute(
+    'data-slide-windowed',
+    'true',
+  );
+  await expect.poll(() => thumbnails.count()).toBeGreaterThan(1);
+  await expect.poll(() => thumbnails.count()).toBeLessThan(slideCount);
+  expect(await thumbnails.count()).toBeLessThanOrEqual(40);
+  await thumbnailViewport.evaluate((viewport) => {
+    viewport.scrollTop = viewport.scrollHeight / 2;
+    viewport.dispatchEvent(new Event('scroll'));
+  });
+  await expect
+    .poll(() =>
+      thumbnailViewport.evaluate((viewport) =>
+        Number(viewport.getAttribute('data-slide-window-start')),
+      ),
+    )
+    .toBeGreaterThan(0);
+  await expect
+    .poll(() =>
+      thumbnailViewport.evaluate((viewport) =>
+        Number(viewport.getAttribute('data-slide-window-end')),
+      ),
+    )
+    .toBeLessThan(slideCount);
 
   const rendered = page.locator('[data-slide-thumbnail-rendered="true"]');
   await expect.poll(() => rendered.count()).toBeGreaterThan(1);
@@ -680,9 +709,23 @@ test('presentation keeps long-deck thumbnail scenes inside a viewport window', a
   expect(await rendered.count()).toBeLessThanOrEqual(16);
 
   await thumbnails.first().focus();
+  await page.keyboard.press('Home');
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document.activeElement?.getAttribute('data-slide-index'),
+      ),
+    )
+    .toBe('0');
   await page.keyboard.press('End');
-  await expect(thumbnails.last()).toBeFocused();
-  await expect(thumbnails.last()).toHaveAttribute(
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        document.activeElement?.getAttribute('data-slide-index'),
+      ),
+    )
+    .toBe(String(slideCount - 1));
+  await expect(page.locator('[data-slide-thumbnail]:focus')).toHaveAttribute(
     'data-slide-thumbnail-rendered',
     'true',
   );
@@ -695,7 +738,13 @@ test('presentation keeps long-deck thumbnail scenes inside a viewport window', a
     .getByRole('slider', { name: '演示缩放', exact: true })
     .press('End');
   await expect(page.getByLabel('演示缩放比例')).toHaveText('200%');
-  await expect(thumbnails).toHaveCount(slideCount);
+  await expect(page.locator('[data-slide-thumbnail].active')).toHaveAttribute(
+    'data-slide-index',
+    String(slideCount - 1),
+  );
+  await expect.poll(() => thumbnails.count()).toBeGreaterThan(1);
+  await expect.poll(() => thumbnails.count()).toBeLessThan(slideCount);
+  expect(await thumbnails.count()).toBeLessThanOrEqual(48);
   await expect.poll(() => rendered.count()).toBeGreaterThan(1);
   await expect.poll(() => rendered.count()).toBeLessThan(slideCount);
   expect(await rendered.count()).toBeLessThanOrEqual(16);

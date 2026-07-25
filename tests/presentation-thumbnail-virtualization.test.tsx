@@ -1,13 +1,13 @@
 import { expect, test } from '@rstest/core';
-import { act, fireEvent, render } from '@testing-library/react';
-import { createRef } from 'react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { createRef, useState } from 'react';
 import { PresentationWorkspace } from '../src/internal/features/work/editors/presentation-workspace';
 import type {
   WorkPresentationContent,
   WorkSlide,
 } from '../src/internal/features/work/work-types';
 
-test('keeps every slide keyboard reachable while mounting only nearby thumbnail scenes', () => {
+test('windows long decks while keeping every slide keyboard reachable', async () => {
   const observers: MockIntersectionObserver[] = [];
   const OriginalIntersectionObserver = globalThis.IntersectionObserver;
   globalThis.IntersectionObserver = class extends MockIntersectionObserver {
@@ -21,40 +21,68 @@ test('keeps every slide keyboard reachable while mounting only nearby thumbnail 
   } as typeof IntersectionObserver;
 
   try {
-    const content = presentationContent(40);
+    const content = presentationContent(160);
     const view = render(presentationWorkspace(content, 'normal'));
 
-    const thumbnails = Array.from(
+    let thumbnails = Array.from(
       view.container.querySelectorAll<HTMLButtonElement>(
         '[data-slide-thumbnail]',
       ),
     );
-    expect(thumbnails).toHaveLength(40);
+    expect(view.container.querySelector('[data-slide-count]')).toHaveAttribute(
+      'data-slide-count',
+      '160',
+    );
+    expect(thumbnails.length).toBeGreaterThan(1);
+    expect(thumbnails.length).toBeLessThanOrEqual(40);
+    expect(thumbnails[0]).toHaveAttribute(
+      'aria-label',
+      '幻灯片 1 / 160：Slide 1',
+    );
     expect(observers).toHaveLength(1);
-    expect(observers[0]?.observed.size).toBe(40);
+    expect(observers[0]?.observed.size).toBe(thumbnails.length);
     expect(renderedThumbnailCount(view.container)).toBe(1);
 
     act(() => {
       observers[0]?.emit([
-        { target: thumbnails[10], isIntersecting: true },
-        { target: thumbnails[11], isIntersecting: true },
+        { target: thumbnails[10] as HTMLButtonElement, isIntersecting: true },
+        { target: thumbnails[11] as HTMLButtonElement, isIntersecting: true },
       ]);
     });
     expect(renderedThumbnailCount(view.container)).toBe(3);
 
     act(() => {
-      observers[0]?.emit([{ target: thumbnails[10], isIntersecting: false }]);
+      observers[0]?.emit([
+        {
+          target: thumbnails[10] as HTMLButtonElement,
+          isIntersecting: false,
+        },
+      ]);
     });
     expect(renderedThumbnailCount(view.container)).toBe(2);
 
-    fireEvent.keyDown(thumbnails[0], { key: 'End' });
-    expect(document.activeElement).toBe(thumbnails[39]);
+    fireEvent.keyDown(thumbnails[0] as HTMLButtonElement, { key: 'End' });
+    await waitFor(() => {
+      thumbnails = Array.from(
+        view.container.querySelectorAll<HTMLButtonElement>(
+          '[data-slide-thumbnail]',
+        ),
+      );
+      expect(document.activeElement).toHaveAttribute('data-slide-index', '159');
+      expect(thumbnails.length).toBeLessThanOrEqual(40);
+    });
 
     view.rerender(presentationWorkspace(content, 'sorter'));
-    expect(observers).toHaveLength(2);
+    await waitFor(() => expect(observers).toHaveLength(2));
     expect(observers[0]?.observed.size).toBe(0);
-    expect(observers[1]?.observed.size).toBe(40);
     expect(observers[1]?.rootMargin).toBe('480px 240px');
+    thumbnails = Array.from(
+      view.container.querySelectorAll<HTMLButtonElement>(
+        '[data-slide-thumbnail]',
+      ),
+    );
+    expect(observers[1]?.observed.size).toBe(thumbnails.length);
+    expect(thumbnails.length).toBeLessThanOrEqual(48);
   } finally {
     globalThis.IntersectionObserver = OriginalIntersectionObserver;
   }
@@ -68,9 +96,13 @@ test('keeps complete thumbnail rendering when intersection observation is unavai
     writable: true,
   });
   try {
-    const content = presentationContent(4);
+    const content = presentationContent(160);
     const view = render(presentationWorkspace(content, 'normal'));
-    expect(renderedThumbnailCount(view.container)).toBe(4);
+    const mountedThumbnailCount = view.container.querySelectorAll(
+      '[data-slide-thumbnail]',
+    ).length;
+    expect(mountedThumbnailCount).toBeLessThanOrEqual(40);
+    expect(renderedThumbnailCount(view.container)).toBe(mountedThumbnailCount);
   } finally {
     Object.defineProperty(globalThis, 'IntersectionObserver', {
       configurable: true,
@@ -78,6 +110,34 @@ test('keeps complete thumbnail rendering when intersection observation is unavai
       writable: true,
     });
   }
+});
+
+test('deletes a windowed slide and moves focus to the adjacent slide', async () => {
+  const view = render(<StatefulPresentationWorkspace slideCount={160} />);
+  const first = view.container.querySelector<HTMLButtonElement>(
+    '[data-slide-thumbnail]',
+  );
+  if (!first) throw new Error('Missing the first thumbnail.');
+
+  fireEvent.keyDown(first, { key: 'End' });
+  await waitFor(() =>
+    expect(document.activeElement).toHaveAttribute('data-slide-index', '159'),
+  );
+
+  fireEvent.keyDown(document.activeElement as HTMLButtonElement, {
+    key: 'Delete',
+  });
+  await waitFor(() => {
+    expect(view.container.querySelector('[data-slide-count]')).toHaveAttribute(
+      'data-slide-count',
+      '159',
+    );
+    expect(document.activeElement).toHaveAttribute(
+      'data-slide-id',
+      'slide-159',
+    );
+    expect(document.activeElement).toHaveAttribute('data-slide-index', '158');
+  });
 });
 
 class MockIntersectionObserver implements IntersectionObserver {
@@ -135,8 +195,15 @@ function renderedThumbnailCount(container: HTMLElement): number {
 function presentationWorkspace(
   content: WorkPresentationContent,
   viewMode: 'normal' | 'sorter',
+  options: {
+    selectedSlideId?: string;
+    onDeleteSlide?: (slideId: string) => boolean;
+    onSelectSlide?: (slideId: string) => void;
+  } = {},
 ) {
-  const selectedSlide = content.slides[0];
+  const selectedSlide =
+    content.slides.find((slide) => slide.id === options.selectedSlideId) ??
+    content.slides[0];
   if (!selectedSlide) throw new Error('A selected slide is required.');
   return (
     <PresentationWorkspace
@@ -162,7 +229,7 @@ function presentationWorkspace(
       onAddSlide={() => undefined}
       onBeginDrag={() => undefined}
       onContinueDrag={() => undefined}
-      onDeleteSlide={() => false}
+      onDeleteSlide={options.onDeleteSlide ?? (() => false)}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
       onEditElement={() => undefined}
@@ -171,7 +238,7 @@ function presentationWorkspace(
       onOpenAgentMenu={() => undefined}
       onOpenComment={() => undefined}
       onSelectElement={() => undefined}
-      onSelectSlide={() => undefined}
+      onSelectSlide={(slideId) => options.onSelectSlide?.(slideId)}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
       onUpdateElement={() => undefined}
@@ -180,6 +247,26 @@ function presentationWorkspace(
       onViewModeChange={() => undefined}
     />
   );
+}
+
+function StatefulPresentationWorkspace({ slideCount }: { slideCount: number }) {
+  const [content, setContent] = useState(() => presentationContent(slideCount));
+  const [selectedSlideId, setSelectedSlideId] = useState(
+    content.slides[0]?.id ?? '',
+  );
+  return presentationWorkspace(content, 'normal', {
+    selectedSlideId,
+    onSelectSlide: setSelectedSlideId,
+    onDeleteSlide: (slideId) => {
+      if (content.slides.length <= 1) return false;
+      const index = content.slides.findIndex((slide) => slide.id === slideId);
+      if (index < 0) return false;
+      const slides = content.slides.filter((slide) => slide.id !== slideId);
+      setContent({ ...content, slides });
+      setSelectedSlideId(slides[Math.min(index, slides.length - 1)]?.id ?? '');
+      return true;
+    },
+  });
 }
 
 function presentationContent(slideCount: number): WorkPresentationContent {

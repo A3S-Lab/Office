@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export function usePresentationThumbnailVisibility(
   slideIds: readonly string[],
@@ -10,9 +10,10 @@ export function usePresentationThumbnailVisibility(
     () => new Set(),
   );
   slideIdsRef.current = slideIds;
-  const slideIdSignature = slideIds
-    .map((slideId) => `${slideId.length}:${slideId}`)
-    .join('');
+  const slideIdSignature = useMemo(
+    () => slideIds.map((slideId) => `${slideId.length}:${slideId}`).join(''),
+    [slideIds],
+  );
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -35,14 +36,39 @@ export function usePresentationThumbnailVisibility(
         rootMargin: viewMode === 'sorter' ? '480px 240px' : '360px 0px',
       },
     );
-    for (const thumbnail of viewport.querySelectorAll<HTMLElement>(
-      '[data-slide-thumbnail]',
-    )) {
-      observer.observe(thumbnail);
-    }
+    const observed = new Set<HTMLElement>();
+    const syncObservedThumbnails = () => {
+      const mounted = new Set(
+        viewport.querySelectorAll<HTMLElement>('[data-slide-thumbnail]'),
+      );
+      for (const thumbnail of observed) {
+        if (mounted.has(thumbnail)) continue;
+        observer.unobserve(thumbnail);
+        observed.delete(thumbnail);
+      }
+      for (const thumbnail of mounted) {
+        if (observed.has(thumbnail)) continue;
+        observed.add(thumbnail);
+        observer.observe(thumbnail);
+      }
+      const mountedIds = new Set(
+        [...mounted]
+          .map((thumbnail) => thumbnail.dataset.slideId)
+          .filter((slideId): slideId is string => Boolean(slideId)),
+      );
+      setVisibleIds((current) => retainedSlideIds(current, mountedIds));
+    };
+    syncObservedThumbnails();
+    const mutationObserver =
+      typeof MutationObserver === 'undefined'
+        ? null
+        : new MutationObserver(syncObservedThumbnails);
+    mutationObserver?.observe(viewport, { childList: true, subtree: true });
     return () => {
       active = false;
+      mutationObserver?.disconnect();
       observer.disconnect();
+      observed.clear();
     };
   }, [slideIdSignature, viewMode]);
 
