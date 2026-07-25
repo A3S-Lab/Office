@@ -26,3 +26,6 @@ All notable changes to A3S Office will be documented in this file.
   layouts, and master-derived artwork. Supported group scale is normalized
   across geometry, typography, rich-text runs, and border weights on import;
   rotated or reflected source groups remain an explicit compatibility warning.
+- Virtualized Presentation thumbnail scenes in both the slide strip and sorter.
+  Every slide keeps a stable keyboard target and scroll footprint, while only
+  the selected slide and the viewport overscan mount full scene content.

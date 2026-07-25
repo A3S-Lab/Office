@@ -30,6 +30,7 @@ import {
   PresentationTextEditor,
   type PresentationTextValue,
 } from './presentation-text-editor';
+import { usePresentationThumbnailVisibility } from './use-presentation-thumbnail-visibility';
 
 export interface PresentationWorkspaceProps {
   activeBackground: string;
@@ -139,9 +140,15 @@ export function PresentationWorkspace({
     selectionUnits.length === 1 && selectionUnits[0]?.groupId
       ? '缩放所选组合'
       : '缩放所选对象';
+  const { viewportRef: thumbnailViewportRef, visibleIds: visibleThumbnailIds } =
+    usePresentationThumbnailVisibility(
+      content.slides.map((slide) => slide.id),
+      viewMode,
+    );
   if (viewMode === 'sorter') {
     return (
       <section
+        ref={thumbnailViewportRef}
         className="work-presentation-sorter"
         aria-label="幻灯片浏览视图"
         style={
@@ -159,6 +166,9 @@ export function PresentationWorkspace({
             selected={slide.id === selectedSlide.id}
             aspectRatio={aspectRatio}
             variant="sorter"
+            renderPreview={
+              slide.id === selectedSlide.id || visibleThumbnailIds.has(slide.id)
+            }
             onSelect={() => onSelectSlide(slide.id, false)}
             onDelete={() => onDeleteSlide(slide.id)}
             onDoubleClick={() => onViewModeChange('normal')}
@@ -173,7 +183,11 @@ export function PresentationWorkspace({
   );
   return (
     <div className="work-presentation-layout">
-      <aside className="work-slide-strip" aria-label="幻灯片">
+      <aside
+        ref={thumbnailViewportRef}
+        className="work-slide-strip"
+        aria-label="幻灯片"
+      >
         {content.slides.map((slide, index) => (
           <PresentationSlideThumbnail
             key={slide.id}
@@ -183,6 +197,9 @@ export function PresentationWorkspace({
             selected={slide.id === selectedSlide.id}
             aspectRatio={aspectRatio}
             variant="strip"
+            renderPreview={
+              slide.id === selectedSlide.id || visibleThumbnailIds.has(slide.id)
+            }
             onSelect={() => onSelectSlide(slide.id, true)}
             onDelete={() => onDeleteSlide(slide.id)}
             onContextMenu={(event) => {

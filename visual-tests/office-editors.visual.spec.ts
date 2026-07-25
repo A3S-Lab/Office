@@ -650,6 +650,57 @@ test('presentation groups remain atomic across selection and history', async ({
   await expect(page.getByText('已选择 1 组，共 2 个对象')).toBeVisible();
 });
 
+test('presentation keeps long-deck thumbnail scenes inside a viewport window', async ({
+  page,
+}) => {
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const duplicate = page.getByRole('button', {
+    name: '复制幻灯片',
+    exact: true,
+  });
+  const thumbnails = page.locator('[data-slide-thumbnail]');
+  const initialCount = await thumbnails.count();
+  for (let index = 0; index < 24; index += 1) {
+    await duplicate.click();
+  }
+  const slideCount = initialCount + 24;
+  await expect(thumbnails).toHaveCount(slideCount);
+
+  const rendered = page.locator('[data-slide-thumbnail-rendered="true"]');
+  await expect.poll(() => rendered.count()).toBeGreaterThan(1);
+  await expect.poll(() => rendered.count()).toBeLessThan(slideCount);
+  expect(await rendered.count()).toBeLessThanOrEqual(16);
+
+  await thumbnails.first().focus();
+  await page.keyboard.press('End');
+  await expect(thumbnails.last()).toBeFocused();
+  await expect(thumbnails.last()).toHaveAttribute(
+    'data-slide-thumbnail-rendered',
+    'true',
+  );
+
+  await page
+    .getByRole('button', { name: '幻灯片浏览视图', exact: true })
+    .click();
+  await expect(page.locator('.work-presentation-sorter')).toBeVisible();
+  await page
+    .getByRole('slider', { name: '演示缩放', exact: true })
+    .press('End');
+  await expect(page.getByLabel('演示缩放比例')).toHaveText('200%');
+  await expect(thumbnails).toHaveCount(slideCount);
+  await expect.poll(() => rendered.count()).toBeGreaterThan(1);
+  await expect.poll(() => rendered.count()).toBeLessThan(slideCount);
+  expect(await rendered.count()).toBeLessThanOrEqual(16);
+});
+
 test('PDF workspace card uses a single, legible file mark', async ({
   page,
 }) => {

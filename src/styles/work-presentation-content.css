@@ -222,6 +222,11 @@
   box-shadow: 0 3px 9px rgb(25 31 45 / 8%);
 }
 
+.work-slide-thumbnail-placeholder {
+  contain: strict;
+  pointer-events: none;
+}
+
 .work-slide-add {
   display: flex;
   width: 136px;

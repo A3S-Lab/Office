@@ -97,7 +97,7 @@ export function App() {
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
-| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, native PPTX group export, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
+| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, native PPTX group export, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, alignment guides, and virtualized thumbnail scenes | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
 ### Package matrix
@@ -418,8 +418,11 @@ nested group nodes around the generated slide, layout, and master-derived
 objects, using identity child-coordinate transforms calculated from emitted
 geometry. Import applies non-rotated group scale to geometry, typography,
 explicit run sizes, and border weights; arbitrary group rotation and reflection
-remain explicit compatibility boundaries. PDF commands call typed PDFium
-capabilities directly.
+remain explicit compatibility boundaries. The slide strip and sorter retain a
+lightweight, keyboard-reachable target and stable aspect-ratio footprint for
+every slide, but mount complete thumbnail scenes only for the selected slide
+and the current viewport overscan. PDF commands call typed PDFium capabilities
+directly.
 
 Public framework adapters converge on the same React editor engine. The
 framework-neutral Core entry owns models and file workflows. The native Rust

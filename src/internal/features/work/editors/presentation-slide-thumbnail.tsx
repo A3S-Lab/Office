@@ -9,6 +9,7 @@ export function PresentationSlideThumbnail({
   selected,
   aspectRatio,
   variant,
+  renderPreview,
   onSelect,
   onDelete,
   onContextMenu,
@@ -20,6 +21,7 @@ export function PresentationSlideThumbnail({
   selected: boolean;
   aspectRatio: string;
   variant: 'strip' | 'sorter';
+  renderPreview: boolean;
   onSelect: () => void;
   onDelete: () => boolean;
   onContextMenu?: MouseEventHandler<HTMLButtonElement>;
@@ -32,6 +34,7 @@ export function PresentationSlideThumbnail({
       aria-label={`幻灯片 ${index + 1}：${slide.name}`}
       data-slide-thumbnail
       data-slide-id={slide.id}
+      data-slide-thumbnail-rendered={renderPreview ? 'true' : 'false'}
       onFocus={onSelect}
       onClick={onSelect}
       onContextMenu={onContextMenu}
@@ -39,12 +42,20 @@ export function PresentationSlideThumbnail({
       onKeyDown={(event) => handleThumbnailKey(event, onDelete)}
     >
       {variant === 'strip' && <span>{index + 1}</span>}
-      <SlideCanvas
-        content={content}
-        slide={slide}
-        interactive={false}
-        aspectRatio={aspectRatio}
-      />
+      {renderPreview ? (
+        <SlideCanvas
+          content={content}
+          slide={slide}
+          interactive={false}
+          aspectRatio={aspectRatio}
+        />
+      ) : (
+        <span
+          aria-hidden="true"
+          className="work-slide-canvas work-slide-thumbnail-placeholder"
+          style={{ aspectRatio, background: slide.background }}
+        />
+      )}
       {variant === 'sorter' && (
         <>
           <span>{index + 1}</span>
