@@ -550,8 +550,84 @@
   line-height: 1.6;
 }
 
+.playground-editor-host {
+  --playground-command-start: 250px;
+  --playground-command-end: 268px;
+
+  position: relative;
+}
+
+.playground-editor-host:has(.editor-sidebar-open) {
+  --playground-command-start: 286px;
+}
+
+.work-editor-shell.pdf .playground-editor-host {
+  --playground-command-end: 180px;
+}
+
 .playground-editor-header {
+  position: absolute;
+  z-index: 20;
+  inset: 0 0 auto;
   min-width: 0;
+  height: 36px;
+  flex: none;
+  justify-content: space-between;
+  gap: 0;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.work-editor-shell.pdf .playground-editor-header {
+  height: 42px;
+}
+
+.playground-editor-command-start {
+  display: flex;
+  width: var(--playground-command-start);
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  padding-right: 10px;
+  pointer-events: auto;
+}
+
+.playground-editor-command-start .work-editor-back,
+.playground-editor-command-start .playground-icon-button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 6px;
+}
+
+.playground-editor-command-start .work-file-kind-icon {
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
+  border-radius: 6px;
+}
+
+.playground-editor-command-start .work-editor-identity {
+  display: block;
+  min-width: 0;
+  flex: 1;
+}
+
+.playground-editor-command-start .work-editor-identity .work-office-text-field {
+  width: 100%;
+  max-width: none;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 660;
+}
+
+.playground-editor-header .work-editor-header-actions {
+  height: 100%;
+  pointer-events: auto;
 }
 
 .playground-editor-header .work-file-kind-icon.markdown {
@@ -565,7 +641,7 @@
 }
 
 .editor-sidebar-open {
-  margin-right: -4px;
+  margin-right: 0;
 }
 
 .playground-mode-switch {
@@ -574,20 +650,21 @@
   align-items: center;
   gap: 2px;
   margin: 0;
-  padding: 2px;
+  height: 30px;
+  padding: 1px;
   border: 1px solid var(--a3s-line);
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--a3s-panel-soft);
 }
 
 .playground-mode-switch > button {
   display: inline-flex;
-  height: 27px;
+  height: 26px;
   align-items: center;
   gap: 5px;
   padding: 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   color: var(--a3s-muted);
   font-size: 10px;
@@ -603,6 +680,12 @@
   box-shadow: 0 1px 3px rgb(20 24 40 / 9%);
   color: var(--a3s-ink);
   font-weight: 620;
+}
+
+.playground-editor-header .work-editor-ai-button,
+.playground-editor-header .work-export-button {
+  height: 28px;
+  border-radius: 6px;
 }
 
 .playground-editor-row {
@@ -627,6 +710,29 @@
   min-width: 0;
   min-height: 0;
   flex: 1;
+}
+
+.playground-editor-host .work-office-ribbon-tabs-row,
+.playground-editor-host .work-office-preview-bar {
+  padding-right: var(--playground-command-end);
+  padding-left: var(--playground-command-start);
+}
+
+.work-editor-shell.pdf .playground-editor-host .work-pdf-toolbar {
+  padding-right: calc(var(--playground-command-end) + 8px);
+  padding-left: calc(var(--playground-command-start) + 8px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.work-editor-shell.pdf
+  .playground-editor-host
+  .work-pdf-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.work-editor-shell.pdf .playground-editor-host .work-pdf-toolbar > * {
+  flex: 0 0 auto;
 }
 
 .playground-assistant {
@@ -891,22 +997,18 @@
   }
 }
 
-@media (max-width: 760px) {
-  .playground-home {
-    padding: 24px 18px 44px;
+@media (max-width: 900px) {
+  .playground-editor-host {
+    --playground-command-start: 170px;
+    --playground-command-end: 134px;
   }
 
-  .playground-template-grid,
-  .playground-artifact-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .playground-editor-host:has(.editor-sidebar-open) {
+    --playground-command-start: 202px;
   }
 
-  .work-editor-identity {
-    min-width: 0;
-  }
-
-  .playground-editor-header .work-file-kind-icon {
-    display: none;
+  .work-editor-shell.pdf .playground-editor-host {
+    --playground-command-end: 76px;
   }
 
   .playground-mode-switch > button span,
@@ -926,6 +1028,49 @@
     width: 33px;
     justify-content: center;
     padding: 0;
+  }
+
+  .work-editor-shell.pdf .work-pdf-toolbar {
+    gap: 4px;
+  }
+
+  .work-editor-shell.pdf .work-pdf-history,
+  .work-editor-shell.pdf .work-pdf-annotation-optional,
+  .work-editor-shell.pdf .work-pdf-fit-button,
+  .work-editor-shell.pdf .work-pdf-zoom-controls > output,
+  .work-editor-shell.pdf .work-pdf-search-state,
+  .work-editor-shell.pdf
+    .work-pdf-search
+    .ds-icon-button:not(.work-pdf-search-clear) {
+    display: none;
+  }
+
+  .work-editor-shell.pdf .work-pdf-search {
+    width: min(150px, 22vw);
+    min-width: 120px;
+  }
+
+  .work-editor-shell.pdf .work-pdf-page-controls {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .playground-home {
+    padding: 24px 18px 44px;
+  }
+
+  .playground-template-grid,
+  .playground-artifact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .work-editor-identity {
+    min-width: 0;
+  }
+
+  .playground-editor-header .work-file-kind-icon {
+    display: none;
   }
 }
 
@@ -948,9 +1093,18 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .playground-editor-host,
+  .playground-editor-host:has(.editor-sidebar-open) {
+    --playground-command-start: 154px;
+    --playground-command-end: 134px;
+  }
+
+  .work-editor-shell.pdf .playground-editor-host {
+    --playground-command-end: 76px;
+  }
+
   .playground-editor-header {
-    gap: 4px;
-    padding-inline: 6px;
+    padding-inline: 4px;
   }
 
   .editor-sidebar-open {
@@ -966,7 +1120,7 @@
   }
 
   .playground-editor-header .work-editor-identity .work-office-text-field {
-    height: 30px;
+    height: 27px;
     font-size: 11px;
   }
 

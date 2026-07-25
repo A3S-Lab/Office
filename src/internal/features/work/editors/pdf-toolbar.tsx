@@ -98,6 +98,35 @@ export function PdfToolbar({
 
   return (
     <header className="work-pdf-toolbar" role="toolbar" aria-label="PDF 工具栏">
+      {editable && (
+        <div className="work-pdf-toolbar-group work-pdf-save">
+          <output aria-label="PDF 保存状态" aria-live="polite">
+            {saveState === 'saving' && (
+              <StatusBadge tone="info">
+                <Loader2 className="spin" size={12} /> 保存中
+              </StatusBadge>
+            )}
+            {saveState === 'saved' && (
+              <StatusBadge tone="success">
+                <Check size={12} /> 已保存
+              </StatusBadge>
+            )}
+            {saveState === 'error' && (
+              <StatusBadge tone="danger">保存失败</StatusBadge>
+            )}
+          </output>
+          <Button
+            tone="secondary"
+            title={`${saveLabel}（Cmd/Ctrl+S）`}
+            disabled={!can.save()}
+            onClick={() => void commands.save()}
+          >
+            <Save size={14} />
+            {saveLabel}
+          </Button>
+        </div>
+      )}
+
       <div className="work-pdf-toolbar-group work-pdf-history">
         <IconButton label="撤销" disabled={!can.undo()} onClick={commands.undo}>
           <Undo2 size={15} />
@@ -305,35 +334,6 @@ export function PdfToolbar({
           页宽
         </button>
       </div>
-
-      {editable && (
-        <div className="work-pdf-toolbar-group work-pdf-save">
-          <output aria-label="PDF 保存状态" aria-live="polite">
-            {saveState === 'saving' && (
-              <StatusBadge tone="info">
-                <Loader2 className="spin" size={12} /> 保存中
-              </StatusBadge>
-            )}
-            {saveState === 'saved' && (
-              <StatusBadge tone="success">
-                <Check size={12} /> 已保存
-              </StatusBadge>
-            )}
-            {saveState === 'error' && (
-              <StatusBadge tone="danger">保存失败</StatusBadge>
-            )}
-          </output>
-          <Button
-            tone="secondary"
-            title={`${saveLabel}（Cmd/Ctrl+S）`}
-            disabled={!can.save()}
-            onClick={() => void commands.save()}
-          >
-            <Save size={14} />
-            {saveLabel}
-          </Button>
-        </div>
-      )}
     </header>
   );
 }

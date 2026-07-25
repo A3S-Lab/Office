@@ -68,8 +68,6 @@ export type { PresentationEditorProps } from './presentation-editor-types';
 export function PresentationEditor(props: PresentationEditorProps) {
   const { content, fileActions, preview } = props;
   if (preview) {
-    const player = <PresentationPlayer content={content} />;
-    if (!fileActions?.length) return player;
     return (
       <section className="work-presentation-editor preview">
         <WorkOfficePreviewBar
@@ -79,7 +77,7 @@ export function PresentationEditor(props: PresentationEditorProps) {
           fileActions={fileActions}
           className="work-presentation-ribbon"
         />
-        {player}
+        <PresentationPlayer content={content} />
       </section>
     );
   }

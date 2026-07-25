@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Check,
   Code2,
   Download,
   Eye,
@@ -159,102 +158,104 @@ export function EditorWorkspace({
 
   return (
     <section className={`work-editor-shell ${artifact.kind}`}>
-      <header className="work-editor-header playground-editor-header">
-        {!sidebarOpen && (
-          <button
-            type="button"
-            className="playground-icon-button editor-sidebar-open"
-            aria-label="展开办公侧边栏"
-            title="展开侧边栏"
-            onClick={onOpenSidebar}
-          >
-            <PanelLeftOpen size={17} />
-          </button>
-        )}
-        <button
-          type="button"
-          className="work-editor-back"
-          aria-label="返回办公首页"
-          title="返回办公首页"
-          onClick={onBack}
-        >
-          <ArrowLeft size={17} />
-        </button>
-        <span className={`work-file-kind-icon ${artifact.kind}`}>
-          <FileKindIcon kind={artifact.kind} size={17} />
-        </span>
-        <div className="work-editor-identity">
-          <input
-            className="work-office-text-field"
-            value={artifact.title}
-            aria-label="文件名"
-            onChange={(event) => onRename(event.target.value)}
-            onBlur={() => {
-              if (!artifact.title.trim()) {
-                onRename(`无标题${fileKindLabel(artifact.kind)}`);
-              }
-            }}
-          />
-          <span>
-            {extension}
-            <i aria-hidden="true">·</i>
-            <span>
-              <Check size={11} />
-              本次会话已保存
-            </span>
-          </span>
-        </div>
-        <div className="work-editor-header-actions">
-          {artifact.kind !== 'pdf' && (
-            <fieldset className="playground-mode-switch">
-              <legend className="sr-only">编辑或预览</legend>
-              <button
-                type="button"
-                className={!preview ? 'active' : ''}
-                aria-pressed={!preview}
-                onClick={() => setPreview(false)}
-              >
-                <Pencil size={14} />
-                <span>编辑</span>
-              </button>
-              <button
-                type="button"
-                className={preview ? 'active' : ''}
-                aria-pressed={preview}
-                onClick={() => setPreview(true)}
-              >
-                <Eye size={15} />
-                <span>预览</span>
-              </button>
-            </fieldset>
-          )}
-          <button
-            type="button"
-            className={`work-editor-ai-button ${assistantOpen ? 'active' : ''}`}
-            aria-label={assistantOpen ? '关闭 AI 助手' : '打开 AI 助手'}
-            aria-pressed={assistantOpen}
-            onClick={onToggleAssistant}
-          >
-            <Sparkles size={15} />
-            <span>AI 助手</span>
-          </button>
-          <button
-            type="button"
-            className="work-export-button"
-            disabled={exporting}
-            onClick={() => void exportArtifact()}
-          >
-            <Download size={15} />
-            <span>{artifact.kind === 'pdf' ? '下载 PDF' : '导出'}</span>
-          </button>
-        </div>
-      </header>
-
       <div className="playground-editor-row">
         <section
           className="playground-editor-host"
           aria-label={`${fileKindLabel(artifact.kind)}编辑器`}
         >
+          <header
+            className="work-editor-header playground-editor-header"
+            role="toolbar"
+            aria-label="文件命令栏"
+          >
+            <div className="playground-editor-command-start">
+              {!sidebarOpen && (
+                <button
+                  type="button"
+                  className="playground-icon-button editor-sidebar-open"
+                  aria-label="展开办公侧边栏"
+                  title="展开侧边栏"
+                  onClick={onOpenSidebar}
+                >
+                  <PanelLeftOpen size={17} />
+                </button>
+              )}
+              <button
+                type="button"
+                className="work-editor-back"
+                aria-label="返回办公首页"
+                title="返回办公首页"
+                onClick={onBack}
+              >
+                <ArrowLeft size={17} />
+              </button>
+              <span className={`work-file-kind-icon ${artifact.kind}`}>
+                <FileKindIcon kind={artifact.kind} size={16} />
+              </span>
+              <div className="work-editor-identity">
+                <input
+                  className="work-office-text-field"
+                  value={artifact.title}
+                  aria-label="文件名"
+                  title={`${artifact.title}.${extension.toLocaleLowerCase()}`}
+                  onChange={(event) => onRename(event.target.value)}
+                  onBlur={() => {
+                    if (!artifact.title.trim()) {
+                      onRename(`无标题${fileKindLabel(artifact.kind)}`);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="work-editor-header-actions">
+              {artifact.kind !== 'pdf' && (
+                <fieldset className="playground-mode-switch">
+                  <legend className="sr-only">编辑或预览</legend>
+                  <button
+                    type="button"
+                    className={!preview ? 'active' : ''}
+                    aria-label="编辑"
+                    aria-pressed={!preview}
+                    title="编辑"
+                    onClick={() => setPreview(false)}
+                  >
+                    <Pencil size={14} />
+                    <span>编辑</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={preview ? 'active' : ''}
+                    aria-label="预览"
+                    aria-pressed={preview}
+                    title="预览"
+                    onClick={() => setPreview(true)}
+                  >
+                    <Eye size={15} />
+                    <span>预览</span>
+                  </button>
+                </fieldset>
+              )}
+              <button
+                type="button"
+                className={`work-editor-ai-button ${assistantOpen ? 'active' : ''}`}
+                aria-label={assistantOpen ? '关闭 AI 助手' : '打开 AI 助手'}
+                aria-pressed={assistantOpen}
+                onClick={onToggleAssistant}
+              >
+                <Sparkles size={15} />
+                <span>AI 助手</span>
+              </button>
+              <button
+                type="button"
+                className="work-export-button"
+                disabled={exporting}
+                onClick={() => void exportArtifact()}
+              >
+                <Download size={15} />
+                <span>{artifact.kind === 'pdf' ? '下载 PDF' : '导出'}</span>
+              </button>
+            </div>
+          </header>
           {artifact.content.type === 'document' && (
             <DocumentEditor
               content={artifact.content}

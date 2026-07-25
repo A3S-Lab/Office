@@ -168,9 +168,9 @@
 
 .work-pdf-save {
   min-height: 29px;
-  margin-left: 3px;
-  padding-left: 8px;
-  border-left: 1px solid var(--a3s-line);
+  margin-right: 3px;
+  padding-right: 8px;
+  border-right: 1px solid var(--a3s-line);
 }
 
 .work-pdf-save > output {
@@ -276,6 +276,6 @@
   }
 
   .work-pdf-save {
-    margin-left: auto;
+    margin-right: 3px;
   }
 }

@@ -105,6 +105,54 @@ test.describe('Office editor visual contracts', () => {
   }
 });
 
+test('shared command bar remains compact when editors enter preview', async ({
+  page,
+}) => {
+  for (const fixture of fixtures.filter(({ kind }) => kind !== 'pdf')) {
+    await page.goto('/');
+    await fixture.open(page);
+    await fixture.ready(page);
+    await page.getByRole('button', { name: '预览' }).click();
+
+    const shell = page.locator(`.work-editor-shell.${fixture.kind}`);
+    const header = shell.getByRole('toolbar', { name: '文件命令栏' });
+    const previewBar = shell.getByRole('region', {
+      name: previewToolbarLabel(fixture.kind),
+    });
+    await expect(header).toBeVisible();
+    await expect(previewBar).toBeVisible();
+
+    const geometry = await shell.evaluate((element) => {
+      const header = element.querySelector<HTMLElement>(
+        '.playground-editor-header',
+      );
+      const previewBar = element.querySelector<HTMLElement>(
+        '.work-office-preview-bar',
+      );
+      const host = element.querySelector<HTMLElement>(
+        '.playground-editor-host',
+      );
+      if (!(header && previewBar && host)) {
+        throw new Error('Preview command-bar geometry is unavailable.');
+      }
+      const headerRect = header.getBoundingClientRect();
+      const previewRect = previewBar.getBoundingClientRect();
+      const hostRect = host.getBoundingClientRect();
+      return {
+        headerHeight: headerRect.height,
+        headerTop: headerRect.top,
+        previewHeight: previewRect.height,
+        previewTop: previewRect.top,
+        hostTop: hostRect.top,
+      };
+    });
+    expect(geometry.headerHeight).toBe(36);
+    expect(geometry.previewHeight).toBe(36);
+    expect(geometry.headerTop).toBeCloseTo(geometry.previewTop, 0);
+    expect(geometry.hostTop).toBeCloseTo(geometry.previewTop, 0);
+  }
+});
+
 test.describe('Office editor context menu contracts', () => {
   test.describe.configure({ mode: 'serial' });
 
@@ -855,12 +903,40 @@ async function verifySharedEditorGeometry(
     const shell = document.querySelector<HTMLElement>('.work-editor-shell');
     const header = shell?.querySelector<HTMLElement>('.work-editor-header');
     const host = shell?.querySelector<HTMLElement>('.playground-editor-host');
-    if (!shell || !header || !host) {
+    const commandStart = header?.querySelector<HTMLElement>(
+      '.playground-editor-command-start',
+    );
+    const commandEnd = header?.querySelector<HTMLElement>(
+      '.work-editor-header-actions',
+    );
+    const integratedRow = host?.querySelector<HTMLElement>(
+      shell?.classList.contains('pdf')
+        ? '.work-pdf-toolbar'
+        : '.work-office-ribbon-tabs-row',
+    );
+    const center = host?.querySelector<HTMLElement>(
+      shell?.classList.contains('pdf')
+        ? '.work-pdf-toolbar > *'
+        : '.work-office-ribbon-tabs',
+    );
+    if (
+      !shell ||
+      !header ||
+      !host ||
+      !commandStart ||
+      !commandEnd ||
+      !integratedRow ||
+      !center
+    ) {
       throw new Error('The shared Office editor shell is incomplete.');
     }
     const shellRect = shell.getBoundingClientRect();
     const headerRect = header.getBoundingClientRect();
     const hostRect = host.getBoundingClientRect();
+    const startRect = commandStart.getBoundingClientRect();
+    const endRect = commandEnd.getBoundingClientRect();
+    const rowRect = integratedRow.getBoundingClientRect();
+    const centerRect = center.getBoundingClientRect();
     return {
       viewportWidth: document.documentElement.clientWidth,
       documentScrollWidth: document.documentElement.scrollWidth,
@@ -875,12 +951,30 @@ async function verifySharedEditorGeometry(
         top: headerRect.top,
         width: headerRect.width,
         height: headerRect.height,
+        position: getComputedStyle(header).position,
+        paddingLeft: Number.parseFloat(getComputedStyle(header).paddingLeft),
       },
       host: {
         left: hostRect.left,
         top: hostRect.top,
         width: hostRect.width,
         height: hostRect.height,
+      },
+      commandStart: {
+        left: startRect.left,
+        right: startRect.right,
+      },
+      commandEnd: {
+        left: endRect.left,
+        right: endRect.right,
+      },
+      integratedRow: {
+        top: rowRect.top,
+        height: rowRect.height,
+      },
+      center: {
+        left: centerRect.left,
+        right: centerRect.right,
       },
     };
   });
@@ -894,12 +988,25 @@ async function verifySharedEditorGeometry(
   expect(geometry.header.left).toBeCloseTo(0, 0);
   expect(geometry.header.top).toBeCloseTo(0, 0);
   expect(geometry.header.width).toBeCloseTo(geometry.viewportWidth, 0);
-  expect(geometry.header.height).toBeGreaterThanOrEqual(48);
-  expect(geometry.header.height).toBeLessThanOrEqual(56);
+  expect(geometry.header.height).toBe(kind === 'pdf' ? 42 : 36);
+  expect(geometry.header.position).toBe('absolute');
   expect(geometry.host.left).toBeCloseTo(0, 0);
-  expect(geometry.host.top).toBeCloseTo(geometry.header.height, 0);
+  expect(geometry.host.top).toBeCloseTo(geometry.shell.top, 0);
   expect(geometry.host.width).toBeCloseTo(geometry.viewportWidth, 0);
-  expect(geometry.host.height).toBeGreaterThan(600);
+  expect(geometry.host.height).toBeCloseTo(geometry.shell.height, 0);
+  expect(geometry.integratedRow.top).toBeCloseTo(geometry.header.top, 0);
+  expect(geometry.integratedRow.height).toBe(geometry.header.height);
+  expect(geometry.commandStart.left).toBeCloseTo(
+    geometry.header.left + geometry.header.paddingLeft,
+    0,
+  );
+  expect(geometry.commandStart.right).toBeLessThanOrEqual(
+    geometry.center.left + 12,
+  );
+  expect(geometry.commandEnd.left).toBeGreaterThanOrEqual(
+    geometry.center.right - 12,
+  );
+  expect(geometry.commandEnd.right).toBeCloseTo(geometry.viewportWidth - 8, 0);
 
   if (projectName === 'compact-768') {
     await expect(
@@ -963,6 +1070,21 @@ async function openEditorContextMenu(
     button: 'right',
     position: kind === 'spreadsheet' ? { x: 280, y: 180 } : undefined,
   });
+}
+
+function previewToolbarLabel(kind: VisualEditorKind): string {
+  switch (kind) {
+    case 'document':
+      return '文字预览工具';
+    case 'markdown':
+      return 'Markdown 预览工具';
+    case 'spreadsheet':
+      return '表格预览工具';
+    case 'presentation':
+      return '演示预览工具';
+    default:
+      throw new Error(`The ${kind} editor does not have a preview toolbar.`);
+  }
 }
 
 function visualPdf(): Buffer {

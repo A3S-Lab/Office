@@ -227,13 +227,14 @@ export function WorkOfficePreviewBar({
   fileActions?: readonly WorkOfficeFileAction[];
   className?: string;
 }) {
-  if (!fileActions?.length) return null;
   return (
     <section
       className={`work-office-preview-bar ${className}`.trim()}
       aria-label={ariaLabel}
     >
-      <WorkOfficeFileMenu actions={fileActions} />
+      {fileActions?.length ? (
+        <WorkOfficeFileMenu actions={fileActions} />
+      ) : null}
       <div className="work-office-preview-summary">
         <Eye size={14} aria-hidden="true" />
         <strong>{label}</strong>

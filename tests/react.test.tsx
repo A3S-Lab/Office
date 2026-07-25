@@ -47,6 +47,9 @@ test('renders the React document editor in preview mode', async () => {
   );
 
   expect(await screen.findByLabelText('文字预览')).toBeInTheDocument();
+  expect(
+    screen.getByRole('region', { name: '文字预览工具' }),
+  ).toHaveTextContent('只读预览');
   expect(document.querySelector('[data-a3s-office]')).toHaveAttribute(
     'data-theme',
     'light',
@@ -424,6 +427,9 @@ test('renders controlled Markdown content with the TipTap editor', async () => {
   expect(await screen.findByLabelText('Markdown 预览')).toHaveTextContent(
     'A3S Office',
   );
+  expect(
+    screen.getByRole('region', { name: 'Markdown 预览工具' }),
+  ).toHaveTextContent('只读预览');
   expect(screen.getByRole('table')).toHaveTextContent('Tables');
   expect(artifact.content.type).toBe('markdown');
 });

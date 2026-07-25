@@ -360,20 +360,15 @@ export function SpreadsheetEditor({
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetShortcut}
     >
-      {preview &&
-        (fileActions?.length ? (
-          <WorkOfficePreviewBar
-            ariaLabel="表格预览工具"
-            label="只读预览"
-            detail={`${content.sheets.length} 个工作表`}
-            fileActions={fileActions}
-            className="work-spreadsheet-ribbon"
-          />
-        ) : (
-          <div className="work-preview-notice">
-            只读预览 · {content.sheets.length} 个工作表
-          </div>
-        ))}
+      {preview && (
+        <WorkOfficePreviewBar
+          ariaLabel="表格预览工具"
+          label="只读预览"
+          detail={`${content.sheets.length} 个工作表`}
+          fileActions={fileActions}
+          className="work-spreadsheet-ribbon"
+        />
+      )}
       {!preview && (
         <SpreadsheetEditorRibbon
           activeTab={ribbonTab}

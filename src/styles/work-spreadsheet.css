@@ -38,24 +38,6 @@
   background: #ffffff;
 }
 
-.work-preview-notice {
-  position: absolute;
-  z-index: 30;
-  top: 7px;
-  right: 12px;
-  display: inline-flex;
-  height: 26px;
-  align-items: center;
-  padding: 0 9px;
-  border: 1px solid #d9e1dc;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 3px 10px rgb(25 40 33 / 8%);
-  color: #32725a;
-  font-size: 9px;
-  pointer-events: none;
-}
-
 .work-spreadsheet-workbook-panel {
   max-height: 278px;
   flex: 0 0 auto;
