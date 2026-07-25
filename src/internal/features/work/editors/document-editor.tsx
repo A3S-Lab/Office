@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { WorkDocumentPreview } from '../components/work-document-pages';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
@@ -53,16 +52,18 @@ import {
 } from './document-find-replace-panel';
 import {
   clampDocumentZoom,
-  documentAgentMenuItems,
   documentCurrentPage,
   documentPageCount,
   documentWordCount,
-  plainTextAsHtml,
 } from './document-editor-support';
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import { DocumentLayoutPanel } from './document-layout-panel';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
 import { DocumentRuler } from './document-ruler';
+import {
+  DocumentSelectionContextMenu,
+  type DocumentSelectionMenuState,
+} from './document-selection-context-menu';
 import { DocumentSelectionToolbar } from './document-selection-toolbar';
 import { DocumentStatusBar } from './document-status-bar';
 import { DocumentToolbar, type DocumentViewMode } from './document-toolbar';
@@ -79,6 +80,11 @@ import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentPageChrome } from './use-document-page-chrome';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
 import { useDocumentComments } from './use-document-comments';
+import {
+  createWorkDocumentSelectionSnapshot,
+  documentPlainTextAsHtml,
+  type WorkGetDocumentSelectionMenuItems,
+} from '../work-document-selection-menu';
 
 export interface DocumentEditorProps {
   content: WorkDocumentContent;
@@ -88,6 +94,7 @@ export interface DocumentEditorProps {
   kernelWasmUrl?: string;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   fileActions?: readonly WorkOfficeFileAction[];
+  getSelectionMenuItems?: WorkGetDocumentSelectionMenuItems;
   onChange: (content: WorkDocumentContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
 }
@@ -117,6 +124,7 @@ export function DocumentEditor({
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
   fileActions,
+  getSelectionMenuItems,
   onChange,
   onAgentRequest,
 }: DocumentEditorProps) {
@@ -149,14 +157,8 @@ export function DocumentEditor({
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<DocumentViewMode>('page');
   const [zoom, setZoom] = useState(90);
-  const [agentMenu, setAgentMenu] = useState<{
-    x: number;
-    y: number;
-    selection: string;
-    rawSelection: string;
-    from: number;
-    to: number;
-  } | null>(null);
+  const [selectionMenu, setSelectionMenu] =
+    useState<DocumentSelectionMenuState | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   contentRef.current = content;
@@ -345,7 +347,7 @@ export function DocumentEditor({
         .chain()
         .focus()
         .setTextSelection({ from, to })
-        .insertContent(plainTextAsHtml(replacement))
+        .insertContent(documentPlainTextAsHtml(replacement))
         .run();
     },
     [editor],
@@ -716,24 +718,33 @@ export function DocumentEditor({
                       if (pageChromeEditing) closePageChrome();
                     }}
                     onContextMenu={(event) => {
-                      if (!onAgentRequest) return;
-                      const { from, to, empty } = editor.state.selection;
-                      if (empty) return;
-                      const rawSelection = editor.state.doc.textBetween(
-                        from,
-                        to,
-                        '\n',
+                      if (!getSelectionMenuItems && !onAgentRequest) return;
+                      const snapshot = createWorkDocumentSelectionSnapshot(
+                        editor,
+                        contentRef.current,
                       );
-                      const selection = rawSelection.trim();
-                      if (!selection) return;
+                      if (!snapshot) return;
                       event.preventDefault();
-                      setAgentMenu({
+                      if (getSelectionMenuItems) {
+                        const items = getSelectionMenuItems(snapshot);
+                        setSelectionMenu(
+                          items.length
+                            ? {
+                                kind: 'custom',
+                                x: event.clientX,
+                                y: event.clientY,
+                                snapshot,
+                                items,
+                              }
+                            : null,
+                        );
+                        return;
+                      }
+                      setSelectionMenu({
+                        kind: 'agent',
                         x: event.clientX,
                         y: event.clientY,
-                        selection,
-                        rawSelection,
-                        from,
-                        to,
+                        snapshot,
                       });
                     }}
                   >
@@ -876,69 +887,13 @@ export function DocumentEditor({
         onViewModeChange={setViewMode}
         onZoomChange={setZoom}
       />
-      {agentMenu && onAgentRequest && (
-        <WorkspaceContextMenu
-          label="选中文本 AI 操作"
-          x={agentMenu.x}
-          y={agentMenu.y}
-          items={documentAgentMenuItems(agentMenu.selection, onAgentRequest, {
-            target: {
-              id: 'document-selection',
-              label: '选中文本',
-              before: agentMenu.rawSelection,
-            },
-            apply: (changes) => {
-              const change = changes.find(
-                (candidate) => candidate.id === 'document-selection',
-              );
-              if (!change) return { appliedTargetIds: [], conflicts: [] };
-              const current = editor.state.doc.textBetween(
-                agentMenu.from,
-                agentMenu.to,
-                '\n',
-              );
-              if (current !== agentMenu.rawSelection) {
-                return {
-                  appliedTargetIds: [],
-                  conflicts: [
-                    {
-                      targetId: change.id,
-                      label: change.label,
-                      message: '选中文本在建议生成后已发生变化。',
-                    },
-                  ],
-                };
-              }
-              const applied = trackChangesRef.current
-                ? editor.commands.replaceDocumentTextWithTrackedChange(
-                    agentMenu.from,
-                    agentMenu.to,
-                    change.after,
-                  )
-                : editor
-                    .chain()
-                    .focus()
-                    .setTextSelection({
-                      from: agentMenu.from,
-                      to: agentMenu.to,
-                    })
-                    .insertContent(plainTextAsHtml(change.after))
-                    .run();
-              return applied
-                ? { appliedTargetIds: [change.id], conflicts: [] }
-                : {
-                    appliedTargetIds: [],
-                    conflicts: [
-                      {
-                        targetId: change.id,
-                        label: change.label,
-                        message: '编辑器无法替换当前选区。',
-                      },
-                    ],
-                  };
-            },
-          })}
-          onClose={() => setAgentMenu(null)}
+      {selectionMenu && (
+        <DocumentSelectionContextMenu
+          editor={editor}
+          menu={selectionMenu}
+          getTrackChanges={() => trackChangesRef.current}
+          onAgentRequest={onAgentRequest}
+          onClose={() => setSelectionMenu(null)}
         />
       )}
       {documentInsert.dialog}

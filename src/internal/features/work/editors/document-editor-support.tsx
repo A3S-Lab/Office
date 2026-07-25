@@ -5,6 +5,7 @@ import {
   MessageSquareText,
   Sparkles,
   TextQuote,
+  WandSparkles,
 } from 'lucide-react';
 import { showToast } from '../../../state/app-state';
 import type { WorkspaceContextMenuItem } from '../../workspace/components/workspace-context-menu';
@@ -14,6 +15,11 @@ import {
   type WorkAgentProposalTarget,
 } from '../work-agent-proposal';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
+import type {
+  WorkDocumentSelectionAction,
+  WorkDocumentSelectionMenuIcon,
+  WorkDocumentSelectionMenuItem,
+} from '../work-document-selection-menu';
 
 export const MIN_DOCUMENT_ZOOM = 50;
 export const MAX_DOCUMENT_ZOOM = 200;
@@ -106,14 +112,64 @@ export function documentAgentMenuItems(
   ];
 }
 
-export function plainTextAsHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
-    .replace(/\r?\n/g, '<br>');
+export function documentCustomSelectionMenuItems(
+  items: readonly WorkDocumentSelectionMenuItem[],
+  createAction: () => WorkDocumentSelectionAction,
+): WorkspaceContextMenuItem[] {
+  const ids = new Set<string>();
+  return items.map((item) => {
+    const id = item.id.trim();
+    if (!id) {
+      throw new Error('Document selection menu item IDs cannot be empty.');
+    }
+    if (ids.has(id)) {
+      throw new Error(`Document selection menu item "${id}" is duplicated.`);
+    }
+    ids.add(id);
+    return {
+      id,
+      label: item.label,
+      icon: documentSelectionMenuIcon(item.icon),
+      shortcut: item.shortcut,
+      ariaKeyShortcut: item.ariaKeyShortcut,
+      danger: item.danger,
+      disabled: item.disabled,
+      separatorBefore: item.separatorBefore,
+      onSelect: () => {
+        const action = createAction();
+        try {
+          const pending = item.onSelect(action.context);
+          if (pending) {
+            void Promise.resolve(pending).finally(action.dispose);
+          } else {
+            action.dispose();
+          }
+        } catch (error) {
+          action.dispose();
+          throw error;
+        }
+      },
+    };
+  });
+}
+
+function documentSelectionMenuIcon(
+  icon: WorkDocumentSelectionMenuIcon | undefined,
+) {
+  switch (icon) {
+    case 'copy':
+      return <Copy size={14} />;
+    case 'language':
+      return <Languages size={14} />;
+    case 'message':
+      return <MessageSquareText size={14} />;
+    case 'quote':
+      return <TextQuote size={14} />;
+    case 'wand':
+      return <WandSparkles size={14} />;
+    default:
+      return <Sparkles size={14} />;
+  }
 }
 
 export function documentPageCount(editor: Editor): number {

@@ -19,7 +19,9 @@ import {
   readSourceBlob,
   registerSourceBlob,
   type DocumentContent,
+  type DocumentSelectionContext,
   type EditorAgentRequest,
+  type GetDocumentSelectionMenuItems,
   type MarkdownContent,
   type OfficeArtifact,
   type OfficeArtifactContent,
@@ -103,6 +105,57 @@ export function EditorWorkspace({
     [artifact.id, onNotice, onTouch],
   );
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
+  const getDocumentSelectionMenuItems =
+    useCallback<GetDocumentSelectionMenuItems>(
+      () => [
+        {
+          id: 'copy',
+          label: '复制',
+          icon: 'copy',
+          onSelect: async ({ commands }) => {
+            const copied = await commands.copyText();
+            onNotice(
+              copied ? '选中文本已复制' : '无法访问剪贴板，请使用系统快捷键',
+              copied ? 'success' : 'danger',
+            );
+          },
+        },
+        {
+          id: 'expand',
+          label: '扩写选中内容',
+          icon: 'sparkles',
+          separatorBefore: true,
+          onSelect: (context) =>
+            onAgentRequest({
+              instruction:
+                '请结合全文和相邻段落扩写选中内容，保持原有事实、语气和文档结构；先返回可审阅草稿。',
+              selection: documentSelectionPromptContext(context),
+            }),
+        },
+        {
+          id: 'polish',
+          label: '润色表达',
+          icon: 'wand',
+          onSelect: (context) =>
+            onAgentRequest({
+              instruction:
+                '请结合全文语气润色选中内容，减少重复和空话，保持事实与专业术语不变；先返回可审阅草稿。',
+              selection: documentSelectionPromptContext(context),
+            }),
+        },
+        {
+          id: 'ask',
+          label: '询问 AI 助手',
+          icon: 'message',
+          onSelect: (context) =>
+            onAgentRequest({
+              instruction: '请结合文档上下文回答关于选中内容的问题：\n\n问题：',
+              selection: documentSelectionPromptContext(context),
+            }),
+        },
+      ],
+      [onAgentRequest, onNotice],
+    );
 
   return (
     <section className={`work-editor-shell ${artifact.kind}`}>
@@ -205,6 +258,7 @@ export function EditorWorkspace({
           {artifact.content.type === 'document' && (
             <DocumentEditor
               content={artifact.content}
+              getSelectionMenuItems={getDocumentSelectionMenuItems}
               onAgentRequest={onAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
               preview={preview}
@@ -268,6 +322,17 @@ export function EditorWorkspace({
       </div>
     </section>
   );
+}
+
+function documentSelectionPromptContext(
+  context: DocumentSelectionContext,
+): string {
+  return [
+    `选中文本：\n${context.selection.text}`,
+    `前文：\n${context.selection.beforeText || '（无）'}`,
+    `后文：\n${context.selection.afterText || '（无）'}`,
+    `完整文档：\n${context.document.text}`,
+  ].join('\n\n');
 }
 
 function AssistantPanel({

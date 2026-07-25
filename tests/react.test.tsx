@@ -1,10 +1,18 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { StrictMode } from 'react';
 import {
   createArtifact,
   type DocumentContent,
+  type DocumentSelectionContext,
+  type DocumentSelectionSnapshot,
   type MarkdownContent,
 } from '../src/core';
 import {
@@ -75,6 +83,61 @@ test('mounts host TipTap extensions in the document editor', async () => {
   });
 
   expect(shortcutCalls).toBe(1);
+});
+
+test('lets the host replace the selected-text menu with document-aware actions', async () => {
+  const artifact = createArtifact('project-brief');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const snapshots: DocumentSelectionSnapshot[] = [];
+  const actions: DocumentSelectionContext[] = [];
+
+  render(
+    <DocumentEditor
+      content={artifact.content}
+      getSelectionMenuItems={(snapshot) => {
+        snapshots.push(snapshot);
+        return [
+          {
+            id: 'expand',
+            label: '扩写',
+            icon: 'sparkles',
+            onSelect: (context) => actions.push(context),
+          },
+          {
+            id: 'polish',
+            label: '润色',
+            icon: 'wand',
+            onSelect: () => undefined,
+          },
+        ];
+      }}
+      onAgentRequest={() => undefined}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+  selectDomText(editor, '这项工作的目标');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fireEvent.contextMenu(editor, { clientX: 120, clientY: 180 });
+
+  const menu = await screen.findByRole('menu', { name: '选中文本操作' });
+  expect(within(menu).getByRole('menuitem', { name: '扩写' })).toBeVisible();
+  expect(within(menu).getByRole('menuitem', { name: '润色' })).toBeVisible();
+  expect(
+    within(menu).queryByRole('menuitem', { name: '总结选中内容' }),
+  ).not.toBeInTheDocument();
+  expect(snapshots).toHaveLength(1);
+  expect(snapshots[0]?.selection.text).toBe('这项工作的目标');
+  expect(snapshots[0]?.document.text).toContain('背景与目标');
+  expect(snapshots[0]?.document.content).toBe(artifact.content);
+
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '扩写' }));
+  expect(actions).toHaveLength(1);
+  expect(actions[0]?.commands.replaceText).toBeTypeOf('function');
 });
 
 test('preloads an editor without mounting it', async () => {
@@ -385,3 +448,25 @@ test('opens Markdown in source-and-preview split mode by default', async () => {
     container.querySelector('.work-markdown-workspace.split'),
   ).toBeInTheDocument();
 });
+
+function selectDomText(root: HTMLElement, text: string): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const value = node.textContent ?? '';
+    const offset = value.indexOf(text);
+    if (offset >= 0) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + text.length);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      root.focus();
+      document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+      return;
+    }
+    node = walker.nextNode();
+  }
+  throw new Error(`Unable to select "${text}" in the editor.`);
+}

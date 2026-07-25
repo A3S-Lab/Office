@@ -203,6 +203,8 @@ across minor releases.
 
 - `DocumentEditor.extensions`: additional TipTap Extensions.
 - `MarkdownEditor.extensions`: additional TipTap Extensions.
+- `DocumentEditor.getSelectionMenuItems`: a host-owned selected-text menu
+  factory with full document snapshots and conflict-aware text-edit commands.
 - Both editors append host Extensions after built-ins and throw on duplicate
   names.
 - Vue accepts `:extensions`; custom elements accept the `.extensions`
@@ -236,6 +238,8 @@ For each editor it must include:
 - The canonical content model or, for PDF, the Blob load/save lifecycle.
 - Supported Extensions, collision behavior, lifecycle guidance, persistence
   requirements, and a copyable highlighted example.
+- Document selection-menu snapshots, async target lifetime, stale-selection
+  behavior, editing commands, and React/Vue/Web Component bindings.
 - Explicit alternatives when an internal Extension API is not public.
 - Links or examples for React, Vue, and Web Components.
 

@@ -101,6 +101,9 @@ export function App() {
   and PDFium without a remote rendering service
 - **Typed Commands**: Dispatch editor actions through typed controllers rather
   than interpreting visible labels or DOM text
+- **Host-Owned Selection Menus**: Replace the Document selection context menu
+  with typed host actions that receive the selected fragment, nearby text, the
+  complete document, and conflict-aware editing commands
 - **Lazy Editor Engines**: Load only the selected editor and its large runtime
   assets
 - **Native Automation**: Inspect and modify Office packages through the Rust
@@ -110,7 +113,7 @@ export function App() {
 
 | Editor | Editing engine | Main capabilities | Native files |
 | --- | --- | --- | --- |
-| Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, responsive style and list galleries, bullet and numbering formats, restart/continue/start controls, rich-text formatting with editable superscript and subscript, size-aware table insertion, contextual row/column/cell editing, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
+| Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, responsive style and list galleries, bullet and numbering formats, restart/continue/start controls, host-defined selection menus with full document context, rich-text formatting with editable superscript and subscript, size-aware table insertion, contextual row/column/cell editing, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
 | Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, native PPTX group export, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, alignment guides, and virtualized thumbnail scenes | PPTX import/export, PDF export |
@@ -375,6 +378,53 @@ product already provides open, save, or export controls.
 `DocumentContent` stores compatibility HTML and may carry a structured,
 versioned model. Persist the complete emitted value. Directly replacing HTML
 invalidates an older model safely.
+
+### Selection context menus
+
+`DocumentEditor.getSelectionMenuItems` lets the host completely replace the
+selected-text context menu. A menu factory receives an immutable snapshot with
+the selected text and structured fragment, up to 2,000 characters on either
+side, the current `DocumentContent`, the complete plain text, and synchronized
+HTML. A selected action receives the same snapshot plus conflict-aware
+`replaceText`, `insertBefore`, `insertAfter`, and `copyText` commands.
+
+```tsx
+import type { GetDocumentSelectionMenuItems } from '@a3s-lab/office/core';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = () => [
+  {
+    id: 'polish',
+    label: 'Polish',
+    icon: 'wand',
+    onSelect: async (context) => {
+      const response = await llm.rewrite({
+        task: 'polish',
+        selection: context.selection.text,
+        before: context.selection.beforeText,
+        after: context.selection.afterText,
+        document: context.document.content,
+        documentText: context.document.text,
+      });
+      const result = context.commands.replaceText(response.text);
+      if (!result.applied) handleSelectionConflict(result.reason);
+    },
+  },
+];
+
+<DocumentEditor
+  content={content}
+  getSelectionMenuItems={getSelectionMenuItems}
+  onChange={setContent}
+/>;
+```
+
+Return or await every asynchronous action. While that Promise is pending, the
+editor maps the original range through unrelated document transactions. If the
+selected text itself changes, editing commands return `stale-selection`
+instead of modifying the wrong range. Each successful command emits one
+controlled update and one undo record, and text insertion or replacement
+honors tracked-changes mode. Vue uses `:get-selection-menu-items`; custom
+elements use the `.getSelectionMenuItems` property.
 
 ### Extensions
 

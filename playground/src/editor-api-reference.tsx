@@ -1,4 +1,11 @@
-import { Blocks, CodeXml, Info, Puzzle, ShieldCheck } from 'lucide-react';
+import {
+  Blocks,
+  CodeXml,
+  Info,
+  MousePointer2,
+  Puzzle,
+  ShieldCheck,
+} from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { CodeBlock } from './code-block';
 
@@ -34,6 +41,11 @@ interface EditorReference {
   contentFields: readonly PropReference[];
   props: readonly PropReference[];
   events: readonly EventReference[];
+  selectionMenu?: {
+    description: string;
+    notes: readonly string[];
+    code: string;
+  };
   extension: {
     status: 'available' | 'host';
     title: string;
@@ -202,9 +214,27 @@ const editorReferences: Record<EditorId, EditorReference> = {
         frameworkBinding: 'Vue: @agent-request · Element: agent-request',
         description: '接收文档选区发起的 AI 请求。',
       },
+      {
+        name: 'getSelectionMenuItems',
+        type: 'GetDocumentSelectionMenuItems',
+        frameworkBinding:
+          'Vue: :get-selection-menu-items · Element: .getSelectionMenuItems',
+        description:
+          '完全接管选中文本的右键菜单，并为每个动作提供选区、全文和安全编辑命令。',
+      },
       ...surfaceProps,
     ],
     events: [...contentEvents('DocumentContent'), agentEvent],
+    selectionMenu: {
+      description:
+        '宿主决定菜单项、文案、可用状态和执行逻辑。回调会得到当前受控内容、全文、选区前后文、结构化选区以及可跟踪异步变化的编辑命令。',
+      notes: [
+        '传入 getSelectionMenuItems 后会完整替换内置选区菜单；库不会按关键词猜测业务动作。',
+        '异步动作必须返回或 await Promise，编辑器会在模型响应期间跟踪原选区；原文被修改时 replaceText 会返回 stale-selection。',
+        'replaceText、insertBefore 和 insertAfter 各自产生一次受控更新和一次撤销记录，并遵守修订模式。',
+      ],
+      code: documentSelectionMenuExample(),
+    },
     extension: {
       status: 'available',
       title: '支持 TipTap Extensions',
@@ -675,6 +705,31 @@ export function EditorApiReference() {
           </table>
         </div>
 
+        {reference.selectionMenu && (
+          <>
+            <ApiHeading
+              icon={<MousePointer2 size={15} />}
+              title="选区右键菜单"
+            />
+            <div className="playground-extension-status available">
+              <div>
+                <strong>宿主完全控制</strong>
+                <span>{reference.selectionMenu.description}</span>
+              </div>
+              <ul>
+                {reference.selectionMenu.notes.map((note) => (
+                  <li key={note}>{note}</li>
+                ))}
+              </ul>
+            </div>
+            <CodeBlock
+              code={reference.selectionMenu.code}
+              label="自定义选区菜单示例"
+              language="tsx"
+            />
+          </>
+        )}
+
         <ApiHeading icon={<Puzzle size={15} />} title="Extensions" />
         <div
           className={`playground-extension-status ${reference.extension.status}`}
@@ -747,6 +802,54 @@ export function Editor({ content, onChange }: {
     />
   );
 }`;
+}
+
+function documentSelectionMenuExample(): string {
+  return `import type {
+  DocumentContent,
+  GetDocumentSelectionMenuItems,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = () => [
+  {
+    id: 'expand',
+    label: '扩写',
+    icon: 'sparkles',
+    onSelect: async (context) => {
+      const result = await llm.rewrite({
+        task: 'expand',
+        selectedText: context.selection.text,
+        before: context.selection.beforeText,
+        after: context.selection.afterText,
+        document: context.document.content,
+        documentText: context.document.text,
+      });
+
+      const applied = context.commands.replaceText(result.text);
+      if (!applied.applied) handleStaleSelection(applied.reason);
+    },
+  },
+  {
+    id: 'polish',
+    label: '润色',
+    icon: 'wand',
+    onSelect: async (context) => {
+      const result = await llm.rewrite({
+        task: 'polish',
+        selectedText: context.selection.text,
+        document: context.document.content,
+      });
+      context.commands.replaceText(result.text);
+    },
+  },
+];
+
+<DocumentEditor
+  content={content as DocumentContent}
+  getSelectionMenuItems={getSelectionMenuItems}
+  onChange={setContent}
+/>;`;
 }
 
 function hostExtensionExample(

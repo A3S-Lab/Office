@@ -45,6 +45,16 @@ export type {
   WorkAgentProposalTarget as AgentProposalTarget,
 } from './internal/features/work/work-agent-proposal';
 export type { WorkEditorAgentRequest as EditorAgentRequest } from './internal/features/work/work-agent-request';
+export type {
+  WorkDocumentSelectionCommandFailure as DocumentSelectionCommandFailure,
+  WorkDocumentSelectionCommandResult as DocumentSelectionCommandResult,
+  WorkDocumentSelectionCommands as DocumentSelectionCommands,
+  WorkDocumentSelectionContext as DocumentSelectionContext,
+  WorkDocumentSelectionMenuIcon as DocumentSelectionMenuIcon,
+  WorkDocumentSelectionMenuItem as DocumentSelectionMenuItem,
+  WorkDocumentSelectionSnapshot as DocumentSelectionSnapshot,
+  WorkGetDocumentSelectionMenuItems as GetDocumentSelectionMenuItems,
+} from './internal/features/work/work-document-selection-menu';
 export {
   workArtifactExtension as artifactExtension,
   workArtifactKindLabel as artifactKindLabel,

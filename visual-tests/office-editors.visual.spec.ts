@@ -145,6 +145,29 @@ test.describe('Office editor context menu contracts', () => {
       expect(geometry.width).toBeLessThanOrEqual(320);
       expect(geometry.height).toBeGreaterThan(40);
 
+      if (kind === 'document') {
+        await expect(
+          menu.getByRole('menuitem', { name: '扩写选中内容' }),
+        ).toBeVisible();
+        await expect(
+          menu.getByRole('menuitem', { name: '润色表达' }),
+        ).toBeVisible();
+        await expect(
+          menu.getByRole('menuitem', { name: '总结选中内容' }),
+        ).toHaveCount(0);
+        await expect(menu).toHaveScreenshot(
+          'document-selection-context-menu.png',
+        );
+        await menu.getByRole('menuitem', { name: '扩写选中内容' }).click();
+        const assistant = page.getByRole('complementary', {
+          name: 'AI 助手',
+        });
+        await expect(assistant).toBeVisible();
+        await expect(assistant).toContainText('完整文档：');
+        await expect(assistant).toContainText('新项目方案');
+        return;
+      }
+
       await page.keyboard.press('Escape');
       await expect(menu).toBeHidden();
     });
@@ -264,6 +287,12 @@ test('component API documents every editor and remains usable on compact screens
   await expect(tabs.getByRole('tab')).toHaveCount(5);
   await expect(
     api.getByRole('rowheader', { name: 'extensions' }),
+  ).toBeVisible();
+  await expect(
+    api.getByRole('rowheader', { name: 'getSelectionMenuItems' }),
+  ).toBeVisible();
+  await expect(
+    api.getByRole('heading', { name: '选区右键菜单', level: 3 }),
   ).toBeVisible();
   await expect(
     api.getByText('支持 TipTap Extensions', { exact: true }),

@@ -13,6 +13,7 @@ import {
 import type {
   DocumentContent,
   EditorAgentRequest,
+  GetDocumentSelectionMenuItems,
   MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
@@ -75,6 +76,7 @@ export const DocumentEditor = defineComponent({
       default: undefined,
       type: Array as PropType<Extensions>,
     },
+    getSelectionMenuItems: Function as PropType<GetDocumentSelectionMenuItems>,
     kernelWasmUrl: String,
     layoutFonts: {
       default: undefined,
@@ -98,6 +100,7 @@ export const DocumentEditor = defineComponent({
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,
+        getSelectionMenuItems: props.getSelectionMenuItems,
         kernelWasmUrl: props.kernelWasmUrl,
         layoutFonts: props.layoutFonts,
         onAgentRequest: (request) => emit('agentRequest', request),

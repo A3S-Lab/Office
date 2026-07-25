@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import type {
   DocumentContent,
   EditorAgentRequest,
+  GetDocumentSelectionMenuItems,
   MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
@@ -147,6 +148,7 @@ abstract class A3SContentEditorElement<
 
 export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentContent> {
   #extensions: Extensions | undefined;
+  #getSelectionMenuItems: GetDocumentSelectionMenuItems | undefined;
   #layoutFonts: readonly DocumentLayoutFont[] | undefined;
 
   static get observedAttributes() {
@@ -171,6 +173,15 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     this.requestRender();
   }
 
+  get getSelectionMenuItems(): GetDocumentSelectionMenuItems | undefined {
+    return this.#getSelectionMenuItems;
+  }
+
+  set getSelectionMenuItems(value: GetDocumentSelectionMenuItems | undefined,) {
+    this.#getSelectionMenuItems = value;
+    this.requestRender();
+  }
+
   get layoutFonts(): readonly DocumentLayoutFont[] | undefined {
     return this.#layoutFonts;
   }
@@ -186,6 +197,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,
+      getSelectionMenuItems: this.getSelectionMenuItems,
       kernelWasmUrl: this.kernelWasmUrl,
       layoutFonts: this.layoutFonts,
       onAgentRequest: (request) => this.requestAgent(request),

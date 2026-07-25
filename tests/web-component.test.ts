@@ -41,6 +41,9 @@ test('registers every custom element idempotently', async () => {
   const hostExtension = Extension.create({ name: 'hostExtension' });
   documentEditor.extensions = [hostExtension];
   expect(documentEditor.extensions).toEqual([hostExtension]);
+  const getSelectionMenuItems = () => [];
+  documentEditor.getSelectionMenuItems = getSelectionMenuItems;
+  expect(documentEditor.getSelectionMenuItems).toBe(getSelectionMenuItems);
 
   const markdownEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.markdown,

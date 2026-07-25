@@ -112,13 +112,27 @@ test('documents every editor contract and its supported extension boundary', () 
     within(documentPanel).getByRole('rowheader', { name: 'extensions' }),
   ).toBeVisible();
   expect(
+    within(documentPanel).getByRole('rowheader', {
+      name: 'getSelectionMenuItems',
+    }),
+  ).toBeVisible();
+  expect(
+    within(documentPanel).getByRole('heading', {
+      name: '选区右键菜单',
+      level: 3,
+    }),
+  ).toBeVisible();
+  expect(
     within(documentPanel).getByText('支持 TipTap Extensions'),
   ).toBeVisible();
-  const extensionExample = documentPanel.querySelector(
+  const examples = documentPanel.querySelectorAll(
     'pre[data-code-language="tsx"]',
   );
-  expect(extensionExample).not.toBeNull();
-  expect(extensionExample).toHaveTextContent('Extension.create({');
+  expect(examples).toHaveLength(2);
+  expect(examples[0]).toHaveTextContent('GetDocumentSelectionMenuItems');
+  expect(examples[0]).toHaveTextContent('context.document.content');
+  expect(examples[0]).toHaveTextContent('context.commands.replaceText');
+  expect(examples[1]).toHaveTextContent('Extension.create({');
 
   fireEvent.click(
     within(tablist).getByRole('tab', {
