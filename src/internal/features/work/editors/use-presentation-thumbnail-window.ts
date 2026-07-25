@@ -30,6 +30,11 @@ interface ThumbnailMetrics {
   viewportRows: number;
 }
 
+interface ThumbnailLayoutAnchor {
+  key: string;
+  slideId: string;
+}
+
 export interface PresentationThumbnailWindow {
   bottomSpacerHeight: number;
   end: number;
@@ -62,14 +67,17 @@ export function usePresentationThumbnailWindow({
   const [, setMetricsVersion] = useState(0);
   const pendingFocusIdRef = useRef<string | null>(null);
   const pendingRevealIdRef = useRef<string | null>(null);
-  const pendingLayoutAnchorRef = useRef(false);
+  const pendingLayoutAnchorRef = useRef<ThumbnailLayoutAnchor | null>(null);
   const layoutKey = `${viewMode}:${zoom}`;
   const layoutKeyRef = useRef(layoutKey);
+  const activeLayoutKeyRef = useRef(layoutKey);
   const frameRef = useRef<number | null>(null);
+  const scheduleMeasurementRef = useRef<() => void>(() => undefined);
   const [range, setRange] = useState<ThumbnailRange>(() =>
     centeredRange(itemCount, selectedIndex, initialMetrics),
   );
   slideIdsRef.current = slideIds;
+  activeLayoutKeyRef.current = layoutKey;
   const slideIdSignature = useMemo(
     () => slideIds.map((slideId) => `${slideId.length}:${slideId}`).join(''),
     [slideIds],
@@ -88,22 +96,33 @@ export function usePresentationThumbnailWindow({
     thumbnail.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }, [viewportRef]);
 
+  const revealThumbnail = useCallback(
+    (slideId: string): boolean => {
+      const viewport = viewportRef.current;
+      if (!viewport) return false;
+      const thumbnail = Array.from(
+        viewport.querySelectorAll<HTMLButtonElement>('[data-slide-thumbnail]'),
+      ).find((candidate) => candidate.dataset.slideId === slideId);
+      if (!thumbnail) return false;
+      thumbnail.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      return true;
+    },
+    [viewportRef],
+  );
+
   const revealPendingThumbnail = useCallback(() => {
     const slideId = pendingRevealIdRef.current;
-    const viewport = viewportRef.current;
-    if (!slideId || !viewport) return;
-    const thumbnail = Array.from(
-      viewport.querySelectorAll<HTMLButtonElement>('[data-slide-thumbnail]'),
-    ).find((candidate) => candidate.dataset.slideId === slideId);
-    if (!thumbnail) return;
+    if (!slideId || !revealThumbnail(slideId)) return;
     pendingRevealIdRef.current = null;
-    thumbnail.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }, [viewportRef]);
+  }, [revealThumbnail]);
 
   const scheduleMeasurement = useCallback(() => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
+      if (activeLayoutKeyRef.current !== layoutKey) return;
+      const pendingLayoutAnchor = pendingLayoutAnchorRef.current;
+      if (pendingLayoutAnchor && pendingLayoutAnchor.key !== layoutKey) return;
       const viewport = viewportRef.current;
       if (!viewport || !windowed) return;
       const list = viewport.querySelector<HTMLElement>(
@@ -151,31 +170,39 @@ export function usePresentationThumbnailWindow({
       );
       const overscanRows =
         viewMode === 'sorter' ? SORTER_OVERSCAN_ROWS : NORMAL_OVERSCAN_ROWS;
-      if (pendingLayoutAnchorRef.current) {
-        const anchorId =
-          pendingFocusIdRef.current ?? pendingRevealIdRef.current;
-        const anchorIndex = anchorId
-          ? slideIdsRef.current.indexOf(anchorId)
-          : -1;
-        pendingLayoutAnchorRef.current = false;
-        if (anchorIndex >= 0) {
-          setRange(centeredRange(itemCount, anchorIndex, metrics));
+      const visibleRange = rowRange(
+        itemCount,
+        columns,
+        Math.max(0, firstVisibleRow - overscanRows),
+        viewportRows + overscanRows * 2,
+      );
+      if (pendingLayoutAnchor?.key === layoutKey) {
+        const anchorIndex = slideIdsRef.current.indexOf(
+          pendingLayoutAnchor.slideId,
+        );
+        if (anchorIndex < 0) {
+          pendingLayoutAnchorRef.current = null;
+        } else if (
+          !metricsChanged &&
+          anchorIndex >= visibleRange.start &&
+          anchorIndex < visibleRange.end
+        ) {
+          pendingLayoutAnchorRef.current = null;
+        } else {
+          setRange((current) => {
+            const next = centeredRange(itemCount, anchorIndex, metrics);
+            return sameRange(current, next) ? current : next;
+          });
           requestAnimationFrame(() => {
-            focusPendingThumbnail();
-            revealPendingThumbnail();
+            revealThumbnail(pendingLayoutAnchor.slideId);
+            requestAnimationFrame(() => scheduleMeasurementRef.current());
           });
           return;
         }
       }
       if (!pendingFocusIdRef.current && !pendingRevealIdRef.current) {
         setRange((current) => {
-          const next = rowRange(
-            itemCount,
-            columns,
-            Math.max(0, firstVisibleRow - overscanRows),
-            viewportRows + overscanRows * 2,
-          );
-          return sameRange(current, next) ? current : next;
+          return sameRange(current, visibleRange) ? current : visibleRange;
         });
       }
       focusPendingThumbnail();
@@ -184,12 +211,15 @@ export function usePresentationThumbnailWindow({
   }, [
     focusPendingThumbnail,
     itemCount,
+    layoutKey,
     revealPendingThumbnail,
+    revealThumbnail,
     viewMode,
     viewportRef,
     windowed,
     zoom,
   ]);
+  scheduleMeasurementRef.current = scheduleMeasurement;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -237,9 +267,18 @@ export function usePresentationThumbnailWindow({
     if (layoutChanged) {
       const metrics = defaultMetrics(viewMode, zoom);
       metricsRef.current = metrics;
-      pendingLayoutAnchorRef.current = true;
+      pendingLayoutAnchorRef.current = {
+        key: layoutKey,
+        slideId: selectedSlideId,
+      };
       setRange(centeredRange(itemCount, selectedIndex, metrics));
       return;
+    }
+    if (pendingLayoutAnchorRef.current?.key === layoutKey) {
+      pendingLayoutAnchorRef.current = {
+        key: layoutKey,
+        slideId: selectedSlideId,
+      };
     }
     setRange((current) => {
       if (selectedIndex >= current.start && selectedIndex < current.end) {
