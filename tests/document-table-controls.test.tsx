@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { DocumentTableInsertPopover } from '../src/internal/features/work/editors/document-table-insert-popover';
 import { DocumentTableRibbon } from '../src/internal/features/work/editors/document-table-ribbon';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
+import { canInsertDocumentComment } from '../src/internal/features/work/work-document-comments';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 let editor: Editor | null = null;
@@ -81,6 +82,47 @@ test('shows the contextual table tab only while the selection is in a table', as
   await waitFor(() =>
     expect(screen.queryByRole('tab', { name: '表格' })).toBeNull(),
   );
+});
+
+test('only enables adding a comment for an eligible text selection', () => {
+  editor = createPlainEditor();
+  const inserted: boolean[] = [];
+  const view = render(
+    documentToolbar(editor, {
+      canInsertComment: canInsertDocumentComment(editor),
+      onInsertComment: () => inserted.push(true),
+    }),
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  const addComment = screen.getByRole('button', { name: '添加批注' });
+  expect(addComment).toBeDisabled();
+  expect(addComment).toHaveAttribute('title', '请先选择未批注的文字');
+
+  const range = documentTextRange(editor, 'selected text');
+  editor.commands.setTextSelection(range);
+  view.rerender(
+    documentToolbar(editor, {
+      canInsertComment: canInsertDocumentComment(editor),
+      onInsertComment: () => inserted.push(true),
+    }),
+  );
+
+  expect(addComment).not.toBeDisabled();
+  expect(addComment).toHaveAttribute('title', '添加批注');
+  fireEvent.click(addComment);
+  expect(inserted).toEqual([true]);
+
+  expect(
+    editor.commands.insertDocumentComment({ id: 'existing-comment', range }),
+  ).toBe(true);
+  view.rerender(
+    documentToolbar(editor, {
+      canInsertComment: canInsertDocumentComment(editor),
+      onInsertComment: () => inserted.push(true),
+    }),
+  );
+  expect(addComment).toBeDisabled();
 });
 
 test('edits table rows, columns, header behavior, and removes the table', () => {
@@ -193,7 +235,16 @@ function createMixedEditor(): Editor {
   });
 }
 
-function documentToolbar(currentEditor: Editor) {
+function documentToolbar(
+  currentEditor: Editor,
+  {
+    canInsertComment = false,
+    onInsertComment = () => undefined,
+  }: {
+    canInsertComment?: boolean;
+    onInsertComment?: () => void;
+  } = {},
+) {
   const noop = () => undefined;
   return (
     <DocumentToolbar
@@ -224,16 +275,18 @@ function documentToolbar(currentEditor: Editor) {
       onToggleCitations={noop}
       onInsertField={noop}
       onRefreshFields={noop}
-      onInsertComment={noop}
+      canInsertComment={canInsertComment}
+      onInsertComment={onInsertComment}
       commentsOpen={false}
       commentCount={0}
       onToggleComments={noop}
       trackChanges={false}
       changesOpen={false}
       changeCount={0}
+      findReplaceMode={null}
       onToggleTrackChanges={noop}
       onToggleChanges={noop}
-      onReplaceText={() => true}
+      onOpenFindReplace={noop}
     />
   );
 }

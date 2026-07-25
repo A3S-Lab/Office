@@ -2,7 +2,6 @@ import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import {
-  applyDocumentPageChromeEditorCommand,
   createDocumentPageChromeEditorExtensions,
   DocumentPageChromeRichTextEditor,
   documentPageChromeEditorState,
@@ -21,32 +20,17 @@ test('applies typed page-chrome commands to a TipTap document', () => {
   });
   editor.commands.setTextSelection({ from: 1, to: 10 });
 
+  expect(editor.chain().focus().toggleBold().run()).toBe(true);
+  expect(editor.chain().focus().toggleUnderline().run()).toBe(true);
+  expect(editor.chain().focus().setColor('#175cd3').run()).toBe(true);
   expect(
-    applyDocumentPageChromeEditorCommand(editor, { type: 'toggleBold' }),
+    editor
+      .chain()
+      .focus()
+      .setDocumentPageChromeLink('https://a3s.dev/office')
+      .run(),
   ).toBe(true);
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'toggleUnderline',
-    }),
-  ).toBe(true);
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'setColor',
-      color: '#175cd3',
-    }),
-  ).toBe(true);
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'setLink',
-      href: 'https://a3s.dev/office',
-    }),
-  ).toBe(true);
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'setAlignment',
-      alignment: 'right',
-    }),
-  ).toBe(true);
+  expect(editor.chain().focus().setTextAlign('right').run()).toBe(true);
 
   const state = documentPageChromeEditorState(editor);
   const html = sanitizeDocumentPageChromeHtml(editor.getHTML());
@@ -63,16 +47,12 @@ test('applies typed page-chrome commands to a TipTap document', () => {
   expect(html).toContain('<strong>');
   expect(html).toContain('<u>');
 
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'setLink',
-      href: 'javascript:alert(1)',
-    }),
-  ).toBe(false);
+  expect(editor.commands.setDocumentPageChromeLink('javascript:alert(1)')).toBe(
+    false,
+  );
   editor.commands.setTextSelection(editor.state.doc.content.size);
   expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'insertImage',
+    editor.commands.insertDocumentPageChromeImage({
       alt: 'A3S mark',
       source: pixelPng,
     }),
@@ -96,20 +76,12 @@ test('preserves and switches page-chrome vertical-position marks', () => {
     subscript: true,
     superscript: false,
   });
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'toggleSuperscript',
-    }),
-  ).toBe(true);
+  expect(editor.commands.toggleDocumentSuperscript()).toBe(true);
   expect(editor.getHTML()).toContain('<sup>water</sup>');
   expect(editor.getHTML()).not.toContain('<sub>water</sub>');
 
   editor.commands.setTextSelection(textRange(editor, 'power'));
-  expect(
-    applyDocumentPageChromeEditorCommand(editor, {
-      type: 'toggleSubscript',
-    }),
-  ).toBe(true);
+  expect(editor.commands.toggleDocumentSubscript()).toBe(true);
   expect(editor.getHTML()).toContain('<sub>power</sub>');
   expect(editor.getHTML()).not.toContain('<sup>power</sup>');
   editor.destroy();

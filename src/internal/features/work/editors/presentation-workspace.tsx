@@ -11,7 +11,8 @@ import type {
 import { presentationSelectionUnits } from '../work-presentation-groups';
 import { OfficeTextArea } from './office-controls';
 import { SlideChart } from './presentation-chart-canvas';
-import type { PresentationDesignMode } from './presentation-design-panel';
+import type { PresentationEditorCommands } from './presentation-command-types';
+import type { PresentationDesignMode } from './presentation-editor-types';
 import {
   EditableSlideTable,
   SlideElementPreview,
@@ -25,10 +26,23 @@ import {
   selectedPresentationElements,
 } from './presentation-selection';
 import { PresentationThumbnailRail } from './presentation-thumbnail-rail';
-import {
-  PresentationTextEditor,
-  type PresentationTextValue,
-} from './presentation-text-editor';
+import { PresentationTextEditor } from './presentation-text-editor';
+
+export type PresentationWorkspaceCommands = Pick<
+  PresentationEditorCommands,
+  | 'addSlide'
+  | 'deleteSlideById'
+  | 'editElement'
+  | 'exitEditing'
+  | 'instantiatePlaceholder'
+  | 'openComment'
+  | 'selectElement'
+  | 'selectSlide'
+  | 'setViewMode'
+  | 'updateElement'
+  | 'updateNotes'
+  | 'updateTextElement'
+>;
 
 export interface PresentationWorkspaceProps {
   activeBackground: string;
@@ -37,6 +51,7 @@ export interface PresentationWorkspaceProps {
   aspectRatio: string;
   canvasName: string;
   canvasRef: RefObject<HTMLElement | null>;
+  commands: PresentationWorkspaceCommands;
   content: WorkPresentationContent;
   designContent: WorkPresentationContent;
   designMode: PresentationDesignMode;
@@ -50,37 +65,22 @@ export interface PresentationWorkspaceProps {
   snapGuides: OfficeKernelPresentationSnapGuide[];
   viewMode: 'normal' | 'sorter';
   zoom: number;
-  onAddSlide: () => void;
   onBeginDrag: (
     event: PointerEvent,
     element: WorkSlideElement,
     mode: 'move' | 'resize',
   ) => void;
   onContinueDrag: (event: PointerEvent) => void;
-  onDeleteSlide: (slideId: string) => boolean;
   onDragCancel: () => void;
   onDragEnd: (event: PointerEvent) => void;
-  onEditElement: (elementId: string) => void;
-  onExitEditing: () => void;
-  onInstantiatePlaceholder: (definition: WorkSlideElement) => void;
   onOpenAgentMenu: (
     event: MouseEvent,
     slide: WorkSlide,
     slideIndex: number,
     element?: WorkSlideElement | null,
   ) => void;
-  onOpenComment: (commentId: string) => void;
-  onSelectElement: (elementId: string | null, additive: boolean) => void;
-  onSelectSlide: (slideId: string, returnToSlideMode: boolean) => void;
   onTextEditorChange: (elementId: string, editor: Editor | null) => void;
   onTextSelectionChange: () => void;
-  onUpdateElement: (patch: Partial<WorkSlideElement>) => void;
-  onUpdateNotes: (notes: string) => void;
-  onUpdateTextElement: (
-    elementId: string,
-    value: PresentationTextValue,
-  ) => void;
-  onViewModeChange: (mode: 'normal' | 'sorter') => void;
 }
 
 export function PresentationWorkspace({
@@ -90,6 +90,7 @@ export function PresentationWorkspace({
   aspectRatio,
   canvasName,
   canvasRef,
+  commands,
   content,
   designContent,
   designMode,
@@ -103,25 +104,13 @@ export function PresentationWorkspace({
   snapGuides,
   viewMode,
   zoom,
-  onAddSlide,
   onBeginDrag,
   onContinueDrag,
-  onDeleteSlide,
   onDragCancel,
   onDragEnd,
-  onEditElement,
-  onExitEditing,
-  onInstantiatePlaceholder,
   onOpenAgentMenu,
-  onOpenComment,
-  onSelectElement,
-  onSelectSlide,
   onTextEditorChange,
   onTextSelectionChange,
-  onUpdateElement,
-  onUpdateNotes,
-  onUpdateTextElement,
-  onViewModeChange,
 }: PresentationWorkspaceProps) {
   const selectedElementSet = new Set(selectedElementIds);
   const selectedElements = selectedPresentationElements(
@@ -147,11 +136,11 @@ export function PresentationWorkspace({
         selectedSlide={selectedSlide}
         viewMode={viewMode}
         zoom={zoom}
-        onAddSlide={onAddSlide}
-        onDeleteSlide={onDeleteSlide}
+        onAddSlide={commands.addSlide}
+        onDeleteSlide={commands.deleteSlideById}
         onOpenAgentMenu={onOpenAgentMenu}
-        onSelectSlide={onSelectSlide}
-        onViewModeChange={onViewModeChange}
+        onSelectSlide={commands.selectSlide}
+        onViewModeChange={commands.setViewMode}
       />
     );
   }
@@ -168,11 +157,11 @@ export function PresentationWorkspace({
         selectedSlide={selectedSlide}
         viewMode={viewMode}
         zoom={zoom}
-        onAddSlide={onAddSlide}
-        onDeleteSlide={onDeleteSlide}
+        onAddSlide={commands.addSlide}
+        onDeleteSlide={commands.deleteSlideById}
         onOpenAgentMenu={onOpenAgentMenu}
-        onSelectSlide={onSelectSlide}
-        onViewModeChange={onViewModeChange}
+        onSelectSlide={commands.selectSlide}
+        onViewModeChange={commands.setViewMode}
       />
 
       <div
@@ -191,7 +180,7 @@ export function PresentationWorkspace({
             width: `${zoom}%`,
             maxWidth: `${(1050 * zoom) / 100}px`,
           }}
-          onPointerDown={() => onSelectElement(null, false)}
+          onPointerDown={() => commands.selectElement(null, false)}
           onContextMenu={(event) => {
             if (designMode !== 'slide') return;
             onOpenAgentMenu(event, selectedSlide, selectedSlideIndex);
@@ -214,7 +203,7 @@ export function PresentationWorkspace({
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
-                onInstantiatePlaceholder(definition);
+                commands.instantiatePlaceholder(definition);
               }}
             >
               {definition.placeholder?.prompt ?? '单击添加内容'}
@@ -297,11 +286,11 @@ export function PresentationWorkspace({
                   if (!presentationElementCanEditContent(element)) return;
                   event.preventDefault();
                   event.stopPropagation();
-                  onEditElement(element.id);
+                  commands.editElement(element.id);
                 }}
                 onFocus={(event) => {
                   if (event.currentTarget !== event.target || selected) return;
-                  onSelectElement(element.id, false);
+                  commands.selectElement(element.id, false);
                 }}
                 onKeyDown={(event) => {
                   if (
@@ -313,10 +302,10 @@ export function PresentationWorkspace({
                   }
                   event.preventDefault();
                   event.stopPropagation();
-                  onEditElement(element.id);
+                  commands.editElement(element.id);
                 }}
                 onContextMenu={(event) => {
-                  if (!selected) onSelectElement(element.id, false);
+                  if (!selected) commands.selectElement(element.id, false);
                   if (designMode !== 'slide') return;
                   onOpenAgentMenu(
                     event,
@@ -337,7 +326,7 @@ export function PresentationWorkspace({
                   if (event.shiftKey) {
                     event.preventDefault();
                     event.stopPropagation();
-                    onSelectElement(element.id, true);
+                    commands.selectElement(element.id, true);
                     return;
                   }
                   event.stopPropagation();
@@ -356,7 +345,7 @@ export function PresentationWorkspace({
                     <EditableSlideTable
                       element={element}
                       onChange={(rows) =>
-                        onUpdateElement({
+                        commands.updateElement({
                           table: { ...element.table, rows },
                         })
                       }
@@ -378,12 +367,12 @@ export function PresentationWorkspace({
                       autoFocus
                       element={element}
                       onChange={(value) =>
-                        onUpdateTextElement(element.id, value)
+                        commands.updateTextElement(element.id, value)
                       }
                       onEditorChange={(editor) =>
                         onTextEditorChange(element.id, editor)
                       }
-                      onExitEditing={onExitEditing}
+                      onExitEditing={commands.exitEditing}
                       onSelectionChange={onTextSelectionChange}
                     />
                   ) : (
@@ -424,7 +413,7 @@ export function PresentationWorkspace({
                 onPointerDown={(event) => event.stopPropagation()}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onOpenComment(comment.id);
+                  commands.openComment(comment.id);
                 }}
               >
                 {index + 1}
@@ -462,7 +451,7 @@ export function PresentationWorkspace({
               aria-label="演讲者备注"
               value={selectedSlide.notes ?? ''}
               placeholder="添加演讲者备注"
-              onChange={(event) => onUpdateNotes(event.target.value)}
+              onChange={(event) => commands.updateNotes(event.target.value)}
             />
           </div>
         )}

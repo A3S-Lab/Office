@@ -15,6 +15,10 @@ import type {
 } from '../work-types';
 import { OfficeSelect, OfficeTextField } from './office-controls';
 import { SpreadsheetChartPanel } from './spreadsheet-chart-panel';
+import type {
+  SpreadsheetEditorCanCommands,
+  SpreadsheetEditorCommands,
+} from './spreadsheet-command-controller';
 import { SpreadsheetConditionalFormatPanel } from './spreadsheet-conditional-format-panel';
 import { SpreadsheetFormulaPanel } from './spreadsheet-formula-panel';
 import { SpreadsheetPivotPanel } from './spreadsheet-pivot-panel';
@@ -35,8 +39,11 @@ interface SpreadsheetWorkbookPanelProps {
   view: SpreadsheetWorkbookPanelView;
   activeSheetId: string;
   selection?: Selection;
-  onChange: (content: WorkSpreadsheetContent) => void;
-  onRecalculate: (scope: 'workbook' | 'selection') => boolean;
+  can: Pick<SpreadsheetEditorCanCommands, 'recalculateFormula'>;
+  commands: Pick<
+    SpreadsheetEditorCommands,
+    'recalculateFormula' | 'setSpreadsheetContent'
+  >;
   onClose: () => void;
 }
 
@@ -45,8 +52,8 @@ export function SpreadsheetWorkbookPanel({
   view,
   activeSheetId,
   selection,
-  onChange,
-  onRecalculate,
+  can,
+  commands,
   onClose,
 }: SpreadsheetWorkbookPanelProps) {
   const title = panelTitle(view);
@@ -65,37 +72,47 @@ export function SpreadsheetWorkbookPanel({
         </IconButton>
       </header>
       {view === 'names' ? (
-        <NamedRangeManager content={content} onChange={onChange} />
+        <NamedRangeManager
+          content={content}
+          onChange={commands.setSpreadsheetContent}
+        />
       ) : view === 'formulas' ? (
         <SpreadsheetFormulaPanel
           content={content}
-          canRecalculateSelection={Boolean(selection)}
-          onChange={onChange}
-          onRecalculate={onRecalculate}
+          canRecalculateSelection={can.recalculateFormula('selection')}
+          canRecalculateWorkbook={can.recalculateFormula('workbook')}
+          onChange={commands.setSpreadsheetContent}
+          onRecalculate={commands.recalculateFormula}
         />
       ) : view === 'charts' ? (
         <SpreadsheetChartPanel
           content={content}
           activeSheetId={activeSheetId}
           selection={selection}
-          onChange={onChange}
+          onChange={commands.setSpreadsheetContent}
         />
       ) : view === 'pivots' ? (
         <SpreadsheetPivotPanel
           content={content}
           activeSheetId={activeSheetId}
           selection={selection}
-          onChange={onChange}
+          onChange={commands.setSpreadsheetContent}
         />
       ) : view === 'conditional-formatting' ? (
         <SpreadsheetConditionalFormatPanel
           content={content}
-          onChange={onChange}
+          onChange={commands.setSpreadsheetContent}
         />
       ) : view === 'protection' ? (
-        <SpreadsheetProtectionPanel content={content} onChange={onChange} />
+        <SpreadsheetProtectionPanel
+          content={content}
+          onChange={commands.setSpreadsheetContent}
+        />
       ) : (
-        <SpreadsheetPrintSettingsPanel content={content} onChange={onChange} />
+        <SpreadsheetPrintSettingsPanel
+          content={content}
+          onChange={commands.setSpreadsheetContent}
+        />
       )}
     </section>
   );

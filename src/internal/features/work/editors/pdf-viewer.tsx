@@ -4,12 +4,14 @@ import {
   type UISchema,
 } from '@embedpdf/react-pdf-viewer';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, StateView } from '../../../design-system/primitives';
-import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
+import { createPdfEditorExtensions } from './pdf-editor-extensions';
 import { PdfToolbar, type PdfSaveState } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
+import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
 const PDF_VIEWER_READY_TIMEOUT_MS = 20_000;
@@ -105,73 +107,28 @@ export function PdfViewer({
       setSaveState('error');
     }
   }, [controller, onSave, saveState]);
-
-  useEffect(() => {
-    if (!sourceUrl) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.repeat || event.altKey) {
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-      if (!(event.metaKey || event.ctrlKey)) {
-        if (
-          onSave &&
-          !isOfficeShortcutBlocked(event.target) &&
-          (key === 'delete' || key === 'backspace') &&
-          annotation.state.selectedCount > 0
-        ) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          annotation.deleteSelection();
-        } else if (
-          key === 'escape' &&
-          !isOfficeShortcutBlocked(event.target) &&
-          annotation.state.activeToolId
-        ) {
-          event.preventDefault();
-          annotation.selectTool(null);
-        }
-        return;
-      }
-
-      if (key === 'f') {
-        event.preventDefault();
-        event.stopImmediatePropagation();
+  const pdfExtensions = useMemo(createPdfEditorExtensions, []);
+  const pdfEditor = useOfficeEditorRuntime(
+    {
+      annotation,
+      editable: Boolean(onSave),
+      focusSearch: () => {
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
-        return;
-      }
-      if (isOfficeShortcutBlocked(event.target)) return;
-
-      let handled = true;
-      if (key === 's' && onSave) {
-        void savePdf();
-      } else if (key === 'z' && event.shiftKey) {
-        controller.redo();
-      } else if (key === 'z') {
-        controller.undo();
-      } else if (key === 'y') {
-        controller.redo();
-      } else if (key === '+' || key === '=') {
-        controller.zoomIn();
-      } else if (key === '-') {
-        controller.zoomOut();
-      } else if (key === '0') {
-        controller.fitPage();
-      } else {
-        handled = false;
-      }
-
-      if (handled) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown, { capture: true });
-    return () =>
-      window.removeEventListener('keydown', onKeyDown, { capture: true });
-  }, [annotation, controller, onSave, savePdf, sourceUrl]);
+      },
+      save: {
+        enabled: Boolean(onSave) && saveState !== 'saving',
+        execute: savePdf,
+      },
+      viewer: controller,
+    },
+    pdfExtensions,
+  );
+  const pdfCommands = pdfEditor.commands;
+  useOfficeEditorKeyboardShortcuts(pdfEditor, {
+    capture: true,
+    enabled: Boolean(sourceUrl),
+  });
 
   if (loadError) {
     return (
@@ -206,13 +163,14 @@ export function PdfViewer({
   return (
     <section className="work-pdf-viewer" aria-label={`PDF 编辑器：${fileName}`}>
       <PdfToolbar
-        annotation={annotation}
-        controller={controller}
+        annotationState={annotation.state}
+        can={pdfEditor.can()}
+        commands={pdfCommands}
         editable={Boolean(onSave)}
         searchInputRef={searchInputRef}
         saveLabel={saveLabel}
         saveState={saveState}
-        onSave={onSave ? () => void savePdf() : undefined}
+        state={controller.state}
       />
       <div
         className="work-pdf-embed"

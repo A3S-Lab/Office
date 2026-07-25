@@ -1,3 +1,4 @@
+import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
@@ -37,6 +38,15 @@ test('registers every custom element idempotently', async () => {
     },
   ];
   expect(documentEditor.layoutFonts?.[0]?.id).toBe('host-font');
+  const hostExtension = Extension.create({ name: 'hostExtension' });
+  documentEditor.extensions = [hostExtension];
+  expect(documentEditor.extensions).toEqual([hostExtension]);
+
+  const markdownEditor = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.markdown,
+  ) as A3SMarkdownEditorElement;
+  markdownEditor.extensions = [hostExtension];
+  expect(markdownEditor.extensions).toEqual([hostExtension]);
 
   const spreadsheetEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.spreadsheet,
@@ -44,6 +54,13 @@ test('registers every custom element idempotently', async () => {
   spreadsheetEditor.kernelWasmUrl = '/assets/spreadsheet-kernel.wasm';
   expect(spreadsheetEditor.getAttribute('kernel-wasm-url')).toBe(
     '/assets/spreadsheet-kernel.wasm',
+  );
+  const presentationEditor = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.presentation,
+  );
+  presentationEditor.kernelWasmUrl = '/assets/presentation-kernel.wasm';
+  expect(presentationEditor.getAttribute('kernel-wasm-url')).toBe(
+    '/assets/presentation-kernel.wasm',
   );
 
   element.remove();

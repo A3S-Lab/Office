@@ -1,7 +1,10 @@
 import { expect, test } from '@rstest/core';
 import { createRef } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { PresentationWorkspace } from '../src/internal/features/work/editors/presentation-workspace';
+import {
+  PresentationWorkspace,
+  type PresentationWorkspaceCommands,
+} from '../src/internal/features/work/editors/presentation-workspace';
 import type {
   WorkPresentationContent,
   WorkSlideElement,
@@ -35,6 +38,11 @@ test('separates additive object selection from content editing', () => {
       aspectRatio="16 / 9"
       canvasName="Slide canvas"
       canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands({
+        editElement: (elementId) => edits.push(elementId),
+        selectElement: (id, additive = false) =>
+          selections.push({ id, additive }),
+      })}
       content={content}
       designContent={content}
       designMode="slide"
@@ -48,27 +56,15 @@ test('separates additive object selection from content editing', () => {
       snapGuides={[]}
       viewMode="normal"
       zoom={90}
-      onAddSlide={() => undefined}
       onBeginDrag={(_event, element, mode) =>
         drags.push(`${element.id}:${mode}`)
       }
       onContinueDrag={() => undefined}
-      onDeleteSlide={() => false}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onEditElement={(elementId) => edits.push(elementId)}
-      onExitEditing={() => undefined}
-      onInstantiatePlaceholder={() => undefined}
       onOpenAgentMenu={() => undefined}
-      onOpenComment={() => undefined}
-      onSelectElement={(id, additive) => selections.push({ id, additive })}
-      onSelectSlide={() => undefined}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
-      onUpdateElement={() => undefined}
-      onUpdateNotes={() => undefined}
-      onUpdateTextElement={() => undefined}
-      onViewModeChange={() => undefined}
     />,
   );
 
@@ -94,6 +90,7 @@ test('separates additive object selection from content editing', () => {
       aspectRatio="16 / 9"
       canvasName="Slide canvas"
       canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands()}
       content={content}
       designContent={content}
       designMode="slide"
@@ -107,27 +104,15 @@ test('separates additive object selection from content editing', () => {
       snapGuides={[]}
       viewMode="normal"
       zoom={90}
-      onAddSlide={() => undefined}
       onBeginDrag={(_event, element, mode) =>
         drags.push(`${element.id}:${mode}`)
       }
       onContinueDrag={() => undefined}
-      onDeleteSlide={() => false}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onEditElement={() => undefined}
-      onExitEditing={() => undefined}
-      onInstantiatePlaceholder={() => undefined}
       onOpenAgentMenu={() => undefined}
-      onOpenComment={() => undefined}
-      onSelectElement={() => undefined}
-      onSelectSlide={() => undefined}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
-      onUpdateElement={() => undefined}
-      onUpdateNotes={() => undefined}
-      onUpdateTextElement={() => undefined}
-      onViewModeChange={() => undefined}
     />,
   );
   expect(screen.getByText('已选择 2 个对象')).toBeVisible();
@@ -151,5 +136,25 @@ function presentationElement(id: string, text: string): WorkSlideElement {
     fill: '#dce6fb',
     bold: false,
     align: 'center',
+  };
+}
+
+function workspaceCommands(
+  overrides: Partial<PresentationWorkspaceCommands> = {},
+): PresentationWorkspaceCommands {
+  return {
+    addSlide: () => undefined,
+    deleteSlideById: () => false,
+    editElement: () => undefined,
+    exitEditing: () => undefined,
+    instantiatePlaceholder: () => undefined,
+    openComment: () => undefined,
+    selectElement: () => undefined,
+    selectSlide: () => undefined,
+    setViewMode: () => undefined,
+    updateElement: () => undefined,
+    updateNotes: () => undefined,
+    updateTextElement: () => undefined,
+    ...overrides,
   };
 }

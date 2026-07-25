@@ -1,3 +1,4 @@
+import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { MarkdownContent } from '../src/core';
@@ -170,4 +171,35 @@ test('maps split-pane scrolling by document progress', () => {
   expect(proportionalMarkdownScrollTop(-20, 1000, 100, 2000, 200)).toBe(0);
   expect(proportionalMarkdownScrollTop(2000, 1000, 100, 2000, 200)).toBe(1800);
   expect(proportionalMarkdownScrollTop(20, 100, 100, 2000, 200)).toBe(0);
+});
+
+test('mounts host TipTap extensions in the Markdown editor', async () => {
+  let shortcutCalls = 0;
+  const hostShortcuts = Extension.create({
+    name: 'testHostShortcuts',
+    addKeyboardShortcuts() {
+      return {
+        F6: () => {
+          shortcutCalls += 1;
+          return true;
+        },
+      };
+    },
+  });
+
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '# Extension test' }}
+      extensions={[hostShortcuts]}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  fireEvent.keyDown(await screen.findByLabelText('Markdown 编辑区'), {
+    code: 'F6',
+    key: 'F6',
+  });
+
+  expect(shortcutCalls).toBe(1);
 });

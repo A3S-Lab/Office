@@ -22,6 +22,10 @@ import {
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
+import {
+  DOCUMENT_LINK_VALIDATION_MESSAGE,
+  normalizeDocumentHref,
+} from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import {
@@ -33,6 +37,7 @@ import { DocumentPaginationPopover } from './document-pagination-popover';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
 import { DocumentTableInsertPopover } from './document-table-insert-popover';
 import { DocumentTableRibbon } from './document-table-ribbon';
+import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
@@ -93,6 +98,7 @@ interface DocumentToolbarProps {
   onToggleCitations: () => void;
   onInsertField: (kind: WorkDocumentFieldKind) => void;
   onRefreshFields: () => void;
+  canInsertComment: boolean;
   onInsertComment: () => void;
   commentsOpen: boolean;
   commentCount: number;
@@ -100,11 +106,14 @@ interface DocumentToolbarProps {
   trackChanges: boolean;
   changesOpen: boolean;
   changeCount: number;
+  findReplaceMode: DocumentFindReplaceMode | null;
   fileActions?: readonly WorkOfficeFileAction[];
-  onRibbonTabChange?: (tab: DocumentRibbonTabId) => void;
+  onRibbonTabChange?: (
+    tab: DocumentRibbonTabId,
+  ) => boolean | undefined | Promise<boolean | undefined>;
   onToggleTrackChanges: () => void;
   onToggleChanges: () => void;
-  onReplaceText: (from: number, to: number, replacement: string) => boolean;
+  onOpenFindReplace: (mode: DocumentFindReplaceMode) => void;
 }
 
 export function DocumentToolbar({
@@ -135,6 +144,7 @@ export function DocumentToolbar({
   onToggleCitations,
   onInsertField,
   onRefreshFields,
+  canInsertComment,
   onInsertComment,
   commentsOpen,
   commentCount,
@@ -142,16 +152,16 @@ export function DocumentToolbar({
   trackChanges,
   changesOpen,
   changeCount,
+  findReplaceMode,
   fileActions,
   onRibbonTabChange,
   onToggleTrackChanges,
   onToggleChanges,
-  onReplaceText,
+  onOpenFindReplace,
 }: DocumentToolbarProps) {
   const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>('home');
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
-  const notice = officeDialog.notice;
   const imageSelected = editor.isActive('image');
   const tableSelected = editor.isActive('table');
   const ribbonTabs = pageChromeEditor
@@ -167,52 +177,22 @@ export function DocumentToolbar({
       return;
     }
     const href = await prompt({
-      title: '链接地址',
+      title: '添加链接',
+      description: '为当前选中的文字设置跳转地址。',
+      fieldLabel: '链接地址',
       initialValue: editor.getAttributes('link').href ?? 'https://',
       placeholder: 'https://',
+      inputMode: 'url',
       confirmLabel: '添加链接',
+      required: '请输入链接地址。',
+      validate: (value) =>
+        normalizeDocumentHref(value) ? null : DOCUMENT_LINK_VALIDATION_MESSAGE,
+      restoreFocusTarget: () => editor.view.dom,
     });
-    if (href?.trim())
-      editor.chain().focus().setLink({ href: href.trim() }).run();
+    if (href === null) return;
+    const normalized = normalizeDocumentHref(href);
+    if (normalized) editor.chain().focus().setLink({ href: normalized }).run();
   }, [editor, prompt]);
-  const findText = useCallback(
-    async (replace: boolean) => {
-      const query = await prompt({
-        title: replace ? '查找要替换的文字' : '查找文字',
-      });
-      if (!query) return;
-      const range =
-        textRange(editor, query, editor.state.selection.to) ??
-        textRange(editor, query, 0);
-      if (!range) {
-        await notice({
-          title: '没有找到',
-          description: `文档中没有“${query}”。`,
-        });
-        return;
-      }
-      if (!replace) {
-        editor.chain().focus().setTextSelection(range).run();
-        return;
-      }
-      const replacement = await prompt({
-        title: '替换为',
-        initialValue: query,
-      });
-      if (replacement !== null) {
-        if (onReplaceText) onReplaceText(range.from, range.to, replacement);
-        else
-          editor
-            .chain()
-            .focus()
-            .setTextSelection(range)
-            .insertContent(replacement)
-            .run();
-      }
-    },
-    [editor, notice, onReplaceText, prompt],
-  );
-
   useEffect(() => {
     setActiveTab((current) => {
       if (pageChromeEditor) return 'pageChrome';
@@ -274,7 +254,7 @@ export function DocumentToolbar({
       }
       if ((key === 'f' || key === 'h') && !event.shiftKey) {
         event.preventDefault();
-        void findText(key === 'h');
+        onOpenFindReplace(key === 'h' ? 'replace' : 'find');
         return;
       }
       if (key !== 'enter' || event.shiftKey || !insideEditor) {
@@ -303,7 +283,7 @@ export function DocumentToolbar({
       editor.off('unmount', detach);
       detach();
     };
-  }, [editor, findText, toggleLink]);
+  }, [editor, onOpenFindReplace, toggleLink]);
 
   return (
     <>
@@ -313,8 +293,14 @@ export function DocumentToolbar({
         defaultTab="home"
         activeTab={activeTab}
         onTabChange={(tab) => {
-          setActiveTab(tab);
-          onRibbonTabChange?.(tab);
+          const accepted = onRibbonTabChange?.(tab);
+          if (accepted instanceof Promise) {
+            void accepted.then((result) => {
+              if (result !== false) setActiveTab(tab);
+            });
+          } else if (accepted !== false) {
+            setActiveTab(tab);
+          }
         }}
         fileActions={fileActions}
         className="work-document-ribbon"
@@ -323,7 +309,10 @@ export function DocumentToolbar({
           home: (
             <DocumentHomeRibbon
               editor={editor}
-              onFindText={(replace) => void findText(replace)}
+              findReplaceMode={findReplaceMode}
+              onFindText={(replace) =>
+                onOpenFindReplace(replace ? 'replace' : 'find')
+              }
             />
           ),
           insert: (
@@ -460,9 +449,9 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="引用来源">
+              <RibbonGroup label="文献">
                 <ToolbarButton
-                  label={`引用来源${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
+                  label={`文献库${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
                   displayLabel
                   active={citationsOpen}
                   onClick={onToggleCitations}
@@ -497,6 +486,8 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="添加批注"
                   displayLabel
+                  disabled={!canInsertComment}
+                  title={canInsertComment ? '添加批注' : '请先选择未批注的文字'}
                   onClick={onInsertComment}
                 >
                   <MessageSquarePlus size={19} />
@@ -600,6 +591,7 @@ export function DocumentToolbar({
 
 function ToolbarButton({
   label,
+  title,
   shortcut,
   active = false,
   disabled = false,
@@ -608,6 +600,7 @@ function ToolbarButton({
   children,
 }: {
   label: string;
+  title?: string;
   shortcut?: string;
   active?: boolean;
   disabled?: boolean;
@@ -619,7 +612,7 @@ function ToolbarButton({
     <WorkOfficeRibbonButton
       label={label}
       visibleLabel={label.replace(/（\d+）$/, '')}
-      title={shortcut ? `${label}（${shortcut}）` : label}
+      title={title ?? (shortcut ? `${label}（${shortcut}）` : label)}
       active={active}
       displayLabel={displayLabel}
       disabled={disabled}
@@ -655,20 +648,4 @@ function DocumentFieldSelect({
       }}
     />
   );
-}
-
-function textRange(
-  editor: Editor,
-  query: string,
-  from: number,
-): { from: number; to: number } | null {
-  let match: { from: number; to: number } | null = null;
-  editor.state.doc.descendants((node, position) => {
-    if (match || !node.isText || !node.text) return;
-    const start = Math.max(0, from - position);
-    const index = node.text.indexOf(query, start);
-    if (index >= 0)
-      match = { from: position + index, to: position + index + query.length };
-  });
-  return match;
 }

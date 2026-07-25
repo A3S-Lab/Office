@@ -11,12 +11,62 @@ export interface WorkDocumentImageLayoutOptions {
   wrapDistance: number;
 }
 
+export interface DocumentImageCommandOptions {
+  restoreFocus?: boolean;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentImage: {
+      setDocumentImageAlternativeText: (alternativeText: string) => ReturnType;
+      setDocumentImageLayoutOptions: (
+        value: Partial<WorkDocumentImageLayoutOptions>,
+        options?: DocumentImageCommandOptions,
+      ) => ReturnType;
+    };
+  }
+}
+
 const DEFAULT_IMAGE_LAYOUT: WorkDocumentImageLayout = 'inline';
 const DEFAULT_IMAGE_ALIGNMENT: WorkDocumentImageAlignment = 'center';
 const DEFAULT_WRAP_DISTANCE_MILLIMETERS = 3;
 const MAX_WRAP_DISTANCE_MILLIMETERS = 25;
 
 export const DocumentImage = Image.extend({
+  addCommands() {
+    return {
+      ...(this.parent?.() ?? {}),
+      setDocumentImageAlternativeText:
+        (alternativeText) =>
+        ({ chain, editor }) => {
+          if (!editor.isActive('image')) return false;
+          const normalized = alternativeText.trim();
+          return chain()
+            .focus()
+            .updateAttributes('image', {
+              alt: normalized || null,
+              title: normalized || null,
+            })
+            .run();
+        },
+      setDocumentImageLayoutOptions:
+        (value, options = {}) =>
+        ({ chain, editor }) => {
+          if (!editor.isActive('image')) return false;
+          const current = documentImageLayoutOptions(editor);
+          const next = normalizeDocumentImageLayoutOptions({
+            ...current,
+            ...value,
+          });
+          let commandChain = chain();
+          if (options.restoreFocus !== false) {
+            commandChain = commandChain.focus();
+          }
+          return commandChain.updateAttributes('image', next).run();
+        },
+    };
+  },
+
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -139,33 +189,16 @@ export function documentImageLayoutOptions(
 export function setDocumentImageLayoutOptions(
   editor: Editor,
   value: Partial<WorkDocumentImageLayoutOptions>,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentImageCommandOptions = {},
 ): boolean {
-  if (!editor.isActive('image')) return false;
-  const current = documentImageLayoutOptions(editor);
-  const next = normalizeDocumentImageLayoutOptions({
-    ...current,
-    ...value,
-  });
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  return chain.updateAttributes('image', next).run();
+  return editor.commands.setDocumentImageLayoutOptions(value, options);
 }
 
 export function setDocumentImageAlternativeText(
   editor: Editor,
   alternativeText: string,
 ): boolean {
-  if (!editor.isActive('image')) return false;
-  const normalized = alternativeText.trim();
-  return editor
-    .chain()
-    .focus()
-    .updateAttributes('image', {
-      alt: normalized || null,
-      title: normalized || null,
-    })
-    .run();
+  return editor.commands.setDocumentImageAlternativeText(alternativeText);
 }
 
 export function documentImageAlternativeText(editor: Editor): string {

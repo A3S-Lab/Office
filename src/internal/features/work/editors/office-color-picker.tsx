@@ -1,8 +1,8 @@
 import { Check, Pipette } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Button, Popover } from '../../../design-system/primitives';
 
-const OFFICE_COLORS = [
+const OFFICE_COLORS: readonly string[] = [
   '#111827',
   '#374151',
   '#6b7280',
@@ -38,18 +38,52 @@ export function OfficeColorPicker({
   className?: string;
 }) {
   const [draft, setDraft] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(() =>
+    Math.max(0, OFFICE_COLORS.indexOf(value.toLowerCase())),
+  );
+  const colorRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => setDraft(value), [value]);
+  useEffect(() => {
+    if (!open) return;
+    const selectedIndex = OFFICE_COLORS.indexOf(value.toLowerCase());
+    const nextIndex = Math.max(0, selectedIndex);
+    setActiveIndex(nextIndex);
+    const frame = requestAnimationFrame(() =>
+      colorRefs.current[nextIndex]?.focus({ preventScroll: true }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [open, value]);
 
   const choose = (color: string, close: () => void) => {
-    onValueChange(color);
     setDraft(color);
     close();
+    onValueChange(color);
   };
 
   const applyDraft = (close: () => void) => {
     const normalized = normalizeCssColor(draft);
     if (normalized) choose(normalized, close);
+  };
+  const moveColorFocus = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex = index;
+    if (event.key === 'ArrowLeft') nextIndex = Math.max(0, index - 1);
+    else if (event.key === 'ArrowRight')
+      nextIndex = Math.min(OFFICE_COLORS.length - 1, index + 1);
+    else if (event.key === 'ArrowUp') nextIndex = Math.max(0, index - 6);
+    else if (event.key === 'ArrowDown')
+      nextIndex = Math.min(OFFICE_COLORS.length - 1, index + 6);
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = OFFICE_COLORS.length - 1;
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+    setActiveIndex(nextIndex);
+    colorRefs.current[nextIndex]?.focus({ preventScroll: true });
   };
 
   return (
@@ -62,6 +96,8 @@ export function OfficeColorPicker({
       className={`work-office-color-picker${compact ? ' compact' : ''}${className ? ` ${className}` : ''}`}
       panelClassName="work-office-color-menu"
       disabled={disabled}
+      open={open}
+      onOpenChange={setOpen}
       trigger={(triggerProps) => (
         <button
           {...triggerProps}
@@ -85,14 +121,20 @@ export function OfficeColorPicker({
             role="listbox"
             aria-label="颜色"
           >
-            {OFFICE_COLORS.map((color) => (
+            {OFFICE_COLORS.map((color, index) => (
               <button
+                ref={(element) => {
+                  colorRefs.current[index] = element;
+                }}
                 type="button"
                 role="option"
                 aria-label={`颜色 ${color}`}
                 aria-selected={color.toLowerCase() === value.toLowerCase()}
+                tabIndex={index === activeIndex ? 0 : -1}
                 key={color}
                 style={{ background: color }}
+                onFocus={() => setActiveIndex(index)}
+                onKeyDown={(event) => moveColorFocus(event, index)}
                 onClick={() => choose(color, close)}
               >
                 {color.toLowerCase() === value.toLowerCase() && (

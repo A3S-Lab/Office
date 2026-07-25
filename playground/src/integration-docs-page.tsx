@@ -1,5 +1,6 @@
 import {
   Check,
+  Blocks,
   CodeXml,
   Download,
   ExternalLink,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CodeBlock, type PlaygroundCodeLanguage } from './code-block';
+import { EditorApiReference } from './editor-api-reference';
 import { PageHeader } from './page-header';
 
 type Framework = 'react' | 'vue' | 'web-component';
@@ -155,7 +157,11 @@ export function IntegrationDocsPage({
         if (page) page.scrollTop = 0;
         return;
       }
-      if (hash === '#guide/components' || hash === '#guide/automation') {
+      if (
+        hash === '#guide/components' ||
+        hash === '#guide/api' ||
+        hash === '#guide/automation'
+      ) {
         document
           .getElementById(hash.slice(1))
           ?.scrollIntoView?.({ block: 'start' });
@@ -209,6 +215,10 @@ export function IntegrationDocsPage({
             <CodeXml size={15} />
             前端组件
           </a>
+          <a href="#guide/api">
+            <Blocks size={15} />
+            组件 API
+          </a>
           <a href="#guide/automation">
             <SquareTerminal size={15} />
             命令行与 AI
@@ -216,6 +226,7 @@ export function IntegrationDocsPage({
         </nav>
 
         <ComponentGuide />
+        <EditorApiReference />
         <AutomationGuide
           rawSkillUrl={rawSkillUrl}
           skillDownloadUrl={skillDownloadUrl}

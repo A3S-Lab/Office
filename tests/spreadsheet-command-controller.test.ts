@@ -1,25 +1,47 @@
 import { describe, expect, test } from '@rstest/core';
+import { createOfficeEditorRuntime } from '../src/internal/features/work/editors/office-editor-extension';
 import {
-  executeSpreadsheetEditorCommand,
+  createSpreadsheetEditorExtensions,
   type SpreadsheetCalculationCommandPort,
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
+  type SpreadsheetEditorCommands,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
 describe('spreadsheet command controller', () => {
+  test('owns controlled workbook replacement in the document extension', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    const next: WorkSpreadsheetContent = {
+      ...fixture.context.content,
+      sheets: [
+        ...fixture.context.content.sheets,
+        { id: 'sheet-2', name: 'Sheet 2' },
+      ],
+    };
+
+    expect(editor.extensionNames[0]).toBe('spreadsheetDocument');
+    expect(editor.can().setSpreadsheetContent(next)).toBe(true);
+    expect(editor.commands.setSpreadsheetContent(next)).toBe(true);
+    expect(fixture.changes).toEqual([next]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    expect(editor.can().setSpreadsheetContent(next)).toBe(false);
+    expect(editor.commands.setSpreadsheetContent(next)).toBe(false);
+    expect(fixture.changes).toEqual([next]);
+  });
+
   test('routes cell formatting through the workbook command port', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [4, 2], column: [3, 1] }];
+    const editor = spreadsheetEditor(fixture.context);
 
-    const handled = executeSpreadsheetEditorCommand(fixture.context, {
-      type: 'cell.format',
-      attribute: 'fs',
-      value: 14,
-    });
+    const handled = editor.commands.setCellFormat('fs', 14);
 
     expect(handled).toBe(true);
+    expect(editor.extensionNames).toContain('spreadsheetCellFormatting');
     expect(fixture.workbook.formats).toEqual([
       {
         attribute: 'fs',
@@ -32,25 +54,11 @@ describe('spreadsheet command controller', () => {
 
   test('uses explicit merge and recalculation commands', () => {
     const fixture = commandFixture();
+    const { commands } = spreadsheetEditor(fixture.context);
 
-    expect(
-      executeSpreadsheetEditorCommand(fixture.context, {
-        type: 'cell.merge.toggle',
-        merged: false,
-      }),
-    ).toBe(true);
-    expect(
-      executeSpreadsheetEditorCommand(fixture.context, {
-        type: 'formula.recalculate',
-        scope: 'selection',
-      }),
-    ).toBe(true);
-    expect(
-      executeSpreadsheetEditorCommand(fixture.context, {
-        type: 'formula.recalculate',
-        scope: 'workbook',
-      }),
-    ).toBe(true);
+    expect(commands.toggleCellMerge(false)).toBe(true);
+    expect(commands.recalculateFormula('selection')).toBe(true);
+    expect(commands.recalculateFormula('workbook')).toBe(true);
 
     expect(fixture.workbook.merges).toEqual([
       {
@@ -71,23 +79,80 @@ describe('spreadsheet command controller', () => {
   test('updates controlled sheet view state without mutating the input', () => {
     const fixture = commandFixture();
     const previousSheet = fixture.context.content.sheets[0];
+    const { commands } = spreadsheetEditor(fixture.context);
 
-    expect(
-      executeSpreadsheetEditorCommand(fixture.context, {
-        type: 'sheet.gridLines.set',
-        visible: false,
-      }),
-    ).toBe(true);
-    expect(
-      executeSpreadsheetEditorCommand(fixture.context, {
-        type: 'sheet.zoom.set',
-        percent: 175,
-      }),
-    ).toBe(true);
+    expect(commands.setGridLines(false)).toBe(true);
+    expect(commands.setZoom(175)).toBe(true);
 
     expect(previousSheet.showGridLines).toBe(true);
     expect(fixture.changes[0].sheets[0].showGridLines).toBe(false);
     expect(fixture.changes[1].sheets[0].zoomRatio).toBe(1.75);
+  });
+
+  test('routes history shortcuts through the history extension', () => {
+    const fixture = commandFixture();
+    const calls: string[] = [];
+    fixture.context.history = {
+      canRedo: false,
+      canUndo: true,
+      redo: () => {
+        calls.push('redo');
+        return true;
+      },
+      undo: () => {
+        calls.push('undo');
+        return true;
+      },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const undo = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'z',
+      metaKey: true,
+    });
+
+    expect(editor.handleKeyDown(undo)).toBe(true);
+    expect(undo.defaultPrevented).toBe(true);
+    expect(calls).toEqual(['undo']);
+
+    const redo = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'z',
+      metaKey: true,
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(redo)).toBe(false);
+    expect(redo.defaultPrevented).toBe(false);
+    expect(calls).toEqual(['undo']);
+  });
+
+  test('owns formula-bar select-all in the keyboard extension', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    const formulaBar = document.createElement('div');
+    formulaBar.className = 'fortune-fx-input';
+    formulaBar.textContent = '=SUM(A1:A4)';
+    const target = document.createElement('span');
+    formulaBar.append(target);
+    document.body.append(formulaBar);
+    let handled = false;
+    target.addEventListener('keydown', (event) => {
+      handled = editor.handleKeyDown(event);
+    });
+    const selectAll = new KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: 'a',
+      metaKey: true,
+    });
+
+    target.dispatchEvent(selectAll);
+
+    expect(handled).toBe(true);
+    expect(selectAll.defaultPrevented).toBe(true);
+    expect(window.getSelection()?.toString()).toBe('=SUM(A1:A4)');
+    window.getSelection()?.removeAllRanges();
+    formulaBar.remove();
   });
 });
 
@@ -119,7 +184,9 @@ function commandFixture(): {
       activeSheetId: 'sheet-1',
       calculation,
       content,
+      editable: true,
       fallbackRange: { row: [0, 1], column: [0, 2] },
+      history: null,
       onChange: (next) => changes.push(next),
       selection: {
         sheetId: 'sheet-1',
@@ -132,6 +199,13 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+function spreadsheetEditor(context: SpreadsheetCommandContext) {
+  return createOfficeEditorRuntime<
+    SpreadsheetCommandContext,
+    SpreadsheetEditorCommands
+  >(context, createSpreadsheetEditorExtensions());
 }
 
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {

@@ -1,5 +1,25 @@
-import { mergeAttributes, Node } from '@tiptap/core';
-import { documentNoteKind } from './work-document-notes';
+import {
+  type CommandProps,
+  type Editor,
+  mergeAttributes,
+  Node,
+} from '@tiptap/core';
+import { TextSelection } from '@tiptap/pm/state';
+import { activeDocumentSectionFromState } from './work-document-section-editor';
+import {
+  documentNoteKey,
+  documentNoteKind,
+  type WorkDocumentNoteKind,
+} from './work-document-notes';
+import { createWorkId } from './work-templates';
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentNote: {
+      insertDocumentNote: (kind: WorkDocumentNoteKind) => ReturnType;
+    };
+  }
+}
 
 export const DocumentNoteReference = Node.create({
   name: 'documentNoteReference',
@@ -7,6 +27,13 @@ export const DocumentNoteReference = Node.create({
   group: 'inline',
   atom: true,
   selectable: true,
+
+  addCommands() {
+    return {
+      insertDocumentNote: (kind) => (props) =>
+        insertDocumentNoteCommand(props, kind),
+    };
+  },
 
   addAttributes() {
     return {
@@ -100,6 +127,72 @@ export const DocumentNote = Node.create({
     ];
   },
 });
+
+function insertDocumentNoteCommand(
+  { dispatch, editor, state, tr }: CommandProps,
+  kind: WorkDocumentNoteKind,
+): boolean {
+  const section = activeDocumentSectionFromState(state);
+  const referenceType = editor.schema.nodes.documentNoteReference;
+  const noteType = editor.schema.nodes.documentNote;
+  const paragraphType = editor.schema.nodes.paragraph;
+  if (
+    !section ||
+    !referenceType ||
+    !noteType ||
+    !paragraphType ||
+    selectionInsideNode(state, 'documentNote')
+  ) {
+    return false;
+  }
+  if (!dispatch) return true;
+
+  const number = nextNoteNumber(state, kind);
+  const id = createWorkId(kind);
+  const attributes = { id, kind, number };
+  tr.replaceSelectionWith(referenceType.create(attributes), false);
+  const updatedSection = tr.doc.nodeAt(section.position);
+  if (!updatedSection || updatedSection.type.name !== 'documentSection') {
+    return false;
+  }
+
+  const insertPosition = section.position + updatedSection.nodeSize - 1;
+  tr.insert(
+    insertPosition,
+    noteType.create(attributes, paragraphType.create()),
+  );
+  tr.setSelection(TextSelection.near(tr.doc.resolve(insertPosition + 2)));
+  tr.scrollIntoView();
+  return true;
+}
+
+function nextNoteNumber(
+  state: Editor['state'],
+  kind: WorkDocumentNoteKind,
+): number {
+  const ids = new Set<string>();
+  state.doc.descendants((node) => {
+    if (
+      node.type.name !== 'documentNoteReference' ||
+      node.attrs.kind !== kind
+    ) {
+      return;
+    }
+    const id = typeof node.attrs.id === 'string' ? node.attrs.id : '';
+    if (id) ids.add(documentNoteKey(kind, id));
+  });
+  return ids.size + 1;
+}
+
+function selectionInsideNode(
+  state: Editor['state'],
+  nodeName: string,
+): boolean {
+  for (let depth = state.selection.$from.depth; depth > 0; depth -= 1) {
+    if (state.selection.$from.node(depth).type.name === nodeName) return true;
+  }
+  return false;
+}
 
 function hiddenAttribute(defaultValue: unknown) {
   return {

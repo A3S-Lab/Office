@@ -26,51 +26,20 @@ import {
   Undo2,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { documentParagraphDirection } from '../work-document-paragraph-formatting';
 import {
-  toggleDocumentSubscript,
-  toggleDocumentSuperscript,
-} from '../work-document-character-formatting';
-import {
-  changeDocumentIndent,
-  clearDocumentFormatting,
-  documentParagraphDirection,
-  setDocumentParagraphDirection,
-  setDocumentLineHeight,
-} from '../work-document-paragraph-formatting';
+  changeDocumentFontSize,
+  documentFontFamilyOptions,
+  documentFontFamilyValue,
+  documentFontSizeOptions,
+  documentFontSizeValue,
+} from './document-formatting-options';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-
-const documentFontFamilyOptions = [
-  { value: 'default', label: '默认字体' },
-  {
-    value: '"Microsoft YaHei", "PingFang SC", sans-serif',
-    label: '微软雅黑',
-  },
-  { value: 'SimSun, "Songti SC", serif', label: '宋体' },
-  { value: 'SimHei, "Heiti SC", sans-serif', label: '黑体' },
-  { value: 'KaiTi, "Kaiti SC", serif', label: '楷体' },
-  { value: 'Arial, sans-serif', label: 'Arial' },
-  { value: '"Times New Roman", serif', label: 'Times New Roman' },
-] as const;
-
-const documentFontSizeOptions = [
-  { value: 'default', label: '10.5' },
-  { value: '9pt', label: '9' },
-  { value: '12pt', label: '12' },
-  { value: '14pt', label: '14' },
-  { value: '16pt', label: '16' },
-  { value: '18pt', label: '18' },
-  { value: '22pt', label: '22' },
-  { value: '24pt', label: '24' },
-  { value: '36pt', label: '36' },
-  { value: '48pt', label: '48' },
-  { value: '72pt', label: '72' },
-] as const;
-
-const documentFontSizeSteps = [9, 10.5, 12, 14, 16, 18, 22, 24, 36, 48, 72];
+import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -82,9 +51,11 @@ const documentLineHeightOptions = [
 
 export function DocumentHomeRibbon({
   editor,
+  findReplaceMode,
   onFindText,
 }: {
   editor: Editor;
+  findReplaceMode: DocumentFindReplaceMode | null;
   onFindText: (replace: boolean) => void;
 }) {
   return (
@@ -213,7 +184,7 @@ export function DocumentHomeRibbon({
               label="下标"
               shortcut="Cmd/Ctrl+,"
               active={editor.isActive('subscript')}
-              onClick={() => toggleDocumentSubscript(editor)}
+              onClick={editor.commands.toggleDocumentSubscript}
             >
               <SubscriptIcon size={16} />
             </ToolbarButton>
@@ -221,7 +192,7 @@ export function DocumentHomeRibbon({
               label="上标"
               shortcut="Cmd/Ctrl+."
               active={editor.isActive('superscript')}
-              onClick={() => toggleDocumentSuperscript(editor)}
+              onClick={editor.commands.toggleDocumentSuperscript}
             >
               <SuperscriptIcon size={16} />
             </ToolbarButton>
@@ -249,7 +220,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="清除格式"
-              onClick={() => clearDocumentFormatting(editor)}
+              onClick={editor.commands.clearDocumentFormatting}
             >
               <Eraser size={16} />
             </ToolbarButton>
@@ -275,13 +246,13 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="减少缩进"
-              onClick={() => changeDocumentIndent(editor, -1)}
+              onClick={() => editor.commands.changeDocumentIndent(-1)}
             >
               <IndentDecrease size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="增加缩进"
-              onClick={() => changeDocumentIndent(editor, 1)}
+              onClick={() => editor.commands.changeDocumentIndent(1)}
             >
               <IndentIncrease size={16} />
             </ToolbarButton>
@@ -291,8 +262,7 @@ export function DocumentHomeRibbon({
               value={documentLineHeightValue(editor)}
               options={documentLineHeightOptions}
               onValueChange={(value) =>
-                setDocumentLineHeight(
-                  editor,
+                editor.commands.setDocumentLineHeight(
                   value === 'default' ? null : value,
                 )
               }
@@ -334,14 +304,18 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="从左向右"
               active={documentParagraphDirection(editor) === 'ltr'}
-              onClick={() => setDocumentParagraphDirection(editor, 'ltr')}
+              onClick={() =>
+                editor.commands.setDocumentParagraphDirection('ltr')
+              }
             >
               <PilcrowRight size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="从右向左"
               active={documentParagraphDirection(editor) === 'rtl'}
-              onClick={() => setDocumentParagraphDirection(editor, 'rtl')}
+              onClick={() =>
+                editor.commands.setDocumentParagraphDirection('rtl')
+              }
             >
               <PilcrowLeft size={16} />
             </ToolbarButton>
@@ -352,6 +326,7 @@ export function DocumentHomeRibbon({
         <ToolbarButton
           label="查找"
           shortcut="Cmd/Ctrl+F"
+          active={findReplaceMode === 'find'}
           onClick={() => onFindText(false)}
         >
           <Search size={16} />
@@ -359,6 +334,7 @@ export function DocumentHomeRibbon({
         <ToolbarButton
           label="替换"
           shortcut="Cmd/Ctrl+H"
+          active={findReplaceMode === 'replace'}
           onClick={() => onFindText(true)}
         >
           <Replace size={16} />
@@ -399,25 +375,6 @@ function ToolbarButton({
 
 const RibbonGroup = WorkOfficeRibbonGroup;
 
-function documentFontFamilyValue(
-  editor: Editor,
-): (typeof documentFontFamilyOptions)[number]['value'] {
-  const value = editor.getAttributes('textStyle').fontFamily;
-  return documentFontFamilyOptions.some((option) => option.value === value)
-    ? (value as (typeof documentFontFamilyOptions)[number]['value'])
-    : 'default';
-}
-
-function documentFontSizeValue(
-  editor: Editor,
-): (typeof documentFontSizeOptions)[number]['value'] {
-  const value = editor.getAttributes('textStyle').fontSize;
-  if (value === '10.5pt' || !value) return 'default';
-  return documentFontSizeOptions.some((option) => option.value === value)
-    ? (value as (typeof documentFontSizeOptions)[number]['value'])
-    : 'default';
-}
-
 function documentLineHeightValue(
   editor: Editor,
 ): (typeof documentLineHeightOptions)[number]['value'] {
@@ -428,28 +385,4 @@ function documentLineHeightValue(
   return documentLineHeightOptions.some((option) => option.value === value)
     ? (value as (typeof documentLineHeightOptions)[number]['value'])
     : 'default';
-}
-
-function changeDocumentFontSize(editor: Editor, direction: -1 | 1): boolean {
-  const current = fontSizePoints(editor.getAttributes('textStyle').fontSize);
-  const next =
-    direction > 0
-      ? (documentFontSizeSteps.find((size) => size > current) ??
-        documentFontSizeSteps.at(-1))
-      : ([...documentFontSizeSteps].reverse().find((size) => size < current) ??
-        documentFontSizeSteps[0]);
-  return editor
-    .chain()
-    .focus()
-    .setFontSize(`${next ?? 10.5}pt`)
-    .run();
-}
-
-function fontSizePoints(value: unknown): number {
-  if (typeof value !== 'string') return 10.5;
-  const match = /^(\d+(?:\.\d+)?)(px|pt)?$/i.exec(value.trim());
-  if (!match) return 10.5;
-  const amount = Number(match[1]);
-  if (!Number.isFinite(amount)) return 10.5;
-  return match[2]?.toLowerCase() === 'px' ? amount * 0.75 : amount;
 }

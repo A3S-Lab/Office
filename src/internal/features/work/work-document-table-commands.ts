@@ -1,4 +1,4 @@
-import type { Editor } from '@tiptap/core';
+import { type CommandProps, Extension } from '@tiptap/core';
 import { createTable } from '@tiptap/extension-table';
 import type {
   Node as ProseMirrorNode,
@@ -12,51 +12,80 @@ export interface DocumentTableDimensions {
   columns: number;
 }
 
-export function insertDocumentTable(
-  editor: Editor,
+export interface InsertDocumentTableOptions {
+  headerRow?: boolean;
+  restoreFocus?: boolean;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentTableCommands: {
+      insertDocumentTable: (
+        dimensions: DocumentTableDimensions,
+        options?: InsertDocumentTableOptions,
+      ) => ReturnType;
+    };
+  }
+}
+
+export const DocumentTableCommands = Extension.create({
+  name: 'documentTableCommands',
+
+  addCommands() {
+    return {
+      insertDocumentTable:
+        (dimensions, options = {}) =>
+        (props) =>
+          insertDocumentTable(props, dimensions, options),
+    };
+  },
+});
+
+function insertDocumentTable(
+  { chain, dispatch, editor, state }: CommandProps,
   dimensions: DocumentTableDimensions,
-  options: {
-    headerRow?: boolean;
-    restoreFocus?: boolean;
-  } = {},
+  options: InsertDocumentTableOptions,
 ): boolean {
   const rows = positiveInteger(dimensions.rows);
   const columns = positiveInteger(dimensions.columns);
   if (rows === null || columns === null) return false;
 
   const headerRow = options.headerRow !== false;
-  const selection = editor.state.selection;
+  const selection = state.selection;
   if (!selection.empty) {
-    const createdTable = createTable(editor.schema, rows, columns, headerRow);
+    const createdTable = createTable(state.schema, rows, columns, headerRow);
     const table = headerRow
       ? withRepeatingFirstRow(createdTable)
       : createdTable;
     const insertionPosition = blockInsertionPosition(selection.$to, table.type);
     if (insertionPosition !== null) {
-      const transaction = editor.state.tr.insert(insertionPosition, table);
+      const transaction = state.tr.insert(insertionPosition, table);
       transaction
         .setSelection(
           TextSelection.near(transaction.doc.resolve(insertionPosition + 1)),
         )
         .scrollIntoView();
-      editor.view.dispatch(transaction);
-      if (options.restoreFocus !== false) editor.commands.focus();
+      dispatch?.(transaction);
+      if (dispatch && options.restoreFocus !== false) editor.commands.focus();
       return true;
     }
   }
 
-  let chain = editor.chain();
-  if (options.restoreFocus !== false) chain = chain.focus();
-  if (!selection.empty) chain = chain.setTextSelection(selection.to);
-  chain = chain.insertTable({
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  if (!selection.empty)
+    commandChain = commandChain.setTextSelection(selection.to);
+  commandChain = commandChain.insertTable({
     rows,
     cols: columns,
     withHeaderRow: headerRow,
   });
   if (headerRow) {
-    chain = chain.updateAttributes('tableRow', { repeatHeader: true });
+    commandChain = commandChain.updateAttributes('tableRow', {
+      repeatHeader: true,
+    });
   }
-  return chain.run();
+  return commandChain.run();
 }
 
 function positiveInteger(value: number): number | null {

@@ -11,8 +11,6 @@ import {
 import {
   documentImageAlternativeText,
   documentImageLayoutOptions,
-  setDocumentImageAlternativeText,
-  setDocumentImageLayoutOptions,
   type WorkDocumentImageAlignment,
   type WorkDocumentImageLayout,
 } from '../work-document-image-layout';
@@ -34,9 +32,9 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
   const image = documentImageLayoutOptions(editor);
   const officeDialog = useOfficeDialog();
   const updateLayout = (layout: WorkDocumentImageLayout) =>
-    setDocumentImageLayoutOptions(editor, { layout });
+    editor.commands.setDocumentImageLayoutOptions({ layout });
   const updateAlignment = (alignment: WorkDocumentImageAlignment) =>
-    setDocumentImageLayoutOptions(editor, { alignment });
+    editor.commands.setDocumentImageLayoutOptions({ alignment });
 
   return (
     <>
@@ -92,7 +90,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           value={String(image.wrapDistance)}
           options={imageWrapDistanceOptions}
           onValueChange={(value) =>
-            setDocumentImageLayoutOptions(editor, {
+            editor.commands.setDocumentImageLayoutOptions({
               wrapDistance: Number(value),
             })
           }
@@ -104,14 +102,17 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           onClick={() => {
             void officeDialog
               .prompt({
-                title: '图片替代文字',
-                description: '简要说明图片内容，便于读屏软件识别。',
+                title: '图片说明',
+                description: '简要描述图片中的关键信息，留空表示装饰性图片。',
+                fieldLabel: '图片替代文字',
                 initialValue: documentImageAlternativeText(editor),
+                multiline: true,
                 confirmLabel: '保存',
+                restoreFocusTarget: () => editor.view.dom,
               })
               .then((value) => {
                 if (value !== null)
-                  setDocumentImageAlternativeText(editor, value);
+                  editor.commands.setDocumentImageAlternativeText(value);
               });
           }}
         >

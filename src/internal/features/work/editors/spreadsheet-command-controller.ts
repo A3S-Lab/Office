@@ -1,6 +1,16 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { spreadsheetSingleRange } from './spreadsheet-editor-support';
+import {
+  createOfficeEditorExtension,
+  type OfficeEditorCanCommands,
+  type OfficeEditorExtension,
+} from './office-editor-extension';
+import { isOfficeShortcutBlocked } from './office-shortcuts';
+import {
+  isSpreadsheetNativeTextUndoTarget,
+  selectSpreadsheetFormulaBarContents,
+  spreadsheetSingleRange,
+} from './spreadsheet-editor-support';
 
 export interface SpreadsheetWorkbookCommandPort {
   cancelMerge: (
@@ -43,56 +53,146 @@ export interface SpreadsheetCalculationCommandPort {
   recalculate: (request: SpreadsheetCalculationCommand) => void;
 }
 
-export type SpreadsheetEditorCommand =
-  | {
-      type: 'cell.format';
-      attribute: keyof Cell;
-      value: unknown;
-    }
-  | {
-      type: 'cell.merge.toggle';
-      merged: boolean;
-    }
-  | {
-      type: 'formula.recalculate';
-      scope: 'selection' | 'workbook';
-    }
-  | {
-      type: 'sheet.gridLines.set';
-      visible: boolean;
-    }
-  | {
-      type: 'sheet.zoom.set';
-      percent: number;
-    };
+export interface SpreadsheetHistoryCommandPort {
+  canRedo: boolean;
+  canUndo: boolean;
+  redo: () => boolean;
+  undo: () => boolean;
+}
+
+export interface SpreadsheetEditorCommands {
+  recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
+  redo: () => boolean;
+  setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
+  setGridLines: (visible: boolean) => boolean;
+  setSpreadsheetContent: (content: WorkSpreadsheetContent) => boolean;
+  setZoom: (percent: number) => boolean;
+  toggleCellMerge: (merged: boolean) => boolean;
+  undo: () => boolean;
+}
+
+export type SpreadsheetEditorCanCommands =
+  OfficeEditorCanCommands<SpreadsheetEditorCommands>;
 
 export interface SpreadsheetCommandContext {
   activeSheetId: string;
   calculation: SpreadsheetCalculationCommandPort | null;
   content: WorkSpreadsheetContent;
+  editable: boolean;
   fallbackRange: SpreadsheetCommandRange;
+  history: SpreadsheetHistoryCommandPort | null;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
   targetSheetId: string;
   workbook: SpreadsheetWorkbookCommandPort | null;
 }
 
-export function executeSpreadsheetEditorCommand(
-  context: SpreadsheetCommandContext,
-  command: SpreadsheetEditorCommand,
-): boolean {
-  switch (command.type) {
-    case 'cell.format':
-      return formatCells(context, command.attribute, command.value);
-    case 'cell.merge.toggle':
-      return toggleCellMerge(context, command.merged);
-    case 'formula.recalculate':
-      return recalculateSpreadsheet(context, command.scope);
-    case 'sheet.gridLines.set':
-      return updateSpreadsheetSheet(context, command.type, command.visible);
-    case 'sheet.zoom.set':
-      return updateSpreadsheetSheet(context, command.type, command.percent);
-  }
+export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtension<
+  SpreadsheetCommandContext,
+  SpreadsheetEditorCommands
+>[] {
+  return [
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetDocument',
+      addCommands: () => ({
+        setSpreadsheetContent: {
+          canExecute: (context) => context.editable,
+          execute: (context, content) => {
+            if (!context.editable) return false;
+            context.onChange(content);
+            return true;
+          },
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetHistory',
+      addCommands: () => ({
+        redo: {
+          canExecute: (context) =>
+            context.editable && (context.history?.canRedo ?? false),
+          execute: (context) => context.history?.redo() ?? false,
+        },
+        undo: {
+          canExecute: (context) =>
+            context.editable && (context.history?.canUndo ?? false),
+          execute: (context) => context.history?.undo() ?? false,
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetKeyboardShortcuts',
+      addKeyboardShortcuts: () => ({
+        'Mod-a': (_props, event) => selectSpreadsheetFormulaBarContents(event),
+        'Mod-z': ({ can, commands }, event) =>
+          runSpreadsheetHistoryShortcut(event, can.undo, commands.undo),
+        'Mod-Shift-z': ({ can, commands }, event) =>
+          runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
+        'Mod-y': ({ can, commands }, event) =>
+          runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetCellFormatting',
+      addCommands: () => ({
+        setCellFormat: {
+          canExecute: canEditSelectedCells,
+          execute: formatCells,
+        },
+        toggleCellMerge: {
+          canExecute: canEditSelectedCells,
+          execute: toggleCellMerge,
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetCalculation',
+      addCommands: () => ({
+        recalculateFormula: {
+          canExecute: (context, scope) =>
+            Boolean(
+              context.editable &&
+                context.calculation &&
+                (scope === 'workbook' || context.selection),
+            ),
+          execute: recalculateSpreadsheet,
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetView',
+      addCommands: () => ({
+        setGridLines: {
+          canExecute: hasActiveSheet,
+          execute: (context, visible) =>
+            updateSpreadsheetSheet(context, 'gridLines', visible),
+        },
+        setZoom: {
+          canExecute: hasActiveSheet,
+          execute: (context, percent) =>
+            updateSpreadsheetSheet(context, 'zoom', percent),
+        },
+      }),
+    }),
+  ];
 }
 
 function formatCells(
@@ -143,20 +243,15 @@ function recalculateSpreadsheet(
 
 function updateSpreadsheetSheet(
   context: SpreadsheetCommandContext,
-  type: 'sheet.gridLines.set' | 'sheet.zoom.set',
+  property: 'gridLines' | 'zoom',
   value: boolean | number,
 ): boolean {
-  if (
-    !context.activeSheetId ||
-    !context.content.sheets.some((sheet) => sheet.id === context.activeSheetId)
-  ) {
-    return false;
-  }
+  if (!hasActiveSheet(context)) return false;
   const next: WorkSpreadsheetContent = {
     ...context.content,
     sheets: context.content.sheets.map((sheet) => {
       if (sheet.id !== context.activeSheetId) return sheet;
-      return type === 'sheet.gridLines.set'
+      return property === 'gridLines'
         ? { ...sheet, showGridLines: Boolean(value) }
         : {
             ...sheet,
@@ -166,6 +261,36 @@ function updateSpreadsheetSheet(
   };
   context.onChange(next);
   return true;
+}
+
+function canEditSelectedCells(context: SpreadsheetCommandContext): boolean {
+  return Boolean(context.editable && context.workbook && context.targetSheetId);
+}
+
+function hasActiveSheet(context: SpreadsheetCommandContext): boolean {
+  return Boolean(
+    context.editable &&
+      context.activeSheetId &&
+      context.content.sheets.some(
+        (sheet) => sheet.id === context.activeSheetId,
+      ),
+  );
+}
+
+function runSpreadsheetHistoryShortcut(
+  event: KeyboardEvent,
+  canExecute: () => boolean,
+  execute: () => boolean,
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !canExecute()
+  ) {
+    return false;
+  }
+  return execute();
 }
 
 function liveRange(

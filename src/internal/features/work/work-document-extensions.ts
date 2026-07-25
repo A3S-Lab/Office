@@ -37,23 +37,40 @@ import { DocumentParagraphFormatting } from './work-document-paragraph-formattin
 import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
+import { DocumentTableCommands } from './work-document-table-commands';
 import { DocumentTableRow } from './work-document-table-row';
+import type { WorkDocumentContent } from './work-types';
 
 export interface WorkDocumentExtensionOptions {
+  getContent?: () => WorkDocumentContent | null;
   isTracking?: () => boolean;
   createChange?: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity;
+  onContentChange?: (content: WorkDocumentContent) => void;
+  onTrackingChange?: (enabled: boolean) => void;
 }
 
 export function createWorkDocumentExtensions(
   options: WorkDocumentExtensionOptions = {},
 ): Extensions {
-  const changeExtension =
-    options.isTracking && options.createChange
-      ? DocumentChange.configure({
-          isTracking: options.isTracking,
-          createChange: options.createChange,
-        })
-      : DocumentChange;
+  const changeExtension = DocumentChange.configure({
+    ...(options.isTracking ? { isTracking: options.isTracking } : {}),
+    ...(options.createChange ? { createChange: options.createChange } : {}),
+    ...(options.onTrackingChange
+      ? { onTrackingChange: options.onTrackingChange }
+      : {}),
+  });
+  const citationExtension = DocumentCitation.configure({
+    ...(options.getContent ? { getContent: options.getContent } : {}),
+    ...(options.onContentChange
+      ? { onContentChange: options.onContentChange }
+      : {}),
+  });
+  const commentExtension = DocumentComment.configure({
+    ...(options.getContent ? { getContent: options.getContent } : {}),
+    ...(options.onContentChange
+      ? { onContentChange: options.onContentChange }
+      : {}),
+  });
   return [
     StarterKit.configure({
       link: {
@@ -62,14 +79,17 @@ export function createWorkDocumentExtensions(
         openOnClick: false,
       },
       underline: false,
+      trailingNode: {
+        notAfter: ['documentSection'],
+      },
     }),
     DocumentSection,
     DocumentCaption,
     DocumentCrossReference,
-    DocumentCitation,
+    citationExtension,
     DocumentBibliography,
     DocumentField,
-    DocumentComment,
+    commentExtension,
     DocumentNoteReference,
     DocumentNote,
     Underline,
@@ -89,6 +109,7 @@ export function createWorkDocumentExtensions(
       tableRow: false,
     }),
     DocumentTableRow,
+    DocumentTableCommands,
     TextStyle,
     FontFamily,
     FontSize,

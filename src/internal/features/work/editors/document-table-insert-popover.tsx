@@ -2,7 +2,6 @@ import type { Editor } from '@tiptap/core';
 import { Table2 } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { Popover } from '../../../design-system/primitives';
-import { insertDocumentTable } from '../work-document-table-commands';
 
 const TABLE_PICKER_ROWS = 8;
 const TABLE_PICKER_COLUMNS = 10;
@@ -34,7 +33,7 @@ export function DocumentTableInsertPopover({ editor }: { editor: Editor }) {
   };
   const insert = (dimensions: TablePickerPosition, close: () => void): void => {
     close();
-    insertDocumentTable(editor, {
+    editor.commands.insertDocumentTable({
       rows: dimensions.row,
       columns: dimensions.column,
     });

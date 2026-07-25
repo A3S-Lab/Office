@@ -19,8 +19,6 @@ import {
   planIncrementalDocumentLayout,
 } from '../work-document-incremental-layout';
 import {
-  applyDocumentPagination,
-  clearDocumentPagination,
   collectDocumentTextLayoutParagraphs,
   documentPageChromeHeights,
   measureDocumentLayoutBlocks,
@@ -130,7 +128,7 @@ export function useDocumentPagination({
       activeRequest.current = null;
       if (editor && editorMounted && !editor.isDestroyed) {
         const editorDom = editor.view.dom;
-        clearDocumentPagination(editor, nextRevision);
+        editor.commands.clearDocumentPagination(nextRevision);
         editorDom.dataset.paginationState =
           enabled && !client ? 'initializing' : 'disabled';
         if (!enabled) {
@@ -223,7 +221,7 @@ export function useDocumentPagination({
       activeRequest.current?.abort();
       const controller = new AbortController();
       activeRequest.current = controller;
-      clearDocumentPagination(editor, nextRevision);
+      editor.commands.clearDocumentPagination(nextRevision);
       editorDom.dataset.paginationState = 'measuring';
       delete editorDom.dataset.paginationError;
       const measurementStart = dirtyMeasurementFrom.current;
@@ -402,8 +400,7 @@ export function useDocumentPagination({
             (descriptor) => [descriptor.pageIndex, descriptor] as const,
           ),
         );
-        applyDocumentPagination(
-          editor,
+        editor.commands.applyDocumentPagination(
           nextRevision,
           layout.breaks.flatMap((pageBreak) => {
             const block = blockById.get(pageBreak.beforeBlockId);
@@ -461,7 +458,7 @@ export function useDocumentPagination({
           error instanceof Error
             ? `${error.name}: ${error.message}`
             : 'UnknownError';
-        clearDocumentPagination(editor, nextRevision);
+        editor.commands.clearDocumentPagination(nextRevision);
         paginationCache.current = null;
         setPagination(null);
       }

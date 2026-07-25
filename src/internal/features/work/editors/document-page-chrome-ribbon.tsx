@@ -19,8 +19,8 @@ import {
   X,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
 import {
-  applyDocumentPageChromeEditorCommand,
   documentPageChromeEditorState,
   loadDocumentPageChromeImage,
   normalizeDocumentPageChromeHref,
@@ -67,32 +67,27 @@ export function DocumentPageChromeRibbon({
   const state = documentPageChromeEditorState(editor);
   const editLink = async () => {
     if (state.link) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'setLink',
-        href: null,
-      });
+      editor.chain().focus().setDocumentPageChromeLink(null).run();
       return;
     }
     const href = await officeDialog.prompt({
-      title: '链接地址',
+      title: '添加链接',
+      fieldLabel: '链接地址',
       initialValue: 'https://',
       placeholder: 'https://',
+      inputMode: 'url',
       confirmLabel: '添加链接',
+      required: '请输入链接地址。',
+      validate: (value) =>
+        normalizeDocumentPageChromeHref(value)
+          ? null
+          : DOCUMENT_LINK_VALIDATION_MESSAGE,
+      restoreFocusTarget: () => editor.view.dom,
     });
     if (href === null) return;
     const normalized = normalizeDocumentPageChromeHref(href);
-    if (!normalized) {
-      await officeDialog.notice({
-        title: '无法添加链接',
-        description: '请输入 http、https、mailto 或文档内 # 锚点地址。',
-      });
-      return;
-    }
-    if (!editor.isDestroyed) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'setLink',
-        href: normalized,
-      });
+    if (normalized && !editor.isDestroyed) {
+      editor.chain().focus().setDocumentPageChromeLink(normalized).run();
     }
   };
   const insertImage = async (file: File | undefined) => {
@@ -106,11 +101,14 @@ export function DocumentPageChromeRibbon({
       return;
     }
     if (!editor.isDestroyed) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'insertImage',
-        alt: image.alt,
-        source: image.source,
-      });
+      editor
+        .chain()
+        .focus()
+        .insertDocumentPageChromeImage({
+          alt: image.alt,
+          source: image.source,
+        })
+        .run();
     }
   };
 
@@ -138,18 +136,14 @@ export function DocumentPageChromeRibbon({
         <PageChromeRibbonButton
           label="撤销页眉页脚编辑"
           disabled={!state.canUndo}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, { type: 'undo' })
-          }
+          onClick={() => editor.chain().focus().undo().run()}
         >
           <Undo2 size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="重做页眉页脚编辑"
           disabled={!state.canRedo}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, { type: 'redo' })
-          }
+          onClick={() => editor.chain().focus().redo().run()}
         >
           <Redo2 size={16} />
         </PageChromeRibbonButton>
@@ -158,44 +152,28 @@ export function DocumentPageChromeRibbon({
         <PageChromeRibbonButton
           label="页眉页脚加粗"
           active={state.bold}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'toggleBold',
-            })
-          }
+          onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚斜体"
           active={state.italic}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'toggleItalic',
-            })
-          }
+          onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚下划线"
           active={state.underline}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'toggleUnderline',
-            })
-          }
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <Underline size={16} />
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚下标"
           active={state.subscript}
-          onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'toggleSubscript',
-            })
-          }
+          onClick={() => editor.chain().focus().toggleDocumentSubscript().run()}
         >
           <SubscriptIcon size={16} />
         </PageChromeRibbonButton>
@@ -203,9 +181,7 @@ export function DocumentPageChromeRibbon({
           label="页眉页脚上标"
           active={state.superscript}
           onClick={() =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'toggleSuperscript',
-            })
+            editor.chain().focus().toggleDocumentSuperscript().run()
           }
         >
           <SuperscriptIcon size={16} />
@@ -216,10 +192,7 @@ export function DocumentPageChromeRibbon({
           ariaLabel="页眉页脚文字颜色"
           value={pickerColor(state.color)}
           onValueChange={(color) =>
-            applyDocumentPageChromeEditorCommand(editor, {
-              type: 'setColor',
-              color,
-            })
+            editor.chain().focus().setColor(color).run()
           }
         />
       </WorkOfficeRibbonGroup>
@@ -229,12 +202,7 @@ export function DocumentPageChromeRibbon({
             key={alignment}
             label={alignmentLabel(alignment)}
             active={state.alignment === alignment}
-            onClick={() =>
-              applyDocumentPageChromeEditorCommand(editor, {
-                type: 'setAlignment',
-                alignment,
-              })
-            }
+            onClick={() => editor.chain().focus().setTextAlign(alignment).run()}
           >
             {alignmentIcon(alignment)}
           </PageChromeRibbonButton>

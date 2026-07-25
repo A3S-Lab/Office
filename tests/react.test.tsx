@@ -1,3 +1,4 @@
+import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { StrictMode } from 'react';
@@ -42,6 +43,38 @@ test('renders the React document editor in preview mode', async () => {
     'data-theme',
     'light',
   );
+});
+
+test('mounts host TipTap extensions in the document editor', async () => {
+  let shortcutCalls = 0;
+  const hostShortcuts = Extension.create({
+    name: 'testDocumentHostShortcuts',
+    addKeyboardShortcuts() {
+      return {
+        F8: () => {
+          shortcutCalls += 1;
+          return true;
+        },
+      };
+    },
+  });
+  const artifact = createArtifact('blank-document');
+
+  render(
+    <DocumentEditor
+      content={artifact.content as DocumentContent}
+      extensions={[hostShortcuts]}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  fireEvent.keyDown(await screen.findByLabelText('文档正文'), {
+    code: 'F8',
+    key: 'F8',
+  });
+
+  expect(shortcutCalls).toBe(1);
 });
 
 test('preloads an editor without mounting it', async () => {

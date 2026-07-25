@@ -412,7 +412,21 @@
 
 .work-office-dialog-field {
   display: grid;
-  min-width: min(420px, 72vw);
+  width: 100%;
+  min-width: 0;
+  gap: 7px;
+}
+
+.work-office-dialog-field-label {
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.work-office-dialog-field-error {
+  color: var(--a3s-red);
+  font-size: 10px;
+  line-height: 1.45;
 }
 
 .work-office-dialog-field .work-office-text-area {

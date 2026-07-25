@@ -1,3 +1,4 @@
+import type { Extensions } from '@tiptap/core';
 import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type {
@@ -145,6 +146,7 @@ abstract class A3SContentEditorElement<
 }
 
 export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentContent> {
+  #extensions: Extensions | undefined;
   #layoutFonts: readonly DocumentLayoutFont[] | undefined;
 
   static get observedAttributes() {
@@ -160,6 +162,15 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     else this.setAttribute('kernel-wasm-url', value);
   }
 
+  get extensions(): Extensions | undefined {
+    return this.#extensions;
+  }
+
+  set extensions(value: Extensions | undefined) {
+    this.#extensions = value;
+    this.requestRender();
+  }
+
   get layoutFonts(): readonly DocumentLayoutFont[] | undefined {
     return this.#layoutFonts;
   }
@@ -173,6 +184,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     if (!this.content) return missingContent('document', this.theme);
     return createElement(DocumentEditor, {
       content: this.content,
+      extensions: this.extensions,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,
       layoutFonts: this.layoutFonts,
@@ -186,14 +198,26 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
 }
 
 export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownContent> {
+  #extensions: Extensions | undefined;
+
   static get observedAttributes() {
     return ['preview', 'save-status', 'theme'];
+  }
+
+  get extensions(): Extensions | undefined {
+    return this.#extensions;
+  }
+
+  set extensions(value: Extensions | undefined) {
+    this.#extensions = value;
+    this.requestRender();
   }
 
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('Markdown', this.theme);
     return createElement(MarkdownEditor, {
       content: this.content,
+      extensions: this.extensions,
       fileActions: this.fileActions,
       onChange: (content) => this.changeContent(content),
       preview: this.preview,
@@ -234,7 +258,16 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
 
 export class A3SPresentationEditorElement extends A3SContentEditorElement<PresentationContent> {
   static get observedAttributes() {
-    return ['preview', 'save-status', 'theme'];
+    return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
+  }
+
+  get kernelWasmUrl(): string | undefined {
+    return this.getAttribute('kernel-wasm-url') ?? undefined;
+  }
+
+  set kernelWasmUrl(value: string | undefined) {
+    if (value === undefined) this.removeAttribute('kernel-wasm-url');
+    else this.setAttribute('kernel-wasm-url', value);
   }
 
   protected editorNode(): ReactNode {
@@ -242,6 +275,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
     return createElement(PresentationEditor, {
       content: this.content,
       fileActions: this.fileActions,
+      kernelWasmUrl: this.kernelWasmUrl,
       onAgentRequest: (request) => this.requestAgent(request),
       onChange: (content) => this.changeContent(content),
       onStartSlideshow: () =>

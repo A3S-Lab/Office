@@ -1,8 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { jsPDF } from 'jspdf';
-
-const visualDifferenceProbe =
-  process.env.A3S_OFFICE_VISUAL_DIFFERENCE_PROBE === '1';
+import {
+  openDocumentFixture,
+  stabilizeVisualSurface,
+  waitForDocumentFixture,
+} from './visual-test-support';
 
 type VisualEditorKind =
   | 'document'
@@ -20,23 +22,8 @@ interface VisualFixture {
 const fixtures: VisualFixture[] = [
   {
     kind: 'document',
-    open: (page) =>
-      page
-        .getByRole('button', {
-          name: '新项目方案 DOCX · 本次会话',
-        })
-        .click(),
-    ready: async (page) => {
-      const editor = page.locator(
-        '.ProseMirror[data-pagination-state="ready"]',
-      );
-      await editor.waitFor();
-      await expect(editor).toHaveAttribute('data-pagination-engine', 'wasm');
-      await expect(editor).toHaveAttribute(
-        'data-pagination-text-engine',
-        'wasm',
-      );
-    },
+    open: openDocumentFixture,
+    ready: waitForDocumentFixture,
   },
   {
     kind: 'markdown',
@@ -185,82 +172,6 @@ test('component guide highlights framework examples by language', async ({
   await expect(example.locator('.token.keyword').first()).toBeVisible();
 });
 
-test('document comments align with their review rail', async ({
-  page,
-}, testInfo) => {
-  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
-  if (!fixture) throw new Error('Missing document visual fixture.');
-
-  await page.goto('/');
-  await fixture.open(page);
-  await fixture.ready(page);
-  await page
-    .locator('.work-document-editable .ProseMirror')
-    .evaluate((root) => {
-      const paragraph = root.querySelectorAll('p')[1];
-      const text = paragraph?.firstChild;
-      if (!(text instanceof Text)) {
-        throw new Error('Document comment fixture text is unavailable.');
-      }
-      const range = document.createRange();
-      range.setStart(text, 0);
-      range.setEnd(text, Math.min(12, text.length));
-      const selection = window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-      document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
-    });
-  await page.getByRole('tab', { name: '审阅' }).click();
-  await page.getByRole('button', { name: '添加批注' }).click();
-  const dialog = page.getByRole('dialog');
-  await dialog
-    .getByRole('textbox', { name: '批注内容' })
-    .fill('这里需要补充可衡量的验收标准。');
-  await dialog.getByRole('button', { name: '添加批注' }).click();
-
-  const panel = page.getByRole('complementary', { name: '批注审阅' });
-  const mark = page.locator('[data-document-comment]');
-  const connector = page.locator('.work-document-comment-connectors path');
-  await expect(panel).toBeVisible();
-  await expect(mark).toHaveCount(1);
-  await expect(mark).toHaveClass(/is-active-comment/);
-  await expect(connector).toHaveCount(1);
-  await expect(page.getByText('这里需要补充可衡量的验收标准。')).toBeVisible();
-
-  const geometry = await page.evaluate(() => {
-    const panel = document.querySelector<HTMLElement>(
-      '.work-document-comments-panel',
-    );
-    const pageElement = document.querySelector<HTMLElement>(
-      '.work-document-page',
-    );
-    if (!panel || !pageElement) {
-      throw new Error('Document review geometry is unavailable.');
-    }
-    const panelRect = panel.getBoundingClientRect();
-    const pageRect = pageElement.getBoundingClientRect();
-    return {
-      viewportWidth: document.documentElement.clientWidth,
-      panelLeft: panelRect.left,
-      panelRight: panelRect.right,
-      panelWidth: panelRect.width,
-      pageRight: pageRect.right,
-    };
-  });
-  if (testInfo.project.name === 'compact-768') {
-    expect(geometry.panelLeft).toBeGreaterThanOrEqual(
-      geometry.viewportWidth - geometry.panelWidth - 16,
-    );
-  } else {
-    expect(geometry.panelLeft).toBeGreaterThanOrEqual(geometry.pageRight - 1);
-  }
-  expect(geometry.panelRight).toBeLessThanOrEqual(geometry.viewportWidth + 1);
-  expect(geometry.panelWidth).toBeGreaterThanOrEqual(270);
-
-  await stabilizeVisualSurface(page);
-  await expect(page).toHaveScreenshot('document-comments.png');
-});
-
 test('component guide provides framework-specific examples', async ({
   page,
 }) => {
@@ -306,6 +217,12 @@ test('unified guide keeps CLI and Skill setup in one document', async ({
     page.getByRole('heading', { name: '前端组件', level: 2 }),
   ).toBeVisible();
 
+  await guideNavigation.getByRole('link', { name: '组件 API' }).click();
+  await expect(page).toHaveURL(/#guide\/api$/);
+  await expect(
+    page.getByRole('heading', { name: '组件 API', level: 2 }),
+  ).toBeVisible();
+
   await guideNavigation.getByRole('link', { name: '命令行与 AI' }).click();
   await expect(page).toHaveURL(/#guide\/automation$/);
   await expect(
@@ -326,8 +243,48 @@ test('unified guide keeps CLI and Skill setup in one document', async ({
     guideNavigation.getByRole('link', { name: '前端组件' }),
   ).toHaveAttribute('href', '#guide/components');
   await expect(
+    guideNavigation.getByRole('link', { name: '组件 API' }),
+  ).toHaveAttribute('href', '#guide/api');
+  await expect(
     guideNavigation.getByRole('link', { name: '命令行与 AI' }),
   ).toHaveAttribute('href', '#guide/automation');
+});
+
+test('component API documents every editor and remains usable on compact screens', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/#guide/api');
+
+  const api = page.locator('section[id="guide/api"]');
+  await expect(
+    api.getByRole('heading', { name: '组件 API', level: 2 }),
+  ).toBeVisible();
+  const tabs = api.getByRole('tablist', { name: '编辑器 API' });
+  await expect(tabs.getByRole('tab')).toHaveCount(5);
+  await expect(
+    api.getByRole('rowheader', { name: 'extensions' }),
+  ).toBeVisible();
+  await expect(
+    api.getByText('支持 TipTap Extensions', { exact: true }),
+  ).toBeVisible();
+  const example = api.locator('pre[data-code-language="tsx"]');
+  await expect(example.locator('.token.keyword').first()).toBeVisible();
+
+  const propsTable = api.locator('.playground-api-table-wrap').nth(1);
+  expect(
+    await propsTable.evaluate(
+      (element) => element.scrollWidth > element.clientWidth,
+    ),
+  ).toBe(true);
+
+  await tabs.getByRole('tab', { name: /PDF.*PdfViewer/ }).click();
+  await expect(
+    api.getByRole('heading', { name: '文件生命周期', level: 3 }),
+  ).toBeVisible();
+  await expect(
+    api.getByRole('rowheader', { name: 'loadSource' }),
+  ).toBeVisible();
 });
 
 test('Markdown GFM source and visual panes stay synchronized', async ({
@@ -844,50 +801,6 @@ async function presentationElementFontSize(element: Locator): Promise<number> {
     const text = node.querySelector<HTMLElement>('[style*="font-size"]');
     if (!text) throw new Error('Presentation text style is unavailable.');
     return Number.parseFloat(getComputedStyle(text).fontSize);
-  });
-}
-
-async function stabilizeVisualSurface(page: Page): Promise<void> {
-  await page.addStyleTag({
-    content: `
-      *,
-      *::before,
-      *::after {
-        caret-color: transparent !important;
-        scroll-behavior: auto !important;
-      }
-
-      * {
-        scrollbar-width: none !important;
-      }
-
-      *::-webkit-scrollbar,
-      .playground-toast {
-        display: none !important;
-      }
-
-      ${
-        visualDifferenceProbe
-          ? `
-            html::after {
-              content: '';
-              position: fixed;
-              inset: 0;
-              z-index: 2147483647;
-              box-sizing: border-box;
-              border: 12px solid #ff00ff;
-              pointer-events: none;
-            }
-          `
-          : ''
-      }
-    `,
-  });
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
   });
 }
 

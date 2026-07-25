@@ -42,6 +42,39 @@ model:
 This split keeps typing, selection, drag, and resize responsive while moving
 CPU-heavy and memory-bounded work away from the UI event loop.
 
+## Document interaction surfaces
+
+Document commands use four interaction surfaces. The command owns the choice;
+localized labels and viewport heuristics never decide behavior.
+
+| Surface | Use | Placement and behavior |
+| --- | --- | --- |
+| Task pane | Find and replace, page setup, citation sources, and revision review | Mutually exclusive at the right edge of the document workspace. It shares width with the page above 900 px, overlays the page below 900 px, and becomes workspace-wide below 520 px. Escape and the visible close action follow the same guarded close path. |
+| Review rail | Anchored comments and comment drafts | Sits beside the paper and connects each thread to its text range. Below 620 px it becomes a bounded review drawer, removes connector lines, and lays cards in document order instead of using absolute placement. |
+| Anchored popover | Table size, paragraph spacing, paragraph pagination, colors, and select options | Portaled to the body but positioned from the invoking control. It flips vertically, clamps to a 16 px viewport margin, updates on nested scroll and resize, focuses its first field when it behaves like a small dialog, and returns focus to the trigger on Escape. |
+| Modal dialog | Captions, cross-references, links, image descriptions, notices, and confirmations | Centered in the viewport with bounded height and an independently scrolling body. The body-level portal makes every non-dialog body child inert. Focus stays inside, destructive confirmations initially focus the safe action, and closing returns to the actual invoker unless the completed command deliberately restores the editor. |
+
+Task panes preserve editing context instead of behaving like navigation.
+Closing a pane returns focus to the body editor. Switching away from a dirty
+citation draft or an unsent comment reply requires an explicit discard
+decision; cancelling that decision returns to the control that requested the
+switch. Citation editing uses progressive disclosure: citation identity,
+title, year, and authors remain visible while secondary publication metadata
+stays collapsed until requested. An edited source cannot be inserted before it
+is saved.
+
+Review actions distinguish reversible, local decisions from broad destructive
+ones. Individual revision decisions remain direct commands. Accepting or
+rejecting every revision requires confirmation, and an empty revision pane does
+not retain disabled bulk controls. Deleting a comment confirms that its thread
+and any unsent reply will also be removed.
+
+These rules are implemented by `DocumentTaskPane`, `Popover`, `Dialog`, and
+`useOfficeDialog`. Native browser prompts, confirms, and selects are not valid
+fallbacks. All four surfaces must be verified at 1280 px, 768 px, 520 px, and
+390 px widths for viewport containment, keyboard entry, Escape behavior, and
+focus restoration.
+
 ## Current implementation status
 
 | Product | Implemented browser surface | Implemented kernel boundary | Next fidelity gate |

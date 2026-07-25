@@ -14,9 +14,8 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import type { PresentationDesignMode } from './presentation-design-panel';
+import type { PresentationDesignMode } from './presentation-editor-types';
 import { translatePresentationSelection } from './presentation-selection';
-import { usePresentationShortcuts } from './use-presentation-shortcuts';
 import {
   applyPresentationElementFormattingPatch,
   presentationElementToolbarState,
@@ -24,42 +23,22 @@ import {
 
 export function usePresentationClipboard({
   content,
-  preview,
   mode,
   targetId,
   selectedSlide,
-  editingElementId,
-  groupSelection,
   selectedElements,
   onChange,
   onSelectSlide,
-  onEditElement,
-  onExitEditing,
   onSelectElements,
-  onUndo,
-  onRedo,
-  onAddSlide,
-  onStartSlideshow,
-  ungroupSelection,
 }: {
   content: WorkPresentationContent;
-  preview: boolean;
   mode: PresentationDesignMode;
   targetId: string | undefined;
   selectedSlide: WorkSlide | undefined;
-  editingElementId: string | null;
-  groupSelection: () => boolean;
   selectedElements: readonly WorkSlideElement[];
   onChange: (content: WorkPresentationContent) => void;
   onSelectSlide: (id: string) => void;
-  onEditElement: (id: string) => void;
-  onExitEditing: () => void;
   onSelectElements: (ids: readonly string[]) => void;
-  onUndo: () => boolean;
-  onRedo: () => boolean;
-  onAddSlide: () => void;
-  onStartSlideshow?: () => void;
-  ungroupSelection: () => boolean;
 }) {
   const selectedElement = selectedElements.at(-1) ?? null;
   const copySelection = useCallback((): boolean => {
@@ -276,30 +255,15 @@ export function usePresentationClipboard({
     return true;
   }, [content, mode, onChange, selectedElement, selectedElements, targetId]);
 
-  usePresentationShortcuts({
+  return {
     copySelection,
     cutSelection,
     deleteSelection: deleteSelectedElement,
     duplicateSelection,
-    editingElementId,
-    groupSelection,
     nudgeSelection,
-    onAddSlide,
-    onEditElement,
-    onExitEditing,
-    onRedo,
-    onSelectElements,
-    onStartSlideshow,
-    onUndo,
     pasteSelection,
-    preview,
-    selectedElement,
-    selectedElementCount: selectedElements.length,
     toggleBold,
-    ungroupSelection,
-  });
-
-  return { copySelection, cutSelection, pasteSelection };
+  };
 }
 
 function updateTargetElements(

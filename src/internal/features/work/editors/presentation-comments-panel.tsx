@@ -6,6 +6,15 @@ import {
 } from '../../../design-system/primitives';
 import type { WorkSlide } from '../work-types';
 import { OfficeTextArea } from './office-controls';
+import type { PresentationEditorCommands } from './presentation-command-types';
+
+export type PresentationCommentsPanelCommands = Pick<
+  PresentationEditorCommands,
+  | 'closeComments'
+  | 'deletePresentationComment'
+  | 'locatePresentationComment'
+  | 'updatePresentationComment'
+>;
 
 interface PresentationCommentView {
   slideId: string;
@@ -21,17 +30,11 @@ interface PresentationCommentView {
 export function PresentationCommentsPanel({
   slides,
   activeCommentId,
-  onLocate,
-  onChange,
-  onDelete,
-  onClose,
+  commands,
 }: {
   slides: WorkSlide[];
   activeCommentId: string | null;
-  onLocate: (slideId: string, commentId: string) => void;
-  onChange: (slideId: string, commentId: string, text: string) => void;
-  onDelete: (slideId: string, commentId: string) => void;
-  onClose: () => void;
+  commands: PresentationCommentsPanelCommands;
 }) {
   const comments = presentationCommentViews(slides);
   return (
@@ -51,7 +54,7 @@ export function PresentationCommentsPanel({
         <IconButton
           className="close"
           label="关闭演示批注审阅"
-          onClick={onClose}
+          onClick={commands.closeComments}
         >
           <X size={14} />
         </IconButton>
@@ -66,7 +69,9 @@ export function PresentationCommentsPanel({
               type="button"
               className="work-presentation-comment-location"
               aria-label={`定位演示批注 ${index + 1}`}
-              onClick={() => onLocate(comment.slideId, comment.id)}
+              onClick={() =>
+                commands.locatePresentationComment(comment.slideId, comment.id)
+              }
             >
               <MapPin size={12} />
               <span>
@@ -82,9 +87,15 @@ export function PresentationCommentsPanel({
             <OfficeTextArea
               aria-label={`编辑演示批注 ${index + 1}`}
               value={comment.text}
-              onFocus={() => onLocate(comment.slideId, comment.id)}
+              onFocus={() =>
+                commands.locatePresentationComment(comment.slideId, comment.id)
+              }
               onChange={(event) =>
-                onChange(comment.slideId, comment.id, event.target.value)
+                commands.updatePresentationComment(
+                  comment.slideId,
+                  comment.id,
+                  event.target.value,
+                )
               }
             />
             <footer>
@@ -92,7 +103,12 @@ export function PresentationCommentsPanel({
               <Button
                 tone="quiet"
                 aria-label={`删除演示批注 ${index + 1}`}
-                onClick={() => onDelete(comment.slideId, comment.id)}
+                onClick={() =>
+                  commands.deletePresentationComment(
+                    comment.slideId,
+                    comment.id,
+                  )
+                }
               >
                 <Trash2 size={12} />
                 删除

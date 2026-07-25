@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, test } from '@rstest/core';
 import { DocumentPaginationPopover } from '../src/internal/features/work/editors/document-pagination-popover';
 import { DocumentParagraphFormatting } from '../src/internal/features/work/work-document-paragraph-formatting';
@@ -12,7 +12,7 @@ afterEach(() => {
   editor = null;
 });
 
-test('edits typed paragraph pagination properties from an accessible popover', () => {
+test('edits typed paragraph pagination properties from an accessible popover', async () => {
   editor = new Editor({
     extensions: [StarterKit, DocumentParagraphFormatting],
     content: '<p>A3S Office</p>',
@@ -27,6 +27,9 @@ test('edits typed paragraph pagination properties from an accessible popover', (
   expect(
     screen.getByRole('checkbox', { name: '段落不跨页' }),
   ).not.toBeChecked();
+  await waitFor(() =>
+    expect(screen.getByRole('checkbox', { name: '段落不跨页' })).toHaveFocus(),
+  );
   expect(
     screen.getByRole('checkbox', { name: '避免页首、页尾单行' }),
   ).toBeChecked();

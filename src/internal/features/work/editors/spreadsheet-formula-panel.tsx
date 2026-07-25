@@ -16,6 +16,7 @@ import {
 interface SpreadsheetFormulaPanelProps {
   content: WorkSpreadsheetContent;
   canRecalculateSelection: boolean;
+  canRecalculateWorkbook: boolean;
   onChange: (content: WorkSpreadsheetContent) => void;
   onRecalculate: (scope: 'workbook' | 'selection') => boolean;
 }
@@ -23,6 +24,7 @@ interface SpreadsheetFormulaPanelProps {
 export function SpreadsheetFormulaPanel({
   content,
   canRecalculateSelection,
+  canRecalculateWorkbook,
   onChange,
   onRecalculate,
 }: SpreadsheetFormulaPanelProps) {
@@ -187,7 +189,11 @@ export function SpreadsheetFormulaPanel({
               <RefreshCw size={12} />
               重新计算当前选区
             </Button>
-            <Button tone="secondary" onClick={() => recalculate('workbook')}>
+            <Button
+              tone="secondary"
+              disabled={!canRecalculateWorkbook}
+              onClick={() => recalculate('workbook')}
+            >
               <Calculator size={12} />
               重新计算工作簿
             </Button>

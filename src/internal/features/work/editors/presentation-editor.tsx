@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { presentationAgentMenuItems } from '../components/work-editor-agent-menus';
 import { applyPresentationAgentProposalChanges } from '../work-agent-proposal-apply';
@@ -8,75 +8,55 @@ import {
   presentationAgentSelection,
   presentationNotesProposalTarget,
 } from '../work-presentation-agent-context';
-import { createPresentationChartElement } from '../work-presentation-charts';
 import {
-  applyPresentationLayout,
   presentationSlideView,
   withPresentationDesign,
 } from '../work-presentation-layouts';
 import {
   canGroupPresentationElements,
   canUngroupPresentationElements,
-  groupPresentationElements,
   presentationSelectionUnits,
-  remapPresentationGroupPaths,
-  ungroupPresentationElements,
 } from '../work-presentation-groups';
-import { clonePresentationSlideForPaste } from '../work-presentation-clipboard';
-import { createWorkId } from '../work-templates';
-import type {
-  WorkPresentationLayout,
-  WorkPresentationMaster,
-  WorkSlide,
-  WorkSlideElement,
-} from '../work-types';
-import { OfficeFileInput, useOfficeDialog } from './office-controls';
+import type { WorkSlide, WorkSlideElement } from '../work-types';
+import { OfficeFileInput } from './office-controls';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
-import { createPresentationCommandDispatcher } from './presentation-command-controller';
+import { createPresentationEditorExtensions } from './presentation-command-controller';
+import type { PresentationEditorCommands } from './presentation-command-types';
 import {
   PresentationCommentsPanel,
   presentationCommentCount,
 } from './presentation-comments-panel';
-import {
-  type PresentationDesignMode,
-  PresentationDesignPanel,
-} from './presentation-design-panel';
-import {
-  clamp,
-  newPresentationElement,
-  newPresentationImageElement,
-  newPresentationTableElement,
-  newSlide,
-  structuredCopy,
-  updatePresentationElements,
-  updateSlide,
-} from './presentation-editor-operations';
+import { PresentationDesignPanel } from './presentation-design-panel';
+import { updatePresentationElements } from './presentation-editor-operations';
 import {
   presentationElementSupportsTextFormatting,
   selectedPresentationElements,
 } from './presentation-selection';
 import type {
   PresentationAgentMenuState,
+  PresentationDesignMode,
   PresentationEditorProps,
 } from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
 import { PresentationStatusBar } from './presentation-status-bar';
 import {
   applyPresentationTextFormatting,
-  type PresentationTextValue,
   presentationTextToolbarState,
 } from './presentation-text-editor';
-import {
-  applyPresentationElementFormattingPatch,
-  presentationElementToolbarState,
-} from './presentation-text-formatting';
+import { presentationElementToolbarState } from './presentation-text-formatting';
 import { PresentationToolbar } from './presentation-toolbar';
 import { PresentationWorkspace } from './presentation-workspace';
 import { usePresentationClipboard } from './use-presentation-clipboard';
+import { usePresentationDesignCommands } from './use-presentation-design-commands';
+import { usePresentationElementCommands } from './use-presentation-element-commands';
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
+import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import { useOfficeEditorRuntime } from './use-office-editor-runtime';
+import { usePresentationReviewCommands } from './use-presentation-review-commands';
 import { usePresentationSelection } from './use-presentation-selection';
+import { usePresentationSlideCommands } from './use-presentation-slide-commands';
 import {
   type PresentationTransformCommit,
   usePresentationTransform,
@@ -85,7 +65,31 @@ import { WorkOfficePreviewBar } from './work-office-chrome';
 
 export type { PresentationEditorProps } from './presentation-editor-types';
 
-export function PresentationEditor({
+export function PresentationEditor(props: PresentationEditorProps) {
+  const { content, fileActions, preview } = props;
+  if (preview) {
+    const player = <PresentationPlayer content={content} />;
+    if (!fileActions?.length) return player;
+    return (
+      <section className="work-presentation-editor preview">
+        <WorkOfficePreviewBar
+          ariaLabel="演示预览工具"
+          label="只读预览"
+          detail={`${content.slides.length} 张幻灯片`}
+          fileActions={fileActions}
+          className="work-presentation-ribbon"
+        />
+        {player}
+      </section>
+    );
+  }
+  const initialSlide = content.slides[0];
+  if (!initialSlide) return null;
+  return <PresentationEditingSurface {...props} initialSlide={initialSlide} />;
+}
+
+function PresentationEditingSurface({
+  initialSlide,
   content,
   preview,
   saveStatus = '已自动保存',
@@ -94,8 +98,11 @@ export function PresentationEditor({
   onChange,
   onAgentRequest,
   onStartSlideshow,
-}: PresentationEditorProps) {
+}: PresentationEditorProps & { initialSlide: WorkSlide }) {
   const contentRef = useRef(content);
+  const presentationCommandsRef = useRef<PresentationEditorCommands | null>(
+    null,
+  );
   const [selectedSlideId, setSelectedSlideId] = useState(
     content.slides[0]?.id ?? '',
   );
@@ -113,14 +120,14 @@ export function PresentationEditor({
   );
   const [viewMode, setViewMode] = useState<'normal' | 'sorter'>('normal');
   const [zoom, setZoom] = useState(90);
-  const officeDialog = useOfficeDialog();
   const canvasRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
   const designContent = withPresentationDesign(content);
   const selectedSlide =
     designContent.slides.find((slide) => slide.id === selectedSlideId) ??
-    designContent.slides[0];
+    designContent.slides[0] ??
+    initialSlide;
   const selectedLayout =
     designContent.layouts?.find(
       (layout) => layout.id === selectedSlide?.layoutId,
@@ -213,12 +220,11 @@ export function PresentationEditor({
             return patch ? { ...element, ...patch } : element;
           }),
         (next) => {
-          contentRef.current = next;
-          onChange(next);
+          presentationCommandsRef.current?.setPresentationContent(next);
         },
       );
     },
-    [activeTargetId, designMode, onChange],
+    [activeTargetId, designMode],
   );
   const transform = usePresentationTransform({
     canvasRef,
@@ -275,13 +281,6 @@ export function PresentationEditor({
     }
   }, [content.slides, selectedSlideId, selection.clear]);
 
-  const addSlide = useCallback(() => {
-    const slide = newSlide(content.slides.length + 1);
-    onChange({ ...content, slides: [...content.slides, slide] });
-    setSelectedSlideId(slide.id);
-    selection.clear();
-  }, [content, onChange, selection.clear]);
-
   const history = usePresentationHistory({
     content,
     onChange,
@@ -291,403 +290,66 @@ export function PresentationEditor({
       selection.clear();
     },
   });
+  const presentationSlides = usePresentationSlideCommands({
+    content,
+    onChange,
+    onClearSelection: selection.clear,
+    onSelectSlide: setSelectedSlideId,
+    selectedSlide,
+  });
 
-  const groupSelection = useCallback((): boolean => {
-    if (
-      !activeTargetId ||
-      !canGroupPresentationElements(
-        activeElements,
-        selection.selectedElementIds,
-      )
-    ) {
-      return false;
-    }
-    updatePresentationElements(
-      contentRef.current,
-      designMode,
-      activeTargetId,
-      (elements) =>
-        groupPresentationElements(
-          elements,
-          selection.selectedElementIds,
-          createWorkId('element-group'),
-        ),
-      (next) => {
-        contentRef.current = next;
-        onChange(next);
-      },
-    );
-    return true;
-  }, [
+  const presentationElements = usePresentationElementCommands({
     activeElements,
     activeTargetId,
+    content,
+    contentRef,
     designMode,
     onChange,
-    selection.selectedElementIds,
-  ]);
-
-  const ungroupSelection = useCallback((): boolean => {
-    if (
-      !activeTargetId ||
-      !canUngroupPresentationElements(
-        activeElements,
-        selection.selectedElementIds,
-      )
-    ) {
-      return false;
-    }
-    updatePresentationElements(
-      contentRef.current,
-      designMode,
-      activeTargetId,
-      (elements) =>
-        ungroupPresentationElements(elements, selection.selectedElementIds),
-      (next) => {
-        contentRef.current = next;
-        onChange(next);
-      },
-    );
-    return true;
-  }, [
-    activeElements,
-    activeTargetId,
-    designMode,
-    onChange,
-    selection.selectedElementIds,
-  ]);
+    onEditElement: selection.edit,
+    onSelectElements: selection.replace,
+    selectedElementIds: selection.selectedElementIds,
+    selectedElements,
+    selectedSlide,
+  });
 
   const clipboard = usePresentationClipboard({
     content,
-    preview,
     mode: designMode,
     targetId: activeTargetId,
     selectedSlide,
-    editingElementId: selection.editingElementId,
-    groupSelection,
     selectedElements,
     onChange,
     onSelectSlide: setSelectedSlideId,
-    onEditElement: selection.edit,
-    onExitEditing: selection.exitEditing,
     onSelectElements: selection.replace,
-    onUndo: history.undo,
-    onRedo: history.redo,
-    onAddSlide: addSlide,
-    onStartSlideshow,
-    ungroupSelection,
+  });
+  const presentationReview = usePresentationReviewCommands({
+    content,
+    onChange,
+    onClearSelection: selection.clear,
+    onCloseComments: () => setCommentsOpen(false),
+    onOpenComments: () => setCommentsOpen(true),
+    onSelectComment: setActiveCommentId,
+    onSelectSlide: setSelectedSlideId,
+    selectedElement,
+    selectedSlide,
   });
 
-  if (preview) {
-    const player = <PresentationPlayer content={content} />;
-    if (!fileActions?.length) return player;
-    return (
-      <section className="work-presentation-editor preview">
-        <WorkOfficePreviewBar
-          ariaLabel="演示预览工具"
-          label="只读预览"
-          detail={`${content.slides.length} 张幻灯片`}
-          fileActions={fileActions}
-          className="work-presentation-ribbon"
-        />
-        {player}
-      </section>
-    );
-  }
-  if (!selectedSlide) return null;
-
-  const updateElement = (patch: Partial<WorkSlideElement>) => {
-    if (!selectedElements.length || !activeTargetId) return;
-    const selectedIds = new Set(selectedElements.map((element) => element.id));
-    updatePresentationElements(
-      contentRef.current,
-      designMode,
-      activeTargetId,
-      (elements) =>
-        elements.map((element) =>
-          selectedIds.has(element.id)
-            ? applyPresentationElementFormattingPatch(element, patch)
-            : element,
-        ),
-      (next) => {
-        contentRef.current = next;
-        onChange(next);
-      },
-    );
-  };
-
-  const updateTextElement = (
-    elementId: string,
-    value: PresentationTextValue,
-  ) => {
-    if (!activeTargetId) return;
-    updatePresentationElements(
-      contentRef.current,
-      designMode,
-      activeTargetId,
-      (elements) =>
-        elements.map((element) =>
-          element.id === elementId ? { ...element, ...value } : element,
-        ),
-      (next) => {
-        contentRef.current = next;
-        onChange(next);
-      },
-    );
-  };
-
-  const addElement = (type: WorkSlideElement['type']) => {
-    if (type !== 'text' && type !== 'shape') return;
-    const element = newPresentationElement(type);
-    if (!activeTargetId) return;
-    updatePresentationElements(
-      content,
-      designMode,
-      activeTargetId,
-      (elements) => [...elements, element],
-      onChange,
-    );
-    if (type === 'text') selection.edit(element.id);
-    else selection.replace([element.id]);
-  };
-
-  const addTable = () => {
-    const element = newPresentationTableElement();
-    updatePresentationElements(
-      content,
-      designMode,
-      activeTargetId ?? selectedSlide.id,
-      (elements) => [...elements, element],
-      onChange,
-    );
-    selection.replace([element.id]);
-  };
-
-  const addChart = () => {
-    const element = createPresentationChartElement();
-    updatePresentationElements(
-      content,
-      'slide',
-      selectedSlide.id,
-      (elements) => [...elements, element],
-      onChange,
-    );
-    selection.replace([element.id]);
-  };
-
-  const addImage = async (file: File) => {
-    const element = await newPresentationImageElement(file);
-    if (!activeTargetId) return;
-    updatePresentationElements(
-      content,
-      designMode,
-      activeTargetId,
-      (elements) => [...elements, element],
-      onChange,
-    );
-    selection.replace([element.id]);
-  };
-
-  const addComment = () => {
-    void officeDialog
-      .prompt({ title: '批注内容', multiline: true, confirmLabel: '添加批注' })
-      .then((text) => {
-        if (!text?.trim()) return;
-        const comment = {
-          id: createWorkId('slide-comment'),
-          author: 'A3S Work 用户',
-          initials: 'AW',
-          date: new Date().toISOString(),
-          text: text.trim(),
-          x: clamp(
-            selectedElement ? selectedElement.x + selectedElement.width : 50,
-            2,
-            98,
-          ),
-          y: clamp(selectedElement ? selectedElement.y : 50, 2, 98),
-        };
-        updateSlide(
-          content,
-          selectedSlide.id,
-          (slide) => ({
-            ...slide,
-            comments: [...(slide.comments ?? []), comment],
-          }),
-          onChange,
-        );
-        setActiveCommentId(comment.id);
-        setCommentsOpen(true);
-      });
-  };
-
-  const duplicateSlide = () => {
-    const copy = clonePresentationSlideForPaste(
-      selectedSlide,
-      content.slides.map((slide) => slide.name),
-    );
-    const index = content.slides.findIndex(
-      (slide) => slide.id === selectedSlide.id,
-    );
-    const slides = [...content.slides];
-    slides.splice(index + 1, 0, copy);
-    onChange({ ...content, slides });
-    setSelectedSlideId(copy.id);
-    selection.clear();
-  };
-
-  const deleteSlideById = (slideId: string): boolean => {
-    if (content.slides.length === 1) return false;
-    const index = content.slides.findIndex((slide) => slide.id === slideId);
-    if (index < 0) return false;
-    const slides = content.slides.filter((slide) => slide.id !== slideId);
-    onChange({ ...content, slides });
-    setSelectedSlideId(slides[Math.min(index, slides.length - 1)].id);
-    selection.clear();
-    return true;
-  };
-  const deleteSlide = () => deleteSlideById(selectedSlide.id);
-
-  const toggleDesignPanel = () => {
-    if (designOpen) {
-      setDesignOpen(false);
-      setDesignMode('slide');
-      selection.clear();
-      return;
-    }
-    onChange(designContent);
-    setDesignOpen(true);
-    setCommentsOpen(false);
-  };
-
-  const updateLayout = (
-    layoutId: string,
-    update: (layout: WorkPresentationLayout) => WorkPresentationLayout,
-  ) => {
-    onChange({
-      ...designContent,
-      layouts: designContent.layouts?.map((layout) =>
-        layout.id === layoutId ? update(structuredCopy(layout)) : layout,
-      ),
-    });
-  };
-
-  const updateMaster = (
-    masterId: string,
-    update: (master: WorkPresentationMaster) => WorkPresentationMaster,
-  ) => {
-    onChange({
-      ...designContent,
-      masters: designContent.masters?.map((master) =>
-        master.id === masterId ? update(structuredCopy(master)) : master,
-      ),
-    });
-  };
-
-  const setActiveBackground = (background: string) => {
-    if (designMode === 'layout' && selectedLayout) {
-      updateLayout(selectedLayout.id, (layout) => ({ ...layout, background }));
-      return;
-    }
-    if (designMode === 'master' && selectedMaster) {
-      updateMaster(selectedMaster.id, (master) => ({ ...master, background }));
-      return;
-    }
-    updateSlide(
-      designContent,
-      selectedSlide.id,
-      (slide) => ({ ...slide, background, useLayoutBackground: false }),
-      onChange,
-    );
-  };
-
-  const createLayout = (copyCurrent: boolean) => {
-    if (!selectedMaster || !selectedLayout) return;
-    const id = createWorkId('layout');
-    const layout: WorkPresentationLayout = copyCurrent
-      ? {
-          ...structuredCopy(selectedLayout),
-          id,
-          name: `${selectedLayout.name} 副本`,
-          elements: remapPresentationGroupPaths(selectedLayout.elements).map(
-            (element) => ({
-              ...structuredCopy(element),
-              id: createWorkId('element'),
-            }),
-          ),
-        }
-      : {
-          id,
-          name: `自定义布局 ${(designContent.layouts?.length ?? 0) + 1}`,
-          masterId: selectedMaster.id,
-          elements: [],
-        };
-    const next = applyPresentationLayout(
-      {
-        ...designContent,
-        layouts: [...(designContent.layouts ?? []), layout],
-      },
-      selectedSlide.id,
-      id,
-    );
-    onChange(next);
-    setDesignMode('layout');
-    selection.clear();
-  };
-
-  const deleteLayout = () => {
-    if (!selectedLayout || (designContent.layouts?.length ?? 0) < 2) return;
-    const fallback = designContent.layouts?.find(
-      (layout) => layout.id !== selectedLayout.id,
-    );
-    if (!fallback) return;
-    onChange({
-      ...designContent,
-      layouts: designContent.layouts?.filter(
-        (layout) => layout.id !== selectedLayout.id,
-      ),
-      slides: designContent.slides.map((slide) =>
-        slide.layoutId === selectedLayout.id
-          ? { ...slide, layoutId: fallback.id }
-          : slide,
-      ),
-    });
-    setDesignMode('slide');
-    selection.clear();
-  };
-
-  const addPlaceholder = (type: 'title' | 'body') => {
-    if (designMode === 'slide' || !activeTargetId) return;
-    const count = activeElements.filter(
-      (element) => element.placeholder?.type === type,
-    ).length;
-    const prompt = type === 'title' ? '单击添加标题' : '单击添加内容';
-    const element: WorkSlideElement = {
-      id: createWorkId('element'),
-      type: 'text',
-      x: type === 'title' ? 8 : 10,
-      y: type === 'title' ? 9 : 24,
-      width: type === 'title' ? 84 : 80,
-      height: type === 'title' ? 12 : 58,
-      text: prompt,
-      fontSize: type === 'title' ? 30 : 20,
-      color: '#172033',
-      fill: 'transparent',
-      bold: type === 'title',
-      align: 'left',
-      placeholder: {
-        key: count ? `type:${type}:${count + 1}` : `type:${type}`,
-        type,
-        prompt,
-      },
-    };
-    updatePresentationElements(
-      designContent,
-      designMode,
-      activeTargetId,
-      (elements) => [...elements, element],
-      onChange,
-    );
-    selection.edit(element.id);
-  };
+  const presentationDesign = usePresentationDesignCommands({
+    activeElements,
+    activeTargetId,
+    designContent,
+    designMode,
+    designOpen,
+    onChange,
+    onClearSelection: selection.clear,
+    onCloseComments: () => setCommentsOpen(false),
+    onEditElement: selection.edit,
+    onSetDesignMode: setDesignMode,
+    onSetDesignOpen: setDesignOpen,
+    selectedLayout,
+    selectedMaster,
+    selectedSlide,
+  });
   const arrangement = createPresentationArrangementController({
     getContent: () => contentRef.current,
     geometry,
@@ -697,60 +359,156 @@ export function PresentationEditor({
     selectedElements,
     targetId: activeTargetId,
   });
-  const presentationCommands = createPresentationCommandDispatcher({
-    addChart,
-    addComment,
-    addElement,
-    addSlide,
-    addTable,
-    alignElement: arrangement.align,
-    distributeElements: arrangement.distribute,
-    applyTransitionToAll: () =>
-      onChange({
-        ...content,
-        slides: content.slides.map((slide) => ({
-          ...slide,
-          transition: selectedSlide.transition
-            ? structuredCopy(selectedSlide.transition)
-            : undefined,
-        })),
-      }),
-    copySelection: clipboard.copySelection,
-    cutSelection: clipboard.cutSelection,
-    deleteSlide,
-    duplicateSlide,
-    groupElements: groupSelection,
-    pasteSelection: clipboard.pasteSelection,
-    redo: history.redo,
-    reorderElement: arrangement.reorder,
-    requestImage: () => imageInputRef.current?.click(),
-    setBackground: setActiveBackground,
-    setTransition: (transition) =>
-      updateSlide(
-        content,
-        selectedSlide.id,
-        (slide) => ({ ...slide, transition }),
-        onChange,
-      ),
-    setViewMode,
-    startSlideshow: () => onStartSlideshow?.(),
-    toggleComments: () => setCommentsOpen((value) => !value),
-    toggleDesign: toggleDesignPanel,
-    ungroupElements: ungroupSelection,
-    undo: history.undo,
-    updateElement: (patch, options) => {
-      if (
-        selectedTextEditor &&
-        !selectedTextEditor.state.selection.empty &&
-        applyPresentationTextFormatting(selectedTextEditor, patch, {
-          restoreFocus: options.restoreTextFocus,
-        })
-      ) {
-        return;
-      }
-      updateElement(patch);
+  const canGroupSelection = canGroupPresentationElements(
+    activeElements,
+    selection.selectedElementIds,
+  );
+  const canUngroupSelection = canUngroupPresentationElements(
+    activeElements,
+    selection.selectedElementIds,
+  );
+  const textFormattingAvailable =
+    selectedElements.length > 0 &&
+    selectedElements.every(presentationElementSupportsTextFormatting);
+  const presentationExtensions = useMemo(
+    createPresentationEditorExtensions,
+    [],
+  );
+  const presentationEditor = useOfficeEditorRuntime(
+    {
+      clipboard: {
+        canCopySelection:
+          selectedElements.length > 0 ||
+          (designMode === 'slide' && Boolean(selectedSlide)),
+        canCutSelection:
+          selectedElements.length > 0 ||
+          (designMode === 'slide' && Boolean(selectedSlide)),
+        canPasteSelection: true,
+        copySelection: clipboard.copySelection,
+        cutSelection: clipboard.cutSelection,
+        pasteSelection: clipboard.pasteSelection,
+      },
+      design: {
+        addPlaceholder: presentationDesign.addPlaceholder,
+        applyLayout: presentationDesign.applyLayout,
+        canDeleteLayout: (designContent.layouts?.length ?? 0) >= 2,
+        close: presentationDesign.close,
+        createLayout: presentationDesign.createLayout,
+        deleteLayout: presentationDesign.deleteLayout,
+        edit: presentationDesign.edit,
+        renameLayout: presentationDesign.renameLayout,
+        renameMaster: presentationDesign.renameMaster,
+        setLayoutBackground: presentationDesign.setLayoutBackground,
+        setMasterBackground: presentationDesign.setMasterBackground,
+        toggleLayoutBackground: presentationDesign.toggleLayoutBackground,
+      },
+      document: {
+        setContent: (next) => {
+          contentRef.current = next;
+          onChange(next);
+        },
+      },
+      elements: {
+        canAlignElement: selectionUnits.length >= 2,
+        canDistributeElements: selectionUnits.length >= 3,
+        canGroupElements: canGroupSelection,
+        canReorderElement: selectedElements.length > 0,
+        canUngroupElements: canUngroupSelection,
+        canUpdateElement: selectedElements.length > 0,
+        alignElement: arrangement.align,
+        distributeElements: arrangement.distribute,
+        groupElements: presentationElements.groupSelection,
+        reorderElement: arrangement.reorder,
+        ungroupElements: presentationElements.ungroupSelection,
+        updateElement: (patch, options) => {
+          if (
+            selectedTextEditor &&
+            !selectedTextEditor.state.selection.empty &&
+            applyPresentationTextFormatting(selectedTextEditor, patch, {
+              restoreFocus: options.restoreTextFocus,
+            })
+          ) {
+            return;
+          }
+          presentationElements.updateElement(patch);
+        },
+        updateTextElement: presentationElements.updateTextElement,
+      },
+      history,
+      insert: {
+        enabled: Boolean(activeTargetId),
+        addChart: presentationElements.addChart,
+        addElement: presentationElements.addElement,
+        addImage: presentationElements.addImage,
+        addTable: presentationElements.addTable,
+        instantiatePlaceholder: presentationElements.instantiatePlaceholder,
+        requestImage: () => imageInputRef.current?.click(),
+      },
+      keyboard: {
+        editingElementId: selection.editingElementId,
+        selectedElement,
+        selectedElementCount: selectedElements.length,
+      },
+      review: {
+        canAddComment: Boolean(selectedSlide),
+        addComment: presentationReview.addComment,
+        closeComments: presentationReview.closeComments,
+        deleteComment: presentationReview.deleteComment,
+        locateComment: presentationReview.locateComment,
+        openComment: presentationReview.openComment,
+        toggleComments: () => setCommentsOpen((value) => !value),
+        updateComment: presentationReview.updateComment,
+      },
+      selection: {
+        canDeleteSelection:
+          selectedElements.length > 0 && Boolean(activeTargetId),
+        canDuplicateSelection:
+          selectedElements.length > 0 && Boolean(activeTargetId),
+        canEditElement: (id) =>
+          activeElements.some((element) => element.id === id),
+        canExitEditing: Boolean(selection.editingElementId),
+        canNudgeSelection:
+          selectedElements.length > 0 && Boolean(activeTargetId),
+        canToggleBold: textFormattingAvailable,
+        deleteSelection: clipboard.deleteSelection,
+        duplicateSelection: clipboard.duplicateSelection,
+        editElement: selection.edit,
+        exitEditing: selection.exitEditing,
+        nudgeSelection: clipboard.nudgeSelection,
+        selectElement: selection.select,
+        selectElements: selection.replace,
+        toggleBold: clipboard.toggleBold,
+      },
+      slides: {
+        canDeleteSlide: designMode === 'slide' && content.slides.length > 1,
+        canDuplicateSlide: designMode === 'slide' && Boolean(selectedSlide),
+        addSlide: presentationSlides.addSlide,
+        applyTransitionToAll: presentationSlides.applyTransitionToAll,
+        deleteSlide: presentationSlides.deleteSlide,
+        deleteSlideById: presentationSlides.deleteSlideById,
+        duplicateSlide: presentationSlides.duplicateSlide,
+        selectSlide: (slideId, returnToSlideMode) => {
+          setSelectedSlideId(slideId);
+          selection.clear();
+          if (returnToSlideMode) setDesignMode('slide');
+        },
+        setBackground: presentationDesign.setActiveBackground,
+        setTransition: presentationSlides.setTransition,
+        updateNotes: presentationSlides.updateNotes,
+      },
+      view: {
+        canStartSlideshow: Boolean(onStartSlideshow),
+        setViewMode,
+        startSlideshow: () => onStartSlideshow?.(),
+        toggleDesign: presentationDesign.toggleDesignPanel,
+      },
     },
-  });
+    presentationExtensions,
+  );
+  const presentationCommands = presentationEditor.commands;
+  presentationCommandsRef.current = presentationCommands;
+  const presentationCan = presentationEditor.can();
+  useOfficeEditorKeyboardShortcuts(presentationEditor);
 
   return (
     <section
@@ -768,7 +526,7 @@ export function PresentationEditor({
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = '';
-          if (file) void addImage(file);
+          if (file) void presentationCommands.addImage(file);
         }}
       />
       <PresentationToolbar
@@ -776,135 +534,33 @@ export function PresentationEditor({
         fileActions={fileActions}
         selectedElement={toolbarSelectedElement}
         selectedUnitCount={selectionUnits.length}
-        canGroup={canGroupPresentationElements(
-          activeElements,
-          selection.selectedElementIds,
-        )}
-        canUngroup={canUngroupPresentationElements(
-          activeElements,
-          selection.selectedElementIds,
-        )}
-        textFormattingAvailable={
-          selectedElements.length > 0 &&
-          selectedElements.every(presentationElementSupportsTextFormatting)
-        }
-        slideCount={content.slides.length}
-        canUndo={history.canUndo}
-        canRedo={history.canRedo}
+        can={presentationCan}
+        textFormattingAvailable={textFormattingAvailable}
         commentsOpen={commentsOpen}
         commentCount={presentationCommentCount(content.slides)}
         designOpen={designOpen}
         editingDesign={designMode !== 'slide'}
         background={activeBackground}
         transition={selectedSlide.transition}
-        canStartSlideshow={Boolean(onStartSlideshow)}
         viewMode={viewMode}
-        onCommand={presentationCommands}
+        commands={presentationCommands}
       />
       {designOpen && selectedLayout && selectedMaster && (
         <PresentationDesignPanel
+          can={presentationCan}
+          commands={presentationCommands}
           content={designContent}
           slide={selectedSlide}
           layout={selectedLayout}
           master={selectedMaster}
           mode={designMode}
-          onApplyLayout={(layoutId) => {
-            onChange(
-              applyPresentationLayout(
-                designContent,
-                selectedSlide.id,
-                layoutId,
-              ),
-            );
-            setDesignMode('slide');
-            selection.clear();
-          }}
-          onToggleLayoutBackground={(enabled) =>
-            updateSlide(
-              designContent,
-              selectedSlide.id,
-              (slide) => ({ ...slide, useLayoutBackground: enabled }),
-              onChange,
-            )
-          }
-          onEditLayout={() => {
-            setDesignMode('layout');
-            selection.clear();
-          }}
-          onEditMaster={() => {
-            setDesignMode('master');
-            selection.clear();
-          }}
-          onCreateLayout={() => createLayout(false)}
-          onDuplicateLayout={() => createLayout(true)}
-          onDeleteLayout={deleteLayout}
-          onRenameLayout={(name) =>
-            updateLayout(selectedLayout.id, (layout) => ({ ...layout, name }))
-          }
-          onRenameMaster={(name) =>
-            updateMaster(selectedMaster.id, (master) => ({ ...master, name }))
-          }
-          onSetLayoutBackground={(background) =>
-            updateLayout(selectedLayout.id, (layout) => ({
-              ...layout,
-              background,
-            }))
-          }
-          onSetMasterBackground={(background) =>
-            updateMaster(selectedMaster.id, (master) => ({
-              ...master,
-              background,
-            }))
-          }
-          onAddPlaceholder={addPlaceholder}
-          onReturnToSlide={() => {
-            setDesignMode('slide');
-            selection.clear();
-          }}
-          onClose={() => {
-            setDesignOpen(false);
-            setDesignMode('slide');
-            selection.clear();
-          }}
         />
       )}
       {commentsOpen && designMode === 'slide' && (
         <PresentationCommentsPanel
           slides={content.slides}
           activeCommentId={activeCommentId}
-          onLocate={(slideId, commentId) => {
-            setSelectedSlideId(slideId);
-            selection.clear();
-            setActiveCommentId(commentId);
-          }}
-          onChange={(slideId, commentId, text) =>
-            updateSlide(
-              content,
-              slideId,
-              (slide) => ({
-                ...slide,
-                comments: slide.comments?.map((comment) =>
-                  comment.id === commentId ? { ...comment, text } : comment,
-                ),
-              }),
-              onChange,
-            )
-          }
-          onDelete={(slideId, commentId) => {
-            updateSlide(
-              content,
-              slideId,
-              (slide) => ({
-                ...slide,
-                comments: slide.comments?.filter(
-                  (comment) => comment.id !== commentId,
-                ),
-              }),
-              onChange,
-            );
-            if (activeCommentId === commentId) setActiveCommentId(null);
-          }}
-          onClose={() => setCommentsOpen(false)}
+          commands={presentationCommands}
         />
       )}
       {designMode === 'slide' &&
@@ -913,21 +569,12 @@ export function PresentationEditor({
           <PresentationChartPanel
             chart={singleSelectedElement.chart}
             onChange={(chart) =>
-              updateElement({ chart, altText: chart.title || '演示图表' })
+              presentationCommands.updateElement({
+                chart,
+                altText: chart.title || '演示图表',
+              })
             }
-            onDelete={() => {
-              updatePresentationElements(
-                content,
-                'slide',
-                selectedSlide.id,
-                (elements) =>
-                  elements.filter(
-                    (element) => element.id !== singleSelectedElement.id,
-                  ),
-                onChange,
-              );
-              selection.clear();
-            }}
+            onDelete={presentationCommands.deleteSelection}
             onClose={selection.clear}
           />
         )}
@@ -938,6 +585,7 @@ export function PresentationEditor({
         aspectRatio={aspectRatio}
         canvasName={canvasName}
         canvasRef={canvasRef}
+        commands={presentationCommands}
         content={content}
         designContent={designContent}
         designMode={designMode}
@@ -950,42 +598,12 @@ export function PresentationEditor({
         selectedSlide={selectedSlide}
         viewMode={viewMode}
         zoom={zoom}
-        onAddSlide={addSlide}
         snapGuides={transform.guides}
         onBeginDrag={transform.beginDrag}
         onContinueDrag={transform.continueDrag}
-        onDeleteSlide={deleteSlideById}
         onDragCancel={transform.cancelDrag}
         onDragEnd={transform.endDrag}
-        onEditElement={selection.edit}
-        onExitEditing={selection.exitEditing}
-        onInstantiatePlaceholder={(definition) => {
-          const element: WorkSlideElement = {
-            ...structuredCopy(definition),
-            id: createWorkId('element'),
-            text: '',
-            textRuns: undefined,
-          };
-          updatePresentationElements(
-            designContent,
-            'slide',
-            selectedSlide.id,
-            (elements) => [...elements, element],
-            onChange,
-          );
-          selection.edit(element.id);
-        }}
         onOpenAgentMenu={openAgentMenu}
-        onOpenComment={(commentId) => {
-          setActiveCommentId(commentId);
-          setCommentsOpen(true);
-        }}
-        onSelectElement={selection.select}
-        onSelectSlide={(slideId, returnToSlideMode) => {
-          setSelectedSlideId(slideId);
-          selection.clear();
-          if (returnToSlideMode) setDesignMode('slide');
-        }}
         onTextEditorChange={(elementId, editor) =>
           setActiveTextEditor((current) =>
             editor
@@ -998,17 +616,6 @@ export function PresentationEditor({
         onTextSelectionChange={() =>
           setTextSelectionVersion((version) => version + 1)
         }
-        onUpdateElement={updateElement}
-        onUpdateNotes={(notes) =>
-          updateSlide(
-            content,
-            selectedSlide.id,
-            (slide) => ({ ...slide, notes }),
-            onChange,
-          )
-        }
-        onUpdateTextElement={updateTextElement}
-        onViewModeChange={setViewMode}
       />
       <PresentationStatusBar
         content={content}
@@ -1016,7 +623,7 @@ export function PresentationEditor({
         viewMode={viewMode}
         zoom={zoom}
         saveStatus={saveStatus}
-        onViewModeChange={setViewMode}
+        onViewModeChange={presentationCommands.setViewMode}
         onZoomChange={setZoom}
       />
       {designMode === 'slide' && agentMenu && onAgentRequest && (
@@ -1046,7 +653,9 @@ export function PresentationEditor({
                       changes,
                     );
                     if (outcome.result.appliedTargetIds.length)
-                      onChange(outcome.content);
+                      presentationCommands.setPresentationContent(
+                        outcome.content,
+                      );
                     return outcome.result;
                   },
                 }
@@ -1055,7 +664,7 @@ export function PresentationEditor({
           onClose={() => setAgentMenu(null)}
         />
       )}
-      {officeDialog.dialog}
+      {presentationReview.dialog}
     </section>
   );
 }

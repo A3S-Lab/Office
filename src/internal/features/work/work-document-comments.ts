@@ -6,9 +6,11 @@ import {
   Slice,
 } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type {
   WorkDocumentComment,
   WorkDocumentCommentReply,
+  WorkDocumentContent,
 } from './work-types';
 
 export interface WorkDocumentCommentAnchor {
@@ -22,14 +24,62 @@ export interface WorkDocumentCommentView
   extends WorkDocumentComment,
     WorkDocumentCommentAnchor {}
 
-const documentCommentPastePluginKey = new PluginKey('documentCommentPaste');
+export interface WorkDocumentCommentRange {
+  from: number;
+  to: number;
+}
 
-export const DocumentComment = Mark.create({
+export interface InsertDocumentCommentOptions {
+  id: string;
+  range?: WorkDocumentCommentRange;
+}
+
+interface DocumentCommentOptions {
+  getContent: () => WorkDocumentContent | null;
+  onContentChange: (content: WorkDocumentContent) => void;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentComment: {
+      addDocumentCommentReply: (
+        id: string,
+        reply: WorkDocumentCommentReply,
+      ) => ReturnType;
+      deleteDocumentComment: (id: string) => ReturnType;
+      showDocumentCommentDraft: (range: WorkDocumentCommentRange) => ReturnType;
+      clearDocumentCommentDraft: () => ReturnType;
+      insertDocumentComment: (
+        options: InsertDocumentCommentOptions,
+      ) => ReturnType;
+      insertDocumentCommentThread: (
+        comment: WorkDocumentComment,
+        range?: WorkDocumentCommentRange,
+      ) => ReturnType;
+      removeDocumentComment: (id: string) => ReturnType;
+      toggleDocumentCommentResolved: (id: string) => ReturnType;
+    };
+  }
+}
+
+const documentCommentPastePluginKey = new PluginKey('documentCommentPaste');
+const documentCommentDraftPluginKey = new PluginKey<DecorationSet>(
+  'documentCommentDraft',
+);
+
+export const DocumentComment = Mark.create<DocumentCommentOptions>({
   name: 'documentComment',
   priority: 1050,
   inclusive: false,
   keepOnSplit: true,
   excludes: '',
+
+  addOptions() {
+    return {
+      getContent: () => null,
+      onContentChange: () => undefined,
+    };
+  },
 
   addAttributes() {
     return {
@@ -53,6 +103,184 @@ export const DocumentComment = Mark.create({
     ];
   },
 
+  addCommands() {
+    return {
+      addDocumentCommentReply:
+        (id, reply) =>
+        ({ dispatch }) => {
+          const content = this.options.getContent();
+          if (
+            !content ||
+            !(content.comments ?? []).some((comment) => comment.id === id)
+          ) {
+            return false;
+          }
+          if (dispatch) {
+            this.options.onContentChange({
+              ...content,
+              comments: appendDocumentCommentReply(
+                content.comments ?? [],
+                id,
+                reply,
+              ),
+            });
+          }
+          return true;
+        },
+      deleteDocumentComment:
+        (id) =>
+        ({ state, dispatch }) => {
+          const commentId = id.trim();
+          const content = this.options.getContent();
+          if (!commentId || !content) return false;
+          const comments = content.comments ?? [];
+          const hasRecord = comments.some(
+            (comment) => comment.id === commentId,
+          );
+          const segments = documentCommentSegments(state.doc, this.type).filter(
+            (segment) => segment.id === commentId,
+          );
+          if (!hasRecord && !segments.length) return false;
+          if (!dispatch) return true;
+          this.options.onContentChange({
+            ...content,
+            comments: removeDocumentCommentRecord(comments, commentId),
+          });
+          if (segments.length) {
+            const transaction = state.tr;
+            for (const segment of segments) {
+              transaction.removeMark(segment.from, segment.to, this.type);
+            }
+            if (transaction.docChanged) dispatch(transaction);
+          }
+          return true;
+        },
+      showDocumentCommentDraft:
+        (range) =>
+        ({ state, dispatch }) => {
+          const normalized = normalizeDocumentCommentRange(state.doc, range);
+          if (
+            !normalized ||
+            !canInsertDocumentCommentInState(state.doc, this.type, normalized)
+          )
+            return false;
+          dispatch?.(
+            state.tr.setMeta(documentCommentDraftPluginKey, {
+              range: normalized,
+            }),
+          );
+          return true;
+        },
+      clearDocumentCommentDraft:
+        () =>
+        ({ state, dispatch }) => {
+          if (!documentCommentDraftRangeFromState(state)) return false;
+          dispatch?.(
+            state.tr.setMeta(documentCommentDraftPluginKey, { range: null }),
+          );
+          return true;
+        },
+      insertDocumentComment:
+        ({ id, range }) =>
+        ({ state, dispatch }) => {
+          const normalized = normalizeDocumentCommentRange(
+            state.doc,
+            range ?? state.selection,
+          );
+          const commentId = id.trim();
+          if (
+            !normalized ||
+            !commentId ||
+            !canInsertDocumentCommentInState(state.doc, this.type, normalized)
+          )
+            return false;
+          const transaction = state.tr.addMark(
+            normalized.from,
+            normalized.to,
+            this.type.create({ id: commentId }),
+          );
+          if (!transaction.docChanged) return false;
+          transaction.setMeta(documentCommentDraftPluginKey, { range: null });
+          dispatch?.(transaction);
+          return true;
+        },
+      insertDocumentCommentThread:
+        (comment, range) =>
+        ({ state, dispatch }) => {
+          const content = this.options.getContent();
+          const normalized = normalizeDocumentCommentRange(
+            state.doc,
+            range ?? state.selection,
+          );
+          const commentId = comment.id.trim();
+          if (
+            !content ||
+            !normalized ||
+            !commentId ||
+            (content.comments ?? []).some(
+              (candidate) => candidate.id === commentId,
+            ) ||
+            !canInsertDocumentCommentInState(state.doc, this.type, normalized)
+          ) {
+            return false;
+          }
+          if (!dispatch) return true;
+          this.options.onContentChange({
+            ...content,
+            comments: [...(content.comments ?? []), comment],
+          });
+          const transaction = state.tr.addMark(
+            normalized.from,
+            normalized.to,
+            this.type.create({ id: commentId }),
+          );
+          transaction.setMeta(documentCommentDraftPluginKey, {
+            range: null,
+          });
+          dispatch(transaction);
+          return true;
+        },
+      removeDocumentComment:
+        (id) =>
+        ({ state, dispatch }) => {
+          const commentId = id.trim();
+          if (!commentId) return false;
+          const segments = documentCommentSegments(state.doc, this.type).filter(
+            (segment) => segment.id === commentId,
+          );
+          if (!segments.length) return false;
+          const transaction = state.tr;
+          for (const segment of segments) {
+            transaction.removeMark(segment.from, segment.to, this.type);
+          }
+          if (!transaction.docChanged) return false;
+          dispatch?.(transaction);
+          return true;
+        },
+      toggleDocumentCommentResolved:
+        (id) =>
+        ({ dispatch }) => {
+          const content = this.options.getContent();
+          if (
+            !content ||
+            !(content.comments ?? []).some((comment) => comment.id === id)
+          ) {
+            return false;
+          }
+          if (dispatch) {
+            this.options.onContentChange({
+              ...content,
+              comments: toggleDocumentCommentResolved(
+                content.comments ?? [],
+                id,
+              ),
+            });
+          }
+          return true;
+        },
+    };
+  },
+
   addProseMirrorPlugins() {
     const type = this.type;
     return [
@@ -63,43 +291,72 @@ export const DocumentComment = Mark.create({
             stripDocumentCommentsFromSlice(slice, type),
         },
       }),
+      new Plugin<DecorationSet>({
+        key: documentCommentDraftPluginKey,
+        state: {
+          init: () => DecorationSet.empty,
+          apply: (transaction, current) => {
+            const mapped = current.map(transaction.mapping, transaction.doc);
+            const meta = transaction.getMeta(documentCommentDraftPluginKey) as
+              | {
+                  range: WorkDocumentCommentRange | null;
+                }
+              | undefined;
+            if (!meta) return mapped;
+            const range = normalizeDocumentCommentRange(
+              transaction.doc,
+              meta.range,
+            );
+            if (!range) return DecorationSet.empty;
+            return DecorationSet.create(transaction.doc, [
+              Decoration.inline(
+                range.from,
+                range.to,
+                {
+                  class: 'work-document-comment-draft',
+                  'data-document-comment-draft': 'true',
+                },
+                {
+                  inclusiveStart: false,
+                  inclusiveEnd: false,
+                },
+              ),
+            ]);
+          },
+        },
+        props: {
+          decorations: (state) =>
+            documentCommentDraftPluginKey.getState(state) ??
+            DecorationSet.empty,
+        },
+      }),
     ];
   },
 });
 
-export function insertDocumentComment(editor: Editor, id: string): boolean {
+export function canInsertDocumentComment(
+  editor: Editor,
+  range: WorkDocumentCommentRange = editor.state.selection,
+): boolean {
   const type = editor.schema.marks.documentComment;
-  const { from, to, empty } = editor.state.selection;
-  if (
-    !type ||
-    empty ||
-    !id.trim() ||
-    selectionContainsDocumentComment(editor.state.doc, from, to)
-  )
-    return false;
-  const transaction = editor.state.tr.addMark(
-    from,
-    to,
-    type.create({ id: id.trim() }),
-  );
-  if (!transaction.docChanged) return false;
-  editor.view.dispatch(transaction);
-  return true;
+  return canInsertDocumentCommentInState(editor.state.doc, type, range);
 }
 
-export function removeDocumentComment(editor: Editor, id: string): boolean {
-  const type = editor.schema.marks.documentComment;
-  if (!type) return false;
-  const segments = documentCommentSegments(editor.state.doc, type).filter(
-    (segment) => segment.id === id,
-  );
-  if (!segments.length) return false;
-  const transaction = editor.state.tr;
-  for (const segment of segments)
-    transaction.removeMark(segment.from, segment.to, type);
-  if (!transaction.docChanged) return false;
-  editor.view.dispatch(transaction);
-  return true;
+export function documentCommentDraftRange(
+  editor: Editor,
+): WorkDocumentCommentRange | null {
+  return documentCommentDraftRangeFromState(editor.state);
+}
+
+function documentCommentDraftRangeFromState(
+  state: Editor['state'],
+): WorkDocumentCommentRange | null {
+  const decorations = documentCommentDraftPluginKey.getState(state)?.find();
+  if (!decorations?.length) return null;
+  return {
+    from: Math.min(...decorations.map((decoration) => decoration.from)),
+    to: Math.max(...decorations.map((decoration) => decoration.to)),
+  };
 }
 
 export function collectDocumentCommentAnchors(
@@ -214,6 +471,34 @@ function selectionContainsDocumentComment(
     return !found;
   });
   return found;
+}
+
+function canInsertDocumentCommentInState(
+  document: ProseMirrorNode,
+  type: ProseMirrorMark['type'] | undefined,
+  range: WorkDocumentCommentRange,
+): boolean {
+  const normalized = normalizeDocumentCommentRange(document, range);
+  if (!type || !normalized) return false;
+  const selectedText = document.textBetween(
+    normalized.from,
+    normalized.to,
+    '\n',
+  );
+  return (
+    Boolean(selectedText.trim()) &&
+    !selectionContainsDocumentComment(document, normalized.from, normalized.to)
+  );
+}
+
+function normalizeDocumentCommentRange(
+  document: ProseMirrorNode,
+  range: WorkDocumentCommentRange | null | undefined,
+): WorkDocumentCommentRange | null {
+  if (!range) return null;
+  const from = Math.max(0, Math.min(document.content.size, range.from));
+  const to = Math.max(0, Math.min(document.content.size, range.to));
+  return from < to ? { from, to } : null;
 }
 
 function documentCommentSegments(

@@ -1,10 +1,5 @@
-import { TaskItem, TaskList } from '@tiptap/extension-list';
-import Image from '@tiptap/extension-image';
-import Placeholder from '@tiptap/extension-placeholder';
-import { TableKit } from '@tiptap/extension-table';
-import { Markdown } from '@tiptap/markdown';
+import type { Extensions } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import {
   type CSSProperties,
   useCallback,
@@ -15,17 +10,22 @@ import {
   useState,
 } from 'react';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
+import { createWorkMarkdownExtensions } from '../work-markdown-extensions';
 import type { WorkMarkdownContent } from '../work-types';
 import { MarkdownStatus } from './markdown-status';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
+import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
 } from './work-office-chrome';
 
+export { markdownTaskCheckboxLabel } from '../work-markdown-extensions';
+
 export interface MarkdownEditorProps {
   content: WorkMarkdownContent;
+  extensions?: Extensions;
   preview: boolean;
   saveStatus?: string;
   fileActions?: readonly WorkOfficeFileAction[];
@@ -33,9 +33,11 @@ export interface MarkdownEditorProps {
 }
 
 const MARKDOWN_PREVIEW_SYNC_DELAY = 160;
+const EMPTY_MARKDOWN_EXTENSIONS: Extensions = [];
 
 export function MarkdownEditor({
   content,
+  extensions: additionalExtensions = EMPTY_MARKDOWN_EXTENSIONS,
   preview,
   saveStatus,
   fileActions,
@@ -63,48 +65,13 @@ export function MarkdownEditor({
   }, []);
 
   const extensions = useMemo(
-    () => [
-      StarterKit.configure({
-        link: {
-          autolink: true,
-          defaultProtocol: 'https',
-          openOnClick: false,
-        },
-        underline: false,
-      }),
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: {
-          'data-type': 'taskItem',
-        },
-        a11y: {
-          checkboxLabel: markdownTaskCheckboxLabel,
-        },
-      }),
-      Image.configure({
-        allowBase64: false,
-        inline: true,
-      }),
-      TableKit.configure({
-        table: {
-          allowTableNodeSelection: true,
-          resizable: false,
-        },
-      }),
-      Placeholder.configure({
-        placeholder: '开始写 Markdown…',
-      }),
-      Markdown.configure({
-        indentation: { style: 'space', size: 2 },
-        markedOptions: {
-          gfm: true,
-          breaks: false,
-          pedantic: false,
-        },
-      }),
-    ],
-    [],
+    () =>
+      mergeOfficeTiptapExtensions(
+        'MarkdownEditor',
+        createWorkMarkdownExtensions(),
+        additionalExtensions,
+      ),
+    [additionalExtensions],
   );
   const editorProps = useMemo(
     () => ({
@@ -149,10 +116,7 @@ export function MarkdownEditor({
         return;
       }
       appliedMarkdownRef.current = markdown;
-      editor.commands.setContent(markdown, {
-        contentType: 'markdown',
-        emitUpdate: false,
-      });
+      editor.commands.setWorkMarkdown(markdown, { emitUpdate: false });
     },
     [cancelPreviewSync, editor],
   );
@@ -326,12 +290,4 @@ function markdownMetrics(markdown: string): {
       : 1,
     characterCount: Array.from(markdown).length,
   };
-}
-
-export function markdownTaskCheckboxLabel(node: {
-  attrs: { checked?: boolean };
-  textContent: string;
-}): string {
-  const label = node.textContent.trim() || '任务';
-  return `${node.attrs.checked ? '已完成' : '未完成'}：${label}`;
 }

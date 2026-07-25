@@ -6,6 +6,21 @@ export interface DocumentTableRowOptions {
   repeatHeader: boolean;
 }
 
+export interface SetDocumentTableRowCommandOptions {
+  restoreFocus?: boolean;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentTableRow: {
+      setDocumentTableRowOptions: (
+        options: DocumentTableRowOptions,
+        commandOptions?: SetDocumentTableRowCommandOptions,
+      ) => ReturnType;
+    };
+  }
+}
+
 export const DocumentTableRow = TableRow.extend({
   addAttributes() {
     return {
@@ -22,6 +37,27 @@ export const DocumentTableRow = TableRow.extend({
       ),
     };
   },
+
+  addCommands() {
+    return {
+      ...(this.parent?.() ?? {}),
+      setDocumentTableRowOptions:
+        (options, commandOptions = {}) =>
+        ({ chain, editor }) => {
+          if (!editor.isActive('table')) return false;
+          let commandChain = chain();
+          if (commandOptions.restoreFocus !== false) {
+            commandChain = commandChain.focus();
+          }
+          return commandChain
+            .updateAttributes('tableRow', {
+              cantSplit: Boolean(options.cantSplit),
+              repeatHeader: Boolean(options.repeatHeader),
+            })
+            .run();
+        },
+    };
+  },
 });
 
 export function documentTableRowOptions(
@@ -33,22 +69,6 @@ export function documentTableRowOptions(
     repeatHeader:
       directBoolean(attributes.repeatHeader) ?? editor.isActive('tableHeader'),
   };
-}
-
-export function setDocumentTableRowOptions(
-  editor: Editor,
-  options: DocumentTableRowOptions,
-  commandOptions: { restoreFocus?: boolean } = {},
-): boolean {
-  if (!editor.isActive('table')) return false;
-  const chain = editor.chain();
-  if (commandOptions.restoreFocus !== false) chain.focus();
-  return chain
-    .updateAttributes('tableRow', {
-      cantSplit: Boolean(options.cantSplit),
-      repeatHeader: Boolean(options.repeatHeader),
-    })
-    .run();
 }
 
 export function canSetDocumentTableRowRepeatHeader(editor: Editor): boolean {

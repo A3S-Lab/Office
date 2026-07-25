@@ -1,4 +1,4 @@
-import { type Editor, Mark, mergeAttributes } from '@tiptap/core';
+import { type CommandProps, Mark, mergeAttributes } from '@tiptap/core';
 import {
   Fragment,
   type Mark as ProseMirrorMark,
@@ -30,6 +30,7 @@ export interface WorkDocumentChange extends WorkDocumentChangeIdentity {
 interface DocumentChangeOptions {
   isTracking: () => boolean;
   createChange: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity;
+  onTrackingChange: (enabled: boolean) => void;
 }
 
 interface ChangeSegment {
@@ -37,6 +38,24 @@ interface ChangeSegment {
   kind: WorkDocumentChangeKind;
   from: number;
   to: number;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentChange: {
+      acceptAllDocumentChanges: () => ReturnType;
+      acceptDocumentChange: (id: string) => ReturnType;
+      rejectAllDocumentChanges: () => ReturnType;
+      rejectDocumentChange: (id: string) => ReturnType;
+      replaceDocumentTextWithTrackedChange: (
+        from: number,
+        to: number,
+        text: string,
+      ) => ReturnType;
+      setDocumentTrackChanges: (enabled: boolean) => ReturnType;
+      toggleDocumentTrackChanges: () => ReturnType;
+    };
+  }
 }
 
 const documentChangePluginKey = new PluginKey('documentChangeTracking');
@@ -56,6 +75,7 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
         author: 'A3S Work',
         date: new Date().toISOString(),
       }),
+      onTrackingChange: () => undefined,
     };
   },
 
@@ -101,6 +121,55 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
       mergeAttributes(HTMLAttributes, { 'data-document-change': 'true' }),
       0,
     ];
+  },
+
+  addCommands() {
+    return {
+      acceptAllDocumentChanges: () => (props) =>
+        resolveDocumentChangesCommand(props, this.type, 'accept') > 0,
+      acceptDocumentChange: (id) => (props) =>
+        resolveDocumentChangesCommand(
+          props,
+          this.type,
+          'accept',
+          new Set([id]),
+        ) > 0,
+      rejectAllDocumentChanges: () => (props) =>
+        resolveDocumentChangesCommand(props, this.type, 'reject') > 0,
+      rejectDocumentChange: (id) => (props) =>
+        resolveDocumentChangesCommand(
+          props,
+          this.type,
+          'reject',
+          new Set([id]),
+        ) > 0,
+      replaceDocumentTextWithTrackedChange:
+        (from, to, text) =>
+        ({ state, tr }) => {
+          if (from < 0 || to < from || to > state.doc.content.size)
+            return false;
+          trackedReplacement(
+            tr,
+            state.doc,
+            this.type,
+            from,
+            to,
+            text,
+            this.options.createChange,
+          );
+          return tr.docChanged;
+        },
+      setDocumentTrackChanges: (enabled) => () => {
+        if (enabled !== this.options.isTracking()) {
+          this.options.onTrackingChange(enabled);
+        }
+        return true;
+      },
+      toggleDocumentTrackChanges: () => () => {
+        this.options.onTrackingChange(!this.options.isTracking());
+        return true;
+      },
+    };
   },
 
   addProseMirrorPlugins() {
@@ -239,58 +308,16 @@ export function collectDocumentChanges(
   );
 }
 
-export function acceptDocumentChange(editor: Editor, id: string): boolean {
-  return resolveDocumentChanges(editor, 'accept', new Set([id])) > 0;
-}
-
-export function rejectDocumentChange(editor: Editor, id: string): boolean {
-  return resolveDocumentChanges(editor, 'reject', new Set([id])) > 0;
-}
-
-export function acceptAllDocumentChanges(editor: Editor): number {
-  return resolveDocumentChanges(editor, 'accept');
-}
-
-export function rejectAllDocumentChanges(editor: Editor): number {
-  return resolveDocumentChanges(editor, 'reject');
-}
-
-export function replaceDocumentTextWithTrackedChange(
-  editor: Editor,
-  from: number,
-  to: number,
-  text: string,
-  createChange: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity,
-): boolean {
-  const type = editor.schema.marks.documentChange;
-  if (!type || from < 0 || to < from || to > editor.state.doc.content.size)
-    return false;
-  editor.view.dispatch(
-    trackedReplacement(
-      editor.state.tr,
-      editor.state.doc,
-      type,
-      from,
-      to,
-      text,
-      createChange,
-    ),
-  );
-  return true;
-}
-
-function resolveDocumentChanges(
-  editor: Editor,
+function resolveDocumentChangesCommand(
+  { state, tr }: CommandProps,
+  type: ProseMirrorMark['type'],
   decision: 'accept' | 'reject',
   ids?: Set<string>,
 ): number {
-  const type = editor.schema.marks.documentChange;
-  if (!type) return 0;
-  const segments = documentChangeSegments(editor.state.doc, type).filter(
+  const segments = documentChangeSegments(state.doc, type).filter(
     (segment) => !ids || ids.has(segment.id),
   );
   if (!segments.length) return 0;
-  const transaction = editor.state.tr;
   const removals: ChangeSegment[] = [];
   const deletions: ChangeSegment[] = [];
   for (const segment of segments) {
@@ -299,16 +326,17 @@ function resolveDocumentChanges(
       (decision === 'reject' && segment.kind === 'deletion');
     (remove ? removals : deletions).push(segment);
   }
-  for (const segment of removals)
-    transaction.removeMark(segment.from, segment.to, type);
+  for (const segment of removals) {
+    tr.removeMark(segment.from, segment.to, type);
+  }
   for (const segment of deletions.sort(
     (left, right) => right.from - left.from,
   )) {
-    transaction.delete(segment.from, segment.to);
+    tr.delete(segment.from, segment.to);
   }
-  if (!transaction.docChanged) return 0;
-  editor.view.dispatch(transaction);
-  return new Set(segments.map((segment) => segment.id)).size;
+  return tr.docChanged
+    ? new Set(segments.map((segment) => segment.id)).size
+    : 0;
 }
 
 function trackedReplacement(

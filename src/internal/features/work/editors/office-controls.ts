@@ -1,6 +1,7 @@
 export { OfficeCheckbox } from './office-checkbox';
 export { OfficeColorPicker } from './office-color-picker';
 export {
+  type OfficeConfirmOptions,
   type OfficeNoticeOptions,
   type OfficePromptOptions,
   useOfficeDialog,

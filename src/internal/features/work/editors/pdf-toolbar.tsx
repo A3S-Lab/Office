@@ -33,32 +33,36 @@ import {
   StatusBadge,
 } from '../../../design-system/primitives';
 import { OfficeTextField } from './office-controls';
-import type { PdfAnnotationController } from './pdf-annotation-controller';
-import type { PdfViewerController } from './pdf-viewer-controller';
+import type { PdfAnnotationControllerState } from './pdf-annotation-controller';
+import type {
+  PdfEditorCanCommands,
+  PdfEditorCommands,
+} from './pdf-editor-extensions';
+import type { PdfViewerControllerState } from './pdf-viewer-controller';
 
 export type PdfSaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export function PdfToolbar({
-  annotation,
-  controller,
+  annotationState,
+  can,
+  commands,
   editable,
-  onSave,
   saveLabel,
   saveState,
   searchInputRef,
+  state,
 }: {
-  annotation: PdfAnnotationController;
-  controller: PdfViewerController;
+  annotationState: PdfAnnotationControllerState;
+  can: PdfEditorCanCommands;
+  commands: PdfEditorCommands;
   editable: boolean;
-  onSave?: () => void;
   saveLabel: string;
   saveState: PdfSaveState;
   searchInputRef: RefObject<HTMLInputElement | null>;
+  state: PdfViewerControllerState;
 }) {
-  const { state } = controller;
   const [pageValue, setPageValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
-  const documentReady = state.ready && state.documentOpen;
 
   useEffect(() => {
     setPageValue(state.currentPage > 0 ? String(state.currentPage) : '');
@@ -70,8 +74,8 @@ export function PdfToolbar({
 
   const commitPage = () => {
     const page = Number(pageValue);
-    if (Number.isInteger(page) && page >= 1 && page <= state.totalPages) {
-      controller.goToPage(page);
+    if (can.goToPage(page)) {
+      commands.goToPage(page);
       return;
     }
     setPageValue(state.currentPage > 0 ? String(state.currentPage) : '');
@@ -86,27 +90,19 @@ export function PdfToolbar({
       state.search.total > 0 &&
       !state.search.loading
     ) {
-      controller.nextSearchResult();
+      commands.nextSearchResult();
       return;
     }
-    controller.search(query);
+    commands.search(query);
   };
 
   return (
     <header className="work-pdf-toolbar" role="toolbar" aria-label="PDF 工具栏">
       <div className="work-pdf-toolbar-group work-pdf-history">
-        <IconButton
-          label="撤销"
-          disabled={!documentReady || !state.canUndo}
-          onClick={controller.undo}
-        >
+        <IconButton label="撤销" disabled={!can.undo()} onClick={commands.undo}>
           <Undo2 size={15} />
         </IconButton>
-        <IconButton
-          label="重做"
-          disabled={!documentReady || !state.canRedo}
-          onClick={controller.redo}
-        >
+        <IconButton label="重做" disabled={!can.redo()} onClick={commands.redo}>
           <Redo2 size={15} />
         </IconButton>
       </div>
@@ -116,63 +112,59 @@ export function PdfToolbar({
           <legend className="sr-only">PDF 批注工具</legend>
           <IconButton
             label="选择"
-            selected={annotation.state.activeToolId === null}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool(null)}
+            selected={annotationState.activeToolId === null}
+            disabled={!can.selectAnnotationTool(null)}
+            onClick={() => commands.selectAnnotationTool(null)}
           >
             <MousePointer2 size={14} />
           </IconButton>
           <IconButton
             label="高亮"
-            selected={annotation.state.activeToolId === 'highlight'}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool('highlight')}
+            selected={annotationState.activeToolId === 'highlight'}
+            disabled={!can.selectAnnotationTool('highlight')}
+            onClick={() => commands.selectAnnotationTool('highlight')}
           >
             <Highlighter size={14} />
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
             label="下划线批注"
-            selected={annotation.state.activeToolId === 'underline'}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool('underline')}
+            selected={annotationState.activeToolId === 'underline'}
+            disabled={!can.selectAnnotationTool('underline')}
+            onClick={() => commands.selectAnnotationTool('underline')}
           >
             <Underline size={14} />
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
             label="删除线批注"
-            selected={annotation.state.activeToolId === 'strikeout'}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool('strikeout')}
+            selected={annotationState.activeToolId === 'strikeout'}
+            disabled={!can.selectAnnotationTool('strikeout')}
+            onClick={() => commands.selectAnnotationTool('strikeout')}
           >
             <Strikethrough size={14} />
           </IconButton>
           <IconButton
             label="画笔"
-            selected={annotation.state.activeToolId === 'ink'}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool('ink')}
+            selected={annotationState.activeToolId === 'ink'}
+            disabled={!can.selectAnnotationTool('ink')}
+            onClick={() => commands.selectAnnotationTool('ink')}
           >
             <Pencil size={14} />
           </IconButton>
           <IconButton
             className="work-pdf-annotation-optional"
             label="文字批注"
-            selected={annotation.state.activeToolId === 'freeText'}
-            disabled={!documentReady || !annotation.state.available}
-            onClick={() => annotation.selectTool('freeText')}
+            selected={annotationState.activeToolId === 'freeText'}
+            disabled={!can.selectAnnotationTool('freeText')}
+            onClick={() => commands.selectAnnotationTool('freeText')}
           >
             <Type size={14} />
           </IconButton>
           <IconButton
             label="删除所选批注"
-            disabled={
-              !documentReady ||
-              !annotation.state.available ||
-              annotation.state.selectedCount === 0
-            }
-            onClick={annotation.deleteSelection}
+            disabled={!can.deleteAnnotationSelection()}
+            onClick={commands.deleteAnnotationSelection}
           >
             <Trash2 size={14} />
           </IconButton>
@@ -188,13 +180,13 @@ export function PdfToolbar({
             aria-label="在 PDF 中搜索"
             placeholder="搜索"
             value={searchValue}
-            disabled={!documentReady || !state.features.search}
+            disabled={!can.search(searchValue)}
             onChange={(event) => setSearchValue(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 event.preventDefault();
                 setSearchValue('');
-                controller.clearSearch();
+                commands.clearSearch();
               } else if (
                 event.key === 'Enter' &&
                 event.shiftKey &&
@@ -202,7 +194,7 @@ export function PdfToolbar({
                 state.search.total > 0
               ) {
                 event.preventDefault();
-                controller.previousSearchResult();
+                commands.previousSearchResult();
               }
             }}
           />
@@ -212,7 +204,7 @@ export function PdfToolbar({
               label="清除搜索"
               onClick={() => {
                 setSearchValue('');
-                controller.clearSearch();
+                commands.clearSearch();
                 searchInputRef.current?.focus();
               }}
             >
@@ -220,19 +212,19 @@ export function PdfToolbar({
             </IconButton>
           )}
           <output className="work-pdf-search-state" aria-live="polite">
-            {searchStatus(controller)}
+            {searchStatus(state)}
           </output>
           <IconButton
             label="上一个搜索结果"
-            disabled={state.search.total === 0}
-            onClick={controller.previousSearchResult}
+            disabled={!can.previousSearchResult()}
+            onClick={commands.previousSearchResult}
           >
             <ChevronUp size={14} />
           </IconButton>
           <IconButton
             label="下一个搜索结果"
-            disabled={state.search.total === 0}
-            onClick={controller.nextSearchResult}
+            disabled={!can.nextSearchResult()}
+            onClick={commands.nextSearchResult}
           >
             <ChevronDown size={14} />
           </IconButton>
@@ -242,12 +234,8 @@ export function PdfToolbar({
       <div className="work-pdf-toolbar-group work-pdf-page-controls">
         <IconButton
           label="上一页"
-          disabled={
-            !documentReady ||
-            !state.features.navigation ||
-            state.currentPage <= 1
-          }
-          onClick={controller.previousPage}
+          disabled={!can.previousPage()}
+          onClick={commands.previousPage}
         >
           <ChevronLeft size={15} />
         </IconButton>
@@ -256,7 +244,7 @@ export function PdfToolbar({
           aria-label="页码"
           inputMode="numeric"
           value={pageValue}
-          disabled={!documentReady || !state.features.navigation}
+          disabled={!can.goToPage(state.currentPage || 1)}
           onBlur={commitPage}
           onChange={(event) =>
             setPageValue(event.target.value.replace(/\D/g, ''))
@@ -275,12 +263,8 @@ export function PdfToolbar({
         <span className="work-pdf-page-total">/ {state.totalPages || '—'}</span>
         <IconButton
           label="下一页"
-          disabled={
-            !documentReady ||
-            !state.features.navigation ||
-            state.currentPage >= state.totalPages
-          }
-          onClick={controller.nextPage}
+          disabled={!can.nextPage()}
+          onClick={commands.nextPage}
         >
           <ChevronRight size={15} />
         </IconButton>
@@ -289,16 +273,16 @@ export function PdfToolbar({
       <div className="work-pdf-toolbar-group work-pdf-zoom-controls">
         <IconButton
           label="缩小"
-          disabled={!documentReady || !state.features.zoom}
-          onClick={controller.zoomOut}
+          disabled={!can.zoomOut()}
+          onClick={commands.zoomOut}
         >
           <Minus size={14} />
         </IconButton>
         <output aria-label="PDF 缩放比例">{state.zoomPercent}%</output>
         <IconButton
           label="放大"
-          disabled={!documentReady || !state.features.zoom}
-          onClick={controller.zoomIn}
+          disabled={!can.zoomIn()}
+          onClick={commands.zoomIn}
         >
           <Plus size={14} />
         </IconButton>
@@ -306,8 +290,8 @@ export function PdfToolbar({
           type="button"
           className="work-pdf-fit-button"
           aria-pressed={state.zoomMode === 'fit-page'}
-          disabled={!documentReady || !state.features.zoom}
-          onClick={controller.fitPage}
+          disabled={!can.fitPage()}
+          onClick={commands.fitPage}
         >
           整页
         </button>
@@ -315,14 +299,14 @@ export function PdfToolbar({
           type="button"
           className="work-pdf-fit-button"
           aria-pressed={state.zoomMode === 'fit-width'}
-          disabled={!documentReady || !state.features.zoom}
-          onClick={controller.fitWidth}
+          disabled={!can.fitWidth()}
+          onClick={commands.fitWidth}
         >
           页宽
         </button>
       </div>
 
-      {onSave && (
+      {editable && (
         <div className="work-pdf-toolbar-group work-pdf-save">
           <output aria-label="PDF 保存状态" aria-live="polite">
             {saveState === 'saving' && (
@@ -342,10 +326,8 @@ export function PdfToolbar({
           <Button
             tone="secondary"
             title={`${saveLabel}（Cmd/Ctrl+S）`}
-            disabled={
-              !documentReady || !state.features.export || saveState === 'saving'
-            }
-            onClick={onSave}
+            disabled={!can.save()}
+            onClick={() => void commands.save()}
           >
             <Save size={14} />
             {saveLabel}
@@ -356,8 +338,8 @@ export function PdfToolbar({
   );
 }
 
-function searchStatus(controller: PdfViewerController): string {
-  const { search } = controller.state;
+function searchStatus(state: PdfViewerControllerState): string {
+  const { search } = state;
   if (search.loading) return '搜索中';
   if (search.error) return '失败';
   if (!search.query && !search.active) return '';

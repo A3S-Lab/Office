@@ -1,0 +1,742 @@
+.work-document-workspace {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.work-document-workspace > .work-document-scroll {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.work-document-task-pane {
+  display: flex;
+  width: clamp(320px, 28vw, 380px);
+  min-width: 300px;
+  min-height: 0;
+  max-height: none;
+  flex: 0 0 auto;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0;
+  border-left: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  box-shadow: -10px 0 28px rgb(26 35 52 / 7%);
+  color: var(--a3s-ink);
+}
+
+.work-document-citations-panel.work-document-task-pane {
+  width: clamp(390px, 34vw, 470px);
+}
+
+.work-document-find-panel.work-document-task-pane {
+  width: clamp(300px, 25vw, 340px);
+}
+
+.work-document-task-pane > .work-document-task-pane-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-height: 52px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+}
+
+.work-document-task-pane > .work-document-task-pane-header > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.work-document-task-pane > .work-document-task-pane-header strong {
+  overflow: hidden;
+  color: var(--a3s-ink);
+  font-size: 12px;
+  font-weight: 680;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-task-pane > .work-document-task-pane-header span {
+  overflow: hidden;
+  color: var(--a3s-faint);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-task-pane
+  > .work-document-task-pane-header
+  > .ds-icon-button.close {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.work-document-task-pane-body {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.work-document-layout-panel.work-document-task-pane {
+  padding: 0;
+  font-size: 10px;
+}
+
+.work-document-layout-body {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  padding: 0 14px 18px;
+}
+
+.work-document-layout-panel .work-document-layout-group,
+.work-document-layout-panel .work-document-columns-panel,
+.work-document-layout-panel .work-document-page-chrome-panel {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr;
+  gap: 9px;
+  margin: 0;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-document-layout-panel .work-document-layout-group > h3,
+.work-document-layout-panel .work-document-layout-group > legend,
+.work-document-layout-panel .work-document-columns-panel > legend,
+.work-document-layout-panel .work-document-page-chrome-panel > legend {
+  float: none;
+  grid-column: 1;
+  margin: 0;
+  color: var(--a3s-ink);
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.work-document-layout-panel .work-office-field {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.work-document-layout-panel .work-office-field > span {
+  color: var(--a3s-muted);
+  white-space: nowrap;
+}
+
+.work-document-layout-panel .work-office-field > :last-child,
+.work-document-layout-panel .work-office-field > .work-office-number-field,
+.work-document-layout-panel .work-office-field > .work-office-select {
+  width: 100%;
+}
+
+.work-document-layout-panel .work-office-select > button[role="combobox"] {
+  min-width: 0;
+}
+
+.work-document-layout-paired-fields,
+.work-document-layout-margin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.work-document-layout-paired-fields .work-office-field,
+.work-document-layout-margin-grid .work-office-field {
+  grid-template-columns: 30px minmax(0, 1fr);
+}
+
+.work-document-layout-panel .work-office-number-field {
+  width: 100%;
+}
+
+.work-document-layout-panel .work-document-section-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.work-document-layout-panel .work-document-section-actions .ds-button {
+  min-height: 28px;
+}
+
+.work-document-layout-panel .work-document-columns-panel {
+  flex-wrap: nowrap;
+}
+
+.work-document-layout-panel .work-document-column-option {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.work-document-layout-panel .work-document-custom-columns {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 4px 0 0;
+}
+
+.work-document-layout-panel .work-document-custom-column {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.work-document-layout-panel .work-document-page-chrome-options {
+  display: grid;
+  grid-column: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.work-document-layout-panel
+  .work-document-page-chrome-options
+  > .work-office-field {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 72px minmax(0, 1fr);
+}
+
+.work-document-layout-panel .work-document-page-chrome-editor {
+  gap: 6px;
+}
+
+.work-document-layout-panel .work-document-page-chrome-toolbar {
+  gap: 3px;
+}
+
+.work-document-layout-panel .work-document-page-chrome-content {
+  min-height: 64px;
+  max-height: 126px;
+}
+
+.work-document-layout-panel
+  .work-document-page-number-option.work-office-field {
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  padding: 14px 0 0;
+}
+
+.work-document-changes-panel.work-document-task-pane {
+  max-height: none;
+}
+
+.work-document-changes-panel > .work-document-changes-bulk-actions {
+  display: flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-changes-panel > .work-document-changes-bulk-actions .ds-button {
+  min-height: 27px;
+}
+
+.work-document-changes-panel > .work-document-change-list {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  padding: 10px;
+}
+
+.work-document-change-list article {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+}
+
+.work-document-change-list article > div {
+  justify-content: flex-end;
+}
+
+.work-document-change-summary {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.work-document-change-summary small {
+  grid-column: 2;
+}
+
+.work-document-citations-panel.work-document-task-pane {
+  max-height: none;
+}
+
+.work-document-citations-panel > .work-document-citation-actions {
+  display: grid;
+  min-height: 48px;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-citations-panel
+  > .work-document-citation-actions
+  .work-office-field {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.work-document-citations-panel
+  > .work-document-citation-actions
+  .work-office-select
+  > button[role="combobox"] {
+  min-width: 0;
+}
+
+.work-document-citations-panel > .work-document-citation-manager {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.work-document-citation-manager > aside {
+  display: flex;
+  min-height: 104px;
+  max-height: 164px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 9px;
+  border: 0;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-document-citation-list-heading {
+  display: flex;
+  min-height: 28px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.work-document-citation-list-heading > strong {
+  color: var(--a3s-ink);
+  font-size: 9px;
+  font-weight: 680;
+}
+
+.work-document-citation-list-heading > .ds-button {
+  min-height: 26px;
+}
+
+.work-document-citation-source-list {
+  display: grid;
+  min-height: 0;
+  align-content: start;
+  gap: 4px;
+  overflow: auto;
+}
+
+.work-document-citation-source-list > button {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 6px 8px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  outline: 0;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-document-citation-source-list > button:hover,
+.work-document-citation-source-list > button:focus-visible {
+  border-color: color-mix(in srgb, var(--a3s-blue) 42%, var(--a3s-line));
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-citation-source-list > button.active {
+  border-color: color-mix(in srgb, var(--a3s-blue) 54%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-blue) 8%, var(--a3s-panel));
+  box-shadow: inset 3px 0 0 var(--a3s-blue);
+}
+
+.work-document-citation-source-list strong,
+.work-document-citation-source-list span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-citation-source-list strong {
+  font-size: 9px;
+  font-weight: 640;
+}
+
+.work-document-citation-source-list span {
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
+.work-document-citation-manager > form {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 9px;
+  flex: 1;
+  padding: 0 12px;
+  overflow: auto;
+}
+
+.work-document-citation-manager > form > .wide,
+.work-document-citation-more-fields > div > .wide {
+  grid-column: 1 / -1;
+}
+
+.work-document-citation-manager > form > .work-office-field > span:first-child,
+.work-document-citation-more-fields
+  > div
+  > .work-office-field
+  > span:first-child {
+  color: var(--a3s-muted);
+  font-size: 8px;
+}
+
+.work-document-citation-manager .work-office-text-area {
+  min-height: 62px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.work-document-citation-form-heading {
+  display: grid;
+  gap: 2px;
+  padding-top: 11px;
+}
+
+.work-document-citation-form-heading strong {
+  color: var(--a3s-ink);
+  font-size: 10px;
+  font-weight: 680;
+}
+
+.work-document-citation-form-heading span {
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
+.work-document-citation-more-fields {
+  min-width: 0;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-document-citation-more-fields > summary {
+  padding: 9px 1px;
+  outline: 0;
+  color: var(--a3s-muted);
+  font-size: 9px;
+  font-weight: 640;
+  cursor: pointer;
+}
+
+.work-document-citation-more-fields > summary:hover,
+.work-document-citation-more-fields > summary:focus-visible {
+  color: var(--a3s-blue);
+}
+
+.work-document-citation-more-fields > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 1px 0 10px;
+}
+
+.work-document-citation-manager .paired {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.work-document-citation-manager .actions {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+  display: grid;
+  gap: 7px;
+  margin: 0 -12px;
+  padding: 9px 12px 11px;
+  border-top: 1px solid var(--a3s-line);
+  background: color-mix(in srgb, var(--a3s-panel) 96%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.work-document-citation-form-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.work-document-citation-form-buttons > span {
+  min-width: 6px;
+  flex: 1;
+}
+
+.work-document-find-tabs {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  margin: 10px 12px 0;
+  padding: 3px;
+  border-radius: 7px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-find-tabs > button {
+  min-height: 27px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.work-document-find-tabs > button[aria-selected="true"] {
+  background: var(--a3s-panel);
+  color: var(--a3s-blue);
+  font-weight: 650;
+  box-shadow: 0 1px 4px rgb(20 31 50 / 9%);
+}
+
+.work-document-find-body {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px 12px 18px;
+}
+
+.work-document-find-body > label {
+  display: grid;
+  gap: 5px;
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-document-find-body .work-office-text-field {
+  width: 100%;
+  height: 31px;
+  background: var(--a3s-bg);
+  font-size: 10px;
+}
+
+.work-document-find-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.work-document-find-field > svg {
+  position: absolute;
+  z-index: 1;
+  left: 8px;
+  color: var(--a3s-faint);
+  pointer-events: none;
+}
+
+.work-document-find-field > .work-office-text-field {
+  padding-left: 29px;
+}
+
+.work-document-find-results {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-document-find-results > output,
+.work-document-find-announcement {
+  color: var(--a3s-faint);
+  font-size: 9px;
+}
+
+.work-document-find-results > div,
+.work-document-find-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.work-document-find-results .ds-icon-button {
+  width: 27px;
+  height: 27px;
+}
+
+.work-document-find-actions {
+  justify-content: flex-end;
+}
+
+.work-document-find-announcement {
+  min-height: 18px;
+  color: var(--a3s-blue);
+}
+
+.work-document-insert-dialog {
+  width: min(400px, 100%);
+}
+
+.work-document-reference-dialog {
+  width: min(480px, 100%);
+}
+
+.work-document-dialog-field {
+  display: grid;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-document-dialog-field .work-office-text-field {
+  width: 100%;
+  min-height: 34px;
+  background: var(--a3s-bg);
+  font-size: 11px;
+}
+
+.work-document-reference-list {
+  display: grid;
+  max-height: min(360px, calc(100dvh - 230px));
+  gap: 6px;
+  overflow: auto;
+}
+
+.work-document-reference-list > label {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 52px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-document-reference-list > label > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-document-reference-list > label:hover,
+.work-document-reference-list > label:has(input:focus-visible) {
+  border-color: color-mix(in srgb, var(--a3s-blue) 52%, var(--a3s-line));
+  outline: 0;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-reference-list > label:has(input:checked) {
+  border-color: color-mix(in srgb, var(--a3s-blue) 60%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-blue) 8%, var(--a3s-panel));
+  box-shadow: inset 3px 0 0 var(--a3s-blue);
+}
+
+.work-document-reference-list strong {
+  color: var(--a3s-blue);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.work-document-reference-list span {
+  overflow: hidden;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .work-document-task-pane {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(380px, calc(100% - 36px));
+    min-width: 0;
+    box-shadow: -16px 0 36px rgb(20 28 43 / 18%);
+  }
+
+  .work-document-citations-panel.work-document-task-pane {
+    width: min(440px, calc(100% - 36px));
+  }
+
+  .work-document-find-panel.work-document-task-pane {
+    width: min(340px, calc(100% - 36px));
+  }
+}
+
+@media (max-width: 520px) {
+  .work-document-task-pane,
+  .work-document-citations-panel.work-document-task-pane,
+  .work-document-find-panel.work-document-task-pane {
+    width: 100%;
+  }
+
+  .work-document-citation-manager > form {
+    grid-template-columns: 1fr;
+  }
+
+  .work-document-citation-manager > form > .wide,
+  .work-document-citation-more-fields > div > .wide {
+    grid-column: 1;
+  }
+
+  .work-document-citation-more-fields > div {
+    grid-template-columns: 1fr;
+  }
+}

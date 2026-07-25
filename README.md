@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <em>Edit documents, Markdown, spreadsheets, presentations, and PDFs with React, Vue, or Web Components</em>
+  <em>Headless editing architecture, product-ready Office surfaces, and typed host integration for React, Vue, and Web Components</em>
 </p>
 
 <p align="center">
@@ -32,6 +32,13 @@
 editing. It provides document, Markdown, spreadsheet, presentation, and PDF
 surfaces through one npm package while keeping each editor's native interaction
 model.
+
+A3S Office combines a headless, extension-driven editing architecture with
+complete product surfaces. Headless does not mean that the package has no UI:
+it means the editing models, commands, and host contracts do not prescribe the
+surrounding product shell or backend. Applications can use the included
+product-ready editors, integrate them into existing workspace chrome, and
+connect them to product infrastructure without forking the editing engines.
 
 The package is controlled by the host application. A3S Office owns editing,
 layout, import, export, and browser rendering; the host owns persistence,
@@ -72,6 +79,9 @@ export function App() {
 
 - **Five Editor Surfaces**: Edit documents, Markdown, spreadsheets,
   presentations, and PDFs without leaving the host product
+- **Headless, Extension-Driven Architecture**: Keep editing models and typed
+  commands independent from the host shell; extend Document and Markdown
+  through public TipTap Extensions
 - **Framework Entry Points**: Use React components, Vue 3 adapters, custom
   elements, or the framework-neutral Core API
 - **Controlled Content**: Persist typed content models in the host and receive
@@ -80,6 +90,12 @@ export function App() {
   HTML, text, ODS, XLS, and CSV where supported
 - **Document Review**: Add anchored comments, replies, resolved state, tracked
   changes, citations, notes, captions, and cross-references
+- **Document Interaction Surfaces**: Keep page settings, sources, revisions,
+  comments, anchored controls, and modal decisions in responsive,
+  keyboard-accessible panes, rails, popovers, and dialogs
+- **Shared Office Interaction System**: Reuse the same tokens, ribbon patterns,
+  task panes, dialogs, popovers, focus rules, and responsive behavior across
+  every editor surface
 - **Browser-Native Kernels**: Combine TipTap, editor-specific scene models,
   cancellable Workers, Rust WebAssembly layout and Spreadsheet calculation,
   and PDFium without a remote rendering service
@@ -287,6 +303,49 @@ product already provides open, save, or export controls.
 versioned model. Persist the complete emitted value. Directly replacing HTML
 invalidates an older model safely.
 
+### Extensions
+
+`DocumentEditor` and `MarkdownEditor` accept TipTap `extensions`. Additional
+extensions are appended to the built-in schema before the editor mounts:
+
+```tsx
+import { Extension } from '@tiptap/core';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const hostShortcuts = Extension.create({
+  name: 'hostShortcuts',
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Shift-s': () => {
+        window.dispatchEvent(new Event('office-save-request'));
+        return true;
+      },
+    };
+  },
+});
+
+<DocumentEditor
+  content={content satisfies DocumentContent}
+  extensions={[hostShortcuts]}
+  onChange={setContent}
+/>;
+```
+
+Keep the extension array referentially stable. Every extension needs a unique
+`name`; a duplicate built-in or host extension name throws instead of silently
+overriding editor behavior. A custom Document Node or Mark also needs a DOCX
+import/export strategy. A custom Markdown Node or Mark needs matching Markdown
+parse and serialize rules. Shortcut, storage, and ProseMirror Plugin extensions
+that do not change persisted structure are the safest starting point.
+
+Vue uses the `:extensions` prop. Custom elements use the `.extensions` property
+because Extension instances cannot be represented as HTML attributes.
+Spreadsheet, Presentation, and PDF do not yet expose their internal command
+contexts as a public extension API. Use the stable host ports instead:
+`fileActions`, `onAgentRequest`, `onStartSlideshow`, `loadSource`, and `onSave`.
+Do not import implementation details from `@a3s-lab/office/internal`.
+
 ### Layout and runtime assets
 
 Document pagination and Spreadsheet scalar calculation run in a dedicated
@@ -346,7 +405,8 @@ the shared parity fixtures.
 
 See [Browser editor architecture](docs/browser-editor-architecture.md) for
 engine ownership, Worker/WASM boundaries, delivery stages, and performance
-gates.
+gates. See [Editor quality roadmap](docs/editor-quality-roadmap.md) for the
+depth-first product priorities, release evidence, and documentation contract.
 
 ## Native Automation
 
@@ -379,23 +439,56 @@ See [Native Office engine](docs/native-office-engine.md) and
 
 ## Architecture
 
+### Architecture principles and advantages
+
+A3S Office separates the host product, editor presentation, editing behavior,
+compute kernels, native-file workflows, and automation. It shares product
+contracts and interaction primitives where consistency matters, while keeping
+the canonical model of each file format independent:
+
+| Characteristic | Design | Integration advantage |
+| --- | --- | --- |
+| Headless product boundary | Editing models and commands do not choose the surrounding shell, storage, identity, collaboration, or AI provider; the package still includes complete editor UI | Embed the editors in an existing product without adopting an A3S backend or rebuilding standard Office interactions |
+| Shared interaction system | All editors use the same design tokens, shell patterns, dialogs, popovers, task panes, focus rules, and responsive layout contracts | Give users one predictable Office experience while allowing the host to theme and compose the surrounding workspace |
+| Extension-driven behavior | Document and Markdown accept public TipTap Extensions; Spreadsheet, Presentation, and PDF use format-specific typed command runtimes and stable host ports until their public Extension contexts are versioned | Add shortcuts, plugins, file actions, and AI workflows without label matching, synthetic clicks, or source forks |
+| Format-native canonical models | Document uses a TipTap/ProseMirror tree, Markdown keeps canonical source, Spreadsheet owns a workbook, Presentation owns a slide scene graph, and PDF delegates document semantics to PDFium | Preserve native interaction and file semantics instead of reducing every format to a lowest-common-denominator JSON model |
+| Controlled host state | The host supplies content and receives typed changes, while file actions and service callbacks remain explicit | Integrate autosave, versions, permissions, collaboration, and external state replacement predictably |
+| Worker/WASM compute boundary | Revisioned, cancellable Workers and Rust WebAssembly own bounded layout, formula, and geometry work | Keep expensive computation deterministic and off the primary interaction path without requiring a rendering server |
+| Framework convergence | React, Vue, and Web Components share the same editor engine; the Core entry point owns framework-neutral models and file workflows | Ship one behavior and compatibility contract across different frontend stacks |
+| Browser and native execution planes | Browser components handle interactive editing; the Rust CLI, MCP server, and Office Skill handle deterministic file automation without launching the UI | Use the same repository for end-user editing and agent or CI workflows without exposing filesystem concerns to the browser bundle |
+| Explicit fidelity boundary | Compatibility reports and fixture gates make preservation, normalization, and rejection decisions visible within the declared support boundary | Reduce silent data loss and make Microsoft Office/WPS interoperability measurable |
+
+### Layer model
+
 Each editor keeps its own canonical model instead of forcing every file type
 through one abstraction:
 
 ```text
-React / Vue / Web Components
-            │
- controlled editor components
-            │
- typed commands + content models
-            │
- ┌──────────┼───────────┬─────────────┐
- TipTap   Workbook    Slide scene   PDFium
-            │              │
-       Worker + Rust WebAssembly
-            │
- DOCX / Markdown / XLSX / PPTX / PDF workflows
+                          Host product
+       persistence · identity · collaboration · authorization · AI
+                               │
+             ┌─────────────────┴──────────────────┐
+             │                                    │
+     Browser editing plane                Native automation plane
+ React · Vue · Web Components             CLI · MCP · Office Skill
+ framework-neutral Core API                       │
+             │                              native Rust core
+ shared Office shell + design system              │
+             │                                    │
+  controlled editor surfaces                      │
+             │                                    │
+ headless commands + Extensions                   │
+             │                                    │
+ ┌───────────┼──────────────┐                     │
+TipTap    Workbook/scene   PDFium                  │
+             │                                    │
+ Workers + Rust WebAssembly                       │
+             └─────────────────┬──────────────────┘
+                               │
+              DOCX · Markdown · XLSX · PPTX · PDF
 ```
+
+### Engine ownership
 
 Documents use one logical TipTap/ProseMirror tree and non-history pagination
 decorations. Markdown keeps source as its controlled value, coalesces source

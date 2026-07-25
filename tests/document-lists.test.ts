@@ -3,7 +3,6 @@ import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
 import {
-  applyDocumentPagination,
   DocumentPagination,
   measureDocumentLayoutBlocks,
 } from '../src/internal/features/work/work-document-pagination';
@@ -46,7 +45,7 @@ describe('document lists', () => {
     const second = snapshot.blocks[1];
     if (!second) throw new Error('Expected the second list item block.');
 
-    applyDocumentPagination(editor, 1, [
+    editor.commands.applyDocumentPagination(1, [
       {
         beforeBlockId: second.block.id,
         pageIndex: 1,

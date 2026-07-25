@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import {
   Fragment,
+  type KeyboardEvent,
   type RefObject,
   useCallback,
   useEffect,
@@ -20,11 +21,21 @@ import {
   CollectionState,
   IconButton,
 } from '../../../design-system/primitives';
-import type { WorkDocumentCommentView } from '../work-document-comments';
-import { OfficeTextArea } from './office-controls';
+import {
+  documentCommentDraftRange,
+  type WorkDocumentCommentRange,
+  type WorkDocumentCommentView,
+} from '../work-document-comments';
+import {
+  DocumentCommentComposer,
+  type DocumentCommentDraft,
+} from './document-comment-composer';
+import { OfficeTextArea, useOfficeDialog } from './office-controls';
 
 interface CommentTrackItem {
   id: string;
+  kind: 'comment' | 'draft';
+  commentId?: string;
   cardTop: number;
   startX: number;
   startY: number;
@@ -49,19 +60,27 @@ const emptyLayout: CommentTrackLayout = {
 export function DocumentCommentsPanel({
   editor,
   comments,
+  draft,
   surfaceRef,
   onReply,
   onToggleResolved,
   onDelete,
+  onCancelDraft,
+  onSubmitDraft,
   onClose,
+  onDirtyChange,
 }: {
   editor: Editor;
   comments: WorkDocumentCommentView[];
+  draft: DocumentCommentDraft | null;
   surfaceRef: RefObject<HTMLDivElement | null>;
   onReply: (id: string, text: string) => void;
   onToggleResolved: (id: string) => void;
   onDelete: (id: string) => void;
+  onCancelDraft: () => void;
+  onSubmitDraft: (text: string) => string | null;
   onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [activeCommentId, setActiveCommentId] = useState<string | null>(
@@ -74,10 +93,73 @@ export function DocumentCommentsPanel({
   const panelRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
+  const completedDraftIdRef = useRef<string | null>(null);
   const frameRef = useRef(0);
+  const officeDialog = useOfficeDialog();
   const unresolved = comments.filter((comment) => !comment.resolved).length;
+  const repliesDirty = Object.values(drafts).some((value) =>
+    Boolean(value.trim()),
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(repliesDirty);
+  }, [onDirtyChange, repliesDirty]);
+
+  useEffect(
+    () => () => {
+      onDirtyChange?.(false);
+    },
+    [onDirtyChange],
+  );
+
+  const submitReply = (commentId: string) => {
+    const text = drafts[commentId]?.trim();
+    if (!text) return;
+    onReply(commentId, text);
+    setDrafts((current) => ({ ...current, [commentId]: '' }));
+  };
+  const handlePanelKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onClose();
+  };
+  const deleteComment = async (commentId: string, index: number) => {
+    const replyDirty = Boolean(drafts[commentId]?.trim());
+    const confirmed = await officeDialog.confirm({
+      title: '删除批注？',
+      description: replyDirty
+        ? '批注、已有回复和未发送的回复都将删除。'
+        : '批注及其回复将被删除。',
+      confirmLabel: '删除',
+      confirmTone: 'danger',
+      restoreFocusTarget: () =>
+        panelRef.current?.querySelector<HTMLElement>(
+          '.work-document-task-pane-close, .ds-icon-button.close',
+        ) ?? editor.view.dom,
+    });
+    if (!confirmed) return;
+    const nextComment = comments[index + 1] ?? comments[index - 1];
+    setDrafts((current) => {
+      const next = { ...current };
+      delete next[commentId];
+      return next;
+    });
+    onDelete(commentId);
+    requestAnimationFrame(() => {
+      const nextTarget = nextComment
+        ? cardRefs.current
+            .get(nextComment.id)
+            ?.querySelector<HTMLElement>('.work-document-comment-anchor')
+        : panelRef.current?.querySelector<HTMLElement>('.ds-icon-button.close');
+      if (nextTarget) nextTarget.focus({ preventScroll: true });
+      else if (!editor.isDestroyed)
+        editor.view.dom.focus({ preventScroll: true });
+    });
+  };
 
   const measure = useCallback(() => {
+    if (editor.isDestroyed) return;
     const surface = surfaceRef.current;
     const panel = panelRef.current;
     const track = trackRef.current;
@@ -105,14 +187,51 @@ export function DocumentCommentsPanel({
       );
     }
 
-    let nextCardTop = 8;
-    const items = comments.map((comment) => {
-      const anchorRects = marks
+    const entries: Array<{
+      id: string;
+      kind: CommentTrackItem['kind'];
+      commentId?: string;
+      from: number;
+      anchorRect?: CommentAnchorRect;
+    }> = comments.map((comment) => {
+      const anchorRect = marks
         .filter((mark) => mark.dataset.commentId === comment.id)
-        .flatMap((mark) => [...mark.getClientRects()]);
-      const anchorRect = anchorRects.at(-1);
+        .flatMap((mark) => [...mark.getClientRects()])
+        .at(-1);
+      return {
+        id: comment.id,
+        kind: 'comment',
+        commentId: comment.id,
+        from: comment.from,
+        anchorRect: anchorRect
+          ? {
+              right: anchorRect.right,
+              top: anchorRect.top,
+              height: anchorRect.height,
+            }
+          : undefined,
+      };
+    });
+    if (draft) {
+      const range = documentCommentDraftRange(editor) ?? draft;
+      entries.push({
+        id: `draft:${draft.id}`,
+        kind: 'draft',
+        from: range.from,
+        anchorRect: draftCommentAnchorRect(editor, range),
+      });
+    }
+    entries.sort(
+      (left, right) =>
+        left.from - right.from || left.kind.localeCompare(right.kind),
+    );
+
+    let nextCardTop = 8;
+    const items = entries.map((entry) => {
+      const { anchorRect } = entry;
       const cardHeight =
-        cardRefs.current.get(comment.id)?.getBoundingClientRect().height ?? 112;
+        cardRefs.current.get(entry.id)?.getBoundingClientRect().height ??
+        (entry.kind === 'draft' ? 164 : 112);
       const preferredTop = anchorRect
         ? anchorRect.top - trackRect.top - 18
         : nextCardTop;
@@ -127,7 +246,9 @@ export function DocumentCommentsPanel({
         ? anchorRect.top - surfaceRect.top + Math.min(anchorRect.height / 2, 12)
         : endY;
       return {
-        id: comment.id,
+        id: entry.id,
+        kind: entry.kind,
+        commentId: entry.commentId,
         cardTop,
         startX,
         startY,
@@ -144,7 +265,7 @@ export function DocumentCommentsPanel({
     setLayout((current) =>
       sameCommentTrackLayout(current, nextLayout) ? current : nextLayout,
     );
-  }, [activeCommentId, comments, editor, surfaceRef]);
+  }, [activeCommentId, comments, draft, editor, surfaceRef]);
 
   const scheduleMeasure = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
@@ -157,6 +278,21 @@ export function DocumentCommentsPanel({
   }, [scheduleMeasure]);
 
   useEffect(() => {
+    if (draft) {
+      completedDraftIdRef.current = draft.id;
+      if (activeCommentId !== null) setActiveCommentId(null);
+      return;
+    }
+    const completedDraftId = completedDraftIdRef.current;
+    if (
+      completedDraftId &&
+      comments.some((comment) => comment.id === completedDraftId)
+    ) {
+      completedDraftIdRef.current = null;
+      if (activeCommentId !== completedDraftId)
+        setActiveCommentId(completedDraftId);
+      return;
+    }
     if (
       activeCommentId &&
       comments.some((comment) => comment.id === activeCommentId)
@@ -167,7 +303,7 @@ export function DocumentCommentsPanel({
         comments[0]?.id ??
         null,
     );
-  }, [activeCommentId, comments]);
+  }, [activeCommentId, comments, draft]);
 
   useEffect(() => {
     const surface = surfaceRef.current;
@@ -200,6 +336,8 @@ export function DocumentCommentsPanel({
   }, [editor, scheduleMeasure, surfaceRef]);
 
   useEffect(() => {
+    if (editor.isDestroyed) return;
+    const editorDom = editor.view.dom;
     const openAnchoredComment = (event: Event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -211,9 +349,8 @@ export function DocumentCommentsPanel({
         setActiveCommentId(id);
       }
     };
-    editor.view.dom.addEventListener('click', openAnchoredComment);
-    return () =>
-      editor.view.dom.removeEventListener('click', openAnchoredComment);
+    editorDom.addEventListener('click', openAnchoredComment);
+    return () => editorDom.removeEventListener('click', openAnchoredComment);
   }, [comments, editor]);
 
   return (
@@ -226,14 +363,18 @@ export function DocumentCommentsPanel({
       >
         {layout.items.map((item) => {
           const comment = comments.find(
-            (candidate) => candidate.id === item.id,
+            (candidate) => candidate.id === item.commentId,
           );
           const bendX = Math.max(item.startX + 16, item.endX - 28);
+          const className = [
+            comment?.resolved ? 'resolved' : '',
+            activeCommentId === item.commentId ? 'active' : '',
+            item.kind === 'draft' ? 'draft active' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
           return (
-            <g
-              className={`${comment?.resolved ? 'resolved' : ''}${activeCommentId === item.id ? ' active' : ''}`}
-              key={item.id}
-            >
+            <g className={className} key={item.id}>
               <path
                 d={`M ${item.startX} ${item.startY} L ${bendX} ${item.startY} L ${item.endX} ${item.endY}`}
               />
@@ -246,14 +387,17 @@ export function DocumentCommentsPanel({
         ref={panelRef}
         className="work-document-comments-panel"
         aria-label="批注审阅"
+        onKeyDown={handlePanelKeyDown}
       >
         <header>
           <div>
             <strong>批注</strong>
             <span>
-              {comments.length
-                ? `${unresolved} 条待处理 · 共 ${comments.length} 条`
-                : '没有批注'}
+              {draft
+                ? '正在添加批注'
+                : comments.length
+                  ? `${unresolved} 条待处理 · 共 ${comments.length} 条`
+                  : '没有批注'}
             </span>
           </div>
           <IconButton className="close" label="关闭批注审阅" onClick={onClose}>
@@ -265,6 +409,22 @@ export function DocumentCommentsPanel({
           className="work-document-comment-track"
           style={{ minHeight: `${layout.trackHeight}px` }}
         >
+          {draft && (
+            <DocumentCommentComposer
+              key={draft.id}
+              ref={(element) => {
+                const id = `draft:${draft.id}`;
+                if (element) cardRefs.current.set(id, element);
+                else cardRefs.current.delete(id);
+              }}
+              draft={draft}
+              top={
+                layout.items.find((item) => item.kind === 'draft')?.cardTop ?? 8
+              }
+              onCancel={onCancelDraft}
+              onSubmit={onSubmitDraft}
+            />
+          )}
           {comments.map((comment, index) => {
             const item = layout.items.find(
               (candidate) => candidate.id === comment.id,
@@ -281,7 +441,6 @@ export function DocumentCommentsPanel({
                 key={comment.id}
                 style={{ top: `${item?.cardTop ?? 8}px` }}
                 onFocusCapture={() => setActiveCommentId(comment.id)}
-                onPointerEnter={() => setActiveCommentId(comment.id)}
               >
                 <button
                   type="button"
@@ -340,20 +499,22 @@ export function DocumentCommentsPanel({
                         [comment.id]: event.target.value,
                       }))
                     }
+                    onKeyDown={(event) => {
+                      if (
+                        event.key !== 'Enter' ||
+                        !(event.metaKey || event.ctrlKey)
+                      )
+                        return;
+                      event.preventDefault();
+                      submitReply(comment.id);
+                    }}
                   />
                   <Button
-                    tone="quiet"
+                    size="compact"
+                    tone="primary"
                     aria-label={`发送回复 ${index + 1}`}
                     disabled={!drafts[comment.id]?.trim()}
-                    onClick={() => {
-                      const text = drafts[comment.id]?.trim();
-                      if (!text) return;
-                      onReply(comment.id, text);
-                      setDrafts((current) => ({
-                        ...current,
-                        [comment.id]: '',
-                      }));
-                    }}
+                    onClick={() => submitReply(comment.id)}
                   >
                     <MessageSquareReply size={13} />
                     回复
@@ -361,6 +522,7 @@ export function DocumentCommentsPanel({
                 </div>
                 <footer>
                   <Button
+                    size="compact"
                     tone="quiet"
                     aria-label={`${comment.resolved ? '重新打开' : '解决'}批注 ${index + 1}`}
                     onClick={() => onToggleResolved(comment.id)}
@@ -373,9 +535,10 @@ export function DocumentCommentsPanel({
                     {comment.resolved ? '重新打开' : '解决'}
                   </Button>
                   <Button
-                    tone="quiet"
+                    size="compact"
+                    tone="danger"
                     aria-label={`删除批注 ${index + 1}`}
-                    onClick={() => onDelete(comment.id)}
+                    onClick={() => void deleteComment(comment.id, index)}
                   >
                     <Trash2 size={13} />
                     删除
@@ -384,7 +547,7 @@ export function DocumentCommentsPanel({
               </article>
             );
           })}
-          {!comments.length && (
+          {!comments.length && !draft && (
             <CollectionState
               className="work-document-comments-empty"
               role="status"
@@ -394,8 +557,35 @@ export function DocumentCommentsPanel({
           )}
         </div>
       </aside>
+      {officeDialog.dialog}
     </Fragment>
   );
+}
+
+interface CommentAnchorRect {
+  right: number;
+  top: number;
+  height: number;
+}
+
+function draftCommentAnchorRect(
+  editor: Editor,
+  range: WorkDocumentCommentRange,
+): CommentAnchorRect | undefined {
+  try {
+    const position = Math.max(
+      0,
+      Math.min(editor.state.doc.content.size, range.to),
+    );
+    const coordinates = editor.view.coordsAtPos(position);
+    return {
+      right: Math.max(coordinates.left, coordinates.right),
+      top: coordinates.top,
+      height: Math.max(1, coordinates.bottom - coordinates.top),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function sameCommentTrackLayout(
@@ -413,6 +603,8 @@ function sameCommentTrackLayout(
     const candidate = next.items[index];
     return (
       candidate?.id === item.id &&
+      candidate.kind === item.kind &&
+      candidate.commentId === item.commentId &&
       Math.abs(candidate.cardTop - item.cardTop) <= 0.5 &&
       Math.abs(candidate.startX - item.startX) <= 0.5 &&
       Math.abs(candidate.startY - item.startY) <= 0.5 &&

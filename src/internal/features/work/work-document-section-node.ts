@@ -4,7 +4,36 @@ import {
   documentSectionLayoutFromNodeAttributes,
   type DocumentSectionNodeAttributes,
 } from './work-document-section';
-import type { WorkDocumentSectionBreakType } from './work-types';
+import {
+  activeDocumentSection,
+  documentSectionById,
+  insertDocumentSection as insertSection,
+  mergeDocumentSectionWithPrevious as mergeSectionWithPrevious,
+  updateActiveDocumentSection as updateActiveSection,
+  updateDocumentSection as updateSection,
+} from './work-document-section-editor';
+import type {
+  WorkDocumentSectionBreakType,
+  WorkDocumentSectionLayout,
+} from './work-types';
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentSection: {
+      insertDocumentSection: (
+        breakAfter?: WorkDocumentSectionBreakType,
+      ) => ReturnType;
+      mergeDocumentSectionWithPrevious: () => ReturnType;
+      updateActiveDocumentSection: (
+        layout: WorkDocumentSectionLayout,
+      ) => ReturnType;
+      updateDocumentSection: (
+        sectionId: string,
+        layout: WorkDocumentSectionLayout,
+      ) => ReturnType;
+    };
+  }
+}
 
 export const DocumentSection = Node.create({
   name: 'documentSection',
@@ -31,6 +60,51 @@ export const DocumentSection = Node.create({
       showPageNumbers: hiddenAttribute(false),
       pageNumberStart: hiddenAttribute(null),
       pageChrome: hiddenAttribute(''),
+    };
+  },
+
+  addCommands() {
+    return {
+      insertDocumentSection:
+        (breakAfter = 'nextPage') =>
+        ({ dispatch, editor, state, tr }) => {
+          const section = activeDocumentSection(editor);
+          if (
+            !section ||
+            !editor.schema.nodes.documentSection ||
+            !editor.schema.nodes.paragraph
+          )
+            return false;
+          return dispatch
+            ? insertSection(editor, breakAfter, { state, tr })
+            : true;
+        },
+      mergeDocumentSectionWithPrevious:
+        () =>
+        ({ dispatch, editor, state, tr }) => {
+          const section = activeDocumentSection(editor);
+          if (!section || section.index === 0) return false;
+          return dispatch
+            ? mergeSectionWithPrevious(editor, { state, tr })
+            : true;
+        },
+      updateActiveDocumentSection:
+        (layout) =>
+        ({ dispatch, editor, state, tr }) => {
+          if (!activeDocumentSection(editor)) return false;
+          return dispatch ? updateActiveSection(layout, { state, tr }) : true;
+        },
+      updateDocumentSection:
+        (sectionId, layout) =>
+        ({ dispatch, editor, state, tr }) => {
+          if (!documentSectionById(editor, sectionId)) return false;
+          return dispatch
+            ? updateSection(sectionId, layout, {
+                state,
+                tr,
+              })
+            : true;
+        },
     };
   },
 

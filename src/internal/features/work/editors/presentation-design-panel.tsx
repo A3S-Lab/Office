@@ -12,49 +12,43 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import type {
+  PresentationEditorCanCommands,
+  PresentationEditorCommands,
+} from './presentation-command-types';
+import type { PresentationDesignMode } from './presentation-editor-types';
 
-export type PresentationDesignMode = 'slide' | 'layout' | 'master';
+export type PresentationDesignPanelCommands = Pick<
+  PresentationEditorCommands,
+  | 'addDesignPlaceholder'
+  | 'applyPresentationLayout'
+  | 'closeDesign'
+  | 'createPresentationLayout'
+  | 'deletePresentationLayout'
+  | 'editDesign'
+  | 'renamePresentationLayout'
+  | 'renamePresentationMaster'
+  | 'setPresentationLayoutBackground'
+  | 'setPresentationMasterBackground'
+  | 'togglePresentationLayoutBackground'
+>;
 
 export function PresentationDesignPanel({
+  can,
+  commands,
   content,
   slide,
   layout,
   master,
   mode,
-  onApplyLayout,
-  onToggleLayoutBackground,
-  onEditLayout,
-  onEditMaster,
-  onCreateLayout,
-  onDuplicateLayout,
-  onDeleteLayout,
-  onRenameLayout,
-  onRenameMaster,
-  onSetLayoutBackground,
-  onSetMasterBackground,
-  onAddPlaceholder,
-  onReturnToSlide,
-  onClose,
 }: {
+  can: Pick<PresentationEditorCanCommands, 'deletePresentationLayout'>;
+  commands: PresentationDesignPanelCommands;
   content: WorkPresentationContent;
   slide: WorkSlide;
   layout: WorkPresentationLayout;
   master: WorkPresentationMaster;
   mode: PresentationDesignMode;
-  onApplyLayout: (layoutId: string) => void;
-  onToggleLayoutBackground: (enabled: boolean) => void;
-  onEditLayout: () => void;
-  onEditMaster: () => void;
-  onCreateLayout: () => void;
-  onDuplicateLayout: () => void;
-  onDeleteLayout: () => void;
-  onRenameLayout: (name: string) => void;
-  onRenameMaster: (name: string) => void;
-  onSetLayoutBackground: (color: string | undefined) => void;
-  onSetMasterBackground: (color: string) => void;
-  onAddPlaceholder: (type: 'title' | 'body') => void;
-  onReturnToSlide: () => void;
-  onClose: () => void;
 }) {
   return (
     <section className="work-presentation-design-panel" aria-label="母版与布局">
@@ -67,7 +61,11 @@ export function PresentationDesignPanel({
             {content.layouts?.length ?? 0} 个布局
           </span>
         </div>
-        <IconButton className="close" label="关闭母版与布局" onClick={onClose}>
+        <IconButton
+          className="close"
+          label="关闭母版与布局"
+          onClick={commands.closeDesign}
+        >
           <X size={14} />
         </IconButton>
       </header>
@@ -82,14 +80,14 @@ export function PresentationDesignPanel({
               value: candidate.id,
               label: candidate.name,
             }))}
-            onValueChange={onApplyLayout}
+            onValueChange={commands.applyPresentationLayout}
           />
         </div>
         <OfficeCheckbox
           className="toggle"
           ariaLabel="使用布局背景"
           checked={slide.useLayoutBackground === true}
-          onCheckedChange={onToggleLayoutBackground}
+          onCheckedChange={commands.togglePresentationLayoutBackground}
         >
           使用布局背景
         </OfficeCheckbox>
@@ -97,7 +95,7 @@ export function PresentationDesignPanel({
           size="compact"
           tone={mode === 'layout' ? 'primary' : 'secondary'}
           aria-pressed={mode === 'layout'}
-          onClick={onEditLayout}
+          onClick={() => commands.editDesign('layout')}
         >
           编辑当前布局
         </Button>
@@ -105,18 +103,22 @@ export function PresentationDesignPanel({
           size="compact"
           tone={mode === 'master' ? 'primary' : 'secondary'}
           aria-pressed={mode === 'master'}
-          onClick={onEditMaster}
+          onClick={() => commands.editDesign('master')}
         >
           编辑当前母版
         </Button>
-        <Button size="compact" aria-label="新建布局" onClick={onCreateLayout}>
+        <Button
+          size="compact"
+          aria-label="新建布局"
+          onClick={() => commands.createPresentationLayout(false)}
+        >
           <Plus size={13} />
           新建布局
         </Button>
         <Button
           size="compact"
           aria-label="复制当前布局"
-          onClick={onDuplicateLayout}
+          onClick={() => commands.createPresentationLayout(true)}
         >
           <Copy size={13} />
           复制布局
@@ -125,8 +127,8 @@ export function PresentationDesignPanel({
           size="compact"
           tone="danger"
           aria-label="删除当前布局"
-          disabled={(content.layouts?.length ?? 0) < 2}
-          onClick={onDeleteLayout}
+          disabled={!can.deletePresentationLayout()}
+          onClick={commands.deletePresentationLayout}
         >
           <Trash2 size={13} />
           删除布局
@@ -144,7 +146,9 @@ export function PresentationDesignPanel({
             <OfficeTextField
               aria-label="布局名称"
               value={layout.name}
-              onChange={(event) => onRenameLayout(event.target.value)}
+              onChange={(event) =>
+                commands.renamePresentationLayout(event.target.value)
+              }
             />
           </div>
           <OfficeColorPicker
@@ -152,20 +156,26 @@ export function PresentationDesignPanel({
             className="work-color-tool"
             ariaLabel="布局背景颜色"
             value={layout.background ?? master.background}
-            onValueChange={onSetLayoutBackground}
+            onValueChange={commands.setPresentationLayoutBackground}
           />
           <OfficeCheckbox
             className="toggle"
             ariaLabel="布局使用母版背景"
             checked={!layout.background}
             onCheckedChange={(checked) =>
-              onSetLayoutBackground(checked ? undefined : master.background)
+              commands.setPresentationLayoutBackground(
+                checked ? undefined : master.background,
+              )
             }
           >
             使用母版背景
           </OfficeCheckbox>
-          <PlaceholderButtons onAdd={onAddPlaceholder} />
-          <Button size="compact" tone="quiet" onClick={onReturnToSlide}>
+          <PlaceholderButtons onAdd={commands.addDesignPlaceholder} />
+          <Button
+            size="compact"
+            tone="quiet"
+            onClick={() => commands.editDesign('slide')}
+          >
             返回幻灯片编辑
           </Button>
         </div>
@@ -182,7 +192,9 @@ export function PresentationDesignPanel({
             <OfficeTextField
               aria-label="母版名称"
               value={master.name}
-              onChange={(event) => onRenameMaster(event.target.value)}
+              onChange={(event) =>
+                commands.renamePresentationMaster(event.target.value)
+              }
             />
           </div>
           <OfficeColorPicker
@@ -190,10 +202,14 @@ export function PresentationDesignPanel({
             className="work-color-tool"
             ariaLabel="母版背景颜色"
             value={master.background}
-            onValueChange={onSetMasterBackground}
+            onValueChange={commands.setPresentationMasterBackground}
           />
-          <PlaceholderButtons onAdd={onAddPlaceholder} />
-          <Button size="compact" tone="quiet" onClick={onReturnToSlide}>
+          <PlaceholderButtons onAdd={commands.addDesignPlaceholder} />
+          <Button
+            size="compact"
+            tone="quiet"
+            onClick={() => commands.editDesign('slide')}
+          >
             返回幻灯片编辑
           </Button>
         </div>

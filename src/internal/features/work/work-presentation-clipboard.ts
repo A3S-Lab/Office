@@ -55,6 +55,10 @@ export function takePresentationClipboard(): WorkPresentationClipboardRead | nul
   };
 }
 
+export function hasPresentationClipboard(): boolean {
+  return clipboard !== null;
+}
+
 export function clearPresentationClipboard(): void {
   clipboard = null;
 }

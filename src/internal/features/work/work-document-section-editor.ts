@@ -1,4 +1,4 @@
-import type { Editor } from '@tiptap/core';
+import type { CommandProps, Editor } from '@tiptap/core';
 import { Fragment, type Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { TextSelection } from '@tiptap/pm/state';
 import { createWorkId } from './work-templates';
@@ -21,10 +21,18 @@ export interface ActiveDocumentSection {
   layout: WorkDocumentSectionLayout;
 }
 
+type DocumentSectionCommandContext = Pick<CommandProps, 'state' | 'tr'>;
+
 export function activeDocumentSection(
   editor: Editor,
 ): ActiveDocumentSection | null {
-  const { doc, selection } = editor.state;
+  return activeDocumentSectionFromState(editor.state);
+}
+
+export function activeDocumentSectionFromState(
+  state: Editor['state'],
+): ActiveDocumentSection | null {
+  const { doc, selection } = state;
   let position: number | null = null;
   let node: ProseMirrorNode | null = null;
   for (let depth = selection.$from.depth; depth > 0; depth -= 1) {
@@ -65,61 +73,45 @@ export function activeDocumentSection(
 }
 
 export function updateActiveDocumentSection(
-  editor: Editor,
   layout: WorkDocumentSectionLayout,
+  commandContext: DocumentSectionCommandContext,
 ): boolean {
-  const section = activeDocumentSection(editor);
+  const state = commandContext.state;
+  const section = activeDocumentSectionFromState(state);
   if (!section) return false;
-  return updateDocumentSection(editor, section.id, layout);
+  return updateDocumentSection(section.id, layout, commandContext);
 }
 
 export function documentSectionById(
   editor: Editor,
   sectionId: string,
 ): ActiveDocumentSection | null {
-  const sections = directDocumentSections(editor.state.doc);
-  const index = sections.findIndex(({ node }, candidateIndex) => {
-    const id =
-      typeof node.attrs.id === 'string' && node.attrs.id
-        ? node.attrs.id
-        : `document-section-${candidateIndex + 1}`;
-    return id === sectionId;
-  });
-  const section = sections[index];
-  if (!section) return null;
-  return {
-    id: sectionId,
-    index,
-    count: sections.length,
-    position: section.position,
-    node: section.node,
-    layout: documentSectionLayoutFromNodeAttributes(
-      section.node.attrs as Partial<DocumentSectionNodeAttributes>,
-    ),
-  };
+  return documentSectionByIdInDocument(editor.state.doc, sectionId);
 }
 
 export function updateDocumentSection(
-  editor: Editor,
   sectionId: string,
   layout: WorkDocumentSectionLayout,
+  commandContext: DocumentSectionCommandContext,
 ): boolean {
-  const section = documentSectionById(editor, sectionId);
+  const state = commandContext.state;
+  const section = documentSectionByIdInDocument(state.doc, sectionId);
   if (!section) return false;
-  const transaction = editor.state.tr.setNodeMarkup(
+  commandContext.tr.setNodeMarkup(
     section.position,
     undefined,
     documentSectionNodeAttributes(layout, section.id),
   );
-  editor.view.dispatch(transaction);
   return true;
 }
 
 export function insertDocumentSection(
   editor: Editor,
-  breakAfter: WorkDocumentSectionBreakType = 'nextPage',
+  breakAfter: WorkDocumentSectionBreakType,
+  commandContext: DocumentSectionCommandContext,
 ): boolean {
-  const section = activeDocumentSection(editor);
+  const state = commandContext.state;
+  const section = activeDocumentSectionFromState(state);
   const sectionType = editor.schema.nodes.documentSection;
   const paragraphType = editor.schema.nodes.paragraph;
   if (!section || !sectionType || !paragraphType) return false;
@@ -128,10 +120,7 @@ export function insertDocumentSection(
   section.node.forEach((child) => {
     children.push(child);
   });
-  const activeChildIndex = sectionChildIndex(
-    section,
-    editor.state.selection.from,
-  );
+  const activeChildIndex = sectionChildIndex(section, state.selection.from);
   const currentChildren = children.slice(0, activeChildIndex + 1);
   const followingChildren = children.slice(activeChildIndex + 1);
   if (!currentChildren.length) currentChildren.push(paragraphType.create());
@@ -153,7 +142,7 @@ export function insertDocumentSection(
     documentSectionNodeAttributes(nextLayout, createWorkId('section')),
     Fragment.fromArray(followingChildren),
   );
-  const transaction = editor.state.tr.replaceWith(
+  const transaction = commandContext.tr.replaceWith(
     section.position,
     section.position + section.node.nodeSize,
     Fragment.fromArray([currentNode, nextNode]),
@@ -162,21 +151,25 @@ export function insertDocumentSection(
   transaction.setSelection(
     TextSelection.near(transaction.doc.resolve(nextPosition)),
   );
-  editor.view.dispatch(transaction.scrollIntoView());
+  transaction.scrollIntoView();
   return true;
 }
 
-export function mergeDocumentSectionWithPrevious(editor: Editor): boolean {
-  const section = activeDocumentSection(editor);
+export function mergeDocumentSectionWithPrevious(
+  _editor: Editor,
+  commandContext: DocumentSectionCommandContext,
+): boolean {
+  const state = commandContext.state;
+  const section = activeDocumentSectionFromState(state);
   if (!section || section.index === 0) return false;
-  const sections = directDocumentSections(editor.state.doc);
+  const sections = directDocumentSections(state.doc);
   const previous = sections[section.index - 1];
   const merged = previous.node.type.create(
     previous.node.attrs,
     previous.node.content.append(section.node.content),
     previous.node.marks,
   );
-  const transaction = editor.state.tr.replaceWith(
+  const transaction = commandContext.tr.replaceWith(
     previous.position,
     section.position + section.node.nodeSize,
     merged,
@@ -188,8 +181,34 @@ export function mergeDocumentSectionWithPrevious(editor: Editor): boolean {
   transaction.setSelection(
     TextSelection.near(transaction.doc.resolve(selectionPosition)),
   );
-  editor.view.dispatch(transaction.scrollIntoView());
+  transaction.scrollIntoView();
   return true;
+}
+
+function documentSectionByIdInDocument(
+  document: ProseMirrorNode,
+  sectionId: string,
+): ActiveDocumentSection | null {
+  const sections = directDocumentSections(document);
+  const index = sections.findIndex(({ node }, candidateIndex) => {
+    const id =
+      typeof node.attrs.id === 'string' && node.attrs.id
+        ? node.attrs.id
+        : `document-section-${candidateIndex + 1}`;
+    return id === sectionId;
+  });
+  const section = sections[index];
+  if (!section) return null;
+  return {
+    id: sectionId,
+    index,
+    count: sections.length,
+    position: section.position,
+    node: section.node,
+    layout: documentSectionLayoutFromNodeAttributes(
+      section.node.attrs as Partial<DocumentSectionNodeAttributes>,
+    ),
+  };
 }
 
 function directDocumentSections(

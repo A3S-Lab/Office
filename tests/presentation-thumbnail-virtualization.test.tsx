@@ -1,7 +1,10 @@
 import { expect, test } from '@rstest/core';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { createRef, useState } from 'react';
-import { PresentationWorkspace } from '../src/internal/features/work/editors/presentation-workspace';
+import {
+  PresentationWorkspace,
+  type PresentationWorkspaceCommands,
+} from '../src/internal/features/work/editors/presentation-workspace';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -213,6 +216,10 @@ function presentationWorkspace(
       aspectRatio="16 / 9"
       canvasName="Slide canvas"
       canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands({
+        deleteSlideById: options.onDeleteSlide ?? (() => false),
+        selectSlide: (slideId) => options.onSelectSlide?.(slideId),
+      })}
       content={content}
       designContent={content}
       designMode="slide"
@@ -226,27 +233,35 @@ function presentationWorkspace(
       snapGuides={[]}
       viewMode={viewMode}
       zoom={100}
-      onAddSlide={() => undefined}
       onBeginDrag={() => undefined}
       onContinueDrag={() => undefined}
-      onDeleteSlide={options.onDeleteSlide ?? (() => false)}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onEditElement={() => undefined}
-      onExitEditing={() => undefined}
-      onInstantiatePlaceholder={() => undefined}
       onOpenAgentMenu={() => undefined}
-      onOpenComment={() => undefined}
-      onSelectElement={() => undefined}
-      onSelectSlide={(slideId) => options.onSelectSlide?.(slideId)}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
-      onUpdateElement={() => undefined}
-      onUpdateNotes={() => undefined}
-      onUpdateTextElement={() => undefined}
-      onViewModeChange={() => undefined}
     />
   );
+}
+
+function workspaceCommands(
+  overrides: Partial<PresentationWorkspaceCommands> = {},
+): PresentationWorkspaceCommands {
+  return {
+    addSlide: () => undefined,
+    deleteSlideById: () => false,
+    editElement: () => undefined,
+    exitEditing: () => undefined,
+    instantiatePlaceholder: () => undefined,
+    openComment: () => undefined,
+    selectElement: () => undefined,
+    selectSlide: () => undefined,
+    setViewMode: () => undefined,
+    updateElement: () => undefined,
+    updateNotes: () => undefined,
+    updateTextElement: () => undefined,
+    ...overrides,
+  };
 }
 
 function StatefulPresentationWorkspace({ slideCount }: { slideCount: number }) {

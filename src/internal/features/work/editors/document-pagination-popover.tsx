@@ -1,10 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { Pilcrow } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
-import {
-  documentParagraphPagination,
-  setDocumentParagraphPagination,
-} from '../work-document-paragraph-formatting';
+import { documentParagraphPagination } from '../work-document-paragraph-formatting';
 import { OfficeCheckbox } from './office-controls';
 
 export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
@@ -20,8 +17,7 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
   ].some((value) => typeof value === 'boolean');
   const update = (key: keyof typeof pagination, checked: boolean): void => {
     const current = documentParagraphPagination(editor);
-    setDocumentParagraphPagination(
-      editor,
+    editor.commands.setDocumentParagraphPagination(
       { ...current, [key]: checked },
       { restoreFocus: false },
     );
@@ -33,6 +29,7 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
       panelLabel="段落分页选项"
       panelRole="dialog"
       portal
+      focusFirstOnOpen
       className="work-document-pagination-popover"
       panelClassName="work-document-pagination-panel"
       trigger={(triggerProps, { open }) => (

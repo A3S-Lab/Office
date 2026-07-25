@@ -61,7 +61,8 @@ export function useDialogFocusScope<T extends HTMLElement>({
   useEffect(() => {
     focusInitial();
     return () => {
-      const restoreTarget = restoreFocusRef.current;
+      const restoreTarget =
+        optionsRef.current.restoreFocusTarget?.() ?? restoreFocusRef.current;
       if (
         optionsRef.current.restoreFocus === false ||
         !restoreTarget?.isConnected

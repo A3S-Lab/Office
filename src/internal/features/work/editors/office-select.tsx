@@ -46,8 +46,8 @@ export function OfficeSelect<T extends string>({
   const selectOption = (index: number, close: () => void) => {
     const option = options[index];
     if (!option || option.disabled) return;
-    onValueChange(option.value);
     close();
+    onValueChange(option.value);
   };
 
   const moveOptionFocus = (event: KeyboardEvent, direction: -1 | 1) => {

@@ -1,3 +1,4 @@
+import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { waitFor } from '@testing-library/dom';
 import { createApp, h, nextTick } from 'vue';
@@ -33,6 +34,9 @@ test('mounts the Vue adapter and renders the React editor', async () => {
 test('mounts the Vue Markdown adapter', async () => {
   const target = document.createElement('div');
   document.body.append(target);
+  const hostShortcuts = Extension.create({
+    name: 'testVueHostShortcuts',
+  });
   const content: MarkdownContent = {
     type: 'markdown',
     markdown: '## Vue adapter',
@@ -41,6 +45,7 @@ test('mounts the Vue Markdown adapter', async () => {
     render: () =>
       h(MarkdownEditor, {
         content,
+        extensions: [hostShortcuts],
         preview: true,
       }),
   });

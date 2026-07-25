@@ -8,7 +8,7 @@
   height: auto;
   max-height: none;
   margin: 0;
-  padding: 0;
+  padding: 16px;
   place-items: center;
   border: 0;
   background: rgb(9 12 22 / 42%);
@@ -16,7 +16,11 @@
 }
 
 .ds-dialog {
-  width: 440px;
+  box-sizing: border-box;
+  display: flex;
+  width: min(440px, 100%);
+  max-height: calc(100dvh - 32px);
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--a3s-line);
   border-radius: var(--a3s-radius);
@@ -29,6 +33,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 20px 24px 16px;
+  flex: 0 0 auto;
 }
 
 .ds-dialog h2 {
@@ -44,16 +49,51 @@
 }
 
 .ds-dialog-body {
+  min-height: 0;
   padding: 4px 24px 20px;
+  overflow: auto;
 }
 
 .ds-dialog > footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex: 0 0 auto;
   padding: 14px 24px;
   border-top: 1px solid var(--a3s-line);
   background: var(--a3s-panel-soft);
+}
+
+.ds-dialog > footer .ds-button.danger {
+  border-color: var(--a3s-red);
+  background: var(--a3s-red);
+  color: white;
+}
+
+.ds-dialog > footer .ds-button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--a3s-red) 88%, black);
+}
+
+@media (max-width: 520px) {
+  .ds-dialog-backdrop {
+    padding: 10px;
+  }
+
+  .ds-dialog {
+    max-height: calc(100dvh - 20px);
+  }
+
+  .ds-dialog > header {
+    padding: 16px 16px 12px;
+  }
+
+  .ds-dialog-body {
+    padding: 4px 16px 16px;
+  }
+
+  .ds-dialog > footer {
+    padding: 12px 16px;
+  }
 }
 
 .ds-field {

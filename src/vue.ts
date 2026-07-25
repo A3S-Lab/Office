@@ -1,3 +1,4 @@
+import type { Extensions } from '@tiptap/core';
 import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
@@ -70,6 +71,10 @@ export const DocumentEditor = defineComponent({
       type: Object as PropType<DocumentContent>,
     },
     fileActions: fileActionsProp,
+    extensions: {
+      default: undefined,
+      type: Array as PropType<Extensions>,
+    },
     kernelWasmUrl: String,
     layoutFonts: {
       default: undefined,
@@ -91,6 +96,7 @@ export const DocumentEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactDocumentEditor, {
         content: props.content,
+        extensions: props.extensions,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,
         layoutFonts: props.layoutFonts,
@@ -115,6 +121,10 @@ export const MarkdownEditor = defineComponent({
       type: Object as PropType<MarkdownContent>,
     },
     fileActions: fileActionsProp,
+    extensions: {
+      default: undefined,
+      type: Array as PropType<Extensions>,
+    },
     preview: {
       default: false,
       type: Boolean,
@@ -130,6 +140,7 @@ export const MarkdownEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactMarkdownEditor, {
         content: props.content,
+        extensions: props.extensions,
         fileActions: props.fileActions,
         onChange: (content) => {
           emit('update:content', content);
@@ -191,6 +202,7 @@ export const PresentationEditor = defineComponent({
       type: Object as PropType<PresentationContent>,
     },
     fileActions: fileActionsProp,
+    kernelWasmUrl: String,
     preview: {
       default: false,
       type: Boolean,
@@ -209,6 +221,7 @@ export const PresentationEditor = defineComponent({
       createElement(ReactPresentationEditor, {
         content: props.content,
         fileActions: props.fileActions,
+        kernelWasmUrl: props.kernelWasmUrl,
         onAgentRequest: (request) => emit('agentRequest', request),
         onChange: (content) => {
           emit('update:content', content);

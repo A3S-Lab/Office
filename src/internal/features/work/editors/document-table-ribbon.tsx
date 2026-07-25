@@ -14,7 +14,6 @@ import type { ReactNode } from 'react';
 import {
   canSetDocumentTableRowRepeatHeader,
   documentTableRowOptions,
-  setDocumentTableRowOptions,
 } from '../work-document-table-row';
 import {
   WorkOfficeRibbonButton,
@@ -111,7 +110,7 @@ export function DocumentTableRibbon({ editor }: { editor: Editor }) {
           active={rowOptions.repeatHeader}
           disabled={!canSetDocumentTableRowRepeatHeader(editor)}
           onClick={() =>
-            setDocumentTableRowOptions(editor, {
+            editor.commands.setDocumentTableRowOptions({
               ...documentTableRowOptions(editor),
               repeatHeader: !documentTableRowOptions(editor).repeatHeader,
             })
@@ -124,7 +123,7 @@ export function DocumentTableRibbon({ editor }: { editor: Editor }) {
           visibleLabel="整行换页"
           active={rowOptions.cantSplit}
           onClick={() =>
-            setDocumentTableRowOptions(editor, {
+            editor.commands.setDocumentTableRowOptions({
               ...documentTableRowOptions(editor),
               cantSplit: !documentTableRowOptions(editor).cantSplit,
             })

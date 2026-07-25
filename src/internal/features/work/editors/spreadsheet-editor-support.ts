@@ -1,5 +1,4 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { WorkSpreadsheetContent } from '../work-types';
 
 const spreadsheetFontSizes = [
@@ -166,7 +165,7 @@ export function isSpreadsheetNativeTextUndoTarget(
 }
 
 export function spreadsheetFormulaBarSelectAllTarget(
-  event: ReactKeyboardEvent<HTMLElement>,
+  event: KeyboardEvent,
 ): HTMLElement | null {
   if (
     event.defaultPrevented ||
@@ -181,6 +180,19 @@ export function spreadsheetFormulaBarSelectAllTarget(
   }
   const formulaBar = event.target.closest('.fortune-fx-input');
   return formulaBar instanceof HTMLElement ? formulaBar : null;
+}
+
+export function selectSpreadsheetFormulaBarContents(
+  event: KeyboardEvent,
+): boolean {
+  const formulaBar = spreadsheetFormulaBarSelectAllTarget(event);
+  const selection = window.getSelection();
+  if (!formulaBar || !selection) return false;
+  const range = document.createRange();
+  range.selectNodeContents(formulaBar);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
 }
 
 function spreadsheetColumnLabel(column: number): string {

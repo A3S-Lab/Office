@@ -1,17 +1,9 @@
 import type { Editor } from '@tiptap/core';
-import { Check, CheckCheck, Undo2, X, XCircle } from 'lucide-react';
-import {
-  Button,
-  CollectionState,
-  IconButton,
-} from '../../../design-system/primitives';
-import {
-  acceptAllDocumentChanges,
-  acceptDocumentChange,
-  rejectAllDocumentChanges,
-  rejectDocumentChange,
-  type WorkDocumentChange,
-} from '../work-document-changes';
+import { Check, CheckCheck, Undo2, XCircle } from 'lucide-react';
+import { Button, CollectionState } from '../../../design-system/primitives';
+import type { WorkDocumentChange } from '../work-document-changes';
+import { DocumentTaskPane } from './document-task-pane';
+import { useOfficeDialog } from './office-controls';
 
 export function DocumentChangesPanel({
   editor,
@@ -22,94 +14,125 @@ export function DocumentChangesPanel({
   changes: WorkDocumentChange[];
   onClose: () => void;
 }) {
+  const officeDialog = useOfficeDialog();
+  const acceptAll = async () => {
+    const confirmed = await officeDialog.confirm({
+      title: '接受全部修订？',
+      description: `将确认当前 ${changes.length} 项修订。`,
+      confirmLabel: '全部接受',
+    });
+    if (confirmed && !editor.isDestroyed) {
+      editor.commands.acceptAllDocumentChanges();
+      requestAnimationFrame(() => {
+        if (!editor.isDestroyed) editor.view.dom.focus();
+      });
+    }
+  };
+  const rejectAll = async () => {
+    const confirmed = await officeDialog.confirm({
+      title: '拒绝全部修订？',
+      description: `将撤销当前 ${changes.length} 项修订。`,
+      confirmLabel: '全部拒绝',
+      confirmTone: 'danger',
+    });
+    if (confirmed && !editor.isDestroyed) {
+      editor.commands.rejectAllDocumentChanges();
+      requestAnimationFrame(() => {
+        if (!editor.isDestroyed) editor.view.dom.focus();
+      });
+    }
+  };
+
   return (
-    <section className="work-document-changes-panel" aria-label="修订审阅">
-      <header>
-        <div>
-          <strong>修订审阅</strong>
-          <span>
-            {changes.length
-              ? `${changes.length} 项待处理的文字修订`
-              : '没有待处理的文字修订'}
-          </span>
-        </div>
-        <div className="work-document-changes-bulk-actions">
-          <Button
-            tone="quiet"
-            disabled={!changes.length}
-            onClick={() => acceptAllDocumentChanges(editor)}
-          >
-            <CheckCheck size={13} />
-            全部接受
-          </Button>
-          <Button
-            tone="quiet"
-            disabled={!changes.length}
-            onClick={() => rejectAllDocumentChanges(editor)}
-          >
-            <Undo2 size={13} />
-            全部拒绝
-          </Button>
-          <IconButton className="close" label="关闭修订审阅" onClick={onClose}>
-            <X size={14} />
-          </IconButton>
-        </div>
-      </header>
-      <div className="work-document-change-list">
-        {changes.map((change, index) => (
-          <article className={change.kind} key={`${change.kind}-${change.id}`}>
-            <button
-              type="button"
-              className="work-document-change-summary"
-              aria-label={`定位修订 ${index + 1}`}
-              onClick={() =>
-                editor
-                  .chain()
-                  .focus()
-                  .setTextSelection({
-                    from: Math.min(change.from, editor.state.doc.content.size),
-                    to: Math.min(change.to, editor.state.doc.content.size),
-                  })
-                  .run()
-              }
-            >
-              <span>{change.kind === 'insertion' ? '插入' : '删除'}</span>
-              <strong>{change.text.trim() || '（空白字符）'}</strong>
-              <small>
-                {change.author}
-                {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
-              </small>
-            </button>
-            <div>
-              <Button
-                tone="quiet"
-                aria-label={`接受修订 ${index + 1}`}
-                onClick={() => acceptDocumentChange(editor, change.id)}
-              >
-                <Check size={13} />
-                接受
-              </Button>
-              <Button
-                tone="quiet"
-                aria-label={`拒绝修订 ${index + 1}`}
-                onClick={() => rejectDocumentChange(editor, change.id)}
-              >
-                <XCircle size={13} />
-                拒绝
-              </Button>
-            </div>
-          </article>
-        ))}
-        {!changes.length && (
-          <CollectionState
-            className="work-document-changes-empty"
-            role="status"
-          >
-            开启修订后，新增和删除的文字会显示在这里，并保留到 DOCX。
-          </CollectionState>
+    <>
+      <DocumentTaskPane
+        className="work-document-changes-panel"
+        title="修订审阅"
+        description={
+          changes.length ? `${changes.length} 项待处理` : '没有待处理的修订'
+        }
+        closeLabel="关闭修订审阅"
+        onClose={onClose}
+      >
+        {changes.length > 0 && (
+          <div className="work-document-changes-bulk-actions">
+            <Button tone="quiet" onClick={() => void acceptAll()}>
+              <CheckCheck size={13} />
+              全部接受
+            </Button>
+            <Button tone="quiet" onClick={() => void rejectAll()}>
+              <Undo2 size={13} />
+              全部拒绝
+            </Button>
+          </div>
         )}
-      </div>
-    </section>
+        <div className="work-document-change-list work-document-task-pane-body">
+          {changes.map((change, index) => (
+            <article
+              className={change.kind}
+              key={`${change.kind}-${change.id}`}
+            >
+              <button
+                type="button"
+                className="work-document-change-summary"
+                aria-label={`定位修订 ${index + 1}`}
+                onClick={() =>
+                  editor
+                    .chain()
+                    .focus()
+                    .setTextSelection({
+                      from: Math.min(
+                        change.from,
+                        editor.state.doc.content.size,
+                      ),
+                      to: Math.min(change.to, editor.state.doc.content.size),
+                    })
+                    .run()
+                }
+              >
+                <span>{change.kind === 'insertion' ? '插入' : '删除'}</span>
+                <strong>{change.text.trim() || '（空白字符）'}</strong>
+                <small>
+                  {change.author}
+                  {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
+                </small>
+              </button>
+              <div>
+                <Button
+                  tone="quiet"
+                  aria-label={`接受修订 ${index + 1}`}
+                  onClick={() =>
+                    editor.commands.acceptDocumentChange(change.id)
+                  }
+                >
+                  <Check size={13} />
+                  接受
+                </Button>
+                <Button
+                  tone="quiet"
+                  aria-label={`拒绝修订 ${index + 1}`}
+                  onClick={() =>
+                    editor.commands.rejectDocumentChange(change.id)
+                  }
+                >
+                  <XCircle size={13} />
+                  拒绝
+                </Button>
+              </div>
+            </article>
+          ))}
+          {!changes.length && (
+            <CollectionState
+              className="work-document-changes-empty"
+              role="status"
+            >
+              开启修订后，改动会显示在这里。
+            </CollectionState>
+          )}
+        </div>
+      </DocumentTaskPane>
+      {officeDialog.dialog}
+    </>
   );
 }
 

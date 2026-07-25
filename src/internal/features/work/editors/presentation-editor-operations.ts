@@ -5,7 +5,7 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import type { PresentationDesignMode } from './presentation-design-panel';
+import type { PresentationDesignMode } from './presentation-editor-types';
 
 export function updatePresentationElements(
   content: WorkPresentationContent,

@@ -1,10 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { MoveVertical } from 'lucide-react';
 import { Popover } from '../../../design-system/primitives';
-import {
-  documentParagraphSpacing,
-  setDocumentParagraphSpacing,
-} from '../work-document-paragraph-formatting';
+import { documentParagraphSpacing } from '../work-document-paragraph-formatting';
 import { OfficeNumberField } from './office-controls';
 
 export function DocumentParagraphSpacingPopover({
@@ -18,16 +15,14 @@ export function DocumentParagraphSpacingPopover({
     const value = pointValue(rawValue);
     if (rawValue.trim() && value === null) return;
     const current = documentParagraphSpacing(editor);
-    setDocumentParagraphSpacing(
-      editor,
+    editor.commands.setDocumentParagraphSpacing(
       { ...current, [key]: value },
       { restoreFocus: false },
     );
   };
   const clear = (): void => {
     const current = documentParagraphSpacing(editor);
-    setDocumentParagraphSpacing(
-      editor,
+    editor.commands.setDocumentParagraphSpacing(
       { ...current, before: null, after: null },
       { restoreFocus: false },
     );
@@ -39,6 +34,7 @@ export function DocumentParagraphSpacingPopover({
       panelLabel="段落间距选项"
       panelRole="dialog"
       portal
+      focusFirstOnOpen
       className="work-document-paragraph-spacing-popover"
       panelClassName="work-document-paragraph-spacing-panel"
       trigger={(triggerProps, { open }) => (

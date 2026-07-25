@@ -1,4 +1,4 @@
-import { Extension, type Editor } from '@tiptap/core';
+import { type CommandProps, Extension, type Editor } from '@tiptap/core';
 
 export const DOCUMENT_INDENT_STEP_PX = 24;
 export const MAX_DOCUMENT_INDENT_LEVEL = 8;
@@ -28,6 +28,40 @@ export interface DocumentParagraphSpacing {
   after: number | null;
   lineHeight: string | null;
   lineRule: DocumentParagraphLineRule | null;
+}
+
+export interface DocumentFormattingCommandOptions {
+  restoreFocus?: boolean;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentParagraphFormatting: {
+      changeDocumentIndent: (direction: -1 | 1) => ReturnType;
+      clearDocumentFormatting: () => ReturnType;
+      setDocumentIndentLevel: (
+        indentLevel: number,
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
+      setDocumentLineHeight: (lineHeight: string | null) => ReturnType;
+      setDocumentParagraphDirection: (
+        direction: DocumentParagraphDirection,
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
+      setDocumentParagraphIndent: (
+        indent: DocumentParagraphIndent,
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
+      setDocumentParagraphPagination: (
+        pagination: DocumentParagraphPagination,
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
+      setDocumentParagraphSpacing: (
+        spacing: DocumentParagraphSpacing,
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
+    };
+  }
 }
 
 export const DocumentParagraphFormatting = Extension.create({
@@ -168,45 +202,51 @@ export const DocumentParagraphFormatting = Extension.create({
       },
     ];
   },
+
+  addCommands() {
+    return {
+      changeDocumentIndent: (direction) => (props) =>
+        changeDocumentIndentCommand(props, direction),
+      clearDocumentFormatting: () => (props) =>
+        clearDocumentFormattingCommand(props),
+      setDocumentIndentLevel:
+        (indentLevel, options = {}) =>
+        (props) =>
+          setDocumentIndentLevelCommand(props, indentLevel, options),
+      setDocumentLineHeight: (lineHeight) => (props) =>
+        setDocumentLineHeightCommand(props, lineHeight),
+      setDocumentParagraphDirection:
+        (direction, options = {}) =>
+        (props) =>
+          setDocumentParagraphDirectionCommand(props, direction, options),
+      setDocumentParagraphIndent:
+        (indent, options = {}) =>
+        (props) =>
+          setDocumentParagraphIndentCommand(props, indent, options),
+      setDocumentParagraphPagination:
+        (pagination, options = {}) =>
+        (props) =>
+          setDocumentParagraphPaginationCommand(props, pagination, options),
+      setDocumentParagraphSpacing:
+        (spacing, options = {}) =>
+        (props) =>
+          setDocumentParagraphSpacingCommand(props, spacing, options),
+    };
+  },
 });
 
 export function setDocumentLineHeight(
   editor: Editor,
   lineHeight: string | null,
 ): boolean {
-  const value = normalizedLineHeight(lineHeight);
-  const attributes = {
-    lineHeight: value,
-    lineRule: value ? lineRuleForLineHeight(value) : null,
-  };
-  return editor
-    .chain()
-    .focus()
-    .updateAttributes('paragraph', attributes)
-    .updateAttributes('heading', attributes)
-    .run();
+  return editor.commands.setDocumentLineHeight(lineHeight);
 }
 
 export function changeDocumentIndent(
   editor: Editor,
   direction: -1 | 1,
 ): boolean {
-  if (editor.isActive('listItem')) {
-    const canChangeListLevel =
-      direction > 0
-        ? editor.can().chain().focus().sinkListItem('listItem').run()
-        : editor.can().chain().focus().liftListItem('listItem').run();
-    if (canChangeListLevel) {
-      return direction > 0
-        ? editor.chain().focus().sinkListItem('listItem').run()
-        : editor.chain().focus().liftListItem('listItem').run();
-    }
-  }
-
-  return setDocumentIndentLevel(
-    editor,
-    documentIndentLevel(editor) + direction,
-  );
+  return editor.commands.changeDocumentIndent(direction);
 }
 
 export function documentIndentLevel(editor: Editor): number {
@@ -230,37 +270,17 @@ export function documentParagraphIndent(
 export function setDocumentIndentLevel(
   editor: Editor,
   indentLevel: number,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentFormattingCommandOptions = {},
 ): boolean {
-  const current = documentParagraphIndent(editor);
-  return setDocumentParagraphIndent(
-    editor,
-    {
-      ...current,
-      left: normalizedIndentLevel(indentLevel) * DOCUMENT_INDENT_STEP_PX,
-    },
-    options,
-  );
+  return editor.commands.setDocumentIndentLevel(indentLevel, options);
 }
 
 export function setDocumentParagraphIndent(
   editor: Editor,
   indent: DocumentParagraphIndent,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentFormattingCommandOptions = {},
 ): boolean {
-  const normalized = normalizeDocumentParagraphIndent(indent);
-  const attributes = {
-    indentLevel: normalized.left / DOCUMENT_INDENT_STEP_PX,
-    rightIndent: normalized.right,
-    firstLineIndent: normalized.firstLine,
-  };
-  const nodeTypes = activeParagraphNodeTypes(editor);
-  if (!nodeTypes.length) return false;
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  for (const nodeType of nodeTypes)
-    chain.updateAttributes(nodeType, attributes);
-  return chain.run();
+  return editor.commands.setDocumentParagraphIndent(indent, options);
 }
 
 export function documentParagraphPagination(
@@ -290,37 +310,17 @@ export function documentParagraphDirection(
 export function setDocumentParagraphDirection(
   editor: Editor,
   direction: DocumentParagraphDirection,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentFormattingCommandOptions = {},
 ): boolean {
-  const nodeTypes = activeParagraphDirectionNodeTypes(editor);
-  if (!nodeTypes.length) return false;
-  const value = normalizeDocumentParagraphDirection(direction);
-  if (!value) return false;
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  for (const nodeType of nodeTypes)
-    chain.updateAttributes(nodeType, { paragraphDirection: value });
-  return chain.run();
+  return editor.commands.setDocumentParagraphDirection(direction, options);
 }
 
 export function setDocumentParagraphPagination(
   editor: Editor,
   pagination: DocumentParagraphPagination,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentFormattingCommandOptions = {},
 ): boolean {
-  const nodeTypes = activeParagraphNodeTypes(editor);
-  if (!nodeTypes.length) return false;
-  const attributes = {
-    keepLines: Boolean(pagination.keepLines),
-    keepWithNext: Boolean(pagination.keepWithNext),
-    pageBreakBefore: Boolean(pagination.pageBreakBefore),
-    widowControl: Boolean(pagination.widowControl),
-  };
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  for (const nodeType of nodeTypes)
-    chain.updateAttributes(nodeType, attributes);
-  return chain.run();
+  return editor.commands.setDocumentParagraphPagination(pagination, options);
 }
 
 export function documentParagraphSpacing(
@@ -338,24 +338,9 @@ export function documentParagraphSpacing(
 export function setDocumentParagraphSpacing(
   editor: Editor,
   spacing: DocumentParagraphSpacing,
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentFormattingCommandOptions = {},
 ): boolean {
-  const nodeTypes = activeParagraphNodeTypes(editor);
-  if (!nodeTypes.length) return false;
-  const lineHeight = normalizedLineHeight(spacing.lineHeight);
-  const attributes = {
-    spaceBefore: normalizedPointSpacing(spacing.before),
-    spaceAfter: normalizedPointSpacing(spacing.after),
-    lineHeight,
-    lineRule:
-      normalizedLineRule(spacing.lineRule) ??
-      (lineHeight ? lineRuleForLineHeight(lineHeight) : null),
-  };
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  for (const nodeType of nodeTypes)
-    chain.updateAttributes(nodeType, attributes);
-  return chain.run();
+  return editor.commands.setDocumentParagraphSpacing(spacing, options);
 }
 
 export function normalizeDocumentParagraphIndent(
@@ -380,9 +365,155 @@ export function normalizeDocumentParagraphDirection(
 }
 
 export function clearDocumentFormatting(editor: Editor): boolean {
-  const chain = editor.chain().focus().unsetAllMarks();
-  if (!editor.isActive('listItem')) chain.setParagraph();
-  return chain
+  return editor.commands.clearDocumentFormatting();
+}
+
+function setDocumentLineHeightCommand(
+  { chain }: CommandProps,
+  lineHeight: string | null,
+): boolean {
+  const value = normalizedLineHeight(lineHeight);
+  const attributes = {
+    lineHeight: value,
+    lineRule: value ? lineRuleForLineHeight(value) : null,
+  };
+  return chain()
+    .focus()
+    .updateAttributes('paragraph', attributes)
+    .updateAttributes('heading', attributes)
+    .run();
+}
+
+function changeDocumentIndentCommand(
+  props: CommandProps,
+  direction: -1 | 1,
+): boolean {
+  const { can, chain, editor } = props;
+  if (editor.isActive('listItem')) {
+    const canChangeListLevel =
+      direction > 0
+        ? can().chain().focus().sinkListItem('listItem').run()
+        : can().chain().focus().liftListItem('listItem').run();
+    if (canChangeListLevel) {
+      return direction > 0
+        ? chain().focus().sinkListItem('listItem').run()
+        : chain().focus().liftListItem('listItem').run();
+    }
+  }
+  return setDocumentIndentLevelCommand(
+    props,
+    documentIndentLevel(editor) + direction,
+    {},
+  );
+}
+
+function setDocumentIndentLevelCommand(
+  props: CommandProps,
+  indentLevel: number,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const current = documentParagraphIndent(props.editor);
+  return setDocumentParagraphIndentCommand(
+    props,
+    {
+      ...current,
+      left: normalizedIndentLevel(indentLevel) * DOCUMENT_INDENT_STEP_PX,
+    },
+    options,
+  );
+}
+
+function setDocumentParagraphIndentCommand(
+  { chain, editor }: CommandProps,
+  indent: DocumentParagraphIndent,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const nodeTypes = activeParagraphNodeTypes(editor);
+  if (!nodeTypes.length) return false;
+  const normalized = normalizeDocumentParagraphIndent(indent);
+  const attributes = {
+    indentLevel: normalized.left / DOCUMENT_INDENT_STEP_PX,
+    rightIndent: normalized.right,
+    firstLineIndent: normalized.firstLine,
+  };
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  for (const nodeType of nodeTypes) {
+    commandChain = commandChain.updateAttributes(nodeType, attributes);
+  }
+  return commandChain.run();
+}
+
+function setDocumentParagraphDirectionCommand(
+  { chain, editor }: CommandProps,
+  direction: DocumentParagraphDirection,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const nodeTypes = activeParagraphDirectionNodeTypes(editor);
+  const value = normalizeDocumentParagraphDirection(direction);
+  if (!nodeTypes.length || !value) return false;
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  for (const nodeType of nodeTypes) {
+    commandChain = commandChain.updateAttributes(nodeType, {
+      paragraphDirection: value,
+    });
+  }
+  return commandChain.run();
+}
+
+function setDocumentParagraphPaginationCommand(
+  { chain, editor }: CommandProps,
+  pagination: DocumentParagraphPagination,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const nodeTypes = activeParagraphNodeTypes(editor);
+  if (!nodeTypes.length) return false;
+  const attributes = {
+    keepLines: Boolean(pagination.keepLines),
+    keepWithNext: Boolean(pagination.keepWithNext),
+    pageBreakBefore: Boolean(pagination.pageBreakBefore),
+    widowControl: Boolean(pagination.widowControl),
+  };
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  for (const nodeType of nodeTypes) {
+    commandChain = commandChain.updateAttributes(nodeType, attributes);
+  }
+  return commandChain.run();
+}
+
+function setDocumentParagraphSpacingCommand(
+  { chain, editor }: CommandProps,
+  spacing: DocumentParagraphSpacing,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const nodeTypes = activeParagraphNodeTypes(editor);
+  if (!nodeTypes.length) return false;
+  const lineHeight = normalizedLineHeight(spacing.lineHeight);
+  const attributes = {
+    spaceBefore: normalizedPointSpacing(spacing.before),
+    spaceAfter: normalizedPointSpacing(spacing.after),
+    lineHeight,
+    lineRule:
+      normalizedLineRule(spacing.lineRule) ??
+      (lineHeight ? lineRuleForLineHeight(lineHeight) : null),
+  };
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  for (const nodeType of nodeTypes) {
+    commandChain = commandChain.updateAttributes(nodeType, attributes);
+  }
+  return commandChain.run();
+}
+
+function clearDocumentFormattingCommand({
+  chain,
+  editor,
+}: CommandProps): boolean {
+  let commandChain = chain().focus().unsetAllMarks();
+  if (!editor.isActive('listItem')) commandChain = commandChain.setParagraph();
+  return commandChain
     .unsetTextAlign()
     .updateAttributes('paragraph', {
       indentLevel: 0,

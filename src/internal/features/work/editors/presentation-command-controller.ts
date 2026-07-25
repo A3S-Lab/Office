@@ -1,159 +1,327 @@
-import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
-import type { WorkSlideElement, WorkSlideTransition } from '../work-types';
-import type { PresentationDistribution } from './presentation-selection';
+import { hasPresentationClipboard } from '../work-presentation-clipboard';
+import {
+  createOfficeEditorExtension,
+  type OfficeEditorExtension,
+} from './office-editor-extension';
+import type {
+  PresentationCommandContext,
+  PresentationEditorCommands,
+} from './presentation-command-types';
+import { createPresentationKeyboardExtension } from './presentation-keyboard-extension';
 
-export type PresentationViewMode = 'normal' | 'sorter';
-
-export type PresentationEditorCommand =
-  | { type: 'chart.add' }
-  | { type: 'clipboard.copy' }
-  | { type: 'clipboard.cut' }
-  | { type: 'clipboard.paste' }
-  | { type: 'comment.add' }
-  | { type: 'comments.toggle' }
-  | { type: 'design.toggle' }
-  | {
-      type: 'element.add';
-      elementType: 'shape' | 'text';
-    }
-  | {
-      type: 'element.align';
-      alignment: OfficeKernelPresentationAlignment;
-    }
-  | {
-      type: 'element.distribute';
-      direction: PresentationDistribution;
-    }
-  | { type: 'element.group' }
-  | {
-      type: 'element.reorder';
-      direction: -1 | 1;
-    }
-  | { type: 'element.ungroup' }
-  | {
-      type: 'element.update';
-      patch: Partial<WorkSlideElement>;
-      restoreTextFocus?: boolean;
-    }
-  | { type: 'history.redo' }
-  | { type: 'history.undo' }
-  | { type: 'image.request' }
-  | { type: 'slide.add' }
-  | { type: 'slide.delete' }
-  | { type: 'slide.duplicate' }
-  | { type: 'slide.background.set'; color: string }
-  | { type: 'slideshow.start' }
-  | { type: 'table.add' }
-  | {
-      type: 'transition.set';
-      transition: WorkSlideTransition | undefined;
-    }
-  | { type: 'transition.applyToAll' }
-  | { type: 'view.set'; mode: PresentationViewMode };
-
-export type PresentationCommandResult = boolean | void | Promise<void>;
-
-export interface PresentationCommandHandlers {
-  addChart: () => PresentationCommandResult;
-  addComment: () => PresentationCommandResult;
-  addElement: (type: 'shape' | 'text') => PresentationCommandResult;
-  addSlide: () => PresentationCommandResult;
-  addTable: () => PresentationCommandResult;
-  alignElement: (
-    alignment: OfficeKernelPresentationAlignment,
-  ) => PresentationCommandResult;
-  applyTransitionToAll: () => PresentationCommandResult;
-  copySelection: () => PresentationCommandResult;
-  cutSelection: () => PresentationCommandResult;
-  deleteSlide: () => PresentationCommandResult;
-  distributeElements: (
-    direction: PresentationDistribution,
-  ) => PresentationCommandResult;
-  duplicateSlide: () => PresentationCommandResult;
-  groupElements: () => PresentationCommandResult;
-  pasteSelection: () => PresentationCommandResult;
-  redo: () => PresentationCommandResult;
-  reorderElement: (direction: -1 | 1) => PresentationCommandResult;
-  requestImage: () => PresentationCommandResult;
-  setBackground: (color: string) => PresentationCommandResult;
-  setTransition: (
-    transition: WorkSlideTransition | undefined,
-  ) => PresentationCommandResult;
-  setViewMode: (mode: PresentationViewMode) => PresentationCommandResult;
-  startSlideshow: () => PresentationCommandResult;
-  toggleComments: () => PresentationCommandResult;
-  toggleDesign: () => PresentationCommandResult;
-  ungroupElements: () => PresentationCommandResult;
-  undo: () => PresentationCommandResult;
-  updateElement: (
-    patch: Partial<WorkSlideElement>,
-    options: { restoreTextFocus?: boolean },
-  ) => PresentationCommandResult;
-}
-
-export type PresentationCommandDispatcher = (
-  command: PresentationEditorCommand,
-) => PresentationCommandResult;
-
-export function createPresentationCommandDispatcher(
-  handlers: PresentationCommandHandlers,
-): PresentationCommandDispatcher {
-  return (command) => {
-    switch (command.type) {
-      case 'chart.add':
-        return handlers.addChart();
-      case 'clipboard.copy':
-        return handlers.copySelection();
-      case 'clipboard.cut':
-        return handlers.cutSelection();
-      case 'clipboard.paste':
-        return handlers.pasteSelection();
-      case 'comment.add':
-        return handlers.addComment();
-      case 'comments.toggle':
-        return handlers.toggleComments();
-      case 'design.toggle':
-        return handlers.toggleDesign();
-      case 'element.add':
-        return handlers.addElement(command.elementType);
-      case 'element.align':
-        return handlers.alignElement(command.alignment);
-      case 'element.distribute':
-        return handlers.distributeElements(command.direction);
-      case 'element.group':
-        return handlers.groupElements();
-      case 'element.reorder':
-        return handlers.reorderElement(command.direction);
-      case 'element.ungroup':
-        return handlers.ungroupElements();
-      case 'element.update':
-        return handlers.updateElement(command.patch, {
-          restoreTextFocus: command.restoreTextFocus,
-        });
-      case 'history.redo':
-        return handlers.redo();
-      case 'history.undo':
-        return handlers.undo();
-      case 'image.request':
-        return handlers.requestImage();
-      case 'slide.add':
-        return handlers.addSlide();
-      case 'slide.delete':
-        return handlers.deleteSlide();
-      case 'slide.duplicate':
-        return handlers.duplicateSlide();
-      case 'slide.background.set':
-        return handlers.setBackground(command.color);
-      case 'slideshow.start':
-        return handlers.startSlideshow();
-      case 'table.add':
-        return handlers.addTable();
-      case 'transition.set':
-        return handlers.setTransition(command.transition);
-      case 'transition.applyToAll':
-        return handlers.applyTransitionToAll();
-      case 'view.set':
-        return handlers.setViewMode(command.mode);
-    }
-  };
+export function createPresentationEditorExtensions(): readonly OfficeEditorExtension<
+  PresentationCommandContext,
+  PresentationEditorCommands
+>[] {
+  return [
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationDocument',
+      addCommands: () => ({
+        setPresentationContent: {
+          execute: ({ document }, content) => document.setContent(content),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationHistory',
+      addCommands: () => ({
+        redo: {
+          canExecute: ({ history }) => history.canRedo,
+          execute: ({ history }) => history.redo(),
+        },
+        undo: {
+          canExecute: ({ history }) => history.canUndo,
+          execute: ({ history }) => history.undo(),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands,
+      { hasContent: boolean }
+    >({
+      name: 'presentationClipboard',
+      addStorage: () => ({
+        hasContent: hasPresentationClipboard(),
+      }),
+      addCommands: ({ storage }) => ({
+        copySelection: {
+          canExecute: ({ clipboard }) => clipboard.canCopySelection,
+          execute: ({ clipboard }) => {
+            const copied = clipboard.copySelection();
+            if (copied) storage.hasContent = true;
+            return copied;
+          },
+        },
+        cutSelection: {
+          canExecute: ({ clipboard }) => clipboard.canCutSelection,
+          execute: ({ clipboard }) => {
+            const cut = clipboard.cutSelection();
+            if (cut) storage.hasContent = true;
+            return cut;
+          },
+        },
+        pasteSelection: {
+          canExecute: ({ clipboard }) =>
+            clipboard.canPasteSelection &&
+            (storage.hasContent || hasPresentationClipboard()),
+          execute: ({ clipboard }) => clipboard.pasteSelection(),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationSlides',
+      addCommands: () => ({
+        addSlide: {
+          execute: ({ slides }) => slides.addSlide(),
+        },
+        applyTransitionToAll: {
+          execute: ({ slides }) => slides.applyTransitionToAll(),
+        },
+        deleteSlide: {
+          canExecute: ({ slides }) => slides.canDeleteSlide,
+          execute: ({ slides }) => slides.deleteSlide(),
+        },
+        deleteSlideById: {
+          canExecute: ({ slides }) => slides.canDeleteSlide,
+          execute: ({ slides }, slideId) => slides.deleteSlideById(slideId),
+        },
+        duplicateSlide: {
+          canExecute: ({ slides }) => slides.canDuplicateSlide,
+          execute: ({ slides }) => slides.duplicateSlide(),
+        },
+        selectSlide: {
+          execute: ({ slides }, slideId, returnToSlideMode = false) =>
+            slides.selectSlide(slideId, returnToSlideMode),
+        },
+        setBackground: {
+          execute: ({ slides }, color) => slides.setBackground(color),
+        },
+        setTransition: {
+          execute: ({ slides }, transition) => slides.setTransition(transition),
+        },
+        updateNotes: {
+          execute: ({ slides }, notes) => slides.updateNotes(notes),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationElements',
+      addCommands: () => ({
+        alignElement: {
+          canExecute: ({ elements }) => elements.canAlignElement,
+          execute: ({ elements }, alignment) =>
+            elements.alignElement(alignment),
+        },
+        distributeElements: {
+          canExecute: ({ elements }) => elements.canDistributeElements,
+          execute: ({ elements }, direction) =>
+            elements.distributeElements(direction),
+        },
+        groupElements: {
+          canExecute: ({ elements }) => elements.canGroupElements,
+          execute: ({ elements }) => elements.groupElements(),
+        },
+        reorderElement: {
+          canExecute: ({ elements }) => elements.canReorderElement,
+          execute: ({ elements }, direction) =>
+            elements.reorderElement(direction),
+        },
+        ungroupElements: {
+          canExecute: ({ elements }) => elements.canUngroupElements,
+          execute: ({ elements }) => elements.ungroupElements(),
+        },
+        updateElement: {
+          canExecute: ({ elements }) => elements.canUpdateElement,
+          execute: ({ elements }, patch, options = {}) =>
+            elements.updateElement(patch, options),
+        },
+        updateTextElement: {
+          execute: ({ elements }, elementId, value) =>
+            elements.updateTextElement(elementId, value),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationDesign',
+      addCommands: () => ({
+        addDesignPlaceholder: {
+          execute: ({ design }, type) => design.addPlaceholder(type),
+        },
+        applyPresentationLayout: {
+          execute: ({ design }, layoutId) => design.applyLayout(layoutId),
+        },
+        closeDesign: {
+          execute: ({ design }) => design.close(),
+        },
+        createPresentationLayout: {
+          execute: ({ design }, copyCurrent) =>
+            design.createLayout(copyCurrent),
+        },
+        deletePresentationLayout: {
+          canExecute: ({ design }) => design.canDeleteLayout,
+          execute: ({ design }) => design.deleteLayout(),
+        },
+        editDesign: {
+          execute: ({ design }, mode) => design.edit(mode),
+        },
+        renamePresentationLayout: {
+          execute: ({ design }, name) => design.renameLayout(name),
+        },
+        renamePresentationMaster: {
+          execute: ({ design }, name) => design.renameMaster(name),
+        },
+        setPresentationLayoutBackground: {
+          execute: ({ design }, color) => design.setLayoutBackground(color),
+        },
+        setPresentationMasterBackground: {
+          execute: ({ design }, color) => design.setMasterBackground(color),
+        },
+        togglePresentationLayoutBackground: {
+          execute: ({ design }, enabled) =>
+            design.toggleLayoutBackground(enabled),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationInsert',
+      addCommands: () => ({
+        addChart: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }) => insert.addChart(),
+        },
+        addElement: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }, type) => insert.addElement(type),
+        },
+        addImage: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }, file) => insert.addImage(file),
+        },
+        addTable: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }) => insert.addTable(),
+        },
+        instantiatePlaceholder: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }, definition) =>
+            insert.instantiatePlaceholder(definition),
+        },
+        requestImage: {
+          canExecute: ({ insert }) => insert.enabled,
+          execute: ({ insert }) => insert.requestImage(),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationSelection',
+      addCommands: () => ({
+        deleteSelection: {
+          canExecute: ({ selection }) => selection.canDeleteSelection,
+          execute: ({ selection }) => selection.deleteSelection(),
+        },
+        duplicateSelection: {
+          canExecute: ({ selection }) => selection.canDuplicateSelection,
+          execute: ({ selection }) => selection.duplicateSelection(),
+        },
+        editElement: {
+          canExecute: ({ selection }, id) => selection.canEditElement(id),
+          execute: ({ selection }, id) => selection.editElement(id),
+        },
+        exitEditing: {
+          canExecute: ({ selection }) => selection.canExitEditing,
+          execute: ({ selection }) => selection.exitEditing(),
+        },
+        nudgeSelection: {
+          canExecute: ({ selection }) => selection.canNudgeSelection,
+          execute: ({ selection }, key, distance) =>
+            selection.nudgeSelection(key, distance),
+        },
+        selectElement: {
+          execute: ({ selection }, elementId, additive = false) =>
+            selection.selectElement(elementId, additive),
+        },
+        selectElements: {
+          execute: ({ selection }, ids) => selection.selectElements(ids),
+        },
+        toggleBold: {
+          canExecute: ({ selection }) => selection.canToggleBold,
+          execute: ({ selection }) => selection.toggleBold(),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationReview',
+      addCommands: () => ({
+        addComment: {
+          canExecute: ({ review }) => review.canAddComment,
+          execute: ({ review }) => review.addComment(),
+        },
+        closeComments: {
+          execute: ({ review }) => review.closeComments(),
+        },
+        deletePresentationComment: {
+          execute: ({ review }, slideId, commentId) =>
+            review.deleteComment(slideId, commentId),
+        },
+        locatePresentationComment: {
+          execute: ({ review }, slideId, commentId) =>
+            review.locateComment(slideId, commentId),
+        },
+        openComment: {
+          execute: ({ review }, commentId) => review.openComment(commentId),
+        },
+        toggleComments: {
+          execute: ({ review }) => review.toggleComments(),
+        },
+        updatePresentationComment: {
+          execute: ({ review }, slideId, commentId, text) =>
+            review.updateComment(slideId, commentId, text),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      PresentationCommandContext,
+      PresentationEditorCommands
+    >({
+      name: 'presentationView',
+      addCommands: () => ({
+        setViewMode: {
+          execute: ({ view }, mode) => view.setViewMode(mode),
+        },
+        startSlideshow: {
+          canExecute: ({ view }) => view.canStartSlideshow,
+          execute: ({ view }) => view.startSlideshow(),
+        },
+        toggleDesign: {
+          execute: ({ view }) => view.toggleDesign(),
+        },
+      }),
+    }),
+    createPresentationKeyboardExtension(),
+  ];
 }

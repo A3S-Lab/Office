@@ -19,6 +19,21 @@ export interface DocumentTabStop {
   leader: DocumentTabLeader;
 }
 
+export interface DocumentTabStopCommandOptions {
+  restoreFocus?: boolean;
+}
+
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentParagraphTabStops: {
+      setDocumentParagraphTabStops: (
+        tabStops: readonly DocumentTabStop[],
+        options?: DocumentTabStopCommandOptions,
+      ) => ReturnType;
+    };
+  }
+}
+
 export const DocumentParagraphTabStops = Extension.create({
   name: 'documentParagraphTabStops',
 
@@ -45,6 +60,28 @@ export const DocumentParagraphTabStops = Extension.create({
       },
     ];
   },
+
+  addCommands() {
+    return {
+      setDocumentParagraphTabStops:
+        (tabStops, options = {}) =>
+        ({ chain, editor }) => {
+          const nodeTypes = activeParagraphNodeTypes(editor);
+          if (!nodeTypes.length) return false;
+          const normalized = normalizeDocumentTabStops(tabStops);
+          let commandChain = chain();
+          if (options.restoreFocus !== false) {
+            commandChain = commandChain.focus();
+          }
+          for (const nodeType of nodeTypes) {
+            commandChain = commandChain.updateAttributes(nodeType, {
+              tabStops: normalized.length ? normalized : null,
+            });
+          }
+          return commandChain.run();
+        },
+    };
+  },
 });
 
 export function documentParagraphTabStops(editor: Editor): DocumentTabStop[] {
@@ -54,19 +91,9 @@ export function documentParagraphTabStops(editor: Editor): DocumentTabStop[] {
 export function setDocumentParagraphTabStops(
   editor: Editor,
   tabStops: readonly DocumentTabStop[],
-  options: { restoreFocus?: boolean } = {},
+  options: DocumentTabStopCommandOptions = {},
 ): boolean {
-  const nodeTypes = activeParagraphNodeTypes(editor);
-  if (!nodeTypes.length) return false;
-  const normalized = normalizeDocumentTabStops(tabStops);
-  const chain = editor.chain();
-  if (options.restoreFocus !== false) chain.focus();
-  for (const nodeType of nodeTypes) {
-    chain.updateAttributes(nodeType, {
-      tabStops: normalized.length ? normalized : null,
-    });
-  }
-  return chain.run();
+  return editor.commands.setDocumentParagraphTabStops(tabStops, options);
 }
 
 export function normalizeDocumentTabStops(value: unknown): DocumentTabStop[] {

@@ -1,6 +1,10 @@
+import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   appendDocumentCommentReply,
+  canInsertDocumentComment,
+  documentCommentDraftRange,
   removeDocumentCommentRecord,
   toggleDocumentCommentResolved,
 } from '../src/internal/features/work/work-document-comments';
@@ -51,4 +55,57 @@ test('leaves unrelated document comments unchanged', () => {
   ).toEqual(source);
   expect(toggleDocumentCommentResolved(source, 'missing')).toEqual(source);
   expect(removeDocumentCommentRecord(source, 'missing')).toEqual(source);
+});
+
+test('keeps a comment draft anchored to its original text range', () => {
+  const element = document.createElement('div');
+  document.body.append(element);
+  const editor = new Editor({
+    element,
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Alpha beta gamma</p>',
+  });
+
+  try {
+    expect(canInsertDocumentComment(editor)).toBe(false);
+    editor.commands.setTextSelection({ from: 1, to: 6 });
+    expect(canInsertDocumentComment(editor)).toBe(true);
+    expect(editor.commands.showDocumentCommentDraft({ from: 1, to: 6 })).toBe(
+      true,
+    );
+    expect(documentCommentDraftRange(editor)).toEqual({ from: 1, to: 6 });
+    expect(
+      editor.view.dom.querySelector('[data-document-comment-draft]'),
+    ).toHaveTextContent('Alpha');
+
+    editor.commands.setTextSelection({ from: 7, to: 11 });
+    expect(
+      editor.commands.insertDocumentComment({
+        id: 'comment-1',
+        range: documentCommentDraftRange(editor) ?? undefined,
+      }),
+    ).toBe(true);
+    expect(editor.getHTML()).toContain(
+      '<span data-comment-id="comment-1" data-document-comment="true">Alpha</span>',
+    );
+    expect(editor.getHTML()).not.toContain(
+      'data-document-comment="true">beta</span>',
+    );
+    expect(documentCommentDraftRange(editor)).toBeNull();
+
+    editor.commands.setTextSelection({ from: 1, to: 6 });
+    expect(canInsertDocumentComment(editor)).toBe(false);
+    expect(editor.commands.removeDocumentComment('comment-1')).toBe(true);
+    expect(editor.getHTML()).not.toContain('data-document-comment="true"');
+
+    editor.commands.setTextSelection({ from: 7, to: 11 });
+    expect(editor.commands.showDocumentCommentDraft({ from: 7, to: 11 })).toBe(
+      true,
+    );
+    expect(editor.commands.clearDocumentCommentDraft()).toBe(true);
+    expect(documentCommentDraftRange(editor)).toBeNull();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
 });

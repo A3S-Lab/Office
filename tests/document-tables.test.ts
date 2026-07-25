@@ -3,16 +3,13 @@ import { describe, expect, test } from '@rstest/core';
 import { waitFor } from '@testing-library/react';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
-  applyDocumentPagination,
   DocumentPagination,
   measureDocumentLayoutBlocks,
 } from '../src/internal/features/work/work-document-pagination';
 import {
   canSetDocumentTableRowRepeatHeader,
   documentTableRowOptions,
-  setDocumentTableRowOptions,
 } from '../src/internal/features/work/work-document-table-row';
-import { insertDocumentTable } from '../src/internal/features/work/work-document-table-commands';
 
 function createTableEditor(): Editor {
   return new Editor({
@@ -53,7 +50,7 @@ describe('document tables', () => {
     editor.on('update', countUpdate);
 
     expect(
-      insertDocumentTable(editor, {
+      editor.commands.insertDocumentTable({
         rows: 2,
         columns: 4,
       }),
@@ -95,8 +92,7 @@ describe('document tables', () => {
     editor.commands.setTextSelection(4);
 
     expect(
-      setDocumentTableRowOptions(
-        editor,
+      editor.commands.setDocumentTableRowOptions(
         { cantSplit: false, repeatHeader: false },
         { restoreFocus: false },
       ),
@@ -235,7 +231,7 @@ describe('document tables', () => {
     if (!fragment?.tableBreak?.cellBreaks) {
       throw new Error('Expected a fragmented table row.');
     }
-    applyDocumentPagination(editor, 1, [
+    editor.commands.applyDocumentPagination(1, [
       {
         beforeBlockId: fragment.block.id,
         pageIndex: 1,

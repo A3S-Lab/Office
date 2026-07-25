@@ -1,4 +1,4 @@
-import { Extension, type Editor } from '@tiptap/core';
+import { Extension } from '@tiptap/core';
 import {
   Plugin,
   PluginKey,
@@ -53,8 +53,53 @@ interface DocumentPaginationMeta {
 const documentPaginationPluginKey =
   new PluginKey<DocumentPaginationPluginState>('documentPagination');
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    documentPagination: {
+      applyDocumentPagination: (
+        revision: number,
+        breaks: DocumentPaginationVisualBreak[],
+      ) => ReturnType;
+      clearDocumentPagination: (revision: number) => ReturnType;
+    };
+  }
+}
+
 export const DocumentPagination = Extension.create({
   name: 'documentPagination',
+
+  addCommands() {
+    return {
+      applyDocumentPagination:
+        (revision, breaks) =>
+        ({ tr }) => {
+          tr.setMeta(documentPaginationPluginKey, {
+            kind: 'apply',
+            revision,
+            breaks,
+          } satisfies DocumentPaginationMeta);
+          tr.setMeta('addToHistory', false);
+          return true;
+        },
+      clearDocumentPagination:
+        (revision) =>
+        ({ state, tr }) => {
+          const current = documentPaginationState(state);
+          if (
+            !current.decorations.find().length &&
+            current.revision === revision
+          ) {
+            return false;
+          }
+          tr.setMeta(documentPaginationPluginKey, {
+            kind: 'clear',
+            revision,
+          } satisfies DocumentPaginationMeta);
+          tr.setMeta('addToHistory', false);
+          return true;
+        },
+    };
+  },
 
   addProseMirrorPlugins() {
     return [
@@ -123,41 +168,6 @@ export const DocumentPagination = Extension.create({
     ];
   },
 });
-
-export function clearDocumentPagination(
-  editor: Editor,
-  revision: number,
-): void {
-  if (editor.isDestroyed) return;
-  const current = documentPaginationState(editor.state);
-  if (!current.decorations.find().length && current.revision === revision)
-    return;
-  editor.view.dispatch(
-    editor.state.tr
-      .setMeta(documentPaginationPluginKey, {
-        kind: 'clear',
-        revision,
-      } satisfies DocumentPaginationMeta)
-      .setMeta('addToHistory', false),
-  );
-}
-
-export function applyDocumentPagination(
-  editor: Editor,
-  revision: number,
-  breaks: DocumentPaginationVisualBreak[],
-): void {
-  if (editor.isDestroyed) return;
-  editor.view.dispatch(
-    editor.state.tr
-      .setMeta(documentPaginationPluginKey, {
-        kind: 'apply',
-        revision,
-        breaks,
-      } satisfies DocumentPaginationMeta)
-      .setMeta('addToHistory', false),
-  );
-}
 
 function documentPaginationState(
   state: EditorState,

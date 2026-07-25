@@ -1,7 +1,7 @@
 import type { OfficeKernelPresentationAlignment } from '../../../kernel/office-kernel-protocol';
 import type { WorkPresentationContent, WorkSlideElement } from '../work-types';
 import { presentationSelectionUnits } from '../work-presentation-groups';
-import type { PresentationDesignMode } from './presentation-design-panel';
+import type { PresentationDesignMode } from './presentation-editor-types';
 import { updatePresentationElements } from './presentation-editor-operations';
 import {
   alignPresentationSelection,

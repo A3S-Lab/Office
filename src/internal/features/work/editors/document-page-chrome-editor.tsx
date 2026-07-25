@@ -27,9 +27,12 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DocumentSubscript,
   DocumentSuperscript,
-  toggleDocumentSubscript,
-  toggleDocumentSuperscript,
 } from '../work-document-character-formatting';
+import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
+import {
+  DocumentPageChromeCommands,
+  normalizeDocumentPageChromeHref,
+} from '../work-document-page-chrome-commands';
 import { sanitizeDocumentPageChromeHtml } from '../work-document-page-chrome';
 import {
   OfficeColorPicker,
@@ -42,19 +45,6 @@ export type DocumentPageChromeAlignment =
   | 'justify'
   | 'left'
   | 'right';
-
-export type DocumentPageChromeEditorCommand =
-  | { type: 'insertImage'; alt: string; source: string }
-  | { type: 'redo' }
-  | { type: 'setAlignment'; alignment: DocumentPageChromeAlignment }
-  | { type: 'setColor'; color: string }
-  | { type: 'setLink'; href: string | null }
-  | { type: 'toggleBold' }
-  | { type: 'toggleItalic' }
-  | { type: 'toggleSubscript' }
-  | { type: 'toggleSuperscript' }
-  | { type: 'toggleUnderline' }
-  | { type: 'undo' };
 
 export interface DocumentPageChromeEditorState {
   alignment: DocumentPageChromeAlignment;
@@ -163,38 +153,30 @@ export function DocumentPageChromeRichTextEditor({
   }, [autoFocus, editor]);
 
   const state = editor ? documentPageChromeEditorState(editor) : null;
-  const run = (command: DocumentPageChromeEditorCommand) => {
-    if (editor) applyDocumentPageChromeEditorCommand(editor, command);
-  };
   const editLink = async () => {
     if (!editor) return;
     if (documentPageChromeEditorState(editor).link) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'setLink',
-        href: null,
-      });
+      editor.chain().focus().setDocumentPageChromeLink(null).run();
       return;
     }
     const href = await officeDialog.prompt({
-      title: '链接地址',
+      title: '添加链接',
+      fieldLabel: '链接地址',
       initialValue: 'https://',
       placeholder: 'https://',
+      inputMode: 'url',
       confirmLabel: '添加链接',
+      required: '请输入链接地址。',
+      validate: (value) =>
+        normalizeDocumentPageChromeHref(value)
+          ? null
+          : DOCUMENT_LINK_VALIDATION_MESSAGE,
+      restoreFocusTarget: () => editor.view.dom,
     });
     if (href === null) return;
     const normalized = normalizeDocumentPageChromeHref(href);
-    if (!normalized) {
-      await officeDialog.notice({
-        title: '无法添加链接',
-        description: '请输入 http、https、mailto 或文档内 # 锚点地址。',
-      });
-      return;
-    }
-    if (!editor.isDestroyed) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'setLink',
-        href: normalized,
-      });
+    if (normalized && !editor.isDestroyed) {
+      editor.chain().focus().setDocumentPageChromeLink(normalized).run();
     }
   };
   const insertImage = async (file: File | undefined) => {
@@ -208,11 +190,14 @@ export function DocumentPageChromeRichTextEditor({
       return;
     }
     if (!editor.isDestroyed) {
-      applyDocumentPageChromeEditorCommand(editor, {
-        type: 'insertImage',
-        alt: image.alt,
-        source: image.source,
-      });
+      editor
+        .chain()
+        .focus()
+        .insertDocumentPageChromeImage({
+          alt: image.alt,
+          source: image.source,
+        })
+        .run();
     }
   };
 
@@ -232,56 +217,62 @@ export function DocumentPageChromeRichTextEditor({
               <PageChromeButton
                 label={`${label}撤销`}
                 disabled={!state?.canUndo}
-                onClick={() => run({ type: 'undo' })}
+                onClick={() => editor?.chain().focus().undo().run()}
               >
                 <Undo2 size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}重做`}
                 disabled={!state?.canRedo}
-                onClick={() => run({ type: 'redo' })}
+                onClick={() => editor?.chain().focus().redo().run()}
               >
                 <Redo2 size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}加粗`}
                 active={state?.bold}
-                onClick={() => run({ type: 'toggleBold' })}
+                onClick={() => editor?.chain().focus().toggleBold().run()}
               >
                 <Bold size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}斜体`}
                 active={state?.italic}
-                onClick={() => run({ type: 'toggleItalic' })}
+                onClick={() => editor?.chain().focus().toggleItalic().run()}
               >
                 <Italic size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}下划线`}
                 active={state?.underline}
-                onClick={() => run({ type: 'toggleUnderline' })}
+                onClick={() => editor?.chain().focus().toggleUnderline().run()}
               >
                 <UnderlineIcon size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}下标`}
                 active={state?.subscript}
-                onClick={() => run({ type: 'toggleSubscript' })}
+                onClick={() =>
+                  editor?.chain().focus().toggleDocumentSubscript().run()
+                }
               >
                 <SubscriptIcon size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}上标`}
                 active={state?.superscript}
-                onClick={() => run({ type: 'toggleSuperscript' })}
+                onClick={() =>
+                  editor?.chain().focus().toggleDocumentSuperscript().run()
+                }
               >
                 <SuperscriptIcon size={14} />
               </PageChromeButton>
               <PageChromeButton
                 label={`${label}左对齐`}
                 active={state?.alignment === 'left'}
-                onClick={() => run({ type: 'setAlignment', alignment: 'left' })}
+                onClick={() =>
+                  editor?.chain().focus().setTextAlign('left').run()
+                }
               >
                 <AlignLeft size={14} />
               </PageChromeButton>
@@ -289,7 +280,7 @@ export function DocumentPageChromeRichTextEditor({
                 label={`${label}居中`}
                 active={state?.alignment === 'center'}
                 onClick={() =>
-                  run({ type: 'setAlignment', alignment: 'center' })
+                  editor?.chain().focus().setTextAlign('center').run()
                 }
               >
                 <AlignCenter size={14} />
@@ -298,7 +289,7 @@ export function DocumentPageChromeRichTextEditor({
                 label={`${label}右对齐`}
                 active={state?.alignment === 'right'}
                 onClick={() =>
-                  run({ type: 'setAlignment', alignment: 'right' })
+                  editor?.chain().focus().setTextAlign('right').run()
                 }
               >
                 <AlignRight size={14} />
@@ -307,7 +298,7 @@ export function DocumentPageChromeRichTextEditor({
                 label={`${label}两端对齐`}
                 active={state?.alignment === 'justify'}
                 onClick={() =>
-                  run({ type: 'setAlignment', alignment: 'justify' })
+                  editor?.chain().focus().setTextAlign('justify').run()
                 }
               >
                 <AlignJustify size={14} />
@@ -324,7 +315,9 @@ export function DocumentPageChromeRichTextEditor({
                 className="work-document-page-chrome-color"
                 ariaLabel={`${label}文字颜色`}
                 value={pageChromePickerColor(state?.color)}
-                onValueChange={(color) => run({ type: 'setColor', color })}
+                onValueChange={(color) =>
+                  editor?.chain().focus().setColor(color).run()
+                }
               />
               <PageChromeButton
                 label={`${label}插入图片`}
@@ -388,6 +381,7 @@ export function createDocumentPageChromeEditorExtensions(
     Underline,
     DocumentSubscript,
     DocumentSuperscript,
+    DocumentPageChromeCommands,
     TextAlign.configure({ types: ['paragraph'] }),
     Placeholder.configure({ placeholder }),
   ];
@@ -424,54 +418,7 @@ export function documentPageChromeEditorState(
   };
 }
 
-export function applyDocumentPageChromeEditorCommand(
-  editor: Editor,
-  command: DocumentPageChromeEditorCommand,
-): boolean {
-  if (editor.isDestroyed) return false;
-  switch (command.type) {
-    case 'insertImage':
-      if (!isDocumentPageChromeImageSource(command.source)) return false;
-      return editor
-        .chain()
-        .focus()
-        .setImage({
-          src: command.source,
-          alt: command.alt.trim() || 'Image',
-          title: command.alt.trim() || undefined,
-        })
-        .run();
-    case 'redo':
-      return editor.chain().focus().redo().run();
-    case 'setAlignment':
-      return editor.chain().focus().setTextAlign(command.alignment).run();
-    case 'setColor':
-      return editor.chain().focus().setColor(command.color).run();
-    case 'setLink': {
-      const chain = editor.chain().focus().extendMarkRange('link');
-      if (command.href === null) return chain.unsetLink().run();
-      const href = normalizeDocumentPageChromeHref(command.href);
-      return href ? chain.setLink({ href }).run() : false;
-    }
-    case 'toggleBold':
-      return editor.chain().focus().toggleBold().run();
-    case 'toggleItalic':
-      return editor.chain().focus().toggleItalic().run();
-    case 'toggleSubscript':
-      return toggleDocumentSubscript(editor);
-    case 'toggleSuperscript':
-      return toggleDocumentSuperscript(editor);
-    case 'toggleUnderline':
-      return editor.chain().focus().toggleUnderline().run();
-    case 'undo':
-      return editor.chain().focus().undo().run();
-  }
-}
-
-export function normalizeDocumentPageChromeHref(value: string): string | null {
-  const href = value.trim();
-  return /^(?:https?:|mailto:|#)/i.test(href) ? href : null;
-}
+export { normalizeDocumentPageChromeHref };
 
 export type DocumentPageChromeImageLoadResult =
   | { ok: true; alt: string; source: string }
@@ -503,10 +450,6 @@ export async function loadDocumentPageChromeImage(
       description: '请重新选择本机图片文件。',
     };
   }
-}
-
-function isDocumentPageChromeImageSource(source: string): boolean {
-  return /^(?:https?:|blob:|data:image\/)/i.test(source.trim());
 }
 
 function pageChromePickerColor(color: string | undefined): string {

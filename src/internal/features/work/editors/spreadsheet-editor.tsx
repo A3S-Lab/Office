@@ -1,25 +1,6 @@
 import type { Hooks, Op, Selection } from '@fortune-sheet/core';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
-import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  BarChart3,
-  Bold,
-  Bookmark,
-  Calculator,
-  Cloud,
-  Grid3X3,
-  Italic,
-  Merge,
-  Palette,
-  Printer,
-  Redo2,
-  ShieldCheck,
-  TableProperties,
-  Underline,
-  Undo2,
-} from 'lucide-react';
+import { Cloud, Grid3X3 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { spreadsheetAgentMenuItems } from '../components/work-editor-agent-menus';
@@ -31,7 +12,6 @@ import {
 } from '../work-spreadsheet-agent-context';
 import {
   reconcileSpreadsheetChartPreviews,
-  spreadsheetChartCount,
   spreadsheetSheetsWithChartPreviews,
 } from '../work-spreadsheet-charts';
 import {
@@ -40,68 +20,46 @@ import {
 } from '../work-spreadsheet-conditional-canvas';
 import { spreadsheetConditionalFormatStyles } from '../work-spreadsheet-conditional-format';
 import { drawSpreadsheetConditionalIcon } from '../work-spreadsheet-conditional-icons';
-import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import {
   reconcileSpreadsheetPivots,
   refreshSpreadsheetPivotTables,
-  spreadsheetPivotCount,
   spreadsheetPivotIntersects,
   spreadsheetPivotOutputContains,
 } from '../work-spreadsheet-pivots';
-import {
-  protectedSheetCount,
-  spreadsheetProtectionKey,
-} from '../work-spreadsheet-protection';
+import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { OfficeColorPicker, OfficeSelect } from './office-controls';
-import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
-  executeSpreadsheetEditorCommand,
-  type SpreadsheetEditorCommand,
+  createSpreadsheetEditorExtensions,
+  type SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { managedConditionalFormatCount } from './spreadsheet-conditional-format-panel';
+import {
+  SpreadsheetEditorRibbon,
+  type SpreadsheetRibbonTabId,
+} from './spreadsheet-editor-ribbon';
 import {
   finiteSpreadsheetSelection,
-  isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
   spreadsheetCellAt,
-  spreadsheetFontSizeOptions,
-  spreadsheetFormulaBarSelectAllTarget,
   spreadsheetSelectionReference,
   spreadsheetSheetsForFortune,
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
-import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
 import { useOfficeHistory } from './use-office-history';
+import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
-  WorkOfficeRibbon,
-  WorkOfficeRibbonButton,
-  WorkOfficeRibbonGroup,
   WorkOfficeStatusBar,
   WorkOfficeZoomControls,
 } from './work-office-chrome';
-
-const spreadsheetRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'pageLayout', label: '页面布局' },
-  { id: 'formulas', label: '公式' },
-  { id: 'data', label: '数据' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
-] as const;
-
-type SpreadsheetRibbonTabId = (typeof spreadsheetRibbonTabs)[number]['id'];
 
 export interface SpreadsheetEditorProps {
   content: WorkSpreadsheetContent;
@@ -138,7 +96,7 @@ export function SpreadsheetEditor({
     [content],
   );
   const contentRef = useRef(materializedContent);
-  const onChangeRef = useRef(onChange);
+  const spreadsheetCommandsRef = useRef<SpreadsheetEditorCommands | null>(null);
   const previewRef = useRef(preview);
   const workbookRef = useRef<WorkbookInstance>(null);
   const {
@@ -171,7 +129,6 @@ export function SpreadsheetEditor({
     '';
   const activeSheetIdRef = useRef(activeSheetId);
   contentRef.current = materializedContent;
-  onChangeRef.current = onChange;
   previewRef.current = preview;
   const conditionalStylesBySheet = useMemo(
     () =>
@@ -272,15 +229,6 @@ export function SpreadsheetEditor({
     )
     .join('|');
   const protectionKey = spreadsheetProtectionKey(content.sheets);
-  const printSettingCount = spreadsheetPrintSettingCount(content);
-  const formulaCount = useMemo(
-    () => spreadsheetFormulaCount(materializedContent),
-    [materializedContent],
-  );
-  const pivotCount = useMemo(
-    () => spreadsheetPivotCount(materializedContent),
-    [materializedContent],
-  );
   const renderedWorkbookSheets = useMemo(
     () =>
       spreadsheetSheetsWithFiniteSelections(
@@ -325,7 +273,7 @@ export function SpreadsheetEditor({
       contentRef.current = next;
       acceptWorkbookContent(next);
       calculation.synchronizeWorkbook(next, operations);
-      onChangeRef.current(next);
+      spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
     },
     [acceptWorkbookContent, calculation, takeWorkbookOperations],
   );
@@ -377,64 +325,34 @@ export function SpreadsheetEditor({
   const multipleCellsSelected =
     selectedRange.row[0] !== selectedRange.row[1] ||
     selectedRange.column[0] !== selectedRange.column[1];
-  const dispatchSpreadsheetCommand = (
-    command: SpreadsheetEditorCommand,
-  ): boolean => {
-    return executeSpreadsheetEditorCommand(
-      {
-        activeSheetId,
-        calculation,
-        content: contentRef.current,
-        fallbackRange: selectedRange,
-        onChange: (next) => {
-          contentRef.current = next;
-          onChange(next);
-        },
-        selection: selectionState,
-        targetSheetId: toolbarSheetId,
-        workbook: workbookRef.current,
+  const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
+  const spreadsheetEditor = useOfficeEditorRuntime(
+    {
+      activeSheetId,
+      calculation,
+      content: contentRef.current,
+      editable: !preview,
+      fallbackRange: selectedRange,
+      history,
+      onChange: (next) => {
+        contentRef.current = next;
+        onChange(next);
       },
-      command,
-    );
-  };
-  const handleHistoryShortcut = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (
-      preview ||
-      event.defaultPrevented ||
-      event.repeat ||
-      event.altKey ||
-      isOfficeShortcutBlocked(event.target) ||
-      isSpreadsheetNativeTextUndoTarget(event.target) ||
-      !(event.metaKey || event.ctrlKey)
-    ) {
-      return;
-    }
-    const key = event.key.toLocaleLowerCase();
-    const handled =
-      key === 'z'
-        ? event.shiftKey
-          ? history.redo()
-          : history.undo()
-        : key === 'y' && !event.shiftKey && history.redo();
-    if (!handled) return;
-    event.preventDefault();
-    event.stopPropagation();
-  };
+      selection: selectionState,
+      targetSheetId: toolbarSheetId,
+      workbook: workbookRef.current,
+    },
+    spreadsheetExtensions,
+  );
+  const spreadsheetCommands = spreadsheetEditor.commands;
+  spreadsheetCommandsRef.current = spreadsheetCommands;
+  const spreadsheetCan = spreadsheetEditor.can();
   const handleSpreadsheetShortcut = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
-    const formulaBar = spreadsheetFormulaBarSelectAllTarget(event);
-    if (formulaBar) {
-      event.preventDefault();
+    if (spreadsheetEditor.handleKeyDown(event.nativeEvent)) {
       event.stopPropagation();
-      const selection = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(formulaBar);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-      return;
     }
-    handleHistoryShortcut(event);
   };
   return (
     <section
@@ -457,315 +375,23 @@ export function SpreadsheetEditor({
           </div>
         ))}
       {!preview && (
-        <WorkOfficeRibbon
-          ariaLabel="表格功能区"
-          tabs={spreadsheetRibbonTabs}
-          defaultTab="home"
+        <SpreadsheetEditorRibbon
           activeTab={ribbonTab}
+          can={spreadsheetCan}
+          commands={spreadsheetCommands}
+          content={content}
+          fileActions={fileActions}
+          gridLinesVisible={gridLinesVisible}
+          multipleCellsSelected={multipleCellsSelected}
           onTabChange={(tab) => {
             setRibbonTab(tab);
             setPanel(null);
           }}
-          fileActions={fileActions}
-          className="work-spreadsheet-ribbon"
-          toolbarClassName="work-spreadsheet-ribbon-toolbar"
-          panels={{
-            home: (
-              <>
-                <WorkOfficeRibbonGroup label="撤销与恢复">
-                  <WorkOfficeRibbonButton
-                    label="撤销"
-                    title="撤销（Cmd/Ctrl+Z）"
-                    aria-keyshortcuts="Control+Z Meta+Z"
-                    disabled={!history.canUndo}
-                    onClick={history.undo}
-                  >
-                    <Undo2 size={19} />
-                  </WorkOfficeRibbonButton>
-                  <WorkOfficeRibbonButton
-                    label="重做"
-                    title="重做（Cmd/Ctrl+Shift+Z）"
-                    aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
-                    disabled={!history.canRedo}
-                    onClick={history.redo}
-                  >
-                    <Redo2 size={19} />
-                  </WorkOfficeRibbonButton>
-                </WorkOfficeRibbonGroup>
-                <WorkOfficeRibbonGroup label="字体">
-                  <OfficeSelect
-                    ariaLabel="字号"
-                    value={String(toolbarCell?.fs ?? 10)}
-                    options={spreadsheetFontSizeOptions(toolbarCell?.fs)}
-                    onValueChange={(value) =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'fs',
-                        value: Number(value),
-                      })
-                    }
-                  />
-                  <WorkOfficeRibbonButton
-                    label="加粗"
-                    title="加粗（Cmd/Ctrl+B）"
-                    displayLabel={false}
-                    active={Number(toolbarCell?.bl) === 1}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'bl',
-                        value: Number(toolbarCell?.bl) === 1 ? 0 : 1,
-                      })
-                    }
-                  >
-                    <Bold size={15} />
-                  </WorkOfficeRibbonButton>
-                  <WorkOfficeRibbonButton
-                    label="斜体"
-                    title="斜体（Cmd/Ctrl+I）"
-                    displayLabel={false}
-                    active={Number(toolbarCell?.it) === 1}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'it',
-                        value: Number(toolbarCell?.it) === 1 ? 0 : 1,
-                      })
-                    }
-                  >
-                    <Italic size={15} />
-                  </WorkOfficeRibbonButton>
-                  <WorkOfficeRibbonButton
-                    label="下划线"
-                    title="下划线（Cmd/Ctrl+U）"
-                    displayLabel={false}
-                    active={Number(toolbarCell?.un) === 1}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'un',
-                        value: Number(toolbarCell?.un) === 1 ? 0 : 1,
-                      })
-                    }
-                  >
-                    <Underline size={15} />
-                  </WorkOfficeRibbonButton>
-                  <OfficeColorPicker
-                    compact
-                    className="work-color-tool"
-                    ariaLabel="文字颜色"
-                    value={
-                      typeof toolbarCell?.fc === 'string'
-                        ? toolbarCell.fc
-                        : '#172033'
-                    }
-                    onValueChange={(value) =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'fc',
-                        value,
-                      })
-                    }
-                  />
-                  <OfficeColorPicker
-                    compact
-                    className="work-color-tool work-spreadsheet-fill-color"
-                    ariaLabel="填充颜色"
-                    value={
-                      typeof toolbarCell?.bg === 'string'
-                        ? toolbarCell.bg
-                        : '#ffffff'
-                    }
-                    onValueChange={(value) =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'bg',
-                        value,
-                      })
-                    }
-                  />
-                </WorkOfficeRibbonGroup>
-                <WorkOfficeRibbonGroup label="对齐">
-                  <WorkOfficeRibbonButton
-                    label="左对齐"
-                    displayLabel={false}
-                    active={String(toolbarCell?.ht ?? '1') === '1'}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'ht',
-                        value: '1',
-                      })
-                    }
-                  >
-                    <AlignLeft size={15} />
-                  </WorkOfficeRibbonButton>
-                  <WorkOfficeRibbonButton
-                    label="居中"
-                    displayLabel={false}
-                    active={String(toolbarCell?.ht) === '0'}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'ht',
-                        value: '0',
-                      })
-                    }
-                  >
-                    <AlignCenter size={15} />
-                  </WorkOfficeRibbonButton>
-                  <WorkOfficeRibbonButton
-                    label="右对齐"
-                    displayLabel={false}
-                    active={String(toolbarCell?.ht) === '2'}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.format',
-                        attribute: 'ht',
-                        value: '2',
-                      })
-                    }
-                  >
-                    <AlignRight size={15} />
-                  </WorkOfficeRibbonButton>
-                </WorkOfficeRibbonGroup>
-                <WorkOfficeRibbonGroup label="单元格">
-                  <WorkOfficeRibbonButton
-                    label={toolbarCell?.mc ? '取消合并' : '合并单元格'}
-                    disabled={!toolbarCell?.mc && !multipleCellsSelected}
-                    onClick={() =>
-                      dispatchSpreadsheetCommand({
-                        type: 'cell.merge.toggle',
-                        merged: Boolean(toolbarCell?.mc),
-                      })
-                    }
-                  >
-                    <Merge size={19} />
-                  </WorkOfficeRibbonButton>
-                </WorkOfficeRibbonGroup>
-              </>
-            ),
-            insert: (
-              <>
-                <WorkOfficeRibbonGroup label="图表">
-                  <SpreadsheetRibbonTool
-                    label="插入图表"
-                    count={spreadsheetChartCount(content)}
-                    icon={<BarChart3 size={19} />}
-                    active={panel === 'charts'}
-                    onClick={() =>
-                      setPanel((value) =>
-                        value === 'charts' ? null : 'charts',
-                      )
-                    }
-                  />
-                </WorkOfficeRibbonGroup>
-                <WorkOfficeRibbonGroup label="样式">
-                  <SpreadsheetRibbonTool
-                    label="条件格式"
-                    count={managedConditionalFormatCount(content)}
-                    icon={<Palette size={19} />}
-                    active={panel === 'conditional-formatting'}
-                    onClick={() =>
-                      setPanel((value) =>
-                        value === 'conditional-formatting'
-                          ? null
-                          : 'conditional-formatting',
-                      )
-                    }
-                  />
-                </WorkOfficeRibbonGroup>
-              </>
-            ),
-            pageLayout: (
-              <WorkOfficeRibbonGroup label="页面设置">
-                <SpreadsheetRibbonTool
-                  label="打印设置"
-                  count={printSettingCount}
-                  icon={<Printer size={19} />}
-                  active={panel === 'print-area'}
-                  onClick={() =>
-                    setPanel((value) =>
-                      value === 'print-area' ? null : 'print-area',
-                    )
-                  }
-                />
-              </WorkOfficeRibbonGroup>
-            ),
-            formulas: (
-              <>
-                <WorkOfficeRibbonGroup label="定义的名称">
-                  <SpreadsheetRibbonTool
-                    label="名称管理器"
-                    count={content.namedRanges?.length ?? 0}
-                    icon={<Bookmark size={19} />}
-                    active={panel === 'names'}
-                    onClick={() =>
-                      setPanel((value) => (value === 'names' ? null : 'names'))
-                    }
-                  />
-                </WorkOfficeRibbonGroup>
-                <WorkOfficeRibbonGroup label="计算">
-                  <SpreadsheetRibbonTool
-                    label="公式与计算"
-                    count={formulaCount}
-                    icon={<Calculator size={19} />}
-                    active={panel === 'formulas'}
-                    onClick={() =>
-                      setPanel((value) =>
-                        value === 'formulas' ? null : 'formulas',
-                      )
-                    }
-                  />
-                </WorkOfficeRibbonGroup>
-              </>
-            ),
-            data: (
-              <WorkOfficeRibbonGroup label="分析">
-                <SpreadsheetRibbonTool
-                  label="数据透视表"
-                  count={pivotCount}
-                  icon={<TableProperties size={19} />}
-                  active={panel === 'pivots'}
-                  onClick={() =>
-                    setPanel((value) => (value === 'pivots' ? null : 'pivots'))
-                  }
-                />
-              </WorkOfficeRibbonGroup>
-            ),
-            review: (
-              <WorkOfficeRibbonGroup label="保护">
-                <SpreadsheetRibbonTool
-                  label="工作表保护"
-                  count={protectedSheetCount(content.sheets)}
-                  icon={<ShieldCheck size={19} />}
-                  active={panel === 'protection'}
-                  onClick={() =>
-                    setPanel((value) =>
-                      value === 'protection' ? null : 'protection',
-                    )
-                  }
-                />
-              </WorkOfficeRibbonGroup>
-            ),
-            view: (
-              <WorkOfficeRibbonGroup label="工作簿视图">
-                <WorkOfficeRibbonButton
-                  label={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
-                  visibleLabel="网格线"
-                  active={gridLinesVisible}
-                  onClick={() =>
-                    dispatchSpreadsheetCommand({
-                      type: 'sheet.gridLines.set',
-                      visible: !gridLinesVisible,
-                    })
-                  }
-                >
-                  <Grid3X3 size={19} />
-                </WorkOfficeRibbonButton>
-              </WorkOfficeRibbonGroup>
-            ),
-          }}
+          onTogglePanel={(nextPanel) =>
+            setPanel((current) => (current === nextPanel ? null : nextPanel))
+          }
+          panel={panel}
+          toolbarCell={toolbarCell}
         />
       )}
       {!preview && panel && (
@@ -778,13 +404,8 @@ export function SpreadsheetEditor({
               ? selectionState.selection
               : undefined
           }
-          onChange={onChange}
-          onRecalculate={(scope) =>
-            dispatchSpreadsheetCommand({
-              type: 'formula.recalculate',
-              scope,
-            })
-          }
+          can={spreadsheetCan}
+          commands={spreadsheetCommands}
           onClose={() => setPanel(null)}
         />
       )}
@@ -853,11 +474,7 @@ export function SpreadsheetEditor({
               sliderLabel="表格缩放"
               onChange={(nextZoom) => {
                 if (preview) setPreviewZoom(nextZoom);
-                else
-                  dispatchSpreadsheetCommand({
-                    type: 'sheet.zoom.set',
-                    percent: nextZoom,
-                  });
+                else spreadsheetCommands.setZoom(nextZoom);
               }}
             />
           </>
@@ -894,7 +511,7 @@ export function SpreadsheetEditor({
                 changes,
               );
               if (outcome.result.appliedTargetIds.length)
-                onChange(outcome.content);
+                spreadsheetCommands.setSpreadsheetContent(outcome.content);
               return outcome.result;
             },
           )}
@@ -902,31 +519,5 @@ export function SpreadsheetEditor({
         />
       )}
     </section>
-  );
-}
-
-function SpreadsheetRibbonTool({
-  label,
-  count,
-  icon,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  icon: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <WorkOfficeRibbonButton
-      label={`${label}（${count}）`}
-      visibleLabel={label}
-      badge={count}
-      active={active}
-      onClick={onClick}
-    >
-      {icon}
-    </WorkOfficeRibbonButton>
   );
 }

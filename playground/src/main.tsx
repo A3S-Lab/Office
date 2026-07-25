@@ -29,6 +29,7 @@ import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
 import './docs-pages.css';
+import './editor-api-reference.css';
 
 const IntegrationDocsPage = lazy(() =>
   import('./integration-docs-page').then((module) => ({

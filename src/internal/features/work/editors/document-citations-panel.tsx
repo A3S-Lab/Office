@@ -1,18 +1,7 @@
 import type { Editor } from '@tiptap/core';
-import { BookMarked, Plus, Quote, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import {
-  Button,
-  CollectionState,
-  IconButton,
-  InlineNotice,
-} from '../../../design-system/primitives';
-import {
-  insertDocumentBibliography,
-  insertDocumentCitation,
-  refreshDocumentCitations,
-  renameDocumentCitationTag,
-} from '../work-document-citation-editor';
+import { BookMarked, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '../../../design-system/primitives';
 import {
   createDocumentBibliography,
   documentCitationStyle,
@@ -28,56 +17,25 @@ import type {
   WorkDocumentContent,
 } from '../work-types';
 import {
-  OfficeSelect,
-  OfficeTextArea,
-  OfficeTextField,
-} from './office-controls';
-
-interface CitationSourceDraft {
-  id?: string;
-  tag: string;
-  sourceType: string;
-  title: string;
-  year: string;
-  authors: string;
-  corporateAuthor: string;
-  publisher: string;
-  city: string;
-  journalName: string;
-  volume: string;
-  issue: string;
-  pages: string;
-  url: string;
-  standardNumber: string;
-  conferenceName: string;
-  institution: string;
-}
-
-const SOURCE_TYPES = [
-  ['Book', '书籍'],
-  ['BookSection', '书籍章节'],
-  ['JournalArticle', '期刊文章'],
-  ['ArticleInAPeriodical', '报刊文章'],
-  ['ConferenceProceedings', '会议论文'],
-  ['Report', '报告'],
-  ['InternetSite', '网站'],
-  ['DocumentFromInternetSite', '网页文档'],
-  ['ElectronicSource', '电子资源'],
-  ['Misc', '其他'],
-] as const;
+  type CitationSourceDraft,
+  DocumentCitationSourceForm,
+} from './document-citation-source-form';
+import { OfficeSelect, useOfficeDialog } from './office-controls';
+import { DocumentTaskPane } from './document-task-pane';
 
 export function DocumentCitationsPanel({
   editor,
   content,
-  onChange,
   onClose,
+  onDirtyChange,
 }: {
   editor: Editor;
   content: WorkDocumentContent;
-  onChange: (content: WorkDocumentContent) => void;
   onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const bibliography = content.bibliography ?? createDocumentBibliography();
+  const officeDialog = useOfficeDialog();
   const [selectedId, setSelectedId] = useState<string | null>(
     bibliography.sources[0]?.id ?? null,
   );
@@ -85,6 +43,11 @@ export function DocumentCitationsPanel({
     sourceDraft(bibliography.sources[0]),
   );
   const [error, setError] = useState('');
+  const tagInputRef = useRef<HTMLInputElement>(null);
+  const selectedSource = bibliography.sources.find(
+    (source) => source.id === draft.id,
+  );
+  const dirty = !sameSourceDraft(draft, sourceDraft(selectedSource));
 
   useEffect(() => {
     const selected = bibliography.sources.find(
@@ -97,16 +60,22 @@ export function DocumentCitationsPanel({
     }
   }, [bibliography.sources, selectedId]);
 
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(
+    () => () => {
+      onDirtyChange?.(false);
+    },
+    [onDirtyChange],
+  );
+
   const commitBibliography = (
     nextBibliography: WorkDocumentBibliography,
     renamedTag?: { previous: string; next: string },
   ) => {
-    const next = { ...content, bibliography: nextBibliography };
-    onChange(next);
-    if (renamedTag) {
-      renameDocumentCitationTag(editor, renamedTag.previous, renamedTag.next);
-    }
-    refreshDocumentCitations(editor, next);
+    editor.commands.setDocumentBibliography(nextBibliography, renamedTag);
   };
   const selectSource = (source: WorkDocumentCitationSource) => {
     setSelectedId(source.id);
@@ -117,11 +86,28 @@ export function DocumentCitationsPanel({
     setSelectedId(null);
     setDraft(sourceDraft());
     setError('');
+    requestAnimationFrame(() =>
+      tagInputRef.current?.focus({ preventScroll: true }),
+    );
+  };
+  const continueAfterDiscard = async (action: () => void) => {
+    if (
+      dirty &&
+      !(await officeDialog.confirm({
+        title: '放弃未保存的更改？',
+        description: '当前文献尚未保存。',
+        confirmLabel: '放弃更改',
+        confirmTone: 'danger',
+      }))
+    ) {
+      return;
+    }
+    action();
   };
   const saveSource = () => {
     const tag = draft.tag.trim();
     if (!isValidDocumentCitationTag(tag)) {
-      setError('引用标记只能使用字母、数字、下划线及 . : + -，长度不超过 80。');
+      setError('简称只能使用字母、数字、下划线及 . : + -，长度不超过 80。');
       return;
     }
     if (!draft.title.trim()) {
@@ -135,7 +121,7 @@ export function DocumentCitationsPanel({
           source.tag.toLowerCase() === tag.toLowerCase(),
       )
     ) {
-      setError('已经存在相同的引用标记。');
+      setError('已经存在相同的简称。');
       return;
     }
     const existing = bibliography.sources.find(
@@ -187,11 +173,19 @@ export function DocumentCitationsPanel({
     setDraft(sourceDraft(saved));
     setError('');
   };
-  const deleteSource = () => {
+  const deleteSource = async () => {
     if (!draft.id) {
       startNewSource();
       return;
     }
+    const sourceTitle = selectedSource?.title || '当前文献';
+    const confirmed = await officeDialog.confirm({
+      title: '删除文献？',
+      description: `“${sourceTitle}”将从文献库中删除，文档中的引用可能无法识别。`,
+      confirmLabel: '删除',
+      confirmTone: 'danger',
+    });
+    if (!confirmed) return;
     const sources = bibliography.sources.filter(
       (source) => source.id !== draft.id,
     );
@@ -210,295 +204,105 @@ export function DocumentCitationsPanel({
       selectedStyle: details.selectedStyle,
     });
   };
-  const selectedSource = bibliography.sources.find(
-    (source) => source.id === draft.id,
-  );
-  const knownSourceType = SOURCE_TYPES.some(
-    ([value]) => value === draft.sourceType,
-  );
-
   return (
-    <section className="work-document-citations-panel" aria-label="文献库">
-      <header>
-        <div>
-          <strong>文献库</strong>
-          <span>
-            {bibliography.sources.length} 条文献源 · 正文引文与参考文献同步更新
-          </span>
+    <>
+      <DocumentTaskPane
+        className="work-document-citations-panel"
+        title="文献库"
+        description={`${bibliography.sources.length} 条文献${dirty ? ' · 有未保存更改' : ''}`}
+        closeLabel="关闭文献库"
+        onClose={onClose}
+      >
+        <div className="work-document-citation-actions">
+          <div className="work-office-field">
+            <span>样式</span>
+            <OfficeSelect
+              ariaLabel="引文样式"
+              value={documentCitationStyle(bibliography.style)}
+              options={[
+                { value: 'apa', label: 'APA' },
+                { value: 'mla', label: 'MLA' },
+                { value: 'chicago', label: 'Chicago' },
+                { value: 'ieee', label: 'IEEE' },
+              ]}
+              onValueChange={changeStyle}
+            />
+          </div>
+          <Button
+            tone="secondary"
+            aria-label="插入参考文献"
+            disabled={!bibliography.sources.length}
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .insertDocumentBibliography(bibliography)
+                .run()
+            }
+          >
+            <BookMarked size={13} />
+            插入参考文献
+          </Button>
         </div>
-        <div className="work-office-field">
-          <span>样式</span>
-          <OfficeSelect
-            ariaLabel="引文样式"
-            value={documentCitationStyle(bibliography.style)}
-            options={[
-              { value: 'apa', label: 'APA' },
-              { value: 'mla', label: 'MLA' },
-              { value: 'chicago', label: 'Chicago' },
-              { value: 'ieee', label: 'IEEE' },
-            ]}
-            onValueChange={changeStyle}
+        <div className="work-document-citation-manager">
+          {bibliography.sources.length > 0 && (
+            <aside aria-label="文献列表">
+              <div className="work-document-citation-list-heading">
+                <strong>文献</strong>
+                <Button
+                  className="create"
+                  size="compact"
+                  tone="quiet"
+                  onClick={() => void continueAfterDiscard(startNewSource)}
+                >
+                  <Plus size={13} />
+                  新建
+                </Button>
+              </div>
+              <div className="work-document-citation-source-list">
+                {bibliography.sources.map((source) => (
+                  <button
+                    type="button"
+                    className={source.id === selectedId ? 'active' : ''}
+                    aria-current={source.id === selectedId}
+                    key={source.id}
+                    onClick={() =>
+                      void continueAfterDiscard(() => selectSource(source))
+                    }
+                  >
+                    <strong>{source.title || '未命名文献'}</strong>
+                    <span>
+                      {source.tag} · {source.year || '无年份'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </aside>
+          )}
+          <DocumentCitationSourceForm
+            draft={draft}
+            dirty={dirty}
+            error={error}
+            tagInputRef={tagInputRef}
+            onDraftChange={(nextDraft) => {
+              setDraft(nextDraft);
+              setError('');
+            }}
+            onSave={saveSource}
+            onInsert={() => {
+              if (!selectedSource || dirty) return;
+              editor
+                .chain()
+                .focus()
+                .insertDocumentCitation(selectedSource, bibliography)
+                .run();
+            }}
+            onDelete={() => void deleteSource()}
           />
         </div>
-        <Button
-          tone="secondary"
-          aria-label="插入参考文献"
-          onClick={() => insertDocumentBibliography(editor, bibliography)}
-        >
-          <BookMarked size={13} />
-          插入参考文献
-        </Button>
-        <IconButton className="close" label="关闭文献库" onClick={onClose}>
-          <X size={14} />
-        </IconButton>
-      </header>
-      <div className="work-document-citation-manager">
-        <aside aria-label="文献源列表">
-          <Button className="create" tone="secondary" onClick={startNewSource}>
-            <Plus size={13} />
-            新建文献源
-          </Button>
-          <div>
-            {bibliography.sources.map((source) => (
-              <button
-                type="button"
-                className={source.id === selectedId ? 'active' : ''}
-                key={source.id}
-                onClick={() => selectSource(source)}
-              >
-                <strong>{source.title || '未命名文献'}</strong>
-                <span>
-                  {source.tag} · {source.year || '无年份'}
-                </span>
-              </button>
-            ))}
-            {!bibliography.sources.length && (
-              <CollectionState
-                className="work-office-collection-empty"
-                role="status"
-              >
-                还没有文献源。
-              </CollectionState>
-            )}
-          </div>
-        </aside>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            saveSource();
-          }}
-        >
-          <div className="work-office-field">
-            <span>引用标记</span>
-            <OfficeTextField
-              aria-label="引用标记"
-              value={draft.tag}
-              maxLength={80}
-              placeholder="例如 Smith2026"
-              onChange={(event) =>
-                setDraft({ ...draft, tag: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>来源类型</span>
-            <OfficeSelect
-              ariaLabel="文献来源类型"
-              value={draft.sourceType}
-              options={[
-                ...(!knownSourceType && draft.sourceType
-                  ? [
-                      {
-                        value: draft.sourceType,
-                        label: `${draft.sourceType}（原始类型）`,
-                      },
-                    ]
-                  : []),
-                ...SOURCE_TYPES.map(([value, label]) => ({ value, label })),
-              ]}
-              onValueChange={(sourceType) => setDraft({ ...draft, sourceType })}
-            />
-          </div>
-          <div className="work-office-field wide">
-            <span>标题</span>
-            <OfficeTextField
-              aria-label="文献标题"
-              value={draft.title}
-              onChange={(event) =>
-                setDraft({ ...draft, title: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>年份</span>
-            <OfficeTextField
-              aria-label="文献年份"
-              value={draft.year}
-              inputMode="numeric"
-              placeholder="2026"
-              onChange={(event) =>
-                setDraft({ ...draft, year: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>机构作者</span>
-            <OfficeTextField
-              aria-label="机构作者"
-              value={draft.corporateAuthor}
-              placeholder="与个人作者二选一"
-              onChange={(event) =>
-                setDraft({ ...draft, corporateAuthor: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field wide">
-            <span>个人作者</span>
-            <OfficeTextArea
-              aria-label="个人作者"
-              value={draft.authors}
-              placeholder={'每行一位，例如：\nSmith, Jane\nLi, Ming'}
-              onChange={(event) =>
-                setDraft({ ...draft, authors: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>出版者</span>
-            <OfficeTextField
-              aria-label="出版者"
-              value={draft.publisher}
-              onChange={(event) =>
-                setDraft({ ...draft, publisher: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>出版城市</span>
-            <OfficeTextField
-              aria-label="出版城市"
-              value={draft.city}
-              onChange={(event) =>
-                setDraft({ ...draft, city: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>期刊名</span>
-            <OfficeTextField
-              aria-label="期刊名"
-              value={draft.journalName}
-              onChange={(event) =>
-                setDraft({ ...draft, journalName: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>卷 / 期</span>
-            <span className="paired">
-              <OfficeTextField
-                aria-label="卷"
-                value={draft.volume}
-                placeholder="卷"
-                onChange={(event) =>
-                  setDraft({ ...draft, volume: event.target.value })
-                }
-              />
-              <OfficeTextField
-                aria-label="期"
-                value={draft.issue}
-                placeholder="期"
-                onChange={(event) =>
-                  setDraft({ ...draft, issue: event.target.value })
-                }
-              />
-            </span>
-          </div>
-          <div className="work-office-field">
-            <span>页码</span>
-            <OfficeTextField
-              aria-label="文献页码"
-              value={draft.pages}
-              placeholder="12–28"
-              onChange={(event) =>
-                setDraft({ ...draft, pages: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>ISBN / DOI</span>
-            <OfficeTextField
-              aria-label="标准编号"
-              value={draft.standardNumber}
-              onChange={(event) =>
-                setDraft({ ...draft, standardNumber: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>会议名称</span>
-            <OfficeTextField
-              aria-label="会议名称"
-              value={draft.conferenceName}
-              onChange={(event) =>
-                setDraft({ ...draft, conferenceName: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field">
-            <span>报告机构</span>
-            <OfficeTextField
-              aria-label="报告机构"
-              value={draft.institution}
-              onChange={(event) =>
-                setDraft({ ...draft, institution: event.target.value })
-              }
-            />
-          </div>
-          <div className="work-office-field wide">
-            <span>网址</span>
-            <OfficeTextField
-              aria-label="文献网址"
-              value={draft.url}
-              inputMode="url"
-              placeholder="https://"
-              onChange={(event) =>
-                setDraft({ ...draft, url: event.target.value })
-              }
-            />
-          </div>
-          <div className="actions wide">
-            {error && (
-              <InlineNotice
-                className="work-office-form-error"
-                tone="danger"
-                role="alert"
-              >
-                {error}
-              </InlineNotice>
-            )}
-            <Button
-              tone="secondary"
-              disabled={!selectedSource}
-              onClick={() =>
-                selectedSource &&
-                insertDocumentCitation(editor, selectedSource, bibliography)
-              }
-            >
-              <Quote size={13} />
-              插入引文
-            </Button>
-            <Button tone="danger" disabled={!draft.id} onClick={deleteSource}>
-              <Trash2 size={13} />
-              删除
-            </Button>
-            <Button type="submit" tone="primary">
-              保存文献源
-            </Button>
-          </div>
-        </form>
-      </div>
-    </section>
+      </DocumentTaskPane>
+      {officeDialog.dialog}
+    </>
   );
 }
 
@@ -561,4 +365,13 @@ function parseAuthors(value: string): WorkDocumentCitationPerson[] {
 
 function optionalValue(value: string): string | undefined {
   return value.trim() || undefined;
+}
+
+function sameSourceDraft(
+  left: CitationSourceDraft,
+  right: CitationSourceDraft,
+): boolean {
+  return (Object.keys(left) as Array<keyof CitationSourceDraft>).every(
+    (key) => left[key] === right[key],
+  );
 }

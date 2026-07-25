@@ -65,6 +65,7 @@ export function Popover({
   open: controlledOpen,
   defaultOpen = false,
   panelRef,
+  focusFirstOnOpen = false,
   onPanelKeyDown,
   onOpenChange,
 }: {
@@ -81,6 +82,7 @@ export function Popover({
   open?: boolean;
   defaultOpen?: boolean;
   panelRef?: Ref<HTMLElement>;
+  focusFirstOnOpen?: boolean;
   onPanelKeyDown?: KeyboardEventHandler<HTMLElement>;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -265,6 +267,16 @@ export function Popover({
     };
   }, [open, portal, updateFloatingPosition]);
 
+  useEffect(() => {
+    if (!open || !focusFirstOnOpen) return;
+    const frame = requestAnimationFrame(() => {
+      firstFocusableElement(panelElementRef.current)?.focus({
+        preventScroll: true,
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusFirstOnOpen, open]);
+
   const triggerProps: PopoverTriggerProps = {
     ref: (element) => {
       triggerRef.current = element;
@@ -336,5 +348,19 @@ function sameFloatingPosition(
     Math.abs(current.top - next.top) < 0.5 &&
     Math.abs(current.left - next.left) < 0.5 &&
     Math.abs(current.anchorWidth - next.anchorWidth) < 0.5
+  );
+}
+
+function firstFocusableElement(panel: HTMLElement | null): HTMLElement | null {
+  return (
+    panel?.querySelector<HTMLElement>(
+      [
+        'button:not(:disabled)',
+        'input:not(:disabled):not([type="hidden"])',
+        'textarea:not(:disabled)',
+        'select:not(:disabled)',
+        '[tabindex]:not([tabindex="-1"])',
+      ].join(', '),
+    ) ?? null
   );
 }

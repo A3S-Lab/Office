@@ -2,6 +2,8 @@ import type { WorkEditorAgentRequest } from '../work-agent-request';
 import type { WorkPresentationContent } from '../work-types';
 import type { WorkOfficeFileAction } from './work-office-chrome';
 
+export type PresentationDesignMode = 'slide' | 'layout' | 'master';
+
 export interface PresentationEditorProps {
   content: WorkPresentationContent;
   preview: boolean;
