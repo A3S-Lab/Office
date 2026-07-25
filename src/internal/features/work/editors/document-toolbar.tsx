@@ -31,6 +31,8 @@ import {
 import { DocumentParagraphSpacingPopover } from './document-paragraph-spacing-popover';
 import { DocumentPaginationPopover } from './document-pagination-popover';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
+import { DocumentTableInsertPopover } from './document-table-insert-popover';
+import { DocumentTableRibbon } from './document-table-ribbon';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
@@ -50,6 +52,7 @@ const documentRibbonTabs = [
 ] as const;
 
 const documentPictureRibbonTab = { id: 'picture', label: '图片' } as const;
+const documentTableRibbonTab = { id: 'table', label: '表格' } as const;
 const documentPageChromeRibbonTab = {
   id: 'pageChrome',
   label: '页眉和页脚',
@@ -58,6 +61,7 @@ const documentPageChromeRibbonTab = {
 type DocumentRibbonTabId =
   | (typeof documentRibbonTabs)[number]['id']
   | typeof documentPictureRibbonTab.id
+  | typeof documentTableRibbonTab.id
   | typeof documentPageChromeRibbonTab.id;
 export type DocumentViewMode = 'page' | 'web';
 
@@ -149,11 +153,14 @@ export function DocumentToolbar({
   const prompt = officeDialog.prompt;
   const notice = officeDialog.notice;
   const imageSelected = editor.isActive('image');
+  const tableSelected = editor.isActive('table');
   const ribbonTabs = pageChromeEditor
     ? [...documentRibbonTabs, documentPageChromeRibbonTab]
     : imageSelected
       ? [...documentRibbonTabs, documentPictureRibbonTab]
-      : documentRibbonTabs;
+      : tableSelected
+        ? [...documentRibbonTabs, documentTableRibbonTab]
+        : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
@@ -210,11 +217,14 @@ export function DocumentToolbar({
     setActiveTab((current) => {
       if (pageChromeEditor) return 'pageChrome';
       if (imageSelected) return 'picture';
-      return current === 'picture' || current === 'pageChrome'
+      if (tableSelected) return 'table';
+      return current === 'picture' ||
+        current === 'table' ||
+        current === 'pageChrome'
         ? 'home'
         : current;
     });
-  }, [imageSelected, pageChromeEditor]);
+  }, [imageSelected, pageChromeEditor, tableSelected]);
 
   useEffect(() => {
     let editorDom: HTMLElement | null = null;
@@ -326,20 +336,7 @@ export function DocumentToolbar({
                 >
                   <ImageIcon size={19} />
                 </ToolbarButton>
-                <ToolbarButton
-                  label="插入表格"
-                  displayLabel
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-                      .updateAttributes('tableRow', { repeatHeader: true })
-                      .run()
-                  }
-                >
-                  <Table2 size={19} />
-                </ToolbarButton>
+                <DocumentTableInsertPopover editor={editor} />
               </RibbonGroup>
               <RibbonGroup label="页面">
                 <ToolbarButton
@@ -582,6 +579,7 @@ export function DocumentToolbar({
           picture: imageSelected ? (
             <DocumentPictureRibbon editor={editor} />
           ) : null,
+          table: tableSelected ? <DocumentTableRibbon editor={editor} /> : null,
           pageChrome:
             pageChromeEditor && pageChromeEditingPart ? (
               <DocumentPageChromeRibbon

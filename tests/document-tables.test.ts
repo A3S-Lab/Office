@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/core';
 import { describe, expect, test } from '@rstest/core';
+import { waitFor } from '@testing-library/react';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   applyDocumentPagination,
@@ -11,6 +12,7 @@ import {
   documentTableRowOptions,
   setDocumentTableRowOptions,
 } from '../src/internal/features/work/work-document-table-row';
+import { insertDocumentTable } from '../src/internal/features/work/work-document-table-commands';
 
 function createTableEditor(): Editor {
   return new Editor({
@@ -29,6 +31,51 @@ function createTableEditor(): Editor {
 }
 
 describe('document tables', () => {
+  test('inserts the chosen table without replacing selected text', async () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true">',
+        '<p>Keep this selected text.</p>',
+        '<p>Continue here.</p>',
+        '</section>',
+      ].join(''),
+    });
+    const editorElement = editor.view.dom;
+    document.body.append(editorElement);
+    const selection = documentTextRange(editor, 'this selected');
+    editor.commands.setTextSelection(selection);
+    editor.commands.blur();
+    let updateCount = 0;
+    const countUpdate = () => {
+      updateCount += 1;
+    };
+    editor.on('update', countUpdate);
+
+    expect(
+      insertDocumentTable(editor, {
+        rows: 2,
+        columns: 4,
+      }),
+    ).toBe(true);
+
+    expect(editor.getText()).toContain('Keep this selected text.');
+    expect(documentTableShape(editor)).toEqual([
+      ['tableHeader', 'tableHeader', 'tableHeader', 'tableHeader'],
+      ['tableCell', 'tableCell', 'tableCell', 'tableCell'],
+    ]);
+    expect(updateCount).toBe(1);
+    await waitFor(() => expect(editor.isFocused).toBe(true));
+
+    expect(editor.commands.undo()).toBe(true);
+    expect(documentTableShape(editor)).toEqual([]);
+    expect(editor.getText()).toContain('Keep this selected text.');
+
+    editor.off('update', countUpdate);
+    editor.destroy();
+    editorElement.remove();
+  });
+
   test('keeps row pagination properties in the TipTap document model', () => {
     const editor = createTableEditor();
     editor.commands.setTextSelection(4);
@@ -250,6 +297,40 @@ describe('document tables', () => {
     editor.destroy();
   });
 });
+
+function documentTextRange(
+  editor: Editor,
+  text: string,
+): { from: number; to: number } {
+  let range: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (range || !node.isText || !node.text) return;
+    const offset = node.text.indexOf(text);
+    if (offset < 0) return;
+    range = {
+      from: position + offset,
+      to: position + offset + text.length,
+    };
+  });
+  if (!range) throw new Error(`Text "${text}" was not found.`);
+  return range;
+}
+
+function documentTableShape(editor: Editor): string[][] {
+  let shape: string[][] = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'table') return true;
+    shape = Array.from({ length: node.childCount }, (_, rowIndex) => {
+      const row = node.child(rowIndex);
+      return Array.from(
+        { length: row.childCount },
+        (_, cellIndex) => row.child(cellIndex).type.name,
+      );
+    });
+    return false;
+  });
+  return shape;
+}
 
 function tableRowTextPosition(editor: Editor, rowIndex: number): number {
   let current = 0;

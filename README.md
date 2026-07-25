@@ -94,7 +94,7 @@ export function App() {
 
 | Editor | Editing engine | Main capabilities | Native files |
 | --- | --- | --- | --- |
-| Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
+| Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, size-aware table insertion, contextual row/column/cell editing, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
 | Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, native PPTX group export, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, alignment guides, and virtualized thumbnail scenes | PPTX import/export, PDF export |

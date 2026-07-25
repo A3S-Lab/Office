@@ -318,6 +318,15 @@ the same measured header overlay. The leading cell alone extends the paper-gap
 paint across the page margins. `cantSplit` rows, single long paragraphs, and
 oversized rows are still atomic and may overflow.
 
+Table creation is selection-safe: a non-empty text selection is preserved and
+the chosen table is inserted after its containing block instead of replacing
+the selected content. The insert ribbon exposes a keyboard-navigable 8 by 10
+size picker. Entering a table opens a dedicated contextual ribbon for row and
+column insertion or deletion, cell merge and split, header-row conversion,
+repeated headers, atomic rows, and table deletion. Command availability comes
+from the ProseMirror table state, so actions that cannot apply to the current
+selection remain disabled.
+
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf
 `documentTab` node preserves each Tab keystroke in the ProseMirror model

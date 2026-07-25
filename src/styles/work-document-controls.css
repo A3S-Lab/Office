@@ -62,6 +62,68 @@
   align-items: center;
 }
 
+.work-document-table-insert-popover {
+  display: flex;
+  align-items: center;
+}
+
+.work-document-table-picker-panel {
+  width: 277px;
+  padding: 11px;
+}
+
+.work-document-table-picker-grid {
+  border-spacing: 3px;
+  border-collapse: separate;
+  table-layout: fixed;
+}
+
+.work-document-table-picker-grid td {
+  padding: 0;
+}
+
+.work-document-table-picker-grid td > button {
+  box-sizing: border-box;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 3px;
+  background: var(--a3s-bg);
+  cursor: pointer;
+}
+
+.work-document-table-picker-grid td > button[data-highlighted="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 48%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 14%,
+    var(--a3s-panel)
+  );
+}
+
+.work-document-table-picker-grid td > button:hover,
+.work-document-table-picker-grid td > button:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-office-accent) 65%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-table-picker-size {
+  display: block;
+  min-height: 18px;
+  margin-top: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 620;
+  line-height: 18px;
+  text-align: center;
+}
+
 .work-document-pagination-panel {
   width: 238px;
   padding: 10px 12px 12px;
