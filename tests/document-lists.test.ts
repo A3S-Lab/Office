@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core';
+import { closeHistory } from '@tiptap/pm/history';
 import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
@@ -14,6 +15,113 @@ import { parseXml } from '../src/internal/features/work/work-ooxml-package';
 import type { WorkDocumentNode } from '../src/internal/features/work/work-types';
 
 describe('document lists', () => {
+  test('applies a bullet style idempotently and keeps it in undo history once', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<p>Alpha</p><p>Beta</p>',
+    });
+    editor.commands.setTextSelection({
+      from: textPosition(editor, 'Alpha'),
+      to: textPosition(editor, 'Beta') + 'Beta'.length,
+    });
+
+    expect(editor.commands.applyDocumentBulletList('square')).toBe(true);
+    expect(editor.getJSON().content?.[0]).toMatchObject({
+      type: 'bulletList',
+      attrs: { bulletStyle: 'square' },
+    });
+    expect(editor.getHTML()).toContain('data-office-bullet-style="square"');
+    const styled = editor.getHTML();
+
+    expect(editor.commands.applyDocumentBulletList('square')).toBe(true);
+    expect(editor.getHTML()).toBe(styled);
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getHTML()).toBe('<p>Alpha</p><p>Beta</p>');
+
+    editor.destroy();
+  });
+
+  test('preserves the start value while changing an ordered-list style', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<p>Alpha</p><p>Beta</p>',
+    });
+    editor.commands.setTextSelection({
+      from: textPosition(editor, 'Alpha'),
+      to: textPosition(editor, 'Beta') + 'Beta'.length,
+    });
+
+    expect(editor.commands.applyDocumentOrderedList('upper-roman')).toBe(true);
+    expect(editor.commands.setDocumentNumberingStart(4)).toBe(true);
+    expect(editor.commands.applyDocumentOrderedList('lower-alpha')).toBe(true);
+    expect(editor.getJSON().content?.[0]).toMatchObject({
+      type: 'orderedList',
+      attrs: { start: 4, type: 'a' },
+    });
+    expect(editor.getHTML()).toContain('<ol start="4" type="a">');
+
+    editor.view.dispatch(closeHistory(editor.state.tr));
+    expect(editor.commands.restartDocumentNumbering()).toBe(true);
+    expect(editor.getJSON().content?.[0]).toMatchObject({
+      type: 'orderedList',
+      attrs: { start: 1, type: 'a' },
+    });
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getJSON().content?.[0]).toMatchObject({
+      type: 'orderedList',
+      attrs: { start: 4, type: 'a' },
+    });
+
+    editor.destroy();
+  });
+
+  test('continues the preceding list with its numbering style', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<ol start="3" type="A">',
+        '<li><p>First</p></li><li><p>Second</p></li>',
+        '</ol>',
+        '<p>Interruption</p>',
+        '<ol><li><p>Third</p></li></ol>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(textPosition(editor, 'Third'));
+
+    expect(editor.can().continueDocumentNumbering()).toBe(true);
+    expect(editor.commands.continueDocumentNumbering()).toBe(true);
+    expect(editor.getJSON().content?.[2]).toMatchObject({
+      type: 'orderedList',
+      attrs: { start: 5, type: 'A' },
+    });
+    expect(editor.getHTML()).toContain('<ol start="5" type="A">');
+
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getJSON().content?.[2]).toMatchObject({
+      type: 'orderedList',
+      attrs: { start: 1, type: null },
+    });
+
+    editor.destroy();
+  });
+
+  test('rejects invalid numbering values and unavailable continuation', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<ol><li><p>Only list</p></li></ol>',
+    });
+    editor.commands.setTextSelection(textPosition(editor, 'Only list'));
+    const initialHtml = editor.getHTML();
+
+    expect(editor.commands.setDocumentNumberingStart(0)).toBe(false);
+    expect(editor.commands.setDocumentNumberingStart(1.5)).toBe(false);
+    expect(editor.can().continueDocumentNumbering()).toBe(false);
+    expect(editor.commands.continueDocumentNumbering()).toBe(false);
+    expect(editor.getHTML()).toBe(initialHtml);
+
+    editor.destroy();
+  });
+
   test('measures list items as independent page-layout blocks', () => {
     const editor = createListEditor();
     mockListGeometry(editor);
@@ -192,6 +300,72 @@ describe('document lists', () => {
       { start: 1, type: 'I' },
     ]);
   });
+
+  test('restores common Word bullet shapes in HTML and the structured model', () => {
+    const source = parseXml(
+      [
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+        '<w:body>',
+        ...Array.from(
+          { length: 3 },
+          (_, level) =>
+            `<w:p><w:pPr><w:numPr><w:ilvl w:val="${level}"/>` +
+            '<w:numId w:val="51"/></w:numPr></w:pPr>' +
+            `<w:r><w:t>Bullet ${level}</w:t></w:r></w:p>`,
+        ),
+        '</w:body></w:document>',
+      ].join(''),
+      'document.xml',
+    );
+    const numbering = parseXml(
+      [
+        '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+        '<w:abstractNum w:abstractNumId="9">',
+        bulletLevelXml(0, '•'),
+        bulletLevelXml(1, '◦'),
+        bulletLevelXml(2, '▪'),
+        '</w:abstractNum>',
+        '<w:num w:numId="51"><w:abstractNumId w:val="9"/></w:num>',
+        '</w:numbering>',
+      ].join(''),
+      'numbering.xml',
+    );
+
+    const markers = markDocxLists(source, numbering);
+    expect(markers.lists.map(({ bulletStyle }) => bulletStyle)).toEqual([
+      'disc',
+      'circle',
+      'square',
+    ]);
+
+    const imported = new DOMParser().parseFromString(
+      markers.lists
+        .map(
+          ({ marker }, index) =>
+            `<ul><li><p>${marker}Bullet ${index}</p></li></ul>`,
+        )
+        .join(''),
+      'text/html',
+    );
+    applyImportedDocxListMarkers(imported, markers);
+    const lists = Array.from(imported.body.querySelectorAll('ul'));
+    expect(lists.map((list) => list.dataset.officeBulletStyle)).toEqual([
+      'disc',
+      'circle',
+      'square',
+    ]);
+
+    const content = createWorkDocumentModelFromContent({
+      type: 'document',
+      pageSize: 'a4',
+      html: imported.body.innerHTML,
+    });
+    expect(
+      collectNodes(content.model?.root, 'bulletList').map(
+        (list) => list.attrs?.bulletStyle,
+      ),
+    ).toEqual(['disc', 'circle', 'square']);
+  });
 });
 
 function createListEditor(): Editor {
@@ -245,6 +419,13 @@ function listLevelXml(level: number, format: string, start = 1): string {
   );
 }
 
+function bulletLevelXml(level: number, marker: string): string {
+  return (
+    `<w:lvl w:ilvl="${level}"><w:start w:val="1"/>` +
+    `<w:numFmt w:val="bullet"/><w:lvlText w:val="${marker}"/></w:lvl>`
+  );
+}
+
 function collectNodes(
   root: WorkDocumentNode | undefined,
   type: string,
@@ -259,4 +440,15 @@ function collectNodes(
     pending.unshift(...(node.content ?? []));
   }
   return matches;
+}
+
+function textPosition(editor: Editor, text: string): number {
+  let position: number | null = null;
+  editor.state.doc.descendants((node, offset) => {
+    if (position !== null || !node.isText || !node.text) return;
+    const index = node.text.indexOf(text);
+    if (index >= 0) position = offset + index;
+  });
+  if (position === null) throw new Error(`Text "${text}" was not found.`);
+  return position;
 }

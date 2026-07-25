@@ -29,6 +29,11 @@ import { DocumentComment } from './work-document-comments';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
 import {
+  DocumentBulletList,
+  DocumentListCommands,
+  DocumentOrderedList,
+} from './work-document-lists';
+import {
   DocumentNote,
   DocumentNoteReference,
 } from './work-document-note-nodes';
@@ -79,10 +84,15 @@ export function createWorkDocumentExtensions(
         openOnClick: false,
       },
       underline: false,
+      bulletList: false,
+      orderedList: false,
       trailingNode: {
         notAfter: ['documentSection'],
       },
     }),
+    DocumentBulletList,
+    DocumentOrderedList,
+    DocumentListCommands,
     DocumentSection,
     DocumentCaption,
     DocumentCrossReference,

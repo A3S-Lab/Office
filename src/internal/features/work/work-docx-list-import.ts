@@ -4,6 +4,7 @@ export interface ImportedDocxListMarker {
   marker: string;
   start: number;
   type?: ImportedDocxOrderedListType;
+  bulletStyle?: ImportedDocxBulletListStyle;
 }
 
 export interface ImportedDocxListMarkers {
@@ -11,6 +12,7 @@ export interface ImportedDocxListMarkers {
 }
 
 export type ImportedDocxOrderedListType = 'a' | 'A' | 'i' | 'I';
+export type ImportedDocxBulletListStyle = 'disc' | 'circle' | 'square';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -63,10 +65,16 @@ export function markDocxLists(
       abstractId === null ? undefined : abstractNumbering.get(abstractId);
     const start = effectiveListStart(concrete, abstract, level);
     const type = effectiveOrderedListType(concrete, abstract, level);
-    if (start <= 1 && !type) continue;
+    const bulletStyle = effectiveBulletListStyle(concrete, abstract, level);
+    if (start <= 1 && !type && !bulletStyle) continue;
     const marker = `__A3S_WORK_LIST_START_${lists.length + 1}__`;
     insertParagraphMarker(document, paragraph, marker);
-    lists.push({ marker, start, ...(type ? { type } : {}) });
+    lists.push({
+      marker,
+      start,
+      ...(type ? { type } : {}),
+      ...(bulletStyle ? { bulletStyle } : {}),
+    });
   }
   return { lists };
 }
@@ -84,16 +92,18 @@ export function applyImportedDocxListMarkers(
     const list = item?.parentElement;
     node.data = node.data.replace(LIST_START_MARKER_PATTERN, (marker) => {
       const imported = listByMarker.get(marker);
-      if (
-        imported &&
-        list instanceof HTMLElement &&
-        list.tagName.toLowerCase() === 'ol'
-      ) {
-        if (imported.start > 1) {
-          list.setAttribute('start', String(imported.start));
+      if (imported && list instanceof HTMLElement) {
+        if (list.tagName.toLowerCase() === 'ol') {
+          if (imported.start > 1) {
+            list.setAttribute('start', String(imported.start));
+          }
+          if (imported.type) {
+            list.setAttribute('type', imported.type);
+          }
         }
-        if (imported.type) {
-          list.setAttribute('type', imported.type);
+        if (list.tagName.toLowerCase() === 'ul' && imported.bulletStyle) {
+          list.dataset.officeBulletStyle = imported.bulletStyle;
+          list.style.listStyleType = imported.bulletStyle;
         }
       }
       return '';
@@ -172,6 +182,47 @@ function effectiveOrderedListType(
   if (format === 'lowerRoman') return 'i';
   if (format === 'upperRoman') return 'I';
   return undefined;
+}
+
+function effectiveBulletListStyle(
+  concrete: Element | undefined,
+  abstract: Element | undefined,
+  level: number,
+): ImportedDocxBulletListStyle | undefined {
+  const definition = effectiveListLevel(concrete, abstract, level);
+  const format = stringAttribute(
+    definition ? directChild(definition, 'numFmt') : null,
+    'val',
+  );
+  if (format !== 'bullet') return undefined;
+  const marker =
+    stringAttribute(
+      definition ? directChild(definition, 'lvlText') : null,
+      'val',
+    ) ?? '';
+  if (/^[o○◦\uF06F]$/u.test(marker)) return 'circle';
+  if (/^[■▪□\uF0A7]$/u.test(marker)) return 'square';
+  return 'disc';
+}
+
+function effectiveListLevel(
+  concrete: Element | undefined,
+  abstract: Element | undefined,
+  level: number,
+): Element | undefined {
+  const override = concrete
+    ? descendants(concrete, 'lvlOverride').find(
+        (candidate) => integerAttribute(candidate, 'ilvl') === level,
+      )
+    : undefined;
+  return (
+    (override ? directChild(override, 'lvl') : undefined) ??
+    (abstract
+      ? descendants(abstract, 'lvl').find(
+          (candidate) => integerAttribute(candidate, 'ilvl') === level,
+        )
+      : undefined)
+  );
 }
 
 function insertParagraphMarker(

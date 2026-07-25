@@ -370,7 +370,7 @@ async function listToDocxParagraphs(
   const ordered = list.tagName.toLowerCase() === 'ol';
   const numbering = ordered
     ? registerOrderedListNumbering(list, level, docx, noteContext)
-    : undefined;
+    : registerBulletListNumbering(list, level, docx, noteContext);
   const items = Array.from(list.children).filter(
     (child): child is HTMLElement =>
       child instanceof HTMLElement && child.tagName.toLowerCase() === 'li',
@@ -401,9 +401,7 @@ async function listToDocxParagraphs(
           children: runs.length ? runs : [new docx.TextRun('')],
           heading,
           ...(blockIndex === 0
-            ? ordered
-              ? { numbering }
-              : { bullet: { level } }
+            ? { numbering }
             : {
                 indent: paragraphIndent(block, tag) ?? {
                   left: (level + 1) * 720,
@@ -464,6 +462,38 @@ function registerOrderedListNumbering(
   return { reference, level };
 }
 
+function registerBulletListNumbering(
+  list: HTMLElement,
+  level: number,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+): { reference: string; level: number } {
+  const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
+  noteContext.nextNumberingReference += 1;
+  noteContext.numbering.push({
+    reference,
+    levels: Array.from({ length: 9 }, (_, currentLevel) => ({
+      level: currentLevel,
+      format: docx.LevelFormat.BULLET,
+      text:
+        currentLevel === level
+          ? bulletListMarker(list)
+          : defaultBulletListMarker(currentLevel),
+      start: 1,
+      suffix: docx.LevelSuffix.TAB,
+      style: {
+        paragraph: {
+          indent: {
+            left: (currentLevel + 1) * 720,
+            hanging: 360,
+          },
+        },
+      },
+    })),
+  });
+  return { reference, level };
+}
+
 function orderedListLevelFormat(
   list: HTMLElement,
   level: number,
@@ -491,6 +521,20 @@ function orderedListStart(list: HTMLElement): number {
   return Number.isSafeInteger(value) && value > 0
     ? Math.min(value, 2_147_483_647)
     : 1;
+}
+
+function bulletListMarker(list: HTMLElement): string {
+  const style =
+    list.dataset.officeBulletStyle || list.style.listStyleType || 'disc';
+  if (style === 'circle') return '○';
+  if (style === 'square') return '■';
+  return '●';
+}
+
+function defaultBulletListMarker(level: number): string {
+  if (level % 3 === 1) return '○';
+  if (level % 3 === 2) return '■';
+  return '●';
 }
 
 function directListItemContentRoot(item: HTMLElement): HTMLElement {

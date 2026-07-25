@@ -98,6 +98,13 @@ Exit evidence:
 - Ensure contextual commands operate on typed selections, including
   multi-cell and keyboard selection.
 
+Current implementation evidence includes the responsive paragraph-style
+gallery and a typed list slice with disc/circle/square bullets, five common
+ordered formats, restart/continue/start commands, keyboard-operated galleries,
+single-transaction undo behavior, and DOCX round trips for the declared list
+styles. Native Word list identities and arbitrary multilevel numbering
+templates remain part of this priority rather than being treated as complete.
+
 Exit evidence:
 
 - Formatting and table operations have command, interaction, undo, DOCX, and

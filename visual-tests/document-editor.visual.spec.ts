@@ -71,6 +71,85 @@ test('document styles stay visible, semantic, and compact when needed', async ({
   await expect(compactSelect).toContainText('标题 2');
 });
 
+test('document list libraries keep styles and numbering settings in context', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
+  if (!fixture) throw new Error('Missing document visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const bulletItem = page
+    .locator('.work-document-editable .ProseMirror ul > li > p')
+    .first();
+  await expect(bulletItem).toBeVisible();
+  await bulletItem.click();
+  const bulletTrigger = page.getByRole('button', { name: '项目符号库' });
+  await bulletTrigger.click();
+  const bulletLibrary = page.getByRole('dialog', { name: '项目符号库' });
+  await expect(bulletLibrary).toBeVisible();
+  await expect(
+    bulletLibrary.getByRole('menuitemradio', { name: '实心圆点' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(
+    bulletLibrary.getByRole('menuitemradio', { name: '空心圆点' }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(bulletLibrary).toBeHidden();
+  await expect(bulletTrigger).toBeFocused();
+  await expect(bulletItem.locator('xpath=ancestor::ul[1]')).toHaveAttribute(
+    'data-office-bullet-style',
+    'circle',
+  );
+
+  const orderedItem = page
+    .locator('.work-document-editable .ProseMirror ol > li > p')
+    .first();
+  await expect(orderedItem).toBeVisible();
+  await orderedItem.click();
+  const numberingTrigger = page.getByRole('button', { name: '编号库' });
+  await numberingTrigger.click();
+  const numberingLibrary = page.getByRole('dialog', { name: '编号库' });
+  await expect(numberingLibrary).toBeVisible();
+  await expect(numberingLibrary.getByRole('menuitemradio')).toHaveCount(5);
+  await expect(
+    numberingLibrary.getByRole('button', { name: '继续前一列表' }),
+  ).toBeDisabled();
+
+  const geometry = await numberingLibrary.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      viewportWidth: document.documentElement.clientWidth,
+      viewportHeight: document.documentElement.clientHeight,
+      left: rect.left,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+    };
+  });
+  expect(geometry.left).toBeGreaterThanOrEqual(8);
+  expect(geometry.top).toBeGreaterThanOrEqual(8);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth - 8);
+  expect(geometry.bottom).toBeLessThanOrEqual(geometry.viewportHeight - 8);
+
+  const start = numberingLibrary.getByRole('textbox', { name: '起始编号' });
+  await start.fill('4');
+  await numberingLibrary.getByRole('button', { name: '应用起始值' }).click();
+  await expect(numberingLibrary).toBeHidden();
+  await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
+    'start',
+    '4',
+  );
+
+  await numberingTrigger.click();
+  await expect(numberingLibrary).toBeVisible();
+  await stabilizeVisualSurface(page);
+  await expect(page).toHaveScreenshot('document-numbering-library.png');
+});
+
 test('document selection toolbar keeps formatting and review in context', async ({
   page,
 }) => {

@@ -79,7 +79,7 @@ focus restoration.
 
 | Product | Implemented browser surface | Implemented kernel boundary | Next fidelity gate |
 | --- | --- | --- | --- |
-| Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, a responsive and keyboard-operated paragraph style gallery, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
+| Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, responsive and keyboard-operated paragraph-style and list galleries, typed bullet and numbering commands with restart/continue/start controls, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a source-and-preview split view by default, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, number-format ownership, and print layout |
 | Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, frame-coalesced transactional move/resize previews that commit once on pointer release, and two-level thumbnail node and scene windowing | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
@@ -327,14 +327,18 @@ list-item block independently and maps a page widget before the first block
 inside the target `li`; eligible list paragraphs are collected for the same
 Rustybuzz text-layout request as ordinary paragraphs. DOCX export emits one
 paragraph with `w:numPr` per item, supports levels zero through eight, positive
-ordered-list starts, common HTML ordered-list types, nesting, bullets, and RTL
-paragraph/run properties. Table cells, notes, headers, and footers use the same
-export path. DOCX import uses bounded numbering metadata to restore positive
-list starts and common decimal, letter, and Roman formats after Mammoth
-conversion, while direction markers are applied to the semantic list item.
-Reversed lists, per-item `value` overrides, arbitrary restart/continuation
-semantics, and loss-preserving custom Word numbering formats remain later
-fidelity gates.
+ordered-list starts, decimal, letter, and Roman formats, three canonical bullet
+shapes, nesting, and RTL paragraph/run properties. Table cells, notes, headers,
+and footers use the same export path. DOCX import uses bounded numbering
+metadata to restore starts, common ordered formats, and disc/circle/square
+bullets after Mammoth conversion, while direction markers are applied to the
+semantic list item. Typed commands apply an active style idempotently, restart
+at one, set a positive start, or continue the preceding same-depth list by
+adopting its format and calculated next value. The split-button galleries keep
+quick toggles separate from keyboard-operated style selection and local
+numbering settings. Reversed lists, per-item `value` overrides, native Word
+list-identity continuation, arbitrary multilevel templates, and loss-preserving
+custom numbering formats remain later fidelity gates.
 
 This slice is not yet a Microsoft Word or WPS line-layout fidelity claim.
 Language-complete font substitution, variable font axes, the remaining

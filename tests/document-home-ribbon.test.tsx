@@ -1,6 +1,12 @@
 import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
@@ -131,6 +137,92 @@ test('supports arrow-key selection in the paragraph style gallery', () => {
 
   expect(document.activeElement).toBe(heading);
   expect(editor.getHTML()).toContain('<h1>Keyboard styles</h1>');
+});
+
+test('uses a keyboard-operated bullet library without toggling the active style off', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>List item</p>',
+  });
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '项目符号库' });
+  fireEvent.click(trigger);
+  let library = screen.getByRole('dialog', { name: '项目符号库' });
+  const disc = within(library).getByRole('menuitemradio', {
+    name: '实心圆点',
+  });
+  const circle = within(library).getByRole('menuitemradio', {
+    name: '空心圆点',
+  });
+
+  await waitFor(() => expect(disc).toHaveFocus());
+  fireEvent.keyDown(disc, { key: 'ArrowRight' });
+  expect(circle).toHaveFocus();
+  fireEvent.keyDown(circle, { key: 'Enter' });
+  expect(editor.getHTML()).toContain('data-office-bullet-style="circle"');
+  expect(
+    screen.queryByRole('dialog', { name: '项目符号库' }),
+  ).not.toBeInTheDocument();
+  expect(trigger).toHaveFocus();
+
+  fireEvent.click(trigger);
+  library = screen.getByRole('dialog', { name: '项目符号库' });
+  const activeCircle = within(library).getByRole('menuitemradio', {
+    name: '空心圆点',
+  });
+  expect(activeCircle).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(activeCircle);
+  expect(editor.getHTML()).toContain('data-office-bullet-style="circle"');
+});
+
+test('edits numbering style, start value, and continuation from the ribbon', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: [
+      '<ol start="3" type="A">',
+      '<li><p>First</p></li><li><p>Second</p></li>',
+      '</ol>',
+      '<p>Break</p>',
+      '<ol><li><p>Third</p></li></ol>',
+    ].join(''),
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Third').from);
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '编号库' });
+  fireEvent.click(trigger);
+  let library = screen.getByRole('dialog', { name: '编号库' });
+  fireEvent.click(
+    within(library).getByRole('menuitemradio', { name: '大写罗马数字' }),
+  );
+  expect(editor.getHTML()).toContain('<ol type="I">');
+
+  fireEvent.click(trigger);
+  library = screen.getByRole('dialog', { name: '编号库' });
+  const start = within(library).getByRole('textbox', { name: '起始编号' });
+  fireEvent.change(start, { target: { value: '7' } });
+  fireEvent.click(within(library).getByRole('button', { name: '应用起始值' }));
+  expect(editor.getHTML()).toContain('<ol start="7" type="I">');
+
+  fireEvent.click(trigger);
+  library = screen.getByRole('dialog', { name: '编号库' });
+  fireEvent.click(
+    within(library).getByRole('button', { name: '继续前一列表' }),
+  );
+  expect(editor.getHTML()).toContain('<ol start="5" type="A">');
 });
 
 function textRange(editor: Editor, text: string): { from: number; to: number } {

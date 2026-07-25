@@ -201,7 +201,8 @@ describe('office core', () => {
       '<li><p>Fourth item</p></li>',
       '<li dir="rtl"><p>مرحبا A3S שלום</p></li>',
       '</ol>',
-      '<ul><li><p>Bullet item</p></li></ul>',
+      '<ul data-office-bullet-style="square" style="list-style-type: square">',
+      '<li><p>Bullet item</p></li></ul>',
     ].join('');
 
     const blob = await createArtifactBlob(artifact);
@@ -241,6 +242,7 @@ describe('office core', () => {
     expect(rtl).toContain('<w:rtl/>');
     expect(numberingXml).toContain('<w:start w:val="3"/>');
     expect(numberingXml).toContain('<w:lvl w:ilvl="1"');
+    expect(numberingXml).toContain('<w:lvlText w:val="■"/>');
 
     const imported = await importOfficeFile(
       new File([blob], 'structured-lists.docx', { type: blob.type }),
@@ -250,7 +252,9 @@ describe('office core', () => {
       throw new Error('Expected an imported document artifact.');
     expect(imported.content.html).toContain('<ol start="3">');
     expect(imported.content.html).toContain('<ol type="a">');
-    expect(imported.content.html).toContain('<ul>');
+    expect(imported.content.html).toContain(
+      'data-office-bullet-style="square"',
+    );
     expect(imported.content.html).toContain('<li dir="rtl">');
     expect(imported.content.html).toContain('Nested item');
     expect(imported.content.html).toContain('مرحبا A3S שלום');

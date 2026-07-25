@@ -879,6 +879,12 @@ async function verifySharedEditorGeometry(
   }
 
   if (kind !== 'pdf') {
+    const ribbonTabs = page.locator('.work-office-ribbon-tabs');
+    await expect(ribbonTabs).toBeVisible();
+    const tabInset = await ribbonTabs.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).paddingLeft),
+    );
+    expect(tabInset).toBeGreaterThanOrEqual(10);
     const startTab = page.getByRole('tab', { name: '开始' });
     await expect(startTab).toHaveAttribute('aria-selected', 'true');
     await expect(startTab).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');

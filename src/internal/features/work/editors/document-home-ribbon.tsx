@@ -12,8 +12,6 @@ import {
   IndentDecrease,
   IndentIncrease,
   Italic,
-  List,
-  ListOrdered,
   PilcrowLeft,
   PilcrowRight,
   Redo2,
@@ -40,6 +38,7 @@ import {
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
+import { DocumentListGallery } from './document-list-gallery';
 import { DocumentStyleGallery } from './document-style-gallery';
 
 const documentLineHeightOptions = [
@@ -199,20 +198,7 @@ export function DocumentHomeRibbon({
       <RibbonGroup label="段落">
         <div className="work-document-paragraph-tools">
           <div className="work-document-paragraph-actions">
-            <ToolbarButton
-              label="项目符号"
-              active={editor.isActive('bulletList')}
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-            >
-              <List size={16} />
-            </ToolbarButton>
-            <ToolbarButton
-              label="编号"
-              active={editor.isActive('orderedList')}
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            >
-              <ListOrdered size={16} />
-            </ToolbarButton>
+            <DocumentListGallery editor={editor} />
             <ToolbarButton
               label="减少缩进"
               onClick={() => editor.commands.changeDocumentIndent(-1)}

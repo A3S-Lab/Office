@@ -1,0 +1,257 @@
+.work-document-list-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.work-document-list-split {
+  display: flex;
+  height: 24px;
+  align-items: stretch;
+  border-radius: 5px;
+}
+
+.work-document-list-popover {
+  display: flex;
+  min-width: 0;
+}
+
+.work-document-ribbon .work-document-list-split > .work-document-list-primary {
+  width: 25px;
+  min-width: 25px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 5px 0 0 5px;
+}
+
+.work-document-ribbon
+  .work-document-list-split
+  .work-document-list-gallery-trigger {
+  width: 13px;
+  min-width: 13px;
+  height: 24px;
+  padding: 0;
+  border-radius: 0 5px 5px 0;
+}
+
+.work-document-list-split[data-active="true"]
+  .work-document-list-gallery-trigger,
+.work-document-list-gallery-trigger.active {
+  background: var(--a3s-panel-soft);
+  color: var(--work-office-accent);
+}
+
+.work-document-list-gallery-trigger::before {
+  width: 1px;
+  height: 13px;
+  margin-right: 1px;
+  background: var(--a3s-line);
+  content: "";
+}
+
+.work-document-list-panel {
+  display: grid;
+  width: min(300px, calc(100vw - 32px));
+  gap: 8px;
+  padding: 10px;
+  border-color: var(--a3s-line-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--a3s-panel) 98%, transparent);
+  box-shadow: 0 16px 38px rgb(15 23 42 / 18%);
+  color: var(--a3s-ink);
+  backdrop-filter: blur(18px);
+}
+
+.work-document-bullet-panel {
+  width: min(244px, calc(100vw - 32px));
+}
+
+.work-document-list-panel-title {
+  padding-inline: 2px;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.work-document-list-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.work-document-list-options > button {
+  display: grid;
+  min-width: 0;
+  height: 64px;
+  place-items: center;
+  gap: 2px;
+  padding: 5px 4px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.work-document-list-options > button:hover,
+.work-document-list-options > button:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 42%,
+    var(--a3s-line)
+  );
+  background: var(--a3s-panel-soft);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-office-accent) 12%, transparent);
+}
+
+.work-document-list-options > button[aria-checked="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 58%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+  box-shadow: inset 0 -2px 0 var(--work-office-accent);
+}
+
+.work-document-list-options > button > small {
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  font-size: 9px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-list-options.bullet-options > button > span {
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  line-height: 28px;
+}
+
+.work-document-numbering-preview {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+  color: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.work-document-numbering-preview > i {
+  font-style: normal;
+}
+
+.work-document-list-clear,
+.work-document-numbering-actions > button,
+.work-document-numbering-start > button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.work-document-list-clear {
+  justify-self: start;
+}
+
+.work-document-list-clear:hover:not(:disabled),
+.work-document-list-clear:focus-visible,
+.work-document-numbering-actions > button:hover:not(:disabled),
+.work-document-numbering-actions > button:focus-visible {
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-document-list-clear:disabled,
+.work-document-numbering-actions > button:disabled,
+.work-document-numbering-start > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.work-document-numbering-settings {
+  display: grid;
+  gap: 7px;
+  padding-top: 8px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-document-numbering-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.work-document-numbering-actions > button {
+  border-color: var(--a3s-line);
+  background: var(--a3s-panel);
+}
+
+.work-document-numbering-start {
+  display: grid;
+  grid-template-columns: auto minmax(84px, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-document-numbering-start .work-office-number-field {
+  height: 28px;
+}
+
+.work-document-numbering-start > button {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 34%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+  font-weight: 620;
+}
+
+.work-document-numbering-start > button:hover:not(:disabled),
+.work-document-numbering-start > button:focus-visible {
+  border-color: var(--work-office-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-office-accent) 12%, transparent);
+}
+
+@media (max-width: 420px) {
+  .work-document-list-panel {
+    width: calc(100vw - 32px);
+  }
+
+  .work-document-numbering-start {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .work-document-numbering-start > button {
+    grid-column: 1 / -1;
+  }
+}
