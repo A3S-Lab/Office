@@ -21,3 +21,8 @@ All notable changes to A3S Office will be documented in this file.
   dependency-failure propagation, and ordered cell-scoped Fortune fallback.
 - Added `kernelWasmUrl` support for Spreadsheet in React and Vue and the
   matching `kernel-wasm-url` Web Component attribute.
+- Added persistent nested Presentation groups with atomic selection and
+  collective transforms, plus native PPTX group-node export for slides,
+  layouts, and master-derived artwork. Supported group scale is normalized
+  across geometry, typography, rich-text runs, and border weights on import;
+  rotated or reflected source groups remain an explicit compatibility warning.

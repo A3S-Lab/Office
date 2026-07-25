@@ -6,6 +6,7 @@ import {
   directChildren,
   firstDescendant,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import {
   workSpreadsheetChartAxisDefaultLabelPosition,
@@ -354,7 +355,7 @@ function createChartElement(
   localName: string,
 ): Element {
   const prefix =
-    parent.lookupPrefix(parent.namespaceURI) ?? parent.prefix ?? 'c';
+    xmlNamespacePrefix(parent, parent.namespaceURI) ?? parent.prefix ?? 'c';
   return document.createElementNS(
     parent.namespaceURI,
     `${prefix}:${localName}`,
@@ -366,7 +367,7 @@ function appendDrawingElement(
   parent: Element,
   localName: string,
 ): Element {
-  const prefix = parent.lookupPrefix(DRAWING_NAMESPACE) ?? 'a';
+  const prefix = xmlNamespacePrefix(parent, DRAWING_NAMESPACE) ?? 'a';
   const element = document.createElementNS(
     DRAWING_NAMESPACE,
     `${prefix}:${localName}`,

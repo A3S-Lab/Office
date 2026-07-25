@@ -9,6 +9,7 @@ import {
   directChildren,
   firstDescendant,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import type {
   WorkSlide,
@@ -234,7 +235,8 @@ export function writePptxChartDataLabels(
     chart.type,
   );
   const namespace = chartNode.namespaceURI;
-  const prefix = chartNode.lookupPrefix(namespace) ?? chartNode.prefix ?? 'c';
+  const prefix =
+    xmlNamespacePrefix(chartNode, namespace) ?? chartNode.prefix ?? 'c';
   const container = document.createElementNS(namespace, `${prefix}:dLbls`);
   appendChartElement(document, container, prefix, 'dLblPos', {
     val: pptxDataLabelPositionValue(

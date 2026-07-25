@@ -88,6 +88,33 @@ export function attribute(element: Element, name: string): string | null {
   );
 }
 
+export function xmlNamespacePrefix(
+  element: Element,
+  namespace: string | null,
+): string | null {
+  if (!namespace) return element.prefix;
+  if (typeof element.lookupPrefix === 'function') {
+    const prefix = element.lookupPrefix(namespace);
+    if (prefix) return prefix;
+  }
+  let current: Element | null = element;
+  while (current) {
+    if (current.namespaceURI === namespace && current.prefix) {
+      return current.prefix;
+    }
+    const declaration = Array.from(current.attributes).find(
+      (item) =>
+        item.value === namespace &&
+        (item.name === 'xmlns' || item.name.startsWith('xmlns:')),
+    );
+    if (declaration?.name.startsWith('xmlns:')) {
+      return declaration.name.slice('xmlns:'.length);
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
 export function directChildren(
   parent: ParentNode,
   localName?: string,

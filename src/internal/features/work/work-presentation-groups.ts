@@ -95,7 +95,7 @@ export function canUngroupPresentationElements(
   );
   return elements.some(
     (element) =>
-      selected.has(element.id) && normalizedGroupPath(element).length > 0,
+      selected.has(element.id) && presentationGroupPath(element).length > 0,
   );
 }
 
@@ -118,7 +118,7 @@ export function groupPresentationElements(
     selected.has(element.id)
       ? {
           ...element,
-          groupIds: [normalizedGroupId, ...normalizedGroupPath(element)],
+          groupIds: [normalizedGroupId, ...presentationGroupPath(element)],
         }
       : element,
   );
@@ -139,7 +139,7 @@ export function ungroupPresentationElements(
   );
   if (!selectedGroups.size) return [...elements];
   return elements.map((element) => {
-    const path = normalizedGroupPath(element);
+    const path = presentationGroupPath(element);
     if (!path.length || !selectedGroups.has(path[0])) return element;
     const remaining = path.slice(1);
     return {
@@ -154,7 +154,7 @@ export function remapPresentationGroupPaths(
 ): WorkSlideElement[] {
   const replacements = new Map<string, string>();
   return elements.map((element) => {
-    const path = normalizedGroupPath(element);
+    const path = presentationGroupPath(element);
     if (!path.length) return element;
     return {
       ...element,
@@ -171,10 +171,10 @@ export function remapPresentationGroupPaths(
 export function topPresentationGroupId(
   element: WorkSlideElement,
 ): string | undefined {
-  return normalizedGroupPath(element)[0];
+  return presentationGroupPath(element)[0];
 }
 
-function normalizedGroupPath(element: WorkSlideElement): string[] {
+export function presentationGroupPath(element: WorkSlideElement): string[] {
   const seen = new Set<string>();
   return (element.groupIds ?? [])
     .map((groupId) => groupId.trim())

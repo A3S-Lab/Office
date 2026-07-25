@@ -7,7 +7,7 @@ import {
   OoxmlPackage,
 } from '../src/internal/features/work/work-ooxml-package';
 
-test('retains nested PPTX group selection paths after flattening geometry', async () => {
+test('retains nested PPTX group selection paths without a blanket compatibility warning', async () => {
   const file = await groupedPresentationFile();
   const archive = await OoxmlPackage.load(await file.arrayBuffer());
   const presentation = await archive.xml('ppt/presentation.xml');
@@ -25,12 +25,76 @@ test('retains nested PPTX group selection paths after flattening geometry', asyn
   expect(elements[1].groupIds).toHaveLength(2);
   expect(elements[1].groupIds?.[0]).toBe(elements[0].groupIds?.[0]);
   expect(elements[1].groupIds?.[1]).not.toBe(elements[0].groupIds?.[0]);
+  expect(result.compatibility.issues).not.toContainEqual(
+    expect.objectContaining({ code: 'pptx.group' }),
+  );
+});
+
+test('scales grouped typography and borders by the smaller cumulative axis', async () => {
+  const file = await presentationFile(
+    groupShape(
+      transform(0, 0, 4_000_000, 2_000_000, {
+        childWidth: 2_000_000,
+        childHeight: 1_000_000,
+      }),
+      [
+        groupShape(
+          transform(0, 0, 1_500_000, 750_000, {
+            childWidth: 2_000_000,
+            childHeight: 1_000_000,
+          }),
+          [styledShape('Scaled member', 0, 0, 1_000_000, 500_000)],
+        ),
+      ],
+    ),
+    'scaled-group.pptx',
+  );
+
+  const result = await importPptxPresentation(file);
+  const element = result.content.slides[0]?.elements[0];
+
+  expect(element?.fontSize).toBe(30);
+  expect(element?.borderWidth).toBe(3);
+  expect(element?.textRuns?.[0]?.fontSize).toBe(30);
+  expect(element?.textRuns?.[1]?.fontSize).toBeUndefined();
+  expect(element?.groupIds).toHaveLength(2);
+});
+
+test('reports only unsupported rotated or reflected group transforms', async () => {
+  const file = await presentationFile(
+    groupShape(
+      transform(0, 0, 2_000_000, 1_000_000, {
+        flipH: true,
+        rotation: 60_000,
+      }),
+      [shape('Transformed member', 0, 0, 1_000_000, 500_000)],
+    ),
+    'transformed-group.pptx',
+  );
+
+  const result = await importPptxPresentation(file);
+
   expect(result.compatibility.issues).toContainEqual(
+    expect.objectContaining({ code: 'pptx.group.transform' }),
+  );
+  expect(result.compatibility.issues).not.toContainEqual(
     expect.objectContaining({ code: 'pptx.group' }),
   );
 });
 
 async function groupedPresentationFile(): Promise<File> {
+  return presentationFile(
+    groupShape(transform(0, 0, 12_192_000, 6_858_000), [
+      shape('Outer member', 500_000, 500_000, 1_800_000, 900_000),
+      groupShape(transform(3_000_000, 1_000_000, 5_000_000, 3_000_000), [
+        shape('Inner member', 0, 0, 2_000_000, 1_000_000),
+      ]),
+    ]),
+    'grouped.pptx',
+  );
+}
+
+async function presentationFile(scene: string, name: string): Promise<File> {
   const zip = new JSZip();
   zip.file(
     'ppt/presentation.xml',
@@ -61,18 +125,13 @@ async function groupedPresentationFile(): Promise<File> {
         xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
         <p:cSld>
           <p:spTree>
-            ${groupShape(transform(0, 0, 12192000, 6858000), [
-              shape('Outer member', 500000, 500000, 1800000, 900000),
-              groupShape(transform(3000000, 1000000, 5000000, 3000000), [
-                shape('Inner member', 0, 0, 2000000, 1000000),
-              ]),
-            ])}
+            ${scene}
           </p:spTree>
         </p:cSld>
       </p:sld>`,
   );
   const bytes = await zip.generateAsync({ type: 'uint8array' });
-  return new File([bytes], 'grouped.pptx', {
+  return new File([bytes], name, {
     type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   });
 }
@@ -102,16 +161,57 @@ function shape(
   </p:sp>`;
 }
 
-function transform(
+function styledShape(
+  name: string,
   x: number,
   y: number,
   width: number,
   height: number,
 ): string {
-  return `<a:xfrm>
+  return `<p:sp>
+    <p:nvSpPr><p:cNvPr id="2" name="${name}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>
+    <p:spPr>
+      <a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${width}" cy="${height}"/></a:xfrm>
+      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+      <a:solidFill><a:srgbClr val="DCE6FB"/></a:solidFill>
+      <a:ln w="25400"><a:solidFill><a:srgbClr val="657087"/></a:solidFill></a:ln>
+    </p:spPr>
+    <p:txBody>
+      <a:bodyPr/><a:lstStyle/>
+      <a:p>
+        <a:r><a:rPr sz="2000"/><a:t>Scaled text</a:t></a:r>
+        <a:r><a:rPr b="1"/><a:t> with inherited size</a:t></a:r>
+      </a:p>
+    </p:txBody>
+  </p:sp>`;
+}
+
+function transform(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  options: {
+    childHeight?: number;
+    childWidth?: number;
+    childX?: number;
+    childY?: number;
+    flipH?: boolean;
+    flipV?: boolean;
+    rotation?: number;
+  } = {},
+): string {
+  const attributes = [
+    options.rotation ? `rot="${options.rotation}"` : '',
+    options.flipH ? 'flipH="1"' : '',
+    options.flipV ? 'flipV="1"' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return `<a:xfrm${attributes ? ` ${attributes}` : ''}>
     <a:off x="${x}" y="${y}"/>
     <a:ext cx="${width}" cy="${height}"/>
-    <a:chOff x="0" y="0"/>
-    <a:chExt cx="${width}" cy="${height}"/>
+    <a:chOff x="${options.childX ?? 0}" y="${options.childY ?? 0}"/>
+    <a:chExt cx="${options.childWidth ?? width}" cy="${options.childHeight ?? height}"/>
   </a:xfrm>`;
 }

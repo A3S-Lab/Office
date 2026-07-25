@@ -4,6 +4,7 @@ import {
   directChild,
   directChildren,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import { createWorkSlideTransition } from './work-presentation-transition';
 import type {
@@ -125,7 +126,7 @@ export function writePptxTransition(
   directChild(root, 'transition')?.remove();
   if (!transition) return;
   const namespace = root.namespaceURI;
-  const prefix = root.lookupPrefix(namespace) ?? root.prefix ?? 'p';
+  const prefix = xmlNamespacePrefix(root, namespace) ?? root.prefix ?? 'p';
   const element = document.createElementNS(namespace, `${prefix}:transition`);
   element.setAttribute(
     'spd',

@@ -1,4 +1,6 @@
 import { withPresentationDesign } from './work-presentation-layouts';
+import { presentationGroupPath } from './work-presentation-groups';
+import type { PptxGroupExportRegistry } from './work-pptx-groups';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -11,6 +13,11 @@ type PptxPresentation = InstanceType<PptxConstructor>;
 type PptxSlideMaster = Parameters<PptxPresentation['defineSlideMaster']>[0];
 type PptxSlideMasterObject = NonNullable<PptxSlideMaster['objects']>[number];
 
+interface PptxLayoutElement {
+  element: WorkSlideElement;
+  groupScope: string;
+}
+
 export interface PptxLayoutBinding {
   masterName: string;
   placeholderNames: Map<string, string>;
@@ -21,6 +28,7 @@ export function definePptxSlideLayouts(
   source: WorkPresentationContent,
   slideWidth: number,
   slideHeight: number,
+  groups: PptxGroupExportRegistry,
 ): {
   content: WorkPresentationContent;
   bindings: Map<string, PptxLayoutBinding>;
@@ -34,21 +42,41 @@ export function definePptxSlideLayouts(
     );
     const masterName = uniqueMasterName(layout.name, usedNames);
     const placeholders = effectivePlaceholders(master, layout);
+    const inherited = scopedLayoutElements(master, layout).filter(
+      ({ element }) => !element.placeholder,
+    );
+    const groupedPlaceholders = placeholders.filter(
+      ({ element }) => presentationGroupPath(element).length,
+    );
+    const nativePlaceholders = placeholders.filter(
+      ({ element }) => !presentationGroupPath(element).length,
+    );
     const placeholderNames = new Map(
-      placeholders.map((element, index) => [
+      nativePlaceholders.map(({ element }, index) => [
         element.placeholder?.key ?? `placeholder:${index + 1}`,
         placeholderName(element, index),
       ]),
     );
-    const inherited = [
-      ...(layout.showMasterElements === false ? [] : (master?.elements ?? [])),
-      ...layout.elements,
-    ].filter((element) => !element.placeholder);
     const objects = [
-      ...inherited.flatMap((element) =>
-        slideMasterObjects(element, slideWidth, slideHeight),
+      ...inherited.flatMap(({ element, groupScope }) =>
+        slideMasterObjects(
+          element,
+          slideWidth,
+          slideHeight,
+          groups,
+          groupScope,
+        ),
       ),
-      ...placeholders.map((element, index) =>
+      ...groupedPlaceholders.flatMap(({ element, groupScope }) =>
+        slideMasterObjects(
+          element,
+          slideWidth,
+          slideHeight,
+          groups,
+          groupScope,
+        ),
+      ),
+      ...nativePlaceholders.map(({ element }, index) =>
         slideMasterPlaceholder(
           element,
           placeholderNames.get(
@@ -74,24 +102,44 @@ export function definePptxSlideLayouts(
 function effectivePlaceholders(
   master: WorkPresentationMaster | undefined,
   layout: WorkPresentationLayout,
-): WorkSlideElement[] {
-  const placeholders = new Map<string, WorkSlideElement>();
-  for (const element of [
-    ...(layout.showMasterElements === false ? [] : (master?.elements ?? [])),
-    ...layout.elements,
-  ]) {
-    if (element.placeholder) placeholders.set(element.placeholder.key, element);
+): PptxLayoutElement[] {
+  const placeholders = new Map<string, PptxLayoutElement>();
+  for (const item of scopedLayoutElements(master, layout)) {
+    if (item.element.placeholder) {
+      placeholders.set(item.element.placeholder.key, item);
+    }
   }
   return Array.from(placeholders.values());
+}
+
+function scopedLayoutElements(
+  master: WorkPresentationMaster | undefined,
+  layout: WorkPresentationLayout,
+): PptxLayoutElement[] {
+  return [
+    ...(layout.showMasterElements === false
+      ? []
+      : (master?.elements ?? []).map((element) => ({
+          element,
+          groupScope: `master:${master?.id ?? layout.masterId}`,
+        }))),
+    ...layout.elements.map((element) => ({
+      element,
+      groupScope: `layout:${layout.id}`,
+    })),
+  ];
 }
 
 function slideMasterObjects(
   element: WorkSlideElement,
   slideWidth: number,
   slideHeight: number,
+  groups: PptxGroupExportRegistry,
+  groupScope: string,
 ): PptxSlideMasterObject[] {
   const box = elementBox(element, slideWidth, slideHeight);
   if (element.type === 'image' && element.image) {
+    const objectName = groups.objectName(groupScope, element, 'image');
     return [
       {
         image: {
@@ -99,11 +147,13 @@ function slideMasterObjects(
           ...box,
           rotate: element.rotation,
           altText: element.altText,
+          ...(objectName ? { objectName } : {}),
         },
       },
     ];
   }
   if (element.type === 'line') {
+    const objectName = groups.objectName(groupScope, element, 'line');
     return [
       {
         line: {
@@ -113,21 +163,24 @@ function slideMasterObjects(
             color: colorValue(element.borderColor ?? element.color),
             width: element.borderWidth ?? 1,
           },
+          ...(objectName ? { objectName } : {}),
         },
       },
     ];
   }
   if (element.type === 'text') {
+    const objectName = groups.objectName(groupScope, element, 'text');
     return [
       {
         text: {
           text: element.text,
-          options: textOptions(element, slideWidth, slideHeight),
+          options: textOptions(element, slideWidth, slideHeight, objectName),
         },
       },
     ];
   }
   if (element.type !== 'shape') return [];
+  const shapeObjectName = groups.objectName(groupScope, element, 'shape');
   const objects: PptxSlideMasterObject[] = [
     {
       rect: {
@@ -145,14 +198,16 @@ function slideMasterObjects(
           width: element.borderWidth ?? 0,
           transparency: element.borderWidth ? 0 : 100,
         },
+        ...(shapeObjectName ? { objectName: shapeObjectName } : {}),
       },
     },
   ];
   if (element.text) {
+    const textObjectName = groups.objectName(groupScope, element, 'text');
     objects.push({
       text: {
         text: element.text,
-        options: textOptions(element, slideWidth, slideHeight),
+        options: textOptions(element, slideWidth, slideHeight, textObjectName),
       },
     });
   }
@@ -181,6 +236,7 @@ function textOptions(
   element: WorkSlideElement,
   slideWidth: number,
   slideHeight: number,
+  objectName?: string,
 ) {
   return {
     ...elementBox(element, slideWidth, slideHeight),
@@ -194,6 +250,7 @@ function textOptions(
     align: element.align,
     valign: element.verticalAlign ?? ('middle' as const),
     margin: 0,
+    ...(objectName ? { objectName } : {}),
   };
 }
 

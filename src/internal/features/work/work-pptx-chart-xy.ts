@@ -9,6 +9,7 @@ import {
   directChildren,
   firstDescendant,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import type { WorkSlide, WorkSlideChart } from './work-types';
 
@@ -134,7 +135,7 @@ function insertChartSetting(
   anchor: Element | null,
 ): Element {
   const prefix =
-    parent.lookupPrefix(parent.namespaceURI) ?? parent.prefix ?? 'c';
+    xmlNamespacePrefix(parent, parent.namespaceURI) ?? parent.prefix ?? 'c';
   const element = document.createElementNS(
     parent.namespaceURI,
     `${prefix}:${localName}`,

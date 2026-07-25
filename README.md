@@ -97,7 +97,7 @@ export function App() {
 | Document | TipTap/ProseMirror + Worker/Rust-WASM layout | Sections, page layout, headers and footers, tables, images, comments, tracked changes, citations, notes, captions, references | DOCX import/export, PDF export |
 | Markdown | TipTap + GFM source model | Source and preview split view, coalesced preview updates, synchronized scrolling, task lists, tables, links, images, and code | MD import/export |
 | Spreadsheet | Fortune Sheet + persistent Worker/Rust-WASM calculation sessions | Multiple sheets, operation-driven cell patches, bounded scalar formulas, incremental dirty dependency graphs, cross-sheet dependencies, formatting, charts, validation, protection, comments, print settings | XLSX/XLS/ODS/CSV import, XLSX/PDF export |
-| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
+| Presentation | Typed multi-selection scene graph + on-demand TipTap text editing + Worker/Rust-WASM geometry | Slides, layouts, shapes, images, tables, charts, comments, transitions, presenter view, object/content mode separation, persistent nested browser groups, native PPTX group export, collective move/scale and keyboard commands, selection alignment/distribution, snapped move/resize previews, and alignment guides | PPTX import/export, PDF export |
 | PDF | PDFium WebAssembly | Rendering, navigation, search, form filling, annotations, history, save | PDF open/save |
 
 ### Package matrix
@@ -309,9 +309,12 @@ Presentation alignment and snapped object transforms use the same kernel.
 Pointer movement updates a frame-coalesced preview; releasing the pointer emits
 one controlled value and therefore one undo step. Presentation group paths are
 stored outermost-first in the scene model, selected as atomic logical units,
-and remapped when objects, slides, or layouts are copied. PDF rendering uses
-`pdfium.wasm`, while presentation export loads the browser PptxGenJS runtime
-only when needed.
+and remapped when objects, slides, or layouts are copied. PPTX export writes
+those paths as nested native group nodes for slide, layout, and master-derived
+objects. Generated groups use identity child coordinates computed from emitted
+OOXML geometry, so non-rotated and non-reflected group transforms reimport with
+their hierarchy and visual scale intact. PDF rendering uses `pdfium.wasm`,
+while presentation export loads the browser PptxGenJS runtime only when needed.
 
 Applications serving package assets from a separate CDN can pass explicit
 `kernelWasmUrl`, `layoutFonts`, `wasmUrl`, or `pptxRuntimeUrl` values. Static
@@ -335,13 +338,12 @@ Unsupported OOXML semantics, arbitrary floating-object layout, complete font
 substitution, modern threaded comments, Spreadsheet arrays, spills, structured
 references, external-workbook refresh, kernel-owned number formatting and print
 pagination, the A3S-owned virtual grid, moving sparse projection work off the
-main thread, native PPTX group-node serialization and transform round-trip
-preservation, and the remaining presentation scene features stay explicit
-fidelity gates. Rust/WASM is the canonical
-Spreadsheet calculation path; if Worker or WebAssembly loading fails, the
-Fortune-based JavaScript fallback keeps editing available but may follow
-Fortune coercion and eager-branch semantics on formulas outside the shared
-parity fixtures.
+main thread, arbitrary rotated or reflected PPTX group transforms, and the
+remaining presentation scene features stay explicit fidelity gates. Rust/WASM
+is the canonical Spreadsheet calculation path; if Worker or WebAssembly
+loading fails, the Fortune-based JavaScript fallback keeps editing available
+but may follow Fortune coercion and eager-branch semantics on formulas outside
+the shared parity fixtures.
 
 See [Browser editor architecture](docs/browser-editor-architecture.md) for
 engine ownership, Worker/WASM boundaries, delivery stages, and performance
@@ -411,8 +413,12 @@ the host receives one controlled update per gesture. Nested browser group paths
 make top-level groups atomic for selection, movement, arrangement, clipboard,
 and history while keeping every scene element independently serializable. A
 shared selection frame scales member geometry, typography, rich-text run sizes,
-and border weights in one controlled update; native PPTX group transforms
-remain a separate serialization boundary. PDF commands call typed PDFium
+and border weights in one controlled update. PPTX serialization builds native
+nested group nodes around the generated slide, layout, and master-derived
+objects, using identity child-coordinate transforms calculated from emitted
+geometry. Import applies non-rotated group scale to geometry, typography,
+explicit run sizes, and border weights; arbitrary group rotation and reflection
+remain explicit compatibility boundaries. PDF commands call typed PDFium
 capabilities directly.
 
 Public framework adapters converge on the same React editor engine. The

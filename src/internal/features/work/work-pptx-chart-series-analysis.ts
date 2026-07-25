@@ -5,6 +5,7 @@ import {
   directChildren,
   firstDescendant,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import { workSpreadsheetChartSupportsSeriesAnalysis } from './work-spreadsheet-chart-layout';
 import {
@@ -446,7 +447,7 @@ function appendChartElement(
   localName: string,
 ): Element {
   const prefix =
-    parent.lookupPrefix(parent.namespaceURI) ?? parent.prefix ?? 'c';
+    xmlNamespacePrefix(parent, parent.namespaceURI) ?? parent.prefix ?? 'c';
   const element = document.createElementNS(
     parent.namespaceURI,
     `${prefix}:${localName}`,
@@ -461,7 +462,7 @@ function createChartElement(
   localName: string,
 ): Element {
   const prefix =
-    parent.lookupPrefix(parent.namespaceURI) ?? parent.prefix ?? 'c';
+    xmlNamespacePrefix(parent, parent.namespaceURI) ?? parent.prefix ?? 'c';
   return document.createElementNS(
     parent.namespaceURI,
     `${prefix}:${localName}`,

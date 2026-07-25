@@ -36,6 +36,7 @@ import {
 } from './work-pptx-comments';
 import { readPptxChart } from './work-pptx-chart-import';
 import { readPptxTransition } from './work-pptx-transition';
+import { scaledPresentationVisuals } from './work-presentation-visual-scale';
 import { createWorkId } from './work-templates';
 import type {
   WorkCompatibilityIssue,
@@ -78,6 +79,7 @@ interface PptxDesignRegistry {
 interface GroupTransform {
   groupIds: string[];
   map: (box: PptxRawBox) => PptxRawBox;
+  visualScale: number;
 }
 
 interface ParsedText {
@@ -577,25 +579,28 @@ async function parseSlideNode(
 ): Promise<WorkSlideElement[]> {
   if (node.localName === 'sp')
     return [
-      withImportedGroupPath(parseShape(node, context, transform), transform),
+      withImportedGroupTransform(
+        parseShape(node, context, transform),
+        transform,
+      ),
     ];
   if (node.localName === 'pic')
     return [
-      withImportedGroupPath(
+      withImportedGroupTransform(
         await parsePicture(node, context, transform),
         transform,
       ),
     ];
   if (node.localName === 'graphicFrame')
     return [
-      withImportedGroupPath(
+      withImportedGroupTransform(
         await parseGraphicFrame(node, context, transform),
         transform,
       ),
     ];
   if (node.localName === 'cxnSp')
     return [
-      withImportedGroupPath(
+      withImportedGroupTransform(
         parseConnector(node, context, transform),
         transform,
       ),
@@ -911,13 +916,19 @@ async function parseGroup(
   context: PptxImportContext,
   parentTransform?: GroupTransform,
 ): Promise<WorkSlideElement[]> {
-  addIssue(
-    context,
-    'pptx.group',
-    'Grouped objects',
-    'Grouped objects retain their nested browser-editing selection paths. PPTX export currently emits the flattened visual objects.',
-  );
   const xfrm = childPath(node, 'grpSpPr', 'xfrm');
+  if (
+    numberAttribute(xfrm, 'rot', 0) !== 0 ||
+    booleanAttribute(xfrm, 'flipH') ||
+    booleanAttribute(xfrm, 'flipV')
+  ) {
+    addIssue(
+      context,
+      'pptx.group.transform',
+      'Group transform',
+      'Group rotation or reflection is retained in the original PPTX but is not applied to browser editing geometry.',
+    );
+  }
   const offset = directChild(xfrm ?? node, 'off');
   const extent = directChild(xfrm ?? node, 'ext');
   const childOffset = directChild(xfrm ?? node, 'chOff');
@@ -934,11 +945,13 @@ async function parseGroup(
     width: numberAttribute(childExtent, 'cx', group.width),
     height: numberAttribute(childExtent, 'cy', group.height),
   };
+  const localVisualScale = pptxGroupVisualScale(group, viewport);
   const transform: GroupTransform = {
     groupIds: [
       ...(parentTransform?.groupIds ?? []),
       createWorkId('element-group'),
     ],
+    visualScale: (parentTransform?.visualScale ?? 1) * localVisualScale,
     map: (box) => {
       const mapped = {
         ...box,
@@ -961,13 +974,24 @@ async function parseGroup(
   return elements;
 }
 
-function withImportedGroupPath(
+function withImportedGroupTransform(
   element: WorkSlideElement,
   transform?: GroupTransform,
 ): WorkSlideElement {
-  return transform?.groupIds.length
-    ? { ...element, groupIds: [...transform.groupIds] }
-    : element;
+  if (!transform?.groupIds.length) return element;
+  return {
+    ...element,
+    ...scaledPresentationVisuals(element, transform.visualScale),
+    groupIds: [...transform.groupIds],
+  };
+}
+
+function pptxGroupVisualScale(group: PptxRawBox, viewport: PptxRawBox): number {
+  const scaleX = Math.abs(group.width) / Math.max(1, Math.abs(viewport.width));
+  const scaleY =
+    Math.abs(group.height) / Math.max(1, Math.abs(viewport.height));
+  const scale = Math.min(scaleX, scaleY);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
 }
 
 function parseText(
@@ -1026,11 +1050,12 @@ function parseText(
       const relationship = relationshipId
         ? context.relationships.get(relationshipId)
         : undefined;
+      const fontSize = runProperties
+        ? positiveNumber(attribute(runProperties, 'sz'))
+        : undefined;
       runs.push({
         text,
-        fontSize: runProperties
-          ? numberAttribute(runProperties, 'sz', 1800) / 100
-          : undefined,
+        fontSize: fontSize ? fontSize / 100 : undefined,
         color,
         bold: runProperties ? booleanAttribute(runProperties, 'b') : undefined,
         italic: runProperties

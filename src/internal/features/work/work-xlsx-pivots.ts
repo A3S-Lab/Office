@@ -7,6 +7,7 @@ import {
   firstDescendant,
   OoxmlPackage,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import {
   formatSpreadsheetCellRanges,
@@ -804,7 +805,12 @@ function insertWorkbookPivotCaches(
 }
 
 function ensureRelationshipNamespace(document: Document): void {
-  if (document.documentElement.lookupPrefix(DOCUMENT_RELATIONSHIP_NAMESPACE))
+  if (
+    xmlNamespacePrefix(
+      document.documentElement,
+      DOCUMENT_RELATIONSHIP_NAMESPACE,
+    )
+  )
     return;
   document.documentElement.setAttributeNS(
     XMLNS_NAMESPACE,

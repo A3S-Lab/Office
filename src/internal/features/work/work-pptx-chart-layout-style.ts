@@ -17,6 +17,7 @@ import {
   directChildren,
   firstDescendant,
   parseXml,
+  xmlNamespacePrefix,
 } from './work-ooxml-package';
 import { normalizePresentationChartSeriesStyle } from './work-presentation-charts';
 import type {
@@ -380,7 +381,7 @@ function insertChartSetting(
   anchor: Element | null,
 ): Element {
   const prefix =
-    parent.lookupPrefix(parent.namespaceURI) ?? parent.prefix ?? 'c';
+    xmlNamespacePrefix(parent, parent.namespaceURI) ?? parent.prefix ?? 'c';
   const element = document.createElementNS(
     parent.namespaceURI,
     `${prefix}:${localName}`,

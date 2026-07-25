@@ -4,8 +4,13 @@ import { patchPptxChartLayoutAndSeriesStyles } from './work-pptx-chart-layout-st
 import { patchPptxChartSeriesAnalysis } from './work-pptx-chart-series-analysis';
 import { patchPptxChartXySettings } from './work-pptx-chart-xy';
 import { patchPptxComments } from './work-pptx-comments';
+import {
+  patchPptxNativeGroups,
+  PptxGroupExportRegistry,
+} from './work-pptx-groups';
 import { definePptxSlideLayouts } from './work-pptx-layout-export';
 import { patchPptxTransitions } from './work-pptx-transition';
+import { presentationGroupPath } from './work-presentation-groups';
 import { presentationChartAxes } from './work-presentation-chart-axes';
 import {
   normalizeDoughnutHoleSize,
@@ -29,13 +34,17 @@ type PptxConstructor = typeof import('pptxgenjs').default;
 type PptxPresentation = InstanceType<PptxConstructor>;
 type PptxSlide = ReturnType<PptxPresentation['addSlide']>;
 
-export function createPptxPresentation(
+function createPptxExportState(
   artifact: WorkArtifact,
   PptxGenJS: PptxConstructor,
-): PptxPresentation {
+): {
+  groups: PptxGroupExportRegistry;
+  presentation: PptxPresentation;
+} {
   if (artifact.content.type !== 'presentation') {
     throw new Error('Only presentation artifacts can be exported as PPTX.');
   }
+  const groups = new PptxGroupExportRegistry();
   const presentation = new PptxGenJS();
   const slideWidth = artifact.content.width ?? 13.333;
   const slideHeight = artifact.content.height ?? 7.5;
@@ -54,6 +63,7 @@ export function createPptxPresentation(
     artifact.content,
     slideWidth,
     slideHeight,
+    groups,
   );
   for (const source of design.content.slides) {
     const binding =
@@ -72,6 +82,8 @@ export function createPptxPresentation(
         presentation,
         slideWidth,
         slideHeight,
+        groups,
+        `slide:${source.id}`,
         element.placeholder
           ? binding?.placeholderNames.get(element.placeholder.key)
           : undefined,
@@ -79,14 +91,14 @@ export function createPptxPresentation(
     }
     if (source.notes?.trim()) slide.addNotes(source.notes);
   }
-  return presentation;
+  return { groups, presentation };
 }
 
 export async function createPptxBlob(
   artifact: WorkArtifact,
   PptxGenJS: PptxConstructor,
 ): Promise<Blob> {
-  const presentation = createPptxPresentation(artifact, PptxGenJS);
+  const { groups, presentation } = createPptxExportState(artifact, PptxGenJS);
   const output = await presentation.write({
     outputType: 'arraybuffer',
     compression: true,
@@ -112,7 +124,7 @@ export async function createPptxBlob(
     withChartSeriesAnalysis,
     slides,
   );
-  const patched = await patchPptxComments(
+  const withComments = await patchPptxComments(
     withTransitions,
     slides,
     artifact.content.type === 'presentation'
@@ -122,6 +134,7 @@ export async function createPptxBlob(
       ? (artifact.content.height ?? 7.5)
       : 7.5,
   );
+  const patched = await patchPptxNativeGroups(withComments, groups);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   });
@@ -133,6 +146,8 @@ function addPresentationElement(
   presentation: PptxPresentation,
   slideWidth: number,
   slideHeight: number,
+  groups: PptxGroupExportRegistry,
+  groupScope: string,
   placeholder?: string,
 ) {
   const x = (element.x / 100) * slideWidth;
@@ -143,6 +158,9 @@ function addPresentationElement(
   const fillColor = element.fill.replace('#', '');
   const borderColor = (element.borderColor ?? element.fill).replace('#', '');
   const rotation = element.rotation;
+  const resolvedPlaceholder = presentationGroupPath(element).length
+    ? undefined
+    : placeholder;
 
   if (
     element.placeholder &&
@@ -154,6 +172,7 @@ function addPresentationElement(
     return;
   }
   if (element.type === 'image' && element.image) {
+    const objectName = groups.objectName(groupScope, element, 'image');
     slide.addImage({
       data: element.image.dataUrl,
       x,
@@ -161,11 +180,13 @@ function addPresentationElement(
       w: width,
       h: height,
       rotate: rotation,
-      placeholder,
+      placeholder: resolvedPlaceholder,
+      ...(objectName ? { objectName } : {}),
     });
     return;
   }
   if (element.type === 'table' && element.table) {
+    const objectName = groups.objectName(groupScope, element, 'table');
     const options = {
       x,
       y,
@@ -177,7 +198,8 @@ function addPresentationElement(
       fontFace: element.fontFamily ?? 'Aptos',
       fontSize: Math.max(7, element.fontSize * 0.75),
       margin: 0.06,
-      placeholder,
+      placeholder: resolvedPlaceholder,
+      ...(objectName ? { objectName } : {}),
     };
     slide.addTable(
       element.table.rows.map((row) => row.map((text) => ({ text }))),
@@ -186,6 +208,7 @@ function addPresentationElement(
     return;
   }
   if (element.type === 'chart' && element.chart) {
+    const objectName = groups.objectName(groupScope, element, 'chart');
     const axes = presentationChartAxes(element.chart);
     const categoryAxis =
       element.chart.type === 'bar' ? axes?.left : axes?.bottom;
@@ -217,7 +240,8 @@ function addPresentationElement(
       legendPos: pptxLegendPosition(element.chart.legendPosition),
       showTitle: Boolean(element.chart.title),
       title: element.chart.title,
-      placeholder,
+      placeholder: resolvedPlaceholder,
+      ...(objectName ? { objectName } : {}),
       ...(presentationChartSupportsAxisTitles(element.chart)
         ? {
             catAxisTitle: categoryAxis?.title,
@@ -243,6 +267,7 @@ function addPresentationElement(
     return;
   }
   if (element.type === 'line') {
+    const objectName = groups.objectName(groupScope, element, 'line');
     slide.addShape(presentation.ShapeType.line, {
       x,
       y,
@@ -250,13 +275,35 @@ function addPresentationElement(
       h: height,
       rotate: rotation,
       line: { color: borderColor, width: element.borderWidth ?? 1 },
+      ...(objectName ? { objectName } : {}),
     });
     return;
   }
   if (element.type === 'shape') {
-    addShape(slide, element, presentation, x, y, width, height, placeholder);
+    addShape(
+      slide,
+      element,
+      presentation,
+      x,
+      y,
+      width,
+      height,
+      resolvedPlaceholder,
+      groups.objectName(groupScope, element, 'shape'),
+    );
   }
-  if (element.text) addText(slide, element, x, y, width, height, placeholder);
+  if (element.text) {
+    addText(
+      slide,
+      element,
+      x,
+      y,
+      width,
+      height,
+      resolvedPlaceholder,
+      groups.objectName(groupScope, element, 'text'),
+    );
+  }
 }
 
 function pptxChartData(chart: WorkSlideChart) {
@@ -311,6 +358,7 @@ function addShape(
   width: number,
   height: number,
   placeholder?: string,
+  objectName?: string,
 ) {
   const shapeType =
     element.shapeType === 'ellipse'
@@ -331,6 +379,7 @@ function addShape(
     h: height,
     rotate: element.rotation,
     placeholder,
+    ...(objectName ? { objectName } : {}),
     fill:
       element.fill === 'transparent'
         ? { color: 'FFFFFF', transparency: 100 }
@@ -355,6 +404,7 @@ function addText(
   width: number,
   height: number,
   placeholder?: string,
+  objectName?: string,
 ) {
   const text = element.textRuns?.length
     ? element.textRuns.map((run) => ({
@@ -392,6 +442,7 @@ function addText(
         : { color: element.fill.replace('#', '') },
     hyperlink: element.href ? { url: element.href } : undefined,
     placeholder,
+    ...(objectName ? { objectName } : {}),
   });
 }
 
