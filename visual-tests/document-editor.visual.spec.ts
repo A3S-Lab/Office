@@ -150,6 +150,75 @@ test('document list libraries keep styles and numbering settings in context', as
   await expect(page).toHaveScreenshot('document-numbering-library.png');
 });
 
+test('document navigation keeps a live outline beside the editing surface', async ({
+  page,
+}, testInfo) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
+  if (!fixture) throw new Error('Missing document visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  await page.getByRole('tab', { name: '视图' }).click();
+  const navigationToggle = page.getByRole('button', { name: '导航窗格' });
+  await navigationToggle.click();
+
+  const pane = page.getByRole('complementary', { name: '文档导航' });
+  const search = pane.getByRole('searchbox', { name: '搜索标题' });
+  await expect(pane).toBeVisible();
+  await expect(search).toBeFocused();
+  await expect(pane.getByText('5 个标题')).toBeVisible();
+  await expect(pane.getByRole('button', { name: '背景与目标' })).toBeVisible();
+
+  await search.fill('范围');
+  await expect(pane.getByText('1 个匹配')).toBeVisible();
+  await expect(pane.getByRole('button', { name: '工作范围' })).toBeVisible();
+  await search.fill('');
+  await pane.getByRole('button', { name: '背景与目标' }).click();
+  await expect(
+    pane.getByRole('button', { name: '背景与目标' }),
+  ).toHaveAttribute('aria-current', 'location');
+
+  const geometry = await page.evaluate(() => {
+    const workspace = document.querySelector('.work-document-workspace');
+    const pane = document.querySelector('.work-document-navigation-panel');
+    const scroll = document.querySelector('.work-document-scroll');
+    if (!(workspace && pane && scroll)) {
+      throw new Error('Document navigation geometry is unavailable.');
+    }
+    const workspaceRect = workspace.getBoundingClientRect();
+    const paneRect = pane.getBoundingClientRect();
+    const scrollRect = scroll.getBoundingClientRect();
+    return {
+      position: getComputedStyle(pane).position,
+      workspaceLeft: workspaceRect.left,
+      paneLeft: paneRect.left,
+      paneRight: paneRect.right,
+      paneWidth: paneRect.width,
+      paneBottom: paneRect.bottom,
+      scrollLeft: scrollRect.left,
+      viewportHeight: document.documentElement.clientHeight,
+    };
+  });
+  expect(geometry.paneLeft).toBeCloseTo(geometry.workspaceLeft, 0);
+  expect(geometry.paneWidth).toBeGreaterThanOrEqual(224);
+  expect(geometry.paneWidth).toBeLessThanOrEqual(292);
+  expect(geometry.paneBottom).toBeLessThanOrEqual(geometry.viewportHeight);
+  if (testInfo.project.name === 'compact-768') {
+    expect(geometry.position).toBe('absolute');
+    expect(geometry.scrollLeft).toBeCloseTo(geometry.workspaceLeft, 0);
+  } else {
+    expect(geometry.position).toBe('static');
+    expect(geometry.scrollLeft).toBeCloseTo(geometry.paneRight, 0);
+  }
+
+  await stabilizeVisualSurface(page);
+  await expect(pane).toHaveScreenshot('document-navigation-pane.png');
+  await page.keyboard.press('Escape');
+  await expect(pane).toBeHidden();
+  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+});
+
 test('document selection toolbar keeps formatting and review in context', async ({
   page,
 }) => {

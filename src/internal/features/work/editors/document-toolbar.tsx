@@ -13,6 +13,7 @@ import {
   ListChecks,
   MessageSquarePlus,
   MessagesSquare,
+  PanelLeftOpen,
   RefreshCw,
   Settings2,
   Table2,
@@ -73,6 +74,7 @@ export type DocumentViewMode = 'page' | 'web';
 interface DocumentToolbarProps {
   editor: Editor;
   layoutOpen: boolean;
+  navigationOpen: boolean;
   showPageNumbers: boolean;
   spellcheckEnabled: boolean;
   viewMode: DocumentViewMode;
@@ -85,6 +87,7 @@ interface DocumentToolbarProps {
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
   onToggleLayout: () => void;
+  onToggleNavigation: () => void;
   onTogglePageNumbers: () => void;
   onToggleSpellcheck: () => void;
   onViewModeChange: (mode: DocumentViewMode) => void;
@@ -119,6 +122,7 @@ interface DocumentToolbarProps {
 export function DocumentToolbar({
   editor,
   layoutOpen,
+  navigationOpen,
   showPageNumbers,
   spellcheckEnabled,
   viewMode,
@@ -131,6 +135,7 @@ export function DocumentToolbar({
   onClosePageChrome,
   onTogglePageChromePageNumber,
   onToggleLayout,
+  onToggleNavigation,
   onTogglePageNumbers,
   onToggleSpellcheck,
   onViewModeChange,
@@ -523,6 +528,16 @@ export function DocumentToolbar({
           ),
           view: (
             <>
+              <RibbonGroup label="显示">
+                <ToolbarButton
+                  label="导航窗格"
+                  displayLabel
+                  active={navigationOpen}
+                  onClick={onToggleNavigation}
+                >
+                  <PanelLeftOpen size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
               <RibbonGroup label="文档视图">
                 <ToolbarButton
                   label="页面视图"

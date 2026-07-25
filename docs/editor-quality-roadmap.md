@@ -136,6 +136,13 @@ Exit evidence:
 - Virtualize or incrementally derive outlines, comments, revisions, and page
   chrome for large files.
 
+Current implementation evidence includes a persistent Word-style navigation
+pane with a typed heading hierarchy, active-heading tracking, title filtering,
+collapsible branches, keyboard traversal, responsive left-side placement, and
+safe selection-based jumps that do not create history entries. Full-text
+navigation results, page thumbnails, and measured outline virtualization for
+100-page fixtures remain part of this priority.
+
 Exit evidence:
 
 - Review operations retain authorship, anchors, replies, and state through

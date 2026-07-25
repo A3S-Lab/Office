@@ -58,6 +58,7 @@ import {
 } from './document-editor-support';
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import { DocumentLayoutPanel } from './document-layout-panel';
+import { DocumentNavigationPanel } from './document-navigation-panel';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
 import { DocumentRuler } from './document-ruler';
 import {
@@ -106,7 +107,8 @@ type DocumentTaskPane =
   | DocumentFindReplaceMode
   | 'citations'
   | 'changes'
-  | 'layout';
+  | 'layout'
+  | 'navigation';
 
 function createTrackedDocumentChange(_kind: WorkDocumentChangeKind) {
   return {
@@ -150,6 +152,7 @@ export function DocumentEditor({
   const [commentRepliesDirty, setCommentRepliesDirty] = useState(false);
   const taskPaneDialog = useOfficeDialog();
   const layoutOpen = taskPane === 'layout';
+  const navigationOpen = taskPane === 'navigation';
   const changesOpen = taskPane === 'changes';
   const citationsOpen = taskPane === 'citations';
   const findReplaceMode =
@@ -328,8 +331,8 @@ export function DocumentEditor({
       event.stopPropagation();
       void closeTaskPane();
     };
-    document.addEventListener('keydown', closeFromEscape);
-    return () => document.removeEventListener('keydown', closeFromEscape);
+    document.addEventListener('keydown', closeFromEscape, true);
+    return () => document.removeEventListener('keydown', closeFromEscape, true);
   }, [closeTaskPane, taskPane]);
 
   const replaceDocumentText = useCallback(
@@ -537,6 +540,7 @@ export function DocumentEditor({
         editor={editor}
         fileActions={fileActions}
         layoutOpen={layoutOpen}
+        navigationOpen={navigationOpen}
         showPageNumbers={visibleChrome.showPageNumber}
         spellcheckEnabled={spellcheckEnabled}
         viewMode={viewMode}
@@ -553,6 +557,7 @@ export function DocumentEditor({
             if (accepted) resetPageChrome();
           });
         }}
+        onToggleNavigation={() => void toggleTaskPane('navigation')}
         onToggleSpellcheck={() => setSpellcheckEnabled((value) => !value)}
         onViewModeChange={setViewMode}
         onZoomChange={(nextZoom) => setZoom(clampDocumentZoom(nextZoom))}
@@ -589,6 +594,7 @@ export function DocumentEditor({
         findReplaceMode={findReplaceMode}
         onRibbonTabChange={(tab) => {
           const keepCurrentPane =
+            taskPane === 'navigation' ||
             (taskPane === 'layout' && tab === 'page') ||
             (taskPane === 'citations' && tab === 'references') ||
             (taskPane === 'changes' && tab === 'review') ||
@@ -605,6 +611,9 @@ export function DocumentEditor({
       <div
         className={`work-document-workspace${taskPane ? ' task-pane-open' : ''}`}
       >
+        {navigationOpen && (
+          <DocumentNavigationPanel editor={editor} onClose={closeTaskPane} />
+        )}
         <div className={`work-document-scroll ${viewMode}`}>
           <div
             ref={reviewSurfaceRef}

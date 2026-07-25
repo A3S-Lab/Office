@@ -58,6 +58,8 @@ export function DocumentHomeRibbon({
   findReplaceMode: DocumentFindReplaceMode | null;
   onFindText: (replace: boolean) => void;
 }) {
+  if (editor.isDestroyed) return null;
+
   return (
     <>
       <RibbonGroup label="撤销">
