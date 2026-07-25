@@ -5,6 +5,11 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import TextAlign from '@tiptap/extension-text-align';
 import StarterKit from '@tiptap/starter-kit';
 import { describe, expect, test } from '@rstest/core';
+import {
+  createArtifact,
+  createArtifactBlob,
+  importOfficeFile,
+} from '../src/core';
 import { DocumentSection } from '../src/internal/features/work/work-document-section-node';
 import {
   changeDocumentIndent,
@@ -39,6 +44,45 @@ function createEditor(content = '<p>A3S Office</p>'): Editor {
 }
 
 describe('document formatting', () => {
+  test('round-trips paragraph alignment through DOCX import', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document')
+      throw new Error('Expected a document artifact.');
+    artifact.content.html = [
+      '<p style="text-align: center;">Centered paragraph</p>',
+      '<p style="text-align: right;">Right-aligned paragraph</p>',
+      '<p style="text-align: justify;">Justified paragraph</p>',
+      '<ol><li dir="rtl"><p style="text-align: right;">Aligned list item</p></li></ol>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const imported = await importOfficeFile(
+      new File([blob], 'paragraph-alignment.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document')
+      throw new Error('Expected an imported document artifact.');
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+
+    expect(paragraphByText(html, 'Centered paragraph')?.style.textAlign).toBe(
+      'center',
+    );
+    expect(
+      paragraphByText(html, 'Right-aligned paragraph')?.style.textAlign,
+    ).toBe('right');
+    expect(paragraphByText(html, 'Justified paragraph')?.style.textAlign).toBe(
+      'justify',
+    );
+    expect(paragraphByText(html, 'Aligned list item')?.style.textAlign).toBe(
+      'right',
+    );
+    expect(
+      paragraphByText(html, 'Aligned list item')?.closest('li'),
+    ).toHaveAttribute('dir', 'rtl');
+  });
+
   test('keeps character and paragraph formatting in the TipTap document', () => {
     const editor = createEditor();
 
@@ -290,3 +334,12 @@ describe('document formatting', () => {
     editor.destroy();
   });
 });
+
+function paragraphByText(
+  document: Document,
+  text: string,
+): HTMLElement | undefined {
+  return Array.from(
+    document.body.querySelectorAll<HTMLElement>('p, h1, h2, h3'),
+  ).find((element) => element.textContent === text);
+}

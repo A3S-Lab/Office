@@ -266,11 +266,15 @@ ribbon. DOCX import resolves `w:bidi` through document defaults, the default
 paragraph style, bounded and cycle-safe `basedOn` chains, and direct
 overrides, including numbered paragraphs. Export maps explicit paragraph or
 list-item direction to `w:bidi` and right-to-left text runs to `w:rtl`. DOCX
-import resolves
-indents, spacing, and pagination through the same style chain. One shared style
-index serves these paragraph import passes. Marker application scans converted
-text once per property family instead of once per paragraph. Web view removes
-both automatic pagination and the paper ruler.
+import resolves `w:jc` alignment through the same defaults, style inheritance,
+and direct overrides. Physical left/right values remain physical, logical
+start/end values follow the resolved paragraph direction, and Word's supported
+distributed variants map to editable justification. Aligned list paragraphs
+remain semantic list items with an aligned paragraph child. Indents, spacing,
+and pagination use the same style chain. One shared style index serves these
+paragraph import passes. Marker application scans converted text once per
+property family instead of once per paragraph. Web view removes both automatic
+pagination and the paper ruler.
 
 Run-format import uses the same style index. It merges document run defaults,
 paragraph-style run properties, direct paragraph run properties, bounded

@@ -67,6 +67,12 @@ import {
   type ImportedDocxParagraphDirectionMarkers,
 } from './work-docx-paragraph-direction-import';
 import {
+  applyImportedDocxParagraphAlignmentMarkers,
+  hasImportedDocxParagraphAlignmentMarkers,
+  markDocxParagraphAlignments,
+  type ImportedDocxParagraphAlignmentMarkers,
+} from './work-docx-paragraph-alignment-import';
+import {
   applyImportedDocxParagraphIndentMarkers,
   hasImportedDocxParagraphIndentMarkers,
   markDocxParagraphIndents,
@@ -128,6 +134,7 @@ export interface PreparedDocxImport {
   citationMarkers: ImportedDocxCitationMarkers;
   listMarkers: ImportedDocxListMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
+  paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
   paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers;
@@ -165,6 +172,7 @@ export async function prepareDocxImport(
       citationMarkers: { citations: [], bibliographies: [] },
       listMarkers: { lists: [] },
       imageLayoutMarkers: { images: [] },
+      paragraphAlignmentMarkers: { paragraphs: [] },
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
       paragraphPaginationMarkers: { paragraphs: [] },
@@ -195,6 +203,10 @@ export async function prepareDocxImport(
     paragraphStylesDocument,
   );
   const paragraphDirectionMarkers = markDocxParagraphDirections(
+    document,
+    paragraphStyles,
+  );
+  const paragraphAlignmentMarkers = markDocxParagraphAlignments(
     document,
     paragraphStyles,
   );
@@ -238,6 +250,7 @@ export async function prepareDocxImport(
         hasImportedDocxFieldMarkers(fieldMarkers) ||
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+        hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
         hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
@@ -255,6 +268,7 @@ export async function prepareDocxImport(
       citationMarkers,
       listMarkers,
       imageLayoutMarkers,
+      paragraphAlignmentMarkers,
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
       paragraphPaginationMarkers,
@@ -292,6 +306,7 @@ export async function prepareDocxImport(
       hasImportedDocxFieldMarkers(fieldMarkers) ||
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+      hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
       hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
@@ -309,6 +324,7 @@ export async function prepareDocxImport(
     citationMarkers,
     listMarkers,
     imageLayoutMarkers,
+    paragraphAlignmentMarkers,
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
     paragraphPaginationMarkers,
@@ -334,6 +350,9 @@ export function applyDocxSectionsToHtml(
   },
   listMarkers: ImportedDocxListMarkers = { lists: [] },
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers = { images: [] },
+  paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers = {
+    paragraphs: [],
+  },
   runFormattingMarkers: ImportedDocxRunFormattingMarkers = {
     runs: [],
   },
@@ -374,6 +393,10 @@ export function applyDocxSectionsToHtml(
     paragraphPaginationMarkers,
   );
   applyImportedDocxParagraphTabStopMarkers(document, tabStopMarkers);
+  applyImportedDocxParagraphAlignmentMarkers(
+    document,
+    paragraphAlignmentMarkers,
+  );
   applyImportedDocxTableRowMarkers(document, tableRowMarkers);
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);

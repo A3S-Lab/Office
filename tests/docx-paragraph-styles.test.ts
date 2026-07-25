@@ -2,6 +2,10 @@ import { describe, expect, test } from '@rstest/core';
 import JSZip from 'jszip';
 import { prepareDocxImport } from '../src/internal/features/work/work-docx-import';
 import {
+  applyImportedDocxParagraphAlignmentMarkers,
+  markDocxParagraphAlignments,
+} from '../src/internal/features/work/work-docx-paragraph-alignment-import';
+import {
   applyImportedDocxParagraphDirectionMarkers,
   markDocxParagraphDirections,
 } from '../src/internal/features/work/work-docx-paragraph-direction-import';
@@ -25,6 +29,77 @@ function stylesXml(body: string): Document {
 }
 
 describe('DOCX paragraph styles', () => {
+  test('resolves and applies physical and logical paragraph alignment', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr>
+          <w:pStyle w:val="Centered"/>
+          <w:jc w:val="end"/>
+        </w:pPr>
+        <w:r><w:t>Direct end alignment</w:t></w:r>
+      </w:p>
+      <w:p>
+        <w:pPr><w:pStyle w:val="RightToLeftStart"/></w:pPr>
+        <w:r><w:t>RTL logical start</w:t></w:r>
+      </w:p>
+      <w:p>
+        <w:pPr><w:jc w:val="distribute"/></w:pPr>
+        <w:r><w:t>Distributed paragraph</w:t></w:r>
+      </w:p>
+      <w:p>
+        <w:pPr><w:numPr/><w:jc w:val="center"/></w:pPr>
+        <w:r><w:t>Centered list item</w:t></w:r>
+      </w:p>
+    `);
+    const styles = stylesXml(`
+      <w:style w:type="paragraph" w:styleId="Centered">
+        <w:pPr><w:jc w:val="center"/></w:pPr>
+      </w:style>
+      <w:style w:type="paragraph" w:styleId="RightToLeftStart">
+        <w:basedOn w:val="Centered"/>
+        <w:pPr><w:bidi/><w:jc w:val="start"/></w:pPr>
+      </w:style>
+    `);
+
+    const markers = markDocxParagraphAlignments(document, styles);
+
+    expect(markers.paragraphs.map(({ alignment }) => alignment)).toEqual([
+      'right',
+      'right',
+      'justify',
+      'center',
+    ]);
+
+    const html = new DOMParser().parseFromString(
+      [
+        `<p>${markers.paragraphs[0]?.marker}Direct end alignment</p>`,
+        `<p>${markers.paragraphs[1]?.marker}RTL logical start</p>`,
+        `<blockquote>${markers.paragraphs[2]?.marker}Distributed paragraph</blockquote>`,
+        `<ol><li>${markers.paragraphs[3]?.marker}Centered list item<ul><li>Nested item</li></ul></li></ol>`,
+      ].join(''),
+      'text/html',
+    );
+
+    applyImportedDocxParagraphAlignmentMarkers(html, markers);
+
+    const blocks = Array.from(
+      html.body.querySelectorAll<HTMLElement>('p, blockquote, li > p'),
+    );
+    expect(blocks.map((block) => block.style.textAlign)).toEqual([
+      'right',
+      'right',
+      'justify',
+      'center',
+    ]);
+    expect(html.body.querySelector('li > p')?.textContent).toBe(
+      'Centered list item',
+    );
+    expect(html.body.querySelector('li > ul > li')?.textContent).toBe(
+      'Nested item',
+    );
+    expect(html.body.textContent).not.toContain('__A3S_');
+  });
+
   test('resolves pagination from defaults, based-on styles, and direct overrides', () => {
     const document = wordXml(`
       <w:p>
