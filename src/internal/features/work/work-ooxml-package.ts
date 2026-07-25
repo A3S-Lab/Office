@@ -80,11 +80,15 @@ export function attribute(element: Element, name: string): string | null {
     ? name.slice(name.indexOf(':') + 1)
     : name;
   return (
-    Array.from(element.attributes).find(
-      (item) =>
-        item.localName === localName &&
-        (!name.includes(':') || item.name === name),
-    )?.value ?? null
+    Array.from(element.attributes).find((item) => {
+      const itemLocalName = item.localName.includes(':')
+        ? item.localName.slice(item.localName.indexOf(':') + 1)
+        : item.localName;
+      return (
+        itemLocalName === localName &&
+        (!name.includes(':') || item.name === name)
+      );
+    })?.value ?? null
   );
 }
 

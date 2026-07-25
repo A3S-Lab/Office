@@ -31,9 +31,11 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
 
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚加粗' }));
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚居中' }));
+  fireEvent.click(screen.getByRole('button', { name: '页眉页脚上标' }));
   await waitFor(() => {
-    expect(editor.getHTML()).toContain('<strong>Quarterly header</strong>');
+    expect(editor.getHTML()).toContain('<strong>');
     expect(editor.getHTML()).toContain('text-align: center');
+    expect(editor.getHTML()).toContain('<sup>');
   });
   expect(screen.getByRole('button', { name: '页眉页脚加粗' })).toHaveAttribute(
     'aria-pressed',
@@ -42,6 +44,24 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   expect(screen.getByRole('button', { name: '页眉页脚居中' })).toHaveAttribute(
     'aria-pressed',
     'true',
+  );
+  expect(screen.getByRole('button', { name: '页眉页脚上标' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '页眉页脚下标' }));
+  await waitFor(() => {
+    expect(editor.getHTML()).toContain('<sub>');
+    expect(editor.getHTML()).not.toContain('<sup>');
+  });
+  expect(screen.getByRole('button', { name: '页眉页脚下标' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(screen.getByRole('button', { name: '页眉页脚上标' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
   );
 
   fireEvent.click(screen.getByRole('button', { name: '切换到页脚' }));

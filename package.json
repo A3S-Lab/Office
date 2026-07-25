@@ -102,6 +102,8 @@
     "@tiptap/extension-image": "3.28.0",
     "@tiptap/extension-list": "3.28.0",
     "@tiptap/extension-placeholder": "3.28.0",
+    "@tiptap/extension-subscript": "3.28.0",
+    "@tiptap/extension-superscript": "3.28.0",
     "@tiptap/extension-table": "3.28.0",
     "@tiptap/extension-text-align": "3.28.0",
     "@tiptap/extension-text-style": "3.28.0",

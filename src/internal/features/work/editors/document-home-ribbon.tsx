@@ -20,10 +20,16 @@ import {
   Replace,
   Search,
   Strikethrough,
+  Subscript as SubscriptIcon,
+  Superscript as SuperscriptIcon,
   Underline as UnderlineIcon,
   Undo2,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import {
+  toggleDocumentSubscript,
+  toggleDocumentSuperscript,
+} from '../work-document-character-formatting';
 import {
   changeDocumentIndent,
   clearDocumentFormatting,
@@ -202,6 +208,22 @@ export function DocumentHomeRibbon({
               onClick={() => editor.chain().focus().toggleStrike().run()}
             >
               <Strikethrough size={16} />
+            </ToolbarButton>
+            <ToolbarButton
+              label="下标"
+              shortcut="Cmd/Ctrl+,"
+              active={editor.isActive('subscript')}
+              onClick={() => toggleDocumentSubscript(editor)}
+            >
+              <SubscriptIcon size={16} />
+            </ToolbarButton>
+            <ToolbarButton
+              label="上标"
+              shortcut="Cmd/Ctrl+."
+              active={editor.isActive('superscript')}
+              onClick={() => toggleDocumentSuperscript(editor)}
+            >
+              <SuperscriptIcon size={16} />
             </ToolbarButton>
             <OfficeColorPicker
               compact

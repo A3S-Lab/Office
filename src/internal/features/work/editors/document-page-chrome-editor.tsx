@@ -18,10 +18,18 @@ import {
   Italic,
   Link2,
   Redo2,
+  Subscript as SubscriptIcon,
+  Superscript as SuperscriptIcon,
   Underline as UnderlineIcon,
   Undo2,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  DocumentSubscript,
+  DocumentSuperscript,
+  toggleDocumentSubscript,
+  toggleDocumentSuperscript,
+} from '../work-document-character-formatting';
 import { sanitizeDocumentPageChromeHtml } from '../work-document-page-chrome';
 import {
   OfficeColorPicker,
@@ -43,6 +51,8 @@ export type DocumentPageChromeEditorCommand =
   | { type: 'setLink'; href: string | null }
   | { type: 'toggleBold' }
   | { type: 'toggleItalic' }
+  | { type: 'toggleSubscript' }
+  | { type: 'toggleSuperscript' }
   | { type: 'toggleUnderline' }
   | { type: 'undo' };
 
@@ -54,6 +64,8 @@ export interface DocumentPageChromeEditorState {
   color: string;
   italic: boolean;
   link: string | null;
+  subscript: boolean;
+  superscript: boolean;
   underline: boolean;
 }
 
@@ -253,6 +265,20 @@ export function DocumentPageChromeRichTextEditor({
                 <UnderlineIcon size={14} />
               </PageChromeButton>
               <PageChromeButton
+                label={`${label}下标`}
+                active={state?.subscript}
+                onClick={() => run({ type: 'toggleSubscript' })}
+              >
+                <SubscriptIcon size={14} />
+              </PageChromeButton>
+              <PageChromeButton
+                label={`${label}上标`}
+                active={state?.superscript}
+                onClick={() => run({ type: 'toggleSuperscript' })}
+              >
+                <SuperscriptIcon size={14} />
+              </PageChromeButton>
+              <PageChromeButton
                 label={`${label}左对齐`}
                 active={state?.alignment === 'left'}
                 onClick={() => run({ type: 'setAlignment', alignment: 'left' })}
@@ -360,6 +386,8 @@ export function createDocumentPageChromeEditorExtensions(
     TextStyle,
     Color,
     Underline,
+    DocumentSubscript,
+    DocumentSuperscript,
     TextAlign.configure({ types: ['paragraph'] }),
     Placeholder.configure({ placeholder }),
   ];
@@ -390,6 +418,8 @@ export function documentPageChromeEditorState(
         : DEFAULT_PAGE_CHROME_COLOR,
     italic: editor.isActive('italic'),
     link: typeof link.href === 'string' ? link.href : null,
+    subscript: editor.isActive('subscript'),
+    superscript: editor.isActive('superscript'),
     underline: editor.isActive('underline'),
   };
 }
@@ -427,6 +457,10 @@ export function applyDocumentPageChromeEditorCommand(
       return editor.chain().focus().toggleBold().run();
     case 'toggleItalic':
       return editor.chain().focus().toggleItalic().run();
+    case 'toggleSubscript':
+      return toggleDocumentSubscript(editor);
+    case 'toggleSuperscript':
+      return toggleDocumentSuperscript(editor);
     case 'toggleUnderline':
       return editor.chain().focus().toggleUnderline().run();
     case 'undo':

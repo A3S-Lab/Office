@@ -11,6 +11,7 @@ import {
   importOfficeFile,
 } from '../src/core';
 import { DocumentSection } from '../src/internal/features/work/work-document-section-node';
+import { toggleDocumentSuperscript } from '../src/internal/features/work/work-document-character-formatting';
 import {
   changeDocumentIndent,
   clearDocumentFormatting,
@@ -27,6 +28,7 @@ import {
   setDocumentParagraphDirection,
   setDocumentParagraphSpacing,
 } from '../src/internal/features/work/work-document-paragraph-formatting';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 function createEditor(content = '<p>A3S Office</p>'): Editor {
   return new Editor({
@@ -44,6 +46,73 @@ function createEditor(content = '<p>A3S Office</p>'): Editor {
 }
 
 describe('document formatting', () => {
+  test('uses keyboard shortcuts without stacking vertical-position marks', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: '<p>x<sub>2</sub></p>',
+    });
+    editor.commands.setTextSelection(textRange(editor, '2'));
+
+    expect(editor.commands.keyboardShortcut('Mod-.')).toBe(true);
+    expect(editor.getHTML()).toContain('<sup>2</sup>');
+    expect(editor.getHTML()).not.toContain('<sub>2</sub>');
+
+    expect(editor.commands.keyboardShortcut('Mod-,')).toBe(true);
+    expect(editor.getHTML()).toContain('<sub>2</sub>');
+    expect(editor.getHTML()).not.toContain('<sup>2</sup>');
+    editor.destroy();
+  });
+
+  test('keeps superscript and subscript editable across a DOCX round trip', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document')
+      throw new Error('Expected a document artifact.');
+    artifact.content.html = '<p>H<sub>water</sub>O and x<sup>power</sup></p>';
+    artifact.content.pageChrome = {
+      differentFirstPage: false,
+      differentOddEvenPages: false,
+      default: {
+        headerHtml: '<p>H<sub>2</sub>O</p>',
+        footerHtml: '<p>x<sup>2</sup></p>',
+        showPageNumber: false,
+      },
+      first: { headerHtml: '', footerHtml: '', showPageNumber: false },
+      even: { headerHtml: '', footerHtml: '', showPageNumber: false },
+    };
+
+    const blob = await createArtifactBlob(artifact);
+    const imported = await importOfficeFile(
+      new File([blob], 'vertical-position.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document')
+      throw new Error('Expected an imported document artifact.');
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: imported.content.html,
+    });
+
+    expect(editor.getHTML()).toContain('<sub>water</sub>');
+    expect(editor.getHTML()).toContain('<sup>power</sup>');
+    expect(imported.content.pageChrome?.default.headerHtml).toContain(
+      '<sub>2</sub>',
+    );
+    expect(imported.content.pageChrome?.default.footerHtml).toContain(
+      '<sup>2</sup>',
+    );
+
+    editor.commands.setTextSelection(textRange(editor, 'water'));
+    expect(toggleDocumentSuperscript(editor)).toBe(true);
+    expect(editor.getHTML()).toContain('<sup>water</sup>');
+    expect(editor.getHTML()).not.toContain('<sub>water</sub>');
+
+    editor.commands.selectAll();
+    clearDocumentFormatting(editor);
+    expect(documentHasMark(editor, 'subscript')).toBe(false);
+    expect(documentHasMark(editor, 'superscript')).toBe(false);
+
+    editor.destroy();
+  });
+
   test('round-trips paragraph alignment through DOCX import', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document')
@@ -342,4 +411,27 @@ function paragraphByText(
   return Array.from(
     document.body.querySelectorAll<HTMLElement>('p, h1, h2, h3'),
   ).find((element) => element.textContent === text);
+}
+
+function textRange(editor: Editor, text: string): { from: number; to: number } {
+  let range: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (range || !node.isText || !node.text) return;
+    const offset = node.text.indexOf(text);
+    if (offset < 0) return;
+    range = {
+      from: position + offset,
+      to: position + offset + text.length,
+    };
+  });
+  if (!range) throw new Error(`Text "${text}" was not found.`);
+  return range;
+}
+
+function documentHasMark(editor: Editor, markName: string): boolean {
+  let found = false;
+  editor.state.doc.descendants((node) => {
+    if (node.marks.some((mark) => mark.type.name === markName)) found = true;
+  });
+  return found;
 }

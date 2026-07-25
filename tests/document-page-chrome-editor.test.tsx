@@ -82,6 +82,39 @@ test('applies typed page-chrome commands to a TipTap document', () => {
   editor.destroy();
 });
 
+test('preserves and switches page-chrome vertical-position marks', () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>H<sub>water</sub>O and x<sup>power</sup></p>',
+  });
+
+  expect(editor.getHTML()).toContain('<sub>water</sub>');
+  expect(editor.getHTML()).toContain('<sup>power</sup>');
+
+  editor.commands.setTextSelection(textRange(editor, 'water'));
+  expect(documentPageChromeEditorState(editor)).toMatchObject({
+    subscript: true,
+    superscript: false,
+  });
+  expect(
+    applyDocumentPageChromeEditorCommand(editor, {
+      type: 'toggleSuperscript',
+    }),
+  ).toBe(true);
+  expect(editor.getHTML()).toContain('<sup>water</sup>');
+  expect(editor.getHTML()).not.toContain('<sub>water</sub>');
+
+  editor.commands.setTextSelection(textRange(editor, 'power'));
+  expect(
+    applyDocumentPageChromeEditorCommand(editor, {
+      type: 'toggleSubscript',
+    }),
+  ).toBe(true);
+  expect(editor.getHTML()).toContain('<sub>power</sub>');
+  expect(editor.getHTML()).not.toContain('<sup>power</sup>');
+  editor.destroy();
+});
+
 test('keeps the page-chrome surface controlled and exposes active formatting', async () => {
   const changes: string[] = [];
   let editor: Editor | null = null;
@@ -103,13 +136,33 @@ test('keeps the page-chrome surface controlled and exposes active formatting', a
   const current = editor as Editor;
   current.commands.setTextSelection({ from: 1, to: 5 });
   fireEvent.click(screen.getByRole('button', { name: '默认页眉加粗' }));
+  fireEvent.click(screen.getByRole('button', { name: '默认页眉上标' }));
 
   await waitFor(() => {
-    expect(changes.at(-1)).toContain('<strong>Page</strong>');
+    expect(changes.at(-1)).toContain('<strong>');
+    expect(current.getHTML()).toContain('<sup>');
   });
   expect(screen.getByRole('button', { name: '默认页眉加粗' })).toHaveAttribute(
     'aria-pressed',
     'true',
+  );
+  expect(screen.getByRole('button', { name: '默认页眉上标' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '默认页眉下标' }));
+  await waitFor(() => {
+    expect(current.getHTML()).toContain('<sub>');
+    expect(current.getHTML()).not.toContain('<sup>');
+  });
+  expect(screen.getByRole('button', { name: '默认页眉下标' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(screen.getByRole('button', { name: '默认页眉上标' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
   );
 
   view.rerender(
@@ -181,3 +234,18 @@ test('rejects unsafe links and unsupported header images without native UI', asy
   ).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '知道了' })).toBeInTheDocument();
 });
+
+function textRange(editor: Editor, text: string): { from: number; to: number } {
+  let range: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (range || !node.isText || !node.text) return;
+    const offset = node.text.indexOf(text);
+    if (offset < 0) return;
+    range = {
+      from: position + offset,
+      to: position + offset + text.length,
+    };
+  });
+  if (!range) throw new Error(`Text "${text}" was not found.`);
+  return range;
+}

@@ -20,6 +20,8 @@
         "@tiptap/extension-image": "3.28.0",
         "@tiptap/extension-list": "3.28.0",
         "@tiptap/extension-placeholder": "3.28.0",
+        "@tiptap/extension-subscript": "3.28.0",
+        "@tiptap/extension-superscript": "3.28.0",
         "@tiptap/extension-table": "3.28.0",
         "@tiptap/extension-text-align": "3.28.0",
         "@tiptap/extension-text-style": "3.28.0",
@@ -339,6 +341,10 @@
     "@tiptap/extension-placeholder": ["@tiptap/extension-placeholder@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-placeholder/-/extension-placeholder-3.28.0.tgz", { "peerDependencies": { "@tiptap/extensions": "3.28.0" } }, "sha512-zueiqNeCHOshDa8dGGSa/0cOBZkMjPrxQhemjF4tj2yZ6EeWHBPtCE5h/uQCagEePxsoaJtvaCRh88199zrgBw=="],
 
     "@tiptap/extension-strike": ["@tiptap/extension-strike@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-strike/-/extension-strike-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0" } }, "sha512-VVj2ZZU9QYqiHLcjqMqRYvuHSsokj/AgUl+6TzLrKjlWwyZ18D4H2vkyI0g70iVTKnUpZ3sEy8WA/rqjgBjqBg=="],
+
+    "@tiptap/extension-subscript": ["@tiptap/extension-subscript@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-subscript/-/extension-subscript-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0" } }, "sha512-lHROuWtzuMv3V4Q11j43Grqci5t0BAMbzIFinPyDSwxDfOCdpj0AwUS+TNNmi4sxZ49QwOXm/vzVMSSi2ChO5g=="],
+
+    "@tiptap/extension-superscript": ["@tiptap/extension-superscript@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-superscript/-/extension-superscript-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0" } }, "sha512-19MWwQIoREjZsEQ7fa/6DUMx15GKZ+iPkOcSdm/PE2rKiDXhec0acWPZTZgH5dluW9GJOMilk7Xl7U8oBNGfjQ=="],
 
     "@tiptap/extension-table": ["@tiptap/extension-table@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-table/-/extension-table-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0" } }, "sha512-SX2Uwn/bFyrqjbBo2Hg9wfLT/ofByHm4f80BuG0h5/m89Ve78CgtaK2lGz9jHZRM7rKTG6eqel+PUZQUwcSzOg=="],
 

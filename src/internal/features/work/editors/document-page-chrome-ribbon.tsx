@@ -12,6 +12,8 @@ import {
   PanelBottom,
   PanelTop,
   Redo2,
+  Subscript as SubscriptIcon,
+  Superscript as SuperscriptIcon,
   Underline,
   Undo2,
   X,
@@ -185,6 +187,28 @@ export function DocumentPageChromeRibbon({
           }
         >
           <Underline size={16} />
+        </PageChromeRibbonButton>
+        <PageChromeRibbonButton
+          label="页眉页脚下标"
+          active={state.subscript}
+          onClick={() =>
+            applyDocumentPageChromeEditorCommand(editor, {
+              type: 'toggleSubscript',
+            })
+          }
+        >
+          <SubscriptIcon size={16} />
+        </PageChromeRibbonButton>
+        <PageChromeRibbonButton
+          label="页眉页脚上标"
+          active={state.superscript}
+          onClick={() =>
+            applyDocumentPageChromeEditorCommand(editor, {
+              type: 'toggleSuperscript',
+            })
+          }
+        >
+          <SuperscriptIcon size={16} />
         </PageChromeRibbonButton>
         <OfficeColorPicker
           compact

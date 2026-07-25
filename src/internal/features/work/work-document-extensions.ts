@@ -13,6 +13,10 @@ import {
   DocumentCrossReference,
 } from './work-document-caption-nodes';
 import {
+  DocumentSubscript,
+  DocumentSuperscript,
+} from './work-document-character-formatting';
+import {
   DocumentChange,
   type WorkDocumentChangeIdentity,
   type WorkDocumentChangeKind,
@@ -69,6 +73,8 @@ export function createWorkDocumentExtensions(
     DocumentNoteReference,
     DocumentNote,
     Underline,
+    DocumentSubscript,
+    DocumentSuperscript,
     DocumentImage.configure({
       allowBase64: true,
       resize: {

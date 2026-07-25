@@ -284,7 +284,10 @@ TipTap/ProseMirror model is created. This currently preserves visible font
 families, half-point sizes, direct hexadecimal colors, Word highlights, and
 run shading. The importer also reads the DOCX font and color schemes, resolves
 major/minor theme font references, system or sRGB theme colors, and tint/shade
-transforms. Export maps background colors back to OOXML run shading.
+transforms. Superscript and subscript remain structured, mutually exclusive
+TipTap marks; their ribbon and keyboard commands switch vertical position
+without stacking both marks, and DOCX round trips retain the corresponding
+`w:vertAlign` values. Export maps background colors back to OOXML run shading.
 
 Lists remain semantic ProseMirror structures. Pagination measures each direct
 list-item block independently and maps a page widget before the first block
