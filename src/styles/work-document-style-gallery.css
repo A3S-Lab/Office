@@ -1,0 +1,123 @@
+.work-document-style-tools {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.work-document-style-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 64px);
+  gap: 2px;
+}
+
+.work-document-ribbon .work-document-style-gallery > label {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  width: 64px;
+  min-width: 64px;
+  height: 48px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-document-ribbon .work-document-style-gallery > label > input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.work-document-ribbon .work-document-style-gallery > label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-ribbon
+  .work-document-style-gallery
+  > label[data-document-style="paragraph"] {
+  font-size: 11px;
+  font-weight: 520;
+}
+
+.work-document-ribbon
+  .work-document-style-gallery
+  > label[data-document-style="h1"] {
+  color: var(--a3s-ink);
+  font-size: 13px;
+  font-weight: 730;
+  letter-spacing: -0.02em;
+}
+
+.work-document-ribbon
+  .work-document-style-gallery
+  > label[data-document-style="h2"] {
+  color: var(--a3s-ink);
+  font-size: 12px;
+  font-weight: 690;
+}
+
+.work-document-ribbon
+  .work-document-style-gallery
+  > label[data-document-style="h3"] {
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 670;
+}
+
+.work-document-ribbon .work-document-style-gallery > label:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 22%,
+    var(--a3s-line)
+  );
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-ribbon .work-document-style-gallery > label.active {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 54%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+  box-shadow: inset 0 -2px 0 var(--work-office-accent);
+}
+
+.work-document-ribbon
+  .work-document-style-gallery
+  > label:has(input:focus-visible) {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-office-accent) 65%, transparent);
+  outline-offset: -2px;
+}
+
+.work-document-ribbon .work-document-style-select {
+  display: none;
+  width: 112px;
+}
+
+@media (max-width: 900px) {
+  .work-document-style-gallery {
+    display: none;
+  }
+
+  .work-document-ribbon .work-document-style-select {
+    display: block;
+  }
+}

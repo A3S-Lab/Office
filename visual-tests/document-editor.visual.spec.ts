@@ -20,6 +20,57 @@ const fixtures = [
   },
 ];
 
+test('document styles stay visible, semantic, and compact when needed', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
+  if (!fixture) throw new Error('Missing document visual fixture.');
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const gallery = page.getByRole('radiogroup', { name: '段落样式库' });
+  const compactSelect = page.getByRole('combobox', { name: '段落样式' });
+  await expect(gallery).toBeVisible();
+  await expect(compactSelect).toBeHidden();
+  const galleryGeometry = await gallery.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  });
+  expect(galleryGeometry.width).toBeGreaterThanOrEqual(250);
+  expect(galleryGeometry.width).toBeLessThanOrEqual(270);
+  expect(galleryGeometry.height).toBeLessThanOrEqual(50);
+
+  const paragraph = page
+    .locator('.work-document-editable .ProseMirror p')
+    .nth(1);
+  const paragraphText = (await paragraph.textContent())?.trim();
+  if (!paragraphText) {
+    throw new Error('Document style fixture paragraph is unavailable.');
+  }
+  await paragraph.click();
+  const headingStyle = gallery.getByRole('radio', {
+    name: '应用样式：标题 2',
+  });
+  await headingStyle.click();
+  const styledHeading = page
+    .locator('.work-document-editable .ProseMirror h2')
+    .filter({ hasText: paragraphText });
+  await expect(styledHeading).toHaveCount(1);
+  await expect(headingStyle).toBeChecked();
+
+  await headingStyle.click();
+  await expect(styledHeading).toHaveCount(1);
+
+  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(gallery).toBeHidden();
+  await compactSelect.scrollIntoViewIfNeeded();
+  await expect(compactSelect).toBeVisible();
+  await expect(compactSelect).toContainText('标题 2');
+});
+
 test('document selection toolbar keeps formatting and review in context', async ({
   page,
 }) => {

@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
@@ -55,6 +55,82 @@ test('switches superscript and subscript without stacking both marks', () => {
   fireEvent.click(screen.getByRole('button', { name: '下标' }));
   expect(editor.getHTML()).toContain('<sub>power</sub>');
   expect(editor.getHTML()).not.toContain('<sup>power</sup>');
+});
+
+test('shows paragraph styles and applies the active style idempotently', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Project brief</p>',
+  });
+  const view = render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const gallery = screen.getByRole('radiogroup', { name: '段落样式库' });
+  const paragraph = within(gallery).getByRole('radio', {
+    name: '应用样式：正文',
+  });
+
+  expect(paragraph).toBeChecked();
+  fireEvent.click(
+    within(gallery).getByRole('radio', { name: '应用样式：标题 1' }),
+  );
+  expect(editor.getHTML()).toContain('<h1>Project brief</h1>');
+  const headingHtml = editor.getHTML();
+
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const activeHeading = within(
+    screen.getByRole('radiogroup', { name: '段落样式库' }),
+  ).getByRole('radio', { name: '应用样式：标题 1' });
+  expect(activeHeading).toBeChecked();
+
+  fireEvent.click(activeHeading);
+  expect(editor.getHTML()).toBe(headingHtml);
+
+  fireEvent.click(
+    within(screen.getByRole('radiogroup', { name: '段落样式库' })).getByRole(
+      'radio',
+      { name: '应用样式：正文' },
+    ),
+  );
+  expect(editor.getHTML()).toContain('<p>Project brief</p>');
+  expect(editor.getHTML()).not.toContain('<h1>');
+});
+
+test('supports arrow-key selection in the paragraph style gallery', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Keyboard styles</p>',
+  });
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const gallery = screen.getByRole('radiogroup', { name: '段落样式库' });
+  const paragraph = within(gallery).getByRole('radio', {
+    name: '应用样式：正文',
+  });
+  const heading = within(gallery).getByRole('radio', {
+    name: '应用样式：标题 1',
+  });
+
+  paragraph.focus();
+  fireEvent.keyDown(paragraph, { key: 'ArrowRight' });
+
+  expect(document.activeElement).toBe(heading);
+  expect(editor.getHTML()).toContain('<h1>Keyboard styles</h1>');
 });
 
 function textRange(editor: Editor, text: string): { from: number; to: number } {

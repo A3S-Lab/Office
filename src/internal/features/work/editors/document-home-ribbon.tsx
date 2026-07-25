@@ -40,6 +40,7 @@ import {
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
+import { DocumentStyleGallery } from './document-style-gallery';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
@@ -77,38 +78,6 @@ export function DocumentHomeRibbon({
         >
           <Redo2 size={16} />
         </ToolbarButton>
-      </RibbonGroup>
-      <RibbonGroup label="样式">
-        <OfficeSelect
-          ariaLabel="段落样式"
-          value={
-            editor.isActive('heading', { level: 1 })
-              ? 'h1'
-              : editor.isActive('heading', { level: 2 })
-                ? 'h2'
-                : editor.isActive('heading', { level: 3 })
-                  ? 'h3'
-                  : 'paragraph'
-          }
-          options={[
-            { value: 'paragraph', label: '正文' },
-            { value: 'h1', label: '标题 1' },
-            { value: 'h2', label: '标题 2' },
-            { value: 'h3', label: '标题 3' },
-          ]}
-          onValueChange={(value) => {
-            if (value === 'paragraph')
-              editor.chain().focus().setParagraph().run();
-            else
-              editor
-                .chain()
-                .focus()
-                .toggleHeading({
-                  level: Number(value.slice(1)) as 1 | 2 | 3,
-                })
-                .run();
-          }}
-        />
       </RibbonGroup>
       <RibbonGroup label="字体">
         <div className="work-document-font-tools">
@@ -321,6 +290,9 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
           </div>
         </div>
+      </RibbonGroup>
+      <RibbonGroup label="样式">
+        <DocumentStyleGallery editor={editor} />
       </RibbonGroup>
       <RibbonGroup label="编辑">
         <ToolbarButton
