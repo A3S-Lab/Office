@@ -47,6 +47,7 @@ export async function importWorkDocumentFile(
           prepared.paragraphPaginationMarkers,
           prepared.bibliography,
           prepared.tabStopMarkers,
+          prepared.tableCellMarkers,
           prepared.tableRowMarkers,
         )
       : result.value;

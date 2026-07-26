@@ -15,6 +15,7 @@ import {
 } from './work-document-notes';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import { patchDocxPageColor } from './work-docx-page-color';
+import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
@@ -899,10 +900,7 @@ async function tableToDocx(
           children: children.length ? children : [new docx.Paragraph('')],
           columnSpan: cell.colSpan > 1 ? cell.colSpan : undefined,
           rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
-          shading:
-            cell.tagName.toLowerCase() === 'th'
-              ? { fill: 'EAF0F8' }
-              : undefined,
+          ...documentTableCellDocxOptions(cell, docx),
           margins: { top: 80, right: 100, bottom: 80, left: 100 },
         }),
       );

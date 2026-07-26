@@ -378,11 +378,16 @@ oversized rows are still atomic and may overflow.
 Table creation is selection-safe: a non-empty text selection is preserved and
 the chosen table is inserted after its containing block instead of replacing
 the selected content. The insert ribbon exposes a keyboard-navigable 8 by 10
-size picker. Entering a table opens a dedicated contextual ribbon for row and
-column insertion or deletion, cell merge and split, header-row conversion,
-repeated headers, atomic rows, and table deletion. Command availability comes
-from the ProseMirror table state, so actions that cannot apply to the current
-selection remain disabled.
+size picker. Entering a table opens separate Design and Layout contextual tabs.
+Design owns keyboard-operated style presets, the header row, multi-cell
+shading, and uniform borders. Layout owns row and column insertion or deletion,
+cell merge and split, horizontal and vertical alignment, repeated headers,
+atomic rows, equal-width reset, and table deletion. These formats are typed
+cell attributes used by edit, preview, print, and common DOCX round trips.
+Command availability comes from the ProseMirror table state, so actions that
+cannot apply to the current selection remain disabled. Per-edge/theme borders,
+exact imported widths, nested tables, and arbitrary table-style inheritance
+remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf

@@ -218,6 +218,116 @@
   align-items: center;
 }
 
+.work-document-table-style-gallery {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.work-document-table-style-gallery > label {
+  position: relative;
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--a3s-muted);
+  cursor: pointer;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.work-document-table-style-gallery > label:hover,
+.work-document-table-style-gallery > label.active {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 32%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--a3s-ink);
+}
+
+.work-document-table-style-gallery > label > input {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.work-document-table-style-gallery > label:has(input:focus-visible) {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-office-accent) 62%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-table-style-preview {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 25px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--work-table-style-border);
+  border-radius: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--work-table-style-header) 0 34%,
+    var(--work-table-style-body) 34% 67%,
+    var(--work-table-style-alternate) 67% 100%
+  );
+  color: color-mix(in srgb, var(--work-table-style-border) 65%, #586174);
+}
+
+.work-document-table-style-preview::before,
+.work-document-table-style-preview::after {
+  position: absolute;
+  background: var(--work-table-style-border);
+  content: "";
+  opacity: 0.8;
+}
+
+.work-document-table-style-preview::before {
+  inset: 0 auto 0 50%;
+  width: 1px;
+}
+
+.work-document-table-style-preview::after {
+  inset: 33% 0 auto;
+  height: 1px;
+  box-shadow: 0 8px 0 var(--work-table-style-border);
+}
+
+.work-document-table-style-preview > svg {
+  opacity: 0;
+}
+
+.work-document-table-color-picker.labeled .work-office-color-trigger {
+  min-width: 68px;
+}
+
+.work-document-table-border-select {
+  width: 76px;
+}
+
+.work-document-table-border-select > button[role="combobox"] {
+  height: 29px;
+  padding-inline: 6px 4px;
+  font-size: 9px;
+}
+
 .work-document-table-picker-panel {
   width: 277px;
   padding: 11px;

@@ -347,6 +347,34 @@
   break-inside: auto;
 }
 
+.work-document-preview-page table,
+.work-document-print-body table {
+  width: 100%;
+  max-width: 100%;
+  margin: 18px 0 22px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.work-document-preview-page :is(th, td),
+.work-document-print-body :is(th, td) {
+  min-width: 80px;
+  padding: 7px 9px;
+  border: 1px solid #cfd5df;
+  vertical-align: top;
+}
+
+.work-document-preview-page th,
+.work-document-print-body th {
+  background-color: #f1f4f9;
+  font-weight: 680;
+}
+
+.work-document-preview-page :is(th, td) > p,
+.work-document-print-body :is(th, td) > p {
+  margin: 0;
+}
+
 .work-document-section tr[data-office-cant-split="true"],
 .work-document-print-body tr[data-office-cant-split="true"] {
   break-inside: avoid;

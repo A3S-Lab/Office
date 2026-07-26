@@ -39,7 +39,10 @@ import { DocumentParagraphSpacingPopover } from './document-paragraph-spacing-po
 import { DocumentPaginationPopover } from './document-pagination-popover';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
 import { DocumentTableInsertPopover } from './document-table-insert-popover';
-import { DocumentTableRibbon } from './document-table-ribbon';
+import {
+  DocumentTableDesignRibbon,
+  DocumentTableLayoutRibbon,
+} from './document-table-ribbon';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import {
   OfficeColorPicker,
@@ -64,7 +67,10 @@ const documentRibbonTabs = [
 ] as const;
 
 const documentPictureRibbonTab = { id: 'picture', label: '图片' } as const;
-const documentTableRibbonTab = { id: 'table', label: '表格' } as const;
+const documentTableRibbonTabs = [
+  { id: 'tableDesign', label: '表格设计' },
+  { id: 'tableLayout', label: '表格布局' },
+] as const;
 const documentPageChromeRibbonTab = {
   id: 'pageChrome',
   label: '页眉和页脚',
@@ -73,7 +79,7 @@ const documentPageChromeRibbonTab = {
 type DocumentRibbonTabId =
   | (typeof documentRibbonTabs)[number]['id']
   | typeof documentPictureRibbonTab.id
-  | typeof documentTableRibbonTab.id
+  | (typeof documentTableRibbonTabs)[number]['id']
   | typeof documentPageChromeRibbonTab.id;
 export type DocumentViewMode = 'page' | 'web';
 
@@ -188,7 +194,7 @@ export function DocumentToolbar({
     : imageSelected
       ? [...documentRibbonTabs, documentPictureRibbonTab]
       : tableSelected
-        ? [...documentRibbonTabs, documentTableRibbonTab]
+        ? [...documentRibbonTabs, ...documentTableRibbonTabs]
         : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
@@ -216,9 +222,14 @@ export function DocumentToolbar({
     setActiveTab((current) => {
       if (pageChromeEditor) return 'pageChrome';
       if (imageSelected) return 'picture';
-      if (tableSelected) return 'table';
+      if (tableSelected) {
+        return current === 'tableDesign' || current === 'tableLayout'
+          ? current
+          : 'tableDesign';
+      }
       return current === 'picture' ||
-        current === 'table' ||
+        current === 'tableDesign' ||
+        current === 'tableLayout' ||
         current === 'pageChrome'
         ? 'home'
         : current;
@@ -623,7 +634,12 @@ export function DocumentToolbar({
           picture: imageSelected ? (
             <DocumentPictureRibbon editor={editor} />
           ) : null,
-          table: tableSelected ? <DocumentTableRibbon editor={editor} /> : null,
+          tableDesign: tableSelected ? (
+            <DocumentTableDesignRibbon editor={editor} />
+          ) : null,
+          tableLayout: tableSelected ? (
+            <DocumentTableLayoutRibbon editor={editor} />
+          ) : null,
           pageChrome:
             pageChromeEditor && pageChromeEditingPart ? (
               <DocumentPageChromeRibbon

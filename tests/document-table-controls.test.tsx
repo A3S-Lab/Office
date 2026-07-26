@@ -1,8 +1,17 @@
 import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { DocumentTableInsertPopover } from '../src/internal/features/work/editors/document-table-insert-popover';
-import { DocumentTableRibbon } from '../src/internal/features/work/editors/document-table-ribbon';
+import {
+  DocumentTableDesignRibbon,
+  DocumentTableLayoutRibbon,
+} from '../src/internal/features/work/editors/document-table-ribbon';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
 import { canInsertDocumentComment } from '../src/internal/features/work/work-document-comments';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
@@ -57,21 +66,24 @@ test('closes the table picker with Escape and restores trigger focus', async () 
   expect(trigger).toHaveFocus();
 });
 
-test('shows the contextual table tab only while the selection is in a table', async () => {
+test('shows Word-style table Design and Layout tabs only inside a table', async () => {
   editor = createMixedEditor();
   const outsidePosition = documentTextRange(editor, 'Outside').from;
   editor.commands.setTextSelection(outsidePosition);
   const view = render(documentToolbar(editor));
 
-  expect(screen.queryByRole('tab', { name: '表格' })).toBeNull();
+  expect(screen.queryByRole('tab', { name: '表格设计' })).toBeNull();
+  expect(screen.queryByRole('tab', { name: '表格布局' })).toBeNull();
 
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
   view.rerender(documentToolbar(editor));
 
-  const tableTab = screen.getByRole('tab', { name: '表格' });
+  const tableDesignTab = screen.getByRole('tab', { name: '表格设计' });
+  const tableLayoutTab = screen.getByRole('tab', { name: '表格布局' });
   await waitFor(() =>
-    expect(tableTab).toHaveAttribute('aria-selected', 'true'),
+    expect(tableDesignTab).toHaveAttribute('aria-selected', 'true'),
   );
+  fireEvent.click(tableLayoutTab);
   expect(
     screen.getByRole('button', { name: '在下方插入行' }),
   ).toBeInTheDocument();
@@ -80,8 +92,9 @@ test('shows the contextual table tab only while the selection is in a table', as
   view.rerender(documentToolbar(editor));
 
   await waitFor(() =>
-    expect(screen.queryByRole('tab', { name: '表格' })).toBeNull(),
+    expect(screen.queryByRole('tab', { name: '表格设计' })).toBeNull(),
   );
+  expect(screen.queryByRole('tab', { name: '表格布局' })).toBeNull();
 });
 
 test('only enables adding a comment for an eligible text selection', () => {
@@ -128,7 +141,7 @@ test('only enables adding a comment for an eligible text selection', () => {
 test('edits table rows, columns, header behavior, and removes the table', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
-  const view = render(<DocumentTableRibbon editor={editor} />);
+  const view = render(<DocumentTableLayoutRibbon editor={editor} />);
 
   fireEvent.click(screen.getByRole('button', { name: '在下方插入行' }));
   expect(tableShape(editor)).toEqual([2, 2, 2]);
@@ -145,7 +158,7 @@ test('edits table rows, columns, header behavior, and removes the table', () => 
   expect(tableShape(editor)).toEqual([3, 3, 3]);
 
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
-  view.rerender(<DocumentTableRibbon editor={editor} />);
+  view.rerender(<DocumentTableDesignRibbon editor={editor} />);
   const originalFirstRow = firstRowCellTypes(editor);
   const toggledCellType =
     originalFirstRow[0] === 'tableHeader' ? 'tableCell' : 'tableHeader';
@@ -154,7 +167,7 @@ test('edits table rows, columns, header behavior, and removes the table', () => 
   fireEvent.click(screen.getByRole('button', { name: '标题行' }));
   expect(firstRowCellTypes(editor)).toEqual(originalFirstRow);
 
-  view.rerender(<DocumentTableRibbon editor={editor} />);
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
   const repeatHeaderBefore =
     editor.getAttributes('tableRow').repeatHeader ?? false;
   fireEvent.click(screen.getByRole('button', { name: '跨页重复标题' }));
@@ -176,7 +189,7 @@ test('merges and splits selected table cells with command-aware controls', () =>
     anchorCell: firstCell,
     headCell: secondCell,
   });
-  const view = render(<DocumentTableRibbon editor={editor} />);
+  const view = render(<DocumentTableLayoutRibbon editor={editor} />);
 
   expect(screen.getByRole('button', { name: '合并单元格' })).not.toBeDisabled();
   expect(screen.getByRole('button', { name: '拆分单元格' })).toBeDisabled();
@@ -184,10 +197,91 @@ test('merges and splits selected table cells with command-aware controls', () =>
   expect(tableShape(editor)).toEqual([1, 2]);
   expect(firstTableCellColspan(editor)).toBe(2);
 
-  view.rerender(<DocumentTableRibbon editor={editor} />);
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
   expect(screen.getByRole('button', { name: '拆分单元格' })).not.toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: '拆分单元格' }));
   expect(tableShape(editor)).toEqual([2, 2]);
+});
+
+test('applies table styles, cell shading, and borders as coherent edits', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  let updateCount = 0;
+  editor.on('update', () => {
+    updateCount += 1;
+  });
+  const view = render(<DocumentTableDesignRibbon editor={editor} />);
+
+  expect(
+    screen.getByRole('radio', { name: '应用表格样式：网格' }),
+  ).toBeChecked();
+  fireEvent.click(
+    screen.getByRole('radio', { name: '应用表格样式：蓝色条纹' }),
+  );
+  expect(updateCount).toBe(1);
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    backgroundColor: '#d9eaf7',
+    borderColor: '#9fbad0',
+    borderStyle: 'solid',
+    borderWidth: 1,
+  });
+  expect(tableCellAttributes(editor)[2]).toMatchObject({
+    backgroundColor: '#f7fbff',
+  });
+
+  expect(editor.commands.undo()).toBe(true);
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    backgroundColor: '#f1f4f9',
+    borderColor: '#cfd5df',
+  });
+
+  const [firstCell, secondCell] = tableCellPositions(editor);
+  editor.commands.setCellSelection({
+    anchorCell: firstCell,
+    headCell: secondCell,
+  });
+  view.rerender(<DocumentTableDesignRibbon editor={editor} />);
+  fireEvent.click(screen.getByRole('button', { name: '单元格底纹' }));
+  const fillDialog = screen.getByRole('dialog', { name: '单元格底纹' });
+  fireEvent.click(
+    within(fillDialog).getByRole('option', { name: '颜色 #fff2cc' }),
+  );
+  expect(tableCellAttributes(editor).slice(0, 2)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ backgroundColor: '#fff2cc' }),
+      expect.objectContaining({ backgroundColor: '#fff2cc' }),
+    ]),
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '边框样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '无边框' }));
+  expect(tableCellAttributes(editor).slice(0, 2)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ borderStyle: 'none', borderWidth: 0 }),
+      expect.objectContaining({ borderStyle: 'none', borderWidth: 0 }),
+    ]),
+  );
+});
+
+test('aligns table cell content and resets resized columns from Layout', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  expect(editor.commands.setCellAttribute('colwidth', [180])).toBe(true);
+  const view = render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '单元格垂直居中' }));
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    verticalAlign: 'middle',
+  });
+
+  fireEvent.click(screen.getByRole('button', { name: '单元格水平居中' }));
+  expect(firstTableParagraphAlignment(editor)).toBe('center');
+
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  fireEvent.click(screen.getByRole('button', { name: '平均分布列' }));
+  expect(tableCellAttributes(editor).every(({ colwidth }) => !colwidth)).toBe(
+    true,
+  );
 });
 
 function createPlainEditor(): Editor {
@@ -369,4 +463,26 @@ function firstTableCellColspan(currentEditor: Editor): number | null {
     return true;
   });
   return colspan;
+}
+
+function tableCellAttributes(currentEditor: Editor): Record<string, unknown>[] {
+  const attributes: Record<string, unknown>[] = [];
+  currentEditor.state.doc.descendants((node) => {
+    if (node.type.name === 'tableCell' || node.type.name === 'tableHeader') {
+      attributes.push(node.attrs);
+      return false;
+    }
+    return true;
+  });
+  return attributes;
+}
+
+function firstTableParagraphAlignment(currentEditor: Editor): unknown {
+  let alignment: unknown;
+  currentEditor.state.doc.descendants((node) => {
+    if (alignment !== undefined || node.type.name !== 'paragraph') return true;
+    alignment = node.attrs.textAlign;
+    return false;
+  });
+  return alignment;
 }

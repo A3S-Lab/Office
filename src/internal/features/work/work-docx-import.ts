@@ -105,6 +105,12 @@ import {
   type ImportedDocxParagraphTabStopMarkers,
 } from './work-docx-tab-stop-import';
 import {
+  applyImportedDocxTableCellMarkers,
+  hasImportedDocxTableCellMarkers,
+  markDocxTableCells,
+  type ImportedDocxTableCellMarkers,
+} from './work-docx-table-cell-import';
+import {
   applyImportedDocxTableRowMarkers,
   hasImportedDocxTableRowMarkers,
   markDocxTableRows,
@@ -143,6 +149,7 @@ export interface PreparedDocxImport {
   paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers;
   runFormattingMarkers: ImportedDocxRunFormattingMarkers;
   tabStopMarkers: ImportedDocxParagraphTabStopMarkers;
+  tableCellMarkers: ImportedDocxTableCellMarkers;
   tableRowMarkers: ImportedDocxTableRowMarkers;
   bibliography?: WorkDocumentContent['bibliography'];
   trackChanges: boolean;
@@ -181,6 +188,7 @@ export async function prepareDocxImport(
       paragraphSpacingMarkers: { paragraphs: [] },
       runFormattingMarkers: { runs: [] },
       tabStopMarkers: { paragraphs: [], inlineTabs: [] },
+      tableCellMarkers: { cells: [] },
       tableRowMarkers: { rows: [] },
       bibliography,
       trackChanges: false,
@@ -235,6 +243,7 @@ export async function prepareDocxImport(
     themeDocument,
   );
   const tabStopMarkers = markDocxParagraphTabStops(document, paragraphStyles);
+  const tableCellMarkers = markDocxTableCells(document);
   const tableRowMarkers = markDocxTableRows(document);
   const settings = archive.has('word/settings.xml')
     ? await archive.xml('word/settings.xml')
@@ -260,6 +269,7 @@ export async function prepareDocxImport(
         hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
         hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
         hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
+        hasImportedDocxTableCellMarkers(tableCellMarkers) ||
         hasImportedDocxTableRowMarkers(tableRowMarkers)
           ? await writeDocumentXml(buffer, document)
           : buffer,
@@ -279,6 +289,7 @@ export async function prepareDocxImport(
       paragraphSpacingMarkers,
       runFormattingMarkers,
       tabStopMarkers,
+      tableCellMarkers,
       tableRowMarkers,
       bibliography,
       trackChanges,
@@ -317,6 +328,7 @@ export async function prepareDocxImport(
       hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
       hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
       hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
+      hasImportedDocxTableCellMarkers(tableCellMarkers) ||
       hasImportedDocxTableRowMarkers(tableRowMarkers)
         ? await writeDocumentXml(buffer, document)
         : buffer,
@@ -336,6 +348,7 @@ export async function prepareDocxImport(
     paragraphSpacingMarkers,
     runFormattingMarkers,
     tabStopMarkers,
+    tableCellMarkers,
     tableRowMarkers,
     bibliography,
     trackChanges,
@@ -378,6 +391,7 @@ export function applyDocxSectionsToHtml(
     paragraphs: [],
     inlineTabs: [],
   },
+  tableCellMarkers: ImportedDocxTableCellMarkers = { cells: [] },
   tableRowMarkers: ImportedDocxTableRowMarkers = { rows: [] },
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
@@ -402,6 +416,7 @@ export function applyDocxSectionsToHtml(
     document,
     paragraphAlignmentMarkers,
   );
+  applyImportedDocxTableCellMarkers(document, tableCellMarkers);
   applyImportedDocxTableRowMarkers(document, tableRowMarkers);
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);

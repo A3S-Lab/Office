@@ -43,6 +43,11 @@ import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
 import { DocumentTableCommands } from './work-document-table-commands';
+import {
+  DocumentTableCell,
+  DocumentTableFormatting,
+  DocumentTableHeader,
+} from './work-document-table-cell-formatting';
 import { DocumentTableRow } from './work-document-table-row';
 import type { WorkDocumentContent } from './work-types';
 
@@ -116,10 +121,15 @@ export function createWorkDocumentExtensions(
     }),
     TableKit.configure({
       table: { resizable: true, allowTableNodeSelection: true },
+      tableCell: false,
+      tableHeader: false,
       tableRow: false,
     }),
+    DocumentTableCell,
+    DocumentTableHeader,
     DocumentTableRow,
     DocumentTableCommands,
+    DocumentTableFormatting,
     TextStyle,
     FontFamily,
     FontSize,

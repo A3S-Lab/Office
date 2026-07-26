@@ -102,8 +102,15 @@ Current implementation evidence includes the responsive paragraph-style
 gallery and a typed list slice with disc/circle/square bullets, five common
 ordered formats, restart/continue/start commands, keyboard-operated galleries,
 single-transaction undo behavior, and DOCX round trips for the declared list
-styles. Native Word list identities and arbitrary multilevel numbering
-templates remain part of this priority rather than being treated as complete.
+styles. Tables now expose separate Design and Layout contextual tabs, five
+keyboard-operated style presets, multi-cell fill and uniform border commands,
+horizontal and vertical alignment, equal-width reset, row/column operations,
+merge/split, repeat-header, and non-splitting row controls. Common cell
+shading, vertical alignment, and uniform borders round-trip through editable
+HTML and DOCX. Native Word list identities, arbitrary multilevel numbering,
+per-edge and theme table borders, exact widths, nested tables, and all
+multi-page row cases remain part of this priority rather than being treated as
+complete.
 
 Exit evidence:
 
