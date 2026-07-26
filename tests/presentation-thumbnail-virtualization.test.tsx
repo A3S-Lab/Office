@@ -237,7 +237,7 @@ function presentationWorkspace(
       onContinueDrag={() => undefined}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onOpenAgentMenu={() => undefined}
+      onOpenContextMenu={() => undefined}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
     />

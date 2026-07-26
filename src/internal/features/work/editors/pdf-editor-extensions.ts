@@ -23,6 +23,7 @@ export interface PdfEditorCommands {
   redo: () => void;
   save: () => Promise<void>;
   search: (query: string) => void;
+  setAnnotationColor: (color: string) => void;
   selectAnnotationTool: (toolId: PdfAnnotationToolId | null) => void;
   undo: () => void;
   zoomIn: () => void;
@@ -154,6 +155,17 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
           canExecute: ({ annotation, editable, viewer }) =>
             editable && documentReady(viewer) && annotation.state.available,
           execute: ({ annotation }, toolId) => annotation.selectTool(toolId),
+        },
+        setAnnotationColor: {
+          canExecute: ({ annotation, editable, viewer }, color) =>
+            editable &&
+            documentReady(viewer) &&
+            annotation.state.available &&
+            (annotation.state.selectedCount > 0 ||
+              Boolean(annotation.state.activeToolId)) &&
+            /^#[0-9a-f]{6}$/i.test(color),
+          execute: ({ annotation }, color) =>
+            annotation.setAnnotationColor(color),
         },
       }),
     }),

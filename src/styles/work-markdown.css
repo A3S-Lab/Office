@@ -24,7 +24,21 @@
 
 .work-markdown-workspace.split {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr);
+  grid-template-columns:
+    minmax(
+      240px,
+      min(
+        calc(var(--work-markdown-source-pane, 50%) - 3.5px),
+        calc(100% - 287px)
+      )
+    )
+    7px
+    minmax(280px, 1fr);
+}
+
+.work-markdown-workspace[data-split-resizing="true"] {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .work-markdown-pane {
@@ -41,6 +55,47 @@
 
 .work-markdown-pane + .work-markdown-pane {
   border-left: 1px solid var(--a3s-line);
+}
+
+.work-markdown-splitter {
+  position: relative;
+  z-index: 4;
+  width: 7px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: var(--a3s-bg);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.work-markdown-splitter::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--a3s-line);
+  content: "";
+  transition:
+    width 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.work-markdown-splitter:hover::before,
+.work-markdown-splitter:focus-visible::before,
+.work-markdown-workspace[data-split-resizing="true"]
+  .work-markdown-splitter::before {
+  width: 3px;
+  background: var(--work-office-accent);
+  transform: translateX(-1px);
+}
+
+.work-markdown-splitter:focus-visible {
+  box-shadow: inset 0 0 0 2px
+    color-mix(in srgb, var(--work-office-accent) 22%, transparent);
 }
 
 .work-markdown-pane-label {
@@ -357,15 +412,19 @@
   gap: 14px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 800px) {
   .work-markdown-workspace.split {
     display: grid;
     grid-template-rows: repeat(2, minmax(220px, 1fr));
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .work-markdown-workspace.split .work-markdown-pane + .work-markdown-pane {
+  .work-markdown-workspace.split .work-markdown-pane.visual {
     border-top: 1px solid var(--a3s-line);
+  }
+
+  .work-markdown-splitter {
+    display: none;
   }
 
   .work-markdown-pane + .work-markdown-pane {

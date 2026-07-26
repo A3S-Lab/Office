@@ -56,6 +56,23 @@
   border-right: 1px solid var(--a3s-line);
 }
 
+.work-pdf-annotation-color {
+  margin-left: 2px;
+}
+
+.work-pdf-annotation-color .work-office-color-trigger {
+  width: 28px;
+  height: 28px;
+  padding: 0 5px;
+  border-color: transparent;
+  border-radius: 5px;
+}
+
+.work-pdf-annotation-color .work-office-color-swatch {
+  width: 11px;
+  height: 11px;
+}
+
 .work-pdf-search {
   display: flex;
   width: clamp(180px, 24vw, 300px);

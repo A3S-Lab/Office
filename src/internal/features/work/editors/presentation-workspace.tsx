@@ -73,7 +73,7 @@ export interface PresentationWorkspaceProps {
   onContinueDrag: (event: PointerEvent) => void;
   onDragCancel: () => void;
   onDragEnd: (event: PointerEvent) => void;
-  onOpenAgentMenu: (
+  onOpenContextMenu: (
     event: MouseEvent,
     slide: WorkSlide,
     slideIndex: number,
@@ -108,7 +108,7 @@ export function PresentationWorkspace({
   onContinueDrag,
   onDragCancel,
   onDragEnd,
-  onOpenAgentMenu,
+  onOpenContextMenu,
   onTextEditorChange,
   onTextSelectionChange,
 }: PresentationWorkspaceProps) {
@@ -138,7 +138,7 @@ export function PresentationWorkspace({
         zoom={zoom}
         onAddSlide={commands.addSlide}
         onDeleteSlide={commands.deleteSlideById}
-        onOpenAgentMenu={onOpenAgentMenu}
+        onOpenContextMenu={onOpenContextMenu}
         onSelectSlide={commands.selectSlide}
         onViewModeChange={commands.setViewMode}
       />
@@ -159,7 +159,7 @@ export function PresentationWorkspace({
         zoom={zoom}
         onAddSlide={commands.addSlide}
         onDeleteSlide={commands.deleteSlideById}
-        onOpenAgentMenu={onOpenAgentMenu}
+        onOpenContextMenu={onOpenContextMenu}
         onSelectSlide={commands.selectSlide}
         onViewModeChange={commands.setViewMode}
       />
@@ -183,7 +183,7 @@ export function PresentationWorkspace({
           onPointerDown={() => commands.selectElement(null, false)}
           onContextMenu={(event) => {
             if (designMode !== 'slide') return;
-            onOpenAgentMenu(event, selectedSlide, selectedSlideIndex);
+            onOpenContextMenu(event, selectedSlide, selectedSlideIndex);
           }}
         >
           {inheritedElements.map((element) => (
@@ -307,7 +307,7 @@ export function PresentationWorkspace({
                 onContextMenu={(event) => {
                   if (!selected) commands.selectElement(element.id, false);
                   if (designMode !== 'slide') return;
-                  onOpenAgentMenu(
+                  onOpenContextMenu(
                     event,
                     selectedSlide,
                     selectedSlideIndex,

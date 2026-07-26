@@ -18,7 +18,7 @@ export function PresentationThumbnailRail({
   zoom,
   onAddSlide,
   onDeleteSlide,
-  onOpenAgentMenu,
+  onOpenContextMenu,
   onSelectSlide,
   onViewModeChange,
 }: {
@@ -30,7 +30,7 @@ export function PresentationThumbnailRail({
   zoom: number;
   onAddSlide: () => void;
   onDeleteSlide: (slideId: string) => boolean;
-  onOpenAgentMenu: (
+  onOpenContextMenu: (
     event: MouseEvent,
     slide: WorkSlide,
     slideIndex: number,
@@ -89,14 +89,10 @@ export function PresentationThumbnailRail({
         slide={slide}
         slideCount={content.slides.length}
         variant={viewMode === 'sorter' ? 'sorter' : 'strip'}
-        onContextMenu={
-          viewMode === 'normal'
-            ? (event) => {
-                onSelectSlide(slide.id, false);
-                onOpenAgentMenu(event, slide, index);
-              }
-            : undefined
-        }
+        onContextMenu={(event) => {
+          onSelectSlide(slide.id, false);
+          onOpenContextMenu(event, slide, index);
+        }}
         onDelete={() => deleteAndRetainFocus(slide, index)}
         onDoubleClick={
           viewMode === 'sorter' ? () => onViewModeChange('normal') : undefined

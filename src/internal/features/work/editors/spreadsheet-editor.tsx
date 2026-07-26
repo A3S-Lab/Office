@@ -42,6 +42,7 @@ import {
   sameSpreadsheetWorkbookState,
   spreadsheetCellAt,
   spreadsheetSelectionReference,
+  spreadsheetSelectionSummary,
   spreadsheetSheetsForFortune,
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
@@ -325,6 +326,9 @@ export function SpreadsheetEditor({
   const multipleCellsSelected =
     selectedRange.row[0] !== selectedRange.row[1] ||
     selectedRange.column[0] !== selectedRange.column[1];
+  const selectionSummary = multipleCellsSelected
+    ? spreadsheetSelectionSummary(toolbarSheet, toolbarSelection)
+    : null;
   const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
@@ -484,6 +488,11 @@ export function SpreadsheetEditor({
             ? spreadsheetSelectionReference(selectionState.selection)
             : '未选择单元格'}
         </output>
+        {selectionSummary && selectionSummary.nonEmptyCount > 0 && (
+          <output aria-label="表格选区统计">
+            {spreadsheetSelectionSummaryText(selectionSummary)}
+          </output>
+        )}
         {!preview && (
           <output aria-label="表格保存状态" className="work-office-save-status">
             <Cloud size={12} />
@@ -515,4 +524,21 @@ export function SpreadsheetEditor({
       )}
     </section>
   );
+}
+
+function spreadsheetSelectionSummaryText(
+  summary: ReturnType<typeof spreadsheetSelectionSummary>,
+): string {
+  const parts = [`计数 ${summary.nonEmptyCount}`];
+  if (summary.average !== null && summary.sum !== null) {
+    parts.push(`平均 ${formatSpreadsheetStatistic(summary.average)}`);
+    parts.push(`求和 ${formatSpreadsheetStatistic(summary.sum)}`);
+  }
+  return parts.join(' · ');
+}
+
+function formatSpreadsheetStatistic(value: number): string {
+  return new Intl.NumberFormat('zh-CN', {
+    maximumFractionDigits: 6,
+  }).format(value);
 }

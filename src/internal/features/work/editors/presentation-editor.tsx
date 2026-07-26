@@ -27,6 +27,7 @@ import {
   PresentationCommentsPanel,
   presentationCommentCount,
 } from './presentation-comments-panel';
+import { presentationCoreContextMenuItems } from './presentation-context-menu';
 import { PresentationDesignPanel } from './presentation-design-panel';
 import { updatePresentationElements } from './presentation-editor-operations';
 import {
@@ -248,13 +249,12 @@ function PresentationEditingSurface({
       : null;
   const aspectRatio = `${content.width ?? 13.333} / ${content.height ?? 7.5}`;
   contentRef.current = content;
-  const openAgentMenu = (
+  const openContextMenu = (
     event: React.MouseEvent,
     slide: WorkSlide,
     slideIndex: number,
     element?: WorkSlideElement | null,
   ) => {
-    if (!onAgentRequest) return;
     event.preventDefault();
     event.stopPropagation();
     setAgentMenu({
@@ -601,7 +601,7 @@ function PresentationEditingSurface({
         onContinueDrag={transform.continueDrag}
         onDragCancel={transform.cancelDrag}
         onDragEnd={transform.endDrag}
-        onOpenAgentMenu={openAgentMenu}
+        onOpenContextMenu={openContextMenu}
         onTextEditorChange={(elementId, editor) =>
           setActiveTextEditor((current) =>
             editor
@@ -624,41 +624,50 @@ function PresentationEditingSurface({
         onViewModeChange={presentationCommands.setViewMode}
         onZoomChange={setZoom}
       />
-      {designMode === 'slide' && agentMenu && onAgentRequest && (
+      {designMode === 'slide' && agentMenu && (
         <WorkspaceContextMenu
-          label={
-            agentMenu.target === 'element'
-              ? '演示元素 AI 操作'
-              : '幻灯片 AI 操作'
-          }
+          label={agentMenu.target === 'element' ? '演示对象操作' : '幻灯片操作'}
           x={agentMenu.x}
           y={agentMenu.y}
-          items={presentationAgentMenuItems(
-            agentMenu.selection,
-            agentMenu.target,
-            onAgentRequest,
-            agentMenuSlide
-              ? {
-                  rewriteTargets: presentationAgentProposalTargets(
-                    agentMenuSlide,
-                    agentMenuElement,
-                  ),
-                  notesTarget: presentationNotesProposalTarget(agentMenuSlide),
-                  apply: (changes) => {
-                    const outcome = applyPresentationAgentProposalChanges(
-                      contentRef.current,
-                      agentMenu.slideId,
-                      changes,
-                    );
-                    if (outcome.result.appliedTargetIds.length)
-                      presentationCommands.setPresentationContent(
-                        outcome.content,
-                      );
-                    return outcome.result;
-                  },
-                }
-              : undefined,
-          )}
+          items={[
+            ...presentationCoreContextMenuItems({
+              can: presentationCan,
+              commands: presentationCommands,
+              slideId: agentMenu.slideId,
+              target: agentMenu.target,
+            }),
+            ...(onAgentRequest
+              ? presentationAgentMenuItems(
+                  agentMenu.selection,
+                  agentMenu.target,
+                  onAgentRequest,
+                  agentMenuSlide
+                    ? {
+                        rewriteTargets: presentationAgentProposalTargets(
+                          agentMenuSlide,
+                          agentMenuElement,
+                        ),
+                        notesTarget:
+                          presentationNotesProposalTarget(agentMenuSlide),
+                        apply: (changes) => {
+                          const outcome = applyPresentationAgentProposalChanges(
+                            contentRef.current,
+                            agentMenu.slideId,
+                            changes,
+                          );
+                          if (outcome.result.appliedTargetIds.length)
+                            presentationCommands.setPresentationContent(
+                              outcome.content,
+                            );
+                          return outcome.result;
+                        },
+                      }
+                    : undefined,
+                ).map((item, index) =>
+                  index === 0 ? { ...item, separatorBefore: true } : item,
+                )
+              : []),
+          ]}
           onClose={() => setAgentMenu(null)}
         />
       )}

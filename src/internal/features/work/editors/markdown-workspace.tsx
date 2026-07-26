@@ -1,8 +1,22 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent } from '@tiptap/react';
-import { type UIEvent, useCallback, useEffect, useRef } from 'react';
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type UIEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 export type MarkdownViewMode = 'visual' | 'source' | 'split';
+
+const DEFAULT_MARKDOWN_SPLIT_PERCENT = 50;
+const MIN_MARKDOWN_SPLIT_PERCENT = 30;
+const MAX_MARKDOWN_SPLIT_PERCENT = 70;
+const MARKDOWN_SPLIT_KEYBOARD_STEP = 5;
 
 export function proportionalMarkdownScrollTop(
   sourceScrollTop: number,
@@ -34,10 +48,15 @@ export function MarkdownWorkspace({
   onSourceChange: (markdown: string) => void;
   onVisualIntent?: () => void;
 }) {
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const sourceRef = useRef<HTMLTextAreaElement>(null);
   const visualRef = useRef<HTMLElement>(null);
   const synchronizedTargetRef = useRef<'source' | 'visual' | null>(null);
   const releaseFrameRef = useRef<number | null>(null);
+  const [sourcePanePercent, setSourcePanePercent] = useState(
+    DEFAULT_MARKDOWN_SPLIT_PERCENT,
+  );
+  const [resizing, setResizing] = useState(false);
   const showSource = !readOnly && mode !== 'visual';
   const showVisual = readOnly || mode !== 'source';
 
@@ -108,8 +127,66 @@ export function MarkdownWorkspace({
     [mode, releaseScrollLock],
   );
 
+  const resizeFromPointer = useCallback((clientX: number) => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+    const bounds = workspace.getBoundingClientRect();
+    if (bounds.width <= 0) return;
+    setSourcePanePercent(
+      clampMarkdownSplitPercent(
+        Math.round(((clientX - bounds.left) / bounds.width) * 1000) / 10,
+      ),
+    );
+  }, []);
+
+  const handleResizeStart = (event: PointerEvent<HTMLHRElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setResizing(true);
+    resizeFromPointer(event.clientX);
+  };
+
+  const handleResizeMove = (event: PointerEvent<HTMLHRElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    resizeFromPointer(event.clientX);
+  };
+
+  const handleResizeEnd = (event: PointerEvent<HTMLHRElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setResizing(false);
+  };
+
+  const handleResizeKeyDown = (event: KeyboardEvent<HTMLHRElement>) => {
+    let next: number | null = null;
+    if (event.key === 'ArrowLeft') {
+      next = sourcePanePercent - MARKDOWN_SPLIT_KEYBOARD_STEP;
+    } else if (event.key === 'ArrowRight') {
+      next = sourcePanePercent + MARKDOWN_SPLIT_KEYBOARD_STEP;
+    } else if (event.key === 'Home') {
+      next = MIN_MARKDOWN_SPLIT_PERCENT;
+    } else if (event.key === 'End') {
+      next = MAX_MARKDOWN_SPLIT_PERCENT;
+    } else if (event.key === 'Enter') {
+      next = DEFAULT_MARKDOWN_SPLIT_PERCENT;
+    }
+    if (next === null) return;
+    event.preventDefault();
+    setSourcePanePercent(clampMarkdownSplitPercent(next));
+  };
+
+  const workspaceStyle = {
+    '--work-markdown-source-pane': `${sourcePanePercent}%`,
+  } as CSSProperties;
+
   return (
-    <div className={`work-markdown-workspace ${mode}`}>
+    <div
+      ref={workspaceRef}
+      className={`work-markdown-workspace ${mode}`}
+      data-split-resizing={resizing || undefined}
+      style={workspaceStyle}
+    >
       {showSource && (
         <section
           aria-label="Markdown 源码窗格"
@@ -127,6 +204,27 @@ export function MarkdownWorkspace({
             onScroll={handleSourceScroll}
           />
         </section>
+      )}
+      {mode === 'split' && (
+        <hr
+          className="work-markdown-splitter"
+          aria-label="调整源码与编辑结果宽度"
+          aria-orientation="vertical"
+          aria-valuemin={MIN_MARKDOWN_SPLIT_PERCENT}
+          aria-valuemax={MAX_MARKDOWN_SPLIT_PERCENT}
+          aria-valuenow={sourcePanePercent}
+          aria-valuetext={`源码窗格 ${sourcePanePercent}%`}
+          tabIndex={0}
+          title="拖动调整分栏宽度，双击恢复均分"
+          onDoubleClick={() =>
+            setSourcePanePercent(DEFAULT_MARKDOWN_SPLIT_PERCENT)
+          }
+          onKeyDown={handleResizeKeyDown}
+          onPointerCancel={handleResizeEnd}
+          onPointerDown={handleResizeStart}
+          onPointerMove={handleResizeMove}
+          onPointerUp={handleResizeEnd}
+        />
       )}
       {showVisual && (
         <section
@@ -146,5 +244,12 @@ export function MarkdownWorkspace({
         </section>
       )}
     </div>
+  );
+}
+
+function clampMarkdownSplitPercent(value: number): number {
+  return Math.min(
+    MAX_MARKDOWN_SPLIT_PERCENT,
+    Math.max(MIN_MARKDOWN_SPLIT_PERCENT, value),
   );
 }

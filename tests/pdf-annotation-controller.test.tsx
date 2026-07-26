@@ -19,13 +19,32 @@ test('selects and deletes PDF annotations through the annotation capability', as
     hasPendingChanges: true,
     locked: { type: 'none' },
   };
+  const selectedAnnotation = {
+    commitState: 'dirty',
+    object: {
+      id: 'annotation-2',
+      pageIndex: 2,
+      type: 9,
+      rect: { origin: { x: 0, y: 0 }, size: { width: 10, height: 10 } },
+      color: '#ffd966',
+      strokeColor: '#ffd966',
+    },
+  };
   const capabilities = {
     annotation: {
       forDocument: () => ({
         getState: () => annotationState,
+        getSelectedAnnotations: () => [selectedAnnotation],
         getSelectedAnnotationIds: () => annotationState.selectedUids,
         setActiveTool: (toolId: string | null) =>
           calls.push(`tool:${toolId ?? 'pointer'}`),
+        updateAnnotations: (
+          annotations: Array<{
+            pageIndex: number;
+            id: string;
+            patch: { color?: string; strokeColor?: string };
+          }>,
+        ) => calls.push(`color:${JSON.stringify(annotations)}`),
         deleteAnnotations: (
           annotations: Array<{ pageIndex: number; id: string }>,
         ) => calls.push(`delete:${JSON.stringify(annotations)}`),
@@ -34,8 +53,15 @@ test('selects and deletes PDF annotations through the annotation capability', as
         ['highlight', 'underline', 'strikeout', 'ink', 'freeText'].includes(
           toolId,
         )
-          ? { id: toolId }
+          ? {
+              id: toolId,
+              defaults: { color: '#ffd966', strokeColor: '#ffd966' },
+            }
           : undefined,
+      setToolDefaults: (
+        toolId: string,
+        patch: { color?: string; strokeColor?: string },
+      ) => calls.push(`defaults:${toolId}:${JSON.stringify(patch)}`),
       onStateChange: annotationChange.subscribe,
       onActiveToolChange: activeToolChange.subscribe,
     },
@@ -57,18 +83,22 @@ test('selects and deletes PDF annotations through the annotation capability', as
   await waitFor(() => expect(result.current.state.available).toBe(true));
   expect(result.current.state).toMatchObject({
     activeToolId: 'highlight',
+    annotationColor: '#ffd966',
     hasPendingChanges: true,
     selectedCount: 1,
   });
 
   act(() => {
     result.current.selectTool('ink');
+    result.current.setAnnotationColor('#ff0000');
     result.current.selectTool(null);
     result.current.deleteSelection();
   });
 
   expect(calls).toEqual([
     'tool:ink',
+    'defaults:highlight:{"color":"#ff0000","strokeColor":"#ff0000"}',
+    'color:[{"pageIndex":2,"id":"annotation-2","patch":{"color":"#ff0000","strokeColor":"#ff0000"}}]',
     'tool:pointer',
     'delete:[{"pageIndex":2,"id":"annotation-2"}]',
   ]);

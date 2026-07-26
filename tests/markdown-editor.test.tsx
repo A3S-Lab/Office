@@ -173,6 +173,34 @@ test('maps split-pane scrolling by document progress', () => {
   expect(proportionalMarkdownScrollTop(20, 100, 100, 2000, 200)).toBe(0);
 });
 
+test('resizes and resets the Markdown split panes from the separator', async () => {
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '# Split view' }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const separator = await screen.findByRole('separator', {
+    name: '调整源码与编辑结果宽度',
+  });
+  const workspace = separator.closest('.work-markdown-workspace');
+  expect(workspace).not.toBeNull();
+  expect(separator).toHaveAttribute('aria-valuenow', '50');
+
+  fireEvent.keyDown(separator, { key: 'ArrowRight' });
+  expect(separator).toHaveAttribute('aria-valuenow', '55');
+  expect(workspace).toHaveStyle({ '--work-markdown-source-pane': '55%' });
+
+  fireEvent.keyDown(separator, { key: 'Home' });
+  expect(separator).toHaveAttribute('aria-valuenow', '30');
+
+  fireEvent.doubleClick(separator);
+  expect(separator).toHaveAttribute('aria-valuenow', '50');
+  expect(workspace).toHaveStyle({ '--work-markdown-source-pane': '50%' });
+});
+
 test('mounts host TipTap extensions in the Markdown editor', async () => {
   let shortcutCalls = 0;
   const hostShortcuts = Extension.create({

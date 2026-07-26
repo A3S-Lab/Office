@@ -62,7 +62,7 @@ test('separates additive object selection from content editing', () => {
       onContinueDrag={() => undefined}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onOpenAgentMenu={() => undefined}
+      onOpenContextMenu={() => undefined}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
     />,
@@ -110,7 +110,7 @@ test('separates additive object selection from content editing', () => {
       onContinueDrag={() => undefined}
       onDragCancel={() => undefined}
       onDragEnd={() => undefined}
-      onOpenAgentMenu={() => undefined}
+      onOpenContextMenu={() => undefined}
       onTextEditorChange={() => undefined}
       onTextSelectionChange={() => undefined}
     />,

@@ -16,6 +16,7 @@ export type PdfAnnotationToolId =
 
 export interface PdfAnnotationControllerState {
   activeToolId: string | null;
+  annotationColor: string;
   available: boolean;
   hasPendingChanges: boolean;
   selectedCount: number;
@@ -24,6 +25,7 @@ export interface PdfAnnotationControllerState {
 export interface PdfAnnotationController {
   state: PdfAnnotationControllerState;
   deleteSelection: () => void;
+  setAnnotationColor: (color: string) => void;
   selectTool: (toolId: PdfAnnotationToolId | null) => void;
 }
 
@@ -34,6 +36,7 @@ interface PdfAnnotationCapabilities {
 
 const INITIAL_STATE: PdfAnnotationControllerState = {
   activeToolId: null,
+  annotationColor: '#ffd966',
   available: false,
   hasPendingChanges: false,
   selectedCount: 0,
@@ -73,8 +76,14 @@ export function usePdfAnnotationController(
           if (disposed) return;
           const scope = activeAnnotationScope(capabilities);
           const annotationState = safely(() => scope?.getState());
+          const activeToolId = annotationState?.activeToolId ?? null;
           setState({
-            activeToolId: annotationState?.activeToolId ?? null,
+            activeToolId,
+            annotationColor: currentAnnotationColor(
+              capabilities,
+              scope,
+              activeToolId,
+            ),
             available: Boolean(scope),
             hasPendingChanges: annotationState?.hasPendingChanges ?? false,
             selectedCount: annotationState?.selectedUids.length ?? 0,
@@ -142,10 +151,71 @@ export function usePdfAnnotationController(
     if (deletions.length > 0) scope.deleteAnnotations(deletions);
   }, []);
 
+  const setAnnotationColor = useCallback((color: string) => {
+    const normalizedColor = normalizeAnnotationColor(color);
+    const capabilities = capabilitiesRef.current;
+    const scope = activeAnnotationScope(capabilities);
+    if (!normalizedColor || !capabilities?.annotation || !scope) return;
+    const activeToolId = scope.getState().activeToolId;
+    const patch = {
+      color: normalizedColor,
+      strokeColor: normalizedColor,
+    };
+    if (activeToolId) {
+      capabilities.annotation.setToolDefaults(activeToolId, patch);
+    }
+    const selected = scope.getSelectedAnnotations();
+    if (selected.length) {
+      scope.updateAnnotations(
+        selected.map(({ object }) => ({
+          pageIndex: object.pageIndex,
+          id: object.id,
+          patch,
+        })),
+      );
+    }
+    setState((current) => ({
+      ...current,
+      annotationColor: normalizedColor,
+    }));
+  }, []);
+
   return useMemo(
-    () => ({ state, deleteSelection, selectTool }),
-    [deleteSelection, selectTool, state],
+    () => ({ state, deleteSelection, setAnnotationColor, selectTool }),
+    [deleteSelection, setAnnotationColor, selectTool, state],
   );
+}
+
+function currentAnnotationColor(
+  capabilities: PdfAnnotationCapabilities,
+  scope: ReturnType<typeof activeAnnotationScope>,
+  activeToolId: string | null,
+): string {
+  const selectedObject = safely(
+    () => scope?.getSelectedAnnotations()[0]?.object,
+  );
+  const selectedColor = annotationColorFromRecord(selectedObject);
+  if (selectedColor) return selectedColor;
+  const activeTool = activeToolId
+    ? safely(() => capabilities.annotation?.getTool(activeToolId))
+    : null;
+  return (
+    annotationColorFromRecord(activeTool?.defaults) ??
+    INITIAL_STATE.annotationColor
+  );
+}
+
+function annotationColorFromRecord(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  return normalizeAnnotationColor(record.color ?? record.strokeColor);
+}
+
+function normalizeAnnotationColor(value: unknown): string | null {
+  if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value.trim())) {
+    return null;
+  }
+  return value.trim().toLowerCase();
 }
 
 function activeAnnotationScope(capabilities: PdfAnnotationCapabilities | null) {

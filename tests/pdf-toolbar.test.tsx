@@ -89,6 +89,7 @@ function createCanCommands(
     redo: () => ready() && controller.state.canRedo,
     save: ready,
     search: ready,
+    setAnnotationColor: ready,
     selectAnnotationTool: ready,
     undo: () => ready() && controller.state.canUndo,
     zoomIn: ready,
@@ -116,6 +117,7 @@ function createCommands(
       calls.push('save');
     },
     search: controller.search,
+    setAnnotationColor: annotation.setAnnotationColor,
     selectAnnotationTool: annotation.selectTool,
     undo: controller.undo,
     zoomIn: controller.zoomIn,
@@ -127,11 +129,13 @@ function createAnnotationController(calls: string[]): PdfAnnotationController {
   return {
     state: {
       activeToolId: null,
+      annotationColor: '#ffd966',
       available: true,
       hasPendingChanges: false,
       selectedCount: 0,
     },
     deleteSelection: () => calls.push('delete-annotation'),
+    setAnnotationColor: (color) => calls.push(`annotation-color:${color}`),
     selectTool: (toolId) => calls.push(`annotation:${toolId ?? 'pointer'}`),
   };
 }

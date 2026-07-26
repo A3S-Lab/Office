@@ -6,6 +6,13 @@ const spreadsheetFontSizes = [
 ] as const;
 const spreadsheetFormulaHistoryIgnoredKeys = new Set(['ct', 'm', 'v']);
 
+export interface SpreadsheetSelectionSummary {
+  average: number | null;
+  nonEmptyCount: number;
+  numericCount: number;
+  sum: number | null;
+}
+
 export function spreadsheetSelectionReference(selection: Selection): string {
   const rowStart = Math.min(
     selection.row[0] ?? 0,
@@ -55,6 +62,69 @@ export function spreadsheetCellAt(
     )?.v ??
     null
   );
+}
+
+export function spreadsheetSelectionSummary(
+  sheet: WorkSpreadsheetContent['sheets'][number] | undefined,
+  selection: Pick<Selection, 'row' | 'column'>,
+): SpreadsheetSelectionSummary {
+  const summary: SpreadsheetSelectionSummary = {
+    average: null,
+    nonEmptyCount: 0,
+    numericCount: 0,
+    sum: null,
+  };
+  if (!sheet) return summary;
+  const range = spreadsheetSingleRange(selection);
+  let sum = 0;
+  const collect = (cell: Cell | null | undefined) => {
+    if (!cell || !spreadsheetCellHasContent(cell)) return;
+    summary.nonEmptyCount += 1;
+    if (typeof cell.v !== 'number' || !Number.isFinite(cell.v)) return;
+    summary.numericCount += 1;
+    sum += cell.v;
+  };
+
+  if (sheet.data?.length) {
+    const rowStart = range.row[0] ?? 0;
+    const rowEnd = Math.min(range.row[1] ?? rowStart, sheet.data.length - 1);
+    const columnStart = range.column[0] ?? 0;
+    const columnEnd = range.column[1] ?? columnStart;
+    for (let rowIndex = rowStart; rowIndex <= rowEnd; rowIndex += 1) {
+      const row = sheet.data[rowIndex];
+      if (!row) continue;
+      const populatedColumnEnd = Math.min(columnEnd, row.length - 1);
+      for (
+        let columnIndex = columnStart;
+        columnIndex <= populatedColumnEnd;
+        columnIndex += 1
+      ) {
+        collect(row[columnIndex]);
+      }
+    }
+  } else {
+    const rowStart = range.row[0] ?? 0;
+    const rowEnd = range.row[1] ?? rowStart;
+    const columnStart = range.column[0] ?? 0;
+    const columnEnd = range.column[1] ?? columnStart;
+    for (const entry of sheet.celldata ?? []) {
+      if (
+        entry.r < rowStart ||
+        entry.r > rowEnd ||
+        entry.c < columnStart ||
+        entry.c > columnEnd
+      ) {
+        continue;
+      }
+      collect(entry.v);
+    }
+  }
+
+  if (summary.numericCount > 0) {
+    summary.sum = sum;
+    summary.average = sum / summary.numericCount;
+  }
+  return summary;
 }
 
 export function spreadsheetFontSizeOptions(
@@ -204,6 +274,12 @@ function spreadsheetColumnLabel(column: number): string {
     value = Math.floor(value / 26);
   }
   return label;
+}
+
+function spreadsheetCellHasContent(cell: Cell): boolean {
+  if (typeof cell.f === 'string' && cell.f.trim()) return true;
+  if (cell.v === null || cell.v === undefined) return false;
+  return typeof cell.v !== 'string' || cell.v.trim().length > 0;
 }
 
 function finiteSpreadsheetSelectionAxis(axis: number[] | undefined): number[] {

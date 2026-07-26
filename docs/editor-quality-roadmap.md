@@ -168,6 +168,8 @@ After the Document gates above are stable:
   clipboard behavior.
 - Publish Markdown Extension parse/serialize requirements and fixtures.
 - Keep source typing coalesced and visual updates responsive on large files.
+- Keep the default split view directly resizable without breaking synchronized
+  scrolling or the stacked compact layout.
 
 Exit evidence: canonical Markdown fixtures round-trip without semantic drift,
 custom structural Extensions have serialization tests, and source/visual undo
@@ -179,6 +181,7 @@ remains one coherent history.
   sparse model and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
   sorting, filtering, validation, charts, pivots, and print layout.
+- Keep lightweight selection statistics responsive for dense and sparse sheets.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 
@@ -192,6 +195,8 @@ Excel and WPS.
   links, notes, comments, transitions, and presenter workflows.
 - Keep scene object identity stable through selection, transforms, clipboard,
   history, import, and export.
+- Keep native slide and object context actions available independently of
+  optional AI integrations.
 - Move bounded geometry, text fitting, connector routing, snapping, and
   thumbnail work behind Worker/WASM contracts.
 
@@ -201,8 +206,9 @@ one controlled update.
 
 ## Priority 5: PDF
 
-- Complete annotation styling, forms, signatures, page organization, search,
-  history, save, and explicit redaction review.
+- Extend the implemented annotation color control with opacity, stroke, forms,
+  signatures, page organization, search, history, save, and explicit redaction
+  review.
 - Keep PDFium lifecycle, page bitmap cache, and source Blob ownership bounded.
 - Verify saved annotations and forms by reopening the emitted Blob.
 

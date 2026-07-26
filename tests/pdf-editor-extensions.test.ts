@@ -23,6 +23,7 @@ describe('PDF editor extensions', () => {
     editor.commands.nextSearchResult();
     editor.commands.zoomIn();
     editor.commands.selectAnnotationTool('highlight');
+    editor.commands.setAnnotationColor('#ff0000');
     editor.commands.deleteAnnotationSelection();
     await editor.commands.save();
 
@@ -41,6 +42,7 @@ describe('PDF editor extensions', () => {
       'search:next',
       'zoom:in',
       'annotation:highlight',
+      'annotation:color:#ff0000',
       'annotation:delete',
       'save',
     ]);
@@ -57,6 +59,7 @@ describe('PDF editor extensions', () => {
     expect(editor.can().undo()).toBe(true);
     expect(editor.can().redo()).toBe(false);
     expect(editor.can().selectAnnotationTool('ink')).toBe(true);
+    expect(editor.can().setAnnotationColor('#ff0000')).toBe(true);
     expect(editor.can().save()).toBe(true);
 
     editor.updateContext({
@@ -133,11 +136,13 @@ function context(calls: string[]): PdfEditorCommandContext {
   const annotation: PdfAnnotationController = {
     state: {
       activeToolId: null,
+      annotationColor: '#ffd966',
       available: true,
       hasPendingChanges: false,
       selectedCount: 1,
     },
     deleteSelection: () => calls.push('annotation:delete'),
+    setAnnotationColor: (color) => calls.push(`annotation:color:${color}`),
     selectTool: (tool) => calls.push(`annotation:${tool ?? 'select'}`),
   };
   return {

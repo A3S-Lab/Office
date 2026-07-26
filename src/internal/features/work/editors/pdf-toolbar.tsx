@@ -33,6 +33,7 @@ import {
   StatusBadge,
 } from '../../../design-system/primitives';
 import { OfficeTextField } from './office-controls';
+import { OfficeColorPicker } from './office-color-picker';
 import type { PdfAnnotationControllerState } from './pdf-annotation-controller';
 import type {
   PdfEditorCanCommands,
@@ -190,6 +191,14 @@ export function PdfToolbar({
           >
             <Type size={14} />
           </IconButton>
+          <OfficeColorPicker
+            ariaLabel="批注颜色"
+            className="work-pdf-annotation-color"
+            compact
+            value={annotationState.annotationColor}
+            disabled={!can.setAnnotationColor(annotationState.annotationColor)}
+            onValueChange={commands.setAnnotationColor}
+          />
           <IconButton
             label="删除所选批注"
             disabled={!can.deleteAnnotationSelection()}
