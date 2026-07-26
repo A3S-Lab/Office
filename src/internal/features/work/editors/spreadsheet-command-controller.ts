@@ -13,6 +13,7 @@ import {
 } from './spreadsheet-editor-support';
 
 export interface SpreadsheetWorkbookCommandPort {
+  batchCallApis: (apiCalls: Array<{ name: string; args: unknown[] }>) => void;
   cancelMerge: (
     ranges: SpreadsheetCommandRange[],
     options?: { id?: string },
@@ -23,10 +24,19 @@ export interface SpreadsheetWorkbookCommandPort {
     type: string,
     options?: { id?: string },
   ) => void;
+  setCellValuesByRange: (
+    values: unknown[][],
+    range: SpreadsheetCommandRange,
+    options?: { id?: string },
+  ) => void;
   setCellFormatByRange: (
     attribute: keyof Cell,
     value: unknown,
     range: SpreadsheetCommandRange,
+    options?: { id?: string },
+  ) => void;
+  setSelection: (
+    range: SpreadsheetCommandRange[],
     options?: { id?: string },
   ) => void;
 }
@@ -60,7 +70,13 @@ export interface SpreadsheetHistoryCommandPort {
   undo: () => boolean;
 }
 
+export interface SpreadsheetFormulaBarCommandPort {
+  setValue: (value: unknown) => void;
+}
+
 export interface SpreadsheetEditorCommands {
+  clearSelectedCells: () => boolean;
+  pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
@@ -80,6 +96,7 @@ export interface SpreadsheetCommandContext {
   content: WorkSpreadsheetContent;
   editable: boolean;
   fallbackRange: SpreadsheetCommandRange;
+  formulaBar: SpreadsheetFormulaBarCommandPort | null;
   history: SpreadsheetHistoryCommandPort | null;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
@@ -147,6 +164,15 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     >({
       name: 'spreadsheetCellFormatting',
       addCommands: () => ({
+        clearSelectedCells: {
+          canExecute: canEditSelectedCells,
+          execute: clearSelectedCells,
+        },
+        pasteCells: {
+          canExecute: (context, values) =>
+            canEditSelectedCells(context) && isRectangularCellMatrix(values),
+          execute: pasteCells,
+        },
         setCellFormat: {
           canExecute: canEditSelectedCells,
           execute: formatCells,
@@ -193,6 +219,78 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
   ];
+}
+
+function clearSelectedCells(context: SpreadsheetCommandContext): boolean {
+  if (!context.workbook || !context.targetSheetId) return false;
+  const range = liveRange(context);
+  const calls: Array<{ name: string; args: unknown[] }> = [];
+  for (let row = range.row[0]; row <= range.row[1]; row += 1) {
+    for (let column = range.column[0]; column <= range.column[1]; column += 1) {
+      calls.push({
+        name: 'clearCell',
+        args: [row, column, { id: context.targetSheetId }],
+      });
+    }
+  }
+  try {
+    context.workbook.batchCallApis(calls);
+  } catch {
+    return false;
+  }
+  syncSpreadsheetFormulaBar(context, '');
+  return true;
+}
+
+function pasteCells(
+  context: SpreadsheetCommandContext,
+  values: readonly (readonly unknown[])[],
+): boolean {
+  if (
+    !context.workbook ||
+    !context.targetSheetId ||
+    !isRectangularCellMatrix(values)
+  ) {
+    return false;
+  }
+  const source = liveRange(context);
+  const data = values.map((row) => [...row]);
+  const range = {
+    row: [source.row[0], source.row[0] + data.length - 1],
+    column: [source.column[0], source.column[0] + data[0].length - 1],
+  };
+  try {
+    context.workbook.setCellValuesByRange(data, range, {
+      id: context.targetSheetId,
+    });
+  } catch {
+    return false;
+  }
+  try {
+    context.workbook.setSelection([range], { id: context.targetSheetId });
+  } catch {
+    // The values were committed; selection highlighting is best effort.
+  }
+  syncSpreadsheetFormulaBar(context, data[0][0]);
+  return true;
+}
+
+function isRectangularCellMatrix(
+  values: readonly (readonly unknown[])[],
+): boolean {
+  const width = values[0]?.length ?? 0;
+  return Boolean(width && values.every((row) => row.length === width));
+}
+
+function syncSpreadsheetFormulaBar(
+  context: SpreadsheetCommandContext,
+  value: unknown,
+): void {
+  try {
+    context.formulaBar?.setValue(value);
+  } catch {
+    // Cell mutations remain valid if the vendor formula bar cannot refresh.
+  }
 }
 
 function formatCells(

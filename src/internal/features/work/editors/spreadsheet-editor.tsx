@@ -32,6 +32,7 @@ import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
+import { spreadsheetCoreContextMenuItems } from './spreadsheet-context-menu';
 import {
   SpreadsheetEditorRibbon,
   type SpreadsheetRibbonTabId,
@@ -77,7 +78,7 @@ interface SpreadsheetSelectionState {
   selection: Selection;
 }
 
-interface SpreadsheetAgentMenuState {
+interface SpreadsheetContextMenuState {
   x: number;
   y: number;
   selection: WorkSpreadsheetAgentSelection;
@@ -99,6 +100,7 @@ export function SpreadsheetEditor({
   const contentRef = useRef(materializedContent);
   const spreadsheetCommandsRef = useRef<SpreadsheetEditorCommands | null>(null);
   const previewRef = useRef(preview);
+  const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
   const workbookRef = useRef<WorkbookInstance>(null);
   const {
     acceptContent: acceptWorkbookContent,
@@ -115,9 +117,8 @@ export function SpreadsheetEditor({
   const [panel, setPanel] = useState<SpreadsheetWorkbookPanelView | null>(null);
   const [selectionState, setSelectionState] =
     useState<SpreadsheetSelectionState | null>(null);
-  const [agentMenu, setAgentMenu] = useState<SpreadsheetAgentMenuState | null>(
-    null,
-  );
+  const [contextMenu, setContextMenu] =
+    useState<SpreadsheetContextMenuState | null>(null);
   const [previewZoom, setPreviewZoom] = useState(100);
   const history = useOfficeHistory({
     content,
@@ -148,7 +149,7 @@ export function SpreadsheetEditor({
   useEffect(() => {
     if (!preview) return;
     setPanel(null);
-    setAgentMenu(null);
+    setContextMenu(null);
   }, [preview]);
   const workbookHooks = useMemo<Hooks>(
     () => ({
@@ -337,6 +338,16 @@ export function SpreadsheetEditor({
       content: contentRef.current,
       editable: !preview,
       fallbackRange: selectedRange,
+      formulaBar: {
+        setValue: (value) => {
+          const formulaBar =
+            spreadsheetCanvasRef.current?.querySelector<HTMLElement>(
+              '.fortune-fx-input',
+            );
+          if (formulaBar)
+            formulaBar.textContent = value == null ? '' : String(value);
+        },
+      },
       history,
       onChange: (next) => {
         contentRef.current = next;
@@ -409,9 +420,10 @@ export function SpreadsheetEditor({
         />
       )}
       <div
+        ref={spreadsheetCanvasRef}
         className="work-spreadsheet-canvas"
         onContextMenuCapture={(event) => {
-          if (preview || !onAgentRequest) return;
+          if (preview) return;
           const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
           const sheet = content.sheets.find(
             (candidate) => candidate.id === sheetId,
@@ -427,7 +439,7 @@ export function SpreadsheetEditor({
           if (!agentSelection) return;
           event.preventDefault();
           event.stopPropagation();
-          setAgentMenu({
+          setContextMenu({
             x: event.clientX,
             y: event.clientY,
             selection: agentSelection,
@@ -500,26 +512,39 @@ export function SpreadsheetEditor({
           </output>
         )}
       </WorkOfficeStatusBar>
-      {agentMenu && onAgentRequest && (
+      {contextMenu && (
         <WorkspaceContextMenu
-          label={`表格选区 ${agentMenu.selection.reference} AI 操作`}
-          x={agentMenu.x}
-          y={agentMenu.y}
-          items={spreadsheetAgentMenuItems(
-            agentMenu.selection,
-            onAgentRequest,
-            (changes) => {
-              const outcome = applySpreadsheetAgentProposalChanges(
-                contentRef.current,
-                agentMenu.selection.sheetId,
-                changes,
-              );
-              if (outcome.result.appliedTargetIds.length)
-                spreadsheetCommands.setSpreadsheetContent(outcome.content);
-              return outcome.result;
-            },
-          )}
-          onClose={() => setAgentMenu(null)}
+          label={`表格选区 ${contextMenu.selection.reference} 操作`}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={[
+            ...spreadsheetCoreContextMenuItems({
+              can: spreadsheetCan,
+              commands: spreadsheetCommands,
+              selection: contextMenu.selection,
+            }),
+            ...(onAgentRequest
+              ? spreadsheetAgentMenuItems(
+                  contextMenu.selection,
+                  onAgentRequest,
+                  (changes) => {
+                    const outcome = applySpreadsheetAgentProposalChanges(
+                      contentRef.current,
+                      contextMenu.selection.sheetId,
+                      changes,
+                    );
+                    if (outcome.result.appliedTargetIds.length)
+                      spreadsheetCommands.setSpreadsheetContent(
+                        outcome.content,
+                      );
+                    return outcome.result;
+                  },
+                ).map((item, index) =>
+                  index === 0 ? { ...item, separatorBefore: true } : item,
+                )
+              : []),
+          ]}
+          onClose={() => setContextMenu(null)}
         />
       )}
     </section>

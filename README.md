@@ -189,9 +189,10 @@ interaction model.
   preview, task lists, tables, links, images, and code. _Markdown
   import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
-  live selection statistics, direct number/percent formats and decimal controls,
-  formatting, charts, validation, protection, comments, and print settings.
-  _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
+  live selection statistics, native cut/copy/paste and clear actions, direct
+  number/percent formats and decimal controls, formatting, charts, validation,
+  protection, comments, and print settings. _XLSX, XLS, ODS, and CSV import;
+  XLSX and PDF export._
 - **Presentation** — Typed slide scene graph, multi-selection, groups, object
   transforms, native slide and object context actions, guides, comments,
   transitions, one-step slideshow from the beginning or current slide, and

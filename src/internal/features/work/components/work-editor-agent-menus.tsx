@@ -28,17 +28,9 @@ export function spreadsheetAgentMenuItems(
 ): WorkspaceContextMenuItem[] {
   return [
     {
-      id: 'copy',
-      label: `复制选区 ${selection.reference}`,
-      icon: <Copy size={14} />,
-      onSelect: () =>
-        void copyEditorSelection(selection.clipboard, '表格选区已复制'),
-    },
-    {
       id: 'ask',
       label: '询问 AI 助手',
       icon: <MessageSquareText size={14} />,
-      separatorBefore: true,
       onSelect: () =>
         void onAgentRequest({
           instruction: '请围绕这个表格选区回答我的问题：\n\n问题：',

@@ -89,6 +89,40 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('routes context-menu clear and paste through one workbook command port', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [3, 2], column: [4, 3] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().clearSelectedCells()).toBe(true);
+    expect(editor.commands.clearSelectedCells()).toBe(true);
+    expect(editor.commands.pasteCells([['A3S', 'Office']])).toBe(true);
+    expect(editor.commands.pasteCells([])).toBe(false);
+
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        { name: 'clearCell', args: [2, 3, { id: 'sheet-1' }] },
+        { name: 'clearCell', args: [2, 4, { id: 'sheet-1' }] },
+        { name: 'clearCell', args: [3, 3, { id: 'sheet-1' }] },
+        { name: 'clearCell', args: [3, 4, { id: 'sheet-1' }] },
+      ],
+    ]);
+    expect(fixture.workbook.pastes).toEqual([
+      {
+        range: { row: [2, 2], column: [3, 4] },
+        sheetId: 'sheet-1',
+        values: [['A3S', 'Office']],
+      },
+    ]);
+    expect(fixture.workbook.selections).toEqual([
+      {
+        range: [{ row: [2, 2], column: [3, 4] }],
+        sheetId: 'sheet-1',
+      },
+    ]);
+    expect(fixture.formulaBarValues).toEqual(['', 'A3S']);
+  });
+
   test('updates controlled sheet view state without mutating the input', () => {
     const fixture = commandFixture();
     const previousSheet = fixture.context.content.sheets[0];
@@ -173,6 +207,7 @@ function commandFixture(): {
   changes: WorkSpreadsheetContent[];
   calculation: RecordingSpreadsheetCalculation;
   context: SpreadsheetCommandContext;
+  formulaBarValues: unknown[];
   workbook: RecordingSpreadsheetWorkbook;
 } {
   const content = {
@@ -188,10 +223,12 @@ function commandFixture(): {
   } satisfies WorkSpreadsheetContent;
   const changes: WorkSpreadsheetContent[] = [];
   const calculation = new RecordingSpreadsheetCalculation();
+  const formulaBarValues: unknown[] = [];
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     calculation,
     changes,
+    formulaBarValues,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
@@ -199,6 +236,9 @@ function commandFixture(): {
       content,
       editable: true,
       fallbackRange: { row: [0, 1], column: [0, 2] },
+      formulaBar: {
+        setValue: (value) => formulaBarValues.push(value),
+      },
       history: null,
       onChange: (next) => changes.push(next),
       selection: {
@@ -222,6 +262,7 @@ function spreadsheetEditor(context: SpreadsheetCommandContext) {
 }
 
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
+  clearBatches: Array<Array<{ name: string; args: unknown[] }>> = [];
   formats: Array<{
     attribute: string;
     range: SpreadsheetCommandRange;
@@ -230,6 +271,15 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
   }> = [];
   merges: Array<{
     range: SpreadsheetCommandRange;
+    sheetId: string | undefined;
+  }> = [];
+  pastes: Array<{
+    range: SpreadsheetCommandRange;
+    sheetId: string | undefined;
+    values: unknown[][];
+  }> = [];
+  selections: Array<{
+    range: SpreadsheetCommandRange[];
     sheetId: string | undefined;
   }> = [];
   selection: SpreadsheetCommandRange[] | undefined;
@@ -241,6 +291,10 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     this.merges.push(
       ...ranges.map((range) => ({ range, sheetId: options?.id })),
     );
+  }
+
+  batchCallApis(apiCalls: Array<{ name: string; args: unknown[] }>): void {
+    this.clearBatches.push(apiCalls);
   }
 
   getSelection(): SpreadsheetCommandRange[] | undefined {
@@ -255,6 +309,21 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     this.merges.push(
       ...ranges.map((range) => ({ range, sheetId: options?.id })),
     );
+  }
+
+  setCellValuesByRange(
+    values: unknown[][],
+    range: SpreadsheetCommandRange,
+    options?: { id?: string },
+  ): void {
+    this.pastes.push({ range, sheetId: options?.id, values });
+  }
+
+  setSelection(
+    range: SpreadsheetCommandRange[],
+    options?: { id?: string },
+  ): void {
+    this.selections.push({ range, sheetId: options?.id });
   }
 
   setCellFormatByRange(

@@ -1,4 +1,11 @@
-import { Copy, CopyPlus, Scissors, Trash2 } from 'lucide-react';
+import {
+  ClipboardPaste,
+  Copy,
+  CopyPlus,
+  Plus,
+  Scissors,
+  Trash2,
+} from 'lucide-react';
 import type { WorkspaceContextMenuItem } from '../../workspace/components/workspace-context-menu';
 import type {
   PresentationEditorCanCommands,
@@ -7,22 +14,26 @@ import type {
 
 type PresentationContextCan = Pick<
   PresentationEditorCanCommands,
+  | 'addSlide'
   | 'copySelection'
   | 'cutSelection'
   | 'deleteSelection'
   | 'deleteSlide'
   | 'duplicateSelection'
   | 'duplicateSlide'
+  | 'pasteSelection'
 >;
 
 type PresentationContextCommands = Pick<
   PresentationEditorCommands,
+  | 'addSlide'
   | 'copySelection'
   | 'cutSelection'
   | 'deleteSelection'
   | 'deleteSlideById'
   | 'duplicateSelection'
   | 'duplicateSlide'
+  | 'pasteSelection'
 >;
 
 export function presentationCoreContextMenuItems({
@@ -39,11 +50,29 @@ export function presentationCoreContextMenuItems({
   if (target === 'slide') {
     return [
       {
+        id: 'add-slide',
+        label: '新建幻灯片',
+        icon: <Plus size={14} />,
+        shortcut: 'Ctrl+M',
+        ariaKeyShortcut: 'Control+M Meta+Shift+N',
+        disabled: !can.addSlide(),
+        onSelect: () => void commands.addSlide(),
+      },
+      {
         id: 'duplicate-slide',
         label: '复制幻灯片',
         icon: <CopyPlus size={14} />,
         disabled: !can.duplicateSlide(),
         onSelect: () => void commands.duplicateSlide(),
+      },
+      {
+        id: 'paste-slide',
+        label: '粘贴',
+        icon: <ClipboardPaste size={14} />,
+        shortcut: '⌘V',
+        ariaKeyShortcut: 'Control+V Meta+V',
+        disabled: !can.pasteSelection(),
+        onSelect: () => void commands.pasteSelection(),
       },
       {
         id: 'delete-slide',
@@ -74,6 +103,15 @@ export function presentationCoreContextMenuItems({
       ariaKeyShortcut: 'Control+X Meta+X',
       disabled: !can.cutSelection(),
       onSelect: () => void commands.cutSelection(),
+    },
+    {
+      id: 'paste-object',
+      label: '粘贴',
+      icon: <ClipboardPaste size={14} />,
+      shortcut: '⌘V',
+      ariaKeyShortcut: 'Control+V Meta+V',
+      disabled: !can.pasteSelection(),
+      onSelect: () => void commands.pasteSelection(),
     },
     {
       id: 'duplicate-object',
