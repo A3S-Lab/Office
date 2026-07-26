@@ -17,13 +17,13 @@ import {
   Table2,
   Undo2,
 } from 'lucide-react';
+import { type ButtonHTMLAttributes, type ReactNode, useState } from 'react';
+import { OfficeSelect } from './office-controls';
 import {
-  type ButtonHTMLAttributes,
-  type ReactNode,
-  useCallback,
-  useState,
-} from 'react';
-import { OfficeSelect, useOfficeDialog } from './office-controls';
+  MarkdownInsertDialog,
+  type MarkdownInsertDialogRequest,
+  type MarkdownInsertDialogResult,
+} from './markdown-insert-dialog';
 import type { MarkdownViewMode } from './markdown-workspace';
 import {
   type WorkOfficeFileAction,
@@ -52,32 +52,60 @@ export function MarkdownToolbar({
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
-  const officeDialog = useOfficeDialog();
-  const toggleLink = useCallback(async () => {
+  const [insertDialog, setInsertDialog] =
+    useState<MarkdownInsertDialogRequest | null>(null);
+  const toggleLink = () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
       return;
     }
-    const href = await officeDialog.prompt({
-      title: '链接地址',
-      initialValue: editor.getAttributes('link').href ?? 'https://',
-      placeholder: 'https://',
-      confirmLabel: '添加链接',
+    const { from, to } = editor.state.selection;
+    setInsertDialog({
+      kind: 'link',
+      label: editor.state.selection.empty
+        ? ''
+        : editor.state.doc.textBetween(from, to, ' '),
+      source: 'https://',
     });
-    if (href?.trim()) {
-      editor.chain().focus().setLink({ href: href.trim() }).run();
-    }
-  }, [editor, officeDialog.prompt]);
-  const insertImage = useCallback(async () => {
-    const source = await officeDialog.prompt({
-      title: '图片地址',
-      placeholder: 'https://',
-      confirmLabel: '插入图片',
+  };
+  const openImageDialog = () => {
+    setInsertDialog({
+      kind: 'image',
+      altText: '',
+      source: 'https://',
     });
-    if (source?.trim()) {
-      editor.chain().focus().setImage({ src: source.trim() }).run();
+  };
+  const commitInsert = (result: MarkdownInsertDialogResult) => {
+    setInsertDialog(null);
+    if (result.kind === 'image') {
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: result.source,
+          alt: result.altText || undefined,
+        })
+        .run();
+      return;
     }
-  }, [editor, officeDialog.prompt]);
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.selection.empty
+      ? ''
+      : editor.state.doc.textBetween(from, to, ' ');
+    if (selectedText && selectedText === result.label) {
+      editor.chain().focus().setLink({ href: result.source }).run();
+      return;
+    }
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'text',
+        text: result.label,
+        marks: [{ type: 'link', attrs: { href: result.source } }],
+      })
+      .run();
+  };
 
   return (
     <>
@@ -221,14 +249,14 @@ export function MarkdownToolbar({
                   label={editor.isActive('link') ? '移除链接' : '添加链接'}
                   displayLabel
                   active={editor.isActive('link')}
-                  onClick={() => void toggleLink()}
+                  onClick={toggleLink}
                 >
                   <Link2 size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="插入图片"
                   displayLabel
-                  onClick={() => void insertImage()}
+                  onClick={openImageDialog}
                 >
                   <ImageIcon size={19} />
                 </MarkdownToolbarButton>
@@ -301,7 +329,14 @@ export function MarkdownToolbar({
           ),
         }}
       />
-      {officeDialog.dialog}
+      {insertDialog && (
+        <MarkdownInsertDialog
+          request={insertDialog}
+          restoreFocusTarget={() => editor.view.dom}
+          onClose={() => setInsertDialog(null)}
+          onSubmit={commitInsert}
+        />
+      )}
     </>
   );
 }

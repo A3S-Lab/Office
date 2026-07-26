@@ -208,6 +208,75 @@
   font-size: 10px;
 }
 
+.work-pdf-overflow {
+  display: none;
+  flex: 0 0 auto;
+}
+
+.work-pdf-overflow-panel {
+  width: 190px;
+  padding: 5px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 9px;
+  background: var(--a3s-panel);
+  box-shadow: 0 14px 34px rgb(15 23 42 / 18%);
+}
+
+.work-pdf-overflow-group {
+  display: grid;
+  gap: 2px;
+}
+
+.work-pdf-overflow-group + .work-pdf-overflow-group {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-pdf-overflow-panel button {
+  display: grid;
+  width: 100%;
+  min-height: 32px;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a3s-ink);
+  font: inherit;
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-pdf-overflow-panel button:hover:not(:disabled),
+.work-pdf-overflow-panel button:focus-visible,
+.work-pdf-overflow-panel button[data-active="true"] {
+  outline: 0;
+  background: var(--a3s-panel-soft);
+}
+
+.work-pdf-overflow-panel button[data-active="true"] {
+  color: var(--a3s-blue);
+}
+
+.work-pdf-overflow-panel button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.work-pdf-overflow-panel button > span:first-child {
+  display: grid;
+  place-items: center;
+  color: var(--a3s-muted);
+}
+
+.work-pdf-overflow-narrow {
+  display: none;
+}
+
 .work-pdf-embed,
 .work-pdf-native-viewer {
   min-width: 0;
@@ -253,6 +322,10 @@
 }
 
 @media (max-width: 980px) {
+  .work-pdf-overflow {
+    display: flex;
+  }
+
   .work-pdf-search {
     width: min(220px, 28vw);
   }
@@ -294,5 +367,9 @@
 
   .work-pdf-save {
     margin-right: 3px;
+  }
+
+  .work-pdf-overflow-narrow {
+    display: grid;
   }
 }

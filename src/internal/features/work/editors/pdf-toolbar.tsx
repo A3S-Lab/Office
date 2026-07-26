@@ -4,14 +4,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Ellipsis,
   Highlighter,
   Loader2,
   Minus,
+  MoveHorizontal,
   MousePointer2,
   Pencil,
   Plus,
   Redo2,
   Save,
+  Scan,
   Search,
   Strikethrough,
   Trash2,
@@ -23,6 +26,7 @@ import {
 import {
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
   type RefObject,
   useEffect,
   useState,
@@ -30,6 +34,7 @@ import {
 import {
   Button,
   IconButton,
+  Popover,
   StatusBadge,
 } from '../../../design-system/primitives';
 import { OfficeTextField } from './office-controls';
@@ -209,6 +214,14 @@ export function PdfToolbar({
         </fieldset>
       )}
 
+      <PdfToolbarOverflow
+        annotationState={annotationState}
+        can={can}
+        commands={commands}
+        editable={editable}
+        state={state}
+      />
+
       <search className="work-pdf-search">
         <form onSubmit={submitSearch}>
           <Search size={14} aria-hidden="true" />
@@ -344,6 +357,163 @@ export function PdfToolbar({
         </button>
       </div>
     </header>
+  );
+}
+
+function PdfToolbarOverflow({
+  annotationState,
+  can,
+  commands,
+  editable,
+  state,
+}: {
+  annotationState: PdfAnnotationControllerState;
+  can: PdfEditorCanCommands;
+  commands: PdfEditorCommands;
+  editable: boolean;
+  state: PdfViewerControllerState;
+}) {
+  return (
+    <Popover
+      label="更多 PDF 工具"
+      panelLabel="更多 PDF 工具"
+      panelRole="menu"
+      placement="bottom-end"
+      portal
+      focusFirstOnOpen
+      className="work-pdf-overflow"
+      panelClassName="work-pdf-overflow-panel"
+      trigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          className="ds-icon-button work-pdf-overflow-trigger"
+          title="更多 PDF 工具"
+        >
+          <Ellipsis size={16} />
+        </button>
+      )}
+    >
+      {(close) => {
+        const select = (command: () => void) => {
+          close();
+          command();
+        };
+        return (
+          <>
+            {editable && (
+              <div className="work-pdf-overflow-group">
+                <PdfOverflowAction
+                  label="下划线批注"
+                  active={annotationState.activeToolId === 'underline'}
+                  disabled={!can.selectAnnotationTool('underline')}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool('underline'))
+                  }
+                >
+                  <Underline size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="删除线批注"
+                  active={annotationState.activeToolId === 'strikeout'}
+                  disabled={!can.selectAnnotationTool('strikeout')}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool('strikeout'))
+                  }
+                >
+                  <Strikethrough size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="文字批注"
+                  active={annotationState.activeToolId === 'freeText'}
+                  disabled={!can.selectAnnotationTool('freeText')}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool('freeText'))
+                  }
+                >
+                  <Type size={15} />
+                </PdfOverflowAction>
+              </div>
+            )}
+            <div className="work-pdf-overflow-group">
+              <PdfOverflowAction
+                label="整页"
+                active={state.zoomMode === 'fit-page'}
+                disabled={!can.fitPage()}
+                onSelect={() => select(commands.fitPage)}
+              >
+                <Scan size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="页宽"
+                active={state.zoomMode === 'fit-width'}
+                disabled={!can.fitWidth()}
+                onSelect={() => select(commands.fitWidth)}
+              >
+                <MoveHorizontal size={15} />
+              </PdfOverflowAction>
+            </div>
+            <div className="work-pdf-overflow-group work-pdf-overflow-narrow">
+              <PdfOverflowAction
+                label="撤销"
+                disabled={!can.undo()}
+                onSelect={() => select(commands.undo)}
+              >
+                <Undo2 size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="重做"
+                disabled={!can.redo()}
+                onSelect={() => select(commands.redo)}
+              >
+                <Redo2 size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="上一个搜索结果"
+                disabled={!can.previousSearchResult()}
+                onSelect={() => select(commands.previousSearchResult)}
+              >
+                <ChevronUp size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="下一个搜索结果"
+                disabled={!can.nextSearchResult()}
+                onSelect={() => select(commands.nextSearchResult)}
+              >
+                <ChevronDown size={15} />
+              </PdfOverflowAction>
+            </div>
+          </>
+        );
+      }}
+    </Popover>
+  );
+}
+
+function PdfOverflowAction({
+  active = false,
+  children,
+  disabled,
+  label,
+  onSelect,
+}: {
+  active?: boolean;
+  children: ReactNode;
+  disabled: boolean;
+  label: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      data-active={active ? 'true' : undefined}
+      disabled={disabled}
+      onClick={onSelect}
+    >
+      <span aria-hidden="true">{children}</span>
+      <span>{label}</span>
+      {active && <Check size={14} aria-hidden="true" />}
+    </button>
   );
 }
 

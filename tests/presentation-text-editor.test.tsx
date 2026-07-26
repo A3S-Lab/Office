@@ -8,6 +8,11 @@ import {
   presentationTextElementHtml,
   presentationTextValue,
 } from '../src/internal/features/work/editors/presentation-text-editor';
+import {
+  newPresentationElement,
+  newSlide,
+} from '../src/internal/features/work/editors/presentation-editor-operations';
+import { SlideElementTextPreview } from '../src/internal/features/work/editors/presentation-slide-canvas';
 import type { WorkSlideElement } from '../src/internal/features/work/work-types';
 
 test('round-trips imported presentation text runs through TipTap', () => {
@@ -195,6 +200,39 @@ test('keeps form control focus while formatting a text selection', async () => {
     fontSize: 32,
     text: 'Editable',
   });
+});
+
+test('keeps presentation prompts out of stored slide text', async () => {
+  const placeholder = textElement({
+    text: '',
+    textRuns: [{ text: '' }],
+    placeholder: {
+      key: 'title',
+      type: 'title',
+      prompt: '单击添加标题',
+    },
+  });
+
+  const view = render(
+    <PresentationTextEditor element={placeholder} onChange={() => undefined} />,
+  );
+  const textbox = await screen.findByRole('textbox', { name: '幻灯片文本' });
+  expect(textbox).toHaveTextContent('');
+  expect(textbox.querySelector('p')).toHaveAttribute(
+    'data-placeholder',
+    '单击添加标题',
+  );
+
+  view.rerender(
+    <SlideElementTextPreview element={placeholder} showPlaceholder />,
+  );
+  expect(screen.getByText('单击添加标题')).toBeInTheDocument();
+
+  expect(newSlide(2).elements[0]).toMatchObject({
+    text: '',
+    placeholder: { type: 'title', prompt: '单击添加标题' },
+  });
+  expect(newPresentationElement('text')).toMatchObject({ text: '' });
 });
 
 function textElement(patch: Partial<WorkSlideElement> = {}): WorkSlideElement {

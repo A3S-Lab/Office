@@ -55,6 +55,7 @@ export function PresentationSlideThumbnail({
           slide={slide}
           interactive={false}
           aspectRatio={aspectRatio}
+          showPlaceholders
         />
       ) : (
         <span

@@ -29,6 +29,26 @@ describe('office core', () => {
     expect(spreadsheet.content.type).toBe('spreadsheet');
     expect(presentation.kind).toBe('presentation');
     expect(presentation.content.type).toBe('presentation');
+    if (presentation.content.type !== 'presentation')
+      throw new Error('Expected a presentation artifact.');
+    expect(presentation.content.slides[0]?.elements).toMatchObject([
+      {
+        text: '',
+        placeholder: {
+          key: 'title',
+          type: 'title',
+          prompt: '单击添加标题',
+        },
+      },
+      {
+        text: '',
+        placeholder: {
+          key: 'subtitle',
+          type: 'subtitle',
+          prompt: '添加副标题',
+        },
+      },
+    ]);
     expect(artifactExtension(presentation.kind)).toBe('pptx');
   });
 

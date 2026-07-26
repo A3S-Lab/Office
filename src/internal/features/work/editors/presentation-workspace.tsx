@@ -251,7 +251,10 @@ export function PresentationWorkspace({
             const selected = selectedElementSet.has(element.id);
             const editing = editingElementId === element.id;
             const label =
-              element.altText?.trim() || element.text?.trim() || '幻灯片元素';
+              element.altText?.trim() ||
+              element.text?.trim() ||
+              element.placeholder?.prompt?.trim() ||
+              '幻灯片元素';
             return (
               <fieldset
                 key={element.id}
@@ -376,7 +379,10 @@ export function PresentationWorkspace({
                       onSelectionChange={onTextSelectionChange}
                     />
                   ) : (
-                    <SlideElementTextPreview element={element} />
+                    <SlideElementTextPreview
+                      element={element}
+                      showPlaceholder
+                    />
                   )
                 ) : null}
                 {selected && !editing && (

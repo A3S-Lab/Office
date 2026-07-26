@@ -1,6 +1,12 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type { MarkdownContent } from '../src/core';
 import { markdownTaskCheckboxLabel } from '../src/internal/features/work/editors/markdown-editor';
 import { proportionalMarkdownScrollTop } from '../src/internal/features/work/editors/markdown-workspace';
@@ -230,4 +236,70 @@ test('mounts host TipTap extensions in the Markdown editor', async () => {
   });
 
   expect(shortcutCalls).toBe(1);
+});
+
+test('inserts Markdown links with display text from one dialog', async () => {
+  const changes: MarkdownContent[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '' }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  await screen.findByLabelText('Markdown 编辑区');
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '添加链接' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '显示文字' }), {
+    target: { value: 'A3S Office' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '链接地址' }), {
+    target: { value: 'https://a3s.dev/office' },
+  });
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: '添加链接' })).getByRole(
+      'button',
+      { name: '添加链接' },
+    ),
+  );
+
+  await waitFor(() =>
+    expect(changes.at(-1)?.markdown).toContain(
+      '[A3S Office](https://a3s.dev/office)',
+    ),
+  );
+});
+
+test('inserts Markdown images with alternative text from one dialog', async () => {
+  const changes: MarkdownContent[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '' }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  await screen.findByLabelText('Markdown 编辑区');
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '插入图片' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '替代文字（可选）' }), {
+    target: { value: 'Office 架构图' },
+  });
+  fireEvent.change(screen.getByRole('textbox', { name: '图片地址' }), {
+    target: { value: 'https://a3s.dev/office.png' },
+  });
+  fireEvent.click(
+    within(screen.getByRole('dialog', { name: '插入图片' })).getByRole(
+      'button',
+      { name: '插入图片' },
+    ),
+  );
+
+  await waitFor(() =>
+    expect(changes.at(-1)?.markdown).toContain(
+      '![Office 架构图](https://a3s.dev/office.png)',
+    ),
+  );
 });

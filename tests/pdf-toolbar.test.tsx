@@ -1,5 +1,5 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { createRef } from 'react';
 import type {
   PdfEditorCanCommands,
@@ -65,6 +65,35 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   ]);
   expect(screen.getByLabelText('PDF 缩放比例')).toHaveTextContent('125%');
   expect(screen.getByText('/ 8')).toBeInTheDocument();
+});
+
+test('keeps compact PDF actions reachable from the more-tools menu', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  let menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '下划线批注' }));
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '页宽' }));
+
+  expect(calls).toEqual(['annotation:underline', 'fit-width']);
 });
 
 function createCanCommands(

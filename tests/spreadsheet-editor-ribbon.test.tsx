@@ -44,6 +44,27 @@ test('routes number-format controls through typed spreadsheet commands', () => {
   ]);
 });
 
+test('omits empty resource counts from spreadsheet ribbon actions', () => {
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="insert"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(() => true)}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '插入图表' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '条件格式' })).toBeInTheDocument();
+  expect(screen.queryByText('0')).not.toBeInTheDocument();
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     recalculateFormula: () => true,

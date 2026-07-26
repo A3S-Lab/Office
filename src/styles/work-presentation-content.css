@@ -360,6 +360,10 @@
   outline-offset: -2px;
 }
 
+.work-slide-placeholder-text {
+  opacity: 0.52;
+}
+
 .work-slide-placeholder-guide {
   position: absolute;
   z-index: 1;

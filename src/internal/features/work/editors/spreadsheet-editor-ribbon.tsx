@@ -491,11 +491,12 @@ function SpreadsheetRibbonTool({
   label: string;
   onClick: () => void;
 }) {
+  const hasCount = count > 0;
   return (
     <WorkOfficeRibbonButton
-      label={`${label}（${count}）`}
+      label={hasCount ? `${label}（${count}）` : label}
       visibleLabel={label}
-      badge={count}
+      badge={hasCount ? count : undefined}
       active={active}
       onClick={onClick}
     >

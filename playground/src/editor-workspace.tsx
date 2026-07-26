@@ -245,15 +245,11 @@ export function EditorWorkspace({
                 <Sparkles size={15} />
                 <span>AI 助手</span>
               </button>
-              <button
-                type="button"
-                className="work-export-button"
-                disabled={exporting}
-                onClick={() => void exportArtifact()}
-              >
-                <Download size={15} />
-                <span>{artifact.kind === 'pdf' ? '下载 PDF' : '导出'}</span>
-              </button>
+              <EditorExportButton
+                kind={artifact.kind}
+                exporting={exporting}
+                onExport={() => void exportArtifact()}
+              />
             </div>
           </header>
           {artifact.content.type === 'document' && (
@@ -321,6 +317,32 @@ export function EditorWorkspace({
         )}
       </div>
     </section>
+  );
+}
+
+export function EditorExportButton({
+  kind,
+  exporting,
+  onExport,
+}: {
+  kind: OfficeArtifact['kind'];
+  exporting: boolean;
+  onExport: () => void;
+}) {
+  const label = kind === 'pdf' ? '下载 PDF' : '导出';
+  return (
+    <button
+      type="button"
+      className="work-export-button"
+      aria-label={label}
+      aria-busy={exporting || undefined}
+      title={label}
+      disabled={exporting}
+      onClick={onExport}
+    >
+      <Download size={15} />
+      <span>{label}</span>
+    </button>
   );
 }
 

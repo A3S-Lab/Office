@@ -12,11 +12,13 @@ export function SlideCanvas({
   slide,
   interactive,
   aspectRatio,
+  showPlaceholders = false,
 }: {
   content?: WorkPresentationContent;
   slide: WorkSlide;
   interactive: boolean;
   aspectRatio: string;
+  showPlaceholders?: boolean;
 }) {
   const view = content ? presentationSlideView(content, slide) : undefined;
   const elements = [
@@ -39,6 +41,7 @@ export function SlideCanvas({
           element={element}
           key={`${origin}:${element.id}`}
           origin={origin}
+          showPlaceholder={showPlaceholders}
         />
       ))}
     </span>
@@ -48,13 +51,16 @@ export function SlideCanvas({
 export function SlideElementPreview({
   element,
   origin,
+  showPlaceholder = false,
 }: {
   element: WorkSlideElement;
   origin: 'inherited' | 'slide';
+  showPlaceholder?: boolean;
 }) {
+  const hasRichText = element.textRuns?.some((run) => run.text.length > 0);
   return (
     <span
-      className={`work-slide-element ${element.type} ${origin}`}
+      className={`work-slide-element ${element.type} ${origin} ${showPlaceholder && element.placeholder ? 'placeholder' : ''}`.trim()}
       data-slide-element-origin={origin}
       style={slideElementStyle(element)}
     >
@@ -70,8 +76,13 @@ export function SlideElementPreview({
           chart={element.chart}
           label={element.altText ?? element.chart.title ?? '图表'}
         />
-      ) : element.textRuns?.length || element.text ? (
-        <SlideElementTextPreview element={element} />
+      ) : hasRichText ||
+        element.text ||
+        (showPlaceholder && element.placeholder?.prompt) ? (
+        <SlideElementTextPreview
+          element={element}
+          showPlaceholder={showPlaceholder}
+        />
       ) : null}
     </span>
   );
@@ -168,10 +179,17 @@ export function slideTextStyle(element: WorkSlideElement): React.CSSProperties {
 
 export function SlideElementTextPreview({
   element,
+  showPlaceholder = false,
 }: {
   element: WorkSlideElement;
+  showPlaceholder?: boolean;
 }) {
-  const content = element.textRuns?.length ? (
+  const placeholderText = showPlaceholder
+    ? element.placeholder?.prompt?.trim()
+    : undefined;
+  const plainText = element.text || placeholderText || '';
+  const hasRichText = element.textRuns?.some((run) => run.text.length > 0);
+  const content = hasRichText ? (
     <span className="work-slide-rich-text" style={slideTextStyle(element)}>
       {element.textRuns?.map((run, index) => {
         const style: React.CSSProperties = {
@@ -212,7 +230,16 @@ export function SlideElementTextPreview({
       })}
     </span>
   ) : (
-    <span style={slideTextStyle(element)}>{element.text}</span>
+    <span
+      className={
+        !element.text && placeholderText
+          ? 'work-slide-placeholder-text'
+          : undefined
+      }
+      style={slideTextStyle(element)}
+    >
+      {plainText}
+    </span>
   );
   return element.href ? (
     <a
