@@ -328,6 +328,48 @@
   font-size: 9px;
 }
 
+.work-document-table-size-fields {
+  display: grid;
+  width: 116px;
+  gap: 3px;
+}
+
+.work-document-table-size-field {
+  display: grid;
+  grid-template-columns: 28px 58px 24px;
+  align-items: center;
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-document-table-size-field .work-office-number-field {
+  min-width: 0;
+  height: 23px;
+  grid-template-rows: 23px;
+}
+
+.work-document-table-size-field .work-office-number-field > input {
+  height: 23px;
+  min-height: 0;
+}
+
+.work-document-table-size-field small {
+  padding-left: 3px;
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
+.work-document-table-layout-select {
+  width: 86px;
+}
+
+.work-document-table-layout-select > button[role="combobox"] {
+  min-width: 86px;
+  height: 29px;
+  padding-inline: 7px 4px;
+  font-size: 9px;
+}
+
 .work-document-table-picker-panel {
   width: 277px;
   padding: 11px;

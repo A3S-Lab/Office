@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { isInTable, selectedRect } from '@tiptap/pm/tables';
 import {
   AlignCenter,
   AlignLeft,
@@ -22,8 +23,10 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
+  useEffect,
   useId,
   useRef,
+  useState,
 } from 'react';
 import {
   activeDocumentTableStyle,
@@ -38,7 +41,16 @@ import {
   canSetDocumentTableRowRepeatHeader,
   documentTableRowOptions,
 } from '../work-document-table-row';
-import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import {
+  documentTableSizing,
+  type DocumentTableLayoutMode,
+  type DocumentTableSizingState,
+} from '../work-document-table-sizing';
+import {
+  OfficeColorPicker,
+  OfficeNumberField,
+  OfficeSelect,
+} from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -57,6 +69,17 @@ const borderOptions = [
   style: DocumentTableBorderStyle;
   width: number;
 }[];
+
+const tableLayoutOptions = [
+  { value: 'window', label: '适应窗口' },
+  { value: 'contents', label: '适应内容' },
+  { value: 'fixed', label: '固定列宽' },
+] as const satisfies readonly {
+  value: DocumentTableLayoutMode;
+  label: string;
+}[];
+
+const PIXELS_PER_CENTIMETER = 96 / 2.54;
 
 export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
   const format =
@@ -133,6 +156,7 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
 
 export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
   const rowOptions = documentTableRowOptions(editor);
+  const sizing = documentTableSizing(editor.state);
   const cellFormat =
     documentTableCellFormat(editor.state) ?? DEFAULT_DOCUMENT_TABLE_CELL_FORMAT;
   const horizontalAlignment = documentTableHorizontalAlignment(editor.state);
@@ -208,6 +232,7 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           <TableCellsSplit size={18} />
         </RibbonButton>
       </RibbonGroup>
+      <DocumentTableSizeRibbonGroup editor={editor} sizing={sizing} />
       <RibbonGroup label="单元格对齐">
         <RibbonButton
           label="单元格水平左对齐"
@@ -304,15 +329,6 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         >
           <BetweenHorizontalEnd size={18} />
         </RibbonButton>
-        <RibbonButton
-          label="平均分布列"
-          visibleLabel="平均列宽"
-          onClick={() =>
-            editor.chain().focus().distributeDocumentTableColumns().run()
-          }
-        >
-          <Columns3 size={18} />
-        </RibbonButton>
       </RibbonGroup>
       <RibbonGroup label="表格">
         <RibbonButton
@@ -326,6 +342,263 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
       </RibbonGroup>
     </>
   );
+}
+
+function DocumentTableSizeRibbonGroup({
+  editor,
+  sizing,
+}: {
+  editor: Editor;
+  sizing: DocumentTableSizingState | null;
+}) {
+  return (
+    <RibbonGroup label="单元格大小">
+      <div className="work-document-table-size-fields">
+        <TableDimensionField
+          label="高度"
+          ariaLabel="行高（厘米）"
+          value={
+            sizing?.rowHeight ?? measuredCurrentTableDimension(editor, 'rows')
+          }
+          onValueChange={(height) =>
+            editor
+              .chain()
+              .focus()
+              .setDocumentTableRowHeight(
+                height,
+                sizing?.rowHeightRule ?? 'atLeast',
+              )
+              .run()
+          }
+        />
+        <TableDimensionField
+          label="宽度"
+          ariaLabel="列宽（厘米）"
+          value={
+            sizing?.columnWidth ??
+            measuredCurrentTableDimension(editor, 'columns')
+          }
+          onValueChange={(width) =>
+            editor
+              .chain()
+              .focus()
+              .setDocumentTableColumnWidth(
+                width,
+                measuredTableColumnWidths(editor),
+              )
+              .run()
+          }
+        />
+      </div>
+      <OfficeSelect
+        ariaLabel="表格自动调整"
+        className="work-document-table-layout-select"
+        value={sizing?.layoutMode ?? 'window'}
+        options={tableLayoutOptions}
+        onValueChange={(layoutMode) =>
+          editor
+            .chain()
+            .focus()
+            .setDocumentTableLayoutMode(
+              layoutMode,
+              layoutMode === 'fixed' ? measuredTableWidth(editor) : undefined,
+            )
+            .run()
+        }
+      />
+      <RibbonButton
+        label="平均分布行"
+        visibleLabel="平均行高"
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .distributeDocumentTableRows(
+              measuredTableSelectionSize(editor, 'rows'),
+            )
+            .run()
+        }
+      >
+        <Rows3 size={18} />
+      </RibbonButton>
+      <RibbonButton
+        label="平均分布列"
+        visibleLabel="平均列宽"
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .distributeDocumentTableColumns(
+              measuredTableSelectionSize(editor, 'columns'),
+            )
+            .run()
+        }
+      >
+        <Columns3 size={18} />
+      </RibbonButton>
+    </RibbonGroup>
+  );
+}
+
+function TableDimensionField({
+  label,
+  ariaLabel,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  ariaLabel: string;
+  value: number | null;
+  onValueChange: (value: number) => void;
+}) {
+  const formattedValue =
+    value === null ? '' : formatCentimeters(value / PIXELS_PER_CENTIMETER);
+  const [draft, setDraft] = useState(formattedValue);
+  useEffect(() => setDraft(formattedValue), [formattedValue]);
+  return (
+    <div className="work-document-table-size-field">
+      <span>{label}</span>
+      <OfficeNumberField
+        ariaLabel={ariaLabel}
+        value={draft}
+        min={0.5}
+        max={30}
+        step={0.1}
+        placeholder="—"
+        onValueChange={(nextValue) => {
+          setDraft(nextValue);
+          const centimeters = Number(nextValue);
+          if (
+            !Number.isFinite(centimeters) ||
+            centimeters < 0.5 ||
+            centimeters > 30
+          ) {
+            return;
+          }
+          onValueChange(
+            Math.round(centimeters * PIXELS_PER_CENTIMETER * 100) / 100,
+          );
+        }}
+      />
+      <small aria-hidden="true">厘米</small>
+    </div>
+  );
+}
+
+function measuredTableWidth(editor: Editor): number | undefined {
+  const table = selectedTableElement(editor);
+  const width = table?.getBoundingClientRect().width || table?.offsetWidth || 0;
+  return width > 0 ? width : undefined;
+}
+
+function measuredCurrentTableDimension(
+  editor: Editor,
+  axis: 'columns' | 'rows',
+): number | null {
+  const table = selectedTableElement(editor);
+  const rectangle = selectedTableRectangle(editor);
+  if (!table || !rectangle) return null;
+  if (axis === 'rows') {
+    const row = table.rows[rectangle.top];
+    const height =
+      row?.getBoundingClientRect().height || row?.offsetHeight || 0;
+    return height > 0 ? height : null;
+  }
+  return measuredTableColumnWidths(editor)?.[rectangle.left] ?? null;
+}
+
+function measuredTableColumnWidths(editor: Editor): number[] | undefined {
+  const table = selectedTableElement(editor);
+  if (!table) return undefined;
+  const columns = Array.from(table.querySelectorAll('colgroup > col'));
+  const tableWidth = table.getBoundingClientRect().width || table.offsetWidth;
+  const widths = columns.map(
+    (column) =>
+      column.getBoundingClientRect().width ||
+      Number.parseFloat((column as HTMLElement).style.width) ||
+      Number.parseFloat((column as HTMLElement).style.minWidth) ||
+      (tableWidth > 0 && columns.length ? tableWidth / columns.length : 0),
+  );
+  return widths.length && widths.every((width) => width > 0)
+    ? widths
+    : undefined;
+}
+
+function measuredTableSelectionSize(
+  editor: Editor,
+  axis: 'columns' | 'rows',
+): number | undefined {
+  const table = selectedTableElement(editor);
+  const sizing = documentTableSizing(editor.state);
+  if (!table || !sizing) return undefined;
+  if (axis === 'rows') {
+    const rows = Array.from(table.tBodies[0]?.rows ?? []);
+    const selectedRows =
+      sizing.selectedRowCount > 1
+        ? rows.slice(
+            selectedTableRectangle(editor)?.top ?? 0,
+            selectedTableRectangle(editor)?.bottom ?? rows.length,
+          )
+        : rows;
+    const heights = selectedRows.map(
+      (row) => row.getBoundingClientRect().height || row.offsetHeight,
+    );
+    return heights.every((height) => height > 0)
+      ? heights.reduce((sum, height) => sum + height, 0)
+      : undefined;
+  }
+  const columns = Array.from(table.querySelectorAll('colgroup > col'));
+  const rectangle = selectedTableRectangle(editor);
+  const selectedColumns =
+    sizing.selectedColumnCount > 1 && rectangle
+      ? columns.slice(rectangle.left, rectangle.right)
+      : columns;
+  const measuredWidths = measuredTableColumnWidths(editor);
+  const widths = measuredWidths
+    ? sizing.selectedColumnCount > 1 && rectangle
+      ? measuredWidths.slice(rectangle.left, rectangle.right)
+      : measuredWidths
+    : selectedColumns.map(() => 0);
+  if (widths.length && widths.every((width) => width > 0)) {
+    return widths.reduce((sum, width) => sum + width, 0);
+  }
+  const tableWidth = measuredTableWidth(editor);
+  return tableWidth && columns.length
+    ? (tableWidth * selectedColumns.length) / columns.length
+    : undefined;
+}
+
+function selectedTableRectangle(editor: Editor): {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+} | null {
+  if (!isInTable(editor.state)) return null;
+  const rectangle = selectedRect(editor.state);
+  return {
+    left: rectangle.left,
+    right: rectangle.right,
+    top: rectangle.top,
+    bottom: rectangle.bottom,
+  };
+}
+
+function selectedTableElement(editor: Editor): HTMLTableElement | null {
+  const selection = editor.state.selection;
+  for (let depth = selection.$from.depth; depth > 0; depth -= 1) {
+    if (selection.$from.node(depth).type.spec.tableRole !== 'table') continue;
+    const nodeDom = editor.view.nodeDOM(selection.$from.before(depth));
+    if (nodeDom instanceof HTMLTableElement) return nodeDom;
+    if (nodeDom instanceof HTMLElement) {
+      return nodeDom.querySelector(':scope > table');
+    }
+  }
+  return null;
+}
+
+function formatCentimeters(value: number): string {
+  return value.toFixed(2).replace(/\.?0+$/, '');
 }
 
 function DocumentTableStyleGallery({ editor }: { editor: Editor }) {

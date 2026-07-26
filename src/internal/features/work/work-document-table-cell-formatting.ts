@@ -118,7 +118,6 @@ declare module '@tiptap/core' {
         alignment: DocumentTableHorizontalAlign,
       ) => ReturnType;
       applyDocumentTableStyle: (style: DocumentTableStyleId) => ReturnType;
-      distributeDocumentTableColumns: () => ReturnType;
     };
   }
 }
@@ -152,8 +151,6 @@ export const DocumentTableFormatting = Extension.create({
         setSelectedCellAlignment(props, alignment),
       applyDocumentTableStyle: (style) => (props) =>
         applyTableStyle(props, style),
-      distributeDocumentTableColumns: () => (props) =>
-        clearTableColumnWidths(props),
     };
   },
 });
@@ -353,23 +350,6 @@ function applyTableStyle(
         ...tableStyleCellFormat(style, cell, rowIndex),
       });
     });
-  });
-  if (dispatch && transaction.docChanged)
-    dispatch(transaction.scrollIntoView());
-  return true;
-}
-
-function clearTableColumnWidths({ dispatch, state }: CommandProps): boolean {
-  const context = selectedTable(state.selection);
-  if (!context) return false;
-  const transaction = state.tr;
-  context.node.descendants((node, offset) => {
-    if (!isTableCell(node)) return true;
-    transaction.setNodeMarkup(context.position + 1 + offset, undefined, {
-      ...node.attrs,
-      colwidth: null,
-    });
-    return false;
   });
   if (dispatch && transaction.docChanged)
     dispatch(transaction.scrollIntoView());

@@ -104,13 +104,14 @@ ordered formats, restart/continue/start commands, keyboard-operated galleries,
 single-transaction undo behavior, and DOCX round trips for the declared list
 styles. Tables now expose separate Design and Layout contextual tabs, five
 keyboard-operated style presets, multi-cell fill and uniform border commands,
-horizontal and vertical alignment, equal-width reset, row/column operations,
+horizontal and vertical alignment, exact column-width and row-height fields,
+equal row/column distribution, content/window autofit, row/column operations,
 merge/split, repeat-header, and non-splitting row controls. Common cell
-shading, vertical alignment, and uniform borders round-trip through editable
-HTML and DOCX. Native Word list identities, arbitrary multilevel numbering,
-per-edge and theme table borders, exact widths, nested tables, and all
-multi-page row cases remain part of this priority rather than being treated as
-complete.
+shading, vertical alignment, uniform borders, fixed grid widths, layout mode,
+and explicit row heights round-trip through editable HTML and DOCX. Native
+Word list identities, arbitrary multilevel numbering, per-edge and theme table
+borders, percentage-width column authoring, nested tables, and all multi-page
+row cases remain part of this priority rather than being treated as complete.
 
 Exit evidence:
 

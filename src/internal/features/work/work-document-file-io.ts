@@ -49,6 +49,7 @@ export async function importWorkDocumentFile(
           prepared.tabStopMarkers,
           prepared.tableCellMarkers,
           prepared.tableRowMarkers,
+          prepared.tableSizingMarkers,
         )
       : result.value;
     const layout = prepared

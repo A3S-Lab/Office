@@ -49,6 +49,10 @@ import {
   DocumentTableHeader,
 } from './work-document-table-cell-formatting';
 import { DocumentTableRow } from './work-document-table-row';
+import {
+  DocumentTable,
+  DocumentTableSizing,
+} from './work-document-table-sizing';
 import type { WorkDocumentContent } from './work-types';
 
 export interface WorkDocumentExtensionOptions {
@@ -120,16 +124,18 @@ export function createWorkDocumentExtensions(
       },
     }),
     TableKit.configure({
-      table: { resizable: true, allowTableNodeSelection: true },
+      table: false,
       tableCell: false,
       tableHeader: false,
       tableRow: false,
     }),
+    DocumentTable,
     DocumentTableCell,
     DocumentTableHeader,
     DocumentTableRow,
     DocumentTableCommands,
     DocumentTableFormatting,
+    DocumentTableSizing,
     TextStyle,
     FontFamily,
     FontSize,

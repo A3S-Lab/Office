@@ -263,7 +263,7 @@ test('applies table styles, cell shading, and borders as coherent edits', () => 
   );
 });
 
-test('aligns table cell content and resets resized columns from Layout', () => {
+test('aligns table cells and applies Word-style sizing from Layout', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
   expect(editor.commands.setCellAttribute('colwidth', [180])).toBe(true);
@@ -278,7 +278,31 @@ test('aligns table cell content and resets resized columns from Layout', () => {
   expect(firstTableParagraphAlignment(editor)).toBe('center');
 
   view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  fireEvent.change(screen.getByRole('textbox', { name: '列宽（厘米）' }), {
+    target: { value: '3.17' },
+  });
+  expect(Number(tableCellAttributes(editor)[0]?.colwidth?.[0])).toBeCloseTo(
+    119.81,
+    1,
+  );
+
   fireEvent.click(screen.getByRole('button', { name: '平均分布列' }));
+  const distributedWidths = tableCellAttributes(editor).map(
+    ({ colwidth }) => colwidth?.[0],
+  );
+  expect(new Set(distributedWidths).size).toBe(1);
+
+  fireEvent.click(screen.getByRole('button', { name: '平均分布行' }));
+  expect(
+    tableRowAttributes(editor).every(({ rowHeight }) => rowHeight === 36),
+  ).toBe(true);
+
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  fireEvent.click(screen.getByRole('combobox', { name: '表格自动调整' }));
+  fireEvent.click(screen.getByRole('option', { name: '适应内容' }));
+  expect(firstTableAttributes(editor)).toMatchObject({
+    layoutMode: 'contents',
+  });
   expect(tableCellAttributes(editor).every(({ colwidth }) => !colwidth)).toBe(
     true,
   );
@@ -327,6 +351,26 @@ function createMixedEditor(): Editor {
       '</section>',
     ].join(''),
   });
+}
+
+function firstTableAttributes(editor: Editor): Record<string, unknown> {
+  let attributes: Record<string, unknown> = {};
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'table') return true;
+    attributes = node.attrs;
+    return false;
+  });
+  return attributes;
+}
+
+function tableRowAttributes(editor: Editor): Record<string, unknown>[] {
+  const attributes: Record<string, unknown>[] = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'tableRow') return true;
+    attributes.push(node.attrs);
+    return false;
+  });
+  return attributes;
 }
 
 function documentToolbar(

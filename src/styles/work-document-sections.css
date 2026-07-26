@@ -356,6 +356,24 @@
   border-collapse: collapse;
 }
 
+.work-document-preview-page table[data-office-table-layout="contents"],
+.work-document-print-body table[data-office-table-layout="contents"] {
+  width: max-content;
+  table-layout: auto;
+}
+
+.work-document-preview-page table[data-office-table-layout="fixed"],
+.work-document-print-body table[data-office-table-layout="fixed"] {
+  width: auto;
+  table-layout: fixed;
+}
+
+.work-document-preview-page table[data-office-table-layout="window"],
+.work-document-print-body table[data-office-table-layout="window"] {
+  width: 100%;
+  table-layout: fixed;
+}
+
 .work-document-preview-page :is(th, td),
 .work-document-print-body :is(th, td) {
   min-width: 80px;

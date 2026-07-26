@@ -182,9 +182,9 @@ Each surface keeps a canonical model that matches its file format and user
 interaction model.
 
 - **Document** — Pagination, sections, clean page margins with on-demand
-  header/footer editing, outline navigation, styles, tables, comments, tracked
-  changes, citations, notes, and host-defined selection menus. _DOCX
-  import/export; PDF export._
+  header/footer editing, outline navigation, styles, precision table sizing and
+  autofit, comments, tracked changes, citations, notes, and host-defined
+  selection menus. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized split preview, task
   lists, tables, links, images, and code. _Markdown import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,

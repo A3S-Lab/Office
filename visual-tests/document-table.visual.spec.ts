@@ -58,3 +58,75 @@ test('document table Design and Layout stay visual and survive preview', async (
     'rgb(159, 186, 208)',
   );
 });
+
+test('table sizing stays usable on desktop and compact ribbons', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  await page.locator('.work-document-editable .ProseMirror p').first().click();
+  await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '插入表格' }).click();
+  await page
+    .getByRole('dialog', { name: '选择表格大小' })
+    .getByRole('button', { name: '3 行 3 列' })
+    .click();
+  await page.getByRole('tab', { name: '表格布局' }).click();
+
+  const width = page.getByRole('textbox', { name: '列宽（厘米）' });
+  await width.scrollIntoViewIfNeeded();
+  await width.fill('3.2');
+  await width.press('Enter');
+
+  const table = page
+    .locator('.work-document-editable .ProseMirror table')
+    .first();
+  await expect(table).toHaveAttribute('data-office-table-layout', 'fixed');
+  await expect
+    .poll(async () =>
+      Number.parseFloat(
+        await table
+          .locator('colgroup > col')
+          .first()
+          .evaluate(
+            (column) =>
+              (column as HTMLElement).style.width ||
+              getComputedStyle(column).width,
+          ),
+      ),
+    )
+    .toBeGreaterThan(119);
+  await expect
+    .poll(async () =>
+      Number.parseFloat(
+        await table.evaluate((node) => getComputedStyle(node).width),
+      ),
+    )
+    .toBeGreaterThan(450);
+
+  const distributeRows = page.getByRole('button', {
+    name: '平均分布行',
+  });
+  await distributeRows.scrollIntoViewIfNeeded();
+  await distributeRows.click();
+  await expect(table.locator('tr').first()).toHaveAttribute(
+    'data-office-row-height',
+    /\d+/,
+  );
+
+  const autofit = page.getByRole('combobox', { name: '表格自动调整' });
+  await autofit.scrollIntoViewIfNeeded();
+  await autofit.click();
+  await page.getByRole('option', { name: '适应内容' }).click();
+  await expect(table).toHaveAttribute('data-office-table-layout', 'contents');
+  await expect
+    .poll(() =>
+      table
+        .locator('colgroup > col')
+        .first()
+        .evaluate((column) => (column as HTMLElement).style.width),
+    )
+    .toBe('');
+});

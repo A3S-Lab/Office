@@ -352,6 +352,43 @@ describe('office core', () => {
     expect(imported.content.html).toContain('data-office-cant-split="false"');
   });
 
+  test('round-trips DOCX table layout, exact column widths, and row heights', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document')
+      throw new Error('Expected a document artifact.');
+    artifact.content.html = [
+      '<table data-office-table-layout="fixed"><tbody>',
+      '<tr data-office-row-height="48" data-office-row-height-rule="exact">',
+      '<td colwidth="120"><p>Left</p></td>',
+      '<td colwidth="180"><p>Right</p></td>',
+      '</tr>',
+      '</tbody></table>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+
+    expect(xml).toContain('<w:tblLayout w:type="fixed"/>');
+    expect(xml).toContain('<w:gridCol w:w="1800"/>');
+    expect(xml).toContain('<w:gridCol w:w="2700"/>');
+    expect(xml).toMatch(/<w:trHeight[^>]*w:val="720"[^>]*w:hRule="exact"/);
+
+    const imported = await importOfficeFile(
+      new File([blob], 'table-sizing.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document')
+      throw new Error('Expected an imported document artifact.');
+    expect(imported.content.html).toContain('data-office-table-layout="fixed"');
+    expect(imported.content.html).toContain('colwidth="120"');
+    expect(imported.content.html).toContain('colwidth="180"');
+    expect(imported.content.html).toContain('data-office-row-height="48"');
+    expect(imported.content.html).toContain(
+      'data-office-row-height-rule="exact"',
+    );
+  });
+
   test('materializes DOCX export from the structured model instead of stale HTML', async () => {
     const artifact = await importOfficeFile(
       new File(['<p>HTML cache</p>'], 'model-source.html', {

@@ -17,6 +17,11 @@ import { patchDocxBibliography } from './work-docx-bibliography';
 import { patchDocxPageColor } from './work-docx-page-color';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
+  documentTableCellSizingDocxOptions,
+  documentTableRowSizingDocxOptions,
+  documentTableSizingDocxOptions,
+} from './work-docx-table-sizing-export';
+import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
 } from './work-docx-caption-export';
@@ -901,6 +906,7 @@ async function tableToDocx(
           columnSpan: cell.colSpan > 1 ? cell.colSpan : undefined,
           rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
           ...documentTableCellDocxOptions(cell, docx),
+          ...documentTableCellSizingDocxOptions(cell, docx),
           margins: { top: 80, right: 100, bottom: 80, left: 100 },
         }),
       );
@@ -919,12 +925,13 @@ async function tableToDocx(
         children: cells,
         cantSplit: dataBoolean(row.dataset.officeCantSplit),
         tableHeader: tableHeader ? true : undefined,
+        ...documentTableRowSizingDocxOptions(row, docx),
       }),
     );
   }
   return new docx.Table({
     rows,
-    width: { size: 100, type: docx.WidthType.PERCENTAGE },
+    ...documentTableSizingDocxOptions(element, docx),
   });
 }
 

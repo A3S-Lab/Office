@@ -683,6 +683,23 @@
   border-collapse: collapse;
 }
 
+.work-document-page .tiptap table[data-office-table-layout="contents"] {
+  width: max-content;
+  max-width: 100%;
+  table-layout: auto;
+}
+
+.work-document-page .tiptap table[data-office-table-layout="fixed"] {
+  width: auto;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.work-document-page .tiptap table[data-office-table-layout="window"] {
+  width: 100%;
+  table-layout: fixed;
+}
+
 .work-document-page .tiptap th,
 .work-document-page .tiptap td {
   position: relative;

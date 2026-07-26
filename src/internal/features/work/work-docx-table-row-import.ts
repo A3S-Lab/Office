@@ -4,6 +4,8 @@ export interface ImportedDocxTableRowMarker {
   marker: string;
   cantSplit?: boolean;
   repeatHeader?: boolean;
+  rowHeight?: number;
+  rowHeightRule?: 'atLeast' | 'exact';
 }
 
 export interface ImportedDocxTableRowMarkers {
@@ -14,6 +16,7 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const TABLE_ROW_MARKER_PATTERN = /__A3S_WORK_TABLE_ROW_\d+__/g;
+const PIXELS_PER_TWIP = 96 / 1440;
 
 export function markDocxTableRows(
   document: Document,
@@ -27,7 +30,12 @@ export function markDocxTableRows(
     const repeatHeader = properties
       ? directChild(properties, 'tblHeader')
       : undefined;
-    if (!cantSplit && !repeatHeader) continue;
+    const height = properties ? directChild(properties, 'trHeight') : undefined;
+    const rowHeight = height
+      ? twipsToPixels(Number(attribute(height, 'val')))
+      : null;
+    const rowHeightRule = tableRowHeightRule(attribute(height ?? row, 'hRule'));
+    if (!cantSplit && !repeatHeader && rowHeight === null) continue;
     const paragraph = firstTableRowParagraph(document, row);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_ROW_${rows.length + 1}__`;
@@ -36,6 +44,8 @@ export function markDocxTableRows(
       marker,
       ...(cantSplit ? { cantSplit: onOffValue(cantSplit) } : {}),
       ...(repeatHeader ? { repeatHeader: onOffValue(repeatHeader) } : {}),
+      ...(rowHeight !== null ? { rowHeight } : {}),
+      ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
     });
   }
   return { rows };
@@ -62,6 +72,12 @@ export function applyImportedDocxTableRowMarkers(
           'data-office-repeat-header',
           properties.repeatHeader,
         );
+        if (properties.rowHeight !== undefined) {
+          row.dataset.officeRowHeight = String(properties.rowHeight);
+          row.style.height = `${properties.rowHeight}px`;
+          row.dataset.officeRowHeightRule =
+            properties.rowHeightRule ?? 'atLeast';
+        }
       }
       return '';
     });
@@ -119,6 +135,16 @@ function setBooleanAttribute(
   value: boolean | undefined,
 ): void {
   if (value !== undefined) element.setAttribute(name, String(value));
+}
+
+function tableRowHeightRule(value: string | null): 'atLeast' | 'exact' | null {
+  if (value === 'exact') return 'exact';
+  return value === 'atLeast' ? 'atLeast' : null;
+}
+
+function twipsToPixels(value: number): number | null {
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.round(value * PIXELS_PER_TWIP * 100) / 100;
 }
 
 function closestAncestor(element: Element, localName: string): Element | null {
