@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 460" role="img" aria-labelledby="title desc">
+  <title id="title">A3S Office — five browser editors behind one typed boundary</title>
+  <desc id="desc">A calm technical banner with document, spreadsheet, presentation, Markdown, and PDF motifs.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbfcff"/>
+      <stop offset="1" stop-color="#f1f4fa"/>
+    </linearGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.25" fill="#dce3ef"/>
+    </pattern>
+    <clipPath id="workspace-clip">
+      <rect x="785" y="48" width="343" height="364" rx="24"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="460" rx="28" fill="url(#canvas)"/>
+  <rect width="1200" height="460" rx="28" fill="url(#dots)" opacity="0.7"/>
+  <path d="M0 347C180 306 316 410 498 377s286-113 447-80 172 45 255 24v139H0Z" fill="#eaf0fb" opacity="0.9"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <g transform="translate(78 62)">
+      <rect width="52" height="52" rx="13" fill="#2f6fed"/>
+      <path d="M15 11h16l7 7v23H15Z" fill="#ffffff"/>
+      <path d="M31 11v8h8" fill="none" stroke="#bfd2ff" stroke-width="2.4"/>
+      <path d="M21 25h12M21 30h12M21 35h8" fill="none" stroke="#2f6fed" stroke-linecap="round" stroke-width="2.3"/>
+    </g>
+
+    <text x="150" y="83" fill="#1a2233" font-size="25" font-weight="700" letter-spacing="3.6">A3S OFFICE</text>
+    <text x="150" y="109" fill="#657085" font-size="18" font-weight="600" letter-spacing="1.8">AI-NATIVE OFFICE ENGINE</text>
+
+    <text x="78" y="198" fill="#111827" font-size="62" font-weight="750" letter-spacing="-2.4">Five editors.</text>
+    <text x="78" y="265" fill="#111827" font-size="62" font-weight="750" letter-spacing="-2.4">One typed boundary.</text>
+    <text x="81" y="313" fill="#586174" font-size="27" font-weight="500">Browser editing and deterministic automation</text>
+    <text x="81" y="347" fill="#586174" font-size="27" font-weight="500">for every core Office surface.</text>
+
+    <g font-size="17" font-weight="700" letter-spacing="1.2">
+      <g transform="translate(80 389)">
+        <rect width="113" height="34" rx="17" fill="#e7efff" stroke="#bfd2ff"/>
+        <circle cx="18" cy="17" r="5" fill="#2f6fed"/>
+        <text x="32" y="22" fill="#285fc8">DOC</text>
+      </g>
+      <g transform="translate(205 389)">
+        <rect width="113" height="34" rx="17" fill="#e8f6f1" stroke="#b9e1d2"/>
+        <circle cx="18" cy="17" r="5" fill="#159469"/>
+        <text x="32" y="22" fill="#117958">SHEET</text>
+      </g>
+      <g transform="translate(330 389)">
+        <rect width="113" height="34" rx="17" fill="#fff0e9" stroke="#f1c7b7"/>
+        <circle cx="18" cy="17" r="5" fill="#db663b"/>
+        <text x="32" y="22" fill="#b74e28">SLIDES</text>
+      </g>
+      <g transform="translate(455 389)">
+        <rect width="113" height="34" rx="17" fill="#edf0f3" stroke="#cfd5dc"/>
+        <circle cx="18" cy="17" r="5" fill="#586574"/>
+        <text x="32" y="22" fill="#46515e">MD</text>
+      </g>
+      <g transform="translate(580 389)">
+        <rect width="113" height="34" rx="17" fill="#fdecee" stroke="#f1c2c8"/>
+        <circle cx="18" cy="17" r="5" fill="#d94b5b"/>
+        <text x="32" y="22" fill="#b33a48">PDF</text>
+      </g>
+    </g>
+
+    <g clip-path="url(#workspace-clip)">
+      <rect x="785" y="48" width="343" height="364" rx="24" fill="#ffffff"/>
+      <rect x="785" y="48" width="343" height="58" fill="#111827"/>
+      <circle cx="817" cy="77" r="6" fill="#f37467"/>
+      <circle cx="839" cy="77" r="6" fill="#f5bd4f"/>
+      <circle cx="861" cy="77" r="6" fill="#61c454"/>
+      <rect x="892" y="68" width="190" height="18" rx="9" fill="#2b3446"/>
+
+      <rect x="818" y="131" width="202" height="254" rx="10" fill="#e9edf3" stroke="#d5dbe5" stroke-width="2"/>
+      <rect x="843" y="113" width="214" height="256" rx="10" fill="#ffffff" stroke="#cfd6e2" stroke-width="2"/>
+      <rect x="843" y="113" width="214" height="34" rx="10" fill="#f7f9fc"/>
+      <circle cx="864" cy="130" r="5" fill="#2f6fed"/>
+      <rect x="877" y="124" width="66" height="11" rx="5.5" fill="#d8e4ff"/>
+      <rect x="960" y="124" width="22" height="11" rx="5.5" fill="#dfe4ec"/>
+      <rect x="990" y="124" width="22" height="11" rx="5.5" fill="#dfe4ec"/>
+      <rect x="864" y="169" width="111" height="13" rx="6.5" fill="#1d2638"/>
+      <rect x="864" y="196" width="167" height="8" rx="4" fill="#d6dce6"/>
+      <rect x="864" y="213" width="145" height="8" rx="4" fill="#dfe4ec"/>
+      <rect x="864" y="243" width="167" height="74" rx="7" fill="#eff4ff" stroke="#bfd2ff"/>
+      <path d="M864 268h167M905 243v74M947 243v74M989 243v74" stroke="#c6d2e6"/>
+      <rect x="864" y="336" width="94" height="8" rx="4" fill="#d6dce6"/>
+      <rect x="968" y="336" width="63" height="8" rx="4" fill="#dfe4ec"/>
+
+      <g transform="translate(1031 185)">
+        <rect width="78" height="116" rx="10" fill="#17233f" stroke="#31405f" stroke-width="2"/>
+        <rect x="16" y="19" width="30" height="5" rx="2.5" fill="#ffb45d"/>
+        <rect x="16" y="37" width="47" height="7" rx="3.5" fill="#ffffff"/>
+        <rect x="16" y="52" width="38" height="5" rx="2.5" fill="#8ca6d9"/>
+        <rect x="16" y="76" width="47" height="22" rx="4" fill="#243454"/>
+      </g>
+    </g>
+    <rect x="785" y="48" width="343" height="364" rx="24" fill="none" stroke="#cfd7e5" stroke-width="2"/>
+  </g>
+</svg>
