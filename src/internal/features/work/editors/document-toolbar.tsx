@@ -14,7 +14,9 @@ import {
   MessageSquarePlus,
   MessagesSquare,
   Palette,
+  PanelBottomOpen,
   PanelLeftOpen,
+  PanelTopOpen,
   RefreshCw,
   Ruler,
   Settings2,
@@ -371,6 +373,22 @@ export function DocumentToolbar({
                   }
                 >
                   <FilePlus2 size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
+              <RibbonGroup label="页眉和页脚">
+                <ToolbarButton
+                  label="页眉"
+                  displayLabel
+                  onClick={() => onPageChromeEditingPartChange('header')}
+                >
+                  <PanelTopOpen size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="页脚"
+                  displayLabel
+                  onClick={() => onPageChromeEditingPartChange('footer')}
+                >
+                  <PanelBottomOpen size={19} />
                 </ToolbarButton>
               </RibbonGroup>
               <RibbonGroup label="链接">

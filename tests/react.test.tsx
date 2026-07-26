@@ -289,10 +289,10 @@ test('updates the controlled page color and renders it on the paper', async () =
   });
 });
 
-test('edits page chrome directly on the paper with a contextual ribbon', async () => {
+test('keeps empty page chrome hidden until its paper margin is double-clicked', async () => {
   const artifact = createArtifact('blank-document');
 
-  render(
+  const { container } = render(
     <DocumentEditor
       content={artifact.content as DocumentContent}
       onChange={() => undefined}
@@ -300,11 +300,22 @@ test('edits page chrome directly on the paper with a contextual ribbon', async (
     />,
   );
 
-  fireEvent.click(
-    await screen.findByRole('button', {
-      name: '编辑页眉',
-    }),
-  );
+  await screen.findByRole('textbox', { name: '文档正文' });
+  expect(
+    screen.queryByRole('button', { name: '编辑页眉' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '编辑页脚' }),
+  ).not.toBeInTheDocument();
+  expect(
+    container.querySelector('.work-document-page-chrome-placeholder'),
+  ).not.toBeInTheDocument();
+
+  const header = container.querySelector('.work-document-page-header');
+  if (!(header instanceof HTMLElement)) {
+    throw new Error('Expected the page header margin.');
+  }
+  fireEvent.doubleClick(header);
   expect(
     await screen.findByRole('textbox', { name: '页内页眉' }),
   ).toBeInTheDocument();
@@ -329,7 +340,31 @@ test('edits page chrome directly on the paper with a contextual ribbon', async (
       screen.queryByRole('textbox', { name: '页内页脚' }),
     ).not.toBeInTheDocument();
   });
-  expect(screen.getByRole('button', { name: '编辑页脚' })).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '编辑页脚' }),
+  ).not.toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByRole('textbox', { name: '文档正文' })).toHaveFocus();
+  });
+});
+
+test('opens page chrome from explicit Insert ribbon commands', async () => {
+  const artifact = createArtifact('blank-document');
+
+  render(
+    <DocumentEditor
+      content={artifact.content as DocumentContent}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  await screen.findByRole('textbox', { name: '文档正文' });
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(await screen.findByRole('button', { name: '页脚' }));
+  expect(
+    await screen.findByRole('textbox', { name: '页内页脚' }),
+  ).toHaveFocus();
 });
 
 test('edits the page-chrome variant resolved for the current physical page', async () => {
@@ -369,7 +404,16 @@ test('edits the page-chrome variant resolved for the current physical page', asy
   );
 
   expect(await screen.findByText('First page header')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '编辑页眉' }));
+  expect(
+    screen.queryByRole('button', { name: '编辑页眉' }),
+  ).not.toBeInTheDocument();
+  const visibleHeader = screen
+    .getByText('First page header')
+    .closest('.work-document-page-header');
+  if (!(visibleHeader instanceof HTMLElement)) {
+    throw new Error('Expected the visible first-page header.');
+  }
+  fireEvent.doubleClick(visibleHeader);
   fireEvent.click(
     await screen.findByRole('button', {
       name: '显示页码',

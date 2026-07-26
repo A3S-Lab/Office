@@ -16,6 +16,7 @@ interface ToolbarCalls {
   files: string[];
   notes: string[];
   pageColors: string[];
+  pageChromeParts: string[];
   viewModes: string[];
   zooms: number[];
   closePageChrome: number;
@@ -57,6 +58,9 @@ test('wires every Insert and Page Layout action to document state or its owner',
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(screen.getByRole('button', { name: '插入图片' }));
   expect(calls.imageRequests).toBe(1);
+  fireEvent.click(screen.getByRole('button', { name: '页眉' }));
+  fireEvent.click(screen.getByRole('button', { name: '页脚' }));
+  expect(calls.pageChromeParts).toEqual(['header', 'footer']);
 
   const firstBreakCount = nodeCount(editor, 'pageBreak');
   fireEvent.click(screen.getByRole('button', { name: '插入分页符' }));
@@ -186,7 +190,7 @@ function toolbar(currentEditor: Editor, calls: ToolbarCalls) {
       onRequestImage={() => {
         calls.imageRequests += 1;
       }}
-      onPageChromeEditingPartChange={() => undefined}
+      onPageChromeEditingPartChange={(part) => calls.pageChromeParts.push(part)}
       onClosePageChrome={() => {
         calls.closePageChrome += 1;
       }}
@@ -259,6 +263,7 @@ function createCalls(): ToolbarCalls {
     files: [],
     notes: [],
     pageColors: [],
+    pageChromeParts: [],
     viewModes: [],
     zooms: [],
     closePageChrome: 0,

@@ -179,7 +179,8 @@ const editorReferences: Record<EditorId, EditorReference> = {
       {
         name: 'pageChrome',
         type: 'WorkDocumentPageChrome',
-        description: '首页、奇偶页的页眉、页脚和页码设置。',
+        description:
+          '首页、奇偶页的页眉、页脚和页码设置。空白页边距默认不显示入口；双击页边距或使用“插入”中的命令进入编辑。',
       },
       {
         name: 'trackChanges / comments',

@@ -78,23 +78,26 @@
 }
 
 .work-document-page-header {
-  top: var(--work-document-page-header-offset, 32px);
+  top: 0;
+  height: var(--work-document-page-margin-top, 86px);
   border-bottom: 1px dashed transparent;
 }
 
 .work-document-page-footer {
-  bottom: var(--work-document-page-footer-offset, 32px);
+  bottom: 0;
+  height: var(--work-document-page-margin-bottom, 96px);
   justify-content: space-between;
   border-top: 1px dashed transparent;
 }
 
-.work-document-page:hover .work-document-page-header,
-.work-document-page:hover .work-document-page-footer,
 .work-document-page-header.editing,
-.work-document-page-footer.editing,
-.work-document-page.page-chrome-panel-open .work-document-page-header,
-.work-document-page.page-chrome-panel-open .work-document-page-footer {
+.work-document-page-footer.editing {
   border-color: #cfd5df;
+}
+
+.work-document-page-header:not(.editing),
+.work-document-page-footer:not(.editing) {
+  cursor: text;
 }
 
 .work-document-page-header .work-document-page-chrome-html,
@@ -117,44 +120,6 @@
   flex: 0 0 auto;
   margin-left: 12px;
   font-variant-numeric: tabular-nums;
-}
-
-.work-document-page-chrome-placeholder {
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-.work-document-page:hover
-  .work-document-page-header.empty
-  .work-document-page-chrome-placeholder,
-.work-document-page:hover
-  .work-document-page-footer.empty
-  .work-document-page-chrome-placeholder,
-.work-document-page.page-chrome-panel-open
-  .work-document-page-chrome-placeholder {
-  opacity: 0.5;
-}
-
-.work-document-page-chrome-activate {
-  position: absolute;
-  inset: -4px 0;
-  z-index: 2;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  outline: 0;
-  background: transparent;
-  cursor: text;
-}
-
-.work-document-page-chrome-activate:hover,
-.work-document-page-chrome-activate:focus-visible {
-  border-color: color-mix(in srgb, var(--a3s-blue) 44%, transparent);
-  background: color-mix(in srgb, var(--a3s-blue) 4%, transparent);
-}
-
-.work-document-page-header > .work-document-page-chrome-activate {
-  inset: -4px 0;
 }
 
 .work-document-page.page-chrome-editing .work-document-editable {

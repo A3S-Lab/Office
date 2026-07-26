@@ -71,6 +71,73 @@ test('Word paper starts without rulers and persists explicit page controls', asy
   await expect(page.getByRole('slider', { name: '左页边距' })).toHaveCount(0);
   await expect(page.getByRole('slider', { name: '上页边距' })).toHaveCount(0);
 
+  const header = page.locator('.work-document-page-header');
+  const footer = page.locator('.work-document-page-footer');
+  await expect(
+    header.locator('.work-document-page-chrome-placeholder'),
+  ).toHaveCount(0);
+  await expect(
+    footer.locator('.work-document-page-chrome-placeholder'),
+  ).toHaveCount(0);
+  await header.hover();
+  await expect(header).toHaveCSS('border-bottom-color', 'rgba(0, 0, 0, 0)');
+  await expect(footer).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+  const chromeGeometry = await page.evaluate(() => {
+    const paper = document.querySelector<HTMLElement>('.work-document-page');
+    const body = document.querySelector<HTMLElement>('.work-document-editable');
+    const header = document.querySelector<HTMLElement>(
+      '.work-document-page-header',
+    );
+    const footer = document.querySelector<HTMLElement>(
+      '.work-document-page-footer',
+    );
+    if (!(paper && body && header && footer)) {
+      throw new Error('Document page chrome geometry is unavailable.');
+    }
+    const paperRect = paper.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    const headerRect = header.getBoundingClientRect();
+    const footerRect = footer.getBoundingClientRect();
+    return {
+      paperTop: paperRect.top,
+      paperBottom: paperRect.bottom,
+      bodyTop: bodyRect.top,
+      bodyBottom: bodyRect.bottom,
+      headerTop: headerRect.top,
+      headerBottom: headerRect.bottom,
+      footerTop: footerRect.top,
+      footerBottom: footerRect.bottom,
+    };
+  });
+  expect(
+    Math.abs(chromeGeometry.headerTop - chromeGeometry.paperTop),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(chromeGeometry.headerBottom - chromeGeometry.bodyTop),
+  ).toBeLessThanOrEqual(1);
+  expect(chromeGeometry.footerTop).toBeGreaterThanOrEqual(
+    chromeGeometry.bodyBottom,
+  );
+  expect(
+    Math.abs(chromeGeometry.footerBottom - chromeGeometry.paperBottom),
+  ).toBeLessThanOrEqual(1);
+  await header.dblclick();
+  await expect(page.getByRole('textbox', { name: '页内页眉' })).toBeFocused();
+  await expect(page.getByRole('tab', { name: '页眉和页脚' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(header).not.toHaveCSS('border-bottom-color', 'rgba(0, 0, 0, 0)');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  await expect(page.getByRole('tab', { name: '页眉和页脚' })).toHaveCount(0);
+
+  await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '页脚' }).click();
+  await expect(page.getByRole('textbox', { name: '页内页脚' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+
   await page.getByRole('tab', { name: '页面布局' }).click();
   await page.getByRole('button', { name: '页面颜色' }).click();
   const pageColorMenu = page.getByRole('dialog', { name: '页面颜色' });

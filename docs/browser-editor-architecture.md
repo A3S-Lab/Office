@@ -262,20 +262,24 @@ number, and resolved first/default/even chrome variant. Page view fixes the
 first paper header and final paper footer to their physical descriptors and
 paints the previous footer plus next header inside every automatic page gap.
 Those repeated surfaces are non-editable decorations and never enter document
-history. Accessible activation targets on the outer paper margins replace the
-static HTML with one toolbar-free TipTap surface in place and add a contextual
-Header and Footer ribbon. That ribbon uses the same typed command functions for
-formatting, alignment, links, images, page-number visibility, switching between
-header and footer, and closing the mode. Escape and web-view transitions close
-the mode and restore body focus. The body is visually de-emphasized without
-being copied or removed from the canonical tree. Both surfaces preserve
-semantic paragraphs, lists, tables, links, marks, alignment, color, and inline
-raster images while exposing a smaller command set than the document body.
-Toolbar controls derive active state from the current selection; they do not
-inspect localized labels or use `document.execCommand`. The controlled HTML
-values still pass through the page-chrome sanitizer and the
-default/first/even-page model, so direct paper editing does not create a second
-persistence format or bypass DOCX header/footer relationships.
+history. Empty outer-paper margins render no persistent placeholder, border,
+or activation control. A double click anywhere in the header or footer margin,
+or the keyboard-accessible Header and Footer commands in the Insert ribbon,
+replaces the static HTML with one toolbar-free TipTap surface in place and adds
+a contextual Header and Footer ribbon. Existing imported content remains
+visible in the clean state without an edit label. The contextual ribbon uses
+the same typed command functions for formatting, alignment, links, images,
+page-number visibility, switching between header and footer, and closing the
+mode. Escape and web-view transitions close the mode and restore body focus.
+The body is visually de-emphasized without being copied or removed from the
+canonical tree. Both surfaces preserve semantic paragraphs, lists, tables,
+links, marks, alignment, color, and inline raster images while exposing a
+smaller command set than the document body. Toolbar controls derive active
+state from the current selection; they do not inspect localized labels or use
+`document.execCommand`. The controlled HTML values still pass through the
+page-chrome sanitizer and the default/first/even-page model, so direct paper
+editing does not create a second persistence format or bypass DOCX
+header/footer relationships.
 
 The editor records the earliest position changed by each ProseMirror
 transaction and reuses measured blocks before that position. Runtime

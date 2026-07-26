@@ -677,7 +677,7 @@ export function DocumentEditor({
                   />
                 )}
                 <article
-                  className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${pageChromeEditing ? ' page-chrome-editing' : ''}${layoutOpen ? ' page-chrome-panel-open' : ''}`}
+                  className={`work-document-page ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${pageChromeEditing ? ' page-chrome-editing' : ''}`}
                   aria-label={preview ? '文字预览' : '文字页面'}
                   style={
                     {
@@ -688,24 +688,24 @@ export function DocumentEditor({
                       ),
                       '--work-document-page-margin-left': `${marginPixels.left}px`,
                       '--work-document-page-margin-right': `${marginPixels.right}px`,
-                      '--work-document-page-header-offset': `${Math.max(
-                        8,
-                        (marginPixels.top - 28) / 2,
-                      )}px`,
-                      '--work-document-page-footer-offset': `${Math.max(
-                        8,
-                        (marginPixels.bottom - 28) / 2,
-                      )}px`,
+                      '--work-document-page-margin-top': `${marginPixels.top}px`,
+                      '--work-document-page-margin-bottom': `${marginPixels.bottom}px`,
                     } as CSSProperties
                   }
                 >
                   {viewMode === 'page' && (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: Double-click mirrors desktop Office; keyboard users use the Insert-ribbon commands.
                     <header
                       ref={pageHeaderRef}
-                      className={`work-document-page-header${headerChrome.headerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
+                      className={`work-document-page-header${pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
                       data-document-page-chrome={
                         firstPageDescriptor.pageChrome.variant
                       }
+                      onDoubleClick={(event) => {
+                        if (pageChromeEditing?.part === 'header') return;
+                        event.preventDefault();
+                        void editPageChrome('header');
+                      }}
                     >
                       {pageChromeEditing?.part === 'header' ? (
                         <DocumentPageChromeRichTextEditor
@@ -721,29 +721,14 @@ export function DocumentEditor({
                           onEditorChange={setPageChromeEditor}
                           onExit={closePageChrome}
                         />
-                      ) : (
-                        <>
-                          {headerChrome.headerHtml ? (
-                            <div
-                              className="work-document-page-chrome-html"
-                              dangerouslySetInnerHTML={{
-                                __html: headerChrome.headerHtml,
-                              }}
-                            />
-                          ) : (
-                            <span className="work-document-page-chrome-placeholder">
-                              页眉
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            className="work-document-page-chrome-activate"
-                            aria-label="编辑页眉"
-                            title="编辑页眉"
-                            onClick={() => editPageChrome('header')}
-                          />
-                        </>
-                      )}
+                      ) : headerChrome.headerHtml ? (
+                        <div
+                          className="work-document-page-chrome-html"
+                          dangerouslySetInnerHTML={{
+                            __html: headerChrome.headerHtml,
+                          }}
+                        />
+                      ) : null}
                     </header>
                   )}
                   <section
@@ -797,12 +782,18 @@ export function DocumentEditor({
                     />
                   </section>
                   {viewMode === 'page' && (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: Double-click mirrors desktop Office; keyboard users use the Insert-ribbon commands.
                     <footer
                       ref={pageFooterRef}
-                      className={`work-document-page-footer${footerChrome.footerHtml ? ' has-content' : ' empty'}${pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
+                      className={`work-document-page-footer${pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
                       data-document-page-chrome={
                         lastPageDescriptor.pageChrome.variant
                       }
+                      onDoubleClick={(event) => {
+                        if (pageChromeEditing?.part === 'footer') return;
+                        event.preventDefault();
+                        void editPageChrome('footer');
+                      }}
                     >
                       <div className="work-document-page-footer-content">
                         {pageChromeEditing?.part === 'footer' ? (
@@ -819,29 +810,14 @@ export function DocumentEditor({
                             onEditorChange={setPageChromeEditor}
                             onExit={closePageChrome}
                           />
-                        ) : (
-                          <>
-                            {footerChrome.footerHtml ? (
-                              <div
-                                className="work-document-page-chrome-html"
-                                dangerouslySetInnerHTML={{
-                                  __html: footerChrome.footerHtml,
-                                }}
-                              />
-                            ) : (
-                              <span className="work-document-page-chrome-placeholder">
-                                页脚
-                              </span>
-                            )}
-                            <button
-                              type="button"
-                              className="work-document-page-chrome-activate"
-                              aria-label="编辑页脚"
-                              title="编辑页脚"
-                              onClick={() => editPageChrome('footer')}
-                            />
-                          </>
-                        )}
+                        ) : footerChrome.footerHtml ? (
+                          <div
+                            className="work-document-page-chrome-html"
+                            dangerouslySetInnerHTML={{
+                              __html: footerChrome.footerHtml,
+                            }}
+                          />
+                        ) : null}
                       </div>
                       {footerChrome.showPageNumber && (
                         <span className="work-document-page-number">
