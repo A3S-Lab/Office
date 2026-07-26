@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 import { jsPDF } from 'jspdf';
 import {
   openDocumentFixture,
@@ -87,8 +87,6 @@ const fixtures: VisualFixture[] = [
 ];
 
 test.describe('Office editor visual contracts', () => {
-  test.describe.configure({ mode: 'serial' });
-
   for (const fixture of fixtures) {
     test(`${fixture.kind} editor`, async ({ page }, testInfo) => {
       await page.goto('/');
