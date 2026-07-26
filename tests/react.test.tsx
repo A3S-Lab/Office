@@ -7,7 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import {
   createArtifact,
   type DocumentContent,
@@ -244,6 +244,49 @@ test('keeps document pagination available under React strict effects', async () 
   expect(screen.getByRole('button', { name: '两端对齐' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '从左向右' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '从右向左' })).toBeInTheDocument();
+  expect(
+    screen.queryByRole('slider', { name: '左页边距' }),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  const rulerToggle = await screen.findByRole('button', { name: '标尺' });
+  expect(rulerToggle).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(rulerToggle);
+  expect(screen.getByRole('slider', { name: '左页边距' })).toBeInTheDocument();
+  expect(screen.getByRole('slider', { name: '上页边距' })).toBeInTheDocument();
+  expect(rulerToggle).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('updates the controlled page color and renders it on the paper', async () => {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document')
+    throw new Error('Expected a document artifact.');
+  const changes: DocumentContent[] = [];
+
+  function ControlledDocument() {
+    const [content, setContent] = useState<DocumentContent>(artifact.content);
+    return (
+      <DocumentEditor
+        content={content}
+        onChange={(next) => {
+          changes.push(next);
+          setContent(next);
+        }}
+        theme="light"
+      />
+    );
+  }
+
+  const { container } = render(<ControlledDocument />);
+  await screen.findByLabelText('文档正文');
+  fireEvent.click(screen.getByRole('tab', { name: '页面布局' }));
+  fireEvent.click(await screen.findByRole('button', { name: '页面颜色' }));
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #fff2cc' }));
+
+  await waitFor(() => expect(changes.at(-1)?.pageColor).toBe('#fff2cc'));
+  expect(container.querySelector('.work-document-page')).toHaveStyle({
+    backgroundColor: '#fff2cc',
+  });
 });
 
 test('edits page chrome directly on the paper with a contextual ribbon', async () => {

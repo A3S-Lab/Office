@@ -116,6 +116,7 @@ export interface WorkDocumentContent {
   html: string;
   model?: WorkDocumentModel;
   pageSize: 'a4' | 'letter';
+  pageColor?: string;
   orientation?: 'portrait' | 'landscape';
   margins?: WorkDocumentMargins;
   columns?: WorkDocumentColumns;

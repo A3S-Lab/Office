@@ -1,11 +1,18 @@
 import { Check, ChevronDown } from 'lucide-react';
-import { type KeyboardEvent, useId, useMemo, useState } from 'react';
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  useId,
+  useMemo,
+  useState,
+} from 'react';
 import { Popover } from '../../../design-system/primitives';
 
 export interface OfficeSelectOption<T extends string = string> {
   value: T;
   label: string;
   disabled?: boolean;
+  previewStyle?: CSSProperties;
 }
 
 export function OfficeSelect<T extends string>({
@@ -103,7 +110,9 @@ export function OfficeSelect<T extends string>({
             }
           }}
         >
-          <span>{selected?.label ?? placeholder}</span>
+          <span style={selected?.previewStyle}>
+            {selected?.label ?? placeholder}
+          </span>
           <ChevronDown size={13} aria-hidden="true" />
         </button>
       )}
@@ -144,7 +153,7 @@ export function OfficeSelect<T extends string>({
                 }
               }}
             >
-              <span>{option.label}</span>
+              <span style={option.previewStyle}>{option.label}</span>
               {option.value === value && <Check size={12} aria-hidden="true" />}
             </button>
           ))}

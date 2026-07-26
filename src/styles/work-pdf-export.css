@@ -387,7 +387,13 @@
     sans-serif
   );
   font-size: 15px;
+  font-synthesis: style weight;
   line-height: 1.8;
+}
+
+.work-pdf-export-page.document :is(em, i),
+.work-document-preview-page :is(em, i) {
+  font-style: italic;
 }
 
 .work-pdf-export-page.document.letter {

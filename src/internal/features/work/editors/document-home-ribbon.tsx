@@ -154,7 +154,7 @@ export function DocumentHomeRibbon({
               label="下标"
               shortcut="Cmd/Ctrl+,"
               active={editor.isActive('subscript')}
-              onClick={editor.commands.toggleDocumentSubscript}
+              onClick={() => editor.commands.toggleDocumentSubscript()}
             >
               <SubscriptIcon size={16} />
             </ToolbarButton>
@@ -162,7 +162,7 @@ export function DocumentHomeRibbon({
               label="上标"
               shortcut="Cmd/Ctrl+."
               active={editor.isActive('superscript')}
-              onClick={editor.commands.toggleDocumentSuperscript}
+              onClick={() => editor.commands.toggleDocumentSuperscript()}
             >
               <SuperscriptIcon size={16} />
             </ToolbarButton>
@@ -190,7 +190,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="清除格式"
-              onClick={editor.commands.clearDocumentFormatting}
+              onClick={() => editor.commands.clearDocumentFormatting()}
             >
               <Eraser size={16} />
             </ToolbarButton>

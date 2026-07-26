@@ -165,6 +165,13 @@ const editorReferences: Record<EditorId, EditorReference> = {
         description: '默认页面尺寸；分节节点可覆盖页面设置。',
       },
       {
+        name: 'pageColor',
+        type: 'string',
+        defaultValue: "'#ffffff'",
+        description:
+          '文档页面颜色，使用 #RGB 或 #RRGGBB；DOCX 与 PDF 导出会保留。',
+      },
+      {
         name: 'orientation / margins / columns',
         type: 'Document layout fields',
         description: '默认方向、页边距和分栏设置。',

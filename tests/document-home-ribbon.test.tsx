@@ -7,6 +7,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { documentFontFamilyOptions } from '../src/internal/features/work/editors/document-formatting-options';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
@@ -61,6 +62,190 @@ test('switches superscript and subscript without stacking both marks', () => {
   fireEvent.click(screen.getByRole('button', { name: '下标' }));
   expect(editor.getHTML()).toContain('<sub>power</sub>');
   expect(editor.getHTML()).not.toContain('<sup>power</sup>');
+});
+
+test('applies italic formatting without replacing the selected text', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Italic text stays intact</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Italic text'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '斜体' }));
+
+  expect(editor.getHTML()).toContain('<em>Italic text</em> stays intact');
+  expect(editor.getText()).toBe('Italic text stays intact');
+});
+
+test('previews every font option with the font it applies', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Font preview</p>',
+  });
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '字体' }));
+  await waitFor(() =>
+    expect(screen.getByRole('option', { name: '默认字体' })).toHaveFocus(),
+  );
+  for (const option of documentFontFamilyOptions) {
+    if (!('previewStyle' in option)) continue;
+    const menuOption = screen.getByRole('option', { name: option.label });
+    expect(within(menuOption).getByText(option.label)).toHaveStyle({
+      fontFamily: option.previewStyle.fontFamily,
+    });
+  }
+});
+
+test('wires every direct character-format action to the TipTap selection', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Format this text</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Format this'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const font = screen.getByRole('region', { name: '字体' });
+
+  for (const label of ['加粗', '斜体', '下划线', '删除线']) {
+    fireEvent.click(within(font).getByRole('button', { name: label }));
+  }
+  fireEvent.click(within(font).getByRole('combobox', { name: '字体' }));
+  fireEvent.click(screen.getByRole('option', { name: 'Arial' }));
+  fireEvent.click(within(font).getByRole('combobox', { name: '字号' }));
+  fireEvent.click(screen.getByRole('option', { name: '14' }));
+  fireEvent.click(within(font).getByRole('button', { name: '文字颜色' }));
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #0070c0' }));
+  fireEvent.click(within(font).getByRole('button', { name: '突出显示' }));
+
+  expect(textMarkNames(editor, 'Format this')).toEqual(
+    new Set([
+      'bold',
+      'highlight',
+      'italic',
+      'strike',
+      'textStyle',
+      'underline',
+    ]),
+  );
+  expect(editor.getAttributes('textStyle')).toMatchObject({
+    color: '#0070c0',
+    fontFamily: 'Arial, sans-serif',
+    fontSize: '14pt',
+  });
+  expect(editor.getHTML()).toContain('font-family: Arial, sans-serif');
+  expect(editor.getHTML()).toContain('font-size: 14pt');
+  expect(editor.getHTML()).toContain('color: #0070c0');
+
+  fireEvent.click(within(font).getByRole('button', { name: '清除格式' }));
+  expect(textMarkNames(editor, 'Format this')).toEqual(new Set());
+  expect(editor.getText()).toBe('Format this text');
+});
+
+test('steps font size and keeps Undo and Redo connected to editor history', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>History text</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'History text'));
+  const view = render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '增大字号' }));
+  expect(editor.getAttributes('textStyle').fontSize).toBe('12pt');
+  fireEvent.click(screen.getByRole('button', { name: '减小字号' }));
+  expect(editor.getAttributes('textStyle').fontSize).toBe('10.5pt');
+  fireEvent.click(screen.getByRole('button', { name: '加粗' }));
+  expect(editor.getHTML()).toContain('<strong>History text</strong>');
+
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '撤销' }));
+  expect(editor.getHTML()).not.toContain('<strong>History text</strong>');
+
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '重做' }));
+  expect(editor.getHTML()).toContain('<strong>History text</strong>');
+});
+
+test('wires paragraph alignment, direction, spacing, and indent controls', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Paragraph controls</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Paragraph').from);
+  const findModes: boolean[] = [];
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={(replace) => findModes.push(replace)}
+    />,
+  );
+  const paragraph = screen.getByRole('region', { name: '段落' });
+
+  fireEvent.click(within(paragraph).getByRole('button', { name: '居中' }));
+  expect(editor.getAttributes('paragraph').textAlign).toBe('center');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '右对齐' }));
+  expect(editor.getAttributes('paragraph').textAlign).toBe('right');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '左对齐' }));
+  expect(editor.getAttributes('paragraph').textAlign).toBe('left');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '两端对齐' }));
+  expect(editor.getAttributes('paragraph').textAlign).toBe('justify');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '从右向左' }));
+  expect(editor.getHTML()).toContain('dir="rtl"');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '从左向右' }));
+  expect(editor.getHTML()).toContain('dir="ltr"');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '增加缩进' }));
+  expect(editor.getHTML()).toContain('data-office-indent-level="1"');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '减少缩进' }));
+  expect(editor.getHTML()).not.toContain('data-office-indent-level');
+  fireEvent.click(within(paragraph).getByRole('button', { name: '增加缩进' }));
+  fireEvent.click(within(paragraph).getByRole('combobox', { name: '行距' }));
+  fireEvent.click(screen.getByRole('option', { name: '1.5 倍' }));
+
+  expect(editor.getHTML()).toContain('dir="ltr"');
+  expect(editor.getHTML()).toContain('data-office-indent-level="1"');
+  expect(editor.getHTML()).toContain('line-height: 1.5');
+  expect(editor.getText()).toBe('Paragraph controls');
+
+  fireEvent.click(screen.getByRole('button', { name: '查找' }));
+  fireEvent.click(screen.getByRole('button', { name: '替换' }));
+  expect(findModes).toEqual([false, true]);
 });
 
 test('shows paragraph styles and applies the active style idempotently', () => {
@@ -238,4 +423,13 @@ function textRange(editor: Editor, text: string): { from: number; to: number } {
   });
   if (!range) throw new Error(`Text "${text}" was not found.`);
   return range;
+}
+
+function textMarkNames(editor: Editor, text: string): Set<string> {
+  const range = textRange(editor, text);
+  let names = new Set<string>();
+  editor.state.doc.nodesBetween(range.from, range.to, (node) => {
+    if (node.isText) names = new Set(node.marks.map((mark) => mark.type.name));
+  });
+  return names;
 }

@@ -34,6 +34,7 @@ import {
   type ImportedDocxCommentMarkers,
 } from './work-docx-comment-import';
 import { importDocxColumns } from './work-docx-column-import';
+import { importDocxPageColor } from './work-docx-page-color';
 import {
   applyImportedDocxFieldMarkers,
   hasImportedDocxFieldMarkers,
@@ -127,6 +128,7 @@ type ImportedDocumentLayout = Omit<WorkDocumentContent, 'type' | 'html'>;
 export interface PreparedDocxImport {
   conversionBuffer: ArrayBuffer;
   sections: Array<{ id: string; layout: WorkDocumentSectionLayout }>;
+  pageColor?: string;
   captionMarkers: ImportedDocxCaptionMarkers;
   changeMarkers: ImportedDocxChangeMarkers;
   commentMarkers: ImportedDocxCommentMarkers;
@@ -186,6 +188,7 @@ export async function prepareDocxImport(
   }
 
   const document = await archive.xml('word/document.xml');
+  const pageColor = importDocxPageColor(document);
   const numbering = archive.has('word/numbering.xml')
     ? await archive.xml('word/numbering.xml')
     : null;
@@ -261,6 +264,7 @@ export async function prepareDocxImport(
           ? await writeDocumentXml(buffer, document)
           : buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
+      pageColor,
       captionMarkers,
       changeMarkers,
       commentMarkers,
@@ -317,6 +321,7 @@ export async function prepareDocxImport(
         ? await writeDocumentXml(buffer, document)
         : buffer,
     sections,
+    pageColor,
     captionMarkers,
     changeMarkers,
     commentMarkers,
@@ -442,7 +447,10 @@ export async function readDocxLayout(
   buffer: ArrayBuffer,
 ): Promise<ImportedDocumentLayout> {
   const prepared = await prepareDocxImport(buffer);
-  return documentContentLayoutProperties(prepared.sections[0].layout);
+  return {
+    ...documentContentLayoutProperties(prepared.sections[0].layout),
+    ...(prepared.pageColor ? { pageColor: prepared.pageColor } : {}),
+  };
 }
 
 async function parseSectionLayout(

@@ -533,7 +533,6 @@ function clearDocumentFormattingCommand({
     .updateAttributes('listItem', {
       paragraphDirection: null,
     })
-    .removeEmptyTextStyle()
     .run();
 }
 

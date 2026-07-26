@@ -13,8 +13,10 @@ import {
   ListChecks,
   MessageSquarePlus,
   MessagesSquare,
+  Palette,
   PanelLeftOpen,
   RefreshCw,
+  Ruler,
   Settings2,
   Table2,
   ZoomIn,
@@ -39,7 +41,11 @@ import { DocumentPictureRibbon } from './document-picture-ribbon';
 import { DocumentTableInsertPopover } from './document-table-insert-popover';
 import { DocumentTableRibbon } from './document-table-ribbon';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
-import { OfficeSelect, useOfficeDialog } from './office-controls';
+import {
+  OfficeColorPicker,
+  OfficeSelect,
+  useOfficeDialog,
+} from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
@@ -75,7 +81,9 @@ interface DocumentToolbarProps {
   editor: Editor;
   layoutOpen: boolean;
   navigationOpen: boolean;
+  pageColor: string;
   showPageNumbers: boolean;
+  showRulers: boolean;
   spellcheckEnabled: boolean;
   viewMode: DocumentViewMode;
   zoom: number;
@@ -89,6 +97,8 @@ interface DocumentToolbarProps {
   onToggleLayout: () => void;
   onToggleNavigation: () => void;
   onTogglePageNumbers: () => void;
+  onToggleRulers: () => void;
+  onPageColorChange: (color: string) => void;
   onToggleSpellcheck: () => void;
   onViewModeChange: (mode: DocumentViewMode) => void;
   onZoomChange: (zoom: number) => void;
@@ -123,7 +133,9 @@ export function DocumentToolbar({
   editor,
   layoutOpen,
   navigationOpen,
+  pageColor,
   showPageNumbers,
+  showRulers,
   spellcheckEnabled,
   viewMode,
   zoom,
@@ -137,6 +149,8 @@ export function DocumentToolbar({
   onToggleLayout,
   onToggleNavigation,
   onTogglePageNumbers,
+  onToggleRulers,
+  onPageColorChange,
   onToggleSpellcheck,
   onViewModeChange,
   onZoomChange,
@@ -388,6 +402,16 @@ export function DocumentToolbar({
                   <Hash size={19} />
                 </ToolbarButton>
               </RibbonGroup>
+              <RibbonGroup label="页面背景">
+                <OfficeColorPicker
+                  ariaLabel="页面颜色"
+                  className="work-document-page-color-picker"
+                  triggerLabel="页面颜色"
+                  triggerIcon={<Palette size={18} />}
+                  value={pageColor}
+                  onValueChange={onPageColorChange}
+                />
+              </RibbonGroup>
               <RibbonGroup label="分隔符">
                 <ToolbarButton
                   label="插入分页符"
@@ -529,6 +553,20 @@ export function DocumentToolbar({
           view: (
             <>
               <RibbonGroup label="显示">
+                <ToolbarButton
+                  label="标尺"
+                  displayLabel
+                  active={showRulers}
+                  disabled={viewMode !== 'page'}
+                  title={
+                    viewMode === 'page'
+                      ? '显示或隐藏标尺'
+                      : '标尺仅用于页面视图'
+                  }
+                  onClick={onToggleRulers}
+                >
+                  <Ruler size={19} />
+                </ToolbarButton>
                 <ToolbarButton
                   label="导航窗格"
                   displayLabel

@@ -380,6 +380,7 @@
     sans-serif
   );
   font-size: 15px;
+  font-synthesis: style weight;
   line-height: 1.82;
 }
 

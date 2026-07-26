@@ -36,6 +36,10 @@ import {
 } from '../work-document-pagination';
 import { normalizeDocumentPageChrome } from '../work-document-page-chrome';
 import {
+  documentPageColor,
+  normalizeDocumentPageColor,
+} from '../work-document-page-color';
+import {
   documentInitialSectionLayout,
   normalizeDocumentHtml,
   syncDocumentContentFromHtml,
@@ -159,6 +163,7 @@ export function DocumentEditor({
     taskPane === 'find' || taskPane === 'replace' ? taskPane : null;
   const [spellcheckEnabled, setSpellcheckEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<DocumentViewMode>('page');
+  const [showRulers, setShowRulers] = useState(false);
   const [zoom, setZoom] = useState(90);
   const [selectionMenu, setSelectionMenu] =
     useState<DocumentSelectionMenuState | null>(null);
@@ -503,6 +508,13 @@ export function DocumentEditor({
   const addSection = () => {
     editor.commands.insertDocumentSection(layout.breakAfter);
   };
+  const updatePageColor = (value: string) => {
+    const pageColor = normalizeDocumentPageColor(value);
+    if (!pageColor || pageColor === contentRef.current.pageColor) return;
+    const next = { ...contentRef.current, pageColor };
+    contentRef.current = next;
+    onChangeRef.current(next);
+  };
 
   if (preview) {
     return (
@@ -541,7 +553,9 @@ export function DocumentEditor({
         fileActions={fileActions}
         layoutOpen={layoutOpen}
         navigationOpen={navigationOpen}
+        pageColor={documentPageColor(content.pageColor)}
         showPageNumbers={visibleChrome.showPageNumber}
+        showRulers={showRulers}
         spellcheckEnabled={spellcheckEnabled}
         viewMode={viewMode}
         zoom={zoom}
@@ -558,6 +572,8 @@ export function DocumentEditor({
           });
         }}
         onToggleNavigation={() => void toggleTaskPane('navigation')}
+        onToggleRulers={() => setShowRulers((value) => !value)}
+        onPageColorChange={updatePageColor}
         onToggleSpellcheck={() => setSpellcheckEnabled((value) => !value)}
         onViewModeChange={setViewMode}
         onZoomChange={(nextZoom) => setZoom(clampDocumentZoom(nextZoom))}
@@ -604,7 +620,9 @@ export function DocumentEditor({
             tab !== 'review',
           );
         }}
-        onToggleTrackChanges={editor.commands.toggleDocumentTrackChanges}
+        onToggleTrackChanges={() =>
+          editor.commands.toggleDocumentTrackChanges()
+        }
         onToggleChanges={() => void toggleTaskPane('changes')}
         onOpenFindReplace={openFindReplace}
       />
@@ -614,7 +632,11 @@ export function DocumentEditor({
         {navigationOpen && (
           <DocumentNavigationPanel editor={editor} onClose={closeTaskPane} />
         )}
-        <div className={`work-document-scroll ${viewMode}`}>
+        <div
+          className={`work-document-scroll ${viewMode}${
+            viewMode === 'page' && showRulers ? ' rulers-visible' : ''
+          }`}
+        >
           <div
             ref={reviewSurfaceRef}
             className={`work-document-review-surface${documentComments.open ? ' comments-open' : ''}`}
@@ -626,7 +648,7 @@ export function DocumentEditor({
                 { '--work-document-zoom': String(zoom / 100) } as CSSProperties
               }
             >
-              {viewMode === 'page' && (
+              {viewMode === 'page' && showRulers && (
                 <DocumentRuler
                   layout={layout}
                   paragraphIndent={paragraphIndent}
@@ -648,7 +670,7 @@ export function DocumentEditor({
                 />
               )}
               <div className="work-document-page-frame">
-                {viewMode === 'page' && (
+                {viewMode === 'page' && showRulers && (
                   <DocumentVerticalRuler
                     layout={layout}
                     onLayoutChange={updateLayout}
@@ -660,6 +682,10 @@ export function DocumentEditor({
                   style={
                     {
                       padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
+                      backgroundColor: documentPageColor(content.pageColor),
+                      '--work-document-page-color': documentPageColor(
+                        content.pageColor,
+                      ),
                       '--work-document-page-margin-left': `${marginPixels.left}px`,
                       '--work-document-page-margin-right': `${marginPixels.right}px`,
                       '--work-document-page-header-offset': `${Math.max(
@@ -866,7 +892,9 @@ export function DocumentEditor({
             sectionCount={section.count}
             onChange={updateLayout}
             onInsertSection={addSection}
-            onMergeSection={editor.commands.mergeDocumentSectionWithPrevious}
+            onMergeSection={() =>
+              editor.commands.mergeDocumentSectionWithPrevious()
+            }
             onClose={closeTaskPane}
           />
         )}

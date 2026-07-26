@@ -495,7 +495,9 @@ If a legacy host changes `html` without updating the model, the stale model is
 ignored and removed on the next synchronization instead of overwriting the
 host's change. Model trees are bounded and validated before they cross into the
 editor. React, Vue, and Web Component wrappers continue to share the same
-controlled value.
+controlled value. Document-level page color remains outside the ProseMirror
+tree, is updated through the same controlled value, and is preserved by DOCX
+import/export and the browser PDF render surface.
 
 This is a transitional persistence boundary, not loss-preserving OOXML yet.
 DOCX still converts through Mammoth, but DOCX, HTML, and text imports create the

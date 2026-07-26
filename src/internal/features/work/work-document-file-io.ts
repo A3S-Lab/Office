@@ -51,7 +51,10 @@ export async function importWorkDocumentFile(
         )
       : result.value;
     const layout = prepared
-      ? documentContentLayoutProperties(prepared.sections[0].layout)
+      ? {
+          ...documentContentLayoutProperties(prepared.sections[0].layout),
+          ...(prepared.pageColor ? { pageColor: prepared.pageColor } : {}),
+        }
       : await readDocxLayout(arrayBuffer).catch(() => ({
           pageSize: 'a4' as const,
         }));

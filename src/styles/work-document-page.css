@@ -6,7 +6,7 @@
   margin: 0 auto;
   padding: 86px 88px 96px;
   border: 1px solid var(--a3s-line);
-  background: #ffffff;
+  background: var(--work-document-page-color, #ffffff);
   box-shadow: 0 8px 28px rgb(30 38 55 / 10%);
   color: #20232b;
 }
@@ -48,6 +48,11 @@
   font-size: 14px;
   line-height: 1.5;
   overflow-wrap: anywhere;
+  font-synthesis: style weight;
+}
+
+.work-document-page .tiptap :is(em, i) {
+  font-style: italic;
 }
 
 .work-document-page.landscape .tiptap {
@@ -385,7 +390,7 @@
     var(--work-document-break-inline-offset-right)
   );
   margin: 0;
-  background: #ffffff;
+  background: var(--work-document-page-color, #ffffff);
 }
 
 .work-document-page .tiptap .work-document-table-cell-page-layer {
@@ -398,7 +403,7 @@
     var(--work-document-table-repeat-header-height)
   );
   overflow: hidden;
-  background: #ffffff;
+  background: var(--work-document-page-color, #ffffff);
 }
 
 .work-document-page .tiptap .work-document-table-cell-local-page-spacer {
@@ -406,7 +411,7 @@
   display: block;
   width: 100%;
   height: var(--work-document-page-spacer-height);
-  background: #ffffff;
+  background: var(--work-document-page-color, #ffffff);
 }
 
 .work-document-page
@@ -786,8 +791,8 @@
     padding: 20px 12px 60px;
   }
 
-  .work-document-vertical-ruler-shell {
-    display: none;
+  .work-document-scroll.rulers-visible {
+    padding-left: 50px;
   }
 }
 

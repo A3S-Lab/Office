@@ -115,13 +115,25 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
   selectFirstImage(editor);
   const view = render(<DocumentPictureRibbon editor={editor} />);
 
-  fireEvent.click(screen.getByRole('button', { name: '四周环绕' }));
-  fireEvent.click(screen.getByRole('button', { name: '右对齐' }));
-
-  expect(documentImageLayoutOptions(editor)).toMatchObject({
-    layout: 'square',
-    alignment: 'right',
-  });
+  for (const [label, layout] of [
+    ['四周环绕', 'square'],
+    ['上下环绕', 'topBottom'],
+    ['嵌入文字', 'inline'],
+  ] as const) {
+    fireEvent.click(screen.getByRole('button', { name: label }));
+    expect(documentImageLayoutOptions(editor).layout).toBe(layout);
+  }
+  for (const [label, alignment] of [
+    ['左对齐', 'left'],
+    ['居中', 'center'],
+    ['右对齐', 'right'],
+  ] as const) {
+    fireEvent.click(screen.getByRole('button', { name: label }));
+    expect(documentImageLayoutOptions(editor).alignment).toBe(alignment);
+  }
+  fireEvent.click(screen.getByRole('combobox', { name: '图片与文字距离' }));
+  fireEvent.click(screen.getByRole('option', { name: '10 毫米' }));
+  expect(documentImageLayoutOptions(editor).wrapDistance).toBe(10);
 
   fireEvent.click(screen.getByRole('button', { name: '替代文字' }));
   fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
@@ -132,6 +144,14 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
     expect(documentImageAlternativeText(editor)).toBe('季度趋势图');
   });
   expect(editor.getHTML()).toContain('alt="季度趋势图"');
+
+  selectFirstImage(editor);
+  fireEvent.click(screen.getByRole('button', { name: '删除图片' }));
+  expect(editor.getJSON()).not.toMatchObject({
+    content: expect.arrayContaining([
+      expect.objectContaining({ type: 'image' }),
+    ]),
+  });
 
   view.unmount();
   editor.destroy();

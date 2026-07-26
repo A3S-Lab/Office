@@ -1,6 +1,12 @@
 import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { createDocumentPageChromeEditorExtensions } from '../src/internal/features/work/editors/document-page-chrome-editor';
 import { DocumentPageChromeRibbon } from '../src/internal/features/work/editors/document-page-chrome-ribbon';
 
@@ -30,21 +36,34 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   );
 
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚加粗' }));
-  fireEvent.click(screen.getByRole('button', { name: '页眉页脚居中' }));
+  fireEvent.click(screen.getByRole('button', { name: '页眉页脚斜体' }));
+  fireEvent.click(screen.getByRole('button', { name: '页眉页脚下划线' }));
+  for (const label of [
+    '页眉页脚左对齐',
+    '页眉页脚居中',
+    '页眉页脚右对齐',
+    '页眉页脚两端对齐',
+  ]) {
+    fireEvent.click(screen.getByRole('button', { name: label }));
+  }
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚上标' }));
+  fireEvent.click(screen.getByRole('button', { name: '页眉页脚文字颜色' }));
+  fireEvent.click(screen.getByRole('option', { name: '颜色 #0070c0' }));
   await waitFor(() => {
     expect(editor.getHTML()).toContain('<strong>');
-    expect(editor.getHTML()).toContain('text-align: center');
+    expect(editor.getHTML()).toContain('<em>');
+    expect(editor.getHTML()).toContain('<u>');
+    expect(editor.getHTML()).toContain('text-align: justify');
+    expect(editor.getHTML()).toContain('color: #0070c0');
     expect(editor.getHTML()).toContain('<sup>');
   });
   expect(screen.getByRole('button', { name: '页眉页脚加粗' })).toHaveAttribute(
     'aria-pressed',
     'true',
   );
-  expect(screen.getByRole('button', { name: '页眉页脚居中' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  expect(
+    screen.getByRole('button', { name: '页眉页脚两端对齐' }),
+  ).toHaveAttribute('aria-pressed', 'true');
   expect(screen.getByRole('button', { name: '页眉页脚上标' })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -64,11 +83,43 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
     'false',
   );
 
+  const beforeUndo = editor.getHTML();
+  fireEvent.click(screen.getByRole('button', { name: '撤销页眉页脚编辑' }));
+  await waitFor(() => expect(editor.getHTML()).not.toBe(beforeUndo));
+  fireEvent.click(screen.getByRole('button', { name: '重做页眉页脚编辑' }));
+  await waitFor(() => expect(editor.getHTML()).toBe(beforeUndo));
+
+  fireEvent.click(screen.getByRole('button', { name: '添加页眉页脚链接' }));
+  const linkDialog = await screen.findByRole('dialog', { name: '添加链接' });
+  fireEvent.change(
+    within(linkDialog).getByRole('textbox', { name: '链接地址' }),
+    {
+      target: { value: 'https://a3s.dev/header' },
+    },
+  );
+  fireEvent.click(within(linkDialog).getByRole('button', { name: '添加链接' }));
+  await waitFor(() =>
+    expect(editor.getHTML()).toContain('href="https://a3s.dev/header"'),
+  );
+  fireEvent.click(
+    await screen.findByRole('button', { name: '移除页眉页脚链接' }),
+  );
+  await waitFor(() => expect(editor.getHTML()).not.toContain('href='));
+
+  const imageInput = screen.getByLabelText('页眉页脚图片文件');
+  let imagePickerRequests = 0;
+  imageInput.addEventListener('click', () => {
+    imagePickerRequests += 1;
+  });
+  fireEvent.click(screen.getByRole('button', { name: '插入页眉页脚图片' }));
+  expect(imagePickerRequests).toBe(1);
+
   fireEvent.click(screen.getByRole('button', { name: '切换到页脚' }));
+  fireEvent.click(screen.getByRole('button', { name: '切换到页眉' }));
   fireEvent.click(screen.getByRole('button', { name: '显示页码' }));
   fireEvent.click(screen.getByRole('button', { name: '关闭页眉和页脚' }));
 
-  expect(parts).toEqual(['footer']);
+  expect(parts).toEqual(['footer', 'header']);
   expect(pageNumberToggles).toBe(1);
   expect(closes).toBe(1);
   editor.destroy();

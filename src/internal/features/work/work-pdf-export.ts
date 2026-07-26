@@ -45,15 +45,23 @@ export async function exportWorkArtifactPdf(
     const orientation =
       page.dataset.pdfOrientation === 'portrait' ? 'portrait' : 'landscape';
     const pageSize = pdfPageSize(page.dataset.pdfPageSize);
+    const backgroundColor = getComputedStyle(page).backgroundColor || '#ffffff';
     const canvas = await html2canvas(page, {
-      backgroundColor: '#ffffff',
+      backgroundColor,
       logging: false,
       scale: 2,
       useCORS: true,
       windowWidth: Math.max(page.scrollWidth, page.clientWidth),
       windowHeight: Math.max(page.scrollHeight, page.clientHeight),
     });
-    pdf = appendCanvas(pdf, canvas, orientation, pageSize, jsPDF);
+    pdf = appendCanvas(
+      pdf,
+      canvas,
+      orientation,
+      pageSize,
+      backgroundColor,
+      jsPDF,
+    );
   }
   if (!pdf) throw new Error('PDF export did not produce any pages.');
   pdf.setProperties({
@@ -89,6 +97,7 @@ function appendCanvas(
   source: HTMLCanvasElement,
   orientation: 'portrait' | 'landscape',
   pageSize: PdfPageSize,
+  backgroundColor: string,
   Pdf: typeof import('jspdf').jsPDF,
 ): JsPdf {
   let document = pdf;
@@ -120,7 +129,7 @@ function appendCanvas(
     const slice = documentCanvas(source.width, height);
     const context = slice.getContext('2d');
     if (!context) throw new Error('The browser could not prepare a PDF page.');
-    context.fillStyle = '#ffffff';
+    context.fillStyle = backgroundColor;
     context.fillRect(0, 0, slice.width, slice.height);
     context.drawImage(
       source,

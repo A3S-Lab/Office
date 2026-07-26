@@ -6,6 +6,7 @@ import {
   normalizeDocumentColumns,
 } from '../work-document-columns';
 import { resolveDocumentPageChrome } from '../work-document-page-chrome';
+import { documentPageColor } from '../work-document-page-color';
 import {
   documentPageDescriptors,
   type WorkDocumentPageDescriptor,
@@ -26,7 +27,13 @@ export function WorkDocumentPdfPages({
   title: string;
 }) {
   return documentPageDescriptors(content).map((page) => (
-    <DocumentPage key={page.key} page={page} title={title} mode="pdf" />
+    <DocumentPage
+      key={page.key}
+      page={page}
+      pageColor={documentPageColor(content.pageColor)}
+      title={title}
+      mode="pdf"
+    />
   ));
 }
 
@@ -38,7 +45,12 @@ export function WorkDocumentPreview({
   return (
     <section className="work-document-preview-pages" aria-label="文字预览">
       {documentPageDescriptors(content).map((page) => (
-        <DocumentPage key={page.key} page={page} mode="preview" />
+        <DocumentPage
+          key={page.key}
+          page={page}
+          pageColor={documentPageColor(content.pageColor)}
+          mode="preview"
+        />
       ))}
     </section>
   );
@@ -46,10 +58,12 @@ export function WorkDocumentPreview({
 
 function DocumentPage({
   page,
+  pageColor,
   title,
   mode,
 }: {
   page: WorkDocumentPageDescriptor;
+  pageColor: string;
   title?: string;
   mode: 'pdf' | 'preview';
 }) {
@@ -107,6 +121,7 @@ function DocumentPage({
           : `文字打印预览第 ${page.physicalPage} 页`
       }
       style={{
+        backgroundColor: pageColor,
         padding: `${millimetersToPixels(layout.margins.top)}px ${millimetersToPixels(
           layout.margins.right,
         )}px ${millimetersToPixels(layout.margins.bottom)}px ${millimetersToPixels(layout.margins.left)}px`,

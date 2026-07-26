@@ -250,7 +250,10 @@ function documentToolbar(
     <DocumentToolbar
       editor={currentEditor}
       layoutOpen={false}
+      navigationOpen={false}
+      pageColor="#ffffff"
       showPageNumbers
+      showRulers={false}
       spellcheckEnabled
       viewMode="page"
       zoom={100}
@@ -262,7 +265,10 @@ function documentToolbar(
       onClosePageChrome={noop}
       onTogglePageChromePageNumber={noop}
       onToggleLayout={noop}
+      onToggleNavigation={noop}
       onTogglePageNumbers={noop}
+      onToggleRulers={noop}
+      onPageColorChange={noop}
       onToggleSpellcheck={noop}
       onViewModeChange={noop}
       onZoomChange={noop}

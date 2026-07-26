@@ -14,6 +14,7 @@ import {
   type WorkDocumentNoteKind,
 } from './work-document-notes';
 import { patchDocxBibliography } from './work-docx-bibliography';
+import { patchDocxPageColor } from './work-docx-page-color';
 import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
@@ -144,9 +145,13 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
-  const patched = await patchDocxBibliography(
+  const bibliographyPatched = await patchDocxBibliography(
     await packed.arrayBuffer(),
     content.bibliography,
+  );
+  const patched = await patchDocxPageColor(
+    bibliographyPatched,
+    content.pageColor,
   );
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

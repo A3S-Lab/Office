@@ -62,6 +62,7 @@ const initialDocument: DocumentContent = {
   type: 'document',
   html: '<h1>Project brief</h1><p>Start editing here.</p>',
   pageSize: 'a4',
+  pageColor: '#ffffff',
 };
 
 export function App() {
@@ -380,7 +381,9 @@ product already provides open, save, or export controls.
 
 `DocumentContent` stores compatibility HTML and may carry a structured,
 versioned model. Persist the complete emitted value. Directly replacing HTML
-invalidates an older model safely.
+invalidates an older model safely. Page layout fields include `pageSize`,
+`pageColor`, orientation, margins, columns, and page chrome; page color is
+preserved through DOCX import/export and browser PDF export.
 
 ### Selection context menus
 
