@@ -136,6 +136,34 @@ test('documents every editor contract and its supported extension boundary', () 
 
   fireEvent.click(
     within(tablist).getByRole('tab', {
+      name: /Markdown.*MarkdownEditor/,
+    }),
+  );
+  const markdownPanel = screen.getByRole('tabpanel', {
+    name: /MarkdownEditor/,
+  });
+  expect(
+    within(markdownPanel).getByRole('rowheader', {
+      name: 'getSelectionMenuItems',
+    }),
+  ).toBeVisible();
+  expect(
+    within(markdownPanel).getByRole('heading', {
+      name: '选区右键菜单',
+      level: 3,
+    }),
+  ).toBeVisible();
+  const markdownExamples = markdownPanel.querySelectorAll(
+    'pre[data-code-language="tsx"]',
+  );
+  expect(markdownExamples).toHaveLength(2);
+  expect(markdownExamples[0]).toHaveTextContent(
+    'GetMarkdownSelectionMenuItems',
+  );
+  expect(markdownExamples[0]).toHaveTextContent('context.commands.replaceText');
+
+  fireEvent.click(
+    within(tablist).getByRole('tab', {
       name: /PDF.*PdfViewer/,
     }),
   );

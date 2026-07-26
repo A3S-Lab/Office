@@ -21,7 +21,9 @@ import {
   type DocumentSelectionContext,
   type EditorAgentRequest,
   type GetDocumentSelectionMenuItems,
+  type GetMarkdownSelectionMenuItems,
   type MarkdownContent,
+  type MarkdownSelectionContext,
   type OfficeArtifact,
   type OfficeArtifactContent,
   type PresentationContent,
@@ -106,53 +108,20 @@ export function EditorWorkspace({
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const getDocumentSelectionMenuItems =
     useCallback<GetDocumentSelectionMenuItems>(
-      () => [
-        {
-          id: 'copy',
-          label: '复制',
-          icon: 'copy',
-          onSelect: async ({ commands }) => {
-            const copied = await commands.copyText();
-            onNotice(
-              copied ? '选中文本已复制' : '无法访问剪贴板，请使用系统快捷键',
-              copied ? 'success' : 'danger',
-            );
-          },
-        },
-        {
-          id: 'expand',
-          label: '扩写选中内容',
-          icon: 'sparkles',
-          separatorBefore: true,
-          onSelect: (context) =>
-            onAgentRequest({
-              instruction:
-                '请结合全文和相邻段落扩写选中内容，保持原有事实、语气和文档结构；先返回可审阅草稿。',
-              selection: documentSelectionPromptContext(context),
-            }),
-        },
-        {
-          id: 'polish',
-          label: '润色表达',
-          icon: 'wand',
-          onSelect: (context) =>
-            onAgentRequest({
-              instruction:
-                '请结合全文语气润色选中内容，减少重复和空话，保持事实与专业术语不变；先返回可审阅草稿。',
-              selection: documentSelectionPromptContext(context),
-            }),
-        },
-        {
-          id: 'ask',
-          label: '询问 AI 助手',
-          icon: 'message',
-          onSelect: (context) =>
-            onAgentRequest({
-              instruction: '请结合文档上下文回答关于选中内容的问题：\n\n问题：',
-              selection: documentSelectionPromptContext(context),
-            }),
-        },
-      ],
+      () =>
+        playgroundSelectionMenuItems<DocumentSelectionContext>(
+          onAgentRequest,
+          onNotice,
+        ),
+      [onAgentRequest, onNotice],
+    );
+  const getMarkdownSelectionMenuItems =
+    useCallback<GetMarkdownSelectionMenuItems>(
+      () =>
+        playgroundSelectionMenuItems<MarkdownSelectionContext>(
+          onAgentRequest,
+          onNotice,
+        ),
       [onAgentRequest, onNotice],
     );
 
@@ -266,6 +235,7 @@ export function EditorWorkspace({
           {artifact.content.type === 'markdown' && (
             <MarkdownEditor
               content={artifact.content}
+              getSelectionMenuItems={getMarkdownSelectionMenuItems}
               onChange={(content: MarkdownContent) => onChange(content)}
               preview={preview}
               saveStatus="本次会话已保存"
@@ -346,9 +316,84 @@ export function EditorExportButton({
   );
 }
 
-function documentSelectionPromptContext(
-  context: DocumentSelectionContext,
-): string {
+interface PlaygroundSelectionContext {
+  selection: {
+    text: string;
+    beforeText: string;
+    afterText: string;
+  };
+  document: {
+    text: string;
+  };
+  commands: {
+    copyText(): Promise<boolean>;
+  };
+}
+
+interface PlaygroundSelectionMenuItem<Context> {
+  id: string;
+  label: string;
+  icon: 'copy' | 'message' | 'sparkles' | 'wand';
+  separatorBefore?: boolean;
+  onSelect(context: Context): void | Promise<void>;
+}
+
+function playgroundSelectionMenuItems<
+  Context extends PlaygroundSelectionContext,
+>(
+  onAgentRequest: (request: EditorAgentRequest) => void,
+  onNotice: (message: string, tone?: NoticeTone) => void,
+): readonly PlaygroundSelectionMenuItem<Context>[] {
+  return [
+    {
+      id: 'copy',
+      label: '复制',
+      icon: 'copy',
+      onSelect: async ({ commands }) => {
+        const copied = await commands.copyText();
+        onNotice(
+          copied ? '选中文本已复制' : '无法访问剪贴板，请使用系统快捷键',
+          copied ? 'success' : 'danger',
+        );
+      },
+    },
+    {
+      id: 'expand',
+      label: '扩写选中内容',
+      icon: 'sparkles',
+      separatorBefore: true,
+      onSelect: (context) =>
+        onAgentRequest({
+          instruction:
+            '请结合全文和相邻段落扩写选中内容，保持原有事实、语气和文档结构；先返回可审阅草稿。',
+          selection: selectionPromptContext(context),
+        }),
+    },
+    {
+      id: 'polish',
+      label: '润色表达',
+      icon: 'wand',
+      onSelect: (context) =>
+        onAgentRequest({
+          instruction:
+            '请结合全文语气润色选中内容，减少重复和空话，保持事实与专业术语不变；先返回可审阅草稿。',
+          selection: selectionPromptContext(context),
+        }),
+    },
+    {
+      id: 'ask',
+      label: '询问 AI 助手',
+      icon: 'message',
+      onSelect: (context) =>
+        onAgentRequest({
+          instruction: '请结合文档上下文回答关于选中内容的问题：\n\n问题：',
+          selection: selectionPromptContext(context),
+        }),
+    },
+  ];
+}
+
+function selectionPromptContext(context: PlaygroundSelectionContext): string {
   return [
     `选中文本：\n${context.selection.text}`,
     `前文：\n${context.selection.beforeText || '（无）'}`,

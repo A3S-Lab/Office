@@ -103,6 +103,148 @@ test('coalesces source edits before rebuilding the visual Markdown tree', async 
   expect(visual).not.toHaveTextContent('Intermediate title');
 });
 
+test('routes ribbon formatting to the active Markdown source selection', async () => {
+  const changes: MarkdownContent[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: 'Write clearly' }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  fireEvent.focus(source);
+  source.setSelectionRange(0, 5);
+  fireEvent.select(source);
+  fireEvent.click(screen.getByRole('button', { name: '加粗' }));
+
+  await waitFor(() => expect(source).toHaveValue('**Write** clearly'));
+  expect(changes.at(-1)?.markdown).toBe('**Write** clearly');
+  expect(source.selectionStart).toBe(2);
+  expect(source.selectionEnd).toBe(7);
+
+  fireEvent.keyDown(source, { key: 'i', ctrlKey: true });
+  await waitFor(() => expect(source).toHaveValue('***Write*** clearly'));
+});
+
+test('applies block formatting to selected Markdown source lines', async () => {
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: 'First item\nSecond item' }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  fireEvent.focus(source);
+  source.setSelectionRange(0, source.value.length);
+  fireEvent.select(source);
+  fireEvent.click(screen.getByRole('button', { name: '项目列表' }));
+
+  await waitFor(() =>
+    expect(source).toHaveValue('- First item\n- Second item'),
+  );
+});
+
+test('lets the host replace the selected-text menu in Markdown source', async () => {
+  const content: MarkdownContent = {
+    type: 'markdown',
+    markdown: '# Plan\n\nShip the release today.\n\n## Notes',
+  };
+  const snapshots: import('../src/core').MarkdownSelectionSnapshot[] = [];
+  const actions: import('../src/core').MarkdownSelectionContext[] = [];
+  render(
+    <MarkdownEditor
+      content={content}
+      getSelectionMenuItems={(snapshot) => {
+        snapshots.push(snapshot);
+        return [
+          {
+            id: 'polish',
+            label: '润色',
+            icon: 'wand',
+            onSelect: (context) => actions.push(context),
+          },
+        ];
+      }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  const start = content.markdown.indexOf('Ship the release today.');
+  source.setSelectionRange(start, start + 'Ship the release today.'.length);
+  fireEvent.select(source);
+  fireEvent.contextMenu(source, { clientX: 120, clientY: 180 });
+
+  const menu = await screen.findByRole('menu', { name: '选中文本操作' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '润色' }));
+
+  expect(snapshots).toHaveLength(1);
+  expect(snapshots[0]?.selection.surface).toBe('source');
+  expect(snapshots[0]?.selection.text).toBe('Ship the release today.');
+  expect(snapshots[0]?.selection.beforeText).toContain('# Plan');
+  expect(snapshots[0]?.selection.afterText).toContain('## Notes');
+  expect(snapshots[0]?.document.markdown).toBe(content.markdown);
+  expect(actions).toHaveLength(1);
+
+  expect(actions[0]?.commands.replaceText('Ship today.')).toEqual({
+    applied: true,
+  });
+  await waitFor(() =>
+    expect(source).toHaveValue('# Plan\n\nShip today.\n\n## Notes'),
+  );
+});
+
+test('keeps the host selection menu available in the Markdown visual editor', async () => {
+  const changes: MarkdownContent[] = [];
+  const surfaces: string[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: 'Review this sentence.' }}
+      getSelectionMenuItems={(snapshot) => {
+        surfaces.push(snapshot.selection.surface);
+        return [
+          {
+            id: 'replace',
+            label: '替换',
+            onSelect: ({ commands }) => {
+              commands.replaceText('Keep this sentence.');
+            },
+          },
+        ];
+      }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  const visual = await screen.findByLabelText('Markdown 编辑区');
+  selectDomText(visual, 'Review this sentence.');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  fireEvent.contextMenu(visual, { clientX: 120, clientY: 180 });
+  fireEvent.click(
+    within(await screen.findByRole('menu', { name: '选中文本操作' })).getByRole(
+      'menuitem',
+      { name: '替换' },
+    ),
+  );
+
+  await waitFor(() =>
+    expect(changes.at(-1)?.markdown).toContain('Keep this sentence.'),
+  );
+  expect(surfaces).toEqual(['visual']);
+});
+
 test('round-trips GFM task state from the visual editor to source', async () => {
   const changes: MarkdownContent[] = [];
   const content: MarkdownContent = {
@@ -303,3 +445,25 @@ test('inserts Markdown images with alternative text from one dialog', async () =
     ),
   );
 });
+
+function selectDomText(root: HTMLElement, text: string): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const value = node.textContent ?? '';
+    const offset = value.indexOf(text);
+    if (offset >= 0) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + text.length);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      root.focus();
+      document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+      return;
+    }
+    node = walker.nextNode();
+  }
+  throw new Error(`Unable to select "${text}" in the editor.`);
+}

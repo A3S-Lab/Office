@@ -5,6 +5,7 @@ import type {
   DocumentContent,
   EditorAgentRequest,
   GetDocumentSelectionMenuItems,
+  GetMarkdownSelectionMenuItems,
   MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
@@ -211,6 +212,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
 
 export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownContent> {
   #extensions: Extensions | undefined;
+  #getSelectionMenuItems: GetMarkdownSelectionMenuItems | undefined;
 
   static get observedAttributes() {
     return ['preview', 'save-status', 'theme'];
@@ -225,12 +227,22 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
     this.requestRender();
   }
 
+  get getSelectionMenuItems(): GetMarkdownSelectionMenuItems | undefined {
+    return this.#getSelectionMenuItems;
+  }
+
+  set getSelectionMenuItems(value: GetMarkdownSelectionMenuItems | undefined) {
+    this.#getSelectionMenuItems = value;
+    this.requestRender();
+  }
+
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('Markdown', this.theme);
     return createElement(MarkdownEditor, {
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,
+      getSelectionMenuItems: this.getSelectionMenuItems,
       onChange: (content) => this.changeContent(content),
       preview: this.preview,
       saveStatus: this.saveStatus,

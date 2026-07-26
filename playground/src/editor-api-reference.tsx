@@ -241,7 +241,11 @@ const editorReferences: Record<EditorId, EditorReference> = {
         '异步动作必须返回或 await Promise，编辑器会在模型响应期间跟踪原选区；原文被修改时 replaceText 会返回 stale-selection。',
         'replaceText、insertBefore 和 insertAfter 各自产生一次受控更新和一次撤销记录，并遵守修订模式。',
       ],
-      code: documentSelectionMenuExample(),
+      code: selectionMenuExample(
+        'DocumentEditor',
+        'DocumentContent',
+        'GetDocumentSelectionMenuItems',
+      ),
     },
     extension: {
       status: 'available',
@@ -285,9 +289,31 @@ const editorReferences: Record<EditorId, EditorReference> = {
         frameworkBinding: 'Vue: :extensions · Element: .extensions',
         description: '追加 TipTap 扩展；扩展名称不能与内置扩展重复。',
       },
+      {
+        name: 'getSelectionMenuItems',
+        type: 'GetMarkdownSelectionMenuItems',
+        frameworkBinding:
+          'Vue: :get-selection-menu-items · Element: .getSelectionMenuItems',
+        description:
+          '完全接管源码或可视区选中文本的右键菜单，并提供 Markdown 全文和安全编辑命令。',
+      },
       ...surfaceProps,
     ],
     events: contentEvents('MarkdownContent'),
+    selectionMenu: {
+      description:
+        '同一套宿主菜单同时覆盖源码和可视编辑区。快照会标明 selection.surface，并提供选区前后文、完整 Markdown、纯文本以及受控替换命令。',
+      notes: [
+        '菜单项和执行逻辑完全由宿主定义；编辑器不会按文案或关键词推断扩写、润色等业务动作。',
+        '源码选区按字符串范围校验，可视选区会跟踪无关事务；目标内容变化后命令返回 stale-selection。',
+        'replaceText、insertBefore 和 insertAfter 都通过 onChange 返回新的 MarkdownContent。',
+      ],
+      code: selectionMenuExample(
+        'MarkdownEditor',
+        'MarkdownContent',
+        'GetMarkdownSelectionMenuItems',
+      ),
+    },
     extension: {
       status: 'available',
       title: '支持 TipTap Extensions',
@@ -812,14 +838,20 @@ export function Editor({ content, onChange }: {
 }`;
 }
 
-function documentSelectionMenuExample(): string {
+function selectionMenuExample(
+  component: 'DocumentEditor' | 'MarkdownEditor',
+  contentType: 'DocumentContent' | 'MarkdownContent',
+  factoryType:
+    | 'GetDocumentSelectionMenuItems'
+    | 'GetMarkdownSelectionMenuItems',
+): string {
   return `import type {
-  DocumentContent,
-  GetDocumentSelectionMenuItems,
+  ${contentType},
+  ${factoryType},
 } from '@a3s-lab/office/core';
-import { DocumentEditor } from '@a3s-lab/office/react';
+import { ${component} } from '@a3s-lab/office/react';
 
-const getSelectionMenuItems: GetDocumentSelectionMenuItems = () => [
+const getSelectionMenuItems: ${factoryType} = () => [
   {
     id: 'expand',
     label: '扩写',
@@ -853,8 +885,8 @@ const getSelectionMenuItems: GetDocumentSelectionMenuItems = () => [
   },
 ];
 
-<DocumentEditor
-  content={content as DocumentContent}
+<${component}
+  content={content as ${contentType}}
   getSelectionMenuItems={getSelectionMenuItems}
   onChange={setContent}
 />;`;

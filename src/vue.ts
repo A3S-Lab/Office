@@ -14,6 +14,7 @@ import type {
   DocumentContent,
   EditorAgentRequest,
   GetDocumentSelectionMenuItems,
+  GetMarkdownSelectionMenuItems,
   MarkdownContent,
   PresentationContent,
   SpreadsheetContent,
@@ -128,6 +129,7 @@ export const MarkdownEditor = defineComponent({
       default: undefined,
       type: Array as PropType<Extensions>,
     },
+    getSelectionMenuItems: Function as PropType<GetMarkdownSelectionMenuItems>,
     preview: {
       default: false,
       type: Boolean,
@@ -145,6 +147,7 @@ export const MarkdownEditor = defineComponent({
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,
+        getSelectionMenuItems: props.getSelectionMenuItems,
         onChange: (content) => {
           emit('update:content', content);
           emit('change', content);

@@ -116,6 +116,30 @@ export function documentCustomSelectionMenuItems(
   items: readonly WorkDocumentSelectionMenuItem[],
   createAction: () => WorkDocumentSelectionAction,
 ): WorkspaceContextMenuItem[] {
+  return customSelectionMenuItems(items, createAction);
+}
+
+interface CustomSelectionAction<Context> {
+  context: Context;
+  dispose(): void;
+}
+
+interface CustomSelectionMenuItem<Context> {
+  id: string;
+  label: string;
+  icon?: WorkDocumentSelectionMenuIcon;
+  shortcut?: string;
+  ariaKeyShortcut?: string;
+  danger?: boolean;
+  disabled?: boolean;
+  separatorBefore?: boolean;
+  onSelect(context: Context): void | Promise<void>;
+}
+
+export function customSelectionMenuItems<Context>(
+  items: readonly CustomSelectionMenuItem<Context>[],
+  createAction: () => CustomSelectionAction<Context>,
+): WorkspaceContextMenuItem[] {
   const ids = new Set<string>();
   return items.map((item) => {
     const id = item.id.trim();

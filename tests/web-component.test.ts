@@ -50,6 +50,8 @@ test('registers every custom element idempotently', async () => {
   ) as A3SMarkdownEditorElement;
   markdownEditor.extensions = [hostExtension];
   expect(markdownEditor.extensions).toEqual([hostExtension]);
+  markdownEditor.getSelectionMenuItems = getSelectionMenuItems;
+  expect(markdownEditor.getSelectionMenuItems).toBe(getSelectionMenuItems);
 
   const spreadsheetEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.spreadsheet,

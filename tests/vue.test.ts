@@ -62,6 +62,60 @@ test('mounts the Vue Markdown adapter', async () => {
   target.remove();
 });
 
+test('passes the Markdown selection-menu factory through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const content: MarkdownContent = {
+    type: 'markdown',
+    markdown: 'Vue selection menu',
+  };
+  const app = createApp({
+    render: () =>
+      h(MarkdownEditor, {
+        content,
+        getSelectionMenuItems: () => [
+          {
+            id: 'host-action',
+            label: '宿主操作',
+            onSelect: () => undefined,
+          },
+        ],
+      }),
+  });
+
+  app.mount(target);
+  await nextTick();
+  const source = await waitFor(() => {
+    const element = target.querySelector<HTMLTextAreaElement>(
+      '[aria-label="Markdown 源码"]',
+    );
+    expect(element).not.toBeNull();
+    if (!element) throw new Error('Expected the Markdown editor to mount.');
+    return element;
+  });
+  source.focus();
+  source.setSelectionRange(0, 3);
+  source.dispatchEvent(new Event('select', { bubbles: true }));
+  source.dispatchEvent(
+    new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 120,
+      clientY: 180,
+    }),
+  );
+
+  await waitFor(() => {
+    expect(
+      target.querySelector('[role="menu"][aria-label="选中文本操作"]'),
+    ).not.toBeNull();
+  });
+  expect(target.textContent).toContain('宿主操作');
+
+  app.unmount();
+  target.remove();
+});
+
 test('passes the document selection-menu factory through the Vue adapter', async () => {
   const target = document.createElement('div');
   document.body.append(target);

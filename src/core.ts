@@ -55,6 +55,16 @@ export type {
   WorkDocumentSelectionSnapshot as DocumentSelectionSnapshot,
   WorkGetDocumentSelectionMenuItems as GetDocumentSelectionMenuItems,
 } from './internal/features/work/work-document-selection-menu';
+export type {
+  WorkGetMarkdownSelectionMenuItems as GetMarkdownSelectionMenuItems,
+  WorkMarkdownSelectionCommandFailure as MarkdownSelectionCommandFailure,
+  WorkMarkdownSelectionCommandResult as MarkdownSelectionCommandResult,
+  WorkMarkdownSelectionCommands as MarkdownSelectionCommands,
+  WorkMarkdownSelectionContext as MarkdownSelectionContext,
+  WorkMarkdownSelectionMenuIcon as MarkdownSelectionMenuIcon,
+  WorkMarkdownSelectionMenuItem as MarkdownSelectionMenuItem,
+  WorkMarkdownSelectionSnapshot as MarkdownSelectionSnapshot,
+} from './internal/features/work/work-markdown-selection-menu';
 export {
   workArtifactExtension as artifactExtension,
   workArtifactKindLabel as artifactKindLabel,

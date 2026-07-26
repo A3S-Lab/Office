@@ -3,13 +3,20 @@ import { EditorContent } from '@tiptap/react';
 import {
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent,
+  type RefObject,
   type UIEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
+import type {
+  MarkdownSourceCommand,
+  MarkdownSourceSelection,
+} from './markdown-source-commands';
 
 export type MarkdownViewMode = 'visual' | 'source' | 'split';
 
@@ -38,18 +45,29 @@ export function MarkdownWorkspace({
   markdown,
   mode,
   readOnly = false,
+  sourceRef,
+  sourceSelectionRequest,
   onSourceChange,
+  onSourceCommand,
+  onSourceContextMenu,
+  onSourceIntent,
+  onVisualContextMenu,
   onVisualIntent,
 }: {
   editor: Editor;
   markdown: string;
   mode: MarkdownViewMode;
   readOnly?: boolean;
+  sourceRef: RefObject<HTMLTextAreaElement | null>;
+  sourceSelectionRequest?: MarkdownSourceSelection & { revision: number };
   onSourceChange: (markdown: string) => void;
+  onSourceCommand?: (command: MarkdownSourceCommand) => boolean;
+  onSourceContextMenu?: (event: MouseEvent<HTMLTextAreaElement>) => void;
+  onSourceIntent?: () => void;
+  onVisualContextMenu?: (event: MouseEvent<HTMLElement>) => void;
   onVisualIntent?: () => void;
 }) {
   const workspaceRef = useRef<HTMLDivElement>(null);
-  const sourceRef = useRef<HTMLTextAreaElement>(null);
   const visualRef = useRef<HTMLElement>(null);
   const synchronizedTargetRef = useRef<'source' | 'visual' | null>(null);
   const releaseFrameRef = useRef<number | null>(null);
@@ -78,6 +96,18 @@ export function MarkdownWorkspace({
     },
     [],
   );
+
+  useLayoutEffect(() => {
+    if (!sourceSelectionRequest) return;
+    const source = sourceRef.current;
+    if (!source) return;
+    source.focus({ preventScroll: true });
+    source.setSelectionRange(
+      sourceSelectionRequest.start,
+      sourceSelectionRequest.end,
+      sourceSelectionRequest.direction,
+    );
+  }, [sourceRef, sourceSelectionRequest]);
 
   const handleSourceScroll = useCallback(
     (event: UIEvent<HTMLTextAreaElement>) => {
@@ -200,7 +230,31 @@ export function MarkdownWorkspace({
             aria-label="Markdown 源码"
             value={markdown}
             spellCheck
-            onChange={(event) => onSourceChange(event.target.value)}
+            onChange={(event) => {
+              onSourceIntent?.();
+              onSourceChange(event.target.value);
+            }}
+            onFocus={onSourceIntent}
+            onContextMenu={onSourceContextMenu}
+            onKeyDown={(event) => {
+              if (
+                event.altKey ||
+                !(event.metaKey || event.ctrlKey) ||
+                event.shiftKey
+              ) {
+                return;
+              }
+              const command =
+                event.key.toLocaleLowerCase() === 'b'
+                  ? 'bold'
+                  : event.key.toLocaleLowerCase() === 'i'
+                    ? 'italic'
+                    : null;
+              if (!command || !onSourceCommand?.(command)) return;
+              event.preventDefault();
+            }}
+            onPointerDown={onSourceIntent}
+            onSelect={onSourceIntent}
             onScroll={handleSourceScroll}
           />
         </section>
@@ -231,6 +285,7 @@ export function MarkdownWorkspace({
           ref={visualRef}
           aria-label={readOnly ? 'Markdown 预览窗格' : 'Markdown 编辑结果窗格'}
           className="work-markdown-pane visual"
+          onContextMenu={onVisualContextMenu}
           onFocusCapture={onVisualIntent}
           onPointerDownCapture={onVisualIntent}
           onScroll={handleVisualScroll}

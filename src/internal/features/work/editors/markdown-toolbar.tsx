@@ -24,6 +24,10 @@ import {
   type MarkdownInsertDialogRequest,
   type MarkdownInsertDialogResult,
 } from './markdown-insert-dialog';
+import type {
+  MarkdownSourceCommand,
+  MarkdownSourceSelectionState,
+} from './markdown-source-commands';
 import type { MarkdownViewMode } from './markdown-workspace';
 import {
   type WorkOfficeFileAction,
@@ -43,18 +47,58 @@ const markdownRibbonTabs = [
 export function MarkdownToolbar({
   editor,
   fileActions,
+  sourceEditing,
   viewMode,
+  getSourceSelection,
+  onSourceCommand,
+  onSourceReplace,
   onViewModeChange,
 }: {
   editor: Editor;
   fileActions?: readonly WorkOfficeFileAction[];
+  sourceEditing: boolean;
   viewMode: MarkdownViewMode;
+  getSourceSelection: () => MarkdownSourceSelectionState | null;
+  onSourceCommand: (command: MarkdownSourceCommand) => boolean;
+  onSourceReplace: (
+    replacement: string,
+    selectedRange?: { start: number; end: number },
+  ) => boolean;
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
   const [insertDialog, setInsertDialog] =
     useState<MarkdownInsertDialogRequest | null>(null);
+  const [insertDialogSurface, setInsertDialogSurface] = useState<
+    'source' | 'visual'
+  >('visual');
+  const canUndo =
+    !sourceEditing &&
+    canRunVisualEditorCommand(editor, () =>
+      editor.can().chain().focus().undo().run(),
+    );
+  const canRedo =
+    !sourceEditing &&
+    canRunVisualEditorCommand(editor, () =>
+      editor.can().chain().focus().redo().run(),
+    );
+  const runCommand = (
+    sourceCommand: MarkdownSourceCommand,
+    visualCommand: () => void,
+  ) => {
+    if (sourceEditing && onSourceCommand(sourceCommand)) return;
+    visualCommand();
+  };
   const toggleLink = () => {
+    if (sourceEditing) {
+      setInsertDialogSurface('source');
+      setInsertDialog({
+        kind: 'link',
+        label: getSourceSelection()?.text ?? '',
+        source: 'https://',
+      });
+      return;
+    }
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
       return;
@@ -67,8 +111,10 @@ export function MarkdownToolbar({
         : editor.state.doc.textBetween(from, to, ' '),
       source: 'https://',
     });
+    setInsertDialogSurface('visual');
   };
   const openImageDialog = () => {
+    setInsertDialogSurface(sourceEditing ? 'source' : 'visual');
     setInsertDialog({
       kind: 'image',
       altText: '',
@@ -77,6 +123,22 @@ export function MarkdownToolbar({
   };
   const commitInsert = (result: MarkdownInsertDialogResult) => {
     setInsertDialog(null);
+    if (insertDialogSurface === 'source') {
+      if (result.kind === 'image') {
+        const replacement = `![${result.altText}](${result.source})`;
+        onSourceReplace(replacement, {
+          start: 2,
+          end: 2 + result.altText.length,
+        });
+      } else {
+        const replacement = `[${result.label}](${result.source})`;
+        onSourceReplace(replacement, {
+          start: 1,
+          end: 1 + result.label.length,
+        });
+      }
+      return;
+    }
     if (result.kind === 'image') {
       editor
         .chain()
@@ -125,7 +187,7 @@ export function MarkdownToolbar({
                 <MarkdownToolbarButton
                   label="撤销"
                   shortcut="Cmd/Ctrl+Z"
-                  disabled={!editor.can().chain().focus().undo().run()}
+                  disabled={!canUndo}
                   onClick={() => editor.chain().focus().undo().run()}
                 >
                   <Undo2 size={16} />
@@ -133,7 +195,7 @@ export function MarkdownToolbar({
                 <MarkdownToolbarButton
                   label="重做"
                   shortcut="Cmd/Ctrl+Shift+Z"
-                  disabled={!editor.can().chain().focus().redo().run()}
+                  disabled={!canRedo}
                   onClick={() => editor.chain().focus().redo().run()}
                 >
                   <Redo2 size={16} />
@@ -159,15 +221,14 @@ export function MarkdownToolbar({
                   ]}
                   onValueChange={(value) => {
                     if (value === 'paragraph') {
-                      editor.chain().focus().setParagraph().run();
+                      runCommand('paragraph', () => {
+                        editor.chain().focus().setParagraph().run();
+                      });
                     } else {
-                      editor
-                        .chain()
-                        .focus()
-                        .toggleHeading({
-                          level: Number(value.slice(1)) as 1 | 2 | 3,
-                        })
-                        .run();
+                      const level = Number(value.slice(1)) as 1 | 2 | 3;
+                      runCommand(`heading-${level}`, () => {
+                        editor.chain().focus().toggleHeading({ level }).run();
+                      });
                     }
                   }}
                 />
@@ -177,7 +238,11 @@ export function MarkdownToolbar({
                   label="加粗"
                   shortcut="Cmd/Ctrl+B"
                   active={editor.isActive('bold')}
-                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  onClick={() =>
+                    runCommand('bold', () => {
+                      editor.chain().focus().toggleBold().run();
+                    })
+                  }
                 >
                   <Bold size={16} />
                 </MarkdownToolbarButton>
@@ -185,21 +250,33 @@ export function MarkdownToolbar({
                   label="斜体"
                   shortcut="Cmd/Ctrl+I"
                   active={editor.isActive('italic')}
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  onClick={() =>
+                    runCommand('italic', () => {
+                      editor.chain().focus().toggleItalic().run();
+                    })
+                  }
                 >
                   <Italic size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="删除线"
                   active={editor.isActive('strike')}
-                  onClick={() => editor.chain().focus().toggleStrike().run()}
+                  onClick={() =>
+                    runCommand('strike', () => {
+                      editor.chain().focus().toggleStrike().run();
+                    })
+                  }
                 >
                   <Strikethrough size={16} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="行内代码"
                   active={editor.isActive('code')}
-                  onClick={() => editor.chain().focus().toggleCode().run()}
+                  onClick={() =>
+                    runCommand('code', () => {
+                      editor.chain().focus().toggleCode().run();
+                    })
+                  }
                 >
                   <Code2 size={16} />
                 </MarkdownToolbarButton>
@@ -209,7 +286,9 @@ export function MarkdownToolbar({
                   label="项目列表"
                   active={editor.isActive('bulletList')}
                   onClick={() =>
-                    editor.chain().focus().toggleBulletList().run()
+                    runCommand('bullet-list', () => {
+                      editor.chain().focus().toggleBulletList().run();
+                    })
                   }
                 >
                   <List size={16} />
@@ -218,7 +297,9 @@ export function MarkdownToolbar({
                   label="编号列表"
                   active={editor.isActive('orderedList')}
                   onClick={() =>
-                    editor.chain().focus().toggleOrderedList().run()
+                    runCommand('ordered-list', () => {
+                      editor.chain().focus().toggleOrderedList().run();
+                    })
                   }
                 >
                   <ListOrdered size={16} />
@@ -226,7 +307,11 @@ export function MarkdownToolbar({
                 <MarkdownToolbarButton
                   label="任务列表"
                   active={editor.isActive('taskList')}
-                  onClick={() => editor.chain().focus().toggleTaskList().run()}
+                  onClick={() =>
+                    runCommand('task-list', () => {
+                      editor.chain().focus().toggleTaskList().run();
+                    })
+                  }
                 >
                   <ListChecks size={16} />
                 </MarkdownToolbarButton>
@@ -234,7 +319,9 @@ export function MarkdownToolbar({
                   label="引用"
                   active={editor.isActive('blockquote')}
                   onClick={() =>
-                    editor.chain().focus().toggleBlockquote().run()
+                    runCommand('blockquote', () => {
+                      editor.chain().focus().toggleBlockquote().run();
+                    })
                   }
                 >
                   <Quote size={16} />
@@ -266,7 +353,11 @@ export function MarkdownToolbar({
                   label="代码块"
                   displayLabel
                   active={editor.isActive('codeBlock')}
-                  onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                  onClick={() =>
+                    runCommand('code-block', () => {
+                      editor.chain().focus().toggleCodeBlock().run();
+                    })
+                  }
                 >
                   <Code2 size={19} />
                 </MarkdownToolbarButton>
@@ -274,7 +365,9 @@ export function MarkdownToolbar({
                   label="分隔线"
                   displayLabel
                   onClick={() =>
-                    editor.chain().focus().setHorizontalRule().run()
+                    runCommand('horizontal-rule', () => {
+                      editor.chain().focus().setHorizontalRule().run();
+                    })
                   }
                 >
                   <Minus size={19} />
@@ -283,15 +376,17 @@ export function MarkdownToolbar({
                   label="表格"
                   displayLabel
                   onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .insertTable({
-                        rows: 3,
-                        cols: 3,
-                        withHeaderRow: true,
-                      })
-                      .run()
+                    runCommand('table', () => {
+                      editor
+                        .chain()
+                        .focus()
+                        .insertTable({
+                          rows: 3,
+                          cols: 3,
+                          withHeaderRow: true,
+                        })
+                        .run();
+                    })
                   }
                 >
                   <Table2 size={19} />
@@ -339,6 +434,14 @@ export function MarkdownToolbar({
       )}
     </>
   );
+}
+
+function canRunVisualEditorCommand(
+  editor: Editor,
+  command: () => boolean,
+): boolean {
+  if (editor.isDestroyed || !editor.view) return false;
+  return command();
 }
 
 function MarkdownToolbarButton({

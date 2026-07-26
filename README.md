@@ -186,7 +186,8 @@ interaction model.
   autofit, comments, tracked changes, citations, notes, and host-defined
   selection menus. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
-  preview, task lists, tables, links, images, and code. _Markdown
+  preview, source-aware ribbon formatting and shortcuts, task lists, tables,
+  links, images, code, and host-defined selection menus. _Markdown
   import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
   live selection statistics, native cut/copy/paste and clear actions, direct
@@ -219,12 +220,13 @@ ports.
 and collaboration; the application shell and navigation; AI providers,
 prompts, policy, and request lifecycle.
 
-Document selection menus can be replaced with host-defined typed actions. Each
-action receives an immutable selection snapshot, nearby text, the complete
-document, and conflict-aware `replaceText`, `insertBefore`, `insertAfter`, and
-`copyText` commands. Async edits map the original range through unrelated
-transactions and fail with `stale-selection` instead of changing the wrong
-text.
+Document and Markdown selection menus can be replaced with host-defined typed
+actions. Each action receives an immutable selection snapshot, nearby text,
+the complete controlled content, and conflict-aware `replaceText`,
+`insertBefore`, `insertAfter`, and `copyText` commands. Markdown snapshots also
+identify whether the source or visual surface owns the selection. Async edits
+track unrelated visual-editor transactions and fail with `stale-selection`
+instead of changing the wrong text.
 
 ## Browser file workflows
 

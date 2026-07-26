@@ -14,6 +14,9 @@ All notable changes to A3S Office will be documented in this file.
   Rslib packaging.
 - Added GFM task lists, coalesced source-to-visual Markdown updates,
   synchronized split-pane scrolling, and dedicated compatibility tests.
+- Added source-aware Markdown ribbon commands and shortcuts plus host-defined
+  selected-text menus for both source and visual editing surfaces, with typed
+  React, Vue, and Web Component APIs and stale-selection protection.
 - Added a shared bounded Rust Spreadsheet formula parser plus a cancellable
   Worker/WebAssembly scalar calculation kernel with sparse requests,
   deterministic dependency order, cross-sheet references, target-only
