@@ -201,10 +201,33 @@ function formatCells(
   value: unknown,
 ): boolean {
   if (!context.workbook || !context.targetSheetId) return false;
-  context.workbook.setCellFormatByRange(attribute, value, liveRange(context), {
-    id: context.targetSheetId,
-  });
-  return true;
+  if (attribute === 'ct' && !isSpreadsheetCellTypeFormat(value)) return false;
+  try {
+    context.workbook.setCellFormatByRange(
+      attribute,
+      value,
+      liveRange(context),
+      {
+        id: context.targetSheetId,
+      },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isSpreadsheetCellTypeFormat(
+  value: unknown,
+): value is NonNullable<Cell['ct']> & { fa: string; t: string } {
+  if (!value || typeof value !== 'object') return false;
+  const format = value as Cell['ct'];
+  return Boolean(
+    typeof format?.fa === 'string' &&
+      format.fa.trim() &&
+      typeof format.t === 'string' &&
+      format.t.trim(),
+  );
 }
 
 function toggleCellMerge(

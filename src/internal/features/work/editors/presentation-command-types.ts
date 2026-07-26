@@ -10,6 +10,7 @@ import type { PresentationDesignMode } from './presentation-editor-types';
 import type { PresentationDistribution } from './presentation-selection';
 
 export type PresentationViewMode = 'normal' | 'sorter';
+export type PresentationSlideshowStart = 'beginning' | 'current';
 export type PresentationCommandResult = boolean | void | Promise<void>;
 
 export interface PresentationEditorCommands {
@@ -83,7 +84,9 @@ export interface PresentationEditorCommands {
     transition: WorkSlideTransition | undefined,
   ) => PresentationCommandResult;
   setViewMode: (mode: PresentationViewMode) => PresentationCommandResult;
-  startSlideshow: () => PresentationCommandResult;
+  startSlideshow: (
+    source: PresentationSlideshowStart,
+  ) => PresentationCommandResult;
   toggleBold: () => boolean;
   toggleComments: () => PresentationCommandResult;
   toggleDesign: () => PresentationCommandResult;
@@ -244,7 +247,9 @@ export interface PresentationReviewCommandPort {
 export interface PresentationViewCommandPort {
   canStartSlideshow: boolean;
   setViewMode: (mode: PresentationViewMode) => PresentationCommandResult;
-  startSlideshow: () => PresentationCommandResult;
+  startSlideshow: (
+    source: PresentationSlideshowStart,
+  ) => PresentationCommandResult;
   toggleDesign: () => PresentationCommandResult;
 }
 

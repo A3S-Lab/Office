@@ -182,6 +182,8 @@ remains one coherent history.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
   sorting, filtering, validation, charts, pivots, and print layout.
 - Keep lightweight selection statistics responsive for dense and sparse sheets.
+- Keep common number and percent presets plus decimal-place commands available
+  from the primary ribbon while the native format engine expands.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 
@@ -197,6 +199,8 @@ Excel and WPS.
   history, import, and export.
 - Keep native slide and object context actions available independently of
   optional AI integrations.
+- Keep F5 and Shift+F5 as direct slideshow paths with an in-page fallback when
+  the browser denies fullscreen.
 - Move bounded geometry, text fitting, connector routing, snapping, and
   thumbnail work behind Worker/WASM contracts.
 

@@ -42,6 +42,26 @@
   background: #ffffff;
 }
 
+.work-spreadsheet-ribbon-toolbar .work-office-select {
+  width: 62px;
+  flex: 0 0 62px;
+}
+
+.work-spreadsheet-ribbon-toolbar .work-office-select > button {
+  width: 62px;
+  min-width: 62px;
+}
+
+.work-spreadsheet-ribbon-toolbar
+  .work-office-select.work-spreadsheet-number-format,
+.work-spreadsheet-ribbon-toolbar
+  .work-office-select.work-spreadsheet-number-format
+  > button {
+  width: 94px;
+  min-width: 94px;
+  flex-basis: 94px;
+}
+
 .work-spreadsheet-workbook-panel {
   max-height: 278px;
   flex: 0 0 auto;

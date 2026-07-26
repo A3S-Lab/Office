@@ -39,8 +39,15 @@ describe('spreadsheet command controller', () => {
     const editor = spreadsheetEditor(fixture.context);
 
     const handled = editor.commands.setCellFormat('fs', 14);
+    const rejected = editor.commands.setCellFormat('ct', '0.00%');
+    const formatted = editor.commands.setCellFormat('ct', {
+      fa: '0.00%',
+      t: 'n',
+    });
 
     expect(handled).toBe(true);
+    expect(rejected).toBe(false);
+    expect(formatted).toBe(true);
     expect(editor.extensionNames).toContain('spreadsheetCellFormatting');
     expect(fixture.workbook.formats).toEqual([
       {
@@ -48,6 +55,12 @@ describe('spreadsheet command controller', () => {
         range: { row: [2, 4], column: [1, 3] },
         sheetId: 'sheet-1',
         value: 14,
+      },
+      {
+        attribute: 'ct',
+        range: { row: [2, 4], column: [1, 3] },
+        sheetId: 'sheet-1',
+        value: { fa: '0.00%', t: 'n' },
       },
     ]);
   });

@@ -118,7 +118,11 @@ function PresentationEditingSurface({
     null,
   );
   const [viewMode, setViewMode] = useState<'normal' | 'sorter'>('normal');
+  const [slideshowStartIndex, setSlideshowStartIndex] = useState<number | null>(
+    null,
+  );
   const [zoom, setZoom] = useState(90);
+  const slideshowReturnFocusRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
@@ -495,9 +499,26 @@ function PresentationEditingSurface({
         updateNotes: presentationSlides.updateNotes,
       },
       view: {
-        canStartSlideshow: Boolean(onStartSlideshow),
+        canStartSlideshow: designMode === 'slide' && content.slides.length > 0,
         setViewMode,
-        startSlideshow: () => onStartSlideshow?.(),
+        startSlideshow: (source) => {
+          const currentIndex = content.slides.findIndex(
+            (slide) => slide.id === selectedSlide.id,
+          );
+          const activeElement = document.activeElement;
+          slideshowReturnFocusRef.current =
+            activeElement instanceof HTMLElement &&
+            activeElement !== document.body
+              ? activeElement
+              : document.querySelector<HTMLElement>(
+                  `[data-presentation-slideshow-source="${source}"]`,
+                );
+          setAgentMenu(null);
+          setSlideshowStartIndex(
+            source === 'current' ? Math.max(0, currentIndex) : 0,
+          );
+          onStartSlideshow?.();
+        },
         toggleDesign: presentationDesign.toggleDesignPanel,
       },
     },
@@ -671,7 +692,56 @@ function PresentationEditingSurface({
           onClose={() => setAgentMenu(null)}
         />
       )}
+      {slideshowStartIndex !== null && (
+        <div
+          className="work-presentation-slideshow-layer"
+          role="dialog"
+          aria-label="幻灯片放映"
+          aria-modal="true"
+        >
+          <PresentationPlayer
+            autoFullscreen
+            content={content}
+            initialIndex={slideshowStartIndex}
+            onExit={() => {
+              const returnFocus = slideshowReturnFocusRef.current;
+              setSlideshowStartIndex(null);
+              restorePresentationSlideshowFocus(returnFocus);
+            }}
+          />
+        </div>
+      )}
       {presentationReview.dialog}
     </section>
   );
+}
+
+function restorePresentationSlideshowFocus(target: HTMLElement | null): void {
+  let remainingAttempts = 30;
+  const restore = () => {
+    if (!target?.isConnected || remainingAttempts <= 0) return;
+    remainingAttempts -= 1;
+    const activeElement = document.activeElement;
+    const canRestore =
+      !activeElement ||
+      activeElement === document.body ||
+      activeElement === document.documentElement ||
+      !activeElement.isConnected;
+    if (canRestore) target.focus({ preventScroll: true });
+
+    const nextActiveElement = document.activeElement;
+    const slideshowOpen = Boolean(
+      document.querySelector('[role="dialog"][aria-label="幻灯片放映"]'),
+    );
+    if (
+      slideshowOpen ||
+      nextActiveElement === target ||
+      nextActiveElement === document.body ||
+      nextActiveElement === document.documentElement ||
+      !nextActiveElement?.isConnected
+    ) {
+      window.setTimeout(restore, 16);
+    }
+  };
+  window.setTimeout(restore, 0);
 }

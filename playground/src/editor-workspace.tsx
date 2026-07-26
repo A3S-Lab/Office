@@ -291,7 +291,6 @@ export function EditorWorkspace({
               content={artifact.content}
               onAgentRequest={onAgentRequest}
               onChange={(content: PresentationContent) => onChange(content)}
-              onStartSlideshow={() => setPreview(true)}
               preview={preview}
               saveStatus="本次会话已保存"
               theme="light"

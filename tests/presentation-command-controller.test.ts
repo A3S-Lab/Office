@@ -114,7 +114,20 @@ describe('presentation editor extensions', () => {
     });
     expect(editor.handleKeyDown(slideshow)).toBe(true);
     expect(slideshow.defaultPrevented).toBe(true);
-    expect(calls).toEqual(['history.undo', 'slideshow.start']);
+    expect(calls).toEqual(['history.undo', 'slideshow.start:beginning']);
+
+    const currentSlideshow = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'F5',
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(currentSlideshow)).toBe(true);
+    expect(currentSlideshow.defaultPrevented).toBe(true);
+    expect(calls).toEqual([
+      'history.undo',
+      'slideshow.start:beginning',
+      'slideshow.start:current',
+    ]);
   });
 });
 
@@ -249,7 +262,7 @@ function presentationContext(calls: string[]): PresentationCommandContext {
     view: {
       canStartSlideshow: true,
       setViewMode: (mode) => calls.push(`view.set:${mode}`),
-      startSlideshow: () => calls.push('slideshow.start'),
+      startSlideshow: (source) => calls.push(`slideshow.start:${source}`),
       toggleDesign: () => calls.push('design.toggle'),
     },
   };

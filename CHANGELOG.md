@@ -29,3 +29,8 @@ All notable changes to A3S Office will be documented in this file.
 - Virtualized Presentation thumbnail scenes in both the slide strip and sorter.
   Every slide keeps a stable keyboard target and scroll footprint, while only
   the selected slide and the viewport overscan mount full scene content.
+- Added primary-ribbon Spreadsheet number and percent formats, decimal-place
+  controls, and readable percentage defaults in the quarterly-plan template.
+- Added direct Presentation playback from the beginning or current slide with
+  F5/Shift+F5 shortcuts, automatic fullscreen, and an in-page fallback with an
+  explicit exit path.

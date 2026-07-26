@@ -20,10 +20,16 @@ export function createPresentationKeyboardExtension(): OfficeEditorExtension<
   >({
     name: 'presentationKeyboardShortcuts',
     addKeyboardShortcuts: () => ({
-      F5: ({ can, commands }, event) => {
-        if (event.repeat || !can.startSlideshow()) return false;
+      'Shift-F5': ({ can, commands }, event) => {
+        if (event.repeat || !can.startSlideshow('current')) return false;
         if (isOfficeShortcutBlocked(event.target)) return true;
-        commands.startSlideshow();
+        commands.startSlideshow('current');
+        return true;
+      },
+      F5: ({ can, commands }, event) => {
+        if (event.repeat || !can.startSlideshow('beginning')) return false;
+        if (isOfficeShortcutBlocked(event.target)) return true;
+        commands.startSlideshow('beginning');
         return true;
       },
       'Control-m': ({ commands }, event) => {

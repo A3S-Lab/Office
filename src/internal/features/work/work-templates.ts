@@ -178,6 +178,14 @@ function quarterlyPlanSheets(): Sheet[] {
     row.forEach((value, columnIndex) => {
       data[rowIndex + 3][columnIndex] = styledCell(value, {
         bg: rowIndex % 2 ? '#f7faf9' : '#ffffff',
+        ...(columnIndex >= 2 && columnIndex <= 5
+          ? {
+              ct: { fa: '0%', t: 'n' },
+              ...(typeof value === 'number'
+                ? { m: `${Math.round(value * 100)}%` }
+                : {}),
+            }
+          : {}),
       });
     });
   });

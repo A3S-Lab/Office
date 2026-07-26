@@ -578,16 +578,6 @@
     overflow-x: auto;
   }
 }
-.work-spreadsheet-ribbon-toolbar .work-office-select {
-  width: 62px;
-  flex: 0 0 62px;
-}
-
-.work-spreadsheet-ribbon-toolbar .work-office-select > button {
-  width: 62px;
-  min-width: 62px;
-}
-
 .work-spreadsheet-fill-color::before {
   content: "■";
   font-family: inherit;

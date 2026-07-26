@@ -315,7 +315,7 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
         },
         startSlideshow: {
           canExecute: ({ view }) => view.canStartSlideshow,
-          execute: ({ view }) => view.startSlideshow(),
+          execute: ({ view }, source) => view.startSlideshow(source),
         },
         toggleDesign: {
           execute: ({ view }) => view.toggleDesign(),

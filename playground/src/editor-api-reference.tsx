@@ -426,7 +426,7 @@ const editorReferences: Record<EditorId, EditorReference> = {
         name: 'onStartSlideshow',
         type: '() => void',
         frameworkBinding: 'Vue: @start-slideshow · Element: start-slideshow',
-        description: '用户开始放映时交给宿主处理。',
+        description: '内置放映启动后通知宿主，可用于同步路由或外接设备。',
       },
       ...surfaceProps,
     ],
@@ -437,7 +437,7 @@ const editorReferences: Record<EditorId, EditorReference> = {
         react: 'onStartSlideshow',
         vue: '@start-slideshow',
         webComponent: 'start-slideshow',
-        description: '请求宿主开始演示。',
+        description: '内置演示开始后的宿主通知。',
       },
     ],
     extension: {
@@ -448,7 +448,7 @@ const editorReferences: Record<EditorId, EditorReference> = {
       notes: [
         '使用 fileActions 接入保存、导出和协作入口。',
         '使用 onAgentRequest 处理幻灯片或元素级 AI 操作。',
-        '使用 onStartSlideshow 接管路由、窗口或演示设备。',
+        '使用 onStartSlideshow 同步宿主路由、窗口或演示设备。',
       ],
       code: hostExtensionExample('PresentationEditor', 'PresentationContent'),
     },

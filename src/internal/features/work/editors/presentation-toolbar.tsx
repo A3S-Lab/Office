@@ -24,6 +24,7 @@ import {
   Redo2,
   Scissors,
   Square,
+  SquarePlay,
   Table2,
   Trash2,
   Type,
@@ -490,10 +491,21 @@ export function PresentationToolbar({
                 label="从头开始放映"
                 title="从头开始放映（F5）"
                 aria-keyshortcuts="F5"
-                disabled={!can.startSlideshow()}
-                onClick={commands.startSlideshow}
+                data-presentation-slideshow-source="beginning"
+                disabled={!can.startSlideshow('beginning')}
+                onClick={() => commands.startSlideshow('beginning')}
               >
                 <Play size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="从当前幻灯片放映"
+                title="从当前幻灯片放映（Shift+F5）"
+                aria-keyshortcuts="Shift+F5"
+                data-presentation-slideshow-source="current"
+                disabled={!can.startSlideshow('current')}
+                onClick={() => commands.startSlideshow('current')}
+              >
+                <SquarePlay size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
           ),

@@ -7,10 +7,13 @@ import {
   Bold,
   Bookmark,
   Calculator,
+  DecimalsArrowLeft,
+  DecimalsArrowRight,
   Grid3X3,
   Italic,
   Merge,
   Palette,
+  Percent,
   Printer,
   Redo2,
   ShieldCheck,
@@ -31,6 +34,13 @@ import type {
 } from './spreadsheet-command-controller';
 import { managedConditionalFormatCount } from './spreadsheet-conditional-format-panel';
 import { spreadsheetFontSizeOptions } from './spreadsheet-editor-support';
+import {
+  adjustSpreadsheetNumberFormat,
+  spreadsheetNumberFormatCode,
+  spreadsheetNumberFormatPreset,
+  spreadsheetNumberFormatValue,
+  type SpreadsheetNumberFormatPreset,
+} from './spreadsheet-number-format';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
 import {
@@ -49,6 +59,17 @@ const spreadsheetRibbonTabs = [
   { id: 'review', label: '审阅' },
   { id: 'view', label: '视图' },
 ] as const;
+
+const spreadsheetNumberFormatOptions: readonly {
+  value: SpreadsheetNumberFormatPreset;
+  label: string;
+  disabled?: boolean;
+}[] = [
+  { value: 'general', label: '常规' },
+  { value: 'number', label: '数字' },
+  { value: 'percent', label: '百分比' },
+  { value: 'custom', label: '自定义', disabled: true },
+];
 
 export type SpreadsheetRibbonTabId =
   (typeof spreadsheetRibbonTabs)[number]['id'];
@@ -83,6 +104,22 @@ export function SpreadsheetEditorRibbon({
     [content],
   );
   const pivotCount = useMemo(() => spreadsheetPivotCount(content), [content]);
+  const numberFormat = toolbarCell?.ct?.fa?.trim() || 'General';
+  const numberFormatPreset = spreadsheetNumberFormatPreset(numberFormat);
+  const decreasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, -1);
+  const increasedNumberFormat = adjustSpreadsheetNumberFormat(numberFormat, 1);
+  const currentNumberFormatValue = spreadsheetNumberFormatValue(
+    numberFormat,
+    toolbarCell,
+  );
+  const decreasedNumberFormatValue = spreadsheetNumberFormatValue(
+    decreasedNumberFormat,
+    toolbarCell,
+  );
+  const increasedNumberFormatValue = spreadsheetNumberFormatValue(
+    increasedNumberFormat,
+    toolbarCell,
+  );
 
   return (
     <WorkOfficeRibbon
@@ -255,6 +292,79 @@ export function SpreadsheetEditorRibbon({
                 onClick={() => commands.setCellFormat('ht', '2')}
               >
                 <AlignRight size={15} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="数字">
+              <OfficeSelect
+                className="work-spreadsheet-number-format"
+                ariaLabel="数字格式"
+                value={numberFormatPreset}
+                disabled={!can.setCellFormat('ct', currentNumberFormatValue)}
+                options={spreadsheetNumberFormatOptions}
+                onValueChange={(preset) => {
+                  if (preset === 'custom') return;
+                  commands.setCellFormat(
+                    'ct',
+                    spreadsheetNumberFormatValue(
+                      spreadsheetNumberFormatCode(preset),
+                      toolbarCell,
+                    ),
+                  );
+                }}
+              />
+              <WorkOfficeRibbonButton
+                label="百分比格式"
+                title="百分比格式"
+                displayLabel={false}
+                active={numberFormatPreset === 'percent'}
+                disabled={
+                  !can.setCellFormat(
+                    'ct',
+                    spreadsheetNumberFormatValue(
+                      spreadsheetNumberFormatCode('percent'),
+                      toolbarCell,
+                    ),
+                  )
+                }
+                onClick={() =>
+                  commands.setCellFormat(
+                    'ct',
+                    spreadsheetNumberFormatValue(
+                      spreadsheetNumberFormatCode('percent'),
+                      toolbarCell,
+                    ),
+                  )
+                }
+              >
+                <Percent size={15} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="减少小数位"
+                title="减少小数位"
+                displayLabel={false}
+                disabled={
+                  decreasedNumberFormat === numberFormat ||
+                  !can.setCellFormat('ct', decreasedNumberFormatValue)
+                }
+                onClick={() =>
+                  commands.setCellFormat('ct', decreasedNumberFormatValue)
+                }
+              >
+                <DecimalsArrowLeft size={16} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="增加小数位"
+                title="增加小数位"
+                displayLabel={false}
+                disabled={
+                  increasedNumberFormat === numberFormat ||
+                  !can.setCellFormat('ct', increasedNumberFormatValue)
+                }
+                onClick={() =>
+                  commands.setCellFormat('ct', increasedNumberFormatValue)
+                }
+              >
+                <DecimalsArrowRight size={16} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="单元格">
