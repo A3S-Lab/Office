@@ -13,6 +13,7 @@ import type {
   WorkSlideElement,
 } from '../work-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
+import type { OfficeTableDimensions } from './office-table-dimensions';
 import {
   newPresentationElement,
   newPresentationImageElement,
@@ -27,7 +28,7 @@ export interface PresentationElementCommands {
   addChart: () => void;
   addElement: (type: 'shape' | 'text') => void;
   addImage: (file: File) => Promise<void>;
-  addTable: () => void;
+  addTable: (dimensions: OfficeTableDimensions) => void;
   groupSelection: () => boolean;
   instantiatePlaceholder: (definition: WorkSlideElement) => void;
   ungroupSelection: () => boolean;
@@ -188,24 +189,30 @@ export function usePresentationElementCommands({
     ],
   );
 
-  const addTable = useCallback(() => {
-    const element = newPresentationTableElement();
-    updatePresentationElements(
+  const addTable = useCallback(
+    (dimensions: OfficeTableDimensions) => {
+      const element = newPresentationTableElement(
+        dimensions.rows,
+        dimensions.columns,
+      );
+      updatePresentationElements(
+        content,
+        designMode,
+        activeTargetId ?? selectedSlide.id,
+        (elements) => [...elements, element],
+        onChange,
+      );
+      onSelectElements([element.id]);
+    },
+    [
+      activeTargetId,
       content,
       designMode,
-      activeTargetId ?? selectedSlide.id,
-      (elements) => [...elements, element],
       onChange,
-    );
-    onSelectElements([element.id]);
-  }, [
-    activeTargetId,
-    content,
-    designMode,
-    onChange,
-    onSelectElements,
-    selectedSlide.id,
-  ]);
+      onSelectElements,
+      selectedSlide.id,
+    ],
+  );
 
   const addChart = useCallback(() => {
     const element = createPresentationChartElement();

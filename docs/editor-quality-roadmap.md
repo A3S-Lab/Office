@@ -168,6 +168,9 @@ After the Document gates above are stable:
   clipboard behavior.
 - Publish Markdown Extension parse/serialize requirements and fixtures.
 - Keep source typing coalesced and visual updates responsive on large files.
+- Keep source undo/redo independent from browser-native textarea history,
+  restore selections, rebase on host replacements, and avoid duplicate visual
+  history records during synchronization.
 - Keep the default split view directly resizable without breaking synchronized
   scrolling or the stacked compact layout.
 
@@ -195,6 +198,8 @@ Excel and WPS.
 
 - Complete masters, layouts, themes, placeholders, groups, tables, charts,
   links, notes, comments, transitions, and presenter workflows.
+- Keep exact row and column table insertion behind the shared, keyboard-
+  accessible Office table picker and one controlled history record.
 - Keep scene object identity stable through selection, transforms, clipboard,
   history, import, and export.
 - Keep native slide and object context actions available independently of
@@ -213,6 +218,8 @@ one controlled update.
 - Extend the implemented annotation color control with opacity, stroke, forms,
   signatures, page organization, search, history, save, and explicit redaction
   review.
+- Keep navigation, zoom, and history reachable from the responsive overflow
+  menu whenever the primary toolbar hides those controls.
 - Keep PDFium lifecycle, page bitmap cache, and source Blob ownership bounded.
 - Verify saved annotations and forms by reopening the emitted Blob.
 

@@ -17,6 +17,9 @@ All notable changes to A3S Office will be documented in this file.
 - Added source-aware Markdown ribbon commands and shortcuts plus host-defined
   selected-text menus for both source and visual editing surfaces, with typed
   React, Vue, and Web Component APIs and stale-selection protection.
+- Added controlled Markdown source history with typing coalescing, toolbar and
+  keyboard undo/redo, selection restoration, and safe rebasing after host
+  content replacement without polluting visual-editor history.
 - Added a shared bounded Rust Spreadsheet formula parser plus a cancellable
   Worker/WebAssembly scalar calculation kernel with sparse requests,
   deterministic dependency order, cross-sheet references, target-only
@@ -37,3 +40,9 @@ All notable changes to A3S Office will be documented in this file.
 - Added direct Presentation playback from the beginning or current slide with
   F5/Shift+F5 shortcuts, automatic fullscreen, and an in-page fallback with an
   explicit exit path.
+- Shared the keyboard-accessible table-dimension picker across Document and
+  Presentation, with exact row and column creation in one controlled update.
+- Kept PDF page navigation, zoom, and history reachable through the compact
+  overflow menu while preserving page status in the primary toolbar.
+- Removed internal implementation terminology from the Spreadsheet
+  conditional-format manager.

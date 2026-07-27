@@ -335,6 +335,15 @@
     display: none;
   }
 
+  .work-pdf-history,
+  .work-pdf-zoom-controls {
+    display: none;
+  }
+
+  .work-pdf-page-controls {
+    flex: 0 0 auto;
+  }
+
   .work-pdf-save > output {
     display: none;
   }
@@ -344,11 +353,6 @@
   .work-pdf-toolbar {
     gap: 4px;
     padding-inline: 6px;
-  }
-
-  .work-pdf-history,
-  .work-pdf-zoom-controls > output {
-    display: none;
   }
 
   .work-pdf-search {

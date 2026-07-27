@@ -436,6 +436,50 @@ function PdfToolbarOverflow({
             )}
             <div className="work-pdf-overflow-group">
               <PdfOverflowAction
+                label="撤销"
+                disabled={!can.undo()}
+                onSelect={() => select(commands.undo)}
+              >
+                <Undo2 size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="重做"
+                disabled={!can.redo()}
+                onSelect={() => select(commands.redo)}
+              >
+                <Redo2 size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="上一页"
+                disabled={!can.previousPage()}
+                onSelect={() => select(commands.previousPage)}
+              >
+                <ChevronLeft size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="下一页"
+                disabled={!can.nextPage()}
+                onSelect={() => select(commands.nextPage)}
+              >
+                <ChevronRight size={15} />
+              </PdfOverflowAction>
+            </div>
+            <div className="work-pdf-overflow-group">
+              <PdfOverflowAction
+                label="缩小"
+                disabled={!can.zoomOut()}
+                onSelect={() => select(commands.zoomOut)}
+              >
+                <Minus size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
+                label="放大"
+                disabled={!can.zoomIn()}
+                onSelect={() => select(commands.zoomIn)}
+              >
+                <Plus size={15} />
+              </PdfOverflowAction>
+              <PdfOverflowAction
                 label="整页"
                 active={state.zoomMode === 'fit-page'}
                 disabled={!can.fitPage()}
@@ -453,20 +497,6 @@ function PdfToolbarOverflow({
               </PdfOverflowAction>
             </div>
             <div className="work-pdf-overflow-group work-pdf-overflow-narrow">
-              <PdfOverflowAction
-                label="撤销"
-                disabled={!can.undo()}
-                onSelect={() => select(commands.undo)}
-              >
-                <Undo2 size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="重做"
-                disabled={!can.redo()}
-                onSelect={() => select(commands.redo)}
-              >
-                <Redo2 size={15} />
-              </PdfOverflowAction>
               <PdfOverflowAction
                 label="上一个搜索结果"
                 disabled={!can.previousSearchResult()}

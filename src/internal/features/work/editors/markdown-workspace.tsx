@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core';
 import { EditorContent } from '@tiptap/react';
 import {
   type CSSProperties,
+  type FormEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
@@ -51,6 +52,9 @@ export function MarkdownWorkspace({
   onSourceCommand,
   onSourceContextMenu,
   onSourceIntent,
+  onSourceRedo,
+  onSourceSelectionChange,
+  onSourceUndo,
   onVisualContextMenu,
   onVisualIntent,
 }: {
@@ -60,10 +64,17 @@ export function MarkdownWorkspace({
   readOnly?: boolean;
   sourceRef: RefObject<HTMLTextAreaElement | null>;
   sourceSelectionRequest?: MarkdownSourceSelection & { revision: number };
-  onSourceChange: (markdown: string) => void;
+  onSourceChange: (
+    markdown: string,
+    selection: MarkdownSourceSelection,
+    inputType?: string,
+  ) => void;
   onSourceCommand?: (command: MarkdownSourceCommand) => boolean;
   onSourceContextMenu?: (event: MouseEvent<HTMLTextAreaElement>) => void;
   onSourceIntent?: () => void;
+  onSourceRedo?: () => boolean;
+  onSourceSelectionChange?: (selection: MarkdownSourceSelection) => void;
+  onSourceUndo?: () => boolean;
   onVisualContextMenu?: (event: MouseEvent<HTMLElement>) => void;
   onVisualIntent?: () => void;
 }) {
@@ -71,6 +82,7 @@ export function MarkdownWorkspace({
   const visualRef = useRef<HTMLElement>(null);
   const synchronizedTargetRef = useRef<'source' | 'visual' | null>(null);
   const releaseFrameRef = useRef<number | null>(null);
+  const sourceInputTypeRef = useRef<string | undefined>(undefined);
   const [sourcePanePercent, setSourcePanePercent] = useState(
     DEFAULT_MARKDOWN_SPLIT_PERCENT,
   );
@@ -230,31 +242,57 @@ export function MarkdownWorkspace({
             aria-label="Markdown 源码"
             value={markdown}
             spellCheck
+            onBeforeInput={(event: FormEvent<HTMLTextAreaElement>) => {
+              const inputType = (event.nativeEvent as InputEvent).inputType;
+              if (inputType === 'historyUndo') {
+                event.preventDefault();
+                onSourceUndo?.();
+                return;
+              }
+              if (inputType === 'historyRedo') {
+                event.preventDefault();
+                onSourceRedo?.();
+                return;
+              }
+              sourceInputTypeRef.current = inputType || undefined;
+            }}
             onChange={(event) => {
               onSourceIntent?.();
-              onSourceChange(event.target.value);
+              const source = event.currentTarget;
+              onSourceChange(
+                source.value,
+                sourceSelection(source),
+                sourceInputTypeRef.current,
+              );
+              sourceInputTypeRef.current = undefined;
             }}
             onFocus={onSourceIntent}
             onContextMenu={onSourceContextMenu}
             onKeyDown={(event) => {
-              if (
-                event.altKey ||
-                !(event.metaKey || event.ctrlKey) ||
-                event.shiftKey
-              ) {
+              if (event.altKey || !(event.metaKey || event.ctrlKey)) return;
+              const key = event.key.toLocaleLowerCase();
+              if (key === 'z') {
+                event.preventDefault();
+                if (event.shiftKey) onSourceRedo?.();
+                else onSourceUndo?.();
                 return;
               }
+              if (key === 'y' && !event.shiftKey) {
+                event.preventDefault();
+                onSourceRedo?.();
+                return;
+              }
+              if (event.shiftKey) return;
               const command =
-                event.key.toLocaleLowerCase() === 'b'
-                  ? 'bold'
-                  : event.key.toLocaleLowerCase() === 'i'
-                    ? 'italic'
-                    : null;
+                key === 'b' ? 'bold' : key === 'i' ? 'italic' : null;
               if (!command || !onSourceCommand?.(command)) return;
               event.preventDefault();
             }}
             onPointerDown={onSourceIntent}
-            onSelect={onSourceIntent}
+            onSelect={(event) => {
+              onSourceIntent?.();
+              onSourceSelectionChange?.(sourceSelection(event.currentTarget));
+            }}
             onScroll={handleSourceScroll}
           />
         </section>
@@ -300,6 +338,14 @@ export function MarkdownWorkspace({
       )}
     </div>
   );
+}
+
+function sourceSelection(source: HTMLTextAreaElement): MarkdownSourceSelection {
+  return {
+    start: source.selectionStart,
+    end: source.selectionEnd,
+    direction: source.selectionDirection,
+  };
 }
 
 function clampMarkdownSplitPercent(value: number): number {

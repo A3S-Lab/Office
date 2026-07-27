@@ -28,11 +28,14 @@ export const WorkMarkdown = Extension.create({
     return {
       setWorkMarkdown:
         (markdown, options = {}) =>
-        ({ commands }) =>
-          commands.setContent(markdown, {
-            contentType: 'markdown',
-            emitUpdate: options.emitUpdate ?? true,
-          }),
+        ({ chain }) =>
+          chain()
+            .setMeta('addToHistory', false)
+            .setContent(markdown, {
+              contentType: 'markdown',
+              emitUpdate: options.emitUpdate ?? true,
+            })
+            .run(),
     };
   },
 });

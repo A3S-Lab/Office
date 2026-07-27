@@ -29,12 +29,14 @@ import {
   applyMarkdownSourceCommand,
   type MarkdownSourceCommand,
   type MarkdownSourceEdit,
+  type MarkdownSourceSelection,
   type MarkdownSourceSelectionState,
   replaceMarkdownSourceSelection,
 } from './markdown-source-commands';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
+import { useMarkdownSourceHistory } from './use-markdown-source-history';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
@@ -88,6 +90,15 @@ export function MarkdownEditor({
   const [viewMode, setViewMode] = useState<MarkdownViewMode>('split');
   const [zoom, setZoom] = useState(100);
   const [, setSelectionVersion] = useState(0);
+  const {
+    canRedo: canRedoSource,
+    canUndo: canUndoSource,
+    record: recordSourceHistory,
+    redo: redoSourceHistory,
+    reset: resetSourceHistory,
+    undo: undoSourceHistory,
+    updateSelection: updateSourceHistorySelection,
+  } = useMarkdownSourceHistory(content.markdown);
   contentRef.current = content;
   onChangeRef.current = onChange;
 
@@ -133,6 +144,10 @@ export function MarkdownEditor({
       sourceMarkdownRef.current = markdown;
       contentRef.current = next;
       setSourceMarkdown(markdown);
+      resetSourceHistory(
+        markdown,
+        textareaSelection(sourceTextareaRef.current, markdown.length),
+      );
       onChangeRef.current(next);
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
@@ -212,10 +227,21 @@ export function MarkdownEditor({
       return;
     }
     emittedMarkdownRef.current = null;
+    resetSourceHistory(
+      markdown,
+      textareaSelection(sourceTextareaRef.current, markdown.length),
+    );
     if (preview || viewMode !== 'source') {
       queueMarkdownPreview(markdown, true);
     }
-  }, [content, editor, preview, queueMarkdownPreview, viewMode]);
+  }, [
+    content,
+    editor,
+    preview,
+    queueMarkdownPreview,
+    resetSourceHistory,
+    viewMode,
+  ]);
 
   const updateSource = useCallback(
     (markdown: string) => {
@@ -237,11 +263,10 @@ export function MarkdownEditor({
     useCallback((): MarkdownSourceSelectionState | null => {
       const source = sourceTextareaRef.current;
       if (!source) return null;
-      const selection = {
-        start: source.selectionStart,
-        end: source.selectionEnd,
-        direction: source.selectionDirection,
-      };
+      const selection = textareaSelection(
+        source,
+        sourceMarkdownRef.current.length,
+      );
       return {
         markdown: sourceMarkdownRef.current,
         selection,
@@ -249,16 +274,56 @@ export function MarkdownEditor({
       };
     }, []);
 
-  const applySourceEdit = useCallback(
-    (edit: MarkdownSourceEdit): boolean => {
-      updateSource(edit.markdown);
+  const requestSourceSelection = useCallback(
+    (selection: MarkdownSourceSelection) => {
       setSourceSelectionRequest((current) => ({
-        ...edit.selection,
+        ...selection,
         revision: (current?.revision ?? 0) + 1,
       }));
+    },
+    [],
+  );
+
+  const applySourceEdit = useCallback(
+    (edit: MarkdownSourceEdit): boolean => {
+      recordSourceHistory(edit);
+      updateSource(edit.markdown);
+      requestSourceSelection(edit.selection);
       return true;
     },
-    [updateSource],
+    [recordSourceHistory, requestSourceSelection, updateSource],
+  );
+
+  const changeSource = useCallback(
+    (
+      markdown: string,
+      selection: MarkdownSourceSelection,
+      inputType?: string,
+    ) => {
+      const edit = { markdown, selection };
+      if (!recordSourceHistory(edit, { typing: true, inputType })) return;
+      updateSource(markdown);
+    },
+    [recordSourceHistory, updateSource],
+  );
+
+  const applySourceHistory = useCallback(
+    (edit: MarkdownSourceEdit | null): boolean => {
+      if (!edit) return false;
+      updateSource(edit.markdown);
+      requestSourceSelection(edit.selection);
+      return true;
+    },
+    [requestSourceSelection, updateSource],
+  );
+
+  const undoSource = useCallback(
+    () => applySourceHistory(undoSourceHistory()),
+    [applySourceHistory, undoSourceHistory],
+  );
+  const redoSource = useCallback(
+    () => applySourceHistory(redoSourceHistory()),
+    [applySourceHistory, redoSourceHistory],
   );
 
   const runSourceCommand = useCallback(
@@ -367,6 +432,8 @@ export function MarkdownEditor({
       if (mode !== 'source') {
         applyMarkdownToEditor(sourceMarkdownRef.current);
       }
+      if (mode === 'visual') setEditingSurface('visual');
+      if (mode === 'source') setEditingSurface('source');
       setViewMode(mode);
     },
     [applyMarkdownToEditor],
@@ -421,10 +488,14 @@ export function MarkdownEditor({
         editor={editor}
         fileActions={fileActions}
         sourceEditing={editingSurface === 'source'}
+        canSourceRedo={canRedoSource}
+        canSourceUndo={canUndoSource}
         viewMode={viewMode}
         getSourceSelection={getSourceSelection}
         onSourceCommand={runSourceCommand}
+        onSourceRedo={redoSource}
         onSourceReplace={replaceSourceSelection}
+        onSourceUndo={undoSource}
         onViewModeChange={changeViewMode}
       />
       <MarkdownWorkspace
@@ -433,12 +504,15 @@ export function MarkdownEditor({
         mode={viewMode}
         sourceRef={sourceTextareaRef}
         sourceSelectionRequest={sourceSelectionRequest}
-        onSourceChange={updateSource}
+        onSourceChange={changeSource}
         onSourceCommand={runSourceCommand}
         onSourceContextMenu={
           getSelectionMenuItems ? openSourceSelectionMenu : undefined
         }
         onSourceIntent={handleSourceIntent}
+        onSourceRedo={redoSource}
+        onSourceSelectionChange={updateSourceHistorySelection}
+        onSourceUndo={undoSource}
         onVisualContextMenu={
           getSelectionMenuItems ? openVisualSelectionMenu : undefined
         }
@@ -461,6 +535,24 @@ export function MarkdownEditor({
       )}
     </section>
   );
+}
+
+function textareaSelection(
+  textarea: HTMLTextAreaElement | null,
+  fallbackPosition: number,
+): MarkdownSourceSelection {
+  if (!textarea) {
+    return {
+      start: fallbackPosition,
+      end: fallbackPosition,
+      direction: 'none',
+    };
+  }
+  return {
+    start: textarea.selectionStart,
+    end: textarea.selectionEnd,
+    direction: textarea.selectionDirection,
+  };
 }
 
 function markdownMetrics(markdown: string): {

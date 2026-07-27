@@ -1031,7 +1031,14 @@
   }
 
   .work-editor-shell.pdf .work-pdf-toolbar {
-    gap: 4px;
+    gap: 2px;
+  }
+
+  .work-editor-shell.pdf .work-pdf-save .ds-button {
+    width: 28px;
+    justify-content: center;
+    padding-inline: 0;
+    font-size: 0;
   }
 
   .work-editor-shell.pdf .work-pdf-history,
@@ -1046,8 +1053,8 @@
   }
 
   .work-editor-shell.pdf .work-pdf-search {
-    width: min(150px, 22vw);
-    min-width: 120px;
+    width: 112px;
+    min-width: 112px;
   }
 
   .work-editor-shell.pdf .work-pdf-page-controls {

@@ -93,7 +93,25 @@ test('keeps compact PDF actions reachable from the more-tools menu', () => {
   menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
   fireEvent.click(within(menu).getByRole('menuitem', { name: '页宽' }));
 
-  expect(calls).toEqual(['annotation:underline', 'fit-width']);
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '上一页' }));
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '放大' }));
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  fireEvent.click(within(menu).getByRole('menuitem', { name: '撤销' }));
+
+  expect(calls).toEqual([
+    'annotation:underline',
+    'fit-width',
+    'previous-page',
+    'zoom-in',
+    'undo',
+  ]);
 });
 
 function createCanCommands(

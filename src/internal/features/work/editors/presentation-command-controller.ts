@@ -218,7 +218,7 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
         },
         addTable: {
           canExecute: ({ insert }) => insert.enabled,
-          execute: ({ insert }) => insert.addTable(),
+          execute: ({ insert }, dimensions) => insert.addTable(dimensions),
         },
         instantiatePlaceholder: {
           canExecute: ({ insert }) => insert.enabled,

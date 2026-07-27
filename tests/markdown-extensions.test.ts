@@ -39,6 +39,7 @@ describe('Markdown extensions', () => {
     ).toBe(true);
     expect(editor.getMarkdown()).toContain('## Updated');
     expect(editor.getMarkdown()).toContain('- [x] Ready');
+    expect(editor.can().undo()).toBe(false);
     editor.destroy();
   });
 

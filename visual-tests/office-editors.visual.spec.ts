@@ -917,6 +917,15 @@ async function verifySharedEditorGeometry(
         ? '.work-pdf-toolbar > *'
         : '.work-office-ribbon-tabs',
     );
+    const pdfPageControls = host?.querySelector<HTMLElement>(
+      '.work-pdf-page-controls',
+    );
+    const pdfPageTotal = host?.querySelector<HTMLElement>(
+      '.work-pdf-page-total',
+    );
+    const pdfNextPage = host?.querySelector<HTMLElement>(
+      '[aria-label="下一页"]',
+    );
     if (
       !shell ||
       !header ||
@@ -974,6 +983,14 @@ async function verifySharedEditorGeometry(
         left: centerRect.left,
         right: centerRect.right,
       },
+      pdf:
+        pdfPageControls && pdfPageTotal && pdfNextPage
+          ? {
+              pageControlsRight: pdfPageControls.getBoundingClientRect().right,
+              pageTotalWidth: pdfPageTotal.getBoundingClientRect().width,
+              nextPageWidth: pdfNextPage.getBoundingClientRect().width,
+            }
+          : null,
     };
   });
 
@@ -1010,6 +1027,30 @@ async function verifySharedEditorGeometry(
     await expect(
       page.getByRole('button', { name: '展开办公侧边栏' }),
     ).toBeVisible();
+  }
+
+  if (kind === 'pdf' && projectName === 'compact-768') {
+    expect(geometry.pdf).not.toBeNull();
+    if (!geometry.pdf) throw new Error('PDF compact controls are missing.');
+    expect(geometry.pdf.pageControlsRight).toBeLessThanOrEqual(
+      geometry.commandEnd.left - 2,
+    );
+    expect(geometry.pdf.pageTotalWidth).toBeGreaterThan(0);
+    expect(geometry.pdf.nextPageWidth).toBeGreaterThan(0);
+    await expect(page.locator('.work-pdf-page-total')).toBeVisible();
+    await expect(page.getByRole('button', { name: '下一页' })).toBeVisible();
+    await expect(page.locator('.work-pdf-history')).toBeHidden();
+    await expect(page.locator('.work-pdf-zoom-controls')).toBeHidden();
+
+    await page.getByRole('button', { name: '更多 PDF 工具' }).click();
+    const overflow = page.getByRole('menu', { name: '更多 PDF 工具' });
+    for (const action of ['撤销', '上一页', '下一页', '缩小', '放大']) {
+      await expect(
+        overflow.getByRole('menuitem', { name: action }),
+      ).toBeVisible();
+    }
+    await page.keyboard.press('Escape');
+    await expect(overflow).toBeHidden();
   }
 
   if (kind !== 'pdf') {

@@ -8,6 +8,7 @@ import type {
 import type { OfficeEditorCanCommands } from './office-editor-extension';
 import type { PresentationDesignMode } from './presentation-editor-types';
 import type { PresentationDistribution } from './presentation-selection';
+import type { OfficeTableDimensions } from './office-table-dimensions';
 
 export type PresentationViewMode = 'normal' | 'sorter';
 export type PresentationSlideshowStart = 'beginning' | 'current';
@@ -20,7 +21,7 @@ export interface PresentationEditorCommands {
   addElement: (type: 'shape' | 'text') => PresentationCommandResult;
   addImage: (file: File) => PresentationCommandResult;
   addSlide: () => PresentationCommandResult;
-  addTable: () => PresentationCommandResult;
+  addTable: (dimensions: OfficeTableDimensions) => PresentationCommandResult;
   alignElement: (
     alignment: OfficeKernelPresentationAlignment,
   ) => PresentationCommandResult;
@@ -158,7 +159,7 @@ export interface PresentationInsertCommandPort {
   addChart: () => PresentationCommandResult;
   addElement: (type: 'shape' | 'text') => PresentationCommandResult;
   addImage: (file: File) => PresentationCommandResult;
-  addTable: () => PresentationCommandResult;
+  addTable: (dimensions: OfficeTableDimensions) => PresentationCommandResult;
   instantiatePlaceholder: (
     definition: WorkSlideElement,
   ) => PresentationCommandResult;

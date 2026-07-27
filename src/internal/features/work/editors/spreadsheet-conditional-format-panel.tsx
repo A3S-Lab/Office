@@ -210,7 +210,7 @@ export function SpreadsheetConditionalFormatPanel({
   }
   return (
     <div className="work-spreadsheet-conditional-manager">
-      <aside aria-label="Work 条件格式规则">
+      <aside aria-label="条件格式规则">
         <Button className="create" tone="secondary" onClick={startNew}>
           <Plus size={13} />
           新建规则
@@ -237,7 +237,7 @@ export function SpreadsheetConditionalFormatPanel({
               className="work-office-collection-empty"
               role="status"
             >
-              还没有 Work 可管理的条件格式规则。
+              还没有条件格式规则。
             </CollectionState>
           )}
         </div>

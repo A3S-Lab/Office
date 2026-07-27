@@ -54,6 +54,7 @@ describe('presentation editor extensions', () => {
     const { commands } = presentationEditor(calls);
 
     commands.addSlide();
+    commands.addTable({ rows: 4, columns: 5 });
     commands.copySelection();
     commands.setTransition({
       type: 'fade',
@@ -71,6 +72,7 @@ describe('presentation editor extensions', () => {
 
     expect(calls).toEqual([
       'slide.add',
+      'table.add:4x5',
       'clipboard.copy',
       'transition.set:fade',
       'transition.applyToAll',
@@ -203,7 +205,8 @@ function presentationContext(calls: string[]): PresentationCommandContext {
       addChart: () => calls.push('chart.add'),
       addElement: (type) => calls.push(`element.add:${type}`),
       addImage: (file) => calls.push(`image.add:${file.name}`),
-      addTable: () => calls.push('table.add'),
+      addTable: ({ rows, columns }) =>
+        calls.push(`table.add:${rows}x${columns}`),
       instantiatePlaceholder: (definition) =>
         calls.push(`placeholder.add:${definition.id}`),
       requestImage: () => calls.push('image.request'),

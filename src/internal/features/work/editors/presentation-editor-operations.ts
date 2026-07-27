@@ -108,14 +108,19 @@ export function newPresentationElement(
   };
 }
 
-export function newPresentationTableElement(): WorkSlideElement {
+export function newPresentationTableElement(
+  requestedRows = 3,
+  requestedColumns = 3,
+): WorkSlideElement {
+  const rows = normalizeTableDimension(requestedRows);
+  const columns = normalizeTableDimension(requestedColumns);
   return {
     id: createWorkId('element'),
     type: 'table',
     x: 15,
     y: 24,
     width: 70,
-    height: 42,
+    height: Math.min(68, Math.max(24, 12 + rows * 10)),
     text: '',
     fontSize: 14,
     color: '#172033',
@@ -126,13 +131,18 @@ export function newPresentationTableElement(): WorkSlideElement {
     borderWidth: 1,
     table: {
       headerRows: 1,
-      rows: [
-        ['标题 1', '标题 2', '标题 3'],
-        ['内容', '内容', '内容'],
-        ['内容', '内容', '内容'],
-      ],
+      rows: Array.from({ length: rows }, (_, rowIndex) =>
+        Array.from({ length: columns }, (_, columnIndex) =>
+          rowIndex === 0 ? `标题 ${columnIndex + 1}` : '内容',
+        ),
+      ),
     },
   };
+}
+
+function normalizeTableDimension(value: number): number {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(20, Math.max(1, Math.floor(value)));
 }
 
 export async function newPresentationImageElement(

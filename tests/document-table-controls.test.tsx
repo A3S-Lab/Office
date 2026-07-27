@@ -13,6 +13,7 @@ import {
   DocumentTableLayoutRibbon,
 } from '../src/internal/features/work/editors/document-table-ribbon';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
+import { OfficeTableInsertPopover } from '../src/internal/features/work/editors/office-table-insert-popover';
 import { canInsertDocumentComment } from '../src/internal/features/work/work-document-comments';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
@@ -64,6 +65,25 @@ test('closes the table picker with Escape and restores trigger focus', async () 
 
   expect(screen.queryByRole('dialog', { name: '选择表格大小' })).toBeNull();
   expect(trigger).toHaveFocus();
+});
+
+test('shares the table-size picker with presentation commands', async () => {
+  const dimensions: Array<{ rows: number; columns: number }> = [];
+  render(
+    <OfficeTableInsertPopover
+      label="表格"
+      onInsert={(value) => dimensions.push(value)}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '表格' }));
+  const target = screen.getByRole('button', { name: '4 行 5 列' });
+  fireEvent.mouseEnter(target);
+  expect(screen.getByText('4 × 5 表格')).toBeInTheDocument();
+  fireEvent.click(target);
+
+  expect(dimensions).toEqual([{ rows: 4, columns: 5 }]);
+  expect(screen.queryByRole('dialog', { name: '选择表格大小' })).toBeNull();
 });
 
 test('shows Word-style table Design and Layout tabs only inside a table', async () => {

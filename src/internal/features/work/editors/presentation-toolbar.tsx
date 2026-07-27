@@ -25,7 +25,6 @@ import {
   Scissors,
   Square,
   SquarePlay,
-  Table2,
   Trash2,
   Type,
   Undo2,
@@ -43,6 +42,7 @@ import {
   OfficeSelect,
   useOfficeDialog,
 } from './office-controls';
+import { OfficeTableInsertPopover } from './office-table-insert-popover';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
@@ -410,13 +410,11 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 {!editingDesign && (
                   <>
-                    <WorkOfficeRibbonButton
+                    <OfficeTableInsertPopover
                       label="表格"
-                      disabled={!can.addTable()}
-                      onClick={commands.addTable}
-                    >
-                      <Table2 size={19} />
-                    </WorkOfficeRibbonButton>
+                      disabled={!can.addTable({ rows: 1, columns: 1 })}
+                      onInsert={commands.addTable}
+                    />
                     <WorkOfficeRibbonButton
                       label="图表"
                       disabled={!can.addChart()}

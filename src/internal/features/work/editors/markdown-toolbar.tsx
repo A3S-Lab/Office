@@ -48,22 +48,30 @@ export function MarkdownToolbar({
   editor,
   fileActions,
   sourceEditing,
+  canSourceRedo,
+  canSourceUndo,
   viewMode,
   getSourceSelection,
   onSourceCommand,
+  onSourceRedo,
   onSourceReplace,
+  onSourceUndo,
   onViewModeChange,
 }: {
   editor: Editor;
   fileActions?: readonly WorkOfficeFileAction[];
   sourceEditing: boolean;
+  canSourceRedo: boolean;
+  canSourceUndo: boolean;
   viewMode: MarkdownViewMode;
   getSourceSelection: () => MarkdownSourceSelectionState | null;
   onSourceCommand: (command: MarkdownSourceCommand) => boolean;
+  onSourceRedo: () => boolean;
   onSourceReplace: (
     replacement: string,
     selectedRange?: { start: number; end: number },
   ) => boolean;
+  onSourceUndo: () => boolean;
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
@@ -72,16 +80,16 @@ export function MarkdownToolbar({
   const [insertDialogSurface, setInsertDialogSurface] = useState<
     'source' | 'visual'
   >('visual');
-  const canUndo =
-    !sourceEditing &&
-    canRunVisualEditorCommand(editor, () =>
-      editor.can().chain().focus().undo().run(),
-    );
-  const canRedo =
-    !sourceEditing &&
-    canRunVisualEditorCommand(editor, () =>
-      editor.can().chain().focus().redo().run(),
-    );
+  const canUndo = sourceEditing
+    ? canSourceUndo
+    : canRunVisualEditorCommand(editor, () =>
+        editor.can().chain().focus().undo().run(),
+      );
+  const canRedo = sourceEditing
+    ? canSourceRedo
+    : canRunVisualEditorCommand(editor, () =>
+        editor.can().chain().focus().redo().run(),
+      );
   const runCommand = (
     sourceCommand: MarkdownSourceCommand,
     visualCommand: () => void,
@@ -188,7 +196,10 @@ export function MarkdownToolbar({
                   label="撤销"
                   shortcut="Cmd/Ctrl+Z"
                   disabled={!canUndo}
-                  onClick={() => editor.chain().focus().undo().run()}
+                  onClick={() => {
+                    if (sourceEditing) onSourceUndo();
+                    else editor.chain().focus().undo().run();
+                  }}
                 >
                   <Undo2 size={16} />
                 </MarkdownToolbarButton>
@@ -196,7 +207,10 @@ export function MarkdownToolbar({
                   label="重做"
                   shortcut="Cmd/Ctrl+Shift+Z"
                   disabled={!canRedo}
-                  onClick={() => editor.chain().focus().redo().run()}
+                  onClick={() => {
+                    if (sourceEditing) onSourceRedo();
+                    else editor.chain().focus().redo().run();
+                  }}
                 >
                   <Redo2 size={16} />
                 </MarkdownToolbarButton>

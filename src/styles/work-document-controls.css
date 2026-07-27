@@ -213,7 +213,7 @@
   align-items: center;
 }
 
-.work-document-table-insert-popover {
+.work-office-table-insert-popover {
   display: flex;
   align-items: center;
 }
@@ -370,22 +370,22 @@
   font-size: 9px;
 }
 
-.work-document-table-picker-panel {
+.work-office-table-picker-panel {
   width: 277px;
   padding: 11px;
 }
 
-.work-document-table-picker-grid {
+.work-office-table-picker-grid {
   border-spacing: 3px;
   border-collapse: separate;
   table-layout: fixed;
 }
 
-.work-document-table-picker-grid td {
+.work-office-table-picker-grid td {
   padding: 0;
 }
 
-.work-document-table-picker-grid td > button {
+.work-office-table-picker-grid td > button {
   box-sizing: border-box;
   width: 22px;
   height: 20px;
@@ -396,7 +396,7 @@
   cursor: pointer;
 }
 
-.work-document-table-picker-grid td > button[data-highlighted="true"] {
+.work-office-table-picker-grid td > button[data-highlighted="true"] {
   border-color: color-mix(
     in srgb,
     var(--work-office-accent) 48%,
@@ -409,14 +409,14 @@
   );
 }
 
-.work-document-table-picker-grid td > button:hover,
-.work-document-table-picker-grid td > button:focus-visible {
+.work-office-table-picker-grid td > button:hover,
+.work-office-table-picker-grid td > button:focus-visible {
   outline: 2px solid
     color-mix(in srgb, var(--work-office-accent) 65%, transparent);
   outline-offset: 1px;
 }
 
-.work-document-table-picker-size {
+.work-office-table-picker-size {
   display: block;
   min-height: 18px;
   margin-top: 8px;

@@ -103,6 +103,118 @@ test('coalesces source edits before rebuilding the visual Markdown tree', async 
   expect(visual).not.toHaveTextContent('Intermediate title');
 });
 
+test('undoes and redoes coalesced typing from the Markdown source surface', async () => {
+  const changes: MarkdownContent[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '# Initial' }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  fireEvent.focus(source);
+  source.setSelectionRange(source.value.length, source.value.length);
+  fireEvent.select(source);
+  fireEvent.change(source, {
+    target: {
+      value: '# Draft',
+      selectionStart: 7,
+      selectionEnd: 7,
+      selectionDirection: 'none',
+    },
+  });
+  fireEvent.change(source, {
+    target: {
+      value: '# Draft title',
+      selectionStart: 13,
+      selectionEnd: 13,
+      selectionDirection: 'none',
+    },
+  });
+
+  const undo = screen.getByRole('button', { name: '撤销' });
+  const redo = screen.getByRole('button', { name: '重做' });
+  await waitFor(() => expect(undo).toBeEnabled());
+  fireEvent.click(undo);
+  await waitFor(() => expect(source).toHaveValue('# Initial'));
+  expect(source.selectionStart).toBe('# Initial'.length);
+  expect(redo).toBeEnabled();
+
+  fireEvent.click(redo);
+  await waitFor(() => expect(source).toHaveValue('# Draft title'));
+  expect(source.selectionStart).toBe('# Draft title'.length);
+  expect(changes.at(-1)?.markdown).toBe('# Draft title');
+});
+
+test('routes source undo and redo shortcuts through the controlled history', async () => {
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: 'Write clearly' }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  fireEvent.focus(source);
+  source.setSelectionRange(0, 5);
+  fireEvent.select(source);
+  fireEvent.click(screen.getByRole('button', { name: '加粗' }));
+  await waitFor(() => expect(source).toHaveValue('**Write** clearly'));
+
+  fireEvent.keyDown(source, { key: 'z', ctrlKey: true });
+  await waitFor(() => expect(source).toHaveValue('Write clearly'));
+  expect(source.selectionStart).toBe(0);
+  expect(source.selectionEnd).toBe(5);
+
+  fireEvent.keyDown(source, { key: 'z', ctrlKey: true, shiftKey: true });
+  await waitFor(() => expect(source).toHaveValue('**Write** clearly'));
+  expect(source.selectionStart).toBe(2);
+  expect(source.selectionEnd).toBe(7);
+});
+
+test('rebases source history after a host-controlled Markdown replacement', async () => {
+  const initial: MarkdownContent = {
+    type: 'markdown',
+    markdown: '# Initial',
+  };
+  const { rerender } = render(
+    <MarkdownEditor
+      content={initial}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const source = (await screen.findByLabelText(
+    'Markdown 源码',
+  )) as HTMLTextAreaElement;
+  fireEvent.focus(source);
+  fireEvent.change(source, { target: { value: '# Local edit' } });
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '撤销' })).toBeEnabled(),
+  );
+
+  rerender(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '# Remote edit' }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  await waitFor(() => expect(source).toHaveValue('# Remote edit'));
+  expect(screen.getByRole('button', { name: '撤销' })).toBeDisabled();
+  fireEvent.keyDown(source, { key: 'z', ctrlKey: true });
+  expect(source).toHaveValue('# Remote edit');
+});
+
 test('routes ribbon formatting to the active Markdown source selection', async () => {
   const changes: MarkdownContent[] = [];
   render(
