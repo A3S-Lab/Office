@@ -1110,6 +1110,24 @@
     --playground-command-end: 76px;
   }
 
+  .work-editor-shell:not(.pdf)
+    .playground-editor-host
+    .work-office-ribbon-tabs-row {
+    margin-top: 36px;
+    padding-inline: 0;
+  }
+
+  .work-editor-shell:not(.pdf)
+    .playground-editor-host
+    .work-office-preview-bar {
+    margin-top: 36px;
+    padding-inline: 8px;
+  }
+
+  .work-editor-shell:not(.pdf) .work-office-ribbon-tabs > button {
+    flex: 0 0 auto;
+  }
+
   .playground-editor-header {
     padding-inline: 4px;
   }

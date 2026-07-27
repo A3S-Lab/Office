@@ -174,7 +174,8 @@ const editorReferences: Record<EditorId, EditorReference> = {
       {
         name: 'orientation / margins / columns',
         type: 'Document layout fields',
-        description: '默认方向、页边距和分栏设置。',
+        description:
+          '默认方向、页边距和分栏设置；“页面设置”按页面、分栏与分节、页眉页脚分组。',
       },
       {
         name: 'pageChrome',

@@ -39,6 +39,13 @@ model:
    DOM measurements are views or migration inputs, not the long-term source of
    truth for OOXML documents.
 
+At phone widths, Document, Markdown, Spreadsheet, and Presentation place file
+identity and actions on the first compact row and keep unshrunk ribbon tabs in
+a second horizontally scrollable row. This preserves tab labels and keyboard
+navigation instead of squeezing both command regions into one line. PDF keeps
+its purpose-built single compact toolbar and is excluded from that stacking
+rule.
+
 This split keeps typing, selection, drag, and resize responsive while moving
 CPU-heavy and memory-bounded work away from the UI event loop.
 
@@ -320,9 +327,13 @@ to the active paragraph's left, right, first-line, and hanging-indent
 attributes. A vertical ruler controls the active section's top and bottom
 margins. Pointer and keyboard changes update the same section node used by
 pagination; compact layouts hide the vertical ruler while retaining Page
-Layout controls. The paragraph attributes map to and from `w:ind` formatting
-during DOCX import and export. Paragraph spacing keeps before/after values plus Word's
-`auto`, `exact`, and `atLeast` line rules. Direct `keepLines`,
+Layout controls. The Page Setup task pane separates Page, Columns and Sections,
+and Header and Footer into keyboard-operated tabs. It opens on paper and margin
+settings, keeps only one settings group mounted, and defers the two bounded
+TipTap page-chrome editors until the user explicitly requests them. The
+paragraph attributes map to and from `w:ind` formatting during DOCX import and
+export. Paragraph spacing keeps before/after values plus Word's `auto`, `exact`,
+and `atLeast` line rules. Direct `keepLines`,
 `keepWithNext`, `pageBreakBefore`, and `widowControl` attributes also
 round-trip through their matching OOXML paragraph properties. The kernel
 applies those rules to visual-line flows, including reserving the first two

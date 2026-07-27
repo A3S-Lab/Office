@@ -107,11 +107,34 @@
   font-size: 10px;
 }
 
+.work-document-layout-tabs.ds-tabs.line {
+  flex: 0 0 auto;
+  gap: 0;
+  padding: 0 14px;
+  background: var(--a3s-panel);
+}
+
+.work-document-layout-tabs.ds-tabs.line > button {
+  flex: 1 1 0;
+  padding-inline: 4px;
+  font-size: 10px;
+}
+
 .work-document-layout-body {
   display: grid;
   align-content: start;
   gap: 0;
   padding: 0 14px 18px;
+}
+
+.work-document-layout-tab-panel {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+}
+
+.work-document-layout-tab-panel > :last-child {
+  border-bottom: 0;
 }
 
 .work-document-layout-panel .work-document-layout-group,

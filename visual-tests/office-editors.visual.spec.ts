@@ -151,6 +151,49 @@ test('shared command bar remains compact when editors enter preview', async ({
   }
 });
 
+test('PDF keeps its single compact command row at phone width', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
+  if (!fixture) throw new Error('Missing PDF visual fixture.');
+
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const geometry = await page
+    .locator('.work-editor-shell.pdf')
+    .evaluate((shell) => {
+      const header = shell.querySelector<HTMLElement>(
+        '.playground-editor-header',
+      );
+      const toolbar = shell.querySelector<HTMLElement>('.work-pdf-toolbar');
+      if (!(header && toolbar)) {
+        throw new Error('Compact PDF command bar is incomplete.');
+      }
+      const headerRect = header.getBoundingClientRect();
+      const toolbarRect = toolbar.getBoundingClientRect();
+      return {
+        viewportWidth: document.documentElement.clientWidth,
+        documentScrollWidth: document.documentElement.scrollWidth,
+        headerTop: headerRect.top,
+        headerHeight: headerRect.height,
+        toolbarTop: toolbarRect.top,
+        toolbarHeight: toolbarRect.height,
+        toolbarOverflowX: getComputedStyle(toolbar).overflowX,
+      };
+    });
+
+  expect(geometry.documentScrollWidth).toBeLessThanOrEqual(
+    geometry.viewportWidth + 1,
+  );
+  expect(geometry.headerHeight).toBe(42);
+  expect(geometry.toolbarHeight).toBe(42);
+  expect(geometry.toolbarTop).toBeCloseTo(geometry.headerTop, 0);
+  expect(geometry.toolbarOverflowX).toBe('auto');
+});
+
 test.describe('Office editor context menu contracts', () => {
   test.describe.configure({ mode: 'serial' });
 

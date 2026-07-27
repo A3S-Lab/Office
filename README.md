@@ -181,10 +181,10 @@ Copyable React, Vue, and Web Component examples live in the
 Each surface keeps a canonical model that matches its file format and user
 interaction model.
 
-- **Document** — Pagination, sections, clean page margins with on-demand
-  header/footer editing, outline navigation, styles, precision table sizing and
-  autofit, comments, tracked changes, citations, notes, and host-defined
-  selection menus. _DOCX import/export; PDF export._
+- **Document** — Pagination, sections, focused page-setup tabs, clean page
+  margins with on-demand header/footer editing, outline navigation, styles,
+  precision table sizing and autofit, comments, tracked changes, citations,
+  notes, and host-defined selection menus. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
   source-aware ribbon formatting and shortcuts, empty-source guidance, task

@@ -781,6 +781,65 @@ test('document review views remain usable at phone width', async ({ page }) => {
   await fixture.open(page);
   await fixture.ready(page);
 
+  const compactChrome = await page
+    .locator('.work-editor-shell.document')
+    .evaluate((shell) => {
+      const header = shell.querySelector<HTMLElement>(
+        '.playground-editor-header',
+      );
+      const ribbonRow = shell.querySelector<HTMLElement>(
+        '.work-office-ribbon-tabs-row',
+      );
+      const ribbonTabs = shell.querySelector<HTMLElement>(
+        '.work-office-ribbon-tabs',
+      );
+      const tabs = Array.from(
+        ribbonTabs?.querySelectorAll<HTMLElement>('[role="tab"]') ?? [],
+      );
+      if (!(header && ribbonRow && ribbonTabs) || tabs.length < 2) {
+        throw new Error('Compact document command bar is incomplete.');
+      }
+      const headerRect = header.getBoundingClientRect();
+      const ribbonRect = ribbonRow.getBoundingClientRect();
+      return {
+        headerBottom: headerRect.bottom,
+        ribbonTop: ribbonRect.top,
+        overflowX: getComputedStyle(ribbonTabs).overflowX,
+        tabsClientWidth: ribbonTabs.clientWidth,
+        tabsScrollWidth: ribbonTabs.scrollWidth,
+        tabRects: tabs.map((tab) => {
+          const rect = tab.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            flexShrink: getComputedStyle(tab).flexShrink,
+          };
+        }),
+      };
+    });
+  expect(compactChrome.ribbonTop).toBeGreaterThanOrEqual(
+    compactChrome.headerBottom - 1,
+  );
+  expect(compactChrome.overflowX).toBe('auto');
+  expect(compactChrome.tabsScrollWidth).toBeGreaterThanOrEqual(
+    compactChrome.tabsClientWidth,
+  );
+  for (const [index, tab] of compactChrome.tabRects.entries()) {
+    expect(tab.flexShrink).toBe('0');
+    if (index === 0) continue;
+    expect(tab.left).toBeGreaterThanOrEqual(
+      compactChrome.tabRects[index - 1].right - 1,
+    );
+  }
+
+  const ribbonTabs = page.getByRole('tablist', { name: '文字功能区' });
+  const homeTab = ribbonTabs.getByRole('tab', { name: '开始' });
+  const insertTab = ribbonTabs.getByRole('tab', { name: '插入' });
+  await homeTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(insertTab).toBeFocused();
+  await expect(insertTab).toHaveAttribute('aria-selected', 'true');
+
   await page.getByRole('tab', { name: '页面布局' }).click();
   await page.getByRole('button', { name: '页面设置', exact: true }).click();
   const layoutPane = page.getByRole('complementary', { name: '页面设置' });
@@ -798,6 +857,21 @@ test('document review views remain usable at phone width', async ({ page }) => {
     layoutGeometry.viewportWidth + 1,
   );
   expect(layoutGeometry.width).toBeCloseTo(layoutGeometry.viewportWidth, 0);
+  await expect(layoutPane.getByRole('tab', { name: '页面' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(
+    layoutPane.getByRole('textbox', { name: '默认页页眉' }),
+  ).toHaveCount(0);
+  await layoutPane.getByRole('tab', { name: '分栏与分节' }).click();
+  await expect(
+    layoutPane.getByRole('combobox', { name: '分节方式' }),
+  ).toBeVisible();
+  await layoutPane.getByRole('tab', { name: '页眉页脚' }).click();
+  await expect(
+    layoutPane.getByRole('textbox', { name: '默认页页眉' }),
+  ).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(layoutPane).toBeHidden();
 

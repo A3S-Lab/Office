@@ -80,6 +80,12 @@ Exit evidence:
   editable document content.
 - Define font substitution and missing-glyph behavior that matches export.
 
+Current product evidence includes a responsive Page Setup task pane with
+keyboard-operated Page, Columns and Sections, and Header and Footer tabs. The
+default view contains only paper and margin controls; page-chrome editors mount
+on demand so compact and desktop workflows do not begin with one mixed,
+unbounded settings stack.
+
 Exit evidence:
 
 - Deterministic page goldens cover Latin, CJK, Arabic, Hebrew, lists, sections,

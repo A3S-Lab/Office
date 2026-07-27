@@ -56,3 +56,9 @@ All notable changes to A3S Office will be documented in this file.
 - Added PDF annotation opacity and compatible stroke-width editing through a
   compact keyboard-accessible style popover, typed capability commands, and
   native PDF annotation defaults and selection updates.
+- Split Word page setup into keyboard-accessible Page, Columns and Sections,
+  and Header and Footer tabs so paper controls stay focused and heavyweight
+  header/footer editors mount only when requested.
+- Stacked the file command bar above non-PDF ribbon tabs at phone widths so
+  filenames and actions no longer compress or overlap the keyboard-accessible,
+  horizontally scrollable tab row; PDF retains its single compact toolbar.
