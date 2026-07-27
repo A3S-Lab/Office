@@ -3,6 +3,9 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
+  AlignVerticalJustifyStart,
   BarChart3,
   Bold,
   Bookmark,
@@ -20,6 +23,7 @@ import {
   TableProperties,
   Underline,
   Undo2,
+  WrapText,
 } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { spreadsheetChartCount } from '../work-spreadsheet-charts';
@@ -33,7 +37,10 @@ import type {
   SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 import { managedConditionalFormatCount } from './spreadsheet-conditional-format-panel';
-import { spreadsheetFontSizeOptions } from './spreadsheet-editor-support';
+import {
+  spreadsheetFontFamilyOptions,
+  spreadsheetFontSizeOptions,
+} from './spreadsheet-editor-support';
 import {
   adjustSpreadsheetNumberFormat,
   spreadsheetNumberFormatCode,
@@ -155,6 +162,27 @@ export function SpreadsheetEditorRibbon({
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="字体">
+              <OfficeSelect
+                className="work-spreadsheet-font-family"
+                ariaLabel="字体"
+                value={
+                  typeof toolbarCell?.ff === 'string' ? toolbarCell.ff : 'Aptos'
+                }
+                disabled={
+                  !can.setCellFormat(
+                    'ff',
+                    typeof toolbarCell?.ff === 'string'
+                      ? toolbarCell.ff
+                      : 'Aptos',
+                  )
+                }
+                options={spreadsheetFontFamilyOptions(
+                  typeof toolbarCell?.ff === 'string'
+                    ? toolbarCell.ff
+                    : undefined,
+                )}
+                onValueChange={(value) => commands.setCellFormat('ff', value)}
+              />
               <OfficeSelect
                 ariaLabel="字号"
                 value={String(toolbarCell?.fs ?? 10)}
@@ -292,6 +320,52 @@ export function SpreadsheetEditorRibbon({
                 onClick={() => commands.setCellFormat('ht', '2')}
               >
                 <AlignRight size={15} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="顶端对齐"
+                displayLabel={false}
+                active={Number(toolbarCell?.vt ?? 1) === 1}
+                disabled={!can.setCellFormat('vt', 1)}
+                onClick={() => commands.setCellFormat('vt', 1)}
+              >
+                <AlignVerticalJustifyStart size={15} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="垂直居中"
+                displayLabel={false}
+                active={Number(toolbarCell?.vt) === 0}
+                disabled={!can.setCellFormat('vt', 0)}
+                onClick={() => commands.setCellFormat('vt', 0)}
+              >
+                <AlignVerticalJustifyCenter size={15} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="底端对齐"
+                displayLabel={false}
+                active={Number(toolbarCell?.vt) === 2}
+                disabled={!can.setCellFormat('vt', 2)}
+                onClick={() => commands.setCellFormat('vt', 2)}
+              >
+                <AlignVerticalJustifyEnd size={15} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label="自动换行"
+                displayLabel={false}
+                active={String(toolbarCell?.tb) === '2'}
+                disabled={
+                  !can.setCellFormat(
+                    'tb',
+                    String(toolbarCell?.tb) === '2' ? '1' : '2',
+                  )
+                }
+                onClick={() =>
+                  commands.setCellFormat(
+                    'tb',
+                    String(toolbarCell?.tb) === '2' ? '1' : '2',
+                  )
+                }
+              >
+                <WrapText size={15} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="数字">

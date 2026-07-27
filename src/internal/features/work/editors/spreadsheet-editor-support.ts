@@ -1,5 +1,6 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { officeFontFamilies } from './office-font-families';
 
 const spreadsheetFontSizes = [
   9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, 72,
@@ -135,6 +136,34 @@ export function spreadsheetFontSizeOptions(
   return values
     .sort((left, right) => left - right)
     .map((value) => ({ value: String(value), label: String(value) }));
+}
+
+export function spreadsheetFontFamilyOptions(current: string | undefined): {
+  value: string;
+  label: string;
+  previewStyle: { fontFamily: string };
+}[] {
+  const options: {
+    value: string;
+    label: string;
+    previewStyle: { fontFamily: string };
+  }[] = officeFontFamilies.map(({ cssFamily, label, name }) => ({
+    value: name,
+    label,
+    previewStyle: { fontFamily: cssFamily },
+  }));
+  const normalizedCurrent = current?.trim();
+  if (
+    normalizedCurrent &&
+    !options.some(({ value }) => value === normalizedCurrent)
+  ) {
+    options.push({
+      value: normalizedCurrent,
+      label: normalizedCurrent,
+      previewStyle: { fontFamily: normalizedCurrent },
+    });
+  }
+  return options;
 }
 
 export function spreadsheetSheetsWithFiniteSelections(

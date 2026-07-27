@@ -16,6 +16,7 @@ import {
   Save,
   Scan,
   Search,
+  SlidersHorizontal,
   Strikethrough,
   Trash2,
   Type,
@@ -204,6 +205,11 @@ export function PdfToolbar({
             disabled={!can.setAnnotationColor(annotationState.annotationColor)}
             onValueChange={commands.setAnnotationColor}
           />
+          <PdfAnnotationStyleControl
+            annotationState={annotationState}
+            can={can}
+            commands={commands}
+          />
           <IconButton
             label="删除所选批注"
             disabled={!can.deleteAnnotationSelection()}
@@ -284,6 +290,7 @@ export function PdfToolbar({
 
       <div className="work-pdf-toolbar-group work-pdf-page-controls">
         <IconButton
+          className="work-pdf-page-step"
           label="上一页"
           disabled={!can.previousPage()}
           onClick={commands.previousPage}
@@ -357,6 +364,92 @@ export function PdfToolbar({
         </button>
       </div>
     </header>
+  );
+}
+
+const PDF_ANNOTATION_OPACITY_OPTIONS = [0.25, 0.5, 0.75, 1] as const;
+const PDF_ANNOTATION_STROKE_WIDTH_OPTIONS = [1, 2, 4, 6, 10] as const;
+
+function PdfAnnotationStyleControl({
+  annotationState,
+  can,
+  commands,
+}: {
+  annotationState: PdfAnnotationControllerState;
+  can: PdfEditorCanCommands;
+  commands: PdfEditorCommands;
+}) {
+  const opacityPercent = Math.round(annotationState.annotationOpacity * 100);
+  const disabled =
+    !can.setAnnotationOpacity(annotationState.annotationOpacity) &&
+    !can.setAnnotationStrokeWidth(annotationState.annotationStrokeWidth);
+  const title = annotationState.supportsStrokeWidth
+    ? `批注样式（${opacityPercent}%，线宽 ${annotationState.annotationStrokeWidth}）`
+    : `批注样式（${opacityPercent}%）`;
+
+  return (
+    <Popover
+      label="批注样式"
+      panelLabel="批注样式"
+      panelRole="dialog"
+      placement="bottom-end"
+      portal
+      focusFirstOnOpen
+      disabled={disabled}
+      className="work-pdf-annotation-style"
+      panelClassName="work-pdf-annotation-style-panel"
+      trigger={(triggerProps) => (
+        <button {...triggerProps} className="ds-icon-button" title={title}>
+          <SlidersHorizontal size={14} />
+        </button>
+      )}
+    >
+      <div className="work-pdf-annotation-style-content">
+        {annotationState.supportsOpacity && (
+          <fieldset className="work-pdf-annotation-style-row">
+            <legend>透明度</legend>
+            <div className="work-pdf-annotation-style-options">
+              {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
+                const label = `${Math.round(opacity * 100)}%`;
+                return (
+                  <button
+                    type="button"
+                    key={opacity}
+                    aria-label={`透明度 ${label}`}
+                    aria-pressed={annotationState.annotationOpacity === opacity}
+                    disabled={!can.setAnnotationOpacity(opacity)}
+                    onClick={() => commands.setAnnotationOpacity(opacity)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+        {annotationState.supportsStrokeWidth && (
+          <fieldset className="work-pdf-annotation-style-row">
+            <legend>线宽</legend>
+            <div className="work-pdf-annotation-style-options">
+              {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
+                <button
+                  type="button"
+                  key={strokeWidth}
+                  aria-label={`线宽 ${strokeWidth}`}
+                  aria-pressed={
+                    annotationState.annotationStrokeWidth === strokeWidth
+                  }
+                  disabled={!can.setAnnotationStrokeWidth(strokeWidth)}
+                  onClick={() => commands.setAnnotationStrokeWidth(strokeWidth)}
+                >
+                  {strokeWidth}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )}
+      </div>
+    </Popover>
   );
 }
 

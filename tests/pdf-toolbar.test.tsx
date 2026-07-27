@@ -42,6 +42,9 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   fireEvent.blur(screen.getByRole('textbox', { name: '页码' }));
   fireEvent.click(screen.getByRole('button', { name: '放大' }));
   fireEvent.click(screen.getByRole('button', { name: '整页' }));
+  fireEvent.click(screen.getByRole('button', { name: '批注样式' }));
+  fireEvent.click(screen.getByRole('button', { name: '透明度 50%' }));
+  fireEvent.click(screen.getByRole('button', { name: '线宽 4' }));
 
   fireEvent.change(screen.getByRole('searchbox', { name: '在 PDF 中搜索' }), {
     target: { value: '架构' },
@@ -60,6 +63,8 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
     'page:7',
     'zoom-in',
     'fit-page',
+    'annotation-opacity:0.5',
+    'annotation-stroke-width:4',
     'search:架构',
     'save',
   ]);
@@ -137,6 +142,8 @@ function createCanCommands(
     save: ready,
     search: ready,
     setAnnotationColor: ready,
+    setAnnotationOpacity: ready,
+    setAnnotationStrokeWidth: ready,
     selectAnnotationTool: ready,
     undo: () => ready() && controller.state.canUndo,
     zoomIn: ready,
@@ -165,6 +172,8 @@ function createCommands(
     },
     search: controller.search,
     setAnnotationColor: annotation.setAnnotationColor,
+    setAnnotationOpacity: annotation.setAnnotationOpacity,
+    setAnnotationStrokeWidth: annotation.setAnnotationStrokeWidth,
     selectAnnotationTool: annotation.selectTool,
     undo: controller.undo,
     zoomIn: controller.zoomIn,
@@ -177,12 +186,20 @@ function createAnnotationController(calls: string[]): PdfAnnotationController {
     state: {
       activeToolId: null,
       annotationColor: '#ffd966',
+      annotationOpacity: 1,
+      annotationStrokeWidth: 6,
       available: true,
       hasPendingChanges: false,
       selectedCount: 0,
+      supportsOpacity: true,
+      supportsStrokeWidth: true,
     },
     deleteSelection: () => calls.push('delete-annotation'),
     setAnnotationColor: (color) => calls.push(`annotation-color:${color}`),
+    setAnnotationOpacity: (opacity) =>
+      calls.push(`annotation-opacity:${opacity}`),
+    setAnnotationStrokeWidth: (strokeWidth) =>
+      calls.push(`annotation-stroke-width:${strokeWidth}`),
     selectTool: (toolId) => calls.push(`annotation:${toolId ?? 'pointer'}`),
   };
 }

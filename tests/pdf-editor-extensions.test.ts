@@ -24,6 +24,8 @@ describe('PDF editor extensions', () => {
     editor.commands.zoomIn();
     editor.commands.selectAnnotationTool('highlight');
     editor.commands.setAnnotationColor('#ff0000');
+    editor.commands.setAnnotationOpacity(0.5);
+    editor.commands.setAnnotationStrokeWidth(4);
     editor.commands.deleteAnnotationSelection();
     await editor.commands.save();
 
@@ -43,6 +45,8 @@ describe('PDF editor extensions', () => {
       'zoom:in',
       'annotation:highlight',
       'annotation:color:#ff0000',
+      'annotation:opacity:0.5',
+      'annotation:stroke-width:4',
       'annotation:delete',
       'save',
     ]);
@@ -60,6 +64,8 @@ describe('PDF editor extensions', () => {
     expect(editor.can().redo()).toBe(false);
     expect(editor.can().selectAnnotationTool('ink')).toBe(true);
     expect(editor.can().setAnnotationColor('#ff0000')).toBe(true);
+    expect(editor.can().setAnnotationOpacity(0.5)).toBe(true);
+    expect(editor.can().setAnnotationStrokeWidth(4)).toBe(true);
     expect(editor.can().save()).toBe(true);
 
     editor.updateContext({
@@ -137,12 +143,20 @@ function context(calls: string[]): PdfEditorCommandContext {
     state: {
       activeToolId: null,
       annotationColor: '#ffd966',
+      annotationOpacity: 1,
+      annotationStrokeWidth: 6,
       available: true,
       hasPendingChanges: false,
       selectedCount: 1,
+      supportsOpacity: true,
+      supportsStrokeWidth: true,
     },
     deleteSelection: () => calls.push('annotation:delete'),
     setAnnotationColor: (color) => calls.push(`annotation:color:${color}`),
+    setAnnotationOpacity: (opacity) =>
+      calls.push(`annotation:opacity:${opacity}`),
+    setAnnotationStrokeWidth: (strokeWidth) =>
+      calls.push(`annotation:stroke-width:${strokeWidth}`),
     selectTool: (tool) => calls.push(`annotation:${tool ?? 'select'}`),
   };
   return {

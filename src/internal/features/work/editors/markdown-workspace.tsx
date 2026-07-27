@@ -240,6 +240,7 @@ export function MarkdownWorkspace({
           <textarea
             ref={sourceRef}
             aria-label="Markdown 源码"
+            placeholder="开始写 Markdown…"
             value={markdown}
             spellCheck
             onBeforeInput={(event: FormEvent<HTMLTextAreaElement>) => {

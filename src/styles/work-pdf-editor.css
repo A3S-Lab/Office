@@ -73,6 +73,85 @@
   height: 11px;
 }
 
+.work-pdf-annotation-style {
+  flex: 0 0 auto;
+}
+
+.work-pdf-annotation-style-panel {
+  width: 238px;
+  padding: 10px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 9px;
+  background: var(--a3s-panel);
+  box-shadow: 0 14px 34px rgb(15 23 42 / 18%);
+}
+
+.work-pdf-annotation-style-content,
+.work-pdf-annotation-style-row {
+  display: grid;
+}
+
+.work-pdf-annotation-style-content {
+  gap: 10px;
+}
+
+.work-pdf-annotation-style-row {
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-pdf-annotation-style-row > legend {
+  margin: 0;
+  padding: 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.work-pdf-annotation-style-options {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+}
+
+.work-pdf-annotation-style-options > button {
+  min-width: 0;
+  height: 28px;
+  padding: 0 5px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 5px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  font: inherit;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.work-pdf-annotation-style-options > button:hover:not(:disabled),
+.work-pdf-annotation-style-options > button:focus-visible {
+  outline: 0;
+  border-color: var(--a3s-blue);
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-pdf-annotation-style-options > button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--a3s-blue) 42%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-blue) 11%, var(--a3s-panel));
+  color: var(--a3s-blue);
+  font-weight: 650;
+}
+
+.work-pdf-annotation-style-options > button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
 .work-pdf-search {
   display: flex;
   width: clamp(180px, 24vw, 300px);
@@ -333,6 +412,10 @@
   .work-pdf-annotation-optional,
   .work-pdf-fit-button {
     display: none;
+  }
+
+  .work-pdf-page-step {
+    display: none !important;
   }
 
   .work-pdf-history,

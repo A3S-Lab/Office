@@ -53,6 +53,16 @@
 }
 
 .work-spreadsheet-ribbon-toolbar
+  .work-office-select.work-spreadsheet-font-family,
+.work-spreadsheet-ribbon-toolbar
+  .work-office-select.work-spreadsheet-font-family
+  > button {
+  width: 112px;
+  min-width: 112px;
+  flex-basis: 112px;
+}
+
+.work-spreadsheet-ribbon-toolbar
   .work-office-select.work-spreadsheet-number-format,
 .work-spreadsheet-ribbon-toolbar
   .work-office-select.work-spreadsheet-number-format

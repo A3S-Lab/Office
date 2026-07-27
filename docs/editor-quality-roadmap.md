@@ -187,6 +187,8 @@ remains one coherent history.
 - Keep lightweight selection statistics responsive for dense and sparse sheets.
 - Keep common number and percent presets plus decimal-place commands available
   from the primary ribbon while the native format engine expands.
+- Keep font family, vertical alignment, and text wrapping available from the
+  primary ribbon and backed by the native workbook cell-style model.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 
@@ -215,9 +217,10 @@ one controlled update.
 
 ## Priority 5: PDF
 
-- Extend the implemented annotation color control with opacity, stroke, forms,
-  signatures, page organization, search, history, save, and explicit redaction
-  review.
+- Keep color, opacity, and compatible stroke-width controls routed through
+  typed annotation capabilities for both tool defaults and selected objects.
+- Add form authoring, signatures, page organization, and explicit redaction
+  review while preserving the implemented search, history, and save paths.
 - Keep navigation, zoom, and history reachable from the responsive overflow
   menu whenever the primary toolbar hides those controls.
 - Keep PDFium lifecycle, page bitmap cache, and source Blob ownership bounded.

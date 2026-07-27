@@ -17,15 +17,21 @@ export type PdfAnnotationToolId =
 export interface PdfAnnotationControllerState {
   activeToolId: string | null;
   annotationColor: string;
+  annotationOpacity: number;
+  annotationStrokeWidth: number;
   available: boolean;
   hasPendingChanges: boolean;
   selectedCount: number;
+  supportsOpacity: boolean;
+  supportsStrokeWidth: boolean;
 }
 
 export interface PdfAnnotationController {
   state: PdfAnnotationControllerState;
   deleteSelection: () => void;
   setAnnotationColor: (color: string) => void;
+  setAnnotationOpacity: (opacity: number) => void;
+  setAnnotationStrokeWidth: (strokeWidth: number) => void;
   selectTool: (toolId: PdfAnnotationToolId | null) => void;
 }
 
@@ -37,9 +43,13 @@ interface PdfAnnotationCapabilities {
 const INITIAL_STATE: PdfAnnotationControllerState = {
   activeToolId: null,
   annotationColor: '#ffd966',
+  annotationOpacity: 1,
+  annotationStrokeWidth: 6,
   available: false,
   hasPendingChanges: false,
   selectedCount: 0,
+  supportsOpacity: false,
+  supportsStrokeWidth: false,
 };
 
 export function usePdfAnnotationController(
@@ -77,6 +87,11 @@ export function usePdfAnnotationController(
           const scope = activeAnnotationScope(capabilities);
           const annotationState = safely(() => scope?.getState());
           const activeToolId = annotationState?.activeToolId ?? null;
+          const style = currentAnnotationStyle(
+            capabilities,
+            scope,
+            activeToolId,
+          );
           setState({
             activeToolId,
             annotationColor: currentAnnotationColor(
@@ -84,6 +99,7 @@ export function usePdfAnnotationController(
               scope,
               activeToolId,
             ),
+            ...style,
             available: Boolean(scope),
             hasPendingChanges: annotationState?.hasPendingChanges ?? false,
             selectedCount: annotationState?.selectedUids.length ?? 0,
@@ -180,10 +196,148 @@ export function usePdfAnnotationController(
     }));
   }, []);
 
+  const setAnnotationOpacity = useCallback((opacity: number) => {
+    const normalizedOpacity = normalizeAnnotationOpacity(opacity);
+    if (
+      normalizedOpacity === null ||
+      !applyAnnotationNumberStyle(
+        capabilitiesRef.current,
+        'opacity',
+        normalizedOpacity,
+      )
+    ) {
+      return;
+    }
+    setState((current) => ({
+      ...current,
+      annotationOpacity: normalizedOpacity,
+    }));
+  }, []);
+
+  const setAnnotationStrokeWidth = useCallback((strokeWidth: number) => {
+    const normalizedStrokeWidth = normalizeAnnotationStrokeWidth(strokeWidth);
+    if (
+      normalizedStrokeWidth === null ||
+      !applyAnnotationNumberStyle(
+        capabilitiesRef.current,
+        'strokeWidth',
+        normalizedStrokeWidth,
+      )
+    ) {
+      return;
+    }
+    setState((current) => ({
+      ...current,
+      annotationStrokeWidth: normalizedStrokeWidth,
+    }));
+  }, []);
+
   return useMemo(
-    () => ({ state, deleteSelection, setAnnotationColor, selectTool }),
-    [deleteSelection, setAnnotationColor, selectTool, state],
+    () => ({
+      state,
+      deleteSelection,
+      setAnnotationColor,
+      setAnnotationOpacity,
+      setAnnotationStrokeWidth,
+      selectTool,
+    }),
+    [
+      deleteSelection,
+      setAnnotationColor,
+      setAnnotationOpacity,
+      setAnnotationStrokeWidth,
+      selectTool,
+      state,
+    ],
   );
+}
+
+function currentAnnotationStyle(
+  capabilities: PdfAnnotationCapabilities,
+  scope: ReturnType<typeof activeAnnotationScope>,
+  activeToolId: string | null,
+): Pick<
+  PdfAnnotationControllerState,
+  | 'annotationOpacity'
+  | 'annotationStrokeWidth'
+  | 'supportsOpacity'
+  | 'supportsStrokeWidth'
+> {
+  const selectedObjects =
+    safely(() => scope?.getSelectedAnnotations().map(({ object }) => object)) ??
+    [];
+  const activeDefaults = activeToolId
+    ? safely(() => capabilities.annotation?.getTool(activeToolId)?.defaults)
+    : null;
+  const opacitySource =
+    selectedObjects.find((object) =>
+      annotationRecordSupports(object, 'opacity'),
+    ) ?? activeDefaults;
+  const strokeWidthSource =
+    selectedObjects.find((object) =>
+      annotationRecordSupports(object, 'strokeWidth'),
+    ) ?? activeDefaults;
+  return {
+    annotationOpacity:
+      annotationNumberFromRecord(
+        opacitySource,
+        'opacity',
+        normalizeAnnotationOpacity,
+      ) ?? INITIAL_STATE.annotationOpacity,
+    annotationStrokeWidth:
+      annotationNumberFromRecord(
+        strokeWidthSource,
+        'strokeWidth',
+        normalizeAnnotationStrokeWidth,
+      ) ?? INITIAL_STATE.annotationStrokeWidth,
+    supportsOpacity:
+      selectedObjects.some((object) =>
+        annotationRecordSupports(object, 'opacity'),
+      ) || annotationRecordSupports(activeDefaults, 'opacity'),
+    supportsStrokeWidth:
+      selectedObjects.some((object) =>
+        annotationRecordSupports(object, 'strokeWidth'),
+      ) || annotationRecordSupports(activeDefaults, 'strokeWidth'),
+  };
+}
+
+type AnnotationNumberStyle = 'opacity' | 'strokeWidth';
+type AnnotationNumberStylePatch = {
+  opacity?: number;
+  strokeWidth?: number;
+};
+
+function applyAnnotationNumberStyle(
+  capabilities: PdfAnnotationCapabilities | null,
+  attribute: AnnotationNumberStyle,
+  value: number,
+): boolean {
+  const scope = activeAnnotationScope(capabilities);
+  if (!capabilities?.annotation || !scope) return false;
+  const patch = { [attribute]: value } as AnnotationNumberStylePatch;
+  const activeToolId = scope.getState().activeToolId;
+  const activeDefaults = activeToolId
+    ? safely(() => capabilities.annotation?.getTool(activeToolId)?.defaults)
+    : null;
+  let applied = false;
+  if (activeToolId && annotationRecordSupports(activeDefaults, attribute)) {
+    capabilities.annotation.setToolDefaults(activeToolId, patch);
+    applied = true;
+  }
+  const selected = scope
+    .getSelectedAnnotations()
+    .filter(({ object }) => annotationRecordSupports(object, attribute));
+  if (selected.length) {
+    scope.updateAnnotations(
+      selected.map(({ object }) => ({
+        pageIndex: object.pageIndex,
+        id: object.id,
+        patch,
+      })),
+    );
+    applied = true;
+  }
+  return applied;
 }
 
 function currentAnnotationColor(
@@ -211,11 +365,47 @@ function annotationColorFromRecord(value: unknown): string | null {
   return normalizeAnnotationColor(record.color ?? record.strokeColor);
 }
 
+function annotationNumberFromRecord(
+  value: unknown,
+  attribute: AnnotationNumberStyle,
+  normalize: (value: unknown) => number | null,
+): number | null {
+  if (!annotationRecordSupports(value, attribute)) return null;
+  return normalize((value as Record<string, unknown>)[attribute]);
+}
+
+function annotationRecordSupports(
+  value: unknown,
+  attribute: AnnotationNumberStyle,
+): boolean {
+  return Boolean(
+    value && typeof value === 'object' && attribute in (value as object),
+  );
+}
+
 function normalizeAnnotationColor(value: unknown): string | null {
   if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value.trim())) {
     return null;
   }
   return value.trim().toLowerCase();
+}
+
+function normalizeAnnotationOpacity(value: unknown): number | null {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 1
+    ? value
+    : null;
+}
+
+function normalizeAnnotationStrokeWidth(value: unknown): number | null {
+  return typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value > 0 &&
+    value <= 24
+    ? value
+    : null;
 }
 
 function activeAnnotationScope(capabilities: PdfAnnotationCapabilities | null) {

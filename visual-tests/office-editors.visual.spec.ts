@@ -512,7 +512,7 @@ test('presentation transforms snap visually and commit one undo step', async ({
 
 test('presentation keeps object selection separate from text editing', async ({
   page,
-}) => {
+}, testInfo) => {
   const fixture = fixtures.find(
     (candidate) => candidate.kind === 'presentation',
   );
@@ -589,6 +589,11 @@ test('presentation keeps object selection separate from text editing', async ({
   await expect(
     canvas.getByRole('textbox', { name: '幻灯片文本' }),
   ).toBeFocused();
+  if (testInfo.project.name === 'desktop-1280') {
+    await expect(
+      page.getByRole('button', { name: '向右查看更多开始工具' }),
+    ).toHaveCount(0);
+  }
 
   await page.keyboard.press('Escape');
   await expect(canvas.getByRole('textbox', { name: '幻灯片文本' })).toHaveCount(

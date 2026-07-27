@@ -70,6 +70,21 @@ test('renders the GFM compatibility surface in preview mode', async () => {
   ).toHaveAttribute('href', 'https://a3s-lab.github.io/Office/');
 });
 
+test('guides an empty Markdown source pane without adding document content', async () => {
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '' }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  expect(await screen.findByLabelText('Markdown 源码')).toHaveAttribute(
+    'placeholder',
+    '开始写 Markdown…',
+  );
+});
+
 test('coalesces source edits before rebuilding the visual Markdown tree', async () => {
   const changes: MarkdownContent[] = [];
   const content: MarkdownContent = {

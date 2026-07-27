@@ -46,3 +46,13 @@ All notable changes to A3S Office will be documented in this file.
   overflow menu while preserving page status in the primary toolbar.
 - Removed internal implementation terminology from the Spreadsheet
   conditional-format manager.
+- Added a visible prompt to the empty Markdown source pane without changing its
+  controlled content.
+- Added Spreadsheet font-family, vertical-alignment, and text-wrap commands to
+  the primary ribbon through the native Fortune cell-format model.
+- Kept common Presentation arrangement commands visible at desktop width by
+  compacting group, ungroup, and layer actions without removing their labels
+  from accessible names and tooltips.
+- Added PDF annotation opacity and compatible stroke-width editing through a
+  compact keyboard-accessible style popover, typed capability commands, and
+  native PDF annotation defaults and selection updates.

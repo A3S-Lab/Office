@@ -44,6 +44,45 @@ test('routes number-format controls through typed spreadsheet commands', () => {
   ]);
 });
 
+test('routes font, vertical alignment, and wrapping through cell formats', () => {
+  const formats: Array<{ attribute: string; value: unknown }> = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands((attribute, value) => {
+        formats.push({ attribute, value });
+        return true;
+      })}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={{ ff: 'Arial', vt: 0, tb: '2' }}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const font = screen.getByRole('combobox', { name: '字体' });
+  expect(font).toHaveTextContent('Arial');
+  fireEvent.click(font);
+  const simSun = screen.getByRole('option', { name: '宋体' });
+  expect(simSun.querySelector('span')).toHaveAttribute(
+    'style',
+    'font-family: SimSun, "Songti SC", serif;',
+  );
+  fireEvent.click(simSun);
+  fireEvent.click(screen.getByRole('button', { name: '底端对齐' }));
+  fireEvent.click(screen.getByRole('button', { name: '自动换行' }));
+
+  expect(formats).toEqual([
+    { attribute: 'ff', value: 'SimSun' },
+    { attribute: 'vt', value: 2 },
+    { attribute: 'tb', value: '1' },
+  ]);
+});
+
 test('omits empty resource counts from spreadsheet ribbon actions', () => {
   render(
     <SpreadsheetEditorRibbon

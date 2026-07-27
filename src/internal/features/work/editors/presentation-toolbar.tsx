@@ -43,6 +43,7 @@ import {
   useOfficeDialog,
 } from './office-controls';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
+import { officeFontFamilies } from './office-font-families';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
@@ -65,13 +66,21 @@ const presentationRibbonTabs = [
   { id: 'view', label: '视图' },
 ] as const;
 
-const presentationFontFamilyOptions = [
-  { value: 'Aptos', label: 'Aptos' },
-  { value: '"Microsoft YaHei"', label: '微软雅黑' },
-  { value: 'SimSun', label: '宋体' },
-  { value: 'Arial', label: 'Arial' },
-  { value: '"Times New Roman"', label: 'Times New Roman' },
-] as const;
+const presentationFontFamilyIds = new Set([
+  'aptos',
+  'microsoft-yahei',
+  'simsun',
+  'arial',
+  'times-new-roman',
+]);
+
+const presentationFontFamilyOptions = officeFontFamilies
+  .filter(({ id }) => presentationFontFamilyIds.has(id))
+  .map(({ cssFamily, cssValue, label }) => ({
+    value: cssValue,
+    label,
+    previewStyle: { fontFamily: cssFamily },
+  }));
 
 const presentationAlignmentOptions = [
   { value: 'none', label: '对象对齐', disabled: true },
@@ -349,6 +358,7 @@ export function PresentationToolbar({
                       label="组合"
                       title="组合（⌘/Ctrl+G）"
                       aria-keyshortcuts="Control+G Meta+G"
+                      displayLabel={false}
                       disabled={!can.groupElements()}
                       onClick={commands.groupElements}
                     >
@@ -358,6 +368,7 @@ export function PresentationToolbar({
                       label="取消组合"
                       title="取消组合（⌘/Ctrl+Shift+G）"
                       aria-keyshortcuts="Control+Shift+G Meta+Shift+G"
+                      displayLabel={false}
                       disabled={!can.ungroupElements()}
                       onClick={commands.ungroupElements}
                     >
@@ -365,6 +376,7 @@ export function PresentationToolbar({
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
                       label="下移一层"
+                      displayLabel={false}
                       disabled={!can.reorderElement(-1)}
                       onClick={() => commands.reorderElement(-1)}
                     >
@@ -372,6 +384,7 @@ export function PresentationToolbar({
                     </WorkOfficeRibbonButton>
                     <WorkOfficeRibbonButton
                       label="上移一层"
+                      displayLabel={false}
                       disabled={!can.reorderElement(1)}
                       onClick={() => commands.reorderElement(1)}
                     >

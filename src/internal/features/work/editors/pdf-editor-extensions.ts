@@ -24,6 +24,8 @@ export interface PdfEditorCommands {
   save: () => Promise<void>;
   search: (query: string) => void;
   setAnnotationColor: (color: string) => void;
+  setAnnotationOpacity: (opacity: number) => void;
+  setAnnotationStrokeWidth: (strokeWidth: number) => void;
   selectAnnotationTool: (toolId: PdfAnnotationToolId | null) => void;
   undo: () => void;
   zoomIn: () => void;
@@ -166,6 +168,30 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
             /^#[0-9a-f]{6}$/i.test(color),
           execute: ({ annotation }, color) =>
             annotation.setAnnotationColor(color),
+        },
+        setAnnotationOpacity: {
+          canExecute: ({ annotation, editable, viewer }, opacity) =>
+            editable &&
+            documentReady(viewer) &&
+            annotation.state.available &&
+            annotation.state.supportsOpacity &&
+            Number.isFinite(opacity) &&
+            opacity >= 0 &&
+            opacity <= 1,
+          execute: ({ annotation }, opacity) =>
+            annotation.setAnnotationOpacity(opacity),
+        },
+        setAnnotationStrokeWidth: {
+          canExecute: ({ annotation, editable, viewer }, strokeWidth) =>
+            editable &&
+            documentReady(viewer) &&
+            annotation.state.available &&
+            annotation.state.supportsStrokeWidth &&
+            Number.isFinite(strokeWidth) &&
+            strokeWidth > 0 &&
+            strokeWidth <= 24,
+          execute: ({ annotation }, strokeWidth) =>
+            annotation.setAnnotationStrokeWidth(strokeWidth),
         },
       }),
     }),

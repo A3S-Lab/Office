@@ -1,40 +1,16 @@
 import type { Editor } from '@tiptap/core';
+import { officeFontFamilies } from './office-font-families';
 
 export const documentFontFamilyOptions = [
   { value: 'default', label: '默认字体' },
-  {
-    value: '"Microsoft YaHei", "PingFang SC", sans-serif',
-    label: '微软雅黑',
-    previewStyle: {
-      fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
-    },
-  },
-  {
-    value: 'SimSun, "Songti SC", serif',
-    label: '宋体',
-    previewStyle: { fontFamily: 'SimSun, "Songti SC", serif' },
-  },
-  {
-    value: 'SimHei, "Heiti SC", sans-serif',
-    label: '黑体',
-    previewStyle: { fontFamily: 'SimHei, "Heiti SC", sans-serif' },
-  },
-  {
-    value: 'KaiTi, "Kaiti SC", serif',
-    label: '楷体',
-    previewStyle: { fontFamily: 'KaiTi, "Kaiti SC", serif' },
-  },
-  {
-    value: 'Arial, sans-serif',
-    label: 'Arial',
-    previewStyle: { fontFamily: 'Arial, sans-serif' },
-  },
-  {
-    value: '"Times New Roman", serif',
-    label: 'Times New Roman',
-    previewStyle: { fontFamily: '"Times New Roman", serif' },
-  },
-] as const;
+  ...officeFontFamilies
+    .filter(({ id }) => id !== 'aptos')
+    .map(({ cssFamily, label }) => ({
+      value: cssFamily,
+      label,
+      previewStyle: { fontFamily: cssFamily },
+    })),
+];
 
 export const documentFontSizeOptions = [
   { value: 'default', label: '10.5' },

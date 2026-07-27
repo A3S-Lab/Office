@@ -187,21 +187,22 @@ interaction model.
   selection menus. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
-  source-aware ribbon formatting and shortcuts, task lists, tables, links,
-  images, code, and host-defined selection menus. _Markdown import/export._
+  source-aware ribbon formatting and shortcuts, empty-source guidance, task
+  lists, tables, links, images, code, and host-defined selection menus.
+  _Markdown import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
   live selection statistics, native cut/copy/paste and clear actions, direct
-  number/percent formats and decimal controls, formatting, charts, validation,
-  protection, comments, and print settings. _XLSX, XLS, ODS, and CSV import;
-  XLSX and PDF export._
+  font-family, vertical-alignment, text-wrap, number/percent, and decimal
+  controls, charts, validation, protection, comments, and print settings.
+  _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
 - **Presentation** — Typed slide scene graph, multi-selection, groups, object
   transforms, keyboard-accessible table-size insertion, native slide and object
   context actions, guides, comments, transitions, one-step slideshow from the
   beginning or current slide, and presenter view. _PPTX import/export; PDF
   export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
-  annotation colors, history, responsive navigation and zoom controls, and
-  save. _PDF open/save._
+  annotation color, opacity, compatible stroke-width controls, history,
+  responsive navigation and zoom controls, and save. _PDF open/save._
 
 Document and Markdown accept public TipTap Extensions. Spreadsheet,
 Presentation, and PDF expose stable host ports rather than their internal
