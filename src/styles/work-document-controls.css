@@ -1111,7 +1111,6 @@
 }
 
 .work-document-editor ins[data-document-change],
-.work-document-preview-pages ins[data-document-change],
 .work-pdf-export-page.document ins[data-document-change] {
   border-bottom: 1px solid #2d8a58;
   background: #e7f6ed;
@@ -1120,7 +1119,6 @@
 }
 
 .work-document-editor del[data-document-change],
-.work-document-preview-pages del[data-document-change],
 .work-pdf-export-page.document del[data-document-change] {
   background: #fff0ee;
   color: #b9483d;

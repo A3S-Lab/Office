@@ -16,11 +16,7 @@ export function layoutOfficeDocumentInJavaScript(
   validateLayoutRequest(request);
   const availableHeight = Math.max(
     1,
-    request.page.height -
-      request.page.marginTop -
-      request.page.marginBottom -
-      request.page.headerHeight -
-      request.page.footerHeight,
+    request.page.height - request.page.marginTop - request.page.marginBottom,
   );
   const pages: OfficeKernelLayoutPage[] = [
     emptyPage(request.startPageIndex, availableHeight),
@@ -120,10 +116,7 @@ function validateLayoutRequest(request: OfficeKernelLayoutRequest): void {
   }
   if (
     request.page.height <=
-    request.page.marginTop +
-      request.page.marginBottom +
-      request.page.headerHeight +
-      request.page.footerHeight
+    request.page.marginTop + request.page.marginBottom
   ) {
     throw kernelError(
       'office.kernel.page_height_invalid',
@@ -544,10 +537,8 @@ function layoutBreaks(
         spacerHeight:
           remainingBodyHeight +
           request.page.marginBottom +
-          request.page.footerHeight +
           request.page.pageGap +
-          request.page.marginTop +
-          request.page.headerHeight,
+          request.page.marginTop,
       },
     ];
   });

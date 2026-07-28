@@ -33,7 +33,7 @@ pub use text_layout::{
     TextTabAlignment, TextTabLayout, TextTabStop, TextWhiteSpace,
 };
 
-pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 14;
+pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 15;
 const MAX_LAYOUT_BLOCKS: usize = 10_000;
 const MAX_LAYOUT_EXTENT: f64 = 1_000_000.0;
 const MAX_LAYOUT_PAGE_INDEX: u32 = 1_000_000;
@@ -57,12 +57,7 @@ pub struct LayoutPageMetrics {
 
 impl LayoutPageMetrics {
     fn available_height(&self) -> f64 {
-        (self.height
-            - self.margin_top
-            - self.margin_bottom
-            - self.header_height
-            - self.footer_height)
-            .max(1.0)
+        (self.height - self.margin_top - self.margin_bottom).max(1.0)
     }
 
     fn validate(&self) -> Result<(), KernelError> {
@@ -85,9 +80,7 @@ impl LayoutPageMetrics {
                 "Page width must be greater than its horizontal margins.",
             ));
         }
-        if self.height
-            <= self.margin_top + self.margin_bottom + self.header_height + self.footer_height
-        {
+        if self.height <= self.margin_top + self.margin_bottom {
             return Err(KernelError::invalid(
                 "office.kernel.page_height_invalid",
                 "Page height must leave a positive body area.",
@@ -666,10 +659,8 @@ fn layout_breaks(pages: &[LayoutPage], metrics: &LayoutPageMetrics) -> Vec<Layou
                 page_index: page.index,
                 spacer_height: remaining_body_height
                     + metrics.margin_bottom
-                    + metrics.footer_height
                     + metrics.page_gap
-                    + metrics.margin_top
-                    + metrics.header_height,
+                    + metrics.margin_top,
                 remaining_body_height,
             })
         })

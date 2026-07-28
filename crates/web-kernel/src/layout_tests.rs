@@ -176,6 +176,31 @@ fn paginates_blocks_and_reports_visual_spacers() {
 }
 
 #[test]
+fn keeps_page_chrome_inside_the_physical_margins() {
+    let mut input = request(vec![block("body", 150.0), block("tail", 20.0)]);
+    input.page = LayoutPageMetrics {
+        width: 300.0,
+        height: 200.0,
+        margin_top: 20.0,
+        margin_right: 20.0,
+        margin_bottom: 20.0,
+        margin_left: 20.0,
+        header_height: 20.0,
+        footer_height: 20.0,
+        page_gap: 30.0,
+    };
+
+    let result = layout_document(&input).expect("layout");
+
+    assert_eq!(result.pages.len(), 2);
+    assert_eq!(result.pages[0].available_height, 160.0);
+    assert!(!result.pages[0].placements[0].overflow);
+    assert_eq!(result.breaks[0].before_block_id, "tail");
+    assert_eq!(result.breaks[0].remaining_body_height, 10.0);
+    assert_eq!(result.breaks[0].spacer_height, 80.0);
+}
+
+#[test]
 fn keeps_a_heading_with_the_following_block() {
     let mut heading = block("heading", 40.0);
     heading.keep_with_next = true;

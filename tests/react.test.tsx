@@ -56,6 +56,28 @@ test('renders the React document editor in preview mode', async () => {
   );
 });
 
+test('keeps the canonical document surface mounted when preview changes', async () => {
+  const artifact = createArtifact('project-brief');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const props = {
+    content: artifact.content,
+    onChange: () => undefined,
+    theme: 'light' as const,
+  };
+  const view = render(<DocumentEditor {...props} preview={false} />);
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+
+  view.rerender(<DocumentEditor {...props} preview />);
+
+  const preview = await screen.findByLabelText('文字预览');
+  expect(preview).toContainElement(editor);
+  expect(editor).toHaveAttribute('role', 'document');
+  expect(editor).toHaveAttribute('contenteditable', 'false');
+  expect(document.querySelector('.work-document-print-body')).toBeNull();
+});
+
 test('mounts host TipTap extensions in the document editor', async () => {
   let shortcutCalls = 0;
   const hostShortcuts = Extension.create({

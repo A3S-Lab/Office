@@ -207,6 +207,14 @@ describe('document lists', () => {
     expect(
       pageBreak?.querySelector('.work-document-page-break-chrome.header'),
     ).toHaveAttribute('data-page-chrome-variant', 'even');
+    expect(
+      pageBreak?.style.getPropertyValue(
+        '--work-document-previous-page-footer-top',
+      ),
+    ).toBe('30px');
+    expect(
+      pageBreak?.style.getPropertyValue('--work-document-next-page-header-top'),
+    ).toBe('80px');
 
     editor.destroy();
   });

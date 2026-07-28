@@ -259,11 +259,6 @@ function incrementalBoundaryBreak(
     pageIndex: next.index,
     remainingBodyHeight,
     spacerHeight:
-      remainingBodyHeight +
-      page.marginBottom +
-      page.footerHeight +
-      page.pageGap +
-      page.marginTop +
-      page.headerHeight,
+      remainingBodyHeight + page.marginBottom + page.pageGap + page.marginTop,
   };
 }

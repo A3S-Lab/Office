@@ -34,6 +34,35 @@ describe('Office layout kernel', () => {
     expect(result.documentRevision).toBe(4);
   });
 
+  test('keeps page chrome inside the physical margins', () => {
+    const input = request([block('body', 150), block('tail', 20)]);
+    input.page = {
+      width: 300,
+      height: 200,
+      marginTop: 20,
+      marginRight: 20,
+      marginBottom: 20,
+      marginLeft: 20,
+      headerHeight: 20,
+      footerHeight: 20,
+      pageGap: 30,
+    };
+
+    const result = layoutOfficeDocumentInJavaScript(input);
+
+    expect(result.pages).toHaveLength(2);
+    expect(result.pages[0]?.availableHeight).toBe(160);
+    expect(result.pages[0]?.placements[0]).toMatchObject({
+      blockId: 'body',
+      overflow: false,
+    });
+    expect(result.breaks[0]).toMatchObject({
+      beforeBlockId: 'tail',
+      remainingBodyHeight: 10,
+      spacerHeight: 80,
+    });
+  });
+
   test('keeps a heading with its following block when they fit together', () => {
     const result = layoutOfficeDocumentInJavaScript(
       request([

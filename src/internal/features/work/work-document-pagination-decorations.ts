@@ -198,11 +198,7 @@ function applyDocumentPageBreakVariables(
   );
   element.style.setProperty(
     '--work-document-page-gap-offset',
-    `${
-      pageBreak.remainingBodyHeight +
-      pageBreak.page.marginBottom +
-      pageBreak.page.footerHeight
-    }px`,
+    `${pageBreak.remainingBodyHeight + pageBreak.page.marginBottom}px`,
   );
   element.style.setProperty(
     '--work-document-page-gap-height',
@@ -210,16 +206,14 @@ function applyDocumentPageBreakVariables(
   );
   element.style.setProperty(
     '--work-document-previous-page-footer-top',
-    `${pageBreak.remainingBodyHeight + pageBreak.page.marginBottom}px`,
+    `${pageBreak.remainingBodyHeight}px`,
   );
   element.style.setProperty(
     '--work-document-next-page-header-top',
     `${
       pageBreak.remainingBodyHeight +
       pageBreak.page.marginBottom +
-      pageBreak.page.footerHeight +
-      pageBreak.page.pageGap +
-      pageBreak.page.marginTop
+      pageBreak.page.pageGap
     }px`,
   );
   element.style.setProperty(

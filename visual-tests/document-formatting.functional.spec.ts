@@ -94,6 +94,56 @@ test('Word keeps browser-synthesized bold text on deterministic layout', async (
   expect(pageErrors).toEqual([]);
 });
 
+test('Word preview reuses the live WASM pagination result', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '空白文字 从一张干净的 A4 页面开始',
+    })
+    .click();
+
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  await editor.fill('A3S Office deterministic pagination. '.repeat(1_200));
+  await expect
+    .poll(async () =>
+      Number(await editor.getAttribute('data-pagination-pages')),
+    )
+    .toBeGreaterThan(1);
+  const pageCount = await editor.getAttribute('data-pagination-pages');
+  const engine = await editor.getAttribute('data-pagination-engine');
+  const breakCount = await editor
+    .locator('.work-document-auto-page-break')
+    .count();
+  expect(engine).toBe('wasm');
+  expect(breakCount).toBeGreaterThan(0);
+  await editor.evaluate((element) => {
+    element.setAttribute('data-preview-identity', 'canonical');
+  });
+
+  await page.getByRole('button', { name: '预览' }).click();
+  const preview = page.locator(
+    '.work-document-preview-page .ProseMirror[data-preview-identity="canonical"]',
+  );
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute('role', 'document');
+  await expect(preview).toHaveAttribute('contenteditable', 'false');
+  await expect(preview).toHaveAttribute('data-pagination-state', 'ready');
+  await expect(preview).toHaveAttribute(
+    'data-pagination-pages',
+    pageCount ?? '',
+  );
+  await expect(preview).toHaveAttribute('data-pagination-engine', engine ?? '');
+  await expect(preview.locator('.work-document-auto-page-break')).toHaveCount(
+    breakCount,
+  );
+  expect(pageErrors).toEqual([]);
+});
+
 test('Word edit, preview, and PDF surfaces share one typography baseline', async ({
   page,
 }) => {
@@ -117,9 +167,7 @@ test('Word edit, preview, and PDF surfaces share one typography baseline', async
     const preview = document.querySelector<HTMLElement>(
       '.work-document-preview-page',
     );
-    const body = preview?.querySelector<HTMLElement>(
-      '.work-document-print-body',
-    );
+    const body = preview?.querySelector<HTMLElement>('.ProseMirror');
     if (!body) throw new Error('Document preview body is unavailable.');
     const probe = document.createElement('section');
     probe.id = 'document-pdf-typography-probe';
@@ -172,7 +220,7 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
   const geometry = await previewPage.evaluate((paper) => {
     const header = paper.querySelector<HTMLElement>(':scope > header');
     const body = paper.querySelector<HTMLElement>(
-      ':scope > .work-document-print-body',
+      ':scope > .work-document-editable',
     );
     const footer = paper.querySelector<HTMLElement>(':scope > footer');
     if (!(header && body && footer)) {
@@ -182,6 +230,7 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
     const headerRect = header.getBoundingClientRect();
     const bodyRect = body.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
+    const paperStyle = getComputedStyle(paper);
     return {
       headerPosition: getComputedStyle(header).position,
       footerPosition: getComputedStyle(footer).position,
@@ -199,6 +248,9 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
       footerBottom: footerRect.bottom,
       footerLeft: footerRect.left,
       footerRight: footerRect.right,
+      scale: paper.offsetWidth > 0 ? paperRect.width / paper.offsetWidth : 1,
+      paddingTop: Number.parseFloat(paperStyle.paddingTop),
+      paddingBottom: Number.parseFloat(paperStyle.paddingBottom),
     };
   });
   expect(geometry.headerPosition).toBe('absolute');
@@ -207,7 +259,13 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
     2,
   );
   expect(
-    Math.abs(geometry.headerBottom - geometry.bodyTop),
+    Math.abs(
+      geometry.headerBottom -
+        (geometry.pageTop + geometry.paddingTop * geometry.scale),
+    ),
+  ).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs(geometry.bodyTop - geometry.headerBottom),
   ).toBeLessThanOrEqual(2);
   expect(Math.abs(geometry.headerLeft - geometry.bodyLeft)).toBeLessThanOrEqual(
     2,
@@ -216,8 +274,12 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
     Math.abs(geometry.headerRight - geometry.bodyRight),
   ).toBeLessThanOrEqual(2);
   expect(
-    Math.abs(geometry.footerTop - geometry.bodyBottom),
+    Math.abs(
+      geometry.footerTop -
+        (geometry.pageBottom - geometry.paddingBottom * geometry.scale),
+    ),
   ).toBeLessThanOrEqual(2);
+  expect(geometry.footerTop).toBeGreaterThanOrEqual(geometry.bodyBottom);
   expect(
     Math.abs(geometry.footerBottom - geometry.pageBottom),
   ).toBeLessThanOrEqual(2);

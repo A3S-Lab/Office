@@ -9,7 +9,7 @@
   white-space: nowrap;
 }
 
-.work-document-preview-pages .work-document-field,
+.work-document-editor.preview .work-document-field,
 .work-pdf-export-page .work-document-field {
   padding: 0;
   border-bottom: 0;

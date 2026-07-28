@@ -391,14 +391,6 @@
   break-inside: avoid;
 }
 
-.work-document-preview-pages {
-  min-height: 0;
-  flex: 1;
-  padding: 28px max(28px, calc((100% - 850px) / 2)) 70px;
-  overflow: auto;
-  background: var(--a3s-bg);
-}
-
 .work-document-preview-page {
   box-sizing: border-box;
   position: relative;

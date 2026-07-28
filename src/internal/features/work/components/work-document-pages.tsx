@@ -25,42 +25,20 @@ export function WorkDocumentPdfPages({
   content: WorkDocumentContent;
 }) {
   return documentPageDescriptors(content).map((page) => (
-    <DocumentPage
+    <DocumentPdfPage
       key={page.key}
       page={page}
       pageColor={documentPageColor(content.pageColor)}
-      mode="pdf"
     />
   ));
 }
 
-export function WorkDocumentPreview({
-  content,
-}: {
-  content: WorkDocumentContent;
-}) {
-  return (
-    <section className="work-document-preview-pages" aria-label="文字预览">
-      {documentPageDescriptors(content).map((page) => (
-        <DocumentPage
-          key={page.key}
-          page={page}
-          pageColor={documentPageColor(content.pageColor)}
-          mode="preview"
-        />
-      ))}
-    </section>
-  );
-}
-
-function DocumentPage({
+function DocumentPdfPage({
   page,
   pageColor,
-  mode,
 }: {
   page: WorkDocumentPageDescriptor;
   pageColor: string;
-  mode: 'pdf' | 'preview';
 }) {
   const pageRef = useRef<HTMLElement>(null);
   const layout = page.layout;
@@ -69,10 +47,7 @@ function DocumentPage({
     page.sectionPage,
     page.physicalPage,
   );
-  const pageClass =
-    mode === 'pdf'
-      ? `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`
-      : `work-document-preview-page ${layout.pageSize} ${layout.orientation}`;
+  const pageClass = `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`;
   const marginPixels = {
     top: millimetersToPixels(layout.margins.top),
     right: millimetersToPixels(layout.margins.right),
@@ -106,21 +81,15 @@ function DocumentPage({
     <section
       ref={pageRef}
       className={pageClass}
-      data-work-pdf-page={mode === 'pdf' ? '' : undefined}
-      data-pdf-orientation={mode === 'pdf' ? layout.orientation : undefined}
-      data-pdf-page-size={mode === 'pdf' ? layout.pageSize : undefined}
+      data-work-pdf-page=""
+      data-pdf-orientation={layout.orientation}
+      data-pdf-page-size={layout.pageSize}
       data-document-physical-page={page.physicalPage}
       data-document-page-number={page.pageNumber}
       data-document-blank-page={String(page.blank)}
       data-document-page-chrome={pageChrome.variant}
-      data-document-comment-appearance={
-        mode === 'pdf' ? 'plain' : 'highlighted'
-      }
-      aria-label={
-        mode === 'preview'
-          ? `文字预览第 ${page.physicalPage} 页`
-          : `文字打印预览第 ${page.physicalPage} 页`
-      }
+      data-document-comment-appearance="plain"
+      aria-label={`文字打印预览第 ${page.physicalPage} 页`}
       style={
         {
           backgroundColor: pageColor,

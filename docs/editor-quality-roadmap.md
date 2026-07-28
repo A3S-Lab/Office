@@ -95,6 +95,14 @@ does not synthesize a filename header. Compact previews keep the same physical
 page geometry and use bounded scrolling instead of changing margins and text
 flow to fit the viewport.
 
+Editing and read-only preview now retain one canonical TipTap surface and the
+same Worker/WASM pagination result, so switching mode preserves shaped runs,
+automatic page breaks, table fragments, and the computed page count. Page
+chrome is treated as an overlay inside the physical margins rather than an
+additional body-height deduction. PDF composition still needs to consume this
+same live pagination result before the three rendering paths share one page
+layout source of truth.
+
 Exit evidence:
 
 - Deterministic page goldens cover Latin, CJK, Arabic, Hebrew, lists, sections,

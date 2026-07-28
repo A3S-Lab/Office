@@ -73,3 +73,10 @@ All notable changes to A3S Office will be documented in this file.
   and PDF composition no longer inserts the filename as an implicit header.
 - Preserved physical Word page width and margins in compact preview so a
   narrow viewport scrolls the page instead of changing line wrapping.
+- Kept the canonical TipTap document and its Worker/WASM page decorations
+  mounted when switching between Word editing and read-only preview, preserving
+  page count, automatic breaks, font shaping, and table pagination instead of
+  rebuilding a separate HTML preview.
+- Corrected page-layout geometry so headers and footers overlay their physical
+  top and bottom margins without reducing the body height a second time; the
+  kernel protocol is now version 15.

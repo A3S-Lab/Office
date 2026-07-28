@@ -535,7 +535,6 @@
 }
 
 .work-document-page .tiptap .work-document-tab,
-.work-document-preview-pages .work-document-tab,
 .work-pdf-export-page.document .work-document-tab {
   position: relative;
   display: inline-block;
@@ -547,7 +546,6 @@
 }
 
 .work-document-page .tiptap .work-document-tab::after,
-.work-document-preview-pages .work-document-tab::after,
 .work-pdf-export-page.document .work-document-tab::after {
   position: absolute;
   right: 1px;

@@ -14,7 +14,7 @@
   color: #b53b3b;
 }
 
-.work-document-preview-pages .work-document-citation,
+.work-document-editor.preview .work-document-citation,
 .work-pdf-export-page .work-document-citation {
   padding: 0;
   border-bottom: 0;
@@ -22,7 +22,7 @@
   color: inherit;
 }
 
-.work-document-preview-pages
+.work-document-editor.preview
   .work-document-citation[data-citation-orphaned="true"],
 .work-pdf-export-page .work-document-citation[data-citation-orphaned="true"] {
   color: #b53b3b;

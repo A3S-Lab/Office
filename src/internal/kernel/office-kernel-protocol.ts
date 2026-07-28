@@ -38,7 +38,9 @@ export interface OfficeKernelPageMetrics {
   marginRight: number;
   marginBottom: number;
   marginLeft: number;
+  /** Visual header region overlaid inside marginTop; it does not reduce body height. */
   headerHeight: number;
+  /** Visual footer region overlaid inside marginBottom; it does not reduce body height. */
   footerHeight: number;
   pageGap: number;
 }
