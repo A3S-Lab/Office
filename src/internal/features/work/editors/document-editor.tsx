@@ -324,7 +324,10 @@ export function DocumentEditor({
   );
 
   useOfficeTaskPaneEscape(Boolean(taskPane), closeTaskPane);
-  useOfficeTaskPaneEscape(documentComments.open, closeCommentsPanel);
+  useOfficeTaskPaneEscape(
+    documentComments.open && !documentComments.draft,
+    closeCommentsPanel,
+  );
 
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {
