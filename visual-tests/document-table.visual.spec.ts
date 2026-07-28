@@ -16,6 +16,7 @@ test('document table Design and Layout stay visual and survive preview', async (
   await page.getByRole('tab', { name: '插入' }).click();
   await page.getByRole('button', { name: '插入表格' }).click();
   const picker = page.getByRole('dialog', { name: '选择表格大小' });
+  await expect(picker.getByRole('button', { name: '1 行 1 列' })).toBeFocused();
   await picker.getByRole('button', { name: '3 行 3 列' }).click();
 
   const designTab = page.getByRole('tab', { name: '表格设计' });
