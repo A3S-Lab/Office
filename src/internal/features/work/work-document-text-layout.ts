@@ -428,25 +428,25 @@ function documentTextLayoutRunStyle(
   const families = cssFontFamilies(style.fontFamily);
   if (!families?.length) return null;
   const weight = cssFontWeight(style.fontWeight);
-  const exactFonts: WorkDocumentLayoutFont[] = [];
+  const matchedFonts: WorkDocumentLayoutFont[] = [];
   for (const family of families) {
     if (isGenericCssFontFamily(family)) break;
-    const font = fonts.find(
-      (candidate) =>
-        loadedFontIds.has(candidate.id) &&
-        candidate.family === family &&
-        (candidate.weight ?? 400) === weight &&
-        (candidate.style ?? 'normal') === fontStyle,
+    const font = matchingDocumentLayoutFont(
+      fonts,
+      loadedFontIds,
+      family,
+      weight,
+      fontStyle,
     );
     if (!font) return null;
-    if (!exactFonts.some((candidate) => candidate.id === font.id)) {
-      exactFonts.push(font);
+    if (!matchedFonts.some((candidate) => candidate.id === font.id)) {
+      matchedFonts.push(font);
     }
-    if (exactFonts.length > MAX_DOCUMENT_TEXT_LAYOUT_FONTS_PER_RUN) {
+    if (matchedFonts.length > MAX_DOCUMENT_TEXT_LAYOUT_FONTS_PER_RUN) {
       return null;
     }
   }
-  const [font, ...fallbackFonts] = exactFonts;
+  const [font, ...fallbackFonts] = matchedFonts;
   if (!font) return null;
   const fontSize = positivePixels(style.fontSize);
   const lineHeight =
@@ -478,6 +478,70 @@ function documentTextLayoutRunStyle(
     ligatures,
     kerning,
   };
+}
+
+function matchingDocumentLayoutFont(
+  fonts: readonly WorkDocumentLayoutFont[],
+  loadedFontIds: ReadonlySet<string>,
+  family: string,
+  requestedWeight: number,
+  requestedStyle: 'italic' | 'normal',
+): WorkDocumentLayoutFont | undefined {
+  const candidates = fonts.filter(
+    (font) =>
+      loadedFontIds.has(font.id) &&
+      font.family === family &&
+      (font.style ?? 'normal') === requestedStyle,
+  );
+  const exact = candidates.find(
+    (font) => (font.weight ?? 400) === requestedWeight,
+  );
+  if (exact) return exact;
+
+  const weights = Array.from(
+    new Set(candidates.map((font) => font.weight ?? 400)),
+  ).sort((left, right) => left - right);
+  const matchedWeight = cssFontWeightSearchOrder(weights, requestedWeight)[0];
+  return matchedWeight === undefined
+    ? undefined
+    : candidates.find((font) => (font.weight ?? 400) === matchedWeight);
+}
+
+function cssFontWeightSearchOrder(
+  weights: readonly number[],
+  requestedWeight: number,
+): number[] {
+  if (requestedWeight < 400) {
+    return [
+      ...weights
+        .filter((weight) => weight <= requestedWeight)
+        .sort((left, right) => right - left),
+      ...weights
+        .filter((weight) => weight > requestedWeight)
+        .sort((left, right) => left - right),
+    ];
+  }
+  if (requestedWeight <= 500) {
+    return [
+      ...weights
+        .filter((weight) => weight >= requestedWeight && weight <= 500)
+        .sort((left, right) => left - right),
+      ...weights
+        .filter((weight) => weight < requestedWeight)
+        .sort((left, right) => right - left),
+      ...weights
+        .filter((weight) => weight > 500)
+        .sort((left, right) => left - right),
+    ];
+  }
+  return [
+    ...weights
+      .filter((weight) => weight >= requestedWeight)
+      .sort((left, right) => left - right),
+    ...weights
+      .filter((weight) => weight < requestedWeight)
+      .sort((left, right) => right - left),
+  ];
 }
 
 function documentTextLayoutRunStyleKey(

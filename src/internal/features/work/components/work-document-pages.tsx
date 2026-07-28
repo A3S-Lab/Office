@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { type CSSProperties, useLayoutEffect, useRef } from 'react';
 import { millimetersToPixels } from '../work-document-layout';
 import {
   documentColumnGridTemplate,
@@ -21,17 +21,14 @@ import type { WorkDocumentContent } from '../work-types';
 
 export function WorkDocumentPdfPages({
   content,
-  title,
 }: {
   content: WorkDocumentContent;
-  title: string;
 }) {
   return documentPageDescriptors(content).map((page) => (
     <DocumentPage
       key={page.key}
       page={page}
       pageColor={documentPageColor(content.pageColor)}
-      title={title}
       mode="pdf"
     />
   ));
@@ -59,12 +56,10 @@ export function WorkDocumentPreview({
 function DocumentPage({
   page,
   pageColor,
-  title,
   mode,
 }: {
   page: WorkDocumentPageDescriptor;
   pageColor: string;
-  title?: string;
   mode: 'pdf' | 'preview';
 }) {
   const pageRef = useRef<HTMLElement>(null);
@@ -78,6 +73,12 @@ function DocumentPage({
     mode === 'pdf'
       ? `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`
       : `work-document-preview-page ${layout.pageSize} ${layout.orientation}`;
+  const marginPixels = {
+    top: millimetersToPixels(layout.margins.top),
+    right: millimetersToPixels(layout.margins.right),
+    bottom: millimetersToPixels(layout.margins.bottom),
+    left: millimetersToPixels(layout.margins.left),
+  };
   useLayoutEffect(() => {
     const element = pageRef.current;
     if (!element) return;
@@ -120,23 +121,25 @@ function DocumentPage({
           ? `文字预览第 ${page.physicalPage} 页`
           : `文字打印预览第 ${page.physicalPage} 页`
       }
-      style={{
-        backgroundColor: pageColor,
-        padding: `${millimetersToPixels(layout.margins.top)}px ${millimetersToPixels(
-          layout.margins.right,
-        )}px ${millimetersToPixels(layout.margins.bottom)}px ${millimetersToPixels(layout.margins.left)}px`,
-      }}
+      style={
+        {
+          backgroundColor: pageColor,
+          padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
+          '--work-document-page-margin-top': `${marginPixels.top}px`,
+          '--work-document-page-margin-right': `${marginPixels.right}px`,
+          '--work-document-page-margin-bottom': `${marginPixels.bottom}px`,
+          '--work-document-page-margin-left': `${marginPixels.left}px`,
+        } as CSSProperties
+      }
     >
-      <header>
-        {pageChrome.headerHtml ? (
+      {pageChrome.headerHtml && (
+        <header>
           <div
             className="work-document-page-chrome-html"
             dangerouslySetInnerHTML={{ __html: pageChrome.headerHtml }}
           />
-        ) : (
-          title || ''
-        )}
-      </header>
+        </header>
+      )}
       <div className="work-document-print-body">
         {page.blank ? (
           <span className="work-document-blank-page-label">

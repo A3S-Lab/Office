@@ -116,7 +116,7 @@ focus restoration.
 
 | Product | Implemented browser surface | Implemented kernel boundary | Next fidelity gate |
 | --- | --- | --- | --- |
-| Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, a persistent typed heading-navigation pane with active-selection tracking, filtering and collapsible keyboard traversal, host-owned selected-text menus with full document context and range-mapped async commands, responsive and keyboard-operated paragraph-style and list galleries, typed bullet and numbering commands with restart/continue/start controls, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across exact registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
+| Document | One TipTap/ProseMirror body tree, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, one typography and page-chrome baseline across editing, preview, and PDF surfaces, a persistent typed heading-navigation pane with active-selection tracking, filtering and collapsible keyboard traversal, host-owned selected-text menus with full document context and range-mapped async commands, responsive and keyboard-operated paragraph-style and list galleries, typed bullet and numbering commands with restart/continue/start controls, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across CSS-matched registered text runs, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a resizable source-and-preview split view by default, source-aware ribbon formatting and shortcuts, bounded source-native history with coalesced typing and selection restoration, host-defined selection menus across both editing surfaces, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, keyboard-adjustable pane sizing, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
 | Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, typed editing and calculation command ports, direct font-family, horizontal/vertical-alignment, text-wrap, general/number/percent, and decimal-place controls backed by native cell-style keys, live count/sum/average selection summaries, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, A3S-owned custom number-format evaluation, and print layout |
 | Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, exact keyboard-accessible table-dimension insertion, native slide/object context actions with optional AI actions, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, direct beginning/current-slide playback with fullscreen fallback, frame-coalesced transactional move/resize previews that commit once on pointer release, and two-level thumbnail node and scene windowing | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
@@ -133,6 +133,17 @@ pre-shaped following-segment widths in the kernel. Glyphs missing from the
 complete stack, unsupported OpenType behavior, inline objects, tab paragraphs
 that resolve any right-to-left run, and unregistered faces deliberately retain
 browser line measurement.
+
+Document editing, read-only preview, and browser PDF composition resolve their
+base font, size, line height, paragraph spacing, headings, lists, quotations,
+and image wrapping from the same CSS rendering variables. Preview and PDF page
+chrome is absolutely positioned inside the physical page margins, matching the
+editing surface instead of consuming body flow. An absent header produces no
+header element, and PDF composition never invents a filename header. Imported
+inline formatting and host typography variables remain higher-priority inputs.
+Narrow preview containers retain the physical page width and margins and
+scroll the page instead of silently shrinking the text area and changing line
+breaks.
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell
 patches from stable Fortune cell operations, and requests only the dirty
@@ -249,10 +260,14 @@ content model or corrupt undo, selection mapping, copy and paste, or a future
 collaboration protocol.
 
 The current browser-kernel slice collects contiguous geometry-affecting text
-runs from eligible paragraphs. Each run carries an ordered, exact registered
-font stack, size, line height, letter spacing, ligature, and kerning behavior.
-The kernel selects a face for each grapheme, joins adjacent selections that use
-the same face, and includes every used face in line ascent and descent.
+runs from eligible paragraphs. Each run carries an ordered registered font
+stack, size, line height, letter spacing, ligature, and kerning behavior. Font
+families and normal/italic styles remain exact; numeric weights follow the CSS
+Fonts matching order so WPS-style values such as 680 or 730 select a registered
+700 face. When a family has only one normal-style weight, the same face
+provides deterministic metrics for browser-synthesized bold text. The kernel
+selects a face for each grapheme, joins adjacent selections that use the same
+face, and includes every used face in line ascent and descent.
 Rustybuzz shapes those segments and the kernel applies Unicode and
 grapheme-safe line breaking across run boundaries. Unsupported paragraphs
 retain the existing DOM range path, which maps each browser visual-line start

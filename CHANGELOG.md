@@ -62,3 +62,14 @@ All notable changes to A3S Office will be documented in this file.
 - Stacked the file command bar above non-PDF ribbon tabs at phone widths so
   filenames and actions no longer compress or overlap the keyboard-accessible,
   horizontally scrollable tab row; PDF retains its single compact toolbar.
+- Matched registered document font weights using the CSS Fonts search order so
+  common 680/730 heading weights and browser-synthesized bold metrics stay on
+  the deterministic Rust/WASM text-layout path instead of falling back to DOM
+  line measurement.
+- Unified Word body typography, headings, paragraphs, lists, quotations, and
+  image wrapping across editing, read-only preview, and PDF composition.
+- Positioned preview and PDF headers and footers inside the configured page
+  margins without shifting body content; empty headers are no longer rendered
+  and PDF composition no longer inserts the filename as an implicit header.
+- Preserved physical Word page width and margins in compact preview so a
+  narrow viewport scrolls the page instead of changing line wrapping.

@@ -1,10 +1,35 @@
+:where(
+  .work-document-page,
+  .work-document-preview-page,
+  .work-pdf-export-page.document
+) {
+  --work-document-render-font-family: var(
+    --a3s-document-font-family,
+    "A3S Office Noto Sans",
+    "A3S Office Noto Sans Hans",
+    "A3S Office Noto Naskh Arabic",
+    "A3S Office Noto Sans Hebrew",
+    sans-serif
+  );
+  --work-document-render-font-size: var(--a3s-document-font-size, 10.5pt);
+  --work-document-render-line-height: var(--a3s-document-line-height, 1.5);
+  --work-document-render-paragraph-after: var(
+    --a3s-document-paragraph-after,
+    6pt
+  );
+  --work-document-render-heading-font-family: var(
+    --a3s-document-heading-font-family,
+    var(--work-document-render-font-family)
+  );
+}
+
 .work-document-page {
   box-sizing: border-box;
   position: relative;
   width: 794px;
   min-height: 1123px;
   margin: 0 auto;
-  padding: 86px 88px 96px;
+  padding: 25mm 23mm;
   border: 1px solid var(--a3s-line);
   background: var(--work-document-page-color, #ffffff);
   box-shadow: 0 8px 28px rgb(30 38 55 / 10%);
@@ -33,25 +58,28 @@
   box-shadow: none;
 }
 
-.work-document-page .tiptap {
-  min-height: 820px;
-  outline: 0;
+.work-document-page .tiptap,
+.work-document-preview-page,
+.work-pdf-export-page.document {
   color: #20232b;
-  font-family: var(
-    --a3s-document-font-family,
-    "A3S Office Noto Sans",
-    "A3S Office Noto Sans Hans",
-    "A3S Office Noto Naskh Arabic",
-    "A3S Office Noto Sans Hebrew",
-    sans-serif
-  );
-  font-size: 14px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+  font-family: var(--work-document-render-font-family);
+  font-size: var(--work-document-render-font-size);
+  line-height: var(--work-document-render-line-height);
+  overflow-wrap: break-word;
   font-synthesis: style weight;
 }
 
-.work-document-page .tiptap :is(em, i) {
+.work-document-page .tiptap {
+  min-height: 820px;
+  outline: 0;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  :is(em, i) {
   font-style: italic;
 }
 
@@ -60,7 +88,9 @@
 }
 
 .work-document-page-header,
-.work-document-page-footer {
+.work-document-page-footer,
+:is(.work-document-preview-page, .work-pdf-export-page.document) > header,
+:is(.work-document-preview-page, .work-pdf-export-page.document) > footer {
   position: absolute;
   z-index: 5;
   right: var(--work-document-page-margin-right, 88px);
@@ -71,22 +101,31 @@
   align-items: center;
   justify-content: center;
   color: #7a8395;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
-  font-size: 12px;
-  line-height: 1.4;
+  font-family: var(--work-document-render-font-family);
+  font-size: var(--work-document-render-font-size);
+  line-height: var(--work-document-render-line-height);
   white-space: pre-wrap;
 }
 
-.work-document-page-header {
+.work-document-page-header,
+:is(.work-document-preview-page, .work-pdf-export-page.document) > header {
   top: 0;
   height: var(--work-document-page-margin-top, 86px);
+  justify-content: center;
+}
+
+.work-document-page-header {
   border-bottom: 1px dashed transparent;
 }
 
-.work-document-page-footer {
+.work-document-page-footer,
+:is(.work-document-preview-page, .work-pdf-export-page.document) > footer {
   bottom: 0;
   height: var(--work-document-page-margin-bottom, 96px);
   justify-content: space-between;
+}
+
+.work-document-page-footer {
   border-top: 1px dashed transparent;
 }
 
@@ -432,7 +471,7 @@
   border: 1px solid #cfd5df;
   background: #f1f4f9;
   color: #20232b;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-family: var(--work-document-render-font-family);
   font-weight: 680;
 }
 
@@ -444,35 +483,55 @@
   margin-top: 0;
 }
 
-.work-document-page .tiptap h1 {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  h1 {
   margin: 0 0 18px;
   color: #172033;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-family: var(--work-document-render-heading-font-family);
   font-size: 24px;
   font-weight: 730;
   letter-spacing: -0.025em;
   line-height: 1.32;
 }
 
-.work-document-page .tiptap h2 {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  h2 {
   margin: 24px 0 10px;
   color: #1b263d;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-family: var(--work-document-render-heading-font-family);
   font-size: 20px;
   font-weight: 690;
   line-height: 1.4;
 }
 
-.work-document-page .tiptap h3 {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  h3 {
   margin: 25px 0 9px;
   color: #24304a;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-family: var(--work-document-render-heading-font-family);
   font-size: 17px;
   font-weight: 670;
 }
 
-.work-document-page .tiptap p {
-  margin: 0 0 8px;
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  p {
+  margin: 0 0 var(--work-document-render-paragraph-after);
 }
 
 .work-document-page .tiptap .work-document-tab,
@@ -528,17 +587,32 @@
   opacity: 0.66;
 }
 
-.work-document-page .tiptap ul,
-.work-document-page .tiptap ol {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  :is(ul, ol) {
   margin: 9px 0 17px;
   padding-left: 26px;
 }
 
-.work-document-page .tiptap li p {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  li
+  p {
   margin: 4px 0;
 }
 
-.work-document-page .tiptap blockquote {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  blockquote {
   margin: 18px 0 24px;
   padding: 12px 16px;
   border-left: 3px solid #3974e8;
@@ -546,11 +620,22 @@
   color: #4f5a70;
 }
 
-.work-document-page .tiptap blockquote p {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  blockquote
+  p {
   margin: 0;
 }
 
-.work-document-page .tiptap code {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  code {
   padding: 2px 4px;
   border-radius: 4px;
   background: #f0f2f5;
@@ -558,7 +643,12 @@
   font-size: 0.88em;
 }
 
-.work-document-page .tiptap pre {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  pre {
   padding: 14px 16px;
   overflow: auto;
   border-radius: 7px;
@@ -566,7 +656,12 @@
   color: #eef2fa;
 }
 
-.work-document-page .tiptap a {
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  a {
   color: #2868d7;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -711,7 +806,7 @@
 
 .work-document-page .tiptap th {
   background: #f1f4f9;
-  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-family: var(--work-document-render-font-family);
   font-weight: 680;
 }
 

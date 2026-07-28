@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@rstest/core';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import JSZip from 'jszip';
 import {
   createArtifact,
@@ -50,12 +50,42 @@ describe('document page color', () => {
       throw new Error('Expected a document artifact.');
     artifact.content.pageColor = '#fff2cc';
 
-    render(
-      <WorkDocumentPdfPages content={artifact.content} title="Page color" />,
-    );
+    render(<WorkDocumentPdfPages content={artifact.content} />);
 
-    expect(
-      screen.getByRole('region', { name: '文字打印预览第 1 页' }),
-    ).toHaveStyle({ backgroundColor: '#fff2cc' });
+    const page = screen.getByRole('region', {
+      name: '文字打印预览第 1 页',
+    });
+    expect(page).toHaveStyle({ backgroundColor: '#fff2cc' });
+    expect(page.querySelector(':scope > header')).toBeNull();
+  });
+
+  test('renders explicit PDF page chrome without inventing a filename header', () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document')
+      throw new Error('Expected a document artifact.');
+    artifact.content.pageChrome = {
+      differentFirstPage: false,
+      differentOddEvenPages: false,
+      default: {
+        headerHtml: '<p>Quarterly report</p>',
+        footerHtml: '<p>Internal</p>',
+        showPageNumber: true,
+      },
+      first: { headerHtml: '', footerHtml: '', showPageNumber: false },
+      even: { headerHtml: '', footerHtml: '', showPageNumber: false },
+    };
+
+    render(<WorkDocumentPdfPages content={artifact.content} />);
+
+    const page = screen.getByRole('region', {
+      name: '文字打印预览第 1 页',
+    });
+    expect(page.querySelector(':scope > header')).toHaveTextContent(
+      'Quarterly report',
+    );
+    expect(page.querySelector(':scope > footer')).toHaveTextContent(
+      'Internal1',
+    );
+    expect(within(page).queryByText(artifact.title)).toBeNull();
   });
 });

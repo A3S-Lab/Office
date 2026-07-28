@@ -84,7 +84,16 @@ Current product evidence includes a responsive Page Setup task pane with
 keyboard-operated Page, Columns and Sections, and Header and Footer tabs. The
 default view contains only paper and margin controls; page-chrome editors mount
 on demand so compact and desktop workflows do not begin with one mixed,
-unbounded settings stack.
+unbounded settings stack. Deterministic text collection now follows CSS font
+weight matching while retaining exact family and normal/italic style
+boundaries, keeping intermediate and synthesized bold weights on the WASM
+layout path when a compatible registered face exists. Editing, read-only
+preview, and PDF composition now share the same base typography and structural
+content styles. Header and footer content occupies the physical page margins
+without shifting body flow, while empty headers remain absent and PDF output
+does not synthesize a filename header. Compact previews keep the same physical
+page geometry and use bounded scrolling instead of changing margins and text
+flow to fit the viewport.
 
 Exit evidence:
 

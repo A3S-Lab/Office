@@ -373,27 +373,12 @@
 }
 
 .work-pdf-export-page.document {
+  position: relative;
   display: flex;
   width: 794px;
   min-height: 1123px;
   flex-direction: column;
-  padding: 72px 82px 88px;
-  font-family: var(
-    --a3s-document-font-family,
-    "A3S Office Noto Sans",
-    "A3S Office Noto Sans Hans",
-    "A3S Office Noto Naskh Arabic",
-    "A3S Office Noto Sans Hebrew",
-    sans-serif
-  );
-  font-size: 15px;
-  font-synthesis: style weight;
-  line-height: 1.8;
-}
-
-.work-pdf-export-page.document :is(em, i),
-.work-document-preview-page :is(em, i) {
-  font-style: italic;
+  padding: 25mm 23mm;
 }
 
 .work-pdf-export-page.document.letter {
@@ -413,54 +398,6 @@
 
 .work-pdf-export-page.document > .work-document-print-body {
   flex: 1;
-}
-
-.work-pdf-export-page.document > footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 28px;
-  padding-top: 8px;
-  border-top: 1px solid #dfe3eb;
-  color: #7a8395;
-  font-family: ui-sans-serif, "PingFang SC", sans-serif;
-  font-size: 9px;
-}
-
-.work-pdf-export-page.document > footer > span:only-child {
-  margin: 0 auto;
-}
-
-.work-pdf-export-page.document > header {
-  margin-bottom: 28px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #dfe3eb;
-  color: #7a8395;
-  font-family: ui-sans-serif, "PingFang SC", sans-serif;
-  font-size: 9px;
-}
-
-.work-pdf-export-page.document h1 {
-  margin: 0 0 24px;
-  color: #172033;
-  font-family: ui-sans-serif, "PingFang SC", sans-serif;
-  font-size: 32px;
-}
-
-.work-pdf-export-page.document h2 {
-  margin: 28px 0 12px;
-  color: #1b263d;
-  font-family: ui-sans-serif, "PingFang SC", sans-serif;
-  font-size: 21px;
-}
-
-.work-pdf-export-page.document p {
-  margin: 0 0 13px;
-}
-
-.work-pdf-export-page.document img,
-.work-pdf-export-page.document table {
-  max-width: 100%;
 }
 
 .work-pdf-export-page.spreadsheet {

@@ -21,6 +21,13 @@ const fallbackLayoutFont: WorkDocumentLayoutFont = {
   weight: 400,
   style: 'normal',
 };
+const boldLayoutFont: WorkDocumentLayoutFont = {
+  id: 'layout-bold',
+  family: layoutFont.family,
+  url: '/fonts/layout-bold.otf',
+  weight: 700,
+  style: 'normal',
+};
 
 describe('document mixed-run text layout', () => {
   test('collects contiguous UTF-16 runs with independent line metrics', () => {
@@ -172,6 +179,81 @@ describe('document mixed-run text layout', () => {
           paragraph.textContent,
           [layoutFont, fallbackLayoutFont],
           new Set([layoutFont.id, fallbackLayoutFont.id]),
+        ),
+      ).toBeNull();
+    } finally {
+      paragraph.remove();
+    }
+  });
+
+  test('matches WPS-style intermediate weights to the nearest registered CSS face', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.style.fontWeight = '680';
+    paragraph.textContent = 'Weighted heading';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent,
+          [layoutFont, boldLayoutFont],
+          new Set([layoutFont.id, boldLayoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          fontId: boldLayoutFont.id,
+          startUtf16: 0,
+          endUtf16: paragraph.textContent.length,
+        }),
+      ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
+  test('keeps synthetic bold metrics deterministic when only a regular face exists', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.style.fontWeight = '700';
+    paragraph.textContent = 'Synthetic bold';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent,
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ),
+      ).toEqual([
+        expect.objectContaining({
+          fontId: layoutFont.id,
+          startUtf16: 0,
+          endUtf16: paragraph.textContent.length,
+        }),
+      ]);
+    } finally {
+      paragraph.remove();
+    }
+  });
+
+  test('does not substitute a normal face for an unregistered italic style', () => {
+    const paragraph = document.createElement('p');
+    applyTextMetrics(paragraph, 14, 21);
+    paragraph.style.fontStyle = 'italic';
+    paragraph.textContent = 'Italic';
+    document.body.append(paragraph);
+
+    try {
+      expect(
+        collectDocumentTextLayoutRuns(
+          paragraph,
+          paragraph.textContent,
+          [layoutFont],
+          new Set([layoutFont.id]),
         ),
       ).toBeNull();
     } finally {

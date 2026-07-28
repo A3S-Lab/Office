@@ -90,11 +90,13 @@ The images below are committed visual-regression baselines from the real
 - **Product-native UI** — Complete Office-style surfaces with no required
   backend, account system, or storage model.
 - **Predictable state** — Controlled content values, typed callbacks, explicit
-  file actions, and conflict-aware document edits.
+  file actions, conflict-aware document edits, and one document typography
+  baseline across editing, preview, and PDF rendering.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
-- **Responsive computation** — Lazy editor chunks, cancellable Workers, Rust
-  WebAssembly layout and calculation, and PDFium rendering.
+- **Responsive computation** — Lazy editor chunks, cancellable Workers,
+  CSS-compatible font-weight matching, Rust WebAssembly layout and
+  calculation, and PDFium rendering.
 - **AI without UI scraping** — Typed agent ports and host-defined selection
   actions receive structured context and editing commands.
 - **Automation outside the browser** — The native Rust CLI, standard MCP
@@ -184,7 +186,8 @@ interaction model.
 - **Document** — Pagination, sections, focused page-setup tabs, clean page
   margins with on-demand header/footer editing, outline navigation, styles,
   precision table sizing and autofit, comments, tracked changes, citations,
-  notes, and host-defined selection menus. _DOCX import/export; PDF export._
+  notes, host-defined selection menus, and shared edit/preview/PDF typography
+  and page-chrome placement. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
   source-aware ribbon formatting and shortcuts, empty-source guidance, task
