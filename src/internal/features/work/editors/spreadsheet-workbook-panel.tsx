@@ -1,6 +1,6 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 import {
   Button,
   CollectionState,
@@ -57,10 +57,18 @@ export function SpreadsheetWorkbookPanel({
   onClose,
 }: SpreadsheetWorkbookPanelProps) {
   const title = panelTitle(view);
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onClose();
+  };
   return (
     <section
       className="work-spreadsheet-workbook-panel"
       aria-label={title.label}
+      data-view={view}
+      onKeyDown={handleKeyDown}
     >
       <header>
         <div>
@@ -71,49 +79,55 @@ export function SpreadsheetWorkbookPanel({
           <X size={14} />
         </IconButton>
       </header>
-      {view === 'names' ? (
-        <NamedRangeManager
-          content={content}
-          onChange={commands.setSpreadsheetContent}
-        />
-      ) : view === 'formulas' ? (
-        <SpreadsheetFormulaPanel
-          content={content}
-          canRecalculateSelection={can.recalculateFormula('selection')}
-          canRecalculateWorkbook={can.recalculateFormula('workbook')}
-          onChange={commands.setSpreadsheetContent}
-          onRecalculate={commands.recalculateFormula}
-        />
-      ) : view === 'charts' ? (
-        <SpreadsheetChartPanel
-          content={content}
-          activeSheetId={activeSheetId}
-          selection={selection}
-          onChange={commands.setSpreadsheetContent}
-        />
-      ) : view === 'pivots' ? (
-        <SpreadsheetPivotPanel
-          content={content}
-          activeSheetId={activeSheetId}
-          selection={selection}
-          onChange={commands.setSpreadsheetContent}
-        />
-      ) : view === 'conditional-formatting' ? (
-        <SpreadsheetConditionalFormatPanel
-          content={content}
-          onChange={commands.setSpreadsheetContent}
-        />
-      ) : view === 'protection' ? (
-        <SpreadsheetProtectionPanel
-          content={content}
-          onChange={commands.setSpreadsheetContent}
-        />
-      ) : (
-        <SpreadsheetPrintSettingsPanel
-          content={content}
-          onChange={commands.setSpreadsheetContent}
-        />
-      )}
+      <section
+        key={view}
+        className="work-spreadsheet-workbook-panel-body"
+        aria-label={`${title.heading}内容`}
+      >
+        {view === 'names' ? (
+          <NamedRangeManager
+            content={content}
+            onChange={commands.setSpreadsheetContent}
+          />
+        ) : view === 'formulas' ? (
+          <SpreadsheetFormulaPanel
+            content={content}
+            canRecalculateSelection={can.recalculateFormula('selection')}
+            canRecalculateWorkbook={can.recalculateFormula('workbook')}
+            onChange={commands.setSpreadsheetContent}
+            onRecalculate={commands.recalculateFormula}
+          />
+        ) : view === 'charts' ? (
+          <SpreadsheetChartPanel
+            content={content}
+            activeSheetId={activeSheetId}
+            selection={selection}
+            onChange={commands.setSpreadsheetContent}
+          />
+        ) : view === 'pivots' ? (
+          <SpreadsheetPivotPanel
+            content={content}
+            activeSheetId={activeSheetId}
+            selection={selection}
+            onChange={commands.setSpreadsheetContent}
+          />
+        ) : view === 'conditional-formatting' ? (
+          <SpreadsheetConditionalFormatPanel
+            content={content}
+            onChange={commands.setSpreadsheetContent}
+          />
+        ) : view === 'protection' ? (
+          <SpreadsheetProtectionPanel
+            content={content}
+            onChange={commands.setSpreadsheetContent}
+          />
+        ) : (
+          <SpreadsheetPrintSettingsPanel
+            content={content}
+            onChange={commands.setSpreadsheetContent}
+          />
+        )}
+      </section>
     </section>
   );
 }

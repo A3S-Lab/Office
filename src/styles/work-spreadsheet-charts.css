@@ -559,22 +559,30 @@
 
 @media (max-width: 900px) {
   .work-spreadsheet-name-manager {
-    grid-template-columns: 170px minmax(520px, 1fr);
+    grid-template-columns: 160px minmax(0, 1fr);
   }
 
   .work-spreadsheet-conditional-manager {
-    grid-template-columns: 190px minmax(620px, 1fr);
+    grid-template-columns: 170px minmax(0, 1fr);
   }
 
   .work-spreadsheet-protection-manager {
-    grid-template-columns: 190px minmax(700px, 1fr);
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-protection-manager > form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .work-spreadsheet-chart-manager {
-    grid-template-columns: 190px minmax(780px, 1fr);
+    grid-template-columns: 170px minmax(0, 1fr);
   }
 
-  .work-spreadsheet-workbook-panel {
+  .work-spreadsheet-chart-manager > form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-workbook-panel-body {
     overflow-x: auto;
   }
 }

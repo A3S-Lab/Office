@@ -188,6 +188,10 @@
 
 @media (max-width: 900px) {
   .work-spreadsheet-pivot-manager {
-    grid-template-columns: 190px minmax(900px, 1fr);
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-pivot-manager > form {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

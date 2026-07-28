@@ -73,37 +73,53 @@
 }
 
 .work-spreadsheet-workbook-panel {
-  max-height: 278px;
+  display: flex;
+  max-height: min(44vh, 336px);
   flex: 0 0 auto;
-  overflow: auto;
+  flex-direction: column;
+  overflow: hidden;
   border-bottom: 1px solid var(--a3s-line);
   background: var(--a3s-panel);
   color: var(--a3s-ink);
 }
 
 .work-spreadsheet-workbook-panel > header {
+  position: relative;
+  z-index: 2;
   display: flex;
   min-height: 42px;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 6px 10px 5px 12px;
   border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
 }
 
 .work-spreadsheet-workbook-panel > header > div {
   display: grid;
+  min-width: 0;
   gap: 1px;
 }
 
 .work-spreadsheet-workbook-panel > header strong {
+  overflow: hidden;
   font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .work-spreadsheet-workbook-panel > header span,
 .work-spreadsheet-workbook-panel form > p {
   color: var(--a3s-faint);
   font-size: 9px;
+}
+
+.work-spreadsheet-workbook-panel > header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .work-spreadsheet-workbook-panel > header > button {
@@ -121,6 +137,26 @@
 .work-spreadsheet-workbook-panel > header > button:hover {
   background: var(--a3s-panel-soft);
   color: var(--a3s-ink);
+}
+
+.work-spreadsheet-workbook-panel-body {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.work-spreadsheet-workbook-panel-body .actions {
+  position: sticky;
+  z-index: 3;
+  bottom: 0;
+  min-height: 39px;
+  padding: 6px 0 5px;
+  border-top: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  box-shadow: 0 -8px 14px rgb(26 35 52 / 5%);
 }
 
 .work-spreadsheet-name-manager {

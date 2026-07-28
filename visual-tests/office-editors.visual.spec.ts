@@ -343,6 +343,100 @@ test('compact spreadsheet ribbon advances to a complete group', async ({
     .toBe(0);
 });
 
+test('compact spreadsheet task panels stay contained and keyboard dismissible', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'compact-768',
+    'This contract targets compact workbook task panels.',
+  );
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'spreadsheet',
+  );
+  if (!fixture) throw new Error('Missing spreadsheet visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const verifyPanel = async (panelName: string, bodyName: string) => {
+    const panel = page.getByRole('region', { name: panelName, exact: true });
+    const body = page.getByRole('region', { name: bodyName, exact: true });
+    const close = panel.getByRole('button', { name: '关闭工作簿设置' });
+    await expect(panel).toBeVisible();
+    await expect(body).toBeVisible();
+    await expect(close).toBeVisible();
+
+    const before = await panel.evaluate((element) => {
+      const header = element.querySelector<HTMLElement>(':scope > header');
+      const body = element.querySelector<HTMLElement>(
+        ':scope > .work-spreadsheet-workbook-panel-body',
+      );
+      if (!(header && body)) {
+        throw new Error('Workbook task-panel geometry is incomplete.');
+      }
+      const panelRect = element.getBoundingClientRect();
+      const headerRect = header.getBoundingClientRect();
+      const bodyRect = body.getBoundingClientRect();
+      return {
+        panelTop: panelRect.top,
+        panelBottom: panelRect.bottom,
+        headerTop: headerRect.top,
+        headerBottom: headerRect.bottom,
+        bodyTop: bodyRect.top,
+        bodyBottom: bodyRect.bottom,
+        bodyClientWidth: body.clientWidth,
+        bodyScrollWidth: body.scrollWidth,
+        bodyOverflowY: getComputedStyle(body).overflowY,
+      };
+    });
+    expect(before.headerTop).toBeCloseTo(before.panelTop, 0);
+    expect(before.bodyTop).toBeCloseTo(before.headerBottom, 0);
+    expect(before.bodyBottom).toBeLessThanOrEqual(before.panelBottom + 1);
+    expect(before.bodyScrollWidth).toBeLessThanOrEqual(
+      before.bodyClientWidth + 1,
+    );
+    expect(before.bodyOverflowY).toBe('auto');
+
+    const actions = body.locator('.actions').last();
+    if ((await actions.count()) > 0) {
+      await expect(actions).toBeVisible();
+      const actionBottom = await actions.evaluate(
+        (element) => element.getBoundingClientRect().bottom,
+      );
+      expect(actionBottom).toBeLessThanOrEqual(before.bodyBottom + 1);
+    }
+
+    await body.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(close).toBeVisible();
+    await body.locator('button, input, [tabindex]').first().focus();
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+  };
+
+  await page.getByRole('tab', { name: '公式', exact: true }).click();
+  await page.getByRole('button', { name: /公式与计算/ }).click();
+  await verifyPanel('公式与计算', '公式与计算内容');
+
+  await page.getByRole('tab', { name: '数据', exact: true }).click();
+  await page.getByRole('button', { name: '数据透视表' }).click();
+  await verifyPanel('数据透视表管理器', '数据透视表内容');
+
+  await page.getByRole('tab', { name: '插入', exact: true }).click();
+  await page.getByRole('button', { name: /^插入图表/ }).click();
+  await page.getByRole('button', { name: '根据当前选区新建' }).click();
+  await verifyPanel('图表管理器', '工作簿图表内容');
+
+  await page.getByRole('button', { name: '条件格式' }).click();
+  await verifyPanel('条件格式管理器', '条件格式内容');
+
+  await page.getByRole('tab', { name: '页面布局', exact: true }).click();
+  await page.getByRole('button', { name: '打印设置' }).click();
+  await verifyPanel('打印设置', '打印设置内容');
+});
+
 test('closing PDF annotation style keeps the active pen', async ({ page }) => {
   const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
   if (!fixture) throw new Error('Missing PDF visual fixture.');
