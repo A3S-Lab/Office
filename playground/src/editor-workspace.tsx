@@ -9,12 +9,16 @@ import {
   X,
 } from 'lucide-react';
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useCallback,
+  useEffect,
+  useRef,
   useState,
 } from 'react';
 import {
   downloadArtifact,
+  downloadArtifactPdf,
   readSourceBlob,
   registerSourceBlob,
   type DocumentContent,
@@ -89,6 +93,22 @@ export function EditorWorkspace({
     } catch (error) {
       onNotice(
         error instanceof Error ? error.message : '导出失败，请重试',
+        'danger',
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportDocumentPdf = async () => {
+    if (exporting || artifact.content.type !== 'document') return;
+    setExporting(true);
+    try {
+      await downloadArtifactPdf(artifact);
+      onNotice(`${artifact.title}.pdf 已下载`, 'success');
+    } catch (error) {
+      onNotice(
+        error instanceof Error ? error.message : 'PDF 导出失败，请重试',
         'danger',
       );
     } finally {
@@ -215,14 +235,21 @@ export function EditorWorkspace({
                 <span>AI 助手</span>
               </button>
               <EditorExportButton
+                key={artifact.id}
                 kind={artifact.kind}
                 exporting={exporting}
                 onExport={() => void exportArtifact()}
+                onExportPdf={
+                  artifact.content.type === 'document'
+                    ? () => void exportDocumentPdf()
+                    : undefined
+                }
               />
             </div>
           </header>
           {artifact.content.type === 'document' && (
             <DocumentEditor
+              artifactId={artifact.id}
               content={artifact.content}
               getSelectionMenuItems={getDocumentSelectionMenuItems}
               onAgentRequest={onAgentRequest}
@@ -294,25 +321,111 @@ export function EditorExportButton({
   kind,
   exporting,
   onExport,
+  onExportPdf,
 }: {
   kind: OfficeArtifact['kind'];
   exporting: boolean;
   onExport: () => void;
+  onExportPdf?: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const label = kind === 'pdf' ? '下载 PDF' : '导出';
+  const hasFormatMenu = Boolean(onExportPdf);
+
+  useEffect(() => {
+    if (!menuOpen || !hasFormatMenu) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+
+    const closeFromOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const closeFromKeyboard = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMenuOpen(false);
+      triggerRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', closeFromOutside);
+    document.addEventListener('keydown', closeFromKeyboard);
+    return () => {
+      document.removeEventListener('pointerdown', closeFromOutside);
+      document.removeEventListener('keydown', closeFromKeyboard);
+    };
+  }, [hasFormatMenu, menuOpen]);
+
+  const runExport = (action: () => void) => {
+    setMenuOpen(false);
+    action();
+  };
+
+  const moveMenuFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]',
+      ) ?? [],
+    );
+    if (!items.length) return;
+    event.preventDefault();
+    const current = items.indexOf(document.activeElement as HTMLButtonElement);
+    const index =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) %
+            items.length;
+    items[index]?.focus();
+  };
+
   return (
-    <button
-      type="button"
-      className="work-export-button"
-      aria-label={label}
-      aria-busy={exporting || undefined}
-      title={label}
-      disabled={exporting}
-      onClick={onExport}
-    >
-      <Download size={15} />
-      <span>{label}</span>
-    </button>
+    <div className="work-export-menu" ref={rootRef}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="work-export-button"
+        aria-label={label}
+        aria-busy={exporting || undefined}
+        aria-expanded={hasFormatMenu ? menuOpen : undefined}
+        aria-haspopup={hasFormatMenu ? 'menu' : undefined}
+        title={label}
+        disabled={exporting}
+        onClick={() =>
+          hasFormatMenu ? setMenuOpen((current) => !current) : onExport()
+        }
+      >
+        <Download size={15} />
+        <span>{label}</span>
+      </button>
+      {onExportPdf && menuOpen && !exporting && (
+        <div
+          ref={menuRef}
+          className="work-export-menu-panel"
+          role="menu"
+          aria-label="导出格式"
+          onKeyDown={moveMenuFocus}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => runExport(onExport)}
+          >
+            <Download size={14} />
+            下载 DOCX
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => runExport(onExportPdf)}
+          >
+            <Download size={14} />
+            导出 PDF
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

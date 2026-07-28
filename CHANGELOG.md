@@ -80,3 +80,9 @@ All notable changes to A3S Office will be documented in this file.
 - Corrected page-layout geometry so headers and footers overlay their physical
   top and bottom margins without reducing the body height a second time; the
   kernel protocol is now version 15.
+- Made browser Word PDF export consume the mounted TipTap and Worker/WASM
+  pagination surface through a stable `artifactId` across React, Vue, and Web
+  Components. Export now preserves automatic breaks, shaped runs, table
+  continuations, page geometry, and page chrome while capturing long documents
+  in bounded batches; the Playground exposes both DOCX and PDF from one compact
+  header export menu.

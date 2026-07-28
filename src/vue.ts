@@ -68,6 +68,7 @@ const fileActionsProp = {
 export const DocumentEditor = defineComponent({
   name: 'A3SDocumentEditor',
   props: {
+    artifactId: String,
     content: {
       required: true,
       type: Object as PropType<DocumentContent>,
@@ -98,6 +99,7 @@ export const DocumentEditor = defineComponent({
   setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactDocumentEditor, {
+        artifactId: props.artifactId,
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,

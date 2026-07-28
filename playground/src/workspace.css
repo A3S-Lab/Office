@@ -688,6 +688,47 @@
   border-radius: 6px;
 }
 
+.work-export-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.work-export-menu-panel {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 4px);
+  right: 0;
+  display: grid;
+  width: 148px;
+  gap: 2px;
+  padding: 5px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 8px;
+  background: var(--a3s-panel);
+  box-shadow: 0 10px 26px rgb(20 24 40 / 14%);
+}
+
+.work-export-menu-panel > button {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--a3s-ink);
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-export-menu-panel > button:hover,
+.work-export-menu-panel > button:focus-visible {
+  outline: none;
+  background: var(--a3s-hover);
+}
+
 .playground-editor-row {
   position: relative;
   display: flex;

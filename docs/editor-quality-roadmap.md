@@ -99,9 +99,11 @@ Editing and read-only preview now retain one canonical TipTap surface and the
 same Worker/WASM pagination result, so switching mode preserves shaped runs,
 automatic page breaks, table fragments, and the computed page count. Page
 chrome is treated as an overlay inside the physical margins rather than an
-additional body-height deduction. PDF composition still needs to consume this
-same live pagination result before the three rendering paths share one page
-layout source of truth.
+additional body-height deduction. Browser PDF export finds this mounted surface
+by stable artifact ID, clones it without editing state, and crops physical pages
+from bounded batches. The three browser rendering paths therefore share one
+page-layout result; searchable text and vector PDF output remain separate
+fidelity work.
 
 Exit evidence:
 

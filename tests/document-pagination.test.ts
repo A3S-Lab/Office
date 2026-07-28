@@ -3,6 +3,8 @@ import {
   createDocumentTableRowFragmentPlan,
   createDocumentLineFragments,
   createShapedDocumentLineFragments,
+  documentPageBodyHeight,
+  documentPaginationSurfaceHeight,
   findDocumentLineStartOffset,
   reusableDocumentLayoutBlocks,
 } from '../src/internal/features/work/work-document-pagination';
@@ -17,6 +19,24 @@ import {
   OFFICE_KERNEL_PROTOCOL_VERSION,
 } from '../src/internal/kernel/office-kernel-protocol';
 import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
+
+test('treats page chrome as overlays and keeps complete physical pages', () => {
+  const page = {
+    width: 300,
+    height: 200,
+    marginTop: 20,
+    marginRight: 20,
+    marginBottom: 20,
+    marginLeft: 20,
+    headerHeight: 18,
+    footerHeight: 16,
+    pageGap: 30,
+  };
+
+  expect(documentPageBodyHeight(page)).toBe(160);
+  expect(documentPaginationSurfaceHeight(1, page)).toBe(200);
+  expect(documentPaginationSurfaceHeight(3, page)).toBe(660);
+});
 
 test('converts measured browser lines into contiguous layout fragments', () => {
   expect(

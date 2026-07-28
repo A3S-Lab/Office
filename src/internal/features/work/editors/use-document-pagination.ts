@@ -20,6 +20,7 @@ import {
 } from '../work-document-incremental-layout';
 import {
   collectDocumentTextLayoutParagraphs,
+  documentPageBodyHeight,
   documentPageChromeHeights,
   measureDocumentLayoutBlocks,
   type DocumentPaginationSnapshot,
@@ -308,14 +309,7 @@ export function useDocumentPagination({
         ...page,
         ...documentPageChromeHeights(editor),
       };
-      const availablePageHeight = Math.max(
-        1,
-        effectivePage.height -
-          effectivePage.marginTop -
-          effectivePage.marginBottom -
-          effectivePage.headerHeight -
-          effectivePage.footerHeight,
-      );
+      const availablePageHeight = documentPageBodyHeight(effectivePage);
       const snapshot = measureDocumentLayoutBlocks(
         editor,
         measurementCache.current,

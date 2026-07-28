@@ -31,6 +31,7 @@ import { documentParagraphIndent } from '../work-document-paragraph-formatting';
 import { documentParagraphTabStops } from '../work-document-tab-stops';
 import {
   documentPageMetrics,
+  documentPaginationSurfaceHeight,
   DocumentPagination,
 } from '../work-document-pagination';
 import { normalizeDocumentPageChrome } from '../work-document-page-chrome';
@@ -91,6 +92,7 @@ import {
 } from '../work-document-selection-menu';
 
 export interface DocumentEditorProps {
+  artifactId?: string;
   content: WorkDocumentContent;
   extensions?: Extensions;
   preview: boolean;
@@ -122,6 +124,7 @@ function createTrackedDocumentChange(_kind: WorkDocumentChangeKind) {
 }
 
 export function DocumentEditor({
+  artifactId,
   content,
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
   preview,
@@ -459,6 +462,9 @@ export function DocumentEditor({
   const pageCount = editor
     ? (pagination.pageCount ?? documentPageCount(editor))
     : 1;
+  const paginationSurfaceHeight = pagination.pageCount
+    ? documentPaginationSurfaceHeight(pagination.pageCount, kernelPage)
+    : undefined;
   const currentPage = editor
     ? Math.min(pageCount, pagination.currentPage ?? documentCurrentPage(editor))
     : 1;
@@ -524,7 +530,11 @@ export function DocumentEditor({
   };
 
   return (
-    <section className={`work-document-editor${preview ? ' preview' : ''}`}>
+    <section
+      className={`work-document-editor${preview ? ' preview' : ''}`}
+      data-work-pdf-artifact={artifactId}
+      data-work-pdf-surface={artifactId ? 'live' : undefined}
+    >
       {!preview && (
         <OfficeFileInput
           ref={imageInputRef}
@@ -681,11 +691,43 @@ export function DocumentEditor({
                 )}
                 <article
                   className={`work-document-page${preview ? ' work-document-preview-page' : ''} ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${!preview && pageChromeEditing ? ' page-chrome-editing' : ''}`}
+                  data-work-pdf-live-document={
+                    artifactId && pagination.pageCount ? '' : undefined
+                  }
+                  data-pdf-orientation={
+                    artifactId && pagination.pageCount
+                      ? layout.orientation
+                      : undefined
+                  }
+                  data-pdf-page-count={
+                    artifactId ? pagination.pageCount : undefined
+                  }
+                  data-pdf-page-gap={
+                    artifactId && pagination.pageCount
+                      ? kernelPage.pageGap
+                      : undefined
+                  }
+                  data-pdf-page-height={
+                    artifactId && pagination.pageCount
+                      ? kernelPage.height
+                      : undefined
+                  }
+                  data-pdf-page-size={
+                    artifactId && pagination.pageCount
+                      ? layout.pageSize
+                      : undefined
+                  }
+                  data-pdf-page-width={
+                    artifactId && pagination.pageCount
+                      ? kernelPage.width
+                      : undefined
+                  }
                   aria-label={preview ? '文字预览' : '文字页面'}
                   style={
                     {
                       padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
                       backgroundColor: documentPageColor(content.pageColor),
+                      minHeight: paginationSurfaceHeight,
                       '--work-document-page-color': documentPageColor(
                         content.pageColor,
                       ),

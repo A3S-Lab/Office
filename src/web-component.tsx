@@ -153,7 +153,22 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
   #layoutFonts: readonly DocumentLayoutFont[] | undefined;
 
   static get observedAttributes() {
-    return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
+    return [
+      'artifact-id',
+      'kernel-wasm-url',
+      'preview',
+      'save-status',
+      'theme',
+    ];
+  }
+
+  get artifactId(): string | undefined {
+    return this.getAttribute('artifact-id') ?? undefined;
+  }
+
+  set artifactId(value: string | undefined) {
+    if (value === undefined) this.removeAttribute('artifact-id');
+    else this.setAttribute('artifact-id', value);
   }
 
   get kernelWasmUrl(): string | undefined {
@@ -195,6 +210,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('document', this.theme);
     return createElement(DocumentEditor, {
+      artifactId: this.artifactId,
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,

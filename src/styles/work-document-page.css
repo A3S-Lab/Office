@@ -189,6 +189,21 @@
   letter-spacing: 0.08em;
 }
 
+.work-document-editor.preview .work-page-break,
+.work-document-live-pdf-snapshot .work-page-break {
+  visibility: hidden;
+}
+
+.work-document-live-pdf-snapshot
+  :is(
+    .work-document-auto-page-break,
+    .work-document-table-page-spacer,
+    .work-document-table-cell-local-page-spacer
+  )::before {
+  display: none;
+  content: none;
+}
+
 .work-document-page.paginated .tiptap {
   min-height: 0;
 }

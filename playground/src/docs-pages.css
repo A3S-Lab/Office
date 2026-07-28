@@ -358,6 +358,16 @@
   border-radius: 0;
 }
 
+.playground-document-pdf-example {
+  overflow: hidden;
+  padding: 0;
+}
+
+.playground-document-pdf-example > .playground-code-block {
+  border: 0;
+  border-radius: 0;
+}
+
 .playground-framework-tabs {
   display: flex;
   min-height: 42px;

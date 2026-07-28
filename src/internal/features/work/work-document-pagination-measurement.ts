@@ -103,6 +103,18 @@ export function documentPageMetrics(
   };
 }
 
+export function documentPageBodyHeight(page: OfficeKernelPageMetrics): number {
+  return Math.max(1, page.height - page.marginTop - page.marginBottom);
+}
+
+export function documentPaginationSurfaceHeight(
+  pageCount: number,
+  page: OfficeKernelPageMetrics,
+): number {
+  const count = Math.max(1, Math.trunc(pageCount));
+  return page.height * count + page.pageGap * (count - 1);
+}
+
 export function documentPageChromeHeights(
   editor: Editor,
 ): Pick<OfficeKernelPageMetrics, 'headerHeight' | 'footerHeight'> {

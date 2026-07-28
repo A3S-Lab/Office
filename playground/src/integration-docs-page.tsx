@@ -30,6 +30,35 @@ tar -xzf a3s-office-skill.tar.gz \\
   -C "\${CODEX_HOME:-$HOME/.codex}/skills"`;
 const skillRequestExample =
   '使用 $a3s-office 检查这份季度报告，修正文档中的年份，并验证输出。';
+const documentPdfExportExample = `import { useState } from 'react';
+import {
+  createArtifact,
+  downloadArtifactPdf,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+export function DocumentWithPdfExport() {
+  const [artifact, setArtifact] = useState(() =>
+    createArtifact('blank-document'),
+  );
+
+  if (artifact.content.type !== 'document') return null;
+
+  return (
+    <>
+      <button onClick={() => void downloadArtifactPdf(artifact)}>
+        导出 PDF
+      </button>
+      <DocumentEditor
+        artifactId={artifact.id}
+        content={artifact.content}
+        onChange={(content) =>
+          setArtifact((current) => ({ ...current, content }))
+        }
+      />
+    </>
+  );
+}`;
 
 const frameworkExamples: Record<
   Framework,
@@ -348,6 +377,23 @@ function ComponentGuide() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section
+        className="playground-doc-group"
+        aria-labelledby="integration-document-pdf-title"
+      >
+        <div className="playground-section-heading">
+          <div>
+            <h3 id="integration-document-pdf-title">导出 Word 分页为 PDF</h3>
+            <span>
+              artifactId 连接当前编辑器与导出函数，避免从 HTML 重新排版
+            </span>
+          </div>
+        </div>
+        <div className="playground-doc-card playground-document-pdf-example">
+          <CodeBlock code={documentPdfExportExample} language="tsx" />
         </div>
       </section>
     </section>

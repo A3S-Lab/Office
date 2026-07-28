@@ -144,6 +144,42 @@ test('Word preview reuses the live WASM pagination result', async ({
   expect(pageErrors).toEqual([]);
 });
 
+test('Word PDF export crops the live WASM pagination surface', async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '空白文字 从一张干净的 A4 页面开始',
+    })
+    .click();
+
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  await editor.fill('A3S Office live PDF pagination. '.repeat(180));
+  await expect
+    .poll(async () =>
+      Number(await editor.getAttribute('data-pagination-pages')),
+    )
+    .toBeGreaterThan(1);
+  await expect(page.locator('[data-work-pdf-live-document]')).toHaveAttribute(
+    'data-pdf-page-count',
+    /[2-9]|\d{2,}/,
+  );
+
+  await page.getByRole('button', { name: '导出', exact: true }).click();
+  await page.getByRole('menuitem', { name: '导出 PDF' }).click();
+  await expect(page.locator('.playground-toast.success')).toContainText(
+    '.pdf 已下载',
+    { timeout: 40_000 },
+  );
+  await expect(page.locator('.work-pdf-export-surface')).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Word edit, preview, and PDF surfaces share one typography baseline', async ({
   page,
 }) => {

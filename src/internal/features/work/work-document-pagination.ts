@@ -16,8 +16,10 @@ export {
 } from './work-document-line-measurement';
 export { reusableDocumentLayoutBlocks } from './work-document-pagination-dom';
 export {
+  documentPageBodyHeight,
   documentPageChromeHeights,
   documentPageMetrics,
+  documentPaginationSurfaceHeight,
   measureDocumentLayoutBlocks,
 } from './work-document-pagination-measurement';
 export type {

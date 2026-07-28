@@ -39,6 +39,7 @@ test('renders the React document editor in preview mode', async () => {
 
   render(
     <DocumentEditor
+      artifactId={artifact.id}
       content={artifact.content as DocumentContent}
       onChange={() => undefined}
       preview
@@ -54,6 +55,9 @@ test('renders the React document editor in preview mode', async () => {
     'data-theme',
     'light',
   );
+  expect(
+    document.querySelector('[data-work-pdf-surface="live"]'),
+  ).toHaveAttribute('data-work-pdf-artifact', artifact.id);
 });
 
 test('keeps the canonical document surface mounted when preview changes', async () => {

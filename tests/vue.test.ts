@@ -16,6 +16,7 @@ test('mounts the Vue adapter and renders the React editor', async () => {
   const app = createApp({
     render: () =>
       h(DocumentEditor, {
+        artifactId: artifact.id,
         content: artifact.content as DocumentContent,
         preview: true,
       }),
@@ -26,6 +27,11 @@ test('mounts the Vue adapter and renders the React editor', async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   expect(target.querySelector('[data-a3s-office]')).not.toBeNull();
+  await waitFor(() => {
+    expect(
+      target.querySelector('[data-work-pdf-surface="live"]'),
+    ).toHaveAttribute('data-work-pdf-artifact', artifact.id);
+  });
 
   app.unmount();
   target.remove();

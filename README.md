@@ -92,8 +92,9 @@ The images below are committed visual-regression baselines from the real
 - **Predictable state** — Controlled content values, typed callbacks, explicit
   file actions, conflict-aware document edits, and one document typography
   baseline across editing, preview, and PDF rendering. Word editing and
-  read-only preview retain the same canonical TipTap tree and Worker/WASM page
-  layout instead of rebuilding content from HTML.
+  read-only preview retain the same canonical TipTap tree, while browser PDF
+  export captures that same Worker/WASM page layout instead of rebuilding
+  content from compatibility HTML.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,
@@ -167,6 +168,58 @@ export function ProjectBrief() {
 The editor owns editing, layout, import/export, and browser rendering. The host
 owns persistence and decides when, where, and how the emitted content is saved.
 
+### Export the live Word layout to PDF
+
+Give each mounted document a stable `artifactId`, then pass the matching,
+current artifact to `downloadArtifactPdf`. Export waits for the live pagination
+surface and crops the physical pages computed by the editor:
+
+```tsx
+import { useState } from 'react';
+import {
+  createArtifact,
+  downloadArtifactPdf,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+export function DocumentWithPdfExport() {
+  const [artifact, setArtifact] = useState(() =>
+    createArtifact('blank-document'),
+  );
+
+  if (artifact.content.type !== 'document') return null;
+
+  return (
+    <main style={{ display: 'flex', height: '100dvh', flexDirection: 'column' }}>
+      <button
+        type="button"
+        onClick={() => void downloadArtifactPdf(artifact)}
+      >
+        Export PDF
+      </button>
+      <section style={{ flex: 1, minHeight: 0 }}>
+        <DocumentEditor
+          artifactId={artifact.id}
+          content={artifact.content}
+          onChange={(content) =>
+            setArtifact((current) => ({
+              ...current,
+              content,
+              revision: current.revision + 1,
+              updatedAt: Date.now(),
+            }))
+          }
+        />
+      </section>
+    </main>
+  );
+}
+```
+
+The live path preserves automatic page-break decorations, shaped text, table
+continuations, and page chrome. It currently rasterizes each physical page
+into the PDF; searchable text and vector output remain future fidelity work.
+
 ### Choose an entry point
 
 - `@a3s-lab/office/react` — Lazy React editor components and preload helpers.
@@ -189,8 +242,8 @@ interaction model.
   margins with on-demand header/footer editing, outline navigation, styles,
   precision table sizing and autofit, comments, tracked changes, citations,
   notes, host-defined selection menus, and shared edit/preview/PDF typography
-  and page-chrome placement. Editing and read-only preview share one live
-  pagination result. _DOCX import/export; PDF export._
+  and page-chrome placement. Editing, read-only preview, and browser PDF export
+  share one live pagination result. _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
   source-aware ribbon formatting and shortcuts, empty-source guidance, task

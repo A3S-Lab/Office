@@ -197,6 +197,13 @@ const editorReferences: Record<EditorId, EditorReference> = {
     props: [
       ...controlledContentProps('DocumentContent', "'已自动保存'"),
       {
+        name: 'artifactId',
+        type: 'string',
+        frameworkBinding: 'artifact-id',
+        description:
+          '宿主文档的稳定 ID；传入后，downloadArtifactPdf 会直接使用当前编辑器的实时分页结果。',
+      },
+      {
         name: 'extensions',
         type: 'Extensions',
         defaultValue: '[]',
