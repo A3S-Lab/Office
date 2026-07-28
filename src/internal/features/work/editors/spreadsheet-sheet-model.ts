@@ -19,7 +19,7 @@ export function addSpreadsheetSheet(
     column: 26,
     defaultRowHeight: 24,
     defaultColWidth: 96,
-    data: [],
+    data: emptySpreadsheetData(60, 26),
     celldata: [],
     luckysheet_select_save: [
       {
@@ -34,6 +34,15 @@ export function addSpreadsheetSheet(
     ...content.sheets.map((sheet) => ({ ...sheet, status: 0 })),
     nextSheet,
   ]);
+}
+
+function emptySpreadsheetData(
+  rows: number,
+  columns: number,
+): NonNullable<WorkSpreadsheetSheet['data']> {
+  return Array.from({ length: rows }, () =>
+    Array.from({ length: columns }, () => null),
+  );
 }
 
 export function activateSpreadsheetSheet(

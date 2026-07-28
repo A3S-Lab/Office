@@ -86,6 +86,8 @@ export interface SpreadsheetEditorProps {
 }
 
 const spreadsheetFocusRetryFrames = 12;
+const spreadsheetFocusObservationMs = 5_000;
+const spreadsheetFocusCleanups = new WeakMap<HTMLElement, () => void>();
 
 interface SpreadsheetSelectionState {
   sheetId: string;
@@ -144,6 +146,7 @@ export function SpreadsheetEditor({
     content.sheets.find((sheet) => !sheet.hide)?.id ??
     '';
   const activeSheetIdRef = useRef(activeSheetId);
+  const focusedSheetIdRef = useRef<string | null>(null);
   contentRef.current = materializedContent;
   previewRef.current = preview;
   const conditionalStylesBySheet = useMemo(
@@ -159,6 +162,14 @@ export function SpreadsheetEditor({
   );
   useEffect(() => {
     activeSheetIdRef.current = activeSheetId;
+  }, [activeSheetId]);
+  useEffect(() => {
+    if (!activeSheetId || focusedSheetIdRef.current === activeSheetId) return;
+    focusedSheetIdRef.current = activeSheetId;
+    const frame = requestAnimationFrame(() =>
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+    );
+    return () => cancelAnimationFrame(frame);
   }, [activeSheetId]);
   useEffect(() => {
     if (!preview) return;
@@ -656,8 +667,34 @@ export function SpreadsheetEditor({
 }
 
 export function focusSpreadsheetGrid(container: HTMLElement | null): void {
+  if (!container) return;
+  spreadsheetFocusCleanups.get(container)?.();
+
   let remainingFrames = spreadsheetFocusRetryFrames;
   let lastFocusedTarget: HTMLElement | null = null;
+  const commandTrigger = document.activeElement;
+  const initialFocusTarget = spreadsheetGridFocusTarget(container);
+  const initialFocusTargetReady =
+    spreadsheetGridFocusTargetReady(initialFocusTarget);
+  let focusObserver: MutationObserver | null = null;
+  let focusObservationTimeout: number | null = null;
+  let focusOutHandler: ((event: FocusEvent) => void) | null = null;
+
+  const stopObservingFocusTarget = () => {
+    focusObserver?.disconnect();
+    focusObserver = null;
+    if (focusOutHandler) {
+      container.removeEventListener('focusout', focusOutHandler);
+      focusOutHandler = null;
+    }
+    if (focusObservationTimeout !== null) {
+      window.clearTimeout(focusObservationTimeout);
+      focusObservationTimeout = null;
+    }
+    if (spreadsheetFocusCleanups.get(container) === stopObservingFocusTarget) {
+      spreadsheetFocusCleanups.delete(container);
+    }
+  };
 
   const restoreFocus = (force: boolean) => {
     const activeElement = document.activeElement;
@@ -665,8 +702,10 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
       !force &&
       activeElement !== document.body &&
       activeElement !== document.documentElement &&
+      activeElement !== commandTrigger &&
       activeElement !== lastFocusedTarget
     ) {
+      stopObservingFocusTarget();
       return;
     }
 
@@ -680,6 +719,39 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
     requestAnimationFrame(() => restoreFocus(false));
   };
 
+  focusOutHandler = (event) => {
+    if (event.target !== lastFocusedTarget) return;
+    requestAnimationFrame(() => restoreFocus(false));
+  };
+  container.addEventListener('focusout', focusOutHandler);
+
+  if (typeof MutationObserver !== 'undefined') {
+    focusObserver = new MutationObserver(() => {
+      const focusTarget = spreadsheetGridFocusTarget(container);
+      const focusTargetReady = spreadsheetGridFocusTargetReady(focusTarget);
+      const mountedOrReplaced = focusTarget !== initialFocusTarget;
+      const initialTargetBecameReady =
+        focusTarget === initialFocusTarget &&
+        !initialFocusTargetReady &&
+        focusTargetReady;
+      if (!focusTarget || (!mountedOrReplaced && !initialTargetBecameReady)) {
+        return;
+      }
+      restoreFocus(false);
+    });
+    focusObserver.observe(container, {
+      attributes: true,
+      attributeFilter: ['style'],
+      childList: true,
+      subtree: true,
+    });
+  }
+  focusObservationTimeout = window.setTimeout(
+    stopObservingFocusTarget,
+    spreadsheetFocusObservationMs,
+  );
+  spreadsheetFocusCleanups.set(container, stopObservingFocusTarget);
+
   restoreFocus(true);
 }
 
@@ -691,6 +763,12 @@ function spreadsheetGridFocusTarget(
     container?.querySelector<HTMLElement>('.fortune-cell-area') ??
     null
   );
+}
+
+function spreadsheetGridFocusTargetReady(target: HTMLElement | null): boolean {
+  if (!target) return false;
+  const bounds = target.getBoundingClientRect();
+  return bounds.width > 0 && bounds.height > 0;
 }
 
 function spreadsheetSelectionSummaryText(

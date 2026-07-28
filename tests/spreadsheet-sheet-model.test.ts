@@ -31,6 +31,11 @@ describe('spreadsheet sheet model', () => {
       row: 60,
       column: 26,
     });
+    expect(next.sheets[2]?.data).toHaveLength(60);
+    expect(next.sheets[2]?.data?.every((row) => row.length === 26)).toBe(true);
+    expect(next.sheets[2]?.data?.flat().every((cell) => cell === null)).toBe(
+      true,
+    );
   });
 
   test('activates adjacent visible worksheets with wraparound navigation', () => {

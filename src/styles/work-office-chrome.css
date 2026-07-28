@@ -396,7 +396,7 @@
   border-top: 1px solid var(--a3s-line);
   background: var(--a3s-panel);
   color: var(--a3s-muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .work-office-status-info,
