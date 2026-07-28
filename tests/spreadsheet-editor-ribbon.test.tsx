@@ -81,6 +81,18 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
     { attribute: 'vt', value: 2 },
     { attribute: 'tb', value: '1' },
   ]);
+  expect(screen.getByRole('button', { name: '加粗' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+B Meta+B',
+  );
+  expect(screen.getByRole('button', { name: '斜体' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+I Meta+I',
+  );
+  expect(screen.getByRole('button', { name: '下划线' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+U Meta+U',
+  );
 });
 
 test('omits empty resource counts from spreadsheet ribbon actions', () => {
@@ -106,10 +118,20 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
 
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
+    activateSheet: () => true,
+    addSheet: () => true,
+    clearSelectedCells: () => true,
+    deleteSheet: () => true,
+    duplicateSheet: () => true,
+    hideSheet: () => true,
+    moveSheet: () => true,
+    pasteCells: () => true,
     recalculateFormula: () => true,
+    renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
     setGridLines: () => true,
+    setSheetColor: () => true,
     setSpreadsheetContent: () => true,
     setZoom: () => true,
     toggleCellMerge: () => true,
@@ -121,10 +143,20 @@ function spreadsheetCommands(
   setCellFormat: SpreadsheetEditorCommands['setCellFormat'],
 ): SpreadsheetEditorCommands {
   return {
+    activateSheet: () => true,
+    addSheet: () => true,
+    clearSelectedCells: () => true,
+    deleteSheet: () => true,
+    duplicateSheet: () => true,
+    hideSheet: () => true,
+    moveSheet: () => true,
+    pasteCells: () => true,
     recalculateFormula: () => true,
+    renameSheet: () => true,
     redo: () => false,
     setCellFormat,
     setGridLines: () => true,
+    setSheetColor: () => true,
     setSpreadsheetContent: () => true,
     setZoom: () => true,
     toggleCellMerge: () => true,

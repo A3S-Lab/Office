@@ -1,7 +1,14 @@
 import type { Hooks, Op, Selection } from '@fortune-sheet/core';
 import { Workbook, type WorkbookInstance } from '@fortune-sheet/react';
 import { Cloud, Grid3X3 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ClipboardEvent as ReactClipboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
 import { spreadsheetAgentMenuItems } from '../components/work-editor-agent-menus';
 import { applySpreadsheetAgentProposalChanges } from '../work-agent-proposal-apply';
@@ -32,13 +39,17 @@ import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
-import { spreadsheetCoreContextMenuItems } from './spreadsheet-context-menu';
+import {
+  parseSpreadsheetClipboardText,
+  spreadsheetCoreContextMenuItems,
+} from './spreadsheet-context-menu';
 import {
   SpreadsheetEditorRibbon,
   type SpreadsheetRibbonTabId,
 } from './spreadsheet-editor-ribbon';
 import {
   finiteSpreadsheetSelection,
+  isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
   spreadsheetCellAt,
@@ -48,6 +59,7 @@ import {
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
@@ -72,6 +84,8 @@ export interface SpreadsheetEditorProps {
   onChange: (content: WorkSpreadsheetContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
 }
+
+const spreadsheetFocusRetryFrames = 12;
 
 interface SpreadsheetSelectionState {
   sheetId: string;
@@ -355,6 +369,7 @@ export function SpreadsheetEditor({
       },
       selection: selectionState,
       targetSheetId: toolbarSheetId,
+      toolbarCell,
       workbook: workbookRef.current,
     },
     spreadsheetExtensions,
@@ -367,13 +382,68 @@ export function SpreadsheetEditor({
   ) => {
     if (spreadsheetEditor.handleKeyDown(event.nativeEvent)) {
       event.stopPropagation();
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current);
     }
+  };
+  const currentClipboardSelection = () => {
+    if (previewRef.current) return null;
+    const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
+    const sheet = contentRef.current.sheets.find(
+      (candidate) => candidate.id === sheetId,
+    );
+    const selection =
+      selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
+    if (!selection) return null;
+    const range = spreadsheetSingleRange(selection);
+    const maximumCells =
+      (range.row[1] - range.row[0] + 1) *
+      (range.column[1] - range.column[0] + 1);
+    return spreadsheetAgentSelection(
+      contentRef.current,
+      sheetId,
+      selection,
+      maximumCells,
+    );
+  };
+  const handleSpreadsheetCopy = (
+    event: ReactClipboardEvent<HTMLElement>,
+    cut: boolean,
+  ) => {
+    if (isSpreadsheetNativeTextUndoTarget(event.target)) return;
+    const selection = currentClipboardSelection();
+    if (!selection) return;
+    event.clipboardData.setData('text/plain', selection.clipboard);
+    event.preventDefault();
+    event.stopPropagation();
+    if (cut) {
+      spreadsheetCommands.clearSelectedCells();
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current);
+    }
+  };
+  const handleSpreadsheetPaste = (event: ReactClipboardEvent<HTMLElement>) => {
+    if (previewRef.current || isSpreadsheetNativeTextUndoTarget(event.target)) {
+      return;
+    }
+    const values = parseSpreadsheetClipboardText(
+      event.clipboardData.getData('text/plain'),
+    );
+    if (!values.length || !spreadsheetCommands.pasteCells(values)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    focusSpreadsheetGrid(spreadsheetCanvasRef.current);
+  };
+  const runSheetCommand = (command: () => boolean) => {
+    command();
+    focusSpreadsheetGrid(spreadsheetCanvasRef.current);
   };
   return (
     <section
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetShortcut}
+      onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
+      onCutCapture={(event) => handleSpreadsheetCopy(event, true)}
+      onPasteCapture={handleSpreadsheetPaste}
     >
       {preview && (
         <WorkOfficePreviewBar
@@ -454,7 +524,7 @@ export function SpreadsheetEditor({
           allowEdit={!preview}
           showToolbar={false}
           showFormulaBar
-          showSheetTabs
+          showSheetTabs={false}
           row={60}
           column={26}
           defaultRowHeight={24}
@@ -464,6 +534,40 @@ export function SpreadsheetEditor({
           onOp={handleWorkbookOperations}
         />
       </div>
+      <SpreadsheetSheetBar
+        activeSheetId={activeSheetId}
+        editable={!preview}
+        sheets={materializedContent.sheets}
+        onActivate={(sheetId) =>
+          runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
+        }
+        onCreate={() => runSheetCommand(() => spreadsheetCommands.addSheet())}
+        onDelete={(sheetId) =>
+          runSheetCommand(() => spreadsheetCommands.deleteSheet(sheetId))
+        }
+        onDuplicate={(sheetId) =>
+          runSheetCommand(() => spreadsheetCommands.duplicateSheet(sheetId))
+        }
+        onHide={(sheetId) =>
+          runSheetCommand(() => spreadsheetCommands.hideSheet(sheetId))
+        }
+        onMove={(sheetId, direction) =>
+          runSheetCommand(() =>
+            spreadsheetCommands.moveSheet(sheetId, direction),
+          )
+        }
+        onRename={(sheetId, name) =>
+          runSheetCommand(() => spreadsheetCommands.renameSheet(sheetId, name))
+        }
+        onSetColor={(sheetId, color) =>
+          runSheetCommand(() =>
+            spreadsheetCommands.setSheetColor(sheetId, color),
+          )
+        }
+        onShow={(sheetId) =>
+          runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
+        }
+      />
       <WorkOfficeStatusBar
         className="work-spreadsheet-status"
         controls={
@@ -548,6 +652,44 @@ export function SpreadsheetEditor({
         />
       )}
     </section>
+  );
+}
+
+export function focusSpreadsheetGrid(container: HTMLElement | null): void {
+  let remainingFrames = spreadsheetFocusRetryFrames;
+  let lastFocusedTarget: HTMLElement | null = null;
+
+  const restoreFocus = (force: boolean) => {
+    const activeElement = document.activeElement;
+    if (
+      !force &&
+      activeElement !== document.body &&
+      activeElement !== document.documentElement &&
+      activeElement !== lastFocusedTarget
+    ) {
+      return;
+    }
+
+    const focusTarget = spreadsheetGridFocusTarget(container);
+    if (focusTarget) {
+      focusTarget.focus({ preventScroll: true });
+      lastFocusedTarget = focusTarget;
+    }
+    if (remainingFrames <= 0) return;
+    remainingFrames -= 1;
+    requestAnimationFrame(() => restoreFocus(false));
+  };
+
+  restoreFocus(true);
+}
+
+function spreadsheetGridFocusTarget(
+  container: HTMLElement | null,
+): HTMLElement | null {
+  return (
+    container?.querySelector<HTMLElement>('.fortune-sheet-overlay') ??
+    container?.querySelector<HTMLElement>('.fortune-cell-area') ??
+    null
   );
 }
 

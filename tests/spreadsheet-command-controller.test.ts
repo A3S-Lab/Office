@@ -173,6 +173,103 @@ describe('spreadsheet command controller', () => {
     expect(calls).toEqual(['undo']);
   });
 
+  test('owns core cell-format and clear shortcuts', () => {
+    const fixture = commandFixture();
+    fixture.context.toolbarCell = { bl: 0, it: 1, un: 0 };
+    const editor = spreadsheetEditor(fixture.context);
+
+    const shortcuts = [
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'b',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'i',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'u',
+        metaKey: true,
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'Delete',
+      }),
+    ];
+
+    expect(shortcuts.map((event) => editor.handleKeyDown(event))).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(shortcuts.every((event) => event.defaultPrevented)).toBe(true);
+    expect(fixture.workbook.formats).toEqual([
+      {
+        attribute: 'bl',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+      {
+        attribute: 'it',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 0,
+      },
+      {
+        attribute: 'un',
+        range: { row: [0, 1], column: [0, 2] },
+        sheetId: 'sheet-1',
+        value: 1,
+      },
+    ]);
+    expect(fixture.workbook.clearBatches).toHaveLength(1);
+    expect(fixture.workbook.clearBatches[0]).toHaveLength(6);
+  });
+
+  test('owns worksheet creation and standard worksheet navigation shortcuts', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets.push({
+      id: 'sheet-2',
+      name: 'Sheet 2',
+      order: 1,
+      status: 0,
+    });
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.commands.addSheet()).toBe(true);
+    const created = fixture.changes.at(-1);
+    if (!created) throw new Error('Expected the created workbook change.');
+    expect(created.sheets.at(-1)).toMatchObject({
+      id: 'sheet-3',
+      name: '工作表 3',
+      status: 1,
+    });
+
+    editor.updateContext({
+      ...fixture.context,
+      activeSheetId: 'sheet-3',
+      content: created,
+      targetSheetId: 'sheet-3',
+    });
+    const previousSheet = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'PageUp',
+    });
+    expect(editor.handleKeyDown(previousSheet)).toBe(true);
+    expect(previousSheet.defaultPrevented).toBe(true);
+    expect(fixture.changes.at(-1)?.sheets).toEqual([
+      expect.objectContaining({ id: 'sheet-1', status: 0 }),
+      expect.objectContaining({ id: 'sheet-2', status: 1 }),
+      expect.objectContaining({ id: 'sheet-3', status: 0 }),
+    ]);
+  });
+
   test('owns formula-bar select-all in the keyboard extension', () => {
     const fixture = commandFixture();
     const editor = spreadsheetEditor(fixture.context);
@@ -249,6 +346,7 @@ function commandFixture(): {
         },
       },
       targetSheetId: 'sheet-1',
+      toolbarCell: null,
       workbook,
     },
   };

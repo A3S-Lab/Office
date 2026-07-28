@@ -11,6 +11,18 @@ import {
   selectSpreadsheetFormulaBarContents,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import {
+  activateSpreadsheetSheet,
+  addSpreadsheetSheet,
+  adjacentSpreadsheetSheetId,
+  deleteSpreadsheetSheet,
+  duplicateSpreadsheetSheet,
+  hideSpreadsheetSheet,
+  moveSpreadsheetSheet,
+  renameSpreadsheetSheet,
+  setSpreadsheetSheetColor,
+  type SpreadsheetSheetMoveDirection,
+} from './spreadsheet-sheet-model';
 
 export interface SpreadsheetWorkbookCommandPort {
   batchCallApis: (apiCalls: Array<{ name: string; args: unknown[] }>) => void;
@@ -75,12 +87,23 @@ export interface SpreadsheetFormulaBarCommandPort {
 }
 
 export interface SpreadsheetEditorCommands {
+  activateSheet: (sheetId: string) => boolean;
+  addSheet: () => boolean;
   clearSelectedCells: () => boolean;
+  deleteSheet: (sheetId: string) => boolean;
+  duplicateSheet: (sheetId: string) => boolean;
+  hideSheet: (sheetId: string) => boolean;
+  moveSheet: (
+    sheetId: string,
+    direction: SpreadsheetSheetMoveDirection,
+  ) => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
+  renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
   setGridLines: (visible: boolean) => boolean;
+  setSheetColor: (sheetId: string, color: string | null) => boolean;
   setSpreadsheetContent: (content: WorkSpreadsheetContent) => boolean;
   setZoom: (percent: number) => boolean;
   toggleCellMerge: (merged: boolean) => boolean;
@@ -101,6 +124,7 @@ export interface SpreadsheetCommandContext {
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
   targetSheetId: string;
+  toolbarCell: Cell | null;
   workbook: SpreadsheetWorkbookCommandPort | null;
 }
 
@@ -147,15 +171,164 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
     >({
+      name: 'spreadsheetSheets',
+      addCommands: () => ({
+        activateSheet: {
+          canExecute: (context, sheetId) =>
+            context.editable &&
+            context.content.sheets.some((sheet) => sheet.id === sheetId),
+          execute: (context, sheetId) =>
+            applySpreadsheetSheetChange(
+              context,
+              activateSpreadsheetSheet(context.content, sheetId),
+            ),
+        },
+        addSheet: {
+          canExecute: (context) => context.editable,
+          execute: (context) =>
+            applySpreadsheetSheetChange(
+              context,
+              addSpreadsheetSheet(context.content),
+            ),
+        },
+        deleteSheet: {
+          canExecute: (context, sheetId) =>
+            Boolean(
+              context.editable &&
+                context.content.sheets.length > 1 &&
+                context.content.sheets.some((sheet) => sheet.id === sheetId),
+            ),
+          execute: (context, sheetId) =>
+            applySpreadsheetSheetChange(
+              context,
+              deleteSpreadsheetSheet(context.content, sheetId),
+            ),
+        },
+        duplicateSheet: {
+          canExecute: (context, sheetId) =>
+            context.editable &&
+            context.content.sheets.some((sheet) => sheet.id === sheetId),
+          execute: (context, sheetId) =>
+            applySpreadsheetSheetChange(
+              context,
+              duplicateSpreadsheetSheet(context.content, sheetId),
+            ),
+        },
+        hideSheet: {
+          canExecute: (context, sheetId) =>
+            context.editable &&
+            context.content.sheets.filter((sheet) => sheet.hide !== 1).length >
+              1 &&
+            context.content.sheets.some(
+              (sheet) => sheet.id === sheetId && sheet.hide !== 1,
+            ),
+          execute: (context, sheetId) =>
+            applySpreadsheetSheetChange(
+              context,
+              hideSpreadsheetSheet(context.content, sheetId, true),
+            ),
+        },
+        moveSheet: {
+          canExecute: (context, sheetId, direction) =>
+            Boolean(
+              context.editable &&
+                moveSpreadsheetSheet(context.content, sheetId, direction),
+            ),
+          execute: (context, sheetId, direction) =>
+            applySpreadsheetSheetChange(
+              context,
+              moveSpreadsheetSheet(context.content, sheetId, direction),
+            ),
+        },
+        renameSheet: {
+          canExecute: (context, sheetId, name) =>
+            Boolean(
+              context.editable &&
+                renameSpreadsheetSheet(context.content, sheetId, name),
+            ),
+          execute: (context, sheetId, name) =>
+            applySpreadsheetSheetChange(
+              context,
+              renameSpreadsheetSheet(context.content, sheetId, name),
+            ),
+        },
+        setSheetColor: {
+          canExecute: (context, sheetId, color) =>
+            Boolean(
+              context.editable &&
+                setSpreadsheetSheetColor(context.content, sheetId, color),
+            ),
+          execute: (context, sheetId, color) =>
+            applySpreadsheetSheetChange(
+              context,
+              setSpreadsheetSheetColor(context.content, sheetId, color),
+            ),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
       name: 'spreadsheetKeyboardShortcuts',
       addKeyboardShortcuts: () => ({
         'Mod-a': (_props, event) => selectSpreadsheetFormulaBarContents(event),
+        'Mod-b': ({ can, commands, context }, event) =>
+          runSpreadsheetCellFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'bl',
+          ),
+        'Mod-i': ({ can, commands, context }, event) =>
+          runSpreadsheetCellFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'it',
+          ),
+        'Mod-u': ({ can, commands, context }, event) =>
+          runSpreadsheetCellFormatShortcut(
+            event,
+            context,
+            can.setCellFormat,
+            commands.setCellFormat,
+            'un',
+          ),
         'Mod-z': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.undo, commands.undo),
         'Mod-Shift-z': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
         'Mod-y': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
+        'Control-PageUp': ({ context, commands }, event) =>
+          runSpreadsheetSheetNavigationShortcut(
+            event,
+            context,
+            commands.activateSheet,
+            -1,
+          ),
+        'Control-PageDown': ({ context, commands }, event) =>
+          runSpreadsheetSheetNavigationShortcut(
+            event,
+            context,
+            commands.activateSheet,
+            1,
+          ),
+        Delete: ({ can, commands }, event) =>
+          runSpreadsheetClearShortcut(
+            event,
+            can.clearSelectedCells,
+            commands.clearSelectedCells,
+          ),
+        Backspace: ({ can, commands }, event) =>
+          runSpreadsheetClearShortcut(
+            event,
+            can.clearSelectedCells,
+            commands.clearSelectedCells,
+          ),
       }),
     }),
     createOfficeEditorExtension<
@@ -398,6 +571,15 @@ function hasActiveSheet(context: SpreadsheetCommandContext): boolean {
   );
 }
 
+function applySpreadsheetSheetChange(
+  context: SpreadsheetCommandContext,
+  next: WorkSpreadsheetContent | null,
+): boolean {
+  if (!context.editable || !next) return false;
+  context.onChange(next);
+  return true;
+}
+
 function runSpreadsheetHistoryShortcut(
   event: KeyboardEvent,
   canExecute: () => boolean,
@@ -412,6 +594,63 @@ function runSpreadsheetHistoryShortcut(
     return false;
   }
   return execute();
+}
+
+function runSpreadsheetCellFormatShortcut(
+  event: KeyboardEvent,
+  context: SpreadsheetCommandContext,
+  canExecute: SpreadsheetEditorCanCommands['setCellFormat'],
+  execute: SpreadsheetEditorCommands['setCellFormat'],
+  attribute: 'bl' | 'it' | 'un',
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target)
+  ) {
+    return false;
+  }
+  const value = Number(context.toolbarCell?.[attribute]) === 1 ? 0 : 1;
+  return canExecute(attribute, value) && execute(attribute, value);
+}
+
+function runSpreadsheetClearShortcut(
+  event: KeyboardEvent,
+  canExecute: SpreadsheetEditorCanCommands['clearSelectedCells'],
+  execute: SpreadsheetEditorCommands['clearSelectedCells'],
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !canExecute()
+  ) {
+    return false;
+  }
+  return execute();
+}
+
+function runSpreadsheetSheetNavigationShortcut(
+  event: KeyboardEvent,
+  context: SpreadsheetCommandContext,
+  activateSheet: SpreadsheetEditorCommands['activateSheet'],
+  direction: SpreadsheetSheetMoveDirection,
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target)
+  ) {
+    return false;
+  }
+  const target = adjacentSpreadsheetSheetId(
+    context.content,
+    context.activeSheetId,
+    direction,
+  );
+  return Boolean(
+    target && target !== context.activeSheetId && activateSheet(target),
+  );
 }
 
 function liveRange(

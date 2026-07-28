@@ -197,6 +197,7 @@ export function SpreadsheetEditorRibbon({
               <WorkOfficeRibbonButton
                 label="加粗"
                 title="加粗（Cmd/Ctrl+B）"
+                aria-keyshortcuts="Control+B Meta+B"
                 displayLabel={false}
                 active={Number(toolbarCell?.bl) === 1}
                 disabled={
@@ -217,6 +218,7 @@ export function SpreadsheetEditorRibbon({
               <WorkOfficeRibbonButton
                 label="斜体"
                 title="斜体（Cmd/Ctrl+I）"
+                aria-keyshortcuts="Control+I Meta+I"
                 displayLabel={false}
                 active={Number(toolbarCell?.it) === 1}
                 disabled={
@@ -237,6 +239,7 @@ export function SpreadsheetEditorRibbon({
               <WorkOfficeRibbonButton
                 label="下划线"
                 title="下划线（Cmd/Ctrl+U）"
+                aria-keyshortcuts="Control+U Meta+U"
                 displayLabel={false}
                 active={Number(toolbarCell?.un) === 1}
                 disabled={

@@ -250,9 +250,11 @@ interaction model.
   lists, tables, links, images, code, and host-defined selection menus.
   _Markdown import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
-  live selection statistics, native cut/copy/paste and clear actions, direct
-  font-family, vertical-alignment, text-wrap, number/percent, and decimal
-  controls, charts, validation, protection, comments, and print settings.
+  live selection statistics, an A3S-owned worksheet bar with lifecycle and
+  color controls, focus-safe formatting, history, worksheet navigation,
+  cut/copy/paste and clear shortcuts, direct font-family, vertical-alignment,
+  text-wrap, number/percent, and decimal controls, charts, validation,
+  protection, comments, and print settings.
   _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
 - **Presentation** — Typed slide scene graph, multi-selection, groups, object
   transforms, keyboard-accessible table-size insertion, native slide and object
