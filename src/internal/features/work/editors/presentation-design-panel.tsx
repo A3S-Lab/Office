@@ -17,6 +17,7 @@ import type {
   PresentationEditorCommands,
 } from './presentation-command-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
+import { handlePresentationTaskPaneKeyDown } from './presentation-task-pane';
 
 export type PresentationDesignPanelCommands = Pick<
   PresentationEditorCommands,
@@ -51,7 +52,13 @@ export function PresentationDesignPanel({
   mode: PresentationDesignMode;
 }) {
   return (
-    <section className="work-presentation-design-panel" aria-label="母版与布局">
+    <section
+      className="work-presentation-design-panel"
+      aria-label="母版与布局"
+      onKeyDown={(event) =>
+        handlePresentationTaskPaneKeyDown(event, commands.closeDesign)
+      }
+    >
       <header>
         <div>
           <LayoutTemplate size={15} />

@@ -26,9 +26,7 @@ export function usePresentationSelection(
 
   const edit = useCallback(
     (elementId: string) => {
-      setSelectedElementIds(
-        expandPresentationGroupSelection(elements, [elementId]),
-      );
+      setSelectedElementIds(selectionWithPendingIds(elements, [elementId]));
       setEditingElementId(elementId);
     },
     [elements],
@@ -38,9 +36,7 @@ export function usePresentationSelection(
 
   const replace = useCallback(
     (elementIds: readonly string[]) => {
-      setSelectedElementIds(
-        expandPresentationGroupSelection(elements, elementIds),
-      );
+      setSelectedElementIds(selectionWithPendingIds(elements, elementIds));
       setEditingElementId(null);
     },
     [elements],
@@ -83,6 +79,17 @@ export function usePresentationSelection(
     select,
     selectedElementIds,
   };
+}
+
+function selectionWithPendingIds(
+  elements: readonly WorkSlideElement[],
+  selectedIds: readonly string[],
+) {
+  const existingIds = new Set(elements.map((element) => element.id));
+  return [
+    ...expandPresentationGroupSelection(elements, selectedIds),
+    ...selectedIds.filter((id) => !existingIds.has(id)),
+  ];
 }
 
 function sameStringArray(left: readonly string[], right: readonly string[]) {

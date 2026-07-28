@@ -41,6 +41,7 @@ import type {
 } from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
 import { PresentationStatusBar } from './presentation-status-bar';
+import { usePresentationTaskPaneEscape } from './presentation-task-pane';
 import {
   applyPresentationTextFormatting,
   presentationTextToolbarState,
@@ -65,6 +66,8 @@ import {
 import { WorkOfficePreviewBar } from './work-office-chrome';
 
 export type { PresentationEditorProps } from './presentation-editor-types';
+
+type PresentationTaskPane = 'comments' | 'design' | null;
 
 export function PresentationEditor(props: PresentationEditorProps) {
   const { content, fileActions, preview } = props;
@@ -110,8 +113,9 @@ function PresentationEditingSurface({
     editor: Editor;
   } | null>(null);
   const [, setTextSelectionVersion] = useState(0);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [designOpen, setDesignOpen] = useState(false);
+  const [taskPane, setTaskPane] = useState<PresentationTaskPane>(null);
+  const commentsOpen = taskPane === 'comments';
+  const designOpen = taskPane === 'design';
   const [designMode, setDesignMode] = useState<PresentationDesignMode>('slide');
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [agentMenu, setAgentMenu] = useState<PresentationAgentMenuState | null>(
@@ -324,12 +328,34 @@ function PresentationEditingSurface({
     onSelectSlide: setSelectedSlideId,
     onSelectElements: selection.replace,
   });
+  const closeComments = useCallback(() => {
+    setTaskPane((current) => (current === 'comments' ? null : current));
+  }, []);
+  const openComments = useCallback(() => {
+    if (designMode !== 'slide') {
+      setDesignMode('slide');
+      selection.clear();
+    }
+    setTaskPane('comments');
+  }, [designMode, selection.clear]);
+  const toggleComments = useCallback(() => {
+    if (commentsOpen) {
+      closeComments();
+      return;
+    }
+    openComments();
+  }, [closeComments, commentsOpen, openComments]);
+  const setDesignPanelOpen = useCallback((open: boolean) => {
+    setTaskPane((current) =>
+      open ? 'design' : current === 'design' ? null : current,
+    );
+  }, []);
   const presentationReview = usePresentationReviewCommands({
     content,
     onChange,
     onClearSelection: selection.clear,
-    onCloseComments: () => setCommentsOpen(false),
-    onOpenComments: () => setCommentsOpen(true),
+    onCloseComments: closeComments,
+    onOpenComments: openComments,
     onSelectComment: setActiveCommentId,
     onSelectSlide: setSelectedSlideId,
     selectedElement,
@@ -344,14 +370,41 @@ function PresentationEditingSurface({
     designOpen,
     onChange,
     onClearSelection: selection.clear,
-    onCloseComments: () => setCommentsOpen(false),
+    onCloseComments: closeComments,
     onEditElement: selection.edit,
     onSetDesignMode: setDesignMode,
-    onSetDesignOpen: setDesignOpen,
+    onSetDesignOpen: setDesignPanelOpen,
     selectedLayout,
     selectedMaster,
     selectedSlide,
   });
+  const chartPaneOpen =
+    !designOpen &&
+    !commentsOpen &&
+    designMode === 'slide' &&
+    singleSelectedElement?.type === 'chart' &&
+    Boolean(singleSelectedElement.chart);
+  const closeVisibleTaskPane = useCallback(() => {
+    if (designOpen) {
+      presentationDesign.close();
+      return;
+    }
+    if (commentsOpen) {
+      closeComments();
+      return;
+    }
+    selection.clear();
+  }, [
+    closeComments,
+    commentsOpen,
+    designOpen,
+    presentationDesign,
+    selection.clear,
+  ]);
+  usePresentationTaskPaneEscape(
+    Boolean(designOpen || commentsOpen || chartPaneOpen),
+    closeVisibleTaskPane,
+  );
   const arrangement = createPresentationArrangementController({
     getContent: () => contentRef.current,
     geometry,
@@ -458,7 +511,7 @@ function PresentationEditingSurface({
         deleteComment: presentationReview.deleteComment,
         locateComment: presentationReview.locateComment,
         openComment: presentationReview.openComment,
-        toggleComments: () => setCommentsOpen((value) => !value),
+        toggleComments,
         updateComment: presentationReview.updateComment,
       },
       selection: {
@@ -582,21 +635,19 @@ function PresentationEditingSurface({
           commands={presentationCommands}
         />
       )}
-      {designMode === 'slide' &&
-        singleSelectedElement?.type === 'chart' &&
-        singleSelectedElement.chart && (
-          <PresentationChartPanel
-            chart={singleSelectedElement.chart}
-            onChange={(chart) =>
-              presentationCommands.updateElement({
-                chart,
-                altText: chart.title || '演示图表',
-              })
-            }
-            onDelete={presentationCommands.deleteSelection}
-            onClose={selection.clear}
-          />
-        )}
+      {chartPaneOpen && singleSelectedElement.chart && (
+        <PresentationChartPanel
+          chart={singleSelectedElement.chart}
+          onChange={(chart) =>
+            presentationCommands.updateElement({
+              chart,
+              altText: chart.title || '演示图表',
+            })
+          }
+          onDelete={presentationCommands.deleteSelection}
+          onClose={selection.clear}
+        />
+      )}
       <PresentationWorkspace
         activeBackground={activeBackground}
         activeCommentId={activeCommentId}

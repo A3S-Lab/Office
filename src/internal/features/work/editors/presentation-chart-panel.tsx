@@ -36,6 +36,7 @@ import { PresentationChartDataLabelEditor } from './presentation-chart-data-labe
 import { PresentationChartLayoutEditor } from './presentation-chart-layout-editor';
 import { PresentationChartSeriesAnalysisEditor } from './presentation-chart-series-analysis-editor';
 import { SpreadsheetChartSeriesStyleEditor } from './spreadsheet-chart-series-style-editor';
+import { handlePresentationTaskPaneKeyDown } from './presentation-task-pane';
 
 const CHART_TYPES: WorkSlideChartType[] = [
   'column',
@@ -76,6 +77,7 @@ export function PresentationChartPanel({
     <section
       className="work-presentation-chart-panel"
       aria-label="演示图表数据"
+      onKeyDown={(event) => handlePresentationTaskPaneKeyDown(event, onClose)}
     >
       <header>
         <div>

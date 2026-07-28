@@ -42,7 +42,12 @@ export function usePresentationReviewCommands({
   const officeDialog = useOfficeDialog();
   const addComment = useCallback(() => {
     void officeDialog
-      .prompt({ title: '批注内容', multiline: true, confirmLabel: '添加批注' })
+      .prompt({
+        title: '批注内容',
+        multiline: true,
+        confirmLabel: '添加批注',
+        required: '请输入批注内容。',
+      })
       .then((text) => {
         if (!text?.trim()) return;
         const comment = {
