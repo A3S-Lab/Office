@@ -194,6 +194,175 @@ test('PDF keeps its single compact command row at phone width', async ({
   expect(geometry.toolbarOverflowX).toBe('auto');
 });
 
+test('presentation transition controls keep standard ribbon geometry', async ({
+  page,
+}) => {
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  await page.getByRole('tab', { name: '切换', exact: true }).click();
+
+  const toolbar = page.getByRole('toolbar', { name: '切换工具栏' });
+  await expect(toolbar).toBeVisible();
+  for (const label of ['切换效果', '换片方式', '应用']) {
+    await expect(page.getByRole('region', { name: label })).toBeVisible();
+  }
+  const geometry = await toolbar.evaluate((element) => {
+    const toolbarRect = element.getBoundingClientRect();
+    return {
+      toolbar: {
+        height: toolbarRect.height,
+        top: toolbarRect.top,
+        bottom: toolbarRect.bottom,
+      },
+      groups: [
+        ...element.querySelectorAll<HTMLElement>(
+          ':scope > .work-office-ribbon-group',
+        ),
+      ].map((group) => {
+        const rect = group.getBoundingClientRect();
+        return {
+          label: group.getAttribute('aria-label'),
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          bottom: rect.bottom,
+        };
+      }),
+    };
+  });
+
+  expect(geometry.toolbar.height).toBe(74);
+  expect(geometry.groups.map(({ label }) => label)).toEqual([
+    '切换效果',
+    '换片方式',
+    '应用',
+  ]);
+  const minimumWidths = new Map([
+    ['切换效果', 175],
+    ['换片方式', 150],
+    ['应用', 56],
+  ]);
+  for (const group of geometry.groups) {
+    expect(group.height).toBe(65);
+    expect(group.top).toBeGreaterThanOrEqual(geometry.toolbar.top);
+    expect(group.bottom).toBeLessThanOrEqual(geometry.toolbar.bottom + 1);
+    expect(group.width).toBeGreaterThanOrEqual(
+      minimumWidths.get(group.label ?? '') ?? 56,
+    );
+  }
+});
+
+test('compact spreadsheet ribbon advances to a complete group', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'compact-768',
+    'This contract targets the compact ribbon navigation.',
+  );
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'spreadsheet',
+  );
+  if (!fixture) throw new Error('Missing spreadsheet visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  const toolbar = page.getByRole('toolbar', { name: '开始工具栏' });
+  const forward = page.getByRole('button', {
+    name: '向右查看更多开始工具',
+  });
+  await expect(forward).toBeVisible();
+  await forward.click();
+  const backward = page.getByRole('button', {
+    name: '向左查看更多开始工具',
+  });
+  await expect(backward).toBeVisible();
+  await expect
+    .poll(() => toolbar.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0);
+
+  const geometry = await toolbar.evaluate((element) => {
+    const toolbarRect = element.getBoundingClientRect();
+    const panel = element.closest('.work-office-ribbon-panel');
+    const backwardButton = panel?.querySelector<HTMLElement>(
+      '.work-office-ribbon-scroll.previous',
+    );
+    if (!backwardButton) {
+      throw new Error('Compact ribbon backward navigation is unavailable.');
+    }
+    const backwardRect = backwardButton.getBoundingClientRect();
+    const inset = Number.parseFloat(
+      getComputedStyle(element).scrollPaddingLeft,
+    );
+    const expectedLeft = toolbarRect.left + inset;
+    const groups = [
+      ...element.querySelectorAll<HTMLElement>(
+        ':scope > .work-office-ribbon-group',
+      ),
+    ].map((group) => {
+      const rect = group.getBoundingClientRect();
+      return {
+        label: group.getAttribute('aria-label'),
+        left: rect.left,
+        right: rect.right,
+      };
+    });
+    const aligned = groups.reduce((closest, group) =>
+      Math.abs(group.left - expectedLeft) <
+      Math.abs(closest.left - expectedLeft)
+        ? group
+        : closest,
+    );
+    return {
+      aligned,
+      backwardRight: backwardRect.right,
+      expectedLeft,
+      scrollLeft: element.scrollLeft,
+      toolbarRight: toolbarRect.right,
+    };
+  });
+
+  expect(geometry.scrollLeft).toBeGreaterThan(0);
+  expect(geometry.aligned.left).toBeCloseTo(geometry.expectedLeft, 0);
+  expect(geometry.aligned.left).toBeGreaterThanOrEqual(
+    geometry.backwardRight + 2,
+  );
+  expect(geometry.aligned.right).toBeLessThanOrEqual(geometry.toolbarRight - 2);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(backward).toBeHidden();
+  await expect(forward).toBeHidden();
+  await expect
+    .poll(() => toolbar.evaluate((element) => element.scrollLeft))
+    .toBe(0);
+});
+
+test('closing PDF annotation style keeps the active pen', async ({ page }) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
+  if (!fixture) throw new Error('Missing PDF visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  const pen = page.getByRole('button', { name: '画笔' });
+  await pen.click();
+  await expect(pen).toHaveAttribute('aria-pressed', 'true');
+
+  await page.getByRole('button', { name: '批注样式' }).click();
+  const style = page.getByRole('dialog', { name: '批注样式' });
+  await expect(style).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  await expect(style).toBeHidden();
+  await expect(pen).toHaveAttribute('aria-pressed', 'true');
+});
+
 test.describe('Office editor context menu contracts', () => {
   test.describe.configure({ mode: 'serial' });
 

@@ -18,6 +18,11 @@ import {
 } from 'react';
 import { Popover, Tabs } from '../../../design-system/primitives';
 import { OfficeSlider } from './office-controls';
+import {
+  calculateRibbonOverflow,
+  calculateRibbonScrollTarget,
+  type WorkOfficeRibbonItemGeometry,
+} from './work-office-ribbon-overflow';
 
 export interface WorkOfficeRibbonTab<T extends string> {
   id: T;
@@ -71,9 +76,14 @@ export function WorkOfficeRibbon<T extends string>({
   const updateRibbonOverflow = useCallback(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
-    const backward = toolbar.scrollLeft > 2;
-    const forward =
-      toolbar.scrollLeft + toolbar.clientWidth < toolbar.scrollWidth - 2;
+    const { backward, forward } = calculateRibbonOverflow({
+      clientWidth: toolbar.clientWidth,
+      items: ribbonItemGeometry(toolbar),
+      scrollLeft: toolbar.scrollLeft,
+    });
+    if (!backward && !forward && toolbar.scrollLeft > 0) {
+      toolbar.scrollLeft = 0;
+    }
     setRibbonOverflow((current) =>
       current.backward === backward && current.forward === forward
         ? current
@@ -83,14 +93,12 @@ export function WorkOfficeRibbon<T extends string>({
   const scrollRibbon = (direction: -1 | 1) => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
-    const distance = Math.max(160, Math.round(toolbar.clientWidth * 0.7));
-    toolbar.scrollLeft = Math.max(
-      0,
-      Math.min(
-        toolbar.scrollWidth - toolbar.clientWidth,
-        toolbar.scrollLeft + distance * direction,
-      ),
-    );
+    toolbar.scrollLeft = calculateRibbonScrollTarget({
+      clientWidth: toolbar.clientWidth,
+      direction,
+      items: ribbonItemGeometry(toolbar),
+      scrollLeft: toolbar.scrollLeft,
+    });
     updateRibbonOverflow();
   };
   const selectTab = (tab: T) => {
@@ -191,6 +199,11 @@ export function WorkOfficeRibbon<T extends string>({
             <div
               ref={toolbarRef}
               className={`work-office-toolbar ${toolbarClassName}`.trim()}
+              data-has-overflow={
+                ribbonOverflow.backward || ribbonOverflow.forward
+                  ? 'true'
+                  : undefined
+              }
               role="toolbar"
               aria-label={`${selectedLabel}工具栏`}
               onScroll={updateRibbonOverflow}
@@ -211,6 +224,21 @@ export function WorkOfficeRibbon<T extends string>({
         )}
       </div>
     </section>
+  );
+}
+
+function ribbonItemGeometry(
+  toolbar: HTMLDivElement,
+): WorkOfficeRibbonItemGeometry[] {
+  return Array.from(toolbar.children).flatMap((element) =>
+    element instanceof HTMLElement
+      ? [
+          {
+            left: element.offsetLeft,
+            right: element.offsetLeft + element.offsetWidth,
+          },
+        ]
+      : [],
   );
 }
 

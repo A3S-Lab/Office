@@ -105,6 +105,40 @@ describe('PDF editor extensions', () => {
     expect(save.defaultPrevented).toBe(true);
     expect(calls).toEqual(['zoom:in', 'save']);
   });
+
+  test('keeps the active annotation tool when Escape belongs to a popover', () => {
+    const calls: string[] = [];
+    const editorContext = context(calls);
+    editorContext.annotation.state.activeToolId = 'ink';
+    const editor = createOfficeEditorRuntime(
+      editorContext,
+      createPdfEditorExtensions(),
+    );
+    const boundary = document.createElement('div');
+    boundary.dataset.officeShortcuts = 'ignore';
+    const control = document.createElement('button');
+    boundary.append(control);
+    document.body.append(boundary);
+    try {
+      let handled = true;
+      boundary.addEventListener('keydown', (event) => {
+        handled = editor.handleKeyDown(event);
+      });
+
+      const escapeEvent = new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key: 'Escape',
+      });
+      control.dispatchEvent(escapeEvent);
+
+      expect(handled).toBe(false);
+      expect(escapeEvent.defaultPrevented).toBe(false);
+      expect(calls).toEqual([]);
+    } finally {
+      boundary.remove();
+    }
+  });
 });
 
 function context(calls: string[]): PdfEditorCommandContext {

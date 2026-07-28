@@ -251,6 +251,14 @@
   gap: 0;
   padding: 5px 10px 5px;
   border: 0;
+  scroll-padding-inline: 34px;
+}
+
+.work-office-ribbon .work-office-toolbar[data-has-overflow="true"]::after {
+  content: "";
+  align-self: stretch;
+  flex: 0 0 calc(100% - 34px);
+  pointer-events: none;
 }
 
 .work-office-ribbon-scroll {

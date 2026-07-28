@@ -297,6 +297,7 @@ export function Popover({
       className={`ds-popover-panel${panelClassName ? ` ${panelClassName}` : ''}`}
       role={panelRole}
       aria-label={panelLabel}
+      data-office-shortcuts="ignore"
       data-floating={portal ? 'true' : undefined}
       onKeyDown={onPanelKeyDown}
       style={portal ? { position: 'absolute', top: 0, left: 0 } : undefined}
@@ -316,6 +317,7 @@ export function Popover({
     <div
       ref={rootRef}
       className={`ds-popover${open ? ' open' : ''}${className ? ` ${className}` : ''}`}
+      data-office-shortcuts={open ? 'ignore' : undefined}
       data-placement={placement}
     >
       {trigger(triggerProps, { open })}

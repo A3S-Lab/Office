@@ -207,49 +207,44 @@
   gap: 5px;
 }
 
-.work-presentation-transition-panel {
+.work-presentation-transition-options,
+.work-presentation-transition-timing {
   display: flex;
   min-width: 0;
-  height: 42px;
-  flex: 0 0 42px;
   align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--a3s-line);
-  background: var(--a3s-panel-soft);
-  color: var(--a3s-muted);
-  font-size: 9px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-.work-presentation-transition-panel > strong {
-  color: var(--a3s-ink);
-  font-size: 10px;
-}
-
-.work-presentation-transition-panel .work-office-field,
-.work-presentation-transition-panel .work-office-checkbox {
-  display: flex;
+.work-presentation-transition-options .work-office-field,
+.work-presentation-transition-timing .work-office-field,
+.work-presentation-transition-timing .work-office-checkbox {
   flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
 }
 
-.work-presentation-transition-panel .work-office-number-field {
-  width: 58px;
+.work-presentation-transition-options .work-office-field.effect {
+  width: 92px;
 }
 
-.work-presentation-transition-panel .work-office-checkbox.toggle {
+.work-presentation-transition-options .work-office-field.direction,
+.work-presentation-transition-options .work-office-field.speed {
+  width: 76px;
+}
+
+.work-presentation-transition-options .work-office-field.orientation {
+  width: 82px;
+}
+
+.work-presentation-transition-timing .work-office-checkbox.toggle {
+  width: max-content;
   gap: 4px;
+  white-space: nowrap;
 }
 
-.work-presentation-transition-panel > .ds-button {
-  flex: 0 0 auto;
-  font-size: 10px;
-}
-
-.work-presentation-transition-panel :disabled {
-  opacity: 0.45;
+.work-presentation-transition-timing .work-office-field.seconds {
+  width: 64px;
 }
 
 .work-presentation-chart-panel {

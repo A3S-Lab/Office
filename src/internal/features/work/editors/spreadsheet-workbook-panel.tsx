@@ -145,15 +145,14 @@ function panelTitle(view: SpreadsheetWorkbookPanelView) {
       label: '图表管理器',
       heading: '工作簿图表',
       description:
-        '从单元格引用创建并编辑可原生往返的柱形图、条形图、折线图、饼图、圆环图、面积图和雷达图',
+        '从单元格数据创建并编辑柱形图、条形图、折线图、饼图、圆环图、面积图和雷达图',
     };
   }
   if (view === 'pivots') {
     return {
       label: '数据透视表管理器',
       heading: '数据透视表',
-      description:
-        '按行、列和值字段汇总工作表数据，并原生往返支持范围内的 XLSX 透视定义与缓存',
+      description: '按行、列和值字段汇总工作表数据，并保留受支持的 XLSX 设置',
     };
   }
   if (view === 'protection') {

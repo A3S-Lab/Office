@@ -119,6 +119,37 @@ test('keeps compact PDF actions reachable from the more-tools menu', () => {
   ]);
 });
 
+test('marks an open annotation popover as an editor-shortcut boundary', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={{ ...annotation.state, activeToolId: 'ink' }}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '批注样式' });
+  fireEvent.click(trigger);
+
+  expect(trigger.closest('.ds-popover')).toHaveAttribute(
+    'data-office-shortcuts',
+    'ignore',
+  );
+  expect(screen.getByRole('dialog', { name: '批注样式' })).toHaveAttribute(
+    'data-office-shortcuts',
+    'ignore',
+  );
+});
+
 function createCanCommands(
   controller: PdfViewerController,
 ): PdfEditorCanCommands {
