@@ -1,38 +1,41 @@
 import { type KeyboardEvent, useEffect } from 'react';
 
-const OVERLAY_SELECTOR = '.ds-dialog-backdrop, .ds-popover.open, [role="menu"]';
+const ACTIVE_OVERLAY_SELECTOR =
+  '.ds-dialog-backdrop, .ds-popover.open, [role="menu"]';
 
-function presentationTaskPaneOwnsEscape(
+type OfficeTaskPaneClose = () => unknown;
+
+function officeTaskPaneOwnsEscape(
   event: Pick<globalThis.KeyboardEvent, 'defaultPrevented' | 'key'>,
 ) {
   return (
     event.key === 'Escape' &&
     !event.defaultPrevented &&
-    !document.querySelector(OVERLAY_SELECTOR)
+    !document.querySelector(ACTIVE_OVERLAY_SELECTOR)
   );
 }
 
-export function handlePresentationTaskPaneKeyDown(
+export function handleOfficeTaskPaneKeyDown(
   event: KeyboardEvent<HTMLElement>,
-  onClose: () => void,
+  onClose: OfficeTaskPaneClose,
 ) {
-  if (!presentationTaskPaneOwnsEscape(event.nativeEvent)) return;
+  if (!officeTaskPaneOwnsEscape(event.nativeEvent)) return;
   event.preventDefault();
   event.stopPropagation();
-  onClose();
+  void onClose();
 }
 
-export function usePresentationTaskPaneEscape(
+export function useOfficeTaskPaneEscape(
   active: boolean,
-  onClose: () => void,
+  onClose: OfficeTaskPaneClose,
 ) {
   useEffect(() => {
     if (!active) return;
     const closeFromEscape = (event: globalThis.KeyboardEvent) => {
-      if (!presentationTaskPaneOwnsEscape(event)) return;
+      if (!officeTaskPaneOwnsEscape(event)) return;
       event.preventDefault();
       event.stopPropagation();
-      onClose();
+      void onClose();
     };
     document.addEventListener('keydown', closeFromEscape, true);
     return () => document.removeEventListener('keydown', closeFromEscape, true);

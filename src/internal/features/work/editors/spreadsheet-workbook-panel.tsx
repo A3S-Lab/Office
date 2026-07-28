@@ -1,6 +1,6 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2, X } from 'lucide-react';
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   CollectionState,
@@ -21,6 +21,10 @@ import type {
 } from './spreadsheet-command-controller';
 import { SpreadsheetConditionalFormatPanel } from './spreadsheet-conditional-format-panel';
 import { SpreadsheetFormulaPanel } from './spreadsheet-formula-panel';
+import {
+  handleOfficeTaskPaneKeyDown,
+  useOfficeTaskPaneEscape,
+} from './office-task-pane';
 import { SpreadsheetPivotPanel } from './spreadsheet-pivot-panel';
 import { SpreadsheetPrintSettingsPanel } from './spreadsheet-print-settings-panel';
 import { SpreadsheetProtectionPanel } from './spreadsheet-protection-panel';
@@ -57,18 +61,13 @@ export function SpreadsheetWorkbookPanel({
   onClose,
 }: SpreadsheetWorkbookPanelProps) {
   const title = panelTitle(view);
-  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape' || event.defaultPrevented) return;
-    event.preventDefault();
-    event.stopPropagation();
-    onClose();
-  };
+  useOfficeTaskPaneEscape(true, onClose);
   return (
     <section
       className="work-spreadsheet-workbook-panel"
       aria-label={title.label}
       data-view={view}
-      onKeyDown={handleKeyDown}
+      onKeyDown={(event) => handleOfficeTaskPaneKeyDown(event, onClose)}
     >
       <header>
         <div>

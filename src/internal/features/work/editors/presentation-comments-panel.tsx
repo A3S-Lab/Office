@@ -7,7 +7,7 @@ import {
 import type { WorkSlide } from '../work-types';
 import { OfficeTextArea } from './office-controls';
 import type { PresentationEditorCommands } from './presentation-command-types';
-import { handlePresentationTaskPaneKeyDown } from './presentation-task-pane';
+import { handleOfficeTaskPaneKeyDown } from './office-task-pane';
 
 export type PresentationCommentsPanelCommands = Pick<
   PresentationEditorCommands,
@@ -43,7 +43,7 @@ export function PresentationCommentsPanel({
       className="work-presentation-comments-panel"
       aria-label="演示批注审阅"
       onKeyDown={(event) =>
-        handlePresentationTaskPaneKeyDown(event, commands.closeComments)
+        handleOfficeTaskPaneKeyDown(event, commands.closeComments)
       }
     >
       <header>

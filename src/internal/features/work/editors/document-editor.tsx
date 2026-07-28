@@ -74,6 +74,7 @@ import { DocumentStatusBar } from './document-status-bar';
 import { DocumentToolbar, type DocumentViewMode } from './document-toolbar';
 import { DocumentVerticalRuler } from './document-vertical-ruler';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
+import { useOfficeTaskPaneEscape } from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import {
   type WorkOfficeFileAction,
@@ -322,25 +323,7 @@ export function DocumentEditor({
     [requestEditorViewChange],
   );
 
-  useEffect(() => {
-    if (!taskPane) return;
-    const closeFromEscape = (event: KeyboardEvent) => {
-      if (
-        event.key !== 'Escape' ||
-        event.defaultPrevented ||
-        document.querySelector(
-          '.ds-dialog-backdrop, .ds-popover.open, [role="menu"]',
-        )
-      ) {
-        return;
-      }
-      event.preventDefault();
-      event.stopPropagation();
-      void closeTaskPane();
-    };
-    document.addEventListener('keydown', closeFromEscape, true);
-    return () => document.removeEventListener('keydown', closeFromEscape, true);
-  }, [closeTaskPane, taskPane]);
+  useOfficeTaskPaneEscape(Boolean(taskPane), closeTaskPane);
 
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {

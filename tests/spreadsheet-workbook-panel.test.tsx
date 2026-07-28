@@ -41,6 +41,48 @@ test('keeps workbook panel controls outside its scrollable body', () => {
   expect(closed).toEqual([true]);
 });
 
+test('dismisses an open workbook panel with Escape outside the panel', () => {
+  const closed: boolean[] = [];
+  render(
+    <SpreadsheetWorkbookPanel
+      content={content}
+      view="charts"
+      activeSheetId="sheet-1"
+      can={can}
+      commands={commands}
+      onClose={() => closed.push(true)}
+    />,
+  );
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+
+  expect(closed).toEqual([true]);
+});
+
+test('lets an active overlay consume Escape before the workbook panel', () => {
+  const closed: boolean[] = [];
+  render(
+    <SpreadsheetWorkbookPanel
+      content={content}
+      view="names"
+      activeSheetId="sheet-1"
+      can={can}
+      commands={commands}
+      onClose={() => closed.push(true)}
+    />,
+  );
+  const menu = document.createElement('div');
+  menu.setAttribute('role', 'menu');
+  document.body.append(menu);
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  menu.remove();
+  expect(closed).toEqual([]);
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(closed).toEqual([true]);
+});
+
 test('starts each workbook panel view at the top of a fresh scroll body', () => {
   const props = {
     content,

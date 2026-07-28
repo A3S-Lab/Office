@@ -41,7 +41,7 @@ import type {
 } from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
 import { PresentationStatusBar } from './presentation-status-bar';
-import { usePresentationTaskPaneEscape } from './presentation-task-pane';
+import { useOfficeTaskPaneEscape } from './office-task-pane';
 import {
   applyPresentationTextFormatting,
   presentationTextToolbarState,
@@ -401,7 +401,7 @@ function PresentationEditingSurface({
     presentationDesign,
     selection.clear,
   ]);
-  usePresentationTaskPaneEscape(
+  useOfficeTaskPaneEscape(
     Boolean(designOpen || commentsOpen || chartPaneOpen),
     closeVisibleTaskPane,
   );
