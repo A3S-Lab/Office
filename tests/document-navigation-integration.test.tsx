@@ -48,3 +48,35 @@ test('opens a persistent Word-style navigation pane from the View ribbon', async
   await waitFor(() => expect(editor).toHaveFocus());
   unmount();
 });
+
+test('closes the Word comments pane with Escape from its ribbon trigger', async () => {
+  const artifact = createArtifact('project-brief');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const { unmount } = render(
+    <DocumentEditor
+      content={artifact.content}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  const commentsToggle = await screen.findByRole('button', {
+    name: /^查看批注/,
+  });
+  fireEvent.click(commentsToggle);
+
+  expect(await screen.findByLabelText('批注审阅')).toBeVisible();
+  commentsToggle.focus();
+  expect(commentsToggle).toHaveFocus();
+  fireEvent.keyDown(commentsToggle, { key: 'Escape' });
+
+  await waitFor(() =>
+    expect(screen.queryByLabelText('批注审阅')).not.toBeInTheDocument(),
+  );
+  await waitFor(() => expect(editor).toHaveFocus());
+  unmount();
+});
