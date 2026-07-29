@@ -159,10 +159,14 @@ export function DocumentCommentsPanel({
         : '批注及其回复将被删除。',
       confirmLabel: '删除',
       confirmTone: 'danger',
-      restoreFocusTarget: () =>
-        panelRef.current?.querySelector<HTMLElement>(
-          '.work-document-task-pane-close, .ds-icon-button.close',
-        ) ?? editor.view.dom,
+      restoreFocusTarget: replyDirty
+        ? () =>
+            cardRefs.current
+              .get(commentId)
+              ?.querySelector<HTMLElement>(
+                '.work-document-comment-reply textarea',
+              ) ?? editor.view.dom
+        : undefined,
     });
     if (!confirmed) return;
     const nextComment = comments[index + 1] ?? comments[index - 1];

@@ -48,10 +48,13 @@ test('confirms before deleting a comment and its pending reply', async () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole('textbox', { name: '回复批注 1' }), {
+    const reply = screen.getByRole('textbox', { name: '回复批注 1' });
+    fireEvent.change(reply, {
       target: { value: 'Unsaved reply' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '删除批注 1' }));
+    const deleteButton = screen.getByRole('button', { name: '删除批注 1' });
+    deleteButton.focus();
+    fireEvent.click(deleteButton);
 
     const dialog = screen.getByRole('dialog', { name: '删除批注？' });
     expect(dialog).toHaveAccessibleDescription(
@@ -60,9 +63,11 @@ test('confirms before deleting a comment and its pending reply', async () => {
     expect(deleted).toEqual([]);
 
     fireEvent.click(within(dialog).getByRole('button', { name: '取消' }));
+    await waitFor(() => expect(reply).toHaveFocus());
+    expect(reply).toHaveValue('Unsaved reply');
     expect(deleted).toEqual([]);
 
-    fireEvent.click(screen.getByRole('button', { name: '删除批注 1' }));
+    fireEvent.click(deleteButton);
     fireEvent.click(
       within(screen.getByRole('dialog', { name: '删除批注？' })).getByRole(
         'button',

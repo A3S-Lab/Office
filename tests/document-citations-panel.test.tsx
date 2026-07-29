@@ -54,19 +54,25 @@ test('protects an edited citation source before changing the selection', async (
     );
 
     const title = screen.getByRole('textbox', { name: '文献标题' });
+    title.focus();
     fireEvent.change(title, { target: { value: 'Edited architecture' } });
     await waitFor(() => expect(dirtyStates.at(-1)).toBe(true));
     expect(screen.getByRole('button', { name: '保存文献' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '插入引文' })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('button', { name: /Beta Systems/ }));
+    const createButton = screen.getByRole('button', { name: '新建' });
+    createButton.focus();
+    fireEvent.click(createButton);
     expect(
       screen.getByRole('dialog', { name: '放弃未保存的更改？' }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
-    await waitFor(() => expect(title).toHaveValue('Edited architecture'));
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(title).toHaveValue('Edited architecture');
 
-    fireEvent.click(screen.getByRole('button', { name: /Beta Systems/ }));
+    const betaButton = screen.getByRole('button', { name: /Beta Systems/ });
+    betaButton.focus();
+    fireEvent.click(betaButton);
     fireEvent.click(screen.getByRole('button', { name: '放弃更改' }));
     await waitFor(() => expect(title).toHaveValue('Beta Systems'));
     expect(screen.getByRole('button', { name: '保存文献' })).toBeDisabled();
@@ -138,14 +144,18 @@ test('confirms before deleting a citation source', async () => {
   );
 
   try {
-    fireEvent.click(screen.getByRole('button', { name: '删除文献' }));
+    const title = screen.getByRole('textbox', { name: '文献标题' });
+    title.focus();
+    fireEvent.change(title, { target: { value: 'Edited before deletion' } });
+    const deleteButton = screen.getByRole('button', { name: '删除文献' });
+    deleteButton.focus();
+    fireEvent.click(deleteButton);
     expect(screen.getByRole('dialog', { name: '删除文献？' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
-    expect(screen.getByRole('textbox', { name: '文献标题' })).toHaveValue(
-      'Alpha Architecture',
-    );
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(title).toHaveValue('Edited before deletion');
 
-    fireEvent.click(screen.getByRole('button', { name: '删除文献' }));
+    fireEvent.click(deleteButton);
     fireEvent.click(
       within(screen.getByRole('dialog', { name: '删除文献？' })).getByRole(
         'button',

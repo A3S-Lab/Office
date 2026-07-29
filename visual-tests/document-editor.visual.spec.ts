@@ -473,6 +473,13 @@ test('document comments align with their review rail', async ({
 
   const reply = panel.getByRole('textbox', { name: '回复批注 1' });
   await reply.fill('尚未发送的回复');
+  await panel.getByRole('button', { name: '删除批注 1' }).click();
+  const deleteComment = page.getByRole('dialog', { name: '删除批注？' });
+  await expect(deleteComment).toBeVisible();
+  await deleteComment.getByRole('button', { name: '取消' }).click();
+  await expect(reply).toBeFocused();
+  await expect(reply).toHaveValue('尚未发送的回复');
+
   await reply.press('Escape');
   const discardReply = page.getByRole('dialog', {
     name: '放弃未完成的批注？',
@@ -791,6 +798,14 @@ test('document task panes and dialogs preserve the editing context', async ({
     name: '文献标题',
   });
   await citationTitle.fill('A3S Office edited');
+  await citationsPane.getByRole('button', { name: '新建' }).click();
+  const discardCitationDraft = page.getByRole('dialog', {
+    name: '放弃未保存的更改？',
+  });
+  await discardCitationDraft.getByRole('button', { name: '取消' }).click();
+  await expect(citationTitle).toBeFocused();
+  await expect(citationTitle).toHaveValue('A3S Office edited');
+
   const closeCitations = citationsPane.getByRole('button', {
     name: '关闭文献库',
   });

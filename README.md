@@ -240,8 +240,8 @@ interaction model.
 
 - **Document** — Pagination, sections, focused page-setup tabs, clean page
   margins with on-demand header/footer editing, outline navigation, styles,
-  precision table sizing and autofit, viewport-safe and focus-safe comment
-  drafting and review, tracked changes, focus-safe citation drafts, notes,
+  precision table sizing and autofit, viewport-safe comment drafting,
+  focus-preserving comment review and citation drafts, tracked changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared
   edit/preview/PDF typography and page-chrome placement. Editing, read-only
   preview, and browser PDF export share one live pagination result.

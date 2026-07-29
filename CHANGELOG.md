@@ -113,3 +113,6 @@ All notable changes to A3S Office will be documented in this file.
 - Returned keyboard focus to the unfinished Word comment, reply, or citation
   field when a user cancels closing or switching its task pane, preserving the
   draft and the user's editing position across desktop and compact layouts.
+- Preserved unfinished Word replies and edited citation fields when users
+  cancel comment deletion, citation deletion, or an internal citation switch,
+  and returned focus to the exact field instead of the destructive action.

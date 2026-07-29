@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import { BookMarked, Plus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type FocusEvent, useEffect, useRef, useState } from 'react';
 import { Button } from '../../../design-system/primitives';
 import {
   createDocumentBibliography,
@@ -44,6 +44,7 @@ export function DocumentCitationsPanel({
   );
   const [error, setError] = useState('');
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const draftFocusRef = useRef<HTMLElement | null>(null);
   const selectedSource = bibliography.sources.find(
     (source) => source.id === draft.id,
   );
@@ -90,6 +91,21 @@ export function DocumentCitationsPanel({
       tagInputRef.current?.focus({ preventScroll: true }),
     );
   };
+  const restoreDraftFocusTarget = () => {
+    if (draftFocusRef.current?.isConnected) return draftFocusRef.current;
+    if (tagInputRef.current?.isConnected) return tagInputRef.current;
+    return editor.view.dom;
+  };
+  const rememberDraftFocus = (event: FocusEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      target.closest('form') &&
+      target.matches(CITATION_DRAFT_CONTROL_SELECTOR)
+    ) {
+      draftFocusRef.current = target;
+    }
+  };
   const continueAfterDiscard = async (action: () => void) => {
     if (
       dirty &&
@@ -98,6 +114,7 @@ export function DocumentCitationsPanel({
         description: '当前文献尚未保存。',
         confirmLabel: '放弃更改',
         confirmTone: 'danger',
+        restoreFocusTarget: restoreDraftFocusTarget,
       }))
     ) {
       return;
@@ -184,6 +201,7 @@ export function DocumentCitationsPanel({
       description: `“${sourceTitle}”将从文献库中删除，文档中的引用可能无法识别。`,
       confirmLabel: '删除',
       confirmTone: 'danger',
+      restoreFocusTarget: dirty ? restoreDraftFocusTarget : undefined,
     });
     if (!confirmed) return;
     const sources = bibliography.sources.filter(
@@ -244,7 +262,10 @@ export function DocumentCitationsPanel({
             插入参考文献
           </Button>
         </div>
-        <div className="work-document-citation-manager">
+        <div
+          className="work-document-citation-manager"
+          onFocusCapture={rememberDraftFocus}
+        >
           {bibliography.sources.length > 0 && (
             <aside aria-label="文献列表">
               <div className="work-document-citation-list-heading">
@@ -305,6 +326,12 @@ export function DocumentCitationsPanel({
     </>
   );
 }
+
+const CITATION_DRAFT_CONTROL_SELECTOR = [
+  'input:not([type="hidden"]):not(:disabled)',
+  'textarea:not(:disabled)',
+  '[role="combobox"]:not([aria-disabled="true"])',
+].join(', ');
 
 function sourceDraft(source?: WorkDocumentCitationSource): CitationSourceDraft {
   const author = source?.contributors?.Author;
