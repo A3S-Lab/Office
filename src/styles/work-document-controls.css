@@ -1059,6 +1059,19 @@
   background: transparent;
 }
 
+.work-document-editor .work-document-find-match {
+  border-radius: 2px;
+  background: #fff1a8;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.work-document-editor .work-document-find-match.active {
+  outline: 1px solid color-mix(in srgb, #d99316 70%, transparent);
+  outline-offset: 1px;
+  background: #ffd66b;
+}
+
 @media (max-width: 900px) {
   .work-document-review-surface.comments-open {
     gap: 0;

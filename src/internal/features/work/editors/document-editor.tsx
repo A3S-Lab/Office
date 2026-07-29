@@ -348,7 +348,6 @@ export function DocumentEditor({
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {
       if (!editor) return false;
-      editor.commands.focus();
       if (trackChangesRef.current) {
         return editor.commands.replaceDocumentTextWithTrackedChange(
           from,
@@ -358,7 +357,6 @@ export function DocumentEditor({
       }
       return editor
         .chain()
-        .focus()
         .setTextSelection({ from, to })
         .insertContent(documentPlainTextAsHtml(replacement))
         .run();

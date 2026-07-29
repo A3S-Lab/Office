@@ -148,6 +148,32 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
   const query = page.getByRole('textbox', { name: '查找内容' });
   await expect(query).toBeFocused();
   await query.fill('项目');
+  await expect
+    .poll(() =>
+      page
+        .locator('.work-document-find-match')
+        .evaluateAll(
+          (elements) =>
+            new Set(
+              elements.map((element) =>
+                element.getAttribute('data-document-find-index'),
+              ),
+            ).size,
+        ),
+    )
+    .toBeGreaterThan(1);
+  await expect(page.locator('.work-document-find-match.active')).toHaveCount(0);
+
+  await query.press('Enter');
+  await expect(query).toBeFocused();
+  await expect(
+    page.locator('.work-document-find-match.active').first(),
+  ).toHaveAttribute('data-document-find-index', '0');
+  await query.press('Enter');
+  await expect(query).toBeFocused();
+  await expect(
+    page.locator('.work-document-find-match.active').first(),
+  ).toHaveAttribute('data-document-find-index', '1');
 
   await body.focus();
   await page.keyboard.press(`${modifier}+f`);
@@ -162,6 +188,12 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
     'true',
   );
   await expect(query).toBeFocused();
+
+  const replacement = page.getByRole('textbox', { name: '替换为' });
+  await replacement.fill('方案');
+  await replacement.press('Enter');
+  await expect(replacement).toBeFocused();
+  await expect(page.getByText('已替换当前匹配')).toBeVisible();
 });
 
 test('Word list galleries apply a style without trapping focus in the ribbon', async ({

@@ -7,7 +7,7 @@ import {
 } from '../src/internal/features/work/editors/document-find-replace-panel';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
-test('finds text across adjacent marked runs and moves through matches', () => {
+test('finds text across adjacent marked runs and moves through matches', async () => {
   const { editor, element } = createEditor(
     '<p>Al<strong>pha</strong> beta Alpha</p>',
   );
@@ -17,7 +17,7 @@ test('finds text across adjacent marked runs and moves through matches', () => {
       { from: 1, to: 6 },
       { from: 12, to: 17 },
     ]);
-    render(
+    const view = render(
       <DocumentFindReplacePanel
         editor={editor}
         mode="find"
@@ -27,18 +27,62 @@ test('finds text across adjacent marked runs and moves through matches', () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole('textbox', { name: '查找内容' }), {
+    const query = screen.getByRole('textbox', { name: '查找内容' });
+    fireEvent.change(query, {
       target: { value: 'alpha' },
     });
     expect(screen.getByText('2 个匹配')).toBeVisible();
+    await waitFor(() =>
+      expect(
+        new Set(
+          [
+            ...editor.view.dom.querySelectorAll<HTMLElement>(
+              '.work-document-find-match',
+            ),
+          ].map((match) => match.dataset.documentFindIndex),
+        ).size,
+      ).toBe(2),
+    );
+    expect(
+      editor.view.dom.querySelectorAll('.work-document-find-match.active'),
+    ).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole('button', { name: '下一个匹配' }));
+    query.focus();
+    fireEvent.keyDown(query, { key: 'Enter' });
+    expect(query).toHaveFocus();
+    expect(editor.state.selection).toMatchObject({ from: 1, to: 6 });
+    expect(
+      new Set(
+        [
+          ...editor.view.dom.querySelectorAll<HTMLElement>(
+            '.work-document-find-match.active',
+          ),
+        ].map((match) => match.dataset.documentFindIndex),
+      ),
+    ).toEqual(new Set(['0']));
+
+    fireEvent.keyDown(query, { key: 'Enter' });
+    expect(query).toHaveFocus();
+    expect(editor.state.selection).toMatchObject({ from: 12, to: 17 });
+    expect(
+      new Set(
+        [
+          ...editor.view.dom.querySelectorAll<HTMLElement>(
+            '.work-document-find-match.active',
+          ),
+        ].map((match) => match.dataset.documentFindIndex),
+      ),
+    ).toEqual(new Set(['1']));
     expect(
       editor.state.doc.textBetween(
         editor.state.selection.from,
         editor.state.selection.to,
       ),
     ).toBe('Alpha');
+    view.unmount();
+    expect(
+      editor.view.dom.querySelectorAll('.work-document-find-match'),
+    ).toHaveLength(0);
   } finally {
     editor.destroy();
     element.remove();
@@ -69,15 +113,49 @@ test('replaces the current match and exposes the task-pane mode switch', () => {
     fireEvent.change(screen.getByRole('textbox', { name: '查找内容' }), {
       target: { value: 'Alpha' },
     });
-    fireEvent.change(screen.getByRole('textbox', { name: '替换为' }), {
+    const replacement = screen.getByRole('textbox', { name: '替换为' });
+    fireEvent.change(replacement, {
       target: { value: 'Omega' },
     });
     fireEvent.click(screen.getByRole('button', { name: '替换' }));
     expect(editor.getText()).toBe('Omega beta Alpha');
     expect(screen.getByText('已替换当前匹配')).toBeVisible();
 
+    replacement.focus();
+    fireEvent.keyDown(replacement, { key: 'Enter' });
+    expect(editor.getText()).toBe('Omega beta Omega');
+    expect(replacement).toHaveFocus();
+    expect(screen.getByText('没有匹配内容')).toBeVisible();
+
     fireEvent.click(screen.getByRole('tab', { name: '查找' }));
     expect(modes).toEqual(['find']);
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('moves backward from an inactive search to the final match', () => {
+  const { editor, element } = createEditor('<p>Alpha beta Alpha</p>');
+
+  try {
+    render(
+      <DocumentFindReplacePanel
+        editor={editor}
+        mode="find"
+        onModeChange={() => undefined}
+        onReplaceText={() => false}
+        onClose={() => undefined}
+      />,
+    );
+
+    const query = screen.getByRole('textbox', { name: '查找内容' });
+    fireEvent.change(query, { target: { value: 'Alpha' } });
+    fireEvent.keyDown(query, { key: 'Enter', shiftKey: true });
+
+    expect(query).toHaveFocus();
+    expect(editor.state.selection).toMatchObject({ from: 12, to: 17 });
+    expect(screen.getByText('第 2 个，共 2 个')).toBeVisible();
   } finally {
     editor.destroy();
     element.remove();

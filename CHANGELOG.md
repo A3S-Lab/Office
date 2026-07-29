@@ -104,3 +104,6 @@ All notable changes to A3S Office will be documented in this file.
   rail.
 - Kept Word revision review keyboard focus on the matching action for the next
   change, then returned it to the document after the final individual decision.
+- Highlighted all Word Find matches persistently, made initial forward and
+  backward navigation select the expected match, and kept Find and Replace
+  controls focused across repeated keyboard actions.

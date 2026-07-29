@@ -3,14 +3,17 @@ import { ArrowDown, ArrowUp, Replace, ReplaceAll, Search } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Button, IconButton } from '../../../design-system/primitives';
 import { OfficeTextField } from './office-controls';
+import {
+  type DocumentFindHighlightRange,
+  registerDocumentFindHighlight,
+  unregisterDocumentFindHighlight,
+  updateDocumentFindHighlights,
+} from './document-find-highlight';
 import { DocumentTaskPane } from './document-task-pane';
 
 export type DocumentFindReplaceMode = 'find' | 'replace';
 
-interface DocumentTextMatch {
-  from: number;
-  to: number;
-}
+type DocumentTextMatch = DocumentFindHighlightRange;
 
 export function DocumentFindReplacePanel({
   editor,
@@ -34,11 +37,30 @@ export function DocumentFindReplacePanel({
   const [replacement, setReplacement] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
   const [announcement, setAnnouncement] = useState('');
-  const document = editor.state.doc;
+  const [, renderEditorState] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => renderEditorState((current) => current + 1);
+    editor.on('transaction', refresh);
+    return () => {
+      editor.off('transaction', refresh);
+    };
+  }, [editor]);
+
+  const editorDocument = editor.state.doc;
   const matches = useMemo(
     () => documentTextMatches(editor, query),
-    [document, editor, query],
+    [editor, editorDocument, query],
   );
+
+  useEffect(() => {
+    registerDocumentFindHighlight(editor);
+    return () => unregisterDocumentFindHighlight(editor);
+  }, [editor]);
+
+  useEffect(() => {
+    updateDocumentFindHighlights(editor, matches, activeIndex);
+  }, [activeIndex, editor, matches]);
 
   useEffect(() => {
     queryRef.current?.focus({ preventScroll: true });
@@ -47,11 +69,16 @@ export function DocumentFindReplacePanel({
 
   useEffect(() => {
     setActiveIndex((current) =>
-      matches.length ? Math.min(Math.max(current, 0), matches.length - 1) : -1,
+      current >= 0 && matches.length
+        ? Math.min(current, matches.length - 1)
+        : -1,
     );
   }, [matches.length]);
 
-  useEffect(() => setAnnouncement(''), [query]);
+  useEffect(() => {
+    setActiveIndex(-1);
+    setAnnouncement('');
+  }, [query]);
 
   const selectMatch = (requestedIndex: number) => {
     if (!matches.length) return;
@@ -61,14 +88,28 @@ export function DocumentFindReplacePanel({
     setActiveIndex(index);
     editor
       .chain()
-      .focus()
       .setTextSelection({ from: match.from, to: match.to })
+      .scrollIntoView()
       .run();
     setAnnouncement(`第 ${index + 1} 个，共 ${matches.length} 个`);
   };
 
+  const moveToMatch = (direction: -1 | 1) => {
+    selectMatch(
+      activeIndex < 0
+        ? direction > 0
+          ? 0
+          : matches.length - 1
+        : activeIndex + direction,
+    );
+  };
+
   const replaceCurrent = () => {
     const match = matches[activeIndex >= 0 ? activeIndex : 0];
+    const focusTarget =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     if (!match || !onReplaceText(match.from, match.to, replacement)) return;
     setAnnouncement('已替换当前匹配');
     const remaining = documentTextMatches(editor, query);
@@ -77,9 +118,12 @@ export function DocumentFindReplacePanel({
     if (next) {
       editor
         .chain()
-        .focus()
         .setTextSelection({ from: next.from, to: next.to })
+        .scrollIntoView()
         .run();
+    }
+    if (focusTarget?.isConnected && !focusTarget.matches(':disabled')) {
+      focusTarget.focus({ preventScroll: true });
     } else {
       queryRef.current?.focus({ preventScroll: true });
     }
@@ -139,7 +183,7 @@ export function DocumentFindReplacePanel({
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
-                selectMatch(activeIndex + (event.shiftKey ? -1 : 1));
+                moveToMatch(event.shiftKey ? -1 : 1);
               }}
             />
           </span>
@@ -173,14 +217,14 @@ export function DocumentFindReplacePanel({
             <IconButton
               label="上一个匹配"
               disabled={!matches.length}
-              onClick={() => selectMatch(activeIndex - 1)}
+              onClick={() => moveToMatch(-1)}
             >
               <ArrowUp size={14} />
             </IconButton>
             <IconButton
               label="下一个匹配"
               disabled={!matches.length}
-              onClick={() => selectMatch(activeIndex + 1)}
+              onClick={() => moveToMatch(1)}
             >
               <ArrowDown size={14} />
             </IconButton>
