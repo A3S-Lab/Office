@@ -223,6 +223,9 @@ remains one coherent history.
 - Keep worksheet lifecycle actions in the shared Office interaction system:
   destructive deletion uses a safe default, invalid names remain editable with
   local accessible feedback, and temporary menus and dialogs restore focus.
+- Keep Cmd/Ctrl+F inside the editor through the compact Spreadsheet Find bar,
+  including displayed, raw, formula, and sparse-cell matching, deterministic
+  navigation, repeated-shortcut refocus, and grid-focus restoration on close.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 

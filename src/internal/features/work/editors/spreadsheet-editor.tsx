@@ -69,6 +69,8 @@ import {
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import { SpreadsheetFindBar } from './spreadsheet-find-bar';
+import type { SpreadsheetFindMatch } from './spreadsheet-find';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
@@ -161,6 +163,8 @@ export function SpreadsheetEditor({
     useState<SpreadsheetSelectionState | null>(null);
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findFocusRequest, setFindFocusRequest] = useState(0);
   const [previewZoom, setPreviewZoom] = useState(100);
   const [previewActiveSheetId, setPreviewActiveSheetId] = useState<
     string | null
@@ -478,6 +482,34 @@ export function SpreadsheetEditor({
     () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
     [],
   );
+  const openSpreadsheetFind = useCallback(() => {
+    setFindOpen(true);
+    setFindFocusRequest((current) => current + 1);
+  }, []);
+  const closeSpreadsheetFind = useCallback(() => {
+    setFindOpen(false);
+    requestAnimationFrame(() =>
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+    );
+  }, []);
+  const selectSpreadsheetFindMatch = useCallback(
+    (match: SpreadsheetFindMatch) => {
+      try {
+        workbookRef.current?.setSelection(
+          [
+            {
+              row: [match.row, match.row],
+              column: [match.column, match.column],
+            },
+          ],
+          { id: match.sheetId },
+        );
+      } catch {
+        return;
+      }
+    },
+    [],
+  );
   const spreadsheetRibbonCommands = useMemo(
     () =>
       spreadsheetCommandsWithGridFocus(
@@ -535,6 +567,17 @@ export function SpreadsheetEditor({
   const handleSpreadsheetKeyDownCapture = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      !event.altKey &&
+      !event.shiftKey &&
+      event.key.toLocaleLowerCase() === 'f'
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      openSpreadsheetFind();
+      return;
+    }
     handleSpreadsheetEditingEscape(event);
     const handled = runSpreadsheetClipboardShortcut(event.nativeEvent, {
       clipboard: browserSpreadsheetClipboard,
@@ -630,9 +673,11 @@ export function SpreadsheetEditor({
           commands={spreadsheetRibbonCommands}
           content={content}
           fileActions={fileActions}
+          findOpen={findOpen}
           gridLinesVisible={gridLinesVisible}
           multipleCellsSelected={multipleCellsSelected}
           panelId={panelId}
+          onOpenFind={openSpreadsheetFind}
           onTabChange={(tab) => {
             setRibbonTab(tab);
             panelTriggerRef.current = null;
@@ -682,6 +727,14 @@ export function SpreadsheetEditor({
             onChange={handleWorkbookChange}
             onOp={handleWorkbookOperations}
           />
+          {findOpen && (
+            <SpreadsheetFindBar
+              sheet={activeSheet}
+              focusRequest={findFocusRequest}
+              onClose={closeSpreadsheetFind}
+              onSelectMatch={selectSpreadsheetFindMatch}
+            />
+          )}
         </div>
         {!preview && panel && (
           <SpreadsheetWorkbookPanel

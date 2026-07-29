@@ -14,7 +14,9 @@ export interface SpreadsheetSelectionSummary {
   sum: number | null;
 }
 
-export function spreadsheetSelectionReference(selection: Selection): string {
+export function spreadsheetSelectionReference(
+  selection: Pick<Selection, 'row' | 'column'>,
+): string {
   const rowStart = Math.min(
     selection.row[0] ?? 0,
     selection.row[1] ?? selection.row[0] ?? 0,

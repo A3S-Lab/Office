@@ -19,6 +19,7 @@ import {
   Percent,
   Printer,
   Redo2,
+  Search,
   ShieldCheck,
   TableProperties,
   Underline,
@@ -87,9 +88,11 @@ export function SpreadsheetEditorRibbon({
   commands,
   content,
   fileActions,
+  findOpen,
   gridLinesVisible,
   multipleCellsSelected,
   panelId,
+  onOpenFind,
   onTabChange,
   onTogglePanel,
   panel,
@@ -100,9 +103,11 @@ export function SpreadsheetEditorRibbon({
   commands: SpreadsheetEditorCommands;
   content: WorkSpreadsheetContent;
   fileActions?: readonly WorkOfficeFileAction[];
+  findOpen: boolean;
   gridLinesVisible: boolean;
   multipleCellsSelected: boolean;
   panelId: string;
+  onOpenFind: () => void;
   onTabChange: (tab: SpreadsheetRibbonTabId) => void;
   onTogglePanel: (
     panel: SpreadsheetWorkbookPanelView,
@@ -461,6 +466,17 @@ export function SpreadsheetEditorRibbon({
                 }
               >
                 <Merge size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="编辑">
+              <WorkOfficeRibbonButton
+                label="查找"
+                title="查找（Cmd/Ctrl+F）"
+                aria-keyshortcuts="Control+F Meta+F"
+                active={findOpen}
+                onClick={onOpenFind}
+              >
+                <Search size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
           </>

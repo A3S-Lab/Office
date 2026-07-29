@@ -35,6 +35,68 @@
   font-size: 12px;
 }
 
+.work-spreadsheet-find-bar {
+  position: absolute;
+  z-index: 30;
+  top: 60px;
+  right: 10px;
+  display: flex;
+  width: min(350px, calc(100% - 20px));
+  min-height: 36px;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 5px 4px 9px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  box-shadow: 0 8px 22px rgb(26 35 52 / 14%);
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-find-bar > .work-office-text-field {
+  width: 0;
+  height: 27px;
+  min-width: 96px;
+  flex: 1 1 auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.work-spreadsheet-find-bar > .work-office-text-field:focus {
+  box-shadow: none;
+}
+
+.work-spreadsheet-find-bar > output {
+  min-width: 54px;
+  color: var(--a3s-faint);
+  font-size: 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-find-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1px;
+}
+
+.work-spreadsheet-find-actions .ds-icon-button {
+  width: 25px;
+  height: 25px;
+  min-height: 25px;
+  border-radius: 5px;
+}
+
+@media (max-width: 600px) {
+  .work-spreadsheet-find-bar {
+    right: 8px;
+    left: 8px;
+    width: auto;
+  }
+}
+
 .work-spreadsheet-ribbon-toolbar .work-office-select {
   width: 62px;
   flex: 0 0 62px;

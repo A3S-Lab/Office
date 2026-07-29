@@ -50,6 +50,9 @@ All notable changes to A3S Office will be documented in this file.
   controlled content.
 - Added Spreadsheet font-family, vertical-alignment, and text-wrap commands to
   the primary ribbon through the native Fortune cell-format model.
+- Added an editor-owned Spreadsheet Find bar with Cmd/Ctrl+F interception,
+  displayed-value, raw-value, formula, and sparse-cell matching, deterministic
+  cell navigation, repeated-shortcut refocus, and grid-focus restoration.
 - Kept common Presentation arrangement commands visible at desktop width by
   compacting group, ungroup, and layer actions without removing their labels
   from accessible names and tooltips.

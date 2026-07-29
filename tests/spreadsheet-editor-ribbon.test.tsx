@@ -20,10 +20,12 @@ test('routes number-format controls through typed spreadsheet commands', () => {
       commands={commands}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
+      findOpen={false}
       multipleCellsSelected={false}
       panel={null}
       toolbarCell={{ v: 0.5, m: '50.0%', ct: { fa: '0.0%', t: 'n' } }}
       onTabChange={() => undefined}
+      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -56,10 +58,12 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
       })}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
+      findOpen={false}
       multipleCellsSelected={false}
       panel={null}
       toolbarCell={{ ff: 'Arial', vt: 0, tb: '2' }}
       onTabChange={() => undefined}
+      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -103,10 +107,12 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
       commands={spreadsheetCommands(() => true)}
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
+      findOpen={false}
       multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
+      onOpenFind={() => undefined}
       onTogglePanel={() => undefined}
     />,
   );
@@ -114,6 +120,33 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
   expect(screen.getByRole('button', { name: '插入图表' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: '条件格式' })).toBeInTheDocument();
   expect(screen.queryByText('0')).not.toBeInTheDocument();
+});
+
+test('exposes the spreadsheet find shortcut through the home ribbon', () => {
+  let openCount = 0;
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(() => true)}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => {
+        openCount += 1;
+      }}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const find = screen.getByRole('button', { name: '查找' });
+  expect(find).toHaveAttribute('aria-keyshortcuts', 'Control+F Meta+F');
+  fireEvent.click(find);
+  expect(openCount).toBe(1);
 });
 
 function spreadsheetCan(): SpreadsheetEditorCanCommands {

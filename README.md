@@ -257,7 +257,9 @@ interaction model.
   grid-aligned single-row responsive workbook footer,
   selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
   PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
-  formatting through root-scoped capture before vendor grid listeners,
+  formatting through root-scoped capture before vendor grid listeners, an
+  editor-owned Cmd/Ctrl+F search bar that finds displayed values, raw values,
+  formulas, and sparse cells without opening browser Find,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

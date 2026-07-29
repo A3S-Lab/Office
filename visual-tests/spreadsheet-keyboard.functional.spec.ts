@@ -83,6 +83,68 @@ test('Spreadsheet handles editor shortcuts before workbook document listeners ca
   await expectGridFocus(page);
 });
 
+test('Spreadsheet owns find, match navigation, and focus restoration', async ({
+  page,
+}) => {
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  for (const modifier of ['Control', 'Meta']) {
+    await grid.focus();
+    await page.keyboard.press(`${modifier}+f`);
+    const query = page.getByRole('textbox', { name: '查找当前工作表' });
+    await expect(query).toBeVisible();
+    await expect(query).toBeFocused();
+    await query.press('Escape');
+    await expect(query).toHaveCount(0);
+    await expectGridFocus(page);
+  }
+
+  await page.getByRole('button', { name: '查找' }).click();
+  const query = page.getByRole('textbox', { name: '查找当前工作表' });
+  await expect(query).toBeFocused();
+  const findGeometry = await page.evaluate(() => {
+    const bar = document.querySelector('.work-spreadsheet-find-bar');
+    const columnHeader = document.querySelector('.fortune-col-header');
+    if (
+      !(bar instanceof HTMLElement) ||
+      !(columnHeader instanceof HTMLElement)
+    ) {
+      throw new Error('Spreadsheet Find geometry is unavailable.');
+    }
+    return {
+      barTop: bar.getBoundingClientRect().top,
+      columnHeaderBottom: columnHeader.getBoundingClientRect().bottom,
+    };
+  });
+  expect(findGeometry.barTop).toBeGreaterThanOrEqual(
+    findGeometry.columnHeaderBottom,
+  );
+  await query.fill('新版发布');
+  await expect(page.getByText('1 个匹配', { exact: true })).toBeVisible();
+  await query.press('Enter');
+  await expect(page.locator('.fortune-name-box')).toHaveText('A5');
+  await expect(page.getByText('1/1', { exact: true })).toBeVisible();
+  await expect(query).toBeFocused();
+
+  const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${modifier}+f`);
+  await expect(query).toBeFocused();
+  await expect
+    .poll(() =>
+      query.evaluate(
+        (input) =>
+          input.selectionStart === 0 &&
+          input.selectionEnd === input.value.length,
+      ),
+    )
+    .toBe(true);
+
+  await query.press('Escape');
+  await expect(query).toHaveCount(0);
+  await expectGridFocus(page);
+});
+
 test('Spreadsheet restores grid focus and navigates worksheets from the keyboard', async ({
   page,
 }) => {
