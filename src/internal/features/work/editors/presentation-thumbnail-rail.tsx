@@ -45,7 +45,11 @@ export function PresentationThumbnailRail({
     slideIndex: number,
     element?: WorkSlideElement | null,
   ) => void;
-  onSelectSlide: (slideId: string, returnToSlideMode: boolean) => void;
+  onSelectSlide: (
+    slideId: string,
+    returnToSlideMode: boolean,
+    dismissMobileNavigation?: boolean,
+  ) => void;
   onViewModeChange: (mode: 'normal' | 'sorter') => void;
 }) {
   const slideIds = useMemo(
@@ -71,7 +75,7 @@ export function PresentationThumbnailRail({
   const selectByIndex = (index: number, returnToSlideMode: boolean) => {
     const slide = content.slides[index];
     if (!slide) return;
-    onSelectSlide(slide.id, returnToSlideMode);
+    onSelectSlide(slide.id, returnToSlideMode, false);
     thumbnailWindow.requestFocus(index);
   };
 
@@ -106,6 +110,7 @@ export function PresentationThumbnailRail({
         onDoubleClick={
           viewMode === 'sorter' ? () => onViewModeChange('normal') : undefined
         }
+        onFocus={() => onSelectSlide(slide.id, false, false)}
         onNavigate={(nextIndex) =>
           selectByIndex(nextIndex, viewMode === 'normal')
         }

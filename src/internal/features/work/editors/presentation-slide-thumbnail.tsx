@@ -12,6 +12,7 @@ export function PresentationSlideThumbnail({
   aspectRatio,
   variant,
   renderPreview,
+  onFocus,
   onSelect,
   onDelete,
   onNavigate,
@@ -26,6 +27,7 @@ export function PresentationSlideThumbnail({
   aspectRatio: string;
   variant: 'strip' | 'sorter';
   renderPreview: boolean;
+  onFocus: () => void;
   onSelect: () => void;
   onDelete: () => boolean;
   onNavigate: (index: number) => void;
@@ -41,6 +43,7 @@ export function PresentationSlideThumbnail({
       data-slide-id={slide.id}
       data-slide-index={index}
       data-slide-thumbnail-rendered={renderPreview ? 'true' : 'false'}
+      onFocus={onFocus}
       onClick={onSelect}
       onContextMenu={onContextMenu}
       onDoubleClick={onDoubleClick}

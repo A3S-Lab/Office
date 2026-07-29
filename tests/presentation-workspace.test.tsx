@@ -205,7 +205,7 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
   fireEvent.click(
     screen.getByRole('button', { name: '幻灯片 2 / 2：Details' }),
   );
-  expect(selections).toEqual(['slide-2']);
+  expect(selections).toEqual(['slide-1', 'slide-2']);
   expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
   await waitFor(() => expect(toggle).toHaveFocus());
 

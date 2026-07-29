@@ -183,9 +183,14 @@ export function PresentationWorkspace({
   const selectedSlideIndex = content.slides.findIndex(
     (slide) => slide.id === selectedSlide.id,
   );
-  const selectSlide = (slideId: string, returnToSlideMode: boolean) => {
+  const selectSlide = (
+    slideId: string,
+    returnToSlideMode: boolean,
+    dismissMobileNavigation = true,
+  ) => {
     commands.selectSlide(slideId, returnToSlideMode);
-    if (mobileSlideNavigationOpen) closeMobileSlideNavigation();
+    if (mobileSlideNavigationOpen && dismissMobileNavigation)
+      closeMobileSlideNavigation();
   };
   return (
     <div
