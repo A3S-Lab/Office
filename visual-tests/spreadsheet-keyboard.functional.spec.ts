@@ -506,6 +506,88 @@ test('Spreadsheet uses one menu geometry for cells and worksheets', async ({
   await expect(grid).toBeFocused();
 });
 
+test('Spreadsheet explains invalid worksheet names and confirms deletion', async ({
+  page,
+}) => {
+  await openSpreadsheetFixture(page);
+
+  await page.locator('.fortune-sheet-overlay').focus();
+  await page.keyboard.press('Shift+F11');
+  const createdSheet = page.getByRole('tab', { name: '工作表 2' });
+  await expect(createdSheet).toHaveAttribute('aria-selected', 'true');
+
+  await createdSheet.dblclick();
+  const renameInput = page.getByRole('textbox', { name: '重命名工作表 2' });
+  await renameInput.fill('执行看板');
+  await renameInput.press('Enter');
+  await expect(renameInput).toHaveValue('执行看板');
+  await expect(renameInput).toHaveAttribute('aria-invalid', 'true');
+  const renameError = page.getByRole('alert').filter({
+    hasText: '名称已存在',
+  });
+  await expect(renameError).toBeVisible();
+  await expect(renameInput).toBeFocused();
+
+  const invalidRenameGeometry = await renameInput.evaluate((input) => {
+    const tab = input.closest<HTMLElement>('.work-spreadsheet-sheet-tab');
+    const error = tab?.querySelector<HTMLElement>(
+      '.work-spreadsheet-sheet-rename-error',
+    );
+    const tabs = tab?.parentElement;
+    if (!(tab && error && tabs)) {
+      throw new Error('Worksheet rename feedback is incomplete.');
+    }
+    const tabBounds = tab.getBoundingClientRect();
+    const errorBounds = error.getBoundingClientRect();
+    const tabsBounds = tabs.getBoundingClientRect();
+    return {
+      errorRight: errorBounds.right,
+      tabRight: tabBounds.right,
+      tabsRight: tabsBounds.right,
+      viewportWidth: document.documentElement.clientWidth,
+    };
+  });
+  expect(invalidRenameGeometry.errorRight).toBeLessThanOrEqual(
+    invalidRenameGeometry.tabsRight + 1,
+  );
+  expect(invalidRenameGeometry.tabRight).toBeLessThanOrEqual(
+    invalidRenameGeometry.viewportWidth + 1,
+  );
+
+  await renameInput.fill('季度看板');
+  await expect(renameError).toHaveCount(0);
+  await renameInput.press('Enter');
+  await expect(page.getByRole('tab', { name: '季度看板' })).toBeFocused();
+
+  const populatedSheet = page.getByRole('tab', { name: '执行看板' });
+  const openDeleteDialog = async () => {
+    await page.getByRole('button', { name: '执行看板选项' }).click();
+    await page.getByRole('menuitem', { name: '删除工作表' }).click();
+  };
+  await openDeleteDialog();
+  const dialog = page.getByRole('dialog', { name: '删除“执行看板”？' });
+  await expect(dialog).toHaveAccessibleDescription(
+    '工作表及其中的内容将被删除。',
+  );
+  await expect(dialog.getByRole('button', { name: '取消' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: '删除' })).toHaveClass(
+    /danger/,
+  );
+  await dialog.getByRole('button', { name: '取消' }).click();
+  await expect(populatedSheet).toBeFocused();
+
+  await openDeleteDialog();
+  await page
+    .getByRole('dialog', { name: '删除“执行看板”？' })
+    .getByRole('button', { name: '删除' })
+    .click();
+  await expect(populatedSheet).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '季度看板' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
 async function openSpreadsheetFixture(page: Page) {
   await page.goto('/');
   await page

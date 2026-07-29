@@ -126,17 +126,8 @@ export function renameSpreadsheetSheet(
   const target = content.sheets.find((sheet) => sheet.id === sheetId);
   if (
     !target ||
-    !normalized ||
-    normalized.length > 31 ||
-    /[\\/?*[\]:]/u.test(normalized) ||
     target.name === normalized ||
-    content.sheets.some(
-      (sheet) =>
-        sheet.id !== sheetId &&
-        sheet.name.localeCompare(normalized, undefined, {
-          sensitivity: 'accent',
-        }) === 0,
-    )
+    spreadsheetSheetNameValidationMessage(content.sheets, sheetId, name)
   ) {
     return null;
   }
@@ -146,6 +137,30 @@ export function renameSpreadsheetSheet(
       sheet.id === sheetId ? { ...sheet, name: normalized } : sheet,
     ),
   );
+}
+
+export function spreadsheetSheetNameValidationMessage(
+  sheets: readonly WorkSpreadsheetSheet[],
+  sheetId: string,
+  name: string,
+): string | null {
+  const normalized = name.trim();
+  if (!sheets.some((sheet) => sheet.id === sheetId)) return '找不到该工作表';
+  if (!normalized) return '请输入名称';
+  if (normalized.length > 31) return '名称不能超过 31 个字符';
+  if (/[\\/?*[\]:]/u.test(normalized)) return '名称不能包含 \\ / ? * [ ] :';
+  if (
+    sheets.some(
+      (sheet) =>
+        sheet.id !== sheetId &&
+        sheet.name.localeCompare(normalized, undefined, {
+          sensitivity: 'accent',
+        }) === 0,
+    )
+  ) {
+    return '名称已存在';
+  }
+  return null;
 }
 
 export function setSpreadsheetSheetColor(

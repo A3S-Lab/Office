@@ -93,6 +93,100 @@ test('supports inline worksheet rename and compact color controls', () => {
   expect(calls).toEqual(['rename:sheet-1:季度看板', 'color:sheet-1:#e06c53']);
 });
 
+test('keeps an invalid worksheet rename open with concise feedback', async () => {
+  const calls: string[] = [];
+  render(
+    <SpreadsheetSheetBar
+      activeSheetId="sheet-2"
+      editable
+      sheets={[
+        { id: 'sheet-1', name: '执行看板', status: 0 },
+        { id: 'sheet-2', name: '工作表 2', status: 1 },
+      ]}
+      onActivate={() => undefined}
+      onCreate={() => undefined}
+      onDelete={() => undefined}
+      onDuplicate={() => undefined}
+      onHide={() => undefined}
+      onMove={() => undefined}
+      onRename={(id, name) => calls.push(`rename:${id}:${name}`)}
+      onSetColor={() => undefined}
+      onShow={() => undefined}
+    />,
+  );
+
+  fireEvent.doubleClick(screen.getByRole('tab', { name: '工作表 2' }));
+  const input = screen.getByRole('textbox', { name: '重命名工作表 2' });
+  fireEvent.change(input, { target: { value: '执行看板' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+
+  expect(input).toHaveValue('执行看板');
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByRole('alert')).toHaveTextContent('名称已存在');
+  expect(input).toHaveFocus();
+  expect(calls).toEqual([]);
+
+  fireEvent.change(input, { target: { value: '季度看板' } });
+  expect(input).not.toHaveAttribute('aria-invalid');
+  expect(screen.queryByRole('alert')).toBeNull();
+  fireEvent.keyDown(input, { key: 'Enter' });
+
+  await waitFor(() =>
+    expect(screen.getByRole('tab', { name: '工作表 2' })).toHaveFocus(),
+  );
+  expect(calls).toEqual(['rename:sheet-2:季度看板']);
+});
+
+test('confirms worksheet deletion with a safe default and restores focus on cancel', async () => {
+  const calls: string[] = [];
+  render(
+    <SpreadsheetSheetBar
+      activeSheetId="sheet-1"
+      editable
+      sheets={[
+        {
+          id: 'sheet-1',
+          name: '执行看板',
+          status: 1,
+          data: [[{ v: '季度目标', m: '季度目标' }]],
+        },
+        { id: 'sheet-2', name: '工作表 2', status: 0 },
+      ]}
+      onActivate={() => undefined}
+      onCreate={() => undefined}
+      onDelete={(id) => calls.push(`delete:${id}`)}
+      onDuplicate={() => undefined}
+      onHide={() => undefined}
+      onMove={() => undefined}
+      onRename={() => undefined}
+      onSetColor={() => undefined}
+      onShow={() => undefined}
+    />,
+  );
+
+  const tab = screen.getByRole('tab', { name: '执行看板' });
+  const openDeleteDialog = () => {
+    fireEvent.click(screen.getByRole('button', { name: '执行看板选项' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '删除工作表' }));
+  };
+
+  openDeleteDialog();
+  expect(
+    screen.getByRole('dialog', { name: '删除“执行看板”？' }),
+  ).toHaveAccessibleDescription('工作表及其中的内容将被删除。');
+  expect(screen.getByRole('button', { name: '取消' })).toHaveFocus();
+  expect(screen.getByRole('button', { name: '删除' })).toHaveClass('danger');
+  expect(calls).toEqual([]);
+
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  await waitFor(() => expect(tab).toHaveFocus());
+  expect(calls).toEqual([]);
+
+  openDeleteDialog();
+  fireEvent.click(screen.getByRole('button', { name: '删除' }));
+  await waitFor(() => expect(calls).toEqual(['delete:sheet-1']));
+});
+
 test('cancels worksheet rename with Escape and restores tab keyboard focus', async () => {
   const calls: string[] = [];
   render(

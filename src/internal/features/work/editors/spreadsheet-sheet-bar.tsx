@@ -15,17 +15,21 @@ import {
 } from 'lucide-react';
 import {
   type CSSProperties,
+  Fragment,
   type ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import type { WorkSpreadsheetSheet } from '../work-types';
+import { useOfficeDialog } from './office-dialog';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   isSpreadsheetSheetHidden,
   type SpreadsheetSheetMoveDirection,
+  spreadsheetSheetNameValidationMessage,
 } from './spreadsheet-sheet-model';
 
 const spreadsheetSheetColors = [
@@ -76,8 +80,11 @@ export function SpreadsheetSheetBar({
   const listedSheets = editable ? orderedSheets : visibleSheets;
   const [renamingSheetId, setRenamingSheetId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const renameErrorId = useId();
   const renameInputRef = useRef<HTMLInputElement>(null);
   const sheetTabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const officeDialog = useOfficeDialog();
 
   useEffect(() => {
     if (!renamingSheetId) return;
@@ -87,6 +94,18 @@ export function SpreadsheetSheetBar({
     });
     return () => cancelAnimationFrame(frame);
   }, [renamingSheetId]);
+
+  useEffect(() => {
+    if (!renameError) return;
+    const frame = requestAnimationFrame(() => {
+      renameInputRef.current?.parentElement?.scrollIntoView?.({
+        behavior: 'auto',
+        block: 'nearest',
+        inline: 'nearest',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [renameError]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -99,6 +118,7 @@ export function SpreadsheetSheetBar({
 
   const beginRename = (sheet: WorkSpreadsheetSheet) => {
     setRenameDraft(sheet.name);
+    setRenameError(null);
     setRenamingSheetId(sheet.id ?? null);
   };
   const finishRename = (
@@ -107,8 +127,20 @@ export function SpreadsheetSheetBar({
     restoreTabFocus = false,
   ) => {
     if (commit && sheet.id && renameDraft.trim() !== sheet.name) {
+      const validationMessage = spreadsheetSheetNameValidationMessage(
+        sheets,
+        sheet.id,
+        renameDraft,
+      );
+      if (validationMessage) {
+        setRenameError(validationMessage);
+        if (restoreTabFocus)
+          renameInputRef.current?.focus({ preventScroll: true });
+        return;
+      }
       onRename(sheet.id, renameDraft);
     }
+    setRenameError(null);
     setRenamingSheetId(null);
     if (restoreTabFocus && sheet.id) {
       requestAnimationFrame(() => {
@@ -117,6 +149,18 @@ export function SpreadsheetSheetBar({
         scrollSpreadsheetSheetTabIntoView(tab);
       });
     }
+  };
+  const requestDelete = async (sheet: WorkSpreadsheetSheet) => {
+    const sheetId = sheet.id;
+    if (!sheetId) return;
+    const confirmed = await officeDialog.confirm({
+      title: `删除“${sheet.name}”？`,
+      description: '工作表及其中的内容将被删除。',
+      confirmLabel: '删除',
+      confirmTone: 'danger',
+      restoreFocusTarget: () => sheetTabRefs.current.get(sheetId) ?? null,
+    });
+    if (confirmed) onDelete(sheetId);
   };
   const activateSheetFromTabKeyboard = (
     sheetId: string,
@@ -160,8 +204,9 @@ export function SpreadsheetSheetBar({
     if (targetId) onActivate(targetId);
   };
 
-  return (
+  return [
     <nav
+      key="sheet-bar"
       className="work-spreadsheet-sheet-bar"
       aria-label="工作表"
       data-editable={editable ? 'true' : 'false'}
@@ -255,32 +300,57 @@ export function SpreadsheetSheetBar({
           return (
             <div
               key={sheetId || sheet.name}
-              className={`work-spreadsheet-sheet-tab${active ? ' active' : ''}`}
+              className={`work-spreadsheet-sheet-tab${active ? ' active' : ''}${renamingSheetId === sheetId ? ' renaming' : ''}${renamingSheetId === sheetId && renameError ? ' invalid' : ''}`}
               style={colorStyle}
             >
               {renamingSheetId === sheetId ? (
-                <input
-                  ref={renameInputRef}
-                  aria-label={`重命名${sheet.name}`}
-                  data-office-shortcuts="ignore"
-                  value={renameDraft}
-                  maxLength={31}
-                  onChange={(event) =>
-                    setRenameDraft(event.currentTarget.value)
-                  }
-                  onBlur={() => finishRename(sheet, true)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      finishRename(sheet, true, true);
-                    } else if (event.key === 'Escape') {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      finishRename(sheet, false, true);
-                    }
-                  }}
-                />
+                <>
+                  <input
+                    ref={renameInputRef}
+                    aria-label={`重命名${sheet.name}`}
+                    aria-invalid={renameError ? 'true' : undefined}
+                    aria-describedby={renameError ? renameErrorId : undefined}
+                    aria-errormessage={renameError ? renameErrorId : undefined}
+                    data-office-shortcuts="ignore"
+                    value={renameDraft}
+                    maxLength={31}
+                    onChange={(event) => {
+                      const nextValue = event.currentTarget.value;
+                      setRenameDraft(nextValue);
+                      if (renameError) {
+                        setRenameError(
+                          spreadsheetSheetNameValidationMessage(
+                            sheets,
+                            sheetId,
+                            nextValue,
+                          ),
+                        );
+                      }
+                    }}
+                    onBlur={() => finishRename(sheet, true)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        finishRename(sheet, true, true);
+                      } else if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        finishRename(sheet, false, true);
+                      }
+                    }}
+                  />
+                  {renameError && (
+                    <span
+                      id={renameErrorId}
+                      className="work-spreadsheet-sheet-rename-error"
+                      role="alert"
+                      title={renameError}
+                    >
+                      {renameError}
+                    </span>
+                  )}
+                </>
               ) : (
                 <button
                   ref={(node) => {
@@ -327,7 +397,7 @@ export function SpreadsheetSheetBar({
                   canHide={visibleSheets.length > 1}
                   canMoveLeft={index > 0}
                   canMoveRight={index < visibleSheets.length - 1}
-                  onDelete={onDelete}
+                  onDelete={(target) => void requestDelete(target)}
                   onDuplicate={onDuplicate}
                   onHide={onHide}
                   onMove={onMove}
@@ -339,8 +409,9 @@ export function SpreadsheetSheetBar({
           );
         })}
       </div>
-    </nav>
-  );
+    </nav>,
+    <Fragment key="dialog">{officeDialog.dialog}</Fragment>,
+  ];
 }
 
 function scrollSpreadsheetSheetTabIntoView(
@@ -380,7 +451,7 @@ function SpreadsheetSheetMenu({
   canHide: boolean;
   canMoveLeft: boolean;
   canMoveRight: boolean;
-  onDelete(sheetId: string): void;
+  onDelete(sheet: WorkSpreadsheetSheet): void;
   onDuplicate(sheetId: string): void;
   onHide(sheetId: string): void;
   onMove(sheetId: string, direction: SpreadsheetSheetMoveDirection): void;
@@ -508,7 +579,7 @@ function SpreadsheetSheetMenu({
             disabled={!canDelete}
             onClick={() => {
               close();
-              onDelete(sheetId);
+              onDelete(sheet);
             }}
           />
         </>

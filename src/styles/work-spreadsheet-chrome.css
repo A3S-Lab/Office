@@ -423,6 +423,29 @@
     color-mix(in srgb, var(--work-spreadsheet-accent) 12%, transparent);
 }
 
+.work-spreadsheet-sheet-tab.invalid {
+  width: min(300px, calc(100vw - 32px));
+  min-width: min(300px, calc(100vw - 32px));
+  max-width: min(300px, calc(100vw - 32px));
+}
+
+.work-spreadsheet-sheet-tab > input[aria-invalid="true"] {
+  border-color: var(--a3s-red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-red) 12%, transparent);
+}
+
+.work-spreadsheet-sheet-rename-error {
+  display: block;
+  min-width: 0;
+  align-self: center;
+  padding-right: 8px;
+  overflow: hidden;
+  color: var(--a3s-red);
+  font: 500 10px / 1.2 var(--a3s-ui-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .work-spreadsheet-sheet-tab > .ds-popover {
   display: flex;
   flex: 0 0 auto;

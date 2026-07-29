@@ -220,6 +220,9 @@ remains one coherent history.
   from the primary ribbon while the native format engine expands.
 - Keep font family, vertical alignment, and text wrapping available from the
   primary ribbon and backed by the native workbook cell-style model.
+- Keep worksheet lifecycle actions in the shared Office interaction system:
+  destructive deletion uses a safe default, invalid names remain editable with
+  local accessible feedback, and temporary menus and dialogs restore focus.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 

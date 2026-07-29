@@ -9,6 +9,7 @@ import {
   moveSpreadsheetSheet,
   renameSpreadsheetSheet,
   setSpreadsheetSheetColor,
+  spreadsheetSheetNameValidationMessage,
 } from '../src/internal/features/work/editors/spreadsheet-sheet-model';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
@@ -116,6 +117,35 @@ describe('spreadsheet sheet model', () => {
       expect.objectContaining({ id: 'sheet-2', order: 0, status: 1 }),
     ]);
     expect(deleteSpreadsheetSheet(deleted, 'sheet-2')).toBeNull();
+  });
+
+  test('describes worksheet rename validation without duplicating command rules', () => {
+    const content = workbook();
+
+    expect(
+      spreadsheetSheetNameValidationMessage(
+        content.sheets,
+        'sheet-2',
+        '执行看板',
+      ),
+    ).toBe('名称已存在');
+    expect(
+      spreadsheetSheetNameValidationMessage(content.sheets, 'sheet-2', '  '),
+    ).toBe('请输入名称');
+    expect(
+      spreadsheetSheetNameValidationMessage(
+        content.sheets,
+        'sheet-2',
+        '风险/清单',
+      ),
+    ).toBe('名称不能包含 \\ / ? * [ ] :');
+    expect(
+      spreadsheetSheetNameValidationMessage(
+        content.sheets,
+        'sheet-2',
+        '风险清单',
+      ),
+    ).toBeNull();
   });
 });
 

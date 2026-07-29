@@ -253,7 +253,8 @@ interaction model.
   selection menus across both editing surfaces. _Markdown import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
   live selection statistics, an A3S-owned worksheet bar with lifecycle and
-  color controls, a grid-aligned single-row responsive workbook footer,
+  color controls, safe deletion confirmation, in-place rename validation, a
+  grid-aligned single-row responsive workbook footer,
   selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
   PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
   formatting through root-scoped capture before vendor grid listeners,
