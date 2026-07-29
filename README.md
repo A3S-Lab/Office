@@ -268,14 +268,16 @@ interaction model.
   transforms, keyboard-accessible table-size insertion, Shift+F10-accessible
   native slide and object context actions, guides, comments, transitions,
   editor-scoped formatting and clipboard shortcuts that restore the selected
-  object, one-step slideshow from the beginning or current slide, and presenter
+  object, a dismissible phone slide navigator that prioritizes the editing
+  canvas, one-step slideshow from the beginning or current slide, and presenter
   view.
   _PPTX import/export; PDF export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,
   focus-safe page and search drafts, responsive search-result, navigation, and
-  zoom controls, editor-scoped shortcuts, a keyboard-operated overflow menu,
-  and save. _PDF open/save._
+  zoom controls, editor-scoped shortcuts, and a keyboard-operated overflow menu
+  that retains secondary annotation tools and appearance settings on phones.
+  _PDF open/save._
 
 Document and Markdown accept public TipTap Extensions. Spreadsheet,
 Presentation, and PDF expose stable host ports rather than their internal

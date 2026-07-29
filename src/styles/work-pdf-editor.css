@@ -475,6 +475,17 @@
   .work-pdf-toolbar {
     gap: 4px;
     padding-inline: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .work-pdf-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .work-pdf-toolbar > * {
+    flex: 0 0 auto;
   }
 
   .work-pdf-search {
@@ -497,5 +508,19 @@
 
   .work-pdf-save {
     margin-right: 3px;
+  }
+}
+
+@media (max-width: 520px) {
+  .work-pdf-annotation-selection,
+  .work-pdf-annotation-ink,
+  .work-pdf-annotation-style,
+  .work-pdf-annotation-delete {
+    display: none;
+  }
+
+  .work-pdf-overflow-panel {
+    max-height: min(520px, calc(100dvh - 24px));
+    overflow-y: auto;
   }
 }

@@ -179,6 +179,7 @@ export function PdfToolbar({
         <fieldset className="work-pdf-toolbar-group work-pdf-annotation">
           <legend className="sr-only">PDF 批注工具</legend>
           <IconButton
+            className="work-pdf-annotation-selection"
             label="选择"
             selected={annotationState.activeToolId === null}
             disabled={!can.selectAnnotationTool(null)}
@@ -213,6 +214,7 @@ export function PdfToolbar({
             <Strikethrough size={14} />
           </IconButton>
           <IconButton
+            className="work-pdf-annotation-ink"
             label="画笔"
             selected={annotationState.activeToolId === 'ink'}
             disabled={!can.selectAnnotationTool('ink')}
@@ -243,6 +245,7 @@ export function PdfToolbar({
             commands={commands}
           />
           <IconButton
+            className="work-pdf-annotation-delete"
             label="删除所选批注"
             title="删除所选批注（Delete / Backspace）"
             aria-keyshortcuts={pdfKeyboardShortcuts.deleteAnnotation}
@@ -633,6 +636,36 @@ function PdfToolbarOverflow({
                 aria-label="批注工具"
               >
                 <PdfOverflowAction
+                  label="选择"
+                  active={annotationState.activeToolId === null}
+                  disabled={!can.selectAnnotationTool(null)}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool(null))
+                  }
+                >
+                  <MousePointer2 size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="高亮"
+                  active={annotationState.activeToolId === 'highlight'}
+                  disabled={!can.selectAnnotationTool('highlight')}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool('highlight'))
+                  }
+                >
+                  <Highlighter size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="画笔"
+                  active={annotationState.activeToolId === 'ink'}
+                  disabled={!can.selectAnnotationTool('ink')}
+                  onSelect={() =>
+                    select(() => commands.selectAnnotationTool('ink'))
+                  }
+                >
+                  <Pencil size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
                   label="下划线批注"
                   active={annotationState.activeToolId === 'underline'}
                   disabled={!can.selectAnnotationTool('underline')}
@@ -662,8 +695,64 @@ function PdfToolbarOverflow({
                 >
                   <Type size={15} />
                 </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="删除所选批注"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.deleteAnnotation}
+                  disabled={!can.deleteAnnotationSelection()}
+                  onSelect={() => select(commands.deleteAnnotationSelection)}
+                >
+                  <Trash2 size={15} />
+                </PdfOverflowAction>
               </fieldset>
             )}
+            {editable &&
+              annotationState.available &&
+              annotationState.supportsOpacity && (
+                <fieldset
+                  className="work-pdf-overflow-group"
+                  aria-label="透明度"
+                >
+                  {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
+                    const label = `透明度 ${Math.round(opacity * 100)}%`;
+                    return (
+                      <PdfOverflowAction
+                        key={opacity}
+                        label={label}
+                        active={annotationState.annotationOpacity === opacity}
+                        disabled={!can.setAnnotationOpacity(opacity)}
+                        onSelect={() =>
+                          select(() => commands.setAnnotationOpacity(opacity))
+                        }
+                      >
+                        <SlidersHorizontal size={15} />
+                      </PdfOverflowAction>
+                    );
+                  })}
+                </fieldset>
+              )}
+            {editable &&
+              annotationState.available &&
+              annotationState.supportsStrokeWidth && (
+                <fieldset className="work-pdf-overflow-group" aria-label="线宽">
+                  {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
+                    <PdfOverflowAction
+                      key={strokeWidth}
+                      label={`线宽 ${strokeWidth}`}
+                      active={
+                        annotationState.annotationStrokeWidth === strokeWidth
+                      }
+                      disabled={!can.setAnnotationStrokeWidth(strokeWidth)}
+                      onSelect={() =>
+                        select(() =>
+                          commands.setAnnotationStrokeWidth(strokeWidth),
+                        )
+                      }
+                    >
+                      <Pencil size={15} />
+                    </PdfOverflowAction>
+                  ))}
+                </fieldset>
+              )}
             {editable && state.features.history && (
               <fieldset
                 className="work-pdf-overflow-group"

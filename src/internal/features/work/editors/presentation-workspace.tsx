@@ -1,5 +1,13 @@
 import type { Editor } from '@tiptap/core';
-import type { PointerEvent, RefObject } from 'react';
+import { GalleryVerticalEnd } from 'lucide-react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from 'react';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -116,6 +124,44 @@ export function PresentationWorkspace({
   onTextEditorChange,
   onTextSelectionChange,
 }: PresentationWorkspaceProps) {
+  const [mobileSlideNavigationOpen, setMobileSlideNavigationOpen] =
+    useState(false);
+  const mobileSlideNavigationId = useId();
+  const mobileSlideNavigationToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileSlideNavigationCloseRef = useRef<HTMLButtonElement>(null);
+
+  const restoreMobileSlideNavigationFocus = () => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        mobileSlideNavigationToggleRef.current?.focus({
+          preventScroll: true,
+        });
+      });
+    });
+  };
+  const closeMobileSlideNavigation = () => {
+    setMobileSlideNavigationOpen(false);
+    restoreMobileSlideNavigationFocus();
+  };
+
+  useEffect(() => {
+    if (!mobileSlideNavigationOpen) return;
+    const focusFrame = requestAnimationFrame(() => {
+      mobileSlideNavigationCloseRef.current?.focus({ preventScroll: true });
+    });
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeMobileSlideNavigation();
+    };
+    window.addEventListener('keydown', closeOnEscape, { capture: true });
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', closeOnEscape, { capture: true });
+    };
+  }, [mobileSlideNavigationOpen]);
+
   const selectedElementSet = new Set(selectedElementIds);
   const selectedElements = selectedPresentationElements(
     activeElements,
@@ -152,21 +198,55 @@ export function PresentationWorkspace({
   const selectedSlideIndex = content.slides.findIndex(
     (slide) => slide.id === selectedSlide.id,
   );
+  const selectSlide = (slideId: string, returnToSlideMode: boolean) => {
+    commands.selectSlide(slideId, returnToSlideMode);
+    if (mobileSlideNavigationOpen) closeMobileSlideNavigation();
+  };
   return (
-    <div className="work-presentation-layout">
+    <div
+      className="work-presentation-layout"
+      data-mobile-slide-navigation={
+        mobileSlideNavigationOpen ? 'open' : 'closed'
+      }
+    >
+      <button
+        ref={mobileSlideNavigationToggleRef}
+        type="button"
+        className="work-presentation-slide-navigation-toggle"
+        aria-label="打开幻灯片导航"
+        aria-controls={mobileSlideNavigationId}
+        aria-expanded={mobileSlideNavigationOpen}
+        onClick={() => setMobileSlideNavigationOpen(true)}
+      >
+        <GalleryVerticalEnd size={15} />
+        <span>第 {selectedSlideIndex + 1} 张</span>
+      </button>
       <PresentationThumbnailRail
         aspectRatio={aspectRatio}
         content={content}
         designContent={designContent}
+        mobileCloseButtonRef={mobileSlideNavigationCloseRef}
+        mobileNavigationId={mobileSlideNavigationId}
         selectedSlide={selectedSlide}
         viewMode={viewMode}
         zoom={zoom}
         onAddSlide={commands.addSlide}
+        onCloseMobileNavigation={closeMobileSlideNavigation}
         onDeleteSlide={commands.deleteSlideById}
         onOpenContextMenu={onOpenContextMenu}
-        onSelectSlide={commands.selectSlide}
+        onSelectSlide={selectSlide}
         onViewModeChange={commands.setViewMode}
       />
+
+      {mobileSlideNavigationOpen && (
+        <button
+          type="button"
+          className="work-presentation-slide-navigation-backdrop"
+          aria-label="关闭幻灯片导航遮罩"
+          tabIndex={-1}
+          onClick={closeMobileSlideNavigation}
+        />
+      )}
 
       <div
         className="work-slide-stage"

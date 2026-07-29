@@ -206,6 +206,52 @@ test('keeps compact PDF actions reachable from the more-tools menu', () => {
   ]);
 });
 
+test('keeps secondary phone annotation controls in the PDF overflow menu', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const openMenu = () => {
+    fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+    return screen.getByRole('menu', { name: '更多 PDF 工具' });
+  };
+
+  let menu = openMenu();
+  fireEvent.click(within(menu).getByRole('menuitemradio', { name: '选择' }));
+  menu = openMenu();
+  fireEvent.click(within(menu).getByRole('menuitemradio', { name: '画笔' }));
+  menu = openMenu();
+  fireEvent.click(
+    within(menu).getByRole('menuitemradio', { name: '透明度 50%' }),
+  );
+  menu = openMenu();
+  fireEvent.click(within(menu).getByRole('menuitemradio', { name: '线宽 4' }));
+  menu = openMenu();
+  expect(
+    within(menu).getByRole('menuitem', { name: '删除所选批注' }),
+  ).toBeDisabled();
+
+  expect(calls).toEqual([
+    'annotation:pointer',
+    'annotation:ink',
+    'annotation-opacity:0.5',
+    'annotation-stroke-width:4',
+  ]);
+});
+
 test('moves through and exits the PDF more-tools menu with standard keys', async () => {
   const controller = createController([]);
   const annotation = createAnnotationController([]);

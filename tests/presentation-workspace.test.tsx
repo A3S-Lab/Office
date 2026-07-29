@@ -1,6 +1,6 @@
 import { expect, test } from '@rstest/core';
 import { createRef } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import {
   PresentationWorkspace,
   type PresentationWorkspaceCommands,
@@ -120,6 +120,87 @@ test('separates additive object selection from content editing', () => {
   expect(screen.getByRole('group', { name: 'Title' })).toHaveClass('selected');
   fireEvent.pointerDown(screen.getByRole('button', { name: '缩放所选对象' }));
   expect(drags).toEqual(['accent:move', 'title:resize']);
+});
+
+test('keeps phone slide navigation dismissible and restores focus', async () => {
+  const selections: string[] = [];
+  const content: WorkPresentationContent = {
+    type: 'presentation',
+    slides: [
+      {
+        id: 'slide-1',
+        name: 'Opening',
+        background: '#ffffff',
+        elements: [],
+      },
+      {
+        id: 'slide-2',
+        name: 'Details',
+        background: '#ffffff',
+        elements: [],
+      },
+    ],
+  };
+
+  const view = render(
+    <PresentationWorkspace
+      activeBackground="#ffffff"
+      activeCommentId={null}
+      activeElements={[]}
+      aspectRatio="16 / 9"
+      canvasName="Slide canvas"
+      canvasRef={createRef<HTMLElement>()}
+      commands={workspaceCommands({
+        selectSlide: (slideId) => selections.push(slideId),
+      })}
+      content={content}
+      designContent={content}
+      designMode="slide"
+      editingElementId={null}
+      inheritedElements={[]}
+      placeholderGuides={[]}
+      selectedElementIds={[]}
+      selectedLayout={undefined}
+      selectedMaster={undefined}
+      selectedSlide={content.slides[0]}
+      snapGuides={[]}
+      viewMode="normal"
+      zoom={90}
+      onBeginDrag={() => undefined}
+      onContinueDrag={() => undefined}
+      onDragCancel={() => undefined}
+      onDragEnd={() => undefined}
+      onOpenContextMenu={() => undefined}
+      onTextEditorChange={() => undefined}
+      onTextSelectionChange={() => undefined}
+    />,
+  );
+
+  const layout = view.container.querySelector('.work-presentation-layout');
+  const toggle = screen.getByRole('button', {
+    name: '打开幻灯片导航',
+  });
+  expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+
+  fireEvent.click(toggle);
+  expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'open');
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  const close = screen.getByRole('button', { name: '关闭幻灯片导航' });
+  await waitFor(() => expect(close).toHaveFocus());
+
+  fireEvent.click(
+    screen.getByRole('button', { name: '幻灯片 2 / 2：Details' }),
+  );
+  expect(selections).toEqual(['slide-2']);
+  expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
+  await waitFor(() => expect(toggle).toHaveFocus());
+
+  fireEvent.click(toggle);
+  await waitFor(() => expect(close).toHaveFocus());
+  fireEvent.keyDown(window, { key: 'Escape' });
+  expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
+  await waitFor(() => expect(toggle).toHaveFocus());
 });
 
 function presentationElement(id: string, text: string): WorkSlideElement {

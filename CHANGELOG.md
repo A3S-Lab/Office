@@ -68,6 +68,11 @@ All notable changes to A3S Office will be documented in this file.
 - Stacked the file command bar above non-PDF ribbon tabs at phone widths so
   filenames and actions no longer compress or overlap the keyboard-accessible,
   horizontally scrollable tab row; PDF retains its single compact toolbar.
+- Replaced the phone Presentation thumbnail rail with a dismissible,
+  focus-managed slide drawer so the editing canvas keeps the primary width.
+- Kept the phone PDF toolbar clear of host file actions and moved secondary
+  annotation tools, opacity, stroke width, and deletion into its scrollable,
+  keyboard-operated overflow menu.
 - Matched registered document font weights using the CSS Fonts search order so
   common 680/730 heading weights and browser-synthesized bold metrics stay on
   the deterministic Rust/WASM text-layout path instead of falling back to DOM

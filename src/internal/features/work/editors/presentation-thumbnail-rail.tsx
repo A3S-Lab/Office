@@ -1,5 +1,5 @@
-import { Plus } from 'lucide-react';
-import { useMemo, type CSSProperties } from 'react';
+import { Plus, X } from 'lucide-react';
+import { useMemo, type CSSProperties, type RefObject } from 'react';
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import type {
   WorkPresentationContent,
@@ -17,7 +17,10 @@ export function PresentationThumbnailRail({
   selectedSlide,
   viewMode,
   zoom,
+  mobileCloseButtonRef,
+  mobileNavigationId,
   onAddSlide,
+  onCloseMobileNavigation,
   onDeleteSlide,
   onOpenContextMenu,
   onSelectSlide,
@@ -29,7 +32,10 @@ export function PresentationThumbnailRail({
   selectedSlide: WorkSlide;
   viewMode: 'normal' | 'sorter';
   zoom: number;
+  mobileCloseButtonRef?: RefObject<HTMLButtonElement | null>;
+  mobileNavigationId?: string;
   onAddSlide: () => void;
+  onCloseMobileNavigation?: () => void;
   onDeleteSlide: (slideId: string) => boolean;
   onOpenContextMenu: (
     event: WorkspaceContextMenuEvent,
@@ -149,6 +155,7 @@ export function PresentationThumbnailRail({
   return (
     <aside
       ref={viewportRef}
+      id={mobileNavigationId}
       className="work-slide-strip"
       aria-label="幻灯片"
       data-slide-count={content.slides.length}
@@ -156,6 +163,17 @@ export function PresentationThumbnailRail({
       data-slide-window-start={thumbnailWindow.start}
       data-slide-windowed={thumbnailWindow.windowed ? 'true' : 'false'}
     >
+      <header className="work-slide-strip-header">
+        <strong>幻灯片</strong>
+        <button
+          ref={mobileCloseButtonRef}
+          type="button"
+          aria-label="关闭幻灯片导航"
+          onClick={onCloseMobileNavigation}
+        >
+          <X size={16} />
+        </button>
+      </header>
       <div className="work-slide-thumbnail-list" data-slide-thumbnail-list>
         {list}
       </div>
