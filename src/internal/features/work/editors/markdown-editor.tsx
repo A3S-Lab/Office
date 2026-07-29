@@ -9,16 +9,16 @@ import {
   useRef,
   useState,
 } from 'react';
-import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import {
   type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
+  workspaceTextControlSelectionBounds,
 } from '../../workspace/components/workspace-context-menu';
+import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import {
   createWorkMarkdownExtensions,
   markdownTaskCheckboxLabel,
 } from '../work-markdown-extensions';
-import type { WorkMarkdownContent } from '../work-types';
 import {
   createWorkMarkdownSourceSelectionAction,
   createWorkMarkdownSourceSelectionSnapshot,
@@ -26,11 +26,15 @@ import {
   type WorkGetMarkdownSelectionMenuItems,
   type WorkMarkdownSelectionSnapshot,
 } from '../work-markdown-selection-menu';
+import type { WorkMarkdownContent } from '../work-types';
+import {
+  type MarkdownEditingSurface,
+  restoreMarkdownEditingSurfaceFocus,
+} from './markdown-editor-focus';
 import {
   MarkdownSelectionContextMenu,
   type MarkdownSelectionMenuState,
 } from './markdown-selection-context-menu';
-import { MarkdownStatus } from './markdown-status';
 import {
   applyMarkdownSourceCommand,
   type MarkdownSourceCommand,
@@ -39,10 +43,7 @@ import {
   type MarkdownSourceSelectionState,
   replaceMarkdownSourceSelection,
 } from './markdown-source-commands';
-import {
-  type MarkdownEditingSurface,
-  restoreMarkdownEditingSurfaceFocus,
-} from './markdown-editor-focus';
+import { MarkdownStatus } from './markdown-status';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
@@ -439,7 +440,10 @@ export function MarkdownEditor({
       if (!snapshot) return false;
       event.preventDefault();
       event.stopPropagation();
-      const position = workspaceContextMenuPosition(event);
+      const position = workspaceContextMenuPosition(
+        event,
+        workspaceTextControlSelectionBounds(event.currentTarget),
+      );
       const items = getSelectionMenuItems(snapshot);
       setSelectionMenu(
         items.length

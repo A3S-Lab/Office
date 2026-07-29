@@ -138,6 +138,42 @@ test('anchors keyboard context menus to the focused control', () => {
   expect(pointerPosition).toEqual({ x: 44, y: 66 });
 });
 
+test('prefers an editor-provided keyboard anchor without moving pointer menus', () => {
+  let keyboardPosition: { x: number; y: number } | null = null;
+  let pointerPosition: { x: number; y: number } | null = null;
+  render(
+    <button
+      type="button"
+      onKeyDown={(event) => {
+        if (isWorkspaceContextMenuKeyboardEvent(event)) {
+          keyboardPosition = workspaceContextMenuPosition(event, {
+            height: 24,
+            left: 40,
+            top: 60,
+            width: 80,
+          });
+        }
+      }}
+      onContextMenu={(event) => {
+        pointerPosition = workspaceContextMenuPosition(event, {
+          height: 24,
+          left: 40,
+          top: 60,
+          width: 80,
+        });
+      }}
+    >
+      Anchored target
+    </button>,
+  );
+
+  const target = screen.getByRole('button', { name: 'Anchored target' });
+  fireEvent.keyDown(target, { key: 'F10', shiftKey: true });
+  expect(keyboardPosition).toEqual({ x: 80, y: 72 });
+  fireEvent.contextMenu(target, { clientX: 18, clientY: 28 });
+  expect(pointerPosition).toEqual({ x: 18, y: 28 });
+});
+
 test('executes advertised shortcuts while the context menu owns focus', async () => {
   const calls: string[] = [];
 

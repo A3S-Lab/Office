@@ -385,7 +385,9 @@ test('Spreadsheet uses one accent across the grid and workbook footer', async ({
   await expect(selectedFont).toHaveAttribute('aria-selected', 'true');
   const controlAppearance = await page.evaluate(() => {
     const menu = document.querySelector('[role="listbox"][aria-label="字体"]');
-    const selected = menu?.querySelector('[role="option"][aria-selected="true"]');
+    const selected = menu?.querySelector(
+      '[role="option"][aria-selected="true"]',
+    );
     if (!(menu instanceof HTMLElement) || !(selected instanceof HTMLElement)) {
       throw new Error('Spreadsheet font menu is unavailable.');
     }
@@ -484,6 +486,21 @@ test('Spreadsheet uses one menu geometry for cells and worksheets', async ({
   await grid.press('Shift+F10');
   await expect(cellMenu).toBeVisible();
   await expect(cellMenu.getByRole('menuitem').first()).toBeFocused();
+  const [selectionBounds, menuBounds] = await Promise.all([
+    page.locator('.luckysheet-cell-selected').boundingBox(),
+    cellMenu.boundingBox(),
+  ]);
+  if (!(selectionBounds && menuBounds)) {
+    throw new Error('Spreadsheet keyboard menu geometry is unavailable.');
+  }
+  expect(menuBounds.x).toBeGreaterThanOrEqual(selectionBounds.x - 1);
+  expect(menuBounds.x).toBeLessThanOrEqual(
+    selectionBounds.x + selectionBounds.width + 1,
+  );
+  expect(menuBounds.y).toBeGreaterThanOrEqual(selectionBounds.y - 1);
+  expect(menuBounds.y).toBeLessThanOrEqual(
+    selectionBounds.y + selectionBounds.height + 1,
+  );
   await page.keyboard.press('Escape');
   await expect(cellMenu).toBeHidden();
   await expect(grid).toBeFocused();

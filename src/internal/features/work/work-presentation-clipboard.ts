@@ -1,6 +1,9 @@
-import { createWorkId } from './work-templates';
 import { remapPresentationGroupPaths } from './work-presentation-groups';
+import { createWorkId } from './work-templates';
 import type { WorkSlide, WorkSlideElement } from './work-types';
+
+export const PRESENTATION_OBJECT_OFFSET_STEP = 5;
+const PRESENTATION_CLIPBOARD_MAX_OFFSET = 20;
 
 export type WorkPresentationClipboardPayload =
   | { kind: 'element'; element: WorkSlideElement }
@@ -51,7 +54,10 @@ export function takePresentationClipboard(): WorkPresentationClipboardRead | nul
   clipboard.pasteCount += 1;
   return {
     payload: structuredCopy(clipboard.payload),
-    offset: Math.min(clipboard.pasteCount * 2, 12),
+    offset: Math.min(
+      clipboard.pasteCount * PRESENTATION_OBJECT_OFFSET_STEP,
+      PRESENTATION_CLIPBOARD_MAX_OFFSET,
+    ),
   };
 }
 

@@ -6,6 +6,7 @@ import {
   clonePresentationSlideForPaste,
   copyPresentationElements,
   copyPresentationSlide,
+  PRESENTATION_OBJECT_OFFSET_STEP,
   takePresentationClipboard,
 } from '../work-presentation-clipboard';
 import { withPresentationDesign } from '../work-presentation-layouts';
@@ -176,7 +177,10 @@ export function usePresentationClipboard({
 
   const duplicateSelection = useCallback((): boolean => {
     if (selectedElements.length && targetId) {
-      const copies = clonePresentationElementsForPaste(selectedElements, 2);
+      const copies = clonePresentationElementsForPaste(
+        selectedElements,
+        PRESENTATION_OBJECT_OFFSET_STEP,
+      );
       const next = updateTargetElements(content, mode, targetId, (elements) => [
         ...elements,
         ...copies,

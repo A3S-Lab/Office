@@ -21,15 +21,28 @@ test('copies and offsets a presentation object set without changing its layout',
     kind: 'elements',
     elements: [{ id: 'first' }, { id: 'second' }],
   });
-  const copies = clonePresentationElementsForPaste(elements, 2);
+  expect(clipboard?.offset).toBe(5);
+  const copies = clonePresentationElementsForPaste(
+    elements,
+    clipboard?.offset ?? 0,
+  );
   expect(copies).toMatchObject([
-    { x: 12, y: 22, placeholder: undefined },
-    { x: 42, y: 52, placeholder: undefined },
+    { x: 15, y: 25, placeholder: undefined },
+    { x: 45, y: 55, placeholder: undefined },
   ]);
   expect(copies[0].id).not.toBe(elements[0].id);
   expect(copies[1].id).not.toBe(elements[1].id);
   expect(copies[1].x - copies[0].x).toBe(30);
   expect(copies[1].y - copies[0].y).toBe(30);
+});
+
+test('keeps repeated presentation pastes visibly offset and bounded', () => {
+  clearPresentationClipboard();
+  copyPresentationElements([presentationElement('source', 10, 20)]);
+
+  expect(
+    Array.from({ length: 6 }, () => takePresentationClipboard()?.offset),
+  ).toEqual([5, 10, 15, 20, 20, 20]);
 });
 
 test('clones presentation group paths without linking the copy to its source', () => {

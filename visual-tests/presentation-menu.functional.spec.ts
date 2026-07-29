@@ -65,6 +65,8 @@ test('Presentation clipboard shortcuts keep object selection and focus coherent'
   const title = objects.nth(1);
   await title.click();
   await expect(title).toBeFocused();
+  const titleBounds = await title.boundingBox();
+  if (!titleBounds) throw new Error('Presentation title geometry is missing.');
 
   await expect(
     page.getByRole('button', { name: '复制', exact: true }),
@@ -77,6 +79,12 @@ test('Presentation clipboard shortcuts keep object selection and focus coherent'
   );
   await expect(pasted).toHaveCount(1);
   await expect(pasted).toBeFocused();
+  const pastedBounds = await pasted.boundingBox();
+  if (!pastedBounds) {
+    throw new Error('Pasted presentation object geometry is missing.');
+  }
+  expect(pastedBounds.x - titleBounds.x).toBeGreaterThanOrEqual(20);
+  expect(pastedBounds.y - titleBounds.y).toBeGreaterThanOrEqual(10);
 
   await page.keyboard.press('Control+x');
   await expect(objects).toHaveCount(3);

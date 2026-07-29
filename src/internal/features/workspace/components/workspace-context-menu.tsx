@@ -3,16 +3,17 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
-} from 'react';
-import { createPortal } from 'react-dom';
-import {
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { matchesAriaKeyShortcuts } from '../../../keyboard-shortcuts';
+import type { WorkspaceContextMenuAnchorBounds } from './workspace-text-control-selection';
+
+export { workspaceTextControlSelectionBounds } from './workspace-text-control-selection';
 
 const CONTEXT_MENU_MARGIN = 8;
 
@@ -39,6 +40,7 @@ export function isWorkspaceContextMenuKeyboardEvent({
 
 export function workspaceContextMenuPosition(
   event: WorkspaceContextMenuEvent,
+  keyboardAnchorBounds?: WorkspaceContextMenuAnchorBounds | null,
 ): { x: number; y: number } {
   if ('clientX' in event && (event.clientX !== 0 || event.clientY !== 0)) {
     return { x: event.clientX, y: event.clientY };
@@ -47,12 +49,23 @@ export function workspaceContextMenuPosition(
   const target =
     event.target instanceof HTMLElement ? event.target : event.currentTarget;
   const bounds =
+    usableContextMenuBounds(keyboardAnchorBounds) ??
     contextMenuSelectionBounds(target.ownerDocument, target) ??
     target.getBoundingClientRect();
   return {
     x: bounds.left + bounds.width / 2,
     y: bounds.top + bounds.height / 2,
   };
+}
+
+function usableContextMenuBounds(
+  bounds: WorkspaceContextMenuAnchorBounds | null | undefined,
+): WorkspaceContextMenuAnchorBounds | null {
+  if (!bounds) return null;
+  const values = [bounds.left, bounds.top, bounds.width, bounds.height];
+  return values.every(Number.isFinite) && bounds.width >= 0 && bounds.height > 0
+    ? bounds
+    : null;
 }
 
 export interface WorkspaceContextMenuItem {

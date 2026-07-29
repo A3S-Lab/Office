@@ -1177,7 +1177,7 @@
 
   .playground-editor-host,
   .playground-editor-host:has(.editor-sidebar-open) {
-    --playground-command-start: 154px;
+    --playground-command-start: 186px;
     --playground-command-end: 134px;
   }
 
@@ -1205,10 +1205,6 @@
 
   .playground-editor-header {
     padding-inline: 4px;
-  }
-
-  .editor-sidebar-open {
-    display: none;
   }
 
   .playground-editor-header .work-editor-back {

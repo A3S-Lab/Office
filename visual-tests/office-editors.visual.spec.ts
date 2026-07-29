@@ -1,10 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
+import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 import {
   openDocumentFixture,
   stabilizeVisualSurface,
   waitForDocumentFixture,
 } from './visual-test-support';
-import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 
 type VisualEditorKind =
   | 'document'
@@ -180,6 +180,87 @@ test('PDF keeps its single compact command row at phone width', async ({
   expect(geometry.toolbarHeight).toBe(42);
   expect(geometry.toolbarTop).toBeCloseTo(geometry.headerTop, 0);
   expect(geometry.toolbarOverflowX).toBe('auto');
+});
+
+test('every editor keeps sidebar access and separate phone header regions', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 700 });
+
+  for (const fixture of fixtures) {
+    await test.step(fixture.kind, async () => {
+      await page.goto('/');
+      await fixture.open(page);
+      await fixture.ready(page);
+
+      const shell = page.locator(`.work-editor-shell.${fixture.kind}`);
+      const sidebarToggle = shell.getByRole('button', {
+        name: '展开办公侧边栏',
+      });
+      await expect(sidebarToggle).toBeVisible();
+
+      const geometry = await shell.evaluate((element) => {
+        const header = element.querySelector<HTMLElement>(
+          '.playground-editor-header',
+        );
+        const start = element.querySelector<HTMLElement>(
+          '.playground-editor-command-start',
+        );
+        const actions = element.querySelector<HTMLElement>(
+          '.work-editor-header-actions',
+        );
+        const toggle = element.querySelector<HTMLElement>(
+          '.editor-sidebar-open',
+        );
+        if (!(header && start && actions && toggle)) {
+          throw new Error('Phone editor header geometry is incomplete.');
+        }
+        const headerBounds = header.getBoundingClientRect();
+        const startBounds = start.getBoundingClientRect();
+        const actionBounds = actions.getBoundingClientRect();
+        const toggleBounds = toggle.getBoundingClientRect();
+        return {
+          actionBottom: actionBounds.bottom,
+          actionLeft: actionBounds.left,
+          actionTop: actionBounds.top,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          headerBottom: headerBounds.bottom,
+          headerLeft: headerBounds.left,
+          headerRight: headerBounds.right,
+          headerTop: headerBounds.top,
+          startBottom: startBounds.bottom,
+          startRight: startBounds.right,
+          startTop: startBounds.top,
+          toggleLeft: toggleBounds.left,
+          toggleRight: toggleBounds.right,
+          viewportWidth: document.documentElement.clientWidth,
+        };
+      });
+
+      expect(geometry.documentScrollWidth).toBeLessThanOrEqual(
+        geometry.viewportWidth + 1,
+      );
+      expect(geometry.startRight).toBeLessThanOrEqual(geometry.actionLeft + 1);
+      expect(geometry.startTop).toBeGreaterThanOrEqual(geometry.headerTop - 1);
+      expect(geometry.startBottom).toBeLessThanOrEqual(
+        geometry.headerBottom + 1,
+      );
+      expect(geometry.actionTop).toBeGreaterThanOrEqual(geometry.headerTop - 1);
+      expect(geometry.actionBottom).toBeLessThanOrEqual(
+        geometry.headerBottom + 1,
+      );
+      expect(geometry.toggleLeft).toBeGreaterThanOrEqual(
+        geometry.headerLeft - 1,
+      );
+      expect(geometry.toggleRight).toBeLessThanOrEqual(
+        geometry.headerRight + 1,
+      );
+    });
+  }
 });
 
 test('PDF prioritizes page and zoom controls at compact workspace width', async ({
@@ -1377,8 +1458,10 @@ async function verifySharedEditorGeometry(
         : '.work-office-ribbon-tabs-row',
     );
     const center = shell?.classList.contains('pdf')
-      ? [...(host?.querySelectorAll<HTMLElement>('.work-pdf-toolbar > *') ?? [])]
-          .find((element) => getComputedStyle(element).display !== 'none')
+      ? [
+          ...(host?.querySelectorAll<HTMLElement>('.work-pdf-toolbar > *') ??
+            []),
+        ].find((element) => getComputedStyle(element).display !== 'none')
       : host?.querySelector<HTMLElement>('.work-office-ribbon-tabs');
     const pdfPageControls = host?.querySelector<HTMLElement>(
       '.work-pdf-page-controls',

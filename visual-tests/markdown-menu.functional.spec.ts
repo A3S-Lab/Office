@@ -298,6 +298,17 @@ test('Markdown opens source selection actions from the keyboard', async ({
   const menu = page.getByRole('menu', { name: '选中文本操作' });
   await expect(menu).toBeVisible();
   await expect(menu.getByRole('menuitem').first()).toBeFocused();
+  const [sourceBounds, menuBounds] = await Promise.all([
+    source.boundingBox(),
+    menu.boundingBox(),
+  ]);
+  if (!(sourceBounds && menuBounds)) {
+    throw new Error('Markdown keyboard menu geometry is unavailable.');
+  }
+  expect(menuBounds.x).toBeGreaterThanOrEqual(sourceBounds.x - 1);
+  expect(menuBounds.x).toBeLessThan(sourceBounds.x + sourceBounds.width / 2);
+  expect(menuBounds.y).toBeGreaterThanOrEqual(sourceBounds.y - 1);
+  expect(menuBounds.y).toBeLessThanOrEqual(sourceBounds.y + 90);
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await expect(source).toBeFocused();

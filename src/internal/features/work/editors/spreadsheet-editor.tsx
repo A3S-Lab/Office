@@ -11,8 +11,8 @@ import {
 } from 'react';
 import {
   isWorkspaceContextMenuKeyboardEvent,
-  type WorkspaceContextMenuEvent,
   WorkspaceContextMenu,
+  type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
 } from '../../workspace/components/workspace-context-menu';
 import { spreadsheetAgentMenuItems } from '../components/work-editor-agent-menus';
@@ -40,6 +40,7 @@ import {
 } from '../work-spreadsheet-pivots';
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
+import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetEditorCommands,
@@ -49,7 +50,6 @@ import {
   parseSpreadsheetClipboardText,
   spreadsheetCoreContextMenuItems,
 } from './spreadsheet-context-menu';
-import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   SpreadsheetEditorRibbon,
   type SpreadsheetRibbonTabId,
@@ -583,7 +583,10 @@ export function SpreadsheetEditor({
     if (!agentSelection) return false;
     event.preventDefault();
     event.stopPropagation();
-    const position = workspaceContextMenuPosition(event);
+    const position = workspaceContextMenuPosition(
+      event,
+      spreadsheetSelectionContextMenuBounds(spreadsheetCanvasRef.current),
+    );
     setContextMenu({
       x: position.x,
       y: position.y,
@@ -922,6 +925,20 @@ function spreadsheetGridFocusTarget(
     container?.querySelector<HTMLElement>('.fortune-cell-area') ??
     null
   );
+}
+
+function spreadsheetSelectionContextMenuBounds(
+  container: HTMLElement | null,
+): DOMRect | null {
+  const selections = [
+    ...(container?.querySelectorAll<HTMLElement>('.luckysheet-cell-selected') ??
+      []),
+  ];
+  for (let index = selections.length - 1; index >= 0; index -= 1) {
+    const bounds = selections[index]?.getBoundingClientRect();
+    if (bounds && bounds.width > 0 && bounds.height > 0) return bounds;
+  }
+  return null;
 }
 
 function spreadsheetGridFocusTargetReady(target: HTMLElement | null): boolean {
