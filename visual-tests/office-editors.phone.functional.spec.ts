@@ -13,6 +13,39 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
   const canvas = page.locator('.work-slide-canvas.interactive');
   await canvas.waitFor();
 
+  const status = page.locator('.work-presentation-status');
+  const slideStatus = status.getByLabel('幻灯片状态');
+  await expect(slideStatus).toHaveText('幻灯片 1 / 3');
+  await expect(slideStatus).toBeVisible();
+  await expect(status.getByLabel('演示备注状态')).toBeHidden();
+  await expect(status.getByLabel('演示批注状态')).toBeHidden();
+  await expect(status.getByLabel('演示保存状态')).toBeHidden();
+  await expect
+    .poll(() =>
+      slideStatus.evaluate(
+        (output) => output.scrollWidth <= output.clientWidth + 1,
+      ),
+    )
+    .toBe(true);
+  const stageGeometry = await page.evaluate(() => {
+    const stage = document.querySelector<HTMLElement>('.work-slide-stage');
+    const canvas = stage?.querySelector<HTMLElement>(
+      ':scope > .work-slide-canvas',
+    );
+    if (!(stage && canvas)) {
+      throw new Error('Phone Presentation stage geometry is unavailable.');
+    }
+    const stageBounds = stage.getBoundingClientRect();
+    const canvasBounds = canvas.getBoundingClientRect();
+    return {
+      canvasTop: canvasBounds.top,
+      stageTop: stageBounds.top,
+    };
+  });
+  expect(stageGeometry.canvasTop - stageGeometry.stageTop).toBeLessThanOrEqual(
+    72,
+  );
+
   const toggle = page.getByRole('button', { name: '打开幻灯片导航' });
   const rail = page.locator('.work-slide-strip');
   await expect(toggle).toBeVisible();

@@ -825,6 +825,42 @@
   .work-slide-stage {
     padding: 50px 14px 12px;
   }
+
+  .work-slide-stage > .work-slide-canvas {
+    margin-top: 0;
+  }
+
+  .work-slide-notes {
+    margin-bottom: 0;
+  }
+
+  .work-presentation-status {
+    gap: 6px;
+    padding-left: 8px;
+  }
+
+  .work-presentation-status .work-office-status-info {
+    flex: 0 1 auto;
+    gap: 0;
+  }
+
+  .work-presentation-status .work-presentation-status-primary {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .work-presentation-status .work-presentation-status-secondary,
+  .work-presentation-status .work-office-save-status {
+    display: none;
+  }
+
+  .work-presentation-status .work-office-status-view {
+    margin-left: auto;
+  }
+
+  .work-presentation-status .work-office-status-slider {
+    width: 54px;
+  }
 }
 
 @media (max-width: 640px) and (prefers-reduced-motion: reduce) {

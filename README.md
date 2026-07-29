@@ -276,9 +276,9 @@ interaction model.
   transforms, keyboard-accessible table-size insertion, Shift+F10-accessible
   native slide and object context actions, guides, comments, transitions,
   editor-scoped formatting and clipboard shortcuts that restore the selected
-  object, a dismissible phone slide navigator that prioritizes the editing
-  canvas, one-step slideshow from the beginning or current slide, and presenter
-  view.
+  object, a dismissible phone slide navigator, a top-aligned phone canvas with
+  a priority-aware status bar, one-step slideshow from the beginning or current
+  slide, and presenter view.
   _PPTX import/export; PDF export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,

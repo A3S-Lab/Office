@@ -61,13 +61,22 @@ export function PresentationStatusBar({
         </>
       }
     >
-      <output aria-label="幻灯片状态">
+      <output
+        aria-label="幻灯片状态"
+        className="work-presentation-status-primary"
+      >
         幻灯片 {slideNumber} / {content.slides.length}
       </output>
-      <output aria-label="演示备注状态">
+      <output
+        aria-label="演示备注状态"
+        className="work-presentation-status-secondary"
+      >
         {selectedSlide.notes?.trim() ? '已添加演讲者备注' : '无演讲者备注'}
       </output>
-      <output aria-label="演示批注状态">
+      <output
+        aria-label="演示批注状态"
+        className="work-presentation-status-secondary"
+      >
         批注：{presentationCommentCount(content.slides)}
       </output>
       <output aria-label="演示保存状态" className="work-office-save-status">
