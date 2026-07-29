@@ -89,6 +89,7 @@ export function SpreadsheetEditorRibbon({
   fileActions,
   gridLinesVisible,
   multipleCellsSelected,
+  panelId,
   onTabChange,
   onTogglePanel,
   panel,
@@ -101,8 +102,12 @@ export function SpreadsheetEditorRibbon({
   fileActions?: readonly WorkOfficeFileAction[];
   gridLinesVisible: boolean;
   multipleCellsSelected: boolean;
+  panelId: string;
   onTabChange: (tab: SpreadsheetRibbonTabId) => void;
-  onTogglePanel: (panel: SpreadsheetWorkbookPanelView) => void;
+  onTogglePanel: (
+    panel: SpreadsheetWorkbookPanelView,
+    trigger: HTMLButtonElement,
+  ) => void;
   panel: SpreadsheetWorkbookPanelView | null;
   toolbarCell: Cell | null | undefined;
 }) {
@@ -464,20 +469,24 @@ export function SpreadsheetEditorRibbon({
           <>
             <WorkOfficeRibbonGroup label="图表">
               <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="charts"
                 label="插入图表"
                 count={spreadsheetChartCount(content)}
                 icon={<BarChart3 size={19} />}
                 active={panel === 'charts'}
-                onClick={() => onTogglePanel('charts')}
+                onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="样式">
               <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="conditional-formatting"
                 label="条件格式"
                 count={managedConditionalFormatCount(content)}
                 icon={<Palette size={19} />}
                 active={panel === 'conditional-formatting'}
-                onClick={() => onTogglePanel('conditional-formatting')}
+                onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
           </>
@@ -485,11 +494,13 @@ export function SpreadsheetEditorRibbon({
         pageLayout: (
           <WorkOfficeRibbonGroup label="页面设置">
             <SpreadsheetRibbonTool
+              controlsId={panelId}
+              panel="print-area"
               label="打印设置"
               count={spreadsheetPrintSettingCount(content)}
               icon={<Printer size={19} />}
               active={panel === 'print-area'}
-              onClick={() => onTogglePanel('print-area')}
+              onToggle={onTogglePanel}
             />
           </WorkOfficeRibbonGroup>
         ),
@@ -497,20 +508,24 @@ export function SpreadsheetEditorRibbon({
           <>
             <WorkOfficeRibbonGroup label="定义的名称">
               <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="names"
                 label="名称管理器"
                 count={content.namedRanges?.length ?? 0}
                 icon={<Bookmark size={19} />}
                 active={panel === 'names'}
-                onClick={() => onTogglePanel('names')}
+                onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="计算">
               <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="formulas"
                 label="公式与计算"
                 count={formulaCount}
                 icon={<Calculator size={19} />}
                 active={panel === 'formulas'}
-                onClick={() => onTogglePanel('formulas')}
+                onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
           </>
@@ -518,22 +533,26 @@ export function SpreadsheetEditorRibbon({
         data: (
           <WorkOfficeRibbonGroup label="分析">
             <SpreadsheetRibbonTool
+              controlsId={panelId}
+              panel="pivots"
               label="数据透视表"
               count={pivotCount}
               icon={<TableProperties size={19} />}
               active={panel === 'pivots'}
-              onClick={() => onTogglePanel('pivots')}
+              onToggle={onTogglePanel}
             />
           </WorkOfficeRibbonGroup>
         ),
         review: (
           <WorkOfficeRibbonGroup label="保护">
             <SpreadsheetRibbonTool
+              controlsId={panelId}
+              panel="protection"
               label="工作表保护"
               count={protectedSheetCount(content.sheets)}
               icon={<ShieldCheck size={19} />}
               active={panel === 'protection'}
-              onClick={() => onTogglePanel('protection')}
+              onToggle={onTogglePanel}
             />
           </WorkOfficeRibbonGroup>
         ),
@@ -558,15 +577,22 @@ export function SpreadsheetEditorRibbon({
 function SpreadsheetRibbonTool({
   active,
   count,
+  controlsId,
   icon,
   label,
-  onClick,
+  panel,
+  onToggle,
 }: {
   active: boolean;
   count: number;
+  controlsId: string;
   icon: ReactNode;
   label: string;
-  onClick: () => void;
+  panel: SpreadsheetWorkbookPanelView;
+  onToggle: (
+    panel: SpreadsheetWorkbookPanelView,
+    trigger: HTMLButtonElement,
+  ) => void;
 }) {
   const hasCount = count > 0;
   return (
@@ -575,7 +601,9 @@ function SpreadsheetRibbonTool({
       visibleLabel={label}
       badge={hasCount ? count : undefined}
       active={active}
-      onClick={onClick}
+      aria-controls={controlsId}
+      aria-expanded={active}
+      onClick={(event) => onToggle(panel, event.currentTarget)}
     >
       {icon}
     </WorkOfficeRibbonButton>

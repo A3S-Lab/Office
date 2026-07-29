@@ -6,12 +6,132 @@ test('Spreadsheet closes a ribbon-opened workbook pane with Escape', async ({
   await openSpreadsheetFixture(page);
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
-  await page.getByRole('button', { name: '插入图表' }).click();
+  const trigger = page.getByRole('button', { name: '插入图表' });
+  await trigger.click();
   const chartPane = page.getByRole('region', { name: '图表管理器' });
   await expect(chartPane).toBeVisible();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
   await page.keyboard.press('Escape');
   await expect(chartPane).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test('Spreadsheet keeps workbook tools in a bounded right task pane', async ({
+  page,
+}) => {
+  await openSpreadsheetFixture(page);
+
+  await page.getByRole('tab', { name: '数据', exact: true }).click();
+  const trigger = page.getByRole('button', { name: '数据透视表' });
+  await trigger.click();
+  const pane = page.getByRole('region', { name: '数据透视表管理器' });
+  await expect(pane).toBeVisible();
+  await expect(
+    pane.getByRole('button', { name: '关闭数据透视表' }),
+  ).toBeVisible();
+
+  const geometry = await page
+    .locator('.work-spreadsheet-workspace')
+    .evaluate((workspace) => {
+      const canvas = workspace.querySelector<HTMLElement>(
+        '.work-spreadsheet-canvas',
+      );
+      const pane = workspace.querySelector<HTMLElement>(
+        '.work-spreadsheet-workbook-panel',
+      );
+      const paneBody = workspace.querySelector<HTMLElement>(
+        '.work-spreadsheet-workbook-panel-body',
+      );
+      if (!(canvas && pane && paneBody)) {
+        throw new Error('Spreadsheet task-pane geometry is incomplete.');
+      }
+      const workspaceRect = workspace.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      const paneRect = pane.getBoundingClientRect();
+      return {
+        canvasBottom: canvasRect.bottom,
+        canvasHeight: canvasRect.height,
+        canvasRight: canvasRect.right,
+        canvasTop: canvasRect.top,
+        paneBodyClientWidth: paneBody.clientWidth,
+        paneBodyScrollWidth: paneBody.scrollWidth,
+        paneBottom: paneRect.bottom,
+        paneLeft: paneRect.left,
+        paneRight: paneRect.right,
+        paneTop: paneRect.top,
+        paneWidth: paneRect.width,
+        position: getComputedStyle(pane).position,
+        workspaceRight: workspaceRect.right,
+        workspaceWidth: workspaceRect.width,
+      };
+    });
+
+  expect(geometry.paneTop).toBeCloseTo(geometry.canvasTop, 0);
+  expect(geometry.paneBottom).toBeCloseTo(geometry.canvasBottom, 0);
+  expect(geometry.paneRight).toBeCloseTo(geometry.workspaceRight, 0);
+  expect(geometry.paneBodyScrollWidth).toBeLessThanOrEqual(
+    geometry.paneBodyClientWidth + 1,
+  );
+  expect(geometry.canvasHeight).toBeGreaterThan(420);
+
+  if (geometry.position === 'absolute') {
+    expect(geometry.canvasRight).toBeCloseTo(geometry.workspaceRight, 0);
+    expect(geometry.paneWidth).toBeLessThan(geometry.workspaceWidth);
+  } else {
+    expect(geometry.canvasRight).toBeCloseTo(geometry.paneLeft, 0);
+    expect(geometry.paneWidth).toBeGreaterThanOrEqual(320);
+    expect(geometry.paneWidth).toBeLessThanOrEqual(460);
+  }
+});
+
+test('Spreadsheet task pane fills the phone workspace without page overflow', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 700 });
+  await openSpreadsheetFixture(page);
+
+  await page.getByRole('tab', { name: '数据', exact: true }).click();
+  await page.getByRole('button', { name: '数据透视表' }).click();
+
+  const geometry = await page
+    .locator('.work-spreadsheet-workspace')
+    .evaluate((workspace) => {
+      const pane = workspace.querySelector<HTMLElement>(
+        '.work-spreadsheet-workbook-panel',
+      );
+      const paneBody = workspace.querySelector<HTMLElement>(
+        '.work-spreadsheet-workbook-panel-body',
+      );
+      if (!(pane && paneBody)) {
+        throw new Error('Phone spreadsheet task pane is unavailable.');
+      }
+      const workspaceRect = workspace.getBoundingClientRect();
+      const paneRect = pane.getBoundingClientRect();
+      return {
+        documentScrollWidth: document.documentElement.scrollWidth,
+        paneBodyClientWidth: paneBody.clientWidth,
+        paneBodyScrollWidth: paneBody.scrollWidth,
+        paneLeft: paneRect.left,
+        paneRight: paneRect.right,
+        workspaceLeft: workspaceRect.left,
+        workspaceRight: workspaceRect.right,
+        viewportWidth: document.documentElement.clientWidth,
+      };
+    });
+
+  expect(geometry.documentScrollWidth).toBeLessThanOrEqual(
+    geometry.viewportWidth + 1,
+  );
+  expect(geometry.paneLeft).toBeCloseTo(geometry.workspaceLeft, 0);
+  expect(geometry.paneRight).toBeCloseTo(geometry.workspaceRight, 0);
+  expect(geometry.paneBodyScrollWidth).toBeLessThanOrEqual(
+    geometry.paneBodyClientWidth + 1,
+  );
 });
 
 test('Spreadsheet cancels a dirty chart draft before closing its pane', async ({

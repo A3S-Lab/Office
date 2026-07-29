@@ -32,7 +32,7 @@ test('keeps workbook panel controls outside its scrollable body', () => {
 
   const panel = screen.getByRole('region', { name: '打印设置' });
   const body = screen.getByRole('region', { name: '打印设置内容' });
-  const close = screen.getByRole('button', { name: '关闭工作簿设置' });
+  const close = screen.getByRole('button', { name: '关闭打印设置' });
 
   expect(panel).toContainElement(body);
   expect(body).not.toContainElement(close);

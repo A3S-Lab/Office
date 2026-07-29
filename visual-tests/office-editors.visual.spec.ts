@@ -566,10 +566,14 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
   await fixture.open(page);
   await fixture.ready(page);
 
-  const verifyPanel = async (panelName: string, bodyName: string) => {
+  const verifyPanel = async (
+    panelName: string,
+    bodyName: string,
+    closeName: string,
+  ) => {
     const panel = page.getByRole('region', { name: panelName, exact: true });
     const body = page.getByRole('region', { name: bodyName, exact: true });
-    const close = panel.getByRole('button', { name: '关闭工作簿设置' });
+    const close = panel.getByRole('button', { name: closeName });
     await expect(panel).toBeVisible();
     await expect(body).toBeVisible();
     await expect(close).toBeVisible();
@@ -625,30 +629,30 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
 
   await page.getByRole('tab', { name: '公式', exact: true }).click();
   await page.getByRole('button', { name: /公式与计算/ }).click();
-  await verifyPanel('公式与计算', '公式与计算内容');
+  await verifyPanel('公式与计算', '公式与计算内容', '关闭公式与计算');
 
   await page.getByRole('button', { name: '名称管理器' }).click();
-  await verifyPanel('名称管理器', '名称管理器内容');
+  await verifyPanel('名称管理器', '名称管理器内容', '关闭名称管理器');
 
   await page.getByRole('tab', { name: '数据', exact: true }).click();
   await page.getByRole('button', { name: '数据透视表' }).click();
-  await verifyPanel('数据透视表管理器', '数据透视表内容');
+  await verifyPanel('数据透视表管理器', '数据透视表内容', '关闭数据透视表');
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: /^插入图表/ }).click();
   await page.getByRole('button', { name: '根据当前选区新建' }).click();
-  await verifyPanel('图表管理器', '工作簿图表内容');
+  await verifyPanel('图表管理器', '工作簿图表内容', '关闭工作簿图表');
 
   await page.getByRole('button', { name: '条件格式' }).click();
-  await verifyPanel('条件格式管理器', '条件格式内容');
+  await verifyPanel('条件格式管理器', '条件格式内容', '关闭条件格式');
 
   await page.getByRole('tab', { name: '页面布局', exact: true }).click();
   await page.getByRole('button', { name: '打印设置' }).click();
-  await verifyPanel('打印设置', '打印设置内容');
+  await verifyPanel('打印设置', '打印设置内容', '关闭打印设置');
 
   await page.getByRole('tab', { name: '审阅', exact: true }).click();
   await page.getByRole('button', { name: '工作表保护' }).click();
-  await verifyPanel('工作表保护', '工作表保护内容');
+  await verifyPanel('工作表保护', '工作表保护内容', '关闭工作表保护');
 });
 
 test('closing PDF annotation style keeps the active pen', async ({ page }) => {

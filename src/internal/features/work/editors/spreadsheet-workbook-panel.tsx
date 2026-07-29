@@ -40,6 +40,7 @@ export type SpreadsheetWorkbookPanelView =
   | 'pivots';
 
 interface SpreadsheetWorkbookPanelProps {
+  id?: string;
   content: WorkSpreadsheetContent;
   view: SpreadsheetWorkbookPanelView;
   activeSheetId: string;
@@ -53,6 +54,7 @@ interface SpreadsheetWorkbookPanelProps {
 }
 
 export function SpreadsheetWorkbookPanel({
+  id,
   content,
   view,
   activeSheetId,
@@ -65,6 +67,7 @@ export function SpreadsheetWorkbookPanel({
   useOfficeTaskPaneEscape(true, onClose);
   return (
     <section
+      id={id}
       className="work-spreadsheet-workbook-panel"
       aria-label={title.label}
       data-view={view}
@@ -75,7 +78,7 @@ export function SpreadsheetWorkbookPanel({
           <strong>{title.heading}</strong>
           <span>{title.description}</span>
         </div>
-        <IconButton label="关闭工作簿设置" onClick={onClose}>
+        <IconButton label={`关闭${title.heading}`} onClick={onClose}>
           <X size={14} />
         </IconButton>
       </header>

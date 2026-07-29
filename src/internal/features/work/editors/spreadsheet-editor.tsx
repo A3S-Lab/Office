@@ -5,6 +5,7 @@ import {
   type ClipboardEvent as ReactClipboardEvent,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -152,8 +153,10 @@ export function SpreadsheetEditor({
     kernelWasmUrl,
     workbookRef,
   });
+  const panelId = useId();
   const [ribbonTab, setRibbonTab] = useState<SpreadsheetRibbonTabId>('home');
   const [panel, setPanel] = useState<SpreadsheetWorkbookPanelView | null>(null);
+  const panelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [selectionState, setSelectionState] =
     useState<SpreadsheetSelectionState | null>(null);
   const [contextMenu, setContextMenu] =
@@ -219,9 +222,16 @@ export function SpreadsheetEditor({
   }, [activeSheetId]);
   useEffect(() => {
     if (!preview) return;
+    panelTriggerRef.current = null;
     setPanel(null);
     setContextMenu(null);
   }, [preview]);
+  const closeWorkbookPanel = useCallback(() => {
+    const trigger = panelTriggerRef.current;
+    panelTriggerRef.current = null;
+    setPanel(null);
+    if (trigger?.isConnected) trigger.focus();
+  }, []);
   const workbookHooks = useMemo<Hooks>(
     () => ({
       afterActivateSheet: (id) => {
@@ -622,61 +632,73 @@ export function SpreadsheetEditor({
           fileActions={fileActions}
           gridLinesVisible={gridLinesVisible}
           multipleCellsSelected={multipleCellsSelected}
+          panelId={panelId}
           onTabChange={(tab) => {
             setRibbonTab(tab);
+            panelTriggerRef.current = null;
             setPanel(null);
           }}
-          onTogglePanel={(nextPanel) =>
-            setPanel((current) => (current === nextPanel ? null : nextPanel))
+          onTogglePanel={(nextPanel, trigger) =>
+            setPanel((current) => {
+              if (current === nextPanel) {
+                panelTriggerRef.current = null;
+                return null;
+              }
+              panelTriggerRef.current = trigger;
+              return nextPanel;
+            })
           }
           panel={panel}
           toolbarCell={toolbarCell}
         />
       )}
-      {!preview && panel && (
-        <SpreadsheetWorkbookPanel
-          content={materializedContent}
-          view={panel}
-          activeSheetId={panelSheetId}
-          selection={
-            selectionState?.sheetId === panelSheetId
-              ? selectionState.selection
-              : undefined
-          }
-          can={spreadsheetCan}
-          commands={spreadsheetCommands}
-          onClose={() => setPanel(null)}
-        />
-      )}
-      <div
-        ref={spreadsheetCanvasRef}
-        className="work-spreadsheet-canvas"
-        onContextMenuCapture={openSpreadsheetContextMenu}
-        onKeyDownCapture={(event) => {
-          if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
-          openSpreadsheetContextMenu(event);
-        }}
-      >
-        <Workbook
-          ref={bindWorkbookInstance}
-          key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
-          data={displayedWorkbookSheets}
-          lang="zh"
-          allowEdit={!preview}
-          showToolbar={false}
-          showFormulaBar
-          showSheetTabs={false}
-          row={60}
-          column={26}
-          rowHeaderWidth={44}
-          columnHeaderHeight={24}
-          defaultRowHeight={24}
-          defaultColWidth={96}
-          defaultFontSize={11}
-          hooks={workbookHooks}
-          onChange={handleWorkbookChange}
-          onOp={handleWorkbookOperations}
-        />
+      <div className="work-spreadsheet-workspace">
+        <div
+          ref={spreadsheetCanvasRef}
+          className="work-spreadsheet-canvas"
+          onContextMenuCapture={openSpreadsheetContextMenu}
+          onKeyDownCapture={(event) => {
+            if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
+            openSpreadsheetContextMenu(event);
+          }}
+        >
+          <Workbook
+            ref={bindWorkbookInstance}
+            key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
+            data={displayedWorkbookSheets}
+            lang="zh"
+            allowEdit={!preview}
+            showToolbar={false}
+            showFormulaBar
+            showSheetTabs={false}
+            row={60}
+            column={26}
+            rowHeaderWidth={44}
+            columnHeaderHeight={24}
+            defaultRowHeight={24}
+            defaultColWidth={96}
+            defaultFontSize={11}
+            hooks={workbookHooks}
+            onChange={handleWorkbookChange}
+            onOp={handleWorkbookOperations}
+          />
+        </div>
+        {!preview && panel && (
+          <SpreadsheetWorkbookPanel
+            id={panelId}
+            content={materializedContent}
+            view={panel}
+            activeSheetId={panelSheetId}
+            selection={
+              selectionState?.sheetId === panelSheetId
+                ? selectionState.selection
+                : undefined
+            }
+            can={spreadsheetCan}
+            commands={spreadsheetCommands}
+            onClose={closeWorkbookPanel}
+          />
+        )}
       </div>
       <div className="work-spreadsheet-footer">
         <SpreadsheetSheetBar

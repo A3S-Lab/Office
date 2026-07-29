@@ -1,0 +1,251 @@
+.work-spreadsheet-workbook-panel-body {
+  overflow-x: hidden;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-name-manager,
+    .work-spreadsheet-conditional-manager,
+    .work-spreadsheet-protection-manager,
+    .work-spreadsheet-chart-manager,
+    .work-spreadsheet-formula-manager,
+    .work-spreadsheet-pivot-manager
+  ) {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100%;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-name-manager,
+    .work-spreadsheet-conditional-manager,
+    .work-spreadsheet-protection-manager,
+    .work-spreadsheet-chart-manager,
+    .work-spreadsheet-pivot-manager
+  )
+  > aside {
+  padding: 10px 12px;
+  border-right: 0;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-name-list,
+    .work-spreadsheet-conditional-list,
+    .work-spreadsheet-protection-list,
+    .work-spreadsheet-chart-list,
+    .work-spreadsheet-pivot-list
+  ) {
+  max-height: 104px;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-name-manager,
+    .work-spreadsheet-conditional-manager,
+    .work-spreadsheet-protection-manager
+  )
+  > form,
+.work-spreadsheet-workbook-panel .work-spreadsheet-print-area-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-name-manager,
+    .work-spreadsheet-conditional-manager,
+    .work-spreadsheet-protection-manager,
+    .work-spreadsheet-print-area-form
+  )
+  :is(.reference, .comment) {
+  grid-column: 1 / -1;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-page-setup-fields,
+    .work-spreadsheet-header-footer-fields
+  ) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-spreadsheet-workbook-panel
+  .work-spreadsheet-header-footer-fields
+  .tokens {
+  grid-column: 1 / -1;
+}
+
+.work-spreadsheet-workbook-panel
+  .work-spreadsheet-conditional-thresholds
+  > div {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-protection-manager fieldset {
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-manager > form,
+.work-spreadsheet-workbook-panel .work-spreadsheet-pivot-manager > form,
+.work-spreadsheet-workbook-panel .work-spreadsheet-formula-manager > form {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-chart-fields,
+    .work-spreadsheet-pivot-fields,
+    .work-spreadsheet-calculation-fields
+  ) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-layout > div,
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-style > div,
+.work-spreadsheet-workbook-panel .work-spreadsheet-data-labels > div,
+.work-spreadsheet-workbook-panel .work-spreadsheet-trendlines fieldset,
+.work-spreadsheet-workbook-panel .work-spreadsheet-error-bars fieldset {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-axes > div,
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-axes fieldset {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-row,
+.work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-row.xy,
+.work-spreadsheet-workbook-panel
+  .work-spreadsheet-chart-series-row.combination {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) 26px;
+}
+
+.work-spreadsheet-workbook-panel
+  .work-spreadsheet-chart-series-row:not(.xy):not(.combination)
+  .reference {
+  grid-column: 1 / 3;
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-pivot-layout > div {
+  max-height: none;
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-pivot-field-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-pivot-field-row:last-child {
+  border-bottom: 0;
+}
+
+.work-spreadsheet-workbook-panel .work-spreadsheet-formula-manager > aside {
+  border-right: 0;
+  border-bottom: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-workbook-panel
+  :is(
+    .work-spreadsheet-chart-empty.ds-state-view,
+    .work-spreadsheet-pivot-empty.ds-state-view
+  ) {
+  min-height: 180px;
+}
+
+@media (max-width: 900px) {
+  .work-spreadsheet-workbook-panel {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(420px, calc(100% - 36px));
+    min-width: 0;
+    box-shadow: -16px 0 36px rgb(20 28 43 / 18%);
+  }
+}
+
+@media (max-width: 520px) {
+  .work-spreadsheet-workbook-panel {
+    width: 100%;
+  }
+
+  .work-spreadsheet-workbook-panel
+    :is(
+      .work-spreadsheet-name-manager,
+      .work-spreadsheet-conditional-manager,
+      .work-spreadsheet-protection-manager
+    )
+    > form,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-print-area-form,
+  .work-spreadsheet-workbook-panel
+    :is(
+      .work-spreadsheet-page-setup-fields,
+      .work-spreadsheet-header-footer-fields,
+      .work-spreadsheet-chart-fields,
+      .work-spreadsheet-pivot-fields,
+      .work-spreadsheet-calculation-fields
+    ),
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-conditional-thresholds
+    > div,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-chart-layout > div,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-style > div,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-data-labels > div,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-trendlines fieldset,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-error-bars fieldset,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-pivot-field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-row,
+  .work-spreadsheet-workbook-panel .work-spreadsheet-chart-series-row.xy,
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-chart-series-row.combination {
+    grid-template-columns: minmax(0, 1fr) 26px;
+  }
+
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-chart-series-row
+    > :not(.remove-series) {
+    grid-column: 1;
+  }
+
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-chart-series-row
+    .remove-series {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .work-spreadsheet-workbook-panel
+    :is(
+      .work-spreadsheet-name-manager,
+      .work-spreadsheet-conditional-manager,
+      .work-spreadsheet-protection-manager,
+      .work-spreadsheet-print-area-form
+    )
+    :is(.reference, .comment),
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-header-footer-fields
+    .tokens,
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-protection-manager
+    fieldset,
+  .work-spreadsheet-workbook-panel
+    .work-spreadsheet-pivot-field-row
+    .placeholder {
+    grid-column: 1;
+  }
+}
