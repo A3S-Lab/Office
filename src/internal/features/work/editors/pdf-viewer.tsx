@@ -14,7 +14,10 @@ import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-s
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
-const PDF_VIEWER_READY_TIMEOUT_MS = 20_000;
+// PDFium can take longer on its first WASM startup, especially after a fresh
+// Playground build. Keep the loading state instead of surfacing a false error
+// while the worker is still making progress.
+const PDF_VIEWER_READY_TIMEOUT_MS = 45_000;
 
 export const a3sPdfUiSchema: UISchema = {
   id: 'a3s-office-pdf',
@@ -49,6 +52,7 @@ export function PdfViewer({
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
+  const pdfRootRef = useRef<HTMLElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const controller = usePdfViewerController(registry);
   const annotation = usePdfAnnotationController(registry);
@@ -128,6 +132,7 @@ export function PdfViewer({
   useOfficeEditorKeyboardShortcuts(pdfEditor, {
     capture: true,
     enabled: Boolean(sourceUrl),
+    scopeRef: pdfRootRef,
   });
 
   if (loadError) {
@@ -161,7 +166,11 @@ export function PdfViewer({
   }
 
   return (
-    <section className="work-pdf-viewer" aria-label={`PDF 编辑器：${fileName}`}>
+    <section
+      ref={pdfRootRef}
+      className="work-pdf-viewer"
+      aria-label={`PDF 编辑器：${fileName}`}
+    >
       <PdfToolbar
         annotationState={annotation.state}
         can={pdfEditor.can()}

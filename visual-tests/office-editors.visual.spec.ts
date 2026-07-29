@@ -1,10 +1,10 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { jsPDF } from 'jspdf';
 import {
   openDocumentFixture,
   stabilizeVisualSurface,
   waitForDocumentFixture,
 } from './visual-test-support';
+import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 
 type VisualEditorKind =
   | 'document'
@@ -69,20 +69,8 @@ const fixtures: VisualFixture[] = [
   },
   {
     kind: 'pdf',
-    open: async (page) => {
-      await page
-        .locator('input[aria-label="打开 Office 或 PDF 文件"]')
-        .setInputFiles({
-          name: 'visual-fixture.pdf',
-          mimeType: 'application/pdf',
-          buffer: visualPdf(),
-        });
-    },
-    ready: async (page) => {
-      await page.locator('.work-pdf-embed[data-ready="true"]').waitFor({
-        timeout: 30_000,
-      });
-    },
+    open: openPdfFixture,
+    ready: waitForPdfFixture,
   },
 ];
 
@@ -192,6 +180,27 @@ test('PDF keeps its single compact command row at phone width', async ({
   expect(geometry.toolbarHeight).toBe(42);
   expect(geometry.toolbarTop).toBeCloseTo(geometry.headerTop, 0);
   expect(geometry.toolbarOverflowX).toBe('auto');
+});
+
+test('PDF prioritizes page and zoom controls at compact workspace width', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
+  if (!fixture) throw new Error('Missing PDF visual fixture.');
+
+  await page.setViewportSize({ width: 768, height: 800 });
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const toolbar = page.getByRole('toolbar', { name: 'PDF 工具栏' });
+  await expect(toolbar.locator('.work-pdf-save')).toBeHidden();
+  await expect(toolbar.locator('.work-pdf-page-controls')).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: '上一页' })).toBeHidden();
+  await expect(toolbar.getByRole('button', { name: '下一页' })).toBeHidden();
+  await expect(toolbar.getByRole('button', { name: '缩小' })).toBeVisible();
+  await expect(toolbar.getByRole('button', { name: '放大' })).toBeVisible();
+  await expect(toolbar.getByLabel('PDF 缩放比例')).toBeHidden();
 });
 
 test('presentation transition controls keep standard ribbon geometry', async ({
@@ -343,6 +352,36 @@ test('compact spreadsheet ribbon advances to a complete group', async ({
     .toBe(0);
 });
 
+test('compact shared ribbon tabs remain readable without overlapping labels', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'compact-768',
+    'This contract targets compact command-bar tabs.',
+  );
+  const fixture = fixtures.find(
+    (candidate) => candidate.kind === 'presentation',
+  );
+  if (!fixture) throw new Error('Missing presentation visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const tabList = page.getByRole('tablist', { name: '演示功能区' });
+  const labelsOverlap = await tabList.evaluate((element) => {
+    const labels = [
+      ...element.querySelectorAll<HTMLElement>(':scope > button > span'),
+    ]
+      .filter((label) => getComputedStyle(label).display !== 'none')
+      .map((label) => label.getBoundingClientRect());
+    return labels.some(
+      (label, index) => index > 0 && label.left < labels[index - 1].right - 0.5,
+    );
+  });
+  expect(labelsOverlap).toBe(false);
+});
+
 test('compact spreadsheet task panels stay contained and keyboard dismissible', async ({
   page,
 }, testInfo) => {
@@ -420,6 +459,9 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
   await page.getByRole('button', { name: /公式与计算/ }).click();
   await verifyPanel('公式与计算', '公式与计算内容');
 
+  await page.getByRole('button', { name: '名称管理器' }).click();
+  await verifyPanel('名称管理器', '名称管理器内容');
+
   await page.getByRole('tab', { name: '数据', exact: true }).click();
   await page.getByRole('button', { name: '数据透视表' }).click();
   await verifyPanel('数据透视表管理器', '数据透视表内容');
@@ -435,6 +477,10 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
   await page.getByRole('tab', { name: '页面布局', exact: true }).click();
   await page.getByRole('button', { name: '打印设置' }).click();
   await verifyPanel('打印设置', '打印设置内容');
+
+  await page.getByRole('tab', { name: '审阅', exact: true }).click();
+  await page.getByRole('button', { name: '工作表保护' }).click();
+  await verifyPanel('工作表保护', '工作表保护内容');
 });
 
 test('closing PDF annotation style keeps the active pen', async ({ page }) => {
@@ -451,6 +497,14 @@ test('closing PDF annotation style keeps the active pen', async ({ page }) => {
   await page.getByRole('button', { name: '批注样式' }).click();
   const style = page.getByRole('dialog', { name: '批注样式' });
   await expect(style).toBeVisible();
+  const fullOpacity = style.getByRole('radio', { name: '透明度 100%' });
+  await expect(fullOpacity).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  const reducedOpacity = style.getByRole('radio', { name: '透明度 75%' });
+  await expect(reducedOpacity).toBeFocused();
+  await expect(reducedOpacity).toBeChecked();
+  await fullOpacity.click({ timeout: 2_000 });
+  await expect(fullOpacity).toBeChecked();
   await page.keyboard.press('Escape');
 
   await expect(style).toBeHidden();
@@ -712,8 +766,7 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
   const task = page.getByRole('checkbox', {
     name: '未完成：Review the synchronized preview',
   });
-  await task.click();
-  await expect(source).toHaveValue(/- \[x\] Review the synchronized preview/);
+  await expect(task).toBeDisabled();
 
   await source.evaluate((element) => {
     element.scrollTop = (element.scrollHeight - element.clientHeight) * 0.55;
@@ -722,10 +775,23 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
   await expect
     .poll(() =>
       page
-        .getByRole('region', { name: 'Markdown 编辑结果窗格' })
+        .getByRole('region', { name: 'Markdown 预览窗格' })
         .evaluate((element) => element.scrollTop),
     )
     .toBeGreaterThan(0);
+
+  await page.getByRole('tab', { name: '视图' }).click();
+  const viewControls = page.getByRole('region', { name: '编辑方式' });
+  await viewControls.getByRole('button', { name: '编辑' }).click();
+  const editableTask = page.getByRole('checkbox', {
+    name: '未完成：Review the synchronized preview',
+  });
+  await expect(editableTask).toBeEnabled();
+  await editableTask.click();
+  await viewControls.getByRole('button', { name: '分屏' }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'Markdown 源码' }),
+  ).toHaveValue(/- \[x\] Review the synchronized preview/);
 });
 
 test('presentation transforms snap visually and commit one undo step', async ({
@@ -1223,11 +1289,10 @@ async function verifySharedEditorGeometry(
         ? '.work-pdf-toolbar'
         : '.work-office-ribbon-tabs-row',
     );
-    const center = host?.querySelector<HTMLElement>(
-      shell?.classList.contains('pdf')
-        ? '.work-pdf-toolbar > *'
-        : '.work-office-ribbon-tabs',
-    );
+    const center = shell?.classList.contains('pdf')
+      ? [...(host?.querySelectorAll<HTMLElement>('.work-pdf-toolbar > *') ?? [])]
+          .find((element) => getComputedStyle(element).display !== 'none')
+      : host?.querySelector<HTMLElement>('.work-office-ribbon-tabs');
     const pdfPageControls = host?.querySelector<HTMLElement>(
       '.work-pdf-page-controls',
     );
@@ -1347,11 +1412,14 @@ async function verifySharedEditorGeometry(
       geometry.commandEnd.left - 2,
     );
     expect(geometry.pdf.pageTotalWidth).toBeGreaterThan(0);
-    expect(geometry.pdf.nextPageWidth).toBeGreaterThan(0);
+    expect(geometry.pdf.nextPageWidth).toBe(0);
     await expect(page.locator('.work-pdf-page-total')).toBeVisible();
-    await expect(page.getByRole('button', { name: '下一页' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '上一页' })).toBeHidden();
+    await expect(page.getByRole('button', { name: '下一页' })).toBeHidden();
     await expect(page.locator('.work-pdf-history')).toBeHidden();
-    await expect(page.locator('.work-pdf-zoom-controls')).toBeHidden();
+    await expect(page.locator('.work-pdf-save')).toBeHidden();
+    await expect(page.locator('.work-pdf-zoom-controls')).toBeVisible();
+    await expect(page.getByLabel('PDF 缩放比例')).toBeHidden();
 
     await page.getByRole('button', { name: '更多 PDF 工具' }).click();
     const overflow = page.getByRole('menu', { name: '更多 PDF 工具' });
@@ -1362,6 +1430,11 @@ async function verifySharedEditorGeometry(
     }
     await page.keyboard.press('Escape');
     await expect(overflow).toBeHidden();
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
   }
 
   if (kind !== 'pdf') {
@@ -1435,42 +1508,4 @@ function previewToolbarLabel(kind: VisualEditorKind): string {
     default:
       throw new Error(`The ${kind} editor does not have a preview toolbar.`);
   }
-}
-
-function visualPdf(): Buffer {
-  const pdf = new jsPDF({
-    compress: true,
-    format: 'a4',
-    orientation: 'portrait',
-    unit: 'pt',
-  });
-  pdf.setCreationDate(new Date('2026-01-01T00:00:00.000Z'));
-  pdf.setFileId('A3S0FF1CE00000000000000000000001');
-  pdf.setProperties({
-    author: 'A3S Lab',
-    creator: 'A3S Office visual tests',
-    subject: 'Deterministic PDF editor fixture',
-    title: 'A3S Office',
-  });
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(24);
-  pdf.text('A3S Office', 72, 96);
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(12);
-  pdf.text('PDF editor visual fixture', 72, 124);
-  pdf.setDrawColor(40, 103, 216);
-  pdf.setFillColor(238, 244, 255);
-  pdf.roundedRect(72, 158, 451, 92, 8, 8, 'FD');
-  pdf.setTextColor(34, 52, 82);
-  pdf.text(
-    'Typed toolbar, PDFium canvas, annotations, search, and save.',
-    92,
-    194,
-  );
-  pdf.text(
-    'This page is generated in memory by the visual regression test.',
-    92,
-    218,
-  );
-  return Buffer.from(pdf.output('arraybuffer'));
 }

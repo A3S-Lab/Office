@@ -7,10 +7,10 @@ import type {
   WorkSlide,
 } from '../work-types';
 import {
+  CommittedOfficeTextField,
   OfficeCheckbox,
   OfficeColorPicker,
   OfficeSelect,
-  OfficeTextField,
 } from './office-controls';
 import type {
   PresentationEditorCanCommands,
@@ -150,12 +150,13 @@ export function PresentationDesignPanel({
           <strong>正在编辑布局</strong>
           <div className="work-office-field">
             <span>名称</span>
-            <OfficeTextField
+            <CommittedOfficeTextField
               aria-label="布局名称"
               value={layout.name}
-              onChange={(event) =>
-                commands.renamePresentationLayout(event.target.value)
-              }
+              maxLength={255}
+              formatValue={(name) => name}
+              parseValue={normalizePresentationDesignName}
+              onValueCommit={commands.renamePresentationLayout}
             />
           </div>
           <OfficeColorPicker
@@ -196,12 +197,13 @@ export function PresentationDesignPanel({
           <strong>正在编辑母版</strong>
           <div className="work-office-field">
             <span>名称</span>
-            <OfficeTextField
+            <CommittedOfficeTextField
               aria-label="母版名称"
               value={master.name}
-              onChange={(event) =>
-                commands.renamePresentationMaster(event.target.value)
-              }
+              maxLength={255}
+              formatValue={(name) => name}
+              parseValue={normalizePresentationDesignName}
+              onValueCommit={commands.renamePresentationMaster}
             />
           </div>
           <OfficeColorPicker
@@ -223,6 +225,11 @@ export function PresentationDesignPanel({
       )}
     </section>
   );
+}
+
+function normalizePresentationDesignName(draft: string): string | null {
+  const name = draft.trim().slice(0, 255);
+  return name || null;
 }
 
 function PlaceholderButtons({

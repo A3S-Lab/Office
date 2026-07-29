@@ -12,7 +12,7 @@ import type {
 import { DocumentColumnsPanel } from './document-columns-panel';
 import { DocumentPageChromePanel } from './document-page-chrome-panel';
 import { DocumentTaskPane } from './document-task-pane';
-import { OfficeNumberField, OfficeSelect } from './office-controls';
+import { CommittedOfficeNumberField, OfficeSelect } from './office-controls';
 
 type DocumentLayoutPanelTab = 'columns' | 'headerFooter' | 'page';
 
@@ -122,17 +122,18 @@ export function DocumentLayoutPanel({
                 {marginFields.map(([side, label]) => (
                   <div className="work-office-field" key={side}>
                     <span>{label}</span>
-                    <OfficeNumberField
+                    <CommittedOfficeNumberField
                       min={5}
                       max={60}
                       step={1}
                       ariaLabel={`${label}页边距`}
                       value={layout.margins[side]}
-                      onValueChange={(value) =>
+                      normalizeValue={normalizeDocumentMarginInput}
+                      onValueCommit={(value) =>
                         update({
                           margins: {
                             ...layout.margins,
-                            [side]: clampDocumentMargin(Number(value)),
+                            [side]: value,
                           },
                         })
                       }
@@ -208,19 +209,13 @@ export function DocumentLayoutPanel({
             />
             <div className="work-office-field work-document-page-number-option">
               <span>本节页码从</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 min={1}
                 max={9999}
                 ariaLabel="起始页码"
                 value={Math.max(1, layout.pageNumberStart ?? 1)}
-                onValueChange={(value) =>
-                  update({
-                    pageNumberStart: Math.min(
-                      9999,
-                      Math.max(1, Math.round(Number(value) || 1)),
-                    ),
-                  })
-                }
+                normalizeValue={normalizeDocumentPageNumberInput}
+                onValueCommit={(pageNumberStart) => update({ pageNumberStart })}
               />
               <span>开始</span>
             </div>
@@ -229,4 +224,18 @@ export function DocumentLayoutPanel({
       </div>
     </DocumentTaskPane>
   );
+}
+
+function normalizeDocumentMarginInput(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? clampDocumentMargin(number) : null;
+}
+
+function normalizeDocumentPageNumberInput(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(9999, Math.max(1, Math.round(number)))
+    : null;
 }

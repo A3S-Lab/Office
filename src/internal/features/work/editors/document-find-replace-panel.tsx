@@ -15,12 +15,14 @@ interface DocumentTextMatch {
 export function DocumentFindReplacePanel({
   editor,
   mode,
+  focusRequest = 0,
   onModeChange,
   onReplaceText,
   onClose,
 }: {
   editor: Editor;
   mode: DocumentFindReplaceMode;
+  focusRequest?: number;
   onModeChange: (mode: DocumentFindReplaceMode) => void;
   onReplaceText: (from: number, to: number, replacement: string) => boolean;
   onClose: () => void;
@@ -41,7 +43,7 @@ export function DocumentFindReplacePanel({
   useEffect(() => {
     queryRef.current?.focus({ preventScroll: true });
     queryRef.current?.select();
-  }, []);
+  }, [focusRequest, mode]);
 
   useEffect(() => {
     setActiveIndex((current) =>

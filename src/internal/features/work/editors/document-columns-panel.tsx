@@ -4,7 +4,7 @@ import {
   updateDocumentColumnWidth,
 } from '../work-document-columns';
 import type { WorkDocumentColumns } from '../work-types';
-import { OfficeCheckbox, OfficeNumberField } from './office-controls';
+import { CommittedOfficeNumberField, OfficeCheckbox } from './office-controls';
 
 export function DocumentColumnsPanel({
   columns,
@@ -32,17 +32,18 @@ export function DocumentColumnsPanel({
       <legend>分栏</legend>
       <div className="work-office-field">
         <span>栏数</span>
-        <OfficeNumberField
+        <CommittedOfficeNumberField
           min={1}
           max={6}
           step={1}
           ariaLabel="分栏数量"
           value={normalized.count}
-          onValueChange={(value) =>
+          normalizeValue={(value) => normalizeRequiredInteger(value, 1, 6)}
+          onValueCommit={(count) =>
             onChange(
               normalizeDocumentColumns({
                 ...normalized,
-                count: Number(value),
+                count,
               }),
             )
           }
@@ -51,17 +52,18 @@ export function DocumentColumnsPanel({
       {!normalized.custom && (
         <div className="work-office-field">
           <span>间距</span>
-          <OfficeNumberField
+          <CommittedOfficeNumberField
             min={0}
             max={30}
             step={0.5}
             ariaLabel="分栏间距"
             value={normalized.spacing}
-            onValueChange={(value) =>
+            normalizeValue={(value) => normalizeRequiredDecimal(value, 0, 30)}
+            onValueCommit={(spacing) =>
               onChange(
                 normalizeDocumentColumns({
                   ...normalized,
-                  spacing: Number(value),
+                  spacing,
                 }),
               )
             }
@@ -99,18 +101,25 @@ export function DocumentColumnsPanel({
               <strong>第 {index + 1} 栏</strong>
               <div className="work-office-field">
                 <span>宽度 %</span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   min={5}
                   max={100 - (normalized.count - 1) * 5}
                   step={0.5}
                   ariaLabel={`第 ${index + 1} 栏宽度百分比`}
                   value={column.widthPercent}
-                  onValueChange={(value) =>
+                  normalizeValue={(value) =>
+                    normalizeRequiredDecimal(
+                      value,
+                      5,
+                      100 - (normalized.count - 1) * 5,
+                    )
+                  }
+                  onValueCommit={(widthPercent) =>
                     onChange(
                       updateDocumentColumnWidth(
                         normalized,
                         index,
-                        Number(value),
+                        widthPercent,
                       ),
                     )
                   }
@@ -119,14 +128,17 @@ export function DocumentColumnsPanel({
               {index < custom.length - 1 && (
                 <div className="work-office-field">
                   <span>栏后间距</span>
-                  <OfficeNumberField
+                  <CommittedOfficeNumberField
                     min={0}
                     max={30}
                     step={0.5}
                     ariaLabel={`第 ${index + 1} 栏后间距`}
                     value={column.spacing}
-                    onValueChange={(value) =>
-                      updateCustomSpacing(index, Number(value))
+                    normalizeValue={(value) =>
+                      normalizeRequiredDecimal(value, 0, 30)
+                    }
+                    onValueCommit={(spacing) =>
+                      updateCustomSpacing(index, spacing)
                     }
                   />
                 </div>
@@ -141,4 +153,28 @@ export function DocumentColumnsPanel({
       )}
     </fieldset>
   );
+}
+
+function normalizeRequiredInteger(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : null;
+}
+
+function normalizeRequiredDecimal(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number * 10) / 10))
+    : null;
 }

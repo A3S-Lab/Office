@@ -25,7 +25,9 @@ export interface PresentationEditorCommands {
   alignElement: (
     alignment: OfficeKernelPresentationAlignment,
   ) => PresentationCommandResult;
-  applyTransitionToAll: () => PresentationCommandResult;
+  applyTransitionToAll: (
+    transition: WorkSlideTransition | undefined,
+  ) => PresentationCommandResult;
   applyPresentationLayout: (layoutId: string) => PresentationCommandResult;
   closeComments: () => PresentationCommandResult;
   closeDesign: () => PresentationCommandResult;
@@ -89,6 +91,8 @@ export interface PresentationEditorCommands {
     source: PresentationSlideshowStart,
   ) => PresentationCommandResult;
   toggleBold: () => boolean;
+  toggleItalic: () => boolean;
+  toggleUnderline: () => boolean;
   toggleComments: () => PresentationCommandResult;
   toggleDesign: () => PresentationCommandResult;
   togglePresentationLayoutBackground: (
@@ -136,10 +140,17 @@ export interface PresentationClipboardCommandPort {
 }
 
 export interface PresentationSlideCommandPort {
+  canAddSlide: boolean;
+  canApplyTransitionToAll: (
+    transition: WorkSlideTransition | undefined,
+  ) => boolean;
   canDeleteSlide: boolean;
   canDuplicateSlide: boolean;
+  canSetTransition: boolean;
   addSlide: () => PresentationCommandResult;
-  applyTransitionToAll: () => PresentationCommandResult;
+  applyTransitionToAll: (
+    transition: WorkSlideTransition | undefined,
+  ) => PresentationCommandResult;
   deleteSlide: () => PresentationCommandResult;
   deleteSlideById: (slideId: string) => boolean;
   duplicateSlide: () => PresentationCommandResult;
@@ -214,6 +225,8 @@ export interface PresentationSelectionCommandPort {
   canExitEditing: boolean;
   canNudgeSelection: boolean;
   canToggleBold: boolean;
+  canToggleItalic: boolean;
+  canToggleUnderline: boolean;
   deleteSelection: () => boolean;
   duplicateSelection: () => boolean;
   editElement: (id: string) => void;
@@ -222,6 +235,8 @@ export interface PresentationSelectionCommandPort {
   selectElement: (elementId: string | null, additive: boolean) => void;
   selectElements: (ids: readonly string[]) => void;
   toggleBold: () => boolean;
+  toggleItalic: () => boolean;
+  toggleUnderline: () => boolean;
 }
 
 export interface PresentationReviewCommandPort {

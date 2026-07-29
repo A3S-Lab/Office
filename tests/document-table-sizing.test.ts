@@ -4,6 +4,34 @@ import { createWorkDocumentExtensions } from '../src/internal/features/work/work
 import { documentTableSizing } from '../src/internal/features/work/work-document-table-sizing';
 
 describe('document table sizing', () => {
+  test('sizes the complete table from a whole-table node selection', () => {
+    const editor = createSizingEditor();
+    editor.commands.setNodeSelection(firstTablePosition(editor));
+
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      selectedColumnCount: 2,
+      selectedRowCount: 3,
+    });
+    expect(editor.commands.setDocumentTableColumnWidth(150)).toBe(true);
+    expect(tableColumnWidths(editor)).toEqual([
+      [150, 150],
+      [150, 150],
+      [150, 150],
+    ]);
+    expect(editor.state.selection.toJSON()).toMatchObject({ type: 'node' });
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      selectedRowCount: 3,
+    });
+    expect(editor.commands.setDocumentTableRowHeight(42, 'exact')).toBe(true);
+    expect(tableRowAttributes(editor)).toEqual(
+      Array.from({ length: 3 }, () =>
+        expect.objectContaining({ rowHeight: 42, rowHeightRule: 'exact' }),
+      ),
+    );
+
+    editor.destroy();
+  });
+
   test('keeps table layout, physical column widths, and row heights in HTML', () => {
     const editor = createSizingEditor();
     editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
@@ -229,4 +257,14 @@ function tableCellPositions(editor: Editor): number[] {
     return true;
   });
   return positions;
+}
+
+function firstTablePosition(editor: Editor): number {
+  let position: number | null = null;
+  editor.state.doc.descendants((node, offset) => {
+    if (position === null && node.type.name === 'table') position = offset;
+    return position === null;
+  });
+  if (position === null) throw new Error('Expected a table node.');
+  return position;
 }

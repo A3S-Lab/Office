@@ -480,6 +480,7 @@
   width: 100%;
 }
 
+.work-document-pagination-reset,
 .work-document-paragraph-spacing-reset {
   justify-self: end;
   padding: 4px 7px;
@@ -492,13 +493,21 @@
   cursor: pointer;
 }
 
-.work-document-paragraph-spacing-reset:hover {
+.work-document-pagination-reset:hover:not(:disabled),
+.work-document-paragraph-spacing-reset:hover:not(:disabled) {
   background: color-mix(in srgb, var(--a3s-blue) 8%, transparent);
 }
 
+.work-document-pagination-reset:focus-visible,
 .work-document-paragraph-spacing-reset:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--a3s-blue) 65%, transparent);
   outline-offset: 1px;
+}
+
+.work-document-pagination-reset:disabled,
+.work-document-paragraph-spacing-reset:disabled {
+  cursor: default;
+  opacity: 0.42;
 }
 
 .work-document-ribbon .work-document-font-tools button:not([role="combobox"]),

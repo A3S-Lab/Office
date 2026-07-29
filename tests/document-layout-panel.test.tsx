@@ -1,5 +1,6 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { DocumentLayoutPanel } from '../src/internal/features/work/editors/document-layout-panel';
 import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
 
@@ -68,4 +69,83 @@ test('keeps page changes controlled inside the active tab', () => {
   fireEvent.click(screen.getByRole('option', { name: '横向' }));
 
   expect(changes).toEqual([{ ...layout, orientation: 'landscape' }]);
+});
+
+test('commits page measurements only after a complete value', () => {
+  const changes: WorkDocumentSectionLayout[] = [];
+
+  function Fixture() {
+    const [current, setCurrent] = useState(layout);
+    return (
+      <DocumentLayoutPanel
+        layout={current}
+        sectionIndex={0}
+        sectionCount={1}
+        onChange={(next) => {
+          changes.push(next);
+          setCurrent(next);
+        }}
+        onInsertSection={() => undefined}
+        onMergeSection={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+  }
+
+  render(<Fixture />);
+  const topMargin = screen.getByRole('textbox', { name: '上页边距' });
+  fireEvent.change(topMargin, { target: { value: '' } });
+  expect(topMargin).toHaveValue('');
+  expect(changes).toEqual([]);
+
+  fireEvent.blur(topMargin);
+  expect(topMargin).toHaveValue('25');
+  expect(changes).toEqual([]);
+
+  fireEvent.change(topMargin, { target: { value: '42.' } });
+  expect(changes).toEqual([]);
+  fireEvent.keyDown(topMargin, { key: 'Enter' });
+  expect(topMargin).toHaveValue('42');
+  expect(changes.at(-1)?.margins.top).toBe(42);
+
+  fireEvent.change(topMargin, { target: { value: '16' } });
+  fireEvent.keyDown(topMargin, { key: 'Escape' });
+  expect(topMargin).toHaveValue('42');
+  expect(changes).toHaveLength(1);
+});
+
+test('keeps an incomplete starting page number out of the section model', () => {
+  const changes: WorkDocumentSectionLayout[] = [];
+
+  function Fixture() {
+    const [current, setCurrent] = useState(layout);
+    return (
+      <DocumentLayoutPanel
+        layout={current}
+        sectionIndex={0}
+        sectionCount={1}
+        onChange={(next) => {
+          changes.push(next);
+          setCurrent(next);
+        }}
+        onInsertSection={() => undefined}
+        onMergeSection={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+  }
+
+  render(<Fixture />);
+  fireEvent.click(screen.getByRole('tab', { name: '页眉页脚' }));
+  const start = screen.getByRole('textbox', { name: '起始页码' });
+  fireEvent.change(start, { target: { value: '' } });
+  expect(changes).toEqual([]);
+  fireEvent.blur(start);
+  expect(start).toHaveValue('1');
+  expect(changes).toEqual([]);
+
+  fireEvent.change(start, { target: { value: '12.6' } });
+  fireEvent.keyDown(start, { key: 'Enter' });
+  expect(start).toHaveValue('13');
+  expect(changes.at(-1)?.pageNumberStart).toBe(13);
 });

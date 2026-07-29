@@ -19,7 +19,9 @@ test('edits typed paragraph pagination properties from an accessible popover', a
   });
 
   render(<DocumentPaginationPopover editor={editor} />);
-  fireEvent.click(screen.getByRole('button', { name: '段落分页' }));
+  const trigger = screen.getByRole('button', { name: '段落分页' });
+  expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.click(trigger);
 
   expect(
     screen.getByRole('dialog', { name: '段落分页选项' }),
@@ -34,7 +36,14 @@ test('edits typed paragraph pagination properties from an accessible popover', a
     screen.getByRole('checkbox', { name: '避免页首、页尾单行' }),
   ).toBeChecked();
 
-  fireEvent.click(screen.getByRole('checkbox', { name: '段落不跨页' }));
+  const keepLines = screen.getByRole('checkbox', { name: '段落不跨页' });
+  fireEvent.click(keepLines);
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-pressed', 'true'));
+  expect(editor.getHTML()).toContain('data-office-keep-lines="true"');
+  expect(editor.getHTML()).not.toContain('data-office-keep-with-next');
+  expect(editor.getHTML()).not.toContain('data-office-page-break-before');
+  expect(editor.getHTML()).not.toContain('data-office-widow-control');
+
   fireEvent.click(screen.getByRole('checkbox', { name: '与下一段同页' }));
   fireEvent.click(screen.getByRole('checkbox', { name: '段前另起一页' }));
   fireEvent.click(screen.getByRole('checkbox', { name: '避免页首、页尾单行' }));
@@ -43,4 +52,22 @@ test('edits typed paragraph pagination properties from an accessible popover', a
   expect(editor.getHTML()).toContain('data-office-keep-with-next="true"');
   expect(editor.getHTML()).toContain('data-office-page-break-before="true"');
   expect(editor.getHTML()).toContain('data-office-widow-control="false"');
+
+  const reset = screen.getByRole('button', { name: '恢复默认分页规则' });
+  expect(reset).toBeEnabled();
+  fireEvent.click(reset);
+
+  await waitFor(() => expect(trigger).toHaveAttribute('aria-pressed', 'false'));
+  expect(keepLines).not.toBeChecked();
+  expect(
+    screen.getByRole('checkbox', { name: '与下一段同页' }),
+  ).not.toBeChecked();
+  expect(
+    screen.getByRole('checkbox', { name: '段前另起一页' }),
+  ).not.toBeChecked();
+  expect(
+    screen.getByRole('checkbox', { name: '避免页首、页尾单行' }),
+  ).toBeChecked();
+  expect(reset).toBeDisabled();
+  expect(editor.getHTML()).toBe('<p>A3S Office</p>');
 });

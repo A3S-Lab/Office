@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { clonePresentationSlideForPaste } from '../work-presentation-clipboard';
+import { workSlideTransitionsEqual } from '../work-presentation-transition';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -13,11 +14,16 @@ import {
 
 export interface PresentationSlideCommands {
   addSlide: () => void;
-  applyTransitionToAll: () => void;
+  applyTransitionToAll: (
+    transition: WorkSlideTransition | undefined,
+  ) => boolean;
+  canApplyTransitionToAll: (
+    transition: WorkSlideTransition | undefined,
+  ) => boolean;
   deleteSlide: () => boolean;
   deleteSlideById: (slideId: string) => boolean;
   duplicateSlide: () => void;
-  setTransition: (transition: WorkSlideTransition | undefined) => void;
+  setTransition: (transition: WorkSlideTransition | undefined) => boolean;
   updateNotes: (notes: string) => void;
 }
 
@@ -75,28 +81,43 @@ export function usePresentationSlideCommands({
     [deleteSlideById, selectedSlide.id],
   );
 
-  const applyTransitionToAll = useCallback(() => {
-    onChange({
-      ...content,
-      slides: content.slides.map((slide) => ({
-        ...slide,
-        transition: selectedSlide.transition
-          ? structuredCopy(selectedSlide.transition)
-          : undefined,
-      })),
-    });
-  }, [content, onChange, selectedSlide.transition]);
+  const canApplyTransitionToAll = useCallback(
+    (transition: WorkSlideTransition | undefined) =>
+      content.slides.some(
+        (slide) => !workSlideTransitionsEqual(slide.transition, transition),
+      ),
+    [content.slides],
+  );
+
+  const applyTransitionToAll = useCallback(
+    (transition: WorkSlideTransition | undefined): boolean => {
+      if (!canApplyTransitionToAll(transition)) return false;
+      onChange({
+        ...content,
+        slides: content.slides.map((slide) => ({
+          ...slide,
+          transition: transition ? structuredCopy(transition) : undefined,
+        })),
+      });
+      return true;
+    },
+    [canApplyTransitionToAll, content, onChange],
+  );
 
   const setTransition = useCallback(
     (transition: WorkSlideTransition | undefined) => {
+      if (workSlideTransitionsEqual(selectedSlide.transition, transition)) {
+        return false;
+      }
       updateSlide(
         content,
         selectedSlide.id,
         (slide) => ({ ...slide, transition }),
         onChange,
       );
+      return true;
     },
-    [content, onChange, selectedSlide.id],
+    [content, onChange, selectedSlide.id, selectedSlide.transition],
   );
 
   const updateNotes = useCallback(
@@ -114,6 +135,7 @@ export function usePresentationSlideCommands({
   return {
     addSlide,
     applyTransitionToAll,
+    canApplyTransitionToAll,
     deleteSlide,
     deleteSlideById,
     duplicateSlide,

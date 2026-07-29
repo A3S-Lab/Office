@@ -1,6 +1,9 @@
 import { expect, test } from '@rstest/core';
 import { act, renderHook } from '@testing-library/react';
-import { sameSpreadsheetHistoryContent } from '../src/internal/features/work/editors/spreadsheet-editor-support';
+import {
+  sameSpreadsheetHistoryContent,
+  spreadsheetContentWithSelection,
+} from '../src/internal/features/work/editors/spreadsheet-editor-support';
 import { useOfficeHistory } from '../src/internal/features/work/editors/use-office-history';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
 
@@ -59,6 +62,59 @@ test('undo skips the intermediate formula-cache state', () => {
   expect(result.current.canUndo).toBe(true);
   act(() => expect(result.current.undo()).toBe(true));
   expect(changes).toEqual([initial]);
+});
+
+test('undo skips derived Fortune sheet payloads after a format change', () => {
+  const initial = workbook();
+  const formatted = structuredClone(initial);
+  const formattedCell = formatted.sheets[0]?.data?.[0]?.[0];
+  if (!formattedCell) throw new Error('Spreadsheet fixture is missing.');
+  formattedCell.bl = 1;
+  formatted.sheets[0].celldata = [
+    { r: 0, c: 0, v: structuredClone(formattedCell) },
+  ];
+  const normalized = structuredClone(formatted);
+  delete normalized.sheets[0].celldata;
+  normalized.sheets[0].luckysheet_select_save = [
+    { row: [0, 0], column: [0, 0] },
+  ];
+  const changes: WorkSpreadsheetContent[] = [];
+  const { result, rerender } = renderHook(
+    ({ value }) =>
+      useOfficeHistory({
+        content: value,
+        onChange: (next) => changes.push(next),
+        sameValue: sameSpreadsheetHistoryContent,
+      }),
+    { initialProps: { value: initial } },
+  );
+
+  rerender({ value: formatted });
+  rerender({ value: normalized });
+
+  expect(result.current.canUndo).toBe(true);
+  act(() => expect(result.current.undo()).toBe(true));
+  expect(changes).toEqual([initial]);
+});
+
+test('preserves the live cell selection when applying spreadsheet history', () => {
+  const initial = workbook();
+  const selected = spreadsheetContentWithSelection(initial, 'sheet-1', {
+    row: [10, 10],
+    column: [5, 5],
+    row_focus: 10,
+    column_focus: 5,
+  });
+
+  expect(initial.sheets[0].luckysheet_select_save).toBeUndefined();
+  expect(selected.sheets[0].luckysheet_select_save).toEqual([
+    {
+      row: [10, 10],
+      column: [5, 5],
+      row_focus: 10,
+      column_focus: 5,
+    },
+  ]);
 });
 
 function workbook(): WorkSpreadsheetContent {

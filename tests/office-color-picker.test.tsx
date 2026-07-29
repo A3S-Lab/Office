@@ -51,3 +51,33 @@ test('shows a readable custom-color preview before applying a valid value', () =
   fireEvent.click(apply);
   expect(selected).toEqual(['#fff2cc']);
 });
+
+test('discards an unapplied custom color when the palette is reopened', async () => {
+  render(
+    <OfficeColorPicker
+      ariaLabel="文字颜色"
+      value="#111827"
+      onValueChange={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '文字颜色' });
+  fireEvent.click(trigger);
+  const input = screen.getByRole('textbox', { name: '自定义颜色值' });
+  fireEvent.change(input, { target: { value: '#not-a-color' } });
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+
+  fireEvent.keyDown(input, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '文字颜色' })).toBeNull();
+  expect(trigger).toHaveFocus();
+
+  fireEvent.click(trigger);
+  await waitFor(() =>
+    expect(screen.getByRole('textbox', { name: '自定义颜色值' })).toHaveValue(
+      '#111827',
+    ),
+  );
+  expect(
+    screen.getByRole('textbox', { name: '自定义颜色值' }),
+  ).not.toHaveAttribute('aria-invalid');
+});

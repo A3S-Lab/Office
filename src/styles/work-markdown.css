@@ -270,6 +270,11 @@
   .work-markdown-canvas
   .tiptap
   li[data-type="taskItem"]
+  > label,
+.work-markdown-pane.visual[data-readonly="true"]
+  .work-markdown-canvas
+  .tiptap
+  li[data-type="taskItem"]
   > label {
   cursor: default;
 }
@@ -409,7 +414,10 @@
   border-color: transparent;
 }
 
-.work-markdown-editor.preview .work-markdown-canvas .tiptap {
+.work-markdown-editor.preview .work-markdown-canvas .tiptap,
+.work-markdown-pane.visual[data-readonly="true"]
+  .work-markdown-canvas
+  .tiptap {
   cursor: default;
 }
 

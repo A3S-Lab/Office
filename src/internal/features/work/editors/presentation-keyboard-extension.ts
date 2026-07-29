@@ -32,13 +32,13 @@ export function createPresentationKeyboardExtension(): OfficeEditorExtension<
         commands.startSlideshow('beginning');
         return true;
       },
-      'Control-m': ({ commands }, event) => {
-        if (presentationShortcutBlocked(event)) return false;
+      'Control-m': ({ can, commands }, event) => {
+        if (presentationShortcutBlocked(event) || !can.addSlide()) return false;
         commands.addSlide();
         return true;
       },
-      'Meta-Shift-n': ({ commands }, event) => {
-        if (presentationShortcutBlocked(event)) return false;
+      'Meta-Shift-n': ({ can, commands }, event) => {
+        if (presentationShortcutBlocked(event) || !can.addSlide()) return false;
         commands.addSlide();
         return true;
       },
@@ -77,6 +77,20 @@ export function createPresentationKeyboardExtension(): OfficeEditorExtension<
           context.keyboard.selectedElementCount,
           can.toggleBold,
           commands.toggleBold,
+        ),
+      'Mod-i': ({ can, commands, context }, event) =>
+        runPresentationObjectShortcut(
+          event,
+          context.keyboard.selectedElementCount,
+          can.toggleItalic,
+          commands.toggleItalic,
+        ),
+      'Mod-u': ({ can, commands, context }, event) =>
+        runPresentationObjectShortcut(
+          event,
+          context.keyboard.selectedElementCount,
+          can.toggleUnderline,
+          commands.toggleUnderline,
         ),
       'Mod-z': ({ can, commands }, event) =>
         runPresentationHistoryShortcut(event, can.undo, commands.undo),

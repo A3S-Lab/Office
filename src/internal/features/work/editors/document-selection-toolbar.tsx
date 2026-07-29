@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import {
-  documentFontFamilyOptions,
+  documentFontFamilyOptionsForValue,
   documentFontFamilyValue,
-  documentFontSizeOptions,
+  documentFontSizeOptionsForValue,
   documentFontSizeValue,
 } from './document-formatting-options';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
@@ -40,6 +40,8 @@ export function DocumentSelectionToolbar({
   onInsertComment: () => void;
 }) {
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const fontFamilyValue = documentFontFamilyValue(editor);
+  const fontSizeValue = documentFontSizeValue(editor);
 
   useEffect(() => {
     const hideOutsideInteraction = (event: FocusEvent | PointerEvent) => {
@@ -98,8 +100,8 @@ export function DocumentSelectionToolbar({
       <OfficeSelect
         ariaLabel="快捷字体"
         className="work-document-selection-font-family"
-        value={documentFontFamilyValue(editor)}
-        options={documentFontFamilyOptions}
+        value={fontFamilyValue}
+        options={documentFontFamilyOptionsForValue(fontFamilyValue)}
         onValueChange={(value) => {
           if (value === 'default')
             editor.chain().focus().unsetFontFamily().run();
@@ -109,8 +111,8 @@ export function DocumentSelectionToolbar({
       <OfficeSelect
         ariaLabel="快捷字号"
         className="work-document-selection-font-size"
-        value={documentFontSizeValue(editor)}
-        options={documentFontSizeOptions}
+        value={fontSizeValue}
+        options={documentFontSizeOptionsForValue(fontSizeValue)}
         onValueChange={(value) => {
           if (value === 'default') editor.chain().focus().unsetFontSize().run();
           else editor.chain().focus().setFontSize(value).run();

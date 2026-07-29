@@ -99,7 +99,7 @@ test('document list libraries keep styles and numbering settings in context', as
   ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(bulletLibrary).toBeHidden();
-  await expect(bulletTrigger).toBeFocused();
+  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
   await expect(bulletItem.locator('xpath=ancestor::ul[1]')).toHaveAttribute(
     'data-office-bullet-style',
     'circle',
@@ -139,6 +139,7 @@ test('document list libraries keep styles and numbering settings in context', as
   await start.fill('4');
   await numberingLibrary.getByRole('button', { name: '应用起始值' }).click();
   await expect(numberingLibrary).toBeHidden();
+  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
   await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
     'start',
     '4',

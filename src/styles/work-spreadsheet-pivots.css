@@ -2,6 +2,10 @@
   display: grid;
   grid-template-columns: minmax(190px, 230px) minmax(860px, 1fr);
   min-height: 214px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .work-spreadsheet-pivot-manager > aside {

@@ -77,7 +77,15 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
   await page.getByRole('tab', { name: '表格布局' }).click();
 
   const width = page.getByRole('textbox', { name: '列宽（厘米）' });
-  await width.scrollIntoViewIfNeeded();
+  await revealRibbonControl(page, '表格布局', width);
+  const initialWidth = await width.inputValue();
+  await width.fill('8.5');
+  await expect(width).toHaveAttribute('data-office-escape-consumer', 'true');
+  await width.press('Escape');
+  await expect(width).toHaveValue(initialWidth);
+  await expect(width).not.toHaveAttribute('data-office-escape-consumer');
+  await expect(width).toBeFocused();
+
   await width.fill('3.2');
   await width.press('Enter');
 
@@ -110,7 +118,7 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
   const distributeRows = page.getByRole('button', {
     name: '平均分布行',
   });
-  await distributeRows.scrollIntoViewIfNeeded();
+  await revealRibbonControl(page, '表格布局', distributeRows);
   await distributeRows.click();
   await expect(table.locator('tr').first()).toHaveAttribute(
     'data-office-row-height',
@@ -118,7 +126,7 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
   );
 
   const autofit = page.getByRole('combobox', { name: '表格自动调整' });
-  await autofit.scrollIntoViewIfNeeded();
+  await revealRibbonControl(page, '表格布局', autofit);
   await autofit.click();
   await page.getByRole('option', { name: '适应内容' }).click();
   await expect(table).toHaveAttribute('data-office-table-layout', 'contents');
@@ -131,3 +139,78 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
     )
     .toBe('');
 });
+
+test('table contextual tabs clean up after deletion through real ribbon overflow', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  const body = page.getByRole('textbox', { name: '文档正文' });
+  await page.locator('.work-document-editable .ProseMirror p').first().click();
+  await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '插入表格' }).click();
+  await page
+    .getByRole('dialog', { name: '选择表格大小' })
+    .getByRole('button', { name: '2 行 2 列' })
+    .click();
+  await page.getByRole('tab', { name: '表格布局' }).click();
+
+  const deleteTable = page.getByRole('button', { name: '删除表格' });
+  await revealRibbonControl(page, '表格布局', deleteTable);
+  await deleteTable.click();
+
+  await expect(
+    page.locator('.work-document-editable .ProseMirror table'),
+  ).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '表格设计' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '表格布局' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '开始' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(body).toBeFocused();
+});
+
+async function revealRibbonControl(
+  page: import('@playwright/test').Page,
+  tabLabel: string,
+  control: import('@playwright/test').Locator,
+): Promise<void> {
+  const toolbar = page.getByRole('toolbar', { name: `${tabLabel}工具栏` });
+  await expect(toolbar).toBeVisible();
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (await ribbonControlIsReachable(control)) return;
+    const next = page.getByRole('button', {
+      name: `向右查看更多${tabLabel}工具`,
+    });
+    await expect(next).toBeVisible();
+    const previousScroll = await toolbar.evaluate((element) =>
+      Math.round(element.scrollLeft),
+    );
+    await next.click();
+    await expect
+      .poll(() =>
+        toolbar.evaluate((element) => Math.round(element.scrollLeft)),
+      )
+      .toBeGreaterThan(previousScroll);
+  }
+  throw new Error(`${tabLabel}中的目标控件无法通过功能区导航到达。`);
+}
+
+async function ribbonControlIsReachable(
+  control: import('@playwright/test').Locator,
+): Promise<boolean> {
+  return control.evaluate((element) => {
+    const toolbar = element.closest('.work-office-toolbar');
+    if (!(toolbar instanceof HTMLElement)) return false;
+    const controlBounds = element.getBoundingClientRect();
+    const toolbarBounds = toolbar.getBoundingClientRect();
+    const safeInset = toolbar.dataset.hasOverflow ? 34 : 0;
+    return (
+      controlBounds.left >= toolbarBounds.left + safeInset &&
+      controlBounds.right <= toolbarBounds.right - safeInset
+    );
+  });
+}

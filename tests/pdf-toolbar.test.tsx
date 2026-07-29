@@ -1,12 +1,18 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { createRef } from 'react';
+import type { PdfAnnotationController } from '../src/internal/features/work/editors/pdf-annotation-controller';
 import type {
   PdfEditorCanCommands,
   PdfEditorCommands,
 } from '../src/internal/features/work/editors/pdf-editor-extensions';
 import { PdfToolbar } from '../src/internal/features/work/editors/pdf-toolbar';
-import type { PdfAnnotationController } from '../src/internal/features/work/editors/pdf-annotation-controller';
 import type {
   PdfViewerController,
   PdfViewerControllerState,
@@ -43,8 +49,8 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   fireEvent.click(screen.getByRole('button', { name: '放大' }));
   fireEvent.click(screen.getByRole('button', { name: '整页' }));
   fireEvent.click(screen.getByRole('button', { name: '批注样式' }));
-  fireEvent.click(screen.getByRole('button', { name: '透明度 50%' }));
-  fireEvent.click(screen.getByRole('button', { name: '线宽 4' }));
+  fireEvent.click(screen.getByRole('radio', { name: '透明度 50%' }));
+  fireEvent.click(screen.getByRole('radio', { name: '线宽 4' }));
 
   fireEvent.change(screen.getByRole('searchbox', { name: '在 PDF 中搜索' }), {
     target: { value: '架构' },
@@ -72,6 +78,85 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   expect(screen.getByText('/ 8')).toBeInTheDocument();
 });
 
+test('keeps read-only PDF chrome free of edit-only commands', () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable={false}
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  expect(screen.queryByRole('button', { name: '保存' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '撤销' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '重做' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '选择' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '高亮' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  const menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  expect(within(menu).queryByRole('menuitem', { name: '撤销' })).toBeNull();
+  expect(
+    within(menu).queryByRole('menuitemradio', { name: '下划线批注' }),
+  ).toBeNull();
+  expect(within(menu).getByRole('menuitem', { name: '下一页' })).toBeEnabled();
+  expect(within(menu).getByRole('menuitem', { name: '放大' })).toBeEnabled();
+});
+
+test('advertises only shortcuts implemented by the PDF command surface', () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const shortcuts = [
+    ['保存', 'Control+S Meta+S'],
+    ['撤销', 'Control+Z Meta+Z'],
+    ['重做', 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y'],
+    ['在 PDF 中搜索', 'Control+F Meta+F'],
+    ['缩小', 'Control+- Meta+-'],
+    ['放大', 'Control+= Meta+= Control+Shift++ Meta+Shift++'],
+    ['整页', 'Control+0 Meta+0'],
+    ['删除所选批注', 'Delete Backspace'],
+  ] as const;
+  for (const [name, shortcut] of shortcuts) {
+    expect(
+      screen.getByRole(name === '在 PDF 中搜索' ? 'searchbox' : 'button', {
+        name,
+      }),
+    ).toHaveAttribute('aria-keyshortcuts', shortcut);
+  }
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  const menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  expect(within(menu).getByRole('menuitem', { name: '撤销' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Z Meta+Z',
+  );
+  expect(
+    within(menu).getByRole('menuitemradio', { name: '整页' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+0 Meta+0');
+});
+
 test('keeps compact PDF actions reachable from the more-tools menu', () => {
   const calls: string[] = [];
   const controller = createController(calls);
@@ -92,11 +177,13 @@ test('keeps compact PDF actions reachable from the more-tools menu', () => {
 
   fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
   let menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
-  fireEvent.click(within(menu).getByRole('menuitem', { name: '下划线批注' }));
+  fireEvent.click(
+    within(menu).getByRole('menuitemradio', { name: '下划线批注' }),
+  );
 
   fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
   menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
-  fireEvent.click(within(menu).getByRole('menuitem', { name: '页宽' }));
+  fireEvent.click(within(menu).getByRole('menuitemradio', { name: '页宽' }));
 
   fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
   menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
@@ -117,6 +204,78 @@ test('keeps compact PDF actions reachable from the more-tools menu', () => {
     'zoom-in',
     'undo',
   ]);
+});
+
+test('moves through and exits the PDF more-tools menu with standard keys', async () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  const menu = screen.getByRole('menu', { name: '更多 PDF 工具' });
+  const enabledItems = [
+    ...menu.querySelectorAll<HTMLButtonElement>(
+      'button[role^="menuitem"]:not(:disabled)',
+    ),
+  ];
+
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(enabledItems.at(-1)).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowDown' });
+  expect(enabledItems[0]).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'ArrowUp' });
+  expect(enabledItems.at(-1)).toHaveFocus();
+  fireEvent.keyDown(menu, { key: 'Home' });
+  expect(enabledItems[0]).toHaveFocus();
+
+  fireEvent.keyDown(menu, { key: 'Tab' });
+  await waitFor(() => {
+    expect(
+      screen.queryByRole('menu', { name: '更多 PDF 工具' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('searchbox', { name: '在 PDF 中搜索' }),
+    ).toHaveFocus();
+  });
+});
+
+test('exposes selected PDF overflow tools as radio menu items', () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+
+  render(
+    <PdfToolbar
+      annotationState={{ ...annotation.state, activeToolId: 'underline' }}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '更多 PDF 工具' }));
+  expect(
+    screen.getByRole('menuitemradio', { name: '下划线批注' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  expect(screen.getByRole('menuitemradio', { name: '页宽' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
 });
 
 test('marks an open annotation popover as an editor-shortcut boundary', () => {
@@ -148,6 +307,102 @@ test('marks an open annotation popover as an editor-shortcut boundary', () => {
     'data-office-shortcuts',
     'ignore',
   );
+});
+
+test('opens annotation styles on the current value and keeps arrows in group', async () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '批注样式' }));
+  const opacity = screen.getByRole('radio', { name: '透明度 100%' });
+  await waitFor(() => expect(opacity).toHaveFocus());
+  expect(opacity).toBeChecked();
+
+  fireEvent.keyDown(opacity, { key: 'ArrowLeft' });
+  expect(screen.getByRole('radio', { name: '透明度 75%' })).toHaveFocus();
+  expect(calls).toContain('annotation-opacity:0.75');
+
+  const strokeWidth = screen.getByRole('radio', { name: '线宽 6' });
+  strokeWidth.focus();
+  fireEvent.keyDown(strokeWidth, { key: 'Home' });
+  expect(screen.getByRole('radio', { name: '线宽 1' })).toHaveFocus();
+  expect(calls).toContain('annotation-stroke-width:1');
+});
+
+test('cancels a page-number draft on Escape without navigating on blur', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const page = screen.getByRole('textbox', { name: '页码' });
+  page.focus();
+  fireEvent.change(page, { target: { value: '7' } });
+  fireEvent.keyDown(page, { key: 'Escape' });
+
+  expect(page).toHaveValue('2');
+  expect(page).not.toHaveFocus();
+  expect(calls).not.toContain('page:7');
+});
+
+test('does not restart or navigate a search while its current query is loading', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  controller.state.search = {
+    active: true,
+    activeResultIndex: 0,
+    error: false,
+    loading: true,
+    query: '架构',
+    total: 3,
+  };
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const search = screen.getByRole('searchbox', { name: '在 PDF 中搜索' });
+  fireEvent.submit(search.closest('form') as HTMLFormElement);
+  fireEvent.keyDown(search, { key: 'Enter', shiftKey: true });
+
+  expect(calls).not.toContain('search:架构');
+  expect(calls).not.toContain('previous-result');
 });
 
 function createCanCommands(
@@ -220,6 +475,13 @@ function createAnnotationController(calls: string[]): PdfAnnotationController {
       annotationOpacity: 1,
       annotationStrokeWidth: 6,
       available: true,
+      availableToolIds: [
+        'highlight',
+        'underline',
+        'strikeout',
+        'ink',
+        'freeText',
+      ],
       hasPendingChanges: false,
       selectedCount: 0,
       supportsOpacity: true,

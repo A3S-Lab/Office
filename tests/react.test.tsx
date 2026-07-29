@@ -562,7 +562,10 @@ test('opens Markdown in source-and-preview split mode by default', async () => {
   );
 
   expect(await screen.findByLabelText('Markdown 源码')).toBeInTheDocument();
-  expect(screen.getByLabelText('Markdown 编辑区')).toBeInTheDocument();
+  expect(screen.getByLabelText('Markdown 预览')).toHaveAttribute(
+    'aria-readonly',
+    'true',
+  );
   expect(
     container.querySelector('.work-markdown-workspace.split'),
   ).toBeInTheDocument();

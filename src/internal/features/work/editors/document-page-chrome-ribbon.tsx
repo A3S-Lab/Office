@@ -135,6 +135,8 @@ export function DocumentPageChromeRibbon({
       <WorkOfficeRibbonGroup label="撤销">
         <PageChromeRibbonButton
           label="撤销页眉页脚编辑"
+          shortcut="Cmd/Ctrl+Z"
+          ariaKeyShortcuts="Control+Z Meta+Z"
           disabled={!state.canUndo}
           onClick={() => editor.chain().focus().undo().run()}
         >
@@ -142,6 +144,8 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="重做页眉页脚编辑"
+          shortcut="Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y"
+          ariaKeyShortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
           disabled={!state.canRedo}
           onClick={() => editor.chain().focus().redo().run()}
         >
@@ -151,6 +155,8 @@ export function DocumentPageChromeRibbon({
       <WorkOfficeRibbonGroup label="文字">
         <PageChromeRibbonButton
           label="页眉页脚加粗"
+          shortcut="Cmd/Ctrl+B"
+          ariaKeyShortcuts="Control+B Meta+B"
           active={state.bold}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
@@ -158,6 +164,8 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚斜体"
+          shortcut="Cmd/Ctrl+I"
+          ariaKeyShortcuts="Control+I Meta+I"
           active={state.italic}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
@@ -165,6 +173,8 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚下划线"
+          shortcut="Cmd/Ctrl+U"
+          ariaKeyShortcuts="Control+U Meta+U"
           active={state.underline}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
@@ -172,6 +182,8 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚下标"
+          shortcut="Cmd/Ctrl+,"
+          ariaKeyShortcuts="Control+, Meta+,"
           active={state.subscript}
           onClick={() => editor.chain().focus().toggleDocumentSubscript().run()}
         >
@@ -179,6 +191,8 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚上标"
+          shortcut="Cmd/Ctrl+."
+          ariaKeyShortcuts="Control+. Meta+."
           active={state.superscript}
           onClick={() =>
             editor.chain().focus().toggleDocumentSuperscript().run()
@@ -259,6 +273,8 @@ export function DocumentPageChromeRibbon({
 
 function PageChromeRibbonButton({
   label,
+  shortcut,
+  ariaKeyShortcuts,
   active = false,
   disabled = false,
   displayLabel = false,
@@ -266,6 +282,8 @@ function PageChromeRibbonButton({
   children,
 }: {
   label: string;
+  shortcut?: string;
+  ariaKeyShortcuts?: string;
   active?: boolean;
   disabled?: boolean;
   displayLabel?: boolean;
@@ -275,6 +293,8 @@ function PageChromeRibbonButton({
   return (
     <WorkOfficeRibbonButton
       label={label}
+      title={shortcut ? `${label}（${shortcut}）` : label}
+      aria-keyshortcuts={ariaKeyShortcuts}
       active={active}
       disabled={disabled}
       displayLabel={displayLabel}

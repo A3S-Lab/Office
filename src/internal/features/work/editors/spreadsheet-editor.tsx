@@ -9,7 +9,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
+import {
+  isWorkspaceContextMenuKeyboardEvent,
+  type WorkspaceContextMenuEvent,
+  WorkspaceContextMenu,
+  workspaceContextMenuPosition,
+} from '../../workspace/components/workspace-context-menu';
 import { spreadsheetAgentMenuItems } from '../components/work-editor-agent-menus';
 import { applySpreadsheetAgentProposalChanges } from '../work-agent-proposal-apply';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
@@ -49,10 +54,12 @@ import {
 } from './spreadsheet-editor-ribbon';
 import {
   finiteSpreadsheetSelection,
+  isSpreadsheetCellEditingTarget,
   isSpreadsheetNativeTextUndoTarget,
   sameSpreadsheetHistoryContent,
   sameSpreadsheetWorkbookState,
   spreadsheetCellAt,
+  spreadsheetContentWithSelection,
   spreadsheetSelectionReference,
   spreadsheetSelectionSummary,
   spreadsheetSheetsForFortune,
@@ -64,8 +71,9 @@ import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
-import { useOfficeHistory } from './use-office-history';
+import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
+import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
@@ -116,10 +124,23 @@ export function SpreadsheetEditor({
   const contentRef = useRef(materializedContent);
   const spreadsheetCommandsRef = useRef<SpreadsheetEditorCommands | null>(null);
   const previewRef = useRef(preview);
+  const spreadsheetRootRef = useRef<HTMLElement>(null);
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
   const workbookRef = useRef<WorkbookInstance>(null);
+  const [workbookInstance, setWorkbookInstance] =
+    useState<WorkbookInstance | null>(null);
+  const bindWorkbookInstance = useCallback(
+    (instance: WorkbookInstance | null) => {
+      workbookRef.current = instance;
+      setWorkbookInstance((current) =>
+        Object.is(current, instance) ? current : instance,
+      );
+    },
+    [],
+  );
   const {
     acceptContent: acceptWorkbookContent,
+    ignoreChangeDuringExternalSync,
     mountRevision: workbookMountRevision,
     recordOperations: recordWorkbookOperations,
     takeOperations: takeWorkbookOperations,
@@ -136,19 +157,39 @@ export function SpreadsheetEditor({
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
   const [previewZoom, setPreviewZoom] = useState(100);
-  const history = useOfficeHistory({
-    content,
-    onChange,
-    sameValue: sameSpreadsheetHistoryContent,
-  });
-  const activeSheetId =
+  const [previewActiveSheetId, setPreviewActiveSheetId] = useState<
+    string | null
+  >(null);
+  const contentActiveSheetId =
     content.sheets.find((sheet) => sheet.status === 1)?.id ??
     content.sheets.find((sheet) => !sheet.hide)?.id ??
     '';
+  const activeSheetId =
+    preview &&
+    previewActiveSheetId &&
+    content.sheets.some(
+      (sheet) => sheet.id === previewActiveSheetId && sheet.hide !== 1,
+    )
+      ? previewActiveSheetId
+      : contentActiveSheetId;
   const activeSheetIdRef = useRef(activeSheetId);
   const focusedSheetIdRef = useRef<string | null>(null);
   contentRef.current = materializedContent;
   previewRef.current = preview;
+  const history = useOfficeHistory({
+    content,
+    onChange: (next) => {
+      const liveSelection = workbookRef.current?.getSelection()?.at(-1);
+      onChange(
+        spreadsheetContentWithSelection(
+          next,
+          selectionState?.sheetId ?? activeSheetIdRef.current,
+          liveSelection ?? selectionState?.selection,
+        ),
+      );
+    },
+    sameValue: sameSpreadsheetHistoryContent,
+  });
   const conditionalStylesBySheet = useMemo(
     () =>
       new Map(
@@ -160,6 +201,9 @@ export function SpreadsheetEditor({
       ),
     [materializedContent.sheets],
   );
+  useEffect(() => {
+    setPreviewActiveSheetId(preview ? contentActiveSheetId : null);
+  }, [contentActiveSheetId, preview]);
   useEffect(() => {
     activeSheetIdRef.current = activeSheetId;
   }, [activeSheetId]);
@@ -180,6 +224,7 @@ export function SpreadsheetEditor({
     () => ({
       afterActivateSheet: (id) => {
         activeSheetIdRef.current = id;
+        if (previewRef.current) setPreviewActiveSheetId(id);
         setSelectionState(null);
       },
       afterSelectionChange: (sheetId, selection) => {
@@ -272,15 +317,24 @@ export function SpreadsheetEditor({
       preview
         ? workbookSheets.map((sheet) => ({
             ...sheet,
+            status: sheet.id === activeSheetId ? 1 : 0,
             zoomRatio: previewZoom / 100,
           }))
         : workbookSheets,
-    [preview, previewZoom, workbookSheets],
+    [activeSheetId, preview, previewZoom, workbookSheets],
   );
   const workbookSheetsRef = useRef(workbookSheets);
   workbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
+      if (
+        ignoreChangeDuringExternalSync(
+          sameSpreadsheetWorkbookState(sheets, workbookSheetsRef.current),
+        )
+      ) {
+        takeWorkbookOperations();
+        return;
+      }
       const operations = takeWorkbookOperations();
       if (
         previewRef.current ||
@@ -302,7 +356,12 @@ export function SpreadsheetEditor({
       calculation.synchronizeWorkbook(next, operations);
       spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
     },
-    [acceptWorkbookContent, calculation, takeWorkbookOperations],
+    [
+      acceptWorkbookContent,
+      calculation,
+      ignoreChangeDuringExternalSync,
+      takeWorkbookOperations,
+    ],
   );
   const handleWorkbookOperations = useCallback(
     (operations: Op[]) => {
@@ -325,10 +384,6 @@ export function SpreadsheetEditor({
     selectionState?.sheetId ?? activeSheetIdRef.current ?? activeSheetId;
   const activeSheet = materializedContent.sheets.find(
     (sheet) => sheet.id === activeSheetId,
-  );
-  const activeSheetIndex = Math.max(
-    0,
-    materializedContent.sheets.findIndex((sheet) => sheet.id === activeSheetId),
   );
   const zoom = Math.round((activeSheet?.zoomRatio ?? 1) * 100);
   useEffect(() => {
@@ -355,6 +410,22 @@ export function SpreadsheetEditor({
   const selectionSummary = multipleCellsSelected
     ? spreadsheetSelectionSummary(toolbarSheet, toolbarSelection)
     : null;
+  const activateReadOnlySpreadsheetSheet = useCallback((sheetId: string) => {
+    if (!previewRef.current) return false;
+    const sheet = contentRef.current.sheets.find(
+      (candidate) => candidate.id === sheetId && candidate.hide !== 1,
+    );
+    if (!sheet) return false;
+    activeSheetIdRef.current = sheetId;
+    setSelectionState(null);
+    setPreviewActiveSheetId(sheetId);
+    try {
+      workbookRef.current?.activateSheet({ id: sheetId });
+    } catch {
+      return false;
+    }
+    return true;
+  }, []);
   const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
@@ -381,19 +452,52 @@ export function SpreadsheetEditor({
       selection: selectionState,
       targetSheetId: toolbarSheetId,
       toolbarCell,
-      workbook: workbookRef.current,
+      view: preview
+        ? { activateSheet: activateReadOnlySpreadsheetSheet }
+        : null,
+      workbook: workbookInstance,
     },
     spreadsheetExtensions,
   );
   const spreadsheetCommands = spreadsheetEditor.commands;
   spreadsheetCommandsRef.current = spreadsheetCommands;
   const spreadsheetCan = spreadsheetEditor.can();
-  const handleSpreadsheetShortcut = (
+  const restoreSpreadsheetGridFocus = useCallback(
+    () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+    [],
+  );
+  const spreadsheetRibbonCommands = useMemo(
+    () =>
+      spreadsheetCommandsWithGridFocus(
+        spreadsheetCommands,
+        restoreSpreadsheetGridFocus,
+      ),
+    [restoreSpreadsheetGridFocus, spreadsheetCommands],
+  );
+  const restoreSpreadsheetShortcutFocus = useCallback(
+    (event: KeyboardEvent) => {
+      event.stopPropagation();
+      if (!isSpreadsheetCellEditingTarget(event.target)) {
+        focusSpreadsheetGrid(spreadsheetCanvasRef.current);
+      }
+    },
+    [],
+  );
+  useOfficeEditorKeyboardShortcuts(spreadsheetEditor, {
+    capture: true,
+    onHandled: restoreSpreadsheetShortcutFocus,
+    scopeRef: spreadsheetRootRef,
+  });
+  const handleSpreadsheetEditingEscape = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
-    if (spreadsheetEditor.handleKeyDown(event.nativeEvent)) {
-      event.stopPropagation();
-      focusSpreadsheetGrid(spreadsheetCanvasRef.current);
+    if (
+      event.key === 'Escape' &&
+      isSpreadsheetCellEditingTarget(event.target)
+    ) {
+      requestAnimationFrame(() =>
+        focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+      );
     }
   };
   const currentClipboardSelection = () => {
@@ -447,11 +551,37 @@ export function SpreadsheetEditor({
     command();
     focusSpreadsheetGrid(spreadsheetCanvasRef.current);
   };
+  const openSpreadsheetContextMenu = (
+    event: WorkspaceContextMenuEvent,
+  ): boolean => {
+    if (preview) return false;
+    const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
+    const sheet = content.sheets.find((candidate) => candidate.id === sheetId);
+    const selection =
+      selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
+    if (!selection) return false;
+    const agentSelection = spreadsheetAgentSelection(
+      content,
+      sheetId,
+      selection,
+    );
+    if (!agentSelection) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    const position = workspaceContextMenuPosition(event);
+    setContextMenu({
+      x: position.x,
+      y: position.y,
+      selection: agentSelection,
+    });
+    return true;
+  };
   return (
     <section
+      ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       aria-label="表格工作区"
-      onKeyDownCapture={handleSpreadsheetShortcut}
+      onKeyDownCapture={handleSpreadsheetEditingEscape}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
       onCutCapture={(event) => handleSpreadsheetCopy(event, true)}
       onPasteCapture={handleSpreadsheetPaste}
@@ -469,7 +599,7 @@ export function SpreadsheetEditor({
         <SpreadsheetEditorRibbon
           activeTab={ribbonTab}
           can={spreadsheetCan}
-          commands={spreadsheetCommands}
+          commands={spreadsheetRibbonCommands}
           content={content}
           fileActions={fileActions}
           gridLinesVisible={gridLinesVisible}
@@ -503,32 +633,14 @@ export function SpreadsheetEditor({
       <div
         ref={spreadsheetCanvasRef}
         className="work-spreadsheet-canvas"
-        onContextMenuCapture={(event) => {
-          if (preview) return;
-          const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
-          const sheet = content.sheets.find(
-            (candidate) => candidate.id === sheetId,
-          );
-          const selection =
-            selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
-          if (!selection) return;
-          const agentSelection = spreadsheetAgentSelection(
-            content,
-            sheetId,
-            selection,
-          );
-          if (!agentSelection) return;
-          event.preventDefault();
-          event.stopPropagation();
-          setContextMenu({
-            x: event.clientX,
-            y: event.clientY,
-            selection: agentSelection,
-          });
+        onContextMenuCapture={openSpreadsheetContextMenu}
+        onKeyDownCapture={(event) => {
+          if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
+          openSpreadsheetContextMenu(event);
         }}
       >
         <Workbook
-          ref={workbookRef}
+          ref={bindWorkbookInstance}
           key={`spreadsheet:${workbookMountRevision}:${preview ? `preview-${previewZoom}` : 'edit'}:${conditionalFormatKey}:${protectionKey}:${chartPreviewKey}`}
           data={displayedWorkbookSheets}
           lang="zh"
@@ -538,98 +650,105 @@ export function SpreadsheetEditor({
           showSheetTabs={false}
           row={60}
           column={26}
+          rowHeaderWidth={44}
+          columnHeaderHeight={24}
           defaultRowHeight={24}
           defaultColWidth={96}
+          defaultFontSize={11}
           hooks={workbookHooks}
           onChange={handleWorkbookChange}
           onOp={handleWorkbookOperations}
         />
       </div>
-      <SpreadsheetSheetBar
-        activeSheetId={activeSheetId}
-        editable={!preview}
-        sheets={materializedContent.sheets}
-        onActivate={(sheetId) =>
-          runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
-        }
-        onCreate={() => runSheetCommand(() => spreadsheetCommands.addSheet())}
-        onDelete={(sheetId) =>
-          runSheetCommand(() => spreadsheetCommands.deleteSheet(sheetId))
-        }
-        onDuplicate={(sheetId) =>
-          runSheetCommand(() => spreadsheetCommands.duplicateSheet(sheetId))
-        }
-        onHide={(sheetId) =>
-          runSheetCommand(() => spreadsheetCommands.hideSheet(sheetId))
-        }
-        onMove={(sheetId, direction) =>
-          runSheetCommand(() =>
-            spreadsheetCommands.moveSheet(sheetId, direction),
-          )
-        }
-        onRename={(sheetId, name) =>
-          runSheetCommand(() => spreadsheetCommands.renameSheet(sheetId, name))
-        }
-        onSetColor={(sheetId, color) =>
-          runSheetCommand(() =>
-            spreadsheetCommands.setSheetColor(sheetId, color),
-          )
-        }
-        onShow={(sheetId) =>
-          runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
-        }
-      />
-      <WorkOfficeStatusBar
-        className="work-spreadsheet-status"
-        controls={
-          <>
-            <button
-              type="button"
-              aria-label="普通表格视图"
-              title="普通表格视图"
-              aria-pressed="true"
+      <div className="work-spreadsheet-footer">
+        <SpreadsheetSheetBar
+          activeSheetId={activeSheetId}
+          editable={!preview}
+          sheets={materializedContent.sheets}
+          onActivate={(sheetId) =>
+            runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
+          }
+          onCreate={() => runSheetCommand(() => spreadsheetCommands.addSheet())}
+          onDelete={(sheetId) =>
+            runSheetCommand(() => spreadsheetCommands.deleteSheet(sheetId))
+          }
+          onDuplicate={(sheetId) =>
+            runSheetCommand(() => spreadsheetCommands.duplicateSheet(sheetId))
+          }
+          onHide={(sheetId) =>
+            runSheetCommand(() => spreadsheetCommands.hideSheet(sheetId))
+          }
+          onMove={(sheetId, direction) =>
+            runSheetCommand(() =>
+              spreadsheetCommands.moveSheet(sheetId, direction),
+            )
+          }
+          onRename={(sheetId, name) =>
+            runSheetCommand(() =>
+              spreadsheetCommands.renameSheet(sheetId, name),
+            )
+          }
+          onSetColor={(sheetId, color) =>
+            runSheetCommand(() =>
+              spreadsheetCommands.setSheetColor(sheetId, color),
+            )
+          }
+          onShow={(sheetId) =>
+            runSheetCommand(() => spreadsheetCommands.activateSheet(sheetId))
+          }
+        />
+        <WorkOfficeStatusBar
+          className="work-spreadsheet-status"
+          controls={
+            <>
+              <span
+                className="work-spreadsheet-view-mode"
+                role="img"
+                aria-label="普通表格视图"
+                title="普通表格视图"
+              >
+                <Grid3X3 size={13} />
+              </span>
+              <span className="work-office-status-divider" />
+              <WorkOfficeZoomControls
+                zoom={preview ? previewZoom : zoom}
+                decreaseLabel="缩小表格"
+                increaseLabel="放大表格"
+                outputLabel="表格缩放比例"
+                sliderLabel="表格缩放"
+                onChange={(nextZoom) => {
+                  if (preview) setPreviewZoom(nextZoom);
+                  else spreadsheetCommands.setZoom(nextZoom);
+                }}
+              />
+            </>
+          }
+        >
+          <output aria-label="表格选区状态">
+            {selectionState
+              ? spreadsheetSelectionReference(selectionState.selection)
+              : '未选择单元格'}
+          </output>
+          {selectionSummary && selectionSummary.nonEmptyCount > 0 && (
+            <output aria-label="表格选区统计">
+              {spreadsheetSelectionSummaryText(selectionSummary)}
+            </output>
+          )}
+          {!preview && (
+            <output
+              aria-label="表格保存状态"
+              className="work-office-save-status"
             >
-              <Grid3X3 size={13} />
-            </button>
-            <span className="work-office-status-divider" />
-            <WorkOfficeZoomControls
-              zoom={preview ? previewZoom : zoom}
-              decreaseLabel="缩小表格"
-              increaseLabel="放大表格"
-              outputLabel="表格缩放比例"
-              sliderLabel="表格缩放"
-              onChange={(nextZoom) => {
-                if (preview) setPreviewZoom(nextZoom);
-                else spreadsheetCommands.setZoom(nextZoom);
-              }}
-            />
-          </>
-        }
-      >
-        <output aria-label="工作表状态">
-          工作表 {activeSheetIndex + 1} / {materializedContent.sheets.length} ·{' '}
-          {activeSheet?.name ?? '未命名'}
-        </output>
-        <output aria-label="表格选区状态">
-          {selectionState
-            ? spreadsheetSelectionReference(selectionState.selection)
-            : '未选择单元格'}
-        </output>
-        {selectionSummary && selectionSummary.nonEmptyCount > 0 && (
-          <output aria-label="表格选区统计">
-            {spreadsheetSelectionSummaryText(selectionSummary)}
-          </output>
-        )}
-        {!preview && (
-          <output aria-label="表格保存状态" className="work-office-save-status">
-            <Cloud size={12} />
-            {saveStatus}
-          </output>
-        )}
-      </WorkOfficeStatusBar>
+              <Cloud size={12} />
+              {saveStatus}
+            </output>
+          )}
+        </WorkOfficeStatusBar>
+      </div>
       {contextMenu && (
         <WorkspaceContextMenu
           label={`表格选区 ${contextMenu.selection.reference} 操作`}
+          className="work-spreadsheet-context-menu"
           x={contextMenu.x}
           y={contextMenu.y}
           items={[
@@ -660,6 +779,9 @@ export function SpreadsheetEditor({
               : []),
           ]}
           onClose={() => setContextMenu(null)}
+          onRestoreFocus={() =>
+            focusSpreadsheetGrid(spreadsheetCanvasRef.current)
+          }
         />
       )}
     </section>
@@ -753,6 +875,28 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
   spreadsheetFocusCleanups.set(container, stopObservingFocusTarget);
 
   restoreFocus(true);
+}
+
+export function spreadsheetCommandsWithGridFocus(
+  commands: SpreadsheetEditorCommands,
+  restoreFocus: () => void,
+): SpreadsheetEditorCommands {
+  const afterSuccessfulCommand =
+    <Arguments extends unknown[]>(command: (...args: Arguments) => boolean) =>
+    (...args: Arguments): boolean => {
+      const handled = command(...args);
+      if (handled) restoreFocus();
+      return handled;
+    };
+
+  return {
+    ...commands,
+    redo: afterSuccessfulCommand(commands.redo),
+    setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
+    setGridLines: afterSuccessfulCommand(commands.setGridLines),
+    toggleCellMerge: afterSuccessfulCommand(commands.toggleCellMerge),
+    undo: afterSuccessfulCommand(commands.undo),
+  };
 }
 
 function spreadsheetGridFocusTarget(

@@ -60,7 +60,7 @@ import {
 const spreadsheetRibbonTabs = [
   { id: 'home', label: '开始' },
   { id: 'insert', label: '插入' },
-  { id: 'pageLayout', label: '页面布局' },
+  { id: 'pageLayout', label: '页面布局', compactLabel: '布局' },
   { id: 'formulas', label: '公式' },
   { id: 'data', label: '数据' },
   { id: 'review', label: '审阅' },
@@ -153,7 +153,7 @@ export function SpreadsheetEditorRibbon({
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
                 label="重做"
-                title="重做（Cmd/Ctrl+Shift+Z）"
+                title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
                 aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
                 disabled={!can.redo()}
                 onClick={commands.redo}

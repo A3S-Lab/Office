@@ -8,10 +8,11 @@ import type {
   WorkSpreadsheetContent,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetFormulaPanelProps {
   content: WorkSpreadsheetContent;
@@ -28,18 +29,29 @@ export function SpreadsheetFormulaPanel({
   onChange,
   onRecalculate,
 }: SpreadsheetFormulaPanelProps) {
-  const [settings, setSettings] = useState(() =>
+  const {
+    cancelDraft,
+    dirty,
+    draft: settings,
+    replaceDraft,
+    setDraft: setSettings,
+    syncDraft,
+  } = useOfficeDraft(() =>
     effectiveSpreadsheetCalculationSettings(content.calculation),
   );
   const [status, setStatus] = useState('');
+  const sourceSettings = useMemo(
+    () => effectiveSpreadsheetCalculationSettings(content.calculation),
+    [content.calculation],
+  );
   const { summary, diagnostics } = useMemo(
     () => spreadsheetFormulaAnalysis(content),
     [content],
   );
 
   useEffect(() => {
-    setSettings(effectiveSpreadsheetCalculationSettings(content.calculation));
-  }, [content.calculation]);
+    syncDraft(sourceSettings);
+  }, [content.calculation, sourceSettings, syncDraft]);
 
   const update = <Key extends keyof WorkSpreadsheetCalculationSettings>(
     key: Key,
@@ -49,11 +61,18 @@ export function SpreadsheetFormulaPanel({
     setStatus('');
   };
   const save = () => {
+    if (!dirty) return;
+    const saved = effectiveSpreadsheetCalculationSettings(settings);
     onChange({
       ...content,
-      calculation: effectiveSpreadsheetCalculationSettings(settings),
+      calculation: saved,
     });
+    replaceDraft(saved);
     setStatus('计算设置已保存。');
+  };
+  const cancel = () => {
+    cancelDraft();
+    setStatus('');
   };
   const recalculate = (scope: 'workbook' | 'selection') => {
     const started = onRecalculate(scope);
@@ -67,7 +86,17 @@ export function SpreadsheetFormulaPanel({
   };
 
   return (
-    <div className="work-spreadsheet-formula-manager">
+    <fieldset
+      className="work-spreadsheet-formula-manager"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancel();
+      }}
+    >
+      <legend className="sr-only">计算设置</legend>
       <aside aria-label="公式统计">
         <FormulaStat label="公式单元格" value={summary.formulaCells} />
         <FormulaStat
@@ -118,27 +147,29 @@ export function SpreadsheetFormulaPanel({
           </div>
           <div className="work-office-field">
             <span>最大迭代次数</span>
-            <OfficeNumberField
+            <CommittedOfficeNumberField
               ariaLabel="最大迭代次数"
               min={1}
               max={10_000}
               step={1}
               disabled={!settings.iterativeCalculation}
               value={settings.maximumIterations}
-              onValueChange={(value) =>
-                update('maximumIterations', Number(value))
+              normalizeValue={(value) =>
+                normalizeCalculationInteger(value, 1, 10_000)
               }
+              onValueCommit={(value) => update('maximumIterations', value)}
             />
           </div>
           <div className="work-office-field">
             <span>最大更改值</span>
-            <OfficeNumberField
+            <CommittedOfficeNumberField
               ariaLabel="最大更改值"
               min={0.000000000001}
               step={0.000001}
               disabled={!settings.iterativeCalculation}
               value={settings.maximumChange}
-              onValueChange={(value) => update('maximumChange', Number(value))}
+              normalizeValue={normalizeCalculationChange}
+              onValueCommit={(value) => update('maximumChange', value)}
             />
           </div>
           <OfficeCheckbox
@@ -197,7 +228,10 @@ export function SpreadsheetFormulaPanel({
               <Calculator size={12} />
               重新计算工作簿
             </Button>
-            <Button type="submit" tone="primary">
+            <Button tone="secondary" disabled={!dirty} onClick={cancel}>
+              取消更改
+            </Button>
+            <Button type="submit" tone="primary" disabled={!dirty}>
               <Save size={12} />
               保存计算设置
             </Button>
@@ -233,14 +267,34 @@ export function SpreadsheetFormulaPanel({
                 className="work-office-collection-empty"
                 role="status"
               >
-                当前公式可由 Work 直接计算，也没有缓存错误或分组冲突。
+                未发现公式兼容性问题。
               </CollectionState>
             )}
           </div>
         </section>
       </form>
-    </div>
+    </fieldset>
   );
+}
+
+function normalizeCalculationInteger(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : null;
+}
+
+function normalizeCalculationChange(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0
+    ? Math.max(0.000000000001, number)
+    : null;
 }
 
 function FormulaStat({

@@ -3,6 +3,8 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CopyPlus,
   EyeOff,
   Layers2,
@@ -13,7 +15,6 @@ import {
 } from 'lucide-react';
 import {
   type CSSProperties,
-  type KeyboardEvent,
   type ReactNode,
   useEffect,
   useRef,
@@ -21,6 +22,7 @@ import {
 } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import type { WorkSpreadsheetSheet } from '../work-types';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   isSpreadsheetSheetHidden,
   type SpreadsheetSheetMoveDirection,
@@ -71,9 +73,11 @@ export function SpreadsheetSheetBar({
   const visibleSheets = orderedSheets.filter(
     (sheet) => !isSpreadsheetSheetHidden(sheet),
   );
+  const listedSheets = editable ? orderedSheets : visibleSheets;
   const [renamingSheetId, setRenamingSheetId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const sheetTabRefs = useRef(new Map<string, HTMLButtonElement>());
 
   useEffect(() => {
     if (!renamingSheetId) return;
@@ -84,28 +88,106 @@ export function SpreadsheetSheetBar({
     return () => cancelAnimationFrame(frame);
   }, [renamingSheetId]);
 
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      scrollSpreadsheetSheetTabIntoView(
+        sheetTabRefs.current.get(activeSheetId),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeSheetId]);
+
   const beginRename = (sheet: WorkSpreadsheetSheet) => {
     setRenameDraft(sheet.name);
     setRenamingSheetId(sheet.id ?? null);
   };
-  const finishRename = (sheet: WorkSpreadsheetSheet, commit: boolean) => {
+  const finishRename = (
+    sheet: WorkSpreadsheetSheet,
+    commit: boolean,
+    restoreTabFocus = false,
+  ) => {
     if (commit && sheet.id && renameDraft.trim() !== sheet.name) {
       onRename(sheet.id, renameDraft);
     }
     setRenamingSheetId(null);
+    if (restoreTabFocus && sheet.id) {
+      requestAnimationFrame(() => {
+        const tab = sheetTabRefs.current.get(sheet.id ?? '');
+        tab?.focus({ preventScroll: true });
+        scrollSpreadsheetSheetTabIntoView(tab);
+      });
+    }
+  };
+  const activateSheetFromTabKeyboard = (
+    sheetId: string,
+    key: string,
+  ): boolean => {
+    const currentIndex = visibleSheets.findIndex(
+      (candidate) => candidate.id === sheetId,
+    );
+    if (currentIndex < 0) return false;
+    const targetIndex =
+      key === 'Home'
+        ? 0
+        : key === 'End'
+          ? visibleSheets.length - 1
+          : key === 'ArrowRight'
+            ? (currentIndex + 1) % visibleSheets.length
+            : key === 'ArrowLeft'
+              ? (currentIndex - 1 + visibleSheets.length) % visibleSheets.length
+              : -1;
+    const targetId = visibleSheets[targetIndex]?.id;
+    if (!targetId || targetId === sheetId) return false;
+    onActivate(targetId);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target = sheetTabRefs.current.get(targetId);
+        target?.focus({ preventScroll: true });
+        scrollSpreadsheetSheetTabIntoView(target);
+      });
+    });
+    return true;
+  };
+  const activateAdjacentSheet = (direction: -1 | 1) => {
+    if (visibleSheets.length < 2) return;
+    const activeIndex = visibleSheets.findIndex(
+      (sheet) => sheet.id === activeSheetId,
+    );
+    const nextIndex =
+      (Math.max(0, activeIndex) + direction + visibleSheets.length) %
+      visibleSheets.length;
+    const targetId = visibleSheets[nextIndex]?.id;
+    if (targetId) onActivate(targetId);
   };
 
   return (
-    <nav className="work-spreadsheet-sheet-bar" aria-label="工作表">
+    <nav
+      className="work-spreadsheet-sheet-bar"
+      aria-label="工作表"
+      data-editable={editable ? 'true' : 'false'}
+    >
       <div className="work-spreadsheet-sheet-tools">
         <button
           type="button"
-          aria-label="新建工作表"
-          title="新建工作表"
-          disabled={!editable}
-          onClick={onCreate}
+          className="work-spreadsheet-sheet-navigation"
+          aria-label="上一个工作表"
+          aria-keyshortcuts="Control+PageUp Meta+PageUp"
+          title="上一个工作表（Ctrl/⌘+PageUp）"
+          disabled={visibleSheets.length < 2}
+          onClick={() => activateAdjacentSheet(-1)}
         >
-          <Plus size={15} />
+          <ChevronLeft size={14} />
+        </button>
+        <button
+          type="button"
+          className="work-spreadsheet-sheet-navigation"
+          aria-label="下一个工作表"
+          aria-keyshortcuts="Control+PageDown Meta+PageDown"
+          title="下一个工作表（Ctrl/⌘+PageDown）"
+          disabled={visibleSheets.length < 2}
+          onClick={() => activateAdjacentSheet(1)}
+        >
+          <ChevronRight size={14} />
         </button>
         <Popover
           label="工作表列表"
@@ -113,22 +195,23 @@ export function SpreadsheetSheetBar({
           panelRole="menu"
           placement="top-start"
           portal
-          panelClassName="work-spreadsheet-sheet-popover work-spreadsheet-sheet-list"
+          panelClassName="work-office-context-menu work-spreadsheet-sheet-popover work-spreadsheet-sheet-list"
           focusFirstOnOpen
-          onPanelKeyDown={moveSpreadsheetSheetMenuFocus}
+          onPanelKeyDown={moveOfficeMenuFocus}
           trigger={(triggerProps) => (
-            <button {...triggerProps} title="工作表列表">
+            <button {...triggerProps} title="查看全部工作表">
               <Layers2 size={14} />
             </button>
           )}
         >
           {(close) =>
-            orderedSheets.map((sheet) => (
+            listedSheets.map((sheet) => (
               <button
                 key={sheet.id ?? sheet.name}
                 type="button"
                 role="menuitemradio"
                 aria-checked={sheet.id === activeSheetId}
+                tabIndex={-1}
                 onClick={() => {
                   close();
                   if (!sheet.id) return;
@@ -148,6 +231,18 @@ export function SpreadsheetSheetBar({
             ))
           }
         </Popover>
+        {editable && (
+          <button
+            type="button"
+            className="work-spreadsheet-sheet-add"
+            aria-label="新建工作表"
+            aria-keyshortcuts="Shift+F11 Alt+Shift+F1"
+            title="新建工作表（Shift+F11）"
+            onClick={onCreate}
+          >
+            <Plus size={15} />
+          </button>
+        )}
       </div>
 
       <div className="work-spreadsheet-sheet-tabs" role="tablist">
@@ -177,15 +272,21 @@ export function SpreadsheetSheetBar({
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
                       event.preventDefault();
-                      finishRename(sheet, true);
+                      event.stopPropagation();
+                      finishRename(sheet, true, true);
                     } else if (event.key === 'Escape') {
                       event.preventDefault();
-                      finishRename(sheet, false);
+                      event.stopPropagation();
+                      finishRename(sheet, false, true);
                     }
                   }}
                 />
               ) : (
                 <button
+                  ref={(node) => {
+                    if (node) sheetTabRefs.current.set(sheetId, node);
+                    else sheetTabRefs.current.delete(sheetId);
+                  }}
                   type="button"
                   role="tab"
                   aria-selected={active}
@@ -193,6 +294,28 @@ export function SpreadsheetSheetBar({
                   title={sheet.name}
                   onClick={() => sheetId && onActivate(sheetId)}
                   onDoubleClick={() => editable && beginRename(sheet)}
+                  onContextMenu={(event) => {
+                    if (!editable) return;
+                    event.preventDefault();
+                    openSpreadsheetSheetMenu(event.currentTarget);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      editable &&
+                      (event.key === 'ContextMenu' ||
+                        (event.key === 'F10' && event.shiftKey))
+                    ) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openSpreadsheetSheetMenu(event.currentTarget);
+                      return;
+                    }
+                    if (!activateSheetFromTabKeyboard(sheetId, event.key)) {
+                      return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
                 >
                   <span>{sheet.name}</span>
                 </button>
@@ -218,6 +341,25 @@ export function SpreadsheetSheetBar({
       </div>
     </nav>
   );
+}
+
+function scrollSpreadsheetSheetTabIntoView(
+  target: HTMLButtonElement | undefined,
+): void {
+  target?.scrollIntoView?.({
+    behavior: 'auto',
+    block: 'nearest',
+    inline: 'nearest',
+  });
+}
+
+function openSpreadsheetSheetMenu(sheetTab: HTMLButtonElement): void {
+  const trigger = sheetTab.parentElement?.querySelector<HTMLButtonElement>(
+    '.work-spreadsheet-sheet-options',
+  );
+  if (!trigger) return;
+  trigger.focus({ preventScroll: true });
+  trigger.click();
 }
 
 function SpreadsheetSheetMenu({
@@ -253,13 +395,14 @@ function SpreadsheetSheetMenu({
       panelRole="menu"
       placement="top-start"
       portal
-      panelClassName="work-spreadsheet-sheet-popover"
+      panelClassName="work-office-context-menu work-spreadsheet-sheet-popover"
       focusFirstOnOpen
-      onPanelKeyDown={moveSpreadsheetSheetMenuFocus}
+      onPanelKeyDown={moveOfficeMenuFocus}
       trigger={(triggerProps, { open }) => (
         <button
           {...triggerProps}
           className="work-spreadsheet-sheet-options"
+          aria-keyshortcuts="Shift+F10"
           title={`${sheet.name}选项`}
         >
           <ChevronDown
@@ -297,7 +440,10 @@ function SpreadsheetSheetMenu({
               onHide(sheetId);
             }}
           />
-          <fieldset className="work-spreadsheet-sheet-color-row">
+          <fieldset
+            className="work-spreadsheet-sheet-color-row"
+            aria-label="标签颜色"
+          >
             <legend>
               <Palette size={14} aria-hidden="true" />
               <span>标签颜色</span>
@@ -307,6 +453,9 @@ function SpreadsheetSheetMenu({
                 <button
                   key={color}
                   type="button"
+                  role="menuitemradio"
+                  aria-checked={sheet.color === color}
+                  tabIndex={-1}
                   aria-label={`${label}标签`}
                   title={`${label}标签`}
                   className={sheet.color === color ? 'active' : undefined}
@@ -319,6 +468,9 @@ function SpreadsheetSheetMenu({
               ))}
               <button
                 type="button"
+                role="menuitemradio"
+                aria-checked={!sheet.color}
+                tabIndex={-1}
                 aria-label="清除标签颜色"
                 title="清除标签颜色"
                 className="clear"
@@ -382,6 +534,7 @@ function SheetMenuButton({
     <button
       type="button"
       role="menuitem"
+      tabIndex={-1}
       className={danger ? 'danger' : undefined}
       disabled={disabled}
       onClick={onClick}
@@ -390,25 +543,4 @@ function SheetMenuButton({
       <span>{label}</span>
     </button>
   );
-}
-
-function moveSpreadsheetSheetMenuFocus(event: KeyboardEvent<HTMLElement>) {
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-  const buttons = [
-    ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-      'button:not(:disabled)',
-    ),
-  ];
-  if (!buttons.length) return;
-  event.preventDefault();
-  const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
-  const next =
-    event.key === 'Home'
-      ? 0
-      : event.key === 'End'
-        ? buttons.length - 1
-        : event.key === 'ArrowDown'
-          ? (current + 1 + buttons.length) % buttons.length
-          : (current - 1 + buttons.length) % buttons.length;
-  buttons[next]?.focus();
 }

@@ -31,11 +31,16 @@ import {
   Underline,
   Ungroup,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import type {
   WorkSlide,
   WorkSlideElement,
   WorkSlideTextAlign,
 } from '../work-types';
+import {
+  DOCUMENT_LINK_VALIDATION_MESSAGE,
+  normalizeDocumentHref,
+} from '../work-document-links';
 import {
   OfficeColorPicker,
   OfficeNumberField,
@@ -43,7 +48,11 @@ import {
   useOfficeDialog,
 } from './office-controls';
 import { OfficeTableInsertPopover } from './office-table-insert-popover';
-import { officeFontFamilies } from './office-font-families';
+import {
+  normalizeOfficeFontFamily,
+  officeFontFamilies,
+  officeFontFamilyLabel,
+} from './office-font-families';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
@@ -61,26 +70,18 @@ const presentationRibbonTabs = [
   { id: 'insert', label: '插入' },
   { id: 'design', label: '设计' },
   { id: 'transitions', label: '切换' },
-  { id: 'slideshow', label: '幻灯片放映' },
+  { id: 'slideshow', label: '幻灯片放映', compactLabel: '放映' },
   { id: 'review', label: '审阅' },
   { id: 'view', label: '视图' },
 ] as const;
 
-const presentationFontFamilyIds = new Set([
-  'aptos',
-  'microsoft-yahei',
-  'simsun',
-  'arial',
-  'times-new-roman',
-]);
-
-const presentationFontFamilyOptions = officeFontFamilies
-  .filter(({ id }) => presentationFontFamilyIds.has(id))
-  .map(({ cssFamily, cssValue, label }) => ({
+const basePresentationFontFamilyOptions = officeFontFamilies.map(
+  ({ cssFamily, cssValue, label }) => ({
     value: cssValue,
     label,
     previewStyle: { fontFamily: cssFamily },
-  }));
+  }),
+);
 
 const presentationAlignmentOptions = [
   { value: 'none', label: '对象对齐', disabled: true },
@@ -124,6 +125,25 @@ export function PresentationToolbar({
   commands: PresentationEditorCommands;
 }) {
   const officeDialog = useOfficeDialog();
+  const [fontSizeDraft, setFontSizeDraft] = useState(() =>
+    selectedElement ? String(selectedElement.fontSize) : '',
+  );
+  const fontFamilyValue = presentationFontFamilyValue(
+    selectedElement?.fontFamily,
+  );
+  useEffect(() => {
+    setFontSizeDraft(selectedElement ? String(selectedElement.fontSize) : '');
+  }, [selectedElement?.fontSize, selectedElement?.id]);
+  const commitFontSize = (value: string): void => {
+    if (!selectedElement) return;
+    const fontSize = normalizedPresentationFontSize(
+      value,
+      selectedElement.fontSize,
+    );
+    setFontSizeDraft(String(fontSize));
+    if (fontSize === selectedElement.fontSize) return;
+    commands.updateElement({ fontSize }, { restoreTextFocus: false });
+  };
   return (
     <>
       <WorkOfficeRibbon
@@ -140,6 +160,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="撤销"
                   title="撤销（Cmd/Ctrl+Z）"
+                  aria-keyshortcuts="Control+Z Meta+Z"
                   disabled={!can.undo()}
                   onClick={commands.undo}
                 >
@@ -147,7 +168,8 @@ export function PresentationToolbar({
                 </WorkOfficeRibbonButton>
                 <WorkOfficeRibbonButton
                   label="重做"
-                  title="重做（Cmd/Ctrl+Shift+Z）"
+                  title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
+                  aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
                   disabled={!can.redo()}
                   onClick={commands.redo}
                 >
@@ -159,6 +181,7 @@ export function PresentationToolbar({
                   label="新建幻灯片"
                   title="新建幻灯片（Ctrl+M / ⌘⇧N）"
                   aria-keyshortcuts="Control+M Meta+Shift+N"
+                  disabled={!can.addSlide()}
                   onClick={commands.addSlide}
                 >
                   <Plus size={19} />
@@ -182,6 +205,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="复制"
                   title="复制（⌘/Ctrl+C）"
+                  aria-keyshortcuts="Control+C Meta+C"
                   disabled={!can.copySelection()}
                   onClick={commands.copySelection}
                 >
@@ -190,6 +214,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="剪切"
                   title="剪切（⌘/Ctrl+X）"
+                  aria-keyshortcuts="Control+X Meta+X"
                   disabled={!can.cutSelection()}
                   onClick={commands.cutSelection}
                 >
@@ -198,6 +223,7 @@ export function PresentationToolbar({
                 <WorkOfficeRibbonButton
                   label="粘贴"
                   title="粘贴（⌘/Ctrl+V）"
+                  aria-keyshortcuts="Control+V Meta+V"
                   disabled={!can.pasteSelection()}
                   onClick={commands.pasteSelection}
                 >
@@ -210,8 +236,8 @@ export function PresentationToolbar({
                     <WorkOfficeRibbonGroup label="字体">
                       <OfficeSelect
                         ariaLabel="演示字体"
-                        value={selectedElement.fontFamily ?? 'Aptos'}
-                        options={presentationFontFamilyOptions}
+                        value={fontFamilyValue}
+                        options={presentationFontFamilyOptions(fontFamilyValue)}
                         onValueChange={(fontFamily) =>
                           commands.updateElement(
                             { fontFamily },
@@ -225,12 +251,15 @@ export function PresentationToolbar({
                           ariaLabel="演示字号"
                           min={8}
                           max={96}
-                          value={selectedElement.fontSize}
-                          onValueChange={(value) =>
-                            commands.updateElement(
-                              { fontSize: Number(value) || 8 },
-                              { restoreTextFocus: false },
-                            )
+                          step={1}
+                          value={fontSizeDraft}
+                          escapeConsumer={
+                            fontSizeDraft !== String(selectedElement.fontSize)
+                          }
+                          onValueChange={setFontSizeDraft}
+                          onCommit={commitFontSize}
+                          onCancel={() =>
+                            setFontSizeDraft(String(selectedElement.fontSize))
                           }
                         />
                       </div>
@@ -240,11 +269,8 @@ export function PresentationToolbar({
                         aria-keyshortcuts="Control+B Meta+B"
                         displayLabel={false}
                         active={Boolean(selectedElement.bold)}
-                        onClick={() =>
-                          commands.updateElement({
-                            bold: !selectedElement.bold,
-                          })
-                        }
+                        disabled={!can.toggleBold()}
+                        onClick={commands.toggleBold}
                       >
                         <Bold size={15} />
                       </WorkOfficeRibbonButton>
@@ -254,11 +280,8 @@ export function PresentationToolbar({
                         aria-keyshortcuts="Control+I Meta+I"
                         displayLabel={false}
                         active={Boolean(selectedElement.italic)}
-                        onClick={() =>
-                          commands.updateElement({
-                            italic: !selectedElement.italic,
-                          })
-                        }
+                        disabled={!can.toggleItalic()}
+                        onClick={commands.toggleItalic}
                       >
                         <Italic size={15} />
                       </WorkOfficeRibbonButton>
@@ -268,11 +291,8 @@ export function PresentationToolbar({
                         aria-keyshortcuts="Control+U Meta+U"
                         displayLabel={false}
                         active={Boolean(selectedElement.underline)}
-                        onClick={() =>
-                          commands.updateElement({
-                            underline: !selectedElement.underline,
-                          })
-                        }
+                        disabled={!can.toggleUnderline()}
+                        onClick={commands.toggleUnderline}
                       >
                         <Underline size={15} />
                       </WorkOfficeRibbonButton>
@@ -449,15 +469,27 @@ export function PresentationToolbar({
                         void officeDialog
                           .prompt({
                             title: '链接地址',
+                            description:
+                              '为所选对象设置网页、邮箱或文档内链接。',
+                            fieldLabel: '链接地址',
                             initialValue: selectedElement.href ?? 'https://',
                             placeholder: 'https://',
+                            inputMode: 'url',
                             confirmLabel: '应用链接',
+                            validate: (value) =>
+                              value.trim() && !normalizeDocumentHref(value)
+                                ? DOCUMENT_LINK_VALIDATION_MESSAGE
+                                : null,
                           })
                           .then((href) => {
-                            if (href !== null)
+                            if (href !== null) {
+                              const normalized = href.trim()
+                                ? normalizeDocumentHref(href)
+                                : undefined;
                               commands.updateElement({
-                                href: href.trim() || undefined,
+                                href: normalized ?? undefined,
                               });
+                            }
                           })
                       }
                     >
@@ -491,7 +523,10 @@ export function PresentationToolbar({
           ),
           transitions: (
             <PresentationTransitionPanel
+              slideId={selectedSlide.id}
               transition={transition}
+              editable={can.setTransition(transition)}
+              canApplyToAll={can.applyTransitionToAll}
               onChange={commands.setTransition}
               onApplyToAll={commands.applyTransitionToAll}
             />
@@ -573,4 +608,44 @@ export function PresentationToolbar({
       {officeDialog.dialog}
     </>
   );
+}
+
+function normalizedPresentationFontSize(
+  value: string,
+  current: number,
+): number {
+  if (!value.trim()) return current;
+  const number = Number(value);
+  if (!Number.isFinite(number)) return current;
+  return Math.min(96, Math.max(8, Math.round(number)));
+}
+
+function presentationFontFamilyValue(current: string | undefined): string {
+  const value = current?.trim() || 'Aptos';
+  const normalized = normalizePresentationFontFamily(value);
+  return (
+    basePresentationFontFamilyOptions.find(
+      (option) => normalizePresentationFontFamily(option.value) === normalized,
+    )?.value ?? value
+  );
+}
+
+function presentationFontFamilyOptions(current: string) {
+  if (
+    basePresentationFontFamilyOptions.some((option) => option.value === current)
+  ) {
+    return basePresentationFontFamilyOptions;
+  }
+  return [
+    ...basePresentationFontFamilyOptions,
+    {
+      value: current,
+      label: officeFontFamilyLabel(current),
+      previewStyle: { fontFamily: current },
+    },
+  ];
+}
+
+function normalizePresentationFontFamily(value: string): string {
+  return normalizeOfficeFontFamily(value);
 }

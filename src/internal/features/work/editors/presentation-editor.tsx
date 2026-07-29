@@ -1,6 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { WorkspaceContextMenu } from '../../workspace/components/workspace-context-menu';
+import {
+  type WorkspaceContextMenuEvent,
+  WorkspaceContextMenu,
+  workspaceContextMenuPosition,
+} from '../../workspace/components/workspace-context-menu';
 import { presentationAgentMenuItems } from '../components/work-editor-agent-menus';
 import { applyPresentationAgentProposalChanges } from '../work-agent-proposal-apply';
 import {
@@ -30,6 +34,12 @@ import {
 import { presentationCoreContextMenuItems } from './presentation-context-menu';
 import { PresentationDesignPanel } from './presentation-design-panel';
 import { updatePresentationElements } from './presentation-editor-operations';
+import {
+  type PresentationObjectFocusState,
+  type PresentationWorkspaceFocusState,
+  presentationCommandsWithObjectFocus,
+  restorePresentationWorkspaceFocus,
+} from './presentation-editor-focus';
 import {
   presentationElementSupportsTextFormatting,
   selectedPresentationElements,
@@ -68,6 +78,7 @@ import { WorkOfficePreviewBar } from './work-office-chrome';
 export type { PresentationEditorProps } from './presentation-editor-types';
 
 type PresentationTaskPane = 'comments' | 'design' | null;
+type PresentationTextFormattingAttribute = 'bold' | 'italic' | 'underline';
 
 export function PresentationEditor(props: PresentationEditorProps) {
   const { content, fileActions, preview } = props;
@@ -127,7 +138,18 @@ function PresentationEditingSurface({
   );
   const [zoom, setZoom] = useState(90);
   const slideshowReturnFocusRef = useRef<HTMLElement | null>(null);
+  const presentationRootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLElement>(null);
+  const objectFocusStateRef = useRef<PresentationObjectFocusState>({
+    editingElementId: null,
+    selectedElementIds: [],
+  });
+  const workspaceFocusStateRef = useRef<PresentationWorkspaceFocusState>({
+    editingElementId: null,
+    selectedElementIds: [],
+    selectedSlideId: selectedSlideId,
+    viewMode: 'normal',
+  });
   const imageInputRef = useRef<HTMLInputElement>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
   const designContent = withPresentationDesign(content);
@@ -168,6 +190,15 @@ function PresentationEditingSurface({
     !activeTextEditor.editor.isDestroyed
       ? activeTextEditor.editor
       : null;
+  objectFocusStateRef.current = {
+    editingElementId: selection.editingElementId,
+    selectedElementIds: selection.selectedElementIds,
+  };
+  workspaceFocusStateRef.current = {
+    ...objectFocusStateRef.current,
+    selectedSlideId: selectedSlide.id,
+    viewMode,
+  };
   const toolbarSelectedElement = selectedElement
     ? selectedTextEditor && !selectedTextEditor.state.selection.empty
       ? presentationTextToolbarState(selectedTextEditor, selectedElement)
@@ -258,16 +289,17 @@ function PresentationEditingSurface({
   const aspectRatio = `${content.width ?? 13.333} / ${content.height ?? 7.5}`;
   contentRef.current = content;
   const openContextMenu = (
-    event: React.MouseEvent,
+    event: WorkspaceContextMenuEvent,
     slide: WorkSlide,
     slideIndex: number,
     element?: WorkSlideElement | null,
   ) => {
     event.preventDefault();
     event.stopPropagation();
+    const position = workspaceContextMenuPosition(event);
     setAgentMenu({
-      x: event.clientX,
-      y: event.clientY,
+      x: position.x,
+      y: position.y,
       selection: presentationAgentSelection(
         slide,
         slideIndex,
@@ -425,6 +457,35 @@ function PresentationEditingSurface({
   const textFormattingAvailable =
     selectedElements.length > 0 &&
     selectedElements.every(presentationElementSupportsTextFormatting);
+  const toggleTextFormatting = useCallback(
+    (attribute: PresentationTextFormattingAttribute): boolean => {
+      if (
+        selectedTextEditor &&
+        !selectedTextEditor.state.selection.empty &&
+        toolbarSelectedElement
+      ) {
+        const value = !toolbarSelectedElement[attribute];
+        return applyPresentationTextFormatting(
+          selectedTextEditor,
+          attribute === 'bold'
+            ? { bold: value }
+            : attribute === 'italic'
+              ? { italic: value }
+              : { underline: value },
+        );
+      }
+      if (attribute === 'bold') return clipboard.toggleBold();
+      if (attribute === 'italic') return clipboard.toggleItalic();
+      return clipboard.toggleUnderline();
+    },
+    [
+      clipboard.toggleBold,
+      clipboard.toggleItalic,
+      clipboard.toggleUnderline,
+      selectedTextEditor,
+      toolbarSelectedElement,
+    ],
+  );
   const presentationExtensions = useMemo(
     createPresentationEditorExtensions,
     [],
@@ -525,6 +586,8 @@ function PresentationEditingSurface({
         canNudgeSelection:
           selectedElements.length > 0 && Boolean(activeTargetId),
         canToggleBold: textFormattingAvailable,
+        canToggleItalic: textFormattingAvailable,
+        canToggleUnderline: textFormattingAvailable,
         deleteSelection: clipboard.deleteSelection,
         duplicateSelection: clipboard.duplicateSelection,
         editElement: selection.edit,
@@ -532,11 +595,18 @@ function PresentationEditingSurface({
         nudgeSelection: clipboard.nudgeSelection,
         selectElement: selection.select,
         selectElements: selection.replace,
-        toggleBold: clipboard.toggleBold,
+        toggleBold: () => toggleTextFormatting('bold'),
+        toggleItalic: () => toggleTextFormatting('italic'),
+        toggleUnderline: () => toggleTextFormatting('underline'),
       },
       slides: {
+        canAddSlide: designMode === 'slide',
+        canApplyTransitionToAll: (transition) =>
+          designMode === 'slide' &&
+          presentationSlides.canApplyTransitionToAll(transition),
         canDeleteSlide: designMode === 'slide' && content.slides.length > 1,
         canDuplicateSlide: designMode === 'slide' && Boolean(selectedSlide),
+        canSetTransition: designMode === 'slide',
         addSlide: presentationSlides.addSlide,
         applyTransitionToAll: presentationSlides.applyTransitionToAll,
         deleteSlide: presentationSlides.deleteSlide,
@@ -580,10 +650,30 @@ function PresentationEditingSurface({
   const presentationCommands = presentationEditor.commands;
   presentationCommandsRef.current = presentationCommands;
   const presentationCan = presentationEditor.can();
-  useOfficeEditorKeyboardShortcuts(presentationEditor);
+  const restoreObjectFocus = useCallback(
+    () =>
+      restorePresentationWorkspaceFocus(
+        presentationRootRef.current,
+        () => workspaceFocusStateRef.current,
+      ),
+    [],
+  );
+  const presentationToolbarCommands = useMemo(
+    () =>
+      presentationCommandsWithObjectFocus(
+        presentationCommands,
+        restoreObjectFocus,
+      ),
+    [presentationCommands, restoreObjectFocus],
+  );
+  useOfficeEditorKeyboardShortcuts(presentationEditor, {
+    onHandled: restoreObjectFocus,
+    scopeRef: presentationRootRef,
+  });
 
   return (
     <section
+      ref={presentationRootRef}
       className="work-presentation-editor"
       data-presentation-geometry-engine={geometry.engine ?? undefined}
       data-presentation-geometry-state={geometry.pending ? 'running' : 'idle'}
@@ -598,7 +688,7 @@ function PresentationEditingSurface({
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = '';
-          if (file) void presentationCommands.addImage(file);
+          if (file) void presentationToolbarCommands.addImage(file);
         }}
       />
       <PresentationToolbar
@@ -615,7 +705,7 @@ function PresentationEditingSurface({
         background={activeBackground}
         transition={selectedSlide.transition}
         viewMode={viewMode}
-        commands={presentationCommands}
+        commands={presentationToolbarCommands}
       />
       {designOpen && selectedLayout && selectedMaster && (
         <PresentationDesignPanel
@@ -693,7 +783,7 @@ function PresentationEditingSurface({
         viewMode={viewMode}
         zoom={zoom}
         saveStatus={saveStatus}
-        onViewModeChange={presentationCommands.setViewMode}
+        onViewModeChange={presentationToolbarCommands.setViewMode}
         onZoomChange={setZoom}
       />
       {designMode === 'slide' && agentMenu && (

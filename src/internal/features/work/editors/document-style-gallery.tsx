@@ -56,8 +56,7 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
                 aria-label={`应用样式：${style.label}`}
                 checked={active}
                 tabIndex={active ? 0 : -1}
-                onChange={() => undefined}
-                onClick={() => applyDocumentParagraphStyle(editor, style)}
+                onChange={() => applyDocumentParagraphStyle(editor, style)}
                 onKeyDown={(event) => {
                   if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
                     moveSelection(event, index + 1);

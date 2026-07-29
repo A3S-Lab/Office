@@ -1,6 +1,6 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   CollectionState,
@@ -44,11 +44,12 @@ import {
   workSpreadsheetChartUsesNumericXAxis,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 import { SpreadsheetChartAxisEditor } from './spreadsheet-chart-axis-editor';
 import {
   type ChartDraft,
@@ -66,6 +67,7 @@ import { SpreadsheetChartSeriesStyleEditor } from './spreadsheet-chart-series-st
 import { SpreadsheetDataLabelEditor } from './spreadsheet-data-label-editor';
 import { SpreadsheetErrorBarEditor } from './spreadsheet-error-bar-editor';
 import { SpreadsheetTrendlineEditor } from './spreadsheet-trendline-editor';
+import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetChartPanelProps {
   content: WorkSpreadsheetContent;
@@ -92,30 +94,55 @@ export function SpreadsheetChartPanel({
   const [selectedKey, setSelectedKey] = useState<string | null>(() =>
     chartKey(items[0]),
   );
-  const [draft, setDraft] = useState<ChartDraft | null>(() =>
+  const {
+    cancelDraft: resetDraft,
+    dirty,
+    draft,
+    draftRef,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft<ChartDraft | null>(() =>
     items[0] ? chartDraft(items[0]) : null,
   );
   const [error, setError] = useState('');
+  const pendingCreatedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const current = items.find((item) => chartKey(item) === selectedKey);
     if (current) {
-      setDraft(chartDraft(current));
+      const next = chartDraft(current);
+      syncDraft(next, chartDraftKey(draftRef.current) !== selectedKey);
+      if (pendingCreatedKeyRef.current === selectedKey) {
+        pendingCreatedKeyRef.current = null;
+      }
       return;
     }
-    if (selectedKey) {
-      const first = items[0];
-      setSelectedKey(chartKey(first));
-      setDraft(first ? chartDraft(first) : null);
-    }
-  }, [items, selectedKey]);
+    if (!selectedKey || pendingCreatedKeyRef.current === selectedKey) return;
+    const first = items[0];
+    const next = first ? chartDraft(first) : null;
+    setSelectedKey(chartKey(first));
+    replaceDraft(next);
+  }, [draftRef, items, replaceDraft, syncDraft]);
 
   const selectChart = (item: ChartListItem) => {
+    const nextKey = chartKey(item);
+    if (nextKey === selectedKey) return;
+    if (dirty) {
+      setError('当前图表有未保存更改，请先保存或取消。');
+      return;
+    }
+    const next = chartDraft(item);
+    pendingCreatedKeyRef.current = null;
     setSelectedKey(chartKey(item));
-    setDraft(chartDraft(item));
+    replaceDraft(next);
     setError('');
   };
   const addChart = () => {
+    if (dirty) {
+      setError('当前图表有未保存更改，请先保存或取消。');
+      return;
+    }
     const sheet =
       content.sheets.find((candidate) => candidate.id === activeSheetId) ??
       content.sheets.find((candidate) => !candidate.hide) ??
@@ -143,12 +170,15 @@ export function SpreadsheetChartPanel({
         : candidate,
     );
     onChange({ ...content, sheets: next });
-    setSelectedKey(`${sheet.id}:${chart.id}`);
-    setDraft({
+    const nextKey = `${sheet.id}:${chart.id}`;
+    const nextDraft: ChartDraft = {
       ...chart,
       sheetId: sheet.id,
       series: chart.series.map((item) => ({ ...item })),
-    });
+    };
+    pendingCreatedKeyRef.current = nextKey;
+    setSelectedKey(nextKey);
+    replaceDraft(nextDraft);
     setError('');
   };
   const saveChart = () => {
@@ -449,13 +479,16 @@ export function SpreadsheetChartPanel({
         : sheet,
     );
     onChange({ ...content, sheets });
-    setDraft(
-      chartDraft({
-        sheetId: draft.sheetId,
-        sheetName: ownerSheet.name,
-        chart: saved,
-      }),
-    );
+    const savedDraft = chartDraft({
+      sheetId: draft.sheetId,
+      sheetName: ownerSheet.name,
+      chart: saved,
+    });
+    replaceDraft(savedDraft);
+    setError('');
+  };
+  const cancelDraft = () => {
+    resetDraft();
     setError('');
   };
   const deleteChart = () => {
@@ -471,13 +504,25 @@ export function SpreadsheetChartPanel({
     const next = items.find(
       (item) => chartKey(item) !== `${draft.sheetId}:${draft.id}`,
     );
+    const nextDraft = next ? chartDraft(next) : null;
+    pendingCreatedKeyRef.current = null;
     setSelectedKey(chartKey(next));
-    setDraft(next ? chartDraft(next) : null);
+    replaceDraft(nextDraft);
     setError('');
   };
 
   return (
-    <div className="work-spreadsheet-chart-manager">
+    <fieldset
+      className="work-spreadsheet-chart-manager"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDraft();
+      }}
+    >
+      <legend className="sr-only">图表编辑</legend>
       <aside aria-label="工作簿图表">
         <Button className="create" tone="secondary" onClick={addChart}>
           <Plus size={13} />
@@ -553,16 +598,23 @@ export function SpreadsheetChartPanel({
             {draft.type === 'doughnut' && (
               <div className="work-office-field">
                 <span>圆环孔径（%）</span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   ariaLabel="圆环孔径（%）"
                   min={10}
                   max={90}
                   step={1}
                   value={draft.doughnutHoleSize ?? 50}
-                  onValueChange={(doughnutHoleSize) =>
+                  normalizeValue={(value) =>
+                    normalizeRequiredOfficeNumber(value, {
+                      integer: true,
+                      minimum: 10,
+                      maximum: 90,
+                    })
+                  }
+                  onValueCommit={(doughnutHoleSize) =>
                     setDraft({
                       ...draft,
-                      doughnutHoleSize: Number(doughnutHoleSize),
+                      doughnutHoleSize,
                     })
                   }
                 />
@@ -616,14 +668,21 @@ export function SpreadsheetChartPanel({
               <>
                 <div className="work-office-field">
                   <span>气泡缩放（%）</span>
-                  <OfficeNumberField
+                  <CommittedOfficeNumberField
                     ariaLabel="气泡缩放（%）"
                     min={0}
                     max={300}
                     step={1}
                     value={draft.bubbleScale ?? 100}
-                    onValueChange={(bubbleScale) =>
-                      setDraft({ ...draft, bubbleScale: Number(bubbleScale) })
+                    normalizeValue={(value) =>
+                      normalizeRequiredOfficeNumber(value, {
+                        integer: true,
+                        minimum: 0,
+                        maximum: 300,
+                      })
+                    }
+                    onValueCommit={(bubbleScale) =>
+                      setDraft({ ...draft, bubbleScale })
                     }
                   />
                 </div>
@@ -1007,7 +1066,10 @@ export function SpreadsheetChartPanel({
               <Trash2 size={13} />
               删除图表
             </Button>
-            <Button type="submit" tone="primary">
+            <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
+              取消更改
+            </Button>
+            <Button type="submit" tone="primary" disabled={!dirty}>
               保存图表
             </Button>
           </div>
@@ -1016,8 +1078,8 @@ export function SpreadsheetChartPanel({
         <StateView
           className="work-spreadsheet-chart-empty"
           size="compact"
-          title="从单元格选区创建原生图表"
-          description="第一行会作为系列名称，第一列会作为分类标签；创建后仍可修改引用和图表类型。"
+          title="从选区创建图表"
+          description="先选择包含标题的数据区域，再新建图表。"
         >
           {error && (
             <InlineNotice
@@ -1030,6 +1092,10 @@ export function SpreadsheetChartPanel({
           )}
         </StateView>
       )}
-    </div>
+    </fieldset>
   );
+}
+
+function chartDraftKey(draft: ChartDraft | null): string | null {
+  return draft ? `${draft.sheetId}:${draft.id}` : null;
 }

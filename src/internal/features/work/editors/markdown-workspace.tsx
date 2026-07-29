@@ -4,7 +4,6 @@ import {
   type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
-  type MouseEvent,
   type PointerEvent,
   type RefObject,
   type UIEvent,
@@ -14,6 +13,10 @@ import {
   useRef,
   useState,
 } from 'react';
+import {
+  isWorkspaceContextMenuKeyboardEvent,
+  type WorkspaceContextMenuEvent,
+} from '../../workspace/components/workspace-context-menu';
 import type {
   MarkdownSourceCommand,
   MarkdownSourceSelection,
@@ -46,6 +49,7 @@ export function MarkdownWorkspace({
   markdown,
   mode,
   readOnly = false,
+  visualReadOnly = readOnly,
   sourceRef,
   sourceSelectionRequest,
   onSourceChange,
@@ -62,6 +66,7 @@ export function MarkdownWorkspace({
   markdown: string;
   mode: MarkdownViewMode;
   readOnly?: boolean;
+  visualReadOnly?: boolean;
   sourceRef: RefObject<HTMLTextAreaElement | null>;
   sourceSelectionRequest?: MarkdownSourceSelection & { revision: number };
   onSourceChange: (
@@ -70,12 +75,16 @@ export function MarkdownWorkspace({
     inputType?: string,
   ) => void;
   onSourceCommand?: (command: MarkdownSourceCommand) => boolean;
-  onSourceContextMenu?: (event: MouseEvent<HTMLTextAreaElement>) => void;
+  onSourceContextMenu?: (
+    event: WorkspaceContextMenuEvent<HTMLTextAreaElement>,
+  ) => boolean;
   onSourceIntent?: () => void;
   onSourceRedo?: () => boolean;
   onSourceSelectionChange?: (selection: MarkdownSourceSelection) => void;
   onSourceUndo?: () => boolean;
-  onVisualContextMenu?: (event: MouseEvent<HTMLElement>) => void;
+  onVisualContextMenu?: (
+    event: WorkspaceContextMenuEvent<HTMLElement>,
+  ) => boolean;
   onVisualIntent?: () => void;
 }) {
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -89,6 +98,7 @@ export function MarkdownWorkspace({
   const [resizing, setResizing] = useState(false);
   const showSource = !readOnly && mode !== 'visual';
   const showVisual = readOnly || mode !== 'source';
+  const visualIsReadOnly = readOnly || visualReadOnly;
 
   const releaseScrollLock = useCallback(() => {
     if (releaseFrameRef.current !== null) {
@@ -119,7 +129,8 @@ export function MarkdownWorkspace({
       sourceSelectionRequest.end,
       sourceSelectionRequest.direction,
     );
-  }, [sourceRef, sourceSelectionRequest]);
+    onSourceSelectionChange?.(sourceSelectionRequest);
+  }, [onSourceSelectionChange, sourceRef, sourceSelectionRequest]);
 
   const handleSourceScroll = useCallback(
     (event: UIEvent<HTMLTextAreaElement>) => {
@@ -235,7 +246,7 @@ export function MarkdownWorkspace({
           className="work-markdown-pane source"
         >
           {mode === 'split' && (
-            <header className="work-markdown-pane-label">源码</header>
+            <header className="work-markdown-pane-label">编辑</header>
           )}
           <textarea
             ref={sourceRef}
@@ -270,6 +281,12 @@ export function MarkdownWorkspace({
             onFocus={onSourceIntent}
             onContextMenu={onSourceContextMenu}
             onKeyDown={(event) => {
+              if (
+                isWorkspaceContextMenuKeyboardEvent(event) &&
+                onSourceContextMenu?.(event)
+              ) {
+                return;
+              }
               if (event.altKey || !(event.metaKey || event.ctrlKey)) return;
               const key = event.key.toLocaleLowerCase();
               if (key === 'z') {
@@ -289,7 +306,14 @@ export function MarkdownWorkspace({
               if (!command || !onSourceCommand?.(command)) return;
               event.preventDefault();
             }}
+            onKeyUp={(event) =>
+              onSourceSelectionChange?.(sourceSelection(event.currentTarget))
+            }
             onPointerDown={onSourceIntent}
+            onPointerUp={(event) => {
+              onSourceIntent?.();
+              onSourceSelectionChange?.(sourceSelection(event.currentTarget));
+            }}
             onSelect={(event) => {
               onSourceIntent?.();
               onSourceSelectionChange?.(sourceSelection(event.currentTarget));
@@ -301,12 +325,12 @@ export function MarkdownWorkspace({
       {mode === 'split' && (
         <hr
           className="work-markdown-splitter"
-          aria-label="调整源码与编辑结果宽度"
+          aria-label="调整编辑与预览宽度"
           aria-orientation="vertical"
           aria-valuemin={MIN_MARKDOWN_SPLIT_PERCENT}
           aria-valuemax={MAX_MARKDOWN_SPLIT_PERCENT}
           aria-valuenow={sourcePanePercent}
-          aria-valuetext={`源码窗格 ${sourcePanePercent}%`}
+          aria-valuetext={`编辑窗格 ${sourcePanePercent}%`}
           tabIndex={0}
           title="拖动调整分栏宽度，双击恢复均分"
           onDoubleClick={() =>
@@ -322,15 +346,22 @@ export function MarkdownWorkspace({
       {showVisual && (
         <section
           ref={visualRef}
-          aria-label={readOnly ? 'Markdown 预览窗格' : 'Markdown 编辑结果窗格'}
+          aria-label={
+            visualIsReadOnly ? 'Markdown 预览窗格' : 'Markdown 编辑窗格'
+          }
           className="work-markdown-pane visual"
+          data-readonly={visualIsReadOnly ? 'true' : 'false'}
           onContextMenu={onVisualContextMenu}
+          onKeyDownCapture={(event) => {
+            if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
+            onVisualContextMenu?.(event);
+          }}
           onFocusCapture={onVisualIntent}
           onPointerDownCapture={onVisualIntent}
           onScroll={handleVisualScroll}
         >
           {mode === 'split' && (
-            <header className="work-markdown-pane-label">编辑结果</header>
+            <header className="work-markdown-pane-label">预览</header>
           )}
           <div className="work-markdown-canvas">
             <EditorContent editor={editor} />

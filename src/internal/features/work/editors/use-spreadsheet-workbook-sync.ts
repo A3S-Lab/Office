@@ -6,6 +6,7 @@ const MAXIMUM_BUFFERED_SPREADSHEET_OPERATIONS = 10_001;
 
 export interface SpreadsheetWorkbookSyncController {
   acceptContent: (content: WorkSpreadsheetContent) => void;
+  ignoreChangeDuringExternalSync: (matchesExternalContent: boolean) => boolean;
   mountRevision: number;
   recordOperations: (operations: readonly Op[]) => void;
   takeOperations: () => Op[];
@@ -15,8 +16,12 @@ export function useSpreadsheetWorkbookSync(
   content: WorkSpreadsheetContent,
 ): SpreadsheetWorkbookSyncController {
   const mountedContentRef = useRef(content);
+  const externalSyncPendingRef = useRef(false);
   const pendingOperationsRef = useRef<Op[]>([]);
   const [mountRevision, setMountRevision] = useState(0);
+  if (mountedContentRef.current !== content) {
+    externalSyncPendingRef.current = true;
+  }
 
   useLayoutEffect(() => {
     if (mountedContentRef.current === content) return;
@@ -28,6 +33,15 @@ export function useSpreadsheetWorkbookSync(
   const acceptContent = useCallback((nextContent: WorkSpreadsheetContent) => {
     mountedContentRef.current = nextContent;
   }, []);
+
+  const ignoreChangeDuringExternalSync = useCallback(
+    (matchesExternalContent: boolean): boolean => {
+      if (!externalSyncPendingRef.current) return false;
+      if (matchesExternalContent) externalSyncPendingRef.current = false;
+      return true;
+    },
+    [],
+  );
 
   const recordOperations = useCallback((operations: readonly Op[]) => {
     if (!operations.length) return;
@@ -43,6 +57,7 @@ export function useSpreadsheetWorkbookSync(
 
   return {
     acceptContent,
+    ignoreChangeDuringExternalSync,
     mountRevision,
     recordOperations,
     takeOperations,

@@ -1,6 +1,10 @@
 import type { Editor } from '@tiptap/core';
-import type { MouseEvent, PointerEvent, RefObject } from 'react';
+import type { PointerEvent, RefObject } from 'react';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
+import {
+  isWorkspaceContextMenuKeyboardEvent,
+  type WorkspaceContextMenuEvent,
+} from '../../workspace/components/workspace-context-menu';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -74,7 +78,7 @@ export interface PresentationWorkspaceProps {
   onDragCancel: () => void;
   onDragEnd: (event: PointerEvent) => void;
   onOpenContextMenu: (
-    event: MouseEvent,
+    event: WorkspaceContextMenuEvent,
     slide: WorkSlide,
     slideIndex: number,
     element?: WorkSlideElement | null,
@@ -296,6 +300,17 @@ export function PresentationWorkspace({
                   commands.selectElement(element.id, false);
                 }}
                 onKeyDown={(event) => {
+                  if (isWorkspaceContextMenuKeyboardEvent(event)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onOpenContextMenu(
+                      event,
+                      selectedSlide,
+                      selectedSlideIndex,
+                      element,
+                    );
+                    return;
+                  }
                   if (
                     event.key !== 'Enter' ||
                     editing ||

@@ -61,7 +61,11 @@ describe('presentation editor extensions', () => {
       speed: 'medium',
       advanceOnClick: true,
     });
-    commands.applyTransitionToAll();
+    commands.applyTransitionToAll({
+      type: 'fade',
+      speed: 'medium',
+      advanceOnClick: true,
+    });
     commands.selectSlide('slide-2', true);
     commands.selectElement('element-2', true);
     commands.updateTextElement('element-2', { text: 'Updated' });
@@ -75,7 +79,7 @@ describe('presentation editor extensions', () => {
       'table.add:4x5',
       'clipboard.copy',
       'transition.set:fade',
-      'transition.applyToAll',
+      'transition.applyToAll:fade',
       'slide.select:slide-2:true',
       'selection.select:element-2:true',
       'element.text:element-2:Updated',
@@ -95,6 +99,33 @@ describe('presentation editor extensions', () => {
     editor.commands.undo();
 
     expect(calls).toEqual(['history.undo']);
+  });
+
+  test('evaluates transition capabilities against the proposed transition', () => {
+    const calls: string[] = [];
+    const context = presentationContext(calls);
+    context.slides.canApplyTransitionToAll = (transition) =>
+      transition?.type === 'push';
+    context.slides.canSetTransition = false;
+    const editor = createOfficeEditorRuntime(
+      context,
+      createPresentationEditorExtensions(),
+    );
+    const fade = {
+      type: 'fade',
+      speed: 'medium',
+      advanceOnClick: true,
+    } as const;
+    const push = {
+      ...fade,
+      type: 'push',
+      direction: 'left',
+    } as const;
+
+    expect(editor.can().applyTransitionToAll(fade)).toBe(false);
+    expect(editor.can().applyTransitionToAll(push)).toBe(true);
+    expect(editor.can().setTransition(fade)).toBe(false);
+    expect(calls).toEqual([]);
   });
 
   test('routes presentation shortcuts through typed commands and can()', () => {
@@ -130,6 +161,90 @@ describe('presentation editor extensions', () => {
       'slideshow.start:beginning',
       'slideshow.start:current',
     ]);
+  });
+
+  test('does not create slides from toolbar shortcuts when slide editing is unavailable', () => {
+    const calls: string[] = [];
+    const context = presentationContext(calls);
+    context.slides.canAddSlide = false;
+    const editor = createOfficeEditorRuntime(
+      context,
+      createPresentationEditorExtensions(),
+    );
+
+    expect(editor.can().addSlide()).toBe(false);
+    for (const event of [
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        ctrlKey: true,
+        key: 'm',
+      }),
+      new KeyboardEvent('keydown', {
+        cancelable: true,
+        key: 'n',
+        metaKey: true,
+        shiftKey: true,
+      }),
+    ]) {
+      expect(editor.handleKeyDown(event)).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(calls).not.toContain('slide.add');
+  });
+
+  test('honors the advertised text-formatting shortcuts on slide objects', () => {
+    const calls: string[] = [];
+    const commandContext = presentationContext(calls);
+    commandContext.keyboard = {
+      editingElementId: null,
+      selectedElement: {
+        id: 'title',
+        type: 'text',
+        x: 10,
+        y: 10,
+        width: 80,
+        height: 20,
+        text: 'Quarterly plan',
+        fontSize: 24,
+        color: '#172033',
+        fill: 'transparent',
+        bold: false,
+        align: 'left',
+      },
+      selectedElementCount: 1,
+    };
+    const editor = createOfficeEditorRuntime(
+      commandContext,
+      createPresentationEditorExtensions(),
+    );
+    const object = document.createElement('button');
+    object.dataset.slideElementOrigin = 'slide';
+    document.body.append(object);
+    try {
+      const handled: boolean[] = [];
+      object.addEventListener('keydown', (event) => {
+        handled.push(editor.handleKeyDown(event));
+      });
+      for (const key of ['b', 'i', 'u']) {
+        object.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            bubbles: true,
+            cancelable: true,
+            key,
+            metaKey: true,
+          }),
+        );
+      }
+
+      expect(handled).toEqual([true, true, true]);
+      expect(calls).toEqual([
+        'selection.bold',
+        'selection.italic',
+        'selection.underline',
+      ]);
+    } finally {
+      object.remove();
+    }
   });
 });
 
@@ -236,6 +351,8 @@ function presentationContext(calls: string[]): PresentationCommandContext {
       canExitEditing: true,
       canNudgeSelection: true,
       canToggleBold: true,
+      canToggleItalic: true,
+      canToggleUnderline: true,
       deleteSelection: () => record(calls, 'selection.delete'),
       duplicateSelection: () => record(calls, 'selection.duplicate'),
       editElement: (id) => calls.push(`selection.edit:${id}`),
@@ -246,20 +363,30 @@ function presentationContext(calls: string[]): PresentationCommandContext {
         calls.push(`selection.select:${elementId ?? 'none'}:${additive}`),
       selectElements: (ids) => calls.push(`selection.set:${ids.join(',')}`),
       toggleBold: () => record(calls, 'selection.bold'),
+      toggleItalic: () => record(calls, 'selection.italic'),
+      toggleUnderline: () => record(calls, 'selection.underline'),
     },
     slides: {
+      canAddSlide: true,
+      canApplyTransitionToAll: () => true,
       canDeleteSlide: true,
       canDuplicateSlide: true,
+      canSetTransition: true,
       addSlide: () => calls.push('slide.add'),
-      applyTransitionToAll: () => calls.push('transition.applyToAll'),
+      applyTransitionToAll: (transition) => {
+        calls.push(`transition.applyToAll:${transition?.type ?? 'none'}`);
+        return true;
+      },
       deleteSlide: () => calls.push('slide.delete'),
       deleteSlideById: (slideId) => record(calls, `slide.delete:${slideId}`),
       duplicateSlide: () => calls.push('slide.duplicate'),
       selectSlide: (slideId, returnToSlideMode) =>
         calls.push(`slide.select:${slideId}:${returnToSlideMode}`),
       setBackground: (color) => calls.push(`background.set:${color}`),
-      setTransition: (transition) =>
-        calls.push(`transition.set:${transition?.type ?? 'none'}`),
+      setTransition: (transition) => {
+        calls.push(`transition.set:${transition?.type ?? 'none'}`);
+        return true;
+      },
       updateNotes: (notes) => calls.push(`notes.update:${notes}`),
     },
     view: {

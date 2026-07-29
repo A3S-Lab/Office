@@ -1075,11 +1075,8 @@
     gap: 2px;
   }
 
-  .work-editor-shell.pdf .work-pdf-save .ds-button {
-    width: 28px;
-    justify-content: center;
-    padding-inline: 0;
-    font-size: 0;
+  .work-editor-shell.pdf .work-pdf-save {
+    display: none;
   }
 
   .work-editor-shell.pdf .work-pdf-history,
@@ -1101,6 +1098,10 @@
   .work-editor-shell.pdf .work-pdf-page-controls {
     margin-left: 0;
   }
+
+  .work-editor-shell.pdf .work-pdf-zoom-controls {
+    display: flex;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1118,6 +1119,10 @@
   }
 
   .playground-editor-header .work-file-kind-icon {
+    display: none;
+  }
+
+  .work-editor-shell.pdf .work-pdf-zoom-controls {
     display: none;
   }
 }

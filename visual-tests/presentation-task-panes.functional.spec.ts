@@ -61,8 +61,128 @@ test('Presentation closes the contextual chart pane with Escape', async ({
   });
   await expect(chartPane).toBeVisible();
 
+  const values = page.getByRole('textbox', {
+    name: '演示图表系列 1 数据',
+  });
+  await values.fill('32, wrong, 61');
+  await expect(values).toHaveAttribute('aria-invalid', 'true');
+  await page.keyboard.press('Escape');
+  await expect(values).toHaveValue('32, 48, 61');
+  await expect(chartPane).toBeVisible();
+
+  const minimum = chartPane.getByRole('textbox', {
+    name: '演示图表纵轴最小值',
+  });
+  const maximum = chartPane.getByRole('textbox', {
+    name: '演示图表纵轴最大值',
+  });
+  await minimum.fill('10');
+  await minimum.press('Enter');
+  await maximum.fill('5');
+  await expect(maximum).toHaveAttribute('aria-invalid', 'true');
+  await maximum.press('Enter');
+  await expect(maximum).toHaveValue('');
+  await expect(maximum).not.toHaveAttribute('aria-invalid');
+  await expect(chartPane).toBeVisible();
+
   await page.keyboard.press('Escape');
   await expect(chartPane).toBeHidden();
+});
+
+test('Presentation task-pane text fields cancel a draft before the pane closes', async ({
+  page,
+}) => {
+  await openPresentationFixture(page);
+
+  await page.getByRole('tab', { name: '插入', exact: true }).click();
+  await page.getByRole('button', { name: '图表', exact: true }).click();
+  const chartPane = page.getByRole('region', {
+    name: '演示图表数据',
+    exact: true,
+  });
+  const title = chartPane.getByRole('textbox', { name: '演示图表标题' });
+  const originalTitle = await title.inputValue();
+
+  await title.fill('未保存的标题');
+  await title.press('Escape');
+  await expect(title).toHaveValue(originalTitle);
+  await expect(chartPane).toBeVisible();
+
+  await title.fill('已保存的标题');
+  await title.press('Enter');
+  await expect(title).toHaveValue('已保存的标题');
+  await expect(chartPane).toBeVisible();
+
+  await title.press('Escape');
+  await expect(chartPane).toBeHidden();
+});
+
+test('Presentation applies the live transition timing draft to every slide', async ({
+  page,
+}) => {
+  await openPresentationFixture(page);
+
+  const thumbnails = page.locator('.work-slide-strip [data-slide-thumbnail]');
+  const activeThumbnail = page.locator(
+    '.work-slide-strip [data-slide-thumbnail].active',
+  );
+  await page.getByRole('tab', { name: '切换', exact: true }).click();
+  const effect = page.getByRole('combobox', {
+    name: '幻灯片切换效果',
+  });
+  const apply = page.getByRole('button', {
+    name: '应用切换效果到全部幻灯片',
+  });
+  await expect(effect).toHaveText('无');
+  await expect(apply).toBeDisabled();
+
+  await effect.click();
+  await page.getByRole('option', { name: '淡化' }).click();
+  await expect(apply).toBeEnabled();
+  const automatic = page.getByRole('checkbox', { name: '自动换片' });
+  await automatic.click();
+  const seconds = page.getByRole('textbox', { name: '自动换片秒数' });
+  await seconds.fill('7.75');
+  await expect(seconds).toHaveValue('7.75');
+
+  await apply.click();
+  await expect(apply).toBeDisabled();
+  await expect(activeThumbnail).toBeFocused();
+
+  await thumbnails.nth(1).click();
+  await expect(seconds).toHaveValue('7.75');
+  await expect(apply).toBeDisabled();
+  const speed = page.getByRole('combobox', { name: '切换速度' });
+  await speed.click();
+  await page.getByRole('option', { name: '慢速' }).click();
+  await expect(apply).toBeEnabled();
+  await expect(activeThumbnail).toBeFocused();
+
+  await thumbnails.first().click();
+  await expect(seconds).toHaveValue('7.75');
+  await expect(speed).toHaveText('中速');
+  await expect(apply).toBeEnabled();
+});
+
+test('Presentation disables slide transitions while editing a layout', async ({
+  page,
+}) => {
+  await openPresentationFixture(page);
+
+  await page.getByRole('tab', { name: '设计', exact: true }).click();
+  await page.getByRole('button', { name: '母版和版式' }).click();
+  await page.getByRole('button', { name: '编辑当前布局' }).click();
+  await page.getByRole('tab', { name: '切换', exact: true }).click();
+
+  await expect(
+    page.getByRole('combobox', { name: '幻灯片切换效果' }),
+  ).toBeDisabled();
+  await expect(page.getByRole('combobox', { name: '切换速度' })).toBeDisabled();
+  await expect(
+    page.getByRole('button', {
+      name: '应用切换效果到全部幻灯片',
+    }),
+  ).toBeDisabled();
 });
 
 async function openPresentationFixture(page: Page) {

@@ -7,9 +7,13 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { documentFontFamilyOptions } from '../src/internal/features/work/editors/document-formatting-options';
+import {
+  changeDocumentFontSize,
+  documentFontFamilyOptions,
+} from '../src/internal/features/work/editors/document-formatting-options';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { MAX_DOCUMENT_INDENT_LEVEL } from '../src/internal/features/work/work-document-paragraph-formatting';
 
 let editor: Editor | null = null;
 
@@ -82,6 +86,10 @@ test('applies italic formatting without replacing the selected text', () => {
 
   expect(editor.getHTML()).toContain('<em>Italic text</em> stays intact');
   expect(editor.getText()).toBe('Italic text stays intact');
+  expect(screen.getByRole('button', { name: '斜体' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+I Meta+I',
+  );
 });
 
 test('previews every font option with the font it applies', async () => {
@@ -108,6 +116,36 @@ test('previews every font option with the font it applies', async () => {
       fontFamily: option.previewStyle.fontFamily,
     });
   }
+});
+
+test('keeps imported font family and size visible instead of reporting defaults', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<p style="line-height: 1.2"><span style="font-family: Calibri; font-size: 11pt">Imported style</span></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Imported style'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const family = screen.getByRole('combobox', { name: '字体' });
+  const size = screen.getByRole('combobox', { name: '字号' });
+  expect(family).toHaveTextContent('Calibri');
+  expect(family.querySelector('span')).toHaveStyle({ fontFamily: 'Calibri' });
+  expect(size).toHaveTextContent('11');
+  expect(screen.getByRole('combobox', { name: '行距' })).toHaveTextContent(
+    '1.2 倍',
+  );
+
+  fireEvent.click(family);
+  const importedFamily = screen.getByRole('option', { name: 'Calibri' });
+  expect(importedFamily).toHaveAttribute('aria-selected', 'true');
+  await waitFor(() => expect(importedFamily).toHaveFocus());
 });
 
 test('wires every direct character-format action to the TipTap selection', () => {
@@ -200,6 +238,43 @@ test('steps font size and keeps Undo and Redo connected to editor history', () =
   );
   fireEvent.click(screen.getByRole('button', { name: '重做' }));
   expect(editor.getHTML()).toContain('<strong>History text</strong>');
+});
+
+test('disables font-size and indent commands at their real boundaries', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Boundary controls</p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Boundary controls'));
+  editor.chain().setFontSize('72pt').run();
+  const view = render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '增大字号' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '减小字号' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '减少缩进' })).toBeDisabled();
+  expect(changeDocumentFontSize(editor, 1)).toBe(false);
+  expect(editor.commands.changeDocumentIndent(-1)).toBe(false);
+
+  editor.chain().setFontSize('9pt').run();
+  editor.commands.setDocumentIndentLevel(MAX_DOCUMENT_INDENT_LEVEL);
+  view.rerender(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('button', { name: '增大字号' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '减小字号' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '增加缩进' })).toBeDisabled();
+  expect(editor.commands.changeDocumentIndent(1)).toBe(false);
 });
 
 test('wires paragraph alignment, direction, spacing, and indent controls', () => {
@@ -365,6 +440,44 @@ test('uses a keyboard-operated bullet library without toggling the active style 
   expect(activeCircle).toHaveAttribute('aria-checked', 'true');
   fireEvent.click(activeCircle);
   expect(editor.getHTML()).toContain('data-office-bullet-style="circle"');
+});
+
+test('keeps the list gallery roving tab stop aligned with arrow-key focus', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>List item</p>',
+  });
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '项目符号库' });
+  fireEvent.click(trigger);
+  const library = screen.getByRole('dialog', { name: '项目符号库' });
+  const disc = within(library).getByRole('menuitemradio', {
+    name: '实心圆点',
+  });
+  const circle = within(library).getByRole('menuitemradio', {
+    name: '空心圆点',
+  });
+  await waitFor(() => expect(disc).toHaveFocus());
+
+  fireEvent.keyDown(disc, { key: 'ArrowRight' });
+  expect(circle).toHaveFocus();
+  expect(circle).toHaveAttribute('tabindex', '0');
+  expect(disc).toHaveAttribute('tabindex', '-1');
+
+  fireEvent.keyDown(circle, { key: 'Tab' });
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('dialog', { name: '项目符号库' }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('button', { name: '编号' })).toHaveFocus();
 });
 
 test('edits numbering style, start value, and continuation from the ribbon', () => {

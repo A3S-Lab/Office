@@ -1,10 +1,24 @@
 import type { Editor } from '@tiptap/core';
 import { Pilcrow } from 'lucide-react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { Popover } from '../../../design-system/primitives';
 import { documentParagraphPagination } from '../work-document-paragraph-formatting';
 import { OfficeCheckbox } from './office-controls';
 
 export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
+  const panelRef = useRef<HTMLElement>(null);
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      editor.on('transaction', notify);
+      return () => editor.off('transaction', notify);
+    },
+    [editor],
+  );
+  useSyncExternalStore(
+    subscribe,
+    () => documentPaginationSnapshot(editor),
+    () => documentPaginationSnapshot(editor),
+  );
   const pagination = documentParagraphPagination(editor);
   const attributes = editor.isActive('heading')
     ? editor.getAttributes('heading')
@@ -16,11 +30,17 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
     attributes.widowControl,
   ].some((value) => typeof value === 'boolean');
   const update = (key: keyof typeof pagination, checked: boolean): void => {
-    const current = documentParagraphPagination(editor);
     editor.commands.setDocumentParagraphPagination(
-      { ...current, [key]: checked },
+      { [key]: checked },
       { restoreFocus: false },
     );
+  };
+  const clear = (): void => {
+    if (!customized) return;
+    panelRef.current
+      ?.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)')
+      ?.focus({ preventScroll: true });
+    editor.commands.clearDocumentParagraphPagination({ restoreFocus: false });
   };
 
   return (
@@ -29,6 +49,7 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
       panelLabel="段落分页选项"
       panelRole="dialog"
       portal
+      panelRef={panelRef}
       focusFirstOnOpen
       className="work-document-pagination-popover"
       panelClassName="work-document-pagination-panel"
@@ -73,7 +94,33 @@ export function DocumentPaginationPopover({ editor }: { editor: Editor }) {
         >
           避免页首、页尾单行
         </OfficeCheckbox>
+        <button
+          type="button"
+          className="work-document-pagination-reset"
+          aria-label="恢复默认分页规则"
+          disabled={!customized}
+          onClick={clear}
+        >
+          恢复默认
+        </button>
       </fieldset>
     </Popover>
   );
+}
+
+function documentPaginationSnapshot(editor: Editor): string {
+  const attributes = editor.isActive('heading')
+    ? editor.getAttributes('heading')
+    : editor.getAttributes('paragraph');
+  const pagination = documentParagraphPagination(editor);
+  return JSON.stringify({
+    node: editor.isActive('heading') ? 'heading' : 'paragraph',
+    pagination,
+    direct: {
+      keepLines: attributes.keepLines ?? null,
+      keepWithNext: attributes.keepWithNext ?? null,
+      pageBreakBefore: attributes.pageBreakBefore ?? null,
+      widowControl: attributes.widowControl ?? null,
+    },
+  });
 }

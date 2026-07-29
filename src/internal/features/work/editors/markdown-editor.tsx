@@ -2,7 +2,6 @@ import type { Extensions } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
-  type MouseEvent,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -11,7 +10,14 @@ import {
   useState,
 } from 'react';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
-import { createWorkMarkdownExtensions } from '../work-markdown-extensions';
+import {
+  type WorkspaceContextMenuEvent,
+  workspaceContextMenuPosition,
+} from '../../workspace/components/workspace-context-menu';
+import {
+  createWorkMarkdownExtensions,
+  markdownTaskCheckboxLabel,
+} from '../work-markdown-extensions';
 import type { WorkMarkdownContent } from '../work-types';
 import {
   createWorkMarkdownSourceSelectionAction,
@@ -33,6 +39,10 @@ import {
   type MarkdownSourceSelectionState,
   replaceMarkdownSourceSelection,
 } from './markdown-source-commands';
+import {
+  type MarkdownEditingSurface,
+  restoreMarkdownEditingSurfaceFocus,
+} from './markdown-editor-focus';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
@@ -42,7 +52,7 @@ import {
   WorkOfficePreviewBar,
 } from './work-office-chrome';
 
-export { markdownTaskCheckboxLabel } from '../work-markdown-extensions';
+export { markdownTaskCheckboxLabel };
 
 export interface MarkdownEditorProps {
   content: WorkMarkdownContent;
@@ -76,9 +86,6 @@ export function MarkdownEditor({
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sourceTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [sourceMarkdown, setSourceMarkdown] = useState(content.markdown);
-  const [editingSurface, setEditingSurface] = useState<'source' | 'visual'>(
-    'visual',
-  );
   const [selectionMenu, setSelectionMenu] =
     useState<MarkdownSelectionMenuState | null>(null);
   const [sourceSelectionRequest, setSourceSelectionRequest] = useState<
@@ -128,30 +135,33 @@ export function MarkdownEditor({
     }),
     [],
   );
-  const editor = useEditor({
-    extensions,
-    content: initialMarkdownRef.current,
-    contentType: 'markdown',
-    editable: !preview,
-    editorProps,
-    onUpdate: ({ editor: current }) => {
-      const markdown = current.getMarkdown();
-      if (markdown === appliedMarkdownRef.current) return;
-      cancelPreviewSync();
-      const next = { ...contentRef.current, markdown };
-      appliedMarkdownRef.current = markdown;
-      emittedMarkdownRef.current = markdown;
-      sourceMarkdownRef.current = markdown;
-      contentRef.current = next;
-      setSourceMarkdown(markdown);
-      resetSourceHistory(
-        markdown,
-        textareaSelection(sourceTextareaRef.current, markdown.length),
-      );
-      onChangeRef.current(next);
+  const editor = useEditor(
+    {
+      extensions,
+      content: initialMarkdownRef.current,
+      contentType: 'markdown',
+      editable: !preview && viewMode === 'visual',
+      editorProps,
+      onUpdate: ({ editor: current }) => {
+        const markdown = current.getMarkdown();
+        if (markdown === appliedMarkdownRef.current) return;
+        cancelPreviewSync();
+        const next = { ...contentRef.current, markdown };
+        appliedMarkdownRef.current = markdown;
+        emittedMarkdownRef.current = markdown;
+        sourceMarkdownRef.current = markdown;
+        contentRef.current = next;
+        setSourceMarkdown(markdown);
+        resetSourceHistory(
+          markdown,
+          textareaSelection(sourceTextareaRef.current, markdown.length),
+        );
+        onChangeRef.current(next);
+      },
+      onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
     },
-    onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
-  });
+    [extensions],
+  );
 
   const applyMarkdownToEditor = useCallback(
     (markdown: string) => {
@@ -195,24 +205,67 @@ export function MarkdownEditor({
 
   useEffect(() => {
     if (!editor) return;
+    const visualEditorReadOnly = preview || viewMode !== 'visual';
+    let checkboxFrame: number | null = null;
+    const applyTaskCheckboxState = () => {
+      for (const checkbox of editor.view.dom.querySelectorAll<HTMLInputElement>(
+        'li[data-type="taskItem"] > label input[type="checkbox"]',
+      )) {
+        checkbox.disabled = visualEditorReadOnly;
+        checkbox.setAttribute('aria-disabled', String(visualEditorReadOnly));
+        checkbox.setAttribute(
+          'aria-label',
+          markdownTaskCheckboxLabel({
+            attrs: { checked: checkbox.checked },
+            textContent:
+              checkbox.closest('li[data-type="taskItem"]')?.textContent ?? '',
+          }),
+        );
+      }
+    };
+    const scheduleTaskCheckboxState = () => {
+      if (checkboxFrame !== null) cancelAnimationFrame(checkboxFrame);
+      checkboxFrame = requestAnimationFrame(() => {
+        checkboxFrame = null;
+        applyTaskCheckboxState();
+      });
+    };
     const applyViewState = () => {
       if (editor.isDestroyed) return;
-      editor.setEditable(!preview);
+      editor.setEditable(!visualEditorReadOnly, false);
       editor.view.dom.setAttribute(
         'aria-label',
-        preview ? 'Markdown 预览' : 'Markdown 编辑区',
+        visualEditorReadOnly ? 'Markdown 预览' : 'Markdown 编辑区',
       );
-      editor.view.dom.setAttribute('aria-readonly', String(preview));
-      editor.view.dom.setAttribute('role', preview ? 'document' : 'textbox');
-      if (preview) editor.view.dom.removeAttribute('aria-multiline');
-      else editor.view.dom.setAttribute('aria-multiline', 'true');
+      editor.view.dom.setAttribute(
+        'aria-readonly',
+        String(visualEditorReadOnly),
+      );
+      editor.view.dom.setAttribute(
+        'role',
+        visualEditorReadOnly ? 'document' : 'textbox',
+      );
+      if (visualEditorReadOnly) {
+        editor.view.dom.removeAttribute('aria-multiline');
+        editor.view.dom.tabIndex = 0;
+      } else {
+        editor.view.dom.setAttribute('aria-multiline', 'true');
+        editor.view.dom.removeAttribute('tabindex');
+      }
+      applyTaskCheckboxState();
+      scheduleTaskCheckboxState();
     };
     applyViewState();
     editor.on('mount', applyViewState);
+    editor.on('update', applyTaskCheckboxState);
+    editor.on('transaction', scheduleTaskCheckboxState);
     return () => {
+      if (checkboxFrame !== null) cancelAnimationFrame(checkboxFrame);
       editor.off('mount', applyViewState);
+      editor.off('update', applyTaskCheckboxState);
+      editor.off('transaction', scheduleTaskCheckboxState);
     };
-  }, [editor, preview]);
+  }, [editor, preview, viewMode]);
 
   useEffect(() => {
     if (!editor || receivedContentRef.current === content) return;
@@ -345,9 +398,11 @@ export function MarkdownEditor({
     (
       replacement: string,
       selectedRange?: { start: number; end: number },
+      target?: MarkdownSourceSelectionState,
     ): boolean => {
-      const current = getSourceSelection();
+      const current = target ?? getSourceSelection();
       if (!current) return false;
+      if (current.markdown !== sourceMarkdownRef.current) return false;
       return applySourceEdit(
         replaceMarkdownSourceSelection(
           current.markdown,
@@ -360,59 +415,70 @@ export function MarkdownEditor({
     [applySourceEdit, getSourceSelection],
   );
 
-  const handleSourceIntent = useCallback(() => setEditingSurface('source'), []);
+  const handleSourceSelectionChange = useCallback(
+    (selection: MarkdownSourceSelection) => {
+      updateSourceHistorySelection(selection);
+      setSelectionVersion((value) => value + 1);
+    },
+    [updateSourceHistorySelection],
+  );
   const handleVisualIntent = useCallback(() => {
-    setEditingSurface('visual');
     applyMarkdownToEditor(sourceMarkdownRef.current);
   }, [applyMarkdownToEditor]);
 
   const openSourceSelectionMenu = useCallback(
-    (event: MouseEvent<HTMLTextAreaElement>) => {
-      if (!getSelectionMenuItems) return;
+    (event: WorkspaceContextMenuEvent<HTMLTextAreaElement>): boolean => {
+      if (!getSelectionMenuItems) return false;
       const current = getSourceSelection();
-      if (!current) return;
+      if (!current) return false;
       const snapshot = createWorkMarkdownSourceSelectionSnapshot(
         current.markdown,
         current.selection,
         contentRef.current,
       );
-      if (!snapshot) return;
+      if (!snapshot) return false;
       event.preventDefault();
+      event.stopPropagation();
+      const position = workspaceContextMenuPosition(event);
       const items = getSelectionMenuItems(snapshot);
       setSelectionMenu(
         items.length
           ? {
-              x: event.clientX,
-              y: event.clientY,
+              x: position.x,
+              y: position.y,
               snapshot,
               items,
             }
           : null,
       );
+      return items.length > 0;
     },
     [getSelectionMenuItems, getSourceSelection],
   );
 
   const openVisualSelectionMenu = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      if (!editor || !getSelectionMenuItems) return;
+    (event: WorkspaceContextMenuEvent<HTMLElement>): boolean => {
+      if (!editor || !getSelectionMenuItems) return false;
       const snapshot = createWorkMarkdownVisualSelectionSnapshot(
         editor,
         contentRef.current,
       );
-      if (!snapshot) return;
+      if (!snapshot) return false;
       event.preventDefault();
+      event.stopPropagation();
+      const position = workspaceContextMenuPosition(event);
       const items = getSelectionMenuItems(snapshot);
       setSelectionMenu(
         items.length
           ? {
-              x: event.clientX,
-              y: event.clientY,
+              x: position.x,
+              y: position.y,
               snapshot,
               items,
             }
           : null,
       );
+      return items.length > 0;
     },
     [editor, getSelectionMenuItems],
   );
@@ -429,14 +495,18 @@ export function MarkdownEditor({
 
   const changeViewMode = useCallback(
     (mode: MarkdownViewMode) => {
+      const focusSurface: MarkdownEditingSurface =
+        mode === 'visual' ? 'visual' : 'source';
       if (mode !== 'source') {
         applyMarkdownToEditor(sourceMarkdownRef.current);
       }
-      if (mode === 'visual') setEditingSurface('visual');
-      if (mode === 'source') setEditingSurface('source');
       setViewMode(mode);
+      restoreMarkdownEditingSurfaceFocus(() => {
+        if (focusSurface === 'source') return sourceTextareaRef.current;
+        return editor && !editor.isDestroyed ? editor.view.dom : null;
+      });
     },
-    [applyMarkdownToEditor],
+    [applyMarkdownToEditor, editor],
   );
 
   const deferredMarkdown = useDeferredValue(sourceMarkdown);
@@ -487,10 +557,11 @@ export function MarkdownEditor({
       <MarkdownToolbar
         editor={editor}
         fileActions={fileActions}
-        sourceEditing={editingSurface === 'source'}
+        sourceEditing={viewMode !== 'visual'}
         canSourceRedo={canRedoSource}
         canSourceUndo={canUndoSource}
         viewMode={viewMode}
+        getSourceFocusTarget={() => sourceTextareaRef.current}
         getSourceSelection={getSourceSelection}
         onSourceCommand={runSourceCommand}
         onSourceRedo={redoSource}
@@ -502,6 +573,7 @@ export function MarkdownEditor({
         editor={editor}
         markdown={sourceMarkdown}
         mode={viewMode}
+        visualReadOnly={viewMode === 'split'}
         sourceRef={sourceTextareaRef}
         sourceSelectionRequest={sourceSelectionRequest}
         onSourceChange={changeSource}
@@ -509,9 +581,8 @@ export function MarkdownEditor({
         onSourceContextMenu={
           getSelectionMenuItems ? openSourceSelectionMenu : undefined
         }
-        onSourceIntent={handleSourceIntent}
         onSourceRedo={redoSource}
-        onSourceSelectionChange={updateSourceHistorySelection}
+        onSourceSelectionChange={handleSourceSelectionChange}
         onSourceUndo={undoSource}
         onVisualContextMenu={
           getSelectionMenuItems ? openVisualSelectionMenu : undefined

@@ -96,8 +96,9 @@ export function useMarkdownSourceHistory(initialMarkdown: string) {
       if (sameSelection(normalized, history.present.selection)) return;
       history.present = { ...history.present, selection: normalized };
       history.typing = null;
+      refresh();
     },
-    [],
+    [refresh],
   );
 
   const undo = useCallback((): MarkdownSourceHistorySnapshot | null => {

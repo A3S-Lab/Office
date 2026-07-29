@@ -1,5 +1,6 @@
 .work-office-ribbon {
   --work-office-accent: var(--a3s-blue);
+  --work-office-control-accent: var(--work-office-accent);
 
   z-index: 8;
   display: flex;
@@ -79,6 +80,14 @@
   align-items: stretch;
 }
 
+.work-office-ribbon-tab-strip {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: stretch;
+}
+
 .work-office-ribbon-tabs {
   --ds-tabs-accent: var(--work-office-accent);
 
@@ -96,6 +105,7 @@
 }
 
 .work-office-ribbon-tabs > button {
+  flex: 0 0 auto;
   padding: 0 12px;
   border-radius: 0;
   font-size: 12px;
@@ -126,6 +136,52 @@
 
 .work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"]::after {
   background: var(--work-office-accent);
+}
+
+.work-office-ribbon-tab-navigation {
+  display: flex;
+  height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+  border-left: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  box-shadow: -5px 0 10px
+    color-mix(in srgb, var(--a3s-panel) 88%, transparent);
+}
+
+.work-office-ribbon-tab-navigation > button {
+  display: grid;
+  width: 24px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-muted);
+  cursor: pointer;
+}
+
+.work-office-ribbon-tab-navigation > button:hover:not(:disabled),
+.work-office-ribbon-tab-navigation > button:focus-visible {
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+}
+
+.work-office-ribbon-tab-navigation > button:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-office-accent);
+}
+
+.work-office-ribbon-tab-navigation > button:disabled {
+  cursor: default;
+  opacity: 0.28;
 }
 
 .work-office-file-menu {
@@ -487,5 +543,19 @@
   .work-office-ribbon-group > span {
     right: 4px;
     left: 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  .work-office-ribbon-tabs > button {
+    padding-inline: 9px;
+  }
+
+  .work-office-ribbon-tabs .ds-tabs-label.has-compact {
+    display: none;
+  }
+
+  .work-office-ribbon-tabs .ds-tabs-label-compact {
+    display: inline;
   }
 }

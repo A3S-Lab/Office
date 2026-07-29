@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
-import { isInTable, selectedRect } from '@tiptap/pm/tables';
+import { NodeSelection } from '@tiptap/pm/state';
+import { isInTable, selectedRect, TableMap } from '@tiptap/pm/tables';
 import {
   AlignCenter,
   AlignLeft,
@@ -26,7 +27,6 @@ import {
   useEffect,
   useId,
   useRef,
-  useState,
 } from 'react';
 import {
   activeDocumentTableStyle,
@@ -55,6 +55,7 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
+import { useOfficeDraft } from './use-office-draft';
 
 const borderOptions = [
   { value: 'solid-1', label: '细实线', style: 'solid', width: 1 },
@@ -84,6 +85,11 @@ const PIXELS_PER_CENTIMETER = 96 / 2.54;
 export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
   const format =
     documentTableCellFormat(editor.state) ?? DEFAULT_DOCUMENT_TABLE_CELL_FORMAT;
+  const borderValue = borderOptionValue(format.borderStyle, format.borderWidth);
+  const currentBorderOptions = borderOptionsForFormat(
+    format.borderStyle,
+    format.borderWidth,
+  );
   return (
     <>
       <RibbonGroup label="表格样式">
@@ -132,10 +138,10 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
         <OfficeSelect
           ariaLabel="边框样式"
           className="work-document-table-border-select"
-          value={borderOptionValue(format.borderStyle, format.borderWidth)}
-          options={borderOptions}
+          value={borderValue}
+          options={currentBorderOptions}
           onValueChange={(value) => {
-            const option = borderOptions.find(
+            const option = currentBorderOptions.find(
               (candidate) => candidate.value === value,
             );
             if (!option) return;
@@ -156,6 +162,9 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
 
 export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
   const rowOptions = documentTableRowOptions(editor);
+  const canSetRowOptions = editor
+    .can()
+    .setDocumentTableRowOptions(rowOptions, { restoreFocus: false });
   const sizing = documentTableSizing(editor.state);
   const cellFormat =
     documentTableCellFormat(editor.state) ?? DEFAULT_DOCUMENT_TABLE_CELL_FORMAT;
@@ -320,6 +329,7 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
           label="整行不跨页"
           visibleLabel="整行换页"
           active={rowOptions.cantSplit}
+          disabled={!canSetRowOptions}
           onClick={() =>
             editor.commands.setDocumentTableRowOptions({
               ...documentTableRowOptions(editor),
@@ -351,6 +361,20 @@ function DocumentTableSizeRibbonGroup({
   editor: Editor;
   sizing: DocumentTableSizingState | null;
 }) {
+  const measuredRowSelection = measuredTableSelectionSize(editor, 'rows');
+  const measuredColumnSelection = measuredTableSelectionSize(editor, 'columns');
+  const canDistributeRows = editor
+    .can()
+    .chain()
+    .focus()
+    .distributeDocumentTableRows(measuredRowSelection)
+    .run();
+  const canDistributeColumns = editor
+    .can()
+    .chain()
+    .focus()
+    .distributeDocumentTableColumns(measuredColumnSelection)
+    .run();
   return (
     <RibbonGroup label="单元格大小">
       <div className="work-document-table-size-fields">
@@ -409,13 +433,12 @@ function DocumentTableSizeRibbonGroup({
       <RibbonButton
         label="平均分布行"
         visibleLabel="平均行高"
+        disabled={!canDistributeRows}
         onClick={() =>
           editor
             .chain()
             .focus()
-            .distributeDocumentTableRows(
-              measuredTableSelectionSize(editor, 'rows'),
-            )
+            .distributeDocumentTableRows(measuredRowSelection)
             .run()
         }
       >
@@ -424,13 +447,12 @@ function DocumentTableSizeRibbonGroup({
       <RibbonButton
         label="平均分布列"
         visibleLabel="平均列宽"
+        disabled={!canDistributeColumns}
         onClick={() =>
           editor
             .chain()
             .focus()
-            .distributeDocumentTableColumns(
-              measuredTableSelectionSize(editor, 'columns'),
-            )
+            .distributeDocumentTableColumns(measuredColumnSelection)
             .run()
         }
       >
@@ -449,12 +471,19 @@ function TableDimensionField({
   label: string;
   ariaLabel: string;
   value: number | null;
-  onValueChange: (value: number) => void;
+  onValueChange: (value: number) => boolean;
 }) {
   const formattedValue =
     value === null ? '' : formatCentimeters(value / PIXELS_PER_CENTIMETER);
-  const [draft, setDraft] = useState(formattedValue);
-  useEffect(() => setDraft(formattedValue), [formattedValue]);
+  const {
+    cancelDraft,
+    dirty,
+    draft,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft(() => formattedValue);
+  useEffect(() => syncDraft(formattedValue), [formattedValue, syncDraft]);
   return (
     <div className="work-document-table-size-field">
       <span>{label}</span>
@@ -465,19 +494,25 @@ function TableDimensionField({
         max={30}
         step={0.1}
         placeholder="—"
-        onValueChange={(nextValue) => {
-          setDraft(nextValue);
+        escapeConsumer={dirty}
+        onValueChange={setDraft}
+        onCancel={dirty ? cancelDraft : undefined}
+        onCommit={(nextValue) => {
           const centimeters = Number(nextValue);
           if (
             !Number.isFinite(centimeters) ||
             centimeters < 0.5 ||
             centimeters > 30
           ) {
+            cancelDraft();
             return;
           }
-          onValueChange(
+          const normalizedDraft = formatCentimeters(centimeters);
+          const committed = onValueChange(
             Math.round(centimeters * PIXELS_PER_CENTIMETER * 100) / 100,
           );
+          if (committed) replaceDraft(normalizedDraft);
+          else cancelDraft();
         }}
       />
       <small aria-hidden="true">厘米</small>
@@ -574,6 +609,14 @@ function selectedTableRectangle(editor: Editor): {
   top: number;
   bottom: number;
 } | null {
+  const selection = editor.state.selection;
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.spec.tableRole === 'table'
+  ) {
+    const map = TableMap.get(selection.node);
+    return { left: 0, right: map.width, top: 0, bottom: map.height };
+  }
   if (!isInTable(editor.state)) return null;
   const rectangle = selectedRect(editor.state);
   return {
@@ -586,6 +629,17 @@ function selectedTableRectangle(editor: Editor): {
 
 function selectedTableElement(editor: Editor): HTMLTableElement | null {
   const selection = editor.state.selection;
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.spec.tableRole === 'table'
+  ) {
+    const nodeDom = editor.view.nodeDOM(selection.from);
+    if (nodeDom instanceof HTMLTableElement) return nodeDom;
+    if (nodeDom instanceof HTMLElement) {
+      return nodeDom.querySelector(':scope > table');
+    }
+    return null;
+  }
   for (let depth = selection.$from.depth; depth > 0; depth -= 1) {
     if (selection.$from.node(depth).type.spec.tableRole !== 'table') continue;
     const nodeDom = editor.view.nodeDOM(selection.$from.before(depth));
@@ -641,8 +695,7 @@ function DocumentTableStyleGallery({ editor }: { editor: Editor }) {
               aria-label={`应用表格样式：${style.label}`}
               checked={active}
               tabIndex={active || (!activeStyle && index === 0) ? 0 : -1}
-              onChange={() => undefined}
-              onClick={() => applyStyle(style)}
+              onChange={() => applyStyle(style)}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
                   moveSelection(event, index + 1);
@@ -693,12 +746,39 @@ function setVerticalAlignment(
 function borderOptionValue(
   style: DocumentTableBorderStyle,
   width: number,
-): (typeof borderOptions)[number]['value'] {
-  return (
-    borderOptions.find(
-      (option) => option.style === style && option.width === width,
-    ) ?? borderOptions[0]
-  ).value;
+): string {
+  return `${style}-${width}`;
+}
+
+function borderOptionsForFormat(
+  style: DocumentTableBorderStyle,
+  width: number,
+) {
+  const value = borderOptionValue(style, width);
+  if (borderOptions.some((option) => option.value === value)) {
+    return borderOptions;
+  }
+  return [
+    ...borderOptions,
+    {
+      value,
+      label:
+        style === 'none'
+          ? '无边框'
+          : `${width} 像素${documentTableBorderStyleLabel(style)}`,
+      style,
+      width,
+    },
+  ];
+}
+
+function documentTableBorderStyleLabel(
+  style: Exclude<DocumentTableBorderStyle, 'none'>,
+): string {
+  if (style === 'dashed') return '虚线';
+  if (style === 'dotted') return '点线';
+  if (style === 'double') return '双线';
+  return '实线';
 }
 
 function RibbonButton({

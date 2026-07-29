@@ -17,12 +17,22 @@ import {
 } from '../work-spreadsheet-ranges';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
 import { SpreadsheetHeaderFooterFields } from './spreadsheet-header-footer-fields';
+import { useOfficeDraft } from './use-office-draft';
+
+interface SpreadsheetPrintSettingsDraft {
+  reference: string;
+  titleRows: string;
+  titleColumns: string;
+  rowPageBreaks: string;
+  columnPageBreaks: string;
+  pageSetup: EffectiveSpreadsheetPageSetup;
+}
 
 export function spreadsheetPrintSettingCount(
   content: WorkSpreadsheetContent,
@@ -62,50 +72,55 @@ export function SpreadsheetPrintSettingsPanel({
   const savedPageSetup = content.pageSetups?.find(
     (pageSetup) => pageSetup.sheetId === sheetId,
   );
-  const [reference, setReference] = useState(savedArea?.reference ?? '');
-  const [titleRows, setTitleRows] = useState(savedTitles?.rows ?? '');
-  const [titleColumns, setTitleColumns] = useState(savedTitles?.columns ?? '');
-  const [rowPageBreaks, setRowPageBreaks] = useState(
-    formatSpreadsheetRowPageBreaks(savedPageBreaks?.rows),
+  const {
+    cancelDraft: resetDraft,
+    dirty,
+    draft,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft<SpreadsheetPrintSettingsDraft>(() =>
+    spreadsheetPrintSettingsDraft(content, sheetId),
   );
-  const [columnPageBreaks, setColumnPageBreaks] = useState(
-    formatSpreadsheetColumnPageBreaks(savedPageBreaks?.columns),
-  );
-  const [pageSetup, setPageSetup] = useState(() =>
-    effectiveSpreadsheetPageSetup(savedPageSetup),
-  );
+  const {
+    columnPageBreaks,
+    pageSetup,
+    reference,
+    rowPageBreaks,
+    titleColumns,
+    titleRows,
+  } = draft;
+  const setReference = (value: string) =>
+    setDraft((current) => ({ ...current, reference: value }));
+  const setTitleRows = (value: string) =>
+    setDraft((current) => ({ ...current, titleRows: value }));
+  const setTitleColumns = (value: string) =>
+    setDraft((current) => ({ ...current, titleColumns: value }));
+  const setRowPageBreaks = (value: string) =>
+    setDraft((current) => ({ ...current, rowPageBreaks: value }));
+  const setColumnPageBreaks = (value: string) =>
+    setDraft((current) => ({ ...current, columnPageBreaks: value }));
+  const setPageSetup = (value: EffectiveSpreadsheetPageSetup) =>
+    setDraft((current) => ({ ...current, pageSetup: value }));
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setReference(
-      content.printAreas?.find((area) => area.sheetId === sheetId)?.reference ??
-        '',
-    );
-    const titles = content.printTitles?.find(
-      (item) => item.sheetId === sheetId,
-    );
-    setTitleRows(titles?.rows ?? '');
-    setTitleColumns(titles?.columns ?? '');
-    const pageBreaks = content.pageBreaks?.find(
-      (item) => item.sheetId === sheetId,
-    );
-    setRowPageBreaks(formatSpreadsheetRowPageBreaks(pageBreaks?.rows));
-    setColumnPageBreaks(formatSpreadsheetColumnPageBreaks(pageBreaks?.columns));
-    setPageSetup(
-      effectiveSpreadsheetPageSetup(
-        content.pageSetups?.find((item) => item.sheetId === sheetId),
-      ),
-    );
+    syncDraft(spreadsheetPrintSettingsDraft(content, sheetId));
+  }, [content, sheetId, syncDraft]);
+
+  const changeSheet = (nextSheetId: string) => {
+    if (nextSheetId === sheetId) return;
+    if (dirty) {
+      setError('当前打印设置有未保存更改，请先保存或取消。');
+      return;
+    }
+    setSheetId(nextSheetId);
+    replaceDraft(spreadsheetPrintSettingsDraft(content, nextSheetId));
     setError('');
-  }, [
-    content.pageBreaks,
-    content.pageSetups,
-    content.printAreas,
-    content.printTitles,
-    sheetId,
-  ]);
+  };
 
   const saveSettings = () => {
+    if (!dirty) return;
     const sheet = availableSheets.find((item) => item.id === sheetId);
     const maximumRow = spreadsheetMaximumRow(sheet);
     const maximumColumn = spreadsheetMaximumColumn(sheet);
@@ -186,13 +201,16 @@ export function SpreadsheetPrintSettingsPanel({
       pageBreaks: nextPageBreaks.length ? nextPageBreaks : undefined,
       pageSetups: nextPageSetups,
     });
-    setReference(normalized ?? '');
-    setTitleRows(normalizedRows ?? '');
-    setTitleColumns(normalizedColumns ?? '');
-    setRowPageBreaks(formatSpreadsheetRowPageBreaks(parsedRowPageBreaks));
-    setColumnPageBreaks(
-      formatSpreadsheetColumnPageBreaks(parsedColumnPageBreaks),
-    );
+    replaceDraft({
+      ...draft,
+      reference: normalized ?? '',
+      titleRows: normalizedRows ?? '',
+      titleColumns: normalizedColumns ?? '',
+      rowPageBreaks: formatSpreadsheetRowPageBreaks(parsedRowPageBreaks),
+      columnPageBreaks: formatSpreadsheetColumnPageBreaks(
+        parsedColumnPageBreaks,
+      ),
+    });
     setError('');
   };
 
@@ -216,18 +234,25 @@ export function SpreadsheetPrintSettingsPanel({
       pageBreaks: nextPageBreaks.length ? nextPageBreaks : undefined,
       pageSetups: nextPageSetups.length ? nextPageSetups : undefined,
     });
-    setReference('');
-    setTitleRows('');
-    setTitleColumns('');
-    setRowPageBreaks('');
-    setColumnPageBreaks('');
-    setPageSetup(effectiveSpreadsheetPageSetup(undefined));
+    replaceDraft(spreadsheetPrintSettingsDraft(content, sheetId, true));
+    setError('');
+  };
+
+  const cancelDraft = () => {
+    resetDraft();
     setError('');
   };
 
   return (
     <form
       className="work-spreadsheet-print-area-form"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDraft();
+      }}
       onSubmit={(event) => {
         event.preventDefault();
         saveSettings();
@@ -242,7 +267,7 @@ export function SpreadsheetPrintSettingsPanel({
             value: sheet.id,
             label: sheet.name,
           }))}
-          onValueChange={setSheetId}
+          onValueChange={changeSheet}
         />
       </div>
       <div className="work-office-field reference">
@@ -348,40 +373,41 @@ export function SpreadsheetPrintSettingsPanel({
         </div>
         <div className="work-office-field">
           <span>缩放比例（10–400%）</span>
-          <OfficeNumberField
+          <CommittedOfficeNumberField
             ariaLabel="缩放比例"
             min={10}
             max={400}
             disabled={pageSetup.fitToPage}
             value={pageSetup.scale}
-            onValueChange={(scale) =>
-              setPageSetup({ ...pageSetup, scale: Number(scale) })
-            }
+            normalizeValue={(value) => normalizePrintInteger(value, 10, 400)}
+            onValueCommit={(scale) => setPageSetup({ ...pageSetup, scale })}
           />
         </div>
         <div className="work-office-field">
           <span>适合页宽（0 为自动）</span>
-          <OfficeNumberField
+          <CommittedOfficeNumberField
             ariaLabel="适合页宽"
             min={0}
             max={32767}
             disabled={!pageSetup.fitToPage}
             value={pageSetup.fitToWidth}
-            onValueChange={(fitToWidth) =>
-              setPageSetup({ ...pageSetup, fitToWidth: Number(fitToWidth) })
+            normalizeValue={(value) => normalizePrintInteger(value, 0, 32_767)}
+            onValueCommit={(fitToWidth) =>
+              setPageSetup({ ...pageSetup, fitToWidth })
             }
           />
         </div>
         <div className="work-office-field">
           <span>适合页高（0 为自动）</span>
-          <OfficeNumberField
+          <CommittedOfficeNumberField
             ariaLabel="适合页高"
             min={0}
             max={32767}
             disabled={!pageSetup.fitToPage}
             value={pageSetup.fitToHeight}
-            onValueChange={(fitToHeight) =>
-              setPageSetup({ ...pageSetup, fitToHeight: Number(fitToHeight) })
+            normalizeValue={(value) => normalizePrintInteger(value, 0, 32_767)}
+            onValueCommit={(fitToHeight) =>
+              setPageSetup({ ...pageSetup, fitToHeight })
             }
           />
         </div>
@@ -470,10 +496,6 @@ export function SpreadsheetPrintSettingsPanel({
         pageSetup={pageSetup}
         onChange={setPageSetup}
       />
-      <p>
-        范围、标题、分页符、页眉页脚与页面设置会保留到 XLSX，并共同控制分页
-        PDF。
-      </p>
       <div className="actions">
         {error && (
           <InlineNotice
@@ -487,18 +509,49 @@ export function SpreadsheetPrintSettingsPanel({
         <Button
           tone="secondary"
           disabled={
-            !savedArea && !savedTitles && !savedPageBreaks && !savedPageSetup
+            dirty ||
+            (!savedArea && !savedTitles && !savedPageBreaks && !savedPageSetup)
           }
           onClick={clearSettings}
         >
           清除
         </Button>
-        <Button type="submit" tone="primary" disabled={!sheetId}>
+        <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
+          取消更改
+        </Button>
+        <Button type="submit" tone="primary" disabled={!sheetId || !dirty}>
           保存打印设置
         </Button>
       </div>
     </form>
   );
+}
+
+function spreadsheetPrintSettingsDraft(
+  content: WorkSpreadsheetContent,
+  sheetId: string,
+  empty = false,
+): SpreadsheetPrintSettingsDraft {
+  const area = empty
+    ? undefined
+    : content.printAreas?.find((item) => item.sheetId === sheetId);
+  const titles = empty
+    ? undefined
+    : content.printTitles?.find((item) => item.sheetId === sheetId);
+  const pageBreaks = empty
+    ? undefined
+    : content.pageBreaks?.find((item) => item.sheetId === sheetId);
+  const pageSetup = empty
+    ? undefined
+    : content.pageSetups?.find((item) => item.sheetId === sheetId);
+  return {
+    reference: area?.reference ?? '',
+    titleRows: titles?.rows ?? '',
+    titleColumns: titles?.columns ?? '',
+    rowPageBreaks: formatSpreadsheetRowPageBreaks(pageBreaks?.rows),
+    columnPageBreaks: formatSpreadsheetColumnPageBreaks(pageBreaks?.columns),
+    pageSetup: effectiveSpreadsheetPageSetup(pageSetup),
+  };
 }
 
 function spreadsheetMaximumRow(
@@ -528,16 +581,41 @@ function PageMarginField({
   return (
     <div className="work-office-field">
       <span>{label}</span>
-      <OfficeNumberField
+      <CommittedOfficeNumberField
         ariaLabel={label}
         min={0}
         max={100}
         step={0.01}
         value={value}
-        onValueChange={(nextValue) => onChange(Number(nextValue))}
+        normalizeValue={(nextValue) => normalizePrintDecimal(nextValue, 0, 100)}
+        onValueCommit={onChange}
       />
     </div>
   );
+}
+
+function normalizePrintInteger(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : null;
+}
+
+function normalizePrintDecimal(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number * 100) / 100))
+    : null;
 }
 
 function validPageSetup(pageSetup: EffectiveSpreadsheetPageSetup): boolean {

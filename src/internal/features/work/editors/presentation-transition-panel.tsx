@@ -1,4 +1,5 @@
 import { CopyCheck } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { createWorkSlideTransition } from '../work-presentation-transition';
 import type {
   WorkSlideTransition,
@@ -17,16 +18,63 @@ import {
 } from './work-office-chrome';
 
 export function PresentationTransitionPanel({
+  slideId,
   transition,
+  editable,
+  canApplyToAll,
   onChange,
   onApplyToAll,
 }: {
+  slideId: string;
   transition: WorkSlideTransition | undefined;
+  editable: boolean;
+  canApplyToAll: (transition: WorkSlideTransition | undefined) => boolean;
   onChange: (transition: WorkSlideTransition | undefined) => void;
-  onApplyToAll: () => void;
+  onApplyToAll: (transition: WorkSlideTransition | undefined) => void;
 }) {
   const update = (patch: Partial<WorkSlideTransition>) => {
     if (transition) onChange({ ...transition, ...patch });
+  };
+  const [advanceAfterDraft, setAdvanceAfterDraft] = useState(() =>
+    presentationAdvanceAfterDraft(transition?.advanceAfterMs),
+  );
+  useEffect(() => {
+    setAdvanceAfterDraft(
+      presentationAdvanceAfterDraft(transition?.advanceAfterMs),
+    );
+  }, [slideId, transition?.advanceAfterMs]);
+  const commitAdvanceAfter = (value: string): void => {
+    if (!transition || transition.advanceAfterMs === undefined) {
+      setAdvanceAfterDraft('');
+      return;
+    }
+    const advanceAfterMs = normalizedPresentationAdvanceAfterMs(
+      value,
+      transition.advanceAfterMs,
+    );
+    setAdvanceAfterDraft(presentationAdvanceAfterDraft(advanceAfterMs));
+    if (advanceAfterMs === transition.advanceAfterMs) return;
+    update({ advanceAfterMs });
+  };
+  const transitionWithAdvanceDraft =
+    transition?.advanceAfterMs === undefined
+      ? transition
+      : {
+          ...transition,
+          advanceAfterMs: normalizedPresentationAdvanceAfterMs(
+            advanceAfterDraft,
+            transition.advanceAfterMs,
+          ),
+        };
+  const applyToAll = () => {
+    if (transitionWithAdvanceDraft?.advanceAfterMs !== undefined) {
+      setAdvanceAfterDraft(
+        presentationAdvanceAfterDraft(
+          transitionWithAdvanceDraft.advanceAfterMs,
+        ),
+      );
+    }
+    onApplyToAll(transitionWithAdvanceDraft);
   };
   return (
     <>
@@ -37,6 +85,7 @@ export function PresentationTransitionPanel({
             <span>效果</span>
             <OfficeSelect
               ariaLabel="幻灯片切换效果"
+              disabled={!editable}
               value={transition?.type ?? 'none'}
               options={[
                 { value: 'none', label: '无' },
@@ -63,6 +112,7 @@ export function PresentationTransitionPanel({
               <span>方向</span>
               <OfficeSelect
                 ariaLabel="切换方向"
+                disabled={!editable}
                 value={transition.direction ?? 'left'}
                 options={[
                   { value: 'left', label: '向左' },
@@ -84,6 +134,7 @@ export function PresentationTransitionPanel({
                 <span>方向</span>
                 <OfficeSelect
                   ariaLabel="切换方向"
+                  disabled={!editable}
                   value={transition.direction ?? 'out'}
                   options={[
                     { value: 'out', label: '向外' },
@@ -100,6 +151,7 @@ export function PresentationTransitionPanel({
                 <span>分割方式</span>
                 <OfficeSelect
                   ariaLabel="分割方式"
+                  disabled={!editable}
                   value={transition.orientation ?? 'horizontal'}
                   options={[
                     { value: 'horizontal', label: '水平' },
@@ -118,7 +170,7 @@ export function PresentationTransitionPanel({
             <span>速度</span>
             <OfficeSelect
               ariaLabel="切换速度"
-              disabled={!transition}
+              disabled={!editable || !transition}
               value={transition?.speed ?? 'medium'}
               options={[
                 { value: 'fast', label: '快速' },
@@ -137,7 +189,7 @@ export function PresentationTransitionPanel({
           <OfficeCheckbox
             className="toggle"
             ariaLabel="单击鼠标后换片"
-            disabled={!transition}
+            disabled={!editable || !transition}
             checked={transition?.advanceOnClick ?? true}
             onCheckedChange={(advanceOnClick) => update({ advanceOnClick })}
           >
@@ -146,7 +198,7 @@ export function PresentationTransitionPanel({
           <OfficeCheckbox
             className="toggle"
             ariaLabel="自动换片"
-            disabled={!transition}
+            disabled={!editable || !transition}
             checked={transition?.advanceAfterMs !== undefined}
             onCheckedChange={(checked) =>
               update({ advanceAfterMs: checked ? 5000 : undefined })
@@ -161,19 +213,22 @@ export function PresentationTransitionPanel({
               min={0.25}
               max={3600}
               step={0.25}
-              disabled={!transition || transition.advanceAfterMs === undefined}
-              value={
-                transition?.advanceAfterMs === undefined
-                  ? ''
-                  : transition.advanceAfterMs / 1000
+              disabled={
+                !editable ||
+                !transition ||
+                transition.advanceAfterMs === undefined
               }
-              onValueChange={(value) =>
-                update({
-                  advanceAfterMs: Math.max(
-                    250,
-                    Math.min(3_600_000, Number(value) * 1000),
-                  ),
-                })
+              value={advanceAfterDraft}
+              escapeConsumer={
+                advanceAfterDraft !==
+                presentationAdvanceAfterDraft(transition?.advanceAfterMs)
+              }
+              onValueChange={setAdvanceAfterDraft}
+              onCommit={commitAdvanceAfter}
+              onCancel={() =>
+                setAdvanceAfterDraft(
+                  presentationAdvanceAfterDraft(transition?.advanceAfterMs),
+                )
               }
             />
           </div>
@@ -183,11 +238,29 @@ export function PresentationTransitionPanel({
         <WorkOfficeRibbonButton
           label="应用切换效果到全部幻灯片"
           visibleLabel="应用到全部"
-          onClick={onApplyToAll}
+          disabled={!editable || !canApplyToAll(transitionWithAdvanceDraft)}
+          onClick={applyToAll}
         >
           <CopyCheck size={19} />
         </WorkOfficeRibbonButton>
       </WorkOfficeRibbonGroup>
     </>
   );
+}
+
+function presentationAdvanceAfterDraft(
+  advanceAfterMs: number | undefined,
+): string {
+  return advanceAfterMs === undefined ? '' : String(advanceAfterMs / 1000);
+}
+
+function normalizedPresentationAdvanceAfterMs(
+  value: string,
+  current: number,
+): number {
+  if (!value.trim()) return current;
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return current;
+  const steppedSeconds = Math.round(seconds * 4) / 4;
+  return Math.round(Math.min(3600, Math.max(0.25, steppedSeconds)) * 1000);
 }

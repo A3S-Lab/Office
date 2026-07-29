@@ -14,6 +14,7 @@ import { DocumentSection } from '../src/internal/features/work/work-document-sec
 import { toggleDocumentSuperscript } from '../src/internal/features/work/work-document-character-formatting';
 import {
   changeDocumentIndent,
+  clearDocumentParagraphPagination,
   clearDocumentFormatting,
   documentIndentLevel,
   documentParagraphIndent,
@@ -287,6 +288,15 @@ describe('document formatting', () => {
     expect(editor.getHTML()).toContain('data-office-page-break-before="true"');
     expect(editor.getHTML()).toContain('data-office-widow-control="false"');
 
+    expect(clearDocumentParagraphPagination(editor)).toBe(true);
+    expect(documentParagraphPagination(editor)).toEqual({
+      keepLines: false,
+      keepWithNext: false,
+      pageBreakBefore: false,
+      widowControl: true,
+    });
+    expect(editor.getHTML()).toBe('<p>A3S Office</p>');
+
     clearDocumentFormatting(editor);
     expect(editor.getHTML()).toBe('<p>A3S Office</p>');
 
@@ -376,6 +386,10 @@ describe('document formatting', () => {
     });
     expect(documentParagraphPagination(editor).keepWithNext).toBe(false);
     expect(editor.getHTML()).toContain('data-office-keep-with-next="false"');
+
+    clearDocumentParagraphPagination(editor);
+    expect(documentParagraphPagination(editor).keepWithNext).toBe(true);
+    expect(editor.getHTML()).toBe('<h2>Heading</h2><p>Body</p>');
 
     editor.destroy();
   });

@@ -19,6 +19,9 @@ export interface DocumentParagraphPagination {
   widowControl: boolean;
 }
 
+export type DocumentParagraphPaginationUpdate =
+  Partial<DocumentParagraphPagination>;
+
 export type DocumentParagraphDirection = 'ltr' | 'rtl';
 
 export type DocumentParagraphLineRule = 'auto' | 'exact' | 'atLeast';
@@ -38,6 +41,9 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentParagraphFormatting: {
       changeDocumentIndent: (direction: -1 | 1) => ReturnType;
+      clearDocumentParagraphPagination: (
+        options?: DocumentFormattingCommandOptions,
+      ) => ReturnType;
       clearDocumentFormatting: () => ReturnType;
       setDocumentIndentLevel: (
         indentLevel: number,
@@ -53,7 +59,7 @@ declare module '@tiptap/core' {
         options?: DocumentFormattingCommandOptions,
       ) => ReturnType;
       setDocumentParagraphPagination: (
-        pagination: DocumentParagraphPagination,
+        pagination: DocumentParagraphPaginationUpdate,
         options?: DocumentFormattingCommandOptions,
       ) => ReturnType;
       setDocumentParagraphSpacing: (
@@ -207,6 +213,10 @@ export const DocumentParagraphFormatting = Extension.create({
     return {
       changeDocumentIndent: (direction) => (props) =>
         changeDocumentIndentCommand(props, direction),
+      clearDocumentParagraphPagination:
+        (options = {}) =>
+        (props) =>
+          clearDocumentParagraphPaginationCommand(props, options),
       clearDocumentFormatting: () => (props) =>
         clearDocumentFormattingCommand(props),
       setDocumentIndentLevel:
@@ -247,6 +257,21 @@ export function changeDocumentIndent(
   direction: -1 | 1,
 ): boolean {
   return editor.commands.changeDocumentIndent(direction);
+}
+
+export function canChangeDocumentIndent(
+  editor: Editor,
+  direction: -1 | 1,
+): boolean {
+  if (editor.isActive('listItem')) {
+    const canChangeListLevel =
+      direction > 0
+        ? editor.can().chain().focus().sinkListItem('listItem').run()
+        : editor.can().chain().focus().liftListItem('listItem').run();
+    if (canChangeListLevel) return true;
+  }
+  const current = documentIndentLevel(editor);
+  return direction > 0 ? current < MAX_DOCUMENT_INDENT_LEVEL : current > 0;
 }
 
 export function documentIndentLevel(editor: Editor): number {
@@ -317,10 +342,17 @@ export function setDocumentParagraphDirection(
 
 export function setDocumentParagraphPagination(
   editor: Editor,
-  pagination: DocumentParagraphPagination,
+  pagination: DocumentParagraphPaginationUpdate,
   options: DocumentFormattingCommandOptions = {},
 ): boolean {
   return editor.commands.setDocumentParagraphPagination(pagination, options);
+}
+
+export function clearDocumentParagraphPagination(
+  editor: Editor,
+  options: DocumentFormattingCommandOptions = {},
+): boolean {
+  return editor.commands.clearDocumentParagraphPagination(options);
 }
 
 export function documentParagraphSpacing(
@@ -400,11 +432,10 @@ function changeDocumentIndentCommand(
         : chain().focus().liftListItem('listItem').run();
     }
   }
-  return setDocumentIndentLevelCommand(
-    props,
-    documentIndentLevel(editor) + direction,
-    {},
-  );
+  const current = documentIndentLevel(editor);
+  const next = normalizedIndentLevel(current + direction);
+  if (next === current) return false;
+  return setDocumentIndentLevelCommand(props, next, {});
 }
 
 function setDocumentIndentLevelCommand(
@@ -464,16 +495,36 @@ function setDocumentParagraphDirectionCommand(
 
 function setDocumentParagraphPaginationCommand(
   { chain, editor }: CommandProps,
-  pagination: DocumentParagraphPagination,
+  pagination: DocumentParagraphPaginationUpdate,
+  options: DocumentFormattingCommandOptions,
+): boolean {
+  const nodeTypes = activeParagraphNodeTypes(editor);
+  if (!nodeTypes.length) return false;
+  const attributes: DocumentParagraphPaginationUpdate = {};
+  for (const key of documentParagraphPaginationKeys) {
+    if (Object.hasOwn(pagination, key))
+      attributes[key] = Boolean(pagination[key]);
+  }
+  if (!Object.keys(attributes).length) return false;
+  let commandChain = chain();
+  if (options.restoreFocus !== false) commandChain = commandChain.focus();
+  for (const nodeType of nodeTypes) {
+    commandChain = commandChain.updateAttributes(nodeType, attributes);
+  }
+  return commandChain.run();
+}
+
+function clearDocumentParagraphPaginationCommand(
+  { chain, editor }: CommandProps,
   options: DocumentFormattingCommandOptions,
 ): boolean {
   const nodeTypes = activeParagraphNodeTypes(editor);
   if (!nodeTypes.length) return false;
   const attributes = {
-    keepLines: Boolean(pagination.keepLines),
-    keepWithNext: Boolean(pagination.keepWithNext),
-    pageBreakBefore: Boolean(pagination.pageBreakBefore),
-    widowControl: Boolean(pagination.widowControl),
+    keepLines: null,
+    keepWithNext: null,
+    pageBreakBefore: null,
+    widowControl: null,
   };
   let commandChain = chain();
   if (options.restoreFocus !== false) commandChain = commandChain.focus();
@@ -734,6 +785,13 @@ function directBooleanAttribute(
     },
   };
 }
+
+const documentParagraphPaginationKeys = [
+  'keepLines',
+  'keepWithNext',
+  'pageBreakBefore',
+  'widowControl',
+] as const satisfies readonly (keyof DocumentParagraphPagination)[];
 
 function directBoolean(value: unknown): boolean | null {
   if (value === true || value === 'true' || value === '1') return true;

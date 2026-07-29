@@ -18,6 +18,7 @@
 @import "./work-document-task-panes.css";
 @import "./work-markdown.css";
 @import "./work-spreadsheet.css";
+@import "./work-spreadsheet-chrome.css";
 @import "./work-spreadsheet-charts.css";
 @import "./work-spreadsheet-formulas.css";
 @import "./work-spreadsheet-pivots.css";

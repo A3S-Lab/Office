@@ -14,11 +14,12 @@ import type {
   WorkSpreadsheetChartAxisPosition,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { normalizeOptionalOfficeNumber } from './office-number-normalization';
 
 const PRIMARY_AXES: Array<{
   position: WorkSpreadsheetChartAxisPosition;
@@ -147,16 +148,23 @@ export function PresentationChartAxisEditor({
               {categoryAxis && (
                 <div className="work-office-field">
                   <span>标签间隔</span>
-                  <OfficeNumberField
+                  <CommittedOfficeNumberField
                     min={1}
                     max={31_999}
                     step={1}
                     ariaLabel={`${ariaName}标签间隔`}
-                    value={axis?.labelInterval ?? ''}
+                    value={axis?.labelInterval}
                     placeholder="自动"
-                    onValueChange={(value) =>
+                    normalizeValue={(value) =>
+                      normalizeOptionalOfficeNumber(value, {
+                        integer: true,
+                        minimum: 1,
+                        maximum: 31_999,
+                      })
+                    }
+                    onValueCommit={(labelInterval) =>
                       updateAxis(position, {
-                        labelInterval: optionalInteger(value),
+                        labelInterval,
                       })
                     }
                   />
@@ -166,40 +174,57 @@ export function PresentationChartAxisEditor({
                 <>
                   <div className="work-office-field">
                     <span>最小值</span>
-                    <OfficeNumberField
+                    <CommittedOfficeNumberField
                       step={0.1}
                       ariaLabel={`${ariaName}最小值`}
-                      value={axis?.minimum ?? ''}
+                      value={axis?.minimum}
                       placeholder="自动"
-                      onValueChange={(value) =>
-                        updateAxis(position, { minimum: optionalNumber(value) })
+                      normalizeValue={(value) =>
+                        normalizeOptionalOfficeNumber(value, {
+                          isValid: (minimum) =>
+                            axis?.maximum === undefined ||
+                            minimum < axis.maximum,
+                        })
+                      }
+                      onValueCommit={(minimum) =>
+                        updateAxis(position, { minimum })
                       }
                     />
                   </div>
                   <div className="work-office-field">
                     <span>最大值</span>
-                    <OfficeNumberField
+                    <CommittedOfficeNumberField
                       step={0.1}
                       ariaLabel={`${ariaName}最大值`}
-                      value={axis?.maximum ?? ''}
+                      value={axis?.maximum}
                       placeholder="自动"
-                      onValueChange={(value) =>
-                        updateAxis(position, { maximum: optionalNumber(value) })
+                      normalizeValue={(value) =>
+                        normalizeOptionalOfficeNumber(value, {
+                          isValid: (maximum) =>
+                            axis?.minimum === undefined ||
+                            maximum > axis.minimum,
+                        })
+                      }
+                      onValueCommit={(maximum) =>
+                        updateAxis(position, { maximum })
                       }
                     />
                   </div>
                   <div className="work-office-field">
                     <span>主单位</span>
-                    <OfficeNumberField
+                    <CommittedOfficeNumberField
                       min={0}
                       step={0.1}
                       ariaLabel={`${ariaName}主单位`}
-                      value={axis?.majorUnit ?? ''}
+                      value={axis?.majorUnit}
                       placeholder="自动"
-                      onValueChange={(value) =>
-                        updateAxis(position, {
-                          majorUnit: optionalNumber(value),
+                      normalizeValue={(value) =>
+                        normalizeOptionalOfficeNumber(value, {
+                          isValid: (majorUnit) => majorUnit > 0,
                         })
+                      }
+                      onValueCommit={(majorUnit) =>
+                        updateAxis(position, { majorUnit })
                       }
                     />
                   </div>
@@ -249,16 +274,4 @@ export function PresentationChartAxisEditor({
       </div>
     </section>
   );
-}
-
-function optionalNumber(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : undefined;
-}
-
-function optionalInteger(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const number = Number(value);
-  return Number.isInteger(number) ? number : undefined;
 }

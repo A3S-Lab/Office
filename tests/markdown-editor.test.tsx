@@ -85,6 +85,58 @@ test('guides an empty Markdown source pane without adding document content', asy
   );
 });
 
+test('keeps the default split view to one editor and one read-only preview', async () => {
+  render(
+    <MarkdownEditor
+      content={{
+        type: 'markdown',
+        markdown: '# Product plan\n\n- [ ] Review the plan',
+      }}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const source = await screen.findByLabelText('Markdown 源码');
+  const preview = screen.getByLabelText('Markdown 预览');
+  expect(source).not.toHaveAttribute('readonly');
+  expect(preview).toHaveAttribute('contenteditable', 'false');
+  expect(preview).toHaveAttribute('aria-readonly', 'true');
+  expect(preview).toHaveAttribute('role', 'document');
+  expect(
+    screen.getByRole('checkbox', { name: '未完成：Review the plan' }),
+  ).toBeDisabled();
+  expect(
+    within(screen.getByRole('region', { name: 'Markdown 源码窗格' })).getByText(
+      '编辑',
+    ),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByRole('region', { name: 'Markdown 预览窗格' })).getByText(
+      '预览',
+    ),
+  ).toBeInTheDocument();
+
+  fireEvent.click(await screen.findByRole('tab', { name: '视图' }));
+  fireEvent.click(
+    within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
+      'button',
+      { name: '编辑' },
+    ),
+  );
+
+  const visualEditor = await screen.findByLabelText('Markdown 编辑区');
+  expect(visualEditor).toHaveAttribute('contenteditable', 'true');
+  expect(visualEditor).toHaveAttribute('aria-readonly', 'false');
+  expect(visualEditor).toHaveAttribute('role', 'textbox');
+  const editableTask = visualEditor.querySelector<HTMLInputElement>(
+    'li[data-type="taskItem"] input[type="checkbox"]',
+  );
+  expect(editableTask).not.toBeNull();
+  expect(editableTask).toBeEnabled();
+  expect(screen.queryByLabelText('Markdown 源码')).toBeNull();
+});
+
 test('coalesces source edits before rebuilding the visual Markdown tree', async () => {
   const changes: MarkdownContent[] = [];
   const content: MarkdownContent = {
@@ -101,7 +153,7 @@ test('coalesces source edits before rebuilding the visual Markdown tree', async 
   );
 
   const source = await screen.findByLabelText('Markdown 源码');
-  const visual = screen.getByLabelText('Markdown 编辑区');
+  const visual = screen.getByLabelText('Markdown 预览');
   fireEvent.change(source, { target: { value: '# Intermediate title' } });
   fireEvent.change(source, {
     target: { value: '# Final title\n\nCurrent content.' },
@@ -249,6 +301,12 @@ test('routes ribbon formatting to the active Markdown source selection', async (
   fireEvent.click(screen.getByRole('button', { name: '加粗' }));
 
   await waitFor(() => expect(source).toHaveValue('**Write** clearly'));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '加粗' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    ),
+  );
   expect(changes.at(-1)?.markdown).toBe('**Write** clearly');
   expect(source.selectionStart).toBe(2);
   expect(source.selectionEnd).toBe(7);
@@ -332,9 +390,11 @@ test('lets the host replace the selected-text menu in Markdown source', async ()
   );
 });
 
-test('keeps the host selection menu available in the Markdown visual editor', async () => {
+test('keeps the host selection menu available in the Markdown preview', async () => {
   const changes: MarkdownContent[] = [];
   const surfaces: string[] = [];
+  const commandResults: import('../src/core').MarkdownSelectionCommandResult[] =
+    [];
   render(
     <MarkdownEditor
       content={{ type: 'markdown', markdown: 'Review this sentence.' }}
@@ -345,7 +405,7 @@ test('keeps the host selection menu available in the Markdown visual editor', as
             id: 'replace',
             label: '替换',
             onSelect: ({ commands }) => {
-              commands.replaceText('Keep this sentence.');
+              commandResults.push(commands.replaceText('Keep this sentence.'));
             },
           },
         ];
@@ -355,7 +415,7 @@ test('keeps the host selection menu available in the Markdown visual editor', as
     />,
   );
 
-  const visual = await screen.findByLabelText('Markdown 编辑区');
+  const visual = await screen.findByLabelText('Markdown 预览');
   selectDomText(visual, 'Review this sentence.');
   await new Promise((resolve) => setTimeout(resolve, 0));
   fireEvent.contextMenu(visual, { clientX: 120, clientY: 180 });
@@ -366,10 +426,9 @@ test('keeps the host selection menu available in the Markdown visual editor', as
     ),
   );
 
-  await waitFor(() =>
-    expect(changes.at(-1)?.markdown).toContain('Keep this sentence.'),
-  );
   expect(surfaces).toEqual(['visual']);
+  expect(commandResults).toEqual([{ applied: false, reason: 'read-only' }]);
+  expect(changes).toEqual([]);
 });
 
 test('round-trips GFM task state from the visual editor to source', async () => {
@@ -387,15 +446,33 @@ test('round-trips GFM task state from the visual editor to source', async () => 
     />,
   );
 
+  fireEvent.click(await screen.findByRole('tab', { name: '视图' }));
+  fireEvent.click(
+    within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
+      'button',
+      { name: '编辑' },
+    ),
+  );
+  const visualEditor = await screen.findByLabelText('Markdown 编辑区');
+  await waitFor(() => expect(visualEditor).toHaveFocus());
+
   const taskText = await screen.findByText('Ship the release');
   const task = taskText.closest('li')?.querySelector('input[type="checkbox"]');
   expect(task).not.toBeNull();
   if (!task) throw new Error('Expected the rendered Markdown task checkbox.');
-  fireEvent.click(task);
+  expect(task).toBeEnabled();
+  expect(task).not.toBeChecked();
+  fireEvent.change(task, { target: { checked: true } });
 
   await waitFor(() => {
     expect(changes.at(-1)?.markdown).toContain('- [x] Ship the release');
   });
+  fireEvent.click(
+    within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
+      'button',
+      { name: '分屏' },
+    ),
+  );
   expect(
     (
       screen.getByLabelText('Markdown 源码') as HTMLTextAreaElement
@@ -416,7 +493,7 @@ test('applies a host-controlled Markdown replacement to both panes', async () =>
     />,
   );
 
-  expect(await screen.findByLabelText('Markdown 编辑区')).toHaveTextContent(
+  expect(await screen.findByLabelText('Markdown 预览')).toHaveTextContent(
     'Initial title',
   );
   const replacement: MarkdownContent = {
@@ -435,7 +512,7 @@ test('applies a host-controlled Markdown replacement to both panes', async () =>
     expect(screen.getByLabelText('Markdown 源码')).toHaveValue(
       replacement.markdown,
     );
-    expect(screen.getByLabelText('Markdown 编辑区')).toHaveTextContent(
+    expect(screen.getByLabelText('Markdown 预览')).toHaveTextContent(
       'Host replacement',
     );
   });
@@ -458,7 +535,7 @@ test('resizes and resets the Markdown split panes from the separator', async () 
   );
 
   const separator = await screen.findByRole('separator', {
-    name: '调整源码与编辑结果宽度',
+    name: '调整编辑与预览宽度',
   });
   const workspace = separator.closest('.work-markdown-workspace');
   expect(workspace).not.toBeNull();
@@ -499,6 +576,14 @@ test('mounts host TipTap extensions in the Markdown editor', async () => {
     />,
   );
 
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  fireEvent.click(
+    within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
+      'button',
+      { name: '编辑' },
+    ),
+  );
+
   fireEvent.keyDown(await screen.findByLabelText('Markdown 编辑区'), {
     code: 'F6',
     key: 'F6',
@@ -517,7 +602,7 @@ test('inserts Markdown links with display text from one dialog', async () => {
     />,
   );
 
-  await screen.findByLabelText('Markdown 编辑区');
+  await screen.findByLabelText('Markdown 源码');
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(screen.getByRole('button', { name: '添加链接' }));
   fireEvent.change(screen.getByRole('textbox', { name: '显示文字' }), {
@@ -529,7 +614,7 @@ test('inserts Markdown links with display text from one dialog', async () => {
   fireEvent.click(
     within(screen.getByRole('dialog', { name: '添加链接' })).getByRole(
       'button',
-      { name: '添加链接' },
+      { name: '添加' },
     ),
   );
 
@@ -538,6 +623,55 @@ test('inserts Markdown links with display text from one dialog', async () => {
       '[A3S Office](https://a3s.dev/office)',
     ),
   );
+});
+
+test('rejects unsafe Markdown link and image sources with one concise error', async () => {
+  const changes: MarkdownContent[] = [];
+  render(
+    <MarkdownEditor
+      content={{ type: 'markdown', markdown: '' }}
+      onChange={(content) => changes.push(content)}
+      theme="light"
+    />,
+  );
+
+  await screen.findByLabelText('Markdown 源码');
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  fireEvent.click(screen.getByRole('button', { name: '添加链接' }));
+  const linkDialog = screen.getByRole('dialog', { name: '添加链接' });
+  const linkSource = within(linkDialog).getByRole('textbox', {
+    name: '链接地址',
+  });
+  fireEvent.change(linkSource, {
+    target: { value: 'javascript:alert(1)' },
+  });
+
+  expect(linkSource).toHaveAttribute('aria-invalid', 'true');
+  expect(within(linkDialog).getByRole('alert')).toHaveTextContent(
+    '请输入完整的 http、https、mailto 或 # 文档内地址。',
+  );
+  expect(
+    within(linkDialog).getByRole('button', { name: '添加' }),
+  ).toBeDisabled();
+  expect(changes).toHaveLength(0);
+
+  fireEvent.click(within(linkDialog).getByRole('button', { name: '取消' }));
+  fireEvent.click(screen.getByRole('button', { name: '插入图片' }));
+  const imageDialog = screen.getByRole('dialog', { name: '插入图片' });
+  const imageSource = within(imageDialog).getByRole('textbox', {
+    name: '图片地址',
+  });
+  fireEvent.change(imageSource, {
+    target: { value: 'data:text/html,<script>alert(1)</script>' },
+  });
+
+  expect(imageSource).toHaveAttribute('aria-invalid', 'true');
+  expect(within(imageDialog).getByRole('alert')).toHaveTextContent(
+    '请输入完整的 http、https 或相对图片地址。',
+  );
+  expect(
+    within(imageDialog).getByRole('button', { name: '插入' }),
+  ).toBeDisabled();
 });
 
 test('inserts Markdown images with alternative text from one dialog', async () => {
@@ -550,25 +684,25 @@ test('inserts Markdown images with alternative text from one dialog', async () =
     />,
   );
 
-  await screen.findByLabelText('Markdown 编辑区');
+  await screen.findByLabelText('Markdown 源码');
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(screen.getByRole('button', { name: '插入图片' }));
   fireEvent.change(screen.getByRole('textbox', { name: '替代文字（可选）' }), {
     target: { value: 'Office 架构图' },
   });
   fireEvent.change(screen.getByRole('textbox', { name: '图片地址' }), {
-    target: { value: 'https://a3s.dev/office.png' },
+    target: { value: '../assets/office diagram.png' },
   });
   fireEvent.click(
     within(screen.getByRole('dialog', { name: '插入图片' })).getByRole(
       'button',
-      { name: '插入图片' },
+      { name: '插入' },
     ),
   );
 
   await waitFor(() =>
     expect(changes.at(-1)?.markdown).toContain(
-      '![Office 架构图](https://a3s.dev/office.png)',
+      '![Office 架构图](../assets/office%20diagram.png)',
     ),
   );
 });

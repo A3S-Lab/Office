@@ -2,7 +2,8 @@ import { type CommandProps, Extension } from '@tiptap/core';
 import { Table, TableView } from '@tiptap/extension-table';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { Plugin, type EditorState } from '@tiptap/pm/state';
-import { isInTable, selectedRect, type TableMap } from '@tiptap/pm/tables';
+import { NodeSelection } from '@tiptap/pm/state';
+import { isInTable, selectedRect, TableMap } from '@tiptap/pm/tables';
 import {
   documentTableRowHeight,
   type DocumentTableRowHeightRule,
@@ -222,7 +223,7 @@ function setSelectedColumnWidth(
     );
   }
   setTableLayoutAttribute(transaction, context, 'fixed');
-  if (transaction.docChanged) dispatch(transaction.scrollIntoView());
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
 
@@ -247,7 +248,7 @@ function setSelectedRowHeight(
     normalized,
     rule,
   );
-  if (transaction.docChanged) dispatch(transaction.scrollIntoView());
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
 
@@ -284,7 +285,7 @@ function setTableLayoutMode(
   } else {
     clearPhysicalColumnWidths(transaction, context);
   }
-  if (transaction.docChanged) dispatch(transaction.scrollIntoView());
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
 
@@ -314,7 +315,7 @@ function distributeColumns(
     columns[0] ?? 0,
   );
   setTableLayoutAttribute(transaction, context, 'fixed');
-  if (transaction.docChanged) dispatch(transaction.scrollIntoView());
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
 
@@ -345,7 +346,7 @@ function distributeRows(
     height ?? DEFAULT_ROW_HEIGHT,
     'atLeast',
   );
-  if (transaction.docChanged) dispatch(transaction.scrollIntoView());
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
 
@@ -360,6 +361,22 @@ interface TableSizingContext {
 }
 
 function tableSizingContext(state: EditorState): TableSizingContext | null {
+  if (
+    state.selection instanceof NodeSelection &&
+    state.selection.node.type.spec.tableRole === 'table'
+  ) {
+    const table = state.selection.node;
+    const map = TableMap.get(table);
+    return {
+      table,
+      tableStart: state.selection.from + 1,
+      map,
+      left: 0,
+      right: map.width,
+      top: 0,
+      bottom: map.height,
+    };
+  }
   if (!isInTable(state)) return null;
   const rectangle = selectedRect(state);
   return {
@@ -371,6 +388,29 @@ function tableSizingContext(state: EditorState): TableSizingContext | null {
     top: rectangle.top,
     bottom: rectangle.bottom,
   };
+}
+
+function dispatchTableSizingTransaction(
+  dispatch: NonNullable<CommandProps['dispatch']>,
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+  state: EditorState,
+): void {
+  if (!transaction.docChanged) return;
+  if (
+    state.selection instanceof NodeSelection &&
+    state.selection.node.type.spec.tableRole === 'table'
+  ) {
+    const tablePosition = context.tableStart - 1;
+    if (
+      transaction.doc.nodeAt(tablePosition)?.type.spec.tableRole === 'table'
+    ) {
+      transaction.setSelection(
+        NodeSelection.create(transaction.doc, tablePosition),
+      );
+    }
+  }
+  dispatch(transaction.scrollIntoView());
 }
 
 function setPhysicalColumnWidths(

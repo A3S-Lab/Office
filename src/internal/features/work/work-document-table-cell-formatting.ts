@@ -1,7 +1,11 @@
 import { type CommandProps, Extension } from '@tiptap/core';
 import { TableCell, TableHeader } from '@tiptap/extension-table';
 import type { Node as ProseMirrorNode, ResolvedPos } from '@tiptap/pm/model';
-import type { EditorState, Selection } from '@tiptap/pm/state';
+import {
+  type EditorState,
+  NodeSelection,
+  type Selection,
+} from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
 
 export type DocumentTableVerticalAlign = 'top' | 'middle' | 'bottom';
@@ -362,6 +366,18 @@ function selectedTableCellPositions(selection: Selection): number[] {
     selection.forEachCell((_node, position) => positions.push(position));
     return positions;
   }
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.spec.tableRole === 'table'
+  ) {
+    const positions: number[] = [];
+    selection.node.forEach((row, rowOffset) => {
+      row.forEach((_cell, cellOffset) => {
+        positions.push(selection.from + 2 + rowOffset + cellOffset);
+      });
+    });
+    return positions;
+  }
   const position = ancestorPosition(selection.$from, isTableCell);
   return position === null ? [] : [position];
 }
@@ -369,6 +385,12 @@ function selectedTableCellPositions(selection: Selection): number[] {
 function selectedTable(
   selection: Selection,
 ): { node: ProseMirrorNode; position: number } | null {
+  if (
+    selection instanceof NodeSelection &&
+    selection.node.type.spec.tableRole === 'table'
+  ) {
+    return { node: selection.node, position: selection.from };
+  }
   for (let depth = selection.$from.depth; depth > 0; depth -= 1) {
     const node = selection.$from.node(depth);
     if (node.type.spec.tableRole === 'table') {

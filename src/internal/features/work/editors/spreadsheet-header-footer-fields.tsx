@@ -1,7 +1,7 @@
 import type { EffectiveSpreadsheetPageSetup } from '../work-spreadsheet-page-setup';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
@@ -58,13 +58,14 @@ export function SpreadsheetHeaderFooterFields({
       />
       <div className="work-office-field">
         <span>起始页码</span>
-        <OfficeNumberField
+        <CommittedOfficeNumberField
           ariaLabel="起始页码"
           min={1}
           max={32767}
           value={pageSetup.pageNumberStart}
-          onValueChange={(pageNumberStart) =>
-            onChange({ ...pageSetup, pageNumberStart: Number(pageNumberStart) })
+          normalizeValue={normalizeStartingPageNumber}
+          onValueCommit={(pageNumberStart) =>
+            onChange({ ...pageSetup, pageNumberStart })
           }
         />
       </div>
@@ -112,6 +113,14 @@ export function SpreadsheetHeaderFooterFields({
       </p>
     </fieldset>
   );
+}
+
+function normalizeStartingPageNumber(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(32_767, Math.max(1, Math.round(number)))
+    : null;
 }
 
 function TemplateField({

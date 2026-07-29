@@ -30,6 +30,8 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useId,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -38,8 +40,9 @@ import {
   Popover,
   StatusBadge,
 } from '../../../design-system/primitives';
-import { OfficeTextField } from './office-controls';
 import { OfficeColorPicker } from './office-color-picker';
+import { OfficeTextField } from './office-controls';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import type { PdfAnnotationControllerState } from './pdf-annotation-controller';
 import type {
   PdfEditorCanCommands,
@@ -48,6 +51,17 @@ import type {
 import type { PdfViewerControllerState } from './pdf-viewer-controller';
 
 export type PdfSaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+const pdfKeyboardShortcuts = {
+  deleteAnnotation: 'Delete Backspace',
+  fitPage: 'Control+0 Meta+0',
+  redo: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
+  save: 'Control+S Meta+S',
+  search: 'Control+F Meta+F',
+  undo: 'Control+Z Meta+Z',
+  zoomIn: 'Control+= Meta+= Control+Shift++ Meta+Shift++',
+  zoomOut: 'Control+- Meta+-',
+} as const;
 
 export function PdfToolbar({
   annotationState,
@@ -70,6 +84,7 @@ export function PdfToolbar({
 }) {
   const [pageValue, setPageValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
+  const cancelPageBlurCommitRef = useRef(false);
 
   useEffect(() => {
     setPageValue(state.currentPage > 0 ? String(state.currentPage) : '');
@@ -91,13 +106,15 @@ export function PdfToolbar({
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const query = searchValue.trim();
-    if (
-      query &&
-      query === state.search.query &&
-      state.search.total > 0 &&
-      !state.search.loading
-    ) {
-      commands.nextSearchResult();
+    if (query && query === state.search.query) {
+      if (state.search.loading) return;
+      if (state.search.error) {
+        commands.search(query);
+        return;
+      }
+      if (state.search.total > 0 && can.nextSearchResult()) {
+        commands.nextSearchResult();
+      }
       return;
     }
     commands.search(query);
@@ -125,6 +142,7 @@ export function PdfToolbar({
           <Button
             tone="secondary"
             title={`${saveLabel}（Cmd/Ctrl+S）`}
+            aria-keyshortcuts={pdfKeyboardShortcuts.save}
             disabled={!can.save()}
             onClick={() => void commands.save()}
           >
@@ -134,14 +152,28 @@ export function PdfToolbar({
         </div>
       )}
 
-      <div className="work-pdf-toolbar-group work-pdf-history">
-        <IconButton label="撤销" disabled={!can.undo()} onClick={commands.undo}>
-          <Undo2 size={15} />
-        </IconButton>
-        <IconButton label="重做" disabled={!can.redo()} onClick={commands.redo}>
-          <Redo2 size={15} />
-        </IconButton>
-      </div>
+      {editable && (
+        <div className="work-pdf-toolbar-group work-pdf-history">
+          <IconButton
+            label="撤销"
+            title="撤销（Cmd/Ctrl+Z）"
+            aria-keyshortcuts={pdfKeyboardShortcuts.undo}
+            disabled={!can.undo()}
+            onClick={commands.undo}
+          >
+            <Undo2 size={15} />
+          </IconButton>
+          <IconButton
+            label="重做"
+            title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
+            aria-keyshortcuts={pdfKeyboardShortcuts.redo}
+            disabled={!can.redo()}
+            onClick={commands.redo}
+          >
+            <Redo2 size={15} />
+          </IconButton>
+        </div>
+      )}
 
       {editable && (
         <fieldset className="work-pdf-toolbar-group work-pdf-annotation">
@@ -212,6 +244,8 @@ export function PdfToolbar({
           />
           <IconButton
             label="删除所选批注"
+            title="删除所选批注（Delete / Backspace）"
+            aria-keyshortcuts={pdfKeyboardShortcuts.deleteAnnotation}
             disabled={!can.deleteAnnotationSelection()}
             onClick={commands.deleteAnnotationSelection}
           >
@@ -235,6 +269,7 @@ export function PdfToolbar({
             ref={searchInputRef}
             type="search"
             aria-label="在 PDF 中搜索"
+            aria-keyshortcuts={pdfKeyboardShortcuts.search}
             placeholder="搜索"
             value={searchValue}
             disabled={!can.search(searchValue)}
@@ -242,16 +277,24 @@ export function PdfToolbar({
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 event.preventDefault();
+                event.stopPropagation();
                 setSearchValue('');
                 commands.clearSearch();
               } else if (
                 event.key === 'Enter' &&
                 event.shiftKey &&
-                searchValue.trim() === state.search.query &&
-                state.search.total > 0
+                searchValue.trim() === state.search.query
               ) {
                 event.preventDefault();
-                commands.previousSearchResult();
+                event.stopPropagation();
+                if (
+                  !state.search.loading &&
+                  !state.search.error &&
+                  state.search.total > 0 &&
+                  can.previousSearchResult()
+                ) {
+                  commands.previousSearchResult();
+                }
               }
             }}
           />
@@ -303,7 +346,16 @@ export function PdfToolbar({
           inputMode="numeric"
           value={pageValue}
           disabled={!can.goToPage(state.currentPage || 1)}
-          onBlur={commitPage}
+          onBlur={() => {
+            if (cancelPageBlurCommitRef.current) {
+              cancelPageBlurCommitRef.current = false;
+              return;
+            }
+            commitPage();
+          }}
+          onFocus={() => {
+            cancelPageBlurCommitRef.current = false;
+          }}
           onChange={(event) =>
             setPageValue(event.target.value.replace(/\D/g, ''))
           }
@@ -313,6 +365,9 @@ export function PdfToolbar({
               commitPage();
               event.currentTarget.select();
             } else if (event.key === 'Escape') {
+              event.preventDefault();
+              event.stopPropagation();
+              cancelPageBlurCommitRef.current = true;
               setPageValue(String(state.currentPage));
               event.currentTarget.blur();
             }
@@ -320,6 +375,7 @@ export function PdfToolbar({
         />
         <span className="work-pdf-page-total">/ {state.totalPages || '—'}</span>
         <IconButton
+          className="work-pdf-page-step"
           label="下一页"
           disabled={!can.nextPage()}
           onClick={commands.nextPage}
@@ -331,6 +387,8 @@ export function PdfToolbar({
       <div className="work-pdf-toolbar-group work-pdf-zoom-controls">
         <IconButton
           label="缩小"
+          title="缩小（Cmd/Ctrl+-）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.zoomOut}
           disabled={!can.zoomOut()}
           onClick={commands.zoomOut}
         >
@@ -339,6 +397,8 @@ export function PdfToolbar({
         <output aria-label="PDF 缩放比例">{state.zoomPercent}%</output>
         <IconButton
           label="放大"
+          title="放大（Cmd/Ctrl++）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.zoomIn}
           disabled={!can.zoomIn()}
           onClick={commands.zoomIn}
         >
@@ -347,6 +407,8 @@ export function PdfToolbar({
         <button
           type="button"
           className="work-pdf-fit-button"
+          title="整页（Cmd/Ctrl+0）"
+          aria-keyshortcuts={pdfKeyboardShortcuts.fitPage}
           aria-pressed={state.zoomMode === 'fit-page'}
           disabled={!can.fitPage()}
           onClick={commands.fitPage}
@@ -379,6 +441,10 @@ function PdfAnnotationStyleControl({
   can: PdfEditorCanCommands;
   commands: PdfEditorCommands;
 }) {
+  const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+  const opacityGroupName = useId();
+  const strokeWidthGroupName = useId();
   const opacityPercent = Math.round(annotationState.annotationOpacity * 100);
   const disabled =
     !can.setAnnotationOpacity(annotationState.annotationOpacity) &&
@@ -394,7 +460,23 @@ function PdfAnnotationStyleControl({
       panelRole="dialog"
       placement="bottom-end"
       portal
-      focusFirstOnOpen
+      open={open}
+      panelRef={panelRef}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) return;
+        requestAnimationFrame(() => {
+          const panel = panelRef.current;
+          const target =
+            panel?.querySelector<HTMLInputElement>(
+              'input[type="radio"]:checked:not(:disabled)',
+            ) ??
+            panel?.querySelector<HTMLInputElement>(
+              'input[type="radio"]:not(:disabled)',
+            );
+          target?.focus({ preventScroll: true });
+        });
+      }}
       disabled={disabled}
       className="work-pdf-annotation-style"
       panelClassName="work-pdf-annotation-style-panel"
@@ -412,16 +494,18 @@ function PdfAnnotationStyleControl({
               {PDF_ANNOTATION_OPACITY_OPTIONS.map((opacity) => {
                 const label = `${Math.round(opacity * 100)}%`;
                 return (
-                  <button
-                    type="button"
-                    key={opacity}
-                    aria-label={`透明度 ${label}`}
-                    aria-pressed={annotationState.annotationOpacity === opacity}
-                    disabled={!can.setAnnotationOpacity(opacity)}
-                    onClick={() => commands.setAnnotationOpacity(opacity)}
-                  >
-                    {label}
-                  </button>
+                  <label key={opacity}>
+                    <input
+                      type="radio"
+                      name={opacityGroupName}
+                      aria-label={`透明度 ${label}`}
+                      checked={annotationState.annotationOpacity === opacity}
+                      disabled={!can.setAnnotationOpacity(opacity)}
+                      onChange={() => commands.setAnnotationOpacity(opacity)}
+                      onKeyDown={movePdfAnnotationStyleOption}
+                    />
+                    <span>{label}</span>
+                  </label>
                 );
               })}
             </div>
@@ -432,18 +516,22 @@ function PdfAnnotationStyleControl({
             <legend>线宽</legend>
             <div className="work-pdf-annotation-style-options">
               {PDF_ANNOTATION_STROKE_WIDTH_OPTIONS.map((strokeWidth) => (
-                <button
-                  type="button"
-                  key={strokeWidth}
-                  aria-label={`线宽 ${strokeWidth}`}
-                  aria-pressed={
-                    annotationState.annotationStrokeWidth === strokeWidth
-                  }
-                  disabled={!can.setAnnotationStrokeWidth(strokeWidth)}
-                  onClick={() => commands.setAnnotationStrokeWidth(strokeWidth)}
-                >
-                  {strokeWidth}
-                </button>
+                <label key={strokeWidth}>
+                  <input
+                    type="radio"
+                    name={strokeWidthGroupName}
+                    aria-label={`线宽 ${strokeWidth}`}
+                    checked={
+                      annotationState.annotationStrokeWidth === strokeWidth
+                    }
+                    disabled={!can.setAnnotationStrokeWidth(strokeWidth)}
+                    onChange={() =>
+                      commands.setAnnotationStrokeWidth(strokeWidth)
+                    }
+                    onKeyDown={movePdfAnnotationStyleOption}
+                  />
+                  <span>{strokeWidth}</span>
+                </label>
               ))}
             </div>
           </fieldset>
@@ -451,6 +539,44 @@ function PdfAnnotationStyleControl({
       </div>
     </Popover>
   );
+}
+
+function movePdfAnnotationStyleOption(
+  event: KeyboardEvent<HTMLInputElement>,
+): void {
+  if (
+    ![
+      'ArrowDown',
+      'ArrowLeft',
+      'ArrowRight',
+      'ArrowUp',
+      'Home',
+      'End',
+    ].includes(event.key)
+  ) {
+    return;
+  }
+  const options = [
+    ...(event.currentTarget
+      .closest('fieldset')
+      ?.querySelectorAll<HTMLInputElement>(
+        'input[type="radio"]:not(:disabled)',
+      ) ?? []),
+  ];
+  if (!options.length) return;
+  event.preventDefault();
+  const current = options.indexOf(event.currentTarget);
+  const nextIndex =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? options.length - 1
+        : event.key === 'ArrowDown' || event.key === 'ArrowRight'
+          ? (current + 1 + options.length) % options.length
+          : (current - 1 + options.length) % options.length;
+  const next = options[nextIndex];
+  next?.focus({ preventScroll: true });
+  next?.click();
 }
 
 function PdfToolbarOverflow({
@@ -466,6 +592,12 @@ function PdfToolbarOverflow({
   editable: boolean;
   state: PdfViewerControllerState;
 }) {
+  const hasOverflowTools =
+    (editable && annotationState.available) ||
+    (editable && state.features.history) ||
+    state.features.navigation ||
+    state.features.search ||
+    state.features.zoom;
   return (
     <Popover
       label="更多 PDF 工具"
@@ -474,6 +606,8 @@ function PdfToolbarOverflow({
       placement="bottom-end"
       portal
       focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      disabled={!hasOverflowTools}
       className="work-pdf-overflow"
       panelClassName="work-pdf-overflow-panel"
       trigger={(triggerProps) => (
@@ -493,8 +627,11 @@ function PdfToolbarOverflow({
         };
         return (
           <>
-            {editable && (
-              <div className="work-pdf-overflow-group">
+            {editable && annotationState.available && (
+              <fieldset
+                className="work-pdf-overflow-group"
+                aria-label="批注工具"
+              >
                 <PdfOverflowAction
                   label="下划线批注"
                   active={annotationState.activeToolId === 'underline'}
@@ -525,86 +662,107 @@ function PdfToolbarOverflow({
                 >
                   <Type size={15} />
                 </PdfOverflowAction>
-              </div>
+              </fieldset>
             )}
-            <div className="work-pdf-overflow-group">
-              <PdfOverflowAction
-                label="撤销"
-                disabled={!can.undo()}
-                onSelect={() => select(commands.undo)}
+            {editable && state.features.history && (
+              <fieldset
+                className="work-pdf-overflow-group"
+                aria-label="历史记录"
               >
-                <Undo2 size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="重做"
-                disabled={!can.redo()}
-                onSelect={() => select(commands.redo)}
+                <PdfOverflowAction
+                  label="撤销"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.undo}
+                  disabled={!can.undo()}
+                  onSelect={() => select(commands.undo)}
+                >
+                  <Undo2 size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="重做"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.redo}
+                  disabled={!can.redo()}
+                  onSelect={() => select(commands.redo)}
+                >
+                  <Redo2 size={15} />
+                </PdfOverflowAction>
+              </fieldset>
+            )}
+            {state.features.navigation && (
+              <fieldset className="work-pdf-overflow-group" aria-label="翻页">
+                <PdfOverflowAction
+                  label="上一页"
+                  disabled={!can.previousPage()}
+                  onSelect={() => select(commands.previousPage)}
+                >
+                  <ChevronLeft size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="下一页"
+                  disabled={!can.nextPage()}
+                  onSelect={() => select(commands.nextPage)}
+                >
+                  <ChevronRight size={15} />
+                </PdfOverflowAction>
+              </fieldset>
+            )}
+            {state.features.zoom && (
+              <fieldset className="work-pdf-overflow-group" aria-label="缩放">
+                <PdfOverflowAction
+                  label="缩小"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.zoomOut}
+                  disabled={!can.zoomOut()}
+                  onSelect={() => select(commands.zoomOut)}
+                >
+                  <Minus size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="放大"
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.zoomIn}
+                  disabled={!can.zoomIn()}
+                  onSelect={() => select(commands.zoomIn)}
+                >
+                  <Plus size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="整页"
+                  active={state.zoomMode === 'fit-page'}
+                  ariaKeyShortcuts={pdfKeyboardShortcuts.fitPage}
+                  disabled={!can.fitPage()}
+                  onSelect={() => select(commands.fitPage)}
+                >
+                  <Scan size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="页宽"
+                  active={state.zoomMode === 'fit-width'}
+                  disabled={!can.fitWidth()}
+                  onSelect={() => select(commands.fitWidth)}
+                >
+                  <MoveHorizontal size={15} />
+                </PdfOverflowAction>
+              </fieldset>
+            )}
+            {state.features.search && (
+              <fieldset
+                className="work-pdf-overflow-group work-pdf-overflow-narrow"
+                aria-label="搜索结果"
               >
-                <Redo2 size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="上一页"
-                disabled={!can.previousPage()}
-                onSelect={() => select(commands.previousPage)}
-              >
-                <ChevronLeft size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="下一页"
-                disabled={!can.nextPage()}
-                onSelect={() => select(commands.nextPage)}
-              >
-                <ChevronRight size={15} />
-              </PdfOverflowAction>
-            </div>
-            <div className="work-pdf-overflow-group">
-              <PdfOverflowAction
-                label="缩小"
-                disabled={!can.zoomOut()}
-                onSelect={() => select(commands.zoomOut)}
-              >
-                <Minus size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="放大"
-                disabled={!can.zoomIn()}
-                onSelect={() => select(commands.zoomIn)}
-              >
-                <Plus size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="整页"
-                active={state.zoomMode === 'fit-page'}
-                disabled={!can.fitPage()}
-                onSelect={() => select(commands.fitPage)}
-              >
-                <Scan size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="页宽"
-                active={state.zoomMode === 'fit-width'}
-                disabled={!can.fitWidth()}
-                onSelect={() => select(commands.fitWidth)}
-              >
-                <MoveHorizontal size={15} />
-              </PdfOverflowAction>
-            </div>
-            <div className="work-pdf-overflow-group work-pdf-overflow-narrow">
-              <PdfOverflowAction
-                label="上一个搜索结果"
-                disabled={!can.previousSearchResult()}
-                onSelect={() => select(commands.previousSearchResult)}
-              >
-                <ChevronUp size={15} />
-              </PdfOverflowAction>
-              <PdfOverflowAction
-                label="下一个搜索结果"
-                disabled={!can.nextSearchResult()}
-                onSelect={() => select(commands.nextSearchResult)}
-              >
-                <ChevronDown size={15} />
-              </PdfOverflowAction>
-            </div>
+                <PdfOverflowAction
+                  label="上一个搜索结果"
+                  disabled={!can.previousSearchResult()}
+                  onSelect={() => select(commands.previousSearchResult)}
+                >
+                  <ChevronUp size={15} />
+                </PdfOverflowAction>
+                <PdfOverflowAction
+                  label="下一个搜索结果"
+                  disabled={!can.nextSearchResult()}
+                  onSelect={() => select(commands.nextSearchResult)}
+                >
+                  <ChevronDown size={15} />
+                </PdfOverflowAction>
+              </fieldset>
+            )}
           </>
         );
       }}
@@ -613,29 +771,53 @@ function PdfToolbarOverflow({
 }
 
 function PdfOverflowAction({
-  active = false,
+  active,
+  ariaKeyShortcuts,
   children,
   disabled,
   label,
   onSelect,
 }: {
   active?: boolean;
+  ariaKeyShortcuts?: string;
   children: ReactNode;
   disabled: boolean;
   label: string;
   onSelect: () => void;
 }) {
+  const content = (
+    <>
+      <span aria-hidden="true">{children}</span>
+      <span>{label}</span>
+      {active && <Check size={14} aria-hidden="true" />}
+    </>
+  );
+  if (active !== undefined) {
+    return (
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={active}
+        aria-keyshortcuts={ariaKeyShortcuts}
+        tabIndex={-1}
+        data-active={active ? 'true' : undefined}
+        disabled={disabled}
+        onClick={onSelect}
+      >
+        {content}
+      </button>
+    );
+  }
   return (
     <button
       type="button"
       role="menuitem"
-      data-active={active ? 'true' : undefined}
+      aria-keyshortcuts={ariaKeyShortcuts}
+      tabIndex={-1}
       disabled={disabled}
       onClick={onSelect}
     >
-      <span aria-hidden="true">{children}</span>
-      <span>{label}</span>
-      {active && <Check size={14} aria-hidden="true" />}
+      {content}
     </button>
   );
 }

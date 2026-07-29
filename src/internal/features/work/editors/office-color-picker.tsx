@@ -107,6 +107,7 @@ export function OfficeColorPicker({
   useEffect(() => setDraft(value), [value]);
   useEffect(() => {
     if (!open) return;
+    setDraft(value);
     const selectedIndex = OFFICE_COLORS.indexOf(value.toLowerCase());
     const nextIndex = Math.max(0, selectedIndex);
     setActiveIndex(nextIndex);
@@ -245,7 +246,9 @@ export function OfficeColorPicker({
               <input
                 type="text"
                 aria-label="自定义颜色值"
-                aria-invalid={Boolean(draft.trim() && !normalizedDraft)}
+                aria-invalid={
+                  draft.trim() && !normalizedDraft ? true : undefined
+                }
                 value={draft}
                 spellCheck={false}
                 onChange={(event) => setDraft(event.target.value)}

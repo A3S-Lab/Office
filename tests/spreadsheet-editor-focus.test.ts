@@ -1,5 +1,49 @@
 import { expect, test } from '@rstest/core';
-import { focusSpreadsheetGrid } from '../src/internal/features/work/editors/spreadsheet-editor';
+import {
+  focusSpreadsheetGrid,
+  spreadsheetCommandsWithGridFocus,
+} from '../src/internal/features/work/editors/spreadsheet-editor';
+import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
+import {
+  isSpreadsheetCellEditingTarget,
+  isSpreadsheetNativeTextUndoTarget,
+} from '../src/internal/features/work/editors/spreadsheet-editor-support';
+
+test('recognizes live cell and formula editors before restoring grid focus', () => {
+  const fortune = document.createElement('div');
+  fortune.className = 'fortune-container';
+  const inputBox = document.createElement('div');
+  inputBox.className = 'luckysheet-input-box';
+  inputBox.style.zIndex = '19';
+  const cellInput = document.createElement('div');
+  cellInput.className = 'luckysheet-cell-input';
+  cellInput.contentEditable = 'true';
+  inputBox.append(cellInput);
+  const hiddenInputBox = document.createElement('div');
+  hiddenInputBox.className = 'luckysheet-input-box';
+  hiddenInputBox.style.zIndex = '-1';
+  const hiddenCellInput = document.createElement('div');
+  hiddenCellInput.className = 'luckysheet-cell-input';
+  hiddenCellInput.contentEditable = 'true';
+  hiddenInputBox.append(hiddenCellInput);
+  const formulaInput = document.createElement('div');
+  formulaInput.className = 'fortune-fx-input';
+  formulaInput.contentEditable = 'true';
+  const grid = document.createElement('div');
+  grid.className = 'fortune-sheet-overlay';
+  const unrelatedInput = document.createElement('input');
+  fortune.append(inputBox, hiddenInputBox, formulaInput, grid);
+
+  expect(isSpreadsheetCellEditingTarget(cellInput)).toBe(true);
+  expect(isSpreadsheetCellEditingTarget(hiddenCellInput)).toBe(false);
+  expect(isSpreadsheetCellEditingTarget(formulaInput)).toBe(true);
+  expect(isSpreadsheetCellEditingTarget(unrelatedInput)).toBe(false);
+  expect(isSpreadsheetNativeTextUndoTarget(cellInput)).toBe(true);
+  expect(isSpreadsheetNativeTextUndoTarget(hiddenCellInput)).toBe(false);
+  expect(isSpreadsheetNativeTextUndoTarget(formulaInput)).toBe(true);
+  expect(isSpreadsheetNativeTextUndoTarget(grid)).toBe(false);
+  expect(isSpreadsheetNativeTextUndoTarget(unrelatedInput)).toBe(true);
+});
 
 test('restores focus to the interactive spreadsheet overlay', async () => {
   const container = document.createElement('div');
@@ -84,6 +128,41 @@ test('recovers from a delayed workbook blur after the grid is mounted', async ()
 
   expect(document.activeElement).toBe(overlay);
   container.remove();
+});
+
+test('returns grid focus after successful ribbon commands only', () => {
+  const calls: string[] = [];
+  const record =
+    (name: string, result = true) =>
+    (...args: unknown[]) => {
+      calls.push(`${name}:${args.join(',')}`);
+      return result;
+    };
+  const commands = {
+    redo: record('redo'),
+    setCellFormat: record('setCellFormat'),
+    setGridLines: record('setGridLines'),
+    setZoom: record('setZoom'),
+    toggleCellMerge: record('toggleCellMerge'),
+    undo: record('undo', false),
+  } as unknown as SpreadsheetEditorCommands;
+  const focused: string[] = [];
+  const ribbon = spreadsheetCommandsWithGridFocus(commands, () =>
+    focused.push('grid'),
+  );
+
+  expect(ribbon.setCellFormat('bl', 1)).toBe(true);
+  expect(ribbon.setGridLines(false)).toBe(true);
+  expect(ribbon.undo()).toBe(false);
+  expect(ribbon.setZoom(125)).toBe(true);
+
+  expect(calls).toEqual([
+    'setCellFormat:bl,1',
+    'setGridLines:false',
+    'undo:',
+    'setZoom:125',
+  ]);
+  expect(focused).toEqual(['grid', 'grid']);
 });
 
 function waitForAnimationFrames(count: number): Promise<void> {

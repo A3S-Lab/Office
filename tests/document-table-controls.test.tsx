@@ -261,6 +261,16 @@ test('applies table styles, cell shading, and borders as coherent edits', () => 
     headCell: secondCell,
   });
   view.rerender(<DocumentTableDesignRibbon editor={editor} />);
+  expect(
+    editor.commands.setDocumentTableCellFormat({
+      borderStyle: 'solid',
+      borderWidth: 0.5,
+    }),
+  ).toBe(true);
+  view.rerender(<DocumentTableDesignRibbon editor={editor} />);
+  expect(screen.getByRole('combobox', { name: '边框样式' })).toHaveTextContent(
+    '0.5 像素实线',
+  );
   fireEvent.click(screen.getByRole('button', { name: '单元格底纹' }));
   const fillDialog = screen.getByRole('dialog', { name: '单元格底纹' });
   fireEvent.click(
@@ -283,6 +293,49 @@ test('applies table styles, cell shading, and borders as coherent edits', () => 
   );
 });
 
+test('applies one table style per radio-gallery keyboard move', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  let updateCount = 0;
+  editor.on('update', () => {
+    updateCount += 1;
+  });
+  render(<DocumentTableDesignRibbon editor={editor} />);
+
+  const grid = screen.getByRole('radio', {
+    name: '应用表格样式：网格',
+  });
+  const blue = screen.getByRole('radio', {
+    name: '应用表格样式：蓝色条纹',
+  });
+  const clean = screen.getByRole('radio', {
+    name: '应用表格样式：简洁',
+  });
+
+  grid.focus();
+  fireEvent.keyDown(grid, { key: 'ArrowRight' });
+  expect(blue).toHaveFocus();
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    backgroundColor: '#d9eaf7',
+    borderStyle: 'solid',
+  });
+
+  fireEvent.keyDown(blue, { key: 'End' });
+  expect(clean).toHaveFocus();
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    borderStyle: 'none',
+    borderWidth: 0,
+  });
+
+  fireEvent.keyDown(clean, { key: 'Home' });
+  expect(grid).toHaveFocus();
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    backgroundColor: '#f1f4f9',
+    borderStyle: 'solid',
+  });
+  expect(updateCount).toBe(3);
+});
+
 test('aligns table cells and applies Word-style sizing from Layout', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
@@ -301,6 +354,7 @@ test('aligns table cells and applies Word-style sizing from Layout', () => {
   fireEvent.change(screen.getByRole('textbox', { name: '列宽（厘米）' }), {
     target: { value: '3.17' },
   });
+  fireEvent.blur(screen.getByRole('textbox', { name: '列宽（厘米）' }));
   expect(Number(tableCellAttributes(editor)[0]?.colwidth?.[0])).toBeCloseTo(
     119.81,
     1,
@@ -326,6 +380,99 @@ test('aligns table cells and applies Word-style sizing from Layout', () => {
   expect(tableCellAttributes(editor).every(({ colwidth }) => !colwidth)).toBe(
     true,
   );
+});
+
+test('disables row and column distribution for a one-cell table', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: [
+      '<section data-document-section="true">',
+      '<table><tbody><tr><td><p>Only cell</p></td></tr></tbody></table>',
+      '</section>',
+    ].join(''),
+  });
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  expect(screen.getByRole('button', { name: '平均分布行' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '平均分布列' })).toBeDisabled();
+});
+
+test('cancels a dirty table dimension without changing the selected cells', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  expect(editor.commands.setCellAttribute('colwidth', [180])).toBe(true);
+  const selectionBefore = editor.state.selection.toJSON();
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const width = screen.getByRole('textbox', { name: '列宽（厘米）' });
+  const committedWidth = width.getAttribute('value');
+  fireEvent.change(width, { target: { value: '8.5' } });
+  expect(width).toHaveAttribute('data-office-escape-consumer', 'true');
+
+  fireEvent.keyDown(width, { key: 'Escape' });
+
+  expect(width).toHaveValue(committedWidth);
+  expect(width).not.toHaveAttribute('data-office-escape-consumer');
+  expect(Number(tableCellAttributes(editor)[0]?.colwidth?.[0])).toBe(180);
+  expect(editor.state.selection.toJSON()).toEqual(selectionBefore);
+});
+
+test('preserves a dirty table dimension while its live baseline changes', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  expect(editor.commands.setCellAttribute('colwidth', [180])).toBe(true);
+  const view = render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const width = screen.getByRole('textbox', { name: '列宽（厘米）' });
+  fireEvent.change(width, { target: { value: '8.5' } });
+  expect(width).toHaveValue('8.5');
+
+  expect(editor.commands.setDocumentTableColumnWidth(200)).toBe(true);
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+
+  expect(width).toHaveValue('8.5');
+  fireEvent.keyDown(width, { key: 'Escape' });
+  expect(width).toHaveValue('5.29');
+  expect(Number(tableCellAttributes(editor)[0]?.colwidth?.[0])).toBe(200);
+});
+
+test('keeps whole-table controls truthful for a table node selection', () => {
+  editor = createTableEditor();
+  editor.commands.setNodeSelection(firstTablePosition(editor));
+  const view = render(<DocumentTableDesignRibbon editor={editor} />);
+
+  fireEvent.click(
+    screen.getByRole('radio', { name: '应用表格样式：绿色条纹' }),
+  );
+  expect(
+    tableCellAttributes(editor).every(
+      ({ borderColor }) => borderColor === '#abc8be',
+    ),
+  ).toBe(true);
+
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  expect(screen.getByRole('button', { name: '在上方插入行' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '跨页重复标题' })).toBeDisabled();
+  const keepRowsTogether = screen.getByRole('button', {
+    name: '整行不跨页',
+  });
+  expect(keepRowsTogether).toBeEnabled();
+  fireEvent.click(keepRowsTogether);
+  expect(
+    tableRowAttributes(editor).every(({ cantSplit }) => cantSplit === true),
+  ).toBe(true);
+
+  const width = screen.getByRole('textbox', { name: '列宽（厘米）' });
+  fireEvent.change(width, { target: { value: '3.2' } });
+  fireEvent.blur(width);
+  expect(
+    tableCellAttributes(editor).every(({ colwidth }) =>
+      Array.isArray(colwidth)
+        ? colwidth.every((value) => Number(value) > 120)
+        : false,
+    ),
+  ).toBe(true);
 });
 
 function createPlainEditor(): Editor {
@@ -496,6 +643,16 @@ function tableShape(currentEditor: Editor): number[] {
     return false;
   });
   return shape;
+}
+
+function firstTablePosition(currentEditor: Editor): number {
+  let position: number | null = null;
+  currentEditor.state.doc.descendants((node, offset) => {
+    if (position === null && node.type.name === 'table') position = offset;
+    return position === null;
+  });
+  if (position === null) throw new Error('Expected a table node.');
+  return position;
 }
 
 function firstRowCellTypes(currentEditor: Editor): string[] {

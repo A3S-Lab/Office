@@ -27,6 +27,23 @@ test('remounts only for external controlled Spreadsheet values', async () => {
   await waitFor(() => expect(result.current.mountRevision).toBe(2));
 });
 
+test('ignores stale workbook changes until external content finishes mounting', async () => {
+  const initial = workbook(1);
+  const { result, rerender } = renderHook(
+    ({ content }) => useSpreadsheetWorkbookSync(content),
+    { initialProps: { content: initial } },
+  );
+
+  expect(result.current.ignoreChangeDuringExternalSync(false)).toBe(false);
+
+  rerender({ content: workbook(2) });
+  await waitFor(() => expect(result.current.mountRevision).toBe(1));
+
+  expect(result.current.ignoreChangeDuringExternalSync(false)).toBe(true);
+  expect(result.current.ignoreChangeDuringExternalSync(true)).toBe(true);
+  expect(result.current.ignoreChangeDuringExternalSync(false)).toBe(false);
+});
+
 test('preserves Fortune operation order until the matching workbook change', () => {
   const value = workbook(1);
   const { result } = renderHook(() => useSpreadsheetWorkbookSync(value));

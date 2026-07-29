@@ -376,7 +376,11 @@ function normalizeMatrix(
   columns: number,
 ): void {
   while (data.length < rows) data.push([]);
-  for (const row of data) while (row.length < columns) row.push(null);
+  for (let index = 0; index < data.length; index += 1) {
+    const row = data[index] ?? [];
+    data[index] = row;
+    while (row.length < columns) row.push(null);
+  }
 }
 
 function flag(value: unknown, fallback: 0 | 1): 0 | 1 {

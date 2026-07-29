@@ -82,10 +82,14 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
       name: 'presentationSlides',
       addCommands: () => ({
         addSlide: {
+          canExecute: ({ slides }) => slides.canAddSlide,
           execute: ({ slides }) => slides.addSlide(),
         },
         applyTransitionToAll: {
-          execute: ({ slides }) => slides.applyTransitionToAll(),
+          canExecute: ({ slides }, transition) =>
+            slides.canApplyTransitionToAll(transition),
+          execute: ({ slides }, transition) =>
+            slides.applyTransitionToAll(transition),
         },
         deleteSlide: {
           canExecute: ({ slides }) => slides.canDeleteSlide,
@@ -107,6 +111,7 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
           execute: ({ slides }, color) => slides.setBackground(color),
         },
         setTransition: {
+          canExecute: ({ slides }) => slides.canSetTransition,
           execute: ({ slides }, transition) => slides.setTransition(transition),
         },
         updateNotes: {
@@ -268,6 +273,14 @@ export function createPresentationEditorExtensions(): readonly OfficeEditorExten
         toggleBold: {
           canExecute: ({ selection }) => selection.canToggleBold,
           execute: ({ selection }) => selection.toggleBold(),
+        },
+        toggleItalic: {
+          canExecute: ({ selection }) => selection.canToggleItalic,
+          execute: ({ selection }) => selection.toggleItalic(),
+        },
+        toggleUnderline: {
+          canExecute: ({ selection }) => selection.canToggleUnderline,
+          execute: ({ selection }) => selection.toggleUnderline(),
         },
       }),
     }),

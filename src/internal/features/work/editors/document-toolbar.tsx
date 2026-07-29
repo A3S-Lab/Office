@@ -32,6 +32,10 @@ import {
   normalizeDocumentHref,
 } from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
+import {
+  MAX_DOCUMENT_ZOOM,
+  MIN_DOCUMENT_ZOOM,
+} from './document-editor-support';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import {
   type DocumentPageChromeEditingPart,
@@ -62,7 +66,7 @@ import {
 const documentRibbonTabs = [
   { id: 'home', label: '开始' },
   { id: 'insert', label: '插入' },
-  { id: 'page', label: '页面布局' },
+  { id: 'page', label: '页面布局', compactLabel: '布局' },
   { id: 'references', label: '引用' },
   { id: 'review', label: '审阅' },
   { id: 'view', label: '视图' },
@@ -70,12 +74,13 @@ const documentRibbonTabs = [
 
 const documentPictureRibbonTab = { id: 'picture', label: '图片' } as const;
 const documentTableRibbonTabs = [
-  { id: 'tableDesign', label: '表格设计' },
-  { id: 'tableLayout', label: '表格布局' },
+  { id: 'tableDesign', label: '表格设计', compactLabel: '设计' },
+  { id: 'tableLayout', label: '表格布局', compactLabel: '布局' },
 ] as const;
 const documentPageChromeRibbonTab = {
   id: 'pageChrome',
   label: '页眉和页脚',
+  compactLabel: '页眉页脚',
 } as const;
 
 type DocumentRibbonTabId =
@@ -191,6 +196,7 @@ export function DocumentToolbar({
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
   const tableSelected = editor.isActive('table');
+  const hasRefreshableFields = documentHasRefreshableFields(editor);
   const ribbonTabs = pageChromeEditor
     ? [...documentRibbonTabs, documentPageChromeRibbonTab]
     : imageSelected
@@ -279,7 +285,7 @@ export function DocumentToolbar({
         else editor.chain().focus().toggleUnderline().run();
         return;
       }
-      if (key === 'k' && !event.shiftKey) {
+      if (insideEditor && key === 'k' && !event.shiftKey) {
         event.preventDefault();
         void toggleLink();
         return;
@@ -363,6 +369,7 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="插入分页符"
                   shortcut="Cmd/Ctrl+Enter"
+                  ariaKeyShortcuts="Control+Enter Meta+Enter"
                   displayLabel
                   onClick={() =>
                     editor
@@ -395,6 +402,7 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label={editor.isActive('link') ? '取消链接' : '添加链接'}
                   shortcut="Cmd/Ctrl+K"
+                  ariaKeyShortcuts="Control+K Meta+K"
                   displayLabel
                   active={editor.isActive('link')}
                   onClick={() => void toggleLink()}
@@ -445,6 +453,7 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="插入分页符"
                   shortcut="Cmd/Ctrl+Enter"
+                  ariaKeyShortcuts="Control+Enter Meta+Enter"
                   displayLabel
                   onClick={() =>
                     editor
@@ -521,6 +530,12 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="更新页码和日期"
                   displayLabel
+                  disabled={!hasRefreshableFields}
+                  title={
+                    hasRefreshableFields
+                      ? '更新页码和日期'
+                      : '文档中没有可更新的页码或日期'
+                  }
                   onClick={onRefreshFields}
                 >
                   <RefreshCw size={19} />
@@ -626,6 +641,7 @@ export function DocumentToolbar({
               <RibbonGroup label={`缩放 ${zoom}%`}>
                 <ToolbarButton
                   label="缩小文档"
+                  disabled={zoom <= MIN_DOCUMENT_ZOOM}
                   onClick={() => onZoomChange(zoom - 10)}
                 >
                   <ZoomOut size={17} />
@@ -642,6 +658,7 @@ export function DocumentToolbar({
                 ))}
                 <ToolbarButton
                   label="放大文档"
+                  disabled={zoom >= MAX_DOCUMENT_ZOOM}
                   onClick={() => onZoomChange(zoom + 10)}
                 >
                   <ZoomIn size={17} />
@@ -680,6 +697,7 @@ function ToolbarButton({
   label,
   title,
   shortcut,
+  ariaKeyShortcuts,
   active = false,
   disabled = false,
   displayLabel = false,
@@ -689,6 +707,7 @@ function ToolbarButton({
   label: string;
   title?: string;
   shortcut?: string;
+  ariaKeyShortcuts?: string;
   active?: boolean;
   disabled?: boolean;
   displayLabel?: boolean;
@@ -700,6 +719,7 @@ function ToolbarButton({
       label={label}
       visibleLabel={label.replace(/（\d+）$/, '')}
       title={title ?? (shortcut ? `${label}（${shortcut}）` : label)}
+      aria-keyshortcuts={ariaKeyShortcuts}
       active={active}
       displayLabel={displayLabel}
       disabled={disabled}
@@ -722,7 +742,7 @@ function DocumentFieldSelect({
       ariaLabel="插入页码或日期"
       value=""
       options={[
-        { value: '', label: '页码或日期' },
+        { value: '', label: '页码或日期', disabled: true },
         { value: 'page', label: '页码' },
         { value: 'numPages', label: '总页数' },
         { value: 'section', label: '当前节号' },
@@ -735,4 +755,14 @@ function DocumentFieldSelect({
       }}
     />
   );
+}
+
+function documentHasRefreshableFields(editor: Editor): boolean {
+  let found = false;
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'documentField') return !found;
+    found = true;
+    return false;
+  });
+  return found;
 }

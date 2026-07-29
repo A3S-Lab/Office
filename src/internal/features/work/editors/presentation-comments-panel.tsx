@@ -5,7 +5,7 @@ import {
   IconButton,
 } from '../../../design-system/primitives';
 import type { WorkSlide } from '../work-types';
-import { OfficeTextArea } from './office-controls';
+import { CommittedOfficeTextArea } from './office-controls';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import { handleOfficeTaskPaneKeyDown } from './office-task-pane';
 
@@ -88,17 +88,19 @@ export function PresentationCommentsPanel({
                 {formatCommentDate(comment.date)}
               </time>
             </header>
-            <OfficeTextArea
+            <CommittedOfficeTextArea
               aria-label={`编辑演示批注 ${index + 1}`}
               value={comment.text}
+              formatValue={(text) => text}
+              parseValue={(draft) => draft}
               onFocus={() =>
                 commands.locatePresentationComment(comment.slideId, comment.id)
               }
-              onChange={(event) =>
+              onValueCommit={(text) =>
                 commands.updatePresentationComment(
                   comment.slideId,
                   comment.id,
-                  event.target.value,
+                  text,
                 )
               }
             />

@@ -51,3 +51,12 @@ export const officeFontFamilies = [
 ] as const;
 
 export type OfficeFontFamily = (typeof officeFontFamilies)[number];
+
+export function officeFontFamilyLabel(value: string): string {
+  const firstFamily = value.split(',')[0]?.trim() || value.trim();
+  return firstFamily.replace(/^(['"])(.*)\1$/, '$2');
+}
+
+export function normalizeOfficeFontFamily(value: string): string {
+  return officeFontFamilyLabel(value).toLocaleLowerCase();
+}

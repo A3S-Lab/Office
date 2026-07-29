@@ -2,6 +2,10 @@
   display: grid;
   grid-template-columns: minmax(180px, 230px) minmax(720px, 1fr);
   min-height: 198px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 .work-spreadsheet-chart-manager > aside {

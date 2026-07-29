@@ -80,6 +80,108 @@ describe('PDF editor extensions', () => {
     expect(editor.can().save()).toBe(false);
   });
 
+  test('keeps read-only PDF sessions free of edit, history, and save commands', () => {
+    const calls: string[] = [];
+    const editorContext = context(calls);
+    editorContext.editable = false;
+    const editor = createOfficeEditorRuntime(
+      editorContext,
+      createPdfEditorExtensions(),
+    );
+
+    expect(editor.can().undo()).toBe(false);
+    expect(editor.can().redo()).toBe(false);
+    expect(editor.can().save()).toBe(false);
+    expect(editor.can().selectAnnotationTool('highlight')).toBe(false);
+    expect(editor.can().deleteAnnotationSelection()).toBe(false);
+    expect(editor.can().nextPage()).toBe(true);
+    expect(editor.can().zoomIn()).toBe(true);
+    expect(editor.can().search('A3S')).toBe(true);
+
+    const undo = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'z',
+      metaKey: true,
+    });
+    const save = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 's',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(undo)).toBe(false);
+    expect(editor.handleKeyDown(save)).toBe(false);
+    expect(undo.defaultPrevented).toBe(false);
+    expect(save.defaultPrevented).toBe(false);
+    expect(calls).toEqual([]);
+  });
+
+  test('offers only annotation tools reported by the PDF capability', () => {
+    const calls: string[] = [];
+    const editorContext = context(calls);
+    editorContext.annotation.state.availableToolIds = ['highlight'];
+    const editor = createOfficeEditorRuntime(
+      editorContext,
+      createPdfEditorExtensions(),
+    );
+
+    expect(editor.can().selectAnnotationTool('highlight')).toBe(true);
+    expect(editor.can().selectAnnotationTool('ink')).toBe(false);
+    expect(calls).toEqual([]);
+  });
+
+  test('disables stale search-result navigation while search is pending or failed', () => {
+    const editorContext = context([]);
+    editorContext.viewer.state.search = {
+      active: true,
+      activeResultIndex: 0,
+      error: false,
+      loading: true,
+      query: 'A3S',
+      total: 3,
+    };
+    const editor = createOfficeEditorRuntime(
+      editorContext,
+      createPdfEditorExtensions(),
+    );
+
+    expect(editor.can().previousSearchResult()).toBe(false);
+    expect(editor.can().nextSearchResult()).toBe(false);
+
+    editor.updateContext({
+      ...editorContext,
+      viewer: {
+        ...editorContext.viewer,
+        state: {
+          ...editorContext.viewer.state,
+          search: {
+            ...editorContext.viewer.state.search,
+            error: true,
+            loading: false,
+          },
+        },
+      },
+    });
+    expect(editor.can().previousSearchResult()).toBe(false);
+    expect(editor.can().nextSearchResult()).toBe(false);
+
+    editor.updateContext({
+      ...editorContext,
+      viewer: {
+        ...editorContext.viewer,
+        state: {
+          ...editorContext.viewer.state,
+          search: {
+            ...editorContext.viewer.state.search,
+            error: false,
+            loading: false,
+          },
+        },
+      },
+    });
+    expect(editor.can().previousSearchResult()).toBe(true);
+    expect(editor.can().nextSearchResult()).toBe(true);
+  });
+
   test('routes PDF shortcuts through typed commands and capabilities', () => {
     const calls: string[] = [];
     const editor = createOfficeEditorRuntime(
@@ -139,6 +241,52 @@ describe('PDF editor extensions', () => {
       boundary.remove();
     }
   });
+
+  test('leaves text-field editing shortcuts with the focused control', () => {
+    const calls: string[] = [];
+    const editorContext = context(calls);
+    editorContext.annotation.state.activeToolId = 'ink';
+    const editor = createOfficeEditorRuntime(
+      editorContext,
+      createPdfEditorExtensions(),
+    );
+    const input = document.createElement('input');
+    document.body.append(input);
+    try {
+      const shortcuts = [
+        new KeyboardEvent('keydown', {
+          bubbles: true,
+          cancelable: true,
+          key: 'z',
+          metaKey: true,
+        }),
+        new KeyboardEvent('keydown', {
+          bubbles: true,
+          cancelable: true,
+          key: 'Backspace',
+        }),
+        new KeyboardEvent('keydown', {
+          bubbles: true,
+          cancelable: true,
+          key: 'Escape',
+        }),
+      ];
+      const handled: boolean[] = [];
+      input.addEventListener('keydown', (event) => {
+        handled.push(editor.handleKeyDown(event));
+      });
+      input.focus();
+      for (const shortcut of shortcuts) input.dispatchEvent(shortcut);
+
+      expect(handled).toEqual([false, false, false]);
+      expect(shortcuts.every((shortcut) => !shortcut.defaultPrevented)).toBe(
+        true,
+      );
+      expect(calls).toEqual([]);
+    } finally {
+      input.remove();
+    }
+  });
 });
 
 function context(calls: string[]): PdfEditorCommandContext {
@@ -180,6 +328,13 @@ function context(calls: string[]): PdfEditorCommandContext {
       annotationOpacity: 1,
       annotationStrokeWidth: 6,
       available: true,
+      availableToolIds: [
+        'highlight',
+        'underline',
+        'strikeout',
+        'ink',
+        'freeText',
+      ],
       hasPendingChanges: false,
       selectedCount: 1,
       supportsOpacity: true,

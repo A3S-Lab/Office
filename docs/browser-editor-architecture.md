@@ -24,7 +24,14 @@ model:
 
 1. The Office shell owns the ribbon, status bar, dialogs, keyboard routing,
    accessibility, file actions, anchored context menus, theming, and responsive
-   behavior.
+   behavior. Context menus share pointer and Shift+F10 entry, viewport-bounded
+   placement, disabled-item-aware arrow navigation, Escape restoration, and an
+   explicit Tab exit that follows document focus order. Window-level shortcut
+   listeners are scoped to their mounted editor root and may capture before a
+   vendor engine's document listeners, so an editor cannot consume commands
+   from host-page controls while its own shortcuts remain deterministic.
+   Successful object and grid commands restore focus to the latest controlled
+   selection before the next keystroke.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object
@@ -58,7 +65,7 @@ localized labels and viewport heuristics never decide behavior.
 | --- | --- | --- |
 | Task pane | Find and replace, page setup, citation sources, and revision review | Mutually exclusive at the right edge of the document workspace. It shares width with the page above 900 px, overlays the page below 900 px, and becomes workspace-wide below 520 px. Escape and the visible close action follow the same guarded close path. |
 | Review rail | Anchored comments and comment drafts | Sits beside the paper and connects each thread to its text range. Below 620 px it becomes a bounded review drawer, removes connector lines, and lays cards in document order instead of using absolute placement. |
-| Anchored popover | Table size, paragraph spacing, paragraph pagination, colors, and select options | Portaled to the body but positioned from the invoking control. It flips vertically, clamps to a 16 px viewport margin, updates on nested scroll and resize, focuses its first field when it behaves like a small dialog, and returns focus to the trigger on Escape. |
+| Anchored popover | Table size, paragraph spacing, paragraph pagination, colors, and select options | Portaled to the body but positioned from the invoking control. It flips vertically, clamps to a 16 px viewport margin, updates on nested scroll and resize, focuses its first field when it behaves like a small dialog, and returns focus to the trigger on Escape. A dirty numeric field consumes the first Escape to discard only its local draft; a clean field lets the next Escape close the surface without a blur commit. |
 | Modal dialog | Captions, cross-references, links, image descriptions, notices, and confirmations | Centered in the viewport with bounded height and an independently scrolling body. The body-level portal makes every non-dialog body child inert. Focus stays inside, destructive confirmations initially focus the safe action, and closing returns to the actual invoker unless the completed command deliberately restores the editor. |
 
 Task panes preserve editing context instead of behaving like navigation.
@@ -69,6 +76,29 @@ switch. Citation editing uses progressive disclosure: citation identity,
 title, year, and authors remain visible while secondary publication metadata
 stays collapsed until requested. An edited source cannot be inserted before it
 is saved.
+
+List galleries use a roving tab stop that follows Arrow, Home, and End focus.
+Tab therefore exits from the visibly focused style rather than from a stale
+previous option, and completed list commands return directly to document
+editing.
+
+Numeric ribbon and task-pane controls keep incomplete edits local. Escape
+restores the last committed value, Enter produces exactly one command even
+when that command synchronously returns focus to the editor, and IME
+composition Enter is never treated as a commit. Table dimensions follow this
+contract without changing the active cell selection. Spreadsheet and
+presentation chart axes additionally reject minimum/maximum pairs that invert
+the visible range and expose the invalid draft before it is committed.
+
+Spreadsheet workbook task panes share one explicit saved-draft contract across
+defined names, charts, conditional formats, calculation settings, pivot tables,
+editable protection ranges, and print settings. Unrelated workbook updates do
+not overwrite a dirty draft, switching to another managed object is blocked
+until the current draft is saved or cancelled, and save actions stay disabled
+when there is no change. The first Escape discards a dirty pane draft while
+keeping the pane open; a second Escape closes the clean pane. Field-level
+numeric drafts still consume Escape before the pane-level draft, so incomplete
+input cannot trigger either a workbook mutation or an accidental close.
 
 Review actions distinguish reversible, local decisions from broad destructive
 ones. Individual revision decisions remain direct commands. Accepting or
@@ -118,9 +148,9 @@ focus restoration.
 | --- | --- | --- | --- |
 | Document | One TipTap/ProseMirror body tree retained across editing and read-only preview, controlled TipTap header/footer surfaces with direct paper-margin editing and a contextual ribbon, one typography and page-chrome baseline across editing, preview, and PDF surfaces, a persistent typed heading-navigation pane with active-selection tracking, filtering and collapsible keyboard traversal, host-owned selected-text menus with full document context and range-mapped async commands, responsive and keyboard-operated paragraph-style and list galleries, typed bullet and numbering commands with restart/continue/start controls, typed physical-page and section-page descriptors, repeated first/default/even page chrome, a versioned structured model with an HTML compatibility representation, prefix-reused visual-line measurement and pages, page decorations, page-aware horizontal and vertical rulers for page margins, paragraph indents and typed tab stops, structured list-item pagination, explicit paragraph and list-item direction, compact spacing and pagination controls, typed inline/square/top-and-bottom image layout, imported style-inherited paragraph properties, structured inline tabs, and theme-aware run font/size/color/background import | Worker plus resumable Rust/WASM flow pagination and Rustybuzz shaping across CSS-matched registered text runs; the same live result remains mounted in read-only preview and is consumed by bounded browser PDF capture, including eligible list paragraphs, Unicode bidi level segmentation, ordered per-grapheme font fallback, packaged Latin/CJK/Arabic/Hebrew faces, and structured left-to-right tabs, with explicit DOM and JavaScript fallbacks for text affected by supported floats | Language-complete font substitution, complete Word style and numbering coverage, locale-complete and bidirectional tabs, arbitrary floating-object offsets and layering, complex table flow, searchable/vector PDF output, and loss-preserving OOXML package state |
 | Markdown | TipTap visual editing with a resizable source-and-preview split view by default, source-aware ribbon formatting and shortcuts, bounded source-native history with coalesced typing and selection restoration, host-defined selection menus across both editing surfaces, GFM tables, strikethrough, autolinks and nested task lists, controlled source state, coalesced preview rebuilds, proportional pane scrolling, keyboard-adjustable pane sizing, optional visual or source-only views, and a stacked compact layout | No kernel required for normal editing | CommonMark differential fixtures, multi-megabyte profiling, and an off-main-thread parser boundary when measurements justify it |
-| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, an A3S-owned accessible worksheet bar for creation, activation, rename, duplicate, color, hide, reorder, and delete operations, typed editing and calculation command ports, focus restoration across controlled workbook remounts, explicit formatting, history, clear, clipboard, and worksheet-navigation shortcuts, direct font-family, horizontal/vertical-alignment, text-wrap, general/number/percent, and decimal-place controls backed by native cell-style keys, live count/sum/average selection summaries, operation-driven sparse-workbook projection, guarded controlled-value remounts, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, A3S-owned custom number-format evaluation, and print layout |
-| Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, exact keyboard-accessible table-dimension insertion, native slide/object context actions with optional AI actions, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, direct beginning/current-slide playback with fullscreen fallback, frame-coalesced transactional move/resize previews that commit once on pointer release, and two-level thumbnail node and scene windowing | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
-| PDF | PDFium-backed page rendering with an A3S-owned responsive toolbar and typed capability controllers for navigation, zoom, search, basic annotations, annotation color, opacity, and compatible stroke-width defaults and selection updates, history, and save; compact widths retain page status and expose navigation, zoom, and history through the overflow menu | PDFium WebAssembly | Forms, redaction review, page organization, and reopen fixtures |
+| Spreadsheet | Fortune Sheet grid integrated with the shared Office shell, shared grid/formula/footer visual tokens and one spreadsheet accent across selection, sheet tabs, menus, and zoom, an A3S-owned accessible single-row workbook footer for creation, activation, rename, duplicate, color, hide, reorder, delete, selection status, and zoom, one cell/worksheet context-menu surface whose displayed accelerators remain executable while the menu owns focus, Arrow/Home/End tab navigation plus Shift+F10 and native context-menu access, typed editing and calculation command ports, A3S-owned deterministic Arrow, Enter, Tab, Home, PageUp/PageDown, extended-selection, row, column, and all-cells keyboard commands, selection-preserving focus restoration across controlled workbook remounts and F2/Escape editing transitions, Cmd/Ctrl formatting, undo/redo, clear, clipboard, Shift+F11 sheet creation, and Ctrl/Cmd+PageUp/PageDown sheet-navigation shortcuts, direct font-family, horizontal/vertical-alignment, text-wrap, general/number/percent, and decimal-place controls backed by native cell-style keys, live count/sum/average selection summaries, operation-driven sparse-workbook projection, guarded controlled-value remounts that reject stale engine callbacks, and no-history result patches with cell-scoped Fortune fallback | Versioned, cancellable Worker/Rust-WASM calculation sessions using the shared bounded Rust formula parser, retained formula ASTs, incremental forward/reverse dependency graphs, dirty-subgraph recalculation, cross-sheet references, and a dynamically loaded JavaScript fallback | A3S-owned virtual grid, moving replacement projection off the main thread, broader Excel formula semantics, A3S-owned custom number-format evaluation, and print layout |
+| Presentation | Scene canvas with ordered typed multi-selection, persistent nested browser groups, native PPTX group-node export, exact keyboard-accessible table-dimension insertion, native slide/object context actions with optional AI actions, a separate object/content editing state, one on-demand TipTap instance, collective move/scale/nudge/clipboard/delete/layer commands, selection-bound alignment and distribution, typed group/ungroup commands, one typed dispatcher for ribbon commands, editor-scoped shortcuts with post-command selection focus, direct beginning/current-slide playback with fullscreen fallback, frame-coalesced transactional move/resize previews that commit once on pointer release, and two-level thumbnail node and scene windowing | Revisioned, cancellable Worker/Rust-WASM slide-relative alignment and object-set snapping with typed visual guides and a JavaScript fallback | Arbitrary rotated or reflected PPTX group transforms, connectors, theme resolution, text fitting, kernel-owned thumbnail layout, and slide serialization |
+| PDF | PDFium-backed page rendering with an A3S-owned responsive toolbar and typed capability controllers for navigation, zoom, search, basic annotations, annotation color, opacity, and compatible stroke-width defaults and selection updates, history, and save; page and search drafts cancel without accidental commands, shortcuts remain scoped to the PDF root, and compact widths retain page status while exposing search-result traversal, navigation, zoom, and history through the keyboard-operated overflow menu | PDFium WebAssembly | Forms, redaction review, page organization, and reopen fixtures |
 
 The table is a fidelity statement, not a marketing capability list. The
 current Document path shapes text-flow paragraphs in Rust/WASM when every
@@ -755,6 +785,9 @@ annotation tools, annotation color, opacity, and compatible stroke-width
 defaults and selected-annotation updates, annotation deletion, history, and
 copy export through public plugin capabilities. It contains no shadow-DOM
 queries, private viewer selectors, label inference, or synthetic clicks.
+Page-number Escape cancels without blur submission, pending searches cannot
+replay stale results, and responsive overflow actions remain reachable whenever
+their direct toolbar controls are hidden.
 Existing PDF password handling remains in the PDF document lifecycle rather
 than the removed toolbar. Form-authoring controls, redaction review, page
 organization, and compatibility fixtures remain part of this stage.

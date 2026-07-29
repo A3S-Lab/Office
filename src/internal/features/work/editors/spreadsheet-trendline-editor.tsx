@@ -4,11 +4,12 @@ import type {
   WorkSpreadsheetTrendlineType,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 
 interface SpreadsheetTrendlineEditorProps {
   seriesNumber: number;
@@ -100,54 +101,72 @@ export function SpreadsheetTrendlineEditor({
             {trendline.type === 'polynomial' && (
               <div className="work-office-field">
                 <span>阶数</span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   ariaLabel={`${labelPrefix} 阶数`}
                   min={2}
                   max={6}
                   step={1}
                   value={trendline.order ?? 2}
-                  onValueChange={(value) =>
-                    replaceTrendline(index, { order: optionalNumber(value) })
+                  normalizeValue={(value) =>
+                    normalizeRequiredOfficeNumber(value, {
+                      integer: true,
+                      minimum: 2,
+                      maximum: 6,
+                    })
                   }
+                  onValueCommit={(order) => replaceTrendline(index, { order })}
                 />
               </div>
             )}
             {trendline.type === 'movingAverage' && (
               <div className="work-office-field">
                 <span>周期</span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   ariaLabel={`${labelPrefix} 周期`}
                   min={2}
                   max={255}
                   step={1}
                   value={trendline.period ?? 2}
-                  onValueChange={(value) =>
-                    replaceTrendline(index, { period: optionalNumber(value) })
+                  normalizeValue={(value) =>
+                    normalizeRequiredOfficeNumber(value, {
+                      integer: true,
+                      minimum: 2,
+                      maximum: 255,
+                    })
+                  }
+                  onValueCommit={(period) =>
+                    replaceTrendline(index, { period })
                   }
                 />
               </div>
             )}
             <div className="work-office-field">
               <span>前推</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel={`${labelPrefix} 前推`}
                 min={0}
                 step={0.1}
                 value={trendline.forward ?? 0}
-                onValueChange={(value) =>
-                  replaceTrendline(index, { forward: optionalNumber(value) })
+                normalizeValue={(value) =>
+                  normalizeRequiredOfficeNumber(value, { minimum: 0 })
+                }
+                onValueCommit={(forward) =>
+                  replaceTrendline(index, { forward })
                 }
               />
             </div>
             <div className="work-office-field">
               <span>后推</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel={`${labelPrefix} 后推`}
                 min={0}
                 step={0.1}
                 value={trendline.backward ?? 0}
-                onValueChange={(value) =>
-                  replaceTrendline(index, { backward: optionalNumber(value) })
+                normalizeValue={(value) =>
+                  normalizeRequiredOfficeNumber(value, { minimum: 0 })
+                }
+                onValueCommit={(backward) =>
+                  replaceTrendline(index, { backward })
                 }
               />
             </div>
@@ -163,13 +182,14 @@ export function SpreadsheetTrendlineEditor({
             </OfficeCheckbox>
             <div className="work-office-field">
               <span>截距</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel={`${labelPrefix} 截距`}
                 step={0.1}
                 disabled={!hasIntercept}
                 value={trendline.intercept ?? 0}
-                onValueChange={(value) =>
-                  replaceTrendline(index, { intercept: optionalNumber(value) })
+                normalizeValue={normalizeRequiredOfficeNumber}
+                onValueCommit={(intercept) =>
+                  replaceTrendline(index, { intercept })
                 }
               />
             </div>
@@ -221,8 +241,4 @@ function trendlineWithType(
   if (type === 'movingAverage')
     return { ...next, period: trendline.period ?? 2, intercept: undefined };
   return next;
-}
-
-function optionalNumber(value: string): number | undefined {
-  return value === '' ? undefined : Number(value);
 }

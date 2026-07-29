@@ -10,6 +10,11 @@ import {
   useState,
 } from 'react';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
+import {
+  isWorkspaceContextMenuKeyboardEvent,
+  type WorkspaceContextMenuEvent,
+  workspaceContextMenuPosition,
+} from '../../workspace/components/workspace-context-menu';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
@@ -50,6 +55,7 @@ import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
+import { restoreDocumentEditorFocus } from './document-editor-focus';
 import {
   DocumentFindReplacePanel,
   type DocumentFindReplaceMode,
@@ -155,6 +161,7 @@ export function DocumentEditor({
   const initialContentRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
+  const [findReplaceFocusRequest, setFindReplaceFocusRequest] = useState(0);
   const [citationsDirty, setCitationsDirty] = useState(false);
   const [commentRepliesDirty, setCommentRepliesDirty] = useState(false);
   const taskPaneDialog = useOfficeDialog();
@@ -318,7 +325,9 @@ export function DocumentEditor({
   );
   const openFindReplace = useCallback(
     async (mode: DocumentFindReplaceMode) => {
-      return requestEditorViewChange(mode, true);
+      const accepted = await requestEditorViewChange(mode, true);
+      if (accepted) setFindReplaceFocusRequest((current) => current + 1);
+      return accepted;
     },
     [requestEditorViewChange],
   );
@@ -328,6 +337,13 @@ export function DocumentEditor({
     documentComments.open && !documentComments.draft,
     closeCommentsPanel,
   );
+
+  const restoreDocumentBodyFocus = useCallback(() => {
+    restoreDocumentEditorFocus(() => {
+      if (!editor || editor.isDestroyed) return null;
+      return editor.view.dom;
+    });
+  }, [editor]);
 
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {
@@ -399,7 +415,11 @@ export function DocumentEditor({
       return;
     }
     appliedSourceKeyRef.current = editorInput.sourceKey;
-    editor.commands.setContent(editorInput.source, { emitUpdate: false });
+    editor
+      .chain()
+      .setMeta('addToHistory', false)
+      .setContent(editorInput.source, { emitUpdate: false })
+      .run();
   }, [content, editor, editorInput, normalizedContent]);
 
   const section = editor ? activeDocumentSection(editor) : null;
@@ -507,13 +527,72 @@ export function DocumentEditor({
   };
   const addSection = () => {
     editor.commands.insertDocumentSection(layout.breakAfter);
+    restoreDocumentBodyFocus();
   };
   const updatePageColor = (value: string) => {
     const pageColor = normalizeDocumentPageColor(value);
-    if (!pageColor || pageColor === contentRef.current.pageColor) return;
-    const next = { ...contentRef.current, pageColor };
-    contentRef.current = next;
-    onChangeRef.current(next);
+    if (!pageColor) return;
+    if (pageColor !== contentRef.current.pageColor) {
+      const next = { ...contentRef.current, pageColor };
+      contentRef.current = next;
+      onChangeRef.current(next);
+    }
+    restoreDocumentBodyFocus();
+  };
+  const changeViewMode = (nextViewMode: DocumentViewMode) => {
+    setViewMode(nextViewMode);
+    restoreDocumentBodyFocus();
+  };
+  const changeToolbarZoom = (nextZoom: number) => {
+    setZoom(clampDocumentZoom(nextZoom));
+    restoreDocumentBodyFocus();
+  };
+  const changeSpellcheck = (enabled: boolean) => {
+    setSpellcheckEnabled(enabled);
+    restoreDocumentBodyFocus();
+  };
+  const toggleBodyPageNumbers = () => {
+    toggleVisiblePageNumber();
+    restoreDocumentBodyFocus();
+  };
+  const refreshDocumentFields = () => {
+    documentInsert.refreshFields();
+    restoreDocumentBodyFocus();
+  };
+  const openSelectionContextMenu = (
+    event: WorkspaceContextMenuEvent,
+  ): boolean => {
+    if (preview || (!getSelectionMenuItems && !onAgentRequest)) return false;
+    const snapshot = createWorkDocumentSelectionSnapshot(
+      editor,
+      contentRef.current,
+    );
+    if (!snapshot) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    const position = workspaceContextMenuPosition(event);
+    if (getSelectionMenuItems) {
+      const items = getSelectionMenuItems(snapshot);
+      setSelectionMenu(
+        items.length
+          ? {
+              kind: 'custom',
+              x: position.x,
+              y: position.y,
+              snapshot,
+              items,
+            }
+          : null,
+      );
+      return items.length > 0;
+    }
+    setSelectionMenu({
+      kind: 'agent',
+      x: position.x,
+      y: position.y,
+      snapshot,
+    });
+    return true;
   };
 
   return (
@@ -568,12 +647,15 @@ export function DocumentEditor({
             });
           }}
           onToggleNavigation={() => void toggleTaskPane('navigation')}
-          onToggleRulers={() => setShowRulers((value) => !value)}
+          onToggleRulers={() => {
+            setShowRulers((value) => !value);
+            restoreDocumentBodyFocus();
+          }}
           onPageColorChange={updatePageColor}
-          onToggleSpellcheck={() => setSpellcheckEnabled((value) => !value)}
-          onViewModeChange={setViewMode}
-          onZoomChange={(nextZoom) => setZoom(clampDocumentZoom(nextZoom))}
-          onTogglePageNumbers={toggleVisiblePageNumber}
+          onToggleSpellcheck={() => changeSpellcheck(!spellcheckEnabled)}
+          onViewModeChange={changeViewMode}
+          onZoomChange={changeToolbarZoom}
+          onTogglePageNumbers={toggleBodyPageNumbers}
           onInsertSection={addSection}
           onInsertNote={documentInsert.insertNote}
           onInsertCaption={documentInsert.insertCaption}
@@ -582,7 +664,7 @@ export function DocumentEditor({
           citationSourceCount={content.bibliography?.sources.length ?? 0}
           onToggleCitations={() => void toggleTaskPane('citations')}
           onInsertField={documentInsert.insertField}
-          onRefreshFields={documentInsert.refreshFields}
+          onRefreshFields={refreshDocumentFields}
           canInsertComment={documentComments.canInsert}
           onInsertComment={() => {
             void requestEditorViewChange(null, false).then((accepted) => {
@@ -617,9 +699,10 @@ export function DocumentEditor({
               tab !== 'review',
             );
           }}
-          onToggleTrackChanges={() =>
-            editor.commands.toggleDocumentTrackChanges()
-          }
+          onToggleTrackChanges={() => {
+            editor.commands.toggleDocumentTrackChanges();
+            restoreDocumentBodyFocus();
+          }}
           onToggleChanges={() => void toggleTaskPane('changes')}
           onOpenFindReplace={openFindReplace}
         />
@@ -775,36 +858,10 @@ export function DocumentEditor({
                     onDoubleClick={() => {
                       if (!preview && pageChromeEditing) closePageChrome();
                     }}
-                    onContextMenu={(event) => {
-                      if (preview) return;
-                      if (!getSelectionMenuItems && !onAgentRequest) return;
-                      const snapshot = createWorkDocumentSelectionSnapshot(
-                        editor,
-                        contentRef.current,
-                      );
-                      if (!snapshot) return;
-                      event.preventDefault();
-                      if (getSelectionMenuItems) {
-                        const items = getSelectionMenuItems(snapshot);
-                        setSelectionMenu(
-                          items.length
-                            ? {
-                                kind: 'custom',
-                                x: event.clientX,
-                                y: event.clientY,
-                                snapshot,
-                                items,
-                              }
-                            : null,
-                        );
-                        return;
-                      }
-                      setSelectionMenu({
-                        kind: 'agent',
-                        x: event.clientX,
-                        y: event.clientY,
-                        snapshot,
-                      });
+                    onContextMenu={openSelectionContextMenu}
+                    onKeyDownCapture={(event) => {
+                      if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
+                      openSelectionContextMenu(event);
                     }}
                   >
                     <EditorContent editor={editor} />
@@ -927,7 +984,8 @@ export function DocumentEditor({
           <DocumentFindReplacePanel
             editor={editor}
             mode={findReplaceMode}
-            onModeChange={setTaskPane}
+            focusRequest={findReplaceFocusRequest}
+            onModeChange={(mode) => void openFindReplace(mode)}
             onReplaceText={replaceDocumentText}
             onClose={closeTaskPane}
           />
@@ -951,8 +1009,8 @@ export function DocumentEditor({
           viewMode={viewMode}
           wordCount={documentWordCount(editor.getText())}
           zoom={zoom}
-          onSpellcheckChange={setSpellcheckEnabled}
-          onViewModeChange={setViewMode}
+          onSpellcheckChange={changeSpellcheck}
+          onViewModeChange={changeViewMode}
           onZoomChange={setZoom}
         />
       )}

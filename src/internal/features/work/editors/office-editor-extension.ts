@@ -1,3 +1,5 @@
+import { matchesOfficeEditorKeyboardShortcut } from '../../../keyboard-shortcuts';
+
 type CommandArguments<Command> = Command extends (
   ...args: infer Arguments extends unknown[]
 ) => unknown
@@ -324,39 +326,4 @@ export function createOfficeEditorRuntime<Context, Commands>(
   };
 }
 
-export function matchesOfficeEditorKeyboardShortcut(
-  event: KeyboardEvent,
-  shortcut: string,
-): boolean {
-  const parts = shortcut
-    .split('-')
-    .map((part) => part.trim().toLocaleLowerCase())
-    .filter(Boolean);
-  const key = parts.at(-1);
-  if (!key) return false;
-  const modifiers = new Set(parts.slice(0, -1));
-  const mod = modifiers.has('mod');
-  const control = modifiers.has('control') || modifiers.has('ctrl');
-  const meta = modifiers.has('meta') || modifiers.has('cmd');
-  const shift = modifiers.has('shift');
-  const alt = modifiers.has('alt') || modifiers.has('option');
-
-  if (mod ? !(event.metaKey || event.ctrlKey) : false) return false;
-  if (!mod && event.ctrlKey !== control) return false;
-  if (!mod && event.metaKey !== meta) return false;
-  if (event.shiftKey !== shift) return false;
-  if (event.altKey !== alt) return false;
-
-  const eventKey = event.key.toLocaleLowerCase();
-  return eventKey === key || shortcutKeyAlias(eventKey) === key;
-}
-
-function shortcutKeyAlias(key: string): string {
-  if (key === ' ') return 'space';
-  if (key === '+') return 'plus';
-  if (key === '-') return 'minus';
-  if (key === '=') return 'equal';
-  if (key === 'esc') return 'escape';
-  if (key === 'del') return 'delete';
-  return key;
-}
+export { matchesOfficeEditorKeyboardShortcut } from '../../../keyboard-shortcuts';

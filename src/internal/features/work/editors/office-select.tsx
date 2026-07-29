@@ -107,6 +107,16 @@ export function OfficeSelect<T extends string>({
               openAt(
                 selectedIndex >= 0 ? selectedIndex - 1 : options.length - 1,
               );
+            } else if (isOfficeSelectSearchKey(event)) {
+              const next = matchingOptionIndex(
+                options,
+                event.key,
+                selectedIndex >= 0 ? selectedIndex + 1 : 0,
+              );
+              if (next >= 0) {
+                event.preventDefault();
+                openAt(next);
+              }
             }
           }}
         >
@@ -150,6 +160,19 @@ export function OfficeSelect<T extends string>({
                 } else if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
                   selectOption(index, close);
+                } else if (isOfficeSelectSearchKey(event)) {
+                  const next = matchingOptionIndex(
+                    options,
+                    event.key,
+                    index + 1,
+                  );
+                  if (next >= 0) {
+                    event.preventDefault();
+                    setActiveIndex(next);
+                    document
+                      .getElementById(`${reactId}-option-${next}`)
+                      ?.focus();
+                  }
                 }
               }}
             >
@@ -161,6 +184,38 @@ export function OfficeSelect<T extends string>({
       )}
     </Popover>
   );
+}
+
+function isOfficeSelectSearchKey(event: KeyboardEvent): boolean {
+  return Boolean(
+    !event.nativeEvent.isComposing &&
+      !event.altKey &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      event.key.length === 1 &&
+      event.key.trim(),
+  );
+}
+
+function matchingOptionIndex<T extends string>(
+  options: readonly OfficeSelectOption<T>[],
+  query: string,
+  requestedIndex: number,
+): number {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery || !options.length) return -1;
+  for (let offset = 0; offset < options.length; offset += 1) {
+    const index = (requestedIndex + offset + options.length) % options.length;
+    const option = options[index];
+    if (
+      option &&
+      !option.disabled &&
+      option.label.toLocaleLowerCase().startsWith(normalizedQuery)
+    ) {
+      return index;
+    }
+  }
+  return -1;
 }
 
 function nearestEnabledOption<T extends string>(

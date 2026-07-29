@@ -7,6 +7,7 @@ const chromiumExecutablePath =
 
 export default defineConfig({
   testDir: './visual-tests',
+  timeout: 60_000,
   outputDir: './test-results/visual',
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),

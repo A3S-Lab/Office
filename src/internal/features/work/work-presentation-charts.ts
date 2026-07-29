@@ -286,6 +286,18 @@ export function parsePresentationChartValues(value: string): number[] {
     });
 }
 
+export function parsePresentationChartValueDraft(
+  value: string,
+): number[] | null {
+  const items = value
+    .split(/[\s,;，；]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, MAX_CHART_ITEMS);
+  const values = items.map(Number);
+  return values.every(Number.isFinite) ? values : null;
+}
+
 export function parsePresentationChartXValues(value: string): string[] {
   return parsePresentationChartValues(value).map((item) => String(item));
 }

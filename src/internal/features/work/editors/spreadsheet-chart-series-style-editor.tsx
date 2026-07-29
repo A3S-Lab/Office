@@ -9,11 +9,12 @@ import type {
   WorkSpreadsheetChartSeriesStyle,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
   OfficeColorPicker,
-  OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 
 interface SpreadsheetChartSeriesStyleEditorProps {
   seriesNumber: number;
@@ -62,15 +63,20 @@ export function SpreadsheetChartSeriesStyleEditor({
           </div>
           <div className="work-office-field">
             <span>填充透明度（%）</span>
-            <OfficeNumberField
+            <CommittedOfficeNumberField
               ariaLabel={`系列 ${seriesNumber} 填充透明度`}
               min={0}
               max={100}
               step={1}
               value={style.fillTransparency ?? 0}
-              onValueChange={(fillTransparency) =>
-                update({ fillTransparency: Number(fillTransparency) })
+              normalizeValue={(value) =>
+                normalizeRequiredOfficeNumber(value, {
+                  integer: true,
+                  minimum: 0,
+                  maximum: 100,
+                })
               }
+              onValueCommit={(fillTransparency) => update({ fillTransparency })}
             />
           </div>
           <div className="work-office-field">
@@ -83,15 +89,20 @@ export function SpreadsheetChartSeriesStyleEditor({
           </div>
           <div className="work-office-field">
             <span>线条宽度（磅）</span>
-            <OfficeNumberField
+            <CommittedOfficeNumberField
               ariaLabel={`系列 ${seriesNumber} 线条宽度`}
               min={0.25}
               max={20}
               step={0.25}
               value={style.lineWidth ?? 2.25}
-              onValueChange={(lineWidth) =>
-                update({ lineWidth: Number(lineWidth) })
+              normalizeValue={(value) =>
+                normalizeRequiredOfficeNumber(value, {
+                  decimalPlaces: 2,
+                  minimum: 0.25,
+                  maximum: 20,
+                })
               }
+              onValueCommit={(lineWidth) => update({ lineWidth })}
             />
           </div>
           <div className="work-office-field">
@@ -136,13 +147,20 @@ export function SpreadsheetChartSeriesStyleEditor({
               </div>
               <div className="work-office-field">
                 <span>数据标记大小（磅）</span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   ariaLabel={`系列 ${seriesNumber} 数据标记大小`}
                   min={2}
                   max={72}
                   step={1}
                   value={marker.size ?? 5}
-                  onValueChange={(size) => updateMarker({ size: Number(size) })}
+                  normalizeValue={(value) =>
+                    normalizeRequiredOfficeNumber(value, {
+                      integer: true,
+                      minimum: 2,
+                      maximum: 72,
+                    })
+                  }
+                  onValueCommit={(size) => updateMarker({ size })}
                 />
               </div>
               <div className="work-office-field">

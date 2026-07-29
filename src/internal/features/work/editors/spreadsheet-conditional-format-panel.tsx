@@ -39,6 +39,7 @@ import {
   withConditionalRules,
 } from './spreadsheet-conditional-format-model';
 import { SpreadsheetConditionalThresholdFields } from './spreadsheet-conditional-threshold-fields';
+import { useOfficeDraft } from './use-office-draft';
 
 export { managedConditionalFormatCount } from './spreadsheet-conditional-format-model';
 
@@ -67,38 +68,72 @@ export function SpreadsheetConditionalFormatPanel({
       ? { sheetId: entries[0].sheet.id, index: entries[0].index }
       : null,
   );
-  const [draft, setDraft] = useState<ConditionalRuleDraft>(() =>
+  const {
+    cancelDraft: resetDraft,
+    dirty,
+    draft,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft<ConditionalRuleDraft>(() =>
     entries[0]
       ? conditionalRuleDraftForRule(entries[0].sheet.id, entries[0].rule)
       : newConditionalRuleDraft(activeSheetId),
   );
   const [error, setError] = useState('');
+  const selectedSheet = selection
+    ? sheets.find((sheet) => sheet.id === selection.sheetId)
+    : undefined;
 
   useEffect(() => {
-    if (!selection) return;
-    const sheet = sheets.find((item) => item.id === selection.sheetId);
-    const rule = sheet
-      ? sheetConditionalRules(sheet)[selection.index]
-      : undefined;
-    if (isManagedConditionalRule(rule)) {
-      setDraft(conditionalRuleDraftForRule(selection.sheetId, rule));
+    if (!selection) {
+      const next = newConditionalRuleDraft(activeSheetId);
+      syncDraft(next);
       return;
     }
+    const selectedSheet = content.sheets.find(
+      (sheet) => sheet.id === selection.sheetId,
+    );
+    const rule = selectedSheet
+      ? sheetConditionalRules(selectedSheet)[selection.index]
+      : undefined;
+    if (isManagedConditionalRule(rule)) {
+      const next = conditionalRuleDraftForRule(selection.sheetId, rule);
+      syncDraft(next);
+      return;
+    }
+    const next = newConditionalRuleDraft(activeSheetId);
     setSelection(null);
-    setDraft(newConditionalRuleDraft(activeSheetId));
-  }, [content.sheets, selection?.sheetId, selection?.index]);
+    replaceDraft(next);
+  }, [activeSheetId, content.sheets, replaceDraft, syncDraft]);
 
   const startNew = () => {
+    if (dirty) {
+      setError('当前规则有未保存更改，请先保存或取消。');
+      return;
+    }
+    const next = newConditionalRuleDraft(activeSheetId);
     setSelection(null);
-    setDraft(newConditionalRuleDraft(activeSheetId));
+    replaceDraft(next);
     setError('');
   };
   const selectRule = (
     location: ConditionalRuleLocation,
     rule: FortuneConditionalFormatRule,
   ) => {
+    if (
+      selection?.sheetId === location.sheetId &&
+      selection.index === location.index
+    ) {
+      return;
+    }
+    if (dirty) {
+      setError('当前规则有未保存更改，请先保存或取消。');
+      return;
+    }
+    const next = conditionalRuleDraftForRule(location.sheetId, rule);
     setSelection(location);
-    setDraft(conditionalRuleDraftForRule(location.sheetId, rule));
+    replaceDraft(next);
     setError('');
   };
   const setIconSet = (iconSet: SpreadsheetConditionalIconSetName) => {
@@ -121,6 +156,7 @@ export function SpreadsheetConditionalFormatPanel({
     setDraft({ ...draft, [field]: thresholds });
   };
   const saveRule = () => {
+    if (selection && !dirty) return;
     const result = buildConditionalRule(draft);
     if ('error' in result) {
       setError(result.error);
@@ -154,7 +190,13 @@ export function SpreadsheetConditionalFormatPanel({
       return;
     }
     onChange({ ...content, sheets: nextSheets });
+    const savedDraft = conditionalRuleDraftForRule(draft.sheetId, rule);
     setSelection({ sheetId: draft.sheetId, index: savedIndex });
+    replaceDraft(savedDraft);
+    setError('');
+  };
+  const cancelDraft = () => {
+    resetDraft();
     setError('');
   };
   const deleteRule = () => {
@@ -167,12 +209,13 @@ export function SpreadsheetConditionalFormatPanel({
       return withConditionalRules(sheet, rules);
     });
     onChange({ ...content, sheets: nextSheets });
+    const next = newConditionalRuleDraft(activeSheetId);
     setSelection(null);
-    setDraft(newConditionalRuleDraft(activeSheetId));
+    replaceDraft(next);
     setError('');
   };
   const moveRule = (offset: -1 | 1) => {
-    if (!selection) return;
+    if (!selection || dirty) return;
     let movedIndex = selection.index;
     const nextSheets = content.sheets.map((sheet) => {
       if (sheet.id !== selection.sheetId) return sheet;
@@ -192,9 +235,6 @@ export function SpreadsheetConditionalFormatPanel({
     setError('');
   };
 
-  const selectedSheet = selection
-    ? sheets.find((sheet) => sheet.id === selection.sheetId)
-    : undefined;
   const selectedRuleCount = selectedSheet
     ? sheetConditionalRules(selectedSheet).length
     : 0;
@@ -209,7 +249,17 @@ export function SpreadsheetConditionalFormatPanel({
     );
   }
   return (
-    <div className="work-spreadsheet-conditional-manager">
+    <fieldset
+      className="work-spreadsheet-conditional-manager"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDraft();
+      }}
+    >
+      <legend className="sr-only">条件格式编辑</legend>
       <aside aria-label="条件格式规则">
         <Button className="create" tone="secondary" onClick={startNew}>
           <Plus size={13} />
@@ -458,9 +508,9 @@ export function SpreadsheetConditionalFormatPanel({
             />
           </>
         )}
-        <p>
-          文本、重复值、排名、平均值和公式规则的条件与样式由表格工具栏维护；此处可统一修改范围、停止行为和优先级。
-        </p>
+        {draft.type === 'toolbarRule' && (
+          <p>此规则的条件和样式请在工具栏中修改。</p>
+        )}
         <div className="actions">
           {error && (
             <InlineNotice
@@ -473,7 +523,7 @@ export function SpreadsheetConditionalFormatPanel({
           )}
           <Button
             tone="secondary"
-            disabled={!selection || selection.index <= 0}
+            disabled={dirty || !selection || selection.index <= 0}
             aria-label="提高优先级"
             onClick={() => moveRule(-1)}
           >
@@ -482,7 +532,9 @@ export function SpreadsheetConditionalFormatPanel({
           </Button>
           <Button
             tone="secondary"
-            disabled={!selection || selection.index >= selectedRuleCount - 1}
+            disabled={
+              dirty || !selection || selection.index >= selectedRuleCount - 1
+            }
             aria-label="降低优先级"
             onClick={() => moveRule(1)}
           >
@@ -493,12 +545,19 @@ export function SpreadsheetConditionalFormatPanel({
             <Trash2 size={13} />
             删除规则
           </Button>
-          <Button type="submit" tone="primary">
+          <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
+            取消更改
+          </Button>
+          <Button
+            type="submit"
+            tone="primary"
+            disabled={Boolean(selection) && !dirty}
+          >
             保存规则
           </Button>
         </div>
       </form>
-    </div>
+    </fieldset>
   );
 }
 

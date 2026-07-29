@@ -37,6 +37,9 @@ type FloatingPosition = {
 
 const FLOATING_GAP = 8;
 const FLOATING_VIEWPORT_PADDING = 16;
+const PORTAL_INHERITED_CUSTOM_PROPERTIES = [
+  '--work-office-control-accent',
+] as const;
 
 const openPopoverStack: symbol[] = [];
 
@@ -119,11 +122,23 @@ export function Popover({
   const setPanelElement = useCallback(
     (element: HTMLElement | null) => {
       panelElementRef.current = element;
+      if (
+        element &&
+        portal &&
+        rootRef.current &&
+        typeof window !== 'undefined'
+      ) {
+        const rootStyle = window.getComputedStyle(rootRef.current);
+        for (const property of PORTAL_INHERITED_CUSTOM_PROPERTIES) {
+          const value = rootStyle.getPropertyValue(property).trim();
+          if (value) element.style.setProperty(property, value);
+        }
+      }
       if (typeof panelRef === 'function') panelRef(element);
       else if (panelRef)
         (panelRef as { current: HTMLElement | null }).current = element;
     },
-    [panelRef],
+    [panelRef, portal],
   );
 
   const updateFloatingPosition = useCallback(() => {
@@ -290,6 +305,31 @@ export function Popover({
     onClick: () => updateOpen(!openRef.current),
   };
 
+  const handlePanelKeyDown: KeyboardEventHandler<HTMLElement> = (event) => {
+    onPanelKeyDown?.(event);
+    if (event.defaultPrevented || event.key !== 'Tab') {
+      return;
+    }
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    if (panelRole !== 'menu') {
+      if (!portal) return;
+      const tabStops = panelTabStops(panelElementRef.current);
+      const boundary = event.shiftKey ? tabStops.at(0) : tabStops.at(-1);
+      if (!boundary || document.activeElement !== boundary) return;
+    }
+    event.preventDefault();
+    const next = adjacentDocumentTabStop(
+      trigger,
+      event.shiftKey ? -1 : 1,
+      panelElementRef.current,
+    );
+    updateOpen(false);
+    requestAnimationFrame(() =>
+      (next ?? trigger).focus({ preventScroll: true }),
+    );
+  };
+
   const panel = open ? (
     <section
       ref={setPanelElement}
@@ -299,7 +339,7 @@ export function Popover({
       aria-label={panelLabel}
       data-office-shortcuts="ignore"
       data-floating={portal ? 'true' : undefined}
-      onKeyDown={onPanelKeyDown}
+      onKeyDown={handlePanelKeyDown}
       style={portal ? { position: 'absolute', top: 0, left: 0 } : undefined}
     >
       {typeof children === 'function' ? children(close) : children}
@@ -354,15 +394,100 @@ function sameFloatingPosition(
 }
 
 function firstFocusableElement(panel: HTMLElement | null): HTMLElement | null {
+  if (!panel) return null;
   return (
-    panel?.querySelector<HTMLElement>(
+    radioGroupTabStops(
       [
-        'button:not(:disabled)',
-        'input:not(:disabled):not([type="hidden"])',
-        'textarea:not(:disabled)',
-        'select:not(:disabled)',
+        ...panel.querySelectorAll<HTMLElement>(
+          [
+            'button:not(:disabled)',
+            'input:not(:disabled):not([type="hidden"])',
+            'textarea:not(:disabled)',
+            'select:not(:disabled)',
+            '[tabindex]:not([tabindex="-1"])',
+          ].join(', '),
+        ),
+      ].filter(elementAvailableForFocus),
+    ).at(0) ?? null
+  );
+}
+
+function panelTabStops(panel: HTMLElement | null): HTMLElement[] {
+  if (!panel) return [];
+  return radioGroupTabStops(
+    [
+      ...panel.querySelectorAll<HTMLElement>(
+        [
+          'a[href]:not([tabindex="-1"])',
+          'button:not(:disabled):not([tabindex="-1"])',
+          'input:not(:disabled):not([type="hidden"]):not([tabindex="-1"])',
+          'select:not(:disabled):not([tabindex="-1"])',
+          'textarea:not(:disabled):not([tabindex="-1"])',
+          '[tabindex]:not([tabindex="-1"])',
+        ].join(', '),
+      ),
+    ].filter(elementAvailableForFocus),
+  );
+}
+
+function radioGroupTabStops(candidates: HTMLElement[]): HTMLElement[] {
+  return candidates.filter((element) => {
+    if (
+      !(element instanceof HTMLInputElement) ||
+      element.type !== 'radio' ||
+      !element.name
+    ) {
+      return true;
+    }
+    const group = candidates.filter(
+      (candidate): candidate is HTMLInputElement =>
+        candidate instanceof HTMLInputElement &&
+        candidate.type === 'radio' &&
+        candidate.name === element.name &&
+        candidate.form === element.form,
+    );
+    return (
+      element === (group.find((candidate) => candidate.checked) ?? group[0])
+    );
+  });
+}
+
+function elementAvailableForFocus(element: HTMLElement): boolean {
+  if (
+    element.closest('[hidden], [inert], [aria-hidden="true"]') ||
+    element.getAttribute('aria-disabled') === 'true'
+  ) {
+    return false;
+  }
+  let current: HTMLElement | null = element;
+  while (current) {
+    const style = getComputedStyle(current);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    current = current.parentElement;
+  }
+  return true;
+}
+
+function adjacentDocumentTabStop(
+  current: HTMLElement,
+  direction: -1 | 1,
+  excludedRoot: HTMLElement | null,
+): HTMLElement | null {
+  const tabStops = [
+    ...document.querySelectorAll<HTMLElement>(
+      [
+        'a[href]:not([tabindex="-1"])',
+        'button:not(:disabled):not([tabindex="-1"])',
+        'input:not(:disabled):not([type="hidden"]):not([tabindex="-1"])',
+        'select:not(:disabled):not([tabindex="-1"])',
+        'textarea:not(:disabled):not([tabindex="-1"])',
         '[tabindex]:not([tabindex="-1"])',
       ].join(', '),
-    ) ?? null
+    ),
+  ].filter(
+    (element) =>
+      !excludedRoot?.contains(element) && elementAvailableForFocus(element),
   );
+  const index = tabStops.indexOf(current);
+  return index < 0 ? null : (tabStops[index + direction] ?? null);
 }

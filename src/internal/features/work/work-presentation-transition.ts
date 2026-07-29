@@ -51,3 +51,18 @@ export function slideTransitionDurationMilliseconds(
   if (transition?.speed === 'slow') return 2000;
   return 1000;
 }
+
+export function workSlideTransitionsEqual(
+  left: WorkSlideTransition | undefined,
+  right: WorkSlideTransition | undefined,
+): boolean {
+  if (!left || !right) return left === right;
+  return (
+    left.type === right.type &&
+    left.speed === right.speed &&
+    left.direction === right.direction &&
+    left.orientation === right.orientation &&
+    left.advanceOnClick === right.advanceOnClick &&
+    left.advanceAfterMs === right.advanceAfterMs
+  );
+}

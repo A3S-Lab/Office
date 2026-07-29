@@ -15,10 +15,11 @@ import {
 } from '../work-spreadsheet-chart-layout';
 import type { WorkSpreadsheetChartType } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
+import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 
 interface SpreadsheetChartLayoutEditorProps {
   chart: WorkSpreadsheetChartLayout & {
@@ -141,20 +142,25 @@ export function SpreadsheetChartLayoutEditor({
           <>
             <div className="work-office-field">
               <span>分类间距（%）</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel="分类间距（%）"
                 min={0}
                 max={500}
                 step={1}
                 value={normalizeWorkSpreadsheetChartGapWidth(chart.gapWidth)}
-                onValueChange={(gapWidth) =>
-                  onChange({ gapWidth: Number(gapWidth) })
+                normalizeValue={(value) =>
+                  normalizeRequiredOfficeNumber(value, {
+                    integer: true,
+                    minimum: 0,
+                    maximum: 500,
+                  })
                 }
+                onValueCommit={(gapWidth) => onChange({ gapWidth })}
               />
             </div>
             <div className="work-office-field">
               <span>系列重叠（%）</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel="系列重叠（%）"
                 min={-100}
                 max={100}
@@ -163,9 +169,14 @@ export function SpreadsheetChartLayoutEditor({
                   chart.overlap,
                   grouping,
                 )}
-                onValueChange={(overlap) =>
-                  onChange({ overlap: Number(overlap) })
+                normalizeValue={(value) =>
+                  normalizeRequiredOfficeNumber(value, {
+                    integer: true,
+                    minimum: -100,
+                    maximum: 100,
+                  })
                 }
+                onValueCommit={(overlap) => onChange({ overlap })}
               />
             </div>
           </>

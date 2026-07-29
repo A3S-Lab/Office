@@ -1,5 +1,6 @@
-.workspace-context-menu {
-  position: fixed;
+.work-office-context-menu {
+  --work-office-menu-accent: var(--a3s-blue);
+
   z-index: 2147483000;
   display: grid;
   width: max-content;
@@ -22,7 +23,11 @@
   backdrop-filter: blur(18px);
 }
 
-.workspace-context-menu > button {
+.workspace-context-menu {
+  position: fixed;
+}
+
+.work-office-context-menu > button {
   display: grid;
   width: 100%;
   min-height: 32px;
@@ -40,45 +45,46 @@
   text-align: left;
 }
 
-.workspace-context-menu > button:hover:not(:disabled),
-.workspace-context-menu > button:focus-visible {
+.work-office-context-menu > button:hover:not(:disabled),
+.work-office-context-menu > button:focus-visible {
   background: var(--a3s-panel-soft);
   box-shadow: none;
 }
 
-.workspace-context-menu > button:focus-visible {
-  outline: 1px solid color-mix(in srgb, var(--a3s-blue) 58%, var(--a3s-line));
+.work-office-context-menu > button:focus-visible {
+  outline: 1px solid
+    color-mix(in srgb, var(--work-office-menu-accent) 58%, var(--a3s-line));
   outline-offset: -1px;
 }
 
-.workspace-context-menu > button:disabled {
+.work-office-context-menu > button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
 }
 
-.workspace-context-menu > button.danger {
+.work-office-context-menu > button.danger {
   color: var(--a3s-red);
 }
 
-.workspace-context-menu > button > svg {
+.work-office-context-menu > button > svg {
   width: 15px;
   height: 15px;
   color: var(--a3s-muted);
   pointer-events: none;
 }
 
-.workspace-context-menu > button.danger > svg {
+.work-office-context-menu > button.danger > svg {
   color: currentcolor;
 }
 
-.workspace-context-menu > button > span {
+.work-office-context-menu > button > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.workspace-context-menu kbd {
+.work-office-context-menu kbd {
   margin-left: 8px;
   color: var(--a3s-faint);
   font: inherit;
@@ -86,7 +92,8 @@
   white-space: nowrap;
 }
 
-.workspace-context-menu-separator {
+.workspace-context-menu-separator,
+.work-spreadsheet-sheet-popover > hr {
   height: 1px;
   margin: 4px 7px;
   border: 0;
@@ -94,11 +101,11 @@
 }
 
 @media (forced-colors: active) {
-  .workspace-context-menu {
+  .work-office-context-menu {
     border-color: CanvasText;
   }
 
-  .workspace-context-menu > button:focus-visible {
+  .work-office-context-menu > button:focus-visible {
     outline: 2px solid Highlight;
   }
 }

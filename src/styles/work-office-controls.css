@@ -69,7 +69,11 @@
 .work-office-select.open > button[role="combobox"],
 .work-office-color-trigger:hover:not(:disabled),
 .work-office-color-picker.open .work-office-color-trigger {
-  border-color: color-mix(in srgb, var(--a3s-blue) 48%, var(--a3s-line));
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-control-accent, var(--a3s-blue)) 48%,
+    var(--a3s-line)
+  );
   background: var(--a3s-panel-soft);
 }
 
@@ -79,8 +83,13 @@
 .work-office-text-area:focus-visible,
 .work-office-number-field:focus-within,
 .work-office-slider:focus-visible {
-  border-color: var(--a3s-blue);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-blue) 18%, transparent);
+  border-color: var(--work-office-control-accent, var(--a3s-blue));
+  box-shadow: 0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--work-office-control-accent, var(--a3s-blue)) 18%,
+      transparent
+    );
 }
 
 .work-office-select > button[role="combobox"]:disabled,
@@ -141,7 +150,7 @@
 }
 
 .work-office-select-menu > button[aria-selected="true"] {
-  color: var(--a3s-blue);
+  color: var(--work-office-control-accent, var(--a3s-blue));
   font-weight: 650;
 }
 
@@ -171,10 +180,13 @@
 
 .work-office-checkbox > input {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
-  pointer-events: none;
+  cursor: inherit;
 }
 
 .work-office-checkbox:not(.disabled):hover {
@@ -182,8 +194,13 @@
 }
 
 .work-office-checkbox > input:focus-visible + .work-office-checkbox-box {
-  border-color: var(--a3s-blue);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-blue) 18%, transparent);
+  border-color: var(--work-office-control-accent, var(--a3s-blue));
+  box-shadow: 0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--work-office-control-accent, var(--a3s-blue)) 18%,
+      transparent
+    );
 }
 
 .work-office-checkbox.disabled {
@@ -204,8 +221,8 @@
 }
 
 .work-office-checkbox.checked .work-office-checkbox-box {
-  border-color: var(--a3s-blue);
-  background: var(--a3s-blue);
+  border-color: var(--work-office-control-accent, var(--a3s-blue));
+  background: var(--work-office-control-accent, var(--a3s-blue));
 }
 
 .work-office-checkbox-label {
@@ -375,7 +392,7 @@
   outline: 0;
   box-shadow:
     0 0 0 1px var(--a3s-panel),
-    0 0 0 3px var(--a3s-blue);
+    0 0 0 3px var(--work-office-control-accent, var(--a3s-blue));
 }
 
 .work-office-color-custom {
@@ -424,8 +441,13 @@
 }
 
 .work-office-color-custom > label > input:focus-visible {
-  border-color: var(--a3s-blue);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-blue) 16%, transparent);
+  border-color: var(--work-office-control-accent, var(--a3s-blue));
+  box-shadow: 0 0 0 2px
+    color-mix(
+      in srgb,
+      var(--work-office-control-accent, var(--a3s-blue)) 16%,
+      transparent
+    );
 }
 
 .work-office-color-custom > label > input[aria-invalid="true"] {
@@ -465,7 +487,7 @@
 }
 
 .work-office-slider-fill {
-  background: var(--a3s-blue);
+  background: var(--work-office-control-accent, var(--a3s-blue));
 }
 
 .work-office-slider-thumb {
@@ -474,7 +496,7 @@
   width: 12px;
   height: 12px;
   margin-left: -6px;
-  border: 2px solid var(--a3s-blue);
+  border: 2px solid var(--work-office-control-accent, var(--a3s-blue));
   border-radius: 50%;
   background: var(--a3s-panel);
   box-shadow: 0 1px 3px rgb(15 23 42 / 24%);

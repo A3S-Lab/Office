@@ -27,6 +27,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetProtectionPanelProps {
   content: WorkSpreadsheetContent;
@@ -51,7 +52,14 @@ export function SpreadsheetProtectionPanel({
     sheets.find((sheet) => sheet.status === 1)?.id ?? sheets[0]?.id ?? '';
   const [sheetId, setSheetId] = useState(initialSheetId);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [draft, setDraft] = useState<EditableRangeDraft>(newRangeDraft());
+  const {
+    cancelDraft: resetDraft,
+    dirty,
+    draft,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft<EditableRangeDraft>(newRangeDraft);
   const [error, setError] = useState('');
   const sheet = sheets.find((item) => item.id === sheetId) ?? sheets[0];
   const authority = sheet ? sheetProtectionAuthority(sheet) : null;
@@ -65,12 +73,12 @@ export function SpreadsheetProtectionPanel({
     if (selectedIndex === null) return;
     const range = ranges[selectedIndex];
     if (range) {
-      setDraft({ name: range.name, reference: range.sqref });
+      syncDraft({ name: range.name, reference: range.sqref });
       return;
     }
     setSelectedIndex(null);
-    setDraft(newRangeDraft());
-  }, [content.sheets, sheetId, selectedIndex]);
+    replaceDraft(newRangeDraft());
+  }, [content.sheets, replaceDraft, sheetId, syncDraft]);
 
   if (!sheet || !authority) {
     return (
@@ -91,24 +99,39 @@ export function SpreadsheetProtectionPanel({
     });
   };
   const changeSheet = (nextSheetId: string) => {
+    if (nextSheetId === sheetId) return;
+    if (dirty) {
+      setError('当前区域有未保存更改，请先保存或取消。');
+      return;
+    }
     setSheetId(nextSheetId);
     setSelectedIndex(null);
-    setDraft(newRangeDraft());
+    replaceDraft(newRangeDraft());
     setError('');
   };
   const selectRange = (index: number) => {
+    if (index === selectedIndex) return;
+    if (dirty) {
+      setError('当前区域有未保存更改，请先保存或取消。');
+      return;
+    }
     const range = ranges[index];
     if (!range) return;
     setSelectedIndex(index);
-    setDraft({ name: range.name, reference: range.sqref });
+    replaceDraft({ name: range.name, reference: range.sqref });
     setError('');
   };
   const startNew = () => {
+    if (dirty) {
+      setError('当前区域有未保存更改，请先保存或取消。');
+      return;
+    }
     setSelectedIndex(null);
-    setDraft(newRangeDraft());
+    replaceDraft(newRangeDraft());
     setError('');
   };
   const saveRange = () => {
+    if (selectedIndex !== null && !dirty) return;
     const name = draft.name.trim();
     const parsed = parseSpreadsheetCellRanges(draft.reference);
     if (!name) {
@@ -158,14 +181,18 @@ export function SpreadsheetProtectionPanel({
       }),
     );
     setSelectedIndex(index);
-    setDraft({ name, reference: formatSpreadsheetCellRanges(parsed) });
+    replaceDraft({ name, reference: formatSpreadsheetCellRanges(parsed) });
+    setError('');
+  };
+  const cancelDraft = () => {
+    resetDraft();
     setError('');
   };
   const deleteRange = () => {
     if (selectedIndex === null) return;
     updateSheet(withoutEditableRange(sheet, selectedIndex));
     setSelectedIndex(null);
-    setDraft(newRangeDraft());
+    replaceDraft(newRangeDraft());
     setError('');
   };
   const setSelectLocked = (checked: boolean) => {
@@ -189,7 +216,17 @@ export function SpreadsheetProtectionPanel({
   const selectedRange = selectedIndex === null ? null : ranges[selectedIndex];
 
   return (
-    <div className="work-spreadsheet-protection-manager">
+    <fieldset
+      className="work-spreadsheet-protection-manager"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDraft();
+      }}
+    >
+      <legend className="sr-only">可编辑区域设置</legend>
       <aside aria-label="允许编辑的区域">
         <Button className="create" tone="secondary" onClick={startNew}>
           <Plus size={13} />
@@ -295,8 +332,7 @@ export function SpreadsheetProtectionPanel({
         </div>
         <p>
           当前有 {unlockedCellCount(sheet)}{' '}
-          个未锁定单元格。密码和账户权限验证器会保留到 XLSX，但 Work
-          不会尝试破解或代替源应用验证。
+          个未锁定单元格。受凭据保护的区域将原样保留。
         </p>
         {selectedRange && editableRangeRequiresCredentials(selectedRange) && (
           <InlineNotice
@@ -325,12 +361,19 @@ export function SpreadsheetProtectionPanel({
             <Trash2 size={13} />
             删除区域
           </Button>
-          <Button type="submit" tone="primary">
+          <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
+            取消更改
+          </Button>
+          <Button
+            type="submit"
+            tone="primary"
+            disabled={selectedIndex !== null && !dirty}
+          >
             保存区域
           </Button>
         </div>
       </form>
-    </div>
+    </fieldset>
   );
 }
 

@@ -1,5 +1,4 @@
 import { Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { CollectionState } from '../../../design-system/primitives';
 import {
   type WorkSpreadsheetChartType,
@@ -10,11 +9,13 @@ import {
   workSpreadsheetChartUsesNumericXAxis,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
+  CommittedOfficeTextField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { normalizeRequiredOfficeNumber } from './office-number-normalization';
 
 interface SpreadsheetErrorBarEditorProps {
   chartType: WorkSpreadsheetChartType;
@@ -158,16 +159,17 @@ export function SpreadsheetErrorBarEditor({
                 <span>
                   {item.valueType === 'percentage' ? '百分比（%）' : '数值'}
                 </span>
-                <OfficeNumberField
+                <CommittedOfficeNumberField
                   ariaLabel={`${labelPrefix} 数值`}
                   min={0}
                   step={0.1}
                   value={
                     item.value ?? (item.valueType === 'percentage' ? 5 : 1)
                   }
-                  onValueChange={(value) =>
-                    replaceErrorBars(index, { value: optionalNumber(value) })
+                  normalizeValue={(value) =>
+                    normalizeRequiredOfficeNumber(value, { minimum: 0 })
                   }
+                  onValueCommit={(value) => replaceErrorBars(index, { value })}
                 />
               </div>
             )}
@@ -294,10 +296,6 @@ function errorBarsWithValueType(
   };
 }
 
-function optionalNumber(value: string): number | undefined {
-  return value === '' ? undefined : Number(value);
-}
-
 function CustomErrorValuesInput({
   label,
   id,
@@ -311,29 +309,28 @@ function CustomErrorValuesInput({
   reference: string | undefined;
   onCommit: (values: number[] | undefined) => void;
 }) {
-  const serialized = values?.join(', ') ?? '';
-  const [draft, setDraft] = useState(serialized);
-  useEffect(() => setDraft(serialized), [serialized]);
   return (
-    <OfficeTextField
+    <CommittedOfficeTextField
       id={id}
       aria-label={label}
-      value={draft}
+      value={values}
+      formatValue={(items) => items?.join(', ') ?? ''}
+      parseValue={parseCustomValues}
       placeholder={reference ? '已保留导入引用；输入数值可替换' : '1, 2, 1.5'}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => onCommit(parseCustomValues(draft))}
+      onValueCommit={onCommit}
     />
   );
 }
 
-function parseCustomValues(value: string): number[] | undefined {
-  const values = value
+function parseCustomValues(value: string): number[] | undefined | null {
+  if (!value.trim()) return undefined;
+  const tokens = value
     .split(/[\s,;，；]+/)
     .map((item) => item.trim())
-    .filter(Boolean)
-    .slice(0, 256)
-    .map(Number)
-    .filter(Number.isFinite)
-    .map((item) => Math.max(0, item));
-  return values.length ? values : undefined;
+    .filter(Boolean);
+  if (!tokens.length || tokens.length > 256) return null;
+  const values = tokens.map(Number);
+  return values.every((item) => Number.isFinite(item) && item >= 0)
+    ? values
+    : null;
 }

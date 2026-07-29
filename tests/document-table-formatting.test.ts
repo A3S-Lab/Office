@@ -8,6 +8,46 @@ import {
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 describe('document table formatting', () => {
+  test('formats every cell from a whole-table node selection', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true">',
+        '<table><tbody>',
+        '<tr><th><p>Title</p></th><th><p>Owner</p></th></tr>',
+        '<tr><td><p>Plan</p></td><td><p>A3S</p></td></tr>',
+        '</tbody></table>',
+        '</section>',
+      ].join(''),
+    });
+    editor.commands.setNodeSelection(firstTablePosition(editor));
+
+    expect(editor.isActive('table')).toBe(true);
+    expect(editor.commands.applyDocumentTableStyle('blueStripe')).toBe(true);
+    expect(
+      tableCellAttributes(editor).every(
+        ({ borderColor, borderStyle }) =>
+          borderColor === '#9fbad0' && borderStyle === 'solid',
+      ),
+    ).toBe(true);
+    expect(
+      editor.commands.setDocumentTableCellFormat({
+        backgroundColor: '#fff2cc',
+      }),
+    ).toBe(true);
+    expect(
+      tableCellAttributes(editor).every(
+        ({ backgroundColor }) => backgroundColor === '#fff2cc',
+      ),
+    ).toBe(true);
+    expect(editor.commands.setDocumentTableHorizontalAlignment('center')).toBe(
+      true,
+    );
+    expect(editor.getHTML().match(/text-align: center/g)).toHaveLength(4);
+
+    editor.destroy();
+  });
+
   test('keeps structured cell presentation in editable HTML', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),
@@ -106,4 +146,14 @@ function tableCellAttributes(editor: Editor): Record<string, unknown>[] {
     return true;
   });
   return attributes;
+}
+
+function firstTablePosition(editor: Editor): number {
+  let position: number | null = null;
+  editor.state.doc.descendants((node, offset) => {
+    if (position === null && node.type.name === 'table') position = offset;
+    return position === null;
+  });
+  if (position === null) throw new Error('Expected a table node.');
+  return position;
 }

@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
-import { useMemo, type CSSProperties, type MouseEvent } from 'react';
+import { useMemo, type CSSProperties } from 'react';
+import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -31,7 +32,7 @@ export function PresentationThumbnailRail({
   onAddSlide: () => void;
   onDeleteSlide: (slideId: string) => boolean;
   onOpenContextMenu: (
-    event: MouseEvent,
+    event: WorkspaceContextMenuEvent,
     slide: WorkSlide,
     slideIndex: number,
     element?: WorkSlideElement | null,

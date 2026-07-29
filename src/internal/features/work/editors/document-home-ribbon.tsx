@@ -23,13 +23,17 @@ import {
   Underline as UnderlineIcon,
   Undo2,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { documentParagraphDirection } from '../work-document-paragraph-formatting';
+import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
 import {
+  canChangeDocumentIndent,
+  documentParagraphDirection,
+} from '../work-document-paragraph-formatting';
+import {
+  canChangeDocumentFontSize,
   changeDocumentFontSize,
-  documentFontFamilyOptions,
+  documentFontFamilyOptionsForValue,
   documentFontFamilyValue,
-  documentFontSizeOptions,
+  documentFontSizeOptionsForValue,
   documentFontSizeValue,
 } from './document-formatting-options';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
@@ -58,7 +62,23 @@ export function DocumentHomeRibbon({
   findReplaceMode: DocumentFindReplaceMode | null;
   onFindText: (replace: boolean) => void;
 }) {
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      if (editor.isDestroyed) return () => undefined;
+      editor.on('transaction', notify);
+      return () => editor.off('transaction', notify);
+    },
+    [editor],
+  );
+  useSyncExternalStore(
+    subscribe,
+    () => editor.state,
+    () => editor.state,
+  );
   if (editor.isDestroyed) return null;
+  const fontFamilyValue = documentFontFamilyValue(editor);
+  const fontSizeValue = documentFontSizeValue(editor);
+  const lineHeightValue = documentLineHeightValue(editor);
 
   return (
     <>
@@ -66,6 +86,7 @@ export function DocumentHomeRibbon({
         <ToolbarButton
           label="撤销"
           shortcut="Cmd/Ctrl+Z"
+          ariaKeyShortcuts="Control+Z Meta+Z"
           disabled={!editor.can().chain().focus().undo().run()}
           onClick={() => editor.chain().focus().undo().run()}
         >
@@ -73,7 +94,8 @@ export function DocumentHomeRibbon({
         </ToolbarButton>
         <ToolbarButton
           label="重做"
-          shortcut="Cmd/Ctrl+Shift+Z"
+          shortcut="Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y"
+          ariaKeyShortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
           disabled={!editor.can().chain().focus().redo().run()}
           onClick={() => editor.chain().focus().redo().run()}
         >
@@ -86,8 +108,8 @@ export function DocumentHomeRibbon({
             <OfficeSelect
               ariaLabel="字体"
               className="work-document-font-family-select"
-              value={documentFontFamilyValue(editor)}
-              options={documentFontFamilyOptions}
+              value={fontFamilyValue}
+              options={documentFontFamilyOptionsForValue(fontFamilyValue)}
               onValueChange={(value) => {
                 if (value === 'default')
                   editor.chain().focus().unsetFontFamily().run();
@@ -97,8 +119,8 @@ export function DocumentHomeRibbon({
             <OfficeSelect
               ariaLabel="字号"
               className="work-document-font-size-select"
-              value={documentFontSizeValue(editor)}
-              options={documentFontSizeOptions}
+              value={fontSizeValue}
+              options={documentFontSizeOptionsForValue(fontSizeValue)}
               onValueChange={(value) => {
                 if (value === 'default')
                   editor.chain().focus().unsetFontSize().run();
@@ -107,12 +129,14 @@ export function DocumentHomeRibbon({
             />
             <ToolbarButton
               label="增大字号"
+              disabled={!canChangeDocumentFontSize(editor, 1)}
               onClick={() => changeDocumentFontSize(editor, 1)}
             >
               <AArrowUp size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="减小字号"
+              disabled={!canChangeDocumentFontSize(editor, -1)}
               onClick={() => changeDocumentFontSize(editor, -1)}
             >
               <AArrowDown size={16} />
@@ -122,6 +146,7 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="加粗"
               shortcut="Cmd/Ctrl+B"
+              ariaKeyShortcuts="Control+B Meta+B"
               active={editor.isActive('bold')}
               onClick={() => editor.chain().focus().toggleBold().run()}
             >
@@ -130,6 +155,7 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="斜体"
               shortcut="Cmd/Ctrl+I"
+              ariaKeyShortcuts="Control+I Meta+I"
               active={editor.isActive('italic')}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             >
@@ -138,6 +164,7 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="下划线"
               shortcut="Cmd/Ctrl+U"
+              ariaKeyShortcuts="Control+U Meta+U"
               active={editor.isActive('underline')}
               onClick={() => editor.chain().focus().toggleUnderline().run()}
             >
@@ -153,6 +180,7 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="下标"
               shortcut="Cmd/Ctrl+,"
+              ariaKeyShortcuts="Control+, Meta+,"
               active={editor.isActive('subscript')}
               onClick={() => editor.commands.toggleDocumentSubscript()}
             >
@@ -161,6 +189,7 @@ export function DocumentHomeRibbon({
             <ToolbarButton
               label="上标"
               shortcut="Cmd/Ctrl+."
+              ariaKeyShortcuts="Control+. Meta+."
               active={editor.isActive('superscript')}
               onClick={() => editor.commands.toggleDocumentSuperscript()}
             >
@@ -203,12 +232,14 @@ export function DocumentHomeRibbon({
             <DocumentListGallery editor={editor} />
             <ToolbarButton
               label="减少缩进"
+              disabled={!canChangeDocumentIndent(editor, -1)}
               onClick={() => editor.commands.changeDocumentIndent(-1)}
             >
               <IndentDecrease size={16} />
             </ToolbarButton>
             <ToolbarButton
               label="增加缩进"
+              disabled={!canChangeDocumentIndent(editor, 1)}
               onClick={() => editor.commands.changeDocumentIndent(1)}
             >
               <IndentIncrease size={16} />
@@ -216,8 +247,8 @@ export function DocumentHomeRibbon({
             <OfficeSelect
               ariaLabel="行距"
               className="work-document-line-height-select"
-              value={documentLineHeightValue(editor)}
-              options={documentLineHeightOptions}
+              value={lineHeightValue}
+              options={documentLineHeightOptionsForValue(lineHeightValue)}
               onValueChange={(value) =>
                 editor.commands.setDocumentLineHeight(
                   value === 'default' ? null : value,
@@ -286,6 +317,7 @@ export function DocumentHomeRibbon({
         <ToolbarButton
           label="查找"
           shortcut="Cmd/Ctrl+F"
+          ariaKeyShortcuts="Control+F Meta+F"
           active={findReplaceMode === 'find'}
           onClick={() => onFindText(false)}
         >
@@ -294,6 +326,7 @@ export function DocumentHomeRibbon({
         <ToolbarButton
           label="替换"
           shortcut="Cmd/Ctrl+H"
+          ariaKeyShortcuts="Control+H Meta+H"
           active={findReplaceMode === 'replace'}
           onClick={() => onFindText(true)}
         >
@@ -307,6 +340,7 @@ export function DocumentHomeRibbon({
 function ToolbarButton({
   label,
   shortcut,
+  ariaKeyShortcuts,
   active = false,
   disabled = false,
   onClick,
@@ -314,6 +348,7 @@ function ToolbarButton({
 }: {
   label: string;
   shortcut?: string;
+  ariaKeyShortcuts?: string;
   active?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -323,6 +358,7 @@ function ToolbarButton({
     <WorkOfficeRibbonButton
       label={label}
       title={shortcut ? `${label}（${shortcut}）` : label}
+      aria-keyshortcuts={ariaKeyShortcuts}
       active={active}
       displayLabel={false}
       disabled={disabled}
@@ -335,14 +371,27 @@ function ToolbarButton({
 
 const RibbonGroup = WorkOfficeRibbonGroup;
 
-function documentLineHeightValue(
-  editor: Editor,
-): (typeof documentLineHeightOptions)[number]['value'] {
+function documentLineHeightValue(editor: Editor): string {
   const attributes = editor.isActive('heading')
     ? editor.getAttributes('heading')
     : editor.getAttributes('paragraph');
   const value = attributes.lineHeight;
-  return documentLineHeightOptions.some((option) => option.value === value)
-    ? (value as (typeof documentLineHeightOptions)[number]['value'])
-    : 'default';
+  if (typeof value !== 'string' || !value.trim() || value === 'normal') {
+    return 'default';
+  }
+  return value.trim();
+}
+
+function documentLineHeightOptionsForValue(value: string) {
+  if (documentLineHeightOptions.some((option) => option.value === value)) {
+    return documentLineHeightOptions;
+  }
+  const numeric = Number(value);
+  return [
+    ...documentLineHeightOptions,
+    {
+      value,
+      label: Number.isFinite(numeric) && numeric > 0 ? `${numeric} 倍` : value,
+    },
+  ];
 }

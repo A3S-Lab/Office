@@ -29,6 +29,7 @@ import {
   OfficeSelect,
   OfficeTextField,
 } from './office-controls';
+import { useOfficeDraft } from './use-office-draft';
 
 interface SpreadsheetPivotPanelProps {
   content: WorkSpreadsheetContent;
@@ -80,7 +81,15 @@ export function SpreadsheetPivotPanel({
   const [selectedKey, setSelectedKey] = useState<string | null>(() =>
     pivotKey(items[0]),
   );
-  const [draft, setDraft] = useState<PivotDraft | null>(() =>
+  const {
+    cancelDraft: resetDraft,
+    dirty,
+    draft,
+    draftRef,
+    replaceDraft,
+    setDraft,
+    syncDraft,
+  } = useOfficeDraft<PivotDraft | null>(() =>
     items[0] ? pivotDraft(items[0]) : null,
   );
   const [error, setError] = useState('');
@@ -90,31 +99,44 @@ export function SpreadsheetPivotPanel({
     if (!items.length) {
       if (selectedKey && optimisticPivotKey.current === selectedKey) return;
       setSelectedKey(null);
-      setDraft(null);
+      replaceDraft(null);
       return;
     }
     const selected = items.find((item) => pivotKey(item) === selectedKey);
     if (selected) {
       if (optimisticPivotKey.current === selectedKey)
         optimisticPivotKey.current = null;
-      setDraft(pivotDraft(selected));
+      syncDraft(
+        pivotDraft(selected),
+        pivotDraftKey(draftRef.current) !== selectedKey,
+      );
       return;
     }
     const first = items[0];
     setSelectedKey(pivotKey(first));
-    setDraft(pivotDraft(first));
-  }, [items, selectedKey]);
+    replaceDraft(pivotDraft(first));
+  }, [draftRef, items, replaceDraft, syncDraft]);
 
   const fields = useMemo(
     () => (draft ? spreadsheetPivotFields(content, draft) : []),
     [content, draft],
   );
   const selectPivot = (item: PivotListItem) => {
+    const nextKey = pivotKey(item);
+    if (nextKey === selectedKey) return;
+    if (dirty) {
+      setError('当前透视表有未保存更改，请先保存或取消。');
+      return;
+    }
     setSelectedKey(pivotKey(item));
-    setDraft(pivotDraft(item));
+    replaceDraft(pivotDraft(item));
     setError('');
   };
   const addPivot = () => {
+    if (dirty) {
+      setError('当前透视表有未保存更改，请先保存或取消。');
+      return;
+    }
     if (!selection) {
       setError('请先在源工作表中选择包含标题和数据的连续区域。');
       return;
@@ -138,7 +160,7 @@ export function SpreadsheetPivotPanel({
     const pivot = owner?.pivotTables?.find(
       (candidate) => candidate.id === created.pivotId,
     );
-    setDraft(
+    replaceDraft(
       owner && pivot
         ? pivotDraft({
             ownerSheetId: owner.id!,
@@ -219,7 +241,7 @@ export function SpreadsheetPivotPanel({
       (pivot) => pivot.id === saved.id,
     );
     if (refreshedOwner && refreshedPivot) {
-      setDraft(
+      replaceDraft(
         pivotDraft({
           ownerSheetId: refreshedOwner.id!,
           ownerSheetName: refreshedOwner.name,
@@ -227,6 +249,10 @@ export function SpreadsheetPivotPanel({
         }),
       );
     }
+    setError('');
+  };
+  const cancelDraft = () => {
+    resetDraft();
     setError('');
   };
   const deletePivot = () => {
@@ -242,16 +268,30 @@ export function SpreadsheetPivotPanel({
       (item) => pivotKey(item) !== `${draft.ownerSheetId}:${draft.id}`,
     );
     setSelectedKey(pivotKey(remaining));
-    setDraft(remaining ? pivotDraft(remaining) : null);
+    replaceDraft(remaining ? pivotDraft(remaining) : null);
     setError('');
   };
   const refreshAll = () => {
+    if (dirty) {
+      setError('当前透视表有未保存更改，请先保存或取消。');
+      return;
+    }
     onChange(refreshSpreadsheetPivotTables(content));
     setError('');
   };
 
   return (
-    <div className="work-spreadsheet-pivot-manager">
+    <fieldset
+      className="work-spreadsheet-pivot-manager"
+      data-office-escape-consumer={dirty || undefined}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || event.defaultPrevented || !dirty) return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancelDraft();
+      }}
+    >
+      <legend className="sr-only">数据透视表编辑</legend>
       <aside aria-label="工作簿数据透视表">
         <Button className="create" tone="secondary" onClick={addPivot}>
           <Plus size={13} />
@@ -397,9 +437,7 @@ export function SpreadsheetPivotPanel({
           >
             <header>
               <strong>字段布局</strong>
-              <span>
-                把源字段分配到行、列、筛选或值区域；保存时立即刷新缓存结果。
-              </span>
+              <span>选择每个字段的用途。</span>
             </header>
             {fields.length ? (
               <div>
@@ -543,7 +581,10 @@ export function SpreadsheetPivotPanel({
                 {error}
               </InlineNotice>
             )}
-            <Button type="submit" tone="primary">
+            <Button tone="secondary" disabled={!dirty} onClick={cancelDraft}>
+              取消更改
+            </Button>
+            <Button type="submit" tone="primary" disabled={!dirty}>
               保存并刷新
             </Button>
           </div>
@@ -553,7 +594,7 @@ export function SpreadsheetPivotPanel({
           className="work-spreadsheet-pivot-empty"
           size="compact"
           title="用当前选区创建数据透视表"
-          description="首行将作为字段名，Work 会在新的报告工作表中生成可刷新的汇总结果。"
+          description="首行作为字段名，汇总结果将生成到新的工作表。"
         >
           {error && (
             <InlineNotice
@@ -566,12 +607,16 @@ export function SpreadsheetPivotPanel({
           )}
         </StateView>
       )}
-    </div>
+    </fieldset>
   );
 }
 
 function pivotKey(item: PivotListItem | undefined): string | null {
   return item ? `${item.ownerSheetId}:${item.pivot.id}` : null;
+}
+
+function pivotDraftKey(draft: PivotDraft | null): string | null {
+  return draft ? `${draft.ownerSheetId}:${draft.id}` : null;
 }
 
 function pivotDraft(item: PivotListItem): PivotDraft {

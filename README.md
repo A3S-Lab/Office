@@ -241,29 +241,41 @@ interaction model.
 - **Document** — Pagination, sections, focused page-setup tabs, clean page
   margins with on-demand header/footer editing, outline navigation, styles,
   precision table sizing and autofit, comments, tracked changes, citations,
-  notes, host-defined selection menus, and shared edit/preview/PDF typography
-  and page-chrome placement. Editing, read-only preview, and browser PDF export
-  share one live pagination result. _DOCX import/export; PDF export._
+  notes, pointer- and Shift+F10-accessible host-defined selection menus, and
+  shared edit/preview/PDF typography and page-chrome placement. Editing,
+  read-only preview, and browser PDF export share one live pagination result.
+  _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
   source-aware ribbon formatting and shortcuts, empty-source guidance, task
-  lists, tables, links, images, code, and host-defined selection menus.
-  _Markdown import/export._
+  lists, tables, links, images, code, and keyboard-accessible host-defined
+  selection menus across both editing surfaces. _Markdown import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
   live selection statistics, an A3S-owned worksheet bar with lifecycle and
-  color controls, focus-safe formatting, history, worksheet navigation,
-  cut/copy/paste and clear shortcuts, direct font-family, vertical-alignment,
-  text-wrap, number/percent, and decimal controls, charts, validation,
-  protection, comments, and print settings.
+  color controls, a grid-aligned single-row responsive workbook footer,
+  selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
+  PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
+  formatting through root-scoped capture before vendor grid listeners,
+  Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
+  preview,
+  one shared cell/worksheet context-menu surface with executable shortcut
+  hints, keyboard-operated cells and sheet tabs, cut/copy/paste, clear, F2
+  editing, and focus-safe Escape behavior, direct
+  font-family, vertical-alignment, text-wrap, number/percent, and decimal
+  controls, charts, validation, protection, comments, and print settings.
   _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._
 - **Presentation** — Typed slide scene graph, multi-selection, groups, object
-  transforms, keyboard-accessible table-size insertion, native slide and object
-  context actions, guides, comments, transitions, one-step slideshow from the
-  beginning or current slide, and presenter view. _PPTX import/export; PDF
-  export._
+  transforms, keyboard-accessible table-size insertion, Shift+F10-accessible
+  native slide and object context actions, guides, comments, transitions,
+  editor-scoped formatting and clipboard shortcuts that restore the selected
+  object, one-step slideshow from the beginning or current slide, and presenter
+  view.
+  _PPTX import/export; PDF export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,
-  responsive navigation and zoom controls, and save. _PDF open/save._
+  focus-safe page and search drafts, responsive search-result, navigation, and
+  zoom controls, editor-scoped shortcuts, a keyboard-operated overflow menu,
+  and save. _PDF open/save._
 
 Document and Markdown accept public TipTap Extensions. Spreadsheet,
 Presentation, and PDF expose stable host ports rather than their internal

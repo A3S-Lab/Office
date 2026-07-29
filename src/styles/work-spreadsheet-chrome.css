@@ -1,0 +1,646 @@
+.work-spreadsheet-editor {
+  --work-spreadsheet-accent: #159469;
+  --work-office-control-accent: var(--work-spreadsheet-accent);
+  --work-spreadsheet-control-height: 32px;
+  --work-spreadsheet-footer-height: 30px;
+  --work-spreadsheet-chrome: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 2%,
+    var(--a3s-panel)
+  );
+  --work-spreadsheet-chrome-hover: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 7%,
+    var(--a3s-panel-soft)
+  );
+  --work-spreadsheet-chrome-active: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 11%,
+    var(--a3s-panel)
+  );
+  --work-spreadsheet-grid-line: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 3%,
+    var(--a3s-line-strong)
+  );
+  --work-spreadsheet-header-text: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 16%,
+    var(--a3s-muted)
+  );
+}
+
+.work-spreadsheet-editor .fortune-fx-editor {
+  height: var(--work-spreadsheet-control-height);
+  border-color: var(--work-spreadsheet-grid-line);
+  border-bottom: 1px solid var(--work-spreadsheet-grid-line);
+  background: var(--work-spreadsheet-chrome);
+}
+
+.work-spreadsheet-editor .fortune-name-box-container {
+  width: 88px;
+  border-color: var(--work-spreadsheet-grid-line);
+  border-right: 1px solid var(--work-spreadsheet-grid-line);
+  background: var(--work-spreadsheet-chrome);
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-spreadsheet-editor .fortune-name-box,
+.work-spreadsheet-editor .fortune-fx-input {
+  min-height: 26px;
+  background: transparent;
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
+  font-size: 12px;
+}
+
+.work-spreadsheet-editor .fortune-name-box:focus-visible,
+.work-spreadsheet-editor .fortune-fx-input:focus-visible {
+  border-radius: 3px;
+  outline: 1px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent) 62%, var(--a3s-line));
+  outline-offset: -2px;
+  background: var(--a3s-panel);
+}
+
+.work-spreadsheet-editor .fortune-fx-input-container {
+  padding-inline: 4px;
+  border-left-color: var(--work-spreadsheet-grid-line);
+}
+
+.work-spreadsheet-editor .fortune-fx-icon {
+  margin-inline: 10px;
+  color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .fortune-col-header,
+.work-spreadsheet-editor .fortune-row-header {
+  /* FortuneSheet paints the header labels on the canvas behind these hit
+     targets. An opaque fill here hides every row number and column letter. */
+  background: transparent;
+  color: var(--work-spreadsheet-header-text);
+  font-family: var(--a3s-ui-font);
+  font-size: 11px;
+  font-weight: 520;
+}
+
+.work-spreadsheet-editor .fortune-left-top {
+  border-color: var(--work-spreadsheet-grid-line);
+  background: var(--work-spreadsheet-chrome);
+}
+
+.work-spreadsheet-editor .fortune-col-header-selected {
+  border-bottom-color: var(--work-spreadsheet-accent);
+  background: var(--work-spreadsheet-chrome-active);
+  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
+  font-weight: 650;
+}
+
+.work-spreadsheet-editor .fortune-row-header-selected {
+  border-right-color: var(--work-spreadsheet-accent);
+  background: var(--work-spreadsheet-chrome-active);
+  color: color-mix(in srgb, var(--work-spreadsheet-accent) 82%, var(--a3s-ink));
+  font-weight: 650;
+}
+
+.work-spreadsheet-editor .fortune-col-header-hover,
+.work-spreadsheet-editor .fortune-row-header-hover {
+  background: var(--work-spreadsheet-chrome-hover);
+}
+
+.work-spreadsheet-editor .luckysheet-cell-selected {
+  border-color: var(--work-spreadsheet-accent);
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 9%,
+    transparent
+  );
+}
+
+.work-spreadsheet-editor .luckysheet-cell-selected-focus {
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 12%,
+    transparent
+  );
+}
+
+.work-spreadsheet-editor .fortune-cell-selected-extend,
+.work-spreadsheet-editor .fortune-cell-selected-move,
+.work-spreadsheet-editor .fortune-selection-copy-hc {
+  border-color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .fortune-cols-change-size,
+.work-spreadsheet-editor .fortune-rows-change-size,
+.work-spreadsheet-editor .fortune-formula-functionrange-highlight .fortune-copy,
+.work-spreadsheet-editor
+  .fortune-formula-functionrange-highlight
+  .luckysheet-highlight {
+  background: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .fortune-change-size-line {
+  border-color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .luckysheet-cs-fillhandle {
+  border-color: var(--a3s-panel);
+  background: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .work-office-slider-fill {
+  background: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .work-office-slider-thumb {
+  border-color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .work-office-slider:focus-visible {
+  border-color: var(--work-spreadsheet-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-spreadsheet-accent) 18%, transparent);
+}
+
+.work-spreadsheet-editor .fortune-sheet-overlay:focus-visible {
+  outline: 1px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent) 24%, transparent);
+  outline-offset: -1px;
+}
+
+.work-spreadsheet-editor .luckysheet-scrollbar-ltr::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.work-spreadsheet-editor .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 14%,
+    var(--a3s-line-strong)
+  );
+  background-clip: content-box;
+}
+
+.work-spreadsheet-editor
+  .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb:hover {
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 24%,
+    var(--a3s-line-strong)
+  );
+  background-clip: content-box;
+}
+
+.work-spreadsheet-editor .fortune-add-row-button {
+  border-color: var(--a3s-line-strong);
+  border-radius: 4px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  font: 10px / 1.4 var(--a3s-ui-font);
+}
+
+.work-spreadsheet-editor .fortune-toolbar {
+  border-bottom-color: var(--work-spreadsheet-grid-line);
+  background: var(--a3s-panel);
+}
+
+.work-spreadsheet-editor .fortune-toolbar-button {
+  border-radius: 4px;
+}
+
+.work-spreadsheet-editor .luckysheet-sheet-area,
+.work-spreadsheet-editor .fortune-sheet-area-right,
+.work-spreadsheet-editor .luckysheet-sheet-selection-calInfo {
+  display: none !important;
+}
+
+.work-spreadsheet-editor.preview .fortune-formula-bar {
+  background: var(--a3s-panel);
+}
+
+.work-spreadsheet-footer {
+  position: relative;
+  z-index: 7;
+  display: flex;
+  min-width: 0;
+  height: var(--work-spreadsheet-footer-height);
+  flex: 0 0 var(--work-spreadsheet-footer-height);
+  align-items: stretch;
+  border-top: 1px solid var(--work-spreadsheet-grid-line);
+  background: var(--work-spreadsheet-chrome);
+  box-shadow: none;
+  font-family: var(--a3s-ui-font);
+}
+
+.work-spreadsheet-sheet-bar {
+  position: relative;
+  z-index: auto;
+  display: flex;
+  min-width: 180px;
+  height: calc(var(--work-spreadsheet-footer-height) - 1px);
+  min-height: calc(var(--work-spreadsheet-footer-height) - 1px);
+  flex: 1 1 auto;
+  align-items: stretch;
+  overflow: hidden;
+  background: transparent;
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-sheet-tools {
+  display: flex;
+  min-width: 102px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 5px;
+  border-right: 1px solid var(--work-spreadsheet-grid-line);
+}
+
+.work-spreadsheet-sheet-bar[data-editable="false"]
+  .work-spreadsheet-sheet-tools {
+  min-width: 78px;
+}
+
+.work-spreadsheet-sheet-tools > button,
+.work-spreadsheet-sheet-tools .ds-popover > button {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-muted);
+  cursor: pointer;
+}
+
+.work-spreadsheet-sheet-tools .ds-popover {
+  display: flex;
+}
+
+.work-spreadsheet-sheet-tools > button:hover:not(:disabled),
+.work-spreadsheet-sheet-tools > button:focus-visible,
+.work-spreadsheet-sheet-tools .ds-popover > button:hover:not(:disabled),
+.work-spreadsheet-sheet-tools .ds-popover > button:focus-visible,
+.work-spreadsheet-sheet-tools .ds-popover.open > button {
+  background: var(--work-spreadsheet-chrome-hover);
+  color: var(--a3s-ink);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--work-spreadsheet-accent) 14%, var(--a3s-line));
+}
+
+.work-spreadsheet-sheet-tools > button:focus-visible,
+.work-spreadsheet-sheet-tools .ds-popover > button:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-sheet-tools button:disabled {
+  cursor: default;
+  opacity: 0.34;
+}
+
+.work-spreadsheet-sheet-add {
+  margin-left: 2px;
+  color: var(--work-spreadsheet-accent) !important;
+}
+
+.work-spreadsheet-sheet-tabs {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: stretch;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-padding-inline: 8px;
+  scrollbar-width: none;
+}
+
+.work-spreadsheet-sheet-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.work-spreadsheet-sheet-tab {
+  position: relative;
+  display: flex;
+  min-width: 78px;
+  max-width: 168px;
+  height: calc(var(--work-spreadsheet-footer-height) - 1px);
+  flex: 0 0 auto;
+  align-items: stretch;
+  overflow: hidden;
+  border-right: 1px solid var(--work-spreadsheet-grid-line);
+  background: transparent;
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-sheet-tab::after {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--work-sheet-color, var(--work-spreadsheet-accent));
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-spreadsheet-sheet-tab:hover {
+  background: var(--work-spreadsheet-chrome-hover);
+  color: var(--a3s-ink);
+}
+
+.work-spreadsheet-sheet-tab.active {
+  border-right-color: var(--work-spreadsheet-grid-line);
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 4%,
+    var(--a3s-panel)
+  );
+  color: var(--a3s-ink);
+  box-shadow: none;
+}
+
+.work-spreadsheet-sheet-tab.active::after,
+.work-spreadsheet-sheet-tab[style*="--work-sheet-color"]::after {
+  opacity: 1;
+}
+
+.work-spreadsheet-sheet-tab > button[role="tab"] {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  padding: 1px 6px 0 10px;
+  overflow: hidden;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 500 11px / 1 var(--a3s-ui-font);
+  text-align: left;
+}
+
+.work-spreadsheet-sheet-tab > button[role="tab"]:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-sheet-tab > button[role="tab"] > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-sheet-tab.active > button[role="tab"] {
+  color: color-mix(in srgb, var(--work-spreadsheet-accent) 76%, var(--a3s-ink));
+  font-weight: 650;
+}
+
+.work-spreadsheet-sheet-tab > input {
+  width: 112px;
+  min-width: 0;
+  height: 23px;
+  align-self: center;
+  margin: 3px 4px 2px;
+  padding: 0 6px;
+  border: 1px solid var(--work-spreadsheet-accent);
+  border-radius: 3px;
+  outline: 0;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: 11px var(--a3s-ui-font);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-spreadsheet-accent) 12%, transparent);
+}
+
+.work-spreadsheet-sheet-tab > .ds-popover {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.work-spreadsheet-sheet-options {
+  display: grid;
+  width: 21px;
+  height: 100%;
+  place-items: center;
+  padding: 0 2px 1px 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-faint);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.work-spreadsheet-sheet-tab:hover .work-spreadsheet-sheet-options,
+.work-spreadsheet-sheet-options[aria-expanded="true"],
+.work-spreadsheet-sheet-options:focus-visible {
+  opacity: 1;
+}
+
+.work-spreadsheet-sheet-options:hover,
+.work-spreadsheet-sheet-options:focus-visible,
+.work-spreadsheet-sheet-options[aria-expanded="true"] {
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-accent) 8%,
+    transparent
+  );
+  color: var(--a3s-ink);
+}
+
+.work-spreadsheet-sheet-options:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-sheet-options svg {
+  transition: transform 120ms ease;
+}
+
+.work-spreadsheet-sheet-options svg.open {
+  transform: rotate(180deg);
+}
+
+.work-spreadsheet-context-menu,
+.work-spreadsheet-sheet-popover {
+  --work-spreadsheet-menu-accent: #159469;
+  --work-office-menu-accent: var(--work-spreadsheet-menu-accent);
+}
+
+.work-spreadsheet-sheet-list {
+  min-width: 220px;
+}
+
+.work-spreadsheet-sheet-list > button[aria-checked="true"] {
+  background: color-mix(
+    in srgb,
+    var(--work-spreadsheet-menu-accent) 10%,
+    var(--a3s-panel)
+  );
+  color: color-mix(
+    in srgb,
+    var(--work-spreadsheet-menu-accent) 78%,
+    var(--a3s-ink)
+  );
+  font-weight: 650;
+}
+
+.work-spreadsheet-sheet-color-row {
+  min-width: 0;
+  margin: 0;
+  padding: 5px 8px 8px;
+  border: 0;
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-sheet-color-row > legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  font-size: 11px;
+}
+
+.work-spreadsheet-sheet-color-row > div {
+  display: flex;
+  gap: 7px;
+  padding: 7px 0 0 26px;
+}
+
+.work-spreadsheet-sheet-color-row > div > button {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 2px solid var(--a3s-panel);
+  border-radius: 50%;
+  outline: 1px solid transparent;
+  cursor: pointer;
+}
+
+.work-spreadsheet-sheet-color-row > div > button:hover,
+.work-spreadsheet-sheet-color-row > div > button:focus-visible,
+.work-spreadsheet-sheet-color-row > div > button.active {
+  outline-color: var(--work-spreadsheet-menu-accent);
+  outline-offset: 1px;
+  transform: scale(1.06);
+}
+
+.work-spreadsheet-sheet-color-row > div > button.clear {
+  position: relative;
+  border-color: var(--a3s-line-strong);
+  background: var(--a3s-panel);
+}
+
+.work-spreadsheet-sheet-color-row > div > button.clear::after {
+  position: absolute;
+  top: 7px;
+  right: 1px;
+  left: 1px;
+  height: 1px;
+  background: var(--a3s-red);
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.work-spreadsheet-footer .work-spreadsheet-status {
+  z-index: auto;
+  width: auto;
+  height: calc(var(--work-spreadsheet-footer-height) - 1px);
+  min-width: 0;
+  flex: 0 1 auto;
+  gap: 10px;
+  padding: 0 8px 0 10px;
+  border-top: 0;
+  border-left: 1px solid var(--work-spreadsheet-grid-line);
+  background: transparent;
+}
+
+.work-spreadsheet-footer .work-spreadsheet-status .work-office-status-info {
+  flex: 0 1 auto;
+  gap: 10px;
+}
+
+.work-spreadsheet-footer .work-spreadsheet-status .work-office-status-view {
+  gap: 2px;
+}
+
+.work-spreadsheet-footer .work-spreadsheet-status button {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+}
+
+.work-spreadsheet-view-mode {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  place-items: center;
+  border-radius: 4px;
+  background: var(--work-spreadsheet-chrome-active);
+  color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-footer .work-spreadsheet-status .work-office-status-slider {
+  width: 72px;
+}
+
+@media (max-width: 980px) {
+  .work-spreadsheet-footer .work-office-save-status,
+  .work-spreadsheet-footer [aria-label="表格选区统计"] {
+    display: none;
+  }
+
+  .work-spreadsheet-footer .work-spreadsheet-status .work-office-status-slider {
+    width: 62px;
+  }
+}
+
+@media (max-width: 720px) {
+  .work-spreadsheet-sheet-tools {
+    min-width: 58px;
+  }
+
+  .work-spreadsheet-sheet-bar[data-editable="false"]
+    .work-spreadsheet-sheet-tools {
+    min-width: 31px;
+  }
+
+  .work-spreadsheet-sheet-navigation {
+    display: none !important;
+  }
+
+  .work-spreadsheet-footer .work-spreadsheet-status {
+    padding-left: 6px;
+  }
+
+  .work-spreadsheet-footer .work-spreadsheet-status .work-office-status-info,
+  .work-spreadsheet-footer .work-office-status-divider,
+  .work-spreadsheet-footer [aria-label="普通表格视图"] {
+    display: none;
+  }
+
+  .work-spreadsheet-footer .work-spreadsheet-status .work-office-status-slider {
+    width: 54px;
+  }
+}
+
+@media (forced-colors: active) {
+  .work-spreadsheet-sheet-tab.active,
+  .work-spreadsheet-sheet-tab > button[role="tab"]:focus-visible,
+  .work-spreadsheet-sheet-tools > button:focus-visible,
+  .work-spreadsheet-sheet-tools .ds-popover > button:focus-visible {
+    outline: 1px solid Highlight;
+    outline-offset: -1px;
+  }
+}

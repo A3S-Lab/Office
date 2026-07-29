@@ -6,10 +6,15 @@ export {
   type OfficePromptOptions,
   useOfficeDialog,
 } from './office-dialog';
-export { OfficeNumberField } from './office-number-field';
+export {
+  CommittedOfficeNumberField,
+  OfficeNumberField,
+} from './office-number-field';
 export { OfficeSelect, type OfficeSelectOption } from './office-select';
 export { OfficeSlider } from './office-slider';
 export {
+  CommittedOfficeTextArea,
+  CommittedOfficeTextField,
   OfficeFileInput,
   OfficeTextArea,
   OfficeTextField,

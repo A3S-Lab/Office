@@ -239,21 +239,48 @@ export function usePresentationClipboard({
     [content, mode, onChange, selectedElements, targetId],
   );
 
-  const toggleBold = useCallback((): boolean => {
-    if (!selectedElement || !selectedElements.length || !targetId) return false;
-    const bold = !presentationElementToolbarState(selectedElement).bold;
-    const selectedIds = new Set(selectedElements.map((element) => element.id));
-    const next = updateTargetElements(content, mode, targetId, (elements) =>
-      elements.map((element) =>
-        selectedIds.has(element.id)
-          ? applyPresentationElementFormattingPatch(element, { bold })
-          : element,
-      ),
-    );
-    if (!next) return false;
-    onChange(next);
-    return true;
-  }, [content, mode, onChange, selectedElement, selectedElements, targetId]);
+  const toggleFormatting = useCallback(
+    (attribute: 'bold' | 'italic' | 'underline'): boolean => {
+      if (!selectedElement || !selectedElements.length || !targetId)
+        return false;
+      const value =
+        !presentationElementToolbarState(selectedElement)[attribute];
+      const selectedIds = new Set(
+        selectedElements.map((element) => element.id),
+      );
+      const next = updateTargetElements(content, mode, targetId, (elements) =>
+        elements.map((element) =>
+          selectedIds.has(element.id)
+            ? applyPresentationElementFormattingPatch(
+                element,
+                attribute === 'bold'
+                  ? { bold: value }
+                  : attribute === 'italic'
+                    ? { italic: value }
+                    : { underline: value },
+              )
+            : element,
+        ),
+      );
+      if (!next) return false;
+      onChange(next);
+      return true;
+    },
+    [content, mode, onChange, selectedElement, selectedElements, targetId],
+  );
+
+  const toggleBold = useCallback(
+    () => toggleFormatting('bold'),
+    [toggleFormatting],
+  );
+  const toggleItalic = useCallback(
+    () => toggleFormatting('italic'),
+    [toggleFormatting],
+  );
+  const toggleUnderline = useCallback(
+    () => toggleFormatting('underline'),
+    [toggleFormatting],
+  );
 
   return {
     copySelection,
@@ -263,6 +290,8 @@ export function usePresentationClipboard({
     nudgeSelection,
     pasteSelection,
     toggleBold,
+    toggleItalic,
+    toggleUnderline,
   };
 }
 

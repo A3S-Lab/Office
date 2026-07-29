@@ -2,15 +2,20 @@ import { type KeyboardEvent, useEffect } from 'react';
 
 const ACTIVE_OVERLAY_SELECTOR =
   '.ds-dialog-backdrop, .ds-popover.open, [role="menu"]';
+const ESCAPE_CONSUMER_SELECTOR = '[data-office-escape-consumer="true"]';
 
 type OfficeTaskPaneClose = () => unknown;
 
 function officeTaskPaneOwnsEscape(
-  event: Pick<globalThis.KeyboardEvent, 'defaultPrevented' | 'key'>,
+  event: Pick<globalThis.KeyboardEvent, 'defaultPrevented' | 'key' | 'target'>,
 ) {
   return (
     event.key === 'Escape' &&
     !event.defaultPrevented &&
+    !(
+      event.target instanceof Element &&
+      event.target.closest(ESCAPE_CONSUMER_SELECTOR)
+    ) &&
     !document.querySelector(ACTIVE_OVERLAY_SELECTOR)
   );
 }

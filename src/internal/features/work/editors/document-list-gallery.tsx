@@ -91,10 +91,13 @@ function BulletListControl({
     0,
     bulletStyles.findIndex((style) => style.value === activeStyle),
   );
-  const focusActiveOption = () =>
+  const [focusIndex, setFocusIndex] = useState(activeIndex);
+  const focusActiveOption = () => {
+    setFocusIndex(activeIndex);
     requestAnimationFrame(() =>
       optionRefs.current[activeIndex]?.focus({ preventScroll: true }),
     );
+  };
 
   return (
     <div
@@ -160,11 +163,13 @@ function BulletListControl({
                   role="menuitemradio"
                   aria-label={style.label}
                   aria-checked={style.value === activeStyle}
-                  tabIndex={index === activeIndex ? 0 : -1}
+                  tabIndex={index === focusIndex ? 0 : -1}
                   data-list-style={style.value}
+                  onFocus={() => setFocusIndex(index)}
                   onClick={() => {
-                    editor.commands.applyDocumentBulletList(style.value);
-                    close();
+                    runDocumentListMenuCommand(editor, close, () =>
+                      editor.commands.applyDocumentBulletList(style.value),
+                    );
                   }}
                   onKeyDown={(event) =>
                     handleGalleryKeyDown(
@@ -173,10 +178,11 @@ function BulletListControl({
                       bulletStyles.length,
                       3,
                       optionRefs,
-                      () => {
-                        editor.commands.applyDocumentBulletList(style.value);
-                        close();
-                      },
+                      setFocusIndex,
+                      () =>
+                        runDocumentListMenuCommand(editor, close, () =>
+                          editor.commands.applyDocumentBulletList(style.value),
+                        ),
                     )
                   }
                 >
@@ -189,10 +195,11 @@ function BulletListControl({
               type="button"
               className="work-document-list-clear"
               disabled={!activeStyle}
-              onClick={() => {
-                editor.commands.clearDocumentList();
-                close();
-              }}
+              onClick={() =>
+                runDocumentListMenuCommand(editor, close, () =>
+                  editor.commands.clearDocumentList(),
+                )
+              }
             >
               <Unlink size={13} aria-hidden="true" />
               清除项目符号
@@ -218,14 +225,19 @@ function OrderedListControl({
     0,
     orderedStyles.findIndex((style) => style.value === activeState?.style),
   );
+  const [focusIndex, setFocusIndex] = useState(activeIndex);
   const validStart = validStartValue(startValue);
-  const focusActiveOption = () =>
+  const focusActiveOption = () => {
+    setFocusIndex(activeIndex);
     requestAnimationFrame(() =>
       optionRefs.current[activeIndex]?.focus({ preventScroll: true }),
     );
+  };
   const applyStart = (close: () => void) => {
     if (validStart === null) return;
-    if (editor.commands.setDocumentNumberingStart(validStart)) close();
+    runDocumentListMenuCommand(editor, close, () =>
+      editor.commands.setDocumentNumberingStart(validStart),
+    );
   };
 
   return (
@@ -295,11 +307,13 @@ function OrderedListControl({
                   role="menuitemradio"
                   aria-label={style.label}
                   aria-checked={style.value === activeState?.style}
-                  tabIndex={index === activeIndex ? 0 : -1}
+                  tabIndex={index === focusIndex ? 0 : -1}
                   data-list-style={style.value}
+                  onFocus={() => setFocusIndex(index)}
                   onClick={() => {
-                    editor.commands.applyDocumentOrderedList(style.value);
-                    close();
+                    runDocumentListMenuCommand(editor, close, () =>
+                      editor.commands.applyDocumentOrderedList(style.value),
+                    );
                   }}
                   onKeyDown={(event) =>
                     handleGalleryKeyDown(
@@ -308,10 +322,11 @@ function OrderedListControl({
                       orderedStyles.length,
                       3,
                       optionRefs,
-                      () => {
-                        editor.commands.applyDocumentOrderedList(style.value);
-                        close();
-                      },
+                      setFocusIndex,
+                      () =>
+                        runDocumentListMenuCommand(editor, close, () =>
+                          editor.commands.applyDocumentOrderedList(style.value),
+                        ),
                     )
                   }
                 >
@@ -330,10 +345,11 @@ function OrderedListControl({
                   <button
                     type="button"
                     disabled={activeState.start === 1}
-                    onClick={() => {
-                      editor.commands.restartDocumentNumbering();
-                      close();
-                    }}
+                    onClick={() =>
+                      runDocumentListMenuCommand(editor, close, () =>
+                        editor.commands.restartDocumentNumbering(),
+                      )
+                    }
                   >
                     <RotateCcw size={13} aria-hidden="true" />
                     重新从 1 开始
@@ -341,10 +357,11 @@ function OrderedListControl({
                   <button
                     type="button"
                     disabled={!editor.can().continueDocumentNumbering()}
-                    onClick={() => {
-                      editor.commands.continueDocumentNumbering();
-                      close();
-                    }}
+                    onClick={() =>
+                      runDocumentListMenuCommand(editor, close, () =>
+                        editor.commands.continueDocumentNumbering(),
+                      )
+                    }
                   >
                     继续前一列表
                   </button>
@@ -381,10 +398,11 @@ function OrderedListControl({
               type="button"
               className="work-document-list-clear"
               disabled={!activeState}
-              onClick={() => {
-                editor.commands.clearDocumentList();
-                close();
-              }}
+              onClick={() =>
+                runDocumentListMenuCommand(editor, close, () =>
+                  editor.commands.clearDocumentList(),
+                )
+              }
             >
               <Unlink size={13} aria-hidden="true" />
               清除编号
@@ -396,12 +414,25 @@ function OrderedListControl({
   );
 }
 
+function runDocumentListMenuCommand(
+  editor: Editor,
+  close: () => void,
+  command: () => boolean,
+): boolean {
+  const handled = command();
+  if (!handled) return false;
+  close();
+  editor.commands.focus();
+  return true;
+}
+
 function handleGalleryKeyDown(
   event: KeyboardEvent<HTMLButtonElement>,
   index: number,
   count: number,
   columns: number,
   refs: MutableRefObject<Array<HTMLButtonElement | null>>,
+  setFocusIndex: (index: number) => void,
   select: () => void,
 ): void {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -419,6 +450,7 @@ function handleGalleryKeyDown(
   else if (event.key === 'End') next = count - 1;
   else return;
   event.preventDefault();
+  setFocusIndex(next);
   refs.current[next]?.focus({ preventScroll: true });
 }
 

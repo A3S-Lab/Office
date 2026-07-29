@@ -1,4 +1,9 @@
-import { Fragment, type ReactNode } from 'react';
+import {
+  Fragment,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
   useCallback,
@@ -7,8 +12,48 @@ import {
   useRef,
   useState,
 } from 'react';
+import { matchesAriaKeyShortcuts } from '../../../keyboard-shortcuts';
 
 const CONTEXT_MENU_MARGIN = 8;
+
+const CONTEXT_MENU_TAB_STOP_SELECTOR = [
+  'a[href]:not([tabindex="-1"])',
+  'button:not(:disabled):not([tabindex="-1"])',
+  'input:not(:disabled):not([type="hidden"]):not([tabindex="-1"])',
+  'select:not(:disabled):not([tabindex="-1"])',
+  'textarea:not(:disabled):not([tabindex="-1"])',
+  '[contenteditable="true"]:not([tabindex="-1"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+export type WorkspaceContextMenuEvent<
+  Target extends HTMLElement = HTMLElement,
+> = MouseEvent<Target> | KeyboardEvent<Target>;
+
+export function isWorkspaceContextMenuKeyboardEvent({
+  key,
+  shiftKey,
+}: Pick<KeyboardEvent<HTMLElement>, 'key' | 'shiftKey'>): boolean {
+  return key === 'ContextMenu' || (key === 'F10' && shiftKey);
+}
+
+export function workspaceContextMenuPosition(
+  event: WorkspaceContextMenuEvent,
+): { x: number; y: number } {
+  if ('clientX' in event && (event.clientX !== 0 || event.clientY !== 0)) {
+    return { x: event.clientX, y: event.clientY };
+  }
+
+  const target =
+    event.target instanceof HTMLElement ? event.target : event.currentTarget;
+  const bounds =
+    contextMenuSelectionBounds(target.ownerDocument, target) ??
+    target.getBoundingClientRect();
+  return {
+    x: bounds.left + bounds.width / 2,
+    y: bounds.top + bounds.height / 2,
+  };
+}
 
 export interface WorkspaceContextMenuItem {
   id: string;
@@ -24,16 +69,20 @@ export interface WorkspaceContextMenuItem {
 
 export function WorkspaceContextMenu({
   label,
+  className = '',
   x,
   y,
   items,
   onClose,
+  onRestoreFocus,
 }: {
   label: string;
+  className?: string;
   x: number;
   y: number;
   items: readonly WorkspaceContextMenuItem[];
   onClose(): void;
+  onRestoreFocus?(): void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -55,14 +104,19 @@ export function WorkspaceContextMenu({
       view,
       portalRootRef.current,
     );
+    const requested = contextMenuRequestedPosition(
+      x,
+      y,
+      restoreFocusRef.current,
+    );
     setPosition({
       left: clampCoordinate(
-        x,
+        requested.x,
         available.left + CONTEXT_MENU_MARGIN,
         available.right - bounds.width - CONTEXT_MENU_MARGIN,
       ),
       top: clampCoordinate(
-        y,
+        requested.y,
         available.top + CONTEXT_MENU_MARGIN,
         available.bottom - bounds.height - CONTEXT_MENU_MARGIN,
       ),
@@ -123,17 +177,36 @@ export function WorkspaceContextMenu({
       ) ?? []),
     ];
     if (!buttons.length) return;
-    const current = buttons.indexOf(
-      document.activeElement as HTMLButtonElement,
-    );
+    const activeElement = menuRef.current?.ownerDocument.activeElement;
+    const current = buttons.indexOf(activeElement as HTMLButtonElement);
     const next =
       current < 0 ? 0 : (current + direction + buttons.length) % buttons.length;
     buttons[next]?.focus();
   };
-  const dismissAndRestoreFocus = () => {
-    onClose();
+  const restoreContextFocus = () => {
+    if (onRestoreFocus) {
+      onRestoreFocus();
+      return;
+    }
     const restoreFocus = restoreFocusRef.current;
     if (restoreFocus?.isConnected) restoreFocus.focus({ preventScroll: true });
+  };
+  const dismissAndRestoreFocus = () => {
+    onClose();
+    restoreContextFocus();
+  };
+  const dismissAndMoveFocus = (direction: -1 | 1) => {
+    const menu = menuRef.current;
+    const restoreFocus = restoreFocusRef.current;
+    const next = adjacentContextMenuTabStop(restoreFocus, direction, menu);
+    const view = menu?.ownerDocument.defaultView;
+    onClose();
+    const focus = () => {
+      const target = next?.isConnected ? next : restoreFocus;
+      if (target?.isConnected) target.focus({ preventScroll: true });
+    };
+    if (view) view.requestAnimationFrame(focus);
+    else focus();
   };
 
   const portalRoot = portalRootRef.current;
@@ -142,20 +215,41 @@ export function WorkspaceContextMenu({
   return createPortal(
     <div
       ref={menuRef}
-      className="workspace-context-menu"
+      className={`work-office-context-menu workspace-context-menu ${className}`.trim()}
       role="menu"
       aria-label={label}
+      aria-orientation="vertical"
+      data-office-shortcuts="ignore"
       style={position}
       onContextMenu={(event) => {
         event.preventDefault();
         event.stopPropagation();
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') {
+        const shortcutItem =
+          !event.repeat && !event.nativeEvent.isComposing
+            ? items.find(
+                (item) =>
+                  !item.disabled &&
+                  matchesAriaKeyShortcuts(
+                    event.nativeEvent,
+                    item.ariaKeyShortcut,
+                  ),
+              )
+            : undefined;
+        if (shortcutItem) {
           event.preventDefault();
+          event.stopPropagation();
+          dismissAndRestoreFocus();
+          shortcutItem.onSelect();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
           dismissAndRestoreFocus();
         } else if (event.key === 'Tab') {
-          onClose();
+          event.preventDefault();
+          event.stopPropagation();
+          dismissAndMoveFocus(event.shiftKey ? -1 : 1);
         } else if (event.key === 'ArrowDown') {
           event.preventDefault();
           moveFocus(1);
@@ -181,16 +275,14 @@ export function WorkspaceContextMenu({
           <button
             type="button"
             role="menuitem"
+            tabIndex={-1}
             className={item.danger ? 'danger' : undefined}
             disabled={item.disabled}
             aria-label={item.label}
             aria-keyshortcuts={item.ariaKeyShortcut}
             onClick={() => {
               onClose();
-              const restoreFocus = restoreFocusRef.current;
-              if (restoreFocus?.isConnected) {
-                restoreFocus.focus({ preventScroll: true });
-              }
+              restoreContextFocus();
               item.onSelect();
             }}
           >
@@ -202,6 +294,73 @@ export function WorkspaceContextMenu({
       ))}
     </div>,
     portalRoot,
+  );
+}
+
+function contextMenuSelectionBounds(
+  ownerDocument: Document,
+  target: HTMLElement,
+): DOMRect | null {
+  const selection = ownerDocument.getSelection?.();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+    return null;
+  }
+  const range = selection.getRangeAt(0);
+  if (!target.contains(range.commonAncestorContainer)) return null;
+  if (typeof range.getBoundingClientRect !== 'function') return null;
+  const bounds = range.getBoundingClientRect();
+  return bounds.width > 0 || bounds.height > 0 ? bounds : null;
+}
+
+function contextMenuRequestedPosition(
+  x: number,
+  y: number,
+  anchor: HTMLElement | null,
+): { x: number; y: number } {
+  if (x !== 0 || y !== 0 || !anchor) return { x, y };
+  const bounds =
+    contextMenuSelectionBounds(anchor.ownerDocument, anchor) ??
+    anchor.getBoundingClientRect();
+  return {
+    x: bounds.left + bounds.width / 2,
+    y: bounds.top + bounds.height / 2,
+  };
+}
+
+function adjacentContextMenuTabStop(
+  origin: HTMLElement | null,
+  direction: -1 | 1,
+  menu: HTMLElement | null,
+): HTMLElement | null {
+  if (!origin) return null;
+  const ownerDocument = origin.ownerDocument;
+  const view = ownerDocument.defaultView;
+  const tabStops = [
+    ...ownerDocument.querySelectorAll<HTMLElement>(
+      CONTEXT_MENU_TAB_STOP_SELECTOR,
+    ),
+  ].filter(
+    (element) =>
+      !menu?.contains(element) &&
+      !element.closest('[hidden], [inert], [aria-hidden="true"]') &&
+      element.getAttribute('aria-disabled') !== 'true' &&
+      view?.getComputedStyle(element).display !== 'none' &&
+      view?.getComputedStyle(element).visibility !== 'hidden',
+  );
+  const index = tabStops.indexOf(origin);
+  if (index >= 0) return tabStops[index + direction] ?? null;
+
+  const nodeApi = view?.Node;
+  if (!nodeApi) return null;
+  const relation =
+    direction === 1
+      ? nodeApi.DOCUMENT_POSITION_FOLLOWING
+      : nodeApi.DOCUMENT_POSITION_PRECEDING;
+  const ordered = direction === 1 ? tabStops : [...tabStops].reverse();
+  return (
+    ordered.find((element) =>
+      Boolean(origin.compareDocumentPosition(element) & relation),
+    ) ?? null
   );
 }
 

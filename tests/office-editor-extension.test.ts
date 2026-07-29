@@ -183,5 +183,16 @@ describe('office editor extensions', () => {
     });
     expect(editor.handleKeyDown(blocked)).toBe(false);
     expect(blocked.defaultPrevented).toBe(false);
+
+    editor.updateContext(context);
+    const compositionShortcut = new KeyboardEvent('keydown', {
+      cancelable: true,
+      code: 'KeyK',
+      key: 'Process',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(compositionShortcut)).toBe(true);
+    expect(compositionShortcut.defaultPrevented).toBe(true);
+    expect(context.value).toBe(5);
   });
 });

@@ -63,13 +63,19 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
       name: 'pdfHistory',
       addCommands: () => ({
         redo: {
-          canExecute: ({ viewer }) =>
-            documentReady(viewer) && viewer.state.canRedo,
+          canExecute: ({ editable, viewer }) =>
+            editable &&
+            documentReady(viewer) &&
+            viewer.state.features.history &&
+            viewer.state.canRedo,
           execute: ({ viewer }) => viewer.redo(),
         },
         undo: {
-          canExecute: ({ viewer }) =>
-            documentReady(viewer) && viewer.state.canUndo,
+          canExecute: ({ editable, viewer }) =>
+            editable &&
+            documentReady(viewer) &&
+            viewer.state.features.history &&
+            viewer.state.canUndo,
           execute: ({ viewer }) => viewer.undo(),
         },
       }),
@@ -106,13 +112,11 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
           execute: ({ viewer }) => viewer.clearSearch(),
         },
         nextSearchResult: {
-          canExecute: ({ viewer }) =>
-            canSearch(viewer) && viewer.state.search.total > 0,
+          canExecute: ({ viewer }) => canNavigateSearchResults(viewer),
           execute: ({ viewer }) => viewer.nextSearchResult(),
         },
         previousSearchResult: {
-          canExecute: ({ viewer }) =>
-            canSearch(viewer) && viewer.state.search.total > 0,
+          canExecute: ({ viewer }) => canNavigateSearchResults(viewer),
           execute: ({ viewer }) => viewer.previousSearchResult(),
         },
         search: {
@@ -154,8 +158,12 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
           execute: ({ annotation }) => annotation.deleteSelection(),
         },
         selectAnnotationTool: {
-          canExecute: ({ annotation, editable, viewer }) =>
-            editable && documentReady(viewer) && annotation.state.available,
+          canExecute: ({ annotation, editable, viewer }, toolId) =>
+            editable &&
+            documentReady(viewer) &&
+            annotation.state.available &&
+            (toolId === null ||
+              annotation.state.availableToolIds.includes(toolId)),
           execute: ({ annotation }, toolId) => annotation.selectTool(toolId),
         },
         setAnnotationColor: {
@@ -203,11 +211,11 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
             void commands.save();
           }),
         'Mod-z': ({ can, commands }, event) =>
-          runPdfShortcut(event, can.undo, commands.undo),
+          runPdfTextAwareShortcut(event, can.undo, commands.undo),
         'Mod-Shift-z': ({ can, commands }, event) =>
-          runPdfShortcut(event, can.redo, commands.redo),
+          runPdfTextAwareShortcut(event, can.redo, commands.redo),
         'Mod-y': ({ can, commands }, event) =>
-          runPdfShortcut(event, can.redo, commands.redo),
+          runPdfTextAwareShortcut(event, can.redo, commands.redo),
         'Mod-Equal': ({ can, commands }, event) =>
           runPdfShortcut(event, can.zoomIn, commands.zoomIn),
         'Mod-Shift-Plus': ({ can, commands }, event) =>
@@ -217,18 +225,24 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
         'Mod-0': ({ can, commands }, event) =>
           runPdfShortcut(event, can.fitPage, commands.fitPage),
         'Mod-f': ({ can, context }, event) => {
-          if (event.repeat || !can.search('')) return false;
+          if (
+            event.repeat ||
+            isOfficeShortcutBlocked(event.target) ||
+            !can.search('')
+          ) {
+            return false;
+          }
           context.focusSearch();
           return true;
         },
         Delete: ({ can, commands }, event) =>
-          runPdfShortcut(
+          runPdfTextAwareShortcut(
             event,
             can.deleteAnnotationSelection,
             commands.deleteAnnotationSelection,
           ),
         Backspace: ({ can, commands }, event) =>
-          runPdfShortcut(
+          runPdfTextAwareShortcut(
             event,
             can.deleteAnnotationSelection,
             commands.deleteAnnotationSelection,
@@ -237,6 +251,7 @@ export function createPdfEditorExtensions(): readonly OfficeEditorExtension<
           if (
             event.repeat ||
             isOfficeShortcutBlocked(event.target) ||
+            isPdfTextEditingTarget(event.target) ||
             !context.annotation.state.activeToolId ||
             !can.selectAnnotationTool(null)
           ) {
@@ -262,8 +277,37 @@ function runPdfShortcut(
   return true;
 }
 
+function runPdfTextAwareShortcut(
+  event: KeyboardEvent,
+  canExecute: () => boolean,
+  execute: () => void,
+): boolean {
+  if (isPdfTextEditingTarget(event.target)) return false;
+  return runPdfShortcut(event, canExecute, execute);
+}
+
+function isPdfTextEditingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable ||
+    Boolean(target.closest('[contenteditable="true"]'))
+  );
+}
+
 function documentReady(viewer: PdfViewerController): boolean {
   return viewer.state.ready && viewer.state.documentOpen;
+}
+
+function canNavigateSearchResults(viewer: PdfViewerController): boolean {
+  return (
+    canSearch(viewer) &&
+    !viewer.state.search.loading &&
+    !viewer.state.search.error &&
+    viewer.state.search.total > 0
+  );
 }
 
 function canNavigate(viewer: PdfViewerController): boolean {
@@ -278,6 +322,11 @@ function canZoom(viewer: PdfViewerController): boolean {
   return documentReady(viewer) && viewer.state.features.zoom;
 }
 
-function canSave({ save, viewer }: PdfEditorCommandContext): boolean {
-  return save.enabled && documentReady(viewer) && viewer.state.features.export;
+function canSave({ editable, save, viewer }: PdfEditorCommandContext): boolean {
+  return (
+    editable &&
+    save.enabled &&
+    documentReady(viewer) &&
+    viewer.state.features.export
+  );
 }

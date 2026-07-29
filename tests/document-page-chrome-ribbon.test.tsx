@@ -36,6 +36,10 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
   );
 
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚加粗' }));
+  expect(screen.getByRole('button', { name: '页眉页脚加粗' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+B Meta+B',
+  );
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚斜体' }));
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚下划线' }));
   for (const label of [

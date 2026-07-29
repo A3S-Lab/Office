@@ -18,6 +18,7 @@ import {
 } from 'react';
 import { Popover, Tabs } from '../../../design-system/primitives';
 import { OfficeSlider } from './office-controls';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   calculateRibbonOverflow,
   calculateRibbonScrollTarget,
@@ -27,6 +28,7 @@ import {
 export interface WorkOfficeRibbonTab<T extends string> {
   id: T;
   label: string;
+  compactLabel?: string;
 }
 
 export interface WorkOfficeFileAction {
@@ -66,6 +68,11 @@ export function WorkOfficeRibbon<T extends string>({
     backward: false,
     forward: false,
   });
+  const [tabOverflow, setTabOverflow] = useState({
+    backward: false,
+    forward: false,
+  });
+  const tabListRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const selectedTab = activeTab ?? internalTab;
   const selectedLabel =
@@ -100,6 +107,34 @@ export function WorkOfficeRibbon<T extends string>({
       scrollLeft: toolbar.scrollLeft,
     });
     updateRibbonOverflow();
+  };
+  const updateTabOverflow = useCallback(() => {
+    const tabList = tabListRef.current;
+    if (!tabList) return;
+    const { backward, forward } = calculateRibbonOverflow({
+      clientWidth: tabList.clientWidth,
+      items: ribbonItemGeometry(tabList),
+      scrollLeft: tabList.scrollLeft,
+    });
+    if (!backward && !forward && tabList.scrollLeft > 0) {
+      tabList.scrollLeft = 0;
+    }
+    setTabOverflow((current) =>
+      current.backward === backward && current.forward === forward
+        ? current
+        : { backward, forward },
+    );
+  }, []);
+  const scrollTabs = (direction: -1 | 1) => {
+    const tabList = tabListRef.current;
+    if (!tabList) return;
+    tabList.scrollLeft = calculateRibbonScrollTarget({
+      clientWidth: tabList.clientWidth,
+      direction,
+      items: ribbonItemGeometry(tabList),
+      scrollLeft: tabList.scrollLeft,
+    });
+    updateTabOverflow();
   };
   const selectTab = (tab: T) => {
     if (activeTab === undefined) setInternalTab(tab);
@@ -154,6 +189,52 @@ export function WorkOfficeRibbon<T extends string>({
     };
   }, [hasSelectedPanel, updateRibbonOverflow]);
 
+  useLayoutEffect(() => {
+    const tabList = tabListRef.current;
+    if (!tabList) return;
+    let frame = requestAnimationFrame(() => {
+      scrollSelectedRibbonTabIntoView(tabList, selectedTab);
+      updateTabOverflow();
+    });
+    const scheduleOverflowUpdate = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(updateTabOverflow);
+    };
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(scheduleOverflowUpdate);
+    const observeChild = (node: Node) => {
+      if (node instanceof Element) resizeObserver?.observe(node);
+    };
+    resizeObserver?.observe(tabList);
+    for (const child of tabList.children) observeChild(child);
+    const mutationObserver =
+      typeof MutationObserver === 'undefined'
+        ? null
+        : new MutationObserver((records) => {
+            for (const record of records) {
+              for (const node of record.addedNodes) observeChild(node);
+            }
+            scheduleOverflowUpdate();
+          });
+    mutationObserver?.observe(tabList, {
+      attributes: true,
+      characterData: true,
+      childList: true,
+      subtree: true,
+    });
+    tabList.addEventListener('scroll', updateTabOverflow);
+    window.addEventListener('resize', scheduleOverflowUpdate);
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
+      tabList.removeEventListener('scroll', updateTabOverflow);
+      window.removeEventListener('resize', scheduleOverflowUpdate);
+    };
+  }, [selectedTab, tabs, updateTabOverflow]);
+
   return (
     <section
       className={`work-office-ribbon ${className}`.trim()}
@@ -163,19 +244,45 @@ export function WorkOfficeRibbon<T extends string>({
         {fileActions?.length ? (
           <WorkOfficeFileMenu actions={fileActions} />
         ) : null}
-        <Tabs
-          ariaLabel={ariaLabel}
-          value={selectedTab}
-          variant="line"
-          size="compact"
-          className="work-office-ribbon-tabs"
-          items={tabs.map((tab) => ({
-            ...tab,
-            tabId: `${reactId}-tab-${tab.id}`,
-            panelId: `${reactId}-panel`,
-          }))}
-          onChange={selectTab}
-        />
+        <div className="work-office-ribbon-tab-strip">
+          <Tabs
+            ariaLabel={ariaLabel}
+            value={selectedTab}
+            variant="line"
+            size="compact"
+            className="work-office-ribbon-tabs"
+            containerRef={tabListRef}
+            items={tabs.map((tab) => ({
+              ...tab,
+              tabId: `${reactId}-tab-${tab.id}`,
+              panelId: `${reactId}-panel`,
+            }))}
+            onChange={selectTab}
+          />
+          {(tabOverflow.backward || tabOverflow.forward) && (
+            <nav
+              className="work-office-ribbon-tab-navigation"
+              aria-label="功能区标签翻页"
+            >
+              <button
+                type="button"
+                aria-label="向左查看更多功能区标签"
+                disabled={!tabOverflow.backward}
+                onClick={() => scrollTabs(-1)}
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <button
+                type="button"
+                aria-label="向右查看更多功能区标签"
+                disabled={!tabOverflow.forward}
+                onClick={() => scrollTabs(1)}
+              >
+                <ChevronRight size={14} />
+              </button>
+            </nav>
+          )}
+        </div>
       </div>
       <div
         id={`${reactId}-panel`}
@@ -242,6 +349,30 @@ function ribbonItemGeometry(
   );
 }
 
+function scrollSelectedRibbonTabIntoView(
+  tabList: HTMLDivElement,
+  selectedTab: string,
+): void {
+  const selected = Array.from(tabList.children).find(
+    (element): element is HTMLElement =>
+      element instanceof HTMLElement && element.dataset.tabId === selectedTab,
+  );
+  if (!selected || tabList.clientWidth <= 0) return;
+  const inset = 8;
+  const visibleLeft = tabList.scrollLeft + inset;
+  const visibleRight = tabList.scrollLeft + tabList.clientWidth - inset;
+  const selectedLeft = selected.offsetLeft;
+  const selectedRight = selectedLeft + selected.offsetWidth;
+  if (selectedLeft < visibleLeft) {
+    tabList.scrollLeft = Math.max(0, selectedLeft - inset);
+  } else if (selectedRight > visibleRight) {
+    tabList.scrollLeft = Math.max(
+      0,
+      selectedRight - tabList.clientWidth + inset,
+    );
+  }
+}
+
 export function WorkOfficePreviewBar({
   ariaLabel,
   label,
@@ -278,7 +409,6 @@ function WorkOfficeFileMenu({
   actions: readonly WorkOfficeFileAction[];
 }) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLElement>(null);
   const focusEdgeRef = useRef<'first' | 'last'>('first');
 
@@ -304,9 +434,7 @@ function WorkOfficeFileMenu({
       panelClassName="work-office-file-popover"
       open={open}
       panelRef={menuRef}
-      onPanelKeyDown={(event) =>
-        moveFileMenuFocus(event, triggerRef, () => setOpen(false))
-      }
+      onPanelKeyDown={moveOfficeMenuFocus}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
         if (nextOpen) focusRequestedAction();
@@ -314,10 +442,6 @@ function WorkOfficeFileMenu({
       trigger={(triggerProps, { open }) => (
         <button
           {...triggerProps}
-          ref={(element) => {
-            triggerProps.ref(element);
-            triggerRef.current = element;
-          }}
           className="work-office-file-trigger"
           onKeyDown={(event) => {
             if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
@@ -366,42 +490,6 @@ function WorkOfficeFileMenu({
   );
 }
 
-function moveFileMenuFocus(
-  event: React.KeyboardEvent<HTMLElement>,
-  triggerRef: React.RefObject<HTMLButtonElement | null>,
-  closeWithoutRestoringFocus: () => void,
-) {
-  if (event.key === 'Tab') {
-    requestAnimationFrame(closeWithoutRestoringFocus);
-    return;
-  }
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    triggerRef.current?.focus();
-    return;
-  }
-  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-  const buttons = [
-    ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-      'button:not(:disabled)',
-    ),
-  ];
-  if (!buttons.length) return;
-  event.preventDefault();
-  const currentIndex = buttons.indexOf(
-    document.activeElement as HTMLButtonElement,
-  );
-  const nextIndex =
-    event.key === 'Home'
-      ? 0
-      : event.key === 'End'
-        ? buttons.length - 1
-        : event.key === 'ArrowDown'
-          ? (currentIndex + 1 + buttons.length) % buttons.length
-          : (currentIndex - 1 + buttons.length) % buttons.length;
-  buttons[nextIndex]?.focus();
-}
-
 export function WorkOfficeRibbonGroup({
   label,
   children,
@@ -424,6 +512,7 @@ export function WorkOfficeRibbonButton({
   active,
   displayLabel = true,
   className = '',
+  title = label,
   children,
   ...props
 }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'children'> & {
@@ -439,6 +528,7 @@ export function WorkOfficeRibbonButton({
       type="button"
       aria-label={label}
       aria-pressed={active}
+      title={title}
       className={`${displayLabel ? 'with-label' : ''} ${active ? 'active' : ''} ${className}`.trim()}
       {...props}
     >

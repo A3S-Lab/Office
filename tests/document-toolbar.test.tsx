@@ -41,8 +41,10 @@ let editor: Editor | null = null;
 
 afterEach(() => {
   const editorElement = editor?.view.dom;
+  const editorRoot = editorElement?.closest('.work-document-editor');
   editor?.destroy();
-  editorElement?.remove();
+  if (editorRoot) editorRoot.remove();
+  else editorElement?.remove();
   editor = null;
 });
 
@@ -65,9 +67,15 @@ test('wires every Insert and Page Layout action to document state or its owner',
   const firstBreakCount = nodeCount(editor, 'pageBreak');
   fireEvent.click(screen.getByRole('button', { name: '插入分页符' }));
   expect(nodeCount(editor, 'pageBreak')).toBe(firstBreakCount + 1);
+  expect(screen.getByRole('button', { name: '插入分页符' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Enter Meta+Enter',
+  );
 
   editor.commands.setTextSelection(textRange(editor, 'Toolbar text'));
-  fireEvent.click(screen.getByRole('button', { name: '添加链接' }));
+  const addLink = screen.getByRole('button', { name: '添加链接' });
+  expect(addLink).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
+  fireEvent.click(addLink);
   const linkDialog = await screen.findByRole('dialog', { name: '添加链接' });
   fireEvent.change(
     within(linkDialog).getByRole('textbox', { name: '链接地址' }),
@@ -80,7 +88,14 @@ test('wires every Insert and Page Layout action to document state or its owner',
     expect(editor?.getHTML()).toContain('href="https://a3s.dev/office"'),
   );
 
-  fireEvent.click(screen.getByRole('combobox', { name: '插入页码或日期' }));
+  const fieldSelect = screen.getByRole('combobox', {
+    name: '插入页码或日期',
+  });
+  fireEvent.click(fieldSelect);
+  expect(screen.getByRole('option', { name: '页码或日期' })).toBeDisabled();
+  await waitFor(() =>
+    expect(screen.getByRole('option', { name: '页码' })).toHaveFocus(),
+  );
   fireEvent.click(screen.getByRole('option', { name: '当前日期' }));
   expect(calls.fields).toEqual(['date']);
 
@@ -110,6 +125,7 @@ test('wires every Insert and Page Layout action to document state or its owner',
 
 test('wires every References, Review, and View action without silent buttons', () => {
   editor = createEditor();
+  editor.commands.insertDocumentField('date');
   const calls = createCalls();
   render(toolbar(editor, calls));
 
@@ -165,7 +181,60 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.zooms).toEqual([90, 75, 100, 125, 110]);
 });
 
-function toolbar(currentEditor: Editor, calls: ToolbarCalls) {
+test('only enables field refresh when the document contains fields', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+  fireEvent.click(screen.getByRole('tab', { name: '引用' }));
+
+  const refresh = screen.getByRole('button', { name: '更新页码和日期' });
+  expect(refresh).toBeDisabled();
+  fireEvent.click(refresh);
+  expect(calls.refreshFields).toBe(0);
+
+  editor.commands.insertDocumentField('page');
+  view.rerender(toolbar(editor, calls));
+  expect(refresh).toBeEnabled();
+  fireEvent.click(refresh);
+  expect(calls.refreshFields).toBe(1);
+});
+
+test('keeps body link shortcuts out of non-document editing surfaces', async () => {
+  editor = createEditor();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  const auxiliaryInput = document.createElement('input');
+  root.append(editor.view.dom, auxiliaryInput);
+  document.body.append(root);
+  render(toolbar(editor, createCalls()));
+
+  fireEvent.keyDown(auxiliaryInput, { key: 'k', ctrlKey: true });
+  expect(screen.queryByRole('dialog', { name: '添加链接' })).toBeNull();
+
+  fireEvent.keyDown(editor.view.dom, { key: 'k', ctrlKey: true });
+  const dialog = await screen.findByRole('dialog', { name: '添加链接' });
+  expect(dialog).toBeVisible();
+  fireEvent.keyDown(dialog, { key: 'Escape' });
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog', { name: '添加链接' })).toBeNull(),
+  );
+});
+
+test('disables document zoom buttons at the supported boundaries', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls, 50));
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+
+  expect(screen.getByRole('button', { name: '缩小文档' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '放大文档' })).toBeEnabled();
+
+  view.rerender(toolbar(editor, calls, 200));
+  expect(screen.getByRole('button', { name: '缩小文档' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '放大文档' })).toBeDisabled();
+});
+
+function toolbar(currentEditor: Editor, calls: ToolbarCalls, zoom = 100) {
   return (
     <DocumentToolbar
       editor={currentEditor}
@@ -183,7 +252,7 @@ function toolbar(currentEditor: Editor, calls: ToolbarCalls) {
       showRulers={false}
       spellcheckEnabled
       viewMode="page"
-      zoom={100}
+      zoom={zoom}
       pageChromeEditor={null}
       pageChromeEditingPart={null}
       pageChromeShowPageNumber={false}

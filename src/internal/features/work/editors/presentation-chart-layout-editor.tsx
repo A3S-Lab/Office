@@ -20,8 +20,8 @@ import type {
   WorkSlideChartLegendPosition,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
 } from './office-controls';
 
@@ -148,18 +148,21 @@ export function PresentationChartLayoutEditor({
           <>
             <div className="work-office-field">
               <span>分类间距（%）</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel="演示图表分类间距（%）"
                 min={0}
                 max={500}
                 step={1}
                 value={normalizeWorkSpreadsheetChartGapWidth(chart.gapWidth)}
-                onValueChange={(value) => change({ gapWidth: Number(value) })}
+                normalizeValue={(value) =>
+                  normalizePresentationChartInteger(value, 0, 500)
+                }
+                onValueCommit={(gapWidth) => change({ gapWidth })}
               />
             </div>
             <div className="work-office-field">
               <span>系列重叠（%）</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel="演示图表系列重叠（%）"
                 min={-100}
                 max={100}
@@ -168,7 +171,10 @@ export function PresentationChartLayoutEditor({
                   chart.overlap,
                   grouping,
                 )}
-                onValueChange={(value) => change({ overlap: Number(value) })}
+                normalizeValue={(value) =>
+                  normalizePresentationChartInteger(value, -100, 100)
+                }
+                onValueCommit={(overlap) => change({ overlap })}
               />
             </div>
           </>
@@ -196,4 +202,16 @@ export function PresentationChartLayoutEditor({
       )}
     </section>
   );
+}
+
+function normalizePresentationChartInteger(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : null;
 }

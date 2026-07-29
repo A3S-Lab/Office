@@ -577,6 +577,10 @@ html[data-ds-resizing="horizontal"] * {
   align-items: center;
 }
 
+.ds-tabs-label-compact {
+  display: none;
+}
+
 .ds-tabs-badge {
   display: inline-grid;
   min-width: 17px;

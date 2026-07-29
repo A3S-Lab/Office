@@ -110,19 +110,20 @@ test('reserves and observes floating image height during pagination', () => {
 
 test('offers a contextual picture ribbon with typed layout and alt-text actions', async () => {
   const editor = createImageEditor(
-    `<img src="${pixelPng}" alt="Original" width="120" height="80">`,
+    `<img src="${pixelPng}" alt="Original" width="120" height="80" data-office-image-wrap-distance="7">`,
   );
   selectFirstImage(editor);
   const view = render(<DocumentPictureRibbon editor={editor} />);
+  const wrapDistance = screen.getByRole('combobox', {
+    name: '图片与文字距离',
+  });
+  expect(wrapDistance).toHaveTextContent('7 毫米');
+  expect(wrapDistance).toBeDisabled();
 
-  for (const [label, layout] of [
-    ['四周环绕', 'square'],
-    ['上下环绕', 'topBottom'],
-    ['嵌入文字', 'inline'],
-  ] as const) {
-    fireEvent.click(screen.getByRole('button', { name: label }));
-    expect(documentImageLayoutOptions(editor).layout).toBe(layout);
-  }
+  fireEvent.click(screen.getByRole('button', { name: '四周环绕' }));
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  expect(documentImageLayoutOptions(editor).layout).toBe('square');
+  expect(wrapDistance).toBeEnabled();
   for (const [label, alignment] of [
     ['左对齐', 'left'],
     ['居中', 'center'],
@@ -134,6 +135,19 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
   fireEvent.click(screen.getByRole('combobox', { name: '图片与文字距离' }));
   fireEvent.click(screen.getByRole('option', { name: '10 毫米' }));
   expect(documentImageLayoutOptions(editor).wrapDistance).toBe(10);
+
+  fireEvent.click(screen.getByRole('button', { name: '上下环绕' }));
+  expect(documentImageLayoutOptions(editor).layout).toBe('topBottom');
+  fireEvent.click(screen.getByRole('button', { name: '嵌入文字' }));
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  expect(documentImageLayoutOptions(editor).layout).toBe('inline');
+  expect(wrapDistance).toBeDisabled();
+
+  fireEvent.click(screen.getByRole('button', { name: '替代文字' }));
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  await waitFor(() => {
+    expect(editor.isActive('image')).toBe(true);
+  });
 
   fireEvent.click(screen.getByRole('button', { name: '替代文字' }));
   fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
@@ -152,6 +166,27 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
       expect.objectContaining({ type: 'image' }),
     ]),
   });
+
+  view.unmount();
+  editor.destroy();
+});
+
+test('disables stale picture commands when the image selection is gone', () => {
+  const editor = createImageEditor(
+    `<img src="${pixelPng}" alt="Plan" width="120" height="80"><p>After</p>`,
+  );
+  editor.commands.setTextSelection(textPosition(editor, 'After'));
+  const view = render(<DocumentPictureRibbon editor={editor} />);
+
+  expect(screen.getByRole('button', { name: '四周环绕' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '替代文字' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '删除图片' })).toBeDisabled();
+
+  selectFirstImage(editor);
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  expect(screen.getByRole('button', { name: '四周环绕' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '替代文字' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '删除图片' })).toBeEnabled();
 
   view.unmount();
   editor.destroy();
@@ -223,4 +258,16 @@ function selectFirstImage(editor: Editor): void {
   });
   if (position === null) throw new Error('Expected an image node.');
   editor.commands.setNodeSelection(position);
+}
+
+function textPosition(editor: Editor, text: string): number {
+  let position: number | null = null;
+  editor.state.doc.descendants((node, offset) => {
+    if (position === null && node.isText && node.text?.includes(text)) {
+      position = offset;
+    }
+    return position === null;
+  });
+  if (position === null) throw new Error(`Expected text "${text}".`);
+  return position;
 }

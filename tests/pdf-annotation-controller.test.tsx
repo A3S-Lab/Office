@@ -112,6 +112,13 @@ test('selects and deletes PDF annotations through the annotation capability', as
     annotationColor: '#ffd966',
     annotationOpacity: 0.75,
     annotationStrokeWidth: 6,
+    availableToolIds: [
+      'highlight',
+      'underline',
+      'strikeout',
+      'ink',
+      'freeText',
+    ],
     hasPendingChanges: true,
     selectedCount: 1,
     supportsOpacity: true,

@@ -20,6 +20,7 @@ export interface PdfAnnotationControllerState {
   annotationOpacity: number;
   annotationStrokeWidth: number;
   available: boolean;
+  availableToolIds: readonly PdfAnnotationToolId[];
   hasPendingChanges: boolean;
   selectedCount: number;
   supportsOpacity: boolean;
@@ -46,6 +47,7 @@ const INITIAL_STATE: PdfAnnotationControllerState = {
   annotationOpacity: 1,
   annotationStrokeWidth: 6,
   available: false,
+  availableToolIds: [],
   hasPendingChanges: false,
   selectedCount: 0,
   supportsOpacity: false,
@@ -101,6 +103,7 @@ export function usePdfAnnotationController(
             ),
             ...style,
             available: Boolean(scope),
+            availableToolIds: availableAnnotationToolIds(capabilities),
             hasPendingChanges: annotationState?.hasPendingChanges ?? false,
             selectedCount: annotationState?.selectedUids.length ?? 0,
           });
@@ -249,6 +252,22 @@ export function usePdfAnnotationController(
       selectTool,
       state,
     ],
+  );
+}
+
+const PDF_ANNOTATION_TOOL_IDS: readonly PdfAnnotationToolId[] = [
+  'highlight',
+  'underline',
+  'strikeout',
+  'ink',
+  'freeText',
+];
+
+function availableAnnotationToolIds(
+  capabilities: PdfAnnotationCapabilities,
+): PdfAnnotationToolId[] {
+  return PDF_ANNOTATION_TOOL_IDS.filter((toolId) =>
+    Boolean(safely(() => capabilities.annotation?.getTool(toolId))),
   );
 }
 

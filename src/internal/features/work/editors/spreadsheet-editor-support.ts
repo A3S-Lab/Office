@@ -246,13 +246,39 @@ export function sameSpreadsheetHistoryContent(
   left: WorkSpreadsheetContent,
   right: WorkSpreadsheetContent,
 ): boolean {
-  return sameSpreadsheetHistoryValue(left, right);
+  return sameSpreadsheetHistoryValue(
+    {
+      ...left,
+      sheets: left.sheets.map(spreadsheetSheetWithoutTransientSelection),
+    },
+    {
+      ...right,
+      sheets: right.sheets.map(spreadsheetSheetWithoutTransientSelection),
+    },
+  );
+}
+
+export function spreadsheetContentWithSelection(
+  content: WorkSpreadsheetContent,
+  sheetId: string,
+  selection: Selection | null | undefined,
+): WorkSpreadsheetContent {
+  if (!sheetId || !selection) return content;
+  const nextSelection = finiteSpreadsheetSelection(selection);
+  let changed = false;
+  const sheets = content.sheets.map((sheet) => {
+    if (sheet.id !== sheetId) return sheet;
+    changed = true;
+    return { ...sheet, luckysheet_select_save: [nextSelection] };
+  });
+  return changed ? { ...content, sheets } : content;
 }
 
 export function isSpreadsheetNativeTextUndoTarget(
   target: EventTarget | null,
 ): boolean {
   if (!(target instanceof HTMLElement)) return false;
+  if (isSpreadsheetCellEditingTarget(target)) return true;
   if (target.closest('.fortune-container')) return false;
   return (
     target instanceof HTMLInputElement ||
@@ -261,6 +287,23 @@ export function isSpreadsheetNativeTextUndoTarget(
     target.isContentEditable ||
     Boolean(target.closest('[contenteditable="true"]'))
   );
+}
+
+export function isSpreadsheetCellEditingTarget(
+  target: EventTarget | null,
+): boolean {
+  if (!(target instanceof Element)) return false;
+  const formulaInput = target.closest('.fortune-fx-input');
+  if (formulaInput) return true;
+  const cellInput = target.closest('.luckysheet-cell-input');
+  if (!cellInput) return false;
+  const inputBox = cellInput.closest<HTMLElement>('.luckysheet-input-box');
+  if (!inputBox) return true;
+  const zIndex = Number.parseInt(
+    inputBox.style.zIndex || getComputedStyle(inputBox).zIndex,
+    10,
+  );
+  return !Number.isFinite(zIndex) || zIndex >= 0;
 }
 
 export function spreadsheetFormulaBarSelectAllTarget(

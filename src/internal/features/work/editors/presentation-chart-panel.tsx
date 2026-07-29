@@ -7,8 +7,7 @@ import {
   normalizePresentationBubbleSizeRepresents,
   normalizePresentationScatterStyle,
   parsePresentationChartCategories,
-  parsePresentationChartValues,
-  parsePresentationChartXValues,
+  parsePresentationChartValueDraft,
   presentationChartSupportsAxisTitles,
   presentationChartSupportsSeriesMarkers,
   presentationChartTypeLabel,
@@ -25,11 +24,11 @@ import type {
   WorkSlideScatterStyle,
 } from '../work-types';
 import {
+  CommittedOfficeNumberField,
+  CommittedOfficeTextArea,
+  CommittedOfficeTextField,
   OfficeCheckbox,
-  OfficeNumberField,
   OfficeSelect,
-  OfficeTextArea,
-  OfficeTextField,
 } from './office-controls';
 import { PresentationChartAxisEditor } from './presentation-chart-axis-editor';
 import { PresentationChartDataLabelEditor } from './presentation-chart-data-label-editor';
@@ -82,7 +81,6 @@ export function PresentationChartPanel({
       <header>
         <div>
           <strong>图表数据</strong>
-          <span>编辑后的数据会同步到预览和原生 PPTX。</span>
         </div>
         <div>
           <Button tone="danger" aria-label="删除演示图表" onClick={onDelete}>
@@ -117,12 +115,12 @@ export function PresentationChartPanel({
         </div>
         <div className="work-office-field">
           <span>标题</span>
-          <OfficeTextField
+          <CommittedOfficeTextField
             aria-label="演示图表标题"
-            value={chart.title ?? ''}
-            onChange={(event) =>
-              onChange({ ...chart, title: event.target.value || undefined })
-            }
+            value={chart.title}
+            formatValue={(title) => title ?? ''}
+            parseValue={(draft) => draft.trim().slice(0, 255) || undefined}
+            onValueCommit={(title) => onChange({ ...chart, title })}
           />
         </div>
         <PresentationChartLayoutEditor chart={chart} onChange={onChange} />
@@ -139,15 +137,18 @@ export function PresentationChartPanel({
         {chart.type === 'doughnut' && (
           <div className="work-office-field">
             <span>孔径</span>
-            <OfficeNumberField
+            <CommittedOfficeNumberField
               ariaLabel="圆环孔径"
               min={10}
               max={90}
               value={normalizeDoughnutHoleSize(chart.doughnutHoleSize)}
-              onValueChange={(value) =>
+              normalizeValue={(value) =>
+                normalizePresentationChartPercent(value, 10, 90)
+              }
+              onValueCommit={(doughnutHoleSize) =>
                 onChange({
                   ...chart,
-                  doughnutHoleSize: normalizeDoughnutHoleSize(Number(value)),
+                  doughnutHoleSize,
                 })
               }
             />
@@ -199,15 +200,18 @@ export function PresentationChartPanel({
           <>
             <div className="work-office-field">
               <span>气泡缩放</span>
-              <OfficeNumberField
+              <CommittedOfficeNumberField
                 ariaLabel="演示气泡图缩放"
                 min={5}
                 max={300}
                 value={normalizePresentationBubbleScale(chart.bubbleScale)}
-                onValueChange={(value) =>
+                normalizeValue={(value) =>
+                  normalizePresentationChartPercent(value, 5, 300)
+                }
+                onValueCommit={(bubbleScale) =>
                   onChange({
                     ...chart,
-                    bubbleScale: normalizePresentationBubbleScale(value),
+                    bubbleScale,
                   })
                 }
               />
@@ -249,15 +253,19 @@ export function PresentationChartPanel({
         )}
         <div className="work-office-field categories">
           <span>{numericXAxis ? 'X 值' : '分类'}（每行一项）</span>
-          <OfficeTextArea
+          <CommittedOfficeTextArea
             aria-label={numericXAxis ? '演示图表 X 值' : '演示图表分类'}
-            value={chart.categories.join('\n')}
-            onChange={(event) =>
+            value={chart.categories}
+            formatValue={(categories) => categories.join('\n')}
+            parseValue={(draft) => {
+              if (!numericXAxis) return parsePresentationChartCategories(draft);
+              const values = parsePresentationChartValueDraft(draft);
+              return values?.map(String) ?? null;
+            }}
+            onValueCommit={(categories) =>
               onChange({
                 ...chart,
-                categories: numericXAxis
-                  ? parsePresentationChartXValues(event.target.value)
-                  : parsePresentationChartCategories(event.target.value),
+                categories,
               })
             }
           />
@@ -267,33 +275,33 @@ export function PresentationChartPanel({
             <div className="work-presentation-chart-series-card" key={index}>
               <fieldset>
                 <legend>系列 {index + 1}</legend>
-                <OfficeTextField
+                <CommittedOfficeTextField
                   aria-label={`演示图表系列 ${index + 1} 名称`}
                   value={series.name}
-                  onChange={(event) =>
-                    updateSeries(index, {
-                      name: event.target.value.slice(0, 255),
-                    })
-                  }
+                  formatValue={(name) => name}
+                  parseValue={(draft) => draft.trim().slice(0, 255)}
+                  onValueCommit={(name) => updateSeries(index, { name })}
                 />
-                <OfficeTextArea
+                <CommittedOfficeTextArea
                   aria-label={`演示图表系列 ${index + 1} ${numericXAxis ? 'Y 值' : '数据'}`}
-                  value={series.values.join(', ')}
-                  onChange={(event) =>
+                  value={series.values}
+                  formatValue={(values) => values.join(', ')}
+                  parseValue={parsePresentationChartValueDraft}
+                  onValueCommit={(values) =>
                     updateSeries(index, {
-                      values: parsePresentationChartValues(event.target.value),
+                      values,
                     })
                   }
                 />
                 {chart.type === 'bubble' && (
-                  <OfficeTextArea
+                  <CommittedOfficeTextArea
                     aria-label={`演示气泡图系列 ${index + 1} 大小`}
-                    value={series.bubbleSizes?.join(', ') ?? ''}
-                    onChange={(event) =>
+                    value={series.bubbleSizes ?? []}
+                    formatValue={(values) => values.join(', ')}
+                    parseValue={parsePresentationChartValueDraft}
+                    onValueCommit={(bubbleSizes) =>
                       updateSeries(index, {
-                        bubbleSizes: parsePresentationChartValues(
-                          event.target.value,
-                        ),
+                        bubbleSizes,
                       })
                     }
                   />
@@ -350,4 +358,16 @@ export function PresentationChartPanel({
       </div>
     </section>
   );
+}
+
+function normalizePresentationChartPercent(
+  value: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(maximum, Math.max(minimum, Math.round(number)))
+    : null;
 }

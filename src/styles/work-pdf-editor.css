@@ -1,4 +1,7 @@
 .work-pdf-viewer {
+  --work-pdf-accent: #c84040;
+  --work-office-control-accent: var(--work-pdf-accent);
+
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -6,6 +9,11 @@
   flex-direction: column;
   overflow: hidden;
   background: #32363f;
+}
+
+.work-pdf-annotation-style-panel,
+.work-pdf-overflow-panel {
+  --work-pdf-accent: #c84040;
 }
 
 .work-pdf-toolbar {
@@ -35,6 +43,15 @@
   height: 28px;
   flex: 0 0 28px;
   border-radius: 5px;
+}
+
+.work-pdf-toolbar .ds-icon-button.selected {
+  background: color-mix(
+    in srgb,
+    var(--work-pdf-accent) 9%,
+    var(--a3s-panel)
+  );
+  color: var(--work-pdf-accent);
 }
 
 .work-pdf-toolbar .ds-icon-button:disabled,
@@ -118,9 +135,12 @@
   gap: 3px;
 }
 
-.work-pdf-annotation-style-options > button {
+.work-pdf-annotation-style-options > label {
+  position: relative;
+  display: grid;
   min-width: 0;
   height: 28px;
+  place-items: center;
   padding: 0 5px;
   border: 1px solid var(--a3s-line);
   border-radius: 5px;
@@ -132,22 +152,45 @@
   cursor: pointer;
 }
 
-.work-pdf-annotation-style-options > button:hover:not(:disabled),
-.work-pdf-annotation-style-options > button:focus-visible {
-  outline: 0;
-  border-color: var(--a3s-blue);
+.work-pdf-annotation-style-options > label > input {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.work-pdf-annotation-style-options > label:hover:not(:has(input:disabled)),
+.work-pdf-annotation-style-options > label:has(input:focus-visible) {
+  border-color: var(--work-pdf-accent);
   background: var(--a3s-panel-soft);
   color: var(--a3s-ink);
 }
 
-.work-pdf-annotation-style-options > button[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--a3s-blue) 42%, var(--a3s-line));
-  background: color-mix(in srgb, var(--a3s-blue) 11%, var(--a3s-panel));
-  color: var(--a3s-blue);
+.work-pdf-annotation-style-options > label:has(input:focus-visible) {
+  outline: 1px solid var(--work-pdf-accent);
+  outline-offset: 1px;
+}
+
+.work-pdf-annotation-style-options > label:has(input:checked) {
+  border-color: color-mix(
+    in srgb,
+    var(--work-pdf-accent) 42%,
+    var(--a3s-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-pdf-accent) 11%,
+    var(--a3s-panel)
+  );
+  color: var(--work-pdf-accent);
   font-weight: 650;
 }
 
-.work-pdf-annotation-style-options > button:disabled {
+.work-pdf-annotation-style-options > label:has(input:disabled) {
   cursor: default;
   opacity: 0.4;
 }
@@ -170,8 +213,9 @@
 }
 
 .work-pdf-search:focus-within {
-  border-color: var(--a3s-blue);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-blue) 14%, transparent);
+  border-color: var(--work-pdf-accent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-pdf-accent) 14%, transparent);
 }
 
 .work-pdf-search > form > svg {
@@ -259,7 +303,7 @@
 }
 
 .work-pdf-fit-button[aria-pressed="true"] {
-  color: var(--a3s-blue);
+  color: var(--work-pdf-accent);
 }
 
 .work-pdf-save {
@@ -303,6 +347,10 @@
 
 .work-pdf-overflow-group {
   display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   gap: 2px;
 }
 
@@ -338,7 +386,7 @@
 }
 
 .work-pdf-overflow-panel button[data-active="true"] {
-  color: var(--a3s-blue);
+  color: var(--work-pdf-accent);
 }
 
 .work-pdf-overflow-panel button:disabled {
@@ -418,9 +466,12 @@
     display: none !important;
   }
 
-  .work-pdf-history,
-  .work-pdf-zoom-controls {
+  .work-pdf-history {
     display: none;
+  }
+
+  .work-pdf-overflow-narrow {
+    display: grid;
   }
 
   .work-pdf-page-controls {
@@ -452,11 +503,11 @@
     margin-left: 0;
   }
 
-  .work-pdf-save {
-    margin-right: 3px;
+  .work-pdf-zoom-controls {
+    display: none;
   }
 
-  .work-pdf-overflow-narrow {
-    display: grid;
+  .work-pdf-save {
+    margin-right: 3px;
   }
 }

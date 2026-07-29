@@ -1,4 +1,5 @@
-import type { MouseEventHandler } from 'react';
+import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
+import { isWorkspaceContextMenuKeyboardEvent } from '../../workspace/components/workspace-context-menu';
 import type { WorkPresentationContent, WorkSlide } from '../work-types';
 import { SlideCanvas } from './presentation-slide-canvas';
 
@@ -28,7 +29,7 @@ export function PresentationSlideThumbnail({
   onSelect: () => void;
   onDelete: () => boolean;
   onNavigate: (index: number) => void;
-  onContextMenu?: MouseEventHandler<HTMLButtonElement>;
+  onContextMenu?: (event: WorkspaceContextMenuEvent<HTMLButtonElement>) => void;
   onDoubleClick?: () => void;
 }) {
   return (
@@ -44,9 +45,15 @@ export function PresentationSlideThumbnail({
       onClick={onSelect}
       onContextMenu={onContextMenu}
       onDoubleClick={onDoubleClick}
-      onKeyDown={(event) =>
-        handleThumbnailKey(event, index, slideCount, onDelete, onNavigate)
-      }
+      onKeyDown={(event) => {
+        if (isWorkspaceContextMenuKeyboardEvent(event) && onContextMenu) {
+          event.preventDefault();
+          event.stopPropagation();
+          onContextMenu(event);
+          return;
+        }
+        handleThumbnailKey(event, index, slideCount, onDelete, onNavigate);
+      }}
     >
       {variant === 'strip' && <span>{index + 1}</span>}
       {renderPreview ? (

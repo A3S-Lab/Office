@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { useTabNavigation } from './tab-navigation';
 
 export type TabItem<T extends string> = {
   id: T;
   label: string;
+  compactLabel?: string;
   icon?: ReactNode;
   badge?: ReactNode;
   disabled?: boolean;
@@ -19,6 +20,7 @@ export function Tabs<T extends string>({
   variant = 'segment',
   size = 'standard',
   className = '',
+  containerRef,
 }: {
   ariaLabel: string;
   value: T;
@@ -27,11 +29,13 @@ export function Tabs<T extends string>({
   variant?: 'segment' | 'line';
   size?: 'standard' | 'compact';
   className?: string;
+  containerRef?: Ref<HTMLDivElement>;
 }) {
   const tabNavigation = useTabNavigation({ items, onChange });
 
   return (
     <div
+      ref={containerRef}
       className={`ds-tabs ${variant} ${size}${className ? ` ${className}` : ''}`}
       role="tablist"
       aria-label={ariaLabel}
@@ -48,6 +52,7 @@ export function Tabs<T extends string>({
             role="tab"
             id={item.tabId}
             data-tab-id={item.id}
+            aria-label={item.label}
             aria-selected={selected}
             aria-controls={item.panelId}
             tabIndex={selected ? 0 : -1}
@@ -62,7 +67,16 @@ export function Tabs<T extends string>({
                 {item.icon}
               </span>
             )}
-            <span className="ds-tabs-label">{item.label}</span>
+            <span
+              className={`ds-tabs-label${item.compactLabel ? ' has-compact' : ''}`}
+            >
+              {item.label}
+            </span>
+            {item.compactLabel && (
+              <span className="ds-tabs-label-compact" aria-hidden="true">
+                {item.compactLabel}
+              </span>
+            )}
             {item.badge !== undefined && (
               <>
                 {' '}

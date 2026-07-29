@@ -241,7 +241,13 @@ describe('spreadsheet command controller', () => {
     });
     const editor = spreadsheetEditor(fixture.context);
 
-    expect(editor.commands.addSheet()).toBe(true);
+    const createSheet = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'F11',
+      shiftKey: true,
+    });
+    expect(editor.handleKeyDown(createSheet)).toBe(true);
+    expect(createSheet.defaultPrevented).toBe(true);
     const created = fixture.changes.at(-1);
     if (!created) throw new Error('Expected the created workbook change.');
     expect(created.sheets.at(-1)).toMatchObject({
@@ -268,6 +274,241 @@ describe('spreadsheet command controller', () => {
       expect.objectContaining({ id: 'sheet-2', status: 1 }),
       expect.objectContaining({ id: 'sheet-3', status: 0 }),
     ]);
+
+    editor.updateContext({
+      ...fixture.context,
+      activeSheetId: 'sheet-2',
+      content: fixture.changes.at(-1) ?? created,
+      targetSheetId: 'sheet-2',
+    });
+    const nextSheetOnMac = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'PageDown',
+      metaKey: true,
+    });
+    expect(editor.handleKeyDown(nextSheetOnMac)).toBe(true);
+    expect(nextSheetOnMac.defaultPrevented).toBe(true);
+    expect(fixture.changes.at(-1)?.sheets).toEqual([
+      expect.objectContaining({ id: 'sheet-1', status: 0 }),
+      expect.objectContaining({ id: 'sheet-2', status: 0 }),
+      expect.objectContaining({ id: 'sheet-3', status: 1 }),
+    ]);
+  });
+
+  test('keeps worksheet navigation available in read-only view without enabling edits', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets.push({
+      id: 'sheet-2',
+      name: 'Sheet 2',
+      order: 1,
+      status: 0,
+    });
+    fixture.context.content.sheets.push({
+      id: 'sheet-3',
+      name: 'Hidden',
+      hide: 1,
+      order: 2,
+      status: 0,
+    });
+    fixture.context.editable = false;
+    const activated: string[] = [];
+    fixture.context.view = {
+      activateSheet: (sheetId) => {
+        activated.push(sheetId);
+        return true;
+      },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+    const nextSheet = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'PageDown',
+      metaKey: true,
+    });
+    const createSheet = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'F11',
+      shiftKey: true,
+    });
+
+    expect(editor.handleKeyDown(nextSheet)).toBe(true);
+    expect(nextSheet.defaultPrevented).toBe(true);
+    expect(editor.handleKeyDown(createSheet)).toBe(false);
+    expect(createSheet.defaultPrevented).toBe(false);
+    expect(editor.can().activateSheet('sheet-3')).toBe(false);
+    expect(editor.commands.activateSheet('sheet-3')).toBe(false);
+    expect(activated).toEqual(['sheet-2']);
+    expect(fixture.changes).toEqual([]);
+  });
+
+  test('owns deterministic cell movement instead of relying on vendor key handlers', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 40,
+      column: 12,
+      data: Array.from({ length: 40 }, () => Array(12).fill(null)),
+    };
+    fixture.context.content.sheets[0].data?.[6]?.splice(6, 1, { v: 'last' });
+    fixture.workbook.selection = [
+      {
+        row: [2, 2],
+        column: [3, 3],
+        row_focus: 2,
+        column_focus: 3,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+    const press = (
+      key: string,
+      modifiers: Pick<KeyboardEventInit, 'metaKey' | 'shiftKey'> = {},
+    ) => {
+      const event = new KeyboardEvent('keydown', {
+        cancelable: true,
+        key,
+        ...modifiers,
+      });
+      expect(editor.handleKeyDown(event)).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+    };
+
+    press('ArrowRight');
+    expect(fixture.workbook.selection?.[0]).toEqual({
+      row: [2, 2],
+      column: [4, 4],
+      row_focus: 2,
+      column_focus: 4,
+    });
+    press('Enter');
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [3, 3],
+      column: [4, 4],
+    });
+    press('Enter', { shiftKey: true });
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [2, 2],
+      column: [4, 4],
+    });
+    press('Tab');
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [2, 2],
+      column: [5, 5],
+    });
+    press('Tab', { shiftKey: true });
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [2, 2],
+      column: [4, 4],
+    });
+    press('Home');
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [2, 2],
+      column: [0, 0],
+    });
+    press('End', { metaKey: true });
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [6, 6],
+      column: [6, 6],
+    });
+    press('Home', { metaKey: true });
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [0, 0],
+      column: [0, 0],
+    });
+    press('PageDown');
+    expect(fixture.workbook.selection?.[0]).toMatchObject({
+      row: [20, 20],
+      column: [0, 0],
+    });
+  });
+
+  test('owns row, column, all-cells, and extended selection shortcuts', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 40,
+      column: 12,
+    };
+    fixture.workbook.selection = [
+      {
+        row: [2, 2],
+        column: [3, 3],
+        row_focus: 2,
+        column_focus: 3,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+    const press = (init: KeyboardEventInit) => {
+      const event = new KeyboardEvent('keydown', {
+        cancelable: true,
+        ...init,
+      });
+      expect(editor.handleKeyDown(event)).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+    };
+
+    press({ key: 'ArrowRight', shiftKey: true });
+    press({ key: 'ArrowDown', shiftKey: true });
+    expect(fixture.workbook.selection?.[0]).toEqual({
+      row: [2, 3],
+      column: [3, 4],
+      row_focus: 3,
+      column_focus: 4,
+    });
+
+    press({ ctrlKey: true, key: ' ' });
+    expect(fixture.workbook.selection?.[0]).toEqual({
+      row: [0, 39],
+      column: [4, 4],
+      row_focus: 3,
+      column_focus: 4,
+    });
+
+    fixture.workbook.selection = [
+      {
+        row: [2, 2],
+        column: [3, 3],
+        row_focus: 2,
+        column_focus: 3,
+      },
+    ];
+    press({ key: ' ', shiftKey: true });
+    expect(fixture.workbook.selection?.[0]).toEqual({
+      row: [2, 2],
+      column: [0, 11],
+      row_focus: 2,
+      column_focus: 3,
+    });
+
+    press({ key: 'a', metaKey: true });
+    expect(fixture.workbook.selection?.[0]).toEqual({
+      row: [0, 39],
+      column: [0, 11],
+      row_focus: 2,
+      column_focus: 3,
+    });
+  });
+
+  test('leaves grid navigation shortcuts with the focused toolbar control', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    const button = document.createElement('button');
+    document.body.append(button);
+    let handled = true;
+    button.addEventListener('keydown', (event) => {
+      handled = editor.handleKeyDown(event);
+    });
+    for (const key of ['ArrowRight', 'Delete']) {
+      const event = new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        key,
+      });
+      button.dispatchEvent(event);
+      expect(handled).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+    }
+    expect(fixture.workbook.selections).toEqual([]);
+    expect(fixture.workbook.clearBatches).toEqual([]);
+    button.remove();
   });
 
   test('owns formula-bar select-all in the keyboard extension', () => {
@@ -347,6 +588,7 @@ function commandFixture(): {
       },
       targetSheetId: 'sheet-1',
       toolbarCell: null,
+      view: null,
       workbook,
     },
   };
@@ -422,6 +664,7 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     options?: { id?: string },
   ): void {
     this.selections.push({ range, sheetId: options?.id });
+    this.selection = range;
   }
 
   setCellFormatByRange(

@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import {
   Bold,
   Code2,
@@ -16,6 +17,7 @@ import {
   Strikethrough,
   Table2,
   Undo2,
+  Unlink,
 } from 'lucide-react';
 import { type ButtonHTMLAttributes, type ReactNode, useState } from 'react';
 import { OfficeSelect } from './office-controls';
@@ -28,6 +30,13 @@ import type {
   MarkdownSourceCommand,
   MarkdownSourceSelectionState,
 } from './markdown-source-commands';
+import {
+  createMarkdownImageSourceInsert,
+  createMarkdownLinkSourceInsert,
+  createMarkdownSourceLinkRemoval,
+  findMarkdownSourceLink,
+  isMarkdownSourceCommandActive,
+} from './markdown-source-commands';
 import type { MarkdownViewMode } from './markdown-workspace';
 import {
   type WorkOfficeFileAction,
@@ -38,11 +47,52 @@ import {
 
 type MarkdownRibbonTab = 'home' | 'insert' | 'view';
 
+type MarkdownInsertDialogState =
+  | {
+      request: MarkdownInsertDialogRequest;
+      surface: 'source';
+      target: MarkdownSourceSelectionState;
+    }
+  | {
+      request: MarkdownInsertDialogRequest;
+      surface: 'visual';
+      target: {
+        document: ProseMirrorNode;
+        from: number;
+        text: string;
+        to: number;
+      };
+    };
+
 const markdownRibbonTabs = [
   { id: 'home', label: '开始' },
   { id: 'insert', label: '插入' },
   { id: 'view', label: '视图' },
 ] as const;
+
+interface MarkdownToolbarShortcut {
+  ariaKeyShortcuts: string;
+  label: string;
+}
+
+const markdownToolbarShortcuts = {
+  bold: {
+    ariaKeyShortcuts: 'Control+B Meta+B',
+    label: 'Cmd/Ctrl+B',
+  },
+  italic: {
+    ariaKeyShortcuts: 'Control+I Meta+I',
+    label: 'Cmd/Ctrl+I',
+  },
+  redo: {
+    ariaKeyShortcuts: 'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
+    label: 'Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y',
+  },
+  undo: {
+    ariaKeyShortcuts: 'Control+Z Meta+Z',
+    label: 'Cmd/Ctrl+Z',
+  },
+} satisfies Record<string, MarkdownToolbarShortcut>;
 
 export function MarkdownToolbar({
   editor,
@@ -51,6 +101,7 @@ export function MarkdownToolbar({
   canSourceRedo,
   canSourceUndo,
   viewMode,
+  getSourceFocusTarget,
   getSourceSelection,
   onSourceCommand,
   onSourceRedo,
@@ -64,22 +115,54 @@ export function MarkdownToolbar({
   canSourceRedo: boolean;
   canSourceUndo: boolean;
   viewMode: MarkdownViewMode;
+  getSourceFocusTarget: () => HTMLElement | null;
   getSourceSelection: () => MarkdownSourceSelectionState | null;
   onSourceCommand: (command: MarkdownSourceCommand) => boolean;
   onSourceRedo: () => boolean;
   onSourceReplace: (
     replacement: string,
     selectedRange?: { start: number; end: number },
+    target?: MarkdownSourceSelectionState,
   ) => boolean;
   onSourceUndo: () => boolean;
   onViewModeChange: (mode: MarkdownViewMode) => void;
 }) {
   const [activeTab, setActiveTab] = useState<MarkdownRibbonTab>('home');
   const [insertDialog, setInsertDialog] =
-    useState<MarkdownInsertDialogRequest | null>(null);
-  const [insertDialogSurface, setInsertDialogSurface] = useState<
-    'source' | 'visual'
-  >('visual');
+    useState<MarkdownInsertDialogState | null>(null);
+  const sourceSelection = sourceEditing ? getSourceSelection() : null;
+  const sourceLink = sourceSelection
+    ? findMarkdownSourceLink(
+        sourceSelection.markdown,
+        sourceSelection.selection,
+      )
+    : null;
+  const commandIsActive = (command: MarkdownSourceCommand) =>
+    sourceSelection
+      ? isMarkdownSourceCommandActive(
+          sourceSelection.markdown,
+          sourceSelection.selection,
+          command,
+        )
+      : false;
+  const paragraphStyle = sourceEditing
+    ? commandIsActive('heading-1')
+      ? 'h1'
+      : commandIsActive('heading-2')
+        ? 'h2'
+        : commandIsActive('heading-3')
+          ? 'h3'
+          : 'paragraph'
+    : editor.isActive('heading', { level: 1 })
+      ? 'h1'
+      : editor.isActive('heading', { level: 2 })
+        ? 'h2'
+        : editor.isActive('heading', { level: 3 })
+          ? 'h3'
+          : 'paragraph';
+  const linkActive = sourceEditing
+    ? Boolean(sourceLink)
+    : editor.isActive('link');
   const canUndo = sourceEditing
     ? canSourceUndo
     : canRunVisualEditorCommand(editor, () =>
@@ -94,87 +177,157 @@ export function MarkdownToolbar({
     sourceCommand: MarkdownSourceCommand,
     visualCommand: () => void,
   ) => {
-    if (sourceEditing && onSourceCommand(sourceCommand)) return;
+    if (sourceEditing) {
+      onSourceCommand(sourceCommand);
+      return;
+    }
     visualCommand();
   };
-  const toggleLink = () => {
+  const openLinkDialog = () => {
     if (sourceEditing) {
-      setInsertDialogSurface('source');
+      const current = getSourceSelection();
+      if (!current) return;
+      const link = findMarkdownSourceLink(current.markdown, current.selection);
       setInsertDialog({
-        kind: 'link',
-        label: getSourceSelection()?.text ?? '',
-        source: 'https://',
+        surface: 'source',
+        target: link
+          ? {
+              markdown: current.markdown,
+              selection: {
+                start: link.range.start,
+                end: link.range.end,
+                direction: 'none',
+              },
+              text: current.markdown.slice(link.range.start, link.range.end),
+            }
+          : current,
+        request: {
+          kind: 'link',
+          action: link ? 'edit' : 'insert',
+          label: link?.label ?? current.text,
+          source: link?.source ?? 'https://',
+        },
       });
       return;
     }
-    if (editor.isActive('link')) {
-      editor.chain().focus().unsetLink().run();
+    const editingLink = editor.isActive('link');
+    if (editingLink) editor.commands.extendMarkRange('link');
+    const { from, to } = editor.state.selection;
+    setInsertDialog({
+      surface: 'visual',
+      target: {
+        document: editor.state.doc,
+        from,
+        text: editor.state.doc.textBetween(from, to, ' '),
+        to,
+      },
+      request: {
+        kind: 'link',
+        action: editingLink ? 'edit' : 'insert',
+        label: editor.state.selection.empty
+          ? ''
+          : editor.state.doc.textBetween(from, to, ' '),
+        source: editingLink
+          ? String(editor.getAttributes('link').href ?? '')
+          : 'https://',
+      },
+    });
+  };
+  const removeLink = () => {
+    if (sourceEditing) {
+      const current = getSourceSelection();
+      if (!current) return;
+      const link = findMarkdownSourceLink(current.markdown, current.selection);
+      if (!link) return;
+      const removal = createMarkdownSourceLinkRemoval(link);
+      onSourceReplace(removal.replacement, removal.selectedRange, {
+        markdown: current.markdown,
+        selection: {
+          start: link.range.start,
+          end: link.range.end,
+          direction: 'none',
+        },
+        text: current.markdown.slice(link.range.start, link.range.end),
+      });
+      return;
+    }
+    if (!editor.isActive('link')) return;
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+  };
+  const openImageDialog = () => {
+    if (sourceEditing) {
+      const current = getSourceSelection();
+      if (!current) return;
+      setInsertDialog({
+        surface: 'source',
+        target: current,
+        request: {
+          kind: 'image',
+          altText: '',
+          source: 'https://',
+        },
+      });
       return;
     }
     const { from, to } = editor.state.selection;
     setInsertDialog({
-      kind: 'link',
-      label: editor.state.selection.empty
-        ? ''
-        : editor.state.doc.textBetween(from, to, ' '),
-      source: 'https://',
-    });
-    setInsertDialogSurface('visual');
-  };
-  const openImageDialog = () => {
-    setInsertDialogSurface(sourceEditing ? 'source' : 'visual');
-    setInsertDialog({
-      kind: 'image',
-      altText: '',
-      source: 'https://',
+      surface: 'visual',
+      target: {
+        document: editor.state.doc,
+        from,
+        text: editor.state.doc.textBetween(from, to, ' '),
+        to,
+      },
+      request: {
+        kind: 'image',
+        altText: '',
+        source: 'https://',
+      },
     });
   };
   const commitInsert = (result: MarkdownInsertDialogResult) => {
-    setInsertDialog(null);
-    if (insertDialogSurface === 'source') {
-      if (result.kind === 'image') {
-        const replacement = `![${result.altText}](${result.source})`;
-        onSourceReplace(replacement, {
-          start: 2,
-          end: 2 + result.altText.length,
-        });
-      } else {
-        const replacement = `[${result.label}](${result.source})`;
-        onSourceReplace(replacement, {
-          start: 1,
-          end: 1 + result.label.length,
-        });
-      }
+    const dialog = insertDialog;
+    if (!dialog) return;
+    if (dialog.surface === 'source') {
+      const insert =
+        result.kind === 'image'
+          ? createMarkdownImageSourceInsert(result.altText, result.source)
+          : createMarkdownLinkSourceInsert(result.label, result.source);
+      onSourceReplace(insert.replacement, insert.selectedRange, dialog.target);
+      setInsertDialog(null);
       return;
     }
+    if (editor.isDestroyed || !editor.state.doc.eq(dialog.target.document)) {
+      setInsertDialog(null);
+      return;
+    }
+    const chain = editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: dialog.target.from, to: dialog.target.to });
     if (result.kind === 'image') {
-      editor
-        .chain()
-        .focus()
+      chain
         .setImage({
           src: result.source,
           alt: result.altText || undefined,
         })
         .run();
+      setInsertDialog(null);
       return;
     }
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.selection.empty
-      ? ''
-      : editor.state.doc.textBetween(from, to, ' ');
-    if (selectedText && selectedText === result.label) {
-      editor.chain().focus().setLink({ href: result.source }).run();
+    if (dialog.target.text && dialog.target.text === result.label) {
+      chain.setLink({ href: result.source }).run();
+      setInsertDialog(null);
       return;
     }
-    editor
-      .chain()
-      .focus()
+    chain
       .insertContent({
         type: 'text',
         text: result.label,
         marks: [{ type: 'link', attrs: { href: result.source } }],
       })
       .run();
+    setInsertDialog(null);
   };
 
   return (
@@ -194,7 +347,7 @@ export function MarkdownToolbar({
               <WorkOfficeRibbonGroup label="撤销">
                 <MarkdownToolbarButton
                   label="撤销"
-                  shortcut="Cmd/Ctrl+Z"
+                  shortcut={markdownToolbarShortcuts.undo}
                   disabled={!canUndo}
                   onClick={() => {
                     if (sourceEditing) onSourceUndo();
@@ -205,7 +358,7 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="重做"
-                  shortcut="Cmd/Ctrl+Shift+Z"
+                  shortcut={markdownToolbarShortcuts.redo}
                   disabled={!canRedo}
                   onClick={() => {
                     if (sourceEditing) onSourceRedo();
@@ -218,15 +371,7 @@ export function MarkdownToolbar({
               <WorkOfficeRibbonGroup label="样式">
                 <OfficeSelect
                   ariaLabel="段落样式"
-                  value={
-                    editor.isActive('heading', { level: 1 })
-                      ? 'h1'
-                      : editor.isActive('heading', { level: 2 })
-                        ? 'h2'
-                        : editor.isActive('heading', { level: 3 })
-                          ? 'h3'
-                          : 'paragraph'
-                  }
+                  value={paragraphStyle}
                   options={[
                     { value: 'paragraph', label: '正文' },
                     { value: 'h1', label: '标题 1' },
@@ -250,8 +395,12 @@ export function MarkdownToolbar({
               <WorkOfficeRibbonGroup label="文字">
                 <MarkdownToolbarButton
                   label="加粗"
-                  shortcut="Cmd/Ctrl+B"
-                  active={editor.isActive('bold')}
+                  shortcut={markdownToolbarShortcuts.bold}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('bold')
+                      : editor.isActive('bold')
+                  }
                   onClick={() =>
                     runCommand('bold', () => {
                       editor.chain().focus().toggleBold().run();
@@ -262,8 +411,12 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="斜体"
-                  shortcut="Cmd/Ctrl+I"
-                  active={editor.isActive('italic')}
+                  shortcut={markdownToolbarShortcuts.italic}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('italic')
+                      : editor.isActive('italic')
+                  }
                   onClick={() =>
                     runCommand('italic', () => {
                       editor.chain().focus().toggleItalic().run();
@@ -274,7 +427,11 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="删除线"
-                  active={editor.isActive('strike')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('strike')
+                      : editor.isActive('strike')
+                  }
                   onClick={() =>
                     runCommand('strike', () => {
                       editor.chain().focus().toggleStrike().run();
@@ -285,7 +442,11 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="行内代码"
-                  active={editor.isActive('code')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('code')
+                      : editor.isActive('code')
+                  }
                   onClick={() =>
                     runCommand('code', () => {
                       editor.chain().focus().toggleCode().run();
@@ -298,7 +459,11 @@ export function MarkdownToolbar({
               <WorkOfficeRibbonGroup label="段落">
                 <MarkdownToolbarButton
                   label="项目列表"
-                  active={editor.isActive('bulletList')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('bullet-list')
+                      : editor.isActive('bulletList')
+                  }
                   onClick={() =>
                     runCommand('bullet-list', () => {
                       editor.chain().focus().toggleBulletList().run();
@@ -309,7 +474,11 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="编号列表"
-                  active={editor.isActive('orderedList')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('ordered-list')
+                      : editor.isActive('orderedList')
+                  }
                   onClick={() =>
                     runCommand('ordered-list', () => {
                       editor.chain().focus().toggleOrderedList().run();
@@ -320,7 +489,11 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="任务列表"
-                  active={editor.isActive('taskList')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('task-list')
+                      : editor.isActive('taskList')
+                  }
                   onClick={() =>
                     runCommand('task-list', () => {
                       editor.chain().focus().toggleTaskList().run();
@@ -331,7 +504,11 @@ export function MarkdownToolbar({
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="引用"
-                  active={editor.isActive('blockquote')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('blockquote')
+                      : editor.isActive('blockquote')
+                  }
                   onClick={() =>
                     runCommand('blockquote', () => {
                       editor.chain().focus().toggleBlockquote().run();
@@ -347,12 +524,20 @@ export function MarkdownToolbar({
             <>
               <WorkOfficeRibbonGroup label="链接">
                 <MarkdownToolbarButton
-                  label={editor.isActive('link') ? '移除链接' : '添加链接'}
+                  label={linkActive ? '编辑链接' : '添加链接'}
                   displayLabel
-                  active={editor.isActive('link')}
-                  onClick={toggleLink}
+                  active={linkActive}
+                  onClick={openLinkDialog}
                 >
                   <Link2 size={19} />
+                </MarkdownToolbarButton>
+                <MarkdownToolbarButton
+                  label="移除链接"
+                  displayLabel
+                  disabled={!linkActive}
+                  onClick={removeLink}
+                >
+                  <Unlink size={19} />
                 </MarkdownToolbarButton>
                 <MarkdownToolbarButton
                   label="插入图片"
@@ -366,7 +551,11 @@ export function MarkdownToolbar({
                 <MarkdownToolbarButton
                   label="代码块"
                   displayLabel
-                  active={editor.isActive('codeBlock')}
+                  active={
+                    sourceEditing
+                      ? commandIsActive('code-block')
+                      : editor.isActive('codeBlock')
+                  }
                   onClick={() =>
                     runCommand('code-block', () => {
                       editor.chain().focus().toggleCodeBlock().run();
@@ -440,8 +629,12 @@ export function MarkdownToolbar({
       />
       {insertDialog && (
         <MarkdownInsertDialog
-          request={insertDialog}
-          restoreFocusTarget={() => editor.view.dom}
+          request={insertDialog.request}
+          restoreFocusTarget={() =>
+            insertDialog.surface === 'source'
+              ? (getSourceFocusTarget() ?? editor.view.dom)
+              : editor.view.dom
+          }
           onClose={() => setInsertDialog(null)}
           onSubmit={commitInsert}
         />
@@ -467,7 +660,7 @@ function MarkdownToolbarButton({
   ...props
 }: {
   label: string;
-  shortcut?: string;
+  shortcut?: MarkdownToolbarShortcut;
   active?: boolean;
   displayLabel?: boolean;
   children: ReactNode;
@@ -479,7 +672,8 @@ function MarkdownToolbarButton({
     <WorkOfficeRibbonButton
       {...props}
       label={label}
-      title={shortcut ? `${label}（${shortcut}）` : label}
+      title={shortcut ? `${label}（${shortcut.label}）` : label}
+      aria-keyshortcuts={shortcut?.ariaKeyShortcuts}
       active={active}
       displayLabel={displayLabel}
     >
