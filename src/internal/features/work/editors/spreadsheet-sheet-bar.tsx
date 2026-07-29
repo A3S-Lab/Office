@@ -83,6 +83,7 @@ export function SpreadsheetSheetBar({
   const [renameError, setRenameError] = useState<string | null>(null);
   const renameErrorId = useId();
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const sheetTabsRef = useRef<HTMLDivElement>(null);
   const sheetTabRefs = useRef(new Map<string, HTMLButtonElement>());
   const officeDialog = useOfficeDialog();
 
@@ -114,6 +115,26 @@ export function SpreadsheetSheetBar({
       );
     });
     return () => cancelAnimationFrame(frame);
+  }, [activeSheetId]);
+
+  useEffect(() => {
+    const sheetTabs = sheetTabsRef.current;
+    if (!sheetTabs || typeof ResizeObserver === 'undefined') return;
+    let frame: number | null = null;
+    const observer = new ResizeObserver(() => {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        scrollSpreadsheetSheetTabIntoView(
+          sheetTabRefs.current.get(activeSheetId),
+        );
+      });
+    });
+    observer.observe(sheetTabs);
+    return () => {
+      observer.disconnect();
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
   }, [activeSheetId]);
 
   const beginRename = (sheet: WorkSpreadsheetSheet) => {
@@ -290,7 +311,11 @@ export function SpreadsheetSheetBar({
         )}
       </div>
 
-      <div className="work-spreadsheet-sheet-tabs" role="tablist">
+      <div
+        ref={sheetTabsRef}
+        className="work-spreadsheet-sheet-tabs"
+        role="tablist"
+      >
         {visibleSheets.map((sheet, index) => {
           const sheetId = sheet.id ?? '';
           const active = sheetId === activeSheetId;

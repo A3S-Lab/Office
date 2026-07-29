@@ -650,6 +650,48 @@ test('Spreadsheet explains invalid worksheet names and confirms deletion', async
   );
 });
 
+test('Spreadsheet keeps the active worksheet visible when the footer compacts to phone width', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 800 });
+  await openSpreadsheetFixture(page);
+
+  await page.locator('.fortune-sheet-overlay').focus();
+  for (let index = 0; index < 3; index += 1) {
+    await page.keyboard.press('Shift+F11');
+  }
+
+  const activeTab = page.getByRole('tab', { name: '工作表 4' });
+  await expect(activeTab).toHaveAttribute('aria-selected', 'true');
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await expect
+    .poll(() =>
+      activeTab.evaluate((tab) => {
+        const tabList = tab.closest('[role="tablist"]');
+        if (!(tabList instanceof HTMLElement)) return false;
+        const tabBounds = tab.getBoundingClientRect();
+        const tabListBounds = tabList.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          tabBounds.left + tabBounds.width / 2,
+          tabBounds.top + tabBounds.height / 2,
+        );
+        return (
+          tabBounds.left >= tabListBounds.left - 1 &&
+          tabBounds.right <= tabListBounds.right + 1 &&
+          tab.contains(hit)
+        );
+      }),
+    )
+    .toBe(true);
+
+  await activeTab.hover();
+  await page.getByRole('button', { name: '工作表 4选项' }).click();
+  await expect(
+    page.getByRole('menu', { name: '工作表 4工作表操作' }),
+  ).toBeVisible();
+});
+
 async function openSpreadsheetFixture(page: Page) {
   await page.goto('/');
   await page

@@ -374,3 +374,76 @@ test('keeps read-only worksheet navigation free of disabled edit controls', () =
   fireEvent.click(screen.getByRole('button', { name: '工作表列表' }));
   expect(screen.queryByText('隐藏底稿')).toBeNull();
 });
+
+test('keeps the active worksheet visible when the tab viewport resizes', () => {
+  const originalResizeObserver = globalThis.ResizeObserver;
+  const originalRequestAnimationFrame = globalThis.requestAnimationFrame;
+  let resizeCallback: ResizeObserverCallback | null = null;
+  let observedTarget: Element | null = null;
+  let disconnected = false;
+  let observer: ResizeObserver | null = null;
+
+  class TestResizeObserver {
+    constructor(callback: ResizeObserverCallback) {
+      resizeCallback = callback;
+      observer = this as unknown as ResizeObserver;
+    }
+
+    observe(target: Element) {
+      observedTarget = target;
+    }
+
+    unobserve() {}
+
+    disconnect() {
+      disconnected = true;
+    }
+  }
+
+  globalThis.ResizeObserver =
+    TestResizeObserver as unknown as typeof ResizeObserver;
+  globalThis.requestAnimationFrame = (callback) => {
+    callback(0);
+    return 1;
+  };
+
+  try {
+    const { unmount } = render(
+      <SpreadsheetSheetBar
+        activeSheetId="sheet-4"
+        editable
+        sheets={[
+          { id: 'sheet-1', name: '执行看板', status: 0 },
+          { id: 'sheet-2', name: '工作表 2', status: 0 },
+          { id: 'sheet-3', name: '工作表 3', status: 0 },
+          { id: 'sheet-4', name: '工作表 4', status: 1 },
+        ]}
+        onActivate={() => undefined}
+        onCreate={() => undefined}
+        onDelete={() => undefined}
+        onDuplicate={() => undefined}
+        onHide={() => undefined}
+        onMove={() => undefined}
+        onRename={() => undefined}
+        onSetColor={() => undefined}
+        onShow={() => undefined}
+      />,
+    );
+
+    const activeTab = screen.getByRole('tab', { name: '工作表 4' });
+    let scrollCalls = 0;
+    activeTab.scrollIntoView = () => {
+      scrollCalls += 1;
+    };
+
+    expect(observedTarget).toHaveClass('work-spreadsheet-sheet-tabs');
+    resizeCallback?.([], observer as ResizeObserver);
+    expect(scrollCalls).toBe(1);
+
+    unmount();
+    expect(disconnected).toBe(true);
+  } finally {
+    globalThis.ResizeObserver = originalResizeObserver;
+    globalThis.requestAnimationFrame = originalRequestAnimationFrame;
+  }
+});
