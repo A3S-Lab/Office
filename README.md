@@ -258,7 +258,7 @@ interaction model.
   live selection statistics, an A3S-owned worksheet bar with lifecycle and
   color controls, safe deletion confirmation, in-place rename validation, a
   grid-aligned single-row responsive workbook footer that keeps the active
-  worksheet visible across window and phone-width changes,
+  worksheet and its actions visible across window and phone-width changes,
   selection-preserving undo/redo, deterministic Arrow, Enter, Tab, Home,
   PageUp/PageDown, row, column, and all-cells selection shortcuts, Cmd/Ctrl
   formatting through root-scoped capture before vendor grid listeners, an

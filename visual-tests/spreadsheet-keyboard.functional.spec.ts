@@ -669,23 +669,34 @@ test('Spreadsheet keeps the active worksheet visible when the footer compacts to
     .poll(() =>
       activeTab.evaluate((tab) => {
         const tabList = tab.closest('[role="tablist"]');
-        if (!(tabList instanceof HTMLElement)) return false;
-        const tabBounds = tab.getBoundingClientRect();
+        const tabContainer = tab.closest('.work-spreadsheet-sheet-tab');
+        const options = tabContainer?.querySelector(
+          '.work-spreadsheet-sheet-options',
+        );
+        if (
+          !(tabList instanceof HTMLElement) ||
+          !(tabContainer instanceof HTMLElement) ||
+          !(options instanceof HTMLElement)
+        ) {
+          return false;
+        }
+        const tabBounds = tabContainer.getBoundingClientRect();
         const tabListBounds = tabList.getBoundingClientRect();
+        const optionsBounds = options.getBoundingClientRect();
         const hit = document.elementFromPoint(
-          tabBounds.left + tabBounds.width / 2,
-          tabBounds.top + tabBounds.height / 2,
+          optionsBounds.left + optionsBounds.width / 2,
+          optionsBounds.top + optionsBounds.height / 2,
         );
         return (
           tabBounds.left >= tabListBounds.left - 1 &&
           tabBounds.right <= tabListBounds.right + 1 &&
-          tab.contains(hit)
+          getComputedStyle(options).opacity === '1' &&
+          options.contains(hit)
         );
       }),
     )
     .toBe(true);
 
-  await activeTab.hover();
   await page.getByRole('button', { name: '工作表 4选项' }).click();
   await expect(
     page.getByRole('menu', { name: '工作表 4工作表操作' }),

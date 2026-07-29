@@ -442,7 +442,7 @@ export function SpreadsheetSheetBar({
 function scrollSpreadsheetSheetTabIntoView(
   target: HTMLButtonElement | undefined,
 ): void {
-  target?.scrollIntoView?.({
+  (target?.parentElement ?? target)?.scrollIntoView?.({
     behavior: 'auto',
     block: 'nearest',
     inline: 'nearest',

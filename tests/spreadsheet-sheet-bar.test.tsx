@@ -431,8 +431,12 @@ test('keeps the active worksheet visible when the tab viewport resizes', () => {
     );
 
     const activeTab = screen.getByRole('tab', { name: '工作表 4' });
+    const activeSheet = activeTab.closest('.work-spreadsheet-sheet-tab');
+    if (!(activeSheet instanceof HTMLElement)) {
+      throw new Error('Expected an active worksheet tab container.');
+    }
     let scrollCalls = 0;
-    activeTab.scrollIntoView = () => {
+    activeSheet.scrollIntoView = () => {
       scrollCalls += 1;
     };
 

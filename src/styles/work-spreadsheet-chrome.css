@@ -643,6 +643,10 @@
     display: none !important;
   }
 
+  .work-spreadsheet-sheet-tab.active .work-spreadsheet-sheet-options {
+    opacity: 1;
+  }
+
   .work-spreadsheet-footer .work-spreadsheet-status {
     padding-left: 6px;
   }
