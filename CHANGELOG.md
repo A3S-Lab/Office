@@ -102,3 +102,5 @@ All notable changes to A3S Office will be documented in this file.
 - Positioned the Word comment composer against its selected text before the
   browser's first paint, removing the initial jump from the top of the review
   rail.
+- Kept Word revision review keyboard focus on the matching action for the next
+  change, then returned it to the document after the final individual decision.

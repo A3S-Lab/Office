@@ -82,6 +82,56 @@ test('confirms before rejecting every tracked change', async () => {
   }
 });
 
+test('keeps keyboard focus in the review flow after individual decisions', async () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const range = textRange(editor, 'Alpha');
+  editor.commands.replaceDocumentTextWithTrackedChange(
+    range.from,
+    range.to,
+    'Omega',
+  );
+  const initialChanges = collectDocumentChanges(editor.state.doc);
+  expect(initialChanges).toHaveLength(2);
+
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={initialChanges}
+        onClose={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '拒绝修订 1' }));
+    const remainingChanges = collectDocumentChanges(editor.state.doc);
+    expect(remainingChanges).toHaveLength(1);
+    view.rerender(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={remainingChanges}
+        onClose={() => undefined}
+      />,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '拒绝修订 1' })).toHaveFocus(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '接受修订 1' }));
+    view.rerender(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={collectDocumentChanges(editor.state.doc)}
+        onClose={() => undefined}
+      />,
+    );
+    await waitFor(() => expect(editor.view.dom).toHaveFocus());
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
 function createEditor(): Editor {
   let sequence = 0;
   return new Editor({

@@ -1,9 +1,17 @@
 import type { Editor } from '@tiptap/core';
 import { Check, CheckCheck, Undo2, XCircle } from 'lucide-react';
+import { useLayoutEffect, useRef } from 'react';
 import { Button, CollectionState } from '../../../design-system/primitives';
 import type { WorkDocumentChange } from '../work-document-changes';
 import { DocumentTaskPane } from './document-task-pane';
 import { useOfficeDialog } from './office-controls';
+
+type DocumentChangeDecision = 'accept' | 'reject';
+
+interface PendingDocumentChangeFocus {
+  changeId: string | null;
+  decision: DocumentChangeDecision;
+}
 
 export function DocumentChangesPanel({
   editor,
@@ -15,6 +23,42 @@ export function DocumentChangesPanel({
   onClose: () => void;
 }) {
   const officeDialog = useOfficeDialog();
+  const decisionButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingFocusRef = useRef<PendingDocumentChangeFocus | null>(null);
+
+  useLayoutEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    pendingFocusRef.current = null;
+    const nextButton = pending.changeId
+      ? decisionButtonRefs.current.get(
+          documentChangeDecisionKey(pending.changeId, pending.decision),
+        )
+      : undefined;
+    if (nextButton) {
+      nextButton.focus({ preventScroll: true });
+      nextButton.scrollIntoView({ block: 'nearest' });
+    } else if (!editor.isDestroyed) {
+      editor.view.dom.focus({ preventScroll: true });
+    }
+  }, [changes, editor]);
+
+  const decideChange = (
+    change: WorkDocumentChange,
+    index: number,
+    decision: DocumentChangeDecision,
+  ) => {
+    const nextChange = changes[index + 1] ?? changes[index - 1] ?? null;
+    pendingFocusRef.current = {
+      changeId: nextChange?.id ?? null,
+      decision,
+    };
+    const handled =
+      decision === 'accept'
+        ? editor.commands.acceptDocumentChange(change.id)
+        : editor.commands.rejectDocumentChange(change.id);
+    if (!handled) pendingFocusRef.current = null;
+  };
   const acceptAll = async () => {
     const confirmed = await officeDialog.confirm({
       title: '接受全部修订？',
@@ -99,21 +143,27 @@ export function DocumentChangesPanel({
               </button>
               <div>
                 <Button
+                  ref={(element) => {
+                    const key = documentChangeDecisionKey(change.id, 'accept');
+                    if (element) decisionButtonRefs.current.set(key, element);
+                    else decisionButtonRefs.current.delete(key);
+                  }}
                   tone="quiet"
                   aria-label={`接受修订 ${index + 1}`}
-                  onClick={() =>
-                    editor.commands.acceptDocumentChange(change.id)
-                  }
+                  onClick={() => decideChange(change, index, 'accept')}
                 >
                   <Check size={13} />
                   接受
                 </Button>
                 <Button
+                  ref={(element) => {
+                    const key = documentChangeDecisionKey(change.id, 'reject');
+                    if (element) decisionButtonRefs.current.set(key, element);
+                    else decisionButtonRefs.current.delete(key);
+                  }}
                   tone="quiet"
                   aria-label={`拒绝修订 ${index + 1}`}
-                  onClick={() =>
-                    editor.commands.rejectDocumentChange(change.id)
-                  }
+                  onClick={() => decideChange(change, index, 'reject')}
                 >
                   <XCircle size={13} />
                   拒绝
@@ -134,6 +184,13 @@ export function DocumentChangesPanel({
       {officeDialog.dialog}
     </>
   );
+}
+
+function documentChangeDecisionKey(
+  changeId: string,
+  decision: DocumentChangeDecision,
+): string {
+  return `${changeId}:${decision}`;
 }
 
 function formatChangeDate(value: string): string {

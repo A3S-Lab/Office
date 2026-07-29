@@ -772,6 +772,18 @@ test('document revision decisions require an explicit confirmation', async ({
     changesPane.getByRole('button', { name: '全部拒绝' }),
   ).toBeHidden();
   await expect(editor).toBeFocused();
+
+  await editor.press('End');
+  await page.keyboard.type(' reviewed');
+  const acceptChange = changesPane.getByRole('button', {
+    name: '接受修订 1',
+  });
+  await expect(acceptChange).toBeVisible();
+  await acceptChange.click();
+  await expect(
+    changesPane.getByText('开启修订后，改动会显示在这里。'),
+  ).toBeVisible();
+  await expect(editor).toBeFocused();
 });
 
 test('document review views remain usable at phone width', async ({ page }) => {
