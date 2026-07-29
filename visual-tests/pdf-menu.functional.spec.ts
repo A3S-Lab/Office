@@ -60,12 +60,10 @@ test('PDF overflow menu uses keyboard navigation and restores its trigger', asyn
   await trigger.click();
   const menu = page.getByRole('menu', { name: '更多 PDF 工具' });
   await expect(menu).toBeVisible();
-  const firstAction = menu.getByRole('menuitemradio', { name: '下划线批注' });
+  const firstAction = menu.getByRole('menuitemradio', { name: '选择' });
   await expect(firstAction).toBeFocused();
   await page.keyboard.press('ArrowDown');
-  await expect(
-    menu.getByRole('menuitemradio', { name: '删除线批注' }),
-  ).toBeFocused();
+  await expect(menu.getByRole('menuitemradio', { name: '高亮' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await expect(trigger).toBeFocused();
