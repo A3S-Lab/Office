@@ -394,6 +394,7 @@ test('document comments align with their review rail', async ({
   const fixture = fixtures.find((candidate) => candidate.kind === 'document');
   if (!fixture) throw new Error('Missing document visual fixture.');
 
+  await page.clock.setFixedTime(new Date('2026-07-29T08:00:00.000Z'));
   await page.goto('/');
   await fixture.open(page);
   await fixture.ready(page);

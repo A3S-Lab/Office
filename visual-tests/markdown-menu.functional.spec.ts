@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Locator, test } from '@playwright/test';
 
 test('Markdown insert dialogs return focus to the invoking editing surface', async ({
   page,
@@ -250,10 +250,7 @@ test('Markdown source selection keeps ribbon state synchronized', async ({
   await source.fill('**bold** plain');
   await expect(bold).toHaveAttribute('aria-pressed', 'false');
 
-  await source.press('Meta+ArrowLeft');
-  for (let index = 0; index < 4; index += 1) {
-    await source.press('ArrowRight');
-  }
+  await setMarkdownSourceSelection(source, 4);
   await expect(bold).toHaveAttribute('aria-pressed', 'true');
   await bold.click();
   await expect(source).toHaveValue('bold plain');
@@ -262,12 +259,7 @@ test('Markdown source selection keeps ribbon state synchronized', async ({
 
   await source.fill('**bold** plain');
 
-  await source.press('Meta+ArrowLeft');
-  await source.press('ArrowRight');
-  await source.press('ArrowRight');
-  for (let index = 0; index < 4; index += 1) {
-    await source.press('Shift+ArrowRight');
-  }
+  await setMarkdownSourceSelection(source, 2, 6);
   await expect
     .poll(() =>
       source.evaluate((element) => ({
@@ -278,18 +270,10 @@ test('Markdown source selection keeps ribbon state synchronized', async ({
     .toEqual({ end: 6, start: 2 });
   await expect(bold).toHaveAttribute('aria-pressed', 'true');
 
-  await source.press('Meta+ArrowRight');
-  for (let index = 0; index < 5; index += 1) {
-    await source.press('Shift+ArrowLeft');
-  }
+  await setMarkdownSourceSelection(source, 9, 14);
   await expect(bold).toHaveAttribute('aria-pressed', 'false');
 
-  await source.press('Meta+ArrowLeft');
-  await source.press('ArrowRight');
-  await source.press('ArrowRight');
-  for (let index = 0; index < 4; index += 1) {
-    await source.press('Shift+ArrowRight');
-  }
+  await setMarkdownSourceSelection(source, 2, 6);
   await expect(bold).toHaveAttribute('aria-pressed', 'true');
   await bold.click();
   await expect(source).toHaveValue('bold plain');
@@ -318,3 +302,18 @@ test('Markdown opens source selection actions from the keyboard', async ({
   await expect(menu).toBeHidden();
   await expect(source).toBeFocused();
 });
+
+async function setMarkdownSourceSelection(
+  source: Locator,
+  start: number,
+  end = start,
+): Promise<void> {
+  await source.evaluate(
+    (element: HTMLTextAreaElement, selection) => {
+      element.focus();
+      element.setSelectionRange(selection.start, selection.end, 'forward');
+    },
+    { end, start },
+  );
+  await source.press('Shift');
+}
