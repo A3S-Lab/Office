@@ -3,6 +3,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { EditorContent, useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
+  type FocusEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -146,7 +147,10 @@ export function DocumentEditor({
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pageHeaderRef = useRef<HTMLElement>(null);
   const pageFooterRef = useRef<HTMLElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const reviewSurfaceRef = useRef<HTMLDivElement>(null);
+  const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
+  const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(content);
   const onChangeRef = useRef(onChange);
   const trackChangesRef = useRef(Boolean(content.trackChanges));
@@ -256,6 +260,48 @@ export function DocumentEditor({
     onBeforeDraft: () => setTaskPane(null),
   });
   const documentInsert = useDocumentInsertCommands({ contentRef, editor });
+  const rememberTaskPaneDraftFocus = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      const target = event.target;
+      if (
+        !(target instanceof HTMLElement) ||
+        !target.matches(
+          'input:not([type="hidden"]), textarea, [contenteditable="true"], [role="combobox"]',
+        )
+      ) {
+        return;
+      }
+      if (target.closest('.work-document-comments-panel')) {
+        commentsDraftFocusRef.current = target;
+      } else if (target.closest('.work-document-citations-panel')) {
+        citationsDraftFocusRef.current = target;
+      }
+    },
+    [],
+  );
+  const restoreTaskPaneDraftFocus = useCallback(
+    (pane: 'comments' | 'citations') => {
+      requestAnimationFrame(() => {
+        const remembered =
+          pane === 'comments'
+            ? commentsDraftFocusRef.current
+            : citationsDraftFocusRef.current;
+        const fallbackSelector =
+          pane === 'comments'
+            ? '.work-document-comments-panel textarea[aria-label="批注内容"], .work-document-comments-panel textarea[aria-label^="回复批注 "]'
+            : '.work-document-citations-panel input:not([type="hidden"]), .work-document-citations-panel textarea, .work-document-citations-panel [role="combobox"]';
+        const target =
+          (remembered?.isConnected ? remembered : null) ??
+          workspaceRef.current?.querySelector<HTMLElement>(fallbackSelector);
+        if (target) {
+          target.focus({ preventScroll: true });
+        } else if (editor && !editor.isDestroyed) {
+          editor.view.dom.focus({ preventScroll: true });
+        }
+      });
+    },
+    [editor],
+  );
   const requestEditorViewChange = useCallback(
     async (
       nextPane: DocumentTaskPane | null,
@@ -272,7 +318,10 @@ export function DocumentEditor({
           confirmLabel: '放弃更改',
           confirmTone: 'danger',
         });
-        if (!discard) return false;
+        if (!discard) {
+          restoreTaskPaneDraftFocus('citations');
+          return false;
+        }
       }
       if (closeComments && commentsDirty) {
         const discard = await taskPaneDialog.confirm({
@@ -283,7 +332,10 @@ export function DocumentEditor({
           confirmLabel: '放弃内容',
           confirmTone: 'danger',
         });
-        if (!discard) return false;
+        if (!discard) {
+          restoreTaskPaneDraftFocus('comments');
+          return false;
+        }
       }
       if (taskPane === 'citations' && nextPane !== 'citations')
         setCitationsDirty(false);
@@ -301,6 +353,7 @@ export function DocumentEditor({
       documentComments.closeDraft,
       documentComments.draft,
       documentComments.setOpen,
+      restoreTaskPaneDraftFocus,
       taskPane,
       taskPaneDialog.confirm,
     ],
@@ -706,7 +759,9 @@ export function DocumentEditor({
         />
       )}
       <div
+        ref={workspaceRef}
         className={`work-document-workspace${!preview && taskPane ? ' task-pane-open' : ''}`}
+        onFocusCapture={rememberTaskPaneDraftFocus}
       >
         {!preview && navigationOpen && (
           <DocumentNavigationPanel editor={editor} onClose={closeTaskPane} />

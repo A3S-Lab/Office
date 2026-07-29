@@ -551,14 +551,14 @@ test('document comment drafts stay visible and only warn for written content', a
   input = composer.getByRole('textbox', { name: '批注内容' });
   await input.fill('尚未保存的批注');
   const dirtyClose = panel.getByRole('button', { name: '关闭批注审阅' });
-  await dirtyClose.click();
+  await page.getByRole('button', { name: '查看修订' }).click();
   const discard = page.getByRole('dialog', {
     name: '放弃未完成的批注？',
   });
   await expect(discard).toBeVisible();
   await discard.getByRole('button', { name: '取消' }).click();
   await expect(input).toHaveValue('尚未保存的批注');
-  await expect(dirtyClose).toBeFocused();
+  await expect(input).toBeFocused();
 
   await dirtyClose.click();
   await discard.getByRole('button', { name: '放弃内容' }).click();
@@ -794,12 +794,12 @@ test('document task panes and dialogs preserve the editing context', async ({
   const closeCitations = citationsPane.getByRole('button', {
     name: '关闭文献库',
   });
-  await closeCitations.click();
+  await page.getByRole('tab', { name: '审阅' }).click();
   const discardCitation = page.getByRole('dialog', {
     name: '放弃未保存的文献更改？',
   });
   await discardCitation.getByRole('button', { name: '取消' }).click();
-  await expect(closeCitations).toBeFocused();
+  await expect(citationTitle).toBeFocused();
   await expect(citationTitle).toHaveValue('A3S Office edited');
 
   await closeCitations.click();
