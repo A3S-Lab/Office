@@ -425,7 +425,7 @@
   gap: 14px;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 640px) {
   .work-markdown-workspace.split {
     display: grid;
     grid-template-rows: repeat(2, minmax(220px, 1fr));

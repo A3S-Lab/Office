@@ -259,8 +259,8 @@ interaction model.
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut
-  hints, keyboard-operated cells and sheet tabs, cut/copy/paste, clear, F2
-  editing, and focus-safe Escape behavior, direct
+  hints, keyboard-operated cells and sheet tabs, permission-resilient
+  cut/copy/paste, clear, F2 editing, and focus-safe Escape behavior, direct
   font-family, vertical-alignment, text-wrap, number/percent, and decimal
   controls, charts, validation, protection, comments, and print settings.
   _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._

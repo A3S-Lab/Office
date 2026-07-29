@@ -776,6 +776,35 @@
   flex: 0 0 auto;
 }
 
+@media (max-width: 1680px) {
+  .work-editor-shell.pdf .work-pdf-overflow {
+    display: flex;
+  }
+
+  .work-editor-shell.pdf .work-pdf-search {
+    width: min(220px, 28vw);
+  }
+
+  .work-editor-shell.pdf .work-pdf-annotation-optional,
+  .work-editor-shell.pdf .work-pdf-fit-button,
+  .work-editor-shell.pdf .work-pdf-page-step,
+  .work-editor-shell.pdf .work-pdf-history {
+    display: none;
+  }
+
+  .work-editor-shell.pdf .work-pdf-overflow-narrow {
+    display: grid;
+  }
+
+  .work-editor-shell.pdf .work-pdf-page-controls {
+    flex: 0 0 auto;
+  }
+
+  .work-editor-shell.pdf .work-pdf-save > output {
+    display: none;
+  }
+}
+
 .playground-assistant {
   position: relative;
   z-index: 24;

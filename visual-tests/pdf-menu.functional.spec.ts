@@ -50,16 +50,13 @@ test('PDF shortcuts do not take over controls outside the editor', async ({
 
 test('PDF overflow menu uses keyboard navigation and restores its trigger', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.goto('/');
   await openPdfFixture(page);
   await waitForPdfFixture(page);
 
   const trigger = page.getByRole('button', { name: '更多 PDF 工具' });
-  if (testInfo.project.name !== 'compact-768') {
-    await expect(trigger).toBeHidden();
-    return;
-  }
+  await expect(trigger).toBeVisible();
   await trigger.click();
   const menu = page.getByRole('menu', { name: '更多 PDF 工具' });
   await expect(menu).toBeVisible();
@@ -76,7 +73,7 @@ test('PDF overflow menu uses keyboard navigation and restores its trigger', asyn
 
 test('PDF page Escape cancels navigation and annotation styles exit in document order', async ({
   page,
-}, testInfo) => {
+}) => {
   await page.goto('/');
   await openPdfFixture(page, { pageCount: 2 });
   await waitForPdfFixture(page);
@@ -104,15 +101,9 @@ test('PDF page Escape cancels navigation and annotation styles exit in document 
   ).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(styleDialog).toBeHidden();
-  if (testInfo.project.name === 'compact-768') {
-    await expect(
-      page.getByRole('button', { name: '更多 PDF 工具' }),
-    ).toBeFocused();
-  } else {
-    await expect(
-      page.getByRole('searchbox', { name: '在 PDF 中搜索' }),
-    ).toBeFocused();
-  }
+  await expect(
+    page.getByRole('button', { name: '更多 PDF 工具' }),
+  ).toBeFocused();
 });
 
 test('PDF search advances a settled query and clear keeps the search field active', async ({

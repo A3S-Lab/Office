@@ -254,6 +254,44 @@ test('Spreadsheet owns deterministic cell navigation, selection, editing, and cl
     .toBe(formulaText);
 });
 
+test('Spreadsheet keeps copy and paste working when browser clipboard access is blocked', async ({
+  page,
+}) => {
+  await openSpreadsheetFixture(page);
+
+  await page.locator('.fortune-sheet-overlay').focus();
+  await page.keyboard.press('Shift+F11');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  await expect(nameBox).toHaveText('A1');
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        readText: async () => {
+          throw new Error('Clipboard read blocked for regression coverage.');
+        },
+        writeText: async () => {
+          throw new Error('Clipboard write blocked for regression coverage.');
+        },
+      },
+    });
+  });
+
+  await page.keyboard.press('4');
+  await page.keyboard.press('2');
+  await page.keyboard.press('Enter');
+  await expect(nameBox).toHaveText('A2');
+  await page.keyboard.press('ArrowUp');
+  const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await page.keyboard.press(`${modifier}+c`);
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B1');
+  await page.keyboard.press(`${modifier}+v`);
+  await expect(formulaBar).toHaveText('42');
+  await expectGridFocus(page);
+});
+
 test('Spreadsheet returns keyboard control to the grid after ribbon menus', async ({
   page,
 }) => {

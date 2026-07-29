@@ -203,6 +203,93 @@ test('PDF prioritizes page and zoom controls at compact workspace width', async 
   await expect(toolbar.getByLabel('PDF 缩放比例')).toBeHidden();
 });
 
+test('PDF keeps page and zoom controls inside the desktop command row', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'This contract targets the 1280px editor command row.',
+  );
+  const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
+  if (!fixture) throw new Error('Missing PDF visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const toolbar = page.getByRole('toolbar', { name: 'PDF 工具栏' });
+  const geometry = await toolbar.evaluate((element) => {
+    const toolbarRect = element.getBoundingClientRect();
+    const pageControls = element.querySelector<HTMLElement>(
+      '.work-pdf-page-controls',
+    );
+    const zoomControls = element.querySelector<HTMLElement>(
+      '.work-pdf-zoom-controls',
+    );
+    if (!(pageControls && zoomControls)) {
+      throw new Error('PDF navigation controls are unavailable.');
+    }
+    const pageRect = pageControls.getBoundingClientRect();
+    const zoomRect = zoomControls.getBoundingClientRect();
+    return {
+      clientWidth: element.clientWidth,
+      pageRight: pageRect.right,
+      scrollWidth: element.scrollWidth,
+      toolbarRight: toolbarRect.right,
+      zoomRight: zoomRect.right,
+    };
+  });
+
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1);
+  expect(geometry.pageRight).toBeLessThanOrEqual(geometry.toolbarRight + 1);
+  expect(geometry.zoomRight).toBeLessThanOrEqual(geometry.toolbarRight + 1);
+});
+
+test('Markdown keeps source and preview side by side at compact width', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'compact-768',
+    'This contract targets the 768px split workspace.',
+  );
+  const fixture = fixtures.find((candidate) => candidate.kind === 'markdown');
+  if (!fixture) throw new Error('Missing Markdown visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+
+  const geometry = await page
+    .locator('.work-markdown-workspace.split')
+    .evaluate((workspace) => {
+      const source = workspace.querySelector<HTMLElement>(
+        '.work-markdown-pane.source',
+      );
+      const preview = workspace.querySelector<HTMLElement>(
+        '.work-markdown-pane.visual',
+      );
+      const splitter = workspace.querySelector<HTMLElement>(
+        '.work-markdown-splitter',
+      );
+      if (!(source && preview && splitter)) {
+        throw new Error('Markdown split workspace is incomplete.');
+      }
+      const sourceRect = source.getBoundingClientRect();
+      const previewRect = preview.getBoundingClientRect();
+      return {
+        previewLeft: previewRect.left,
+        previewTop: previewRect.top,
+        sourceRight: sourceRect.right,
+        sourceTop: sourceRect.top,
+        splitterDisplay: getComputedStyle(splitter).display,
+      };
+    });
+
+  expect(geometry.sourceTop).toBeCloseTo(geometry.previewTop, 0);
+  expect(geometry.sourceRight).toBeLessThanOrEqual(geometry.previewLeft);
+  expect(geometry.splitterDisplay).not.toBe('none');
+});
+
 test('presentation transition controls keep standard ribbon geometry', async ({
   page,
 }) => {

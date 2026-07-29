@@ -45,9 +45,11 @@ import {
   type SpreadsheetEditorCommands,
 } from './spreadsheet-command-controller';
 import {
+  browserSpreadsheetClipboard,
   parseSpreadsheetClipboardText,
   spreadsheetCoreContextMenuItems,
 } from './spreadsheet-context-menu';
+import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   SpreadsheetEditorRibbon,
   type SpreadsheetRibbonTabId,
@@ -520,6 +522,19 @@ export function SpreadsheetEditor({
       maximumCells,
     );
   };
+  const handleSpreadsheetKeyDownCapture = (
+    event: React.KeyboardEvent<HTMLElement>,
+  ) => {
+    handleSpreadsheetEditingEscape(event);
+    const handled = runSpreadsheetClipboardShortcut(event.nativeEvent, {
+      clipboard: browserSpreadsheetClipboard,
+      clearSelectedCells: spreadsheetCommands.clearSelectedCells,
+      pasteCells: spreadsheetCommands.pasteCells,
+      readSelectionText: () => currentClipboardSelection()?.clipboard ?? null,
+      restoreFocus: restoreSpreadsheetGridFocus,
+    });
+    if (handled) event.stopPropagation();
+  };
   const handleSpreadsheetCopy = (
     event: ReactClipboardEvent<HTMLElement>,
     cut: boolean,
@@ -581,7 +596,7 @@ export function SpreadsheetEditor({
       ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       aria-label="表格工作区"
-      onKeyDownCapture={handleSpreadsheetEditingEscape}
+      onKeyDownCapture={handleSpreadsheetKeyDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
       onCutCapture={(event) => handleSpreadsheetCopy(event, true)}
       onPasteCapture={handleSpreadsheetPaste}

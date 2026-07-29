@@ -101,7 +101,7 @@ export function parseSpreadsheetClipboardText(value: string): string[][] {
   ]);
 }
 
-const browserSpreadsheetClipboard: SpreadsheetClipboardPort = {
+export const browserSpreadsheetClipboard: SpreadsheetClipboardPort = {
   readText: () =>
     readSpreadsheetClipboardText(
       typeof navigator !== 'undefined' && navigator.clipboard?.readText
