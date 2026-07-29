@@ -1,13 +1,13 @@
 import type { Editor } from '@tiptap/core';
 import { GalleryVerticalEnd } from 'lucide-react';
 import {
-  useEffect,
   useId,
   useRef,
   useState,
   type PointerEvent,
   type RefObject,
 } from 'react';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -130,37 +130,22 @@ export function PresentationWorkspace({
   const mobileSlideNavigationToggleRef = useRef<HTMLButtonElement>(null);
   const mobileSlideNavigationCloseRef = useRef<HTMLButtonElement>(null);
 
-  const restoreMobileSlideNavigationFocus = () => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        mobileSlideNavigationToggleRef.current?.focus({
-          preventScroll: true,
-        });
-      });
-    });
-  };
   const closeMobileSlideNavigation = () => {
     setMobileSlideNavigationOpen(false);
-    restoreMobileSlideNavigationFocus();
   };
-
-  useEffect(() => {
-    if (!mobileSlideNavigationOpen) return;
-    const focusFrame = requestAnimationFrame(() => {
-      mobileSlideNavigationCloseRef.current?.focus({ preventScroll: true });
-    });
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      closeMobileSlideNavigation();
-    };
-    window.addEventListener('keydown', closeOnEscape, { capture: true });
-    return () => {
-      cancelAnimationFrame(focusFrame);
-      window.removeEventListener('keydown', closeOnEscape, { capture: true });
-    };
-  }, [mobileSlideNavigationOpen]);
+  useDialogFocusScope<HTMLElement>({
+    active: mobileSlideNavigationOpen,
+    onEscape: closeMobileSlideNavigation,
+    initialFocus: () => mobileSlideNavigationCloseRef.current,
+    getActiveScope: () =>
+      document.getElementById(mobileSlideNavigationId) as HTMLElement | null,
+    getIsolationExceptions: () => [
+      document.querySelector<HTMLElement>(
+        '.work-presentation-slide-navigation-backdrop',
+      ),
+    ],
+    restoreFocusTarget: () => mobileSlideNavigationToggleRef.current,
+  });
 
   const selectedElementSet = new Set(selectedElementIds);
   const selectedElements = selectedPresentationElements(
@@ -226,6 +211,7 @@ export function PresentationWorkspace({
         content={content}
         designContent={designContent}
         mobileCloseButtonRef={mobileSlideNavigationCloseRef}
+        mobileNavigationModal={mobileSlideNavigationOpen}
         mobileNavigationId={mobileSlideNavigationId}
         selectedSlide={selectedSlide}
         viewMode={viewMode}

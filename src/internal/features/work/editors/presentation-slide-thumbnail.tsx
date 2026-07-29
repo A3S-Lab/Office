@@ -41,7 +41,6 @@ export function PresentationSlideThumbnail({
       data-slide-id={slide.id}
       data-slide-index={index}
       data-slide-thumbnail-rendered={renderPreview ? 'true' : 'false'}
-      onFocus={onSelect}
       onClick={onSelect}
       onContextMenu={onContextMenu}
       onDoubleClick={onDoubleClick}

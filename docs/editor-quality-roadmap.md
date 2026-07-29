@@ -47,6 +47,14 @@ These are foundations, not a separate feature-expansion phase:
 - Performance budgets are fixture-based. A release cannot replace measured
   evidence with a qualitative claim.
 
+Current shared-shell evidence includes one modal focus boundary for the compact
+Office sidebar, Presentation slide drawer, AI assistant, and editor dialogs.
+Each surface receives focus on entry, wraps forward and reverse Tab navigation,
+isolates obscured content with `inert`, lets only the top overlay handle Escape,
+and restores the current semantic invoker even when React remounts that control.
+Phone, 768 px, and desktop browser checks keep overlay and persistent-pane
+behavior distinct.
+
 ## Priority 1: Word-Compatible Document Editing
 
 Document work is delivered as complete vertical slices in the order below.

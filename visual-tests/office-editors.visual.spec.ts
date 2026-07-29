@@ -737,9 +737,7 @@ test.describe('Office editor context menu contracts', () => {
           'document-selection-context-menu.png',
         );
         await menu.getByRole('menuitem', { name: '扩写选中内容' }).click();
-        const assistant = page.getByRole('complementary', {
-          name: 'AI 助手',
-        });
+        const assistant = page.locator('.playground-assistant');
         await expect(assistant).toBeVisible();
         await expect(assistant).toContainText('完整文档：');
         await expect(assistant).toContainText('新项目方案');

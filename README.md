@@ -89,6 +89,9 @@ The images below are committed visual-regression baselines from the real
 
 - **Product-native UI** — Complete Office-style surfaces with no required
   backend, account system, or storage model.
+- **Accessible responsive shell** — Compact sidebars, slide navigation, AI
+  panes, dialogs, menus, and popovers share bounded keyboard navigation,
+  background isolation, topmost Escape handling, and focus restoration.
 - **Predictable state** — Controlled content values, typed callbacks, explicit
   file actions, conflict-aware document edits, and one document typography
   baseline across editing, preview, and PDF rendering. Word editing and

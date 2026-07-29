@@ -14,7 +14,7 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
   await canvas.waitFor();
 
   const toggle = page.getByRole('button', { name: '打开幻灯片导航' });
-  const rail = page.getByRole('complementary', { name: '幻灯片' });
+  const rail = page.locator('.work-slide-strip');
   await expect(toggle).toBeVisible();
   await expect(rail).toBeHidden();
   await expect
@@ -23,6 +23,9 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
 
   await toggle.click();
   await expect(rail).toBeVisible();
+  await expect(rail).toHaveAttribute('role', 'dialog');
+  await expect(rail).toHaveAttribute('aria-modal', 'true');
+  await expect(toggle).toHaveAttribute('inert', '');
   await expect
     .poll(() =>
       rail.evaluate((element) => element.getBoundingClientRect().left),
@@ -44,9 +47,77 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
     exact: true,
   });
   await expect(close).toBeFocused();
+  await page.keyboard.press('Tab');
+  const firstSlide = page.getByRole('button', {
+    name: '幻灯片 1 / 3：封面',
+  });
+  await expect(firstSlide).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
   await page.getByRole('button', { name: '幻灯片 2 / 3：核心判断' }).click();
   await expect(rail).toBeHidden();
   await expect(toggle).toBeFocused();
+});
+
+test('Phone Office sidebar owns focus until dismissed', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: '展开办公侧边栏' });
+  await trigger.click();
+
+  const sidebar = page.getByRole('dialog', { name: 'A3S Office 导航' });
+  const close = page.getByRole('button', { name: '收起办公侧边栏' });
+  await expect(sidebar).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.playground-main-pane')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(close).toBeFocused();
+
+  await page.keyboard.press('Tab');
+  await expect(sidebar.getByRole('button', { name: '编辑器' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await expect(sidebar).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.playground-main-pane')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+});
+
+test('Phone AI assistant keeps focus out of the obscured editor', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
+    .click();
+
+  const trigger = page.getByRole('button', { name: '打开 AI 助手' });
+  await trigger.click();
+  const assistant = page.getByRole('dialog', { name: 'AI 助手' });
+  const close = assistant.getByRole('button', { name: '关闭 AI 助手' });
+  await expect(assistant).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.playground-editor-host')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(close).toBeFocused();
+
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await expect(assistant).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.playground-editor-host')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
 });
 
 test('PDF keeps compact tools clear of the file actions on phones', async ({

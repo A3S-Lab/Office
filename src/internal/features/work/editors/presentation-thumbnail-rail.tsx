@@ -18,6 +18,7 @@ export function PresentationThumbnailRail({
   viewMode,
   zoom,
   mobileCloseButtonRef,
+  mobileNavigationModal = false,
   mobileNavigationId,
   onAddSlide,
   onCloseMobileNavigation,
@@ -33,6 +34,7 @@ export function PresentationThumbnailRail({
   viewMode: 'normal' | 'sorter';
   zoom: number;
   mobileCloseButtonRef?: RefObject<HTMLButtonElement | null>;
+  mobileNavigationModal?: boolean;
   mobileNavigationId?: string;
   onAddSlide: () => void;
   onCloseMobileNavigation?: () => void;
@@ -125,6 +127,9 @@ export function PresentationThumbnailRail({
       />
     </>
   );
+  const mobileModalAttributes = mobileNavigationModal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
 
   if (viewMode === 'sorter') {
     return (
@@ -154,6 +159,7 @@ export function PresentationThumbnailRail({
 
   return (
     <aside
+      {...mobileModalAttributes}
       ref={viewportRef}
       id={mobileNavigationId}
       className="work-slide-strip"

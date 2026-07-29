@@ -40,6 +40,7 @@ import {
   PresentationEditor,
   SpreadsheetEditor,
 } from '@a3s-lab/office/react';
+import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 import type { NoticeTone } from './playground-types';
 
@@ -49,6 +50,7 @@ const assistantMaximumWidth = 680;
 export function EditorWorkspace({
   artifact,
   sidebarOpen,
+  assistantModal,
   assistantOpen,
   assistantWidth,
   lastAgentRequest,
@@ -64,6 +66,7 @@ export function EditorWorkspace({
 }: {
   artifact: OfficeArtifact;
   sidebarOpen: boolean;
+  assistantModal: boolean;
   assistantOpen: boolean;
   assistantWidth: number;
   lastAgentRequest: EditorAgentRequest | null;
@@ -307,6 +310,7 @@ export function EditorWorkspace({
           <AssistantPanel
             artifact={artifact}
             lastRequest={lastAgentRequest}
+            modal={assistantModal}
             width={assistantWidth}
             onClose={onToggleAssistant}
             onWidthChange={onAssistantWidthChange}
@@ -515,19 +519,30 @@ function selectionPromptContext(context: PlaygroundSelectionContext): string {
   ].join('\n\n');
 }
 
-function AssistantPanel({
+export function AssistantPanel({
   artifact,
   lastRequest,
+  modal,
   width,
   onClose,
   onWidthChange,
 }: {
   artifact: OfficeArtifact;
   lastRequest: EditorAgentRequest | null;
+  modal: boolean;
   width: number;
   onClose: () => void;
   onWidthChange: (width: number) => void;
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const focusScope = useDialogFocusScope<HTMLElement>({
+    active: modal,
+    onEscape: onClose,
+    initialFocus: () => closeButtonRef.current,
+  });
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
   const resize = (event: ReactPointerEvent<HTMLHRElement>) => {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -550,9 +565,12 @@ function AssistantPanel({
 
   return (
     <aside
+      {...modalAttributes}
+      ref={focusScope.scopeRef}
       className="playground-assistant"
       aria-label="AI 助手"
       style={{ width }}
+      onKeyDown={focusScope.handleKeyDown}
     >
       <hr
         className="playground-assistant-resizer"
@@ -579,6 +597,7 @@ function AssistantPanel({
           <small>{artifact.title}</small>
         </div>
         <button
+          ref={closeButtonRef}
           type="button"
           className="playground-icon-button"
           aria-label="关闭 AI 助手"

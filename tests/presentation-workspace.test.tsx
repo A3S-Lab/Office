@@ -186,8 +186,21 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
   fireEvent.click(toggle);
   expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'open');
   expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  const drawer = screen.getByRole('dialog', { name: '幻灯片' });
   const close = screen.getByRole('button', { name: '关闭幻灯片导航' });
+  expect(drawer).toHaveAttribute('aria-modal', 'true');
+  expect(toggle).toHaveAttribute('inert');
   await waitFor(() => expect(close).toHaveFocus());
+
+  fireEvent.keyDown(close, { key: 'Tab' });
+  expect(
+    screen.getByRole('button', { name: '幻灯片 1 / 2：Opening' }),
+  ).toHaveFocus();
+  fireEvent.keyDown(
+    screen.getByRole('button', { name: '幻灯片 1 / 2：Opening' }),
+    { key: 'Tab', shiftKey: true },
+  );
+  expect(close).toHaveFocus();
 
   fireEvent.click(
     screen.getByRole('button', { name: '幻灯片 2 / 2：Details' }),
@@ -198,7 +211,7 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
 
   fireEvent.click(toggle);
   await waitFor(() => expect(close).toHaveFocus());
-  fireEvent.keyDown(window, { key: 'Escape' });
+  fireEvent.keyDown(close, { key: 'Escape' });
   expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
   await waitFor(() => expect(toggle).toHaveFocus());
 });

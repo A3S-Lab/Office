@@ -15,6 +15,8 @@ import {
   type OfficeEditorKind,
   preloadOfficeEditor,
 } from '@a3s-lab/office/react';
+import { useRef } from 'react';
+import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import type { SiteRoute } from './playground-types';
 
 function warmOfficeEditor(kind: OfficeEditorKind): void {
@@ -22,6 +24,7 @@ function warmOfficeEditor(kind: OfficeEditorKind): void {
 }
 
 export function SiteSidebar({
+  modal = false,
   route,
   onCollapse,
   onNavigate,
@@ -29,6 +32,7 @@ export function SiteSidebar({
   onOpenFile,
   onOpenPdf,
 }: {
+  modal?: boolean;
   route: SiteRoute;
   onCollapse: () => void;
   onNavigate: (route: SiteRoute) => void;
@@ -36,11 +40,33 @@ export function SiteSidebar({
   onOpenFile: () => void;
   onOpenPdf: () => void;
 }) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const focusScope = useDialogFocusScope<HTMLElement>({
+    active: modal,
+    onEscape: onCollapse,
+    initialFocus: () => closeButtonRef.current,
+    getIsolationExceptions: () => [
+      document.querySelector<HTMLElement>('.playground-sidebar-scrim'),
+    ],
+    restoreFocusTarget: () =>
+      document.querySelector<HTMLElement>('[aria-label="展开办公侧边栏"]'),
+  });
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
+
   return (
-    <aside className="playground-sidebar" aria-label="A3S Office 导航">
+    <aside
+      {...modalAttributes}
+      ref={focusScope.scopeRef}
+      className="playground-sidebar"
+      aria-label="A3S Office 导航"
+      onKeyDown={focusScope.handleKeyDown}
+    >
       <header className="sidebar-product-header">
         <strong>办公</strong>
         <button
+          ref={closeButtonRef}
           type="button"
           className="playground-icon-button"
           aria-label="收起办公侧边栏"

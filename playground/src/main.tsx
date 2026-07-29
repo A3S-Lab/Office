@@ -25,6 +25,7 @@ import type {
   SiteRoute,
 } from './playground-types';
 import { SiteSidebar } from './site-sidebar';
+import { useMediaQuery } from './use-media-query';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
@@ -51,6 +52,8 @@ function Playground() {
   const [lastAgentRequest, setLastAgentRequest] =
     useState<EditorAgentRequest | null>(null);
   const [notice, setNotice] = useState<PlaygroundNotice | null>(null);
+  const sidebarModal = useMediaQuery('(max-width: 839px)');
+  const assistantModal = useMediaQuery('(max-width: 1040px)');
   const fileInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
   const activeArtifact =
@@ -179,6 +182,7 @@ function Playground() {
 
       {sidebarOpen && (
         <SiteSidebar
+          modal={sidebarModal}
           route={route}
           onCollapse={() => setSidebarOpen(false)}
           onCreate={newArtifact}
@@ -192,6 +196,8 @@ function Playground() {
           type="button"
           className="playground-sidebar-scrim"
           aria-label="关闭办公侧边栏"
+          aria-hidden="true"
+          tabIndex={-1}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -202,6 +208,7 @@ function Playground() {
             <EditorWorkspace
               key={activeArtifact.id}
               artifact={activeArtifact}
+              assistantModal={assistantModal}
               assistantOpen={assistantOpen}
               assistantWidth={assistantWidth}
               lastAgentRequest={lastAgentRequest}

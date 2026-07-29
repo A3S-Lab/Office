@@ -73,6 +73,10 @@ All notable changes to A3S Office will be documented in this file.
   horizontally scrollable tab row; PDF retains its single compact toolbar.
 - Replaced the phone Presentation thumbnail rail with a dismissible,
   focus-managed slide drawer so the editing canvas keeps the primary width.
+- Unified modal focus boundaries across the compact Office sidebar,
+  Presentation slide drawer, and AI assistant. Focus now enters the visible
+  surface, wraps on Tab and Shift+Tab, keeps the background inert, lets only
+  the top overlay consume Escape, and returns to the invoking control.
 - Kept the phone PDF toolbar clear of host file actions and moved secondary
   annotation tools, opacity, stroke width, and deletion into its scrollable,
   keyboard-operated overflow menu.
