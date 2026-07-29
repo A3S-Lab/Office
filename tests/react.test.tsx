@@ -429,16 +429,18 @@ test('edits the page-chrome variant resolved for the current physical page', asy
     />,
   );
 
-  expect(await screen.findByText('First page header')).toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: '编辑页眉' }),
   ).not.toBeInTheDocument();
-  const visibleHeader = screen
-    .getByText('First page header')
-    .closest('.work-document-page-header');
-  if (!(visibleHeader instanceof HTMLElement)) {
-    throw new Error('Expected the visible first-page header.');
-  }
+  const visibleHeader = await waitFor(() => {
+    const header = screen
+      .getByText('First page header')
+      .closest('.work-document-page-header');
+    if (!(header instanceof HTMLElement)) {
+      throw new Error('Expected the visible first-page header.');
+    }
+    return header;
+  });
   fireEvent.doubleClick(visibleHeader);
   fireEvent.click(
     await screen.findByRole('button', {
