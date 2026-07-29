@@ -172,9 +172,11 @@ Exit evidence:
 Current implementation evidence includes a persistent Word-style navigation
 pane with a typed heading hierarchy, active-heading tracking, title filtering,
 collapsible branches, keyboard traversal, responsive left-side placement, and
-safe selection-based jumps that do not create history entries. Full-text
-navigation results, page thumbnails, and measured outline virtualization for
-100-page fixtures remain part of this priority.
+safe selection-based jumps that do not create history entries. New comment
+drafts stay inside the visible review rail even for document-wide selections,
+and discard confirmation is limited to drafts or replies that contain written
+content. Full-text navigation results, page thumbnails, and measured outline
+virtualization for 100-page fixtures remain part of this priority.
 
 Exit evidence:
 

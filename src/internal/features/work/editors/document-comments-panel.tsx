@@ -89,6 +89,7 @@ export function DocumentCommentsPanel({
       comments[0]?.id ??
       null,
   );
+  const [draftDirty, setDraftDirty] = useState(false);
   const [layout, setLayout] = useState<CommentTrackLayout>(emptyLayout);
   const panelRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -100,10 +101,11 @@ export function DocumentCommentsPanel({
   const repliesDirty = Object.values(drafts).some((value) =>
     Boolean(value.trim()),
   );
+  const commentsDirty = draftDirty || repliesDirty;
 
   useEffect(() => {
-    onDirtyChange?.(repliesDirty);
-  }, [onDirtyChange, repliesDirty]);
+    onDirtyChange?.(commentsDirty);
+  }, [commentsDirty, onDirtyChange]);
 
   useEffect(
     () => () => {
@@ -112,11 +114,35 @@ export function DocumentCommentsPanel({
     [onDirtyChange],
   );
 
+  useEffect(() => setDraftDirty(false), [draft?.id]);
+
   const submitReply = (commentId: string) => {
     const text = drafts[commentId]?.trim();
     if (!text) return;
     onReply(commentId, text);
     setDrafts((current) => ({ ...current, [commentId]: '' }));
+  };
+  const cancelDraft = async () => {
+    if (draftDirty) {
+      const confirmed = await officeDialog.confirm({
+        title: '放弃未完成的批注？',
+        description: '未添加的批注不会保留。',
+        confirmLabel: '放弃内容',
+        confirmTone: 'danger',
+        restoreFocusTarget: () => {
+          const draftCard = draft
+            ? cardRefs.current.get(`draft:${draft.id}`)
+            : null;
+          return (
+            draftCard?.querySelector<HTMLElement>('[aria-label="批注内容"]') ??
+            editor.view.dom
+          );
+        },
+      });
+      if (!confirmed) return;
+    }
+    setDraftDirty(false);
+    onCancelDraft();
   };
   const handlePanelKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'Escape' || event.defaultPrevented) return;
@@ -168,7 +194,27 @@ export function DocumentCommentsPanel({
     const surfaceRect = surface.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
     const trackRect = track.getBoundingClientRect();
+    const scroll = surface.closest<HTMLElement>('.work-document-scroll');
+    const scrollRect = scroll?.getBoundingClientRect();
+    const panelHeader = panel.firstElementChild;
+    const panelHeaderRect =
+      panelHeader instanceof HTMLElement
+        ? panelHeader.getBoundingClientRect()
+        : undefined;
     const trackOffset = trackRect.top - surfaceRect.top;
+    const visibleTrackTop = Math.max(
+      8,
+      Math.max(
+        scrollRect?.top ?? trackRect.top,
+        panelHeaderRect?.bottom ?? trackRect.top,
+      ) -
+        trackRect.top +
+        8,
+    );
+    const visibleTrackBottom =
+      Math.min(scrollRect?.bottom ?? trackRect.bottom, panelRect.bottom) -
+      trackRect.top -
+      8;
     const commentsById = new Map(
       comments.map((comment) => [comment.id, comment] as const),
     );
@@ -235,7 +281,20 @@ export function DocumentCommentsPanel({
       const preferredTop = anchorRect
         ? anchorRect.top - trackRect.top - 18
         : nextCardTop;
-      const cardTop = Math.max(8, preferredTop, nextCardTop);
+      const minimumTop = Math.max(8, nextCardTop);
+      let cardTop = Math.max(minimumTop, preferredTop);
+      if (entry.kind === 'draft' && scrollRect) {
+        const maximumVisibleTop = Math.max(
+          visibleTrackTop,
+          visibleTrackBottom - cardHeight,
+        );
+        if (minimumTop <= maximumVisibleTop) {
+          cardTop = Math.min(
+            maximumVisibleTop,
+            Math.max(minimumTop, visibleTrackTop, preferredTop),
+          );
+        }
+      }
       nextCardTop = cardTop + cardHeight + 10;
       const endX = panelRect.left - surfaceRect.left + 1;
       const endY = trackOffset + cardTop + 24;
@@ -327,10 +386,13 @@ export function DocumentCommentsPanel({
       characterData: true,
       subtree: true,
     });
+    const scroll = surface.closest<HTMLElement>('.work-document-scroll');
+    scroll?.addEventListener('scroll', scheduleMeasure, { passive: true });
     window.addEventListener('resize', scheduleMeasure);
     return () => {
       observer?.disconnect();
       mutationObserver?.disconnect();
+      scroll?.removeEventListener('scroll', scheduleMeasure);
       window.removeEventListener('resize', scheduleMeasure);
     };
   }, [editor, scheduleMeasure, surfaceRef]);
@@ -421,7 +483,8 @@ export function DocumentCommentsPanel({
               top={
                 layout.items.find((item) => item.kind === 'draft')?.cardTop ?? 8
               }
-              onCancel={onCancelDraft}
+              onCancel={() => void cancelDraft()}
+              onDirtyChange={setDraftDirty}
               onSubmit={onSubmitDraft}
             />
           )}

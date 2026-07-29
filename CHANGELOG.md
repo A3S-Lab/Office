@@ -107,3 +107,6 @@ All notable changes to A3S Office will be documented in this file.
 - Highlighted all Word Find matches persistently, made initial forward and
   backward navigation select the expected match, and kept Find and Replace
   controls focused across repeated keyboard actions.
+- Kept new Word comment composers inside the visible review rail for long
+  selections and limited discard prompts to comment drafts or replies with
+  written content.

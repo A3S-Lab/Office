@@ -11,12 +11,14 @@ const draft = {
 
 test('submits a focused comment draft without a modal backdrop', () => {
   const submitted: string[] = [];
+  const dirtyStates: boolean[] = [];
 
   render(
     <DocumentCommentComposer
       draft={draft}
       top={48}
       onCancel={() => undefined}
+      onDirtyChange={(dirty) => dirtyStates.push(dirty)}
       onSubmit={(text) => {
         submitted.push(text);
         return null;
@@ -42,6 +44,7 @@ test('submits a focused comment draft without a modal backdrop', () => {
   );
 
   fireEvent.change(input, { target: { value: '  Clarify this.  ' } });
+  expect(dirtyStates.at(-1)).toBe(true);
   fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
   expect(submitted).toEqual(['Clarify this.']);
 });

@@ -23,10 +23,11 @@ export const DocumentCommentComposer = forwardRef<
     draft: DocumentCommentDraft;
     top: number;
     onCancel: () => void;
+    onDirtyChange?: (dirty: boolean) => void;
     onSubmit: (text: string) => string | null;
   }
 >(function DocumentCommentComposer(
-  { draft, top, onCancel, onSubmit },
+  { draft, top, onCancel, onDirtyChange, onSubmit },
   forwardedRef,
 ) {
   const titleId = useId();
@@ -37,6 +38,17 @@ export const DocumentCommentComposer = forwardRef<
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const dirty = Boolean(text.trim());
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(
+    () => () => {
+      onDirtyChange?.(false);
+    },
+    [onDirtyChange],
+  );
 
   const submit = () => {
     const value = text.trim();
@@ -95,7 +107,7 @@ export const DocumentCommentComposer = forwardRef<
         <Button
           size="compact"
           tone="primary"
-          disabled={!text.trim()}
+          disabled={!dirty}
           onClick={submit}
         >
           <MessageSquarePlus size={13} />

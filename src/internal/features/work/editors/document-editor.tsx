@@ -163,7 +163,7 @@ export function DocumentEditor({
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
   const [findReplaceFocusRequest, setFindReplaceFocusRequest] = useState(0);
   const [citationsDirty, setCitationsDirty] = useState(false);
-  const [commentRepliesDirty, setCommentRepliesDirty] = useState(false);
+  const [commentsDirty, setCommentsDirty] = useState(false);
   const taskPaneDialog = useOfficeDialog();
   const layoutOpen = taskPane === 'layout';
   const navigationOpen = taskPane === 'navigation';
@@ -274,7 +274,7 @@ export function DocumentEditor({
         });
         if (!discard) return false;
       }
-      if (closeComments && (documentComments.draft || commentRepliesDirty)) {
+      if (closeComments && commentsDirty) {
         const discard = await taskPaneDialog.confirm({
           title: '放弃未完成的批注？',
           description: documentComments.draft
@@ -288,7 +288,7 @@ export function DocumentEditor({
       if (taskPane === 'citations' && nextPane !== 'citations')
         setCitationsDirty(false);
       if (closeComments) {
-        setCommentRepliesDirty(false);
+        setCommentsDirty(false);
         documentComments.closeDraft(false);
         documentComments.setOpen(false);
       }
@@ -297,7 +297,7 @@ export function DocumentEditor({
     },
     [
       citationsDirty,
-      commentRepliesDirty,
+      commentsDirty,
       documentComments.closeDraft,
       documentComments.draft,
       documentComments.setOpen,
@@ -945,7 +945,7 @@ export function DocumentEditor({
                 onCancelDraft={documentComments.closeDraft}
                 onSubmitDraft={documentComments.submitDraft}
                 onClose={() => void closeCommentsPanel()}
-                onDirtyChange={setCommentRepliesDirty}
+                onDirtyChange={setCommentsDirty}
               />
             )}
           </div>

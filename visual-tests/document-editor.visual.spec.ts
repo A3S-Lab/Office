@@ -488,6 +488,84 @@ test('document comments align with their review rail', async ({
   await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
 });
 
+test('document comment drafts stay visible and only warn for written content', async ({
+  page,
+}) => {
+  const fixture = fixtures.find((candidate) => candidate.kind === 'document');
+  if (!fixture) throw new Error('Missing document visual fixture.');
+
+  await page.goto('/');
+  await fixture.open(page);
+  await fixture.ready(page);
+  const body = page.getByRole('textbox', { name: '文档正文' });
+  const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  await body.focus();
+  await page.keyboard.press(`${modifier}+a`);
+  await page.getByRole('tab', { name: '审阅' }).click();
+  await page.getByRole('button', { name: '添加批注', exact: true }).click();
+
+  let panel = page.getByRole('complementary', { name: '批注审阅' });
+  let composer = page.getByRole('dialog', { name: '添加批注' });
+  let input = composer.getByRole('textbox', { name: '批注内容' });
+  await expect(input).toBeFocused();
+  const geometry = await composer.evaluate((element) => {
+    const composerRect = element.getBoundingClientRect();
+    const panelElement = element.closest<HTMLElement>(
+      '.work-document-comments-panel',
+    );
+    const scrollElement = element.closest<HTMLElement>('.work-document-scroll');
+    const headerElement = panelElement?.firstElementChild;
+    if (
+      !panelElement ||
+      !scrollElement ||
+      !(headerElement instanceof HTMLElement)
+    ) {
+      throw new Error('Document comment viewport geometry is unavailable.');
+    }
+    const scrollRect = scrollElement.getBoundingClientRect();
+    const headerRect = headerElement.getBoundingClientRect();
+    return {
+      top: composerRect.top,
+      bottom: composerRect.bottom,
+      visibleTop: Math.max(scrollRect.top, headerRect.bottom) + 8,
+      visibleBottom: scrollRect.bottom - 8,
+    };
+  });
+  expect(geometry.top).toBeGreaterThanOrEqual(geometry.visibleTop - 1);
+  expect(geometry.bottom).toBeLessThanOrEqual(geometry.visibleBottom + 1);
+
+  const closeComments = panel.getByRole('button', {
+    name: '关闭批注审阅',
+  });
+  await closeComments.click();
+  await expect(
+    page.getByRole('dialog', { name: '放弃未完成的批注？' }),
+  ).toHaveCount(0);
+  await expect(panel).toBeHidden();
+  await expect(body).toBeFocused();
+
+  await page.keyboard.press(`${modifier}+a`);
+  await page.getByRole('button', { name: '添加批注', exact: true }).click();
+  panel = page.getByRole('complementary', { name: '批注审阅' });
+  composer = page.getByRole('dialog', { name: '添加批注' });
+  input = composer.getByRole('textbox', { name: '批注内容' });
+  await input.fill('尚未保存的批注');
+  const dirtyClose = panel.getByRole('button', { name: '关闭批注审阅' });
+  await dirtyClose.click();
+  const discard = page.getByRole('dialog', {
+    name: '放弃未完成的批注？',
+  });
+  await expect(discard).toBeVisible();
+  await discard.getByRole('button', { name: '取消' }).click();
+  await expect(input).toHaveValue('尚未保存的批注');
+  await expect(dirtyClose).toBeFocused();
+
+  await dirtyClose.click();
+  await discard.getByRole('button', { name: '放弃内容' }).click();
+  await expect(panel).toBeHidden();
+  await expect(body).toBeFocused();
+});
+
 test('document comment drafts clean up and stacked comments do not overlap', async ({
   page,
 }) => {
