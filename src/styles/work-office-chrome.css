@@ -147,8 +147,7 @@
   padding: 0 4px;
   border-left: 1px solid var(--a3s-line);
   background: var(--a3s-panel);
-  box-shadow: -5px 0 10px
-    color-mix(in srgb, var(--a3s-panel) 88%, transparent);
+  box-shadow: -5px 0 10px color-mix(in srgb, var(--a3s-panel) 88%, transparent);
 }
 
 .work-office-ribbon-tab-navigation > button {

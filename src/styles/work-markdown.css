@@ -415,9 +415,7 @@
 }
 
 .work-markdown-editor.preview .work-markdown-canvas .tiptap,
-.work-markdown-pane.visual[data-readonly="true"]
-  .work-markdown-canvas
-  .tiptap {
+.work-markdown-pane.visual[data-readonly="true"] .work-markdown-canvas .tiptap {
   cursor: default;
 }
 

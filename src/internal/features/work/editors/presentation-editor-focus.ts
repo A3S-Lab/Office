@@ -131,9 +131,7 @@ export function presentationCommandsWithObjectFocus(
     addImage: afterSuccessfulCommand(commands.addImage),
     addTable: afterSuccessfulCommand(commands.addTable),
     alignElement: afterSuccessfulCommand(commands.alignElement),
-    applyTransitionToAll: afterSuccessfulCommand(
-      commands.applyTransitionToAll,
-    ),
+    applyTransitionToAll: afterSuccessfulCommand(commands.applyTransitionToAll),
     copySelection: afterSuccessfulCommand(commands.copySelection),
     cutSelection: afterSuccessfulCommand(commands.cutSelection),
     deleteSlide: afterSuccessfulCommand(commands.deleteSlide),

@@ -46,11 +46,7 @@
 }
 
 .work-pdf-toolbar .ds-icon-button.selected {
-  background: color-mix(
-    in srgb,
-    var(--work-pdf-accent) 9%,
-    var(--a3s-panel)
-  );
+  background: color-mix(in srgb, var(--work-pdf-accent) 9%, var(--a3s-panel));
   color: var(--work-pdf-accent);
 }
 
@@ -176,16 +172,8 @@
 }
 
 .work-pdf-annotation-style-options > label:has(input:checked) {
-  border-color: color-mix(
-    in srgb,
-    var(--work-pdf-accent) 42%,
-    var(--a3s-line)
-  );
-  background: color-mix(
-    in srgb,
-    var(--work-pdf-accent) 11%,
-    var(--a3s-panel)
-  );
+  border-color: color-mix(in srgb, var(--work-pdf-accent) 42%, var(--a3s-line));
+  background: color-mix(in srgb, var(--work-pdf-accent) 11%, var(--a3s-panel));
   color: var(--work-pdf-accent);
   font-weight: 650;
 }

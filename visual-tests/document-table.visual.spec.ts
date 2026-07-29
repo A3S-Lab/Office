@@ -191,9 +191,7 @@ async function revealRibbonControl(
     );
     await next.click();
     await expect
-      .poll(() =>
-        toolbar.evaluate((element) => Math.round(element.scrollLeft)),
-      )
+      .poll(() => toolbar.evaluate((element) => Math.round(element.scrollLeft)))
       .toBeGreaterThan(previousScroll);
   }
   throw new Error(`${tabLabel}中的目标控件无法通过功能区导航到达。`);

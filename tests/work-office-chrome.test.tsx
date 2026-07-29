@@ -103,9 +103,9 @@ test('pages compact ribbon tabs instead of compressing their labels', async () =
   expect(slideshow.querySelector('.ds-tabs-label')).toHaveTextContent(
     '幻灯片放映',
   );
-  expect(
-    slideshow.querySelector('.ds-tabs-label-compact'),
-  ).toHaveTextContent('放映');
+  expect(slideshow.querySelector('.ds-tabs-label-compact')).toHaveTextContent(
+    '放映',
+  );
   Object.defineProperty(tabList, 'clientWidth', {
     configurable: true,
     value: 160,

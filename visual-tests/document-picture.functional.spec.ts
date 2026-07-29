@@ -67,9 +67,9 @@ test('picture contextual ribbon keeps selection, dialog focus, and cleanup coher
   await page.getByRole('button', { name: '替代文字' }).click();
   await alternativeText.fill('季度计划趋势图');
   await dialog.getByRole('button', { name: '保存' }).click();
-  await expect(
-    imageContainer.locator('img[alt="季度计划趋势图"]'),
-  ).toHaveCount(1);
+  await expect(imageContainer.locator('img[alt="季度计划趋势图"]')).toHaveCount(
+    1,
+  );
   await expect(body).toBeFocused();
 
   await page.getByRole('button', { name: '删除图片' }).click();

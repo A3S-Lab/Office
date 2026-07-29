@@ -149,7 +149,8 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
 
 function selectedDocumentImagePosition(editor: Editor): number | null {
   const selection = editor.state.selection;
-  return selection instanceof NodeSelection && selection.node.type.name === 'image'
+  return selection instanceof NodeSelection &&
+    selection.node.type.name === 'image'
     ? selection.from
     : null;
 }

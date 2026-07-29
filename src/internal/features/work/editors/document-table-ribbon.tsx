@@ -475,14 +475,8 @@ function TableDimensionField({
 }) {
   const formattedValue =
     value === null ? '' : formatCentimeters(value / PIXELS_PER_CENTIMETER);
-  const {
-    cancelDraft,
-    dirty,
-    draft,
-    replaceDraft,
-    setDraft,
-    syncDraft,
-  } = useOfficeDraft(() => formattedValue);
+  const { cancelDraft, dirty, draft, replaceDraft, setDraft, syncDraft } =
+    useOfficeDraft(() => formattedValue);
   useEffect(() => syncDraft(formattedValue), [formattedValue, syncDraft]);
   return (
     <div className="work-document-table-size-field">
