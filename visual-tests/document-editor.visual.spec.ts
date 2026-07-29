@@ -859,6 +859,31 @@ test('document review views remain usable at phone width', async ({ page }) => {
     layoutGeometry.viewportWidth + 1,
   );
   expect(layoutGeometry.width).toBeCloseTo(layoutGeometry.viewportWidth, 0);
+  const layoutHeaderGeometry = await layoutPane
+    .locator('.work-document-task-pane-header')
+    .evaluate((element) => {
+      const pane = element.parentElement;
+      if (!pane) throw new Error('Page Setup task pane is unavailable.');
+      const headerRect = element.getBoundingClientRect();
+      const paneRect = pane.getBoundingClientRect();
+      return {
+        headerLeft: headerRect.left,
+        headerRight: headerRect.right,
+        headerWidth: headerRect.width,
+        paneLeft: paneRect.left,
+        paneRight: paneRect.right,
+        paneWidth: paneRect.width,
+      };
+    });
+  expect(
+    Math.abs(layoutHeaderGeometry.headerLeft - layoutHeaderGeometry.paneLeft),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(layoutHeaderGeometry.headerRight - layoutHeaderGeometry.paneRight),
+  ).toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(layoutHeaderGeometry.headerWidth - layoutHeaderGeometry.paneWidth),
+  ).toBeLessThanOrEqual(1);
   await expect(layoutPane.getByRole('tab', { name: '页面' })).toHaveAttribute(
     'aria-selected',
     'true',

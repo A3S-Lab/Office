@@ -273,9 +273,9 @@ export function DocumentCommentsPanel({
   }, [measure]);
 
   useLayoutEffect(() => {
-    scheduleMeasure();
+    measure();
     return () => cancelAnimationFrame(frameRef.current);
-  }, [scheduleMeasure]);
+  }, [measure]);
 
   useEffect(() => {
     if (draft) {

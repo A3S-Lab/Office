@@ -21,6 +21,8 @@
   max-height: none;
   flex: 0 0 auto;
   flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
   overflow: hidden;
   border: 0;
   border-left: 1px solid var(--a3s-line);

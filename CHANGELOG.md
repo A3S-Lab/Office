@@ -92,3 +92,8 @@ All notable changes to A3S Office will be documented in this file.
   continuations, page geometry, and page chrome while capturing long documents
   in bounded batches; the Playground exposes both DOCX and PDF from one compact
   header export menu.
+- Kept Word task-pane headers stretched to the pane edges at compact and phone
+  widths so titles and close actions retain the shared Office alignment.
+- Positioned the Word comment composer against its selected text before the
+  browser's first paint, removing the initial jump from the top of the review
+  rail.
