@@ -388,9 +388,12 @@ test('opens page chrome from explicit Insert ribbon commands', async () => {
   await screen.findByRole('textbox', { name: '文档正文' });
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(await screen.findByRole('button', { name: '页脚' }));
-  expect(
-    await screen.findByRole('textbox', { name: '页内页脚' }),
-  ).toHaveFocus();
+  const footerEditor = await screen.findByRole('textbox', {
+    name: '页内页脚',
+  });
+  await waitFor(() => {
+    expect(footerEditor).toHaveFocus();
+  });
 });
 
 test('edits the page-chrome variant resolved for the current physical page', async () => {
