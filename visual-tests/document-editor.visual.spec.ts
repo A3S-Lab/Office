@@ -728,7 +728,11 @@ test('document task panes and dialogs preserve the editing context', async ({
   });
   await expect(captionDialog).toBeVisible();
   await expect(captionField).toBeFocused();
-  await expect(page.locator('body > [inert]')).not.toHaveCount(0);
+  const officeRoot = captionDialog.locator(
+    'xpath=ancestor::*[@data-a3s-office][1]',
+  );
+  await expect(officeRoot.locator(':scope > [inert]')).not.toHaveCount(0);
+  await expect(captionDialog.locator('xpath=..')).not.toHaveAttribute('inert');
   const dialogGeometry = await captionDialog.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return {

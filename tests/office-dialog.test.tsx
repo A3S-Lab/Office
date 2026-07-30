@@ -90,6 +90,8 @@ test('keeps portal dialogs inside their Office theme boundary', async () => {
     'data-theme',
     'dark',
   );
+  expect(trigger).toHaveAttribute('inert');
+  expect(dialog.closest('.ds-dialog-backdrop')).not.toHaveAttribute('inert');
   fireEvent.keyDown(dialog, { key: 'Escape' });
   await waitFor(() => expect(trigger).toHaveFocus());
 });
