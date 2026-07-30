@@ -119,8 +119,31 @@ test('Word preview reuses the live WASM pagination result', async ({
   const breakCount = await editor
     .locator('.work-document-auto-page-break')
     .count();
+  const physicalPageCount = Number(pageCount);
+  const paper = page.locator('.work-document-page');
+  const pageSheets = paper.locator('.work-document-page-sheet');
   expect(engine).toBe('wasm');
   expect(breakCount).toBeGreaterThan(0);
+  expect(physicalPageCount).toBeGreaterThan(1);
+  await expect(pageSheets).toHaveCount(physicalPageCount);
+  await expect(paper).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  const sheetGeometry = await pageSheets.evaluateAll((sheets) =>
+    sheets.slice(0, 2).map((sheet) => {
+      const rect = sheet.getBoundingClientRect();
+      return {
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+      };
+    }),
+  );
+  expect(sheetGeometry).toHaveLength(2);
+  expect(
+    (sheetGeometry[1]?.top ?? 0) - (sheetGeometry[0]?.bottom ?? 0),
+  ).toBeGreaterThan(20);
+  expect(sheetGeometry[1]?.left).toBeCloseTo(sheetGeometry[0]?.left ?? 0, 0);
+  expect(sheetGeometry[1]?.right).toBeCloseTo(sheetGeometry[0]?.right ?? 0, 0);
   await editor.evaluate((element) => {
     element.setAttribute('data-preview-identity', 'canonical');
   });
@@ -141,6 +164,9 @@ test('Word preview reuses the live WASM pagination result', async ({
   await expect(preview.locator('.work-document-auto-page-break')).toHaveCount(
     breakCount,
   );
+  await expect(
+    page.locator('.work-document-preview-page .work-document-page-sheet'),
+  ).toHaveCount(physicalPageCount);
   expect(pageErrors).toEqual([]);
 });
 
@@ -417,6 +443,10 @@ test('Word paper starts without rulers and persists explicit page controls', asy
   await expectWithinViewport(pageColorMenu);
   await pageColorMenu.getByRole('option', { name: '颜色 #fff2cc' }).click();
   await expect(page.locator('.work-document-page')).toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  );
+  await expect(page.locator('.work-document-page-sheet').first()).toHaveCSS(
     'background-color',
     'rgb(255, 242, 204)',
   );

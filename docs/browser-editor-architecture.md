@@ -303,6 +303,14 @@ are widget decorations, not page nodes. Reflow therefore does not split the
 content model or corrupt undo, selection mapping, copy and paste, or a future
 collaboration protocol.
 
+Page view renders one non-editable physical paper sheet per measured kernel
+page behind that single editor tree. The mapped boundary widgets reserve the
+remaining printable height, page chrome, and page gap while the sheet stack
+provides separate page backgrounds, borders, and shadows. The visible page
+count therefore cannot degrade into one continuously stretched paper surface,
+and changing the page color still applies to every physical sheet without
+creating additional editable roots.
+
 The current browser-kernel slice collects contiguous geometry-affecting text
 runs from eligible paragraphs. Each run carries an ordered registered font
 stack, size, line height, letter spacing, ligature, and kerning behavior. Font
@@ -884,8 +892,8 @@ The browser kernel is covered at four boundaries:
 4. Browser checks for real Worker/WASM/font loading, shaped-line parity with
    browser line boxes at non-100% zoom, real per-grapheme fallback diagnostics,
    explicit unresolved-glyph fallback, page-view reflow, web-view clearing,
-   page counts, nested and RTL list flow, undo behavior, and slide-relative
-   element alignment.
+   page counts, one physical sheet per measured page, visible page gaps, nested
+   and RTL list flow, undo behavior, and slide-relative element alignment.
 
 Presentation group serialization tests inspect generated slide and layout
 OOXML, nested group order, identity child-coordinate transforms, unique

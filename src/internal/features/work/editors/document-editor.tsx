@@ -70,6 +70,7 @@ import {
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import { DocumentLayoutPanel } from './document-layout-panel';
 import { DocumentNavigationPanel } from './document-navigation-panel';
+import { DocumentPageStack } from './document-page-stack';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
 import { DocumentRuler } from './document-ruler';
 import {
@@ -868,6 +869,14 @@ export function DocumentEditor({
                     } as CSSProperties
                   }
                 >
+                  {viewMode === 'page' && pagination.pageCount && (
+                    <DocumentPageStack
+                      pageColor={documentPageColor(content.pageColor)}
+                      pageCount={pagination.pageCount}
+                      pageGap={kernelPage.pageGap}
+                      pageHeight={kernelPage.height}
+                    />
+                  )}
                   {viewMode === 'page' &&
                     (!preview || Boolean(headerChrome.headerHtml)) && (
                       // biome-ignore lint/a11y/noStaticElementInteractions: Double-click mirrors desktop Office; keyboard users use the Insert-ribbon commands.

@@ -36,6 +36,35 @@
   color: #20232b;
 }
 
+.work-document-page.paginated {
+  border-color: transparent;
+  background-color: transparent !important;
+  box-shadow: none;
+}
+
+.work-document-page-stack {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-document-page-sheet {
+  position: absolute;
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--a3s-line);
+  box-shadow: 0 8px 28px rgb(30 38 55 / 10%);
+}
+
+.work-document-page.paginated .work-document-editable {
+  position: relative;
+  z-index: 1;
+}
+
 .work-document-page.letter {
   width: 816px;
   min-height: 1056px;
