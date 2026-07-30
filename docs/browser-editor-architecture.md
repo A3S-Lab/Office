@@ -303,6 +303,11 @@ are widget decorations, not page nodes. Reflow therefore does not split the
 content model or corrupt undo, selection mapping, copy and paste, or a future
 collaboration protocol.
 
+Document section nodes are isolating editing boundaries. Normal paragraph
+breaks, empty paragraphs, and multiline paste therefore remain inside the
+active section instead of becoming unmeasured root blocks. Explicit section
+commands still split or merge those boundaries transactionally.
+
 Page view renders one non-editable physical paper sheet per measured kernel
 page behind that single editor tree. The mapped boundary widgets reserve the
 remaining printable height, page chrome, and page gap while the sheet stack
@@ -323,9 +328,11 @@ face, and includes every used face in line ascent and descent.
 Rustybuzz shapes those segments and the kernel applies Unicode and
 grapheme-safe line breaking across run boundaries. Unsupported paragraphs
 retain the existing DOM range path, which maps each browser visual-line start
-back to a ProseMirror position. The Worker/WASM kernel chooses page breaks,
-keeps a minimum number of line fragments on either side of a break, and
-returns mapped decorations.
+back to a ProseMirror position. This fallback also fragments paragraphs with
+explicit hard breaks so gradual typing and multiline paste cannot overflow a
+physical sheet as one atomic block. The Worker/WASM kernel chooses page
+breaks, keeps a minimum number of line fragments on either side of a break,
+and returns mapped decorations.
 Tables, images, code blocks, and other complex content use explicit
 format-specific measurement. Top-level tables are row flows; eligible rows can
 additionally expose synchronized direct-cell block fragments. Ordered and bullet

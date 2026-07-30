@@ -70,8 +70,7 @@ export function measureParagraphLineFragments(
   const text = documentTextLayoutContent(node);
   if (
     node.type.name !== 'paragraph' ||
-    text === null ||
-    text.length < 2 ||
+    (text ?? node.textContent).length < 2 ||
     element.querySelector(
       [
         'img',
@@ -87,7 +86,7 @@ export function measureParagraphLineFragments(
   ) {
     return [];
   }
-  if (shapedLayout?.missingGlyphCount === 0) {
+  if (text !== null && shapedLayout?.missingGlyphCount === 0) {
     const shaped = measureShapedParagraphLineFragments(
       editor,
       element,

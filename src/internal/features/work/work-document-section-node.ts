@@ -40,6 +40,7 @@ export const DocumentSection = Node.create({
   group: 'block',
   content: 'block+',
   defining: true,
+  isolating: true,
 
   addAttributes() {
     return {

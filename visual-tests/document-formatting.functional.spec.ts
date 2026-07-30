@@ -103,6 +103,69 @@ test('Word keeps browser-synthesized bold text on deterministic layout', async (
   expect(pageErrors).toEqual([]);
 });
 
+test('Word paginates gradual hard-break input before it leaves the paper', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '空白文字 从一张干净的 A4 页面开始',
+    })
+    .click();
+
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  await editor.click();
+  for (let line = 1; line <= 32; line += 1) {
+    await page.keyboard.type(`Measured pagination line ${line}.`);
+    await page.keyboard.press('Shift+Enter');
+    await page.keyboard.press('Shift+Enter');
+  }
+
+  await expect
+    .poll(async () =>
+      Number(await editor.getAttribute('data-pagination-pages')),
+    )
+    .toBeGreaterThan(1);
+  const pageCount = Number(await editor.getAttribute('data-pagination-pages'));
+  await expect(page.locator('.work-document-page-sheet')).toHaveCount(
+    pageCount,
+  );
+  expect(pageErrors).toEqual([]);
+});
+
+test('Word keeps paragraph input inside the active section and paginates it', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '空白文字 从一张干净的 A4 页面开始',
+    })
+    .click();
+
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  await editor.click();
+  for (let paragraph = 1; paragraph <= 32; paragraph += 1) {
+    await page.keyboard.type(`Measured paragraph ${paragraph}.`);
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+  }
+
+  await expect(editor.locator(':scope > p')).toHaveCount(0);
+  await expect
+    .poll(async () =>
+      Number(await editor.getAttribute('data-pagination-pages')),
+    )
+    .toBeGreaterThan(1);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Word preview reuses the live WASM pagination result', async ({
   page,
 }) => {
