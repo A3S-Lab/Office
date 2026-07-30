@@ -77,6 +77,10 @@ import {
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import {
+  stepOfficeZoom,
+  useOfficeEditorWheelZoom,
+} from './use-office-editor-wheel-zoom';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
@@ -132,6 +136,7 @@ export function SpreadsheetEditor({
   const spreadsheetRootRef = useRef<HTMLElement>(null);
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
   const workbookRef = useRef<WorkbookInstance>(null);
+  const spreadsheetZoomRef = useRef(100);
   const [workbookInstance, setWorkbookInstance] =
     useState<WorkbookInstance | null>(null);
   const bindWorkbookInstance = useCallback(
@@ -402,6 +407,7 @@ export function SpreadsheetEditor({
     (sheet) => sheet.id === activeSheetId,
   );
   const zoom = Math.round((activeSheet?.zoomRatio ?? 1) * 100);
+  spreadsheetZoomRef.current = preview ? previewZoom : zoom;
   useEffect(() => {
     if (preview) setPreviewZoom(zoom);
   }, [preview, zoom]);
@@ -531,6 +537,19 @@ export function SpreadsheetEditor({
     capture: true,
     onHandled: restoreSpreadsheetShortcutFocus,
     scopeRef: spreadsheetRootRef,
+  });
+  const changeSpreadsheetWheelZoom = (direction: 'in' | 'out') => {
+    const current = spreadsheetZoomRef.current;
+    const next = stepOfficeZoom(current, direction);
+    if (next === current) return;
+    spreadsheetZoomRef.current = next;
+    if (previewRef.current) setPreviewZoom(next);
+    else spreadsheetCommandsRef.current?.setZoom(next);
+  };
+  useOfficeEditorWheelZoom({
+    scopeRef: spreadsheetRootRef,
+    onZoomIn: () => changeSpreadsheetWheelZoom('in'),
+    onZoomOut: () => changeSpreadsheetWheelZoom('out'),
   });
   const handleSpreadsheetEditingEscape = (
     event: React.KeyboardEvent<HTMLElement>,

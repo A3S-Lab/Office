@@ -93,6 +93,7 @@ import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentPageChrome } from './use-document-page-chrome';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
 import { useDocumentComments } from './use-document-comments';
+import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import {
   createWorkDocumentSelectionSnapshot,
   documentPlainTextAsHtml,
@@ -560,6 +561,12 @@ export function DocumentEditor({
     layout,
     onBeforeEdit: () => requestEditorViewChange(null, true),
     visiblePage: currentPageDescriptor,
+  });
+  useOfficeEditorWheelZoom({
+    enabled: Boolean(editor),
+    scopeRef: workspaceRef,
+    onZoomIn: () => setZoom((current) => clampDocumentZoom(current + 10)),
+    onZoomOut: () => setZoom((current) => clampDocumentZoom(current - 10)),
   });
 
   if (!editor) {

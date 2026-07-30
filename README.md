@@ -94,6 +94,9 @@ The images below are committed visual-regression baselines from the real
   background isolation, topmost Escape handling, and focus restoration.
   Shared color palettes expand to an eight-column touch layout on phones while
   preserving spatial arrow-key navigation.
+- **Editor-scoped zoom** — Status controls and Ctrl/Cmd + mouse-wheel gestures
+  share each surface's bounded zoom model without changing the host browser's
+  page scale.
 - **Predictable state** — Controlled content values, typed callbacks, explicit
   file actions, conflict-aware document edits, and one document typography
   baseline across editing, preview, and PDF rendering. Word editing and

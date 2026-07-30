@@ -49,6 +49,10 @@ import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useMarkdownSourceHistory } from './use-markdown-source-history';
 import {
+  stepOfficeZoom,
+  useOfficeEditorWheelZoom,
+} from './use-office-editor-wheel-zoom';
+import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
 } from './work-office-chrome';
@@ -86,6 +90,7 @@ export function MarkdownEditor({
   const initialMarkdownRef = useRef(content.markdown);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sourceTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const markdownRootRef = useRef<HTMLElement>(null);
   const [sourceMarkdown, setSourceMarkdown] = useState(content.markdown);
   const [selectionMenu, setSelectionMenu] =
     useState<MarkdownSelectionMenuState | null>(null);
@@ -521,6 +526,18 @@ export function MarkdownEditor({
   const editorStyle = {
     '--work-markdown-zoom': zoom,
   } as CSSProperties;
+  useOfficeEditorWheelZoom({
+    enabled: Boolean(editor),
+    scopeRef: markdownRootRef,
+    onZoomIn: () =>
+      setZoom((current) =>
+        stepOfficeZoom(current, 'in', { minimum: 60, maximum: 180 }),
+      ),
+    onZoomOut: () =>
+      setZoom((current) =>
+        stepOfficeZoom(current, 'out', { minimum: 60, maximum: 180 }),
+      ),
+  });
 
   if (!editor) {
     return <WorkEditorLoadingState title="正在准备 Markdown 编辑器" />;
@@ -528,7 +545,11 @@ export function MarkdownEditor({
 
   if (preview) {
     return (
-      <section className="work-markdown-editor preview" style={editorStyle}>
+      <section
+        ref={markdownRootRef}
+        className="work-markdown-editor preview"
+        style={editorStyle}
+      >
         <WorkOfficePreviewBar
           ariaLabel="Markdown 预览工具"
           label="只读预览"
@@ -557,7 +578,11 @@ export function MarkdownEditor({
   }
 
   return (
-    <section className="work-markdown-editor" style={editorStyle}>
+    <section
+      ref={markdownRootRef}
+      className="work-markdown-editor"
+      style={editorStyle}
+    >
       <MarkdownToolbar
         editor={editor}
         fileActions={fileActions}

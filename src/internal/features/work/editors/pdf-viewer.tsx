@@ -11,6 +11,7 @@ import { createPdfEditorExtensions } from './pdf-editor-extensions';
 import { PdfToolbar, type PdfSaveState } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
@@ -133,6 +134,12 @@ export function PdfViewer({
     capture: true,
     enabled: Boolean(sourceUrl),
     scopeRef: pdfRootRef,
+  });
+  useOfficeEditorWheelZoom({
+    enabled: Boolean(sourceUrl),
+    scopeRef: pdfRootRef,
+    onZoomIn: pdfCommands.zoomIn,
+    onZoomOut: pdfCommands.zoomOut,
   });
 
   if (loadError) {

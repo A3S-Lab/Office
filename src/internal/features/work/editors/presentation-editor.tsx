@@ -65,6 +65,10 @@ import { usePresentationElementCommands } from './use-presentation-element-comma
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import {
+  stepOfficeZoom,
+  useOfficeEditorWheelZoom,
+} from './use-office-editor-wheel-zoom';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { usePresentationReviewCommands } from './use-presentation-review-commands';
 import { usePresentationSelection } from './use-presentation-selection';
@@ -669,6 +673,11 @@ function PresentationEditingSurface({
   useOfficeEditorKeyboardShortcuts(presentationEditor, {
     onHandled: restoreObjectFocus,
     scopeRef: presentationRootRef,
+  });
+  useOfficeEditorWheelZoom({
+    scopeRef: presentationRootRef,
+    onZoomIn: () => setZoom((current) => stepOfficeZoom(current, 'in')),
+    onZoomOut: () => setZoom((current) => stepOfficeZoom(current, 'out')),
   });
 
   return (

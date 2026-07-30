@@ -639,7 +639,9 @@ component behavior and import/export compatibility before the next slice starts.
 ### Stage 1: shared editing foundation
 
 - Use the same ribbon, status bar, dialogs, fields, zoom controls, loading
-  states, shortcuts, and responsive rules in every editor.
+  states, shortcuts, and responsive rules in every editor. Ctrl/Cmd + wheel is
+  captured inside the active editor and routed to the same bounded zoom model
+  as its status controls instead of changing browser page scale.
 - Keep one command route per product and make commands operate on typed
   selections.
 - Load Document, Markdown, Spreadsheet, Presentation, PDF, Workers, and WASM as
