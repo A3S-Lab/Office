@@ -204,9 +204,11 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
   expect(close).toHaveFocus();
 
   mediaQuery.setMatches(false);
-  await waitFor(() => expect(drawer).not.toHaveAttribute('role'));
-  expect(drawer).not.toHaveAttribute('aria-modal');
-  expect(toggle).not.toHaveAttribute('inert');
+  await waitFor(() => {
+    expect(drawer).not.toHaveAttribute('role');
+    expect(drawer).not.toHaveAttribute('aria-modal');
+    expect(toggle).not.toHaveAttribute('inert');
+  });
   await waitFor(() =>
     expect(
       screen.getByRole('button', { name: '幻灯片 1 / 2：Opening' }),
