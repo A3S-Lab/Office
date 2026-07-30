@@ -996,42 +996,6 @@
   line-height: 1.65;
 }
 
-.playground-agent-request p code {
-  color: #6453d9;
-  font: 9px / 1.5 var(--font-mono);
-}
-
-.playground-agent-hook {
-  display: flex;
-  margin-top: auto;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--a3s-line);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--a3s-panel-soft) 64%, var(--a3s-panel));
-}
-
-.playground-agent-hook > span {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--a3s-ink);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.playground-agent-hook > span svg {
-  color: #6453d9;
-}
-
-.playground-agent-hook code {
-  overflow: auto;
-  color: var(--a3s-muted);
-  font: 9px / 1.6 var(--font-mono);
-  white-space: nowrap;
-}
-
 @media (max-width: 1240px) {
   .playground-template-grid,
   .playground-artifact-grid {
@@ -1183,6 +1147,15 @@
 
   .work-editor-shell.pdf .playground-editor-host {
     --playground-command-end: 76px;
+  }
+
+  .work-editor-shell.pdf .playground-editor-host .work-pdf-toolbar {
+    overflow-x: hidden;
+  }
+
+  .work-editor-shell.pdf .work-pdf-search {
+    width: auto;
+    min-width: 0;
   }
 
   .work-editor-shell:not(.pdf)

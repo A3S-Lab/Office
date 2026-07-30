@@ -46,7 +46,7 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
     72,
   );
 
-  const toggle = page.getByRole('button', { name: '打开幻灯片导航' });
+  const toggle = page.locator('.work-presentation-slide-navigation-toggle');
   const rail = page.locator('.work-slide-strip');
   await expect(toggle).toBeVisible();
   await expect(rail).toBeHidden();
@@ -86,6 +86,22 @@ test('Presentation prioritizes its canvas and uses a dismissible slide drawer', 
   });
   await expect(firstSlide).toBeFocused();
   await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(rail).toBeVisible();
+  await expect(rail).not.toHaveAttribute('role', 'dialog');
+  await expect(rail).not.toHaveAttribute('aria-modal', 'true');
+  await expect(toggle).not.toHaveAttribute('inert', '');
+  await expect(page.locator('.work-slide-stage')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(firstSlide).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 700 });
+  await expect(rail).toHaveAttribute('role', 'dialog');
+  await expect(rail).toHaveAttribute('aria-modal', 'true');
   await expect(close).toBeFocused();
   await page.getByRole('button', { name: '幻灯片 2 / 3：核心判断' }).click();
   await expect(rail).toBeHidden();
@@ -216,9 +232,11 @@ test('PDF keeps compact tools clear of the file actions on phones', async ({
   const more = toolbar.getByRole('button', { name: '更多 PDF 工具' });
   const ai = page.getByRole('button', { name: '打开 AI 助手' });
   const download = page.getByRole('button', { name: '下载 PDF' });
+  const search = toolbar.getByRole('searchbox', { name: '在 PDF 中搜索' });
   await expect(more).toBeVisible();
   await expect(ai).toBeVisible();
   await expect(download).toBeVisible();
+  await expect(search).toBeVisible();
   await expect(toolbar.getByRole('button', { name: '画笔' })).toBeHidden();
   await expect(toolbar.getByRole('button', { name: '批注样式' })).toBeHidden();
 
@@ -232,24 +250,45 @@ test('PDF keeps compact tools clear of the file actions on phones', async ({
     const download = document.querySelector<HTMLElement>(
       '[aria-label="下载 PDF"]',
     );
-    if (!(more && ai && download)) {
+    const search = document.querySelector<HTMLElement>('.work-pdf-search');
+    const toolbar = document.querySelector<HTMLElement>('.work-pdf-toolbar');
+    if (!(more && ai && download && search && toolbar)) {
       throw new Error('Phone PDF command geometry is incomplete.');
     }
     const moreRect = more.getBoundingClientRect();
+    const searchRect = search.getBoundingClientRect();
+    const toolbarRect = toolbar.getBoundingClientRect();
     const actionLeft = Math.min(
       ai.getBoundingClientRect().left,
       download.getBoundingClientRect().left,
     );
+    const actionBottom = Math.max(
+      ai.getBoundingClientRect().bottom,
+      download.getBoundingClientRect().bottom,
+    );
     return {
+      actionBottom,
       actionLeft,
       moreLeft: moreRect.left,
       moreRight: moreRect.right,
+      searchBottom: searchRect.bottom,
+      searchTop: searchRect.top,
+      toolbarBottom: toolbarRect.bottom,
+      toolbarHeight: toolbarRect.height,
       viewportWidth: document.documentElement.clientWidth,
     };
   });
   expect(geometry.moreLeft).toBeGreaterThanOrEqual(0);
   expect(geometry.moreRight).toBeLessThanOrEqual(geometry.actionLeft);
   expect(geometry.moreRight).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.toolbarHeight).toBeGreaterThanOrEqual(70);
+  expect(geometry.searchTop).toBeGreaterThanOrEqual(geometry.actionBottom);
+  expect(geometry.searchBottom).toBeLessThanOrEqual(geometry.toolbarBottom);
+
+  await search.fill('A3S');
+  await toolbar.getByRole('button', { name: '清除搜索' }).click();
+  await expect(search).toHaveValue('');
+  await expect(page.getByText(/\.pdf 已下载$/)).toHaveCount(0);
 
   await toolbar.getByRole('button', { name: '高亮' }).click();
   await more.click();

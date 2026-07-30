@@ -90,6 +90,48 @@ test('contains compact assistant focus and restores its exact trigger', () => {
   expect(trigger).toHaveFocus();
 });
 
+test('keeps assistant empty states contextual and free of integration code', () => {
+  const document = createArtifact('blank-document');
+  const view = render(
+    <AssistantPanel
+      artifact={document}
+      lastRequest={null}
+      modal={false}
+      width={460}
+      onClose={() => undefined}
+      onWidthChange={() => undefined}
+    />,
+  );
+
+  expect(screen.getByRole('heading', { name: '从选中文本开始' })).toBeVisible();
+  expect(
+    screen.getByText('选中文本后，可从右键菜单发起扩写、润色或提问。'),
+  ).toBeVisible();
+  expect(screen.queryByText(/onAgentRequest|DocumentEditor/)).toBeNull();
+
+  const pdf = createArtifact('blank-document');
+  pdf.kind = 'pdf';
+  pdf.title = 'sample';
+  pdf.content = { type: 'pdf' };
+  view.rerender(
+    <AssistantPanel
+      artifact={pdf}
+      lastRequest={null}
+      modal={false}
+      width={460}
+      onClose={() => undefined}
+      onWidthChange={() => undefined}
+    />,
+  );
+
+  expect(
+    screen.getByRole('heading', { name: '当前 PDF 暂无 AI 请求' }),
+  ).toBeVisible();
+  expect(
+    screen.getByText('PDF 阅读与批注可直接使用；摘要与问答接入仍在完善。'),
+  ).toBeVisible();
+});
+
 function ModalAssistantHarness() {
   const [open, setOpen] = useState(false);
   const artifact = createArtifact('blank-document');

@@ -139,7 +139,7 @@ test('shared command bar remains compact when editors enter preview', async ({
   }
 });
 
-test('PDF keeps its single compact command row at phone width', async ({
+test('PDF uses a collision-free two-row command surface at phone width', async ({
   page,
 }) => {
   const fixture = fixtures.find((candidate) => candidate.kind === 'pdf');
@@ -157,16 +157,33 @@ test('PDF keeps its single compact command row at phone width', async ({
         '.playground-editor-header',
       );
       const toolbar = shell.querySelector<HTMLElement>('.work-pdf-toolbar');
-      if (!(header && toolbar)) {
+      const search = shell.querySelector<HTMLElement>('.work-pdf-search');
+      const pageControls = shell.querySelector<HTMLElement>(
+        '.work-pdf-page-controls',
+      );
+      const ai = shell.querySelector<HTMLElement>('.work-editor-ai-button');
+      const download = shell.querySelector<HTMLElement>('.work-export-button');
+      if (!(header && toolbar && search && pageControls && ai && download)) {
         throw new Error('Compact PDF command bar is incomplete.');
       }
       const headerRect = header.getBoundingClientRect();
       const toolbarRect = toolbar.getBoundingClientRect();
+      const searchRect = search.getBoundingClientRect();
+      const pageRect = pageControls.getBoundingClientRect();
       return {
         viewportWidth: document.documentElement.clientWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
+        actionBottom: Math.max(
+          ai.getBoundingClientRect().bottom,
+          download.getBoundingClientRect().bottom,
+        ),
         headerTop: headerRect.top,
         headerHeight: headerRect.height,
+        pageBottom: pageRect.bottom,
+        pageTop: pageRect.top,
+        searchBottom: searchRect.bottom,
+        searchTop: searchRect.top,
+        toolbarBottom: toolbarRect.bottom,
         toolbarTop: toolbarRect.top,
         toolbarHeight: toolbarRect.height,
         toolbarOverflowX: getComputedStyle(toolbar).overflowX,
@@ -177,9 +194,13 @@ test('PDF keeps its single compact command row at phone width', async ({
     geometry.viewportWidth + 1,
   );
   expect(geometry.headerHeight).toBe(42);
-  expect(geometry.toolbarHeight).toBe(42);
+  expect(geometry.toolbarHeight).toBe(76);
   expect(geometry.toolbarTop).toBeCloseTo(geometry.headerTop, 0);
-  expect(geometry.toolbarOverflowX).toBe('auto');
+  expect(geometry.toolbarOverflowX).toBe('hidden');
+  expect(geometry.searchTop).toBeGreaterThanOrEqual(geometry.actionBottom);
+  expect(geometry.pageTop).toBeGreaterThanOrEqual(geometry.actionBottom);
+  expect(geometry.searchBottom).toBeLessThanOrEqual(geometry.toolbarBottom);
+  expect(geometry.pageBottom).toBeLessThanOrEqual(geometry.toolbarBottom);
 });
 
 test('every editor keeps sidebar access and separate phone header regions', async ({

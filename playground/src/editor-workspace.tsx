@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Code2,
   Download,
   Eye,
   PanelLeftOpen,
@@ -543,6 +542,7 @@ export function AssistantPanel({
   const modalAttributes = modal
     ? ({ role: 'dialog', 'aria-modal': true } as const)
     : {};
+  const welcomeCopy = assistantWelcomeCopy(artifact.kind);
   const resize = (event: ReactPointerEvent<HTMLHRElement>) => {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -613,39 +613,59 @@ export function AssistantPanel({
               <Sparkles size={18} />
             </span>
             <div>
-              <small>编辑器请求</small>
+              <small>AI 请求</small>
               <h2>{lastRequest.instruction}</h2>
             </div>
             {lastRequest.selection && (
               <blockquote>{lastRequest.selection}</blockquote>
             )}
-            <p>
-              请求已经由 <code>onAgentRequest</code> 交给宿主。在线 Playground
-              不会把文件发送到任何模型。
-            </p>
+            <p>请求已准备好，在线 Playground 不会自动上传文件。</p>
           </section>
         ) : (
           <section className="playground-assistant-welcome">
             <span>
               <Sparkles size={21} />
             </span>
-            <h2>和当前文件一起工作</h2>
-            <p>
-              在文字、表格或演示中选择内容，再从编辑器菜单发起 AI
-              操作，即可在这里查看真实的宿主请求。
-            </p>
+            <h2>{welcomeCopy.title}</h2>
+            <p>{welcomeCopy.description}</p>
           </section>
         )}
-        <section className="playground-agent-hook">
-          <span>
-            <Code2 size={15} />
-            接入自己的模型
-          </span>
-          <code>{'<DocumentEditor onAgentRequest={handleRequest} />'}</code>
-        </section>
       </div>
     </aside>
   );
+}
+
+function assistantWelcomeCopy(kind: OfficeArtifact['kind']): {
+  title: string;
+  description: string;
+} {
+  switch (kind) {
+    case 'document':
+      return {
+        title: '从选中文本开始',
+        description: '选中文本后，可从右键菜单发起扩写、润色或提问。',
+      };
+    case 'markdown':
+      return {
+        title: '从选中内容开始',
+        description: '选中 Markdown 内容后，可从右键菜单发起改写或提问。',
+      };
+    case 'spreadsheet':
+      return {
+        title: '从单元格开始',
+        description: '选中单元格后，可从菜单发起分析或整理。',
+      };
+    case 'presentation':
+      return {
+        title: '从幻灯片内容开始',
+        description: '选中文本或对象后，可从菜单发起改写或提问。',
+      };
+    case 'pdf':
+      return {
+        title: '当前 PDF 暂无 AI 请求',
+        description: 'PDF 阅读与批注可直接使用；摘要与问答接入仍在完善。',
+      };
+  }
 }
 
 function clampAssistantWidth(width: number): number {

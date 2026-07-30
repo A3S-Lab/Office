@@ -134,3 +134,10 @@ All notable changes to A3S Office will be documented in this file.
 - Kept multi-cell paste selection mutable across Fortune Sheet and React state
   replays, preventing a frozen-range crash while preserving the pasted range
   for subsequent copy, cut, and undo commands.
+- Released the Presentation slide drawer's modal focus isolation as soon as a
+  responsive viewport returns to desktop width, while preserving the open rail
+  and moving focus to the active slide.
+- Moved phone PDF search and page navigation to a dedicated second toolbar row
+  so clearing a query cannot collide with the host download action.
+- Replaced Playground AI implementation snippets with concise, file-specific
+  guidance for documents, Markdown, spreadsheets, presentations, and PDFs.

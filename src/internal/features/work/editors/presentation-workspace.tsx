@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { GalleryVerticalEnd } from 'lucide-react';
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -39,6 +40,8 @@ import {
 } from './presentation-selection';
 import { PresentationThumbnailRail } from './presentation-thumbnail-rail';
 import { PresentationTextEditor } from './presentation-text-editor';
+
+const presentationMobileNavigationQuery = '(max-width: 640px)';
 
 export type PresentationWorkspaceCommands = Pick<
   PresentationEditorCommands,
@@ -126,6 +129,9 @@ export function PresentationWorkspace({
 }: PresentationWorkspaceProps) {
   const [mobileSlideNavigationOpen, setMobileSlideNavigationOpen] =
     useState(false);
+  const mobileSlideNavigationModal = useMobileSlideNavigationModal();
+  const mobileSlideNavigationModalOpen =
+    mobileSlideNavigationOpen && mobileSlideNavigationModal;
   const mobileSlideNavigationId = useId();
   const mobileSlideNavigationToggleRef = useRef<HTMLButtonElement>(null);
   const mobileSlideNavigationCloseRef = useRef<HTMLButtonElement>(null);
@@ -134,7 +140,7 @@ export function PresentationWorkspace({
     setMobileSlideNavigationOpen(false);
   };
   useDialogFocusScope<HTMLElement>({
-    active: mobileSlideNavigationOpen,
+    active: mobileSlideNavigationModalOpen,
     onEscape: closeMobileSlideNavigation,
     initialFocus: () => mobileSlideNavigationCloseRef.current,
     getActiveScope: () =>
@@ -144,7 +150,13 @@ export function PresentationWorkspace({
         '.work-presentation-slide-navigation-backdrop',
       ),
     ],
-    restoreFocusTarget: () => mobileSlideNavigationToggleRef.current,
+    restoreFocusTarget: () =>
+      mobileSlideNavigationModal
+        ? mobileSlideNavigationToggleRef.current
+        : (document
+            .getElementById(mobileSlideNavigationId)
+            ?.querySelector<HTMLElement>('[data-slide-thumbnail].active') ??
+          null),
   });
 
   const selectedElementSet = new Set(selectedElementIds);
@@ -216,7 +228,7 @@ export function PresentationWorkspace({
         content={content}
         designContent={designContent}
         mobileCloseButtonRef={mobileSlideNavigationCloseRef}
-        mobileNavigationModal={mobileSlideNavigationOpen}
+        mobileNavigationModal={mobileSlideNavigationModalOpen}
         mobileNavigationId={mobileSlideNavigationId}
         selectedSlide={selectedSlide}
         viewMode={viewMode}
@@ -229,7 +241,7 @@ export function PresentationWorkspace({
         onViewModeChange={commands.setViewMode}
       />
 
-      {mobileSlideNavigationOpen && (
+      {mobileSlideNavigationModalOpen && (
         <button
           type="button"
           className="work-presentation-slide-navigation-backdrop"
@@ -550,6 +562,42 @@ export function PresentationWorkspace({
       </div>
     </div>
   );
+}
+
+function useMobileSlideNavigationModal(): boolean {
+  const [matches, setMatches] = useState(() =>
+    mediaQueryMatches(presentationMobileNavigationQuery),
+  );
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
+      return;
+    }
+    const mediaQuery = window.matchMedia(presentationMobileNavigationQuery);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  return matches;
+}
+
+function mediaQueryMatches(query: string): boolean {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return true;
+  }
+  return window.matchMedia(query).matches;
 }
 
 function presentationSelectionStatus(

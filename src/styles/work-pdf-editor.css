@@ -512,6 +512,33 @@
 }
 
 @media (max-width: 520px) {
+  .work-pdf-toolbar {
+    position: relative;
+    box-sizing: border-box;
+    height: 76px;
+    flex-basis: 76px;
+    align-items: center;
+    padding-block: 6px 36px;
+    overflow-x: hidden;
+  }
+
+  .work-pdf-search {
+    position: absolute;
+    z-index: 2;
+    right: 78px;
+    bottom: 5px;
+    left: 6px;
+    width: auto;
+    min-width: 0;
+  }
+
+  .work-pdf-page-controls {
+    position: absolute;
+    z-index: 2;
+    right: 6px;
+    bottom: 6px;
+  }
+
   .work-pdf-annotation-selection,
   .work-pdf-annotation-ink,
   .work-pdf-annotation-style,

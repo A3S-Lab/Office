@@ -123,6 +123,7 @@ test('separates additive object selection from content editing', () => {
 });
 
 test('keeps phone slide navigation dismissible and restores focus', async () => {
+  const mediaQuery = installMatchMedia(true);
   const selections: string[] = [];
   const content: WorkPresentationContent = {
     type: 'presentation',
@@ -202,10 +203,25 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
   );
   expect(close).toHaveFocus();
 
+  mediaQuery.setMatches(false);
+  await waitFor(() => expect(drawer).not.toHaveAttribute('role'));
+  expect(drawer).not.toHaveAttribute('aria-modal');
+  expect(toggle).not.toHaveAttribute('inert');
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: '幻灯片 1 / 2：Opening' }),
+    ).toHaveFocus(),
+  );
+
+  mediaQuery.setMatches(true);
+  await waitFor(() => expect(drawer).toHaveAttribute('role', 'dialog'));
+  expect(drawer).toHaveAttribute('aria-modal', 'true');
+  await waitFor(() => expect(close).toHaveFocus());
+
   fireEvent.click(
     screen.getByRole('button', { name: '幻灯片 2 / 2：Details' }),
   );
-  expect(selections).toEqual(['slide-1', 'slide-2']);
+  expect(selections.at(-1)).toBe('slide-2');
   expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
   await waitFor(() => expect(toggle).toHaveFocus());
 
@@ -214,7 +230,63 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
   fireEvent.keyDown(close, { key: 'Escape' });
   expect(layout).toHaveAttribute('data-mobile-slide-navigation', 'closed');
   await waitFor(() => expect(toggle).toHaveFocus());
+  mediaQuery.restore();
 });
+
+function installMatchMedia(initialMatches: boolean): {
+  restore(): void;
+  setMatches(matches: boolean): void;
+} {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    window,
+    'matchMedia',
+  );
+  const listeners = new Set<(event: MediaQueryListEvent) => void>();
+  let matches = initialMatches;
+  const media = '(max-width: 640px)';
+  const mediaQuery = {
+    get matches() {
+      return matches;
+    },
+    media,
+    onchange: null,
+    addEventListener: (
+      _type: 'change',
+      listener: (event: MediaQueryListEvent) => void,
+    ) => listeners.add(listener),
+    removeEventListener: (
+      _type: 'change',
+      listener: (event: MediaQueryListEvent) => void,
+    ) => listeners.delete(listener),
+    addListener: (listener: (event: MediaQueryListEvent) => void) =>
+      listeners.add(listener),
+    removeListener: (listener: (event: MediaQueryListEvent) => void) =>
+      listeners.delete(listener),
+    dispatchEvent: () => true,
+  } as MediaQueryList;
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: () => mediaQuery,
+  });
+
+  return {
+    restore: () => {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'matchMedia', originalDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'matchMedia');
+      }
+    },
+    setMatches: (nextMatches) => {
+      matches = nextMatches;
+      const event = { matches, media } as MediaQueryListEvent;
+      mediaQuery.onchange?.(event);
+      for (const listener of listeners) listener(event);
+    },
+  };
+}
 
 function presentationElement(id: string, text: string): WorkSlideElement {
   return {
