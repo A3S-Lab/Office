@@ -1,0 +1,43 @@
+diff --git a/dist/index.esm.js b/dist/index.esm.js
+index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..dc62088f576bbe4ddf0dc864a39942ae449a837c 100644
+--- a/dist/index.esm.js
++++ b/dist/index.esm.js
+@@ -9919,7 +9919,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+     setSelection: function setSelection(range) {
+       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+       return setContext(function (draftCtx) {
+-        return api.setSelection(draftCtx, range, options);
++        return api.setSelection(draftCtx, _.cloneDeep(range), options);
+       });
+     },
+     setCellValuesByRange: function setCellValuesByRange(data, range) {
+diff --git a/dist/index.js b/dist/index.js
+index e4045518773578e3faaa3a58985a5585f9683088..b2e2218380891e31f7cfe156c9b4e77a252c2480 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -9930,7 +9930,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+     setSelection: function setSelection(range) {
+       var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+       return setContext(function (draftCtx) {
+-        return core.api.setSelection(draftCtx, range, options);
++        return core.api.setSelection(
++          draftCtx,
++          ___default['default'].cloneDeep(range),
++          options,
++        );
+       });
+     },
+     setCellValuesByRange: function setCellValuesByRange(data, range) {
+diff --git a/dist/index.umd.js b/dist/index.umd.js
+index e1c484068e24e3dc31a2831de32b58e898edde85..14baf7e17fd2d03692c80443404ea9a0720e0dd7 100644
+--- a/dist/index.umd.js
++++ b/dist/index.umd.js
+@@ -45249,7 +45249,7 @@
+       setSelection: function setSelection(range) {
+         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+         return setContext(function (draftCtx) {
+-          return index.setSelection(draftCtx, range, options);
++          return index.setSelection(draftCtx, lodash.cloneDeep(range), options);
+         });
+       },
+       setCellValuesByRange: function setCellValuesByRange(data, range) {

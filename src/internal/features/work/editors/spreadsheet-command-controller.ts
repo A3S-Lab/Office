@@ -732,7 +732,15 @@ function pasteCells(
     return false;
   }
   try {
-    context.workbook.setSelection([range], { id: context.targetSheetId });
+    context.workbook.setSelection(
+      [
+        {
+          row: [...range.row],
+          column: [...range.column],
+        },
+      ],
+      { id: context.targetSheetId },
+    );
   } catch {
     // The values were committed; selection highlighting is best effort.
   }

@@ -363,8 +363,10 @@
 }
 
 .work-office-color-grid {
+  --work-office-color-grid-columns: 10;
+
   display: grid;
-  grid-template-columns: repeat(10, 22px);
+  grid-template-columns: repeat(var(--work-office-color-grid-columns), 22px);
   gap: 3px;
 }
 
@@ -460,6 +462,59 @@
   padding: 0 8px;
   border-radius: 5px;
   font-size: 9px;
+}
+
+@media (max-width: 520px) {
+  .work-office-color-menu {
+    width: min(304px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    padding: 10px;
+  }
+
+  .work-office-color-palette {
+    gap: 7px;
+  }
+
+  .work-office-color-section-title {
+    font-size: 10px;
+  }
+
+  .work-office-color-grid {
+    --work-office-color-grid-columns: 8;
+
+    grid-template-columns: repeat(
+        var(--work-office-color-grid-columns),
+        minmax(0, 1fr)
+      );
+    gap: 3px;
+  }
+
+  .work-office-color-grid > button {
+    width: 100%;
+    height: auto;
+    min-height: 30px;
+    aspect-ratio: 1;
+    border-radius: 5px;
+  }
+
+  .work-office-color-custom {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .work-office-color-custom-preview {
+    width: 30px;
+    height: 32px;
+  }
+
+  .work-office-color-custom > label {
+    font-size: 9px;
+  }
+
+  .work-office-color-custom > label > input,
+  .work-office-color-custom > .ds-button {
+    min-height: 32px;
+  }
 }
 
 .work-office-slider {

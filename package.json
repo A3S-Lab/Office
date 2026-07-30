@@ -151,5 +151,8 @@
     "typescript": "^6.0.3",
     "vue": "^3.5.27"
   },
-  "private": false
+  "private": false,
+  "patchedDependencies": {
+    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet%2Freact@1.0.4.patch"
+  }
 }

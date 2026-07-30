@@ -29,6 +29,46 @@ test('opens on the current color and supports spatial keyboard navigation', asyn
   expect(trigger).toHaveFocus();
 });
 
+test('uses the rendered palette column count for vertical keyboard navigation', async () => {
+  render(
+    <OfficeColorPicker
+      ariaLabel="文字颜色"
+      value="#111827"
+      onValueChange={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '文字颜色' }));
+  const first = screen.getByRole('option', { name: '颜色 #111827' });
+  const firstInSecondRow = screen.getByRole('option', {
+    name: '颜色 #f9fafb',
+  });
+  const grid = first.closest<HTMLElement>('.work-office-color-grid');
+  expect(grid).not.toBeNull();
+  for (const colorGrid of document.querySelectorAll<HTMLElement>(
+    '.work-office-color-grid',
+  )) {
+    colorGrid.style.setProperty('--work-office-color-grid-columns', '8');
+  }
+  await waitFor(() => expect(first).toHaveFocus());
+
+  fireEvent.keyDown(first, { key: 'ArrowDown' });
+
+  expect(firstInSecondRow).toHaveFocus();
+
+  const themeLastRowFirst = screen.getByRole('option', {
+    name: '颜色 #741b47',
+  });
+  const standardFirst = screen.getByRole('option', {
+    name: '颜色 #c00000',
+  });
+  themeLastRowFirst.focus();
+  fireEvent.keyDown(themeLastRowFirst, { key: 'ArrowDown' });
+  expect(standardFirst).toHaveFocus();
+  fireEvent.keyDown(standardFirst, { key: 'ArrowUp' });
+  expect(themeLastRowFirst).toHaveFocus();
+});
+
 test('shows a readable custom-color preview before applying a valid value', () => {
   const selected: string[] = [];
   render(

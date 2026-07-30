@@ -126,3 +126,11 @@ All notable changes to A3S Office will be documented in this file.
 - Guarded worksheet deletion with the shared safe-default Office confirmation
   dialog, and kept invalid inline renames open with concise visible and
   accessible validation instead of silently discarding the entered name.
+- Enlarged the shared Office color palette into an eight-column phone layout,
+  kept the panel inside the viewport, and made vertical keyboard navigation
+  follow the rendered grid across theme and standard colors.
+- Stopped delayed Spreadsheet grid-focus recovery from stealing focus after a
+  letter starts cell editing, preserving direct text entry after F2 and Escape.
+- Kept multi-cell paste selection mutable across Fortune Sheet and React state
+  replays, preventing a frozen-range crash while preserving the pasted range
+  for subsequent copy, cut, and undo commands.

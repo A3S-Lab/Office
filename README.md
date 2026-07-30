@@ -92,6 +92,8 @@ The images below are committed visual-regression baselines from the real
 - **Accessible responsive shell** — Compact sidebars, slide navigation, AI
   panes, dialogs, menus, and popovers share bounded keyboard navigation,
   background isolation, topmost Escape handling, and focus restoration.
+  Shared color palettes expand to an eight-column touch layout on phones while
+  preserving spatial arrow-key navigation.
 - **Predictable state** — Controlled content values, typed callbacks, explicit
   file actions, conflict-aware document edits, and one document typography
   baseline across editing, preview, and PDF rendering. Word editing and
@@ -267,8 +269,9 @@ interaction model.
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut
-  hints, keyboard-operated cells and sheet tabs, permission-resilient
-  cut/copy/paste, clear, F2 editing, and focus-safe Escape behavior, direct
+  hints, keyboard-operated cells and sheet tabs, direct type-to-edit,
+  permission-resilient multi-cell cut/copy/paste, clear, F2 editing, and
+  focus-safe Escape behavior, direct
   font-family, vertical-alignment, text-wrap, number/percent, and decimal
   controls, charts, validation, protection, comments, and print settings.
   _XLSX, XLS, ODS, and CSV import; XLSX and PDF export._

@@ -913,6 +913,10 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
 
   const restoreFocus = (force: boolean) => {
     const activeElement = document.activeElement;
+    if (!force && isSpreadsheetCellEditingTarget(activeElement)) {
+      stopObservingFocusTarget();
+      return;
+    }
     if (
       !force &&
       activeElement !== document.body &&

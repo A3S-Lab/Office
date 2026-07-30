@@ -277,6 +277,17 @@ test('Spreadsheet owns deterministic cell navigation, selection, editing, and cl
   await page.keyboard.press('Escape');
   await expectGridFocus(page);
 
+  await page.keyboard.press('A');
+  await page.keyboard.press('3');
+  await page.keyboard.press('S');
+  await page.keyboard.press('Enter');
+  await expect(nameBox).toHaveText('A2');
+  await page.keyboard.press('ArrowUp');
+  await expect(formulaBar).toHaveText('A3S');
+  await page.keyboard.press(`${modifier}+z`);
+  await expect(formulaBar).toHaveText('');
+  await expectGridFocus(page);
+
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
     origin: new URL(page.url()).origin,
   });

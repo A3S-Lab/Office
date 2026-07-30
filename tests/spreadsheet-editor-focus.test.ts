@@ -130,6 +130,34 @@ test('recovers from a delayed workbook blur after the grid is mounted', async ()
   container.remove();
 });
 
+test('does not steal focus when a hidden cell editor resumes editing', async () => {
+  const container = document.createElement('div');
+  const overlay = document.createElement('main');
+  overlay.className = 'fortune-sheet-overlay';
+  overlay.tabIndex = -1;
+  const inputBox = document.createElement('div');
+  inputBox.className = 'luckysheet-input-box';
+  inputBox.style.zIndex = '-1';
+  const cellInput = document.createElement('div');
+  cellInput.className = 'luckysheet-cell-input';
+  cellInput.contentEditable = 'true';
+  cellInput.tabIndex = 0;
+  inputBox.append(cellInput);
+  container.append(overlay, inputBox);
+  document.body.append(container);
+  cellInput.focus();
+
+  focusSpreadsheetGrid(container);
+  expect(document.activeElement).toBe(overlay);
+
+  inputBox.style.zIndex = '19';
+  cellInput.focus();
+  await waitForAnimationFrames(3);
+
+  expect(document.activeElement).toBe(cellInput);
+  container.remove();
+});
+
 test('returns grid focus after successful ribbon commands only', () => {
   const calls: string[] = [];
   const record =

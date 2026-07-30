@@ -76,6 +76,7 @@ const STANDARD_COLORS = [
 
 const OFFICE_COLORS: readonly string[] = [...THEME_COLORS, ...STANDARD_COLORS];
 const COLOR_GRID_COLUMNS = 10;
+const COLOR_GRID_COLUMNS_PROPERTY = '--work-office-color-grid-columns';
 
 export function OfficeColorPicker({
   ariaLabel,
@@ -131,17 +132,15 @@ export function OfficeColorPicker({
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
   ) => {
+    const columns = renderedColorGridColumns(event.currentTarget);
     let nextIndex = index;
     if (event.key === 'ArrowLeft') nextIndex = Math.max(0, index - 1);
     else if (event.key === 'ArrowRight')
       nextIndex = Math.min(OFFICE_COLORS.length - 1, index + 1);
     else if (event.key === 'ArrowUp')
-      nextIndex = Math.max(0, index - COLOR_GRID_COLUMNS);
+      nextIndex = verticalColorIndex(index, -1, columns);
     else if (event.key === 'ArrowDown')
-      nextIndex = Math.min(
-        OFFICE_COLORS.length - 1,
-        index + COLOR_GRID_COLUMNS,
-      );
+      nextIndex = verticalColorIndex(index, 1, columns);
     else if (event.key === 'Home') nextIndex = 0;
     else if (event.key === 'End') nextIndex = OFFICE_COLORS.length - 1;
     else return;
@@ -274,6 +273,44 @@ export function OfficeColorPicker({
       )}
     </Popover>
   );
+}
+
+function renderedColorGridColumns(option: HTMLElement): number {
+  const grid = option.closest<HTMLElement>('.work-office-color-grid');
+  if (!grid || typeof window === 'undefined') return COLOR_GRID_COLUMNS;
+  const renderedColumns = Number.parseInt(
+    window.getComputedStyle(grid).getPropertyValue(COLOR_GRID_COLUMNS_PROPERTY),
+    10,
+  );
+  return Number.isFinite(renderedColumns) && renderedColumns > 0
+    ? renderedColumns
+    : COLOR_GRID_COLUMNS;
+}
+
+function verticalColorIndex(
+  index: number,
+  direction: -1 | 1,
+  columns: number,
+): number {
+  const inTheme = index < THEME_COLORS.length;
+  const groupStart = inTheme ? 0 : THEME_COLORS.length;
+  const groupLength = inTheme ? THEME_COLORS.length : STANDARD_COLORS.length;
+  const localIndex = index - groupStart;
+  const column = localIndex % columns;
+  const row = Math.floor(localIndex / columns);
+
+  if (direction < 0) {
+    if (row > 0) return index - columns;
+    if (inTheme) return index;
+    const previousLastRow =
+      Math.floor((THEME_COLORS.length - 1) / columns) * columns;
+    return Math.min(THEME_COLORS.length - 1, previousLastRow + column);
+  }
+
+  const nextLocalIndex = (row + 1) * columns + column;
+  if (nextLocalIndex < groupLength) return groupStart + nextLocalIndex;
+  if (!inTheme) return index;
+  return THEME_COLORS.length + Math.min(column, STANDARD_COLORS.length - 1);
 }
 
 function normalizeCssColor(value: string): string | null {

@@ -53,7 +53,9 @@ Each surface receives focus on entry, wraps forward and reverse Tab navigation,
 isolates obscured content with `inert`, lets only the top overlay handle Escape,
 and restores the current semantic invoker even when React remounts that control.
 Phone, 768 px, and desktop browser checks keep overlay and persistent-pane
-behavior distinct.
+behavior distinct. Shared Office color palettes now replace their dense
+desktop grid with eight larger columns on phones; spatial keyboard movement
+follows the rendered column count across theme and standard-color sections.
 
 ## Priority 1: Word-Compatible Document Editing
 
@@ -234,6 +236,8 @@ remains one coherent history.
 - Keep Cmd/Ctrl+F inside the editor through the compact Spreadsheet Find bar,
   including displayed, raw, formula, and sparse-cell matching, deterministic
   navigation, repeated-shortcut refocus, and grid-focus restoration on close.
+- Preserve direct type-to-edit after focus recovery and keep multi-cell paste,
+  selection, copy, and undo coherent when React replays vendor state updates.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
   images, and unsupported package state.
 

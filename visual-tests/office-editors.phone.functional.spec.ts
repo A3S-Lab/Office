@@ -153,6 +153,58 @@ test('Phone AI assistant keeps focus out of the obscured editor', async ({
   );
 });
 
+test('Shared Office color picker exposes phone-sized touch targets', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
+    .click();
+
+  const trigger = page.getByRole('button', { name: '文字颜色' });
+  await trigger.click();
+  const menu = page.getByRole('dialog', { name: '文字颜色' });
+  const first = menu.getByRole('option', { name: '颜色 #111827' });
+  const secondRow = menu.getByRole('option', { name: '颜色 #f9fafb' });
+  await expect(first).toBeFocused();
+
+  const geometry = await page.evaluate(() => {
+    const menu = document.querySelector<HTMLElement>('.work-office-color-menu');
+    const grid = document.querySelector<HTMLElement>(
+      '.work-office-color-grid.theme',
+    );
+    const option = grid?.querySelector<HTMLElement>('[role="option"]');
+    if (!(menu && grid && option)) {
+      throw new Error('Phone Office color picker is unavailable.');
+    }
+    const menuBounds = menu.getBoundingClientRect();
+    const optionBounds = option.getBoundingClientRect();
+    return {
+      columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+      menuLeft: menuBounds.left,
+      menuRight: menuBounds.right,
+      optionHeight: optionBounds.height,
+      optionWidth: optionBounds.width,
+      viewportWidth: document.documentElement.clientWidth,
+    };
+  });
+  expect(geometry.columns).toBe(8);
+  expect(geometry.optionWidth).toBeGreaterThanOrEqual(30);
+  expect(geometry.optionHeight).toBeGreaterThanOrEqual(30);
+  expect(geometry.menuLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry.menuRight).toBeLessThanOrEqual(geometry.viewportWidth);
+
+  await first.press('ArrowDown');
+  await expect(secondRow).toBeFocused();
+  await secondRow.click();
+  await expect(menu).toBeHidden();
+  await expect(trigger.locator('.work-office-color-swatch')).toHaveCSS(
+    'background-color',
+    'rgb(249, 250, 251)',
+  );
+});
+
 test('PDF keeps compact tools clear of the file actions on phones', async ({
   page,
 }) => {

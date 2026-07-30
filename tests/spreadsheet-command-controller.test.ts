@@ -123,6 +123,20 @@ describe('spreadsheet command controller', () => {
     expect(fixture.formulaBarValues).toEqual(['', 'A3S']);
   });
 
+  test('does not reuse a vendor-frozen paste range for the resulting selection', () => {
+    const fixture = commandFixture();
+    fixture.workbook.freezePastedRange = true;
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.commands.pasteCells([['A3S', 'Office']])).toBe(true);
+    expect(fixture.workbook.selections).toEqual([
+      {
+        range: [{ row: [0, 0], column: [0, 1] }],
+        sheetId: 'sheet-1',
+      },
+    ]);
+  });
+
   test('updates controlled sheet view state without mutating the input', () => {
     const fixture = commandFixture();
     const previousSheet = fixture.context.content.sheets[0];
@@ -623,6 +637,7 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     sheetId: string | undefined;
   }> = [];
   selection: SpreadsheetCommandRange[] | undefined;
+  freezePastedRange = false;
 
   cancelMerge(
     ranges: SpreadsheetCommandRange[],
@@ -657,12 +672,20 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     options?: { id?: string },
   ): void {
     this.pastes.push({ range, sheetId: options?.id, values });
+    if (this.freezePastedRange) {
+      Object.freeze(range.row);
+      Object.freeze(range.column);
+      Object.freeze(range);
+    }
   }
 
   setSelection(
     range: SpreadsheetCommandRange[],
     options?: { id?: string },
   ): void {
+    if (range.some((selection) => Object.isFrozen(selection))) {
+      throw new TypeError('Workbook selection ranges must remain mutable.');
+    }
     this.selections.push({ range, sheetId: options?.id });
     this.selection = range;
   }
