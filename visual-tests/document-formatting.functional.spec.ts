@@ -5,12 +5,16 @@ import {
 } from './visual-test-support';
 
 const fontPreviews = [
+  ['思源黑体', '"A3S Office Noto Sans Hans"'],
   ['微软雅黑', '"Microsoft YaHei", "PingFang SC", sans-serif'],
+  ['苹方', '"PingFang SC", "Microsoft YaHei", sans-serif'],
   ['宋体', 'SimSun, "Songti SC", serif'],
   ['黑体', 'SimHei, "Heiti SC", sans-serif'],
   ['楷体', 'KaiTi, "Kaiti SC", serif'],
+  ['Calibri', 'Calibri'],
   ['Arial', 'Arial, sans-serif'],
-  ['Times New Roman', '"Times New Roman", serif'],
+  ['Times New Roman', '"Times New Roman", Times, serif'],
+  ['Menlo', 'Menlo, SFMono-Regular, Consolas, monospace'],
 ] as const;
 
 test('Word formatting controls apply computed styles and preview their fonts', async ({
@@ -36,12 +40,17 @@ test('Word formatting controls apply computed styles and preview their fonts', a
   const fontMenu = page.getByRole('listbox', { name: '字体' });
   await expect(fontMenu).toBeVisible();
   await expectWithinViewport(fontMenu);
+  expect(await fontMenu.getByRole('option').count()).toBeGreaterThan(25);
+  await expect(fontMenu.getByText('内置字体')).toBeVisible();
+  await expect(fontMenu.getByText('中文字体')).toBeVisible();
+  await expect(fontMenu.getByText('西文字体')).toBeVisible();
+  await expect(fontMenu.getByText('等宽字体')).toBeVisible();
   for (const [label, family] of fontPreviews) {
-    const option = fontMenu.getByRole('option', { name: label });
+    const option = fontMenu.getByRole('option', { name: label, exact: true });
     await expect(option).toBeVisible();
     expect(
       await option
-        .locator('span')
+        .locator('.work-office-select-option-label')
         .evaluate((element) => getComputedStyle(element).fontFamily),
     ).toBe(family);
   }

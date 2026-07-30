@@ -32,6 +32,7 @@ import {
   normalizeDocumentHref,
 } from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
@@ -93,6 +94,7 @@ export type DocumentViewMode = 'page' | 'web';
 interface DocumentToolbarProps {
   editor: Editor;
   layoutOpen: boolean;
+  layoutFonts?: readonly WorkDocumentLayoutFont[];
   navigationOpen: boolean;
   pageColor: string;
   showPageNumbers: boolean;
@@ -145,6 +147,7 @@ interface DocumentToolbarProps {
 export function DocumentToolbar({
   editor,
   layoutOpen,
+  layoutFonts = [],
   navigationOpen,
   pageColor,
   showPageNumbers,
@@ -348,6 +351,7 @@ export function DocumentToolbar({
             <DocumentHomeRibbon
               editor={editor}
               findReplaceMode={findReplaceMode}
+              layoutFonts={layoutFonts}
               onFindText={(replace) =>
                 onOpenFindReplace(replace ? 'replace' : 'find')
               }

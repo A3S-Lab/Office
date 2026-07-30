@@ -121,8 +121,31 @@
   width: max-content;
   min-width: max(100%, 150px);
   max-width: 280px;
-  max-height: 260px;
+  max-height: 320px;
   overflow-y: auto;
+}
+
+.work-office-select-menu:is(
+  [aria-label="字体"],
+  [aria-label="快捷字体"],
+  [aria-label="演示字体"]
+) {
+  min-width: 210px;
+  max-width: 240px;
+}
+
+.work-office-select-group-label {
+  position: sticky;
+  z-index: 1;
+  top: -5px;
+  margin: 0 -1px 2px;
+  padding: 7px 8px 4px;
+  background: color-mix(in srgb, var(--a3s-panel) 98%, transparent);
+  color: var(--a3s-faint);
+  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
 }
 
 .work-office-select-menu > button {
@@ -141,6 +164,30 @@
   font-size: 10px;
   text-align: left;
   cursor: pointer;
+}
+
+.work-office-select-option-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.work-office-select-option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-office-select-option-copy > small {
+  flex: 0 0 auto;
+  color: var(--a3s-faint);
+  font-family: var(--a3s-ui-font, ui-sans-serif), "PingFang SC", sans-serif;
+  font-size: 8px;
+  font-weight: 500;
 }
 
 .work-office-select-menu > button:hover:not(:disabled),

@@ -28,6 +28,7 @@ import {
   canChangeDocumentIndent,
   documentParagraphDirection,
 } from '../work-document-paragraph-formatting';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   canChangeDocumentFontSize,
   changeDocumentFontSize,
@@ -56,10 +57,12 @@ const documentLineHeightOptions = [
 export function DocumentHomeRibbon({
   editor,
   findReplaceMode,
+  layoutFonts = [],
   onFindText,
 }: {
   editor: Editor;
   findReplaceMode: DocumentFindReplaceMode | null;
+  layoutFonts?: readonly WorkDocumentLayoutFont[];
   onFindText: (replace: boolean) => void;
 }) {
   const subscribe = useCallback(
@@ -76,7 +79,7 @@ export function DocumentHomeRibbon({
     () => editor.state,
   );
   if (editor.isDestroyed) return null;
-  const fontFamilyValue = documentFontFamilyValue(editor);
+  const fontFamilyValue = documentFontFamilyValue(editor, layoutFonts);
   const fontSizeValue = documentFontSizeValue(editor);
   const lineHeightValue = documentLineHeightValue(editor);
 
@@ -109,7 +112,10 @@ export function DocumentHomeRibbon({
               ariaLabel="字体"
               className="work-document-font-family-select"
               value={fontFamilyValue}
-              options={documentFontFamilyOptionsForValue(fontFamilyValue)}
+              options={documentFontFamilyOptionsForValue(
+                fontFamilyValue,
+                layoutFonts,
+              )}
               onValueChange={(value) => {
                 if (value === 'default')
                   editor.chain().focus().unsetFontFamily().run();

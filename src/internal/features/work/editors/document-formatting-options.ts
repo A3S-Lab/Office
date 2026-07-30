@@ -1,19 +1,27 @@
 import type { Editor } from '@tiptap/core';
 import {
+  OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID,
+  OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID,
+  type WorkDocumentLayoutFont,
+} from '../work-document-fonts';
+import {
   normalizeOfficeFontFamily,
   officeFontFamilies,
   officeFontFamilyLabel,
 } from './office-font-families';
+import type { OfficeSelectOption } from './office-select';
 
-export const documentFontFamilyOptions = [
+export const documentFontFamilyOptions: readonly OfficeSelectOption[] = [
   { value: 'default', label: '默认字体' },
-  ...officeFontFamilies
-    .filter(({ id }) => id !== 'aptos')
-    .map(({ cssFamily, label }) => ({
-      value: cssFamily,
-      label,
-      previewStyle: { fontFamily: cssFamily },
-    })),
+  ...officeFontFamilies.map(({ cssFamily, group, label, name }) => ({
+    value: cssFamily,
+    group,
+    label,
+    previewStyle: { fontFamily: cssFamily },
+    searchText: `${name} ${label}`,
+  })),
 ];
 
 export const documentFontSizeOptions = [
@@ -32,12 +40,15 @@ export const documentFontSizeOptions = [
 
 const documentFontSizeSteps = [9, 10.5, 12, 14, 16, 18, 22, 24, 36, 48, 72];
 
-export function documentFontFamilyValue(editor: Editor): string {
+export function documentFontFamilyValue(
+  editor: Editor,
+  layoutFonts: readonly WorkDocumentLayoutFont[] = [],
+): string {
   const value = editor.getAttributes('textStyle').fontFamily;
   if (typeof value !== 'string' || !value.trim()) return 'default';
   const normalized = normalizeOfficeFontFamily(value);
   return (
-    documentFontFamilyOptions.find(
+    documentFontFamilyOptionsForLayoutFonts(layoutFonts).find(
       (option) =>
         option.value !== 'default' &&
         normalizeOfficeFontFamily(option.value) === normalized,
@@ -45,21 +56,81 @@ export function documentFontFamilyValue(editor: Editor): string {
   );
 }
 
-export function documentFontFamilyOptionsForValue(value: string) {
-  if (
-    value === 'default' ||
-    documentFontFamilyOptions.some((option) => option.value === value)
-  ) {
-    return documentFontFamilyOptions;
+export function documentFontFamilyOptionsForValue(
+  value: string,
+  layoutFonts: readonly WorkDocumentLayoutFont[] = [],
+) {
+  const options = documentFontFamilyOptionsForLayoutFonts(layoutFonts);
+  if (value === 'default' || options.some((option) => option.value === value)) {
+    return options;
   }
   return [
-    ...documentFontFamilyOptions,
+    ...options,
     {
       value,
+      group: '文档字体',
       label: officeFontFamilyLabel(value),
       previewStyle: { fontFamily: value },
+      searchText: value,
     },
   ];
+}
+
+function documentFontFamilyOptionsForLayoutFonts(
+  layoutFonts: readonly WorkDocumentLayoutFont[],
+): readonly OfficeSelectOption[] {
+  if (!layoutFonts.length) return documentFontFamilyOptions;
+  const layoutOptions = documentLayoutFontFamilyOptions(layoutFonts);
+  const layoutFamilies = new Set(
+    layoutOptions.map((option) => normalizeOfficeFontFamily(option.value)),
+  );
+  return [
+    documentFontFamilyOptions[0] as OfficeSelectOption,
+    ...layoutOptions,
+    ...documentFontFamilyOptions
+      .slice(1)
+      .filter(
+        (option) =>
+          !layoutFamilies.has(normalizeOfficeFontFamily(option.value)),
+      ),
+  ];
+}
+
+const bundledDocumentFontLabels = new Map<string, string>([
+  [OFFICE_DOCUMENT_LAYOUT_LATIN_FONT_ID, 'Noto Sans'],
+  [OFFICE_DOCUMENT_LAYOUT_FONT_ID, '思源黑体'],
+  [OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_ID, 'Noto Naskh Arabic'],
+  [OFFICE_DOCUMENT_LAYOUT_HEBREW_FONT_ID, 'Noto Sans Hebrew'],
+]);
+
+function documentLayoutFontFamilyOptions(
+  layoutFonts: readonly WorkDocumentLayoutFont[],
+): OfficeSelectOption[] {
+  const families = new Set<string>();
+  return layoutFonts.flatMap((font) => {
+    const normalized = normalizeOfficeFontFamily(font.family);
+    if (!normalized || families.has(normalized)) return [];
+    families.add(normalized);
+    const bundledLabel = bundledDocumentFontLabels.get(font.id);
+    const value = cssFontFamilyValue(font.family);
+    const label = bundledLabel ?? font.family;
+    return [
+      {
+        value,
+        group: bundledLabel ? '内置字体' : '项目字体',
+        label,
+        previewStyle: { fontFamily: value },
+        searchText: `${font.family} ${label}`,
+      },
+    ];
+  });
+}
+
+function cssFontFamilyValue(family: string): string {
+  const trimmed = family.trim();
+  return /[\s,'"]/.test(trimmed)
+    ? `"${trimmed.replaceAll('"', '\\"')}"`
+    : trimmed;
 }
 
 export function documentFontSizeValue(editor: Editor): string {

@@ -1,6 +1,7 @@
 import type { Cell, Selection } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { officeFontFamilies } from './office-font-families';
+import type { OfficeSelectOption } from './office-select';
 
 const spreadsheetFontSizes = [
   9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 36, 48, 72,
@@ -140,20 +141,18 @@ export function spreadsheetFontSizeOptions(
     .map((value) => ({ value: String(value), label: String(value) }));
 }
 
-export function spreadsheetFontFamilyOptions(current: string | undefined): {
-  value: string;
-  label: string;
-  previewStyle: { fontFamily: string };
-}[] {
-  const options: {
-    value: string;
-    label: string;
-    previewStyle: { fontFamily: string };
-  }[] = officeFontFamilies.map(({ cssFamily, label, name }) => ({
-    value: name,
-    label,
-    previewStyle: { fontFamily: cssFamily },
-  }));
+export function spreadsheetFontFamilyOptions(
+  current: string | undefined,
+): OfficeSelectOption[] {
+  const options: OfficeSelectOption[] = officeFontFamilies.map(
+    ({ cssFamily, group, label, name }) => ({
+      value: name,
+      group,
+      label,
+      previewStyle: { fontFamily: cssFamily },
+      searchText: `${name} ${label}`,
+    }),
+  );
   const normalizedCurrent = current?.trim();
   if (
     normalizedCurrent &&
@@ -161,8 +160,10 @@ export function spreadsheetFontFamilyOptions(current: string | undefined): {
   ) {
     options.push({
       value: normalizedCurrent,
+      group: '文档字体',
       label: normalizedCurrent,
       previewStyle: { fontFamily: normalizedCurrent },
+      searchText: normalizedCurrent,
     });
   }
   return options;

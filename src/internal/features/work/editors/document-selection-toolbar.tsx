@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
 import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   documentFontFamilyOptionsForValue,
   documentFontFamilyValue,
@@ -34,14 +35,16 @@ const selectionToolbarPluginKey = 'documentSelectionToolbar';
 export function DocumentSelectionToolbar({
   editor,
   canInsertComment,
+  layoutFonts = [],
   onInsertComment,
 }: {
   editor: Editor;
   canInsertComment: boolean;
+  layoutFonts?: readonly WorkDocumentLayoutFont[];
   onInsertComment: () => void;
 }) {
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const fontFamilyValue = documentFontFamilyValue(editor);
+  const fontFamilyValue = documentFontFamilyValue(editor, layoutFonts);
   const fontSizeValue = documentFontSizeValue(editor);
 
   useEffect(() => {
@@ -104,7 +107,10 @@ export function DocumentSelectionToolbar({
         ariaLabel="快捷字体"
         className="work-document-selection-font-family"
         value={fontFamilyValue}
-        options={documentFontFamilyOptionsForValue(fontFamilyValue)}
+        options={documentFontFamilyOptionsForValue(
+          fontFamilyValue,
+          layoutFonts,
+        )}
         onValueChange={(value) => {
           if (value === 'default')
             editor.chain().focus().unsetFontFamily().run();

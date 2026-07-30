@@ -587,6 +587,14 @@ paragraph enters the deterministic path only when every explicit family in its
 CSS stack matches a
 successfully loaded and registered asset in the same order.
 
+The document font selector groups packaged layout faces, common Chinese,
+Western, and monospace system families, host-provided layout faces, and an
+otherwise unknown family retained from imported content. Each choice previews
+its own CSS family while short section headings distinguish packaged, system,
+host, and imported entries without repeating status text on every row. The same
+grouped catalog is reused by the compact selection toolbar, Presentation text
+controls, and Spreadsheet cell formatting.
+
 ## Structured document boundary
 
 `WorkDocumentContent` remains controlled by the host and keeps `html` as a

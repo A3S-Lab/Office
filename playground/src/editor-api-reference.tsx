@@ -222,7 +222,8 @@ const editorReferences: Record<EditorId, EditorReference> = {
         type: 'readonly DocumentLayoutFont[]',
         defaultValue: '包内中西文、阿拉伯文和希伯来文字体',
         frameworkBinding: 'Vue: :layout-fonts · Element: .layoutFonts',
-        description: '排版测量字体；应与最终导出和显示字体匹配。',
+        description:
+          '排版测量字体；会出现在字体菜单中，并应与最终导出和显示字体匹配。',
       },
       {
         name: 'onAgentRequest',

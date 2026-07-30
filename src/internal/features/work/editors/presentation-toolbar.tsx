@@ -76,10 +76,12 @@ const presentationRibbonTabs = [
 ] as const;
 
 const basePresentationFontFamilyOptions = officeFontFamilies.map(
-  ({ cssFamily, cssValue, label }) => ({
+  ({ cssFamily, cssValue, group, label, name }) => ({
     value: cssValue,
+    group,
     label,
     previewStyle: { fontFamily: cssFamily },
+    searchText: `${name} ${label}`,
   }),
 );
 
@@ -640,8 +642,10 @@ function presentationFontFamilyOptions(current: string) {
     ...basePresentationFontFamilyOptions,
     {
       value: current,
+      group: '文档字体',
       label: officeFontFamilyLabel(current),
       previewStyle: { fontFamily: current },
+      searchText: current,
     },
   ];
 }

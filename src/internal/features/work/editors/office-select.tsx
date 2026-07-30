@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react';
 import {
+  Fragment,
   type CSSProperties,
   type KeyboardEvent,
   useId,
@@ -12,7 +13,10 @@ export interface OfficeSelectOption<T extends string = string> {
   value: T;
   label: string;
   disabled?: boolean;
+  group?: string;
+  meta?: string;
   previewStyle?: CSSProperties;
+  searchText?: string;
 }
 
 export function OfficeSelect<T extends string>({
@@ -130,55 +134,79 @@ export function OfficeSelect<T extends string>({
       {(close) => (
         <>
           {options.map((option, index) => (
-            <button
-              type="button"
-              role="option"
-              id={`${reactId}-option-${index}`}
-              key={option.value}
-              aria-selected={option.value === value}
-              disabled={option.disabled}
-              tabIndex={index === activeIndex ? 0 : -1}
-              onClick={() => selectOption(index, close)}
-              onFocus={() => setActiveIndex(index)}
-              onKeyDown={(event) => {
-                if (event.key === 'ArrowDown') moveOptionFocus(event, 1);
-                else if (event.key === 'ArrowUp') moveOptionFocus(event, -1);
-                else if (event.key === 'Home') {
-                  event.preventDefault();
-                  const next = nearestEnabledOption(options, 0, 1);
-                  setActiveIndex(next);
-                  document.getElementById(`${reactId}-option-${next}`)?.focus();
-                } else if (event.key === 'End') {
-                  event.preventDefault();
-                  const next = nearestEnabledOption(
-                    options,
-                    options.length - 1,
-                    -1,
-                  );
-                  setActiveIndex(next);
-                  document.getElementById(`${reactId}-option-${next}`)?.focus();
-                } else if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  selectOption(index, close);
-                } else if (isOfficeSelectSearchKey(event)) {
-                  const next = matchingOptionIndex(
-                    options,
-                    event.key,
-                    index + 1,
-                  );
-                  if (next >= 0) {
+            <Fragment key={option.value}>
+              {option.group && options[index - 1]?.group !== option.group && (
+                <div
+                  className="work-office-select-group-label"
+                  role="presentation"
+                >
+                  {option.group}
+                </div>
+              )}
+              <button
+                type="button"
+                role="option"
+                id={`${reactId}-option-${index}`}
+                aria-label={option.label}
+                aria-selected={option.value === value}
+                disabled={option.disabled}
+                tabIndex={index === activeIndex ? 0 : -1}
+                onClick={() => selectOption(index, close)}
+                onFocus={() => setActiveIndex(index)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') moveOptionFocus(event, 1);
+                  else if (event.key === 'ArrowUp') moveOptionFocus(event, -1);
+                  else if (event.key === 'Home') {
                     event.preventDefault();
+                    const next = nearestEnabledOption(options, 0, 1);
                     setActiveIndex(next);
                     document
                       .getElementById(`${reactId}-option-${next}`)
                       ?.focus();
+                  } else if (event.key === 'End') {
+                    event.preventDefault();
+                    const next = nearestEnabledOption(
+                      options,
+                      options.length - 1,
+                      -1,
+                    );
+                    setActiveIndex(next);
+                    document
+                      .getElementById(`${reactId}-option-${next}`)
+                      ?.focus();
+                  } else if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    selectOption(index, close);
+                  } else if (isOfficeSelectSearchKey(event)) {
+                    const next = matchingOptionIndex(
+                      options,
+                      event.key,
+                      index + 1,
+                    );
+                    if (next >= 0) {
+                      event.preventDefault();
+                      setActiveIndex(next);
+                      document
+                        .getElementById(`${reactId}-option-${next}`)
+                        ?.focus();
+                    }
                   }
-                }
-              }}
-            >
-              <span style={option.previewStyle}>{option.label}</span>
-              {option.value === value && <Check size={12} aria-hidden="true" />}
-            </button>
+                }}
+              >
+                <span
+                  className="work-office-select-option-copy"
+                  style={option.previewStyle}
+                >
+                  <span className="work-office-select-option-label">
+                    {option.label}
+                  </span>
+                  {option.meta && <small>{option.meta}</small>}
+                </span>
+                {option.value === value && (
+                  <Check size={12} aria-hidden="true" />
+                )}
+              </button>
+            </Fragment>
           ))}
         </>
       )}
@@ -210,7 +238,11 @@ function matchingOptionIndex<T extends string>(
     if (
       option &&
       !option.disabled &&
-      option.label.toLocaleLowerCase().startsWith(normalizedQuery)
+      [option.label, option.searchText ?? '']
+        .join(' ')
+        .toLocaleLowerCase()
+        .split(/\s+/)
+        .some((term) => term.startsWith(normalizedQuery))
     ) {
       return index;
     }

@@ -685,6 +685,7 @@ export function DocumentEditor({
         <DocumentToolbar
           editor={editor}
           fileActions={fileActions}
+          layoutFonts={layoutFonts}
           layoutOpen={layoutOpen}
           navigationOpen={navigationOpen}
           pageColor={documentPageColor(content.pageColor)}
@@ -938,6 +939,7 @@ export function DocumentEditor({
                       <DocumentSelectionToolbar
                         editor={editor}
                         canInsertComment={documentComments.canInsert}
+                        layoutFonts={layoutFonts}
                         onInsertComment={() => {
                           void requestEditorViewChange(null, false).then(
                             (accepted) => {

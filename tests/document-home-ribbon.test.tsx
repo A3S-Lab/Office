@@ -14,6 +14,10 @@ import {
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { MAX_DOCUMENT_INDENT_LEVEL } from '../src/internal/features/work/work-document-paragraph-formatting';
+import {
+  OFFICE_DOCUMENT_LAYOUT_FONT_FAMILY,
+  OFFICE_DOCUMENT_LAYOUT_FONT_ID,
+} from '../src/internal/features/work/work-document-fonts';
 
 let editor: Editor | null = null;
 
@@ -112,10 +116,51 @@ test('previews every font option with the font it applies', async () => {
   for (const option of documentFontFamilyOptions) {
     if (!('previewStyle' in option)) continue;
     const menuOption = screen.getByRole('option', { name: option.label });
-    expect(within(menuOption).getByText(option.label)).toHaveStyle({
-      fontFamily: option.previewStyle.fontFamily,
-    });
+    expect(
+      menuOption.querySelector('.work-office-select-option-copy'),
+    ).toHaveStyle({ fontFamily: option.previewStyle.fontFamily });
   }
+});
+
+test('groups common fonts and includes host-provided layout fonts', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>Font catalog</p>',
+  });
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      layoutFonts={[
+        {
+          id: OFFICE_DOCUMENT_LAYOUT_FONT_ID,
+          family: OFFICE_DOCUMENT_LAYOUT_FONT_FAMILY,
+          url: '/fonts/noto-sans-hans.otf',
+        },
+        {
+          id: 'brand-sans-regular',
+          family: 'Brand Sans',
+          url: '/fonts/brand-sans.ttf',
+        },
+      ]}
+      onFindText={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('combobox', { name: '字体' }));
+  const options = screen.getAllByRole('option');
+  expect(options.length).toBeGreaterThan(20);
+  expect(screen.getByText('内置字体')).toBeInTheDocument();
+  expect(screen.getByText('中文字体')).toBeInTheDocument();
+  expect(screen.getByText('西文字体')).toBeInTheDocument();
+  expect(screen.getByText('等宽字体')).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '思源黑体' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('option', { name: 'Brand Sans' }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: '苹方' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Calibri' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Menlo' })).toBeInTheDocument();
 });
 
 test('keeps imported font family and size visible instead of reporting defaults', async () => {
