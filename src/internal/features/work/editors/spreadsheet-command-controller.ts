@@ -42,6 +42,31 @@ export interface SpreadsheetWorkbookCommandPort {
     options?: { id?: string },
   ) => void;
   getSelection: () => SpreadsheetCommandRange[] | undefined;
+  getCellsByRange: (
+    range: SpreadsheetCommandRange,
+    options?: { id?: string },
+  ) => (Cell | null)[][];
+  insertRowOrColumn: (
+    type: SpreadsheetStructureAxis,
+    index: number,
+    count: number,
+    direction: 'lefttop' | 'rightbottom',
+    options?: { id?: string },
+  ) => void;
+  deleteRowOrColumn: (
+    type: SpreadsheetStructureAxis,
+    start: number,
+    end: number,
+    options?: { id?: string },
+  ) => void;
+  hideRowOrColumn: (
+    rowOrColumnInfo: string[],
+    type: SpreadsheetStructureAxis,
+  ) => void;
+  showRowOrColumn: (
+    rowOrColumnInfo: string[],
+    type: SpreadsheetStructureAxis,
+  ) => void;
   mergeCells: (
     ranges: SpreadsheetCommandRange[],
     type: string,
@@ -58,6 +83,16 @@ export interface SpreadsheetWorkbookCommandPort {
     range: SpreadsheetCommandRange,
     options?: { id?: string },
   ) => void;
+  setRowHeight: (
+    rowInfo: Record<string, number>,
+    options?: { id?: string },
+    custom?: boolean,
+  ) => void;
+  setColumnWidth: (
+    columnInfo: Record<string, number>,
+    options?: { id?: string },
+    custom?: boolean,
+  ) => void;
   setSelection: (
     range: SpreadsheetCommandRange[],
     options?: { id?: string },
@@ -73,6 +108,10 @@ export interface SpreadsheetCommandSelection {
   sheetId: string;
   selection: Selection;
 }
+
+export type SpreadsheetStructureAxis = 'row' | 'column';
+export type SpreadsheetStructureInsertPosition = 'before' | 'after';
+export type SpreadsheetSortDirection = 'ascending' | 'descending';
 
 export type SpreadsheetCalculationCommand =
   | { scope: 'workbook' }
@@ -105,9 +144,14 @@ export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
   addSheet: () => boolean;
   clearSelectedCells: () => boolean;
+  deleteSelectedStructure: (axis: SpreadsheetStructureAxis) => boolean;
   deleteSheet: (sheetId: string) => boolean;
   duplicateSheet: (sheetId: string) => boolean;
   hideSheet: (sheetId: string) => boolean;
+  insertSelectedStructure: (
+    axis: SpreadsheetStructureAxis,
+    position: SpreadsheetStructureInsertPosition,
+  ) => boolean;
   moveSheet: (
     sheetId: string,
     direction: SpreadsheetSheetMoveDirection,
@@ -121,8 +165,17 @@ export interface SpreadsheetEditorCommands {
   setGridLines: (visible: boolean) => boolean;
   selectCellRange: (scope: SpreadsheetSelectionScope) => boolean;
   setSheetColor: (sheetId: string, color: string | null) => boolean;
+  setSelectedStructureHidden: (
+    axis: SpreadsheetStructureAxis,
+    hidden: boolean,
+  ) => boolean;
+  setSelectedStructureSize: (
+    axis: SpreadsheetStructureAxis,
+    size: number,
+  ) => boolean;
   setSpreadsheetContent: (content: WorkSpreadsheetContent) => boolean;
   setZoom: (percent: number) => boolean;
+  sortSelectedCells: (direction: SpreadsheetSortDirection) => boolean;
   toggleCellMerge: (merged: boolean) => boolean;
   undo: () => boolean;
 }
@@ -577,6 +630,34 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands
     >({
+      name: 'spreadsheetStructure',
+      addCommands: () => ({
+        deleteSelectedStructure: {
+          canExecute: canDeleteSelectedStructure,
+          execute: deleteSelectedStructure,
+        },
+        insertSelectedStructure: {
+          canExecute: canInsertSelectedStructure,
+          execute: insertSelectedStructure,
+        },
+        setSelectedStructureHidden: {
+          canExecute: canSetSelectedStructureHidden,
+          execute: setSelectedStructureHidden,
+        },
+        setSelectedStructureSize: {
+          canExecute: canSetSelectedStructureSize,
+          execute: setSelectedStructureSize,
+        },
+        sortSelectedCells: {
+          canExecute: canSortSelectedCells,
+          execute: sortSelectedCells,
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
       name: 'spreadsheetCellFormatting',
       addCommands: () => ({
         clearSelectedCells: {
@@ -634,6 +715,235 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       }),
     }),
   ];
+}
+
+function canInsertSelectedStructure(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  _position: SpreadsheetStructureInsertPosition,
+): boolean {
+  if (!canEditSelectedCells(context)) return false;
+  const range = liveRange(context);
+  const [start, end] = spreadsheetStructureRange(range, axis);
+  const count = end - start + 1;
+  const maximum = axis === 'row' ? 10_000 : 1_000;
+  return spreadsheetStructureExtent(context, axis) + count < maximum;
+}
+
+function insertSelectedStructure(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  position: SpreadsheetStructureInsertPosition,
+): boolean {
+  if (!context.workbook || !context.targetSheetId) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  const before = position === 'before';
+  try {
+    context.workbook.insertRowOrColumn(
+      axis,
+      before ? start : end,
+      end - start + 1,
+      before ? 'lefttop' : 'rightbottom',
+      { id: context.targetSheetId },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function canDeleteSelectedStructure(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+): boolean {
+  if (!canEditSelectedCells(context)) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  return end - start + 1 < spreadsheetStructureExtent(context, axis);
+}
+
+function deleteSelectedStructure(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+): boolean {
+  if (!context.workbook || !context.targetSheetId) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  try {
+    context.workbook.deleteRowOrColumn(axis, start, end, {
+      id: context.targetSheetId,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function canSetSelectedStructureHidden(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  hidden: boolean,
+): boolean {
+  if (!canEditSelectedCells(context)) return false;
+  if (!hidden) return true;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  return end - start + 1 < spreadsheetStructureExtent(context, axis);
+}
+
+function setSelectedStructureHidden(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  hidden: boolean,
+): boolean {
+  if (!context.workbook) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  const indices = Array.from({ length: end - start + 1 }, (_, offset) =>
+    String(start + offset),
+  );
+  try {
+    if (hidden) context.workbook.hideRowOrColumn(indices, axis);
+    else context.workbook.showRowOrColumn(indices, axis);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function canSetSelectedStructureSize(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  size: number,
+): boolean {
+  const maximum = axis === 'row' ? 545 : 2_038;
+  return Boolean(
+    canEditSelectedCells(context) &&
+      Number.isFinite(size) &&
+      size >= 1 &&
+      size <= maximum,
+  );
+}
+
+function setSelectedStructureSize(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+  size: number,
+): boolean {
+  if (!context.workbook || !context.targetSheetId) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  const sizes = Object.fromEntries(
+    Array.from({ length: end - start + 1 }, (_, offset) => [
+      String(start + offset),
+      size,
+    ]),
+  );
+  try {
+    if (axis === 'row') {
+      context.workbook.setRowHeight(sizes, { id: context.targetSheetId }, true);
+    } else {
+      context.workbook.setColumnWidth(
+        sizes,
+        { id: context.targetSheetId },
+        true,
+      );
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function canSortSelectedCells(
+  context: SpreadsheetCommandContext,
+  _direction: SpreadsheetSortDirection,
+): boolean {
+  if (!canEditSelectedCells(context)) return false;
+  const [start, end] = spreadsheetStructureRange(liveRange(context), 'row');
+  return end > start;
+}
+
+function sortSelectedCells(
+  context: SpreadsheetCommandContext,
+  direction: SpreadsheetSortDirection,
+): boolean {
+  if (!context.workbook || !context.targetSheetId) return false;
+  const range = liveRange(context);
+  try {
+    const rows = context.workbook.getCellsByRange(range, {
+      id: context.targetSheetId,
+    });
+    if (rows.length < 2) return false;
+    const sorted = rows
+      .map((cells, index) => ({ cells, index }))
+      .sort((left, right) => {
+        const result = compareSpreadsheetSortCells(
+          left.cells[0] ?? null,
+          right.cells[0] ?? null,
+          direction,
+        );
+        return result || left.index - right.index;
+      })
+      .map(({ cells }) => cells);
+    context.workbook.setCellValuesByRange(sorted, range, {
+      id: context.targetSheetId,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function compareSpreadsheetSortCells(
+  left: Cell | null,
+  right: Cell | null,
+  direction: SpreadsheetSortDirection,
+): number {
+  const leftValue = spreadsheetSortValue(left);
+  const rightValue = spreadsheetSortValue(right);
+  if (leftValue === null) return rightValue === null ? 0 : 1;
+  if (rightValue === null) return -1;
+  const order =
+    typeof leftValue === 'number' && typeof rightValue === 'number'
+      ? leftValue - rightValue
+      : spreadsheetSortCollator.compare(String(leftValue), String(rightValue));
+  return direction === 'ascending' ? order : -order;
+}
+
+function spreadsheetSortValue(cell: Cell | null): number | string | null {
+  const value = cell?.v ?? cell?.m;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  return null;
+}
+
+const spreadsheetSortCollator = new Intl.Collator('zh-CN', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+function spreadsheetStructureRange(
+  range: SpreadsheetCommandRange,
+  axis: SpreadsheetStructureAxis,
+): [number, number] {
+  const values = axis === 'row' ? range.row : range.column;
+  return [
+    Math.min(values[0] ?? 0, values[1] ?? 0),
+    Math.max(values[0] ?? 0, values[1] ?? 0),
+  ];
+}
+
+function spreadsheetStructureExtent(
+  context: SpreadsheetCommandContext,
+  axis: SpreadsheetStructureAxis,
+): number {
+  const sheet = context.content.sheets.find(
+    (candidate) => candidate.id === context.targetSheetId,
+  );
+  const range = spreadsheetStructureRange(liveRange(context), axis);
+  if (!sheet) return range[1] + 1;
+  if (axis === 'row') {
+    return Math.max(sheet.row ?? 0, sheet.data?.length ?? 0, range[1] + 1);
+  }
+  const dataWidth = Math.max(0, ...(sheet.data ?? []).map((row) => row.length));
+  return Math.max(sheet.column ?? 0, dataWidth, range[1] + 1);
 }
 
 function clearSelectedCells(context: SpreadsheetCommandContext): boolean {

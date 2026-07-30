@@ -21,6 +21,17 @@
   --a3s-shadow-soft: 0 14px 36px rgb(20 24 40 / 12%);
   --a3s-radius: 16px;
   --a3s-radius-sm: 9px;
+  --a3s-overlay-radius: 10px;
+  --a3s-overlay-border: var(--a3s-line-strong);
+  --a3s-overlay-surface: color-mix(in srgb, var(--a3s-panel) 98%, transparent);
+  --a3s-scrollbar-size: 10px;
+  --a3s-scrollbar-track: transparent;
+  --a3s-scrollbar-thumb: color-mix(in srgb, var(--a3s-muted) 38%, transparent);
+  --a3s-scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--a3s-muted) 58%,
+    transparent
+  );
   --a3s-ui-font:
     ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
@@ -107,6 +118,41 @@
 
 .a3s-office button {
   color: inherit;
+}
+
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor),
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor) :where(*) {
+  scrollbar-color: var(--a3s-scrollbar-thumb) var(--a3s-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor)
+  :where(*)::-webkit-scrollbar {
+  width: var(--a3s-scrollbar-size);
+  height: var(--a3s-scrollbar-size);
+}
+
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor)
+  :where(*)::-webkit-scrollbar-track,
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor)
+  :where(*)::-webkit-scrollbar-corner {
+  background: var(--a3s-scrollbar-track);
+}
+
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor)
+  :where(*)::-webkit-scrollbar-thumb {
+  min-width: var(--a3s-scrollbar-size);
+  min-height: var(--a3s-scrollbar-size);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--a3s-scrollbar-thumb);
+  background-clip: content-box;
+}
+
+:where(.a3s-office, .ds-dialog-backdrop, .ds-popover-portal-anchor)
+  :where(*)::-webkit-scrollbar-thumb:hover {
+  background: var(--a3s-scrollbar-thumb-hover);
+  background-clip: content-box;
 }
 
 .a3s-office :where(button, input, textarea, select, a):focus-visible {

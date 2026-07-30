@@ -1,6 +1,7 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRef, useState } from 'react';
+import { Dialog } from '../src/internal/design-system/primitives';
 import { useOfficeDialog } from '../src/internal/features/work/editors/office-dialog';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
@@ -60,6 +61,37 @@ test('uses a safe default action and explicit styling for destructive confirms',
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   await waitFor(() => expect(trigger).toHaveFocus());
   expect(screen.getByRole('status')).toHaveTextContent('保留');
+});
+
+test('keeps portal dialogs inside their Office theme boundary', async () => {
+  function Fixture() {
+    const [open, setOpen] = useState(false);
+    return (
+      <section data-a3s-office data-theme="dark">
+        <button type="button" onClick={() => setOpen(true)}>
+          打开主题弹窗
+        </button>
+        {open && (
+          <Dialog title="主题弹窗" onClose={() => setOpen(false)}>
+            <p>主题内容</p>
+          </Dialog>
+        )}
+      </section>
+    );
+  }
+
+  render(<Fixture />);
+  const trigger = screen.getByRole('button', { name: '打开主题弹窗' });
+  trigger.focus();
+  fireEvent.click(trigger);
+
+  const dialog = screen.getByRole('dialog', { name: '主题弹窗' });
+  expect(dialog.closest('[data-a3s-office]')).toHaveAttribute(
+    'data-theme',
+    'dark',
+  );
+  fireEvent.keyDown(dialog, { key: 'Escape' });
+  await waitFor(() => expect(trigger).toHaveFocus());
 });
 
 function OfficeDialogHarness() {

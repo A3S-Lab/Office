@@ -4,7 +4,7 @@ import { Popover } from '../src/internal/design-system/primitives';
 
 test('carries the editor control accent into a portal panel', () => {
   render(
-    <>
+    <section data-a3s-office data-theme="dark">
       <style>{`.test-office-popover-accent { --work-office-control-accent: #159469; }`}</style>
       <Popover
         label="Choose a font"
@@ -20,7 +20,7 @@ test('carries the editor control accent into a portal panel', () => {
           Aptos
         </button>
       </Popover>
-    </>,
+    </section>,
   );
 
   fireEvent.click(screen.getByRole('button', { name: 'Choose a font' }));
@@ -30,6 +30,9 @@ test('carries the editor control accent into a portal panel', () => {
       .getByRole('listbox', { name: 'Fonts' })
       .style.getPropertyValue('--work-office-control-accent'),
   ).toBe('#159469');
+  expect(
+    screen.getByRole('listbox', { name: 'Fonts' }).closest('[data-a3s-office]'),
+  ).toHaveAttribute('data-theme', 'dark');
 });
 
 test('moves portal menu focus to the tab stop beside its trigger', async () => {

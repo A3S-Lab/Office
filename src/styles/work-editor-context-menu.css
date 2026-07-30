@@ -9,12 +9,10 @@
   max-height: calc(100vh - 16px);
   padding: 5px;
   overflow: auto;
-  border: 1px solid var(--a3s-line-strong);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--a3s-panel) 98%, transparent);
-  box-shadow:
-    0 18px 44px rgb(16 24 40 / 20%),
-    0 2px 7px rgb(16 24 40 / 8%);
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
   color: var(--a3s-ink);
   font-family: var(--a3s-ui-font);
   font-size: 11px;

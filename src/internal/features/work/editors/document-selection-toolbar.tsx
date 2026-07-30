@@ -11,6 +11,7 @@ import {
   Underline as UnderlineIcon,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef } from 'react';
+import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
 import {
   documentFontFamilyOptionsForValue,
   documentFontFamilyValue,
@@ -77,7 +78,9 @@ export function DocumentSelectionToolbar({
       aria-label="文本快捷工具栏"
       updateDelay={80}
       resizeDelay={60}
-      appendTo={() => document.body}
+      appendTo={() =>
+        officeOverlayPortalRoot(editor.view.dom.ownerDocument, editor.view.dom)
+      }
       options={bubbleMenuOptions}
       shouldShow={({ element, state, view }) => {
         const { selection } = state;

@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { showToast } from '../../../state/app-state';
 import {
   isWorkspaceContextMenuKeyboardEvent,
   WorkspaceContextMenu,
@@ -44,12 +45,16 @@ import type { WorkSpreadsheetContent } from '../work-types';
 import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   createSpreadsheetEditorExtensions,
+  type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
+  type SpreadsheetStructureAxis,
 } from './spreadsheet-command-controller';
 import {
   browserSpreadsheetClipboard,
   parseSpreadsheetClipboardText,
   spreadsheetCoreContextMenuItems,
+  spreadsheetSortContextMenuItems,
+  spreadsheetStructureContextMenuItems,
 } from './spreadsheet-context-menu';
 import {
   SpreadsheetEditorRibbon,
@@ -71,6 +76,7 @@ import {
 } from './spreadsheet-editor-support';
 import { SpreadsheetFindBar } from './spreadsheet-find-bar';
 import type { SpreadsheetFindMatch } from './spreadsheet-find';
+import { useOfficeDialog } from './office-dialog';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
@@ -112,6 +118,8 @@ interface SpreadsheetSelectionState {
 }
 
 interface SpreadsheetContextMenuState {
+  kind: 'cells' | SpreadsheetStructureAxis;
+  range: SpreadsheetCommandRange;
   x: number;
   y: number;
   selection: WorkSpreadsheetAgentSelection;
@@ -168,6 +176,7 @@ export function SpreadsheetEditor({
     useState<SpreadsheetSelectionState | null>(null);
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
+  const officeDialog = useOfficeDialog();
   const [findOpen, setFindOpen] = useState(false);
   const [findFocusRequest, setFindFocusRequest] = useState(0);
   const [previewZoom, setPreviewZoom] = useState(100);
@@ -229,6 +238,25 @@ export function SpreadsheetEditor({
     );
     return () => cancelAnimationFrame(frame);
   }, [activeSheetId]);
+  useEffect(() => {
+    const container = spreadsheetCanvasRef.current;
+    if (!container || preview) return;
+    const enhanceTriggers = () => {
+      for (const trigger of container.querySelectorAll<HTMLElement>(
+        '.header-arrow',
+      )) {
+        trigger.setAttribute('role', 'button');
+        trigger.setAttribute('aria-label', '列操作');
+        trigger.setAttribute('aria-haspopup', 'menu');
+        trigger.setAttribute('title', '列操作');
+      }
+    };
+    enhanceTriggers();
+    if (typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver(enhanceTriggers);
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [preview, workbookMountRevision]);
   useEffect(() => {
     if (!preview) return;
     panelTriggerRef.current = null;
@@ -640,15 +668,22 @@ export function SpreadsheetEditor({
   };
   const openSpreadsheetContextMenu = (
     event: WorkspaceContextMenuEvent,
+    requestedKind?: SpreadsheetStructureAxis,
   ): boolean => {
     if (preview) return false;
     const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
-    const sheet = content.sheets.find((candidate) => candidate.id === sheetId);
-    const selection =
+    const sheet = contentRef.current.sheets.find(
+      (candidate) => candidate.id === sheetId,
+    );
+    const savedSelection =
       selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
+    const liveSelection = workbookRef.current?.getSelection()?.at(-1);
+    const selection = liveSelection
+      ? ({ ...savedSelection, ...liveSelection } as Selection)
+      : savedSelection;
     if (!selection) return false;
     const agentSelection = spreadsheetAgentSelection(
-      content,
+      contentRef.current,
       sheetId,
       selection,
     );
@@ -660,11 +695,49 @@ export function SpreadsheetEditor({
       spreadsheetSelectionContextMenuBounds(spreadsheetCanvasRef.current),
     );
     setContextMenu({
+      kind:
+        requestedKind ?? spreadsheetContextMenuKind(event.target, selection),
+      range: spreadsheetSingleRange(selection),
       x: position.x,
       y: position.y,
       selection: agentSelection,
     });
     return true;
+  };
+  const requestSpreadsheetStructureSize = async (
+    axis: SpreadsheetStructureAxis,
+  ) => {
+    const menu = contextMenu;
+    if (!menu) return;
+    const row = axis === 'row';
+    const label = row ? '行高' : '列宽';
+    const maximum = row ? 545 : 2_038;
+    const currentSize = spreadsheetStructureSize(
+      workbookRef.current,
+      axis,
+      menu.range,
+      menu.selection.sheetId,
+    );
+    const value = await officeDialog.prompt({
+      title: `设置${label}`,
+      fieldLabel: `${label}（1–${maximum} 像素）`,
+      initialValue: currentSize === null ? '' : String(currentSize),
+      inputMode: 'numeric',
+      confirmLabel: '应用',
+      restoreFocusTarget: () =>
+        spreadsheetGridFocusTarget(spreadsheetCanvasRef.current),
+      required: `请输入${label}。`,
+      validate: (candidate) => {
+        const size = Number(candidate);
+        return Number.isInteger(size) && size >= 1 && size <= maximum
+          ? null
+          : `${label}需为 1–${maximum} 之间的整数。`;
+      },
+    });
+    if (value === null) return;
+    if (!spreadsheetCommands.setSelectedStructureSize(axis, Number(value))) {
+      showToast(`无法设置${label}。`, 'error');
+    }
   };
   return (
     <section
@@ -720,8 +793,19 @@ export function SpreadsheetEditor({
         <div
           ref={spreadsheetCanvasRef}
           className="work-spreadsheet-canvas"
+          onClickCapture={(event) => {
+            if (!spreadsheetHeaderMenuTrigger(event.target)) return;
+            openSpreadsheetContextMenu(event, 'column');
+          }}
           onContextMenuCapture={openSpreadsheetContextMenu}
           onKeyDownCapture={(event) => {
+            if (
+              spreadsheetHeaderMenuTrigger(event.target) &&
+              (event.key === 'Enter' || event.key === ' ')
+            ) {
+              openSpreadsheetContextMenu(event, 'column');
+              return;
+            }
             if (!isWorkspaceContextMenuKeyboardEvent(event)) return;
             openSpreadsheetContextMenu(event);
           }}
@@ -859,7 +943,7 @@ export function SpreadsheetEditor({
       </div>
       {contextMenu && (
         <WorkspaceContextMenu
-          label={`表格选区 ${contextMenu.selection.reference} 操作`}
+          label={spreadsheetContextMenuLabel(contextMenu)}
           className="work-spreadsheet-context-menu"
           x={contextMenu.x}
           y={contextMenu.y}
@@ -869,7 +953,23 @@ export function SpreadsheetEditor({
               commands: spreadsheetCommands,
               selection: contextMenu.selection,
             }),
-            ...(onAgentRequest
+            ...(contextMenu.kind === 'cells'
+              ? spreadsheetSortContextMenuItems({
+                  can: spreadsheetCan,
+                  commands: spreadsheetCommands,
+                  separatorBefore: true,
+                })
+              : spreadsheetStructureContextMenuItems({
+                  axis: contextMenu.kind,
+                  can: spreadsheetCan,
+                  commands: spreadsheetCommands,
+                  onResize: (axis) => {
+                    void requestSpreadsheetStructureSize(axis);
+                  },
+                }).map((item, index) =>
+                  index === 0 ? { ...item, separatorBefore: true } : item,
+                )),
+            ...(contextMenu.kind === 'cells' && onAgentRequest
               ? spreadsheetAgentMenuItems(
                   contextMenu.selection,
                   onAgentRequest,
@@ -896,6 +996,7 @@ export function SpreadsheetEditor({
           }
         />
       )}
+      {officeDialog.dialog}
     </section>
   );
 }
@@ -1023,6 +1124,61 @@ function spreadsheetGridFocusTarget(
     container?.querySelector<HTMLElement>('.fortune-cell-area') ??
     null
   );
+}
+
+function spreadsheetHeaderMenuTrigger(target: EventTarget | null) {
+  return target instanceof Element
+    ? target.closest<HTMLElement>('.header-arrow')
+    : null;
+}
+
+function spreadsheetContextMenuKind(
+  target: EventTarget | null,
+  selection: Selection,
+): SpreadsheetContextMenuState['kind'] {
+  if (target instanceof Element) {
+    if (target.closest('.fortune-col-header')) return 'column';
+    if (target.closest('.fortune-row-header')) return 'row';
+  }
+  if (selection.column_select) return 'column';
+  if (selection.row_select) return 'row';
+  return 'cells';
+}
+
+function spreadsheetContextMenuLabel({
+  kind,
+  selection,
+}: SpreadsheetContextMenuState): string {
+  const subject = kind === 'row' ? '行' : kind === 'column' ? '列' : '表格选区';
+  return `${subject} ${selection.reference} 操作`;
+}
+
+function spreadsheetStructureSize(
+  workbook: WorkbookInstance | null,
+  axis: SpreadsheetStructureAxis,
+  range: SpreadsheetCommandRange,
+  sheetId: string,
+): number | null {
+  if (!workbook) return null;
+  const values = axis === 'row' ? range.row : range.column;
+  const start = Math.min(values[0] ?? 0, values[1] ?? 0);
+  const end = Math.max(values[0] ?? 0, values[1] ?? 0);
+  const indices = Array.from(
+    { length: end - start + 1 },
+    (_, offset) => start + offset,
+  );
+  try {
+    const sizes =
+      axis === 'row'
+        ? workbook.getRowHeight(indices, { id: sheetId })
+        : workbook.getColumnWidth(indices, { id: sheetId });
+    const unique = new Set(
+      indices.map((index) => sizes[index]).filter(Number.isFinite),
+    );
+    return unique.size === 1 ? (unique.values().next().value ?? null) : null;
+  } catch {
+    return null;
+  }
 }
 
 function spreadsheetSelectionContextMenuBounds(

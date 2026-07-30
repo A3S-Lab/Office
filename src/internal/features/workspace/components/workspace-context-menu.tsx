@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { officeOverlayPortalRoot } from '../../../design-system/primitives/overlay/portal-root';
 import { matchesAriaKeyShortcuts } from '../../../keyboard-shortcuts';
 import type { WorkspaceContextMenuAnchorBounds } from './workspace-text-control-selection';
 
@@ -384,12 +385,10 @@ function contextMenuPortalRoot(
 ): HTMLElement {
   const elementAtPoint = ownerDocument.elementFromPoint?.(x, y);
   const activeElement = ownerDocument.activeElement;
-  return (
-    elementAtPoint?.closest<HTMLElement>('[data-a3s-office]') ??
-    (activeElement instanceof HTMLElement
-      ? activeElement.closest<HTMLElement>('[data-a3s-office]')
-      : null) ??
-    ownerDocument.body
+  return officeOverlayPortalRoot(
+    ownerDocument,
+    elementAtPoint,
+    activeElement instanceof Element ? activeElement : null,
   );
 }
 

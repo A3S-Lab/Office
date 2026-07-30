@@ -1,3 +1,4 @@
+import type { Cell } from '@fortune-sheet/core';
 import { describe, expect, test } from '@rstest/core';
 import { createOfficeEditorRuntime } from '../src/internal/features/work/editors/office-editor-extension';
 import {
@@ -121,6 +122,106 @@ describe('spreadsheet command controller', () => {
       },
     ]);
     expect(fixture.formulaBarValues).toEqual(['', 'A3S']);
+  });
+
+  test('routes row and column structure actions through the workbook command port', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 12,
+      column: 8,
+    };
+    fixture.workbook.selection = [{ row: [3, 4], column: [2, 3] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().insertSelectedStructure('row', 'before')).toBe(true);
+    expect(editor.commands.insertSelectedStructure('row', 'before')).toBe(true);
+    expect(editor.commands.insertSelectedStructure('column', 'after')).toBe(
+      true,
+    );
+    expect(editor.commands.deleteSelectedStructure('row')).toBe(true);
+    expect(editor.commands.setSelectedStructureHidden('column', true)).toBe(
+      true,
+    );
+    expect(editor.commands.setSelectedStructureHidden('column', false)).toBe(
+      true,
+    );
+    expect(editor.commands.setSelectedStructureSize('row', 36)).toBe(true);
+    expect(editor.commands.setSelectedStructureSize('column', 128)).toBe(true);
+
+    expect(fixture.workbook.structureChanges).toEqual([
+      {
+        action: 'insert',
+        axis: 'row',
+        count: 2,
+        direction: 'lefttop',
+        end: undefined,
+        index: 3,
+        sheetId: 'sheet-1',
+        start: undefined,
+      },
+      {
+        action: 'insert',
+        axis: 'column',
+        count: 2,
+        direction: 'rightbottom',
+        end: undefined,
+        index: 3,
+        sheetId: 'sheet-1',
+        start: undefined,
+      },
+      {
+        action: 'delete',
+        axis: 'row',
+        count: undefined,
+        direction: undefined,
+        end: 4,
+        index: undefined,
+        sheetId: 'sheet-1',
+        start: 3,
+      },
+    ]);
+    expect(fixture.workbook.visibilityChanges).toEqual([
+      { axis: 'column', hidden: true, indices: ['2', '3'] },
+      { axis: 'column', hidden: false, indices: ['2', '3'] },
+    ]);
+    expect(fixture.workbook.sizeChanges).toEqual([
+      {
+        axis: 'row',
+        custom: true,
+        sheetId: 'sheet-1',
+        sizes: { 3: 36, 4: 36 },
+      },
+      {
+        axis: 'column',
+        custom: true,
+        sheetId: 'sheet-1',
+        sizes: { 2: 128, 3: 128 },
+      },
+    ]);
+  });
+
+  test('sorts the selected rows without dropping cell formatting', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 2], column: [0, 1] }];
+    fixture.workbook.cells = [
+      [{ v: '研发', bl: 1 }, { v: 120 }],
+      [{ v: '市场', fc: '#d84b4f' }, { v: 80 }],
+      [{ v: '产品', bg: '#eef4ff' }, { v: 100 }],
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().sortSelectedCells('ascending')).toBe(true);
+    expect(editor.commands.sortSelectedCells('ascending')).toBe(true);
+    expect(fixture.workbook.pastes.at(-1)).toEqual({
+      range: { row: [0, 2], column: [0, 1] },
+      sheetId: 'sheet-1',
+      values: [
+        [{ v: '产品', bg: '#eef4ff' }, { v: 100 }],
+        [{ v: '市场', fc: '#d84b4f' }, { v: 80 }],
+        [{ v: '研发', bl: 1 }, { v: 120 }],
+      ],
+    });
   });
 
   test('does not reuse a vendor-frozen paste range for the resulting selection', () => {
@@ -616,6 +717,7 @@ function spreadsheetEditor(context: SpreadsheetCommandContext) {
 }
 
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
+  cells: (Cell | null)[][] = [];
   clearBatches: Array<Array<{ name: string; args: unknown[] }>> = [];
   formats: Array<{
     attribute: string;
@@ -638,6 +740,27 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
   }> = [];
   selection: SpreadsheetCommandRange[] | undefined;
   freezePastedRange = false;
+  sizeChanges: Array<{
+    axis: 'row' | 'column';
+    custom: boolean;
+    sheetId: string | undefined;
+    sizes: Record<string, number>;
+  }> = [];
+  structureChanges: Array<{
+    action: 'insert' | 'delete';
+    axis: 'row' | 'column';
+    count: number | undefined;
+    direction: 'lefttop' | 'rightbottom' | undefined;
+    end: number | undefined;
+    index: number | undefined;
+    sheetId: string | undefined;
+    start: number | undefined;
+  }> = [];
+  visibilityChanges: Array<{
+    axis: 'row' | 'column';
+    hidden: boolean;
+    indices: string[];
+  }> = [];
 
   cancelMerge(
     ranges: SpreadsheetCommandRange[],
@@ -654,6 +777,81 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
 
   getSelection(): SpreadsheetCommandRange[] | undefined {
     return this.selection;
+  }
+
+  getCellsByRange(): (Cell | null)[][] {
+    return this.cells;
+  }
+
+  insertRowOrColumn(
+    axis: 'row' | 'column',
+    index: number,
+    count: number,
+    direction: 'lefttop' | 'rightbottom',
+    options?: { id?: string },
+  ): void {
+    this.structureChanges.push({
+      action: 'insert',
+      axis,
+      count,
+      direction,
+      end: undefined,
+      index,
+      sheetId: options?.id,
+      start: undefined,
+    });
+  }
+
+  deleteRowOrColumn(
+    axis: 'row' | 'column',
+    start: number,
+    end: number,
+    options?: { id?: string },
+  ): void {
+    this.structureChanges.push({
+      action: 'delete',
+      axis,
+      count: undefined,
+      direction: undefined,
+      end,
+      index: undefined,
+      sheetId: options?.id,
+      start,
+    });
+  }
+
+  hideRowOrColumn(indices: string[], axis: 'row' | 'column'): void {
+    this.visibilityChanges.push({ axis, hidden: true, indices });
+  }
+
+  showRowOrColumn(indices: string[], axis: 'row' | 'column'): void {
+    this.visibilityChanges.push({ axis, hidden: false, indices });
+  }
+
+  setRowHeight(
+    sizes: Record<string, number>,
+    options?: { id?: string },
+    custom = false,
+  ): void {
+    this.sizeChanges.push({
+      axis: 'row',
+      custom,
+      sheetId: options?.id,
+      sizes,
+    });
+  }
+
+  setColumnWidth(
+    sizes: Record<string, number>,
+    options?: { id?: string },
+    custom = false,
+  ): void {
+    this.sizeChanges.push({
+      axis: 'column',
+      custom,
+      sheetId: options?.id,
+      sizes,
+    });
   }
 
   mergeCells(

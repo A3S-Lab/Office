@@ -579,6 +579,53 @@ test('Spreadsheet uses one menu geometry for cells and worksheets', async ({
   await expect(grid).toBeFocused();
 });
 
+test('Spreadsheet header menus use A3S chrome, commands, and focus behavior', async ({
+  page,
+}) => {
+  await openSpreadsheetFixture(page);
+
+  const columnHeader = page.locator('.fortune-col-header');
+  await columnHeader.hover({ position: { x: 150, y: 12 } });
+  const headerTrigger = page.getByRole('button', { name: '列操作' });
+  await expect(headerTrigger).toBeVisible();
+  await expect(headerTrigger).toHaveAttribute('aria-haspopup', 'menu');
+  await headerTrigger.click();
+
+  const menu = page.getByRole('menu', { name: /^列 .* 操作$/ });
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveClass(/work-office-context-menu/);
+  await expect(menu.getByRole('menuitem', { name: '升序排列' })).toBeVisible();
+  await expect(
+    menu.getByRole('menuitem', { name: '在左侧插入列' }),
+  ).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: '列宽…' })).toBeVisible();
+  await expect(
+    page.locator('.fortune-context-menu.luckysheet-cols-menu:visible'),
+  ).toHaveCount(0);
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expectGridFocus(page);
+
+  await columnHeader.hover({ position: { x: 150, y: 12 } });
+  await page.getByRole('button', { name: '列操作' }).click();
+  await page.getByRole('menuitem', { name: '列宽…' }).click();
+  const sizeDialog = page.getByRole('dialog', { name: '设置列宽' });
+  const sizeInput = sizeDialog.getByRole('textbox', {
+    name: '列宽（1–2038 像素）',
+  });
+  await expect(sizeInput).toBeFocused();
+  await sizeInput.fill('120');
+  await sizeDialog.getByRole('button', { name: '应用' }).click();
+  await expect(sizeDialog).toBeHidden();
+  await expectGridFocus(page);
+
+  await expect(page.locator('.luckysheet-bottom-controll-row')).toHaveCSS(
+    'display',
+    'none',
+  );
+});
+
 test('Spreadsheet explains invalid worksheet names and confirms deletion', async ({
   page,
 }) => {

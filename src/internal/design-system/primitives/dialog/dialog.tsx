@@ -1,8 +1,9 @@
 import { X } from 'lucide-react';
-import { type ReactNode, useEffect, useId } from 'react';
+import { type ReactNode, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { IconButton } from '../button/icon-button';
 import { useDialogFocusScope } from '../overlay/dialog-focus-scope';
+import { officeOverlayPortalRoot } from '../overlay/portal-root';
 
 export function Dialog({
   title,
@@ -27,6 +28,13 @@ export function Dialog({
 }) {
   const titleId = useId();
   const descriptionId = useId();
+  const portalRootRef = useRef<HTMLElement | null>(null);
+  if (!portalRootRef.current && typeof document !== 'undefined') {
+    portalRootRef.current = officeOverlayPortalRoot(
+      document,
+      restoreFocusTarget?.(),
+    );
+  }
   const focusScope = useDialogFocusScope<HTMLElement>({
     onEscape: onClose,
     escapeDisabled: closeDisabled,
@@ -68,7 +76,7 @@ export function Dialog({
       </section>
     </dialog>
   );
-  return typeof document === 'undefined'
+  return typeof document === 'undefined' || !portalRootRef.current
     ? dialog
-    : createPortal(dialog, document.body);
+    : createPortal(dialog, portalRootRef.current);
 }

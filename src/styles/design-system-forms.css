@@ -13,6 +13,8 @@
   border: 0;
   background: rgb(9 12 22 / 42%);
   backdrop-filter: blur(3px);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
 }
 
 .ds-dialog {
@@ -22,10 +24,10 @@
   max-height: calc(100dvh - 32px);
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--a3s-line);
-  border-radius: var(--a3s-radius);
-  background: var(--a3s-panel);
-  box-shadow: var(--a3s-shadow);
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
 }
 
 .ds-dialog > header {

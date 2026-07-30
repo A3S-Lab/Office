@@ -61,6 +61,46 @@ test('formats the current text selection without losing it', async () => {
   });
 });
 
+test('keeps the floating selection toolbar inside the Office theme boundary', async () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<section data-document-section="true"><p>Theme-bound selection.</p></section>',
+  });
+  const view = render(
+    <section data-a3s-office data-theme="dark">
+      <EditorContent editor={editor} />
+      <DocumentSelectionToolbar
+        editor={editor}
+        canInsertComment
+        onInsertComment={() => undefined}
+      />
+    </section>,
+  );
+  const range = textRange(editor, 'Theme-bound');
+
+  editor.chain().focus().setTextSelection(range).run();
+  view.rerender(
+    <section data-a3s-office data-theme="dark">
+      <EditorContent editor={editor} />
+      <DocumentSelectionToolbar
+        editor={editor}
+        canInsertComment
+        onInsertComment={() => undefined}
+      />
+    </section>,
+  );
+
+  const toolbar = await screen.findByRole('toolbar', {
+    name: '文本快捷工具栏',
+  });
+  await waitFor(() => expect(toolbar).toBeVisible());
+  expect(toolbar.closest('[data-a3s-office]')).toHaveAttribute(
+    'data-theme',
+    'dark',
+  );
+});
+
 test('hides for a caret and disables unavailable comment insertion', async () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),

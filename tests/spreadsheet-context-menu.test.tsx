@@ -4,6 +4,7 @@ import {
   parseSpreadsheetClipboardText,
   readSpreadsheetClipboardText,
   spreadsheetCoreContextMenuItems,
+  spreadsheetStructureContextMenuItems,
   writeSpreadsheetClipboardText,
 } from '../src/internal/features/work/editors/spreadsheet-context-menu';
 
@@ -113,5 +114,86 @@ test('puts standard spreadsheet editing actions before optional AI actions', asy
     'clear',
     'paste:[["项目","金额"],["研发","120"]]',
     'clear',
+  ]);
+});
+
+test('uses one A3S command model for row and column header menus', () => {
+  const calls: string[] = [];
+  const can = {
+    deleteSelectedStructure: () => true,
+    insertSelectedStructure: () => true,
+    setSelectedStructureHidden: () => true,
+    setSelectedStructureSize: () => true,
+    sortSelectedCells: () => true,
+  };
+  const commands = {
+    deleteSelectedStructure: (axis: 'row' | 'column') => {
+      calls.push(`delete:${axis}`);
+      return true;
+    },
+    insertSelectedStructure: (
+      axis: 'row' | 'column',
+      position: 'before' | 'after',
+    ) => {
+      calls.push(`insert:${axis}:${position}`);
+      return true;
+    },
+    setSelectedStructureHidden: (axis: 'row' | 'column', hidden: boolean) => {
+      calls.push(`hidden:${axis}:${hidden}`);
+      return true;
+    },
+    setSelectedStructureSize: () => true,
+    sortSelectedCells: (direction: 'ascending' | 'descending') => {
+      calls.push(`sort:${direction}`);
+      return true;
+    },
+  };
+  const resizeCalls: string[] = [];
+  const columnItems = spreadsheetStructureContextMenuItems({
+    axis: 'column',
+    can,
+    commands,
+    onResize: (axis) => resizeCalls.push(axis),
+  });
+
+  expect(columnItems.map(({ label }) => label)).toEqual([
+    '升序排列',
+    '降序排列',
+    '在左侧插入列',
+    '在右侧插入列',
+    '删除所选列',
+    '列宽…',
+    '隐藏所选列',
+    '取消隐藏列',
+  ]);
+  columnItems.forEach((item) => {
+    item.onSelect();
+  });
+  expect(calls).toEqual([
+    'sort:ascending',
+    'sort:descending',
+    'insert:column:before',
+    'insert:column:after',
+    'delete:column',
+    'hidden:column:true',
+    'hidden:column:false',
+  ]);
+  expect(resizeCalls).toEqual(['column']);
+
+  const rowItems = spreadsheetStructureContextMenuItems({
+    axis: 'row',
+    can,
+    commands,
+    onResize: (axis) => resizeCalls.push(axis),
+  });
+  expect(rowItems.map(({ label }) => label)).toEqual([
+    '升序排列',
+    '降序排列',
+    '在上方插入行',
+    '在下方插入行',
+    '删除所选行',
+    '行高…',
+    '隐藏所选行',
+    '取消隐藏行',
   ]);
 });

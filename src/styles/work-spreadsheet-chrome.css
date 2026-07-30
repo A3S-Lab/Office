@@ -170,38 +170,48 @@
   outline-offset: -1px;
 }
 
-.work-spreadsheet-editor .luckysheet-scrollbar-ltr::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.work-spreadsheet-editor .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--work-spreadsheet-accent) 14%,
-    var(--a3s-line-strong)
-  );
-  background-clip: content-box;
+.work-spreadsheet-editor .luckysheet-bottom-controll-row {
+  display: none !important;
 }
 
 .work-spreadsheet-editor
-  .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb:hover {
-  background: color-mix(
-    in srgb,
-    var(--work-spreadsheet-accent) 24%,
-    var(--a3s-line-strong)
-  );
-  background-clip: content-box;
+  .fortune-context-menu.luckysheet-cols-menu:not(.fortune-filter-menu):not(
+    .fortune-sheet-list
+  ) {
+  display: none !important;
 }
 
-.work-spreadsheet-editor .fortune-add-row-button {
+.work-spreadsheet-editor .fortune-modal-container {
+  background: rgb(9 12 22 / 42%);
+  backdrop-filter: blur(3px);
+}
+
+.work-spreadsheet-editor .fortune-dialog {
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
+}
+
+.work-spreadsheet-editor .fortune-message-box-button {
+  min-height: 32px;
+  margin: 0 4px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font: 600 11px / 18px var(--a3s-ui-font);
+}
+
+.work-spreadsheet-editor .fortune-message-box-button.button-default {
   border-color: var(--a3s-line-strong);
-  border-radius: 4px;
   background: var(--a3s-panel);
-  color: var(--a3s-muted);
-  font: 10px / 1.4 var(--a3s-ui-font);
+  color: var(--a3s-ink);
+}
+
+.work-spreadsheet-editor .fortune-message-box-button.button-primary {
+  background: var(--work-spreadsheet-accent);
+  color: white;
 }
 
 .work-spreadsheet-editor .fortune-toolbar {

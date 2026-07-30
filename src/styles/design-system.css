@@ -273,10 +273,12 @@
   max-width: min(440px, calc(100vw - 32px));
   max-height: min(420px, calc(100dvh - 32px));
   overflow: auto;
-  border: 1px solid var(--a3s-line-strong);
-  border-radius: 12px;
-  background: var(--a3s-panel);
+  border: 1px solid var(--a3s-overlay-border);
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
   box-shadow: var(--a3s-shadow-soft);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
 }
 
 .ds-popover-portal-anchor {
