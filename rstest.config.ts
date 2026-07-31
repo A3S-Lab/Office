@@ -3,6 +3,9 @@ import { defineConfig } from '@rstest/core';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  coverage: {
+    provider: 'v8',
+  },
   environment: 'happy-dom',
   exclude: ['visual-tests/**'],
   extends: withRslibConfig({ libId: 'library' }),
@@ -13,4 +16,5 @@ export default defineConfig({
     },
   },
   setupFiles: ['./rstest.setup.ts'],
+  testTimeout: 10_000,
 });
