@@ -176,6 +176,43 @@ test('Presentation numeric menus commit complete font and timing values', async 
   );
 });
 
+test('Presentation font controls keep standard single-border geometry', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
+    .click();
+
+  const canvas = page.locator('.work-slide-canvas.interactive');
+  await canvas.waitFor();
+  await canvas.locator(':scope > .work-slide-element').nth(1).click();
+
+  const fontGroup = page.getByRole('region', { name: '字体' });
+  const fontFamily = page.getByRole('combobox', { name: '演示字体' });
+  const fontSize = page.getByRole('textbox', { name: '演示字号' });
+  const fontSizeControl = fontSize.locator('..');
+  const bold = page.getByRole('button', { name: '加粗' });
+
+  await expect(fontGroup.getByText('字号', { exact: true })).toHaveCount(0);
+  await expect(fontSizeControl).toHaveClass(/work-office-number-field/);
+  await expect(fontSizeControl).toHaveCSS('border-top-width', '1px');
+  await expect(fontSizeControl).toHaveCSS('height', '29px');
+
+  const [familyBox, sizeBox, boldBox] = await Promise.all([
+    fontFamily.boundingBox(),
+    fontSizeControl.boundingBox(),
+    bold.boundingBox(),
+  ]);
+  if (!familyBox || !sizeBox || !boldBox) {
+    throw new Error('Presentation font control geometry is unavailable.');
+  }
+  expect(sizeBox.width).toBeGreaterThanOrEqual(72);
+  expect(sizeBox.width).toBeLessThanOrEqual(88);
+  expect(sizeBox.x).toBeGreaterThanOrEqual(familyBox.x + familyBox.width);
+  expect(boldBox.x).toBeGreaterThanOrEqual(sizeBox.x + sizeBox.width);
+});
+
 test('Presentation returns object keyboard control after ribbon formatting', async ({
   page,
 }) => {

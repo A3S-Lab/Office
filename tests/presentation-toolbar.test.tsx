@@ -1,14 +1,14 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type {
-  WorkSlide,
-  WorkSlideElement,
-} from '../src/internal/features/work/work-types';
-import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
 } from '../src/internal/features/work/editors/presentation-command-types';
 import { PresentationToolbar } from '../src/internal/features/work/editors/presentation-toolbar';
+import type {
+  WorkSlide,
+  WorkSlideElement,
+} from '../src/internal/features/work/work-types';
 
 test('routes character-format buttons through selection-aware commands', () => {
   const calls: string[] = [];
@@ -249,6 +249,42 @@ test('commits a validated presentation font size instead of editing intermediate
   fireEvent.keyDown(fontSize, { key: 'Escape' });
   expect(fontSize).toHaveValue('24');
   expect(updates).toEqual([{ fontSize: 96 }]);
+});
+
+test('renders presentation font size as one standard ribbon control', () => {
+  const commands = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCommands;
+  const can = new Proxy(
+    {},
+    { get: () => () => true },
+  ) as PresentationEditorCanCommands;
+
+  render(
+    <PresentationToolbar
+      selectedSlide={slide}
+      selectedElement={textElement}
+      selectedUnitCount={1}
+      can={can}
+      textFormattingAvailable
+      commentsOpen={false}
+      commentCount={0}
+      designOpen={false}
+      editingDesign={false}
+      transition={slide.transition}
+      commands={commands}
+    />,
+  );
+
+  const fontGroup = screen.getByRole('region', { name: '字体' });
+  const fontSize = screen.getByRole('textbox', { name: '演示字号' });
+  expect(fontSize.parentElement).toHaveClass('work-office-number-field');
+  expect(fontGroup.querySelectorAll('.work-office-number-field')).toHaveLength(
+    1,
+  );
+  expect(fontGroup.querySelector('.presentation-number-field')).toBeNull();
+  expect(fontGroup.textContent).not.toContain('字号');
 });
 
 test('validates presentation links and restores the invoking menu control', async () => {

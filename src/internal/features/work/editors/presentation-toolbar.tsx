@@ -27,32 +27,32 @@ import {
   SquarePlay,
   Trash2,
   Type,
-  Undo2,
   Underline,
+  Undo2,
   Ungroup,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import {
+  DOCUMENT_LINK_VALIDATION_MESSAGE,
+  normalizeDocumentHref,
+} from '../work-document-links';
 import type {
   WorkSlide,
   WorkSlideElement,
   WorkSlideTextAlign,
 } from '../work-types';
 import {
-  DOCUMENT_LINK_VALIDATION_MESSAGE,
-  normalizeDocumentHref,
-} from '../work-document-links';
-import {
   OfficeColorPicker,
   OfficeNumberField,
   OfficeSelect,
   useOfficeDialog,
 } from './office-controls';
-import { OfficeTableInsertPopover } from './office-table-insert-popover';
 import {
   normalizeOfficeFontFamily,
   officeFontFamilies,
   officeFontFamilyLabel,
 } from './office-font-families';
+import { OfficeTableInsertPopover } from './office-table-insert-popover';
 import type {
   PresentationEditorCanCommands,
   PresentationEditorCommands,
@@ -247,24 +247,22 @@ export function PresentationToolbar({
                           )
                         }
                       />
-                      <div className="presentation-number-field work-office-field">
-                        <span>字号</span>
-                        <OfficeNumberField
-                          ariaLabel="演示字号"
-                          min={8}
-                          max={96}
-                          step={1}
-                          value={fontSizeDraft}
-                          escapeConsumer={
-                            fontSizeDraft !== String(selectedElement.fontSize)
-                          }
-                          onValueChange={setFontSizeDraft}
-                          onCommit={commitFontSize}
-                          onCancel={() =>
-                            setFontSizeDraft(String(selectedElement.fontSize))
-                          }
-                        />
-                      </div>
+                      <OfficeNumberField
+                        ariaLabel="演示字号"
+                        className="presentation-font-size-field"
+                        min={8}
+                        max={96}
+                        step={1}
+                        value={fontSizeDraft}
+                        escapeConsumer={
+                          fontSizeDraft !== String(selectedElement.fontSize)
+                        }
+                        onValueChange={setFontSizeDraft}
+                        onCommit={commitFontSize}
+                        onCancel={() =>
+                          setFontSizeDraft(String(selectedElement.fontSize))
+                        }
+                      />
                       <WorkOfficeRibbonButton
                         label="加粗"
                         title="加粗（Cmd/Ctrl+B）"

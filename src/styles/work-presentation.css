@@ -93,26 +93,9 @@
   flex-basis: 44px;
 }
 
-.presentation-number-field {
-  display: flex;
-  height: 29px;
-  align-items: center;
-  gap: 5px;
-  padding: 0 6px;
-  border: 1px solid var(--a3s-line);
-  border-radius: 6px;
-  color: var(--a3s-faint);
-  font-size: 9px;
-}
-
-.presentation-number-field input {
-  width: 34px;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--a3s-ink);
-  font-size: 10px;
+.presentation-font-size-field {
+  width: 72px;
+  flex: 0 0 72px;
 }
 
 .slide-background-tool::before {
