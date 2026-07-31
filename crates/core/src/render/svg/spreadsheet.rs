@@ -27,6 +27,22 @@ pub(super) fn render(document: &NativeOfficeDocument, limit: usize) -> UseResult
         .iter()
         .filter(|node| node.node_type == OfficeNodeType::Worksheet)
         .collect::<Vec<_>>();
+    render_sheets(document, &sheets, limit)
+}
+
+pub(super) fn render_unit(
+    document: &NativeOfficeDocument,
+    sheet: &DocumentNode,
+    limit: usize,
+) -> UseResult<String> {
+    render_sheets(document, &[sheet], limit)
+}
+
+fn render_sheets(
+    document: &NativeOfficeDocument,
+    sheets: &[&DocumentNode],
+    limit: usize,
+) -> UseResult<String> {
     let total_height = if sheets.is_empty() {
         180.0
     } else {
@@ -47,7 +63,7 @@ pub(super) fn render(document: &NativeOfficeDocument, limit: usize) -> UseResult
     }
 
     let mut y = PAGE_MARGIN;
-    for sheet in sheets {
+    for &sheet in sheets {
         let height = sheet_height(sheet);
         render_sheet(document, &mut output, sheet, y, height)?;
         y += height + SHEET_GAP;

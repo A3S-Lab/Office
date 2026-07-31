@@ -10,28 +10,36 @@ pub(super) fn render(document: &NativeOfficeDocument, output: &mut BoundedOutput
         if sheet.node_type != OfficeNodeType::Worksheet {
             continue;
         }
-        output.push("<section class=\"sheet\"")?;
-        write_node_attributes(output, sheet)?;
-        write_optional_attribute(
-            output,
-            "data-state",
-            sheet.format.get("state").map(String::as_str),
-        )?;
-        output.push("><h2>")?;
-        output.text(sheet.path.trim_start_matches('/'))?;
-        output.push("</h2>")?;
-        render_cells(output, sheet)?;
-        let owner = sheet.format.get("part").map(String::as_str);
-        for picture in sheet
-            .children
-            .iter()
-            .filter(|node| node.node_type == OfficeNodeType::Picture)
-        {
-            render_picture(document, output, picture, owner)?;
-        }
-        output.push("</section>")?;
+        render_sheet(document, output, sheet)?;
     }
     Ok(())
+}
+
+pub(super) fn render_sheet(
+    document: &NativeOfficeDocument,
+    output: &mut BoundedOutput,
+    sheet: &DocumentNode,
+) -> UseResult<()> {
+    output.push("<section class=\"sheet\"")?;
+    write_node_attributes(output, sheet)?;
+    write_optional_attribute(
+        output,
+        "data-state",
+        sheet.format.get("state").map(String::as_str),
+    )?;
+    output.push("><h2>")?;
+    output.text(sheet.path.trim_start_matches('/'))?;
+    output.push("</h2>")?;
+    render_cells(output, sheet)?;
+    let owner = sheet.format.get("part").map(String::as_str);
+    for picture in sheet
+        .children
+        .iter()
+        .filter(|node| node.node_type == OfficeNodeType::Picture)
+    {
+        render_picture(document, output, picture, owner)?;
+    }
+    output.push("</section>")
 }
 
 fn render_cells(output: &mut BoundedOutput, sheet: &DocumentNode) -> UseResult<()> {

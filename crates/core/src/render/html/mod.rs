@@ -18,6 +18,23 @@ table{border-collapse:collapse;width:100%;margin:.75rem 0}th,td{border:1px solid
 "#;
 
 pub(super) fn render(document: &NativeOfficeDocument, limit: usize) -> UseResult<String> {
+    render_selected(document, None, limit)
+}
+
+pub(super) fn render_unit(
+    document: &NativeOfficeDocument,
+    unit: &DocumentNode,
+    ordinal: u32,
+    limit: usize,
+) -> UseResult<String> {
+    render_selected(document, Some((unit, ordinal)), limit)
+}
+
+fn render_selected(
+    document: &NativeOfficeDocument,
+    selected: Option<(&DocumentNode, u32)>,
+    limit: usize,
+) -> UseResult<String> {
     let mut output = BoundedOutput::new(limit);
     output.push("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>A3S Native Office semantic preview</title><style>")?;
     output.push(STYLES)?;
@@ -25,13 +42,25 @@ pub(super) fn render(document: &NativeOfficeDocument, limit: usize) -> UseResult
         "</style></head><body data-renderer=\"a3s-office-semantic-v1\" data-document-kind=\"",
     )?;
     output.push(document_kind(document.kind()))?;
-    output.push("\"><header class=\"preview-header\"><h1>")?;
+    output.push("\"")?;
+    if let Some((unit, ordinal)) = selected {
+        output.push(" data-unit-path=\"")?;
+        output.attribute(&unit.path)?;
+        output.push_fmt(format_args!("\" data-unit-ordinal=\"{ordinal}\""))?;
+    }
+    output.push("><header class=\"preview-header\"><h1>")?;
     output.push(document_title(document.kind()))?;
     output.push("</h1><p class=\"semantic-note\">Deterministic semantic preview; it does not claim Microsoft Office layout fidelity.</p></header><main>")?;
-    match document.kind() {
-        DocumentKind::Word => word::render(document, &mut output)?,
-        DocumentKind::Spreadsheet => spreadsheet::render(document, &mut output)?,
-        DocumentKind::Presentation => presentation::render(document, &mut output)?,
+    match (document.kind(), selected) {
+        (DocumentKind::Word, _) => word::render(document, &mut output)?,
+        (DocumentKind::Spreadsheet, Some((sheet, _))) => {
+            spreadsheet::render_sheet(document, &mut output, sheet)?
+        }
+        (DocumentKind::Spreadsheet, None) => spreadsheet::render(document, &mut output)?,
+        (DocumentKind::Presentation, Some((slide, ordinal))) => {
+            presentation::render_slide(document, &mut output, slide, ordinal)?
+        }
+        (DocumentKind::Presentation, None) => presentation::render(document, &mut output)?,
     }
     output.push("</main></body></html>")?;
     Ok(output.into_string())

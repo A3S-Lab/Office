@@ -80,7 +80,10 @@ pub use opc::{
 };
 pub use package::{NativeOfficePackage, PackageLimits, PackageRevision};
 pub use render::{
-    NativeOfficeRenderFormat, NativeOfficeRenderedView, MAX_NATIVE_OFFICE_RENDER_BYTES,
+    NativeOfficeRenderFormat, NativeOfficeRenderedUnit, NativeOfficeRenderedView, NativeOfficeUnit,
+    NativeOfficeUnitInventory, NativeOfficeUnitInventoryOptions, NativeOfficeUnitLocator,
+    NativeOfficeUnitRenderOptions, DEFAULT_NATIVE_OFFICE_UNIT_INVENTORY_LIMIT,
+    MAX_NATIVE_OFFICE_RENDER_BYTES, MAX_NATIVE_OFFICE_UNIT_INVENTORY_LIMIT,
 };
 pub use replay::{
     NativeOfficeReplayArtifact, NativeOfficeReplayBase, MAX_NATIVE_OFFICE_REPLAY_MUTATIONS,

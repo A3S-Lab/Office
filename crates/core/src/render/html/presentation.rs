@@ -9,46 +9,64 @@ const DEFAULT_SLIDE_WIDTH_CM: f64 = 33.8667;
 const DEFAULT_SLIDE_HEIGHT_CM: f64 = 19.05;
 
 pub(super) fn render(document: &NativeOfficeDocument, output: &mut BoundedOutput) -> UseResult<()> {
-    let (slide_width, slide_height) = slide_size(document.root());
-    if document.root().children.is_empty() {
+    let slides = document
+        .root()
+        .children
+        .iter()
+        .filter(|node| node.node_type == OfficeNodeType::Slide)
+        .collect::<Vec<_>>();
+    if slides.is_empty() {
         return output.push(
             "<section class=\"slide-card\"><h2>Presentation</h2><p>No slides.</p></section>",
         );
     }
-    for (index, slide) in document.root().children.iter().enumerate() {
-        if slide.node_type != OfficeNodeType::Slide {
-            continue;
-        }
-        output.push("<section class=\"slide-card\"")?;
-        write_node_attributes(output, slide)?;
-        output.push_fmt(format_args!("><h2>Slide {}</h2><div class=\"slide-canvas\" style=\"aspect-ratio:{slide_width:.4}/{slide_height:.4}\">", index + 1))?;
-        let owner = slide.format.get("part").map(String::as_str);
-        let mut object_count = 0_usize;
-        for child in &slide.children {
-            if child.node_type == OfficeNodeType::Notes {
-                continue;
-            }
-            object_count += 1;
-            render_object(document, output, child, owner, slide_width, slide_height)?;
-        }
-        if object_count == 0 {
-            output.push("<div class=\"slide-empty\">Empty slide</div>")?;
-        }
-        output.push("</div>")?;
-        if let Some(notes) = slide
-            .children
-            .iter()
-            .find(|node| node.node_type == OfficeNodeType::Notes && !node.text.is_empty())
-        {
-            output.push("<aside class=\"slide-notes\"")?;
-            write_node_attributes(output, notes)?;
-            output.push("><strong>Notes</strong><br>")?;
-            output.text(&notes.text)?;
-            output.push("</aside>")?;
-        }
-        output.push("</section>")?;
+    for (offset, slide) in slides.into_iter().enumerate() {
+        let ordinal = u32::try_from(offset.saturating_add(1)).map_err(|_| {
+            crate::render::render_error(
+                "use.office.unit_inventory_invalid",
+                "Presentation slide order exceeds the supported identity range.",
+            )
+        })?;
+        render_slide(document, output, slide, ordinal)?;
     }
     Ok(())
+}
+
+pub(super) fn render_slide(
+    document: &NativeOfficeDocument,
+    output: &mut BoundedOutput,
+    slide: &DocumentNode,
+    ordinal: u32,
+) -> UseResult<()> {
+    let (slide_width, slide_height) = slide_size(document.root());
+    output.push("<section class=\"slide-card\"")?;
+    write_node_attributes(output, slide)?;
+    output.push_fmt(format_args!("><h2>Slide {ordinal}</h2><div class=\"slide-canvas\" style=\"aspect-ratio:{slide_width:.4}/{slide_height:.4}\">"))?;
+    let owner = slide.format.get("part").map(String::as_str);
+    let mut object_count = 0_usize;
+    for child in &slide.children {
+        if child.node_type == OfficeNodeType::Notes {
+            continue;
+        }
+        object_count += 1;
+        render_object(document, output, child, owner, slide_width, slide_height)?;
+    }
+    if object_count == 0 {
+        output.push("<div class=\"slide-empty\">Empty slide</div>")?;
+    }
+    output.push("</div>")?;
+    if let Some(notes) = slide
+        .children
+        .iter()
+        .find(|node| node.node_type == OfficeNodeType::Notes && !node.text.is_empty())
+    {
+        output.push("<aside class=\"slide-notes\"")?;
+        write_node_attributes(output, notes)?;
+        output.push("><strong>Notes</strong><br>")?;
+        output.text(&notes.text)?;
+        output.push("</aside>")?;
+    }
+    output.push("</section>")
 }
 
 fn render_object(

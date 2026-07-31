@@ -2,12 +2,19 @@ mod html;
 mod image;
 mod output;
 mod svg;
+mod unit;
 
 use a3s_use_core::{UseError, UseResult};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::{DocumentKind, NativeOfficeDocument};
+
+pub use unit::{
+    NativeOfficeRenderedUnit, NativeOfficeUnit, NativeOfficeUnitInventory,
+    NativeOfficeUnitInventoryOptions, NativeOfficeUnitLocator, NativeOfficeUnitRenderOptions,
+    DEFAULT_NATIVE_OFFICE_UNIT_INVENTORY_LIMIT, MAX_NATIVE_OFFICE_UNIT_INVENTORY_LIMIT,
+};
 
 /// Maximum UTF-8 bytes produced by one native semantic render.
 pub const MAX_NATIVE_OFFICE_RENDER_BYTES: usize = 16 * 1024 * 1024;
@@ -64,14 +71,7 @@ pub(crate) fn render_with_limit(
     format: NativeOfficeRenderFormat,
     limit: usize,
 ) -> UseResult<NativeOfficeRenderedView> {
-    if limit == 0 || limit > MAX_NATIVE_OFFICE_RENDER_BYTES {
-        return Err(render_error(
-            "use.office.render_limit_invalid",
-            format!(
-                "Native Office render limit must be between 1 and {MAX_NATIVE_OFFICE_RENDER_BYTES} bytes."
-            ),
-        ));
-    }
+    validate_render_limit(limit)?;
     let content = match format {
         NativeOfficeRenderFormat::Html => html::render(document, limit)?,
         NativeOfficeRenderFormat::Svg => svg::render(document, limit)?,
@@ -89,11 +89,36 @@ pub(crate) fn render_with_limit(
     })
 }
 
-fn unit_count(document: &NativeOfficeDocument) -> usize {
+pub(super) fn unit_count(document: &NativeOfficeDocument) -> usize {
     match document.kind() {
         DocumentKind::Word => 1,
-        DocumentKind::Spreadsheet | DocumentKind::Presentation => document.root().children.len(),
+        DocumentKind::Spreadsheet => document
+            .root()
+            .children
+            .iter()
+            .filter(|node| node.node_type == crate::OfficeNodeType::Worksheet)
+            .count(),
+        DocumentKind::Presentation => document
+            .root()
+            .children
+            .iter()
+            .filter(|node| node.node_type == crate::OfficeNodeType::Slide)
+            .count(),
     }
+}
+
+pub(super) fn validate_render_limit(limit: usize) -> UseResult<()> {
+    if (1..=MAX_NATIVE_OFFICE_RENDER_BYTES).contains(&limit) {
+        return Ok(());
+    }
+    Err(render_error(
+        "use.office.render_limit_invalid",
+        format!(
+            "Native Office render limit must be between 1 and {MAX_NATIVE_OFFICE_RENDER_BYTES} bytes."
+        ),
+    )
+    .with_detail("limitBytes", limit)
+    .with_detail("maxLimitBytes", MAX_NATIVE_OFFICE_RENDER_BYTES))
 }
 
 pub(super) fn render_error(code: &'static str, message: impl Into<String>) -> UseError {

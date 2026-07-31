@@ -345,8 +345,9 @@ Use `downloadArtifact` to start a browser download or
 ## Native automation
 
 The repository also contains a native Rust engine for deterministic reads,
-validation, mutation, batch operations, semantic previews, screenshots, and
-file watching across Office packages.
+validation, mutation, batch operations, exact natural-unit inventories,
+sibling-isolated semantic previews, screenshots, and file watching across
+Office packages.
 
 ```bash
 # Run from the repository root

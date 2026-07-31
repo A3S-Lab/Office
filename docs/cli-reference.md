@@ -582,6 +582,15 @@ SHA-256 receipt before atomic no-clobber publication. It defaults to a 30-second
 deadline, caps the deadline at 120 seconds, and caps the PNG at 64 MiB. It does
 not fetch external relationships or consult OfficeCLI.
 
+The Rust API additionally exposes bounded natural-unit inventory and rendering.
+DOCX remains one document-scoped unit until real pagination exists; XLSX units
+are exact one-based worksheet index/name pairs; PPTX units are exact one-based
+slides. Inventory rejects duplicate identities; `render_unit` emits only the
+selected worksheet or slide and rejects a wrong kind, position, name/index
+pair, or output bound.
+These unit renders preserve semantic paths for downstream evidence but remain
+semantic previews rather than page-layout evidence.
+
 `office native watch <file>` renders the same bounded all-format HTML, binds
 only `127.0.0.1`, selects an ephemeral port by default, and prints a URL with a
 fresh 256-bit capability token. Every page, status response, and standard SSE
@@ -1339,6 +1348,17 @@ let document = NativeOfficeDocument::open("report.docx").await?;
 println!("{}", document.text_view().text);
 let html = document.render(NativeOfficeRenderFormat::Html)?;
 println!("{} {} bytes", html.sha256, html.byte_length);
+let inventory = document.unit_inventory()?;
+for unit in inventory.units {
+    let rendered = document.render_unit(
+        &unit.locator,
+        a3s_office::NativeOfficeUnitRenderOptions {
+            format: NativeOfficeRenderFormat::Svg,
+            max_output_bytes: 4 * 1024 * 1024,
+        },
+    )?;
+    println!("{} {} {}", rendered.unit.path, rendered.sha256, rendered.byte_length);
+}
 let headings = document.query("p[style=Heading1]")?;
 println!("{} heading(s)", headings.len());
 

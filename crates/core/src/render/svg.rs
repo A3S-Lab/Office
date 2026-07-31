@@ -22,19 +22,59 @@ pub(super) fn render(document: &NativeOfficeDocument, limit: usize) -> UseResult
     }
 }
 
+pub(super) fn render_unit(
+    document: &NativeOfficeDocument,
+    unit: &DocumentNode,
+    ordinal: u32,
+    limit: usize,
+) -> UseResult<String> {
+    match document.kind() {
+        DocumentKind::Word => word::render(document, limit),
+        DocumentKind::Spreadsheet => spreadsheet::render_unit(document, unit, limit),
+        DocumentKind::Presentation => render_presentation_unit(document, unit, ordinal, limit),
+    }
+}
+
 pub(super) fn render_presentation(
     document: &NativeOfficeDocument,
     limit: usize,
 ) -> UseResult<String> {
-    let mut output = BoundedOutput::new(limit);
-    let (width_cm, height_cm) = slide_size(document.root());
-    let canvas_height = CANVAS_WIDTH * height_cm / width_cm;
-    let slides = document
+    let nodes = document
         .root()
         .children
         .iter()
         .filter(|node| node.node_type == OfficeNodeType::Slide)
         .collect::<Vec<_>>();
+    let mut slides = Vec::with_capacity(nodes.len());
+    for (offset, slide) in nodes.into_iter().enumerate() {
+        let ordinal = u32::try_from(offset.saturating_add(1)).map_err(|_| {
+            super::render_error(
+                "use.office.unit_inventory_invalid",
+                "Presentation slide order exceeds the supported identity range.",
+            )
+        })?;
+        slides.push((slide, ordinal));
+    }
+    render_presentation_units(document, &slides, limit)
+}
+
+fn render_presentation_unit(
+    document: &NativeOfficeDocument,
+    slide: &DocumentNode,
+    ordinal: u32,
+    limit: usize,
+) -> UseResult<String> {
+    render_presentation_units(document, &[(slide, ordinal)], limit)
+}
+
+fn render_presentation_units(
+    document: &NativeOfficeDocument,
+    slides: &[(&DocumentNode, u32)],
+    limit: usize,
+) -> UseResult<String> {
+    let mut output = BoundedOutput::new(limit);
+    let (width_cm, height_cm) = slide_size(document.root());
+    let canvas_height = CANVAS_WIDTH * height_cm / width_cm;
     let total_height = if slides.is_empty() {
         canvas_height
     } else {
@@ -49,11 +89,11 @@ pub(super) fn render_presentation(
         output.push_fmt(format_args!("<rect class=\"slide-background\" x=\"0\" y=\"0\" width=\"{CANVAS_WIDTH:.4}\" height=\"{canvas_height:.4}\"/><text class=\"placeholder-text\" x=\"40\" y=\"60\">No slides</text>"))?;
     }
 
-    for (index, slide) in slides.into_iter().enumerate() {
-        let top = index as f64 * (LABEL_HEIGHT + canvas_height + SLIDE_GAP);
+    for (offset, &(slide, ordinal)) in slides.iter().enumerate() {
+        let top = offset as f64 * (LABEL_HEIGHT + canvas_height + SLIDE_GAP);
         let canvas_top = top + LABEL_HEIGHT;
-        let clip_id = format!("a3s-slide-clip-{}", index + 1);
-        output.push_fmt(format_args!("<text class=\"slide-label\" x=\"0\" y=\"{:.4}\">Slide {}</text><defs><clipPath id=\"{clip_id}\"><rect x=\"0\" y=\"{canvas_top:.4}\" width=\"{CANVAS_WIDTH:.4}\" height=\"{canvas_height:.4}\"/></clipPath></defs><g", top + 25.0, index + 1))?;
+        let clip_id = format!("a3s-slide-clip-{ordinal}");
+        output.push_fmt(format_args!("<text class=\"slide-label\" x=\"0\" y=\"{:.4}\">Slide {ordinal}</text><defs><clipPath id=\"{clip_id}\"><rect x=\"0\" y=\"{canvas_top:.4}\" width=\"{CANVAS_WIDTH:.4}\" height=\"{canvas_height:.4}\"/></clipPath></defs><g", top + 25.0))?;
         write_path(&mut output, slide)?;
         output.push_fmt(format_args!(" clip-path=\"url(#{clip_id})\"><rect class=\"slide-background\" x=\"0\" y=\"{canvas_top:.4}\" width=\"{CANVAS_WIDTH:.4}\" height=\"{canvas_height:.4}\"/>"))?;
         if let Some(notes) = slide

@@ -905,6 +905,25 @@ well-formed XML with accessible title/description metadata and no script or
 external URL surface. The output does not claim theme, font, pagination, print,
 or layout fidelity.
 
+The same layer exposes an exact natural-unit contract for streaming consumers.
+`NativeOfficeDocument::inventory_units` returns a complete bounded inventory:
+Word remains one `document` unit because the native engine does not invent
+pagination, Spreadsheet returns one-based `worksheet` locators carrying both
+the preserved name and index, and Presentation returns one-based `slide`
+locators. Every record also carries its canonical semantic path. The default
+inventory bound is 10,000 units, the hard bound is 100,000, and an over-limit
+document fails instead of returning a truncated or ambiguous inventory.
+
+`NativeOfficeDocument::render_unit` accepts only one exact inventory locator
+plus an explicit HTML/SVG byte bound. Inventory rejects duplicate identities;
+rendering rejects a mismatched worksheet name/index, wrong locator kind, zero
+position, or unknown unit. Per-unit Spreadsheet and Presentation output contains only
+the selected worksheet or slide, records the unit path and ordinal, and never
+includes sibling content. The receipt repeats the exact unit identity, total
+document-unit count, media type, byte length, and deterministic SHA-256. This
+is a browser-neutral semantic bridge for downstream composition; it is not a
+page-layout or pixel-fidelity claim.
+
 Artifacts are deterministic and contain no time or source filename. All text
 and attributes are escaped, HTML declares a restrictive CSP with scripts and
 network access disabled, external relationships remain inert, and only
@@ -913,7 +932,8 @@ internally related, structurally validated PNG/JPEG/GIF bytes may become
 publishes atomically without replacing an existing path; inline CLI output uses
 the same render bound and MCP retains its stricter 8 MiB structured-result
 bound. Unit and process tests cover hostile markup, deterministic hashes,
-sparse cells, invalid raster parts, all-format HTML and SVG,
+sparse cells, exact unit inventories, sibling-isolated per-unit HTML/SVG,
+invalid raster parts, all-format HTML and SVG,
 no-clobber output, standard MCP, and an unusable OfficeCLI path.
 
 Native live watch is available through `office native watch <file>`. The typed
