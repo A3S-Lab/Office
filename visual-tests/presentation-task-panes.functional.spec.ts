@@ -89,6 +89,63 @@ test('Presentation closes the contextual chart pane with Escape', async ({
   await expect(chartPane).toBeHidden();
 });
 
+test('Presentation keeps the chart inspector beside the canvas and preserves selection when it closes', async ({
+  page,
+}) => {
+  await openPresentationFixture(page);
+
+  await page.getByRole('tab', { name: '插入', exact: true }).click();
+  await page.getByRole('button', { name: '图表', exact: true }).click();
+
+  const workspace = page.locator('.work-presentation-workspace');
+  const chartPane = page.getByRole('region', {
+    name: '演示图表数据',
+    exact: true,
+  });
+  const selectedChart = page.locator('.work-slide-element.chart.selected');
+  await expect(workspace).toBeVisible();
+  await expect(chartPane).toBeVisible();
+  await expect(selectedChart).toHaveCount(1);
+
+  const geometry = await page.evaluate(() => {
+    const panel = document.querySelector<HTMLElement>(
+      '.work-presentation-chart-panel',
+    );
+    const body = document.querySelector<HTMLElement>(
+      '.work-presentation-chart-controls',
+    );
+    const canvas = document.querySelector<HTMLElement>(
+      '.work-slide-canvas.interactive',
+    );
+    if (!panel || !body || !canvas) {
+      throw new Error('Presentation chart inspector geometry is incomplete.');
+    }
+    const panelBox = panel.getBoundingClientRect();
+    const canvasBox = canvas.getBoundingClientRect();
+    return {
+      bodyClientWidth: body.clientWidth,
+      bodyScrollWidth: body.scrollWidth,
+      canvasLeft: canvasBox.left,
+      panelLeft: panelBox.left,
+      panelWidth: panelBox.width,
+    };
+  });
+
+  expect(geometry.panelWidth).toBeGreaterThanOrEqual(340);
+  expect(geometry.panelLeft).toBeGreaterThan(geometry.canvasLeft);
+  expect(geometry.bodyScrollWidth).toBeLessThanOrEqual(
+    geometry.bodyClientWidth + 1,
+  );
+
+  await chartPane.getByRole('button', { name: '关闭演示图表数据' }).click();
+  await expect(chartPane).toBeHidden();
+  await expect(selectedChart).toHaveCount(1);
+  await expect(page.getByRole('region', { name: '演示编辑器' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: '返回办公首页' }),
+  ).toBeVisible();
+});
+
 test('Presentation task-pane text fields cancel a draft before the pane closes', async ({
   page,
 }) => {

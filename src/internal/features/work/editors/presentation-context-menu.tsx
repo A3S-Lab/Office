@@ -53,7 +53,7 @@ export function presentationCoreContextMenuItems({
         id: 'add-slide',
         label: '新建幻灯片',
         icon: <Plus size={14} />,
-        shortcut: 'Ctrl+M',
+        shortcut: 'Ctrl+M / ⌘⇧N',
         ariaKeyShortcut: 'Control+M Meta+Shift+N',
         disabled: !can.addSlide(),
         onSelect: () => void commands.addSlide(),

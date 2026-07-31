@@ -24,12 +24,17 @@ test('validates prompt input, traps focus, and restores the editing target', asy
   expect(input.closest('.ds-dialog-backdrop')).not.toHaveAttribute('inert');
   expect(dialog).toHaveAccessibleDescription('为选中的文字设置跳转地址。');
   expect(input).toHaveFocus();
-  expect(input).toHaveAttribute('aria-invalid', 'true');
+  expect(input).not.toHaveAttribute('aria-invalid');
   expect(submit).toBeDisabled();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+  fireEvent.blur(input);
+  expect(input).toHaveAttribute('aria-invalid', 'true');
   expect(screen.getByRole('alert')).toHaveTextContent(
     DOCUMENT_LINK_VALIDATION_MESSAGE,
   );
 
+  input.focus();
   fireEvent.change(input, { target: { value: 'https://a3s.dev/docs' } });
   expect(submit).toBeEnabled();
   fireEvent.keyDown(input, { key: 'Tab' });

@@ -73,3 +73,27 @@ test('AI assistant becomes modal only when it overlays the editor', async ({
   }
   await expect(assistant).toBeHidden();
 });
+
+test('Creation feedback stays clear of the editor status bar', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page
+    .getByRole('button', {
+      name: '空白 Markdown 用轻量标记编写结构化内容',
+    })
+    .click();
+
+  const toast = page.locator('.playground-toast.success');
+  const status = page.locator('.work-markdown-status');
+  await expect(toast).toBeVisible();
+  await expect(status).toBeVisible();
+
+  const boxes = await Promise.all([toast.boundingBox(), status.boundingBox()]);
+  const toastBox = boxes[0];
+  const statusBox = boxes[1];
+  if (!toastBox || !statusBox) {
+    throw new Error('Toast or editor status geometry is unavailable.');
+  }
+  expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(statusBox.y - 8);
+});

@@ -129,6 +129,8 @@ function PresentationEditingSurface({
   } | null>(null);
   const [, setTextSelectionVersion] = useState(0);
   const [taskPane, setTaskPane] = useState<PresentationTaskPane>(null);
+  const [dismissedChartPaneElementId, setDismissedChartPaneElementId] =
+    useState<string | null>(null);
   const commentsOpen = taskPane === 'comments';
   const designOpen = taskPane === 'design';
   const [designMode, setDesignMode] = useState<PresentationDesignMode>('slide');
@@ -154,6 +156,14 @@ function PresentationEditingSurface({
     selectedSlideId: selectedSlideId,
     viewMode: 'normal',
   });
+  const restoreObjectFocus = useCallback(
+    () =>
+      restorePresentationWorkspaceFocus(
+        presentationRootRef.current,
+        () => workspaceFocusStateRef.current,
+      ),
+    [],
+  );
   const imageInputRef = useRef<HTMLInputElement>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
   const designContent = withPresentationDesign(content);
@@ -203,6 +213,9 @@ function PresentationEditingSurface({
     selectedSlideId: selectedSlide.id,
     viewMode,
   };
+  useEffect(() => {
+    setDismissedChartPaneElementId(null);
+  }, [selectedElementId]);
   const toolbarSelectedElement = selectedElement
     ? selectedTextEditor && !selectedTextEditor.state.selection.empty
       ? presentationTextToolbarState(selectedTextEditor, selectedElement)
@@ -418,8 +431,15 @@ function PresentationEditingSurface({
     !designOpen &&
     !commentsOpen &&
     designMode === 'slide' &&
+    viewMode === 'normal' &&
     singleSelectedElement?.type === 'chart' &&
-    Boolean(singleSelectedElement.chart);
+    Boolean(singleSelectedElement.chart) &&
+    dismissedChartPaneElementId !== selectedElementId;
+  const closeChartPane = useCallback(() => {
+    if (!selectedElementId) return;
+    setDismissedChartPaneElementId(selectedElementId);
+    window.setTimeout(restoreObjectFocus, 0);
+  }, [restoreObjectFocus, selectedElementId]);
   const closeVisibleTaskPane = useCallback(() => {
     if (designOpen) {
       presentationDesign.close();
@@ -429,13 +449,13 @@ function PresentationEditingSurface({
       closeComments();
       return;
     }
-    selection.clear();
+    closeChartPane();
   }, [
+    closeChartPane,
     closeComments,
     commentsOpen,
     designOpen,
     presentationDesign,
-    selection.clear,
   ]);
   useOfficeTaskPaneEscape(
     Boolean(designOpen || commentsOpen || chartPaneOpen),
@@ -654,14 +674,6 @@ function PresentationEditingSurface({
   const presentationCommands = presentationEditor.commands;
   presentationCommandsRef.current = presentationCommands;
   const presentationCan = presentationEditor.can();
-  const restoreObjectFocus = useCallback(
-    () =>
-      restorePresentationWorkspaceFocus(
-        presentationRootRef.current,
-        () => workspaceFocusStateRef.current,
-      ),
-    [],
-  );
   const presentationToolbarCommands = useMemo(
     () =>
       presentationCommandsWithObjectFocus(
@@ -734,58 +746,60 @@ function PresentationEditingSurface({
           commands={presentationCommands}
         />
       )}
-      {chartPaneOpen && singleSelectedElement.chart && (
-        <PresentationChartPanel
-          chart={singleSelectedElement.chart}
-          onChange={(chart) =>
-            presentationCommands.updateElement({
-              chart,
-              altText: chart.title || '演示图表',
-            })
+      <div className="work-presentation-workspace">
+        <PresentationWorkspace
+          activeBackground={activeBackground}
+          activeCommentId={activeCommentId}
+          activeElements={transform.displayElements}
+          aspectRatio={aspectRatio}
+          canvasName={canvasName}
+          canvasRef={canvasRef}
+          commands={presentationCommands}
+          content={content}
+          designContent={designContent}
+          designMode={designMode}
+          editingElementId={selection.editingElementId}
+          inheritedElements={inheritedElements}
+          placeholderGuides={placeholderGuides}
+          selectedElementIds={selection.selectedElementIds}
+          selectedLayout={selectedLayout}
+          selectedMaster={selectedMaster}
+          selectedSlide={selectedSlide}
+          viewMode={viewMode}
+          zoom={zoom}
+          snapGuides={transform.guides}
+          onBeginDrag={transform.beginDrag}
+          onContinueDrag={transform.continueDrag}
+          onDragCancel={transform.cancelDrag}
+          onDragEnd={transform.endDrag}
+          onOpenContextMenu={openContextMenu}
+          onTextEditorChange={(elementId, editor) =>
+            setActiveTextEditor((current) =>
+              editor
+                ? { elementId, editor }
+                : current?.elementId === elementId
+                  ? null
+                  : current,
+            )
           }
-          onDelete={presentationCommands.deleteSelection}
-          onClose={selection.clear}
+          onTextSelectionChange={() =>
+            setTextSelectionVersion((version) => version + 1)
+          }
         />
-      )}
-      <PresentationWorkspace
-        activeBackground={activeBackground}
-        activeCommentId={activeCommentId}
-        activeElements={transform.displayElements}
-        aspectRatio={aspectRatio}
-        canvasName={canvasName}
-        canvasRef={canvasRef}
-        commands={presentationCommands}
-        content={content}
-        designContent={designContent}
-        designMode={designMode}
-        editingElementId={selection.editingElementId}
-        inheritedElements={inheritedElements}
-        placeholderGuides={placeholderGuides}
-        selectedElementIds={selection.selectedElementIds}
-        selectedLayout={selectedLayout}
-        selectedMaster={selectedMaster}
-        selectedSlide={selectedSlide}
-        viewMode={viewMode}
-        zoom={zoom}
-        snapGuides={transform.guides}
-        onBeginDrag={transform.beginDrag}
-        onContinueDrag={transform.continueDrag}
-        onDragCancel={transform.cancelDrag}
-        onDragEnd={transform.endDrag}
-        onOpenContextMenu={openContextMenu}
-        onTextEditorChange={(elementId, editor) =>
-          setActiveTextEditor((current) =>
-            editor
-              ? { elementId, editor }
-              : current?.elementId === elementId
-                ? null
-                : current,
-          )
-        }
-        onTextSelectionChange={() =>
-          setTextSelectionVersion((version) => version + 1)
-        }
-      />
+        {chartPaneOpen && singleSelectedElement.chart && (
+          <PresentationChartPanel
+            chart={singleSelectedElement.chart}
+            onChange={(chart) =>
+              presentationCommands.updateElement({
+                chart,
+                altText: chart.title || '演示图表',
+              })
+            }
+            onDelete={presentationCommands.deleteSelection}
+            onClose={closeChartPane}
+          />
+        )}
+      </div>
       <PresentationStatusBar
         content={content}
         selectedSlide={selectedSlide}

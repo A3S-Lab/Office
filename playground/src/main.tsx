@@ -154,7 +154,11 @@ function Playground() {
   );
 
   return (
-    <main className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''}`}>
+    <main
+      className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''} ${
+        route === 'office' && activeArtifact ? 'editor-open' : ''
+      }`}
+    >
       <input
         ref={fileInput}
         className="playground-file-input"

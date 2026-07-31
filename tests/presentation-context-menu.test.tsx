@@ -40,6 +40,7 @@ test('provides native slide operations before optional AI actions', () => {
     '粘贴',
     '删除幻灯片',
   ]);
+  expect(items[0]?.shortcut).toBe('Ctrl+M / ⌘⇧N');
   for (const item of items) item.onSelect();
   expect(calls).toEqual(['add', 'duplicate', 'paste', 'delete:slide-2']);
 });

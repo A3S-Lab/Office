@@ -81,6 +81,7 @@ export function PresentationChartPanel({
       <header>
         <div>
           <strong>图表数据</strong>
+          <span>配置数据、布局与系列</span>
         </div>
         <div>
           <Button tone="danger" aria-label="删除演示图表" onClick={onDelete}>
@@ -90,7 +91,10 @@ export function PresentationChartPanel({
           <IconButton
             className="close"
             label="关闭演示图表数据"
-            onClick={onClose}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
           >
             <X size={14} />
           </IconButton>

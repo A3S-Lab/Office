@@ -239,6 +239,8 @@ export function useOfficeDialog(): {
 
   const promptError =
     request?.kind === 'prompt' ? promptValidationMessage(request) : null;
+  const visiblePromptError =
+    request?.kind === 'prompt' && request.touched ? promptError : null;
   const submitPrompt = () => {
     if (!request || request.kind !== 'prompt') return;
     if (promptValidationMessage(request)) {
@@ -307,7 +309,7 @@ export function useOfficeDialog(): {
             <OfficeTextArea
               id={promptFieldId}
               aria-label={request.fieldLabel}
-              aria-invalid={Boolean(promptError) || undefined}
+              aria-invalid={Boolean(visiblePromptError) || undefined}
               value={request.value}
               placeholder={request.placeholder}
               onChange={(event) =>
@@ -329,7 +331,7 @@ export function useOfficeDialog(): {
             <OfficeTextField
               id={promptFieldId}
               aria-label={request.fieldLabel}
-              aria-invalid={Boolean(promptError) || undefined}
+              aria-invalid={Boolean(visiblePromptError) || undefined}
               value={request.value}
               inputMode={request.inputMode}
               placeholder={request.placeholder}
@@ -349,12 +351,11 @@ export function useOfficeDialog(): {
               }}
             />
           )}
-          {promptError &&
-            (request.touched || Boolean(request.value.trim())) && (
-              <span className="work-office-dialog-field-error" role="alert">
-                {promptError}
-              </span>
-            )}
+          {visiblePromptError && (
+            <span className="work-office-dialog-field-error" role="alert">
+              {visiblePromptError}
+            </span>
+          )}
         </label>
       )}
     </Dialog>

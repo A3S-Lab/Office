@@ -479,6 +479,10 @@ input:focus-visible,
   animation: playground-toast-in 180ms ease-out;
 }
 
+.playground-site.editor-open .playground-toast {
+  bottom: 50px;
+}
+
 .playground-toast.success > svg {
   color: var(--a3s-green);
 }
@@ -567,6 +571,10 @@ body.playground-resizing * {
     bottom: 16px;
     left: 16px;
     max-width: none;
+  }
+
+  .playground-site.editor-open .playground-toast {
+    bottom: 48px;
   }
 }
 
