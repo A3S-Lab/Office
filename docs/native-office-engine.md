@@ -995,8 +995,8 @@ Browser-injected PNG screenshot output is implemented for all three formats at
 the root facade. It stages the deterministic HTML in a private temporary
 directory, converts the local path to a `file://` URL, and passes that URL plus
 a temporary PNG destination to the existing object-safe `PageRenderer`.
-`a3s-use-office` has no Browser dependency. The facade validates that the
-provider returned exactly one expected regular, non-symlink PNG artifact,
+The native `a3s-office` core has no Browser dependency. The facade validates
+that the provider returned exactly one expected regular, non-symlink PNG artifact,
 checks its decoded dimensions, size, and SHA-256 receipt, then publishes the
 final destination atomically without overwriting an existing entry. The PNG is
 limited to 64 MiB; the rendering deadline defaults to 30 seconds and must be
@@ -1004,15 +1004,24 @@ between 1 and 120 seconds. External relationships are never fetched.
 
 The typed `NativeOfficeScreenshotRenderer` accepts an injected
 `Arc<dyn PageRenderer>`; `capture_native_office_screenshot` performs normal
-Browser discovery for convenience. CLI
-`office native view <file> screenshot --output <file.png>` and MCP
+Browser discovery for convenience. `render_unit` and
+`capture_native_office_unit_screenshot` instead stage the sibling-isolated HTML
+for one exact `NativeOfficeUnitLocator`, reject an identity mismatch before
+Browser work, require the renderer to remain on the exact staged `file://` URL,
+and return the unit, document-unit count, source-HTML hash, and PNG receipt.
+CLI `office native view <file> screenshot --output <file.png>` and MCP
 `office_view` with `view=screenshot` return the same typed receipt. MCP requires
 `output` and accepts optional `timeoutMs`; the session lock is released before
 Browser work starts. Process tests cover DOCX, XLSX, and PPTX CLI screenshots,
 an MCP screenshot lifecycle, PNG hashes, invalid arguments, Browser-disabled
 builds, and no-clobber behavior while setting an unusable OfficeCLI path.
 Screenshots are raster captures of the semantic preview, not Office layout
-fidelity. Layout goldens remain open.
+fidelity. The current `PageRenderer` contract also does not report a complete
+content-addressed render profile covering viewport, engine/version, fonts,
+DPI, locale, and page geometry. Therefore unit screenshots are not yet valid
+as layout-authoritative Parser raster evidence. The native `a3s-office` core
+and Parser integration remain browser-free; only this optional Office CLI
+facade owns the Browser dependency. Layout goldens remain open.
 
 Basic Presentation table structure is deliberately bounded. Table dimensions
 must be positive, no mutation may exceed 5,000 rows, 5,000 columns, or 100,000

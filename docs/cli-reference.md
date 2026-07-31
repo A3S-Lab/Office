@@ -582,6 +582,14 @@ SHA-256 receipt before atomic no-clobber publication. It defaults to a 30-second
 deadline, caps the deadline at 120 seconds, and caps the PNG at 64 MiB. It does
 not fetch external relationships or consult OfficeCLI.
 
+The optional Browser facade can also capture one exact Rust unit locator. It
+stages only that unit's HTML, rejects locator conflicts before Browser work,
+requires the final URL to remain the private staged `file://` URL, and binds
+the PNG receipt to the selected unit and source-HTML SHA-256. The underlying
+Browser contract does not yet attest viewport, engine/version, fonts, DPI,
+locale, and page geometry as one deterministic render profile, so this capture
+is still semantic-preview evidence rather than a Parser-ready layout raster.
+
 The Rust API additionally exposes bounded natural-unit inventory and rendering.
 DOCX remains one document-scoped unit until real pagination exists; XLSX units
 are exact one-based worksheet index/name pairs; PPTX units are exact one-based

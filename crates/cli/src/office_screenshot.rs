@@ -5,7 +5,11 @@ use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use a3s_office::{DocumentKind, NativeOfficeDocument, NativeOfficeImage, NativeOfficeImageFormat};
+use a3s_office::{
+    DocumentKind, NativeOfficeDocument, NativeOfficeImage, NativeOfficeImageFormat,
+    NativeOfficeRenderFormat, NativeOfficeUnit, NativeOfficeUnitLocator,
+    NativeOfficeUnitRenderOptions, MAX_NATIVE_OFFICE_RENDER_BYTES,
+};
 use a3s_use_browser::{BrowserPool, BrowserPoolConfig, PageRenderer, RenderRequest, WaitCondition};
 use a3s_use_core::{UseError, UseResult};
 use serde::{Deserialize, Serialize};
@@ -53,6 +57,27 @@ pub struct NativeOfficeScreenshot {
     pub renderer_elapsed_ms: u64,
 }
 
+/// Browser capture of exactly one native Office semantic unit.
+///
+/// This receipt proves which semantic HTML unit was captured. It does not
+/// claim Microsoft Office pagination or layout fidelity.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeUnitScreenshot {
+    pub kind: DocumentKind,
+    pub unit: NativeOfficeUnit,
+    pub document_unit_count: usize,
+    pub output_path: PathBuf,
+    pub media_type: String,
+    pub width_px: u32,
+    pub height_px: u32,
+    pub byte_length: u64,
+    pub sha256: String,
+    pub source_html_byte_length: usize,
+    pub source_html_sha256: String,
+    pub renderer_elapsed_ms: u64,
+}
+
 #[derive(Clone)]
 pub struct NativeOfficeScreenshotRenderer {
     renderer: Arc<dyn PageRenderer>,
@@ -72,7 +97,58 @@ impl NativeOfficeScreenshotRenderer {
         let html = document.html_view()?;
         let kind = html.kind;
         let source_html_sha256 = html.sha256;
-        let staging = ScreenshotStaging::prepare(html.content).await?;
+        let captured = self.capture_html(html.content, &request).await?;
+        Ok(NativeOfficeScreenshot {
+            kind,
+            output_path: request.output,
+            media_type: "image/png".to_string(),
+            width_px: captured.width_px,
+            height_px: captured.height_px,
+            byte_length: captured.byte_length,
+            sha256: captured.sha256,
+            source_html_sha256,
+            renderer_elapsed_ms: captured.renderer_elapsed_ms,
+        })
+    }
+
+    /// Captures the deterministic HTML for exactly one inventory locator.
+    pub async fn render_unit(
+        &self,
+        document: &NativeOfficeDocument,
+        locator: &NativeOfficeUnitLocator,
+        request: NativeOfficeScreenshotRequest,
+    ) -> UseResult<NativeOfficeUnitScreenshot> {
+        validate_request(&request).await?;
+        let html = document.render_unit(
+            locator,
+            NativeOfficeUnitRenderOptions {
+                format: NativeOfficeRenderFormat::Html,
+                max_output_bytes: MAX_NATIVE_OFFICE_RENDER_BYTES,
+            },
+        )?;
+        let captured = self.capture_html(html.content, &request).await?;
+        Ok(NativeOfficeUnitScreenshot {
+            kind: html.kind,
+            unit: html.unit,
+            document_unit_count: html.document_unit_count,
+            output_path: request.output,
+            media_type: "image/png".to_string(),
+            width_px: captured.width_px,
+            height_px: captured.height_px,
+            byte_length: captured.byte_length,
+            sha256: captured.sha256,
+            source_html_byte_length: html.byte_length,
+            source_html_sha256: html.sha256,
+            renderer_elapsed_ms: captured.renderer_elapsed_ms,
+        })
+    }
+
+    async fn capture_html(
+        &self,
+        html: String,
+        request: &NativeOfficeScreenshotRequest,
+    ) -> UseResult<CapturedScreenshot> {
+        let staging = ScreenshotStaging::prepare(html).await?;
         let url = Url::from_file_path(&staging.html_path).map_err(|_| {
             screenshot_error(
                 "use.office.screenshot_staging_failed",
@@ -82,29 +158,25 @@ impl NativeOfficeScreenshotRenderer {
         let rendered = self
             .renderer
             .render(RenderRequest {
-                url,
+                url: url.clone(),
                 timeout_ms: request.timeout_ms,
                 wait: WaitCondition::Load,
                 user_agent: Some("a3s-office-semantic-preview/1".to_string()),
                 screenshot_path: Some(staging.screenshot_path.clone()),
             })
             .await?;
-        let validated = validate_screenshot(&rendered, &staging.screenshot_path).await?;
+        let validated = validate_screenshot(&rendered, &staging.screenshot_path, &url).await?;
         office_artifact::write_new(
             &request.output,
             validated.bytes,
             OfficeArtifactKind::Screenshot,
         )
         .await?;
-        Ok(NativeOfficeScreenshot {
-            kind,
-            output_path: request.output,
-            media_type: "image/png".to_string(),
+        Ok(CapturedScreenshot {
             width_px: validated.width_px,
             height_px: validated.height_px,
             byte_length: validated.byte_length,
             sha256: validated.sha256,
-            source_html_sha256,
             renderer_elapsed_ms: rendered.elapsed_ms,
         })
     }
@@ -119,6 +191,20 @@ pub async fn capture_native_office_screenshot(
     let injected: Arc<dyn PageRenderer> = pool.clone();
     let renderer = NativeOfficeScreenshotRenderer::new(injected);
     let result = renderer.render(document, request).await;
+    pool.shutdown().await;
+    result
+}
+
+/// Captures one exact semantic unit through the discovered Browser provider.
+pub async fn capture_native_office_unit_screenshot(
+    document: &NativeOfficeDocument,
+    locator: &NativeOfficeUnitLocator,
+    request: NativeOfficeScreenshotRequest,
+) -> UseResult<NativeOfficeUnitScreenshot> {
+    let pool = Arc::new(BrowserPool::new(BrowserPoolConfig::default()));
+    let injected: Arc<dyn PageRenderer> = pool.clone();
+    let renderer = NativeOfficeScreenshotRenderer::new(injected);
+    let result = renderer.render_unit(document, locator, request).await;
     pool.shutdown().await;
     result
 }
@@ -239,10 +325,25 @@ struct ValidatedScreenshot {
     sha256: String,
 }
 
+struct CapturedScreenshot {
+    width_px: u32,
+    height_px: u32,
+    byte_length: u64,
+    sha256: String,
+    renderer_elapsed_ms: u64,
+}
+
 async fn validate_screenshot(
     rendered: &a3s_use_browser::RenderedPage,
     expected_path: &Path,
+    expected_url: &Url,
 ) -> UseResult<ValidatedScreenshot> {
+    if &rendered.requested_url != expected_url || &rendered.final_url != expected_url {
+        return Err(screenshot_error(
+            "use.office.screenshot_navigation_invalid",
+            "The Browser renderer did not remain on the exact staged Office semantic preview.",
+        ));
+    }
     if rendered.artifacts.len() != 1 {
         return Err(screenshot_error(
             "use.office.screenshot_artifact_invalid",
