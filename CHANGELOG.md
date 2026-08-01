@@ -50,6 +50,9 @@ All notable changes to A3S Office will be documented in this file.
   explicit exit path.
 - Shared the keyboard-accessible table-dimension picker across Document and
   Presentation, with exact row and column creation in one controlled update.
+  Desktop keeps the fast 8 × 10 matrix without duplicate table-cell semantics;
+  phones use focused row and column controls with 44 px targets and an
+  editor-accented, white-text insertion action.
 - Kept PDF page navigation, zoom, and history reachable through the compact
   overflow menu while preserving page status in the primary toolbar.
 - Removed internal implementation terminology from the Spreadsheet

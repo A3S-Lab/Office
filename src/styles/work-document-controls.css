@@ -370,21 +370,26 @@
 }
 
 .work-office-table-picker-panel {
+  --work-office-table-picker-accent: var(
+    --work-office-control-accent,
+    var(--a3s-blue)
+  );
+
   width: 277px;
   padding: 11px;
 }
 
 .work-office-table-picker-grid {
-  border-spacing: 3px;
-  border-collapse: separate;
-  table-layout: fixed;
-}
-
-.work-office-table-picker-grid td {
+  display: grid;
+  grid-template-columns: repeat(10, 22px);
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
   padding: 0;
+  border: 0;
 }
 
-.work-office-table-picker-grid td > button {
+.work-office-table-picker-grid > button {
   box-sizing: border-box;
   width: 22px;
   height: 20px;
@@ -395,24 +400,162 @@
   cursor: pointer;
 }
 
-.work-office-table-picker-grid td > button[data-highlighted="true"] {
+.work-office-table-picker-grid > button[data-highlighted="true"] {
   border-color: color-mix(
     in srgb,
-    var(--work-office-accent) 48%,
+    var(--work-office-table-picker-accent) 48%,
     var(--a3s-line)
   );
   background: color-mix(
     in srgb,
-    var(--work-office-accent) 14%,
+    var(--work-office-table-picker-accent) 14%,
     var(--a3s-panel)
   );
 }
 
-.work-office-table-picker-grid td > button:hover,
-.work-office-table-picker-grid td > button:focus-visible {
+.work-office-table-picker-grid > button:hover,
+.work-office-table-picker-grid > button:focus-visible {
   outline: 2px solid
-    color-mix(in srgb, var(--work-office-accent) 65%, transparent);
+    color-mix(in srgb, var(--work-office-table-picker-accent) 65%, transparent);
   outline-offset: 1px;
+}
+
+.work-office-table-picker-compact {
+  display: grid;
+  gap: 10px;
+}
+
+.work-office-table-picker-dimension {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-office-table-picker-dimension > legend {
+  margin-bottom: 5px;
+  padding: 0;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 16px;
+}
+
+.work-office-table-picker-stepper {
+  display: grid;
+  height: 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  overflow: hidden;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 8px;
+  background: var(--a3s-panel);
+}
+
+.work-office-table-picker-stepper > button,
+.work-office-table-picker-stepper > input {
+  min-width: 0;
+  height: 42px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--a3s-ink);
+}
+
+.work-office-table-picker-stepper > button {
+  display: grid;
+  padding: 0;
+  place-items: center;
+  color: var(--a3s-muted);
+  cursor: pointer;
+}
+
+.work-office-table-picker-stepper > button:first-child {
+  border-right: 1px solid var(--a3s-line);
+}
+
+.work-office-table-picker-stepper > button:last-child {
+  border-left: 1px solid var(--a3s-line);
+}
+
+.work-office-table-picker-stepper > button:hover:not(:disabled) {
+  background: color-mix(
+    in srgb,
+    var(--work-office-table-picker-accent) 9%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-table-picker-accent);
+}
+
+.work-office-table-picker-stepper > button:disabled {
+  color: var(--a3s-faint);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.work-office-table-picker-stepper > input {
+  width: 100%;
+  padding: 0 6px;
+  appearance: textfield;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 680;
+  text-align: center;
+}
+
+.work-office-table-picker-stepper > input::-webkit-inner-spin-button,
+.work-office-table-picker-stepper > input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.work-office-table-picker-stepper:focus-within {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-table-picker-accent) 64%,
+    var(--a3s-line-strong)
+  );
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--work-office-table-picker-accent) 16%, transparent);
+}
+
+.work-office-table-picker-stepper > :focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-office-table-picker-accent) 68%, transparent);
+  outline-offset: -3px;
+}
+
+.work-office-table-picker-compact > .work-office-table-picker-submit {
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--work-office-table-picker-accent);
+  border-radius: 8px;
+  background: var(--work-office-table-picker-accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.work-office-table-picker-compact > .work-office-table-picker-submit:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-table-picker-accent) 86%,
+    #000
+  );
+  background: color-mix(
+    in srgb,
+    var(--work-office-table-picker-accent) 90%,
+    #000
+  );
+}
+
+.work-office-table-picker-compact
+  > .work-office-table-picker-submit:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-office-table-picker-accent) 58%, transparent);
+  outline-offset: 2px;
 }
 
 .work-office-table-picker-size {

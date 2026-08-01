@@ -60,6 +60,55 @@ test('document table Design and Layout stay visual and survive preview', async (
   );
 });
 
+test('table sizing uses contained touch controls on phone', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  await page.locator('.work-document-editable .ProseMirror p').first().click();
+  await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '插入表格' }).click();
+
+  const picker = page.getByRole('dialog', { name: '选择表格大小' });
+  const rows = picker.getByRole('spinbutton', { name: '行数' });
+  const columns = picker.getByRole('spinbutton', { name: '列数' });
+  await expect(rows).toBeFocused();
+  await expect(picker.getByRole('button', { name: '1 行 1 列' })).toHaveCount(
+    0,
+  );
+
+  const decrement = picker.getByRole('button', { name: '减少行数' });
+  const decrementBounds = await decrement.boundingBox();
+  expect(decrementBounds?.width).toBeGreaterThanOrEqual(40);
+  expect(decrementBounds?.height).toBeGreaterThanOrEqual(40);
+  const pickerBounds = await picker.boundingBox();
+  expect(pickerBounds?.x).toBeGreaterThanOrEqual(0);
+  expect(
+    (pickerBounds?.x ?? 0) + (pickerBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(390);
+
+  const submit = picker.getByRole('button', {
+    name: '插入 1 × 1 表格',
+  });
+  await expect(submit).toHaveCSS('background-color', 'rgb(40, 100, 232)');
+  await expect(submit).toHaveCSS('color', 'rgb(255, 255, 255)');
+
+  await rows.fill('3');
+  await columns.fill('3');
+  await picker.getByRole('button', { name: '插入 3 × 3 表格' }).click();
+
+  await expect(
+    page.locator('.work-document-editable .ProseMirror table :is(th, td)'),
+  ).toHaveCount(9);
+  await expect(page.getByRole('tab', { name: '表格设计' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
 test('table sizing stays usable on desktop and compact ribbons', async ({
   page,
 }) => {

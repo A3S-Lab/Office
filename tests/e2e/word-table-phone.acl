@@ -1,0 +1,138 @@
+suite "office-word-table-phone" {
+    version = 1
+
+    scenario "insert-edit-and-delete-table-on-phone" {
+        name = "Insert, edit, and delete a Word table on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-table-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "phone-sidebar-starts-closed" {
+            visible = css("button[aria-label='展开办公侧边栏']")
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "place-caret" {
+            target = css(".work-document-editable .ProseMirror p:last-child")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-table-picker" {
+            target = role("button", "插入表格")
+        }
+
+        expect "compact-picker-replaces-micro-grid" {
+            visible = css(".work-office-table-picker-panel:has(.work-office-table-picker-compact):not(:has(.work-office-table-picker-grid))")
+        }
+
+        expect "row-field-receives-focus" {
+            visible = css("input[aria-label='行数']:focus")
+        }
+
+        expect "column-field-is-ready" {
+            visible = css("input[aria-label='列数'][value='1']")
+        }
+
+        screenshot "compact-table-picker" {
+            path = "screenshots/word-table-picker-phone.png"
+        }
+
+        accessibility "compact-picker-semantics" {
+            path = "evidence/word-table-picker-phone.json"
+            interactive = true
+        }
+
+        click "increase-row-count-to-two" {
+            target = role("button", "增加行数")
+        }
+
+        click "increase-row-count-to-three" {
+            target = role("button", "增加行数")
+        }
+
+        click "increase-column-count-to-two" {
+            target = role("button", "增加列数")
+        }
+
+        click "increase-column-count-to-three" {
+            target = role("button", "增加列数")
+        }
+
+        expect "row-count-is-three" {
+            visible = css("input[aria-label='行数'][value='3']")
+        }
+
+        expect "column-count-is-three" {
+            visible = css("input[aria-label='列数'][value='3']")
+        }
+
+        click "insert-table" {
+            target = role("button", "插入 3 × 3 表格")
+        }
+
+        expect "three-by-three-table-inserted" {
+            visible = css(".work-document-editable .ProseMirror table:has(tr:nth-child(3) > :nth-child(3)):not(:has(tr:nth-child(4))):not(:has(tr > :nth-child(4)))")
+        }
+
+        click "open-table-layout" {
+            target = role("tab", "表格布局")
+        }
+
+        click "insert-row-below" {
+            target = role("button", "在下方插入行")
+        }
+
+        expect "four-by-three-table-ready" {
+            visible = css(".work-document-editable .ProseMirror table:has(tr:nth-child(4) > :nth-child(3)):not(:has(tr:nth-child(5))):not(:has(tr > :nth-child(4)))")
+        }
+
+        click "advance-compact-ribbon" {
+            target = role("button", "向右查看更多表格布局工具")
+        }
+
+        click "delete-table" {
+            target = role("button", "删除表格")
+        }
+
+        expect "table-is-removed-and-editor-is-focused" {
+            visible = css(".work-document-editable .ProseMirror:not(:has(table)):focus")
+        }
+
+        expect "contextual-tabs-are-removed" {
+            visible = css(".work-office-ribbon-tabs:not(:has(> button[aria-label='表格设计'])):not(:has(> button[aria-label='表格布局']))")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

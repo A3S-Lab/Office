@@ -150,8 +150,12 @@ horizontal and vertical alignment, exact column-width and row-height fields,
 equal row/column distribution, content/window autofit, row/column operations,
 merge/split, repeat-header, and non-splitting row controls. Common cell
 shading, vertical alignment, uniform borders, fixed grid widths, layout mode,
-and explicit row heights round-trip through editable HTML and DOCX. Native
-Word list identities, arbitrary multilevel numbering, per-edge and theme table
+and explicit row heights round-trip through editable HTML and DOCX. Desktop
+insertion keeps an 8 × 10 keyboard matrix without duplicate cell
+semantics, while phone insertion uses focused row and column controls with
+44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
+row extension, compact-ribbon deletion, and editor-focus recovery. Native Word
+list identities, arbitrary multilevel numbering, per-edge and theme table
 borders, percentage-width column authoring, nested tables, and all multi-page
 row cases remain part of this priority rather than being treated as complete.
 

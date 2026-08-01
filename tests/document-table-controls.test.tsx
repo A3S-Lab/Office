@@ -86,6 +86,51 @@ test('shares the table-size picker with presentation commands', async () => {
   expect(screen.queryByRole('dialog', { name: '选择表格大小' })).toBeNull();
 });
 
+test('exposes one desktop control per table size without duplicate cells', async () => {
+  render(<OfficeTableInsertPopover label="表格" onInsert={() => undefined} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '表格' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '1 行 1 列' })).toHaveFocus(),
+  );
+
+  expect(screen.queryAllByRole('cell')).toHaveLength(0);
+  expect(screen.getAllByRole('button', { name: /\d+ 行 \d+ 列/ })).toHaveLength(
+    80,
+  );
+});
+
+test('uses touch-sized row and column controls on compact screens', async () => {
+  const restoreMatchMedia = mockMatchMedia(true);
+  const dimensions: Array<{ rows: number; columns: number }> = [];
+
+  try {
+    render(
+      <OfficeTableInsertPopover
+        label="表格"
+        onInsert={(value) => dimensions.push(value)}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '表格' }));
+    const rows = screen.getByRole('spinbutton', { name: '行数' });
+    const columns = screen.getByRole('spinbutton', { name: '列数' });
+    await waitFor(() => expect(rows).toHaveFocus());
+    expect(screen.queryByRole('button', { name: '1 行 1 列' })).toBeNull();
+
+    fireEvent.change(rows, { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: '增加列数' }));
+    fireEvent.click(screen.getByRole('button', { name: '增加列数' }));
+    expect(columns).toHaveValue(3);
+    fireEvent.click(screen.getByRole('button', { name: '插入 3 × 3 表格' }));
+
+    expect(dimensions).toEqual([{ rows: 3, columns: 3 }]);
+    expect(screen.queryByRole('dialog', { name: '选择表格大小' })).toBeNull();
+  } finally {
+    restoreMatchMedia();
+  }
+});
+
 test('shows Word-style table Design and Layout tabs only inside a table', async () => {
   editor = createMixedEditor();
   const outsidePosition = documentTextRange(editor, 'Outside').from;
@@ -706,4 +751,31 @@ function firstTableParagraphAlignment(currentEditor: Editor): unknown {
     return false;
   });
   return alignment;
+}
+
+function mockMatchMedia(matches: boolean): () => void {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    window,
+    'matchMedia',
+  );
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => ({
+      matches,
+      media: '(max-width: 520px)',
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  });
+  return () => {
+    if (originalDescriptor) {
+      Object.defineProperty(window, 'matchMedia', originalDescriptor);
+    } else {
+      Reflect.deleteProperty(window, 'matchMedia');
+    }
+  };
 }
