@@ -14,7 +14,11 @@ import {
 } from 'react';
 import { slideTransitionDurationMilliseconds } from '../work-presentation-transition';
 import type { WorkPresentationContent } from '../work-types';
-import { PresentationPresenterView } from './presentation-presenter-view';
+import {
+  createPresentationTimerController,
+  PresentationPresenterView,
+  type PresentationTimerController,
+} from './presentation-presenter-view';
 import { SlideCanvas } from './presentation-slide-canvas';
 
 interface PlaybackState {
@@ -39,6 +43,10 @@ export function PresentationPlayer({
   });
   const [presenter, setPresenter] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
+  const presenterTimerRef = useRef<PresentationTimerController | null>(null);
+  if (!presenterTimerRef.current) {
+    presenterTimerRef.current = createPresentationTimerController();
+  }
   const enteredFullscreenRef = useRef(false);
   const completedExitRef = useRef(false);
   const slide = content.slides[playback.index] ?? content.slides[0];
@@ -73,26 +81,58 @@ export function PresentationPlayer({
   );
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLButtonElement ||
-        event.target instanceof HTMLAnchorElement ||
-        event.target instanceof HTMLInputElement
-      ) {
-        return;
-      }
-      if (event.key === 'ArrowRight' || event.key === ' ') move(1);
-      if (event.key === 'ArrowLeft') move(-1);
       if (event.key === 'Escape') {
+        event.preventDefault();
         if (document.fullscreenElement && document.exitFullscreen) {
           void document.exitFullscreen();
         } else {
           completeExit();
         }
+        return;
+      }
+
+      if (presentationTargetAcceptsTextInput(event.target)) return;
+
+      if (
+        (event.key === ' ' || event.key === 'Spacebar') &&
+        presentationTargetActivatesWithSpace(event.target)
+      ) {
+        return;
+      }
+
+      if (
+        event.key === 'ArrowRight' ||
+        event.key === 'ArrowDown' ||
+        event.key === 'PageDown' ||
+        event.key === ' ' ||
+        event.key === 'Spacebar'
+      ) {
+        event.preventDefault();
+        move(1);
+        return;
+      }
+      if (
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'PageUp'
+      ) {
+        event.preventDefault();
+        move(-1);
+        return;
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        move(-content.slides.length);
+        return;
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        move(content.slides.length);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [completeExit, move]);
+  }, [completeExit, content.slides.length, move]);
   useLayoutEffect(() => {
     const player = playerRef.current;
     if (!autoFullscreen || !player) return;
@@ -157,7 +197,7 @@ export function PresentationPlayer({
           index={playback.index}
           total={content.slides.length}
           aspectRatio={aspectRatio}
-          onMove={move}
+          timer={presenterTimerRef.current}
         />
       ) : (
         <div className="work-presentation-player-stage">
@@ -195,6 +235,7 @@ export function PresentationPlayer({
         <button
           type="button"
           aria-label="上一张"
+          aria-keyshortcuts="ArrowLeft ArrowUp PageUp"
           disabled={playback.index === 0}
           onClick={() => move(-1)}
         >
@@ -206,6 +247,7 @@ export function PresentationPlayer({
         <button
           type="button"
           aria-label="下一张"
+          aria-keyshortcuts="ArrowRight ArrowDown PageDown Space"
           disabled={playback.index === content.slides.length - 1}
           onClick={() => move(1)}
         >
@@ -234,6 +276,7 @@ export function PresentationPlayer({
             type="button"
             className="work-presentation-player-exit"
             aria-label="退出放映"
+            aria-keyshortcuts="Escape"
             onClick={() => {
               if (document.fullscreenElement && document.exitFullscreen) {
                 void document.exitFullscreen().finally(completeExit);
@@ -247,6 +290,25 @@ export function PresentationPlayer({
         )}
       </footer>
     </section>
+  );
+}
+
+function presentationTargetAcceptsTextInput(
+  target: EventTarget | null,
+): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  );
+}
+
+function presentationTargetActivatesWithSpace(
+  target: EventTarget | null,
+): boolean {
+  return (
+    target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement
   );
 }
 

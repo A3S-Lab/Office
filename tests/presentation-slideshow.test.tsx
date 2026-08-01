@@ -1,5 +1,11 @@
-import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { expect, rstest, test } from '@rstest/core';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { PresentationEditor } from '../src/internal/features/work/editors/presentation-editor';
 import { PresentationPlayer } from '../src/internal/features/work/editors/presentation-player';
 import type { WorkPresentationContent } from '../src/internal/features/work/work-types';
@@ -168,6 +174,73 @@ test('returns focus to the slideshow launcher after playback exits', async () =>
   fireEvent.click(screen.getByRole('button', { name: '退出放映' }));
 
   await waitFor(() => expect(launcher).toHaveFocus());
+});
+
+test('keeps slideshow keyboard commands active after presenter controls receive focus', () => {
+  let exits = 0;
+  render(
+    <PresentationPlayer
+      content={presentation()}
+      onExit={() => {
+        exits += 1;
+      }}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '演讲者视图' }));
+  const presenterToggle = screen.getByRole('button', {
+    name: '退出演讲者视图',
+  });
+  presenterToggle.focus();
+
+  expect(screen.queryByRole('button', { name: '演讲者上一张' })).toBeNull();
+  expect(screen.queryByRole('button', { name: '演讲者下一张' })).toBeNull();
+  expect(screen.getAllByRole('button', { name: '上一张' })).toHaveLength(1);
+  expect(screen.getAllByRole('button', { name: '下一张' })).toHaveLength(1);
+
+  fireEvent.keyDown(presenterToggle, { key: 'ArrowRight' });
+  expect(screen.getByText('2 / 3')).toBeVisible();
+  expect(
+    screen.getByRole('region', { name: '当前幻灯片' }).querySelector('h2'),
+  ).toHaveTextContent('Two');
+
+  fireEvent.keyDown(presenterToggle, { key: 'End' });
+  expect(screen.getByText('3 / 3')).toBeVisible();
+  fireEvent.keyDown(presenterToggle, { key: 'Home' });
+  expect(screen.getByText('1 / 3')).toBeVisible();
+  fireEvent.keyDown(presenterToggle, { key: 'Escape' });
+  expect(exits).toBe(1);
+});
+
+test('keeps the presenter timer continuous for the slideshow session', () => {
+  rstest.useFakeTimers();
+  rstest.setSystemTime(new Date('2026-08-01T00:00:00.000Z'));
+  const view = render(<PresentationPlayer content={presentation()} />);
+
+  try {
+    act(() => rstest.advanceTimersByTime(5_000));
+    fireEvent.click(screen.getByRole('button', { name: '演讲者视图' }));
+    expect(screen.getByText('00:05')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: '暂停计时' }));
+    act(() => rstest.advanceTimersByTime(3_000));
+    expect(screen.getByText('00:05')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: '退出演讲者视图' }));
+    act(() => rstest.advanceTimersByTime(2_000));
+    fireEvent.click(screen.getByRole('button', { name: '演讲者视图' }));
+    expect(screen.getByText('00:05')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: '继续计时' }));
+    act(() => rstest.advanceTimersByTime(2_000));
+    expect(screen.getByText('00:07')).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: '重置计时' }));
+    expect(screen.getByText('00:00')).toBeVisible();
+  } finally {
+    view.unmount();
+    rstest.useRealTimers();
+  }
 });
 
 function presentation(): WorkPresentationContent {

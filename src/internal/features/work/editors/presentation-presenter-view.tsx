@@ -3,6 +3,20 @@ import { useEffect, useState } from 'react';
 import type { WorkPresentationContent, WorkSlide } from '../work-types';
 import { SlideCanvas } from './presentation-slide-canvas';
 
+export interface PresentationTimerController {
+  elapsedMilliseconds: number;
+  runningSinceMilliseconds: number | null;
+}
+
+export function createPresentationTimerController(
+  now = Date.now(),
+): PresentationTimerController {
+  return {
+    elapsedMilliseconds: 0,
+    runningSinceMilliseconds: now,
+  };
+}
+
 export function PresentationPresenterView({
   content,
   slide,
@@ -10,7 +24,7 @@ export function PresentationPresenterView({
   index,
   total,
   aspectRatio,
-  onMove,
+  timer,
 }: {
   content: WorkPresentationContent;
   slide: WorkSlide;
@@ -18,19 +32,44 @@ export function PresentationPresenterView({
   index: number;
   total: number;
   aspectRatio: string;
-  onMove: (delta: number) => void;
+  timer: PresentationTimerController;
 }) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [running, setRunning] = useState(true);
+  const [, setTimerRevision] = useState(0);
+  const now = Date.now();
+  const running = timer.runningSinceMilliseconds !== null;
+  const elapsedSeconds = presentationTimerElapsedSeconds(timer, now);
 
   useEffect(() => {
     if (!running) return;
-    const timer = window.setInterval(
-      () => setElapsedSeconds((current) => current + 1),
+    const interval = window.setInterval(
+      () => setTimerRevision((current) => current + 1),
       1000,
     );
-    return () => window.clearInterval(timer);
+    return () => window.clearInterval(interval);
   }, [running]);
+
+  const toggleTimer = () => {
+    const currentTime = Date.now();
+    if (timer.runningSinceMilliseconds === null) {
+      timer.runningSinceMilliseconds = currentTime;
+    } else {
+      timer.elapsedMilliseconds = presentationTimerElapsedMilliseconds(
+        timer,
+        currentTime,
+      );
+      timer.runningSinceMilliseconds = null;
+    }
+    setTimerRevision((current) => current + 1);
+  };
+
+  const resetTimer = () => {
+    const currentTime = Date.now();
+    timer.elapsedMilliseconds = 0;
+    if (timer.runningSinceMilliseconds !== null) {
+      timer.runningSinceMilliseconds = currentTime;
+    }
+    setTimerRevision((current) => current + 1);
+  };
 
   return (
     <section className="work-presentation-presenter" aria-label="演讲者视图">
@@ -39,22 +78,21 @@ export function PresentationPresenterView({
           <span>演讲计时</span>
           <strong>
             <span className="sr-only">已用时间：</span>
-            <time>{formatDuration(elapsedSeconds)}</time>
+            <time dateTime={`PT${elapsedSeconds}S`}>
+              {formatDuration(elapsedSeconds)}
+            </time>
           </strong>
         </div>
         <div className="work-presentation-presenter-timer-actions">
           <button
             type="button"
             aria-label={running ? '暂停计时' : '继续计时'}
-            onClick={() => setRunning((current) => !current)}
+            aria-pressed={!running}
+            onClick={toggleTimer}
           >
             {running ? <Pause size={15} /> : <Play size={15} />}
           </button>
-          <button
-            type="button"
-            aria-label="重置计时"
-            onClick={() => setElapsedSeconds(0)}
-          >
+          <button type="button" aria-label="重置计时" onClick={resetTimer}>
             <RotateCcw size={15} />
           </button>
         </div>
@@ -103,26 +141,27 @@ export function PresentationPresenterView({
           <p>{slide.notes?.trim() || '此页没有演讲者备注'}</p>
         </aside>
       </div>
-
-      <footer>
-        <button
-          type="button"
-          aria-label="演讲者上一张"
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
-        >
-          上一张
-        </button>
-        <button
-          type="button"
-          aria-label="演讲者下一张"
-          disabled={index === total - 1}
-          onClick={() => onMove(1)}
-        >
-          下一张
-        </button>
-      </footer>
     </section>
+  );
+}
+
+function presentationTimerElapsedSeconds(
+  timer: PresentationTimerController,
+  now: number,
+): number {
+  return Math.floor(presentationTimerElapsedMilliseconds(timer, now) / 1000);
+}
+
+function presentationTimerElapsedMilliseconds(
+  timer: PresentationTimerController,
+  now: number,
+): number {
+  if (timer.runningSinceMilliseconds === null) {
+    return timer.elapsedMilliseconds;
+  }
+  return (
+    timer.elapsedMilliseconds +
+    Math.max(0, now - timer.runningSinceMilliseconds)
   );
 }
 

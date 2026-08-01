@@ -34,3 +34,18 @@ while a text box is being edited.
 
 Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
 integration. The internal scene-command runtime is not a public extension API.
+
+## Built-in slideshow
+
+The slideshow keeps one shared navigation strip in audience and presenter
+modes. Arrow keys and Page Up/Page Down move between slides, Space advances,
+Home and End jump to the deck boundaries, and Escape exits playback. These
+commands remain active when a slideshow control has focus, while text inputs
+and editable content retain their normal keyboard behavior.
+
+Presenter mode shows the current slide, next-slide cue, speaker notes, and a
+pauseable timer. The timer belongs to the playback session, so switching
+between audience and presenter modes does not reset elapsed time. At phone
+widths, the current slide stays full-width, the next-slide preview compacts to
+its title cue, notes remain scrollable, and the same navigation strip remains
+available.

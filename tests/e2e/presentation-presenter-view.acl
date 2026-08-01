@@ -1,0 +1,165 @@
+suite "presentation-presenter-view" {
+    version = 1
+
+    scenario "presenter-keyboard-navigation" {
+        name = "Navigate and exit the presenter view from its focused controls"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "compact-desktop" {
+            width = 768
+            height = 800
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-presentation" {
+            target = text("策略汇报", true)
+        }
+
+        wait "presentation-loaded" {
+            text = "把最重要的结论放在标题中"
+        }
+
+        click "open-slideshow-tab" {
+            target = role("tab", "幻灯片放映")
+        }
+
+        click "start-slideshow" {
+            target = role("button", "从头开始放映")
+        }
+
+        click "open-presenter-view" {
+            target = role("button", "演讲者视图")
+        }
+
+        expect "presenter-view-ready" {
+            visible = css("[aria-label='演讲者视图']")
+        }
+
+        focus "focus-presenter-toggle" {
+            target = css("button[aria-label='退出演讲者视图']")
+        }
+
+        press "next-slide" {
+            key = "ArrowRight"
+        }
+
+        expect "second-slide-current" {
+            text = "幻灯片 2 / 3"
+        }
+
+        press "last-slide" {
+            key = "End"
+        }
+
+        expect "last-slide-current" {
+            text = "幻灯片 3 / 3"
+        }
+
+        press "first-slide" {
+            key = "Home"
+        }
+
+        expect "first-slide-current" {
+            text = "幻灯片 1 / 3"
+        }
+
+        screenshot "presenter-view" {
+            path = "screenshots/presenter-view.png"
+        }
+
+        press "exit-slideshow" {
+            key = "Escape"
+        }
+
+        expect "editor-restored" {
+            text = "从头开始放映"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "presenter-phone-layout" {
+        name = "Keep the presenter canvas, next-slide cue, notes, and controls visible on phones"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-presentation" {
+            target = text("策略汇报", true)
+        }
+
+        wait "presentation-loaded" {
+            text = "把最重要的结论放在标题中"
+        }
+
+        click "open-slideshow-tab" {
+            target = role("tab", "幻灯片放映")
+        }
+
+        click "start-slideshow" {
+            target = role("button", "从头开始放映")
+        }
+
+        click "open-presenter-view" {
+            target = role("button", "演讲者视图")
+        }
+
+        expect "current-slide-visible" {
+            visible = css("[aria-label='当前幻灯片'] .work-slide-canvas")
+        }
+
+        expect "next-slide-cue-visible" {
+            text = "核心判断"
+        }
+
+        expect "presenter-notes-visible" {
+            visible = css("[aria-label='演讲者备注']")
+        }
+
+        expect "shared-controls-visible" {
+            visible = css(".work-presentation-player > footer")
+        }
+
+        screenshot "phone-presenter-view" {
+            path = "screenshots/phone-presenter-view.png"
+        }
+
+        press "exit-slideshow" {
+            key = "Escape"
+        }
+
+        expect "editor-restored" {
+            text = "从头开始放映"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
