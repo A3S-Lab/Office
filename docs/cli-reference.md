@@ -599,6 +599,21 @@ pair, or output bound.
 These unit renders preserve semantic paths for downstream evidence but remain
 semantic previews rather than page-layout evidence.
 
+The native Rust API separately exposes the object-safe, `Send + Sync`
+`NativeOfficeLayoutRenderer` boundary and strict source/unit/profile receipts.
+`NativeOfficePptxImageLayoutRenderer` is the first layout-authoritative
+implementation. It accepts only a slide containing one opaque PNG that covers
+the complete declared slide surface with no crop, rotation, flip, effects, or
+sibling visual objects. The PNG aspect ratio must exactly match the slide, so
+the implementation returns the original embedded bytes without reflow or
+resampling. It rehashes the source before and after work, validates the full
+locator/ordinal/path identity, stages output atomically with no overwrite,
+rehashes the published pixels, and records the engine binary, physical surface,
+DPI, viewport, locale, timezone, empty font manifest, renderer configuration,
+and explicit `source-layout` authority in a deterministic profile. DOCX, XLSX,
+and richer PPTX slides return `use.office.layout_unsupported`. The semantic
+HTML/SVG/Browser screenshot path cannot construct this receipt.
+
 `office native watch <file>` renders the same bounded all-format HTML, binds
 only `127.0.0.1`, selects an ephemeral port by default, and prints a URL with a
 fresh 256-bit capability token. Every page, status response, and standard SSE

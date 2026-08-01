@@ -349,8 +349,11 @@ Use `downloadArtifact` to start a browser download or
 
 The repository also contains a native Rust engine for deterministic reads,
 validation, mutation, batch operations, exact natural-unit inventories,
-sibling-isolated semantic previews, screenshots, and file watching across
-Office packages.
+sibling-isolated semantic previews, screenshots, file watching, and a
+source-bound exact-layout raster boundary across Office packages. The first
+layout-authoritative route supports image-only PPTX slides whose single opaque
+PNG exactly covers the declared slide surface; richer slides and other formats
+remain typed unsupported instead of being relabeled semantic previews.
 
 ```bash
 # Run from the repository root

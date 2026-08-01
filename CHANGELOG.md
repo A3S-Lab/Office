@@ -10,6 +10,11 @@ All notable changes to A3S Office will be documented in this file.
 - Added DOCX, XLSX, PPTX, PDF, HTML, Markdown, text, CSV, XLS, and ODS file
   workflows.
 - Added a colocated PDFium WebAssembly asset with an overridable URL.
+- Added a browser-neutral exact-unit Office layout-renderer contract and a
+  source-bound, no-resampling implementation for opaque PNGs that completely
+  cover one PPTX slide, including deterministic profile receipts, source
+  mutation checks, bounded no-clobber output, and typed unsupported outcomes
+  for every richer layout.
 - Added an interactive React playground, type checks, integration tests, and
   Rslib packaging.
 - Added GFM task lists, coalesced source-to-visual Markdown updates,

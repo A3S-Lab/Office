@@ -17,6 +17,7 @@ mod discovery;
 mod editor;
 mod install;
 mod issues;
+mod layout;
 mod opc;
 mod opc_edit;
 mod package;
@@ -73,6 +74,13 @@ pub use issues::{
     NativeOfficeIssue, NativeOfficeIssueCategory, NativeOfficeIssueFilter,
     NativeOfficeIssueOptions, NativeOfficeIssueReport, NativeOfficeIssueSeverity,
     NativeOfficeIssueSubtype, DEFAULT_NATIVE_OFFICE_ISSUE_LIMIT, MAX_NATIVE_OFFICE_ISSUE_LIMIT,
+};
+pub use layout::{
+    NativeOfficeLayoutAuthority, NativeOfficeLayoutEnvironment, NativeOfficeLayoutInspection,
+    NativeOfficeLayoutProfile, NativeOfficeLayoutRaster, NativeOfficeLayoutReceipt,
+    NativeOfficeLayoutRenderRequest, NativeOfficeLayoutRenderer,
+    NativeOfficeLayoutRendererDescriptor, NativeOfficePptxImageLayoutRenderer,
+    NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
 };
 pub use opc::{
     ContentTypes, OpcPackageModel, Relationship, RelationshipGraph, RelationshipSource,
@@ -319,6 +327,8 @@ mod hyperlink_tests;
 mod image_tests;
 #[cfg(test)]
 mod issues_tests;
+#[cfg(test)]
+mod layout_tests;
 #[cfg(test)]
 mod named_range_tests;
 #[cfg(test)]

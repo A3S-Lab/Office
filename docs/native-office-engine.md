@@ -1021,7 +1021,22 @@ content-addressed render profile covering viewport, engine/version, fonts,
 DPI, locale, and page geometry. Therefore unit screenshots are not yet valid
 as layout-authoritative Parser raster evidence. The native `a3s-office` core
 and Parser integration remain browser-free; only this optional Office CLI
-facade owns the Browser dependency. Layout goldens remain open.
+facade owns the Browser dependency. Rich-layout Browser goldens remain open.
+
+The native core now provides a separate browser-neutral
+`NativeOfficeLayoutRenderer` contract for exact source/unit/profile receipts.
+Its first concrete renderer is deliberately narrow: a PPTX slide must contain
+one opaque PNG, positioned at the origin over the complete declared slide
+surface, with no crop, transform, effects, or sibling visual object. The image
+and slide aspect ratios must match exactly, allowing the renderer to publish
+the original PNG bytes without resampling. Source revisions are rehashed before
+and after staging, output is bounded and no-clobber, and the receipt binds the
+actual pixels to physical geometry, DPI, viewport, engine-binary identity,
+locale, timezone, fonts/configuration hashes, and `source-layout` authority.
+Every other Office unit fails with `use.office.layout_unsupported`; semantic
+preview receipts cannot be promoted. This gives scanned/image-only decks a
+truthful OCR and overlay surface while rich Presentation, Word pagination,
+Spreadsheet print layout, and PDF remain follow-up providers.
 
 Basic Presentation table structure is deliberately bounded. Table dimensions
 must be positive, no mutation may exceed 5,000 rows, 5,000 columns, or 100,000
@@ -1148,6 +1163,9 @@ screenshots, and saved-revision live watch cover all three formats; PNG requires
 a ready Browser provider. They are available through typed Rust APIs, `office
 native view|watch`, `office_view`, and progressive
 Word/Spreadsheet/Presentation/MCP Skill references.
+The typed Rust API additionally provides an exact-layout provider boundary and
+native no-resampling source-layout receipts for opaque, full-slide PPTX PNGs;
+this route does not require Browser and does not broaden semantic screenshots.
 The MCP target's 12 typed tools use bounded in-process sessions for validate,
 create/open/list, semantic reads, annotations, and issues, constrained raw XML, atomic
 mutation batches, immutable-template merge, save, and close. It limits open

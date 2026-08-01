@@ -24,3 +24,6 @@ tempfile.workspace = true
 tokio.workspace = true
 url.workspace = true
 zip.workspace = true
+
+[dev-dependencies]
+png = "0.17"
