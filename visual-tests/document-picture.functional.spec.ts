@@ -52,7 +52,10 @@ test('picture contextual ribbon keeps selection, dialog focus, and cleanup coher
   await expect(body).toBeFocused();
   await expect(pictureTab).toHaveAttribute('aria-selected', 'true');
 
-  await page.getByRole('button', { name: '替代文字' }).click();
+  const alternativeTextButton = page.getByRole('button', {
+    name: '替代文字',
+  });
+  await alternativeTextButton.click();
   const dialog = page.getByRole('dialog', { name: '图片说明' });
   const alternativeText = dialog.getByRole('textbox', {
     name: '图片替代文字',
@@ -61,16 +64,17 @@ test('picture contextual ribbon keeps selection, dialog focus, and cleanup coher
   await alternativeText.fill('不应保存的说明');
   await dialog.getByRole('button', { name: '取消' }).click();
   await expect(dialog).toBeHidden();
-  await expect(body).toBeFocused();
+  await expect(alternativeTextButton).toBeFocused();
   await expect(pictureTab).toHaveAttribute('aria-selected', 'true');
 
-  await page.getByRole('button', { name: '替代文字' }).click();
+  await alternativeTextButton.click();
   await alternativeText.fill('季度计划趋势图');
   await dialog.getByRole('button', { name: '保存' }).click();
   await expect(imageContainer.locator('img[alt="季度计划趋势图"]')).toHaveCount(
     1,
   );
-  await expect(body).toBeFocused();
+  await expect(alternativeTextButton).toBeFocused();
+  await expect(imageContainer).toHaveClass(/ProseMirror-selectednode/);
 
   await page.getByRole('button', { name: '删除图片' }).click();
   await expect(imageContainer).toHaveCount(0);

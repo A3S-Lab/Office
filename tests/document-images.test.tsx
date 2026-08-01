@@ -143,21 +143,32 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
   expect(documentImageLayoutOptions(editor).layout).toBe('inline');
   expect(wrapDistance).toBeDisabled();
 
-  fireEvent.click(screen.getByRole('button', { name: '替代文字' }));
+  const alternativeTextButton = screen.getByRole('button', {
+    name: '替代文字',
+  });
+  alternativeTextButton.focus();
+  fireEvent.click(alternativeTextButton);
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
   await waitFor(() => {
     expect(editor.isActive('image')).toBe(true);
+    expect(alternativeTextButton).toHaveFocus();
   });
 
-  fireEvent.click(screen.getByRole('button', { name: '替代文字' }));
+  fireEvent.click(alternativeTextButton);
   fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
     target: { value: '季度趋势图' },
   });
   fireEvent.click(screen.getByRole('button', { name: '保存' }));
   await waitFor(() => {
     expect(documentImageAlternativeText(editor)).toBe('季度趋势图');
+    expect(editor.isActive('image')).toBe(true);
+    expect(alternativeTextButton).toHaveFocus();
   });
   expect(editor.getHTML()).toContain('alt="季度趋势图"');
+
+  fireEvent.click(alternativeTextButton);
+  expect(screen.getByRole('dialog', { name: '图片说明' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
 
   selectFirstImage(editor);
   fireEvent.click(screen.getByRole('button', { name: '删除图片' }));

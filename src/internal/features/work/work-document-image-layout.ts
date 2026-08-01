@@ -18,7 +18,10 @@ export interface DocumentImageCommandOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentImage: {
-      setDocumentImageAlternativeText: (alternativeText: string) => ReturnType;
+      setDocumentImageAlternativeText: (
+        alternativeText: string,
+        options?: DocumentImageCommandOptions,
+      ) => ReturnType;
       setDocumentImageLayoutOptions: (
         value: Partial<WorkDocumentImageLayoutOptions>,
         options?: DocumentImageCommandOptions,
@@ -37,12 +40,15 @@ export const DocumentImage = Image.extend({
     return {
       ...(this.parent?.() ?? {}),
       setDocumentImageAlternativeText:
-        (alternativeText) =>
+        (alternativeText, options = {}) =>
         ({ chain, editor }) => {
           if (!editor.isActive('image')) return false;
           const normalized = alternativeText.trim();
-          return chain()
-            .focus()
+          let commandChain = chain();
+          if (options.restoreFocus !== false) {
+            commandChain = commandChain.focus();
+          }
+          return commandChain
             .updateAttributes('image', {
               alt: normalized || null,
               title: normalized || null,
@@ -197,8 +203,12 @@ export function setDocumentImageLayoutOptions(
 export function setDocumentImageAlternativeText(
   editor: Editor,
   alternativeText: string,
+  options: DocumentImageCommandOptions = {},
 ): boolean {
-  return editor.commands.setDocumentImageAlternativeText(alternativeText);
+  return editor.commands.setDocumentImageAlternativeText(
+    alternativeText,
+    options,
+  );
 }
 
 export function documentImageAlternativeText(editor: Editor): string {

@@ -178,7 +178,10 @@ Presentation images, and imported Office/PDF files. File inputs can reset
 immediately for same-file reselection without invalidating an in-flight read.
 Unit coverage verifies single-read ownership and the A3S Test picture fixture
 verifies that a relative-path PNG reaches the Word canvas and opens its
-contextual picture toolbar without a false read error.
+contextual picture toolbar without a false read error. The phone picture
+workflow keeps its bounded ribbon overflow, retains the selected image while
+alternative text is edited, and restores the exact Alternative text command
+after save or cancel so the next keyboard action cannot mutate document content.
 
 Exit evidence:
 

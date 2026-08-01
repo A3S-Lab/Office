@@ -114,6 +114,9 @@ All notable changes to A3S Office will be documented in this file.
   header export menu.
 - Kept Word task-pane headers stretched to the pane edges at compact and phone
   widths so titles and close actions retain the shared Office alignment.
+- Kept a Word picture selected while its alternative text is edited and
+  returned keyboard focus to the exact Picture ribbon command after save or
+  cancel, preventing the next key press from changing document content.
 - Positioned the Word comment composer against its selected text before the
   browser's first paint, removing the initial jump from the top of the review
   rail.

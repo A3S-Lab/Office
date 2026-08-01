@@ -120,14 +120,15 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
                 initialValue: documentImageAlternativeText(editor),
                 multiline: true,
                 confirmLabel: '保存',
-                restoreFocusTarget: () => editor.view.dom,
               })
               .then((value) => {
                 if (!restoreDocumentImageSelection(editor, imagePosition)) {
                   return;
                 }
                 if (value !== null) {
-                  editor.commands.setDocumentImageAlternativeText(value);
+                  editor.commands.setDocumentImageAlternativeText(value, {
+                    restoreFocus: false,
+                  });
                 }
               });
           }}
@@ -166,7 +167,7 @@ function restoreDocumentImageSelection(
   ) {
     return false;
   }
-  return editor.chain().setNodeSelection(position).focus().run();
+  return editor.commands.setNodeSelection(position);
 }
 
 function imageWrapDistanceOptionsForValue(value: string) {

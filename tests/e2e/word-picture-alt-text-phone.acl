@@ -1,0 +1,110 @@
+suite "office-word-picture-alt-text-phone" {
+    version = 1
+
+    scenario "restore-picture-command-focus-after-alt-text" {
+        name = "Keep the selected Word picture active after editing alternative text on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = css(".playground-artifact-card.document")
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "place-picture" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        upload "insert-picture" {
+            target = css("input[aria-label='插入文档图片']")
+            paths = [".a3s-test/fixtures/word-picture.png"]
+        }
+
+        wait "picture-inserted" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'] img[alt='word-picture.png']")
+        }
+
+        click "scroll-picture-tools-once" {
+            target = role("button", "向右查看更多图片工具")
+        }
+
+        click "scroll-picture-tools-twice" {
+            target = role("button", "向右查看更多图片工具")
+        }
+
+        click "open-alternative-text" {
+            target = role("button", "替代文字")
+        }
+
+        expect "alternative-text-dialog-ready" {
+            visible = css("[role='dialog'][aria-labelledby]")
+        }
+
+        fill "describe-picture" {
+            target = label("图片替代文字")
+            value = "Blue project diagram"
+        }
+
+        click "save-alternative-text" {
+            target = role("button", "保存")
+        }
+
+        expect "alternative-text-saved" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'] img[alt='Blue project diagram']")
+        }
+
+        expect "picture-selection-retained" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'].ProseMirror-selectednode")
+        }
+
+        expect "alternative-text-invoker-focused" {
+            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='替代文字']:focus")
+        }
+
+        press "reopen-from-restored-focus" {
+            key = "Enter"
+        }
+
+        expect "alternative-text-dialog-reopened" {
+            visible = css("[role='dialog'][aria-labelledby]")
+        }
+
+        click "cancel-reopened-dialog" {
+            target = role("button", "取消")
+        }
+
+        expect "invoker-focus-restored-after-cancel" {
+            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='替代文字']:focus")
+        }
+
+        screenshot "picture-alternative-text-phone" {
+            path = "screenshots/word-picture-alt-text-phone.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
