@@ -193,6 +193,9 @@ previews, physical-page and restarted-page-number labels, active-page tracking,
 arrow/Home/End keyboard traversal, and selection-safe jumps to each page. A
 page preview is derived from the measured text ranges assigned to that page, so
 pages split from one long paragraph do not repeat the paragraph's opening text.
+The dedicated Find/Replace task pane now has deterministic phone-width coverage
+for query entry, match navigation, single replacement, disabled-action focus
+recovery, content synchronization, and modal close-to-invoker focus restoration.
 New comment
 drafts stay inside the visible review rail even for document-wide selections,
 and discard confirmation is limited to drafts or replies that contain written

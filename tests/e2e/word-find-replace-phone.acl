@@ -1,0 +1,128 @@
+suite "office-word-find-replace-phone" {
+    version = 1
+
+    scenario "replace-body-text-on-phone" {
+        name = "Replace Word body text from the phone task pane"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-find-replace-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "phone-sidebar-starts-closed" {
+            visible = css("button[aria-label='展开办公侧边栏']")
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "记录尚未解决的问题、依赖和决策负责人。"
+        }
+
+        click "open-replace" {
+            target = css(".work-office-ribbon-group[aria-label='编辑'] button[aria-label='替换']")
+        }
+
+        expect "replace-pane-is-modal" {
+            visible = css(".work-document-find-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "document-is-isolated" {
+            visible = css(".work-document-scroll[inert]")
+        }
+
+        fill "find-body-text" {
+            target = label("查找内容")
+            value = "尚未解决"
+        }
+
+        expect "one-match-found" {
+            text = "1 个匹配"
+        }
+
+        fill "set-replacement" {
+            target = label("替换为")
+            value = "待确认"
+        }
+
+        click "select-match" {
+            target = role("button", "下一个匹配")
+        }
+
+        expect "match-is-active" {
+            visible = css(".work-document-find-match.active[data-document-find-active='true']")
+        }
+
+        click "replace-current" {
+            target = css(".work-document-find-actions .ds-button.secondary")
+        }
+
+        expect "replacement-confirmed" {
+            text = "已替换当前匹配"
+        }
+
+        expect "query-has-no-match" {
+            text = "没有匹配内容"
+        }
+
+        expect "disabled-action-did-not-keep-focus" {
+            visible = css(".work-document-find-panel input[aria-label='查找内容']:focus")
+        }
+
+        expect "replace-action-is-disabled" {
+            visible = css(".work-document-find-actions .ds-button.secondary:disabled")
+        }
+
+        screenshot "replacement-state" {
+            path = "screenshots/word-find-replace-phone.png"
+        }
+
+        click "close-replace" {
+            target = role("button", "关闭查找")
+        }
+
+        expect "document-is-restored" {
+            visible = css(".work-document-scroll:not([inert])")
+        }
+
+        expect "invoker-focus-is-restored" {
+            visible = css(".work-office-ribbon-group[aria-label='编辑'] button[aria-label='替换']:focus")
+        }
+
+        expect "replacement-is-visible" {
+            text = "记录待确认的问题、依赖和决策负责人。"
+        }
+
+        screenshot "updated-document" {
+            path = "screenshots/word-find-replace-document-phone.png"
+        }
+
+        accessibility "replace-semantics" {
+            path = "evidence/replace-semantics.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

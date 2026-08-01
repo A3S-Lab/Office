@@ -139,6 +139,46 @@ test('replaces the current match and exposes the task-pane mode switch', () => {
   }
 });
 
+test('returns focus to the query after replacing the final match from the action button', async () => {
+  const { editor, element } = createEditor('<p>Alpha beta</p>');
+
+  try {
+    render(
+      <DocumentFindReplacePanel
+        editor={editor}
+        mode="replace"
+        onModeChange={() => undefined}
+        onReplaceText={(from, to, replacement) =>
+          editor
+            .chain()
+            .setTextSelection({ from, to })
+            .insertContent(replacement)
+            .run()
+        }
+        onClose={() => undefined}
+      />,
+    );
+
+    const query = screen.getByRole('textbox', { name: '查找内容' });
+    fireEvent.change(query, { target: { value: 'Alpha' } });
+    fireEvent.change(screen.getByRole('textbox', { name: '替换为' }), {
+      target: { value: 'Omega' },
+    });
+    const replace = screen.getByRole('button', { name: '替换' });
+    replace.focus();
+    fireEvent.click(replace);
+
+    expect(editor.getText()).toBe('Omega beta');
+    expect(replace).toBeDisabled();
+    await waitFor(() => expect(query).toHaveFocus());
+    expect(query.selectionStart).toBe(0);
+    expect(query.selectionEnd).toBe(query.value.length);
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 test('moves backward from an inactive search to the final match', () => {
   const { editor, element } = createEditor('<p>Alpha beta Alpha</p>');
 

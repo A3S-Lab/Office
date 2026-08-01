@@ -127,6 +127,11 @@ export function DocumentFindReplacePanel({
         .scrollIntoView()
         .run();
     }
+    if (!remaining.length && focusTarget instanceof HTMLButtonElement) {
+      queryRef.current?.focus({ preventScroll: true });
+      queryRef.current?.select();
+      return;
+    }
     if (focusTarget?.isConnected && !focusTarget.matches(':disabled')) {
       focusTarget.focus({ preventScroll: true });
     } else {
