@@ -791,10 +791,10 @@ test('Playground stays at the site root and opens a standalone documentation cen
     productNavigation.getByRole('button', { name: 'Playground' }),
   ).toHaveAttribute('aria-current', 'page');
   const docs = productNavigation.getByRole('link', { name: '文档' });
-  await expect(docs).toHaveAttribute('href', /docs\/index\.html$/);
+  await expect(docs).toHaveAttribute('href', /docs\/$/);
   await docs.click();
 
-  await expect(page).toHaveURL(/\/docs\/index\.html$/);
+  await expect(page).toHaveURL(/\/docs\/$/);
   await expect(
     page.getByRole('heading', {
       name: 'A3S Office documentation',

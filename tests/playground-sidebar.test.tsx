@@ -8,7 +8,7 @@ test('keeps Markdown last in the quick-create list', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/docs/index.html"
+      docsUrl="/docs/"
       onCollapse={() => undefined}
       onHome={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
@@ -35,7 +35,7 @@ test('keeps one documentation entry in the product navigation', () => {
 
   render(
     <SiteSidebar
-      docsUrl="/docs/index.html"
+      docsUrl="/docs/"
       onCollapse={() => undefined}
       onHome={() => {
         homeRequests += 1;
@@ -55,7 +55,7 @@ test('keeps one documentation entry in the product navigation', () => {
   expect(playground).toHaveAttribute('aria-current', 'page');
   expect(
     within(productNavigation).getByRole('link', { name: '文档' }),
-  ).toHaveAttribute('href', '/docs/index.html');
+  ).toHaveAttribute('href', '/docs/');
   fireEvent.click(playground);
   expect(homeRequests).toBe(1);
 });
@@ -96,7 +96,7 @@ function ModalSidebarHarness() {
       </button>
       {open && (
         <SiteSidebar
-          docsUrl="/docs/index.html"
+          docsUrl="/docs/"
           modal
           onCollapse={() => setOpen(false)}
           onHome={() => undefined}

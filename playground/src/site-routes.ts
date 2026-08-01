@@ -1,12 +1,12 @@
-const DOCUMENTATION_ENTRY_PATH = 'docs/index.html';
-const GETTING_STARTED_PATH = 'docs/guide/index.html';
+const DOCUMENTATION_ENTRY_PATH = 'docs/';
+const GETTING_STARTED_PATH = 'docs/guide/';
 
 export function documentationEntryUrl(baseUri: string): string {
   return new URL(DOCUMENTATION_ENTRY_PATH, baseUri).href;
 }
 
 export function legacyDocsPath(hash: string): string | null {
-  if (hash === '#guide/components') return 'docs/components/index.html';
+  if (hash === '#guide/components') return 'docs/components/';
   if (hash === '#guide/api') return 'docs/components/document.html';
   if (
     hash === '#guide/automation' ||
@@ -15,7 +15,7 @@ export function legacyDocsPath(hash: string): string | null {
     hash === '#cli' ||
     hash === '#skill'
   ) {
-    return 'docs/automation/index.html';
+    return 'docs/automation/';
   }
   return hash === '#guide' ? GETTING_STARTED_PATH : null;
 }

@@ -19,7 +19,7 @@ suite "office-docs-navigation" {
         }
 
         wait "documentation-route" {
-            url = "http://127.0.0.1:4175/docs/index.html"
+            url = "http://127.0.0.1:4175/docs/"
         }
 
         expect "documentation-center-ready" {
