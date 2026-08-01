@@ -3,14 +3,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(test)]
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use a3s_use_core::UseResult;
 use async_trait::async_trait;
 use sha2::{Digest, Sha256};
 
 use super::engine::{PdfiumEngine, PDFIUM_ENGINE_VERSION};
 use super::{
-    NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageInventoryOptions,
-    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+    pdf_page_identity_mismatch, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
+    NativeOfficePdfPageInventoryOptions, MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
 };
 use crate::layout::pptx_image::io::{
     ensure_output_available, hash_regular_file, publish_output, stage_output,
@@ -38,6 +41,8 @@ const DEVICE_SCALE_FACTOR_MILLI: u32 = 1_000;
 pub struct NativeOfficePdfiumLayoutRenderer {
     engine: Arc<PdfiumEngine>,
     font_manifest_sha256: String,
+    #[cfg(test)]
+    inventory_calls: Arc<AtomicUsize>,
 }
 
 impl NativeOfficePdfiumLayoutRenderer {
@@ -58,6 +63,8 @@ impl NativeOfficePdfiumLayoutRenderer {
         let renderer = Self {
             engine,
             font_manifest_sha256,
+            #[cfg(test)]
+            inventory_calls: Arc::new(AtomicUsize::new(0)),
         };
         renderer.descriptor().validate()?;
         Ok(renderer)
@@ -95,6 +102,8 @@ impl NativeOfficePdfiumLayoutRenderer {
         options.validate()?;
         self.descriptor().validate()?;
         validate_pdf_revision(&source_revision, options.max_source_bytes)?;
+        #[cfg(test)]
+        self.inventory_calls.fetch_add(1, Ordering::Relaxed);
         let source_path = absolute(source_path.as_ref())?;
         let timeout_ms = options.timeout_ms;
         let engine = Arc::clone(&self.engine);
@@ -131,7 +140,9 @@ impl NativeOfficePdfiumLayoutRenderer {
         Ok(inventory)
     }
 
-    /// Freezes the exact profile for one inventoried PDF page.
+    /// Inventories the PDF and freezes the exact profile for one selected page.
+    /// Reuse [`Self::inspect_inventoried_page`] after a complete inventory has
+    /// already been admitted.
     pub async fn inspect_page(
         &self,
         source_path: impl AsRef<Path>,
@@ -149,21 +160,41 @@ impl NativeOfficePdfiumLayoutRenderer {
         let inventory = self
             .inventory_pages(&source_path, source_revision.clone(), options)
             .await?;
-        let offset = usize::try_from(unit.ordinal.saturating_sub(1))
-            .map_err(|_| pdf_page_identity_mismatch())?;
-        let page = inventory
-            .pages
-            .get(offset)
-            .filter(|page| page.unit == unit)
-            .ok_or_else(pdf_page_identity_mismatch)?;
-        let profile = self.profile(page, environment, options.dpi_milli);
+        self.inspect_inventoried_page(source_path, &inventory, unit, environment)
+    }
+
+    /// Freezes one page from a previously validated complete inventory without
+    /// reopening or reinventorying the PDF. Rendering still revalidates the
+    /// immutable source and the selected page's exact profile before output.
+    pub fn inspect_inventoried_page(
+        &self,
+        source_path: impl AsRef<Path>,
+        inventory: &NativeOfficePdfPageInventory,
+        unit: NativeOfficeUnit,
+        environment: NativeOfficeLayoutEnvironment,
+    ) -> UseResult<NativeOfficeLayoutInspection> {
+        self.descriptor().validate()?;
+        validate_unit(&unit)?;
+        environment.validate()?;
+        validate_pdf_revision(
+            &inventory.source_revision,
+            MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+        )?;
+        let source_path = absolute(source_path.as_ref())?;
+        let page = inventory.validated_page(&unit)?;
+        let profile = self.profile(page, environment, inventory.dpi_milli);
         profile.validate()?;
         Ok(NativeOfficeLayoutInspection {
             source_path,
-            source_revision,
+            source_revision: inventory.source_revision.clone(),
             unit,
             profile,
         })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inventory_call_count(&self) -> usize {
+        self.inventory_calls.load(Ordering::Relaxed)
     }
 
     fn profile(
@@ -485,12 +516,5 @@ fn pdfium_task_failed() -> a3s_use_core::UseError {
     layout_error(
         "use.office.pdfium_unavailable",
         "The bounded PDFium task did not complete successfully.",
-    )
-}
-
-fn pdf_page_identity_mismatch() -> a3s_use_core::UseError {
-    layout_error(
-        "use.office.pdf_page_identity_mismatch",
-        "The requested PDF page locator does not match the observed one-based page identity.",
     )
 }

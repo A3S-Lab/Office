@@ -362,9 +362,12 @@ PNG exactly covers the declared slide surface. The optional Rust `pdfium`
 feature adds bounded, one-based PDF page inventory and exact page PNGs through
 an explicit host-supplied PDFium 7881 library. It records media/crop boxes,
 rotation, physical and pixel geometry, source and engine hashes, and never
-downloads a runtime or introduces a Browser dependency. Richer slides and
-formats without an authoritative provider remain typed unsupported instead of
-being relabeled semantic previews.
+downloads a runtime or introduces a Browser dependency. Consumers can inspect
+selected pages from one previously validated complete inventory without
+rescanning the full document; render still revalidates the immutable source and
+actual page profile before publication. Richer slides and formats without an
+authoritative provider remain typed unsupported instead of being relabeled
+semantic previews.
 Native DOCX and PPTX table reads also normalize merged cells into one-based
 logical row and column coordinates, row and column spans, and stable anchor
 references for covered physical cells.

@@ -184,6 +184,26 @@ pub struct NativeOfficePdfPageInventory {
 impl NativeOfficePdfPageInventory {
     /// Validates completeness, source identity, ordering, and exact page geometry.
     pub fn validate(&self) -> UseResult<()> {
+        self.validate_envelope()?;
+        for (offset, page) in self.pages.iter().enumerate() {
+            let expected_number = u32::try_from(offset + 1).map_err(|_| invalid_inventory())?;
+            if page.unit
+                != (NativeOfficeUnit {
+                    ordinal: expected_number,
+                    locator: NativeOfficeUnitLocator::Page {
+                        number: expected_number,
+                    },
+                    path: format!("/page[{expected_number}]"),
+                })
+            {
+                return Err(invalid_inventory());
+            }
+            page.validate(self.dpi_milli)?;
+        }
+        Ok(())
+    }
+
+    fn validate_envelope(&self) -> UseResult<()> {
         validate_revision(&self.source_revision).map_err(|_| invalid_inventory())?;
         if self.kind != NativeOfficeLayoutSourceKind::Pdf
             || !(1..=MAX_NATIVE_OFFICE_PDF_PAGE_LIMIT).contains(&self.max_pages)
@@ -202,22 +222,23 @@ impl NativeOfficePdfPageInventory {
                 ),
             ));
         }
-        for (offset, page) in self.pages.iter().enumerate() {
-            let expected_number = u32::try_from(offset + 1).map_err(|_| invalid_inventory())?;
-            if page.unit
-                != (NativeOfficeUnit {
-                    ordinal: expected_number,
-                    locator: NativeOfficeUnitLocator::Page {
-                        number: expected_number,
-                    },
-                    path: format!("/page[{expected_number}]"),
-                })
-            {
-                return Err(invalid_inventory());
-            }
-            page.validate(self.dpi_milli)?;
-        }
         Ok(())
+    }
+
+    pub(super) fn validated_page(
+        &self,
+        unit: &NativeOfficeUnit,
+    ) -> UseResult<&NativeOfficePdfPageGeometry> {
+        self.validate_envelope()?;
+        let offset = usize::try_from(unit.ordinal.saturating_sub(1))
+            .map_err(|_| pdf_page_identity_mismatch())?;
+        let page = self
+            .pages
+            .get(offset)
+            .filter(|page| page.unit == *unit)
+            .ok_or_else(pdf_page_identity_mismatch)?;
+        page.validate(self.dpi_milli)?;
+        Ok(page)
     }
 
     /// Confirms that an inventory belongs to the caller's immutable source.
@@ -257,5 +278,12 @@ pub(super) fn invalid_page_geometry() -> UseError {
     layout_error(
         "use.office.pdf_page_geometry_invalid",
         "PDF media box, crop box, rotation, physical surface, and pixel geometry disagree.",
+    )
+}
+
+pub(super) fn pdf_page_identity_mismatch() -> UseError {
+    layout_error(
+        "use.office.pdf_page_identity_mismatch",
+        "The requested PDF page locator does not match the observed one-based page identity.",
     )
 }
