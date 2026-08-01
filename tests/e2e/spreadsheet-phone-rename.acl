@@ -1,0 +1,112 @@
+suite "office-spreadsheet-phone-rename" {
+    version = 1
+
+    scenario "validate-and-commit-worksheet-name-on-phone" {
+        name = "Validate and commit a Spreadsheet worksheet name on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "create-spreadsheet" {
+            target = role("button", "表格")
+        }
+
+        wait "spreadsheet-loaded" {
+            text = "键盘快捷键"
+        }
+
+        expect "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        expect "worksheet-created" {
+            text = "工作表 2"
+        }
+
+        double_click "rename-created-worksheet" {
+            target = css(".work-spreadsheet-sheet-tab.active > button[role='tab']")
+        }
+
+        fill "invalid-name" {
+            target = label("重命名工作表 2")
+            value = "Bad/Name"
+        }
+
+        press "submit-invalid-name" {
+            key = "Enter"
+        }
+
+        expect "invalid-name-explained" {
+            text = "名称不能包含 \\ / ? * [ ] :"
+        }
+
+        expect "invalid-feedback-layout-active" {
+            visible = css(".work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.invalid)")
+        }
+
+        screenshot "invalid-name-feedback" {
+            path = "screenshots/spreadsheet-phone-invalid-name.png"
+        }
+
+        fill "valid-name" {
+            target = label("重命名工作表 2")
+            value = "移动端看板"
+        }
+
+        press "commit-valid-name" {
+            key = "Enter"
+        }
+
+        expect "valid-name-committed" {
+            text = "移动端看板"
+        }
+
+        double_click "begin-cancelled-rename" {
+            target = css(".work-spreadsheet-sheet-tab.active > button[role='tab']")
+        }
+
+        fill "cancelled-name" {
+            target = label("重命名移动端看板")
+            value = "不应保存"
+        }
+
+        press "cancel-rename" {
+            key = "Escape"
+        }
+
+        press "open-restored-tab-menu" {
+            key = "Shift+F10"
+        }
+
+        expect "exact-tab-focus-restored" {
+            visible = css("[role='menu'][aria-label='移动端看板工作表操作']")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

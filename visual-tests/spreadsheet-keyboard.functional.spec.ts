@@ -708,6 +708,98 @@ test('Spreadsheet explains invalid worksheet names and confirms deletion', async
   );
 });
 
+test('Spreadsheet keeps phone worksheet rename feedback readable above footer controls', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone rename contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 700 });
+  await openSpreadsheetFixture(page);
+
+  await page.locator('.fortune-sheet-overlay').focus();
+  await page.keyboard.press('Shift+F11');
+  const createdSheet = page.getByRole('tab', { name: '工作表 2' });
+  await createdSheet.dblclick();
+
+  const renameInput = page.getByRole('textbox', { name: '重命名工作表 2' });
+  await renameInput.fill('Bad/Name');
+  await renameInput.press('Enter');
+  const renameError = page.getByRole('alert').filter({
+    hasText: '名称不能包含 \\ / ? * [ ] :',
+  });
+  await expect(renameError).toBeVisible();
+  await expect(renameInput).toBeFocused();
+
+  const geometry = await page
+    .locator('.work-spreadsheet-footer')
+    .evaluate((footer) => {
+      const input = footer.querySelector<HTMLInputElement>(
+        '.work-spreadsheet-sheet-tab.invalid > input',
+      );
+      const error = footer.querySelector<HTMLElement>(
+        '.work-spreadsheet-sheet-rename-error',
+      );
+      const status = footer.querySelector<HTMLElement>(
+        '.work-spreadsheet-status',
+      );
+      const tools = footer.querySelector<HTMLElement>(
+        '.work-spreadsheet-sheet-tools',
+      );
+      const otherTab = footer.querySelector<HTMLElement>(
+        '.work-spreadsheet-sheet-tab:not(.renaming)',
+      );
+      if (!(input && error && status && tools && otherTab)) {
+        throw new Error('Phone worksheet rename feedback is incomplete.');
+      }
+      const footerBounds = footer.getBoundingClientRect();
+      const inputBounds = input.getBoundingClientRect();
+      const errorBounds = error.getBoundingClientRect();
+      return {
+        errorAlignSelf: getComputedStyle(error).alignSelf,
+        errorBottom: errorBounds.bottom,
+        errorClientWidth: error.clientWidth,
+        errorFontSize: Number.parseFloat(getComputedStyle(error).fontSize),
+        errorLeft: errorBounds.left,
+        errorRight: errorBounds.right,
+        errorScrollWidth: error.scrollWidth,
+        errorTextAlign: getComputedStyle(error).textAlign,
+        footerBottom: footerBounds.bottom,
+        footerHeight: footerBounds.height,
+        inputLeft: inputBounds.left,
+        inputRight: inputBounds.right,
+        otherTabDisplay: getComputedStyle(otherTab).display,
+        statusDisplay: getComputedStyle(status).display,
+        toolsDisplay: getComputedStyle(tools).display,
+        viewportHeight: document.documentElement.clientHeight,
+        viewportWidth: document.documentElement.clientWidth,
+      };
+    });
+
+  expect(geometry.footerHeight).toBeGreaterThanOrEqual(48);
+  expect(geometry.statusDisplay).toBe('none');
+  expect(geometry.toolsDisplay).toBe('none');
+  expect(geometry.otherTabDisplay).toBe('none');
+  expect(geometry.errorAlignSelf).toBe('stretch');
+  expect(geometry.errorFontSize).toBeGreaterThanOrEqual(11);
+  expect(geometry.errorTextAlign).toBe('left');
+  expect(geometry.inputLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry.inputRight).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.errorLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry.errorRight).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.errorBottom).toBeLessThanOrEqual(geometry.footerBottom);
+  expect(geometry.footerBottom).toBeLessThanOrEqual(geometry.viewportHeight);
+  expect(geometry.errorScrollWidth).toBeLessThanOrEqual(
+    geometry.errorClientWidth + 1,
+  );
+
+  await renameInput.fill('移动端看板');
+  await expect(renameError).toHaveCount(0);
+  await renameInput.press('Enter');
+  await expect(page.getByRole('tab', { name: '移动端看板' })).toBeFocused();
+});
+
 test('Spreadsheet keeps the active worksheet visible when the footer compacts to phone width', async ({
   page,
 }) => {

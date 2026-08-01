@@ -640,6 +640,71 @@
 }
 
 @media (max-width: 720px) {
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.invalid) {
+    --work-spreadsheet-footer-height: 54px;
+  }
+
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.renaming)
+    .work-spreadsheet-sheet-tools,
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.renaming)
+    .work-spreadsheet-status {
+    display: none;
+  }
+
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.renaming)
+    .work-spreadsheet-sheet-bar {
+    min-width: 0;
+  }
+
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.renaming)
+    .work-spreadsheet-sheet-tabs {
+    scroll-padding-inline: 0;
+  }
+
+  .work-spreadsheet-footer:has(.work-spreadsheet-sheet-tab.renaming)
+    .work-spreadsheet-sheet-tab:not(.renaming) {
+    display: none;
+  }
+
+  .work-spreadsheet-sheet-tab.renaming {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    border-right: 0;
+  }
+
+  .work-spreadsheet-sheet-tab.renaming > input {
+    width: calc(100% - 16px);
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+
+  .work-spreadsheet-sheet-tab.invalid {
+    display: flex;
+    height: calc(var(--work-spreadsheet-footer-height) - 1px);
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+  }
+
+  .work-spreadsheet-sheet-tab.invalid > input {
+    width: auto;
+    flex: 0 0 23px;
+    align-self: stretch;
+    margin: 4px 8px 1px;
+  }
+
+  .work-spreadsheet-sheet-tab.invalid .work-spreadsheet-sheet-rename-error {
+    width: auto;
+    align-self: stretch;
+    padding: 0 8px 5px;
+    overflow: visible;
+    font-size: 11px;
+    text-align: left;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
   .work-spreadsheet-sheet-tools {
     min-width: 58px;
   }
