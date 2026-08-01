@@ -1,0 +1,97 @@
+---
+title: DocumentEditor
+description: Document content, properties, events, selection menus, layout fonts, and extensions.
+---
+
+# DocumentEditor
+
+`DocumentEditor` is the paginated rich-text surface for DOCX-compatible
+documents, reports, and long-form content. TipTap owns the logical document and
+selection model; the A3S Office kernel owns deterministic pagination, shaping,
+and file semantics.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `DocumentContent` | Yes | — | Controlled document content. |
+| `onChange` | `(content: DocumentContent) => void` | Yes | — | Emits the complete next value. |
+| `artifactId` | `string` | No | — | Stable host ID used by live PDF export. |
+| `preview` | `boolean` | No | `false` | Read-only rendering with the same pagination surface. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `extensions` | `Extensions` | No | `[]` | Additional TipTap extensions with unique names. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Override the Office layout-kernel URL. |
+| `layoutFonts` | `readonly DocumentLayoutFont[]` | No | packaged fonts | Browser and shaping fonts shown in the font menu. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends a typed editor request to the host AI flow. |
+| `getSelectionMenuItems` | `GetDocumentSelectionMenuItems` | No | built-in menu | Completely replaces the selected-text context menu. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'document'` | Content discriminator. |
+| `html` | `string` | Compatibility representation saved with the structured model. |
+| `model` | `WorkDocumentModel` | Versioned TipTap document tree and precise editing source. |
+| `pageSize` | `'a4' \| 'letter'` | Default physical page size. Sections may override it. |
+| `pageColor` | `string` | Page color retained by DOCX and PDF export. |
+| `orientation`, `margins`, `columns` | document layout fields | Default layout before section overrides. |
+| `pageChrome` | `WorkDocumentPageChrome` | First, odd, and even headers, footers, and page numbers. |
+| `trackChanges` | `boolean` | Revision recording state. |
+| `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
+| `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
+
+## Host-defined selection menu
+
+The menu factory receives an immutable selection snapshot with exact selected
+text, a structured fragment, adjacent context, complete plain text, synchronized
+HTML, and the current controlled content value. The callback also receives
+conflict-aware editing commands.
+
+```tsx
+import type {
+  DocumentContent,
+  GetDocumentSelectionMenuItems,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = (context) => [
+  {
+    id: 'rewrite',
+    label: 'Rewrite',
+    run: async () => {
+      const replacement = await rewriteWithModel({
+        selection: context.selection.text,
+        before: context.selection.beforeText,
+        after: context.selection.afterText,
+        document: context.document.text,
+      });
+      await context.commands.replaceText(replacement);
+    },
+  },
+];
+
+export function Editor(props: {
+  content: DocumentContent;
+  onChange: (content: DocumentContent) => void;
+}) {
+  return (
+    <DocumentEditor
+      {...props}
+      getSelectionMenuItems={getSelectionMenuItems}
+    />
+  );
+}
+```
+
+Return or await asynchronous work so the editor can map the original range
+through unrelated transactions. If the selected text itself changes, a later
+`replaceText` returns `stale-selection` instead of modifying unrelated content.
+
+## Extensions
+
+`extensions` accepts TipTap extensions. Keep the array identity stable and use
+unique extension names. A custom Node or Mark also needs DOCX import/export
+semantics if it must survive a file round trip. See the
+[extension model](./extensions.mdx).

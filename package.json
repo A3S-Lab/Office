@@ -68,6 +68,8 @@
   "scripts": {
     "build": "bun run kernel:build && rslib",
     "dev": "bun run kernel:build && rslib --watch",
+    "docs:build": "rspress build -c website/rspress.config.ts && bun scripts/rewrite-docs-base.ts",
+    "docs:dev": "rspress -c website/rspress.config.ts",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
@@ -76,7 +78,7 @@
     "kernel:test": "bun run kernel:build && bun scripts/smoke-office-kernel.ts",
     "playground": "bun run playground:assets && rsbuild dev --config playground/rsbuild.config.ts",
     "playground:assets": "bun run build && bash scripts/package-office-skill.sh",
-    "playground:build": "bun run playground:assets && rsbuild build --config playground/rsbuild.config.ts",
+    "playground:build": "bun run playground:assets && rsbuild build --config playground/rsbuild.config.ts && bun run docs:build",
     "playground:bundle-check": "bun scripts/check-playground-bundle.ts",
     "playground:preview": "rsbuild preview --config playground/rsbuild.config.ts --host 127.0.0.1 --port 4175 --strict-port",
     "playground:typecheck": "tsc --noEmit -p playground/tsconfig.json",
@@ -133,6 +135,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
+    "@rspress/core": "^2.0.17",
     "@playwright/test": "1.61.1",
     "@rsbuild/core": "^2.1.5",
     "@rsbuild/plugin-react": "^2.1.0",

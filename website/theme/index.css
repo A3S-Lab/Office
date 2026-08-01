@@ -1,0 +1,85 @@
+:root {
+  --rp-c-brand: #2864e8;
+  --rp-c-brand-dark: #1f55cb;
+  --rp-c-brand-darker: #1947ad;
+  --rp-c-brand-light: #4f7ff0;
+  --rp-c-brand-lighter: #7399f4;
+  --rp-c-brand-tint: rgb(40 100 232 / 10%);
+  --rp-c-bg: #f7f7f8;
+  --rp-c-bg-soft: #ffffff;
+  --rp-c-bg-mute: #f0f1f3;
+  --rp-c-divider: #dedfe3;
+  --rp-c-divider-light: #e8e9ec;
+  --rp-c-text-1: #17181a;
+  --rp-c-text-2: #5d626b;
+  --rp-c-text-3: #858b95;
+  --rp-content-max-width: 920px;
+  --rp-nav-height: 62px;
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--rp-c-bg);
+  font-family:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgb(40 100 232 / 18%);
+}
+
+.rp-nav {
+  border-bottom: 1px solid rgb(222 223 227 / 82%);
+  background: rgb(247 247 248 / 90%);
+  backdrop-filter: blur(16px);
+}
+
+.rp-nav__title__link {
+  gap: 8px;
+}
+
+.rp-nav__title__link > span {
+  color: var(--rp-c-text-1);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.rp-doc-layout {
+  background:
+    radial-gradient(circle at 72% 0%, rgb(40 100 232 / 5%), transparent 34rem),
+    var(--rp-c-bg);
+}
+
+.rp-doc h1,
+.rp-doc h2,
+.rp-doc h3 {
+  letter-spacing: -0.025em;
+}
+
+.rp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.rp-doc div[class*="language-"] {
+  border: 1px solid #2a2d33;
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgb(20 28 42 / 8%);
+}
+
+.rp-sidebar {
+  background: color-mix(in srgb, var(--rp-c-bg) 92%, white);
+}
+
+@media (max-width: 768px) {
+  .rp-doc table {
+    display: block;
+    overflow-x: auto;
+  }
+}

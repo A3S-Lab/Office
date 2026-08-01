@@ -1261,7 +1261,7 @@ delivery gates.
 The native package, semantic, and editor APIs are available directly to Rust
 callers:
 
-```rust,no_run
+```rust
 use a3s_office::{
     NativeOfficeComment, NativeOfficeCommentUpdate, NativeOfficeDocument,
     NativeOfficeEditor, NativeOfficeHighlightColor, NativeOfficeHorizontalAlignment,

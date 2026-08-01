@@ -1,13 +1,5 @@
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import {
-  lazy,
-  StrictMode,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   createArtifact,
@@ -19,27 +11,14 @@ import {
 } from '@a3s-lab/office/core';
 import '@a3s-lab/office/styles.css';
 import { EditorWorkspace } from './editor-workspace';
-import type {
-  NoticeTone,
-  PlaygroundNotice,
-  SiteRoute,
-} from './playground-types';
+import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
-import './docs-pages.css';
-import './editor-api-reference.css';
-
-const IntegrationDocsPage = lazy(() =>
-  import('./integration-docs-page').then((module) => ({
-    default: module.IntegrationDocsPage,
-  })),
-);
 
 function Playground() {
-  const [route, setRoute] = useState<SiteRoute>(readRoute);
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth >= 840,
   );
@@ -58,11 +37,17 @@ function Playground() {
   const pdfInput = useRef<HTMLInputElement>(null);
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
+  const docsUrl = new URL('docs/guide/index.html', document.baseURI).href;
 
   useEffect(() => {
-    const onHashChange = () => setRoute(readRoute());
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    const redirectLegacyDocsRoute = () => {
+      const path = legacyDocsPath(window.location.hash);
+      if (path) window.location.replace(new URL(path, document.baseURI));
+    };
+    window.addEventListener('hashchange', redirectLegacyDocsRoute);
+    redirectLegacyDocsRoute();
+    return () =>
+      window.removeEventListener('hashchange', redirectLegacyDocsRoute);
   }, []);
 
   useEffect(() => {
@@ -78,15 +63,6 @@ function Playground() {
     [],
   );
 
-  const navigate = (nextRoute: SiteRoute) => {
-    setRoute(nextRoute);
-    const nextHash = `#${nextRoute}`;
-    if (window.location.hash !== nextHash) {
-      window.location.hash = nextHash;
-    }
-    if (window.innerWidth < 840) setSidebarOpen(false);
-  };
-
   const openArtifact = (artifactId: string) => {
     const now = Date.now();
     setArtifacts((current) =>
@@ -100,7 +76,6 @@ function Playground() {
     setLastAgentRequest(null);
     setAssistantOpen(false);
     setSidebarOpen(false);
-    navigate('office');
   };
 
   const newArtifact = (templateId: string) => {
@@ -110,7 +85,6 @@ function Playground() {
     setLastAgentRequest(null);
     setAssistantOpen(false);
     setSidebarOpen(false);
-    navigate('office');
     showNotice(`${artifact.title} 已创建`, 'success');
   };
 
@@ -138,7 +112,6 @@ function Playground() {
       setLastAgentRequest(null);
       setAssistantOpen(false);
       setSidebarOpen(false);
-      navigate('office');
       showNotice(`${file.name} 已打开`, 'success');
     } catch (error) {
       showNotice(
@@ -148,15 +121,10 @@ function Playground() {
     }
   };
 
-  const assetUrl = useCallback(
-    (fileName: string) => new URL(fileName, document.baseURI).href,
-    [],
-  );
-
   return (
     <main
       className={`playground-site ${sidebarOpen ? 'sidebar-visible' : ''} ${
-        route === 'office' && activeArtifact ? 'editor-open' : ''
+        activeArtifact ? 'editor-open' : ''
       }`}
     >
       <input
@@ -186,11 +154,16 @@ function Playground() {
 
       {sidebarOpen && (
         <SiteSidebar
+          docsUrl={docsUrl}
           modal={sidebarModal}
-          route={route}
           onCollapse={() => setSidebarOpen(false)}
           onCreate={newArtifact}
-          onNavigate={navigate}
+          onHome={() => {
+            setActiveArtifactId(null);
+            setAssistantOpen(false);
+            setLastAgentRequest(null);
+            if (window.innerWidth < 840) setSidebarOpen(false);
+          }}
           onOpenFile={() => fileInput.current?.click()}
           onOpenPdf={() => pdfInput.current?.click()}
         />
@@ -207,95 +180,72 @@ function Playground() {
       )}
 
       <section className="playground-main-pane">
-        {route === 'office' &&
-          (activeArtifact ? (
-            <EditorWorkspace
-              key={activeArtifact.id}
-              artifact={activeArtifact}
-              assistantModal={assistantModal}
-              assistantOpen={assistantOpen}
-              assistantWidth={assistantWidth}
-              lastAgentRequest={lastAgentRequest}
-              sidebarOpen={sidebarOpen}
-              onAgentRequest={(request) => {
-                setLastAgentRequest(request);
-                setAssistantOpen(true);
-              }}
-              onAssistantWidthChange={(width) => {
-                setAssistantWidth(width);
-                persistAssistantWidth(width);
-              }}
-              onBack={() => {
-                setActiveArtifactId(null);
-                setAssistantOpen(false);
-                setLastAgentRequest(null);
-                if (window.innerWidth >= 840) setSidebarOpen(true);
-              }}
-              onChange={(content: OfficeArtifactContent) =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  content,
-                  kind: content.type,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-              onNotice={showNotice}
-              onOpenSidebar={() => setSidebarOpen(true)}
-              onRename={(title) =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  title,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-              onToggleAssistant={() => setAssistantOpen((current) => !current)}
-              onTouch={() =>
-                updateActiveArtifact((artifact) => ({
-                  ...artifact,
-                  revision: artifact.revision + 1,
-                  updatedAt: Date.now(),
-                }))
-              }
-            />
-          ) : (
-            <WorkspaceHome
-              artifacts={artifacts}
-              sidebarOpen={sidebarOpen}
-              onCreate={newArtifact}
-              onImport={() => fileInput.current?.click()}
-              onOpen={openArtifact}
-              onOpenPdf={() => pdfInput.current?.click()}
-              onOpenSidebar={() => setSidebarOpen(true)}
-            />
-          ))}
-        <Suspense fallback={<PlaygroundRouteLoading />}>
-          {route === 'guide' && (
-            <IntegrationDocsPage
-              rawSkillUrl={assetUrl('downloads/a3s-office-skill/SKILL.md')}
-              sidebarOpen={sidebarOpen}
-              skillDownloadUrl={assetUrl('downloads/a3s-office-skill.tar.gz')}
-              onOpenSidebar={() => setSidebarOpen(true)}
-            />
-          )}
-        </Suspense>
+        {activeArtifact ? (
+          <EditorWorkspace
+            key={activeArtifact.id}
+            artifact={activeArtifact}
+            assistantModal={assistantModal}
+            assistantOpen={assistantOpen}
+            assistantWidth={assistantWidth}
+            lastAgentRequest={lastAgentRequest}
+            sidebarOpen={sidebarOpen}
+            onAgentRequest={(request) => {
+              setLastAgentRequest(request);
+              setAssistantOpen(true);
+            }}
+            onAssistantWidthChange={(width) => {
+              setAssistantWidth(width);
+              persistAssistantWidth(width);
+            }}
+            onBack={() => {
+              setActiveArtifactId(null);
+              setAssistantOpen(false);
+              setLastAgentRequest(null);
+              if (window.innerWidth >= 840) setSidebarOpen(true);
+            }}
+            onChange={(content: OfficeArtifactContent) =>
+              updateActiveArtifact((artifact) => ({
+                ...artifact,
+                content,
+                kind: content.type,
+                revision: artifact.revision + 1,
+                updatedAt: Date.now(),
+              }))
+            }
+            onNotice={showNotice}
+            onOpenSidebar={() => setSidebarOpen(true)}
+            onRename={(title) =>
+              updateActiveArtifact((artifact) => ({
+                ...artifact,
+                title,
+                revision: artifact.revision + 1,
+                updatedAt: Date.now(),
+              }))
+            }
+            onToggleAssistant={() => setAssistantOpen((current) => !current)}
+            onTouch={() =>
+              updateActiveArtifact((artifact) => ({
+                ...artifact,
+                revision: artifact.revision + 1,
+                updatedAt: Date.now(),
+              }))
+            }
+          />
+        ) : (
+          <WorkspaceHome
+            artifacts={artifacts}
+            sidebarOpen={sidebarOpen}
+            onCreate={newArtifact}
+            onImport={() => fileInput.current?.click()}
+            onOpen={openArtifact}
+            onOpenPdf={() => pdfInput.current?.click()}
+            onOpenSidebar={() => setSidebarOpen(true)}
+          />
+        )}
       </section>
 
       {notice && <PlaygroundToast key={notice.id} notice={notice} />}
     </main>
-  );
-}
-
-function PlaygroundRouteLoading() {
-  return (
-    <section
-      className="playground-route-loading"
-      role="status"
-      aria-label="正在加载页面"
-    >
-      <span aria-hidden="true" />
-    </section>
   );
 }
 
@@ -314,10 +264,19 @@ function PlaygroundToast({ notice }: { notice: PlaygroundNotice }) {
   );
 }
 
-function readRoute(): SiteRoute {
-  const route = window.location.hash.slice(1).split('/')[0];
-  if (route === 'guide' || route === 'cli' || route === 'skill') return 'guide';
-  return 'office';
+function legacyDocsPath(hash: string): string | null {
+  if (hash === '#guide/components') return 'docs/components/index.html';
+  if (hash === '#guide/api') return 'docs/components/document.html';
+  if (
+    hash === '#guide/automation' ||
+    hash === '#guide/cli' ||
+    hash === '#guide/skill' ||
+    hash === '#cli' ||
+    hash === '#skill'
+  ) {
+    return 'docs/automation/index.html';
+  }
+  return hash === '#guide' ? 'docs/guide/index.html' : null;
 }
 
 function createInitialArtifacts(): OfficeArtifact[] {

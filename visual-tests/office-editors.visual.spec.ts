@@ -771,146 +771,122 @@ test.describe('Office editor context menu contracts', () => {
   }
 });
 
-test('component guide highlights framework examples by language', async ({
+test('Playground stays at the site root and opens a standalone documentation center', async ({
   page,
 }) => {
-  await page.goto('/#guide');
-  await expect(page.getByRole('heading', { name: '接入文档' })).toBeVisible();
-
-  const example = page.locator(
-    '.playground-framework-example .playground-code-block pre',
-  );
-  await expect(example).toHaveAttribute('data-code-language', 'tsx');
-  await expect(example.locator('.token.keyword').first()).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Vue' }).click();
-  await expect(example).toHaveAttribute('data-code-language', 'markup');
-  await expect(example.locator('.token.tag').first()).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Web Component' }).click();
-  await expect(example).toHaveAttribute('data-code-language', 'typescript');
-  await expect(example.locator('.token.keyword').first()).toBeVisible();
-});
-
-test('component guide provides framework-specific examples', async ({
-  page,
-}) => {
-  await page.goto('/#guide');
+  await page.goto('/');
   await expect(
-    page.getByRole('heading', { name: '接入文档', level: 1 }),
-  ).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'React' })).toBeVisible();
-
-  await page.getByRole('tab', { name: 'Vue' }).click();
-  await expect(page.locator('.playground-framework-example pre')).toContainText(
-    'v-model:content',
-  );
-
-  await page.getByRole('tab', { name: 'Web Component' }).click();
-  await expect(page.locator('.playground-framework-example pre')).toContainText(
-    'defineA3SOfficeElements',
-  );
-});
-
-test('unified guide keeps CLI and Skill setup in one document', async ({
-  page,
-}) => {
-  await page.goto('/#cli');
-  await expect(
-    page.getByRole('heading', { name: '接入文档', level: 1 }),
-  ).toBeVisible();
-  await expect(page).toHaveURL(/#guide\/automation$/);
-  await expect(
-    page.getByRole('heading', { name: '命令行与 AI', level: 2 }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole('link', { name: '下载 CLI Skill' }),
-  ).toBeVisible();
-  await expect(page.getByRole('tablist', { name: '接入内容' })).toHaveCount(0);
-
-  const guideNavigation = page.getByRole('navigation', {
-    name: '接入方式',
-  });
-  await guideNavigation.getByRole('link', { name: '前端组件' }).click();
-  await expect(page).toHaveURL(/#guide\/components$/);
-  await expect(
-    page.getByRole('heading', { name: '前端组件', level: 2 }),
-  ).toBeVisible();
-
-  await guideNavigation.getByRole('link', { name: '组件 API' }).click();
-  await expect(page).toHaveURL(/#guide\/api$/);
-  await expect(
-    page.getByRole('heading', { name: '组件 API', level: 2 }),
-  ).toBeVisible();
-
-  await guideNavigation.getByRole('link', { name: '命令行与 AI' }).click();
-  await expect(page).toHaveURL(/#guide\/automation$/);
-  await expect(
-    page.getByRole('heading', { name: '安装 CLI Skill', level: 3 }),
+    page.getByRole('heading', { name: '我的文档', level: 1 }),
   ).toBeVisible();
 
   const openSidebar = page.getByRole('button', {
     name: '展开办公侧边栏',
   });
   if (await openSidebar.isVisible()) await openSidebar.click();
-  await page
-    .getByRole('navigation', { name: '产品页面' })
-    .getByRole('button', { name: '接入文档' })
-    .click();
-  await expect(page).toHaveURL(/#guide$/);
-  await expect(guideNavigation).toBeVisible();
+
+  const productNavigation = page.getByRole('navigation', {
+    name: '产品页面',
+  });
   await expect(
-    guideNavigation.getByRole('link', { name: '前端组件' }),
-  ).toHaveAttribute('href', '#guide/components');
+    productNavigation.getByRole('button', { name: 'Playground' }),
+  ).toHaveAttribute('aria-current', 'page');
+  const docs = productNavigation.getByRole('link', { name: '文档' });
+  await expect(docs).toHaveAttribute('href', /docs\/guide\/index\.html$/);
+  await docs.click();
+
+  await expect(page).toHaveURL(/\/docs\/guide\/index\.html$/);
   await expect(
-    guideNavigation.getByRole('link', { name: '组件 API' }),
-  ).toHaveAttribute('href', '#guide/api');
-  await expect(
-    guideNavigation.getByRole('link', { name: '命令行与 AI' }),
-  ).toHaveAttribute('href', '#guide/automation');
+    page.getByRole('heading', { name: 'Getting started', level: 1 }),
+  ).toBeVisible();
+  await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
+    'Components',
+  );
 });
 
-test('component API documents every editor and remains usable on compact screens', async ({
+test('documentation pages provide searchable framework examples with syntax highlighting', async ({
+  page,
+}) => {
+  await page.goto('/docs/components/react.html');
+  await expect(
+    page.getByRole('heading', { name: 'React', level: 1 }),
+  ).toBeVisible();
+  const example = page.locator('pre.shiki[data-lang="tsx"]').first();
+  await expect(example).toContainText('DocumentEditor');
+  await expect(
+    example.locator('[style*="--shiki-token-keyword"]').first(),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('.rp-search-button:visible, .rp-search-button--mobile:visible')
+      .first(),
+  ).toBeVisible();
+
+  const sidebar = page.locator('.rp-doc-layout__sidebar');
+  await expect(sidebar.getByRole('link', { name: 'Vue' })).toHaveAttribute(
+    'href',
+    /components\/vue\.html$/,
+  );
+  await expect(
+    sidebar.getByRole('link', { name: 'Web Component' }),
+  ).toHaveAttribute('href', /components\/web-component\.html$/);
+  await expect(
+    sidebar.getByRole('link', { name: 'DocumentEditor' }),
+  ).toHaveAttribute('href', /components\/document\.html$/);
+  await expect(
+    sidebar.getByRole('link', { name: 'PdfViewer' }),
+  ).toHaveAttribute('href', /components\/pdf\.html$/);
+});
+
+test('CLI and coding-agent Skill remain one managed documentation workflow', async ({
+  page,
+}) => {
+  await page.goto('/docs/automation/index.html');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Office CLI and coding-agent Skill',
+      level: 1,
+    }),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('pre')
+      .filter({ hasText: 'a3s-office validate report.docx' })
+      .first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Download the A3S Office Skill' }),
+  ).toHaveAttribute('href', '../../downloads/a3s-office-skill.tar.gz');
+  await expect(
+    page.getByRole('heading', { name: 'Responsibilities', level: 2 }),
+  ).toBeVisible();
+});
+
+test('legacy guide links migrate to bounded editor API pages on narrow screens', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/#guide/api');
-
-  const api = page.locator('section[id="guide/api"]');
+  await expect(page).toHaveURL(/\/docs\/components\/document\.html$/);
   await expect(
-    api.getByRole('heading', { name: '组件 API', level: 2 }),
-  ).toBeVisible();
-  const tabs = api.getByRole('tablist', { name: '编辑器 API' });
-  await expect(tabs.getByRole('tab')).toHaveCount(5);
-  await expect(
-    api.getByRole('rowheader', { name: 'extensions' }),
+    page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
   ).toBeVisible();
   await expect(
-    api.getByRole('rowheader', { name: 'getSelectionMenuItems' }),
+    page
+      .locator('code')
+      .filter({ hasText: /^getSelectionMenuItems$/ })
+      .first(),
   ).toBeVisible();
   await expect(
-    api.getByRole('heading', { name: '选区右键菜单', level: 3 }),
+    page.getByRole('heading', {
+      name: 'Host-defined selection menu',
+      level: 2,
+    }),
   ).toBeVisible();
-  await expect(
-    api.getByText('支持 TipTap Extensions', { exact: true }),
-  ).toBeVisible();
-  const example = api.locator('pre[data-code-language="tsx"]');
-  await expect(example.locator('.token.keyword').first()).toBeVisible();
-
-  const propsTable = api.locator('.playground-api-table-wrap').nth(1);
   expect(
-    await propsTable.evaluate(
-      (element) => element.scrollWidth > element.clientWidth,
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
-
-  await tabs.getByRole('tab', { name: /PDF.*PdfViewer/ }).click();
-  await expect(
-    api.getByRole('heading', { name: '文件生命周期', level: 3 }),
-  ).toBeVisible();
-  await expect(
-    api.getByRole('rowheader', { name: 'loadSource' }),
-  ).toBeVisible();
 });
 
 test('Markdown GFM source and visual panes stay synchronized', async ({

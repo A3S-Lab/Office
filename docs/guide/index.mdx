@@ -1,0 +1,73 @@
+---
+title: Getting started
+description: Install A3S Office and mount the first controlled editor.
+---
+
+# Getting started
+
+Install the library and import its shared stylesheet once in the host
+application.
+
+```bash
+bun add @a3s-lab/office
+```
+
+```tsx title="DocumentPage.tsx"
+import { useState } from 'react';
+import type { DocumentContent } from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+import '@a3s-lab/office/styles.css';
+
+const initialContent: DocumentContent = {
+  type: 'document',
+  html: '<h1>Project brief</h1><p>Start editing here.</p>',
+  pageSize: 'a4',
+};
+
+export function DocumentPage() {
+  const [content, setContent] = useState(initialContent);
+
+  return (
+    <main style={{ height: '100vh', minHeight: 0 }}>
+      <DocumentEditor content={content} onChange={setContent} />
+    </main>
+  );
+}
+```
+
+## Controlled content
+
+Every editable component is controlled. The editor emits a complete typed
+content value through `onChange`; the host owns persistence, collaboration,
+versioning, and the value passed back into the component.
+
+Do not persist rendered DOM as the primary file model. Keep the structured
+content returned by the editor, and use the package import/export APIs at file
+boundaries.
+
+## Package entry points
+
+| Import | Purpose |
+| --- | --- |
+| `@a3s-lab/office/core` | Content types, artifact helpers, import, export, and preload APIs |
+| `@a3s-lab/office/react` | React editor components |
+| `@a3s-lab/office/vue` | Vue component bindings |
+| `@a3s-lab/office/web-component` | Custom-element registration |
+| `@a3s-lab/office/styles.css` | Required editor and design-system styles |
+
+## Host layout
+
+Editors fill their host. Give the host a definite height and allow nested flex
+or grid children to shrink with `min-height: 0` and `min-width: 0`.
+
+```css
+.office-editor-host {
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+}
+```
+
+Continue with the [framework bindings](../components/index.mdx) or open the
+[DocumentEditor API](../components/document.mdx).

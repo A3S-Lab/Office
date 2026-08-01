@@ -219,7 +219,7 @@ input:focus-visible,
   gap: 3px;
 }
 
-.playground-primary-nav > button,
+.playground-primary-nav > :is(button, a),
 .playground-quick-create > button {
   display: flex;
   width: 100%;
@@ -233,11 +233,12 @@ input:focus-visible,
   background: transparent;
   color: var(--a3s-muted);
   font-size: 12px;
+  text-decoration: none;
   text-align: left;
   cursor: pointer;
 }
 
-.playground-primary-nav > button > svg {
+.playground-primary-nav > :is(button, a) > svg {
   width: 25px;
   height: 25px;
   flex: 0 0 25px;
@@ -247,20 +248,20 @@ input:focus-visible,
   background: color-mix(in srgb, currentcolor 7%, var(--a3s-panel));
 }
 
-.playground-primary-nav > button > span,
+.playground-primary-nav > :is(button, a) > span,
 .playground-quick-create > button > span:not(.quick-create-icon) {
   min-width: 0;
   flex: 1;
 }
 
-.playground-primary-nav > button:hover,
-.playground-primary-nav > button.active,
+.playground-primary-nav > :is(button, a):hover,
+.playground-primary-nav > :is(button, a).active,
 .playground-quick-create > button:hover {
   background: var(--a3s-panel-strong);
   color: var(--a3s-ink);
 }
 
-.playground-primary-nav > button.active {
+.playground-primary-nav > :is(button, a).active {
   color: var(--a3s-blue);
   font-weight: 650;
 }

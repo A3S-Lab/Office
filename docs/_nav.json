@@ -1,0 +1,34 @@
+[
+  {
+    "text": "Documentation",
+    "link": "/guide/",
+    "activeMatch": "^/(guide|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+  },
+  {
+    "text": "Components",
+    "link": "/components/",
+    "activeMatch": "^/components/"
+  },
+  {
+    "text": "CLI & Skill",
+    "link": "/automation/",
+    "activeMatch": "^/automation/"
+  },
+  {
+    "text": "Playground",
+    "link": "https://a3s-lab.github.io/Office/"
+  },
+  {
+    "text": "Resources",
+    "items": [
+      {
+        "text": "GitHub",
+        "link": "https://github.com/A3S-Lab/Office"
+      },
+      {
+        "text": "npm",
+        "link": "https://www.npmjs.com/package/@a3s-lab/office"
+      }
+    ]
+  }
+]

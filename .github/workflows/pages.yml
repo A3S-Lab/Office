@@ -52,10 +52,8 @@ jobs:
       - name: Type-check playground
         run: bun run playground:typecheck
 
-      - name: Build playground
+      - name: Build playground for verification
         run: bun run playground:build
-        env:
-          A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/
 
       - name: Check playground bundle budget
         run: bun run playground:bundle-check
@@ -71,8 +69,6 @@ jobs:
 
       - name: Check editor visual contracts
         run: bun run playground:visual
-        env:
-          A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/
 
       - name: Upload visual-test diagnostics
         if: failure()
@@ -83,6 +79,11 @@ jobs:
             playwright-report
             test-results/visual
           if-no-files-found: ignore
+
+      - name: Build GitHub Pages artifact
+        run: bun run playground:build
+        env:
+          A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5

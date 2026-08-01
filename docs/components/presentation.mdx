@@ -1,0 +1,36 @@
+---
+title: PresentationEditor
+description: Presentation content, slideshow events, geometry kernel, and host extension points.
+---
+
+# PresentationEditor
+
+`PresentationEditor` uses a typed scene graph for slides and mounts TipTap only
+while a text box is being edited.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `PresentationContent` | Yes | — | Controlled presentation content. |
+| `onChange` | `(content: PresentationContent) => void` | Yes | — | Emits the complete next presentation. |
+| `preview` | `boolean` | No | `false` | Read-only presentation surface. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Snapping, alignment, and geometry-kernel URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends slide or object context to the host AI flow. |
+| `onStartSlideshow` | `() => void` | No | — | Notifies the host after built-in playback starts. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'presentation'` | Content discriminator. |
+| `slides` | `WorkSlide[]` | Slides, elements, notes, comments, and transitions. |
+| `width`, `height` | `number` | Presentation canvas dimensions. |
+| `masters` | `WorkPresentationMaster[]` | Master backgrounds and elements. |
+| `layouts` | `WorkPresentationLayout[]` | Master-linked layouts, placeholders, and inherited elements. |
+
+Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
+integration. The internal scene-command runtime is not a public extension API.

@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="https://a3s-lab.github.io/Office/">Playground</a> ·
+  <a href="https://a3s-lab.github.io/Office/docs/guide/">Documentation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#five-format-native-surfaces">Editors</a> ·
   <a href="#native-automation">Automation</a> ·
@@ -239,7 +240,7 @@ into the PDF; searchable text and vector output remain future fidelity work.
 - `@a3s-lab/office/styles.css` — Shared editor and interaction-system styles.
 
 Copyable React, Vue, and Web Component examples live in the
-[integration guide](https://a3s-lab.github.io/Office/#guide).
+[component documentation](https://a3s-lab.github.io/Office/docs/components/).
 
 ## Five format-native surfaces
 
@@ -366,8 +367,8 @@ bounded contracts. They inspect and modify files without launching desktop
 Office or scraping editor UI.
 
 Read the [native engine design](docs/native-office-engine.md), the complete
-[CLI reference](docs/cli-reference.md), or the Playground's
-[automation guide](https://a3s-lab.github.io/Office/#guide/automation).
+[CLI reference](docs/cli-reference.md), or the published
+[CLI and Skill guide](https://a3s-lab.github.io/Office/docs/automation/).
 
 ## Architecture
 
@@ -416,7 +417,10 @@ committed visual contracts; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-- [Live Playground and integration guide](https://a3s-lab.github.io/Office/)
+- [Live Playground](https://a3s-lab.github.io/Office/)
+- [Documentation center](https://a3s-lab.github.io/Office/docs/guide/)
+- [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
+- [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)
 - [Browser editor architecture](docs/browser-editor-architecture.md)
 - [Native Office engine](docs/native-office-engine.md)
 - [CLI reference](docs/cli-reference.md)

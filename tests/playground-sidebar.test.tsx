@@ -8,9 +8,9 @@ test('keeps Markdown last in the quick-create list', () => {
 
   render(
     <SiteSidebar
-      route="office"
+      docsUrl="/docs/guide/index.html"
       onCollapse={() => undefined}
-      onNavigate={() => undefined}
+      onHome={() => undefined}
       onCreate={(templateId) => createdTemplates.push(templateId)}
       onOpenFile={() => undefined}
       onOpenPdf={() => undefined}
@@ -31,13 +31,15 @@ test('keeps Markdown last in the quick-create list', () => {
 });
 
 test('keeps one documentation entry in the product navigation', () => {
-  const routes: string[] = [];
+  let homeRequests = 0;
 
   render(
     <SiteSidebar
-      route="guide"
+      docsUrl="/docs/guide/index.html"
       onCollapse={() => undefined}
-      onNavigate={(route) => routes.push(route)}
+      onHome={() => {
+        homeRequests += 1;
+      }}
       onCreate={() => undefined}
       onOpenFile={() => undefined}
       onOpenPdf={() => undefined}
@@ -47,15 +49,15 @@ test('keeps one documentation entry in the product navigation', () => {
   const productNavigation = screen.getByRole('navigation', {
     name: '产品页面',
   });
-  const items = within(productNavigation)
-    .getAllByRole('button')
-    .map((button) => button.textContent?.trim());
-
-  expect(items).toEqual(['编辑器', '接入文档']);
-  fireEvent.click(
-    within(productNavigation).getByRole('button', { name: '接入文档' }),
-  );
-  expect(routes).toEqual(['guide']);
+  const playground = within(productNavigation).getByRole('button', {
+    name: 'Playground',
+  });
+  expect(playground).toHaveAttribute('aria-current', 'page');
+  expect(
+    within(productNavigation).getByRole('link', { name: '文档' }),
+  ).toHaveAttribute('href', '/docs/guide/index.html');
+  fireEvent.click(playground);
+  expect(homeRequests).toBe(1);
 });
 
 test('contains phone focus in the sidebar and restores its exact trigger', () => {
@@ -73,8 +75,8 @@ test('contains phone focus in the sidebar and restores its exact trigger', () =>
   expect(close).toHaveFocus();
 
   fireEvent.keyDown(close, { key: 'Tab' });
-  expect(screen.getByRole('button', { name: '编辑器' })).toHaveFocus();
-  fireEvent.keyDown(screen.getByRole('button', { name: '编辑器' }), {
+  expect(screen.getByRole('button', { name: 'Playground' })).toHaveFocus();
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Playground' }), {
     key: 'Tab',
     shiftKey: true,
   });
@@ -94,10 +96,10 @@ function ModalSidebarHarness() {
       </button>
       {open && (
         <SiteSidebar
+          docsUrl="/docs/guide/index.html"
           modal
-          route="office"
           onCollapse={() => setOpen(false)}
-          onNavigate={() => undefined}
+          onHome={() => undefined}
           onCreate={() => undefined}
           onOpenFile={() => undefined}
           onOpenPdf={() => undefined}

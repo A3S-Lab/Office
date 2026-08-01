@@ -1,5 +1,5 @@
 import {
-  CodeXml,
+  BookOpenText,
   ExternalLink,
   FileCode2,
   FileSpreadsheet,
@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Github,
   HardDrive,
+  PanelsTopLeft,
   PanelLeftClose,
   Presentation,
 } from 'lucide-react';
@@ -17,25 +18,24 @@ import {
 } from '@a3s-lab/office/react';
 import { useRef } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
-import type { SiteRoute } from './playground-types';
 
 function warmOfficeEditor(kind: OfficeEditorKind): void {
   void preloadOfficeEditor(kind).catch(() => undefined);
 }
 
 export function SiteSidebar({
+  docsUrl,
   modal = false,
-  route,
   onCollapse,
-  onNavigate,
+  onHome,
   onCreate,
   onOpenFile,
   onOpenPdf,
 }: {
+  docsUrl: string;
   modal?: boolean;
-  route: SiteRoute;
   onCollapse: () => void;
-  onNavigate: (route: SiteRoute) => void;
+  onHome: () => void;
   onCreate: (templateId: string) => void;
   onOpenFile: () => void;
   onOpenPdf: () => void;
@@ -94,22 +94,17 @@ export function SiteSidebar({
         <span className="playground-sidebar-label">产品</span>
         <button
           type="button"
-          className={route === 'office' ? 'active' : ''}
-          aria-current={route === 'office' ? 'page' : undefined}
-          onClick={() => onNavigate('office')}
+          className="active"
+          aria-current="page"
+          onClick={onHome}
         >
-          <FolderOpen size={16} />
-          <span>编辑器</span>
+          <PanelsTopLeft size={16} />
+          <span>Playground</span>
         </button>
-        <button
-          type="button"
-          className={route === 'guide' ? 'active' : ''}
-          aria-current={route === 'guide' ? 'page' : undefined}
-          onClick={() => onNavigate('guide')}
-        >
-          <CodeXml size={16} />
-          <span>接入文档</span>
-        </button>
+        <a href={docsUrl}>
+          <BookOpenText size={16} />
+          <span>文档</span>
+        </a>
       </nav>
 
       <section className="playground-quick-create" aria-label="快速新建">

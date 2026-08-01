@@ -1,0 +1,46 @@
+---
+title: PdfViewer
+description: PDF source lifecycle, PDFium resource configuration, annotations, and save handling.
+---
+
+# PdfViewer
+
+`PdfViewer` loads PDF data on demand, renders pages through PDFium WebAssembly,
+and exposes navigation, search, annotations, history, and save behavior.
+
+Unlike the other editors, PDF does not use a controlled content object. The
+host provides and persists complete `Blob` values through explicit ports.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `loadSource` | `() => Promise<Blob>` | Yes | — | Reads the PDF without requiring file-system access. |
+| `onSave` | `(pdf: Blob) => Promise<boolean>` | No | — | Persists an edited PDF. Returning `true` reports success. |
+| `fileName` | `string` | No | `'document.pdf'` | File identity and download name. |
+| `saveLabel` | `string` | No | `'Save'` | Save command label. |
+| `sourceKey` | `string` | No | — | Source version key. A change releases and reloads the source. |
+| `wasmUrl` | `string` | No | packaged `pdfium.wasm` | PDFium WebAssembly URL. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+```tsx
+import { PdfViewer } from '@a3s-lab/office/react';
+
+export function PdfPage({ file }: { file: File }) {
+  return (
+    <PdfViewer
+      fileName={file.name}
+      sourceKey={`${file.name}:${file.lastModified}`}
+      loadSource={() => Promise.resolve(file)}
+      onSave={async (pdf) => {
+        await uploadPdf(pdf);
+        return true;
+      }}
+    />
+  );
+}
+```
+
+Use `loadSource` to connect object storage, IndexedDB, or a local file handle.
+Use `onSave` to own authorization, progress, versioning, and failure behavior.
+PDFium and annotation-controller internals are not public extension points.

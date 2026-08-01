@@ -123,7 +123,9 @@ test('Phone Office sidebar owns focus until dismissed', async ({ page }) => {
   await expect(close).toBeFocused();
 
   await page.keyboard.press('Tab');
-  await expect(sidebar.getByRole('button', { name: '编辑器' })).toBeFocused();
+  await expect(
+    sidebar.getByRole('button', { name: 'Playground' }),
+  ).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(close).toBeFocused();
   await page.keyboard.press('Escape');
