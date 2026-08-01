@@ -1,8 +1,10 @@
-import { type KeyboardEvent, useEffect } from 'react';
+import { type KeyboardEvent, useEffect, useState } from 'react';
 
 const ACTIVE_OVERLAY_SELECTOR =
   '.ds-dialog-backdrop, .ds-popover.open, [role="menu"]';
 const ESCAPE_CONSUMER_SELECTOR = '[data-office-escape-consumer="true"]';
+
+export const OFFICE_TASK_PANE_MODAL_QUERY = '(max-width: 900px)';
 
 type OfficeTaskPaneClose = () => unknown;
 
@@ -45,4 +47,38 @@ export function useOfficeTaskPaneEscape(
     document.addEventListener('keydown', closeFromEscape, true);
     return () => document.removeEventListener('keydown', closeFromEscape, true);
   }, [active, onClose]);
+}
+
+export function useOfficeTaskPaneModal(): boolean {
+  const [matches, setMatches] = useState(officeTaskPaneModalMatches);
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
+      return;
+    }
+    const mediaQuery = window.matchMedia(OFFICE_TASK_PANE_MODAL_QUERY);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  return matches;
+}
+
+function officeTaskPaneModalMatches(): boolean {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return false;
+  }
+  return window.matchMedia(OFFICE_TASK_PANE_MODAL_QUERY).matches;
 }

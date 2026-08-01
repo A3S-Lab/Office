@@ -1,6 +1,13 @@
 import type { Editor } from '@tiptap/core';
 import { ArrowDown, ArrowUp, Replace, ReplaceAll, Search } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import {
+  type KeyboardEvent,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button, IconButton } from '../../../design-system/primitives';
 import { OfficeTextField } from './office-controls';
 import {
@@ -139,6 +146,19 @@ export function DocumentFindReplacePanel({
     queryRef.current?.focus({ preventScroll: true });
   };
 
+  const handleCommandKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+    const key = event.key.toLocaleLowerCase();
+    if (key !== 'f' && key !== 'h') return;
+    event.preventDefault();
+    event.stopPropagation();
+    onModeChange(key === 'h' ? 'replace' : 'find');
+    requestAnimationFrame(() => {
+      queryRef.current?.focus({ preventScroll: true });
+      queryRef.current?.select();
+    });
+  };
+
   return (
     <DocumentTaskPane
       className="work-document-find-panel"
@@ -146,6 +166,7 @@ export function DocumentFindReplacePanel({
       description="在当前文档中定位文字"
       closeLabel="关闭查找"
       onClose={onClose}
+      onKeyDown={handleCommandKeyDown}
     >
       <div
         className="work-document-find-tabs"

@@ -101,6 +101,36 @@ test('keeps portal dialogs inside their Office theme boundary', async () => {
   await waitFor(() => expect(trigger).toHaveFocus());
 });
 
+test('recovers focus when the focused dialog control is removed', async () => {
+  function Fixture() {
+    const [showAction, setShowAction] = useState(true);
+    return (
+      <Dialog title="动态弹窗" onClose={() => undefined}>
+        {showAction ? (
+          <button
+            type="button"
+            data-autofocus
+            onClick={() => setShowAction(false)}
+          >
+            完成当前操作
+          </button>
+        ) : (
+          <p>操作已完成</p>
+        )}
+      </Dialog>
+    );
+  }
+
+  render(<Fixture />);
+  const action = screen.getByRole('button', { name: '完成当前操作' });
+  expect(action).toHaveFocus();
+  fireEvent.click(action);
+
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '关闭' })).toHaveFocus(),
+  );
+});
+
 function OfficeDialogHarness() {
   const dialog = useOfficeDialog();
   const editorRef = useRef<HTMLTextAreaElement>(null);

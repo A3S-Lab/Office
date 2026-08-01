@@ -52,6 +52,9 @@ Office sidebar, Presentation slide drawer, AI assistant, and editor dialogs.
 Each surface receives focus on entry, wraps forward and reverse Tab navigation,
 isolates obscured content with `inert`, lets only the top overlay handle Escape,
 and restores the current semantic invoker even when React remounts that control.
+Compact Word navigation, find, layout, citations, changes, and comments task
+panes now use the same modal boundary while retaining persistent side-pane
+behavior on desktop.
 Phone, 768 px, and desktop browser checks keep overlay and persistent-pane
 behavior distinct. Shared Office color palettes now replace their dense
 desktop grid with eight larger columns on phones; spatial keyboard movement

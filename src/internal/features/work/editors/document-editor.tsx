@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -82,7 +83,10 @@ import { DocumentStatusBar } from './document-status-bar';
 import { DocumentToolbar, type DocumentViewMode } from './document-toolbar';
 import { DocumentVerticalRuler } from './document-vertical-ruler';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
-import { useOfficeTaskPaneEscape } from './office-task-pane';
+import {
+  useOfficeTaskPaneEscape,
+  useOfficeTaskPaneModal,
+} from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import {
   type WorkOfficeFileAction,
@@ -151,6 +155,7 @@ export function DocumentEditor({
   const pageFooterRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const reviewSurfaceRef = useRef<HTMLDivElement>(null);
+  const taskPaneInvokerRef = useRef<HTMLElement | null>(null);
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(content);
@@ -171,6 +176,7 @@ export function DocumentEditor({
   const [citationsDirty, setCitationsDirty] = useState(false);
   const [commentsDirty, setCommentsDirty] = useState(false);
   const taskPaneDialog = useOfficeDialog();
+  const taskPaneModal = useOfficeTaskPaneModal();
   const layoutOpen = taskPane === 'layout';
   const navigationOpen = taskPane === 'navigation';
   const changesOpen = taskPane === 'changes';
@@ -262,6 +268,12 @@ export function DocumentEditor({
     onBeforeDraft: () => setTaskPane(null),
   });
   const documentInsert = useDocumentInsertCommands({ contentRef, editor });
+  const rememberTaskPaneInvoker = useCallback(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.isConnected) {
+      taskPaneInvokerRef.current = active;
+    }
+  }, []);
   const rememberTaskPaneDraftFocus = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       const target = event.target;
@@ -362,34 +374,112 @@ export function DocumentEditor({
   );
   const closeTaskPane = useCallback(async () => {
     if (!(await requestEditorViewChange(null, false))) return;
-    requestAnimationFrame(() => {
-      if (editor && !editor.isDestroyed) editor.view.dom.focus();
-    });
-  }, [editor, requestEditorViewChange]);
+    if (!taskPaneModal) {
+      requestAnimationFrame(() => {
+        if (editor && !editor.isDestroyed) editor.view.dom.focus();
+      });
+    }
+  }, [editor, requestEditorViewChange, taskPaneModal]);
   const closeCommentsPanel = useCallback(async () => {
     if (!(await requestEditorViewChange(null, true))) return;
-    requestAnimationFrame(() => {
-      if (editor && !editor.isDestroyed) editor.view.dom.focus();
-    });
-  }, [editor, requestEditorViewChange]);
+    if (!taskPaneModal) {
+      requestAnimationFrame(() => {
+        if (editor && !editor.isDestroyed) editor.view.dom.focus();
+      });
+    }
+  }, [editor, requestEditorViewChange, taskPaneModal]);
   const toggleTaskPane = useCallback(
     async (pane: Exclude<DocumentTaskPane, DocumentFindReplaceMode>) => {
+      if (taskPane !== pane) rememberTaskPaneInvoker();
       return requestEditorViewChange(taskPane === pane ? null : pane, true);
     },
-    [requestEditorViewChange, taskPane],
+    [rememberTaskPaneInvoker, requestEditorViewChange, taskPane],
   );
   const openFindReplace = useCallback(
     async (mode: DocumentFindReplaceMode) => {
+      if (taskPane !== mode) rememberTaskPaneInvoker();
       const accepted = await requestEditorViewChange(mode, true);
       if (accepted) setFindReplaceFocusRequest((current) => current + 1);
       return accepted;
     },
-    [requestEditorViewChange],
+    [rememberTaskPaneInvoker, requestEditorViewChange, taskPane],
   );
+  const startCommentDraft = useCallback(async () => {
+    rememberTaskPaneInvoker();
+    if (!(await requestEditorViewChange(null, false))) return;
+    documentComments.startDraft();
+  }, [
+    documentComments.startDraft,
+    rememberTaskPaneInvoker,
+    requestEditorViewChange,
+  ]);
+  const toggleCommentsPanel = useCallback(async () => {
+    if (documentComments.open) {
+      await closeCommentsPanel();
+      return;
+    }
+    rememberTaskPaneInvoker();
+    if (!(await requestEditorViewChange(null, false))) return;
+    documentComments.setOpen(true);
+  }, [
+    closeCommentsPanel,
+    documentComments.open,
+    documentComments.setOpen,
+    rememberTaskPaneInvoker,
+    requestEditorViewChange,
+  ]);
 
-  useOfficeTaskPaneEscape(Boolean(taskPane), closeTaskPane);
+  const activeTaskPane = Boolean(taskPane || documentComments.open);
+  const activeTaskPaneElement = () =>
+    workspaceRef.current?.querySelector<HTMLElement>(
+      documentComments.open
+        ? '.work-document-comments-panel'
+        : '.work-document-task-pane',
+    ) ?? null;
+  useDialogFocusScope<HTMLElement>({
+    active: !preview && taskPaneModal && activeTaskPane,
+    onEscape: () => {
+      if (documentComments.open) void closeCommentsPanel();
+      else void closeTaskPane();
+    },
+    escapeDisabled: Boolean(documentComments.draft),
+    passThroughCommandKeys: ['enter', 'f', 'h'],
+    initialFocus: () => {
+      const pane = activeTaskPaneElement();
+      if (documentComments.draft) {
+        return (
+          pane?.querySelector<HTMLElement>('[aria-label="批注内容"]') ?? null
+        );
+      }
+      if (taskPane === 'find' || taskPane === 'replace') {
+        return (
+          pane?.querySelector<HTMLElement>('[aria-label="查找内容"]') ?? null
+        );
+      }
+      if (taskPane === 'navigation') {
+        return (
+          pane?.querySelector<HTMLElement>('[aria-label="搜索标题"]') ?? null
+        );
+      }
+      return pane?.querySelector<HTMLElement>('.ds-icon-button.close') ?? null;
+    },
+    getActiveScope: activeTaskPaneElement,
+    restoreFocusTarget: () => {
+      const invoker = taskPaneInvokerRef.current;
+      if (
+        invoker?.isConnected &&
+        !invoker.matches(':disabled') &&
+        !invoker.closest('[hidden], [aria-hidden="true"]')
+      ) {
+        return invoker;
+      }
+      return editor && !editor.isDestroyed ? editor.view.dom : null;
+    },
+  });
+
+  useOfficeTaskPaneEscape(Boolean(taskPane) && !taskPaneModal, closeTaskPane);
   useOfficeTaskPaneEscape(
-    documentComments.open && !documentComments.draft,
+    documentComments.open && !documentComments.draft && !taskPaneModal,
     closeCommentsPanel,
   );
 
@@ -726,22 +816,10 @@ export function DocumentEditor({
           onInsertField={documentInsert.insertField}
           onRefreshFields={refreshDocumentFields}
           canInsertComment={documentComments.canInsert}
-          onInsertComment={() => {
-            void requestEditorViewChange(null, false).then((accepted) => {
-              if (accepted) documentComments.startDraft();
-            });
-          }}
+          onInsertComment={() => void startCommentDraft()}
           commentsOpen={documentComments.open}
           commentCount={documentComments.comments.length}
-          onToggleComments={() => {
-            if (documentComments.open) {
-              void closeCommentsPanel();
-              return;
-            }
-            void requestEditorViewChange(null, false).then((accepted) => {
-              if (accepted) documentComments.setOpen(true);
-            });
-          }}
+          onToggleComments={() => void toggleCommentsPanel()}
           trackChanges={Boolean(content.trackChanges)}
           changesOpen={changesOpen}
           changeCount={changes.length}
@@ -940,13 +1018,7 @@ export function DocumentEditor({
                         editor={editor}
                         canInsertComment={documentComments.canInsert}
                         layoutFonts={layoutFonts}
-                        onInsertComment={() => {
-                          void requestEditorViewChange(null, false).then(
-                            (accepted) => {
-                              if (accepted) documentComments.startDraft();
-                            },
-                          );
-                        }}
+                        onInsertComment={() => void startCommentDraft()}
                       />
                     )}
                   </section>

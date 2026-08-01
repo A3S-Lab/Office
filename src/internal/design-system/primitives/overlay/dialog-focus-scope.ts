@@ -19,6 +19,7 @@ export interface DialogFocusScopeOptions {
   active?: boolean;
   onEscape?: () => void;
   escapeDisabled?: boolean;
+  passThroughCommandKeys?: readonly string[];
   initialFocus?: () => HTMLElement | null;
   getActiveScope?: () => HTMLElement | null;
   getIsolationExceptions?: () => readonly (HTMLElement | null | undefined)[];
@@ -52,6 +53,7 @@ export function useDialogFocusScope<T extends HTMLElement>({
   active = true,
   onEscape,
   escapeDisabled = false,
+  passThroughCommandKeys,
   initialFocus,
   getActiveScope,
   getIsolationExceptions,
@@ -65,6 +67,7 @@ export function useDialogFocusScope<T extends HTMLElement>({
     active,
     onEscape,
     escapeDisabled,
+    passThroughCommandKeys,
     initialFocus,
     getActiveScope,
     getIsolationExceptions,
@@ -128,10 +131,28 @@ export function useDialogFocusScope<T extends HTMLElement>({
         focusInitial(currentScope);
       }
     };
+    const recoverFocusAfterContentChange = new MutationObserver(() => {
+      if (!isTopScope(activeScope)) return;
+      const currentScope =
+        optionsRef.current.getActiveScope?.() ??
+        (scopeRef.current as HTMLElement | null);
+      const currentActiveElement = activeElement();
+      if (
+        currentScope?.isConnected &&
+        (!currentActiveElement || !currentScope.contains(currentActiveElement))
+      ) {
+        focusInitial(currentScope);
+      }
+    });
+    recoverFocusAfterContentChange.observe(scope, {
+      childList: true,
+      subtree: true,
+    });
     document.addEventListener('keydown', handleDocumentKeyDown, true);
     document.addEventListener('focusin', handleDocumentFocus, true);
 
     return () => {
+      recoverFocusAfterContentChange.disconnect();
       document.removeEventListener('keydown', handleDocumentKeyDown, true);
       document.removeEventListener('focusin', handleDocumentFocus, true);
       const wasTopScope = isTopScope(activeScope);
@@ -181,12 +202,18 @@ function handleScopedKeyDown(
   }
   if (event.key !== 'Tab') {
     const commandKey = event.metaKey || event.ctrlKey;
+    const normalizedKey = event.key.toLocaleLowerCase();
+    const passThroughCommand = Boolean(
+      commandKey && options.passThroughCommandKeys?.includes(normalizedKey),
+    );
     if (
       commandKey &&
-      ['f', 'h', 'k', 'n', 'p', 's'].includes(event.key.toLocaleLowerCase())
+      !passThroughCommand &&
+      ['f', 'h', 'k', 'n', 'p', 's'].includes(normalizedKey)
     )
       event.preventDefault();
-    if (commandKey || event.altKey) event.stopPropagation();
+    if ((commandKey || event.altKey) && !passThroughCommand)
+      event.stopPropagation();
     return;
   }
 

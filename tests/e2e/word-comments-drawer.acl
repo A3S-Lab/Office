@@ -1,0 +1,69 @@
+suite "office-word-comments-drawer" {
+    version = 1
+
+    scenario "open-focus-contained-comments-on-phone" {
+        name = "Open the focus-contained Word comments drawer on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-review" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-comments" {
+            target = role("button", "查看批注")
+        }
+
+        expect "comments-are-modal" {
+            visible = css(".work-document-comments-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "document-is-isolated" {
+            visible = css(".work-document-page-stage[inert]")
+        }
+
+        screenshot "comments-drawer" {
+            path = "screenshots/word-comments-drawer-phone.png"
+        }
+
+        press "close-comments" {
+            key = "Escape"
+        }
+
+        expect "document-is-restored" {
+            visible = css(".work-document-page-stage:not([inert])")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

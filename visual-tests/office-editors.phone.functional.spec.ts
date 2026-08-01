@@ -171,6 +171,64 @@ test('Phone AI assistant keeps focus out of the obscured editor', async ({
   );
 });
 
+test('Phone Word comments own focus until the review drawer closes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
+    .click();
+
+  await page.getByRole('tab', { name: '审阅' }).click();
+  const trigger = page.getByRole('button', {
+    name: '查看批注',
+    exact: true,
+  });
+  await trigger.click();
+
+  const drawer = page.getByRole('dialog', { name: '批注审阅' });
+  const close = drawer.getByRole('button', { name: '关闭批注审阅' });
+  await expect(drawer).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.work-document-page-stage')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-document-ribbon')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(close).toBeFocused();
+
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.work-document-page-stage')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-document-ribbon')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await trigger.click();
+  const desktopPane = page.locator('.work-document-comments-panel');
+  await expect(desktopPane).toBeVisible();
+  await expect(desktopPane).not.toHaveAttribute('role', 'dialog');
+  await expect(desktopPane).not.toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.work-document-page-stage')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+});
+
 test('Shared Office color picker exposes phone-sized touch targets', async ({
   page,
 }) => {

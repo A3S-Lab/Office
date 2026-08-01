@@ -31,6 +31,7 @@ import {
   type DocumentCommentDraft,
 } from './document-comment-composer';
 import { OfficeTextArea, useOfficeDialog } from './office-controls';
+import { useOfficeTaskPaneModal } from './office-task-pane';
 
 interface CommentTrackItem {
   id: string;
@@ -97,6 +98,10 @@ export function DocumentCommentsPanel({
   const completedDraftIdRef = useRef<string | null>(null);
   const frameRef = useRef(0);
   const officeDialog = useOfficeDialog();
+  const modal = useOfficeTaskPaneModal();
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
   const unresolved = comments.filter((comment) => !comment.resolved).length;
   const repliesDirty = Object.values(drafts).some((value) =>
     Boolean(value.trim()),
@@ -450,6 +455,7 @@ export function DocumentCommentsPanel({
         })}
       </svg>
       <aside
+        {...modalAttributes}
         ref={panelRef}
         className="work-document-comments-panel"
         aria-label="批注审阅"

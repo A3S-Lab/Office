@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useId } from 'react';
 import { IconButton } from '../../../design-system/primitives';
+import { useOfficeTaskPaneModal } from './office-task-pane';
 
 export function DocumentTaskPane({
   ariaLabel,
@@ -10,6 +11,7 @@ export function DocumentTaskPane({
   className,
   children,
   onClose,
+  onKeyDown,
 }: {
   ariaLabel?: string;
   title: string;
@@ -18,10 +20,16 @@ export function DocumentTaskPane({
   className: string;
   children: ReactNode;
   onClose: () => void;
+  onKeyDown?: (event: KeyboardEvent<HTMLElement>) => void;
 }) {
   const titleId = useId();
   const descriptionId = useId();
+  const modal = useOfficeTaskPaneModal();
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    onKeyDown?.(event);
     if (event.key !== 'Escape' || event.defaultPrevented) return;
     event.preventDefault();
     event.stopPropagation();
@@ -30,6 +38,7 @@ export function DocumentTaskPane({
 
   return (
     <aside
+      {...modalAttributes}
       className={`${className} work-document-task-pane`}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabel ? undefined : titleId}

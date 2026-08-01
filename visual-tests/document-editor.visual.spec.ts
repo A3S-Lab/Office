@@ -164,9 +164,17 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   const navigationToggle = page.getByRole('button', { name: '导航窗格' });
   await navigationToggle.click();
 
-  const pane = page.getByRole('complementary', { name: '文档导航' });
+  const pane = page.locator('.work-document-navigation-panel');
+  const modalPane = documentTaskPanesAreModal(page);
   const search = pane.getByRole('searchbox', { name: '搜索标题' });
   await expect(pane).toBeVisible();
+  await expectDocumentTaskPaneMode(pane, modalPane);
+  if (modalPane) {
+    await expect(page.locator('.work-document-scroll')).toHaveAttribute(
+      'inert',
+      '',
+    );
+  }
   await expect(search).toBeFocused();
   await expect(pane.getByText('5 个标题')).toBeVisible();
   await expect(pane.getByRole('button', { name: '背景与目标' })).toBeVisible();
@@ -217,7 +225,9 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   await expect(pane).toHaveScreenshot('document-navigation-pane.png');
   await page.keyboard.press('Escape');
   await expect(pane).toBeHidden();
-  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  if (modalPane) await expect(navigationToggle).toBeFocused();
+  else
+    await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
 });
 
 test('document selection toolbar keeps formatting and review in context', async ({
@@ -400,7 +410,8 @@ test('document comments align with their review rail', async ({
   await fixture.ready(page);
   const selectedRange = await selectDocumentParagraphText(page, 1, 12);
   await page.getByRole('tab', { name: '审阅' }).click();
-  await page.getByRole('button', { name: '添加批注' }).click();
+  const addComment = page.getByRole('button', { name: '添加批注' });
+  await addComment.click();
   const composer = page.getByRole('dialog', { name: '添加批注' });
   await expect(page.locator('.ds-dialog-backdrop')).toHaveCount(0);
   await expect(composer).toHaveClass(/work-document-comment-composer/);
@@ -429,10 +440,12 @@ test('document comments align with their review rail', async ({
     .fill('这里需要补充可衡量的验收标准。');
   await composer.getByRole('button', { name: '添加批注', exact: true }).click();
 
-  const panel = page.getByRole('complementary', { name: '批注审阅' });
+  const panel = page.locator('.work-document-comments-panel');
+  const modalPane = documentTaskPanesAreModal(page);
   const mark = page.locator('[data-document-comment]');
   const connector = page.locator('.work-document-comment-connectors path');
   await expect(panel).toBeVisible();
+  await expectDocumentTaskPaneMode(panel, modalPane);
   await expect(mark).toHaveCount(1);
   await expect(mark).toHaveClass(/is-active-comment/);
   await expect(connector).toHaveCount(1);
@@ -506,12 +519,18 @@ test('document comment drafts stay visible and only warn for written content', a
   await fixture.ready(page);
   const body = page.getByRole('textbox', { name: '文档正文' });
   const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  const modalPane = documentTaskPanesAreModal(page);
   await body.focus();
   await page.keyboard.press(`${modifier}+a`);
   await page.getByRole('tab', { name: '审阅' }).click();
-  await page.getByRole('button', { name: '添加批注', exact: true }).click();
+  const addComment = page.getByRole('button', {
+    name: '添加批注',
+    exact: true,
+  });
+  await addComment.click();
 
-  let panel = page.getByRole('complementary', { name: '批注审阅' });
+  const panel = page.locator('.work-document-comments-panel');
+  await expectDocumentTaskPaneMode(panel, modalPane);
   let composer = page.getByRole('dialog', { name: '添加批注' });
   let input = composer.getByRole('textbox', { name: '批注内容' });
   await expect(input).toBeFocused();
@@ -549,16 +568,18 @@ test('document comment drafts stay visible and only warn for written content', a
     page.getByRole('dialog', { name: '放弃未完成的批注？' }),
   ).toHaveCount(0);
   await expect(panel).toBeHidden();
-  await expect(body).toBeFocused();
+  if (modalPane) await expect(addComment).toBeFocused();
+  else await expect(body).toBeFocused();
 
+  await body.focus();
   await page.keyboard.press(`${modifier}+a`);
-  await page.getByRole('button', { name: '添加批注', exact: true }).click();
-  panel = page.getByRole('complementary', { name: '批注审阅' });
+  await addComment.click();
   composer = page.getByRole('dialog', { name: '添加批注' });
   input = composer.getByRole('textbox', { name: '批注内容' });
   await input.fill('尚未保存的批注');
   const dirtyClose = panel.getByRole('button', { name: '关闭批注审阅' });
-  await page.getByRole('button', { name: '查看修订' }).click();
+  if (modalPane) await dirtyClose.click();
+  else await page.getByRole('button', { name: '查看修订' }).click();
   const discard = page.getByRole('dialog', {
     name: '放弃未完成的批注？',
   });
@@ -570,7 +591,8 @@ test('document comment drafts stay visible and only warn for written content', a
   await dirtyClose.click();
   await discard.getByRole('button', { name: '放弃内容' }).click();
   await expect(panel).toBeHidden();
-  await expect(body).toBeFocused();
+  if (modalPane) await expect(addComment).toBeFocused();
+  else await expect(body).toBeFocused();
 });
 
 test('document comment drafts clean up and stacked comments do not overlap', async ({
@@ -582,6 +604,7 @@ test('document comment drafts clean up and stacked comments do not overlap', asy
   await page.goto('/');
   await fixture.open(page);
   await fixture.ready(page);
+  const modalPane = documentTaskPanesAreModal(page);
   await selectDocumentParagraphText(page, 1, 12);
   await page.getByRole('tab', { name: '审阅' }).click();
 
@@ -596,7 +619,18 @@ test('document comment drafts clean up and stacked comments do not overlap', asy
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: '添加批注' })).toHaveCount(0);
   await expect(page.locator('[data-document-comment-draft]')).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  const commentsPanel = page.locator('.work-document-comments-panel');
+  const closeComments = commentsPanel.getByRole('button', {
+    name: '关闭批注审阅',
+  });
+  if (modalPane) {
+    await expect(closeComments).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(commentsPanel).toBeHidden();
+    await expect(toolbarAddComment).toBeFocused();
+  } else {
+    await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  }
 
   await selectDocumentParagraphText(page, 1, 12);
   await expect(toolbarAddComment).toBeEnabled();
@@ -607,6 +641,10 @@ test('document comment drafts clean up and stacked comments do not overlap', asy
     .getByRole('textbox', { name: '批注内容' })
     .press('Control+Enter');
   await expect(page.locator('[data-document-comment]')).toHaveCount(1);
+  if (modalPane) {
+    await closeComments.click();
+    await expect(commentsPanel).toBeHidden();
+  }
 
   await selectDocumentParagraphText(page, 2, 10);
   await expect(toolbarAddComment).toBeEnabled();
@@ -658,11 +696,14 @@ test('document task panes and dialogs preserve the editing context', async ({
   await page.goto('/');
   await fixture.open(page);
   await fixture.ready(page);
+  const modalPane = documentTaskPanesAreModal(page);
 
   await page.getByRole('tab', { name: '开始' }).click();
-  await page.getByRole('button', { name: '查找', exact: true }).click();
-  const findPane = page.getByRole('complementary', { name: '查找' });
+  const findTrigger = page.getByRole('button', { name: '查找', exact: true });
+  await findTrigger.click();
+  const findPane = page.locator('.work-document-find-panel');
   await expect(findPane).toBeVisible();
+  await expectDocumentTaskPaneMode(findPane, modalPane);
   await expect(
     findPane.getByRole('textbox', { name: '查找内容' }),
   ).toBeFocused();
@@ -683,7 +724,9 @@ test('document task panes and dialogs preserve the editing context', async ({
 
   await page.keyboard.press('Escape');
   await expect(findPane).toBeHidden();
-  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  if (modalPane) await expect(findTrigger).toBeFocused();
+  else
+    await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
 
   await page.getByRole('tab', { name: '页面布局' }).click();
   const paragraphSpacingTrigger = page.getByRole('button', {
@@ -771,9 +814,11 @@ test('document task panes and dialogs preserve the editing context', async ({
   await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
 
   await page.getByRole('tab', { name: '引用' }).click();
-  await page.getByRole('button', { name: '文献库' }).click();
-  const citationsPane = page.getByRole('complementary', { name: '文献库' });
+  const citationsTrigger = page.getByRole('button', { name: '文献库' });
+  await citationsTrigger.click();
+  const citationsPane = page.locator('.work-document-citations-panel');
   await expect(citationsPane).toBeVisible();
+  await expectDocumentTaskPaneMode(citationsPane, modalPane);
   await expect(
     citationsPane.getByRole('form', { name: '新建文献' }),
   ).toBeVisible();
@@ -813,7 +858,8 @@ test('document task panes and dialogs preserve the editing context', async ({
   const closeCitations = citationsPane.getByRole('button', {
     name: '关闭文献库',
   });
-  await page.getByRole('tab', { name: '审阅' }).click();
+  if (modalPane) await closeCitations.click();
+  else await page.getByRole('tab', { name: '审阅' }).click();
   const discardCitation = page.getByRole('dialog', {
     name: '放弃未保存的文献更改？',
   });
@@ -824,7 +870,9 @@ test('document task panes and dialogs preserve the editing context', async ({
   await closeCitations.click();
   await discardCitation.getByRole('button', { name: '放弃更改' }).click();
   await expect(citationsPane).toBeHidden();
-  await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  if (modalPane) await expect(citationsTrigger).toBeFocused();
+  else
+    await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
 });
 
 test('document revision decisions require an explicit confirmation', async ({
@@ -836,6 +884,7 @@ test('document revision decisions require an explicit confirmation', async ({
   await page.goto('/');
   await fixture.open(page);
   await fixture.ready(page);
+  const modalPane = documentTaskPanesAreModal(page);
 
   await page.getByRole('tab', { name: '审阅' }).click();
   await page.getByRole('button', { name: '修订模式' }).click();
@@ -843,10 +892,12 @@ test('document revision decisions require an explicit confirmation', async ({
   await editor.click();
   await page.keyboard.press('End');
   await page.keyboard.type(' tracked');
-  await page.getByRole('button', { name: /查看修订/ }).click();
+  const changesTrigger = page.getByRole('button', { name: /查看修订/ });
+  await changesTrigger.click();
 
-  const changesPane = page.getByRole('complementary', { name: '修订审阅' });
+  const changesPane = page.locator('.work-document-changes-panel');
   await expect(changesPane).toBeVisible();
+  await expectDocumentTaskPaneMode(changesPane, modalPane);
   const rejectAll = changesPane.getByRole('button', { name: '全部拒绝' });
   await expect(rejectAll).toBeVisible();
   await rejectAll.click();
@@ -868,10 +919,25 @@ test('document revision decisions require an explicit confirmation', async ({
   await expect(
     changesPane.getByRole('button', { name: '全部拒绝' }),
   ).toBeHidden();
-  await expect(editor).toBeFocused();
+  const closeChanges = changesPane.getByRole('button', {
+    name: '关闭修订审阅',
+  });
+  if (modalPane) {
+    await expect(closeChanges).toBeFocused();
+    await closeChanges.click();
+    await expect(changesPane).toBeHidden();
+    await expect(changesTrigger).toBeFocused();
+  } else {
+    await expect(editor).toBeFocused();
+  }
 
+  await editor.focus();
   await editor.press('End');
   await page.keyboard.type(' reviewed');
+  if (modalPane) {
+    await changesTrigger.click();
+    await expect(changesPane).toBeVisible();
+  }
   const acceptChange = changesPane.getByRole('button', {
     name: '接受修订 1',
   });
@@ -880,7 +946,8 @@ test('document revision decisions require an explicit confirmation', async ({
   await expect(
     changesPane.getByText('开启修订后，改动会显示在这里。'),
   ).toBeVisible();
-  await expect(editor).toBeFocused();
+  if (modalPane) await expect(closeChanges).toBeFocused();
+  else await expect(editor).toBeFocused();
 });
 
 test('document review views remain usable at phone width', async ({ page }) => {
@@ -953,7 +1020,8 @@ test('document review views remain usable at phone width', async ({ page }) => {
 
   await page.getByRole('tab', { name: '页面布局' }).click();
   await page.getByRole('button', { name: '页面设置', exact: true }).click();
-  const layoutPane = page.getByRole('complementary', { name: '页面设置' });
+  const layoutPane = page.locator('.work-document-layout-panel');
+  await expectDocumentTaskPaneMode(layoutPane, true);
   const layoutGeometry = await layoutPane.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     return {
@@ -1048,7 +1116,8 @@ test('document review views remain usable at phone width', async ({ page }) => {
 
   await page.getByRole('tab', { name: '审阅' }).click();
   await page.getByRole('button', { name: '添加批注' }).click();
-  const commentPanel = page.getByRole('complementary', { name: '批注审阅' });
+  const commentPanel = page.locator('.work-document-comments-panel');
+  await expectDocumentTaskPaneMode(commentPanel, true);
   const composer = page.getByRole('dialog', { name: '添加批注' });
   const reviewGeometry = await commentPanel.evaluate((element) => {
     const rect = element.getBoundingClientRect();
@@ -1080,6 +1149,23 @@ test('document review views remain usable at phone width', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(composer).toBeHidden();
 });
+
+function documentTaskPanesAreModal(page: Page): boolean {
+  return (page.viewportSize()?.width ?? Number.POSITIVE_INFINITY) <= 900;
+}
+
+async function expectDocumentTaskPaneMode(
+  pane: Locator,
+  modal: boolean,
+): Promise<void> {
+  if (modal) {
+    await expect(pane).toHaveAttribute('role', 'dialog');
+    await expect(pane).toHaveAttribute('aria-modal', 'true');
+    return;
+  }
+  await expect(pane).not.toHaveAttribute('role', 'dialog');
+  await expect(pane).not.toHaveAttribute('aria-modal', 'true');
+}
 
 async function selectDocumentParagraphText(
   page: Page,

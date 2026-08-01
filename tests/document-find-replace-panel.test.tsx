@@ -1,6 +1,7 @@
 import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import {
   DocumentFindReplacePanel,
   documentTextMatches,
@@ -201,6 +202,55 @@ test('refocuses and selects the query when the command is invoked again', async 
     await waitFor(() => expect(query).toHaveFocus());
     expect(query.selectionStart).toBe(0);
     expect(query.selectionEnd).toBe(query.value.length);
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('switches Find and Replace from pane-local command shortcuts', async () => {
+  const { editor, element } = createEditor('<p>Alpha beta Alpha</p>');
+
+  function Fixture() {
+    const [mode, setMode] = useState<'find' | 'replace'>('find');
+    return (
+      <DocumentFindReplacePanel
+        editor={editor}
+        mode={mode}
+        onModeChange={setMode}
+        onReplaceText={() => false}
+        onClose={() => undefined}
+      />
+    );
+  }
+
+  try {
+    render(<Fixture />);
+    const query = screen.getByRole('textbox', { name: '查找内容' });
+    fireEvent.change(query, { target: { value: 'Alpha' } });
+    query.setSelectionRange(query.value.length, query.value.length);
+
+    fireEvent.keyDown(query, { key: 'h', ctrlKey: true });
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: '替换' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    await waitFor(() => expect(query).toHaveFocus());
+    expect(query.selectionStart).toBe(0);
+    expect(query.selectionEnd).toBe(query.value.length);
+
+    const replacement = screen.getByRole('textbox', { name: '替换为' });
+    replacement.focus();
+    fireEvent.keyDown(replacement, { key: 'f', metaKey: true });
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: '查找' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      ),
+    );
+    await waitFor(() => expect(query).toHaveFocus());
   } finally {
     editor.destroy();
     element.remove();

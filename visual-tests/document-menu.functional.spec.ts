@@ -143,6 +143,8 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
 
   const body = page.getByRole('textbox', { name: '文档正文' });
   const modifier = process.platform === 'darwin' ? 'Meta' : 'Control';
+  const modalPane =
+    (page.viewportSize()?.width ?? Number.POSITIVE_INFINITY) <= 900;
   await body.focus();
   await page.keyboard.press(`${modifier}+f`);
   const query = page.getByRole('textbox', { name: '查找内容' });
@@ -175,14 +177,20 @@ test('Word repeats Find and Replace commands by returning focus to the query', a
     page.locator('.work-document-find-match.active').first(),
   ).toHaveAttribute('data-document-find-index', '1');
 
-  await body.focus();
-  await page.keyboard.press(`${modifier}+f`);
+  if (modalPane) await query.press(`${modifier}+f`);
+  else {
+    await body.focus();
+    await page.keyboard.press(`${modifier}+f`);
+  }
   await expect(query).toBeFocused();
   await expect(query).toHaveJSProperty('selectionStart', 0);
   await expect(query).toHaveJSProperty('selectionEnd', 2);
 
-  await body.focus();
-  await page.keyboard.press(`${modifier}+h`);
+  if (modalPane) await query.press(`${modifier}+h`);
+  else {
+    await body.focus();
+    await page.keyboard.press(`${modifier}+h`);
+  }
   await expect(page.getByRole('tab', { name: '替换' })).toHaveAttribute(
     'aria-selected',
     'true',
