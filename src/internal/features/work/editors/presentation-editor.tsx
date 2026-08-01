@@ -706,11 +706,7 @@ function PresentationEditingSurface({
         ref={imageInputRef}
         accept="image/*"
         aria-label="插入图片"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void presentationToolbarCommands.addImage(file);
-        }}
+        onFileSelect={(file) => presentationToolbarCommands.addImage(file)}
       />
       <PresentationToolbar
         selectedSlide={selectedSlide}

@@ -260,11 +260,7 @@ export function DocumentPageChromeRibbon({
         ref={imageInputRef}
         accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
         aria-label="页眉页脚图片文件"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          void insertImage(file);
-        }}
+        onFileSelect={insertImage}
       />
       {officeDialog.dialog}
     </>

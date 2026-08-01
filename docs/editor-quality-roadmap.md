@@ -172,6 +172,14 @@ Exit evidence:
 - Make image and object dialogs validate size, placement, alternative text, and
   destructive replacement before commit.
 
+Current implementation evidence includes one project-owned file
+materialization boundary shared by Word body images, header/footer images,
+Presentation images, and imported Office/PDF files. File inputs can reset
+immediately for same-file reselection without invalidating an in-flight read.
+Unit coverage verifies single-read ownership and the A3S Test picture fixture
+verifies that a relative-path PNG reaches the Word canvas and opens its
+contextual picture toolbar without a false read error.
+
 Exit evidence:
 
 - Relationship-bearing objects reopen with working targets in Word and WPS.

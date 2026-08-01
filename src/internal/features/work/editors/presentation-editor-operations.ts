@@ -5,6 +5,7 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
+import { readOfficeFileAsDataUrl } from './office-file-data';
 import type { PresentationDesignMode } from './presentation-editor-types';
 
 export function updatePresentationElements(
@@ -163,7 +164,7 @@ export async function newPresentationImageElement(
     align: 'center',
     altText: file.name,
     image: {
-      dataUrl: await fileToDataUrl(file),
+      dataUrl: await readOfficeFileAsDataUrl(file),
       contentType: file.type || 'application/octet-stream',
       name: file.name,
     },
@@ -177,15 +178,4 @@ export function clamp(value: number, minimum: number, maximum: number): number {
 export function structuredCopy<T>(value: T): T {
   if (typeof structuredClone === 'function') return structuredClone(value);
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => resolve(String(reader.result)));
-    reader.addEventListener('error', () =>
-      reject(reader.error ?? new Error('Image could not be read')),
-    );
-    reader.readAsDataURL(file);
-  });
 }

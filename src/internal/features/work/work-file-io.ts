@@ -13,6 +13,7 @@ import {
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
+import { materializeWorkFile } from './work-file-data';
 import {
   createWorkPresentationBlob,
   importWorkPresentationFile,
@@ -87,17 +88,26 @@ export type WorkArtifactExportOptions = WorkPresentationExportOptions;
 
 export async function importWorkFile(file: File): Promise<WorkArtifact> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
-  if (MARKDOWN_EXTENSIONS.has(extension)) return importWorkMarkdownFile(file);
+  if (
+    !MARKDOWN_EXTENSIONS.has(extension) &&
+    !DOCUMENT_EXTENSIONS.has(extension) &&
+    !SPREADSHEET_EXTENSIONS.has(extension) &&
+    !PRESENTATION_EXTENSIONS.has(extension) &&
+    !PDF_EXTENSIONS.has(extension)
+  ) {
+    throw new Error(
+      '目前可导入 DOCX、XLSX、XLS、ODS、CSV、PPTX、PDF、HTML、Markdown 和文本文件。',
+    );
+  }
+  const source = await materializeWorkFile(file);
+  if (MARKDOWN_EXTENSIONS.has(extension)) return importWorkMarkdownFile(source);
   if (DOCUMENT_EXTENSIONS.has(extension))
-    return importWorkDocumentFile(file, extension);
+    return importWorkDocumentFile(source, extension);
   if (SPREADSHEET_EXTENSIONS.has(extension))
-    return importSpreadsheet(file, extension);
+    return importSpreadsheet(source, extension);
   if (PRESENTATION_EXTENSIONS.has(extension))
-    return importWorkPresentationFile(file);
-  if (PDF_EXTENSIONS.has(extension)) return importPdf(file);
-  throw new Error(
-    '目前可导入 DOCX、XLSX、XLS、ODS、CSV、PPTX、PDF、HTML、Markdown 和文本文件。',
-  );
+    return importWorkPresentationFile(source);
+  return importPdf(source);
 }
 
 export async function exportWorkArtifact(
@@ -278,7 +288,7 @@ async function importSpreadsheet(
 
 async function importPdf(file: File): Promise<WorkArtifact> {
   const contentType = file.type || 'application/pdf';
-  const source = new Blob([await file.arrayBuffer()], { type: contentType });
+  const source = new Blob([file], { type: contentType });
   const artifact = createWorkArtifact('blank-document');
   artifact.kind = 'pdf';
   artifact.title = fileNameWithoutExtension(file.name);

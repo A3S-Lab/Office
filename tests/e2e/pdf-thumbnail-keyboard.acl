@@ -21,7 +21,7 @@ suite "pdf-thumbnail-keyboard" {
         }
 
         wait "pdf-ready" {
-            visible = css("[aria-label='PDF 页面缩略图']")
+            visible = css("[data-pdf-page-index='0'][aria-current='page']")
         }
 
         expect "thumbnail-navigation-ready" {

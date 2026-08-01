@@ -755,12 +755,7 @@ export function DocumentEditor({
           ref={imageInputRef}
           accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
           aria-label="插入文档图片"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (!file) return;
-            documentInsert.insertImage(file);
-          }}
+          onFileSelect={documentInsert.insertImage}
         />
       )}
       {preview ? (

@@ -192,13 +192,24 @@ function safelyParseOfficeTextDraft<Value>(
 
 export const OfficeFileInput = forwardRef<
   HTMLInputElement,
-  Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>
->(function OfficeFileInput({ className = '', ...props }, ref) {
+  Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> & {
+    onFileSelect: (file: File) => unknown;
+  }
+>(function OfficeFileInput({ className = '', onFileSelect, ...props }, ref) {
   return (
     <input
       ref={ref}
       type="file"
       className={`work-file-input ${className}`.trim()}
+      onChange={(event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        try {
+          if (file) onFileSelect(file);
+        } finally {
+          input.value = '';
+        }
+      }}
       {...props}
     />
   );

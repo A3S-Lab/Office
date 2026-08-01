@@ -263,17 +263,6 @@ export function clampDocumentZoom(zoom: number): number {
   );
 }
 
-export function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => resolve(String(reader.result)));
-    reader.addEventListener('error', () =>
-      reject(reader.error ?? new Error('Image could not be read')),
-    );
-    reader.readAsDataURL(file);
-  });
-}
-
 async function copyDocumentSelection(selection: string): Promise<void> {
   try {
     if (!navigator.clipboard?.writeText)

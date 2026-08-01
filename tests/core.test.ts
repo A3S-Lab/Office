@@ -91,14 +91,20 @@ describe('office core', () => {
       lastModified: 1_765_756_800_000,
       type: 'application/pdf',
     });
-    const readSource = source.arrayBuffer.bind(source);
     let sourceReads = 0;
-    source.arrayBuffer = async () => {
+    let finishSourceRead: ((bytes: ArrayBuffer) => void) | undefined;
+    source.arrayBuffer = () => {
       sourceReads += 1;
-      return readSource();
+      return new Promise<ArrayBuffer>((resolve) => {
+        finishSourceRead = resolve;
+      });
     };
 
-    const artifact = await importOfficeFile(source);
+    const pendingImport = importOfficeFile(source);
+
+    expect(sourceReads).toBe(1);
+    finishSourceRead?.(bytes.slice().buffer);
+    const artifact = await pendingImport;
 
     expect(sourceReads).toBe(1);
     expect(artifact).toMatchObject({

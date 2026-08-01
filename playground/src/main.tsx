@@ -137,11 +137,9 @@ function Playground() {
         onChange={(event) => {
           const input = event.currentTarget;
           const file = input.files?.[0];
-          if (file) {
-            void importFile(file).finally(() => {
-              input.value = '';
-            });
-          }
+          const pendingImport = file ? importFile(file) : null;
+          input.value = '';
+          if (pendingImport) void pendingImport;
         }}
       />
       <input
@@ -153,11 +151,9 @@ function Playground() {
         onChange={(event) => {
           const input = event.currentTarget;
           const file = input.files?.[0];
-          if (file) {
-            void importFile(file).finally(() => {
-              input.value = '';
-            });
-          }
+          const pendingImport = file ? importFile(file) : null;
+          input.value = '';
+          if (pendingImport) void pendingImport;
         }}
       />
 

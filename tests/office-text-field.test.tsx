@@ -1,10 +1,62 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import {
   CommittedOfficeTextArea,
   CommittedOfficeTextField,
+  OfficeFileInput,
 } from '../src/internal/features/work/editors/office-text-field';
+
+test('starts file consumers before reset and supports same-file reselection', async () => {
+  const file = new File(['image'], 'diagram.png', { type: 'image/png' });
+  const finishReadings: Array<() => void> = [];
+  const selected: File[] = [];
+
+  render(
+    <OfficeFileInput
+      aria-label="测试图片文件"
+      onFileSelect={(nextFile) => {
+        selected.push(nextFile);
+        return new Promise<void>((resolve) => {
+          finishReadings.push(resolve);
+        });
+      }}
+    />,
+  );
+
+  const input = screen.getByLabelText('测试图片文件') as HTMLInputElement;
+  Object.defineProperty(input, 'files', {
+    configurable: true,
+    value: [file],
+  });
+  let inputValue = 'C:\\fakepath\\diagram.png';
+  const releasedValues: string[] = [];
+  Object.defineProperty(input, 'value', {
+    configurable: true,
+    get: () => inputValue,
+    set: (value: string) => {
+      inputValue = value;
+      releasedValues.push(value);
+    },
+  });
+
+  fireEvent.change(input);
+
+  expect(selected).toEqual([file]);
+  expect(inputValue).toBe('');
+  expect(releasedValues).toEqual(['']);
+
+  inputValue = 'C:\\fakepath\\diagram.png';
+  fireEvent.change(input);
+
+  expect(selected).toEqual([file, file]);
+  expect(inputValue).toBe('');
+  expect(releasedValues).toEqual(['', '']);
+
+  for (const finishReading of finishReadings) finishReading();
+  await waitFor(() => expect(inputValue).toBe(''));
+  expect(releasedValues).toEqual(['', '']);
+});
 
 test('keeps multiline drafts local until they are valid and committed', () => {
   const commits: number[][] = [];

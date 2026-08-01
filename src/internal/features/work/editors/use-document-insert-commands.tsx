@@ -18,7 +18,7 @@ import type {
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import type { WorkDocumentContent } from '../work-types';
-import { fileToDataUrl } from './document-editor-support';
+import { readOfficeFileAsDataUrl } from './office-file-data';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
 
 type DocumentInsertDialog =
@@ -38,7 +38,7 @@ export interface DocumentInsertCommands {
   insertCaption: (kind: WorkDocumentCaptionKind) => void;
   insertCrossReference: () => void;
   insertField: (kind: WorkDocumentFieldKind) => void;
-  insertImage: (file: File) => void;
+  insertImage: (file: File) => Promise<void>;
   insertNote: (kind: WorkDocumentNoteKind) => boolean;
   refreshFields: () => boolean;
 }
@@ -66,7 +66,7 @@ export function useDocumentInsertCommands({
   }, []);
 
   const insertImage = useCallback(
-    (file: File) => {
+    async (file: File) => {
       if (!editor) return;
       if (
         ![
@@ -77,33 +77,34 @@ export function useDocumentInsertCommands({
           'image/webp',
         ].includes(file.type)
       ) {
-        void officeDialog.notice({
+        await officeDialog.notice({
           title: '无法插入图片',
           description: '请选择 PNG、JPEG、GIF、WebP 或 BMP 图片。',
         });
         return;
       }
       if (file.size > 8 * 1024 * 1024) {
-        void officeDialog.notice({
+        await officeDialog.notice({
           title: '图片过大',
           description: '单张图片不能超过 8 MiB。',
         });
         return;
       }
-      void fileToDataUrl(file)
-        .then((src) =>
+      try {
+        const src = await readOfficeFileAsDataUrl(file);
+        if (!editor.isDestroyed) {
           editor
             .chain()
             .focus()
             .setImage({ src, alt: file.name, title: file.name })
-            .run(),
-        )
-        .catch(() =>
-          officeDialog.notice({
-            title: '无法读取图片',
-            description: '文件可能已经移动或损坏，请重新选择。',
-          }),
-        );
+            .run();
+        }
+      } catch {
+        await officeDialog.notice({
+          title: '无法读取图片',
+          description: '文件可能已经移动或损坏，请重新选择。',
+        });
+      }
     },
     [editor, officeDialog],
   );

@@ -39,6 +39,7 @@ import {
   OfficeFileInput,
   useOfficeDialog,
 } from './office-controls';
+import { readOfficeFileAsDataUrl } from './office-file-data';
 
 export type DocumentPageChromeAlignment =
   | 'center'
@@ -342,11 +343,7 @@ export function DocumentPageChromeRichTextEditor({
               ref={imageInputRef}
               accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
               aria-label={`${label}图片文件`}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = '';
-                void insertImage(file);
-              }}
+              onFileSelect={insertImage}
             />
           </>
         )}
@@ -453,7 +450,7 @@ export async function loadDocumentPageChromeImage(
     return {
       ok: true,
       alt: file.name,
-      source: await fileToDataUrl(file),
+      source: await readOfficeFileAsDataUrl(file),
     };
   } catch {
     return {
@@ -497,15 +494,4 @@ function PageChromeButton({
       {children}
     </button>
   );
-}
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => resolve(String(reader.result)));
-    reader.addEventListener('error', () =>
-      reject(reader.error ?? new Error('Image could not be read')),
-    );
-    reader.readAsDataURL(file);
-  });
 }

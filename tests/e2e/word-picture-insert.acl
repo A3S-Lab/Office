@@ -1,0 +1,61 @@
+suite "office-word-picture-insert" {
+    version = 1
+
+    scenario "insert-project-owned-picture" {
+        name = "Insert a project-owned PNG into a Word document"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "place-picture" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        upload "insert-picture" {
+            target = css("input[aria-label='插入文档图片']")
+            paths = [".a3s-test/fixtures/word-picture.png"]
+        }
+
+        wait "picture-inserted" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'] img[alt='word-picture.png']")
+        }
+
+        wait "picture-tools-open" {
+            visible = css("[role='toolbar'][aria-label='图片工具栏']")
+        }
+
+        screenshot "inserted-picture" {
+            path = "screenshots/word-picture-insert.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
