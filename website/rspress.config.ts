@@ -9,6 +9,7 @@ const siteOrigin = process.env.DOCS_ORIGIN ?? 'https://a3s-lab.github.io';
 
 export default defineConfig({
   root: path.resolve(import.meta.dirname, '../docs'),
+  themeDir: path.resolve(import.meta.dirname, 'theme'),
   base: docsBase,
   siteOrigin,
   title: 'A3S Office',

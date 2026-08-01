@@ -1,4 +1,4 @@
-name: Deploy Playground
+name: Deploy A3S Office Website
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
       - name: Type-check playground
         run: bun run playground:typecheck
 
-      - name: Build playground for verification
+      - name: Build Playground homepage and documentation center
         run: bun run playground:build
 
       - name: Check playground bundle budget
@@ -80,7 +80,7 @@ jobs:
             test-results/visual
           if-no-files-found: ignore
 
-      - name: Build GitHub Pages artifact
+      - name: Build GitHub Pages website
         run: bun run playground:build
         env:
           A3S_OFFICE_PLAYGROUND_BASE: ${{ steps.pages.outputs.base_path }}/

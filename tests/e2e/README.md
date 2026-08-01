@@ -23,6 +23,7 @@ navigation, and page-preview regressions; the phone Spreadsheet
 worksheet-rename workflow; Presentation focus recovery across object cut and
 paste plus presenter-view keyboard navigation and phone layout; and the public
 Playground-to-documentation-center navigation contract, including the
-documentation tree and published Playground return link. Each suite owns only
-its browser surface. Keep the preview process under the terminal that started
-it and stop that process separately when testing is complete.
+documentation tree and the same-deployment return to the Playground homepage.
+Each suite owns only its browser surface. Keep the preview process under the
+terminal that started it and stop that process separately when testing is
+complete.

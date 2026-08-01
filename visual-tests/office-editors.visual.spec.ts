@@ -809,13 +809,9 @@ test('Playground stays at the site root and opens a standalone documentation cen
   await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
     'DocumentEditor',
   );
-  const docsMenu = page.getByRole('button', { name: 'mobile hamburger' });
-  if (await docsMenu.isVisible()) await docsMenu.click();
-  await expect(page.getByRole('link', { name: /^Playground/ })).toHaveAttribute(
-    'href',
-    /\/Office\/$/,
-  );
-  await page.goto('/');
+  const playgroundHome = page.locator('.office-docs-playground-link');
+  await expect(playgroundHome).toHaveAttribute('href', '../');
+  await playgroundHome.click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole('heading', { name: '我的文档', level: 1 }),

@@ -425,6 +425,11 @@ committed visual contracts; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
+The published website keeps the interactive Playground at its root and builds
+the searchable Rspress documentation center under `/docs/`. Both surfaces use
+the same deployment base, so preview, Pages, and fork deployments keep working
+without hard-coded return URLs.
+
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)

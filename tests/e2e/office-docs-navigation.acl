@@ -46,7 +46,11 @@ suite "office-docs-navigation" {
             text = "Playground"
         }
 
-        navigate "return-to-playground" {
+        click "return-to-playground" {
+            target = css(".office-docs-playground-link")
+        }
+
+        wait "playground-route-restored" {
             url = "http://127.0.0.1:4175/"
         }
 
