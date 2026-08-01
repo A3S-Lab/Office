@@ -25,6 +25,21 @@ test('PDF page rail scrolls, selects pages, and follows toolbar navigation', asy
     )
     .toBe(true);
 
+  await firstPage.focus();
+  await firstPage.press('ArrowDown');
+  await expect(secondPage).toBeFocused();
+  await expect(secondPage).toHaveAttribute('aria-current', 'page');
+  await expect(pageField).toHaveValue('2');
+  await secondPage.press('ArrowDown');
+  const thirdPage = page.getByRole('button', { name: '第 3 页' });
+  await expect(thirdPage).toBeFocused();
+  await expect(thirdPage).toHaveAttribute('aria-current', 'page');
+  await expect(pageField).toHaveValue('3');
+  await thirdPage.press('Home');
+  await expect(firstPage).toBeFocused();
+  await expect(firstPage).toHaveAttribute('aria-current', 'page');
+  await expect(pageField).toHaveValue('1');
+
   await secondPage.click();
   await expect(pageField).toHaveValue('2');
   await expect(secondPage).toHaveAttribute('aria-current', 'page');

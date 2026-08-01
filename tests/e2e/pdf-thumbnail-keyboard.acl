@@ -1,0 +1,81 @@
+suite "pdf-thumbnail-keyboard" {
+    version = 1
+
+    scenario "navigate-page-thumbnails-with-the-keyboard" {
+        name = "Move selection and focus through PDF page thumbnails"
+        surface = "web"
+        timeout_ms = 45000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css("[aria-label='PDF 页面缩略图']")
+        }
+
+        expect "thumbnail-navigation-ready" {
+            visible = css("[aria-label='PDF 页面缩略图']")
+        }
+
+        focus "focus-first-page" {
+            target = css("[data-pdf-page-index='0']")
+        }
+
+        press "next-page" {
+            key = "ArrowDown"
+        }
+
+        wait "second-page-selected-and-focused" {
+            visible = css("[data-pdf-page-index='1'][aria-current='page']:focus")
+        }
+
+        press "next-page-again" {
+            key = "ArrowDown"
+        }
+
+        wait "third-page-selected-and-focused" {
+            visible = css("[data-pdf-page-index='2'][aria-current='page']:focus")
+        }
+
+        press "last-page" {
+            key = "End"
+        }
+
+        wait "last-page-selected-and-focused" {
+            visible = css("[data-pdf-page-index='3'][aria-current='page']:focus")
+        }
+
+        press "first-page" {
+            key = "Home"
+        }
+
+        wait "first-page-selected-and-focused" {
+            visible = css("[data-pdf-page-index='0'][aria-current='page']:focus")
+        }
+
+        screenshot "pdf-thumbnail-keyboard" {
+            path = "screenshots/pdf-thumbnail-keyboard.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -28,8 +28,13 @@ test('routes PDF commands through typed plugin capabilities', async () => {
         getTotalPages: () => 8,
         scrollToPreviousPage: () => calls.push('previous-page'),
         scrollToNextPage: () => calls.push('next-page'),
-        scrollToPage: ({ pageNumber }: { pageNumber: number }) =>
-          calls.push(`page:${pageNumber}`),
+        scrollToPage: ({
+          behavior,
+          pageNumber,
+        }: {
+          behavior?: string;
+          pageNumber: number;
+        }) => calls.push(`page:${pageNumber}:${behavior}`),
       }),
       onPageChange: pageChange.subscribe,
       onLayoutReady: layoutReady.subscribe,
@@ -131,7 +136,7 @@ test('routes PDF commands through typed plugin capabilities', async () => {
   expect(calls).toEqual([
     'previous-page',
     'next-page',
-    'page:6',
+    'page:6:auto',
     'zoom-out',
     'zoom-in',
     'zoom:fit-page',
@@ -150,6 +155,67 @@ test('routes PDF commands through typed plugin capabilities', async () => {
   currentPage = 5;
   act(() => pageChange.emit(undefined));
   await waitFor(() => expect(result.current.state.currentPage).toBe(5));
+});
+
+test('serializes page jumps and preserves the latest navigation intent', async () => {
+  const calls: string[] = [];
+  const pageChange = createEvent();
+  const pageChangeState = createEvent<{
+    documentId: string;
+    state: { isChanging: boolean };
+  }>();
+  let changing = false;
+
+  const capabilities = {
+    'document-manager': {
+      getActiveDocumentId: () => 'document-1',
+    },
+    scroll: {
+      forDocument: () => ({
+        getCurrentPage: () => 1,
+        getTotalPages: () => 8,
+        getPageChangeState: () => ({ isChanging: changing }),
+        scrollToPage: ({
+          behavior,
+          pageNumber,
+        }: {
+          behavior?: string;
+          pageNumber: number;
+        }) => {
+          calls.push(`page:${pageNumber}:${behavior}`);
+          changing = true;
+        },
+      }),
+      onPageChange: pageChange.subscribe,
+      onPageChangeState: pageChangeState.subscribe,
+    },
+  };
+  const registry = {
+    pluginsReady: () => Promise.resolve(),
+    getPlugin: (id: keyof typeof capabilities) => {
+      const capability = capabilities[id];
+      return capability ? { provides: () => capability } : undefined;
+    },
+  } as unknown as PluginRegistry;
+
+  const { result } = renderHook(() => usePdfViewerController(registry));
+  await waitFor(() => expect(result.current.state.ready).toBe(true));
+
+  act(() => {
+    result.current.goToPage(4);
+    result.current.goToPage(7);
+    result.current.goToPage(2);
+  });
+  expect(calls).toEqual(['page:4:auto']);
+
+  changing = false;
+  act(() =>
+    pageChangeState.emit({
+      documentId: 'document-1',
+      state: { isChanging: false },
+    }),
+  );
+  expect(calls).toEqual(['page:4:auto', 'page:2:auto']);
 });
 
 function createEvent<T = unknown>() {

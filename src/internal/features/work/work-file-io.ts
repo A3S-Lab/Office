@@ -276,18 +276,20 @@ async function importSpreadsheet(
   return artifact;
 }
 
-function importPdf(file: File): WorkArtifact {
+async function importPdf(file: File): Promise<WorkArtifact> {
+  const contentType = file.type || 'application/pdf';
+  const source = new Blob([await file.arrayBuffer()], { type: contentType });
   const artifact = createWorkArtifact('blank-document');
   artifact.kind = 'pdf';
   artifact.title = fileNameWithoutExtension(file.name);
   artifact.content = { type: 'pdf' };
   artifact.source = {
     name: file.name,
-    contentType: file.type || 'application/pdf',
+    contentType,
     size: file.size,
     updatedAt: file.lastModified || Date.now(),
   };
-  rememberWorkSourceBlob(artifact.id, file);
+  rememberWorkSourceBlob(artifact.id, source);
   return artifact;
 }
 

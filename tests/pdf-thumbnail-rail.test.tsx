@@ -1,6 +1,7 @@
 import type { PluginRegistry } from '@embedpdf/react-pdf-viewer';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 import {
   PDF_THUMBNAIL_WINDOW_LIMIT,
   PdfThumbnailRail,
@@ -44,6 +45,90 @@ test('shows page numbers, current-page state, and routes thumbnail selection', a
     view.unmount();
     expect(urls.revoked).toEqual(urls.created);
   } finally {
+    urls.restore();
+  }
+});
+
+test('moves focus with continuous thumbnail keyboard navigation', async () => {
+  const urls = installObjectUrlFixture();
+  const registry = createRegistry(
+    (pageIndex) => new Blob([`page-${pageIndex}`], { type: 'image/png' }),
+  );
+  let view: ReturnType<typeof render> | null = null;
+
+  function ControlledThumbnailRail() {
+    const [currentPage, setCurrentPage] = useState(1);
+    return (
+      <PdfThumbnailRail
+        currentPage={currentPage}
+        registry={registry}
+        totalPages={4}
+        onSelectPage={setCurrentPage}
+      />
+    );
+  }
+
+  try {
+    view = render(<ControlledThumbnailRail />);
+    const firstPage = screen.getByRole('button', { name: '第 1 页' });
+    firstPage.focus();
+
+    fireEvent.keyDown(firstPage, { key: 'ArrowDown' });
+    const secondPage = screen.getByRole('button', { name: '第 2 页' });
+    await waitFor(() => expect(secondPage).toHaveFocus());
+    expect(secondPage).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.keyDown(secondPage, { key: 'ArrowDown' });
+    const thirdPage = screen.getByRole('button', { name: '第 3 页' });
+    await waitFor(() => expect(thirdPage).toHaveFocus());
+    expect(thirdPage).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.keyDown(thirdPage, { key: 'End' });
+    const lastPage = screen.getByRole('button', { name: '第 4 页' });
+    await waitFor(() => expect(lastPage).toHaveFocus());
+    expect(lastPage).toHaveAttribute('aria-current', 'page');
+
+    fireEvent.keyDown(lastPage, { key: 'Home' });
+    await waitFor(() => expect(firstPage).toHaveFocus());
+    expect(firstPage).toHaveAttribute('aria-current', 'page');
+  } finally {
+    view?.unmount();
+    urls.restore();
+  }
+});
+
+test('focuses a keyboard destination after long-document virtualization mounts it', async () => {
+  const urls = installObjectUrlFixture();
+  const registry = createRegistry(
+    (pageIndex) => new Blob([`page-${pageIndex}`], { type: 'image/png' }),
+  );
+  let view: ReturnType<typeof render> | null = null;
+
+  function ControlledLongThumbnailRail() {
+    const [currentPage, setCurrentPage] = useState(1);
+    return (
+      <PdfThumbnailRail
+        currentPage={currentPage}
+        registry={registry}
+        totalPages={240}
+        onSelectPage={setCurrentPage}
+      />
+    );
+  }
+
+  try {
+    view = render(<ControlledLongThumbnailRail />);
+    const firstPage = screen.getByRole('button', { name: '第 1 页' });
+    firstPage.focus();
+    fireEvent.keyDown(firstPage, { key: 'End' });
+
+    await waitFor(() => {
+      const lastPage = screen.getByRole('button', { name: '第 240 页' });
+      expect(lastPage).toHaveAttribute('aria-current', 'page');
+      expect(lastPage).toHaveFocus();
+    });
+  } finally {
+    view?.unmount();
     urls.restore();
   }
 });

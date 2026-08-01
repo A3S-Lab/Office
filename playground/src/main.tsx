@@ -135,9 +135,13 @@ function Playground() {
         accept={OFFICE_FILE_ACCEPT}
         aria-label="打开 Office 或 PDF 文件"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void importFile(file);
+          const input = event.currentTarget;
+          const file = input.files?.[0];
+          if (file) {
+            void importFile(file).finally(() => {
+              input.value = '';
+            });
+          }
         }}
       />
       <input
@@ -147,9 +151,13 @@ function Playground() {
         accept=".pdf,application/pdf"
         aria-label="打开 PDF 文件"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = '';
-          if (file) void importFile(file);
+          const input = event.currentTarget;
+          const file = input.files?.[0];
+          if (file) {
+            void importFile(file).finally(() => {
+              input.value = '';
+            });
+          }
         }}
       />
 

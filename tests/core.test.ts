@@ -83,6 +83,42 @@ describe('office core', () => {
     expect(await output.text()).toBe(source);
   });
 
+  test('materializes imported PDF bytes before the source file can disappear', async () => {
+    const bytes = new Uint8Array([
+      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 0x0a,
+    ]);
+    const source = new File([bytes], 'contract.pdf', {
+      lastModified: 1_765_756_800_000,
+      type: 'application/pdf',
+    });
+    const readSource = source.arrayBuffer.bind(source);
+    let sourceReads = 0;
+    source.arrayBuffer = async () => {
+      sourceReads += 1;
+      return readSource();
+    };
+
+    const artifact = await importOfficeFile(source);
+
+    expect(sourceReads).toBe(1);
+    expect(artifact).toMatchObject({
+      kind: 'pdf',
+      title: 'contract',
+      content: { type: 'pdf' },
+      source: {
+        name: 'contract.pdf',
+        contentType: 'application/pdf',
+        size: bytes.byteLength,
+        updatedAt: 1_765_756_800_000,
+      },
+    });
+    const output = await createArtifactBlob(artifact);
+    expect(output).not.toBe(source);
+    expect(output.type).toBe('application/pdf');
+    expect(new Uint8Array(await output.arrayBuffer())).toEqual(bytes);
+    expect(sourceReads).toBe(1);
+  });
+
   test('imports browser documents into the versioned structured model', async () => {
     const artifact = await importOfficeFile(
       new File(['<h1>A3S Office</h1><p>Structured import.</p>'], 'brief.html', {

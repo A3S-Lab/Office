@@ -44,3 +44,18 @@ export function PdfPage({ file }: { file: File }) {
 Use `loadSource` to connect object storage, IndexedDB, or a local file handle.
 Use `onSave` to own authorization, progress, versioning, and failure behavior.
 PDFium and annotation-controller internals are not public extension points.
+
+## Page navigation
+
+The desktop surface keeps a scrollable page-thumbnail rail synchronized with
+the page field and PDF viewport. On compact screens the same rail becomes a
+dismissible modal drawer. Long documents render a bounded thumbnail window,
+so navigation cost does not grow linearly with the page count.
+
+Each thumbnail is a real button. `ArrowUp` and `ArrowDown` move one page,
+`Home` selects the first page, and `End` selects the last page. Keyboard
+navigation updates both `aria-current` and DOM focus after the destination is
+mounted, including destinations outside the current virtualized window. The
+viewer serializes overlapping page changes and preserves the latest requested
+destination while the PDF viewport settles. The host does not need to
+coordinate thumbnail focus or page selection.

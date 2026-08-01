@@ -32,6 +32,18 @@ suite "office-spreadsheet-phone-rename" {
             visible = css(".work-spreadsheet-editor")
         }
 
+        wait "spreadsheet-grid-ready" {
+            visible = css(".fortune-sheet-overlay")
+        }
+
+        focus "focus-spreadsheet-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        expect "spreadsheet-grid-focused" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
         press "create-worksheet" {
             key = "Shift+F11"
         }

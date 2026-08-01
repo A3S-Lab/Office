@@ -47,6 +47,7 @@ export function PdfThumbnailRail({
   onSelectPage,
 }: PdfThumbnailRailProps) {
   const viewportRef = useRef<HTMLElement>(null);
+  const pendingKeyboardFocusPageRef = useRef<number | null>(null);
   const [anchorIndex, setAnchorIndex] = useState(() =>
     pageIndex(currentPage, totalPages),
   );
@@ -107,6 +108,16 @@ export function PdfThumbnailRail({
       ),
     [range.end, range.start],
   );
+  useLayoutEffect(() => {
+    const pendingPage = pendingKeyboardFocusPageRef.current;
+    if (pendingPage === null || currentPage !== pendingPage) return;
+    const thumbnail = viewportRef.current?.querySelector<HTMLButtonElement>(
+      `[data-pdf-page-index="${pendingPage - 1}"]`,
+    );
+    if (!thumbnail) return;
+    pendingKeyboardFocusPageRef.current = null;
+    thumbnail.focus({ preventScroll: true });
+  }, [currentPage, range.end, range.start]);
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
     const thumbnail = viewport?.querySelector<HTMLElement>(
@@ -176,6 +187,12 @@ export function PdfThumbnailRail({
               registry={registry}
               totalPages={totalPages}
               onSelectPage={onSelectPage}
+              onSelectPageFromKeyboard={(nextPage) => {
+                if (!mobileNavigationModal) {
+                  pendingKeyboardFocusPageRef.current = nextPage;
+                }
+                onSelectPage(nextPage);
+              }}
             />
           ))}
           <PdfThumbnailSpacer height={bottomSpacerHeight} position="after" />
@@ -226,12 +243,14 @@ function PdfPageThumbnail({
   registry,
   totalPages,
   onSelectPage,
+  onSelectPageFromKeyboard,
 }: {
   current: boolean;
   page: number;
   registry: PluginRegistry;
   totalPages: number;
   onSelectPage: (page: number) => void;
+  onSelectPageFromKeyboard: (page: number) => void;
 }) {
   const { sourceUrl, state } = usePdfThumbnailSource(registry, page);
   return (
@@ -248,7 +267,7 @@ function PdfPageThumbnail({
         if (nextPage === null) return;
         event.preventDefault();
         event.stopPropagation();
-        onSelectPage(nextPage);
+        onSelectPageFromKeyboard(nextPage);
       }}
     >
       <span className="work-pdf-thumbnail-number" aria-hidden="true">

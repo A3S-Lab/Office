@@ -109,6 +109,7 @@ export function usePdfViewerController(
   registry: PluginRegistry | null,
 ): PdfViewerController {
   const capabilitiesRef = useRef<PdfViewerCapabilities | null>(null);
+  const pendingPageRef = useRef<number | null>(null);
   const [state, setState] = useState<PdfViewerControllerState>(
     initialPdfViewerControllerState,
   );
@@ -117,6 +118,7 @@ export function usePdfViewerController(
     let disposed = false;
     const unsubscribe: Array<() => void> = [];
     capabilitiesRef.current = null;
+    pendingPageRef.current = null;
     setState(initialPdfViewerControllerState);
     if (!registry) return;
 
@@ -132,24 +134,43 @@ export function usePdfViewerController(
             setState(readControllerState(capabilities));
           }
         };
+        const syncDocument = () => {
+          pendingPageRef.current = null;
+          sync();
+        };
 
         subscribe(
           unsubscribe,
           capabilities.documentManager?.onActiveDocumentChanged,
-          sync,
+          syncDocument,
         );
         subscribe(
           unsubscribe,
           capabilities.documentManager?.onDocumentOpened,
-          sync,
+          syncDocument,
         );
         subscribe(
           unsubscribe,
           capabilities.documentManager?.onDocumentClosed,
-          sync,
+          syncDocument,
         );
         subscribe(unsubscribe, capabilities.scroll?.onPageChange, sync);
         subscribe(unsubscribe, capabilities.scroll?.onLayoutReady, sync);
+        const stopPageChangeState = safely(() =>
+          capabilities.scroll?.onPageChangeState((event) => {
+            if (disposed || event.state.isChanging) return;
+            const pendingPage = pendingPageRef.current;
+            if (pendingPage === null) return;
+            withActiveDocument(capabilities, ({ scroll }, documentId) => {
+              if (event.documentId !== documentId) return;
+              const scope = scroll?.forDocument(documentId);
+              if (scope) {
+                requestPdfPageNavigation(scope, pendingPage, pendingPageRef);
+              }
+            });
+          }),
+        );
+        if (stopPageChangeState) unsubscribe.push(stopPageChangeState);
         subscribe(unsubscribe, capabilities.zoom?.onStateChange, sync);
         subscribe(unsubscribe, capabilities.search?.onStateChange, sync);
         subscribe(unsubscribe, capabilities.history?.onHistoryChange, sync);
@@ -166,6 +187,7 @@ export function usePdfViewerController(
     return () => {
       disposed = true;
       capabilitiesRef.current = null;
+      pendingPageRef.current = null;
       for (const stop of unsubscribe) stop();
     };
   }, [registry]);
@@ -186,12 +208,7 @@ export function usePdfViewerController(
     withActiveDocument(capabilitiesRef.current, ({ scroll }, documentId) => {
       const scope = scroll?.forDocument(documentId);
       if (!scope) return;
-      const totalPages = scope.getTotalPages();
-      if (totalPages < 1) return;
-      const nextPage = Math.min(totalPages, Math.max(1, Math.round(page)));
-      if (Number.isFinite(nextPage)) {
-        scope.scrollToPage({ pageNumber: nextPage, behavior: 'smooth' });
-      }
+      requestPdfPageNavigation(scope, page, pendingPageRef);
     });
   }, []);
 
@@ -434,6 +451,24 @@ function withActiveDocument(
   const documentId = activeDocumentId(capabilities);
   if (!capabilities || !documentId) return;
   safely(() => action(capabilities, documentId));
+}
+
+function requestPdfPageNavigation(
+  scope: ReturnType<ScrollCapability['forDocument']>,
+  page: number,
+  pendingPage: { current: number | null },
+): void {
+  const totalPages = scope.getTotalPages();
+  if (totalPages < 1 || !Number.isFinite(page)) return;
+  const nextPage = Math.min(totalPages, Math.max(1, Math.round(page)));
+  const pageChangeInProgress =
+    safely(() => scope.getPageChangeState().isChanging) ?? false;
+  if (pageChangeInProgress) {
+    pendingPage.current = nextPage;
+    return;
+  }
+  pendingPage.current = null;
+  scope.scrollToPage({ pageNumber: nextPage, behavior: 'auto' });
 }
 
 function subscribe<T>(
