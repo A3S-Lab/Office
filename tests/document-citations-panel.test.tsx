@@ -125,6 +125,61 @@ test('uses progressive disclosure and focuses a new citation source', async () =
   }
 });
 
+test('moves citation validation to the invalid required field', async () => {
+  const editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p>References</p>',
+  });
+  const content: WorkDocumentContent = {
+    type: 'document',
+    html: editor.getHTML(),
+    bibliography: { style: 'apa', sources: [] },
+  };
+
+  try {
+    render(
+      <DocumentCitationsPanel
+        editor={editor}
+        content={content}
+        onClose={() => undefined}
+      />,
+    );
+
+    const tag = screen.getByRole('textbox', { name: '文献简称' });
+    const title = screen.getByRole('textbox', { name: '文献标题' });
+    const save = screen.getByRole('button', { name: '保存文献' });
+
+    fireEvent.change(tag, { target: { value: 'source2026' } });
+    save.focus();
+    fireEvent.click(save);
+
+    const titleError = await screen.findByRole('alert');
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(title).toHaveAttribute('aria-describedby', titleError.id);
+    expect(titleError).toHaveTextContent('请输入文献标题。');
+    expect(tag).not.toHaveAttribute('aria-invalid');
+
+    fireEvent.change(title, {
+      target: { value: 'Agentic Office Workflows' },
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(title).not.toHaveAttribute('aria-invalid');
+
+    fireEvent.change(tag, { target: { value: 'invalid tag' } });
+    fireEvent.click(save);
+
+    const tagError = await screen.findByRole('alert');
+    await waitFor(() => expect(tag).toHaveFocus());
+    expect(tag).toHaveAttribute('aria-invalid', 'true');
+    expect(tag).toHaveAttribute('aria-describedby', tagError.id);
+    expect(tagError).toHaveTextContent('简称只能使用字母、数字');
+    expect(title).not.toHaveAttribute('aria-invalid');
+  } finally {
+    editor.destroy();
+  }
+});
+
 test('confirms before deleting a citation source', async () => {
   const editor = new Editor({
     extensions: createWorkDocumentExtensions(),

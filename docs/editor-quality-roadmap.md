@@ -224,7 +224,11 @@ content. Cancelling a task-pane switch now returns keyboard focus to the exact
 unfinished comment, reply, or citation field on desktop and compact layouts,
 so protected content can be edited immediately. The same editing context is
 retained when users cancel comment deletion, citation deletion, or an internal
-citation switch. Raster-quality page thumbnails and bounded page,
+citation switch. Citation source validation is now attached to the exact
+invalid tag or title field, moves keyboard focus to that field, and clears only
+when its value changes. A deterministic phone workflow covers validation,
+source persistence, citation insertion, and exact close-to-invoker focus
+restoration. Raster-quality page thumbnails and bounded page,
 outline/search-result virtualization for 100-page fixtures remain part of this
 priority.
 

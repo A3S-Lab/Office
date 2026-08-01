@@ -1,6 +1,6 @@
 import { Quote, Trash2 } from 'lucide-react';
-import type { Ref } from 'react';
-import { Button, InlineNotice } from '../../../design-system/primitives';
+import { type Ref, useId } from 'react';
+import { Button } from '../../../design-system/primitives';
 import {
   OfficeSelect,
   OfficeTextArea,
@@ -27,6 +27,8 @@ export interface CitationSourceDraft {
   institution: string;
 }
 
+export type CitationSourceValidationField = 'tag' | 'title';
+
 const SOURCE_TYPES = [
   ['Book', '书籍'],
   ['BookSection', '书籍章节'],
@@ -44,7 +46,9 @@ export function DocumentCitationSourceForm({
   draft,
   dirty,
   error,
+  errorField,
   tagInputRef,
+  titleInputRef,
   onDraftChange,
   onSave,
   onInsert,
@@ -53,12 +57,15 @@ export function DocumentCitationSourceForm({
   draft: CitationSourceDraft;
   dirty: boolean;
   error: string;
+  errorField?: CitationSourceValidationField;
   tagInputRef?: Ref<HTMLInputElement>;
+  titleInputRef?: Ref<HTMLInputElement>;
   onDraftChange: (draft: CitationSourceDraft) => void;
   onSave: () => void;
   onInsert: () => void;
   onDelete: () => void;
 }) {
+  const validationErrorId = useId();
   const saved = Boolean(draft.id);
   const knownSourceType = SOURCE_TYPES.some(
     ([value]) => value === draft.sourceType,
@@ -67,6 +74,8 @@ export function DocumentCitationSourceForm({
     key: Key,
     value: CitationSourceDraft[Key],
   ) => onDraftChange({ ...draft, [key]: value });
+  const tagError = errorField === 'tag' ? error : '';
+  const titleError = errorField === 'title' ? error : '';
 
   return (
     <form
@@ -85,11 +94,22 @@ export function DocumentCitationSourceForm({
         <OfficeTextField
           ref={tagInputRef}
           aria-label="文献简称"
+          aria-describedby={tagError ? validationErrorId : undefined}
+          aria-invalid={tagError ? true : undefined}
           value={draft.tag}
           maxLength={80}
           placeholder="例如 Smith2026"
           onChange={(event) => update('tag', event.target.value)}
         />
+        {tagError && (
+          <span
+            id={validationErrorId}
+            className="work-office-dialog-field-error"
+            role="alert"
+          >
+            {tagError}
+          </span>
+        )}
       </div>
       <div className="work-office-field">
         <span>类型</span>
@@ -113,10 +133,22 @@ export function DocumentCitationSourceForm({
       <div className="work-office-field wide">
         <span>标题</span>
         <OfficeTextField
+          ref={titleInputRef}
           aria-label="文献标题"
+          aria-describedby={titleError ? validationErrorId : undefined}
+          aria-invalid={titleError ? true : undefined}
           value={draft.title}
           onChange={(event) => update('title', event.target.value)}
         />
+        {titleError && (
+          <span
+            id={validationErrorId}
+            className="work-office-dialog-field-error"
+            role="alert"
+          >
+            {titleError}
+          </span>
+        )}
       </div>
       <div className="work-office-field">
         <span>年份</span>
@@ -236,15 +268,6 @@ export function DocumentCitationSourceForm({
         </div>
       </details>
       <div className="actions wide">
-        {error && (
-          <InlineNotice
-            className="work-office-form-error"
-            tone="danger"
-            role="alert"
-          >
-            {error}
-          </InlineNotice>
-        )}
         <div className="work-document-citation-form-buttons">
           {saved && (
             <Button tone="danger" aria-label="删除文献" onClick={onDelete}>

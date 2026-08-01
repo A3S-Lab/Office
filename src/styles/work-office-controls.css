@@ -92,6 +92,17 @@
     );
 }
 
+.work-office-text-field[aria-invalid="true"],
+.work-office-text-area[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--a3s-red) 68%, var(--a3s-line));
+}
+
+.work-office-text-field[aria-invalid="true"]:focus-visible,
+.work-office-text-area[aria-invalid="true"]:focus-visible {
+  border-color: var(--a3s-red);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--a3s-red) 16%, transparent);
+}
+
 .work-office-select > button[role="combobox"]:disabled,
 .work-office-color-trigger:disabled,
 .work-office-text-field:disabled,

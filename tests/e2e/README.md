@@ -20,8 +20,10 @@ bun run test:e2e
 ```
 
 The suites cover focused Word page-color, the complete phone Page Setup flow
-with grouped header/footer formatting controls, compact comments-drawer,
-full-text navigation, the complete phone Find/Replace workflow, page-preview,
+with grouped header/footer formatting controls, compact comments-drawer, a
+phone citation workflow with field-level validation, save, insertion, and
+close-to-invoker focus restoration, full-text navigation, the complete phone
+Find/Replace workflow, page-preview,
 selected-text AI question-composer regressions, and durable picture insertion
 from a project-relative fixture after the browser-managed file input is reset,
 plus phone-width picture alternative-text editing that retains the image

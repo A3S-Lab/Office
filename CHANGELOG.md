@@ -141,6 +141,9 @@ All notable changes to A3S Office will be documented in this file.
 - Preserved unfinished Word replies and edited citation fields when users
   cancel comment deletion, citation deletion, or an internal citation switch,
   and returned focus to the exact field instead of the destructive action.
+- Moved Word citation validation beside the invalid tag or title field, added
+  accessible error relationships and invalid styling, and focused the field so
+  phone users can repair and complete the citation workflow immediately.
 - Guarded worksheet deletion with the shared safe-default Office confirmation
   dialog, and kept invalid inline renames open with concise visible and
   accessible validation instead of silently discarding the entered name.

@@ -128,7 +128,7 @@ suite "office-word-navigation-search" {
             visible = css(".work-document-scroll:not([inert])")
         }
 
-        expect "document-is-focused" {
+        wait "document-is-focused" {
             visible = css(".work-document-editable .ProseMirror:focus")
         }
 

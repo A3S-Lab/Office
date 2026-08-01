@@ -18,6 +18,7 @@ import type {
 } from '../work-types';
 import {
   type CitationSourceDraft,
+  type CitationSourceValidationField,
   DocumentCitationSourceForm,
 } from './document-citation-source-form';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
@@ -42,8 +43,12 @@ export function DocumentCitationsPanel({
   const [draft, setDraft] = useState<CitationSourceDraft>(() =>
     sourceDraft(bibliography.sources[0]),
   );
-  const [error, setError] = useState('');
+  const [error, setError] = useState<{
+    field: CitationSourceValidationField;
+    message: string;
+  } | null>(null);
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const draftFocusRef = useRef<HTMLElement | null>(null);
   const selectedSource = bibliography.sources.find(
     (source) => source.id === draft.id,
@@ -81,12 +86,12 @@ export function DocumentCitationsPanel({
   const selectSource = (source: WorkDocumentCitationSource) => {
     setSelectedId(source.id);
     setDraft(sourceDraft(source));
-    setError('');
+    setError(null);
   };
   const startNewSource = () => {
     setSelectedId(null);
     setDraft(sourceDraft());
-    setError('');
+    setError(null);
     requestAnimationFrame(() =>
       tagInputRef.current?.focus({ preventScroll: true }),
     );
@@ -121,14 +126,29 @@ export function DocumentCitationsPanel({
     }
     action();
   };
+  const reportValidationError = (
+    field: CitationSourceValidationField,
+    message: string,
+  ) => {
+    setError({ field, message });
+    requestAnimationFrame(() => {
+      const target =
+        field === 'tag' ? tagInputRef.current : titleInputRef.current;
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  };
   const saveSource = () => {
     const tag = draft.tag.trim();
     if (!isValidDocumentCitationTag(tag)) {
-      setError('简称只能使用字母、数字、下划线及 . : + -，长度不超过 80。');
+      reportValidationError(
+        'tag',
+        '简称只能使用字母、数字、下划线及 . : + -，长度不超过 80。',
+      );
       return;
     }
     if (!draft.title.trim()) {
-      setError('请输入文献标题。');
+      reportValidationError('title', '请输入文献标题。');
       return;
     }
     if (
@@ -138,7 +158,7 @@ export function DocumentCitationsPanel({
           source.tag.toLowerCase() === tag.toLowerCase(),
       )
     ) {
-      setError('已经存在相同的简称。');
+      reportValidationError('tag', '已经存在相同的简称。');
       return;
     }
     const existing = bibliography.sources.find(
@@ -188,7 +208,7 @@ export function DocumentCitationsPanel({
     );
     setSelectedId(saved.id);
     setDraft(sourceDraft(saved));
-    setError('');
+    setError(null);
   };
   const deleteSource = async () => {
     if (!draft.id) {
@@ -211,7 +231,7 @@ export function DocumentCitationsPanel({
     const next = sources[0];
     setSelectedId(next?.id ?? null);
     setDraft(sourceDraft(next));
-    setError('');
+    setError(null);
   };
   const changeStyle = (style: WorkDocumentCitationStyle) => {
     const details = documentCitationStyleDetails(style);
@@ -303,11 +323,17 @@ export function DocumentCitationsPanel({
           <DocumentCitationSourceForm
             draft={draft}
             dirty={dirty}
-            error={error}
+            error={error?.message ?? ''}
+            errorField={error?.field}
             tagInputRef={tagInputRef}
+            titleInputRef={titleInputRef}
             onDraftChange={(nextDraft) => {
               setDraft(nextDraft);
-              setError('');
+              setError((current) =>
+                current && nextDraft[current.field] !== draft[current.field]
+                  ? null
+                  : current,
+              );
             }}
             onSave={saveSource}
             onInsert={() => {
