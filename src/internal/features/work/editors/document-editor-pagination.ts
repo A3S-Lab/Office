@@ -13,6 +13,8 @@ export function fallbackPaginationPageDescriptor(
     pageIndex: sectionPage - 1,
     physicalPage: sectionPage,
     pageNumber: Math.max(1, layout.pageNumberStart ?? 1) + sectionPage - 1,
+    previewText: '',
+    selectionPosition: 1,
     sectionPage,
     sectionId: sectionId ?? 'document-section-1',
     sectionIndex: sectionIndex ?? 0,

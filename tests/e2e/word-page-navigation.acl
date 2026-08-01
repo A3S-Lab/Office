@@ -1,0 +1,77 @@
+suite "office-word-page-navigation" {
+    version = 1
+
+    scenario "browse-page-previews" {
+        name = "Browse Word page previews from the desktop navigation pane"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        expect "heading-view-ready" {
+            text = "标题"
+        }
+
+        click "open-pages" {
+            target = text("页面", true)
+        }
+
+        wait "page-preview-mounted" {
+            text = "第 1 页"
+        }
+
+        expect "page-navigation-ready" {
+            visible = css(".work-document-page-navigation")
+        }
+
+        expect "current-page-ready" {
+            visible = css("[data-document-page-thumbnail='1'][aria-current='page']")
+        }
+
+        expect "text-preview-ready" {
+            visible = css("[data-document-page-thumbnail='1'] .work-document-page-thumbnail > span")
+        }
+
+        screenshot "page-navigation" {
+            path = "screenshots/word-page-navigation-desktop.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

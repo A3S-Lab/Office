@@ -1,4 +1,5 @@
 import type { Editor, EditorEvents } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -44,6 +45,8 @@ export interface DocumentPaginationPageDescriptor {
   pageIndex: number;
   physicalPage: number;
   pageNumber: number;
+  previewText: string;
+  selectionPosition: number;
   sectionPage: number;
   sectionId: string;
   sectionIndex: number;
@@ -388,6 +391,7 @@ export function useDocumentPagination({
         const pages = documentPaginationPageDescriptors(
           layout,
           snapshot.blocks,
+          editor.state.doc,
         );
         const pageByIndex = new Map(
           pages.map(
@@ -548,6 +552,7 @@ export function useDocumentPagination({
 export function documentPaginationPageDescriptors(
   layout: OfficeKernelLayoutResult,
   blocks: readonly MeasuredDocumentLayoutBlock[],
+  documentNode?: ProseMirrorNode,
 ): DocumentPaginationPageDescriptor[] {
   const blockById = new Map(
     blocks.map((candidate) => [candidate.block.id, candidate] as const),
@@ -556,6 +561,14 @@ export function documentPaginationPageDescriptors(
   const descriptors: DocumentPaginationPageDescriptor[] = [];
 
   for (const page of layout.pages) {
+    const pageBlocks = Array.from(
+      new Map(
+        page.placements.flatMap((placement) => {
+          const block = blockById.get(placement.blockId);
+          return block ? [[block.block.id, block] as const] : [];
+        }),
+      ).values(),
+    );
     const pageSections = Array.from(
       new Map(
         page.placements.flatMap((placement) => {
@@ -582,6 +595,15 @@ export function documentPaginationPageDescriptors(
       pageIndex: page.index,
       physicalPage,
       pageNumber,
+      previewText: documentPagePreviewText(pageBlocks, documentNode),
+      selectionPosition: Math.max(
+        1,
+        Math.min(
+          ...pageBlocks.map(
+            (block) => block.selectionRanges?.[0]?.from ?? block.from,
+          ),
+        ),
+      ),
       sectionPage,
       sectionId: section.id,
       sectionIndex: section.index,
@@ -594,6 +616,63 @@ export function documentPaginationPageDescriptors(
     });
   }
   return descriptors;
+}
+
+function documentPagePreviewText(
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+  documentNode: ProseMirrorNode | undefined,
+): string {
+  const measuredText = documentNode
+    ? documentPageTextRanges(blocks)
+        .reduce(
+          (preview, range) => {
+            const from = Math.max(preview.cursor, range.from);
+            const to = Math.min(documentNode.content.size, range.to);
+            if (to <= from) return preview;
+            const separator = preview.text && from > preview.cursor ? ' ' : '';
+            return {
+              cursor: to,
+              text: `${preview.text}${separator}${documentNode.textBetween(
+                from,
+                to,
+                ' ',
+                ' ',
+              )}`,
+            };
+          },
+          { cursor: 0, text: '' },
+        )
+        .text.replaceAll(/\s+/g, ' ')
+        .trim()
+    : '';
+  if (measuredText) return measuredText.slice(0, 320);
+  return blocks
+    .map((block) => block.element.textContent?.replaceAll(/\s+/g, ' ').trim())
+    .filter((text): text is string => Boolean(text))
+    .join(' ')
+    .slice(0, 320);
+}
+
+function documentPageTextRanges(
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+): Array<{ from: number; to: number }> {
+  return Array.from(
+    new Map(
+      blocks
+        .flatMap((block) =>
+          block.selectionRanges?.length
+            ? block.selectionRanges
+            : [{ from: block.from, to: block.to }],
+        )
+        .filter(
+          (range) =>
+            Number.isSafeInteger(range.from) &&
+            Number.isSafeInteger(range.to) &&
+            range.to > range.from,
+        )
+        .map((range) => [`${range.from}:${range.to}`, range] as const),
+    ).values(),
+  ).sort((left, right) => left.from - right.from || left.to - right.to);
 }
 
 function visualPageChrome(

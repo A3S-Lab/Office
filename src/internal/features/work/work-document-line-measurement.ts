@@ -9,7 +9,10 @@ import {
   verticalBlockStart,
 } from './work-document-pagination-dom';
 import type { MeasuredDocumentLayoutBlock } from './work-document-pagination-types';
-import { documentTextLayoutContent } from './work-document-text-layout';
+import {
+  documentTextLayoutContent,
+  isDocumentLineFragmentNode,
+} from './work-document-text-layout';
 
 interface DocumentLineRect {
   top: number;
@@ -69,7 +72,7 @@ export function measureParagraphLineFragments(
 ): MeasuredDocumentLayoutBlock[] {
   const text = documentTextLayoutContent(node);
   if (
-    node.type.name !== 'paragraph' ||
+    !isDocumentLineFragmentNode(node) ||
     (text ?? node.textContent).length < 2 ||
     element.querySelector(
       [

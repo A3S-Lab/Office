@@ -384,6 +384,40 @@ describe('document mixed-run text layout', () => {
     }
   });
 
+  test('sends headings to the deterministic line-layout kernel', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content:
+        '<section data-document-section="true"><h1>Long heading content that can span physical pages</h1></section>',
+    });
+    document.body.append(editor.view.dom);
+    const heading = editor.view.dom.querySelector('h1');
+    expect(heading).toBeInstanceOf(HTMLElement);
+    applyTextMetrics(heading as HTMLElement, 24, 32);
+    Object.defineProperty(heading, 'clientWidth', {
+      configurable: true,
+      value: 400,
+    });
+
+    try {
+      expect(
+        collectDocumentTextLayoutParagraphs(
+          editor,
+          [layoutFont],
+          new Set([layoutFont.id]),
+        ).paragraphs,
+      ).toEqual([
+        expect.objectContaining({
+          text: 'Long heading content that can span physical pages',
+          maxWidth: 400,
+        }),
+      ]);
+    } finally {
+      editor.view.dom.remove();
+      editor.destroy();
+    }
+  });
+
   test('collects list paragraphs for deterministic text layout', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),

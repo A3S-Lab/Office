@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { Schema } from '@tiptap/pm/model';
 import {
   createDocumentTableRowFragmentPlan,
   createDocumentLineFragments,
@@ -400,6 +401,56 @@ test('counts a continuous section on every physical page it occupies', () => {
     sectionId: 'section-b',
     sectionPage: 2,
   });
+});
+
+test('derives each page preview and jump target from its measured text range', () => {
+  const firstPageText = 'First page summary.';
+  const secondPageText = 'Second page details.';
+  const schema = new Schema({
+    nodes: {
+      doc: { content: 'block+' },
+      paragraph: { content: 'text*', group: 'block' },
+      text: { inline: true },
+    },
+  });
+  const documentNode = schema.node('doc', null, [
+    schema.node(
+      'paragraph',
+      null,
+      schema.text(`${firstPageText} ${secondPageText}`),
+    ),
+  ]);
+  const element = document.createElement('p');
+  element.textContent = `${firstPageText} ${secondPageText}`;
+  const layout = sectionLayout();
+  const firstTextEnd = 1 + firstPageText.length;
+  const secondTextStart = firstTextEnd + 1;
+  const blocks: MeasuredDocumentLayoutBlock[] = [
+    {
+      ...measuredBlock('paragraph-line-0', 'section-a', 0, layout, element),
+      from: 1,
+      to: firstTextEnd,
+    },
+    {
+      ...measuredBlock('paragraph-line-1', 'section-a', 0, layout, element),
+      from: secondTextStart,
+      to: secondTextStart + secondPageText.length,
+    },
+  ];
+
+  expect(
+    documentPaginationPageDescriptors(
+      paginationLayout(['paragraph-line-0', 'paragraph-line-1']),
+      blocks,
+      documentNode,
+    ).map(({ previewText, selectionPosition }) => ({
+      previewText,
+      selectionPosition,
+    })),
+  ).toEqual([
+    { previewText: firstPageText, selectionPosition: 1 },
+    { previewText: secondPageText, selectionPosition: secondTextStart },
+  ]);
 });
 
 function sectionLayout(

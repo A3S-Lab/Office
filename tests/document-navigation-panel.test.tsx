@@ -202,6 +202,62 @@ test('searches body text, previews context, and jumps to a selected result', asy
   }
 });
 
+test('switches to page previews and jumps to the selected page', async () => {
+  const { editor, element } = createEditor();
+  const outline = collectWorkDocumentOutline(editor.state.doc);
+  const delivery = outline.find((item) => item.text === '交付计划');
+  if (!delivery) throw new Error('Expected the delivery heading.');
+
+  try {
+    render(
+      <DocumentNavigationPanel
+        currentPage={1}
+        editor={editor}
+        pages={[
+          {
+            physicalPage: 1,
+            pageNumber: 1,
+            orientation: 'portrait',
+            previewText: '项目方案 背景与目标 工作范围',
+            selectionPosition: 1,
+          },
+          {
+            physicalPage: 2,
+            pageNumber: 2,
+            orientation: 'portrait',
+            previewText: '交付计划 交付计划内容',
+            selectionPosition: delivery.from,
+          },
+        ]}
+        onClose={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: '页面' }));
+    const pages = screen.getByRole('navigation', { name: '文档页面' });
+    const firstPage = within(pages).getByRole('button', { name: '第 1 页' });
+    const secondPage = within(pages).getByRole('button', { name: '第 2 页' });
+    expect(firstPage).toHaveAttribute('aria-current', 'page');
+    expect(secondPage).toHaveTextContent('交付计划');
+
+    fireEvent.click(secondPage);
+    expect(secondPage).toHaveAttribute('aria-current', 'page');
+    expect(
+      editor.state.doc.textBetween(
+        editor.state.selection.from,
+        editor.state.selection.from + '交付计划'.length,
+      ),
+    ).toBe('交付计划');
+
+    secondPage.focus();
+    fireEvent.keyDown(secondPage, { key: 'Home' });
+    await waitFor(() => expect(firstPage).toHaveFocus());
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 test('closes compact navigation before restoring the body selection', async () => {
   const { editor, element } = createEditor();
 

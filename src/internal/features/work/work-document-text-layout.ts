@@ -190,7 +190,7 @@ function documentTextLayoutParagraph(
 ): OfficeKernelTextLayoutParagraph | null {
   const text = documentTextLayoutContent(node);
   if (
-    node.type.name !== 'paragraph' ||
+    !isDocumentLineFragmentNode(node) ||
     text === null ||
     text.length < 2 ||
     text.includes('\u00ad') ||
@@ -253,6 +253,10 @@ function documentTextLayoutParagraph(
         }
       : {}),
   };
+}
+
+export function isDocumentLineFragmentNode(node: ProseMirrorNode): boolean {
+  return node.type.name === 'paragraph' || node.type.name === 'heading';
 }
 
 export function documentTextLayoutContent(

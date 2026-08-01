@@ -18,10 +18,11 @@ bun run test:e2e:check
 bun run test:e2e
 ```
 
-The suites cover focused Word page-color, compact comments-drawer, and
-full-text navigation regressions; the phone Spreadsheet worksheet-rename
-workflow; Presentation focus recovery across object cut and paste; and the
-public Playground-to-managed-guide navigation contract, including the
-documentation tree and published Playground return link. Each suite owns only
-its browser surface. Keep the preview process under the terminal that started
-it and stop that process separately when testing is complete.
+The suites cover focused Word page-color, compact comments-drawer, full-text
+navigation, and page-preview regressions; the phone Spreadsheet
+worksheet-rename workflow; Presentation focus recovery across object cut and
+paste; and the public Playground-to-managed-guide navigation contract,
+including the documentation tree and published Playground return link. Each
+suite owns only its browser surface. Keep the preview process under the
+terminal that started it and stop that process separately when testing is
+complete.

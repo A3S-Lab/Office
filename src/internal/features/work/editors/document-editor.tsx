@@ -852,8 +852,22 @@ export function DocumentEditor({
       >
         {!preview && navigationOpen && (
           <DocumentNavigationPanel
+            currentPage={currentPage}
             editor={editor}
             modal={taskPaneModal}
+            pages={(pagination.pages.length
+              ? pagination.pages
+              : [firstPageDescriptor]
+            ).map((page) => ({
+              backgroundColor: documentPageColor(content.pageColor),
+              orientation: page.layout.orientation,
+              pageNumber: page.pageNumber,
+              physicalPage: page.physicalPage,
+              previewText:
+                page.previewText ||
+                editor.getText().replaceAll(/\s+/g, ' ').trim().slice(0, 320),
+              selectionPosition: page.selectionPosition,
+            }))}
             onClose={closeTaskPane}
           />
         )}
