@@ -20,7 +20,7 @@
 
 <p align="center">
   <a href="https://a3s-lab.github.io/Office/">Playground</a> ·
-  <a href="https://a3s-lab.github.io/Office/docs/guide/">Documentation</a> ·
+  <a href="https://a3s-lab.github.io/Office/docs/">Documentation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#five-format-native-surfaces">Editors</a> ·
   <a href="#native-automation">Automation</a> ·
@@ -425,7 +425,7 @@ committed visual contracts; see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Documentation
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
-- [Documentation center](https://a3s-lab.github.io/Office/docs/guide/)
+- [Documentation center](https://a3s-lab.github.io/Office/docs/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
 - [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)
 - [Browser editor architecture](docs/browser-editor-architecture.md)

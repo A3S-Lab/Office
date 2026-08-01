@@ -791,13 +791,13 @@ test('Playground stays at the site root and opens a standalone documentation cen
     productNavigation.getByRole('button', { name: 'Playground' }),
   ).toHaveAttribute('aria-current', 'page');
   const docs = productNavigation.getByRole('link', { name: '文档' });
-  await expect(docs).toHaveAttribute('href', /docs\/guide\/index\.html$/);
+  await expect(docs).toHaveAttribute('href', /docs\/index\.html$/);
   await docs.click();
 
-  await expect(page).toHaveURL(/\/docs\/guide\/index\.html$/);
+  await expect(page).toHaveURL(/\/docs\/index\.html$/);
   await expect(
     page.getByRole('heading', {
-      name: 'Getting started',
+      name: 'A3S Office documentation',
       level: 1,
     }),
   ).toBeVisible();
@@ -815,17 +815,11 @@ test('Playground stays at the site root and opens a standalone documentation cen
     'href',
     /\/Office\/$/,
   );
-
-  await page.goto('/docs/index.html');
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole('heading', {
-      name: 'A3S Office documentation',
-      level: 1,
-    }),
+    page.getByRole('heading', { name: '我的文档', level: 1 }),
   ).toBeVisible();
-  await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
-    'Getting started',
-  );
 });
 
 test('documentation pages provide searchable framework examples with syntax highlighting', async ({

@@ -19,11 +19,11 @@ suite "office-docs-navigation" {
         }
 
         wait "documentation-route" {
-            url = "http://127.0.0.1:4175/docs/guide/index.html"
+            url = "http://127.0.0.1:4175/docs/index.html"
         }
 
         expect "documentation-center-ready" {
-            text = "Getting started"
+            text = "A3S Office documentation"
         }
 
         expect "documentation-search-ready" {

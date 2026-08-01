@@ -4,12 +4,12 @@ import {
   legacyDocsPath,
 } from '../playground/src/site-routes';
 
-test('keeps the Playground at the site root and opens the managed guide directly', () => {
+test('keeps the Playground at the site root and opens the documentation center', () => {
   expect(
     documentationEntryUrl('https://a3s-lab.github.io/Office/index.html'),
-  ).toBe('https://a3s-lab.github.io/Office/docs/guide/index.html');
+  ).toBe('https://a3s-lab.github.io/Office/docs/index.html');
   expect(documentationEntryUrl('http://127.0.0.1:4175/')).toBe(
-    'http://127.0.0.1:4175/docs/guide/index.html',
+    'http://127.0.0.1:4175/docs/index.html',
   );
 });
 
