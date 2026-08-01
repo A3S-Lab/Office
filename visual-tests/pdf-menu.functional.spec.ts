@@ -50,6 +50,48 @@ test('PDF page rail scrolls, selects pages, and follows toolbar navigation', asy
     .toBe(true);
 });
 
+test('PDF page thumbnails stay inside their navigation cards', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openPdfFixture(page, { pageCount: 3 });
+  await waitForPdfFixture(page);
+
+  const geometry = await page
+    .getByRole('navigation', { name: 'PDF 页面缩略图' })
+    .evaluate((viewport) => {
+      const viewportBounds = viewport.getBoundingClientRect();
+      return Array.from(
+        viewport.querySelectorAll<HTMLButtonElement>(
+          '[data-pdf-page-thumbnail]',
+        ),
+      ).map((button) => {
+        const buttonBounds = button.getBoundingClientRect();
+        const numberBounds = button
+          .querySelector('.work-pdf-thumbnail-number')
+          ?.getBoundingClientRect();
+        const previewBounds = button
+          .querySelector('.work-pdf-thumbnail-preview')
+          ?.getBoundingClientRect();
+
+        return {
+          buttonRight: buttonBounds.right,
+          numberTop: numberBounds?.top,
+          previewRight: previewBounds?.right,
+          previewTop: previewBounds?.top,
+          viewportRight: viewportBounds.right,
+        };
+      });
+    });
+
+  expect(geometry.length).toBeGreaterThan(0);
+  for (const item of geometry) {
+    expect(item.previewRight).toBeLessThanOrEqual(item.buttonRight + 0.5);
+    expect(item.buttonRight).toBeLessThanOrEqual(item.viewportRight + 0.5);
+    expect(item.numberTop).toBeCloseTo(item.previewTop ?? Number.NaN, 0);
+  }
+});
+
 test('PDF toolbar shortcuts stay inside the editor command surface', async ({
   page,
 }) => {

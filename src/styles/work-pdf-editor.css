@@ -457,9 +457,10 @@
 
 .work-pdf-thumbnail-list > button {
   position: relative;
-  display: flex;
+  display: grid;
+  box-sizing: border-box;
   width: 100%;
-  flex: 0 0 auto;
+  grid-template-columns: 18px minmax(0, 1fr);
   align-items: flex-start;
   gap: 6px;
   padding: 4px 4px 4px 0;
@@ -489,7 +490,6 @@
 
 .work-pdf-thumbnail-number {
   width: 18px;
-  flex: 0 0 18px;
   padding-top: 2px;
   color: var(--a3s-faint);
   font-size: 9px;
@@ -506,10 +506,12 @@
 .work-pdf-thumbnail-preview {
   position: relative;
   display: grid;
-  width: 130px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 130px;
   min-width: 0;
-  flex: 0 0 130px;
   aspect-ratio: 3 / 4;
+  justify-self: start;
   place-items: center;
   overflow: hidden;
   border: 1px solid var(--a3s-line);
@@ -613,8 +615,7 @@
   }
 
   .work-pdf-thumbnail-preview {
-    width: 112px;
-    flex-basis: 112px;
+    max-width: 112px;
   }
 }
 
@@ -805,13 +806,8 @@
     padding: 12px 10px 20px;
   }
 
-  .work-pdf-thumbnail-list > button {
-    justify-content: flex-start;
-  }
-
   .work-pdf-thumbnail-preview {
-    width: 200px;
-    flex-basis: 200px;
+    max-width: 200px;
   }
 }
 
