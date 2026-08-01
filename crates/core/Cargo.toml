@@ -8,12 +8,19 @@ authors.workspace = true
 rust-version.workspace = true
 description = "Native OOXML document operations for A3S Office"
 
+[features]
+default = []
+pdfium = ["dep:libloading", "dep:pdfium-render", "dep:png"]
+
 [dependencies]
 a3s-office-formula-parser.workspace = true
 a3s-use-core.workspace = true
 async-trait.workspace = true
 base64.workspace = true
 fs2.workspace = true
+libloading = { workspace = true, optional = true }
+pdfium-render = { workspace = true, optional = true }
+png = { workspace = true, optional = true }
 quick-xml.workspace = true
 regex.workspace = true
 reqwest.workspace = true
@@ -26,4 +33,4 @@ url.workspace = true
 zip.workspace = true
 
 [dev-dependencies]
-png = "0.17"
+png.workspace = true

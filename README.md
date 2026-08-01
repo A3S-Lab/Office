@@ -358,8 +358,13 @@ validation, mutation, batch operations, exact natural-unit inventories,
 sibling-isolated semantic previews, screenshots, file watching, and a
 source-bound exact-layout raster boundary across Office packages. The first
 layout-authoritative route supports image-only PPTX slides whose single opaque
-PNG exactly covers the declared slide surface; richer slides and other formats
-remain typed unsupported instead of being relabeled semantic previews.
+PNG exactly covers the declared slide surface. The optional Rust `pdfium`
+feature adds bounded, one-based PDF page inventory and exact page PNGs through
+an explicit host-supplied PDFium 7881 library. It records media/crop boxes,
+rotation, physical and pixel geometry, source and engine hashes, and never
+downloads a runtime or introduces a Browser dependency. Richer slides and
+formats without an authoritative provider remain typed unsupported instead of
+being relabeled semantic previews.
 Native DOCX and PPTX table reads also normalize merged cells into one-based
 logical row and column coordinates, row and column spans, and stable anchor
 references for covered physical cells.
@@ -392,7 +397,8 @@ Read the [native engine design](docs/native-office-engine.md), the complete
 
 The browser plane combines controlled editor surfaces, framework adapters,
 Workers, Rust WebAssembly, and PDFium. The native plane keeps filesystem and
-OOXML package concerns in a separate Rust core. Both planes expose typed
+OOXML package concerns in a separate Rust core, with a host-injected optional
+PDFium provider for read-only PDF page evidence. Both planes expose typed
 contracts; neither requires an A3S backend.
 
 For engine ownership, Worker/WASM boundaries, delivery stages, and performance

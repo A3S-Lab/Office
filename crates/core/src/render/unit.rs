@@ -23,8 +23,17 @@ pub const MAX_NATIVE_OFFICE_UNIT_INVENTORY_LIMIT: usize = 100_000;
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum NativeOfficeUnitLocator {
     Document,
-    Worksheet { index: u32, name: String },
-    Slide { number: u32 },
+    Worksheet {
+        index: u32,
+        name: String,
+    },
+    Slide {
+        number: u32,
+    },
+    #[cfg(feature = "pdfium")]
+    Page {
+        number: u32,
+    },
 }
 
 /// One exact natural unit observed in a native Office semantic snapshot.
@@ -372,6 +381,8 @@ fn validate_locator(locator: &NativeOfficeUnitLocator) -> UseResult<()> {
             *index > 0 && !name.is_empty() && !name.contains('/')
         }
         NativeOfficeUnitLocator::Slide { number } => *number > 0,
+        #[cfg(feature = "pdfium")]
+        NativeOfficeUnitLocator::Page { number } => *number > 0,
     };
     if valid {
         return Ok(());
@@ -421,5 +432,7 @@ fn locator_kind_label(locator: &NativeOfficeUnitLocator) -> &'static str {
         NativeOfficeUnitLocator::Document => "document",
         NativeOfficeUnitLocator::Worksheet { .. } => "worksheet",
         NativeOfficeUnitLocator::Slide { .. } => "slide",
+        #[cfg(feature = "pdfium")]
+        NativeOfficeUnitLocator::Page { .. } => "page",
     }
 }
