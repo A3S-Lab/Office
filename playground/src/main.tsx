@@ -37,7 +37,7 @@ function Playground() {
   const pdfInput = useRef<HTMLInputElement>(null);
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
-  const docsUrl = new URL('docs/guide/index.html', document.baseURI).href;
+  const docsUrl = new URL('docs/index.html', document.baseURI).href;
 
   useEffect(() => {
     const redirectLegacyDocsRoute = () => {

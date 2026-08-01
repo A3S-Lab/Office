@@ -1,0 +1,59 @@
+suite "office-docs-navigation" {
+    version = 1
+
+    scenario "open-docs-and-return-to-playground" {
+        name = "Open the dedicated documentation center and return to the Playground"
+        surface = "web"
+        timeout_ms = 30000
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-is-home" {
+            text = "我的文档"
+        }
+
+        click "open-documentation" {
+            target = text("文档", true)
+        }
+
+        wait "documentation-route" {
+            url = "http://127.0.0.1:4175/docs/index.html"
+        }
+
+        expect "documentation-center-ready" {
+            text = "A3S Office documentation"
+        }
+
+        expect "documentation-search-ready" {
+            visible = css(".rp-search-button, .rp-search-button--mobile")
+        }
+
+        screenshot "documentation-center" {
+            path = "screenshots/documentation-center.png"
+        }
+
+        expect "playground-link-ready" {
+            text = "Playground"
+        }
+
+        navigate "return-to-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-restored" {
+            text = "我的文档"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

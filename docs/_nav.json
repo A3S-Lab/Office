@@ -1,8 +1,8 @@
 [
   {
     "text": "Documentation",
-    "link": "/guide/",
-    "activeMatch": "^/(guide|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+    "link": "/",
+    "activeMatch": "^/$|^/(guide|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
   },
   {
     "text": "Components",

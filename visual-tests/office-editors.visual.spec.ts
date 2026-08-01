@@ -791,15 +791,38 @@ test('Playground stays at the site root and opens a standalone documentation cen
     productNavigation.getByRole('button', { name: 'Playground' }),
   ).toHaveAttribute('aria-current', 'page');
   const docs = productNavigation.getByRole('link', { name: '文档' });
-  await expect(docs).toHaveAttribute('href', /docs\/guide\/index\.html$/);
+  await expect(docs).toHaveAttribute('href', /docs\/index\.html$/);
   await docs.click();
 
-  await expect(page).toHaveURL(/\/docs\/guide\/index\.html$/);
+  await expect(page).toHaveURL(/\/docs\/index\.html$/);
+  await expect(
+    page.getByRole('heading', {
+      name: 'A3S Office documentation',
+      level: 1,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.locator(
+      '.rp-search-button:visible, .rp-search-button--mobile:visible',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Getting started', exact: true }),
+  ).toHaveAttribute('href', /docs\/guide\/index\.html$/);
+  await page
+    .getByRole('link', { name: 'Getting started', exact: true })
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Getting started', level: 1 }),
   ).toBeVisible();
   await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
-    'Components',
+    'DocumentEditor',
+  );
+  const docsMenu = page.getByRole('button', { name: 'mobile hamburger' });
+  if (await docsMenu.isVisible()) await docsMenu.click();
+  await expect(page.getByRole('link', { name: /^Playground/ })).toHaveAttribute(
+    'href',
+    /\/Office\/$/,
   );
 });
 

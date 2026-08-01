@@ -11,13 +11,14 @@ bun run playground:build
 bun run playground:preview
 ```
 
-Validate and run the ACL suite from another terminal:
+Validate and run the ACL suites from another terminal:
 
 ```bash
 bun run test:e2e:check
 bun run test:e2e
 ```
 
-The suite owns only its browser surface. Keep the preview process under the
-terminal that started it and stop that process separately when testing is
-complete.
+The suites cover a focused editor regression and the public Playground-to-docs
+navigation contract. Each suite owns only its browser surface. Keep the preview
+process under the terminal that started it and stop that process separately
+when testing is complete.
