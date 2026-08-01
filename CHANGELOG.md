@@ -122,6 +122,9 @@ All notable changes to A3S Office will be documented in this file.
   rail.
 - Kept Word revision review keyboard focus on the matching action for the next
   change, then returned it to the document after the final individual decision.
+- Made the empty Word revision pane reflect whether new changes are actually
+  being recorded and added in-pane start/stop controls, keeping the phone modal
+  workflow actionable and focus-stable after the last revision is resolved.
 - Highlighted all Word Find matches persistently, made initial forward and
   backward navigation select the expected match, and kept Find and Replace
   controls focused across repeated keyboard actions.

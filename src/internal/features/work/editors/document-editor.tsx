@@ -1120,6 +1120,10 @@ export function DocumentEditor({
           <DocumentChangesPanel
             editor={editor}
             changes={changes}
+            trackChanges={Boolean(content.trackChanges)}
+            onTrackChangesChange={(enabled) =>
+              editor.commands.setDocumentTrackChanges(enabled)
+            }
             onClose={closeTaskPane}
           />
         )}

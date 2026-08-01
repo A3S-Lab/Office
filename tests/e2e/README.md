@@ -25,7 +25,9 @@ full-text navigation, the complete phone Find/Replace workflow, page-preview,
 selected-text AI question-composer regressions, and durable picture insertion
 from a project-relative fixture after the browser-managed file input is reset,
 plus phone-width picture alternative-text editing that retains the image
-selection and restores the exact ribbon invoker after save and cancel;
+selection and restores the exact ribbon invoker after save and cancel, and a
+phone tracked-changes workflow with in-pane recording controls, truthful empty
+states, exact decision focus, and close-to-invoker restoration;
 the phone Spreadsheet
 worksheet-rename workflow; Presentation focus recovery across object cut and
 paste plus presenter-view keyboard navigation and phone layout; PDF import

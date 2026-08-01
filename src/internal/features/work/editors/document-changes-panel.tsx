@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core';
-import { Check, CheckCheck, Undo2, XCircle } from 'lucide-react';
+import { Check, CheckCheck, FileDiff, Undo2, XCircle } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import { Button, CollectionState } from '../../../design-system/primitives';
 import type { WorkDocumentChange } from '../work-document-changes';
@@ -16,10 +16,14 @@ interface PendingDocumentChangeFocus {
 export function DocumentChangesPanel({
   editor,
   changes,
+  trackChanges,
+  onTrackChangesChange,
   onClose,
 }: {
   editor: Editor;
   changes: WorkDocumentChange[];
+  trackChanges: boolean;
+  onTrackChangesChange: (enabled: boolean) => void;
   onClose: () => void;
 }) {
   const officeDialog = useOfficeDialog();
@@ -174,9 +178,20 @@ export function DocumentChangesPanel({
           {!changes.length && (
             <CollectionState
               className="work-document-changes-empty"
+              icon={<FileDiff />}
+              actions={
+                <Button
+                  size="compact"
+                  tone={trackChanges ? 'quiet' : 'primary'}
+                  onClick={() => onTrackChangesChange(!trackChanges)}
+                >
+                  {trackChanges ? '停止记录' : '开启修订'}
+                </Button>
+              }
+              tone={trackChanges ? 'info' : 'neutral'}
               role="status"
             >
-              开启修订后，改动会显示在这里。
+              {trackChanges ? '正在记录新的改动。' : '当前没有记录新的改动。'}
             </CollectionState>
           )}
         </div>

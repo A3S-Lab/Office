@@ -211,6 +211,12 @@ pages split from one long paragraph do not repeat the paragraph's opening text.
 The dedicated Find/Replace task pane now has deterministic phone-width coverage
 for query entry, match navigation, single replacement, disabled-action focus
 recovery, content synchronization, and modal close-to-invoker focus restoration.
+The compact revision pane now exposes recording controls inside its modal
+boundary, reports whether new changes are actually being recorded, retains
+focus when that state changes, and keeps the truthful active state after the
+last pending revision is resolved. A deterministic phone workflow covers
+enabling tracking, creating and accepting an insertion, empty-state recovery,
+and exact invoker restoration.
 New comment
 drafts stay inside the visible review rail even for document-wide selections,
 and discard confirmation is limited to drafts or replies that contain written

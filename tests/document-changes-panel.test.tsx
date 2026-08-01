@@ -14,21 +14,44 @@ import {
 } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
-test('keeps the empty review pane quiet', () => {
+test('keeps the empty review pane aligned with the tracking state', () => {
   const editor = createEditor();
   document.body.append(editor.view.dom);
+  const trackingChanges: boolean[] = [];
   try {
-    render(
+    const view = render(
       <DocumentChangesPanel
         editor={editor}
         changes={[]}
+        trackChanges={false}
+        onTrackChangesChange={(enabled) => trackingChanges.push(enabled)}
         onClose={() => undefined}
       />,
     );
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      '开启修订后，改动会显示在这里。',
+      '当前没有记录新的改动。',
     );
+    const enableTracking = screen.getByRole('button', { name: '开启修订' });
+    enableTracking.focus();
+    fireEvent.click(enableTracking);
+    expect(trackingChanges).toEqual([true]);
+
+    view.rerender(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[]}
+        trackChanges
+        onTrackChangesChange={(enabled) => trackingChanges.push(enabled)}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('正在记录新的改动。');
+    const stopTracking = screen.getByRole('button', { name: '停止记录' });
+    expect(stopTracking).toHaveFocus();
+    fireEvent.click(stopTracking);
+    expect(trackingChanges).toEqual([true, false]);
     expect(
       screen.queryByRole('button', { name: '全部接受' }),
     ).not.toBeInTheDocument();
@@ -57,6 +80,8 @@ test('confirms before rejecting every tracked change', async () => {
       <DocumentChangesPanel
         editor={editor}
         changes={changes}
+        trackChanges
+        onTrackChangesChange={() => undefined}
         onClose={() => undefined}
       />,
     );
@@ -99,6 +124,8 @@ test('keeps keyboard focus in the review flow after individual decisions', async
       <DocumentChangesPanel
         editor={editor}
         changes={initialChanges}
+        trackChanges
+        onTrackChangesChange={() => undefined}
         onClose={() => undefined}
       />,
     );
@@ -110,6 +137,8 @@ test('keeps keyboard focus in the review flow after individual decisions', async
       <DocumentChangesPanel
         editor={editor}
         changes={remainingChanges}
+        trackChanges
+        onTrackChangesChange={() => undefined}
         onClose={() => undefined}
       />,
     );
@@ -122,6 +151,8 @@ test('keeps keyboard focus in the review flow after individual decisions', async
       <DocumentChangesPanel
         editor={editor}
         changes={collectDocumentChanges(editor.state.doc)}
+        trackChanges
+        onTrackChangesChange={() => undefined}
         onClose={() => undefined}
       />,
     );

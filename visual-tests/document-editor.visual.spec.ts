@@ -938,8 +938,9 @@ test('document revision decisions require an explicit confirmation', async ({
 
   await rejectAll.click();
   await confirmation.getByRole('button', { name: '全部拒绝' }).click();
+  await expect(changesPane.getByText('正在记录新的改动。')).toBeVisible();
   await expect(
-    changesPane.getByText('开启修订后，改动会显示在这里。'),
+    changesPane.getByRole('button', { name: '停止记录' }),
   ).toBeVisible();
   await expect(
     changesPane.getByRole('button', { name: '全部拒绝' }),
@@ -968,9 +969,7 @@ test('document revision decisions require an explicit confirmation', async ({
   });
   await expect(acceptChange).toBeVisible();
   await acceptChange.click();
-  await expect(
-    changesPane.getByText('开启修订后，改动会显示在这里。'),
-  ).toBeVisible();
+  await expect(changesPane.getByText('正在记录新的改动。')).toBeVisible();
   if (modalPane) await expect(closeChanges).toBeFocused();
   else await expect(editor).toBeFocused();
 });

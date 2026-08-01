@@ -1,0 +1,139 @@
+suite "office-word-track-changes-phone" {
+    version = 1
+
+    scenario "review-tracked-change-on-phone" {
+        name = "Record and resolve a Word change from the phone review pane"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-track-changes-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "记录尚未解决的问题、依赖和决策负责人。"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "open-empty-review-pane" {
+            target = role("button", "查看修订")
+        }
+
+        expect "review-pane-is-modal" {
+            visible = css(".work-document-changes-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "tracking-start-is-actionable" {
+            visible = css(".work-document-changes-empty button")
+        }
+
+        expect "tracking-start-is-truthful" {
+            text = "当前没有记录新的改动。"
+        }
+
+        click "start-tracking-in-pane" {
+            target = role("button", "开启修订")
+        }
+
+        expect "tracking-state-is-visible" {
+            text = "正在记录新的改动。"
+        }
+
+        expect "tracking-toggle-keeps-focus" {
+            visible = css(".work-document-changes-empty button:focus")
+        }
+
+        click "close-empty-review-pane" {
+            target = role("button", "关闭修订审阅")
+        }
+
+        expect "review-invoker-focus-is-restored" {
+            visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订']:focus")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        type "write-tracked-change" {
+            target = css(".work-document-editable .ProseMirror")
+            value = " 手机修订"
+        }
+
+        expect "tracked-change-count-is-visible" {
+            visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订（1）']")
+        }
+
+        click "review-tracked-change" {
+            target = role("button", "查看修订（1）")
+        }
+
+        expect "tracked-change-is-listed" {
+            text = "手机修订"
+        }
+
+        click "accept-tracked-change" {
+            target = role("button", "接受修订 1")
+        }
+
+        expect "empty-state-remains-truthful" {
+            text = "正在记录新的改动。"
+        }
+
+        expect "empty-state-receives-safe-focus" {
+            visible = css("button[aria-label='关闭修订审阅']:focus")
+        }
+
+        click "stop-tracking-in-pane" {
+            target = role("button", "停止记录")
+        }
+
+        expect "stopped-state-is-visible" {
+            text = "当前没有记录新的改动。"
+        }
+
+        expect "stopped-toggle-keeps-focus" {
+            visible = css(".work-document-changes-empty button:focus")
+        }
+
+        screenshot "tracked-change-empty-state" {
+            path = "screenshots/word-track-changes-phone.png"
+        }
+
+        accessibility "review-semantics" {
+            path = "evidence/review-semantics.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
