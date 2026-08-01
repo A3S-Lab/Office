@@ -1,0 +1,69 @@
+suite "office-presentation-cut-paste-focus" {
+    version = 1
+
+    scenario "restore-editor-focus-after-cut" {
+        name = "Keep Presentation clipboard shortcuts in scope after cutting an object"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-presentation" {
+            target = text("策略汇报", true)
+        }
+
+        wait "presentation-loaded" {
+            text = "把最重要的结论放在标题中"
+        }
+
+        click "select-title" {
+            target = css(".work-slide-canvas.interactive > .work-slide-element:nth-of-type(2)")
+        }
+
+        expect "title-selected-and-focused" {
+            visible = css(".work-slide-canvas.interactive > .work-slide-element[data-slide-element-selected='true']:focus")
+        }
+
+        press "cut-title" {
+            key = "Control+x"
+        }
+
+        expect "slide-focus-restored" {
+            visible = css(".work-slide-strip [data-slide-thumbnail].active:focus")
+        }
+
+        press "paste-title" {
+            key = "Control+v"
+        }
+
+        expect "pasted-object-selected-and-focused" {
+            visible = css(".work-slide-canvas.interactive > .work-slide-element[data-slide-element-selected='true']:focus")
+        }
+
+        screenshot "restored-object" {
+            path = "screenshots/presentation-cut-paste-focus.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

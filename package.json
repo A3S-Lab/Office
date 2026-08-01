@@ -85,8 +85,8 @@
     "playground:visual": "playwright test --config playwright.config.ts",
     "playground:visual:update": "playwright test --config playwright.config.ts --update-snapshots",
     "test": "rstest",
-    "test:e2e": "a3s-test run tests/e2e/word-page-color.acl --json && a3s-test run tests/e2e/word-comments-drawer.acl --json && a3s-test run tests/e2e/word-navigation-search.acl --json && a3s-test run tests/e2e/spreadsheet-phone-rename.acl --json && a3s-test run tests/e2e/office-docs-navigation.acl --json",
-    "test:e2e:check": "a3s-test check tests/e2e/word-page-color.acl --json && a3s-test check tests/e2e/word-comments-drawer.acl --json && a3s-test check tests/e2e/word-navigation-search.acl --json && a3s-test check tests/e2e/spreadsheet-phone-rename.acl --json && a3s-test check tests/e2e/office-docs-navigation.acl --json",
+    "test:e2e": "a3s-test run tests/e2e/word-page-color.acl --json && a3s-test run tests/e2e/word-comments-drawer.acl --json && a3s-test run tests/e2e/word-navigation-search.acl --json && a3s-test run tests/e2e/spreadsheet-phone-rename.acl --json && a3s-test run tests/e2e/presentation-cut-paste-focus.acl --json && a3s-test run tests/e2e/office-docs-navigation.acl --json",
+    "test:e2e:check": "a3s-test check tests/e2e/word-page-color.acl --json && a3s-test check tests/e2e/word-comments-drawer.acl --json && a3s-test check tests/e2e/word-navigation-search.acl --json && a3s-test check tests/e2e/spreadsheet-phone-rename.acl --json && a3s-test check tests/e2e/presentation-cut-paste-focus.acl --json && a3s-test check tests/e2e/office-docs-navigation.acl --json",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"
   },

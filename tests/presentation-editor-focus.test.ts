@@ -144,6 +144,66 @@ test('focuses the active slide when presentation views remount', async () => {
   root.remove();
 });
 
+test('stabilizes workspace focus after a cut removes the focused object', async () => {
+  const root = document.createElement('section');
+  const object = presentationObject('element-1', true);
+  const thumbnail = document.createElement('button');
+  thumbnail.dataset.slideThumbnail = 'true';
+  thumbnail.dataset.slideId = 'slide-1';
+  thumbnail.className = 'active';
+  root.append(object, thumbnail);
+  document.body.append(root);
+  const state = {
+    editingElementId: null as string | null,
+    selectedElementIds: ['element-1'] as readonly string[],
+    selectedSlideId: 'slide-1',
+    viewMode: 'normal' as 'normal' | 'sorter',
+  };
+
+  object.focus();
+  restorePresentationWorkspaceFocus(root, () => state);
+  requestAnimationFrame(() => {
+    state.selectedElementIds = [];
+    object.remove();
+  });
+  await waitForAnimationFrames(4);
+
+  expect(thumbnail).toHaveFocus();
+  root.remove();
+});
+
+test('does not steal focus while workspace stabilization is pending', async () => {
+  const root = document.createElement('section');
+  const object = presentationObject('element-1', true);
+  const thumbnail = document.createElement('button');
+  thumbnail.dataset.slideThumbnail = 'true';
+  thumbnail.dataset.slideId = 'slide-1';
+  thumbnail.className = 'active';
+  const unrelated = document.createElement('input');
+  root.append(object, thumbnail);
+  document.body.append(root, unrelated);
+  const state = {
+    editingElementId: null as string | null,
+    selectedElementIds: ['element-1'] as readonly string[],
+    selectedSlideId: 'slide-1',
+    viewMode: 'normal' as 'normal' | 'sorter',
+  };
+
+  object.focus();
+  restorePresentationWorkspaceFocus(root, () => state);
+  await waitForAnimationFrames(1);
+  expect(object).toHaveFocus();
+
+  unrelated.focus();
+  state.selectedElementIds = [];
+  object.remove();
+  await waitForAnimationFrames(3);
+
+  expect(unrelated).toHaveFocus();
+  root.remove();
+  unrelated.remove();
+});
+
 test('focuses the latest selected object without stealing active editing focus', async () => {
   const trigger = document.createElement('button');
   const unrelated = document.createElement('input');

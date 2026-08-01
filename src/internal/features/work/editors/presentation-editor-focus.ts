@@ -23,6 +23,7 @@ export function restorePresentationObjectFocus(
 ): void {
   if (!container) return;
   const commandTrigger = document.activeElement;
+  let lastRestoredTarget: HTMLElement | null = null;
   let remainingFrames = PRESENTATION_OBJECT_FOCUS_RETRY_FRAMES;
 
   const restore = () => {
@@ -50,10 +51,14 @@ export function restorePresentationObjectFocus(
     const canRestore =
       activeElement === commandTrigger ||
       activeElement === target ||
+      activeElement === lastRestoredTarget ||
       activeElement === document.body ||
       activeElement === document.documentElement ||
       !activeElement?.isConnected;
-    if (canRestore) target.focus({ preventScroll: true });
+    if (!canRestore) return;
+    if (activeElement !== target) target.focus({ preventScroll: true });
+    lastRestoredTarget = target;
+    requestAnimationFrame(restore);
   };
 
   requestAnimationFrame(restore);
@@ -65,6 +70,7 @@ export function restorePresentationWorkspaceFocus(
 ): void {
   if (!root) return;
   const commandTrigger = document.activeElement;
+  let lastRestoredTarget: HTMLElement | null = null;
   let remainingFrames = PRESENTATION_WORKSPACE_FOCUS_RETRY_FRAMES;
 
   const restore = () => {
@@ -97,10 +103,14 @@ export function restorePresentationWorkspaceFocus(
     const canRestore =
       activeElement === commandTrigger ||
       activeElement === target ||
+      activeElement === lastRestoredTarget ||
       activeElement === document.body ||
       activeElement === document.documentElement ||
       !activeElement?.isConnected;
-    if (canRestore) target.focus({ preventScroll: true });
+    if (!canRestore) return;
+    if (activeElement !== target) target.focus({ preventScroll: true });
+    lastRestoredTarget = target;
+    requestAnimationFrame(restore);
   };
 
   requestAnimationFrame(restore);

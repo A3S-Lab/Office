@@ -88,6 +88,9 @@ test('Presentation clipboard shortcuts keep object selection and focus coherent'
 
   await page.keyboard.press('Control+x');
   await expect(objects).toHaveCount(3);
+  await expect(
+    page.locator('.work-slide-strip [data-slide-thumbnail].active'),
+  ).toBeFocused();
   await page.keyboard.press('Control+v');
   await expect(objects).toHaveCount(4);
   await expect(pasted).toHaveCount(1);
