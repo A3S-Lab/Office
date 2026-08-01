@@ -1,0 +1,93 @@
+suite "word-ai-question" {
+    version = 1
+
+    scenario "compose-before-sending-selected-context" {
+        name = "Ask an explicit question before sending selected Word context"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-project-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-ready" {
+            text = "背景与目标"
+        }
+
+        click "place-caret-in-heading" {
+            target = css(".ProseMirror h1")
+        }
+
+        press "move-to-heading-start" {
+            key = "Home"
+        }
+
+        press "select-first-heading" {
+            key = "Shift+End"
+        }
+
+        press "open-selection-menu" {
+            key = "Shift+F10"
+        }
+
+        expect "ask-action-ready" {
+            text = "询问 AI 助手"
+        }
+
+        click "ask-ai" {
+            target = role("menuitem", "询问 AI 助手")
+        }
+
+        expect "question-composer-ready" {
+            visible = css("textarea[aria-label='向 AI 助手提问']")
+        }
+
+        expect "context-attached" {
+            text = "已附带选中文本和文档上下文。"
+        }
+
+        fill "write-question" {
+            target = label("向 AI 助手提问")
+            value = "这段结论有哪些依据？"
+        }
+
+        click "send-question" {
+            target = role("button", "发送问题")
+        }
+
+        expect "prepared-request" {
+            text = "请结合已附带的文档上下文回答："
+        }
+
+        expect "context-collapsed" {
+            visible = css(".playground-agent-request details:not([open])")
+        }
+
+        screenshot "question-request" {
+            path = "screenshots/word-ai-question.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

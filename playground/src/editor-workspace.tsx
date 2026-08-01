@@ -2,8 +2,10 @@ import {
   ArrowLeft,
   Download,
   Eye,
+  MessageSquareText,
   PanelLeftOpen,
   Pencil,
+  SendHorizontal,
   Sparkles,
   X,
 } from 'lucide-react';
@@ -81,7 +83,24 @@ export function EditorWorkspace({
 }) {
   const [preview, setPreview] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [assistantQuestion, setAssistantQuestion] =
+    useState<PlaygroundAssistantQuestionDraft | null>(null);
   const extension = fileKindExtension(artifact.kind);
+
+  const handleAgentRequest = useCallback(
+    (request: EditorAgentRequest) => {
+      setAssistantQuestion(null);
+      onAgentRequest(request);
+    },
+    [onAgentRequest],
+  );
+  const beginAssistantQuestion = useCallback(
+    (draft: PlaygroundAssistantQuestionDraft) => {
+      setAssistantQuestion(draft);
+      if (!assistantOpen) onToggleAssistant();
+    },
+    [assistantOpen, onToggleAssistant],
+  );
 
   const exportArtifact = async () => {
     if (exporting) return;
@@ -131,20 +150,22 @@ export function EditorWorkspace({
   const getDocumentSelectionMenuItems =
     useCallback<GetDocumentSelectionMenuItems>(
       () =>
-        playgroundSelectionMenuItems<DocumentSelectionContext>(
-          onAgentRequest,
+        createPlaygroundSelectionMenuItems<DocumentSelectionContext>(
+          handleAgentRequest,
+          beginAssistantQuestion,
           onNotice,
         ),
-      [onAgentRequest, onNotice],
+      [beginAssistantQuestion, handleAgentRequest, onNotice],
     );
   const getMarkdownSelectionMenuItems =
     useCallback<GetMarkdownSelectionMenuItems>(
       () =>
-        playgroundSelectionMenuItems<MarkdownSelectionContext>(
-          onAgentRequest,
+        createPlaygroundSelectionMenuItems<MarkdownSelectionContext>(
+          handleAgentRequest,
+          beginAssistantQuestion,
           onNotice,
         ),
-      [onAgentRequest, onNotice],
+      [beginAssistantQuestion, handleAgentRequest, onNotice],
     );
 
   return (
@@ -254,7 +275,7 @@ export function EditorWorkspace({
               artifactId={artifact.id}
               content={artifact.content}
               getSelectionMenuItems={getDocumentSelectionMenuItems}
-              onAgentRequest={onAgentRequest}
+              onAgentRequest={handleAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
               preview={preview}
               saveStatus="本次会话已保存"
@@ -274,7 +295,7 @@ export function EditorWorkspace({
           {artifact.content.type === 'spreadsheet' && (
             <SpreadsheetEditor
               content={artifact.content}
-              onAgentRequest={onAgentRequest}
+              onAgentRequest={handleAgentRequest}
               onChange={(content: SpreadsheetContent) => onChange(content)}
               preview={preview}
               saveStatus="本次会话已保存"
@@ -284,7 +305,7 @@ export function EditorWorkspace({
           {artifact.content.type === 'presentation' && (
             <PresentationEditor
               content={artifact.content}
-              onAgentRequest={onAgentRequest}
+              onAgentRequest={handleAgentRequest}
               onChange={(content: PresentationContent) => onChange(content)}
               preview={preview}
               saveStatus="本次会话已保存"
@@ -310,8 +331,21 @@ export function EditorWorkspace({
             artifact={artifact}
             lastRequest={lastAgentRequest}
             modal={assistantModal}
+            questionDraft={assistantQuestion}
             width={assistantWidth}
+            onCancelQuestion={() => setAssistantQuestion(null)}
             onClose={onToggleAssistant}
+            onQuestionChange={(question) =>
+              setAssistantQuestion((current) =>
+                current ? { ...current, question } : current,
+              )
+            }
+            onSubmitQuestion={() => {
+              if (!assistantQuestion) return;
+              const request =
+                createPlaygroundAssistantQuestionRequest(assistantQuestion);
+              if (request) handleAgentRequest(request);
+            }}
             onWidthChange={onAssistantWidthChange}
           />
         )}
@@ -454,10 +488,17 @@ interface PlaygroundSelectionMenuItem<Context> {
   onSelect(context: Context): void | Promise<void>;
 }
 
-function playgroundSelectionMenuItems<
+export interface PlaygroundAssistantQuestionDraft {
+  question: string;
+  selectionContext: string;
+  selectionPreview: string;
+}
+
+export function createPlaygroundSelectionMenuItems<
   Context extends PlaygroundSelectionContext,
 >(
   onAgentRequest: (request: EditorAgentRequest) => void,
+  onQuestionDraft: (draft: PlaygroundAssistantQuestionDraft) => void,
   onNotice: (message: string, tone?: NoticeTone) => void,
 ): readonly PlaygroundSelectionMenuItem<Context>[] {
   return [
@@ -500,13 +541,35 @@ function playgroundSelectionMenuItems<
       id: 'ask',
       label: '询问 AI 助手',
       icon: 'message',
-      onSelect: (context) =>
-        onAgentRequest({
-          instruction: '请结合文档上下文回答关于选中内容的问题：\n\n问题：',
-          selection: selectionPromptContext(context),
-        }),
+      onSelect: (context) => onQuestionDraft(createQuestionDraft(context)),
     },
   ];
+}
+
+function createQuestionDraft(
+  context: PlaygroundSelectionContext,
+): PlaygroundAssistantQuestionDraft {
+  const selection = context.selection.text.trim();
+  const previewLimit = 240;
+  return {
+    question: '',
+    selectionContext: selectionPromptContext(context),
+    selectionPreview:
+      selection.length > previewLimit
+        ? `${selection.slice(0, previewLimit - 1).trimEnd()}…`
+        : selection,
+  };
+}
+
+export function createPlaygroundAssistantQuestionRequest(
+  draft: PlaygroundAssistantQuestionDraft,
+): EditorAgentRequest | null {
+  const question = draft.question.trim();
+  if (!question) return null;
+  return {
+    instruction: `请结合已附带的文档上下文回答：\n\n${question}`,
+    selection: draft.selectionContext,
+  };
 }
 
 function selectionPromptContext(context: PlaygroundSelectionContext): string {
@@ -522,23 +585,37 @@ export function AssistantPanel({
   artifact,
   lastRequest,
   modal,
+  questionDraft,
   width,
+  onCancelQuestion,
   onClose,
+  onQuestionChange,
+  onSubmitQuestion,
   onWidthChange,
 }: {
   artifact: OfficeArtifact;
   lastRequest: EditorAgentRequest | null;
   modal: boolean;
+  questionDraft: PlaygroundAssistantQuestionDraft | null;
   width: number;
+  onCancelQuestion: () => void;
   onClose: () => void;
+  onQuestionChange: (question: string) => void;
+  onSubmitQuestion: () => void;
   onWidthChange: (width: number) => void;
 }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const questionInputRef = useRef<HTMLTextAreaElement>(null);
+  const questionSelectionContext = questionDraft?.selectionContext;
   const focusScope = useDialogFocusScope<HTMLElement>({
     active: modal,
     onEscape: onClose,
-    initialFocus: () => closeButtonRef.current,
+    initialFocus: () =>
+      questionDraft ? questionInputRef.current : closeButtonRef.current,
   });
+  useEffect(() => {
+    if (questionSelectionContext) questionInputRef.current?.focus();
+  }, [questionSelectionContext]);
   const modalAttributes = modal
     ? ({ role: 'dialog', 'aria-modal': true } as const)
     : {};
@@ -607,7 +684,54 @@ export function AssistantPanel({
         </button>
       </header>
       <div className="playground-assistant-content">
-        {lastRequest ? (
+        {questionDraft ? (
+          <section className="playground-agent-question">
+            <span className="playground-agent-request-icon">
+              <MessageSquareText size={18} />
+            </span>
+            <div>
+              <small>询问选中内容</small>
+              <h2>你想问什么？</h2>
+            </div>
+            <blockquote>{questionDraft.selectionPreview}</blockquote>
+            <p>已附带选中文本和文档上下文。</p>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSubmitQuestion();
+              }}
+            >
+              <label>
+                <span>问题</span>
+                <textarea
+                  ref={questionInputRef}
+                  aria-label="向 AI 助手提问"
+                  value={questionDraft.question}
+                  placeholder="例如：这段结论有哪些依据？"
+                  rows={4}
+                  onChange={(event) => onQuestionChange(event.target.value)}
+                />
+              </label>
+              <div className="playground-agent-question-actions">
+                <button
+                  type="button"
+                  className="playground-secondary-button"
+                  onClick={onCancelQuestion}
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="playground-primary-button"
+                  disabled={!questionDraft.question.trim()}
+                >
+                  <SendHorizontal size={14} />
+                  发送问题
+                </button>
+              </div>
+            </form>
+          </section>
+        ) : lastRequest ? (
           <section className="playground-agent-request">
             <span className="playground-agent-request-icon">
               <Sparkles size={18} />
@@ -617,7 +741,10 @@ export function AssistantPanel({
               <h2>{lastRequest.instruction}</h2>
             </div>
             {lastRequest.selection && (
-              <blockquote>{lastRequest.selection}</blockquote>
+              <details>
+                <summary>查看附带上下文</summary>
+                <blockquote>{lastRequest.selection}</blockquote>
+              </details>
             )}
             <p>请求已准备好，在线 Playground 不会自动上传文件。</p>
           </section>

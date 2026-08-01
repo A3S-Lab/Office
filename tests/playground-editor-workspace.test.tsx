@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { createArtifact } from '../src/core';
 import {
   AssistantPanel,
+  createPlaygroundAssistantQuestionRequest,
+  createPlaygroundSelectionMenuItems,
   EditorExportButton,
 } from '../playground/src/editor-workspace';
 
@@ -97,8 +99,12 @@ test('keeps assistant empty states contextual and free of integration code', () 
       artifact={document}
       lastRequest={null}
       modal={false}
+      questionDraft={null}
       width={460}
+      onCancelQuestion={() => undefined}
       onClose={() => undefined}
+      onQuestionChange={() => undefined}
+      onSubmitQuestion={() => undefined}
       onWidthChange={() => undefined}
     />,
   );
@@ -118,8 +124,12 @@ test('keeps assistant empty states contextual and free of integration code', () 
       artifact={pdf}
       lastRequest={null}
       modal={false}
+      questionDraft={null}
       width={460}
+      onCancelQuestion={() => undefined}
       onClose={() => undefined}
+      onQuestionChange={() => undefined}
+      onSubmitQuestion={() => undefined}
       onWidthChange={() => undefined}
     />,
   );
@@ -130,6 +140,135 @@ test('keeps assistant empty states contextual and free of integration code', () 
   expect(
     screen.getByText('PDF 阅读与批注可直接使用；摘要与问答接入仍在完善。'),
   ).toBeVisible();
+});
+
+test('collects an explicit question before creating an AI request', async () => {
+  const requests: string[] = [];
+  const drafts: Array<{
+    question: string;
+    selectionContext: string;
+    selectionPreview: string;
+  }> = [];
+  const items = createPlaygroundSelectionMenuItems(
+    (request) => requests.push(request.instruction),
+    (draft) => drafts.push(draft),
+    () => undefined,
+  );
+  const ask = items.find((item) => item.id === 'ask');
+
+  await ask?.onSelect({
+    selection: {
+      text: '关键结论',
+      beforeText: '前文',
+      afterText: '后文',
+    },
+    document: { text: '完整文档' },
+    commands: { copyText: async () => true },
+  });
+
+  expect(requests).toEqual([]);
+  expect(drafts).toHaveLength(1);
+  expect(drafts[0]?.selectionPreview).toBe('关键结论');
+  expect(drafts[0]?.selectionContext).toContain('完整文档：\n完整文档');
+  const draft = drafts[0];
+  if (!draft) throw new Error('Expected an assistant question draft.');
+
+  expect(
+    createPlaygroundAssistantQuestionRequest({
+      ...draft,
+      question: '  这段结论有哪些依据？  ',
+    }),
+  ).toEqual({
+    instruction: '请结合已附带的文档上下文回答：\n\n这段结论有哪些依据？',
+    selection: draft.selectionContext,
+  });
+  expect(
+    createPlaygroundAssistantQuestionRequest({
+      ...draft,
+      question: '   ',
+    }),
+  ).toBeNull();
+});
+
+test('renders a focused assistant question composer before submission', () => {
+  const questionChanges: string[] = [];
+  let submissions = 0;
+  const artifact = createArtifact('blank-document');
+  const draft = {
+    question: '',
+    selectionContext: '选中文本和完整文档上下文',
+    selectionPreview: '关键结论',
+  };
+  const view = render(
+    <AssistantPanel
+      artifact={artifact}
+      lastRequest={null}
+      modal={false}
+      questionDraft={draft}
+      width={460}
+      onCancelQuestion={() => undefined}
+      onClose={() => undefined}
+      onQuestionChange={(question) => questionChanges.push(question)}
+      onSubmitQuestion={() => {
+        submissions += 1;
+      }}
+      onWidthChange={() => undefined}
+    />,
+  );
+
+  const question = screen.getByRole('textbox', { name: '向 AI 助手提问' });
+  expect(question).toHaveFocus();
+  expect(screen.getByRole('button', { name: '发送问题' })).toBeDisabled();
+  expect(screen.getByText('关键结论')).toBeVisible();
+
+  fireEvent.change(question, {
+    target: { value: '这段结论有哪些依据？' },
+  });
+  expect(questionChanges).toEqual(['这段结论有哪些依据？']);
+
+  view.rerender(
+    <AssistantPanel
+      artifact={artifact}
+      lastRequest={null}
+      modal={false}
+      questionDraft={{ ...draft, question: '这段结论有哪些依据？' }}
+      width={460}
+      onCancelQuestion={() => undefined}
+      onClose={() => undefined}
+      onQuestionChange={() => undefined}
+      onSubmitQuestion={() => {
+        submissions += 1;
+      }}
+      onWidthChange={() => undefined}
+    />,
+  );
+  fireEvent.click(screen.getByRole('button', { name: '发送问题' }));
+  expect(submissions).toBe(1);
+});
+
+test('keeps prepared request context collapsed until the user asks for it', () => {
+  const artifact = createArtifact('blank-document');
+  render(
+    <AssistantPanel
+      artifact={artifact}
+      lastRequest={{
+        instruction: '润色这段内容',
+        selection: '完整文档上下文',
+      }}
+      modal={false}
+      questionDraft={null}
+      width={460}
+      onCancelQuestion={() => undefined}
+      onClose={() => undefined}
+      onQuestionChange={() => undefined}
+      onSubmitQuestion={() => undefined}
+      onWidthChange={() => undefined}
+    />,
+  );
+
+  const details = screen.getByText('查看附带上下文').closest('details');
+  expect(details).not.toHaveAttribute('open');
+  expect(screen.getByText('完整文档上下文')).not.toBeVisible();
 });
 
 function ModalAssistantHarness() {
@@ -145,8 +284,12 @@ function ModalAssistantHarness() {
           artifact={artifact}
           lastRequest={null}
           modal
+          questionDraft={null}
           width={460}
+          onCancelQuestion={() => undefined}
           onClose={() => setOpen(false)}
+          onQuestionChange={() => undefined}
+          onSubmitQuestion={() => undefined}
           onWidthChange={() => undefined}
         />
       )}

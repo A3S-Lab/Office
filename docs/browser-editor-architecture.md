@@ -117,7 +117,11 @@ from localized labels or keywords. While an async callback Promise remains
 pending, its target range maps through unrelated transactions. An edit to the
 selected text makes the target stale and rejects the later command rather than
 changing an unrelated range. Successful edit commands honor tracked changes
-and produce one controlled update and one undo record.
+and produce one controlled update and one undo record. Open-ended host actions
+collect required user input before creating an agent request. The Playground's
+question action therefore opens a focused composer, preserves the complete
+selection context in controlled state, and dispatches only after an explicit
+submit; prepared context is collapsed by default in the assistant UI.
 
 Markdown exposes the same host-owned boundary for both source and visual
 selections. Its snapshot identifies the active surface and includes the exact

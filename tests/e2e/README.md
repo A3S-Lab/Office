@@ -20,7 +20,8 @@ bun run test:e2e
 ```
 
 The suites cover focused Word page-color, compact comments-drawer, full-text
-navigation, and page-preview regressions; the phone Spreadsheet
+navigation, page-preview, and selected-text AI question-composer regressions;
+the phone Spreadsheet
 worksheet-rename workflow; Presentation focus recovery across object cut and
 paste plus presenter-view keyboard navigation and phone layout; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard

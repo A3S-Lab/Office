@@ -65,18 +65,18 @@ import type {
 } from '@a3s-lab/office/core';
 import { DocumentEditor } from '@a3s-lab/office/react';
 
-const getSelectionMenuItems: GetDocumentSelectionMenuItems = (context) => [
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = (snapshot) => [
   {
     id: 'rewrite',
     label: 'Rewrite',
-    run: async () => {
+    onSelect: async (context) => {
       const replacement = await rewriteWithModel({
-        selection: context.selection.text,
-        before: context.selection.beforeText,
-        after: context.selection.afterText,
-        document: context.document.text,
+        selection: snapshot.selection.text,
+        before: snapshot.selection.beforeText,
+        after: snapshot.selection.afterText,
+        document: snapshot.document.text,
       });
-      await context.commands.replaceText(replacement);
+      context.commands.replaceText(replacement);
     },
   },
 ];
@@ -97,6 +97,10 @@ export function Editor(props: {
 Return or await asynchronous work so the editor can map the original range
 through unrelated transactions. If the selected text itself changes, a later
 `replaceText` returns `stale-selection` instead of modifying unrelated content.
+For an open-ended action such as “Ask AI”, collect the user's question in the
+host UI before dispatching a request. The Playground demonstrates this with a
+focused question composer and keeps the attached document context collapsed
+after submission instead of filling the assistant with raw context.
 
 ## Extensions
 

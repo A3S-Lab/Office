@@ -331,3 +331,57 @@ test('Word opens the selected-text menu from the keyboard at the selection', asy
   await expect(menu).toBeHidden();
   await expect(editor).toBeFocused();
 });
+
+test('Word asks for a question before preparing selected-text context for AI', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '项目方案 目标、范围、里程碑与风险' })
+    .click();
+  const editor = page.getByRole('textbox', { name: '文档正文' });
+  await editor.evaluate((element) => {
+    const text = element.querySelector('h1')?.firstChild;
+    if (!(text instanceof Text)) {
+      throw new Error('Document AI question selection is unavailable.');
+    }
+    const range = document.createRange();
+    range.setStart(text, 0);
+    range.setEnd(text, Math.min(4, text.length));
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    (element as HTMLElement).focus();
+    document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+  });
+  await editor.press('Shift+F10');
+  await page.getByRole('menuitem', { name: '询问 AI 助手' }).click();
+
+  const assistant = page.getByRole('dialog', { name: 'AI 助手' });
+  const question = assistant.getByRole('textbox', {
+    name: '向 AI 助手提问',
+  });
+  const send = assistant.getByRole('button', { name: '发送问题' });
+  await expect(question).toBeFocused();
+  await expect(question).toBeEmpty();
+  await expect(send).toBeDisabled();
+  await expect(
+    assistant.getByText('已附带选中文本和文档上下文。'),
+  ).toBeVisible();
+
+  await question.fill('这段结论有哪些依据？');
+  await expect(send).toBeEnabled();
+  await send.click();
+
+  await expect(
+    assistant.getByRole('heading', {
+      name: '请结合已附带的文档上下文回答： 这段结论有哪些依据？',
+    }),
+  ).toBeVisible();
+  const context = assistant.getByText('查看附带上下文').locator('..');
+  await expect(context).not.toHaveAttribute('open');
+  await expect(context.locator('blockquote')).toBeHidden();
+  await context.getByText('查看附带上下文').click();
+  await expect(context.locator('blockquote')).toBeVisible();
+});

@@ -326,7 +326,10 @@ the complete controlled content, and conflict-aware `replaceText`,
 `insertBefore`, `insertAfter`, and `copyText` commands. Markdown snapshots also
 identify whether the source or visual surface owns the selection. Async edits
 track unrelated visual-editor transactions and fail with `stale-selection`
-instead of changing the wrong text.
+instead of changing the wrong text. The Playground's open-ended question action
+enters a focused draft before dispatch, so a host never receives an unfinished
+“Question:” request; attached context stays available without dominating the
+assistant surface.
 
 ## Browser file workflows
 
