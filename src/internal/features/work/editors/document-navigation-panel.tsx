@@ -15,24 +15,37 @@ import {
   visibleWorkDocumentOutlineItems,
   type WorkDocumentOutlineItem,
 } from '../work-document-outline';
+import {
+  documentTextMatches,
+  type DocumentTextMatch,
+} from '../work-document-search';
+import {
+  registerDocumentFindHighlight,
+  unregisterDocumentFindHighlight,
+  updateDocumentFindHighlights,
+} from './document-find-highlight';
 import { OfficeTextField } from './office-controls';
 import { DocumentTaskPane } from './document-task-pane';
 
 export function DocumentNavigationPanel({
   editor,
+  modal = false,
   onClose,
 }: {
   editor: Editor;
-  onClose: () => void;
+  modal?: boolean;
+  onClose: () => void | Promise<void>;
 }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  const resultRefs = useRef(new Map<string, HTMLButtonElement>());
   const [, renderEditorState] = useState(0);
   const [query, setQuery] = useState('');
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [rovingId, setRovingId] = useState<string | null>(null);
+  const [rovingResultId, setRovingResultId] = useState<string | null>(null);
 
   useEffect(() => {
     const refresh = () => renderEditorState((current) => current + 1);
@@ -52,13 +65,32 @@ export function DocumentNavigationPanel({
     editor.state.selection.from,
   );
   const visibleItems = useMemo(
-    () => visibleWorkDocumentOutlineItems(outline, collapsedIds, query),
-    [collapsedIds, outline, query],
+    () => visibleWorkDocumentOutlineItems(outline, collapsedIds, ''),
+    [collapsedIds, outline],
+  );
+  const normalizedQuery = query.trim();
+  const matches = useMemo(
+    () => documentTextMatches(document, normalizedQuery),
+    [document, normalizedQuery],
+  );
+  const selectedMatchIndex = matches.findIndex(
+    (match) =>
+      editor.state.selection.from === match.from &&
+      editor.state.selection.to === match.to,
   );
 
   useEffect(() => {
     searchRef.current?.focus({ preventScroll: true });
   }, []);
+
+  useEffect(() => {
+    registerDocumentFindHighlight(editor);
+    return () => unregisterDocumentFindHighlight(editor);
+  }, [editor]);
+
+  useEffect(() => {
+    updateDocumentFindHighlights(editor, matches, selectedMatchIndex);
+  }, [editor, matches, selectedMatchIndex]);
 
   useEffect(() => {
     const validIds = new Set(
@@ -81,10 +113,29 @@ export function DocumentNavigationPanel({
     setRovingId(nextId);
   }, [activeItem?.id, rovingId, visibleItems]);
 
+  useEffect(() => {
+    if (!normalizedQuery) return;
+    const validResultIds = new Set(matches.map(documentMatchId));
+    setRovingResultId((current) =>
+      current && validResultIds.has(current)
+        ? current
+        : matches[0]
+          ? documentMatchId(matches[0])
+          : null,
+    );
+  }, [matches, normalizedQuery]);
+
   const focusItem = useCallback((itemId: string) => {
     setRovingId(itemId);
     requestAnimationFrame(() => {
       itemRefs.current.get(itemId)?.focus({ preventScroll: true });
+    });
+  }, []);
+
+  const focusResult = useCallback((resultId: string) => {
+    setRovingResultId(resultId);
+    requestAnimationFrame(() => {
+      resultRefs.current.get(resultId)?.focus({ preventScroll: true });
     });
   }, []);
 
@@ -122,17 +173,21 @@ export function DocumentNavigationPanel({
       focusAt(visibleItems.length - 1);
     } else if (
       event.key === 'ArrowRight' &&
-      !query &&
+      !normalizedQuery &&
       item.hasChildren &&
       collapsedIds.has(item.id)
     ) {
       event.preventDefault();
       toggleCollapsed(item.id);
-    } else if (event.key === 'ArrowRight' && !query && item.hasChildren) {
+    } else if (
+      event.key === 'ArrowRight' &&
+      !normalizedQuery &&
+      item.hasChildren
+    ) {
       event.preventDefault();
       const child = visibleItems[index + 1];
       if (child?.depth > item.depth) focusItem(child.id);
-    } else if (event.key === 'ArrowLeft' && !query) {
+    } else if (event.key === 'ArrowLeft' && !normalizedQuery) {
       event.preventDefault();
       if (item.hasChildren && !collapsedIds.has(item.id)) {
         toggleCollapsed(item.id);
@@ -142,12 +197,55 @@ export function DocumentNavigationPanel({
     }
   };
 
+  const navigateTo = async (
+    selection: number | { from: number; to: number },
+  ) => {
+    const chain = editor.chain();
+    if (!modal) chain.focus();
+    chain.setTextSelection(selection).scrollIntoView().run();
+    if (!modal) return;
+    await onClose();
+    requestAnimationFrame(() => {
+      if (!editor.isDestroyed) editor.chain().focus().scrollIntoView().run();
+    });
+  };
+
+  const selectMatch = (match: DocumentTextMatch) => {
+    void navigateTo({ from: match.from, to: match.to });
+  };
+
+  const handleResultKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    match: DocumentTextMatch,
+  ) => {
+    const index = matches.findIndex(
+      (candidate) => documentMatchId(candidate) === documentMatchId(match),
+    );
+    const focusAt = (requestedIndex: number) => {
+      const next = matches[requestedIndex];
+      if (next) focusResult(documentMatchId(next));
+    };
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      focusAt(Math.min(matches.length - 1, index + 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      focusAt(Math.max(0, index - 1));
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      focusAt(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      focusAt(matches.length - 1);
+    }
+  };
+
   return (
     <DocumentTaskPane
       ariaLabel="文档导航"
       className="work-document-navigation-panel"
       title="导航窗格"
-      description="按标题浏览文档"
+      description="浏览标题或搜索正文"
       closeLabel="关闭导航窗格"
       onClose={onClose}
     >
@@ -156,96 +254,161 @@ export function DocumentNavigationPanel({
         <OfficeTextField
           ref={searchRef}
           type="search"
-          aria-label="搜索标题"
-          placeholder="搜索标题"
+          aria-label="搜索文档"
+          placeholder="搜索文档"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key !== 'ArrowDown' || !visibleItems.length) return;
-            event.preventDefault();
-            focusItem(visibleItems[0]?.id ?? '');
+            if (event.key === 'Enter' && matches[0]) {
+              event.preventDefault();
+              selectMatch(matches[0]);
+            } else if (event.key === 'ArrowDown') {
+              const firstTarget = normalizedQuery
+                ? matches[0]
+                  ? documentMatchId(matches[0])
+                  : null
+                : visibleItems[0]?.id;
+              if (!firstTarget) return;
+              event.preventDefault();
+              if (normalizedQuery) focusResult(firstTarget);
+              else focusItem(firstTarget);
+            }
           }}
         />
       </div>
       <div className="work-document-navigation-summary" aria-live="polite">
-        {query ? `${visibleItems.length} 个匹配` : `${outline.length} 个标题`}
+        {normalizedQuery
+          ? matches.length
+            ? `${matches.length} 个匹配`
+            : '没有匹配内容'
+          : `${outline.length} 个标题`}
       </div>
-      <nav
-        className="work-document-task-pane-body work-document-outline"
-        aria-label="文档标题"
-      >
-        {visibleItems.length ? (
-          <ol>
-            {visibleItems.map((item) => {
-              const collapsed = collapsedIds.has(item.id);
-              return (
-                <li
-                  key={item.id}
-                  className={activeItem?.id === item.id ? 'active' : undefined}
-                  style={
-                    {
-                      '--work-document-outline-indent': `${item.depth * 14}px`,
-                    } as CSSProperties
-                  }
-                >
-                  {!query && item.hasChildren ? (
+      {normalizedQuery ? (
+        <nav
+          className="work-document-task-pane-body work-document-search-results"
+          aria-label="文档搜索结果"
+        >
+          {matches.length ? (
+            <ol>
+              {matches.map((match, index) => {
+                const resultId = documentMatchId(match);
+                const section =
+                  currentWorkDocumentOutlineItem(outline, match.from)?.text ??
+                  '文档开头';
+                return (
+                  <li key={resultId}>
                     <button
+                      ref={(element) => {
+                        if (element) resultRefs.current.set(resultId, element);
+                        else resultRefs.current.delete(resultId);
+                      }}
                       type="button"
-                      tabIndex={-1}
-                      className="work-document-outline-toggle"
-                      aria-label={`${collapsed ? '展开' : '折叠'} ${item.text}`}
-                      title={collapsed ? '展开下级标题' : '折叠下级标题'}
-                      onClick={() => toggleCollapsed(item.id)}
+                      className="work-document-search-result"
+                      tabIndex={resultId === rovingResultId ? 0 : -1}
+                      aria-label={`第 ${index + 1} 个匹配：${match.matchedText}`}
+                      aria-current={
+                        selectedMatchIndex === index ? 'location' : undefined
+                      }
+                      onFocus={() => setRovingResultId(resultId)}
+                      onKeyDown={(event) => handleResultKeyDown(event, match)}
+                      onClick={() => selectMatch(match)}
                     >
-                      {collapsed ? (
-                        <ChevronRight size={13} />
-                      ) : (
-                        <ChevronDown size={13} />
-                      )}
+                      <span className="work-document-search-section">
+                        {section}
+                      </span>
+                      <span className="work-document-search-excerpt">
+                        {match.truncatedBefore && '…'}
+                        {match.before}
+                        <mark>{match.matchedText}</mark>
+                        {match.after}
+                        {match.truncatedAfter && '…'}
+                      </span>
                     </button>
-                  ) : (
-                    <span className="work-document-outline-toggle-spacer" />
-                  )}
-                  <button
-                    ref={(element) => {
-                      if (element) itemRefs.current.set(item.id, element);
-                      else itemRefs.current.delete(item.id);
-                    }}
-                    type="button"
-                    className="work-document-outline-item"
-                    tabIndex={item.id === rovingId ? 0 : -1}
-                    aria-current={
-                      activeItem?.id === item.id ? 'location' : undefined
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="work-document-outline-empty">
+              尝试更短或不同的文字
+            </div>
+          )}
+        </nav>
+      ) : (
+        <nav
+          className="work-document-task-pane-body work-document-outline"
+          aria-label="文档标题"
+        >
+          {visibleItems.length ? (
+            <ol>
+              {visibleItems.map((item) => {
+                const collapsed = collapsedIds.has(item.id);
+                return (
+                  <li
+                    key={item.id}
+                    className={
+                      activeItem?.id === item.id ? 'active' : undefined
                     }
-                    aria-expanded={
-                      !query && item.hasChildren ? !collapsed : undefined
+                    style={
+                      {
+                        '--work-document-outline-indent': `${item.depth * 14}px`,
+                      } as CSSProperties
                     }
-                    title={item.text}
-                    onFocus={() => setRovingId(item.id)}
-                    onKeyDown={(event) => handleItemKeyDown(event, item)}
-                    onClick={() => {
-                      editor
-                        .chain()
-                        .focus()
-                        .setTextSelection(item.from)
-                        .scrollIntoView()
-                        .run();
-                    }}
                   >
-                    {item.text}
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        ) : (
-          <div className="work-document-outline-empty">
-            {outline.length
-              ? '没有匹配的标题'
-              : '应用标题样式后，可在这里快速跳转'}
-          </div>
-        )}
-      </nav>
+                    {item.hasChildren ? (
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        className="work-document-outline-toggle"
+                        aria-label={`${collapsed ? '展开' : '折叠'} ${item.text}`}
+                        title={collapsed ? '展开下级标题' : '折叠下级标题'}
+                        onClick={() => toggleCollapsed(item.id)}
+                      >
+                        {collapsed ? (
+                          <ChevronRight size={13} />
+                        ) : (
+                          <ChevronDown size={13} />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="work-document-outline-toggle-spacer" />
+                    )}
+                    <button
+                      ref={(element) => {
+                        if (element) itemRefs.current.set(item.id, element);
+                        else itemRefs.current.delete(item.id);
+                      }}
+                      type="button"
+                      className="work-document-outline-item"
+                      tabIndex={item.id === rovingId ? 0 : -1}
+                      aria-current={
+                        activeItem?.id === item.id ? 'location' : undefined
+                      }
+                      aria-expanded={item.hasChildren ? !collapsed : undefined}
+                      title={item.text}
+                      onFocus={() => setRovingId(item.id)}
+                      onKeyDown={(event) => handleItemKeyDown(event, item)}
+                      onClick={() => {
+                        void navigateTo(item.from);
+                      }}
+                    >
+                      {item.text}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <div className="work-document-outline-empty">
+              应用标题样式后，可在这里快速跳转
+            </div>
+          )}
+        </nav>
+      )}
     </DocumentTaskPane>
   );
+}
+
+function documentMatchId(match: DocumentTextMatch): string {
+  return `match-${match.from}-${match.to}`;
 }

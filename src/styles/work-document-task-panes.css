@@ -738,6 +738,81 @@
   font-weight: 650;
 }
 
+.work-document-search-results {
+  background: var(--a3s-panel);
+}
+
+.work-document-search-results > ol {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  margin: 0;
+  padding: 7px 8px 14px;
+  list-style: none;
+}
+
+.work-document-search-results > ol > li {
+  min-width: 0;
+}
+
+.work-document-search-result {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-document-search-result:hover {
+  border-color: color-mix(in srgb, var(--a3s-line) 78%, transparent);
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-document-search-result:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 64%, transparent);
+  outline-offset: -2px;
+}
+
+.work-document-search-result[aria-current="location"] {
+  border-color: color-mix(in srgb, var(--a3s-blue) 20%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-blue) 8%, var(--a3s-panel));
+}
+
+.work-document-search-section {
+  overflow: hidden;
+  color: var(--a3s-faint);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-search-excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.work-document-search-excerpt mark {
+  border-radius: 2px;
+  background: #fff1a8;
+  color: var(--a3s-ink);
+}
+
 .work-document-outline-empty {
   margin: 18px 14px;
   padding: 18px 14px;

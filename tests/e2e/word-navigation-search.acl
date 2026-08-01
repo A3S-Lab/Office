@@ -1,0 +1,153 @@
+suite "office-word-navigation-search" {
+    version = 1
+
+    scenario "search-and-select-body-text" {
+        name = "Search Word body text from the desktop navigation pane"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        fill "search-body" {
+            target = label("搜索文档")
+            value = "尚未解决"
+        }
+
+        expect "one-result" {
+            text = "1 个匹配"
+        }
+
+        expect "context-is-visible" {
+            text = "风险与决策"
+        }
+
+        click "select-result" {
+            target = role("button", "第 1 个匹配：尚未解决")
+        }
+
+        expect "result-is-current" {
+            visible = css(".work-document-search-result[aria-current='location']")
+        }
+
+        expect "document-range-is-highlighted" {
+            visible = css(".work-document-find-match.active[data-document-find-active='true']")
+        }
+
+        screenshot "selected-result" {
+            path = "screenshots/word-navigation-search-desktop.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/desktop-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/desktop-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "restore-document-after-compact-result" {
+        name = "Restore the Word body after selecting a result from compact navigation"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        expect "navigation-is-modal" {
+            visible = css(".work-document-navigation-panel[role='dialog'][aria-modal='true']")
+        }
+
+        fill "search-body" {
+            target = label("搜索文档")
+            value = "尚未解决"
+        }
+
+        click "select-result" {
+            target = role("button", "第 1 个匹配：尚未解决")
+        }
+
+        expect "document-is-restored" {
+            visible = css(".work-document-scroll:not([inert])")
+        }
+
+        expect "document-is-focused" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        expect "selection-tools-are-visible" {
+            visible = css(".work-document-selection-toolbar")
+        }
+
+        screenshot "restored-selection" {
+            path = "screenshots/word-navigation-search-compact.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/compact-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/compact-page-errors.json"
+            clear = false
+        }
+    }
+}

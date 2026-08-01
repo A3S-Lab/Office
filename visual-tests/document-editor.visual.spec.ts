@@ -166,7 +166,7 @@ test('document navigation keeps a live outline beside the editing surface', asyn
 
   const pane = page.locator('.work-document-navigation-panel');
   const modalPane = documentTaskPanesAreModal(page);
-  const search = pane.getByRole('searchbox', { name: '搜索标题' });
+  const search = pane.getByRole('searchbox', { name: '搜索文档' });
   await expect(pane).toBeVisible();
   await expectDocumentTaskPaneMode(pane, modalPane);
   if (modalPane) {
@@ -179,11 +179,35 @@ test('document navigation keeps a live outline beside the editing surface', asyn
   await expect(pane.getByText('5 个标题')).toBeVisible();
   await expect(pane.getByRole('button', { name: '背景与目标' })).toBeVisible();
 
-  await search.fill('范围');
+  await search.fill('尚未解决');
   await expect(pane.getByText('1 个匹配')).toBeVisible();
-  await expect(pane.getByRole('button', { name: '工作范围' })).toBeVisible();
-  await search.fill('');
+  const result = pane.getByRole('button', {
+    name: '第 1 个匹配：尚未解决',
+  });
+  await expect(result).toContainText('风险与决策');
+  await expect(result.locator('mark')).toHaveText('尚未解决');
+  await result.click();
+  if (modalPane) {
+    await expect(pane).toBeHidden();
+    await expect(page.getByRole('textbox', { name: '文档正文' })).toBeFocused();
+  } else {
+    await expect(result).toHaveAttribute('aria-current', 'location');
+  }
+  await expect
+    .poll(() => page.evaluate(() => window.getSelection()?.toString() ?? ''))
+    .toBe('尚未解决');
+  if (modalPane) {
+    await navigationToggle.click();
+    await expect(pane).toBeVisible();
+  } else {
+    await search.fill('');
+  }
   await pane.getByRole('button', { name: '背景与目标' }).click();
+  if (modalPane) {
+    await expect(pane).toBeHidden();
+    await navigationToggle.click();
+    await expect(pane).toBeVisible();
+  }
   await expect(
     pane.getByRole('button', { name: '背景与目标' }),
   ).toHaveAttribute('aria-current', 'location');
@@ -221,6 +245,7 @@ test('document navigation keeps a live outline beside the editing surface', asyn
     expect(geometry.scrollLeft).toBeCloseTo(geometry.paneRight, 0);
   }
 
+  await search.evaluate((element) => element.blur());
   await stabilizeVisualSurface(page);
   await expect(pane).toHaveScreenshot('document-navigation-pane.png');
   await page.keyboard.press('Escape');

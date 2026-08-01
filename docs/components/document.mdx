@@ -42,6 +42,15 @@ and file semantics.
 | `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
 | `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
 
+## Built-in navigation
+
+The View ribbon opens a persistent heading outline on wide layouts and a
+focus-contained drawer on compact layouts. Searching the pane scans body text
+as well as headings, groups each result under its current section, highlights
+all matches, and moves the editor selection without adding a history entry.
+Selecting a compact result closes the drawer before restoring the body focus
+and exact text range.
+
 ## Host-defined selection menu
 
 The menu factory receives an immutable selection snapshot with exact selected

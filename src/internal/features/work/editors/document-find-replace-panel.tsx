@@ -9,9 +9,9 @@ import {
   useState,
 } from 'react';
 import { Button, IconButton } from '../../../design-system/primitives';
+import { documentTextMatches } from '../work-document-search';
 import { OfficeTextField } from './office-controls';
 import {
-  type DocumentFindHighlightRange,
   registerDocumentFindHighlight,
   unregisterDocumentFindHighlight,
   updateDocumentFindHighlights,
@@ -19,8 +19,6 @@ import {
 import { DocumentTaskPane } from './document-task-pane';
 
 export type DocumentFindReplaceMode = 'find' | 'replace';
-
-type DocumentTextMatch = DocumentFindHighlightRange;
 
 export function DocumentFindReplacePanel({
   editor,
@@ -56,7 +54,7 @@ export function DocumentFindReplacePanel({
 
   const editorDocument = editor.state.doc;
   const matches = useMemo(
-    () => documentTextMatches(editor, query),
+    () => documentTextMatches(editorDocument, query),
     [editor, editorDocument, query],
   );
 
@@ -119,7 +117,7 @@ export function DocumentFindReplacePanel({
         : null;
     if (!match || !onReplaceText(match.from, match.to, replacement)) return;
     setAnnouncement('已替换当前匹配');
-    const remaining = documentTextMatches(editor, query);
+    const remaining = documentTextMatches(editor.state.doc, query);
     const next =
       remaining[Math.min(Math.max(activeIndex, 0), remaining.length - 1)];
     if (next) {
@@ -284,37 +282,4 @@ export function DocumentFindReplacePanel({
       </div>
     </DocumentTaskPane>
   );
-}
-
-export function documentTextMatches(
-  editor: Editor,
-  rawQuery: string,
-): DocumentTextMatch[] {
-  const query = rawQuery.toLocaleLowerCase();
-  if (!query) return [];
-  const runs: Array<{ from: number; text: string }> = [];
-  editor.state.doc.descendants((node, position) => {
-    if (!node.isText || !node.text) return;
-    const previous = runs.at(-1);
-    if (previous && previous.from + previous.text.length === position) {
-      previous.text += node.text;
-    } else {
-      runs.push({ from: position, text: node.text });
-    }
-  });
-  return runs.flatMap((run) => {
-    const matches: DocumentTextMatch[] = [];
-    const text = run.text.toLocaleLowerCase();
-    let offset = 0;
-    while (offset <= text.length - query.length) {
-      const index = text.indexOf(query, offset);
-      if (index < 0) break;
-      matches.push({
-        from: run.from + index,
-        to: run.from + index + query.length,
-      });
-      offset = index + Math.max(1, query.length);
-    }
-    return matches;
-  });
 }

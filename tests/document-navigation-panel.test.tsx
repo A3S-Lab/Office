@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
+import { useState } from 'react';
 import {
   act,
   fireEvent,
@@ -103,7 +104,7 @@ test('derives a typed hierarchy and the heading for the current position', () =>
   }
 });
 
-test('filters, collapses, keyboard-navigates, and jumps through headings', async () => {
+test('collapses, keyboard-navigates, and jumps through headings', async () => {
   const { editor, element } = createEditor();
 
   try {
@@ -111,7 +112,7 @@ test('filters, collapses, keyboard-navigates, and jumps through headings', async
       <DocumentNavigationPanel editor={editor} onClose={() => undefined} />,
     );
     const pane = screen.getByRole('complementary', { name: '文档导航' });
-    const search = within(pane).getByRole('searchbox', { name: '搜索标题' });
+    const search = within(pane).getByRole('searchbox', { name: '搜索文档' });
     expect(search).toHaveFocus();
     expect(within(pane).getByText('5 个标题')).toBeVisible();
 
@@ -132,11 +133,6 @@ test('filters, collapses, keyboard-navigates, and jumps through headings', async
     fireEvent.keyDown(project, { key: 'ArrowDown' });
     await waitFor(() => expect(background).toHaveFocus());
 
-    fireEvent.change(search, { target: { value: '交付' } });
-    expect(within(pane).getByText('1 个匹配')).toBeVisible();
-    expect(
-      within(pane).queryByRole('button', { name: '项目方案' }),
-    ).not.toBeInTheDocument();
     const delivery = within(pane).getByRole('button', { name: '交付计划' });
     fireEvent.click(delivery);
     expect(
@@ -146,6 +142,100 @@ test('filters, collapses, keyboard-navigates, and jumps through headings', async
       ),
     ).toBe('交付计划');
     expect(delivery).toHaveAttribute('aria-current', 'location');
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('searches body text, previews context, and jumps to a selected result', async () => {
+  const { editor, element } = createEditor();
+
+  try {
+    render(
+      <DocumentNavigationPanel editor={editor} onClose={() => undefined} />,
+    );
+    const pane = screen.getByRole('complementary', { name: '文档导航' });
+    const search = within(pane).getByRole('searchbox', { name: '搜索文档' });
+
+    fireEvent.change(search, { target: { value: '成功标准内容' } });
+    expect(within(pane).getByText('1 个匹配')).toBeVisible();
+    expect(
+      within(pane).getByRole('navigation', { name: '文档搜索结果' }),
+    ).toBeVisible();
+    const result = within(pane).getByRole('button', {
+      name: '第 1 个匹配：成功标准内容',
+    });
+    expect(result).toHaveTextContent('成功标准内容');
+    expect(result).toHaveTextContent('成功标准');
+
+    fireEvent.click(result);
+    expect(
+      editor.state.doc.textBetween(
+        editor.state.selection.from,
+        editor.state.selection.to,
+      ),
+    ).toBe('成功标准内容');
+    expect(result).toHaveAttribute('aria-current', 'location');
+
+    fireEvent.change(search, { target: { value: '内容' } });
+    expect(within(pane).getByText('4 个匹配')).toBeVisible();
+    fireEvent.keyDown(search, { key: 'ArrowDown' });
+    const first = within(pane).getByRole('button', {
+      name: '第 1 个匹配：内容',
+    });
+    const second = within(pane).getByRole('button', {
+      name: '第 2 个匹配：内容',
+    });
+    await waitFor(() => expect(first).toHaveFocus());
+    fireEvent.keyDown(first, { key: 'ArrowDown' });
+    await waitFor(() => expect(second).toHaveFocus());
+
+    fireEvent.change(search, { target: { value: '' } });
+    expect(
+      within(pane).getByRole('navigation', { name: '文档标题' }),
+    ).toBeVisible();
+    expect(within(pane).getByText('5 个标题')).toBeVisible();
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('closes compact navigation before restoring the body selection', async () => {
+  const { editor, element } = createEditor();
+
+  function CompactNavigation() {
+    const [open, setOpen] = useState(true);
+    return open ? (
+      <DocumentNavigationPanel
+        editor={editor}
+        modal
+        onClose={() => setOpen(false)}
+      />
+    ) : null;
+  }
+
+  try {
+    render(<CompactNavigation />);
+    const search = screen.getByRole('searchbox', { name: '搜索文档' });
+    fireEvent.change(search, { target: { value: '成功标准内容' } });
+    fireEvent.click(
+      screen.getByRole('button', { name: '第 1 个匹配：成功标准内容' }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('complementary', { name: '文档导航' }),
+      ).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(editor.view.dom).toHaveFocus());
+    expect(
+      editor.state.doc.textBetween(
+        editor.state.selection.from,
+        editor.state.selection.to,
+      ),
+    ).toBe('成功标准内容');
   } finally {
     editor.destroy();
     element.remove();

@@ -458,7 +458,7 @@ export function DocumentEditor({
       }
       if (taskPane === 'navigation') {
         return (
-          pane?.querySelector<HTMLElement>('[aria-label="搜索标题"]') ?? null
+          pane?.querySelector<HTMLElement>('[aria-label="搜索文档"]') ?? null
         );
       }
       return pane?.querySelector<HTMLElement>('.ds-icon-button.close') ?? null;
@@ -851,7 +851,11 @@ export function DocumentEditor({
         onFocusCapture={rememberTaskPaneDraftFocus}
       >
         {!preview && navigationOpen && (
-          <DocumentNavigationPanel editor={editor} onClose={closeTaskPane} />
+          <DocumentNavigationPanel
+            editor={editor}
+            modal={taskPaneModal}
+            onClose={closeTaskPane}
+          />
         )}
         <div
           className={`work-document-scroll ${viewMode}${

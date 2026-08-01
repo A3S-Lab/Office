@@ -183,17 +183,20 @@ Exit evidence:
   chrome for large files.
 
 Current implementation evidence includes a persistent Word-style navigation
-pane with a typed heading hierarchy, active-heading tracking, title filtering,
-collapsible branches, keyboard traversal, responsive left-side placement, and
-safe selection-based jumps that do not create history entries. New comment
+pane with a typed heading hierarchy, active-heading tracking, collapsible
+branches, keyboard traversal, and responsive left-side placement. Its search
+returns full-text results with section context, bounded excerpts, match
+highlights, and safe selection-based jumps that do not create history entries.
+Compact result selection closes the modal pane before restoring the exact body
+selection and focus. New comment
 drafts stay inside the visible review rail even for document-wide selections,
 and discard confirmation is limited to drafts or replies that contain written
 content. Cancelling a task-pane switch now returns keyboard focus to the exact
 unfinished comment, reply, or citation field on desktop and compact layouts,
 so protected content can be edited immediately. The same editing context is
 retained when users cancel comment deletion, citation deletion, or an internal
-citation switch. Full-text navigation results, page thumbnails, and measured
-outline virtualization for 100-page fixtures remain part of this priority.
+citation switch. Page thumbnails and measured outline/search-result
+virtualization for 100-page fixtures remain part of this priority.
 
 Exit evidence:
 

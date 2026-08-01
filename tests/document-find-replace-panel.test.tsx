@@ -2,11 +2,9 @@ import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
-import {
-  DocumentFindReplacePanel,
-  documentTextMatches,
-} from '../src/internal/features/work/editors/document-find-replace-panel';
+import { DocumentFindReplacePanel } from '../src/internal/features/work/editors/document-find-replace-panel';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { documentTextMatches } from '../src/internal/features/work/work-document-search';
 
 test('finds text across adjacent marked runs and moves through matches', async () => {
   const { editor, element } = createEditor(
@@ -14,7 +12,12 @@ test('finds text across adjacent marked runs and moves through matches', async (
   );
 
   try {
-    expect(documentTextMatches(editor, 'alpha')).toEqual([
+    expect(
+      documentTextMatches(editor.state.doc, 'alpha').map(({ from, to }) => ({
+        from,
+        to,
+      })),
+    ).toEqual([
       { from: 1, to: 6 },
       { from: 12, to: 17 },
     ]);
