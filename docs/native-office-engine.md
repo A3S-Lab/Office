@@ -1047,11 +1047,14 @@ source, inventories every page without truncation, and emits one-based
 `/page[N]` locators with media box, crop box, 0/90/180/270-degree rotation,
 physical surface, DPI, and pixel dimensions. Exact-page rendering happens on
 bounded blocking workers and publishes a revalidated PNG only after the source,
-profile, deadline, output limit, and no-clobber checks pass. Typed failures
-separate corrupt/password-required, zero-page, page-limit, missing-page,
-unsupported, timeout, output-limit, and source-mutation cases. Fixture tests
-use a CI-supplied, checksum-pinned PDFium binary and cover two isolated pages,
-a non-default crop box, rotation, deterministic repeated pixels, and failed
+profile, deadline, output limit, and no-clobber checks pass. A validated
+complete inventory can now serve constant-scope per-page inspections without
+another document scan; the actual render still verifies the source bytes and
+observed page profile. Typed failures separate corrupt/password-required,
+zero-page, page-limit, missing-page, unsupported, timeout, output-limit, and
+source-mutation cases. Fixture tests use a CI-supplied, checksum-pinned PDFium
+binary and cover two isolated pages, cached selection without re-inventory, a
+non-default crop box, rotation, deterministic repeated pixels, and failed
 publication paths.
 
 Basic Presentation table structure is deliberately bounded. Table dimensions
@@ -1183,7 +1186,9 @@ The typed Rust API additionally provides an exact-layout provider boundary and
 native no-resampling source-layout receipts for opaque, full-slide PPTX PNGs.
 With the optional `pdfium` feature it also provides bounded native PDF page
 inventories and source-layout PNG receipts through a host-supplied PDFium 7881
-library. Neither route requires Browser or broadens semantic screenshots.
+library. A complete validated inventory can be reused for constant-scope page
+inspection across bounded render waves. Neither route requires Browser or
+broadens semantic screenshots.
 The MCP target's 12 typed tools use bounded in-process sessions for validate,
 create/open/list, semantic reads, annotations, and issues, constrained raw XML, atomic
 mutation batches, immutable-template merge, save, and close. It limits open

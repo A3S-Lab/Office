@@ -15,6 +15,9 @@ All notable changes to A3S Office will be documented in this file.
   cover one PPTX slide, including deterministic profile receipts, source
   mutation checks, bounded no-clobber output, and typed unsupported outcomes
   for every richer layout.
+- Added constant-scope inspection of pages from a previously validated native
+  PDF inventory, allowing large-document consumers to reuse one complete page
+  scan while render-time source and profile checks remain authoritative.
 - Added an interactive React playground, type checks, integration tests, and
   Rslib packaging.
 - Added GFM task lists, coalesced source-to-visual Markdown updates,

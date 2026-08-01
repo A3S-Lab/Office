@@ -144,6 +144,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .inventory_pages(&source, revision.clone(), options)
         .await
         .unwrap();
+    assert_eq!(renderer.inventory_call_count(), 1);
     assert_eq!(inventory.total_pages, 2);
     assert_eq!(inventory.pages[0].media_box.right_millipoints, 200_000);
     assert_eq!(inventory.pages[0].crop_box.left_millipoints, 10_000);
@@ -156,15 +157,14 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
 
     let page_one = inventory.pages[0].unit.clone();
     let inspection = renderer
-        .inspect_page(
+        .inspect_inventoried_page(
             &source,
-            revision.clone(),
+            &inventory,
             page_one.clone(),
             NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
-            options,
         )
-        .await
         .unwrap();
+    assert_eq!(renderer.inventory_call_count(), 1);
     let first_output = directory.path().join("page-1.png");
     let first_request = inspection.clone().into_render_request(
         &first_output,
@@ -197,15 +197,14 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     assert_eq!(first.raster.sha256, repeat.raster.sha256);
 
     let page_two_inspection = renderer
-        .inspect_page(
+        .inspect_inventoried_page(
             &source,
-            revision.clone(),
+            &inventory,
             inventory.pages[1].unit.clone(),
             NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
-            options,
         )
-        .await
         .unwrap();
+    assert_eq!(renderer.inventory_call_count(), 1);
     let second_output = directory.path().join("page-2.png");
     let second = renderer
         .render(page_two_inspection.into_render_request(
@@ -225,6 +224,37 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         [0, 0, 255, 255]
     );
     assert_ne!(first.raster.sha256, second.raster.sha256);
+
+    let mut tampered_inventory = inventory.clone();
+    tampered_inventory.pages[0].output_width_px += 1;
+    let tampered_page = renderer
+        .inspect_inventoried_page(
+            &source,
+            &tampered_inventory,
+            page_one.clone(),
+            NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+        )
+        .unwrap_err();
+    assert_eq!(tampered_page.code, "use.office.pdf_page_geometry_invalid");
+    assert_eq!(renderer.inventory_call_count(), 1);
+
+    let missing_cached_page = renderer
+        .inspect_inventoried_page(
+            &source,
+            &inventory,
+            NativeOfficeUnit {
+                ordinal: 3,
+                locator: NativeOfficeUnitLocator::Page { number: 3 },
+                path: "/page[3]".to_string(),
+            },
+            NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+        )
+        .unwrap_err();
+    assert_eq!(
+        missing_cached_page.code,
+        "use.office.pdf_page_identity_mismatch"
+    );
+    assert_eq!(renderer.inventory_call_count(), 1);
 
     let over_limit = renderer
         .inventory_pages(

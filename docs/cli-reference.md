@@ -629,13 +629,16 @@ never downloads it. `source_revision` admits a regular source under an explicit
 byte/deadline bound. `inventory_pages` returns every page or fails instead of
 truncating, using strict one-based `/page[N]` identities and integer media/crop
 boxes in millipoints. Each page records effective rotation, physical micrometers,
-and DPI-derived pixels. `inspect_page` freezes those inputs into the common
-layout profile, and `render` publishes exactly one PNG with the same source
-mutation, timeout, byte-limit, no-clobber, rehash, and receipt checks. Corrupt,
-password-protected, zero-page, over-limit, missing-page, unsupported, and
-mutated inputs have stable typed failures. Only one content-addressed PDFium
-binary may be bound per process. This optional core feature does not depend on
-`a3s-use-browser` or `chromiumoxide`.
+and DPI-derived pixels. `inspect_page` remains the convenience path that
+inventories and selects in one call. Large-document consumers can instead call
+`inspect_inventoried_page` for constant-scope selection from one previously
+validated complete inventory. `render` still reads and verifies the immutable
+source, renders the actual selected page, and rejects any profile drift before
+publishing exactly one PNG with the same timeout, byte-limit, no-clobber,
+rehash, and receipt checks. Corrupt, password-protected, zero-page, over-limit,
+missing-page, unsupported, and mutated inputs have stable typed failures. Only
+one content-addressed PDFium binary may be bound per process. This optional core
+feature does not depend on `a3s-use-browser` or `chromiumoxide`.
 
 The semantic HTML/SVG/Browser screenshot path cannot construct either
 source-layout receipt.
