@@ -79,8 +79,15 @@ pub use layout::{
     NativeOfficeLayoutAuthority, NativeOfficeLayoutEnvironment, NativeOfficeLayoutInspection,
     NativeOfficeLayoutProfile, NativeOfficeLayoutRaster, NativeOfficeLayoutReceipt,
     NativeOfficeLayoutRenderRequest, NativeOfficeLayoutRenderer,
-    NativeOfficeLayoutRendererDescriptor, NativeOfficePptxImageLayoutRenderer,
-    NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
+    NativeOfficeLayoutRendererDescriptor, NativeOfficeLayoutSourceKind,
+    NativeOfficePptxImageLayoutRenderer, NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
+};
+#[cfg(feature = "pdfium")]
+pub use layout::{
+    NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfiumLayoutRenderer,
+    DEFAULT_NATIVE_OFFICE_PDF_PAGE_LIMIT, MAX_NATIVE_OFFICE_PDF_PAGE_LIMIT,
+    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
 };
 pub use opc::{
     ContentTypes, OpcPackageModel, Relationship, RelationshipGraph, RelationshipSource,
@@ -331,6 +338,8 @@ mod issues_tests;
 mod layout_tests;
 #[cfg(test)]
 mod named_range_tests;
+#[cfg(all(test, feature = "pdfium"))]
+mod pdfium_layout_tests;
 #[cfg(test)]
 mod spreadsheet_edit_tests;
 

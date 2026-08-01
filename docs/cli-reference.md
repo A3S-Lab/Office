@@ -619,8 +619,26 @@ locator/ordinal/path identity, stages output atomically with no overwrite,
 rehashes the published pixels, and records the engine binary, physical surface,
 DPI, viewport, locale, timezone, empty font manifest, renderer configuration,
 and explicit `source-layout` authority in a deterministic profile. DOCX, XLSX,
-and richer PPTX slides return `use.office.layout_unsupported`. The semantic
-HTML/SVG/Browser screenshot path cannot construct this receipt.
+and richer PPTX slides return `use.office.layout_unsupported`.
+
+With the Rust `pdfium` feature, `NativeOfficePdfiumLayoutRenderer` provides a
+second browser-neutral implementation for PDF. Construction requires an
+explicit PDFium Chromium/7881 dynamic-library path and a SHA-256 host font
+manifest; the provider copies and rehashes that binary in private staging and
+never downloads it. `source_revision` admits a regular source under an explicit
+byte/deadline bound. `inventory_pages` returns every page or fails instead of
+truncating, using strict one-based `/page[N]` identities and integer media/crop
+boxes in millipoints. Each page records effective rotation, physical micrometers,
+and DPI-derived pixels. `inspect_page` freezes those inputs into the common
+layout profile, and `render` publishes exactly one PNG with the same source
+mutation, timeout, byte-limit, no-clobber, rehash, and receipt checks. Corrupt,
+password-protected, zero-page, over-limit, missing-page, unsupported, and
+mutated inputs have stable typed failures. Only one content-addressed PDFium
+binary may be bound per process. This optional core feature does not depend on
+`a3s-use-browser` or `chromiumoxide`.
+
+The semantic HTML/SVG/Browser screenshot path cannot construct either
+source-layout receipt.
 
 `office native watch <file>` renders the same bounded all-format HTML, binds
 only `127.0.0.1`, selects an ephemeral port by default, and prints a URL with a

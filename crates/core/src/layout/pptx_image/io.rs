@@ -8,7 +8,7 @@ use tokio::io::AsyncReadExt as _;
 use crate::layout::{layout_error, NativeOfficeLayoutRaster};
 use crate::{NativeOfficeImage, NativeOfficeImageFormat, PackageRevision};
 
-pub(super) async fn ensure_output_available(output: &Path) -> UseResult<()> {
+pub(in crate::layout) async fn ensure_output_available(output: &Path) -> UseResult<()> {
     match tokio::fs::symlink_metadata(output).await {
         Ok(_) => Err(layout_error(
             "use.office.layout_output_exists",
@@ -22,9 +22,12 @@ pub(super) async fn ensure_output_available(output: &Path) -> UseResult<()> {
     }
 }
 
-pub(super) struct StagedOutput(tempfile::NamedTempFile);
+pub(in crate::layout) struct StagedOutput(tempfile::NamedTempFile);
 
-pub(super) async fn stage_output(output: &Path, bytes: Vec<u8>) -> UseResult<StagedOutput> {
+pub(in crate::layout) async fn stage_output(
+    output: &Path,
+    bytes: Vec<u8>,
+) -> UseResult<StagedOutput> {
     let parent = output
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -45,7 +48,10 @@ pub(super) async fn stage_output(output: &Path, bytes: Vec<u8>) -> UseResult<Sta
     .map_err(|_| layout_output_invalid())?
 }
 
-pub(super) async fn publish_output(staged: StagedOutput, output: &Path) -> UseResult<()> {
+pub(in crate::layout) async fn publish_output(
+    staged: StagedOutput,
+    output: &Path,
+) -> UseResult<()> {
     let output = output.to_path_buf();
     tokio::task::spawn_blocking(move || {
         staged.0.persist_noclobber(output).map_err(|error| {
@@ -64,12 +70,13 @@ pub(super) async fn publish_output(staged: StagedOutput, output: &Path) -> UseRe
     .map_err(|_| layout_output_invalid())?
 }
 
-pub(super) async fn validate_published_output(
+pub(in crate::layout) async fn validate_published_output(
     output: &Path,
     max_output_bytes: u64,
     expected_width: u32,
     expected_height: u32,
     expected_sha256: &str,
+    expected_rotation_degrees: u16,
 ) -> UseResult<NativeOfficeLayoutRaster> {
     let metadata = tokio::fs::symlink_metadata(output)
         .await
@@ -101,11 +108,11 @@ pub(super) async fn validate_published_output(
         height_px: image.height_px,
         byte_length: metadata.len(),
         sha256,
-        rotation_degrees: 0,
+        rotation_degrees: expected_rotation_degrees,
     })
 }
 
-pub(super) async fn verify_source_revision(
+pub(in crate::layout) async fn verify_source_revision(
     path: &Path,
     expected: &PackageRevision,
 ) -> UseResult<()> {
@@ -134,7 +141,7 @@ pub(super) async fn verify_source_revision(
     Ok(())
 }
 
-pub(super) async fn hash_regular_file(
+pub(in crate::layout) async fn hash_regular_file(
     path: &Path,
     expected_bytes: Option<u64>,
 ) -> UseResult<String> {
@@ -163,7 +170,7 @@ pub(super) async fn hash_regular_file(
     Ok(format!("{:x}", digest.finalize()))
 }
 
-pub(super) fn source_mutated() -> a3s_use_core::UseError {
+pub(in crate::layout) fn source_mutated() -> a3s_use_core::UseError {
     layout_error(
         "use.office.layout_source_mutated",
         "The Office layout source no longer matches its immutable byte length and SHA-256.",

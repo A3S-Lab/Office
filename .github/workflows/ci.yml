@@ -90,5 +90,18 @@ jobs:
       - name: Test native workspace
         run: cargo test --workspace
 
+      - name: Test optional native PDFium layout provider
+        env:
+          PDFIUM_ARCHIVE_SHA256: 1470e21b8b4a3b4ad7f85684e2da11d94f3b69a86d81dee11b9b6709d927ac1d
+        run: |
+          pdfium_test_dir="$(mktemp -d)"
+          curl --fail --location --retry 3 \
+            --output "${pdfium_test_dir}/pdfium.tgz" \
+            https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/7881/pdfium-linux-x64.tgz
+          printf '%s  %s\n' "${PDFIUM_ARCHIVE_SHA256}" "${pdfium_test_dir}/pdfium.tgz" | sha256sum --check --strict
+          tar -xzf "${pdfium_test_dir}/pdfium.tgz" -C "${pdfium_test_dir}"
+          A3S_OFFICE_TEST_PDFIUM_LIBRARY="${pdfium_test_dir}/lib/libpdfium.so" \
+            cargo test -p a3s-office --locked --features pdfium --all-targets
+
       - name: Inspect npm package
         run: bun pm pack --dry-run

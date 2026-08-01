@@ -1,3 +1,5 @@
+#[cfg(feature = "pdfium")]
+mod pdfium;
 mod pptx_image;
 
 use std::path::PathBuf;
@@ -9,6 +11,13 @@ use sha2::{Digest, Sha256};
 
 use crate::{DocumentKind, NativeOfficeUnit, PackageRevision};
 
+#[cfg(feature = "pdfium")]
+pub use pdfium::{
+    NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfiumLayoutRenderer,
+    DEFAULT_NATIVE_OFFICE_PDF_PAGE_LIMIT, MAX_NATIVE_OFFICE_PDF_PAGE_LIMIT,
+    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+};
 pub use pptx_image::NativeOfficePptxImageLayoutRenderer;
 
 /// Version of the canonical native Office layout-profile contract.
@@ -29,6 +38,30 @@ pub enum NativeOfficeLayoutAuthority {
     SourceLayout,
     /// Pixels are a semantic preview and cannot ground source coordinates.
     SemanticPreview,
+}
+
+/// Source formats admitted by the read-only layout boundary.
+///
+/// This remains separate from [`DocumentKind`], which identifies editable
+/// OOXML packages owned by the native Office document model.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeLayoutSourceKind {
+    Word,
+    Spreadsheet,
+    Presentation,
+    #[cfg(feature = "pdfium")]
+    Pdf,
+}
+
+impl From<DocumentKind> for NativeOfficeLayoutSourceKind {
+    fn from(kind: DocumentKind) -> Self {
+        match kind {
+            DocumentKind::Word => Self::Word,
+            DocumentKind::Spreadsheet => Self::Spreadsheet,
+            DocumentKind::Presentation => Self::Presentation,
+        }
+    }
 }
 
 /// Stable identity and transfer behavior of one layout renderer.
@@ -250,7 +283,7 @@ impl NativeOfficeLayoutReceipt {
 #[async_trait]
 pub trait NativeOfficeLayoutRenderer: Send + Sync {
     fn descriptor(&self) -> NativeOfficeLayoutRendererDescriptor;
-    fn supports(&self, kind: DocumentKind) -> bool;
+    fn supports(&self, kind: NativeOfficeLayoutSourceKind) -> bool;
 
     async fn render(
         &self,
@@ -277,8 +310,12 @@ pub(crate) fn validate_unit(unit: &NativeOfficeUnit) -> UseResult<()> {
         crate::NativeOfficeUnitLocator::Slide { number } => {
             unit.ordinal == *number && unit.path == format!("/slide[{number}]")
         }
+        #[cfg(feature = "pdfium")]
+        crate::NativeOfficeUnitLocator::Page { number } => {
+            unit.ordinal == *number && unit.path == format!("/page[{number}]")
+        }
     };
-    if ordinal_matches && !unit.path.chars().any(char::is_control) {
+    if unit.ordinal > 0 && ordinal_matches && !unit.path.chars().any(char::is_control) {
         return Ok(());
     }
     Err(layout_error(

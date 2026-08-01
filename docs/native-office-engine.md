@@ -1035,8 +1035,24 @@ actual pixels to physical geometry, DPI, viewport, engine-binary identity,
 locale, timezone, fonts/configuration hashes, and `source-layout` authority.
 Every other Office unit fails with `use.office.layout_unsupported`; semantic
 preview receipts cannot be promoted. This gives scanned/image-only decks a
-truthful OCR and overlay surface while rich Presentation, Word pagination,
-Spreadsheet print layout, and PDF remain follow-up providers.
+truthful OCR and overlay surface while rich Presentation, Word pagination, and
+Spreadsheet print layout remain follow-up providers.
+
+The optional native-core `pdfium` feature now provides the PDF follow-up
+without sharing the browser editor's Worker/WASM runtime. A host must inject a
+PDFium Chromium/7881 dynamic library plus its own font-manifest SHA-256. Office
+privately stages and rehashes the library, binds one binary identity
+process-wide, and performs no runtime fetch. The provider hashes a bounded PDF
+source, inventories every page without truncation, and emits one-based
+`/page[N]` locators with media box, crop box, 0/90/180/270-degree rotation,
+physical surface, DPI, and pixel dimensions. Exact-page rendering happens on
+bounded blocking workers and publishes a revalidated PNG only after the source,
+profile, deadline, output limit, and no-clobber checks pass. Typed failures
+separate corrupt/password-required, zero-page, page-limit, missing-page,
+unsupported, timeout, output-limit, and source-mutation cases. Fixture tests
+use a CI-supplied, checksum-pinned PDFium binary and cover two isolated pages,
+a non-default crop box, rotation, deterministic repeated pixels, and failed
+publication paths.
 
 Basic Presentation table structure is deliberately bounded. Table dimensions
 must be positive, no mutation may exceed 5,000 rows, 5,000 columns, or 100,000
@@ -1164,8 +1180,10 @@ a ready Browser provider. They are available through typed Rust APIs, `office
 native view|watch`, `office_view`, and progressive
 Word/Spreadsheet/Presentation/MCP Skill references.
 The typed Rust API additionally provides an exact-layout provider boundary and
-native no-resampling source-layout receipts for opaque, full-slide PPTX PNGs;
-this route does not require Browser and does not broaden semantic screenshots.
+native no-resampling source-layout receipts for opaque, full-slide PPTX PNGs.
+With the optional `pdfium` feature it also provides bounded native PDF page
+inventories and source-layout PNG receipts through a host-supplied PDFium 7881
+library. Neither route requires Browser or broadens semantic screenshots.
 The MCP target's 12 typed tools use bounded in-process sessions for validate,
 create/open/list, semantic reads, annotations, and issues, constrained raw XML, atomic
 mutation batches, immutable-template merge, save, and close. It limits open

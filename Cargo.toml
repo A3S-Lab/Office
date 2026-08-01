@@ -25,6 +25,9 @@ base64 = "0.22"
 fs2 = "0.4"
 futures-util = "0.3"
 getrandom = "0.3"
+libloading = "=0.8.9"
+pdfium-render = { version = "=0.9.3", default-features = false, features = ["pdfium_7881", "thread_safe"] }
+png = "0.17"
 quick-xml = "0.38"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }

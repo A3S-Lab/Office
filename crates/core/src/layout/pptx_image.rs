@@ -1,5 +1,5 @@
 mod candidate;
-mod io;
+pub(in crate::layout) mod io;
 
 use std::path::Path;
 use std::time::Duration;
@@ -18,10 +18,10 @@ use super::{
     is_sha256, layout_error, validate_revision, validate_unit, NativeOfficeLayoutAuthority,
     NativeOfficeLayoutEnvironment, NativeOfficeLayoutInspection, NativeOfficeLayoutProfile,
     NativeOfficeLayoutReceipt, NativeOfficeLayoutRenderRequest, NativeOfficeLayoutRenderer,
-    NativeOfficeLayoutRendererDescriptor, MAX_LAYOUT_OUTPUT_BYTES, MAX_LAYOUT_TIMEOUT_MS,
-    NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
+    NativeOfficeLayoutRendererDescriptor, NativeOfficeLayoutSourceKind, MAX_LAYOUT_OUTPUT_BYTES,
+    MAX_LAYOUT_TIMEOUT_MS, NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
 };
-use crate::{DocumentKind, NativeOfficeUnit, PackageRevision};
+use crate::{NativeOfficeUnit, PackageRevision};
 
 const RENDERER_ID: &str = "a3s-office-native-pptx-image";
 const ENGINE_NAME: &str = "a3s-office-png-passthrough";
@@ -186,6 +186,7 @@ impl NativeOfficePptxImageLayoutRenderer {
             candidate.width_px,
             candidate.height_px,
             &candidate.png_sha256,
+            0,
         )
         .await?;
         verify_source_revision(&candidate.source_path, &request.source_revision).await?;
@@ -228,8 +229,8 @@ impl NativeOfficeLayoutRenderer for NativeOfficePptxImageLayoutRenderer {
         }
     }
 
-    fn supports(&self, kind: DocumentKind) -> bool {
-        kind == DocumentKind::Presentation
+    fn supports(&self, kind: NativeOfficeLayoutSourceKind) -> bool {
+        kind == NativeOfficeLayoutSourceKind::Presentation
     }
 
     async fn render(
