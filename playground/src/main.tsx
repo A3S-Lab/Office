@@ -12,6 +12,7 @@ import {
 import '@a3s-lab/office/styles.css';
 import { EditorWorkspace } from './editor-workspace';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
+import { documentationEntryUrl, legacyDocsPath } from './site-routes';
 import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { WorkspaceHome } from './workspace-home';
@@ -37,7 +38,7 @@ function Playground() {
   const pdfInput = useRef<HTMLInputElement>(null);
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
-  const docsUrl = new URL('docs/index.html', document.baseURI).href;
+  const docsUrl = documentationEntryUrl(document.baseURI);
 
   useEffect(() => {
     const redirectLegacyDocsRoute = () => {
@@ -262,21 +263,6 @@ function PlaygroundToast({ notice }: { notice: PlaygroundNotice }) {
       <span>{notice.message}</span>
     </output>
   );
-}
-
-function legacyDocsPath(hash: string): string | null {
-  if (hash === '#guide/components') return 'docs/components/index.html';
-  if (hash === '#guide/api') return 'docs/components/document.html';
-  if (
-    hash === '#guide/automation' ||
-    hash === '#guide/cli' ||
-    hash === '#guide/skill' ||
-    hash === '#cli' ||
-    hash === '#skill'
-  ) {
-    return 'docs/automation/index.html';
-  }
-  return hash === '#guide' ? 'docs/guide/index.html' : null;
 }
 
 function createInitialArtifacts(): OfficeArtifact[] {

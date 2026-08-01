@@ -19,15 +19,23 @@ suite "office-docs-navigation" {
         }
 
         wait "documentation-route" {
-            url = "http://127.0.0.1:4175/docs/index.html"
+            url = "http://127.0.0.1:4175/docs/guide/index.html"
         }
 
         expect "documentation-center-ready" {
-            text = "A3S Office documentation"
+            text = "Getting started"
         }
 
         expect "documentation-search-ready" {
             visible = css(".rp-search-button, .rp-search-button--mobile")
+        }
+
+        expect "documentation-tree-ready" {
+            visible = css(".rp-doc-layout__sidebar")
+        }
+
+        expect "editor-reference-is-managed" {
+            text = "DocumentEditor"
         }
 
         screenshot "documentation-center" {
