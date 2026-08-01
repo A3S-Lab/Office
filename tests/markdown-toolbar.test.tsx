@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MarkdownToolbar } from '../src/internal/features/work/editors/markdown-toolbar';
 import type { MarkdownSourceCommand } from '../src/internal/features/work/editors/markdown-source-commands';
 import { createWorkMarkdownExtensions } from '../src/internal/features/work/work-markdown-extensions';
@@ -214,4 +214,44 @@ test('advertises only the keyboard shortcuts implemented by the editor', () => {
     'aria-keyshortcuts',
     'Control+I Meta+I',
   );
+});
+
+test('exposes concise and unambiguous Markdown view modes', () => {
+  editor = new Editor({
+    extensions: createWorkMarkdownExtensions(),
+    content: '<p>Markdown view modes</p>',
+  });
+
+  render(
+    <MarkdownToolbar
+      editor={editor}
+      sourceEditing
+      canSourceRedo={false}
+      canSourceUndo={false}
+      viewMode="split"
+      getSourceFocusTarget={() => null}
+      getSourceSelection={() => null}
+      onSourceCommand={() => false}
+      onSourceRedo={() => false}
+      onSourceReplace={() => false}
+      onSourceUndo={() => false}
+      onViewModeChange={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  const modeGroup = screen.getByRole('region', { name: '编辑方式' });
+  const visual = within(modeGroup).getByRole('button', {
+    name: '可视化编辑',
+  });
+  const source = within(modeGroup).getByRole('button', { name: '源码编辑' });
+  const split = within(modeGroup).getByRole('button', { name: '分屏编辑' });
+
+  expect(visual).toHaveTextContent('可视化');
+  expect(source).toHaveTextContent('源码');
+  expect(split).toHaveTextContent('分屏');
+  expect(visual).toHaveAttribute('aria-pressed', 'false');
+  expect(source).toHaveAttribute('aria-pressed', 'false');
+  expect(split).toHaveAttribute('aria-pressed', 'true');
+  expect(within(modeGroup).queryByRole('button', { name: '编辑' })).toBeNull();
 });

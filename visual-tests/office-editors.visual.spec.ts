@@ -964,13 +964,13 @@ test('Markdown GFM source and visual panes stay synchronized', async ({
 
   await page.getByRole('tab', { name: '视图' }).click();
   const viewControls = page.getByRole('region', { name: '编辑方式' });
-  await viewControls.getByRole('button', { name: '编辑' }).click();
+  await viewControls.getByRole('button', { name: '可视化编辑' }).click();
   const editableTask = page.getByRole('checkbox', {
     name: '未完成：Review the synchronized preview',
   });
   await expect(editableTask).toBeEnabled();
   await editableTask.click();
-  await viewControls.getByRole('button', { name: '分屏' }).click();
+  await viewControls.getByRole('button', { name: '分屏编辑' }).click();
   await expect(
     page.getByRole('textbox', { name: 'Markdown 源码' }),
   ).toHaveValue(/- \[x\] Review the synchronized preview/);

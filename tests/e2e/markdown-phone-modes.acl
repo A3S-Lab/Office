@@ -1,0 +1,107 @@
+suite "office-markdown-phone-modes" {
+    version = 1
+
+    scenario "edit-and-switch-markdown-modes-on-phone" {
+        name = "Edit Markdown and switch between its phone view modes"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=markdown-phone-modes"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "phone-sidebar-starts-closed" {
+            visible = css("button[aria-label='展开办公侧边栏']")
+        }
+
+        click "create-markdown" {
+            target = css(".playground-template-card.markdown")
+        }
+
+        wait "markdown-loaded" {
+            visible = css(".work-markdown-editor")
+        }
+
+        expect "default-phone-split-view" {
+            visible = css(".work-markdown-workspace.split")
+        }
+
+        fill "write-markdown-source" {
+            target = css(".work-markdown-pane.source textarea")
+            value = "# 手机工作流\n\n- [x] 源码编辑\n- [ ] 预览同步"
+        }
+
+        wait "preview-synchronized" {
+            text = "预览同步"
+        }
+
+        click "open-view-tab" {
+            target = role("tab", "视图")
+        }
+
+        expect "visual-mode-is-unambiguous" {
+            visible = css("button[aria-label='可视化编辑']")
+        }
+
+        expect "source-mode-is-unambiguous" {
+            visible = css("button[aria-label='源码编辑']")
+        }
+
+        expect "split-mode-is-unambiguous" {
+            visible = css("button[aria-label='分屏编辑'][aria-pressed='true']")
+        }
+
+        click "use-source-mode" {
+            target = role("button", "源码编辑")
+        }
+
+        expect "source-only-workspace" {
+            visible = css(".work-markdown-workspace.source .work-markdown-pane.source")
+        }
+
+        click "use-visual-mode" {
+            target = role("button", "可视化编辑")
+        }
+
+        expect "visual-editor-workspace" {
+            visible = css(".work-markdown-workspace.visual [aria-label='Markdown 编辑区']")
+        }
+
+        click "restore-split-mode" {
+            target = role("button", "分屏编辑")
+        }
+
+        expect "split-workspace-restored" {
+            visible = css(".work-markdown-workspace.split .work-markdown-pane.visual[data-readonly='true']")
+        }
+
+        screenshot "phone-markdown-modes" {
+            path = "screenshots/markdown-phone-modes.png"
+        }
+
+        accessibility "mode-semantics" {
+            path = "evidence/mode-semantics.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

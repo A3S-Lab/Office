@@ -121,7 +121,7 @@ test('keeps the default split view to one editor and one read-only preview', asy
   fireEvent.click(
     within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
       'button',
-      { name: '编辑' },
+      { name: '可视化编辑' },
     ),
   );
 
@@ -450,7 +450,7 @@ test('round-trips GFM task state from the visual editor to source', async () => 
   fireEvent.click(
     within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
       'button',
-      { name: '编辑' },
+      { name: '可视化编辑' },
     ),
   );
   const visualEditor = await screen.findByLabelText('Markdown 编辑区');
@@ -470,7 +470,7 @@ test('round-trips GFM task state from the visual editor to source', async () => 
   fireEvent.click(
     within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
       'button',
-      { name: '分屏' },
+      { name: '分屏编辑' },
     ),
   );
   expect(
@@ -580,7 +580,7 @@ test('mounts host TipTap extensions in the Markdown editor', async () => {
   fireEvent.click(
     within(screen.getByRole('region', { name: '编辑方式' })).getByRole(
       'button',
-      { name: '编辑' },
+      { name: '可视化编辑' },
     ),
   );
 

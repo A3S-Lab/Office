@@ -600,7 +600,8 @@ export function MarkdownToolbar({
           view: (
             <WorkOfficeRibbonGroup label="编辑方式">
               <MarkdownToolbarButton
-                label="编辑"
+                label="可视化编辑"
+                visibleLabel="可视化"
                 displayLabel
                 active={viewMode === 'visual'}
                 onClick={() => onViewModeChange('visual')}
@@ -608,7 +609,8 @@ export function MarkdownToolbar({
                 <PencilLine size={19} />
               </MarkdownToolbarButton>
               <MarkdownToolbarButton
-                label="源码"
+                label="源码编辑"
+                visibleLabel="源码"
                 displayLabel
                 active={viewMode === 'source'}
                 onClick={() => onViewModeChange('source')}
@@ -616,7 +618,8 @@ export function MarkdownToolbar({
                 <Code2 size={19} />
               </MarkdownToolbarButton>
               <MarkdownToolbarButton
-                label="分屏"
+                label="分屏编辑"
+                visibleLabel="分屏"
                 displayLabel
                 active={viewMode === 'split'}
                 onClick={() => onViewModeChange('split')}
@@ -653,6 +656,7 @@ function canRunVisualEditorCommand(
 
 function MarkdownToolbarButton({
   label,
+  visibleLabel,
   shortcut,
   active = false,
   displayLabel = false,
@@ -660,6 +664,7 @@ function MarkdownToolbarButton({
   ...props
 }: {
   label: string;
+  visibleLabel?: string;
   shortcut?: MarkdownToolbarShortcut;
   active?: boolean;
   displayLabel?: boolean;
@@ -672,6 +677,7 @@ function MarkdownToolbarButton({
     <WorkOfficeRibbonButton
       {...props}
       label={label}
+      visibleLabel={visibleLabel}
       title={shortcut ? `${label}（${shortcut.label}）` : label}
       aria-keyshortcuts={shortcut?.ariaKeyShortcuts}
       active={active}

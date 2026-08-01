@@ -22,7 +22,7 @@ test('Markdown insert dialogs return focus to the invoking editing surface', asy
   await page.getByRole('tab', { name: '视图' }).click();
   await page
     .getByRole('region', { name: '编辑方式' })
-    .getByRole('button', { name: '编辑' })
+    .getByRole('button', { name: '可视化编辑' })
     .click();
   const visual = page.getByRole('textbox', { name: 'Markdown 编辑区' });
   await visual.focus();
@@ -145,7 +145,7 @@ test('Markdown edits and removes links without losing the visual selection', asy
   await page.getByRole('tab', { name: '视图' }).click();
   await page
     .getByRole('region', { name: '编辑方式' })
-    .getByRole('button', { name: '编辑' })
+    .getByRole('button', { name: '可视化编辑' })
     .click();
 
   const visual = page.getByRole('textbox', { name: 'Markdown 编辑区' });
@@ -216,18 +216,18 @@ test('Markdown view controls return keyboard focus to the selected surface', asy
 
   await page.getByRole('tab', { name: '视图' }).click();
   const viewControls = page.getByRole('region', { name: '编辑方式' });
-  await viewControls.getByRole('button', { name: '源码' }).click();
+  await viewControls.getByRole('button', { name: '源码编辑' }).click();
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });
   await expect(source).toBeFocused();
   const sourceBefore = await source.inputValue();
   await page.keyboard.press('Meta+b');
   await expect(source).not.toHaveValue(sourceBefore);
 
-  await viewControls.getByRole('button', { name: '编辑' }).click();
+  await viewControls.getByRole('button', { name: '可视化编辑' }).click();
   const visual = page.getByRole('textbox', { name: 'Markdown 编辑区' });
   await expect(visual).toBeFocused();
 
-  await viewControls.getByRole('button', { name: '分屏' }).click();
+  await viewControls.getByRole('button', { name: '分屏编辑' }).click();
   await expect(
     page.getByRole('textbox', { name: 'Markdown 源码' }),
   ).toBeFocused();
@@ -241,7 +241,7 @@ test('Markdown source selection keeps ribbon state synchronized', async ({
   await page.getByRole('tab', { name: '视图' }).click();
   await page
     .getByRole('region', { name: '编辑方式' })
-    .getByRole('button', { name: '源码' })
+    .getByRole('button', { name: '源码编辑' })
     .click();
   await page.getByRole('tab', { name: '开始' }).click();
 
