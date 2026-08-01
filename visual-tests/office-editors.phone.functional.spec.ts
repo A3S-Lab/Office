@@ -223,6 +223,55 @@ test('Shared Office color picker exposes phone-sized touch targets', async ({
   );
 });
 
+test('Word page color keeps its custom controls visible at phone height', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
+    .click();
+
+  await page.getByRole('tab', { name: '页面布局' }).click();
+  await page.getByRole('button', { name: '页面颜色' }).click();
+
+  const menu = page.getByRole('dialog', { name: '页面颜色' });
+  await expect(
+    menu.getByRole('textbox', { name: '自定义颜色值' }),
+  ).toBeVisible();
+  await expect(
+    menu.getByRole('button', { name: '应用自定义颜色' }),
+  ).toBeVisible();
+
+  const geometry = await menu.evaluate((panel) => {
+    const custom = panel.querySelector<HTMLElement>(
+      '.work-office-color-custom',
+    );
+    if (!custom) {
+      throw new Error('Custom color controls are unavailable.');
+    }
+    const panelBounds = panel.getBoundingClientRect();
+    const customBounds = custom.getBoundingClientRect();
+    return {
+      customBottom: customBounds.bottom,
+      customTop: customBounds.top,
+      panelBottom: panelBounds.bottom,
+      panelClientHeight: panel.clientHeight,
+      panelScrollHeight: panel.scrollHeight,
+      panelScrollTop: panel.scrollTop,
+      panelTop: panelBounds.top,
+      viewportHeight: document.documentElement.clientHeight,
+    };
+  });
+  expect(geometry.panelScrollTop).toBe(0);
+  expect(geometry.customTop).toBeGreaterThanOrEqual(geometry.panelTop);
+  expect(geometry.customBottom).toBeLessThanOrEqual(geometry.panelBottom + 1);
+  expect(geometry.customBottom).toBeLessThanOrEqual(geometry.viewportHeight);
+  expect(geometry.panelScrollHeight).toBeLessThanOrEqual(
+    geometry.panelClientHeight + 1,
+  );
+});
+
 test('PDF keeps compact tools clear of the file actions on phones', async ({
   page,
 }) => {

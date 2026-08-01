@@ -1,0 +1,74 @@
+suite "office-word-page-color" {
+    version = 1
+
+    scenario "apply-custom-page-color-on-phone" {
+        name = "Apply a custom Word page color from a phone viewport"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        expect "document-ready" {
+            visible = css(".work-document-editor")
+        }
+
+        click "open-page-layout" {
+            target = role("tab", "页面布局")
+        }
+
+        click "open-page-color" {
+            target = role("button", "页面颜色")
+        }
+
+        expect "custom-color-controls-visible" {
+            visible = css(".work-office-color-custom")
+        }
+
+        fill "custom-color" {
+            target = label("自定义颜色值")
+            value = "#fff2cc"
+        }
+
+        click "apply-custom-color" {
+            target = role("button", "应用自定义颜色")
+        }
+
+        expect "document-still-ready" {
+            visible = css(".work-document-page-sheet")
+        }
+
+        screenshot "applied-page-color" {
+            path = "screenshots/word-page-color-phone.png"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

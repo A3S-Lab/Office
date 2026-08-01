@@ -394,6 +394,7 @@
 
 .work-office-color-menu {
   width: 276px;
+  max-height: min(520px, calc(100dvh - 32px));
   padding: 8px;
 }
 
