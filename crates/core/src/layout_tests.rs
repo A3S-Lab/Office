@@ -11,6 +11,7 @@ use crate::{
 
 const TEST_TIMEOUT_MS: u64 = 10_000;
 const TEST_MAX_OUTPUT_BYTES: u64 = 1024 * 1024;
+const CONSTRAINED_ASYNC_STACK_BYTES: usize = 1024 * 1024;
 const SLIDE_WIDTH_EMU: &str = "12192000";
 const SLIDE_HEIGHT_EMU: &str = "6858000";
 
@@ -66,6 +67,46 @@ async fn exact_pptx_image_slide_is_a_source_layout_raster() {
         std::fs::read(&receipt.raster.output_path).unwrap(),
         published
     );
+}
+
+#[test]
+fn exact_pptx_image_render_supports_a_constrained_async_thread_stack() {
+    std::thread::Builder::new()
+        .name("office-layout-constrained-stack".to_string())
+        .stack_size(CONSTRAINED_ASYNC_STACK_BYTES)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    let fixture = exact_image_deck().await;
+                    let renderer = renderer();
+                    let inspection = renderer
+                        .inspect_unit(
+                            &fixture.path,
+                            fixture.revision,
+                            slide_unit(1),
+                            environment(),
+                            TEST_TIMEOUT_MS,
+                        )
+                        .await
+                        .unwrap();
+                    let output = fixture.directory.path().join("constrained-stack.png");
+                    let request = inspection.into_render_request(
+                        &output,
+                        TEST_MAX_OUTPUT_BYTES,
+                        TEST_TIMEOUT_MS,
+                    );
+
+                    renderer.render(request).await.unwrap();
+
+                    assert_eq!(std::fs::read(output).unwrap(), fixture.first_png);
+                });
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }
 
 #[tokio::test]

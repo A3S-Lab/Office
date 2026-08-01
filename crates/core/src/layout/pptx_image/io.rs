@@ -143,7 +143,7 @@ pub(super) async fn hash_regular_file(
         .map_err(|_| source_mutated())?;
     let mut digest = Sha256::new();
     let mut bytes_read = 0_u64;
-    let mut buffer = [0_u8; 64 * 1024];
+    let mut buffer = vec![0_u8; 64 * 1024];
     loop {
         let count = file.read(&mut buffer).await.map_err(|_| source_mutated())?;
         if count == 0 {
