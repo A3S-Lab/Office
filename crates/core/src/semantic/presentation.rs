@@ -218,7 +218,7 @@ fn read_slide(
             part_name,
             slide_paths,
             &mut node.children,
-        );
+        )?;
     }
     append_comments(package, opc, part_name, &path, &mut node)?;
     append_notes(package, opc, part_name, &path, &mut node)?;
@@ -403,7 +403,7 @@ fn read_shape_tree(
     owner_part: &str,
     slide_paths: &BTreeMap<String, String>,
     output: &mut Vec<DocumentNode>,
-) {
+) -> UseResult<()> {
     let mut shape_index = 0_usize;
     let mut picture_index = 0_usize;
     let mut table_index = 0_usize;
@@ -435,7 +435,7 @@ fn read_shape_tree(
                     output.push(read_table(
                         element,
                         &format!("{parent_path}/table[{table_index}]"),
-                    ));
+                    )?);
                 } else if find_descendant(element, "chart").is_some() {
                     chart_index += 1;
                     output.push(read_chart(
@@ -469,7 +469,7 @@ fn read_shape_tree(
                     owner_part,
                     slide_paths,
                     &mut group.children,
-                );
+                )?;
                 group.text = group
                     .children
                     .iter()
@@ -482,6 +482,7 @@ fn read_shape_tree(
             _ => {}
         }
     }
+    Ok(())
 }
 
 fn read_shape(
@@ -632,12 +633,12 @@ fn copy_pixel_extent(element: &XmlElement, attribute: &str, key: &str, node: &mu
     }
 }
 
-fn read_table(frame: &XmlElement, path: &str) -> DocumentNode {
+fn read_table(frame: &XmlElement, path: &str) -> UseResult<DocumentNode> {
     let mut node = DocumentNode::new(path, "table", OfficeNodeType::Table);
     apply_non_visual_properties(frame, &mut node);
     apply_transform(frame, &mut node);
     let Some(table) = find_descendant(frame, "tbl") else {
-        return node;
+        return Ok(node);
     };
     if let Some(grid) = table.child("tblGrid") {
         let widths = grid
@@ -680,7 +681,8 @@ fn read_table(frame: &XmlElement, path: &str) -> DocumentNode {
         .map(|row| row.text.as_str())
         .collect::<Vec<_>>()
         .join("\n");
-    node
+    super::table_grid::annotate_presentation_table(table, &mut node)?;
+    Ok(node)
 }
 
 fn read_chart(frame: &XmlElement, path: &str) -> DocumentNode {

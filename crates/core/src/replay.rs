@@ -287,10 +287,10 @@ fn emit_word_table(
         rows: table.children.len(),
         columns,
     });
-    for row in &table.children {
+    for (row_offset, row) in table.children.iter().enumerate() {
         require_plain_node(row, OfficeNodeType::TableRow)?;
-        for cell in &row.children {
-            require_plain_node(cell, OfficeNodeType::TableCell)?;
+        for (cell_offset, cell) in row.children.iter().enumerate() {
+            validate_unmerged_table_cell(cell, row_offset + 1, cell_offset + 1)?;
             let [paragraph] = cell.children.as_slice() else {
                 return Err(dump_unsupported(
                     &cell.path,
@@ -1120,7 +1120,7 @@ fn validate_presentation_table(table: &DocumentNode) -> UseResult<()> {
             "Presentation replay requires at least one table column.",
         ));
     }
-    for row in &table.children {
+    for (row_offset, row) in table.children.iter().enumerate() {
         if row.node_type != OfficeNodeType::TableRow
             || row.style.is_some()
             || row.children.len() != columns
@@ -1130,13 +1130,14 @@ fn validate_presentation_table(table: &DocumentNode) -> UseResult<()> {
                 "Presentation replay requires a rectangular table with plain rows.",
             ));
         }
-        for cell in &row.children {
+        for (cell_offset, cell) in row.children.iter().enumerate() {
             if cell.node_type != OfficeNodeType::TableCell || cell.style.is_some() {
                 return Err(dump_unsupported(
                     &cell.path,
                     "Presentation replay requires plain table cells.",
                 ));
             }
+            validate_unmerged_table_cell(cell, row_offset + 1, cell_offset + 1)?;
         }
     }
     Ok(())
@@ -1200,6 +1201,33 @@ fn require_plain_node(node: &DocumentNode, expected: OfficeNodeType) -> UseResul
                 "{} formatting or node metadata is not exactly replayable yet.",
                 expected.label()
             ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_unmerged_table_cell(
+    cell: &DocumentNode,
+    expected_row: usize,
+    expected_column: usize,
+) -> UseResult<()> {
+    const GRID_KEYS: [&str; 5] = ["row", "column", "rowSpan", "columnSpan", "mergeAnchor"];
+    let expected = [
+        ("row", expected_row.to_string()),
+        ("column", expected_column.to_string()),
+        ("rowSpan", "1".to_string()),
+        ("columnSpan", "1".to_string()),
+        ("mergeAnchor", "true".to_string()),
+    ];
+    let canonical = cell.format.len() == GRID_KEYS.len()
+        && GRID_KEYS.iter().all(|key| cell.format.contains_key(*key))
+        && expected
+            .iter()
+            .all(|(key, value)| cell.format.get(*key) == Some(value));
+    if !canonical {
+        return Err(dump_unsupported(
+            &cell.path,
+            "Merged or non-canonical table cells are not exactly replayable yet.",
         ));
     }
     Ok(())

@@ -355,6 +355,9 @@ source-bound exact-layout raster boundary across Office packages. The first
 layout-authoritative route supports image-only PPTX slides whose single opaque
 PNG exactly covers the declared slide surface; richer slides and other formats
 remain typed unsupported instead of being relabeled semantic previews.
+Native DOCX and PPTX table reads also normalize merged cells into one-based
+logical row and column coordinates, row and column spans, and stable anchor
+references for covered physical cells.
 
 ```bash
 # Run from the repository root

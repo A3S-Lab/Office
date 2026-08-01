@@ -16,6 +16,14 @@ dropping it. Word and Presentation additionally share a portable 17-color
 highlight palette, display-only text case, and conservative BCP-47 primary
 language tags. Word alone supports explicit double strikethrough; Spreadsheet
 and Presentation reject it through format-specific typed errors.
+
+Word and Presentation table-cell reads expose one-based `row` and `column`,
+positive `rowSpan` and `columnSpan`, and `mergeAnchor`. A covered physical cell
+has `mergeAnchor=false` plus the stable semantic `mergeAnchorPath` of its
+logical anchor. Invalid, overlapping, orphaned, or out-of-bounds merge topology
+fails closed instead of being projected as a rectangular table. These fields
+describe document structure only; they are not page-layout geometry.
+
 Word and Presentation apply character properties to run paths and alignment to
 paragraph paths; Spreadsheet applies the same contract to cells or bounded A1
 ranges,

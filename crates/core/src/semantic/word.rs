@@ -38,7 +38,7 @@ pub(super) fn read(
         "word/document.xml",
         &mut comment_anchors,
         &mut body_node.children,
-    );
+    )?;
     body_node.text = join_block_text(&body_node.children);
     root.text = body_node.text.clone();
     root.children.push(body_node);
@@ -88,7 +88,7 @@ fn read_headers_and_footers(
             part_name,
             &mut ignored_comment_anchors,
             &mut node.children,
-        );
+        )?;
         node.text = join_block_text(&node.children);
         root.children.push(node);
     }
@@ -204,7 +204,7 @@ fn read_block_children(
     owner_part: &str,
     comment_anchors: &mut BTreeMap<String, String>,
     output: &mut Vec<DocumentNode>,
-) {
+) -> UseResult<()> {
     let mut paragraph_index = output
         .iter()
         .filter(|node| node.node_type == OfficeNodeType::Paragraph)
@@ -235,7 +235,7 @@ fn read_block_children(
                     opc,
                     owner_part,
                     comment_anchors,
-                ));
+                )?);
             }
             "sdt" | "customXml" | "ins" | "del" | "moveFrom" | "moveTo" => {
                 let nested = element.child("sdtContent").unwrap_or(element);
@@ -247,7 +247,7 @@ fn read_block_children(
                     owner_part,
                     comment_anchors,
                     output,
-                );
+                )?;
                 paragraph_index = output
                     .iter()
                     .filter(|node| node.node_type == OfficeNodeType::Paragraph)
@@ -260,6 +260,7 @@ fn read_block_children(
             _ => {}
         }
     }
+    Ok(())
 }
 
 fn read_paragraph(
@@ -470,7 +471,7 @@ fn read_table(
     opc: &OpcPackageModel,
     owner_part: &str,
     comment_anchors: &mut BTreeMap<String, String>,
-) -> DocumentNode {
+) -> UseResult<DocumentNode> {
     let mut node = DocumentNode::new(path, "tbl", OfficeNodeType::Table);
     if let Some(style) = table
         .child("tblPr")
@@ -496,7 +497,7 @@ fn read_table(
                 owner_part,
                 comment_anchors,
                 &mut cell_node.children,
-            );
+            )?;
             cell_node.text = join_block_text(&cell_node.children);
             row_node.children.push(cell_node);
         }
@@ -514,7 +515,8 @@ fn read_table(
         .map(|row| row.text.as_str())
         .collect::<Vec<_>>()
         .join("\n");
-    node
+    super::table_grid::annotate_word_table(table, &mut node)?;
+    Ok(node)
 }
 
 fn apply_paragraph_properties(

@@ -2,6 +2,7 @@ mod annotated;
 mod presentation;
 mod selector;
 mod spreadsheet;
+mod table_grid;
 mod word;
 
 pub use annotated::{

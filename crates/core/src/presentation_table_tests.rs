@@ -104,8 +104,15 @@ async fn native_editor_adds_edits_and_removes_presentation_tables() {
     assert!(part_text(&editor, &slide_part).contains("</a:tc><a:extLst/></a:tr>"));
 
     let overflow = duplicate_last_table_cell(part_text(&editor, &slide_part));
-    editor.replace_xml_part(&slide_part, overflow).unwrap();
-    editor.remove("/slide[1]/table[1]/tr[3]/tc[3]").unwrap();
+    let before = editor.package().content_sha256();
+    assert_eq!(
+        editor
+            .replace_xml_part(&slide_part, overflow)
+            .unwrap_err()
+            .code,
+        "use.office.batch_validation_failed"
+    );
+    assert_eq!(editor.package().content_sha256(), before);
     assert_eq!(
         editor
             .remove("/slide[1]/table[1]/tr[3]/tc[2]")
@@ -169,7 +176,7 @@ async fn presentation_table_mutations_are_atomic_and_enforce_the_table_grid() {
 
     editor.add_table_row("/slide[1]/table[1]", Some(2)).unwrap();
     let slide_part = slide_part(&editor);
-    let merged = part_text(&editor, &slide_part).replacen("<a:tc>", "<a:tc gridSpan=\"2\">", 1);
+    let merged = merge_first_two_table_cells(part_text(&editor, &slide_part));
     editor.replace_xml_part(&slide_part, merged).unwrap();
     let before = editor.package().content_sha256();
     assert_eq!(
@@ -262,7 +269,7 @@ async fn presentation_table_column_mutations_fail_closed_and_roll_back() {
     editor.add_slide("/", "Atomic columns").unwrap();
     editor.add_table("/slide[1]", 2, 2).unwrap();
     let slide_part = slide_part(&editor);
-    let merged = part_text(&editor, &slide_part).replacen("<a:tc>", "<a:tc gridSpan=\"2\">", 1);
+    let merged = merge_first_two_table_cells(part_text(&editor, &slide_part));
     editor.replace_xml_part(&slide_part, merged).unwrap();
     let before = editor.package().content_sha256();
 
@@ -407,6 +414,14 @@ fn slide_part(editor: &NativeOfficeEditor) -> String {
 
 fn part_text(editor: &NativeOfficeEditor, part: &str) -> String {
     String::from_utf8(editor.package().xml_part(part).unwrap().raw().to_vec()).unwrap()
+}
+
+fn merge_first_two_table_cells(xml: String) -> String {
+    xml.replacen("<a:tc>", "<a:tc gridSpan=\"2\">", 1).replacen(
+        "</a:tc><a:tc>",
+        "</a:tc><a:tc hMerge=\"1\">",
+        1,
+    )
 }
 
 fn remove_last_table_cell(mut xml: String) -> String {
