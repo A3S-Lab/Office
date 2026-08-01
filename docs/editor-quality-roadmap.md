@@ -97,7 +97,11 @@ Current product evidence includes a responsive Page Setup task pane with
 keyboard-operated Page, Columns and Sections, and Header and Footer tabs. The
 default view contains only paper and margin controls; page-chrome editors mount
 on demand so compact and desktop workflows do not begin with one mixed,
-unbounded settings stack. Deterministic text collection now follows CSS font
+unbounded settings stack. Header and footer formatting actions are divided
+into balanced text-formatting and alignment/insertion rows instead of leaving
+orphaned controls on an accidental wrap line; a deterministic phone workflow
+now covers all three tabs, a live column update, modal isolation, and invoker
+focus restoration. Deterministic text collection now follows CSS font
 weight matching while retaining exact family and normal/italic style
 boundaries, keeping intermediate and synthesized bold weights on the WASM
 layout path when a compatible registered face exists. Editing, read-only

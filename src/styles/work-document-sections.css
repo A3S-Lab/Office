@@ -99,11 +99,21 @@
 }
 
 .work-document-page-chrome-toolbar {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.work-document-page-chrome-toolbar-row {
   display: flex;
   min-width: 0;
-  flex-wrap: wrap;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 3px;
+  border: 0;
 }
 
 .work-document-page-chrome-toolbar button {

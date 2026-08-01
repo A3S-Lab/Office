@@ -1,0 +1,130 @@
+suite "office-word-page-setup-phone" {
+    version = 1
+
+    scenario "configure-word-page-on-phone" {
+        name = "Configure Word Page Setup from a phone task pane"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-page-setup-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        expect "phone-sidebar-starts-closed" {
+            visible = css("button[aria-label='展开办公侧边栏']")
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-page-layout" {
+            target = role("tab", "页面布局")
+        }
+
+        click "open-page-setup" {
+            target = role("button", "页面设置")
+        }
+
+        expect "page-setup-is-modal" {
+            visible = css(".work-document-layout-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "document-is-isolated" {
+            visible = css(".work-document-scroll[inert]")
+        }
+
+        expect "page-controls-are-ready" {
+            visible = css("input[aria-label='上页边距'][value='25']")
+        }
+
+        click "open-columns-and-sections" {
+            target = role("tab", "分栏与分节")
+        }
+
+        click "use-two-columns" {
+            target = role("button", "增加分栏数量")
+        }
+
+        expect "two-columns-are-applied" {
+            visible = css("input[aria-label='分栏数量'][value='2']")
+        }
+
+        click "open-header-and-footer" {
+            target = role("tab", "页眉页脚")
+        }
+
+        expect "header-text-actions-are-grouped" {
+            visible = css(".work-document-page-chrome-toolbar-row[aria-label='默认页页眉文字格式']")
+        }
+
+        expect "header-object-actions-are-grouped" {
+            visible = css(".work-document-page-chrome-toolbar-row[aria-label='默认页页眉对齐与插入']")
+        }
+
+        expect "footer-text-actions-are-grouped" {
+            visible = css(".work-document-page-chrome-toolbar-row[aria-label='默认页页脚文字格式']")
+        }
+
+        expect "footer-object-actions-are-grouped" {
+            visible = css(".work-document-page-chrome-toolbar-row[aria-label='默认页页脚对齐与插入']")
+        }
+
+        screenshot "page-setup-header-footer" {
+            path = "screenshots/word-page-setup-header-footer-phone.png"
+        }
+
+        press "close-page-setup" {
+            key = "Escape"
+        }
+
+        expect "document-is-restored" {
+            visible = css(".work-document-scroll:not([inert])")
+        }
+
+        expect "invoker-focus-is-restored" {
+            visible = css(".work-office-ribbon-group[aria-label='页面设置'] button[aria-label='页面设置']:focus")
+        }
+
+        click "reopen-page-setup" {
+            target = role("button", "页面设置")
+        }
+
+        click "reopen-columns-and-sections" {
+            target = role("tab", "分栏与分节")
+        }
+
+        expect "column-change-is-persistent" {
+            visible = css("input[aria-label='分栏数量'][value='2']")
+        }
+
+        accessibility "page-setup-semantics" {
+            path = "evidence/page-setup-semantics.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

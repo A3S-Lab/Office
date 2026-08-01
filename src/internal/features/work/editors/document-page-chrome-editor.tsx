@@ -214,117 +214,129 @@ export function DocumentPageChromeRichTextEditor({
               role="toolbar"
               aria-label={`${label}格式`}
             >
-              <PageChromeButton
-                label={`${label}撤销`}
-                disabled={!state?.canUndo}
-                onClick={() => editor?.chain().focus().undo().run()}
+              <fieldset
+                className="work-document-page-chrome-toolbar-row"
+                aria-label={`${label}文字格式`}
               >
-                <Undo2 size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}重做`}
-                disabled={!state?.canRedo}
-                onClick={() => editor?.chain().focus().redo().run()}
+                <PageChromeButton
+                  label={`${label}撤销`}
+                  disabled={!state?.canUndo}
+                  onClick={() => editor?.chain().focus().undo().run()}
+                >
+                  <Undo2 size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}重做`}
+                  disabled={!state?.canRedo}
+                  onClick={() => editor?.chain().focus().redo().run()}
+                >
+                  <Redo2 size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}加粗`}
+                  active={state?.bold}
+                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                >
+                  <Bold size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}斜体`}
+                  active={state?.italic}
+                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                >
+                  <Italic size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}下划线`}
+                  active={state?.underline}
+                  onClick={() =>
+                    editor?.chain().focus().toggleUnderline().run()
+                  }
+                >
+                  <UnderlineIcon size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}下标`}
+                  active={state?.subscript}
+                  onClick={() =>
+                    editor?.chain().focus().toggleDocumentSubscript().run()
+                  }
+                >
+                  <SubscriptIcon size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}上标`}
+                  active={state?.superscript}
+                  onClick={() =>
+                    editor?.chain().focus().toggleDocumentSuperscript().run()
+                  }
+                >
+                  <SuperscriptIcon size={14} />
+                </PageChromeButton>
+              </fieldset>
+              <fieldset
+                className="work-document-page-chrome-toolbar-row"
+                aria-label={`${label}对齐与插入`}
               >
-                <Redo2 size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}加粗`}
-                active={state?.bold}
-                onClick={() => editor?.chain().focus().toggleBold().run()}
-              >
-                <Bold size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}斜体`}
-                active={state?.italic}
-                onClick={() => editor?.chain().focus().toggleItalic().run()}
-              >
-                <Italic size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}下划线`}
-                active={state?.underline}
-                onClick={() => editor?.chain().focus().toggleUnderline().run()}
-              >
-                <UnderlineIcon size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}下标`}
-                active={state?.subscript}
-                onClick={() =>
-                  editor?.chain().focus().toggleDocumentSubscript().run()
-                }
-              >
-                <SubscriptIcon size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}上标`}
-                active={state?.superscript}
-                onClick={() =>
-                  editor?.chain().focus().toggleDocumentSuperscript().run()
-                }
-              >
-                <SuperscriptIcon size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}左对齐`}
-                active={state?.alignment === 'left'}
-                onClick={() =>
-                  editor?.chain().focus().setTextAlign('left').run()
-                }
-              >
-                <AlignLeft size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}居中`}
-                active={state?.alignment === 'center'}
-                onClick={() =>
-                  editor?.chain().focus().setTextAlign('center').run()
-                }
-              >
-                <AlignCenter size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}右对齐`}
-                active={state?.alignment === 'right'}
-                onClick={() =>
-                  editor?.chain().focus().setTextAlign('right').run()
-                }
-              >
-                <AlignRight size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={`${label}两端对齐`}
-                active={state?.alignment === 'justify'}
-                onClick={() =>
-                  editor?.chain().focus().setTextAlign('justify').run()
-                }
-              >
-                <AlignJustify size={14} />
-              </PageChromeButton>
-              <PageChromeButton
-                label={state?.link ? `${label}移除链接` : `${label}添加链接`}
-                active={Boolean(state?.link)}
-                onClick={() => void editLink()}
-              >
-                <Link2 size={14} />
-              </PageChromeButton>
-              <OfficeColorPicker
-                compact
-                className="work-document-page-chrome-color"
-                ariaLabel={`${label}文字颜色`}
-                value={pageChromePickerColor(state?.color)}
-                onValueChange={(color) =>
-                  editor?.chain().focus().setColor(color).run()
-                }
-              />
-              <PageChromeButton
-                label={`${label}插入图片`}
-                onClick={() => imageInputRef.current?.click()}
-              >
-                <ImageIcon size={14} />
-              </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}左对齐`}
+                  active={state?.alignment === 'left'}
+                  onClick={() =>
+                    editor?.chain().focus().setTextAlign('left').run()
+                  }
+                >
+                  <AlignLeft size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}居中`}
+                  active={state?.alignment === 'center'}
+                  onClick={() =>
+                    editor?.chain().focus().setTextAlign('center').run()
+                  }
+                >
+                  <AlignCenter size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}右对齐`}
+                  active={state?.alignment === 'right'}
+                  onClick={() =>
+                    editor?.chain().focus().setTextAlign('right').run()
+                  }
+                >
+                  <AlignRight size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={`${label}两端对齐`}
+                  active={state?.alignment === 'justify'}
+                  onClick={() =>
+                    editor?.chain().focus().setTextAlign('justify').run()
+                  }
+                >
+                  <AlignJustify size={14} />
+                </PageChromeButton>
+                <PageChromeButton
+                  label={state?.link ? `${label}移除链接` : `${label}添加链接`}
+                  active={Boolean(state?.link)}
+                  onClick={() => void editLink()}
+                >
+                  <Link2 size={14} />
+                </PageChromeButton>
+                <OfficeColorPicker
+                  compact
+                  className="work-document-page-chrome-color"
+                  ariaLabel={`${label}文字颜色`}
+                  value={pageChromePickerColor(state?.color)}
+                  onValueChange={(color) =>
+                    editor?.chain().focus().setColor(color).run()
+                  }
+                />
+                <PageChromeButton
+                  label={`${label}插入图片`}
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  <ImageIcon size={14} />
+                </PageChromeButton>
+              </fieldset>
             </div>
             <OfficeFileInput
               ref={imageInputRef}

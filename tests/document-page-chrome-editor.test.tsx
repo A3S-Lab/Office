@@ -1,6 +1,12 @@
 import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import {
   createDocumentPageChromeEditorExtensions,
   DocumentPageChromeRichTextEditor,
@@ -104,6 +110,15 @@ test('keeps the page-chrome surface controlled and exposes active formatting', a
   const textbox = await screen.findByRole('textbox', { name: '默认页眉' });
   expect(textbox).toHaveAttribute('data-document-page-chrome-engine', 'tiptap');
   expect(textbox).toHaveClass('work-document-page-chrome-content');
+  const toolbar = screen.getByRole('toolbar', { name: '默认页眉格式' });
+  const textFormatting = within(toolbar).getByRole('group', {
+    name: '默认页眉文字格式',
+  });
+  const alignmentAndInsert = within(toolbar).getByRole('group', {
+    name: '默认页眉对齐与插入',
+  });
+  expect(within(textFormatting).getAllByRole('button')).toHaveLength(7);
+  expect(within(alignmentAndInsert).getAllByRole('button')).toHaveLength(7);
   expect(editor).not.toBeNull();
   const current = editor as Editor;
   current.commands.setTextSelection({ from: 1, to: 5 });

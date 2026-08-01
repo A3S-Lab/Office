@@ -1101,6 +1101,49 @@ test('document review views remain usable at phone width', async ({ page }) => {
   await expect(
     layoutPane.getByRole('textbox', { name: '默认页页眉' }),
   ).toBeVisible();
+  const pageChromeToolbar = layoutPane.getByRole('toolbar', {
+    name: '默认页页眉格式',
+  });
+  await expect(
+    pageChromeToolbar.getByRole('group', {
+      name: '默认页页眉文字格式',
+    }),
+  ).toBeVisible();
+  await expect(
+    pageChromeToolbar.getByRole('group', {
+      name: '默认页页眉对齐与插入',
+    }),
+  ).toBeVisible();
+  const pageChromeToolbarRows = await pageChromeToolbar
+    .locator('.work-document-page-chrome-toolbar-row')
+    .evaluateAll((rows) =>
+      rows.map((row) => {
+        const rowRect = row.getBoundingClientRect();
+        const itemRects = Array.from(row.children).map((item) =>
+          item.getBoundingClientRect(),
+        );
+        return {
+          top: rowRect.top,
+          bottom: rowRect.bottom,
+          left: rowRect.left,
+          right: rowRect.right,
+          itemTops: itemRects.map((rect) => rect.top),
+          itemLefts: itemRects.map((rect) => rect.left),
+          itemRights: itemRects.map((rect) => rect.right),
+        };
+      }),
+    );
+  expect(pageChromeToolbarRows).toHaveLength(2);
+  expect(pageChromeToolbarRows[1]?.top).toBeGreaterThanOrEqual(
+    (pageChromeToolbarRows[0]?.bottom ?? 0) - 1,
+  );
+  for (const row of pageChromeToolbarRows) {
+    expect(Math.max(...row.itemTops) - Math.min(...row.itemTops)).toBeLessThan(
+      1,
+    );
+    expect(Math.min(...row.itemLefts)).toBeGreaterThanOrEqual(row.left - 1);
+    expect(Math.max(...row.itemRights)).toBeLessThanOrEqual(row.right + 1);
+  }
   await page.keyboard.press('Escape');
   await expect(layoutPane).toBeHidden();
 

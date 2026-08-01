@@ -19,9 +19,10 @@ bun run test:e2e:check
 bun run test:e2e
 ```
 
-The suites cover focused Word page-color, compact comments-drawer, full-text
-navigation, the complete phone Find/Replace workflow, page-preview, and
-selected-text AI question-composer regressions;
+The suites cover focused Word page-color, the complete phone Page Setup flow
+with grouped header/footer formatting controls, compact comments-drawer,
+full-text navigation, the complete phone Find/Replace workflow, page-preview,
+and selected-text AI question-composer regressions;
 the phone Spreadsheet
 worksheet-rename workflow; Presentation focus recovery across object cut and
 paste plus presenter-view keyboard navigation and phone layout; PDF import
