@@ -84,10 +84,18 @@ pub use layout::{
 };
 #[cfg(feature = "pdfium")]
 pub use layout::{
+    NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
-    NativeOfficePdfPageInventoryOptions, NativeOfficePdfiumLayoutRenderer,
-    DEFAULT_NATIVE_OFFICE_PDF_PAGE_LIMIT, MAX_NATIVE_OFFICE_PDF_PAGE_LIMIT,
-    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextLayer,
+    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfiumLayoutRenderer, DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_DEPTH,
+    DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES, DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES,
+    DEFAULT_NATIVE_OFFICE_PDF_PAGE_LIMIT, DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS,
+    DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES, MAX_NATIVE_OFFICE_PDF_OUTLINE_DEPTH,
+    MAX_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES, MAX_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES,
+    MAX_NATIVE_OFFICE_PDF_PAGE_LIMIT, MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 pub use opc::{
     ContentTypes, OpcPackageModel, Relationship, RelationshipGraph, RelationshipSource,

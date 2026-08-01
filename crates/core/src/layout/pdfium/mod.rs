@@ -1,5 +1,7 @@
 mod engine;
+mod outline;
 mod renderer;
+mod text;
 
 use a3s_use_core::{UseError, UseResult};
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,19 @@ use super::{
 };
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision};
 
+pub use outline::{
+    NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
+    DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_DEPTH, DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES,
+    DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES, MAX_NATIVE_OFFICE_PDF_OUTLINE_DEPTH,
+    MAX_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES, MAX_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES,
+};
 pub use renderer::NativeOfficePdfiumLayoutRenderer;
+pub use text::{
+    NativeOfficePdfPageTextLayer, NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+};
 
 /// Default maximum number of pages accepted by one PDF inventory.
 pub const DEFAULT_NATIVE_OFFICE_PDF_PAGE_LIMIT: usize = 10_000;
@@ -37,7 +51,7 @@ pub struct NativeOfficePdfPageBox {
 }
 
 impl NativeOfficePdfPageBox {
-    fn validate(&self) -> UseResult<()> {
+    pub(super) fn validate(&self) -> UseResult<()> {
         let coordinates = [
             self.left_millipoints,
             self.bottom_millipoints,

@@ -365,9 +365,14 @@ rotation, physical and pixel geometry, source and engine hashes, and never
 downloads a runtime or introduces a Browser dependency. Consumers can inspect
 selected pages from one previously validated complete inventory without
 rescanning the full document; render still revalidates the immutable source and
-actual page profile before publication. Richer slides and formats without an
-authoritative provider remain typed unsupported instead of being relabeled
-semantic previews.
+actual page profile before publication. The same retained inventory now
+authorizes bounded native PDF text-layer extraction with source-order Unicode,
+exact UTF-8/UTF-16 ranges, optional glyph boxes in PDF coordinates, and bounded
+document outlines with exact page targets. Text and outline calls revalidate
+the immutable source, reuse inventory authority, and return typed limit or
+unsupported failures without OCR or Browser access. Richer slides and formats
+without an authoritative provider remain typed unsupported instead of being
+relabeled semantic previews.
 Native DOCX and PPTX table reads also normalize merged cells into one-based
 logical row and column coordinates, row and column spans, and stable anchor
 references for covered physical cells.
