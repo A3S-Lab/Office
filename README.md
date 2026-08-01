@@ -290,6 +290,8 @@ interaction model.
   _PPTX import/export; PDF export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,
+  a scrollable page-thumbnail rail with current-page synchronization and
+  bounded rendering for long files, a dismissible page drawer on phones,
   focus-safe page and search drafts, responsive search-result, navigation, and
   zoom controls, editor-scoped shortcuts, and a keyboard-operated overflow menu
   that retains secondary annotation tools and appearance settings on phones.

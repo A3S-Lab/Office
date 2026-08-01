@@ -1,6 +1,55 @@
 import { expect, test } from '@playwright/test';
 import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 
+test('PDF page rail scrolls, selects pages, and follows toolbar navigation', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openPdfFixture(page, { pageCount: 12 });
+  await waitForPdfFixture(page);
+
+  const navigation = page.getByRole('navigation', {
+    name: 'PDF 页面缩略图',
+  });
+  const firstPage = page.getByRole('button', { name: '第 1 页' });
+  const secondPage = page.getByRole('button', { name: '第 2 页' });
+  const pageField = page.getByRole('textbox', { name: '页码' });
+  await expect(navigation).toBeVisible();
+  await expect(navigation.locator('[data-pdf-page-thumbnail]')).toHaveCount(12);
+  await expect(firstPage).toHaveAttribute('aria-current', 'page');
+  await expect
+    .poll(() =>
+      navigation.evaluate(
+        (element) => element.scrollHeight > element.clientHeight,
+      ),
+    )
+    .toBe(true);
+
+  await secondPage.click();
+  await expect(pageField).toHaveValue('2');
+  await expect(secondPage).toHaveAttribute('aria-current', 'page');
+
+  await pageField.fill('10');
+  await pageField.press('Enter');
+  const tenthPage = page.getByRole('button', { name: '第 10 页' });
+  await expect(pageField).toHaveValue('10');
+  await expect(tenthPage).toHaveAttribute('aria-current', 'page');
+  await expect
+    .poll(() =>
+      tenthPage.evaluate((thumbnail) => {
+        const viewport = thumbnail.closest('.work-pdf-thumbnail-viewport');
+        if (!viewport) return false;
+        const thumbnailBounds = thumbnail.getBoundingClientRect();
+        const viewportBounds = viewport.getBoundingClientRect();
+        return (
+          thumbnailBounds.top >= viewportBounds.top - 1 &&
+          thumbnailBounds.bottom <= viewportBounds.bottom + 1
+        );
+      }),
+    )
+    .toBe(true);
+});
+
 test('PDF toolbar shortcuts stay inside the editor command surface', async ({
   page,
 }) => {

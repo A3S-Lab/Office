@@ -272,6 +272,8 @@ one controlled update.
   review while preserving the implemented search, history, and save paths.
 - Keep navigation, zoom, and history reachable from the responsive overflow
   menu whenever the primary toolbar hides those controls.
+- Retain the implemented active-page thumbnail synchronization, bounded
+  long-document thumbnail window, and focus-contained phone page drawer.
 - Keep PDFium lifecycle, page bitmap cache, and source Blob ownership bounded.
 - Verify saved annotations and forms by reopening the emitted Blob.
 

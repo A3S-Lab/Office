@@ -3,11 +3,20 @@ import {
   type PluginRegistry,
   type UISchema,
 } from '@embedpdf/react-pdf-viewer';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, GalleryVerticalEnd, Loader2 } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button, StateView } from '../../../design-system/primitives';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
 import { createPdfEditorExtensions } from './pdf-editor-extensions';
+import { PdfThumbnailRail } from './pdf-thumbnail-rail';
 import { PdfToolbar, type PdfSaveState } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
@@ -19,6 +28,7 @@ const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
 // Playground build. Keep the loading state instead of surfacing a false error
 // while the worker is still making progress.
 const PDF_VIEWER_READY_TIMEOUT_MS = 45_000;
+const PDF_MOBILE_PAGE_NAVIGATION_QUERY = '(max-width: 640px)';
 
 export const a3sPdfUiSchema: UISchema = {
   id: 'a3s-office-pdf',
@@ -53,11 +63,41 @@ export function PdfViewer({
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
+  const [mobilePageNavigationOpen, setMobilePageNavigationOpen] =
+    useState(false);
   const pdfRootRef = useRef<HTMLElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mobilePageNavigationId = useId();
+  const mobilePageNavigationToggleRef = useRef<HTMLButtonElement>(null);
+  const mobilePageNavigationCloseRef = useRef<HTMLButtonElement>(null);
   const controller = usePdfViewerController(registry);
   const annotation = usePdfAnnotationController(registry);
   const viewerReady = controller.state.ready && controller.state.documentOpen;
+  const mobilePageNavigationModal = usePdfMobilePageNavigationModal();
+  const mobilePageNavigationModalOpen =
+    mobilePageNavigationOpen && mobilePageNavigationModal;
+
+  const closeMobilePageNavigation = useCallback(() => {
+    setMobilePageNavigationOpen(false);
+  }, []);
+  useDialogFocusScope<HTMLElement>({
+    active: mobilePageNavigationModalOpen,
+    onEscape: closeMobilePageNavigation,
+    initialFocus: () => mobilePageNavigationCloseRef.current,
+    getActiveScope: () =>
+      document.getElementById(mobilePageNavigationId) as HTMLElement | null,
+    getIsolationExceptions: () => [
+      document.querySelector<HTMLElement>('.work-pdf-page-navigation-backdrop'),
+    ],
+    restoreFocusTarget: () =>
+      mobilePageNavigationModal
+        ? mobilePageNavigationToggleRef.current
+        : (document
+            .getElementById(mobilePageNavigationId)
+            ?.querySelector<HTMLElement>(
+              '[data-pdf-page-thumbnail][aria-current="page"]',
+            ) ?? null),
+  });
 
   useEffect(() => {
     let disposed = false;
@@ -66,6 +106,7 @@ export function PdfViewer({
     setSaveState('idle');
     setSourceUrl(null);
     setLoadError(null);
+    setMobilePageNavigationOpen(false);
 
     void loadSource()
       .then((source) => {
@@ -189,46 +230,102 @@ export function PdfViewer({
         state={controller.state}
       />
       <div
-        className="work-pdf-embed"
-        aria-busy={!viewerReady}
-        data-ready={viewerReady || undefined}
+        className="work-pdf-workspace"
+        data-mobile-page-navigation={
+          mobilePageNavigationOpen ? 'open' : 'closed'
+        }
       >
-        <PDFViewer
-          key={sourceUrl}
-          className="work-pdf-native-viewer"
-          style={{ width: '100%', height: '100%' }}
-          config={{
-            src: sourceUrl,
-            // EmbedPDF creates a Blob worker, so a root-relative URL has no
-            // usable base inside WorkerGlobalScope. Keep this absolute.
-            wasmUrl:
-              wasmUrl ?? new URL(PDFIUM_WASM_PATH, window.location.href).href,
-            tabBar: 'never',
-            theme: {
-              preference: 'system',
-              light: { accent: { primary: '#2867d8' } },
-              dark: { accent: { primary: '#7da7ff' } },
-            },
-            i18n: { defaultLocale: 'zh-CN' },
-            ui: { schema: a3sPdfUiSchema },
-            annotations: {
-              annotationAuthor: 'A3S Office 用户',
-              autoCommit: true,
-            },
-            export: { defaultFileName: fileName },
-            fonts: { ui: null, signature: null },
-            disabledCategories: onSave
-              ? undefined
-              : ['annotation', 'redaction', 'form', 'history'],
-          }}
-          onReady={setRegistry}
-        />
-        {!viewerReady && (
-          <div className="work-pdf-loading" role="status">
-            <Loader2 className="spin" size={18} />
-            正在打开…
-          </div>
+        {viewerReady && registry && controller.state.totalPages > 0 && (
+          <>
+            <button
+              ref={mobilePageNavigationToggleRef}
+              type="button"
+              className="work-pdf-page-navigation-toggle"
+              aria-label="打开 PDF 页面导航"
+              aria-controls={mobilePageNavigationId}
+              aria-expanded={mobilePageNavigationOpen}
+              onClick={() => setMobilePageNavigationOpen(true)}
+            >
+              <GalleryVerticalEnd size={15} />
+              <span>第 {Math.max(1, controller.state.currentPage)} 页</span>
+            </button>
+            <PdfThumbnailRail
+              currentPage={controller.state.currentPage}
+              mobileCloseButtonRef={mobilePageNavigationCloseRef}
+              mobileNavigationId={mobilePageNavigationId}
+              mobileNavigationModal={mobilePageNavigationModalOpen}
+              registry={registry}
+              totalPages={controller.state.totalPages}
+              onCloseMobileNavigation={closeMobilePageNavigation}
+              onSelectPage={(page) => {
+                controller.goToPage(page);
+                if (mobilePageNavigationModalOpen) {
+                  closeMobilePageNavigation();
+                }
+              }}
+            />
+          </>
         )}
+        {mobilePageNavigationModalOpen && (
+          <button
+            type="button"
+            className="work-pdf-page-navigation-backdrop"
+            aria-label="关闭 PDF 页面导航遮罩"
+            tabIndex={-1}
+            onClick={closeMobilePageNavigation}
+          />
+        )}
+        <div
+          className="work-pdf-embed"
+          aria-busy={!viewerReady}
+          data-ready={viewerReady || undefined}
+        >
+          <PDFViewer
+            key={sourceUrl}
+            className="work-pdf-native-viewer"
+            style={{ width: '100%', height: '100%' }}
+            config={{
+              src: sourceUrl,
+              // EmbedPDF creates a Blob worker, so a root-relative URL has no
+              // usable base inside WorkerGlobalScope. Keep this absolute.
+              wasmUrl:
+                wasmUrl ?? new URL(PDFIUM_WASM_PATH, window.location.href).href,
+              tabBar: 'never',
+              theme: {
+                preference: 'system',
+                light: { accent: { primary: '#2867d8' } },
+                dark: { accent: { primary: '#7da7ff' } },
+              },
+              i18n: { defaultLocale: 'zh-CN' },
+              ui: { schema: a3sPdfUiSchema },
+              thumbnails: {
+                autoScroll: false,
+                buffer: 4,
+                gap: 10,
+                imagePadding: 0,
+                labelHeight: 0,
+                paddingY: 0,
+                width: 132,
+              },
+              annotations: {
+                annotationAuthor: 'A3S Office 用户',
+                autoCommit: true,
+              },
+              export: { defaultFileName: fileName },
+              fonts: { ui: null, signature: null },
+              disabledCategories: onSave
+                ? undefined
+                : ['annotation', 'redaction', 'form', 'history'],
+            }}
+            onReady={setRegistry}
+          />
+          {!viewerReady && (
+            <div className="work-pdf-loading" role="status">
+              <Loader2 className="spin" size={18} />
+              正在打开…
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
@@ -237,4 +334,40 @@ export function PdfViewer({
 function pdfErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return 'Unable to read this PDF file.';
+}
+
+function usePdfMobilePageNavigationModal(): boolean {
+  const [matches, setMatches] = useState(() =>
+    pdfMediaQueryMatches(PDF_MOBILE_PAGE_NAVIGATION_QUERY),
+  );
+
+  useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
+      return;
+    }
+    const mediaQuery = window.matchMedia(PDF_MOBILE_PAGE_NAVIGATION_QUERY);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', update);
+      return () => mediaQuery.removeEventListener('change', update);
+    }
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  return matches;
+}
+
+function pdfMediaQueryMatches(query: string): boolean {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
+    return true;
+  }
+  return window.matchMedia(query).matches;
 }

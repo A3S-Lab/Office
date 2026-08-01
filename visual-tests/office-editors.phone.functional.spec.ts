@@ -305,3 +305,43 @@ test('PDF keeps compact tools clear of the file actions on phones', async ({
     menu.getByRole('menuitemradio', { name: '线宽 4' }),
   ).toBeVisible();
 });
+
+test('PDF uses a dismissible page drawer on phones', async ({ page }) => {
+  await page.goto('/');
+  await openPdfFixture(page, { pageCount: 3 });
+  await waitForPdfFixture(page);
+
+  const toggle = page.getByRole('button', { name: '打开 PDF 页面导航' });
+  const rail = page.locator('.work-pdf-thumbnail-rail');
+  await expect(toggle).toBeVisible();
+  await expect(rail).toBeHidden();
+
+  await toggle.click();
+  const dialog = page.getByRole('dialog', { name: 'PDF 页面' });
+  const close = page.getByRole('button', {
+    name: '关闭 PDF 页面导航',
+    exact: true,
+  });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  await expect(close).toBeFocused();
+  await expect(page.locator('.work-pdf-embed')).toHaveAttribute('inert', '');
+  await expect
+    .poll(() =>
+      dialog.evaluate((element) => element.getBoundingClientRect().left),
+    )
+    .toBeGreaterThanOrEqual(-1);
+  const drawerGeometry = await dialog.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return { left: bounds.left, right: bounds.right, width: bounds.width };
+  });
+  expect(drawerGeometry.left).toBeGreaterThanOrEqual(-1);
+  expect(drawerGeometry.right).toBeLessThanOrEqual(281);
+  expect(drawerGeometry.width).toBeGreaterThanOrEqual(260);
+
+  await page.getByRole('button', { name: '第 2 页' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(toggle).toBeFocused();
+  await expect(page.getByRole('textbox', { name: '页码' })).toHaveValue('2');
+  await expect(toggle).toContainText('第 2 页');
+});
