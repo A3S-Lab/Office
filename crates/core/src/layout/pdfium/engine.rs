@@ -11,7 +11,9 @@ use sha2::{Digest, Sha256};
 
 use super::{
     invalid_page_geometry, millipoints_to_micrometers, millipoints_to_pixels,
-    NativeOfficePdfPageBox, NativeOfficePdfPageGeometry,
+    NativeOfficePdfOutline, NativeOfficePdfOutlineOptions, NativeOfficePdfPageBox,
+    NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageTextLayer,
+    NativeOfficePdfTextLayerOptions,
 };
 use crate::layout::layout_error;
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator};
@@ -135,6 +137,78 @@ impl PdfiumEngine {
             max_output_bytes,
         )?;
         Ok((observed, png))
+    }
+
+    pub(super) fn extract_page_text(
+        &self,
+        bytes: Vec<u8>,
+        inventory: &NativeOfficePdfPageInventory,
+        unit: &NativeOfficeUnit,
+        options: NativeOfficePdfTextLayerOptions,
+    ) -> UseResult<NativeOfficePdfPageTextLayer> {
+        inventory.validate()?;
+        options.validate()?;
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| pdfium_unavailable())?;
+        let document = self
+            .pdfium
+            .load_pdf_from_byte_vec(bytes, None)
+            .map_err(map_load_error)?;
+        let total_pages = page_count(document.pages().len())?;
+        if total_pages != inventory.total_pages {
+            return Err(layout_error(
+                "use.office.pdf_inventory_source_mismatch",
+                "The PDF page inventory no longer matches the immutable source.",
+            ));
+        }
+        let expected = inventory.validated_page(unit)?;
+        let offset =
+            usize::try_from(unit.ordinal.saturating_sub(1)).map_err(|_| pdf_page_not_found())?;
+        let index = i32::try_from(offset).map_err(|_| pdf_page_not_found())?;
+        let page = document.pages().get(index).map_err(map_page_error)?;
+        let observed = observe_page(&page, offset, inventory.dpi_milli)?;
+        if observed != *expected {
+            return Err(layout_error(
+                "use.office.pdf_page_identity_mismatch",
+                "The selected PDF text page no longer matches its inventoried geometry.",
+            ));
+        }
+        let layer = super::text::extract_page_text(
+            &page,
+            inventory.source_revision.clone(),
+            observed,
+            options,
+        )?;
+        layer.validate(inventory)?;
+        Ok(layer)
+    }
+
+    pub(super) fn extract_outline(
+        &self,
+        bytes: Vec<u8>,
+        inventory: &NativeOfficePdfPageInventory,
+        options: NativeOfficePdfOutlineOptions,
+    ) -> UseResult<NativeOfficePdfOutline> {
+        inventory.validate()?;
+        options.validate()?;
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| pdfium_unavailable())?;
+        let document = self
+            .pdfium
+            .load_pdf_from_byte_vec(bytes, None)
+            .map_err(map_load_error)?;
+        let total_pages = page_count(document.pages().len())?;
+        if total_pages != inventory.total_pages {
+            return Err(layout_error(
+                "use.office.pdf_inventory_source_mismatch",
+                "The PDF page inventory no longer matches the immutable source.",
+            ));
+        }
+        super::outline::extract_outline(&document, inventory, options)
     }
 }
 
@@ -266,7 +340,7 @@ fn page_box(boundary: PdfPageBoundaryBox) -> UseResult<NativeOfficePdfPageBox> {
     })
 }
 
-fn signed_points_to_millipoints(points: f32) -> UseResult<i64> {
+pub(super) fn signed_points_to_millipoints(points: f32) -> UseResult<i64> {
     let value = f64::from(points) * 1_000.0;
     if !value.is_finite() || value < i64::MIN as f64 || value > i64::MAX as f64 {
         return Err(invalid_page_geometry());

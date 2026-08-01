@@ -1,8 +1,11 @@
 use crate::{
     NativeOfficeLayoutEnvironment, NativeOfficeLayoutRenderer, NativeOfficeLayoutSourceKind,
+    NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
-    NativeOfficePdfPageInventoryOptions, NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit,
-    NativeOfficeUnitLocator, PackageRevision,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextLayer,
+    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision,
+    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 use sha2::Digest as _;
 
@@ -110,6 +113,103 @@ fn pdf_inventory_rejects_invalid_page_geometry_and_limits() {
     );
 }
 
+#[test]
+fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
+    let inventory = inventory(vec![page(1, 0, 612_000, 792_000)]);
+    let text = "A\n🌍".to_string();
+    let layer = NativeOfficePdfPageTextLayer {
+        schema_version: NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+        source_revision: inventory.source_revision.clone(),
+        unit: inventory.pages[0].unit.clone(),
+        page_geometry: inventory.pages[0].clone(),
+        engine_version: "chromium/7881".to_string(),
+        max_characters: 8,
+        max_text_bytes: 32,
+        text_sha256: format!("{:x}", sha2::Sha256::digest(text.as_bytes())),
+        text,
+        characters: vec![
+            text_character(
+                0,
+                "A",
+                0,
+                1,
+                0,
+                1,
+                Some(text_box(10_000, 20_000, 18_000, 32_000)),
+            ),
+            text_character(1, "\n", 1, 2, 1, 2, None),
+            text_character(
+                2,
+                "🌍",
+                2,
+                6,
+                2,
+                4,
+                Some(text_box(10_000, 40_000, 22_000, 52_000)),
+            ),
+        ],
+    };
+
+    layer.validate(&inventory).unwrap();
+    assert_eq!(layer.characters[2].utf8_range(), 2..6);
+    assert_eq!(layer.characters[2].utf16_range(), 2..4);
+
+    let mut tampered = layer.clone();
+    tampered.characters[2].utf16_end = 3;
+    assert_eq!(
+        tampered.validate(&inventory).unwrap_err().code,
+        "use.office.pdf_text_layer_invalid"
+    );
+
+    let mut foreign = inventory.clone();
+    foreign.source_revision.sha256 = "b".repeat(64);
+    assert_eq!(
+        layer.validate(&foreign).unwrap_err().code,
+        "use.office.pdf_text_layer_source_mismatch"
+    );
+}
+
+#[test]
+fn pdf_outline_preserves_hierarchy_and_exact_page_targets() {
+    let inventory = inventory(vec![
+        page(1, 0, 612_000, 792_000),
+        page(2, 0, 612_000, 792_000),
+    ]);
+    let outline = NativeOfficePdfOutline {
+        schema_version: NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+        source_revision: inventory.source_revision.clone(),
+        engine_version: "chromium/7881".to_string(),
+        max_entries: 8,
+        max_depth: 4,
+        max_title_bytes: 64,
+        entries: vec![
+            NativeOfficePdfOutlineEntry {
+                index: 0,
+                parent_index: None,
+                depth: 0,
+                title: "Chapter".to_string(),
+                target_unit: Some(inventory.pages[0].unit.clone()),
+            },
+            NativeOfficePdfOutlineEntry {
+                index: 1,
+                parent_index: Some(0),
+                depth: 1,
+                title: "Section".to_string(),
+                target_unit: Some(inventory.pages[1].unit.clone()),
+            },
+        ],
+    };
+
+    outline.validate(&inventory).unwrap();
+
+    let mut invalid_parent = outline.clone();
+    invalid_parent.entries[1].parent_index = Some(1);
+    assert_eq!(
+        invalid_parent.validate(&inventory).unwrap_err().code,
+        "use.office.pdf_outline_invalid"
+    );
+}
+
 #[tokio::test]
 async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     let Some(library) = std::env::var_os("A3S_OFFICE_TEST_PDFIUM_LIBRARY") else {
@@ -154,6 +254,85 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     assert_eq!(inventory.pages[1].rotation_degrees, 90);
     assert_eq!(inventory.pages[1].output_width_px, 240);
     assert_eq!(inventory.pages[1].output_height_px, 120);
+
+    let first_text = renderer
+        .extract_page_text(
+            &source,
+            &inventory,
+            inventory.pages[0].unit.clone(),
+            NativeOfficePdfTextLayerOptions {
+                max_characters: 64,
+                max_text_bytes: 1024,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(renderer.inventory_call_count(), 1);
+    assert_eq!(first_text.text, "Hello PDF");
+    assert_eq!(first_text.characters.len(), 9);
+    assert!(first_text
+        .characters
+        .iter()
+        .filter_map(|character| character.bounds)
+        .all(|bounds| bounds.right_millipoints > bounds.left_millipoints));
+    first_text.validate(&inventory).unwrap();
+
+    let outline = renderer
+        .extract_outline(
+            &source,
+            &inventory,
+            NativeOfficePdfOutlineOptions {
+                max_entries: 4,
+                max_depth: 4,
+                max_title_bytes: 64,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(renderer.inventory_call_count(), 1);
+    assert_eq!(outline.entries.len(), 2);
+    assert_eq!(outline.entries[0].title, "First page");
+    assert_eq!(
+        outline.entries[0].target_unit,
+        Some(inventory.pages[0].unit.clone())
+    );
+    assert_eq!(outline.entries[1].title, "Second page");
+    assert_eq!(
+        outline.entries[1].target_unit,
+        Some(inventory.pages[1].unit.clone())
+    );
+
+    let text_limit = renderer
+        .extract_page_text(
+            &source,
+            &inventory,
+            inventory.pages[0].unit.clone(),
+            NativeOfficePdfTextLayerOptions {
+                max_characters: 1,
+                max_text_bytes: 1024,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(text_limit.code, "use.office.pdf_text_character_limit");
+
+    let outline_limit = renderer
+        .extract_outline(
+            &source,
+            &inventory,
+            NativeOfficePdfOutlineOptions {
+                max_entries: 1,
+                max_depth: 4,
+                max_title_bytes: 64,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(outline_limit.code, "use.office.pdf_outline_entry_limit");
 
     let page_one = inventory.pages[0].unit.clone();
     let inspection = renderer
@@ -395,6 +574,40 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .unwrap_err();
     assert_eq!(mutation.code, "use.office.layout_source_mutated");
     assert!(!mutation_output.exists());
+
+    let blank_source = directory.path().join("blank.pdf");
+    std::fs::write(&blank_source, blank_page_pdf()).unwrap();
+    let blank_revision = renderer
+        .source_revision(&blank_source, 1024 * 1024, TEST_TIMEOUT_MS)
+        .await
+        .unwrap();
+    let blank_inventory = renderer
+        .inventory_pages(
+            &blank_source,
+            blank_revision,
+            NativeOfficePdfPageInventoryOptions {
+                max_pages: 1,
+                ..options
+            },
+        )
+        .await
+        .unwrap();
+    let blank_text = renderer
+        .extract_page_text(
+            &blank_source,
+            &blank_inventory,
+            blank_inventory.pages[0].unit.clone(),
+            NativeOfficePdfTextLayerOptions {
+                max_characters: 8,
+                max_text_bytes: 8,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap();
+    assert!(blank_text.text.is_empty());
+    assert!(blank_text.characters.is_empty());
+    blank_text.validate(&blank_inventory).unwrap();
 }
 
 fn inventory(pages: Vec<NativeOfficePdfPageGeometry>) -> NativeOfficePdfPageInventory {
@@ -451,16 +664,57 @@ fn page(
     }
 }
 
+fn text_character(
+    index: u32,
+    text: &str,
+    utf8_start: u64,
+    utf8_end: u64,
+    utf16_start: u64,
+    utf16_end: u64,
+    bounds: Option<NativeOfficePdfPageBox>,
+) -> NativeOfficePdfTextCharacter {
+    NativeOfficePdfTextCharacter {
+        index,
+        text: text.to_string(),
+        utf8_start,
+        utf8_end,
+        utf16_start,
+        utf16_end,
+        bounds,
+        font_size_millipoints: Some(12_000),
+        rotation_millidegrees: Some(0),
+        generated: Some(false),
+    }
+}
+
+fn text_box(
+    left_millipoints: i64,
+    bottom_millipoints: i64,
+    right_millipoints: i64,
+    top_millipoints: i64,
+) -> NativeOfficePdfPageBox {
+    NativeOfficePdfPageBox {
+        left_millipoints,
+        bottom_millipoints,
+        right_millipoints,
+        top_millipoints,
+    }
+}
+
 fn two_page_pdf() -> Vec<u8> {
-    let red = b"1 0 0 rg\n0 0 200 100 re f\n";
-    let blue = b"0 0 1 rg\n0 0 120 240 re f\n";
+    let red = b"1 0 0 rg\n0 0 200 100 re f\nBT /F1 12 Tf 20 50 Td (Hello PDF) Tj ET\n";
+    let blue = b"0 0 1 rg\n0 0 120 240 re f\nBT /F1 12 Tf 20 100 Td (Rotated PDF) Tj ET\n";
     let objects = vec![
-        b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
+        b"<< /Type /Catalog /Pages 2 0 R /Outlines 8 0 R /PageMode /UseOutlines >>".to_vec(),
         b"<< /Type /Pages /Count 2 /Kids [3 0 R 4 0 R] >>".to_vec(),
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /CropBox [10 20 190 80] /Resources << >> /Contents 5 0 R >>".to_vec(),
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 120 240] /Rotate 90 /Resources << >> /Contents 6 0 R >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /CropBox [10 20 190 80] /Resources << /Font << /F1 7 0 R >> >> /Contents 5 0 R >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 120 240] /Rotate 90 /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>".to_vec(),
         pdf_stream(red),
         pdf_stream(blue),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_vec(),
+        b"<< /Type /Outlines /First 9 0 R /Last 10 0 R /Count 2 >>".to_vec(),
+        b"<< /Title (First page) /Parent 8 0 R /Next 10 0 R /Dest [3 0 R /Fit] >>".to_vec(),
+        b"<< /Title (Second page) /Parent 8 0 R /Prev 9 0 R /Dest [4 0 R /Fit] >>".to_vec(),
     ];
     encode_pdf(&objects)
 }
@@ -469,6 +723,14 @@ fn zero_page_pdf() -> Vec<u8> {
     encode_pdf(&[
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Count 0 /Kids [] >>".to_vec(),
+    ])
+}
+
+fn blank_page_pdf() -> Vec<u8> {
+    encode_pdf(&[
+        b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
+        b"<< /Type /Pages /Count 1 /Kids [3 0 R] >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Resources << >> >>".to_vec(),
     ])
 }
 

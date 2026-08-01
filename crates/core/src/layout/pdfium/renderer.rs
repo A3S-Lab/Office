@@ -12,8 +12,10 @@ use sha2::{Digest, Sha256};
 
 use super::engine::{PdfiumEngine, PDFIUM_ENGINE_VERSION};
 use super::{
-    pdf_page_identity_mismatch, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
-    NativeOfficePdfPageInventoryOptions, MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+    pdf_page_identity_mismatch, NativeOfficePdfOutline, NativeOfficePdfOutlineOptions,
+    NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageInventoryOptions,
+    NativeOfficePdfPageTextLayer, NativeOfficePdfTextLayerOptions,
+    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
 };
 use crate::layout::pptx_image::io::{
     ensure_output_available, hash_regular_file, publish_output, stage_output,
@@ -138,6 +140,96 @@ impl NativeOfficePdfiumLayoutRenderer {
         };
         inventory.validate()?;
         Ok(inventory)
+    }
+
+    /// Extracts one complete, bounded native text layer from a previously
+    /// inventoried PDF page without rerunning page inventory.
+    pub async fn extract_page_text(
+        &self,
+        source_path: impl AsRef<Path>,
+        inventory: &NativeOfficePdfPageInventory,
+        unit: NativeOfficeUnit,
+        options: NativeOfficePdfTextLayerOptions,
+    ) -> UseResult<NativeOfficePdfPageTextLayer> {
+        self.descriptor().validate()?;
+        inventory.validate()?;
+        options.validate()?;
+        inventory.validated_page(&unit)?;
+        validate_pdf_revision(
+            &inventory.source_revision,
+            MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+        )?;
+        let source_path = absolute(source_path.as_ref())?;
+        let timeout_ms = options.timeout_ms;
+        let engine = Arc::clone(&self.engine);
+        let inventory_for_task = inventory.clone();
+        let revision_for_task = inventory.source_revision.clone();
+        let source_for_task = source_path.clone();
+        let task = async move {
+            let bytes = read_source_bytes(
+                &source_for_task,
+                &revision_for_task,
+                MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+            )
+            .await?;
+            let layer = tokio::task::spawn_blocking(move || {
+                engine.extract_page_text(bytes, &inventory_for_task, &unit, options)
+            })
+            .await
+            .map_err(|_| pdfium_task_failed())??;
+            verify_source_revision(&source_for_task, &revision_for_task).await?;
+            Ok::<_, a3s_use_core::UseError>(layer)
+        };
+        let layer = match tokio::time::timeout(Duration::from_millis(timeout_ms), task).await {
+            Ok(result) => result?,
+            Err(_) => return Err(layout_timeout(timeout_ms)),
+        };
+        layer.validate(inventory)?;
+        Ok(layer)
+    }
+
+    /// Extracts one complete, bounded native document outline against a
+    /// previously admitted page inventory without rerunning inventory.
+    pub async fn extract_outline(
+        &self,
+        source_path: impl AsRef<Path>,
+        inventory: &NativeOfficePdfPageInventory,
+        options: NativeOfficePdfOutlineOptions,
+    ) -> UseResult<NativeOfficePdfOutline> {
+        self.descriptor().validate()?;
+        inventory.validate()?;
+        options.validate()?;
+        validate_pdf_revision(
+            &inventory.source_revision,
+            MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+        )?;
+        let source_path = absolute(source_path.as_ref())?;
+        let timeout_ms = options.timeout_ms;
+        let engine = Arc::clone(&self.engine);
+        let inventory_for_task = inventory.clone();
+        let revision_for_task = inventory.source_revision.clone();
+        let source_for_task = source_path.clone();
+        let task = async move {
+            let bytes = read_source_bytes(
+                &source_for_task,
+                &revision_for_task,
+                MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+            )
+            .await?;
+            let outline = tokio::task::spawn_blocking(move || {
+                engine.extract_outline(bytes, &inventory_for_task, options)
+            })
+            .await
+            .map_err(|_| pdfium_task_failed())??;
+            verify_source_revision(&source_for_task, &revision_for_task).await?;
+            Ok::<_, a3s_use_core::UseError>(outline)
+        };
+        let outline = match tokio::time::timeout(Duration::from_millis(timeout_ms), task).await {
+            Ok(result) => result?,
+            Err(_) => return Err(layout_timeout(timeout_ms)),
+        };
+        outline.validate(inventory)?;
+        Ok(outline)
     }
 
     /// Inventories the PDF and freezes the exact profile for one selected page.
