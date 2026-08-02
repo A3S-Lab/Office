@@ -38,7 +38,9 @@ the phone Spreadsheet
 worksheet-rename workflow; Presentation focus recovery across object cut and
 paste plus presenter-view keyboard navigation and phone layout; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard
-navigation; the phone Markdown source, visual, and split-mode workflow with
+navigation, plus a phone page-drawer workflow proving toolbar ownership,
+selection, modal close behavior, and an unobstructed document canvas; the
+phone Markdown source, visual, and split-mode workflow with
 unambiguous accessible controls; and the public
 Playground-to-documentation-center navigation contract, including the
 documentation tree and the same-deployment return to the Playground homepage.

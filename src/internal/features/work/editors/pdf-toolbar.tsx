@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ChevronUp,
   Ellipsis,
+  GalleryVerticalEnd,
   Highlighter,
   Loader2,
   Minus,
@@ -52,6 +53,13 @@ import type { PdfViewerControllerState } from './pdf-viewer-controller';
 
 export type PdfSaveState = 'idle' | 'saving' | 'saved' | 'error';
 
+interface PdfPageNavigationControl {
+  controlsId: string;
+  expanded: boolean;
+  onOpen: () => void;
+  toggleRef: RefObject<HTMLButtonElement | null>;
+}
+
 const pdfKeyboardShortcuts = {
   deleteAnnotation: 'Delete Backspace',
   fitPage: 'Control+0 Meta+0',
@@ -68,6 +76,7 @@ export function PdfToolbar({
   can,
   commands,
   editable,
+  pageNavigation,
   saveLabel,
   saveState,
   searchInputRef,
@@ -77,6 +86,7 @@ export function PdfToolbar({
   can: PdfEditorCanCommands;
   commands: PdfEditorCommands;
   editable: boolean;
+  pageNavigation?: PdfPageNavigationControl;
   saveLabel: string;
   saveState: PdfSaveState;
   searchInputRef: RefObject<HTMLInputElement | null>;
@@ -335,6 +345,22 @@ export function PdfToolbar({
       </search>
 
       <div className="work-pdf-toolbar-group work-pdf-page-controls">
+        {pageNavigation && (
+          <IconButton
+            ref={pageNavigation.toggleRef}
+            className="work-pdf-page-navigation-toggle"
+            label="打开 PDF 页面导航"
+            tooltip="页面缩略图"
+            aria-controls={pageNavigation.controlsId}
+            aria-expanded={pageNavigation.expanded}
+            onClick={pageNavigation.onOpen}
+          >
+            <GalleryVerticalEnd size={15} />
+            <span className="sr-only">
+              第 {Math.max(1, state.currentPage)} 页
+            </span>
+          </IconButton>
+        )}
         <IconButton
           className="work-pdf-page-step"
           label="上一页"

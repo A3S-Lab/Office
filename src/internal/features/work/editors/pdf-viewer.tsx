@@ -3,7 +3,7 @@ import {
   type PluginRegistry,
   type UISchema,
 } from '@embedpdf/react-pdf-viewer';
-import { AlertCircle, GalleryVerticalEnd, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -224,6 +224,16 @@ export function PdfViewer({
         can={pdfEditor.can()}
         commands={pdfCommands}
         editable={Boolean(onSave)}
+        pageNavigation={
+          viewerReady && registry && controller.state.totalPages > 0
+            ? {
+                controlsId: mobilePageNavigationId,
+                expanded: mobilePageNavigationOpen,
+                onOpen: () => setMobilePageNavigationOpen(true),
+                toggleRef: mobilePageNavigationToggleRef,
+              }
+            : undefined
+        }
         searchInputRef={searchInputRef}
         saveLabel={saveLabel}
         saveState={saveState}
@@ -236,35 +246,21 @@ export function PdfViewer({
         }
       >
         {viewerReady && registry && controller.state.totalPages > 0 && (
-          <>
-            <button
-              ref={mobilePageNavigationToggleRef}
-              type="button"
-              className="work-pdf-page-navigation-toggle"
-              aria-label="打开 PDF 页面导航"
-              aria-controls={mobilePageNavigationId}
-              aria-expanded={mobilePageNavigationOpen}
-              onClick={() => setMobilePageNavigationOpen(true)}
-            >
-              <GalleryVerticalEnd size={15} />
-              <span>第 {Math.max(1, controller.state.currentPage)} 页</span>
-            </button>
-            <PdfThumbnailRail
-              currentPage={controller.state.currentPage}
-              mobileCloseButtonRef={mobilePageNavigationCloseRef}
-              mobileNavigationId={mobilePageNavigationId}
-              mobileNavigationModal={mobilePageNavigationModalOpen}
-              registry={registry}
-              totalPages={controller.state.totalPages}
-              onCloseMobileNavigation={closeMobilePageNavigation}
-              onSelectPage={(page) => {
-                controller.goToPage(page);
-                if (mobilePageNavigationModalOpen) {
-                  closeMobilePageNavigation();
-                }
-              }}
-            />
-          </>
+          <PdfThumbnailRail
+            currentPage={controller.state.currentPage}
+            mobileCloseButtonRef={mobilePageNavigationCloseRef}
+            mobileNavigationId={mobilePageNavigationId}
+            mobileNavigationModal={mobilePageNavigationModalOpen}
+            registry={registry}
+            totalPages={controller.state.totalPages}
+            onCloseMobileNavigation={closeMobilePageNavigation}
+            onSelectPage={(page) => {
+              controller.goToPage(page);
+              if (mobilePageNavigationModalOpen) {
+                closeMobilePageNavigation();
+              }
+            }}
+          />
         )}
         {mobilePageNavigationModalOpen && (
           <button

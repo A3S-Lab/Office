@@ -78,6 +78,46 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   expect(screen.getByText('/ 8')).toBeInTheDocument();
 });
 
+test('keeps the compact page-navigation trigger inside the page controls', () => {
+  const controller = createController([]);
+  const annotation = createAnnotationController([]);
+  const toggleRef = createRef<HTMLButtonElement>();
+  let openCount = 0;
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, [])}
+      editable
+      pageNavigation={{
+        controlsId: 'pdf-page-navigation',
+        expanded: false,
+        onOpen: () => {
+          openCount += 1;
+        },
+        toggleRef,
+      }}
+      saveLabel="保存"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  const toggle = screen.getByRole('button', {
+    name: '打开 PDF 页面导航',
+  });
+  expect(toggle.closest('.work-pdf-page-controls')).not.toBeNull();
+  expect(toggleRef.current).toBe(toggle);
+  expect(toggle).toHaveAttribute('aria-controls', 'pdf-page-navigation');
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  expect(toggle).toHaveTextContent('第 2 页');
+
+  fireEvent.click(toggle);
+  expect(openCount).toBe(1);
+});
+
 test('keeps read-only PDF chrome free of edit-only commands', () => {
   const controller = createController([]);
   const annotation = createAnnotationController([]);

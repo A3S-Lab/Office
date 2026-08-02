@@ -1,0 +1,87 @@
+suite "office-pdf-page-drawer-phone" {
+    version = 1
+
+    scenario "keep-page-navigation-in-the-phone-toolbar" {
+        name = "Keep PDF page navigation out of the document canvas on a phone"
+        surface = "web"
+        timeout_ms = 45000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        upload "open-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-ready" {
+            visible = css(".work-pdf-toolbar .work-pdf-page-navigation-toggle[aria-expanded='false']")
+        }
+
+        expect "page-trigger-is-not-in-canvas" {
+            visible = css(".work-pdf-embed:not(:has(.work-pdf-page-navigation-toggle))")
+        }
+
+        click "open-page-drawer" {
+            target = role("button", "打开 PDF 页面导航")
+        }
+
+        expect "page-drawer-is-modal" {
+            visible = css(".work-pdf-thumbnail-rail[role='dialog'][aria-modal='true']")
+        }
+
+        focus "focus-page-three" {
+            target = css(".work-pdf-thumbnail-rail [data-pdf-page-index='2']")
+        }
+
+        press "select-page-three" {
+            key = "Enter"
+        }
+
+        wait "page-trigger-is-restored" {
+            visible = css(".work-pdf-toolbar .work-pdf-page-navigation-toggle[aria-expanded='false']")
+        }
+
+        click "reopen-page-drawer" {
+            target = role("button", "打开 PDF 页面导航")
+        }
+
+        expect "page-three-is-current" {
+            visible = css("[data-pdf-page-index='2'][aria-current='page']")
+        }
+
+        click "close-page-drawer" {
+            target = role("button", "关闭 PDF 页面导航")
+        }
+
+        wait "toolbar-trigger-remains-owned" {
+            visible = css(".work-pdf-toolbar .work-pdf-page-navigation-toggle[aria-expanded='false']")
+        }
+
+        screenshot "page-navigation-in-toolbar" {
+            path = "screenshots/pdf-page-navigation-phone.png"
+        }
+
+        accessibility "page-navigation-semantics" {
+            path = "evidence/pdf-page-navigation-phone.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

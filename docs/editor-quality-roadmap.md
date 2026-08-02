@@ -327,7 +327,8 @@ one controlled update.
 - Keep navigation, zoom, and history reachable from the responsive overflow
   menu whenever the primary toolbar hides those controls.
 - Retain the implemented active-page thumbnail synchronization, bounded
-  long-document thumbnail window, and focus-contained phone page drawer.
+  long-document thumbnail window, and focus-contained phone page drawer. Its
+  toolbar-owned trigger must never cover rendered PDF content.
 - Keep PDFium lifecycle, page bitmap cache, and source Blob ownership bounded.
 - Verify saved annotations and forms by reopening the emitted Blob.
 

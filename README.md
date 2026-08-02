@@ -297,7 +297,8 @@ interaction model.
   annotation color, opacity, compatible stroke-width controls, history,
   a scrollable page-thumbnail rail with current-page synchronization and
   focus-synchronized Arrow/Home/End navigation, bounded rendering for long
-  files, a dismissible page drawer on phones,
+  files, and a dismissible page drawer whose phone trigger stays in the page
+  controls instead of covering PDF content,
   focus-safe page and search drafts, responsive search-result, navigation, and
   zoom controls, editor-scoped shortcuts, and a keyboard-operated overflow menu
   that retains secondary annotation tools and appearance settings on phones.

@@ -424,6 +424,26 @@ test('PDF uses a dismissible page drawer on phones', async ({ page }) => {
   const rail = page.locator('.work-pdf-thumbnail-rail');
   await expect(toggle).toBeVisible();
   await expect(rail).toBeHidden();
+  const triggerPlacement = await toggle.evaluate((element) => {
+    const toolbar = element.closest('.work-pdf-toolbar');
+    const embed = document.querySelector('.work-pdf-embed');
+    const toggleBounds = element.getBoundingClientRect();
+    const toolbarBounds = toolbar?.getBoundingClientRect();
+    const embedBounds = embed?.getBoundingClientRect();
+    return {
+      insideToolbar: Boolean(toolbar),
+      toggleBottom: toggleBounds.bottom,
+      toolbarBottom: toolbarBounds?.bottom ?? Number.NaN,
+      embedTop: embedBounds?.top ?? Number.NaN,
+    };
+  });
+  expect(triggerPlacement.insideToolbar).toBe(true);
+  expect(triggerPlacement.toggleBottom).toBeLessThanOrEqual(
+    triggerPlacement.toolbarBottom + 0.5,
+  );
+  expect(triggerPlacement.toggleBottom).toBeLessThanOrEqual(
+    triggerPlacement.embedTop + 0.5,
+  );
 
   await toggle.click();
   const dialog = page.getByRole('dialog', { name: 'PDF 页面' });

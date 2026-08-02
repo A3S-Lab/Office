@@ -60,6 +60,9 @@ All notable changes to A3S Office will be documented in this file.
   looking stale number.
 - Kept PDF page navigation, zoom, and history reachable through the compact
   overflow menu while preserving page status in the primary toolbar.
+- Moved the phone PDF page-drawer trigger into the toolbar page controls so it
+  no longer overlays document content, while retaining modal focus isolation,
+  current-page synchronization, and focus restoration after selection.
 - Removed internal implementation terminology from the Spreadsheet
   conditional-format manager.
 - Added a visible prompt to the empty Markdown source pane without changing its

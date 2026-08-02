@@ -695,36 +695,12 @@
 }
 
 @media (max-width: 640px) {
-  .work-pdf-page-navigation-toggle {
-    position: absolute;
-    z-index: 18;
-    top: 8px;
-    left: 8px;
+  .work-pdf-toolbar .work-pdf-page-navigation-toggle {
     display: inline-flex;
-    height: 32px;
-    align-items: center;
-    gap: 6px;
-    padding: 0 9px;
-    border: 1px solid var(--a3s-line-strong);
-    border-radius: 7px;
-    background: var(--a3s-panel);
-    box-shadow: 0 4px 14px rgb(23 28 42 / 10%);
-    color: var(--a3s-ink);
-    font: inherit;
-    font-size: 10px;
-    font-variant-numeric: tabular-nums;
-    font-weight: 650;
-    cursor: pointer;
   }
 
-  .work-pdf-page-navigation-toggle:hover,
-  .work-pdf-page-navigation-toggle:focus-visible {
-    outline: 0;
-    border-color: color-mix(
-      in srgb,
-      var(--work-pdf-accent) 55%,
-      var(--a3s-line)
-    );
+  .work-pdf-page-navigation-toggle[aria-expanded="true"] {
+    background: color-mix(in srgb, var(--work-pdf-accent) 9%, var(--a3s-panel));
     color: var(--work-pdf-accent);
   }
 
@@ -825,7 +801,7 @@
   .work-pdf-search {
     position: absolute;
     z-index: 2;
-    right: 78px;
+    right: 108px;
     bottom: 5px;
     left: 6px;
     width: auto;

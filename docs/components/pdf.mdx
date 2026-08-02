@@ -49,8 +49,10 @@ PDFium and annotation-controller internals are not public extension points.
 
 The desktop surface keeps a scrollable page-thumbnail rail synchronized with
 the page field and PDF viewport. On compact screens the same rail becomes a
-dismissible modal drawer. Long documents render a bounded thumbnail window,
-so navigation cost does not grow linearly with the page count.
+dismissible modal drawer. Its trigger is part of the toolbar page controls,
+not an overlay on the rendered document. Long documents render a bounded
+thumbnail window, so navigation cost does not grow linearly with the page
+count.
 
 Each thumbnail is a real button. `ArrowUp` and `ArrowDown` move one page,
 `Home` selects the first page, and `End` selects the last page. Keyboard
