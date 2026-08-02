@@ -524,9 +524,7 @@ export function SpreadsheetEditor({
   }, []);
   const closeSpreadsheetFind = useCallback(() => {
     setFindOpen(false);
-    requestAnimationFrame(() =>
-      focusSpreadsheetGrid(spreadsheetCanvasRef.current),
-    );
+    focusSpreadsheetGrid(spreadsheetCanvasRef.current);
   }, []);
   const selectSpreadsheetFindMatch = useCallback(
     (match: SpreadsheetFindMatch) => {

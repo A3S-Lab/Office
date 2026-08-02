@@ -69,7 +69,7 @@ suite "office-spreadsheet-phone-find" {
             key = "Escape"
         }
 
-        expect "grid-focus-restored" {
+        wait "grid-focus-restored" {
             visible = css(".fortune-sheet-overlay:focus")
         }
 
