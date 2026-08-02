@@ -1,0 +1,62 @@
+---
+title: MarkdownEditor
+description: Markdown content, split-view behavior, selection menus, and TipTap extensions.
+---
+
+# MarkdownEditor
+
+`MarkdownEditor` opens in a resizable source-and-visual split view. The
+Markdown string remains the single persistence source while TipTap provides
+the visual editing surface.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `MarkdownContent` | Yes | — | Controlled Markdown value. |
+| `onChange` | `(content: MarkdownContent) => void` | Yes | — | Emits the complete next value. |
+| `preview` | `boolean` | No | `false` | Read-only rendering. |
+| `saveStatus` | `string` | No | — | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `extensions` | `Extensions` | No | `[]` | Additional TipTap extensions. |
+| `getSelectionMenuItems` | `GetMarkdownSelectionMenuItems` | No | built-in menu | Replaces the selected-text menu in source and visual surfaces. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+```ts
+interface MarkdownContent {
+  type: 'markdown';
+  markdown: string;
+}
+```
+
+The controlled source history coalesces typing, keeps explicit commands as
+separate records, restores source selection on undo and redo, and rebases when
+the host replaces the value.
+
+## Selection menu
+
+The host menu covers both source and visual selections. The snapshot identifies
+`selection.surface` and includes exact selected text, adjacent context, the
+complete Markdown source, rendered plain text, and safe replace/insert
+commands.
+
+```tsx
+import type { GetMarkdownSelectionMenuItems } from '@a3s-lab/office/core';
+
+const getSelectionMenuItems: GetMarkdownSelectionMenuItems = (context) => [
+  {
+    id: 'summarize',
+    label: 'Summarize',
+    run: async () => {
+      const summary = await summarize(context.document.markdown);
+      await context.commands.replaceText(summary);
+    },
+  },
+];
+```
+
+Extensions that introduce new Nodes or Marks must provide matching Markdown
+parse and serialization rules. Otherwise the structure cannot survive a
+source-view round trip.

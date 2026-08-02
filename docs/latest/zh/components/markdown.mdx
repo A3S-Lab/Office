@@ -1,0 +1,57 @@
+---
+title: MarkdownEditor
+description: Markdown 内容、分栏模式、选区菜单与 TipTap Extension。
+---
+
+# MarkdownEditor
+
+`MarkdownEditor` 默认使用可拖动分隔线的“左侧源码、右侧预览”模式。
+Markdown 字符串始终是唯一持久化来源，TipTap 提供可视化编辑能力。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `MarkdownContent` | 是 | — | 受控 Markdown 内容。 |
+| `onChange` | `(content: MarkdownContent) => void` | 是 | — | 返回完整的新内容。 |
+| `preview` | `boolean` | 否 | `false` | 只读渲染。 |
+| `saveStatus` | `string` | 否 | — | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `extensions` | `Extensions` | 否 | `[]` | 附加 TipTap Extension。 |
+| `getSelectionMenuItems` | `GetMarkdownSelectionMenuItems` | 否 | 内置菜单 | 替换源码与可视化界面的选区菜单。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+```ts
+interface MarkdownContent {
+  type: 'markdown';
+  markdown: string;
+}
+```
+
+受控源码历史会合并连续输入，把明确命令保留为独立记录，在撤销和重做时恢复源码选区，
+并在宿主替换内容后重新建立历史基线。
+
+## 选区菜单
+
+宿主菜单同时覆盖源码和可视化选区。快照通过 `selection.surface` 标识当前界面，并提供
+精确选中文本、相邻内容、完整 Markdown、渲染后的纯文本和安全的替换、插入命令。
+
+```tsx
+import type { GetMarkdownSelectionMenuItems } from '@a3s-lab/office/core';
+
+const getSelectionMenuItems: GetMarkdownSelectionMenuItems = (context) => [
+  {
+    id: 'summarize',
+    label: '总结',
+    run: async () => {
+      const summary = await summarize(context.document.markdown);
+      await context.commands.replaceText(summary);
+    },
+  },
+];
+```
+
+新增 Node 或 Mark 的 Extension 必须同时提供 Markdown 解析与序列化规则，否则结构无法
+在切换源码视图后保留。

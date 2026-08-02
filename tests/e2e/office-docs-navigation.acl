@@ -6,6 +6,11 @@ suite "office-docs-navigation" {
         surface = "web"
         timeout_ms = 30000
 
+        viewport "desktop-navigation" {
+            width = 1440
+            height = 900
+        }
+
         navigate "open-playground" {
             url = "http://127.0.0.1:4175/"
         }
@@ -23,7 +28,11 @@ suite "office-docs-navigation" {
         }
 
         expect "documentation-center-ready" {
-            text = "A3S Office documentation"
+            text = "A3S Office 文档"
+        }
+
+        expect "documentation-defaults-to-chinese" {
+            visible = css("html[lang=zh]")
         }
 
         expect "documentation-search-ready" {
@@ -42,8 +51,60 @@ suite "office-docs-navigation" {
             path = "screenshots/documentation-center.png"
         }
 
-        expect "playground-link-ready" {
-            text = "Playground"
+        click "open-document-reference" {
+            target = css(".rp-doc-layout__sidebar a[href$='/components/document.html']")
+        }
+
+        wait "latest-document-route" {
+            url = "http://127.0.0.1:4175/docs/components/document.html"
+        }
+
+        click "open-version-menu" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) > .rp-nav-menu__item__container")
+        }
+
+        click "select-version-0-1-0" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) a[aria-label='0.1.0']")
+        }
+
+        wait "versioned-document-route" {
+            url = "http://127.0.0.1:4175/docs/0.1.0/components/document.html"
+        }
+
+        expect "versioned-document-ready" {
+            text = "自定义选区菜单"
+        }
+
+        click "open-language-menu" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(1) > .rp-nav-menu__item__container")
+        }
+
+        click "select-english" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(1) a[aria-label='English']")
+        }
+
+        wait "english-versioned-document-route" {
+            url = "http://127.0.0.1:4175/docs/0.1.0/en/components/document.html"
+        }
+
+        expect "english-document-ready" {
+            text = "Host-defined selection menu"
+        }
+
+        expect "documentation-language-is-english" {
+            visible = css("html[lang=en]")
+        }
+
+        click "open-latest-menu" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) > .rp-nav-menu__item__container")
+        }
+
+        click "select-latest" {
+            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) a[aria-label='latest']")
+        }
+
+        wait "latest-english-document-route" {
+            url = "http://127.0.0.1:4175/docs/en/components/document.html"
         }
 
         click "return-to-playground" {

@@ -6,3 +6,11 @@ export function playgroundHrefFromDocsRoute(routePath: string): string {
     : Math.max(0, segments.length - 1);
   return '../'.repeat(directoryDepth + 1);
 }
+
+export function playgroundAssetHrefFromDocsRoute(
+  routePath: string,
+  assetPath: string,
+): string {
+  const normalizedAssetPath = assetPath.replace(/^\/+/, '');
+  return `${playgroundHrefFromDocsRoute(routePath)}${normalizedAssetPath}`;
+}

@@ -1,0 +1,43 @@
+import { access, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { expect, test } from '@rstest/core';
+import {
+  DOCUMENTATION_DEFAULT_LANGUAGE,
+  DOCUMENTATION_DEFAULT_VERSION,
+  DOCUMENTATION_LOCALES,
+  DOCUMENTATION_REQUIRED_ROUTES,
+  DOCUMENTATION_VERSIONS,
+} from '../website/documentation-site';
+
+const documentationRoot = path.resolve(import.meta.dirname, '../docs');
+
+test('uses Simplified Chinese and latest as stable documentation defaults', () => {
+  expect(DOCUMENTATION_DEFAULT_LANGUAGE).toBe('zh');
+  expect(DOCUMENTATION_LOCALES.map(({ lang }) => lang)).toEqual(['zh', 'en']);
+  expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
+  expect(DOCUMENTATION_VERSIONS).toEqual(['latest', '0.1.0']);
+});
+
+test('keeps every public route available in every language and version', async () => {
+  for (const version of DOCUMENTATION_VERSIONS) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      for (const route of DOCUMENTATION_REQUIRED_ROUTES) {
+        await expect(
+          access(path.join(documentationRoot, version, lang, route)),
+        ).resolves.toBeUndefined();
+      }
+    }
+  }
+});
+
+test('keeps the published release homepage frozen and visibly versioned', async () => {
+  const [chinese, english] = await Promise.all([
+    readFile(path.join(documentationRoot, '0.1.0/zh/index.mdx'), 'utf8'),
+    readFile(path.join(documentationRoot, '0.1.0/en/index.mdx'), 'utf8'),
+  ]);
+
+  expect(chinese).toContain('# A3S Office 0.1.0 文档');
+  expect(chinese).toContain('冻结文档');
+  expect(english).toContain('# A3S Office 0.1.0 documentation');
+  expect(english).toContain('frozen documentation');
+});

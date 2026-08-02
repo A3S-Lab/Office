@@ -389,8 +389,8 @@ CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
 bounded contracts. They inspect and modify files without launching desktop
 Office or scraping editor UI.
 
-Read the [native engine design](docs/native-office-engine.md), the complete
-[CLI reference](docs/cli-reference.md), or the published
+Read the [native engine design](docs/latest/en/native-office-engine.md), the
+complete [CLI reference](docs/latest/en/cli-reference.md), or the published
 [CLI and Skill guide](https://a3s-lab.github.io/Office/docs/automation/).
 
 ## Architecture
@@ -408,7 +408,8 @@ PDFium provider for read-only PDF page evidence. Both planes expose typed
 contracts; neither requires an A3S backend.
 
 For engine ownership, Worker/WASM boundaries, delivery stages, and performance
-gates, see [Browser editor architecture](docs/browser-editor-architecture.md).
+gates, see
+[Browser editor architecture](docs/latest/en/browser-editor-architecture.md).
 
 ## Project status
 
@@ -420,7 +421,7 @@ The project targets predictable browser editing and file preservation, not
 pixel parity with every Microsoft Office or WPS feature. Unsupported OOXML
 semantics and fidelity gaps remain explicit compatibility boundaries instead
 of being silently approximated. Track product depth and release evidence in
-the [editor quality roadmap](docs/editor-quality-roadmap.md).
+the [editor quality roadmap](docs/latest/en/editor-quality-roadmap.md).
 
 ## Development
 
@@ -442,18 +443,22 @@ committed visual contracts; see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Documentation
 
 The published website keeps the interactive Playground at its root and builds
-the searchable Rspress documentation center under `/docs/`. Both surfaces use
-the same deployment base, so preview, Pages, and fork deployments keep working
+the searchable Rspress documentation center under `/docs/`. Simplified Chinese
+is the stable default, English remains available from the language menu, and
+the version menu switches between `latest` and frozen release documentation.
+Search is scoped to the active language and version. Both surfaces use the
+same deployment base, so preview, Pages, and fork deployments keep working
 without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
 - [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)
-- [Browser editor architecture](docs/browser-editor-architecture.md)
-- [Native Office engine](docs/native-office-engine.md)
-- [CLI reference](docs/cli-reference.md)
-- [Editor quality roadmap](docs/editor-quality-roadmap.md)
+- [Browser editor architecture](docs/latest/en/browser-editor-architecture.md)
+- [Native Office engine](docs/latest/en/native-office-engine.md)
+- [CLI reference](docs/latest/en/cli-reference.md)
+- [Editor quality roadmap](docs/latest/en/editor-quality-roadmap.md)
 - [Changelog](CHANGELOG.md)
 
 ## Community and security

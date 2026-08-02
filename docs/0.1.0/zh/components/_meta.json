@@ -1,0 +1,24 @@
+[
+  "index",
+  {
+    "type": "section-header",
+    "label": "框架"
+  },
+  "react",
+  "vue",
+  "web-component",
+  {
+    "type": "section-header",
+    "label": "编辑器 API"
+  },
+  "document",
+  "markdown",
+  "spreadsheet",
+  "presentation",
+  "pdf",
+  {
+    "type": "section-header",
+    "label": "自定义"
+  },
+  "extensions"
+]

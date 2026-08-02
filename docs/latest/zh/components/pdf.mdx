@@ -1,0 +1,56 @@
+---
+title: PdfViewer
+description: PDF 数据加载、PDFium 资源、批注与保存接口。
+---
+
+# PdfViewer
+
+`PdfViewer` 按需加载 PDF，通过 PDFium WebAssembly 渲染页面，并提供导航、搜索、
+批注、历史记录和保存能力。
+
+PDF 与其他编辑器不同，不使用受控内容对象。宿主通过明确的输入、输出接口提供并保存
+完整 `Blob`。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `loadSource` | `() => Promise<Blob>` | 是 | — | 读取 PDF，不要求文件系统权限。 |
+| `onSave` | `(pdf: Blob) => Promise<boolean>` | 否 | — | 保存编辑后的 PDF；返回 `true` 表示成功。 |
+| `fileName` | `string` | 否 | `'document.pdf'` | 文件标识与下载名称。 |
+| `saveLabel` | `string` | 否 | `'Save'` | 保存按钮文字。 |
+| `sourceKey` | `string` | 否 | — | 数据版本标识；变化后会释放并重新加载数据。 |
+| `wasmUrl` | `string` | 否 | 内置 `pdfium.wasm` | PDFium WebAssembly 地址。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+```tsx
+import { PdfViewer } from '@a3s-lab/office/react';
+
+export function PdfPage({ file }: { file: File }) {
+  return (
+    <PdfViewer
+      fileName={file.name}
+      sourceKey={`${file.name}:${file.lastModified}`}
+      loadSource={() => Promise.resolve(file)}
+      onSave={async (pdf) => {
+        await uploadPdf(pdf);
+        return true;
+      }}
+    />
+  );
+}
+```
+
+使用 `loadSource` 接入对象存储、IndexedDB 或本地文件句柄。宿主通过 `onSave`
+管理权限、进度、版本与失败处理。PDFium 和批注控制器内部实现不是公共扩展接口。
+
+## 页面导航
+
+桌面端左侧提供可滚动缩略图列表，并与页码输入框、PDF 视口保持同步。窄屏下同一列表
+变为可关闭抽屉，入口位于工具栏的页码控件内，不会覆盖文档内容。长文档只渲染有限的
+缩略图窗口，页面越多也不会线性增加界面成本。
+
+每个缩略图都是可聚焦按钮。`ArrowUp`、`ArrowDown` 前后翻页，`Home`、`End`
+跳到首尾。目标超出当前虚拟窗口时，挂载完成后仍会同步 `aria-current` 与 DOM 焦点。
+多个翻页请求重叠时，查看器会按顺序处理，并保留最后一次目标页请求；宿主无需协调焦点
+或页码状态。

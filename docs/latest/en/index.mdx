@@ -1,0 +1,40 @@
+---
+title: A3S Office documentation
+description: Embed browser-native Office editors, extend their behavior, and automate Office files from coding agents.
+---
+
+# A3S Office documentation
+
+A3S Office is a modular browser editor library for documents, Markdown,
+spreadsheets, presentations, and PDFs. The Playground is the interactive home;
+this site is the stable reference for integration and automation.
+
+## Choose a path
+
+| Goal | Start here |
+| --- | --- |
+| Evaluate an editor in the browser | <PlaygroundLink>Open the Playground</PlaygroundLink> |
+| Embed an editor in an application | [Getting started](./guide/index.mdx) |
+| Compare React, Vue, and custom-element bindings | [Component integration](./components/index.mdx) |
+| Configure one editor in detail | [Editor API](./components/document.mdx) |
+| Add host actions or TipTap extensions | [Extension model](./components/extensions.mdx) |
+| Inspect or edit files from a coding agent | [CLI and Skill](./automation/index.mdx) |
+
+## Editor surfaces
+
+| Surface | Public component | Primary engine |
+| --- | --- | --- |
+| Document | `DocumentEditor` | TipTap/ProseMirror plus the A3S Office layout kernel |
+| Markdown | `MarkdownEditor` | TipTap visual editing and a controlled Markdown source model |
+| Spreadsheet | `SpreadsheetEditor` | Grid interaction plus the A3S Office calculation kernel |
+| Presentation | `PresentationEditor` | Scene graph with on-demand TipTap text editing |
+| PDF | `PdfViewer` | PDFium WebAssembly rendering and annotation controllers |
+
+The public package is `@a3s-lab/office`. It exposes typed core models, React
+components, Vue bindings, custom elements, and one shared stylesheet.
+
+## Languages and versions
+
+Use the navigation controls to switch between Simplified Chinese and English,
+or between `latest` and a published release. Search stays scoped to the current
+language and version so API results from different releases are never mixed.

@@ -1,0 +1,129 @@
+---
+title: CLI 参考
+description: a3s-office 的安装、结构化读取、类型化修改、校验、批处理与 MCP 用法。
+---
+
+# CLI 参考
+
+`a3s-office` 在本机读取、校验和修改 Office 文件。自动化场景应默认使用 `--json`，
+并在写入后执行独立的读取或校验命令。
+
+## 安装
+
+```bash
+cargo install \
+  --git https://github.com/A3S-Lab/Office.git \
+  --locked a3s-office-cli
+```
+
+```bash
+a3s-office --version
+a3s-office --help
+```
+
+## 基本命令
+
+| 命令 | 用途 | 是否修改文件 |
+| --- | --- | --- |
+| `validate <file>` | 校验文件包、关系、结构与受支持语义 | 否 |
+| `view <file> <view>` | 返回目录、工作表、幻灯片、表格或其他语义视图 | 否 |
+| `get <file> <selector>` | 读取选择器对应的结构化值 | 否 |
+| `set <file> <selector> ...` | 修改文本、格式或结构化属性 | 是 |
+| `remove <file> <selector>` | 删除受支持目标 | 是 |
+| `batch <file> ...` | 原子执行带版本的多项修改 | 是 |
+| `watch <file> ...` | 监听文件并输出有界变化事件 | 否 |
+| `mcp` | 启动标准输入输出 MCP 服务 | 否 |
+
+运行具体命令的 `--help` 可以查看当前版本支持的精确参数。
+
+```bash
+a3s-office view --help
+a3s-office set --help
+a3s-office batch --help
+```
+
+## 读取与校验
+
+```bash
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+a3s-office view workbook.xlsx sheets --json
+a3s-office view deck.pptx slides --json
+```
+
+结构化输出用于确认文件身份、目标是否存在、修改前状态和修改后状态。不要解析面向人工
+阅读的终端句子来驱动智能体判断。
+
+## 选择器
+
+选择器使用与文件结构对应的稳定路径。索引以命令帮助和当前协议为准，常见形式如下：
+
+```text
+/body/p[1]
+/body/p[1]/r[1]
+/Sheet1/cell[A1]
+/slide[1]/shape[1]
+```
+
+在写入前先用 `get` 或 `view` 验证目标。目标不存在、命中多个对象或属性组合无效时，
+命令应明确失败，不会选择“最像”的对象继续执行。
+
+## 文本与格式修改
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office set report.docx '/body/p[1]/r[1]' \
+  --bold true \
+  --font-family Aptos \
+  --font-size 14 \
+  --text-color 123456 \
+  --language zh-CN \
+  --json
+```
+
+布尔值、颜色、单位、语言和枚举会在提交前校验。不支持的格式组合返回类型化错误，
+不会写入一半状态。
+
+## 原子批处理
+
+需要一次修改多个目标时，应使用带协议版本的批处理。引擎先验证整个输入，再在内存或
+临时文件中应用；全部操作成功后才发布输出。
+
+批处理适合编码智能体保存计划、审计修改和精确回放。它不是自然语言指令集合，每个操作
+都必须属于当前协议定义的类型化命令。
+
+## 写后验证
+
+```bash
+a3s-office set report.docx /body \
+  --find Draft \
+  --replace Final \
+  --json
+
+a3s-office validate report.docx --json
+a3s-office view report.docx outline --json
+```
+
+零退出码表示命令执行完成，不等于业务目标已经满足。验证命令应读取用户真正关心的结构，
+并确认输出路径、源文件保留策略和最终文件状态。
+
+## MCP
+
+```bash
+a3s-office mcp
+```
+
+MCP 使用与 CLI 相同的准入、读取、修改、限制和错误协议。客户端应完成标准初始化，
+读取工具 schema，再发送类型化请求；不要把 CLI 的显示文字当作 MCP 参数。
+
+## 退出与清理
+
+普通命令结束时会关闭自己创建的文件、监听器和临时资源。长时间运行的监听或 MCP 服务
+收到第一次中断后会开始有界清理；调用方仍应等待进程退出，并把超时与业务失败区分开。
+
+完整命令参数、全部选择器、批处理 schema、PDF 证据字段和错误代码见
+[English 完整 CLI 参考](/en/cli-reference.md)。

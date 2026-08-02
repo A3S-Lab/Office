@@ -2,17 +2,17 @@
   {
     "text": "Documentation",
     "link": "/",
-    "activeMatch": "^/$|^/(guide|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?(?:$|guide(?:/|$)|browser-editor-architecture|native-office-engine|editor-quality-roadmap|cli-reference)"
   },
   {
     "text": "Components",
     "link": "/components/",
-    "activeMatch": "^/components/"
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?components/"
   },
   {
     "text": "CLI & Skill",
     "link": "/automation/",
-    "activeMatch": "^/automation/"
+    "activeMatch": "^/(?:0\\.1\\.0/)?(?:en/)?automation/"
   },
   {
     "text": "Resources",

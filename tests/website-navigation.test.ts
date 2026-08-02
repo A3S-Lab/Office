@@ -1,5 +1,8 @@
 import { expect, test } from '@rstest/core';
-import { playgroundHrefFromDocsRoute } from '../website/theme/site-navigation';
+import {
+  playgroundAssetHrefFromDocsRoute,
+  playgroundHrefFromDocsRoute,
+} from '../website/theme/site-navigation';
 
 test('derives a deployment-relative Playground link from every docs route depth', () => {
   expect(playgroundHrefFromDocsRoute('/')).toBe('../');
@@ -10,4 +13,20 @@ test('derives a deployment-relative Playground link from every docs route depth'
   expect(playgroundHrefFromDocsRoute('/components/react.html?tab=usage')).toBe(
     '../../',
   );
+  expect(playgroundHrefFromDocsRoute('/en/components/react.html')).toBe(
+    '../../../',
+  );
+  expect(playgroundHrefFromDocsRoute('/0.1.0/en/components/react.html')).toBe(
+    '../../../../',
+  );
+});
+
+test('derives deployment-relative Playground assets from localized version routes', () => {
+  expect(
+    playgroundAssetHrefFromDocsRoute(
+      '/0.1.0/en/automation/',
+      '/downloads/a3s-office-skill.tar.gz',
+    ),
+  ).toBe('../../../../downloads/a3s-office-skill.tar.gz');
+  expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../');
 });

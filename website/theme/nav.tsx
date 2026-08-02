@@ -1,4 +1,4 @@
-import { removeBase, useLocation } from '@rspress/core/runtime';
+import { removeBase, useLocation, usePage } from '@rspress/core/runtime';
 import {
   Nav as OriginalNav,
   type NavProps,
@@ -7,7 +7,9 @@ import { playgroundHrefFromDocsRoute } from './site-navigation';
 
 export function Nav(props: NavProps) {
   const { pathname } = useLocation();
+  const { page } = usePage();
   const playgroundHref = playgroundHrefFromDocsRoute(removeBase(pathname));
+  const isChinese = page.lang === 'zh';
 
   return (
     <OriginalNav
@@ -18,9 +20,11 @@ export function Nav(props: NavProps) {
           <a
             className="office-docs-playground-link"
             href={playgroundHref}
-            aria-label="Open Playground homepage"
+            aria-label={
+              isChinese ? '返回 Playground 首页' : 'Open Playground homepage'
+            }
           >
-            <span>Playground</span>
+            <span>{isChinese ? '在线体验' : 'Playground'}</span>
             <svg aria-hidden="true" viewBox="0 0 16 16">
               <path d="m6 3 5 5-5 5M11 8H2.5" />
             </svg>

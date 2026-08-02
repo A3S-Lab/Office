@@ -50,7 +50,7 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
-    "docs/browser-editor-architecture.md",
+    "docs/latest/en/browser-editor-architecture.md",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"

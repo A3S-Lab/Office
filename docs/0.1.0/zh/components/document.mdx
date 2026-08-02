@@ -1,0 +1,107 @@
+---
+title: DocumentEditor
+description: 文档内容、属性、事件、选区菜单、排版字体与 Extension。
+---
+
+# DocumentEditor
+
+`DocumentEditor` 用于编辑需要分页的 DOCX 兼容文档、报告和长篇内容。
+TipTap 负责逻辑文档与选区，A3S Office 内核负责确定性分页、文本塑形和文件语义。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `DocumentContent` | 是 | — | 受控文档内容。 |
+| `onChange` | `(content: DocumentContent) => void` | 是 | — | 返回完整的新内容。 |
+| `artifactId` | `string` | 否 | — | 在线 PDF 导出使用的稳定宿主 ID。 |
+| `preview` | `boolean` | 否 | `false` | 使用同一分页结果的只读渲染。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `extensions` | `Extensions` | 否 | `[]` | 名称不重复的附加 TipTap Extension。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 覆盖 Office 排版内核地址。 |
+| `layoutFonts` | `readonly DocumentLayoutFont[]` | 否 | 内置字体 | 浏览器与塑形内核共用、并显示在字体菜单中的字体。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把类型化编辑请求发送给宿主 AI 流程。 |
+| `getSelectionMenuItems` | `GetDocumentSelectionMenuItems` | 否 | 内置菜单 | 完全替换选中文本后的右键菜单。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'document'` | 内容类型标识。 |
+| `html` | `string` | 与结构化模型一起保存的兼容表示。 |
+| `model` | `WorkDocumentModel` | 带版本的 TipTap 文档树，也是精确编辑源。 |
+| `pageSize` | `'a4' \| 'letter'` | 默认纸张；分节可以覆盖。 |
+| `pageColor` | `string` | DOCX 与 PDF 导出保留的页面颜色。 |
+| `orientation`, `margins`, `columns` | 文档布局字段 | 分节覆盖前的默认布局。 |
+| `pageChrome` | `WorkDocumentPageChrome` | 首页、奇数页、偶数页的页眉、页脚和页码。 |
+| `trackChanges` | `boolean` | 是否记录修订。 |
+| `comments` | `WorkDocumentComment[]` | 批注、回复与解决状态。 |
+| `bibliography` | `WorkDocumentBibliography` | 引用样式与文献记录。 |
+
+## 内置导航
+
+“视图”选项卡会在宽屏打开固定的标题导航，在窄屏打开可管理焦点的抽屉。
+导航搜索同时覆盖标题与正文，按当前章节组织结果，高亮所有命中项，并把编辑器选区
+移动到目标位置，但不会增加撤销记录。窄屏选择结果后，抽屉先关闭，再把焦点和精确
+文本范围还给正文。
+
+## 引用与题注
+
+“引用”选项卡可以插入题注、交叉引用、脚注、尾注、页码字段、日期与文献引用。
+删除或移动题注会在同一事务中更新相关交叉引用：有效目标会重新编号，目标缺失时显示
+`Missing reference`，而不是继续显示过期编号。一次撤销会同时恢复题注与引用字段。
+
+## 自定义选区菜单
+
+菜单工厂会收到不可变的选区快照，其中包含精确文本、结构化片段、前后文、全文纯文本、
+同步 HTML 与当前受控内容，同时提供能检测冲突的编辑命令。
+
+```tsx
+import type {
+  DocumentContent,
+  GetDocumentSelectionMenuItems,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const getSelectionMenuItems: GetDocumentSelectionMenuItems = (snapshot) => [
+  {
+    id: 'rewrite',
+    label: '润色',
+    onSelect: async (context) => {
+      const replacement = await rewriteWithModel({
+        selection: snapshot.selection.text,
+        before: snapshot.selection.beforeText,
+        after: snapshot.selection.afterText,
+        document: snapshot.document.text,
+      });
+      context.commands.replaceText(replacement);
+    },
+  },
+];
+
+export function Editor(props: {
+  content: DocumentContent;
+  onChange: (content: DocumentContent) => void;
+}) {
+  return (
+    <DocumentEditor
+      {...props}
+      getSelectionMenuItems={getSelectionMenuItems}
+    />
+  );
+}
+```
+
+异步操作需要返回 Promise。编辑器会在无关事务发生后重新映射原选区；如果选中的文本
+本身已经变化，后续 `replaceText` 会返回 `stale-selection`，不会改错内容。
+
+“询问 AI”这类开放操作，应先在宿主界面收集用户问题，再发出请求。Playground 的实现
+会打开独立问题输入框；提交后仍可查看所附上下文，但不会用整篇上下文占满助手消息流。
+
+## Extension
+
+`extensions` 接收 TipTap Extension。数组引用应保持稳定，每个 Extension 必须使用
+唯一名称。如果自定义 Node 或 Mark 需要经过 DOCX 导入导出后仍然存在，还要提供相应
+文件语义。详见[扩展机制](./extensions.mdx)。

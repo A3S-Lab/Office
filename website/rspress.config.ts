@@ -1,5 +1,11 @@
 import path from 'node:path';
 import { defineConfig } from '@rspress/core';
+import {
+  DOCUMENTATION_DEFAULT_LANGUAGE,
+  DOCUMENTATION_DEFAULT_VERSION,
+  DOCUMENTATION_LOCALES,
+  DOCUMENTATION_VERSIONS,
+} from './documentation-site';
 
 const playgroundBase = normalizeBase(
   process.env.A3S_OFFICE_PLAYGROUND_BASE ?? '/',
@@ -14,8 +20,20 @@ export default defineConfig({
   siteOrigin,
   title: 'A3S Office',
   description:
-    'Documentation for embedding A3S Office editors, extending their behavior, and automating Office files with the CLI and coding-agent Skill.',
-  lang: 'en',
+    '在应用中接入、扩展 A3S Office 编辑器，并通过 CLI 与编码智能体处理 Office 文件。',
+  lang: DOCUMENTATION_DEFAULT_LANGUAGE,
+  locales: [...DOCUMENTATION_LOCALES],
+  multiVersion: {
+    default: DOCUMENTATION_DEFAULT_VERSION,
+    versions: [...DOCUMENTATION_VERSIONS],
+  },
+  route: {
+    localeRedirect: 'never',
+  },
+  search: {
+    mode: 'local',
+    versioned: true,
+  },
   icon: '/favicon.svg',
   logo: '/a3s-office-mark.svg',
   logoText: 'A3S Office',

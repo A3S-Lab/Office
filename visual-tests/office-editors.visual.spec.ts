@@ -797,10 +797,11 @@ test('Playground stays at the site root and opens a standalone documentation cen
   await expect(page).toHaveURL(/\/docs\/$/);
   await expect(
     page.getByRole('heading', {
-      name: 'A3S Office documentation',
+      name: 'A3S Office 文档',
       level: 1,
     }),
   ).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
   await expect(
     page.locator(
       '.rp-search-button:visible, .rp-search-button--mobile:visible',
@@ -816,6 +817,56 @@ test('Playground stays at the site root and opens a standalone documentation cen
   await expect(
     page.getByRole('heading', { name: '我的文档', level: 1 }),
   ).toBeVisible();
+});
+
+test('documentation keeps the current page across version and language switches', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/docs/components/document.html');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
+  await expect(
+    page.getByRole('heading', { name: 'DocumentEditor', level: 1 }),
+  ).toBeVisible();
+
+  const navigationMenuFor = (linkLabel: string) =>
+    page
+      .locator('.rp-nav__others > .rp-nav-menu__item')
+      .filter({ has: page.locator(`a[aria-label="${linkLabel}"]`) });
+
+  const versionMenu = navigationMenuFor('0.1.0');
+  await versionMenu.locator(':scope > .rp-nav-menu__item__container').click();
+  await versionMenu.getByRole('link', { name: '0.1.0', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/0\.1\.0\/components\/document\.html$/);
+  await expect(
+    page.getByRole('heading', { name: '自定义选区菜单', level: 2 }),
+  ).toBeVisible();
+
+  const languageMenu = navigationMenuFor('English');
+  await languageMenu.locator(':scope > .rp-nav-menu__item__container').click();
+  await languageMenu
+    .getByRole('link', { name: 'English', exact: true })
+    .click();
+  await expect(page).toHaveURL(
+    /\/docs\/0\.1\.0\/en\/components\/document\.html$/,
+  );
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Host-defined selection menu',
+      level: 2,
+    }),
+  ).toBeVisible();
+
+  const latestMenu = navigationMenuFor('latest');
+  await latestMenu.locator(':scope > .rp-nav-menu__item__container').click();
+  await latestMenu.getByRole('link', { name: 'latest', exact: true }).click();
+  await expect(page).toHaveURL(/\/docs\/en\/components\/document\.html$/);
+
+  const playgroundHome = page.locator('.office-docs-playground-link');
+  await expect(playgroundHome).toHaveAttribute('href', '../../../');
+  await playgroundHome.click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('documentation pages provide searchable framework examples with syntax highlighting', async ({
@@ -858,7 +909,7 @@ test('CLI and coding-agent Skill remain one managed documentation workflow', asy
   await page.goto('/docs/automation/index.html');
   await expect(
     page.getByRole('heading', {
-      name: 'Office CLI and coding-agent Skill',
+      name: 'Office CLI 与编码智能体 Skill',
       level: 1,
     }),
   ).toBeVisible();
@@ -869,10 +920,10 @@ test('CLI and coding-agent Skill remain one managed documentation workflow', asy
       .first(),
   ).toBeVisible();
   await expect(
-    page.getByRole('link', { name: 'Download the A3S Office Skill' }),
+    page.getByRole('link', { name: '下载 A3S Office Skill' }),
   ).toHaveAttribute('href', '../../downloads/a3s-office-skill.tar.gz');
   await expect(
-    page.getByRole('heading', { name: 'Responsibilities', level: 2 }),
+    page.getByRole('heading', { name: '职责边界', level: 2 }),
   ).toBeVisible();
 });
 
@@ -893,7 +944,7 @@ test('legacy guide links migrate to bounded editor API pages on narrow screens',
   ).toBeVisible();
   await expect(
     page.getByRole('heading', {
-      name: 'Host-defined selection menu',
+      name: '自定义选区菜单',
       level: 2,
     }),
   ).toBeVisible();
