@@ -132,14 +132,9 @@ bun run playground
 Then open the local URL printed by the development server. For a zero-install
 tour, use the [live Playground](https://a3s-lab.github.io/Office/).
 
-> [!NOTE]
-> The `@a3s-lab/office` package is prepared for npm, but the first public npm
-> release has not been published yet. Use the Playground or build from source
-> until the release channel is available.
-
 ### Embed a controlled React editor
 
-Once the package release is available, install it with its React peers:
+Install the public package with its React peers:
 
 ```bash
 bun add @a3s-lab/office react react-dom

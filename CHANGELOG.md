@@ -2,7 +2,7 @@
 
 All notable changes to A3S Office will be documented in this file.
 
-## 0.1.0
+## 0.1.0 - 2026-08-02
 
 - Extracted the complete A3S Web document, spreadsheet, presentation, and PDF
   editor engine into an independent package.
