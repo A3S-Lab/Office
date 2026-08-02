@@ -263,7 +263,9 @@ interaction model.
   changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared
   edit/preview/PDF typography and page-chrome placement. Editing, read-only
-  preview, and browser PDF export share one live pagination result.
+  preview, and browser PDF export share one live pagination result. Tail edits
+  reuse the stable physical-page prefix, including resolved first/odd/even
+  headers, footers, page numbers, and navigation descriptors.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

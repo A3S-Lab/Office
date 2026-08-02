@@ -54,6 +54,12 @@ export interface DocumentPaginationPageDescriptor {
   pageChrome: ResolvedDocumentPageChrome;
 }
 
+export interface DocumentPaginationPageDescriptorDerivation {
+  pages: DocumentPaginationPageDescriptor[];
+  reusedPageCount: number;
+  derivedPageCount: number;
+}
+
 export interface UseDocumentPaginationOptions {
   editor: Editor | null;
   documentRevision: number;
@@ -146,7 +152,9 @@ export function useDocumentPagination({
           delete editorDom.dataset.paginationLaidOutBlocks;
           delete editorDom.dataset.paginationPages;
           delete editorDom.dataset.paginationReusedBlocks;
+          delete editorDom.dataset.paginationReusedPageChrome;
           delete editorDom.dataset.paginationReusedPages;
+          delete editorDom.dataset.paginationDerivedPageChrome;
           delete editorDom.dataset.paginationShapedParagraphs;
           delete editorDom.dataset.paginationShapedRuns;
           delete editorDom.dataset.paginationTextCandidates;
@@ -227,6 +235,8 @@ export function useDocumentPagination({
       activeRequest.current = controller;
       editor.commands.clearDocumentPagination(nextRevision);
       editorDom.dataset.paginationState = 'measuring';
+      editorDom.dataset.paginationReusedPageChrome = '0';
+      editorDom.dataset.paginationDerivedPageChrome = '0';
       delete editorDom.dataset.paginationError;
       const measurementStart = dirtyMeasurementFrom.current;
       dirtyMeasurementFrom.current = Number.POSITIVE_INFINITY;
@@ -388,10 +398,20 @@ export function useDocumentPagination({
         const blockById = new Map(
           snapshot.blocks.map((block) => [block.block.id, block] as const),
         );
-        const pages = documentPaginationPageDescriptors(
-          layout,
-          snapshot.blocks,
-          editor.state.doc,
+        const pageDescriptorDerivation =
+          deriveDocumentPaginationPageDescriptors(
+            layout,
+            snapshot.blocks,
+            editor.state.doc,
+            previousPagination?.pages,
+            layoutPlan.reusedPageCount,
+          );
+        const pages = pageDescriptorDerivation.pages;
+        editorDom.dataset.paginationReusedPageChrome = String(
+          pageDescriptorDerivation.reusedPageCount,
+        );
+        editorDom.dataset.paginationDerivedPageChrome = String(
+          pageDescriptorDerivation.derivedPageCount,
         );
         const pageByIndex = new Map(
           pages.map(
@@ -554,11 +574,32 @@ export function documentPaginationPageDescriptors(
   blocks: readonly MeasuredDocumentLayoutBlock[],
   documentNode?: ProseMirrorNode,
 ): DocumentPaginationPageDescriptor[] {
+  return deriveDocumentPaginationPageDescriptors(layout, blocks, documentNode)
+    .pages;
+}
+
+export function deriveDocumentPaginationPageDescriptors(
+  layout: OfficeKernelLayoutResult,
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+  documentNode?: ProseMirrorNode,
+  previousPages: readonly DocumentPaginationPageDescriptor[] = [],
+  requestedReusedPageCount = 0,
+): DocumentPaginationPageDescriptorDerivation {
   const blockById = new Map(
     blocks.map((candidate) => [candidate.block.id, candidate] as const),
   );
+  const previousPageByIndex = new Map(
+    previousPages.map((page) => [page.pageIndex, page] as const),
+  );
+  const reusablePhysicalPageCount = Number.isSafeInteger(
+    requestedReusedPageCount,
+  )
+    ? Math.max(0, Math.min(requestedReusedPageCount, layout.pages.length))
+    : 0;
   const sectionPages = new Map<string, number>();
   const descriptors: DocumentPaginationPageDescriptor[] = [];
+  let reuseOpen = reusablePhysicalPageCount > 0;
+  let reusedPageCount = 0;
 
   for (const page of layout.pages) {
     const pageBlocks = Array.from(
@@ -591,6 +632,26 @@ export function documentPaginationPageDescriptors(
       firstSectionPage && section.layout.pageNumberStart !== undefined
         ? section.layout.pageNumberStart
         : Math.max(1, previousPageNumber + 1);
+    const previousPage = previousPageByIndex.get(page.index);
+    if (
+      reuseOpen &&
+      page.index < reusablePhysicalPageCount &&
+      previousPage &&
+      reusableDocumentPageDescriptor(
+        previousPage,
+        physicalPage,
+        pageNumber,
+        sectionPage,
+        section.id,
+        section.index,
+        section.layout,
+      )
+    ) {
+      descriptors.push(previousPage);
+      reusedPageCount += 1;
+      continue;
+    }
+    if (page.index < reusablePhysicalPageCount) reuseOpen = false;
     descriptors.push({
       pageIndex: page.index,
       physicalPage,
@@ -615,7 +676,31 @@ export function documentPaginationPageDescriptors(
       ),
     });
   }
-  return descriptors;
+  return {
+    pages: descriptors,
+    reusedPageCount,
+    derivedPageCount: descriptors.length - reusedPageCount,
+  };
+}
+
+function reusableDocumentPageDescriptor(
+  candidate: DocumentPaginationPageDescriptor,
+  physicalPage: number,
+  pageNumber: number,
+  sectionPage: number,
+  sectionId: string,
+  sectionIndex: number,
+  layout: WorkDocumentSectionLayout,
+): boolean {
+  return (
+    candidate.pageIndex === physicalPage - 1 &&
+    candidate.physicalPage === physicalPage &&
+    candidate.pageNumber === pageNumber &&
+    candidate.sectionPage === sectionPage &&
+    candidate.sectionId === sectionId &&
+    candidate.sectionIndex === sectionIndex &&
+    JSON.stringify(candidate.layout) === JSON.stringify(layout)
+  );
 }
 
 function documentPagePreviewText(

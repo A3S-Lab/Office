@@ -437,6 +437,13 @@ both a monotonic document revision and an independent layout revision,
 allowing font, viewport, or page-size work to supersede an older layout without
 changing the document identity.
 
+The same safe prefix is also the cache boundary for page descriptors. Stable
+descriptors retain their resolved first/default/even header and footer content,
+page number, preview text, and navigation target; only the rewound boundary and
+new suffix are derived again. Runtime diagnostics expose reused and derived
+page-chrome counts so long-document browser tests can enforce the incremental
+budget instead of inferring it from elapsed time.
+
 It also supports explicit page and section breaks, keep-together blocks,
 keep-with-next headings, cancellation, stale-revision rejection, and automatic
 reflow after editing, resizing, font loading, or zoom changes. Page view uses

@@ -11,6 +11,7 @@ import {
 } from '../src/internal/features/work/work-document-pagination';
 import type { MeasuredDocumentLayoutBlock } from '../src/internal/features/work/work-document-pagination';
 import {
+  deriveDocumentPaginationPageDescriptors,
   documentPaginationPageDescriptors,
   pageForPosition,
   type DocumentPaginationResult,
@@ -401,6 +402,88 @@ test('counts a continuous section on every physical page it occupies', () => {
     sectionId: 'section-b',
     sectionPage: 2,
   });
+});
+
+test('reuses stable page chrome before an incrementally laid-out tail', () => {
+  const layout = sectionLayout({
+    pageNumberStart: 7,
+    pageChrome: {
+      differentFirstPage: true,
+      differentOddEvenPages: true,
+      default: chrome('Default'),
+      first: chrome('First'),
+      even: chrome('Even'),
+    },
+  });
+  const element = document.createElement('p');
+  const blocks = ['a', 'b', 'c', 'd', 'e'].map((id, index) => ({
+    ...measuredBlock(id, 'section-a', 0, layout, element),
+    from: index * 20 + 1,
+    to: index * 20 + 20,
+  }));
+  const firstLayout = paginationLayout(['a', 'b', 'c', 'd', 'e']);
+  const previous = documentPaginationPageDescriptors(firstLayout, blocks);
+  const nextLayout = {
+    ...firstLayout,
+    documentRevision: firstLayout.documentRevision + 1,
+  };
+
+  const derived = deriveDocumentPaginationPageDescriptors(
+    nextLayout,
+    blocks,
+    undefined,
+    previous,
+    3,
+  );
+
+  expect(derived.reusedPageCount).toBe(3);
+  expect(derived.derivedPageCount).toBe(2);
+  expect(derived.pages.slice(0, 3)).toEqual(previous.slice(0, 3));
+  expect(derived.pages[0]).toBe(previous[0]);
+  expect(derived.pages[2]).toBe(previous[2]);
+  expect(derived.pages[3]).not.toBe(previous[3]);
+  expect(
+    derived.pages.map(({ pageNumber, sectionPage, pageChrome }) => ({
+      pageNumber,
+      sectionPage,
+      variant: pageChrome.variant,
+    })),
+  ).toEqual([
+    { pageNumber: 7, sectionPage: 1, variant: 'first' },
+    { pageNumber: 8, sectionPage: 2, variant: 'even' },
+    { pageNumber: 9, sectionPage: 3, variant: 'default' },
+    { pageNumber: 10, sectionPage: 4, variant: 'even' },
+    { pageNumber: 11, sectionPage: 5, variant: 'default' },
+  ]);
+
+  const changedSectionLayout = sectionLayout({
+    pageNumberStart: 1,
+    pageChrome: {
+      differentFirstPage: false,
+      differentOddEvenPages: false,
+      default: chrome('Changed'),
+      first: chrome('Changed first'),
+      even: chrome('Changed even'),
+    },
+  });
+  const changedBlocks = blocks.map((block) => ({
+    ...block,
+    section: block.section
+      ? { ...block.section, layout: changedSectionLayout }
+      : undefined,
+  }));
+  const invalidated = deriveDocumentPaginationPageDescriptors(
+    nextLayout,
+    changedBlocks,
+    undefined,
+    previous,
+    3,
+  );
+
+  expect(invalidated.reusedPageCount).toBe(0);
+  expect(invalidated.derivedPageCount).toBe(5);
+  expect(invalidated.pages[0]?.pageNumber).toBe(1);
+  expect(invalidated.pages[0]?.pageChrome.headerHtml).toBe('<p>Changed</p>');
 });
 
 test('derives each page preview and jump target from its measured text range', () => {

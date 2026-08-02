@@ -105,6 +105,30 @@ suite "office-word-page-windowing" {
             visible = css("[data-document-page-thumbnail='120'][aria-current='page']")
         }
 
+        focus "focus-document-tail" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        press "edit-document-tail" {
+            key = "x"
+        }
+
+        wait "stable-page-chrome-is-reused" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-reused-page-chrome='118'][data-pagination-derived-page-chrome='2']")
+        }
+
+        expect "tail-edit-keeps-pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        focus "return-focus-to-page-navigation" {
+            target = css("[data-document-page-thumbnail='120']")
+        }
+
         press "return-focus-to-first-page" {
             key = "Home"
         }

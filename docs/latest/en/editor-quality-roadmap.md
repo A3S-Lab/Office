@@ -281,8 +281,13 @@ window model now bounds heading and search-result rows above 48 items to at most
 real 120-page fixture contributes 120 headings and 120 matches; deterministic
 browser evidence proves first/last keyboard access, exact final-result
 selection, physical spacer geometry, and zero console or page errors. Comments
-now have the same bounded long-review evidence; incremental page-chrome
-derivation remains the large-file work in this priority.
+now have the same bounded long-review evidence. Page-chrome descriptor
+derivation is incremental as well: a tail edit reuses the stable physical-page
+prefix, including resolved first/default/even headers, footers, page numbers,
+preview text, and jump targets. The deterministic 120-page DOCX workflow proves
+that a final-page edit reuses 118 descriptors and derives only the two-page
+boundary suffix while page navigation, focus, console, and page errors remain
+stable.
 
 Exit evidence:
 
