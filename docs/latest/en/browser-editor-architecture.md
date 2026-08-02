@@ -538,8 +538,9 @@ the chosen table is inserted after its containing block instead of replacing
 the selected content. The insert ribbon exposes a keyboard-navigable 8 by 10
 size picker. Entering a table opens separate Design and Layout contextual tabs.
 Design owns keyboard-operated style presets, the header row, multi-cell
-shading, and uniform borders. Layout owns row and column insertion or deletion,
-cell merge and split, horizontal and vertical alignment, repeated headers,
+shading, and a reusable border pen with whole-selection, outside, inside, side,
+inside-horizontal, and inside-vertical targets. Layout owns row and column
+insertion or deletion, cell merge and split, horizontal and vertical alignment, repeated headers,
 atomic rows, centimeter-based column width and row height fields, equal row and
 column distribution, content/window autofit, and table deletion. Physical
 column widths remain coherent across merged cells through ProseMirror's table
@@ -547,10 +548,14 @@ map; explicit row heights and the table layout mode are typed attributes rather
 than transient DOM measurements. Edit, preview, print, and DOCX import/export
 share those attributes. Fixed DOCX tables round-trip `tblGrid`, `tcW`,
 `tblLayout`, and `trHeight`, while window/content autofit remains responsive in
-the browser. Command availability comes from the ProseMirror table state, so
-actions that cannot apply to the current selection remain disabled. Per-edge
-and theme borders, percentage-width column authoring, nested-table editing, and
-arbitrary table-style inheritance remain explicit fidelity gaps.
+the browser. Independent top, right, bottom, and left cell-border attributes
+render identically in edit and preview, export as independent `w:tcBorders`,
+and reopen without being flattened. Explicit table-level outer and inside
+borders resolve onto their owning cell edges during import. Command availability
+comes from the ProseMirror table state, so actions that cannot apply to the
+current selection remain disabled. Theme-derived borders, percentage-width
+column authoring, nested-table editing, and arbitrary table-style inheritance
+remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf

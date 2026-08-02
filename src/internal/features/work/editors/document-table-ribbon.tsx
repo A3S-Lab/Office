@@ -27,12 +27,15 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
 } from 'react';
 import {
   activeDocumentTableStyle,
   DEFAULT_DOCUMENT_TABLE_CELL_FORMAT,
   DOCUMENT_TABLE_STYLE_OPTIONS,
+  type DocumentTableBorder,
   type DocumentTableBorderStyle,
+  type DocumentTableBorderTarget,
   documentTableCellFormat,
   documentTableHorizontalAlignment,
   type DocumentTableStyleOption,
@@ -63,12 +66,29 @@ const borderOptions = [
   { value: 'dashed-1', label: '虚线', style: 'dashed', width: 1 },
   { value: 'dotted-1', label: '点线', style: 'dotted', width: 1 },
   { value: 'double-2', label: '双线', style: 'double', width: 2 },
-  { value: 'none-0', label: '无边框', style: 'none', width: 0 },
 ] as const satisfies readonly {
   value: string;
   label: string;
   style: DocumentTableBorderStyle;
   width: number;
+}[];
+
+type DocumentTableBorderAction = DocumentTableBorderTarget | 'clear';
+
+const borderTargetOptions = [
+  { value: 'clear', label: '无框线' },
+  { value: 'all', label: '所有框线' },
+  { value: 'outside', label: '外侧框线' },
+  { value: 'inside', label: '内部框线' },
+  { value: 'top', label: '上框线' },
+  { value: 'bottom', label: '下框线' },
+  { value: 'left', label: '左框线' },
+  { value: 'right', label: '右框线' },
+  { value: 'insideHorizontal', label: '内部横框线' },
+  { value: 'insideVertical', label: '内部竖框线' },
+] as const satisfies readonly {
+  value: DocumentTableBorderAction;
+  label: string;
 }[];
 
 const tableLayoutOptions = [
@@ -85,10 +105,20 @@ const PIXELS_PER_CENTIMETER = 96 / 2.54;
 export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
   const format =
     documentTableCellFormat(editor.state) ?? DEFAULT_DOCUMENT_TABLE_CELL_FORMAT;
-  const borderValue = borderOptionValue(format.borderStyle, format.borderWidth);
+  const [borderPen, setBorderPen] = useState<DocumentTableBorder>(() => ({
+    color: format.borderColor,
+    style: format.borderStyle === 'none' ? 'solid' : format.borderStyle,
+    width:
+      format.borderStyle === 'none' || format.borderWidth === 0
+        ? 1
+        : format.borderWidth,
+  }));
+  const [borderTarget, setBorderTarget] =
+    useState<DocumentTableBorderAction>('all');
+  const borderValue = borderOptionValue(borderPen.style, borderPen.width);
   const currentBorderOptions = borderOptionsForFormat(
-    format.borderStyle,
-    format.borderWidth,
+    borderPen.style,
+    borderPen.width,
   );
   return (
     <>
@@ -126,13 +156,9 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
           ariaLabel="边框颜色"
           className="work-document-table-color-picker"
           compact
-          value={format.borderColor}
+          value={borderPen.color}
           onValueChange={(borderColor) =>
-            editor
-              .chain()
-              .focus()
-              .setDocumentTableCellFormat({ borderColor })
-              .run()
+            setBorderPen((current) => ({ ...current, color: borderColor }))
           }
         />
         <OfficeSelect
@@ -145,13 +171,30 @@ export function DocumentTableDesignRibbon({ editor }: { editor: Editor }) {
               (candidate) => candidate.value === value,
             );
             if (!option) return;
+            setBorderPen((current) => ({
+              ...current,
+              style: option.style,
+              width: option.width,
+            }));
+          }}
+        />
+        <OfficeSelect
+          ariaLabel="应用边框"
+          className="work-document-table-border-target-select"
+          value={borderTarget}
+          options={borderTargetOptions}
+          onValueChange={(value) => {
+            setBorderTarget(value);
+            const clear = value === 'clear';
             editor
               .chain()
               .focus()
-              .setDocumentTableCellFormat({
-                borderStyle: option.style,
-                borderWidth: option.width,
-              })
+              .setDocumentTableBorders(
+                clear ? 'all' : value,
+                clear
+                  ? { color: borderPen.color, style: 'none', width: 0 }
+                  : borderPen,
+              )
               .run();
           }}
         />

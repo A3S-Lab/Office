@@ -7,25 +7,54 @@ import {
   type Selection,
 } from '@tiptap/pm/state';
 import { CellSelection } from '@tiptap/pm/tables';
+import {
+  type DocumentTableBorder,
+  type DocumentTableBorderStyle,
+  type DocumentTableBorderTarget,
+  type DocumentTableCellBorders,
+  documentTableBordersFromAttributes,
+  documentTableBordersFromElement,
+  normalizeDocumentTableBorderStyle,
+  normalizeDocumentTableBorderWidth,
+  normalizeTableColor,
+  renderDocumentTableBorders,
+  setSelectedDocumentTableBorders,
+  uniformDocumentTableBorder,
+  uniformDocumentTableBorders,
+} from './work-document-table-borders';
+
+export {
+  documentTableBordersFromElement,
+  normalizeDocumentTableBorder,
+  normalizeDocumentTableBorderStyle,
+  normalizeDocumentTableBorderWidth,
+  normalizeTableColor,
+  renderDocumentTableBorders,
+  uniformDocumentTableBorder,
+  uniformDocumentTableBorders,
+} from './work-document-table-borders';
+export type {
+  DocumentTableBorder,
+  DocumentTableBorderEdge,
+  DocumentTableBorderStyle,
+  DocumentTableBorderTarget,
+  DocumentTableCellBorders,
+} from './work-document-table-borders';
 
 export type DocumentTableVerticalAlign = 'top' | 'middle' | 'bottom';
 export type DocumentTableHorizontalAlign = 'left' | 'center' | 'right';
-export type DocumentTableBorderStyle =
-  | 'solid'
-  | 'dashed'
-  | 'dotted'
-  | 'double'
-  | 'none';
-
 export interface DocumentTableCellFormat {
   backgroundColor: string;
   verticalAlign: DocumentTableVerticalAlign;
   borderColor: string;
   borderStyle: DocumentTableBorderStyle;
   borderWidth: number;
+  borders: DocumentTableCellBorders;
 }
 
-export type DocumentTableCellFormatPatch = Partial<DocumentTableCellFormat>;
+export type DocumentTableCellFormatPatch = Partial<
+  Omit<DocumentTableCellFormat, 'borders'>
+>;
 
 export type DocumentTableStyleId =
   | 'grid'
@@ -105,6 +134,11 @@ export const DEFAULT_DOCUMENT_TABLE_CELL_FORMAT: DocumentTableCellFormat = {
   borderColor: '#cfd5df',
   borderStyle: 'solid',
   borderWidth: 1,
+  borders: uniformDocumentTableBorders({
+    color: '#cfd5df',
+    style: 'solid',
+    width: 1,
+  }),
 };
 
 export const DEFAULT_DOCUMENT_TABLE_HEADER_FORMAT: DocumentTableCellFormat = {
@@ -122,6 +156,10 @@ declare module '@tiptap/core' {
         alignment: DocumentTableHorizontalAlign,
       ) => ReturnType;
       applyDocumentTableStyle: (style: DocumentTableStyleId) => ReturnType;
+      setDocumentTableBorders: (
+        target: DocumentTableBorderTarget,
+        border: DocumentTableBorder,
+      ) => ReturnType;
     };
   }
 }
@@ -155,6 +193,8 @@ export const DocumentTableFormatting = Extension.create({
         setSelectedCellAlignment(props, alignment),
       applyDocumentTableStyle: (style) => (props) =>
         applyTableStyle(props, style),
+      setDocumentTableBorders: (target, border) => (props) =>
+        setSelectedDocumentTableBorders(props, target, border),
     };
   },
 });
@@ -196,11 +236,18 @@ export function activeDocumentTableStyle(
       row.forEach((cell) => {
         const expected = tableStyleCellFormat(style, cell, rowIndex);
         const actual = formatFromAttributes(cell.attrs);
+        const expectedBorder = {
+          color: style.borderColor,
+          style: style.borderStyle,
+          width: style.borderWidth,
+        } satisfies DocumentTableBorder;
+        const actualBorder = uniformDocumentTableBorder(actual.borders);
         if (
           expected.backgroundColor !== actual.backgroundColor ||
-          expected.borderColor !== actual.borderColor ||
-          expected.borderStyle !== actual.borderStyle ||
-          expected.borderWidth !== actual.borderWidth
+          !actualBorder ||
+          actualBorder.color !== expectedBorder.color ||
+          actualBorder.style !== expectedBorder.style ||
+          actualBorder.width !== expectedBorder.width
         ) {
           matches = false;
         }
@@ -253,18 +300,7 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         normalizeTableColor(
           element.dataset.officeCellBorderColor || element.style.borderColor,
         ) ?? defaults.borderColor,
-      renderHTML: (attributes: Record<string, unknown>) => {
-        const format = formatFromAttributes(attributes, defaults);
-        return {
-          'data-office-cell-border-color': format.borderColor,
-          'data-office-cell-border-style': format.borderStyle,
-          'data-office-cell-border-width': String(format.borderWidth),
-          style:
-            format.borderStyle === 'none' || format.borderWidth === 0
-              ? 'border: 0 none transparent'
-              : `border: ${format.borderWidth}px ${format.borderStyle} ${format.borderColor}`,
-        };
-      },
+      renderHTML: () => ({}),
     },
     borderStyle: {
       default: defaults.borderStyle,
@@ -282,6 +318,19 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         ) ?? defaults.borderWidth,
       renderHTML: () => ({}),
     },
+    borders: {
+      default: defaults.borders,
+      parseHTML: (element: HTMLElement) =>
+        documentTableBordersFromElement(element, {
+          color: defaults.borderColor,
+          style: defaults.borderStyle,
+          width: defaults.borderWidth,
+        }),
+      renderHTML: (attributes: Record<string, unknown>) =>
+        renderDocumentTableBorders(
+          formatFromAttributes(attributes, defaults).borders,
+        ),
+    },
   };
 }
 
@@ -297,9 +346,28 @@ function setSelectedCellFormat(
   for (const position of positions) {
     const cell = transaction.doc.nodeAt(position);
     if (!cell || !isTableCell(cell)) continue;
+    const current = formatFromAttributes(cell.attrs);
+    const changesBorder =
+      normalized.borderColor !== undefined ||
+      normalized.borderStyle !== undefined ||
+      normalized.borderWidth !== undefined;
+    const nextBorder: DocumentTableBorder = {
+      color: normalized.borderColor ?? current.borderColor,
+      style: normalized.borderStyle ?? current.borderStyle,
+      width: normalized.borderWidth ?? current.borderWidth,
+    };
+    if (nextBorder.style === 'none') nextBorder.width = 0;
     transaction.setNodeMarkup(position, undefined, {
       ...cell.attrs,
       ...normalized,
+      ...(changesBorder
+        ? {
+            borderColor: nextBorder.color,
+            borderStyle: nextBorder.style,
+            borderWidth: nextBorder.width,
+            borders: uniformDocumentTableBorders(nextBorder),
+          }
+        : {}),
     });
   }
   if (dispatch && transaction.docChanged)
@@ -349,9 +417,16 @@ function applyTableStyle(
   context.node.forEach((row, rowOffset, rowIndex) => {
     row.forEach((cell, cellOffset) => {
       const position = context.position + 2 + rowOffset + cellOffset;
+      const format = tableStyleCellFormat(style, cell, rowIndex);
+      const border = {
+        color: style.borderColor,
+        style: style.borderStyle,
+        width: style.borderWidth,
+      } satisfies DocumentTableBorder;
       transaction.setNodeMarkup(position, undefined, {
         ...cell.attrs,
-        ...tableStyleCellFormat(style, cell, rowIndex),
+        ...format,
+        borders: uniformDocumentTableBorders(border),
       });
     });
   });
@@ -471,6 +546,23 @@ function formatFromAttributes(
   attributes: Record<string, unknown>,
   defaults = DEFAULT_DOCUMENT_TABLE_CELL_FORMAT,
 ): DocumentTableCellFormat {
+  const fallbackBorder: DocumentTableBorder = {
+    color:
+      normalizeTableColor(String(attributes.borderColor ?? '')) ??
+      defaults.borderColor,
+    style:
+      normalizeDocumentTableBorderStyle(String(attributes.borderStyle ?? '')) ??
+      defaults.borderStyle,
+    width:
+      normalizeDocumentTableBorderWidth(attributes.borderWidth) ??
+      defaults.borderWidth,
+  };
+  if (fallbackBorder.style === 'none') fallbackBorder.width = 0;
+  const borders = documentTableBordersFromAttributes(
+    attributes,
+    fallbackBorder,
+  );
+  const representative = uniformDocumentTableBorder(borders) ?? borders.top;
   return {
     backgroundColor:
       normalizeTableColor(String(attributes.backgroundColor ?? '')) ??
@@ -479,38 +571,11 @@ function formatFromAttributes(
       normalizeDocumentTableVerticalAlign(
         String(attributes.verticalAlign ?? ''),
       ) ?? defaults.verticalAlign,
-    borderColor:
-      normalizeTableColor(String(attributes.borderColor ?? '')) ??
-      defaults.borderColor,
-    borderStyle:
-      normalizeDocumentTableBorderStyle(String(attributes.borderStyle ?? '')) ??
-      defaults.borderStyle,
-    borderWidth:
-      normalizeDocumentTableBorderWidth(attributes.borderWidth) ??
-      defaults.borderWidth,
+    borderColor: representative.color,
+    borderStyle: representative.style,
+    borderWidth: representative.width,
+    borders,
   };
-}
-
-export function normalizeTableColor(
-  value: string | null | undefined,
-): string | null {
-  const trimmed = value?.trim().toLowerCase();
-  if (!trimmed) return null;
-  if (/^#[0-9a-f]{3}$/.test(trimmed)) {
-    return `#${trimmed
-      .slice(1)
-      .split('')
-      .map((part) => `${part}${part}`)
-      .join('')}`;
-  }
-  if (/^#[0-9a-f]{6}$/.test(trimmed)) return trimmed;
-  const rgb = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(trimmed);
-  if (!rgb) return null;
-  const channels = rgb.slice(1, 4).map(Number);
-  if (channels.some((channel) => channel < 0 || channel > 255)) return null;
-  return `#${channels
-    .map((channel) => channel.toString(16).padStart(2, '0'))
-    .join('')}`;
 }
 
 export function normalizeDocumentTableVerticalAlign(
@@ -519,30 +584,4 @@ export function normalizeDocumentTableVerticalAlign(
   if (value === 'top' || value === 'middle' || value === 'bottom') return value;
   if (value === 'center') return 'middle';
   return null;
-}
-
-export function normalizeDocumentTableBorderStyle(
-  value: string | null | undefined,
-): DocumentTableBorderStyle | null {
-  if (
-    value === 'solid' ||
-    value === 'dashed' ||
-    value === 'dotted' ||
-    value === 'double' ||
-    value === 'none'
-  ) {
-    return value;
-  }
-  return null;
-}
-
-export function normalizeDocumentTableBorderWidth(
-  value: unknown,
-): number | null {
-  const width =
-    typeof value === 'number'
-      ? value
-      : Number.parseFloat(String(value ?? '').replace(/px$/i, ''));
-  if (!Number.isFinite(width) || width < 0 || width > 6) return null;
-  return Math.round(width * 2) / 2;
 }

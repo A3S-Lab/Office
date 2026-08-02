@@ -327,6 +327,16 @@
   font-size: 9px;
 }
 
+.work-document-table-border-target-select {
+  width: 88px;
+}
+
+.work-document-table-border-target-select > button[role="combobox"] {
+  height: 29px;
+  padding-inline: 6px 4px;
+  font-size: 9px;
+}
+
 .work-document-table-size-fields {
   display: grid;
   width: 116px;

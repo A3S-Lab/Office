@@ -258,7 +258,9 @@ interaction model.
   actions, selection-preserving bullet and numbering commands, and explicit
   Escape-to-invoker focus restoration;
   grouped bundled, common system, monospace, imported, and host-provided font
-  choices with live typeface previews, precision table sizing and autofit,
+  choices with live typeface previews, precision table sizing and autofit, a
+  reusable table-border pen with all, outside, inside, and individual-edge
+  targets, and per-edge DOCX border preservation,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked
   changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared

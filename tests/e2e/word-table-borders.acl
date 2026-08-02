@@ -1,0 +1,127 @@
+suite "office-word-table-borders" {
+    version = 1
+
+    scenario "author-per-edge-table-borders" {
+        name = "Author and preview per-edge Word table borders"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1440
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-table-borders"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "place-caret" {
+            target = css(".work-document-editable .ProseMirror p:last-child")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-table-picker" {
+            target = role("button", "插入表格")
+        }
+
+        click "insert-two-by-two-table" {
+            target = role("button", "2 行 2 列")
+        }
+
+        expect "table-design-is-active" {
+            visible = css("button[role='tab'][aria-label='表格设计'][aria-selected='true']")
+        }
+
+        drag "select-entire-table" {
+            source = css(".work-document-editable table tr:first-child > :first-child")
+            target = css(".work-document-editable table tr:last-child > :last-child")
+        }
+
+        expect "every-cell-is-selected" {
+            visible = css(".work-document-editable table:not(:has(:is(th, td):not(.selectedCell)))")
+        }
+
+        click "open-border-targets" {
+            target = role("combobox", "应用边框")
+        }
+
+        click "remove-all-borders" {
+            target = role("option", "无框线")
+        }
+
+        expect "every-edge-is-cleared" {
+            visible = css(".work-document-editable table:not(:has(:is(th, td):not([data-office-cell-border-top-style='none'][data-office-cell-border-right-style='none'][data-office-cell-border-bottom-style='none'][data-office-cell-border-left-style='none'])))")
+        }
+
+        click "open-border-style" {
+            target = role("combobox", "边框样式")
+        }
+
+        click "choose-double-border" {
+            target = role("option", "双线")
+        }
+
+        expect "style-choice-does-not-flatten-edges" {
+            visible = css(".work-document-editable table :is(th, td):first-child[data-office-cell-border-top-style='none'][data-office-cell-border-left-style='none']")
+        }
+
+        click "reopen-border-targets" {
+            target = role("combobox", "应用边框")
+        }
+
+        click "apply-outside-border" {
+            target = role("option", "外侧框线")
+        }
+
+        expect "top-left-cell-has-only-outside-edges" {
+            visible = css(".work-document-editable table tr:first-child > :first-child[data-office-cell-border-top-style='double'][data-office-cell-border-right-style='none'][data-office-cell-border-bottom-style='none'][data-office-cell-border-left-style='double']")
+        }
+
+        expect "bottom-right-cell-has-only-outside-edges" {
+            visible = css(".work-document-editable table tr:last-child > :last-child[data-office-cell-border-top-style='none'][data-office-cell-border-right-style='double'][data-office-cell-border-bottom-style='double'][data-office-cell-border-left-style='none']")
+        }
+
+        click "preview-document" {
+            target = role("button", "预览")
+        }
+
+        expect "preview-keeps-per-edge-borders" {
+            visible = css(".work-document-preview-page table tr:first-child > :first-child[data-office-cell-border-top-style='double'][data-office-cell-border-right-style='none'][data-office-cell-border-bottom-style='none'][data-office-cell-border-left-style='double']")
+        }
+
+        screenshot "word-table-border-preview" {
+            path = "screenshots/word-table-borders-preview.png"
+        }
+
+        accessibility "per-edge-border-semantics" {
+            path = "evidence/word-table-borders.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

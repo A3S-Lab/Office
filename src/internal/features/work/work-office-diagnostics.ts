@@ -111,7 +111,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.tables',
             'Tables',
-            'Table rows, non-splitting rows, repeated headers, common cell shading, vertical alignment, and uniform borders remain editable; per-edge or theme borders, exact cell widths, nested tables, and rows that split internally may be normalized.',
+            'Table rows, non-splitting rows, repeated headers, common cell shading, vertical alignment, and explicit per-edge borders remain editable; theme-derived borders, exact cell widths, nested tables, and rows that split internally may be normalized.',
           ),
         );
       }

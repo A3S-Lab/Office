@@ -4,6 +4,11 @@ import {
   directChild,
   directChildren,
 } from './work-ooxml-package';
+import {
+  type DocumentTableBorderEdge,
+  documentTableBordersFromElement,
+  renderDocumentTableBorders,
+} from './work-document-table-borders';
 
 export type ImportedDocxTableCellVerticalAlign = 'top' | 'middle' | 'bottom';
 export type ImportedDocxTableCellBorderStyle =
@@ -17,9 +22,7 @@ export interface ImportedDocxTableCellMarker {
   marker: string;
   backgroundColor?: string;
   verticalAlign?: ImportedDocxTableCellVerticalAlign;
-  borderColor?: string;
-  borderStyle?: ImportedDocxTableCellBorderStyle;
-  borderWidth?: number;
+  borders?: ImportedDocxTableCellBorders;
 }
 
 export interface ImportedDocxTableCellMarkers {
@@ -31,6 +34,17 @@ interface ImportedDocxCellBorder {
   style: ImportedDocxTableCellBorderStyle;
   width: number;
 }
+
+type ImportedDocxTableCellBorders = Partial<
+  Record<DocumentTableBorderEdge, ImportedDocxCellBorder>
+>;
+
+const TABLE_BORDER_EDGES: readonly DocumentTableBorderEdge[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+];
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -47,15 +61,12 @@ export function markDocxTableCells(
     const verticalAlignment = properties
       ? directChild(properties, 'vAlign')
       : undefined;
-    const directBorders = properties
-      ? uniformBorders(directChild(properties, 'tcBorders'))
-      : null;
-    const border = directBorders ?? uniformTableBorders(cell);
+    const borders = importedTableCellBorders(cell, properties);
     const backgroundColor = ooxmlColor(attribute(shading ?? cell, 'fill'));
     const verticalAlign = tableVerticalAlign(
       attribute(verticalAlignment ?? cell, 'val'),
     );
-    if (!backgroundColor && !verticalAlign && !border) continue;
+    if (!backgroundColor && !verticalAlign && !borders) continue;
     const paragraph = firstTableCellParagraph(document, cell);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_CELL_${cells.length + 1}__`;
@@ -64,13 +75,7 @@ export function markDocxTableCells(
       marker,
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(verticalAlign ? { verticalAlign } : {}),
-      ...(border
-        ? {
-            borderColor: border.color,
-            borderStyle: border.style,
-            borderWidth: border.width,
-          }
-        : {}),
+      ...(borders ? { borders } : {}),
     });
   }
   return { cells };
@@ -113,52 +118,119 @@ function applyCellFormat(
     cell.dataset.officeCellVerticalAlign = format.verticalAlign;
     cell.style.verticalAlign = format.verticalAlign;
   }
-  if (
-    format.borderColor &&
-    format.borderStyle &&
-    format.borderWidth !== undefined
-  ) {
-    cell.dataset.officeCellBorderColor = format.borderColor;
-    cell.dataset.officeCellBorderStyle = format.borderStyle;
-    cell.dataset.officeCellBorderWidth = String(format.borderWidth);
-    cell.style.border =
-      format.borderStyle === 'none' || format.borderWidth === 0
-        ? '0px none transparent'
-        : `${format.borderWidth}px ${format.borderStyle} ${format.borderColor}`;
+  if (format.borders) {
+    const borders = documentTableBordersFromElement(cell, {
+      color: '#cfd5df',
+      style: 'solid',
+      width: 1,
+    });
+    for (const edge of TABLE_BORDER_EDGES) {
+      const border = format.borders[edge];
+      if (border) borders[edge] = { ...border };
+    }
+    const rendered = renderDocumentTableBorders(borders);
+    for (const [name, value] of Object.entries(rendered)) {
+      if (name !== 'style') cell.setAttribute(name, value);
+    }
+    cell.style.cssText = `${cell.style.cssText}; ${rendered.style}`;
   }
 }
 
-function uniformTableBorders(cell: Element): ImportedDocxCellBorder | null {
-  const table = closestAncestor(cell, 'tbl');
-  const properties = table ? directChild(table, 'tblPr') : undefined;
-  return properties
-    ? uniformBorders(directChild(properties, 'tblBorders'), true)
-    : null;
+function importedTableCellBorders(
+  cell: Element,
+  properties: Element | undefined,
+): ImportedDocxTableCellBorders | null {
+  const tableBorders = tableBordersForCell(cell);
+  const cellBorders = borderEdges(
+    properties ? directChild(properties, 'tcBorders') : undefined,
+  );
+  const borders: ImportedDocxTableCellBorders = {};
+  for (const edge of TABLE_BORDER_EDGES) {
+    const border = cellBorders[edge] ?? tableBorders[edge];
+    if (border) borders[edge] = border;
+  }
+  return Object.keys(borders).length ? borders : null;
 }
 
-function uniformBorders(
-  borders: Element | undefined,
-  includeInside = false,
-): ImportedDocxCellBorder | null {
-  if (!borders) return null;
-  const edgeNames = includeInside
-    ? ['top', 'right', 'bottom', 'left', 'insideH', 'insideV']
-    : ['top', 'right', 'bottom', 'left'];
-  const edgeElements = new Map(
-    directChildren(borders).map((edge) => [edge.localName, edge]),
+function tableBordersForCell(cell: Element): ImportedDocxTableCellBorders {
+  const table = closestAncestor(cell, 'tbl');
+  const properties = table ? directChild(table, 'tblPr') : undefined;
+  const borders = properties
+    ? borderElementMap(directChild(properties, 'tblBorders'))
+    : new Map<string, Element>();
+  if (!table || !borders.size) return {};
+
+  const row = closestAncestor(cell, 'tr');
+  if (!row) return {};
+  const rows = descendants(table, 'tr').filter(
+    (candidate) => closestAncestor(candidate, 'tbl') === table,
   );
-  const formats = edgeNames.map((name) => parseBorder(edgeElements.get(name)));
-  if (formats.some((format) => !format)) return null;
-  const first = formats[0];
-  if (!first) return null;
-  return formats.every(
-    (format) =>
-      format?.color === first.color &&
-      format.style === first.style &&
-      format.width === first.width,
-  )
-    ? first
-    : null;
+  const cells = descendants(row, 'tc').filter(
+    (candidate) => closestAncestor(candidate, 'tr') === row,
+  );
+  const rowIndex = rows.indexOf(row);
+  const cellIndex = cells.indexOf(cell);
+  if (rowIndex < 0 || cellIndex < 0) return {};
+
+  return compactBorders({
+    top: parseBorder(borders.get(rowIndex === 0 ? 'top' : 'insideH')),
+    right: parseBorder(
+      borderElement(
+        borders,
+        cellIndex === cells.length - 1 ? ['right', 'end'] : ['insideV'],
+      ),
+    ),
+    bottom: parseBorder(
+      borders.get(rowIndex === rows.length - 1 ? 'bottom' : 'insideH'),
+    ),
+    left: parseBorder(
+      borderElement(borders, cellIndex === 0 ? ['left', 'start'] : ['insideV']),
+    ),
+  });
+}
+
+function borderEdges(
+  borders: Element | undefined,
+): ImportedDocxTableCellBorders {
+  const edges = borderElementMap(borders);
+  return compactBorders({
+    top: parseBorder(edges.get('top')),
+    right: parseBorder(borderElement(edges, ['right', 'end'])),
+    bottom: parseBorder(edges.get('bottom')),
+    left: parseBorder(borderElement(edges, ['left', 'start'])),
+  });
+}
+
+function borderElementMap(borders: Element | undefined): Map<string, Element> {
+  return new Map(
+    borders
+      ? directChildren(borders).map((edge) => [edge.localName, edge])
+      : [],
+  );
+}
+
+function borderElement(
+  borders: ReadonlyMap<string, Element>,
+  names: readonly string[],
+): Element | undefined {
+  for (const name of names) {
+    const edge = borders.get(name);
+    if (edge) return edge;
+  }
+  return undefined;
+}
+
+function compactBorders(
+  borders: Partial<
+    Record<DocumentTableBorderEdge, ImportedDocxCellBorder | null>
+  >,
+): ImportedDocxTableCellBorders {
+  const result: ImportedDocxTableCellBorders = {};
+  for (const edge of TABLE_BORDER_EDGES) {
+    const border = borders[edge];
+    if (border) result[edge] = border;
+  }
+  return result;
 }
 
 function parseBorder(edge: Element | undefined): ImportedDocxCellBorder | null {

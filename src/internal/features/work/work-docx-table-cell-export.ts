@@ -1,5 +1,7 @@
 import type { ITableCellOptions } from 'docx';
 import {
+  type DocumentTableBorder,
+  documentTableBordersFromElement,
   normalizeDocumentTableBorderStyle,
   normalizeDocumentTableBorderWidth,
   normalizeDocumentTableVerticalAlign,
@@ -20,25 +22,24 @@ export function documentTableCellDocxOptions(
   const verticalAlign = normalizeDocumentTableVerticalAlign(
     cell.dataset.officeCellVerticalAlign || cell.style.verticalAlign,
   );
-  const borderStyle = normalizeDocumentTableBorderStyle(
+  const legacyBorderStyle = normalizeDocumentTableBorderStyle(
     cell.dataset.officeCellBorderStyle || cell.style.borderStyle,
   );
-  const borderWidth = normalizeDocumentTableBorderWidth(
-    cell.dataset.officeCellBorderWidth || cell.style.borderWidth,
-  );
-  const borderColor = normalizeTableColor(
-    cell.dataset.officeCellBorderColor || cell.style.borderColor,
-  );
-  const border = borderStyle
-    ? {
-        style: docxBorderStyle(borderStyle, docx),
-        ...(borderStyle === 'none'
-          ? {}
-          : {
-              color: docxColor(borderColor ?? '#cfd5df'),
-              size: Math.max(1, Math.round((borderWidth ?? 1) * 6)),
-            }),
-      }
+  const fallbackBorder: DocumentTableBorder = {
+    color:
+      normalizeTableColor(
+        cell.dataset.officeCellBorderColor || cell.style.borderColor,
+      ) ?? '#cfd5df',
+    style: legacyBorderStyle ?? 'solid',
+    width:
+      legacyBorderStyle === 'none'
+        ? 0
+        : (normalizeDocumentTableBorderWidth(
+            cell.dataset.officeCellBorderWidth || cell.style.borderWidth,
+          ) ?? 1),
+  };
+  const borders = hasDocumentTableBorderPresentation(cell)
+    ? documentTableBordersFromElement(cell, fallbackBorder)
     : null;
 
   return {
@@ -60,17 +61,47 @@ export function documentTableCellDocxOptions(
                 : docx.VerticalAlignTable.TOP,
         }
       : {}),
-    ...(border
+    ...(borders
       ? {
           borders: {
-            top: border,
-            right: border,
-            bottom: border,
-            left: border,
+            top: documentTableCellDocxBorder(borders.top, docx),
+            right: documentTableCellDocxBorder(borders.right, docx),
+            bottom: documentTableCellDocxBorder(borders.bottom, docx),
+            left: documentTableCellDocxBorder(borders.left, docx),
           },
         }
       : {}),
   };
+}
+
+function documentTableCellDocxBorder(
+  border: DocumentTableBorder,
+  docx: typeof import('docx'),
+) {
+  return {
+    style: docxBorderStyle(border.style, docx),
+    ...(border.style === 'none' || border.width === 0
+      ? {}
+      : {
+          color: docxColor(border.color),
+          size: Math.max(1, Math.round(border.width * 6)),
+        }),
+  };
+}
+
+function hasDocumentTableBorderPresentation(
+  cell: HTMLTableCellElement,
+): boolean {
+  return Boolean(
+    Object.keys(cell.dataset).some((key) =>
+      key.startsWith('officeCellBorder'),
+    ) ||
+      cell.style.borderStyle ||
+      cell.style.borderTopStyle ||
+      cell.style.borderRightStyle ||
+      cell.style.borderBottomStyle ||
+      cell.style.borderLeftStyle,
+  );
 }
 
 function docxBorderStyle(

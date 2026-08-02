@@ -268,7 +268,7 @@ test('merges and splits selected table cells with command-aware controls', () =>
   expect(tableShape(editor)).toEqual([2, 2]);
 });
 
-test('applies table styles, cell shading, and borders as coherent edits', () => {
+test('applies table styles and cell shading as coherent edits', () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
   let updateCount = 0;
@@ -306,16 +306,6 @@ test('applies table styles, cell shading, and borders as coherent edits', () => 
     headCell: secondCell,
   });
   view.rerender(<DocumentTableDesignRibbon editor={editor} />);
-  expect(
-    editor.commands.setDocumentTableCellFormat({
-      borderStyle: 'solid',
-      borderWidth: 0.5,
-    }),
-  ).toBe(true);
-  view.rerender(<DocumentTableDesignRibbon editor={editor} />);
-  expect(screen.getByRole('combobox', { name: '边框样式' })).toHaveTextContent(
-    '0.5 像素实线',
-  );
   fireEvent.click(screen.getByRole('button', { name: '单元格底纹' }));
   const fillDialog = screen.getByRole('dialog', { name: '单元格底纹' });
   fireEvent.click(
@@ -327,15 +317,69 @@ test('applies table styles, cell shading, and borders as coherent edits', () => 
       expect.objectContaining({ backgroundColor: '#fff2cc' }),
     ]),
   );
+});
+
+test('applies per-edge borders with a reusable Word-style border pen', () => {
+  editor = createTableEditor();
+  editor.commands.setNodeSelection(firstTablePosition(editor));
+  render(<DocumentTableDesignRibbon editor={editor} />);
+
+  const applyBorders = screen.getByRole('combobox', {
+    name: '应用边框',
+  });
+  fireEvent.click(applyBorders);
+  fireEvent.click(screen.getByRole('option', { name: '无框线' }));
+  expect(
+    tableCellAttributes(editor).every(({ borders }) =>
+      Object.values(borders ?? {}).every(
+        (border) => border.style === 'none' && border.width === 0,
+      ),
+    ),
+  ).toBe(true);
 
   fireEvent.click(screen.getByRole('combobox', { name: '边框样式' }));
-  fireEvent.click(screen.getByRole('option', { name: '无边框' }));
-  expect(tableCellAttributes(editor).slice(0, 2)).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({ borderStyle: 'none', borderWidth: 0 }),
-      expect.objectContaining({ borderStyle: 'none', borderWidth: 0 }),
-    ]),
-  );
+  fireEvent.click(screen.getByRole('option', { name: '双线' }));
+  expect(
+    tableCellAttributes(editor).every(({ borders }) =>
+      Object.values(borders ?? {}).every((border) => border.style === 'none'),
+    ),
+  ).toBe(true);
+
+  fireEvent.click(applyBorders);
+  fireEvent.click(screen.getByRole('option', { name: '外侧框线' }));
+  const [topLeft, topRight, bottomLeft, bottomRight] =
+    tableCellAttributes(editor);
+  expect(topLeft?.borders).toMatchObject({
+    top: { style: 'double', width: 2 },
+    right: { style: 'none', width: 0 },
+    bottom: { style: 'none', width: 0 },
+    left: { style: 'double', width: 2 },
+  });
+  expect(topRight?.borders).toMatchObject({
+    top: { style: 'double', width: 2 },
+    right: { style: 'double', width: 2 },
+  });
+  expect(bottomLeft?.borders).toMatchObject({
+    bottom: { style: 'double', width: 2 },
+    left: { style: 'double', width: 2 },
+  });
+  expect(bottomRight?.borders).toMatchObject({
+    right: { style: 'double', width: 2 },
+    bottom: { style: 'double', width: 2 },
+  });
+
+  fireEvent.click(screen.getByRole('combobox', { name: '边框样式' }));
+  fireEvent.click(screen.getByRole('option', { name: '虚线' }));
+  fireEvent.click(applyBorders);
+  fireEvent.click(screen.getByRole('option', { name: '内部横框线' }));
+  expect(tableCellAttributes(editor)[0]?.borders).toMatchObject({
+    top: { style: 'double' },
+    bottom: { style: 'dashed', width: 1 },
+  });
+  expect(tableCellAttributes(editor)[2]?.borders).toMatchObject({
+    top: { style: 'dashed', width: 1 },
+    bottom: { style: 'double' },
+  });
 });
 
 test('applies one table style per radio-gallery keyboard move', () => {

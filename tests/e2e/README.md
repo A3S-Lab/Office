@@ -49,6 +49,9 @@ geometry, Home/End reachability, keyboard acceptance, the 120-to-119 count
 transition, and same-action focus continuity, plus a phone
 table workflow covering touch-sized dimension controls, exact 3 × 3 insertion,
 row extension, compact-ribbon deletion, and focused editing recovery, plus a
+desktop table-border workflow proving that the reusable border pen does not
+flatten existing edges, outside borders retain independent cell-edge data in
+edit and preview, and browser diagnostics stay clean, plus a
 phone caption and cross-reference workflow covering dialog focus, accessible
 numbering, keyboard deletion, and the live missing-reference transition;
 the phone Spreadsheet
