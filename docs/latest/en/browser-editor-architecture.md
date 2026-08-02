@@ -192,6 +192,19 @@ removes editing-only state, and crops exact physical pages from bounded capture
 batches. Explicit descriptor pages remain a fallback for surfaces without a
 registered live document.
 
+The Word navigation pane uses that same capture boundary for real physical-page
+thumbnails instead of reconstructing an approximate text card. The current and
+adjacent pages are admitted first; the remaining captures use an
+`IntersectionObserver` window, one serialized queue, debounced source-mutation
+refresh, and off-screen image release. Each capture clones the already measured
+live page, strips editing state, and crops one exact page offset. It deliberately
+does not wait for the document-wide font set or a browser animation frame:
+pagination readiness is the layout authority, while unrelated fonts and
+background agent tabs must not stall a preview. Text excerpts remain a bounded
+loading or failure fallback. This bounds raster work, but the page buttons,
+outline, and search-result collections still require full virtualization proof
+against the representative 100-page fixtures.
+
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell
 patches from stable Fortune cell operations, and requests only the dirty

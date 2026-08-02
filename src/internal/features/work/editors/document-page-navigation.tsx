@@ -6,6 +6,10 @@ import {
   useState,
 } from 'react';
 import type { WorkDocumentSectionLayout } from '../work-types';
+import {
+  DocumentPageThumbnail,
+  type WorkDocumentPageThumbnailSource,
+} from './document-page-thumbnail';
 
 export interface DocumentNavigationPage {
   backgroundColor?: string;
@@ -19,10 +23,12 @@ export interface DocumentNavigationPage {
 export function DocumentPageNavigation({
   currentPage,
   pages,
+  thumbnailSource,
   onSelectPage,
 }: {
   currentPage: number;
   pages: readonly DocumentNavigationPage[];
+  thumbnailSource?: WorkDocumentPageThumbnailSource;
   onSelectPage: (page: DocumentNavigationPage) => void | Promise<void>;
 }) {
   const pageRefs = useRef(new Map<number, HTMLButtonElement>());
@@ -112,13 +118,14 @@ export function DocumentPageNavigation({
                     void onSelectPage(page);
                   }}
                 >
-                  <span
-                    className={`work-document-page-thumbnail ${page.orientation}`}
-                    aria-hidden="true"
-                    style={{ backgroundColor: page.backgroundColor }}
-                  >
-                    <span>{page.previewText || '空白页'}</span>
-                  </span>
+                  <DocumentPageThumbnail
+                    backgroundColor={page.backgroundColor}
+                    fallbackText={page.previewText}
+                    orientation={page.orientation}
+                    pageIndex={page.physicalPage - 1}
+                    priority={Math.abs(page.physicalPage - selectedPage) <= 1}
+                    source={thumbnailSource}
+                  />
                   <span className="work-document-page-thumbnail-label">
                     第 {page.physicalPage} 页
                     {page.pageNumber !== page.physicalPage && (

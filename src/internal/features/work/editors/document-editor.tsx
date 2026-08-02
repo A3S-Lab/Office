@@ -155,6 +155,7 @@ export function DocumentEditor({
   const pageFooterRef = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const reviewSurfaceRef = useRef<HTMLDivElement>(null);
+  const pageSurfaceRef = useRef<HTMLElement>(null);
   const taskPaneInvokerRef = useRef<HTMLElement | null>(null);
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
@@ -850,6 +851,18 @@ export function DocumentEditor({
             currentPage={currentPage}
             editor={editor}
             modal={taskPaneModal}
+            pageThumbnailSource={
+              pageSurfaceRef.current && pagination.pageCount
+                ? {
+                    element: pageSurfaceRef.current,
+                    pageCount: pagination.pageCount,
+                    pageGap: kernelPage.pageGap,
+                    pageHeight: kernelPage.height,
+                    pageWidth: kernelPage.width,
+                    revision: editorInput.sourceKey,
+                  }
+                : undefined
+            }
             pages={(pagination.pages.length
               ? pagination.pages
               : [firstPageDescriptor]
@@ -913,6 +926,7 @@ export function DocumentEditor({
                   />
                 )}
                 <article
+                  ref={pageSurfaceRef}
                   className={`work-document-page${preview ? ' work-document-preview-page' : ''} ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${!preview && pageChromeEditing ? ' page-chrome-editing' : ''}`}
                   data-work-pdf-live-document={
                     artifactId && pagination.pageCount ? '' : undefined

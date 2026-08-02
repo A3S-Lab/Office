@@ -56,8 +56,12 @@ suite "office-word-page-navigation" {
             visible = css("[data-document-page-thumbnail='1'][aria-current='page']")
         }
 
-        expect "text-preview-ready" {
-            visible = css("[data-document-page-thumbnail='1'] .work-document-page-thumbnail > span")
+        expect "live-page-source-ready" {
+            visible = css("[data-document-page-thumbnail='1'] [data-thumbnail-source='live-page']")
+        }
+
+        expect "physical-page-raster-ready" {
+            visible = css("[data-document-page-thumbnail='1'] [data-thumbnail-state='ready'] img[data-document-page-raster='1']")
         }
 
         screenshot "page-navigation" {

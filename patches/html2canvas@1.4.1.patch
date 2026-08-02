@@ -1,0 +1,88 @@
+diff --git a/dist/html2canvas.esm.js b/dist/html2canvas.esm.js
+index dab56ad9b2319b51aea92c3f6cd8929ec8536e4a..59b44f3c9315291f75bbd619997567cc1297854d 100644
+--- a/dist/html2canvas.esm.js
++++ b/dist/html2canvas.esm.js
+@@ -5195,4 +5195,16 @@ var createCounterText = function (value, type, appendSuffix) {
+ var IGNORE_ATTRIBUTE = 'data-html2canvas-ignore';
++var waitForFontLoading = function (ready, timeout) {
++    if (typeof timeout !== 'number' || !Number.isFinite(timeout)) {
++        return ready;
++    }
++    if (timeout <= 0) {
++        return Promise.resolve();
++    }
++    return Promise.race([
++        ready,
++        new Promise(function (resolve) { return setTimeout(resolve, timeout); })
++    ]);
++};
+ var DocumentCloner = /** @class */ (function () {
+     function DocumentCloner(context, element, options) {
+         this.context = context;
+@@ -5239,7 +5251,7 @@ var DocumentCloner = /** @class */ (function () {
+                             return [2 /*return*/, Promise.reject("Error finding the " + this.referenceElement.nodeName + " in the cloned document")];
+                         }
+                         if (!(documentClone.fonts && documentClone.fonts.ready)) return [3 /*break*/, 2];
+-                        return [4 /*yield*/, documentClone.fonts.ready];
++                        return [4 /*yield*/, waitForFontLoading(documentClone.fonts.ready, this.options.fontReadyTimeout)];
+                     case 1:
+                         _a.sent();
+                         _a.label = 2;
+@@ -7739,6 +7751,7 @@ var renderElement = function (element, opts) { return __awaiter(void 0, void 0,
+                     allowTaint: (_l = opts.allowTaint) !== null && _l !== void 0 ? _l : false,
+                     onclone: opts.onclone,
+                     ignoreElements: opts.ignoreElements,
++                    fontReadyTimeout: opts.fontReadyTimeout,
+                     inlineImages: foreignObjectRendering,
+                     copyStyles: foreignObjectRendering
+                 };
+diff --git a/dist/html2canvas.js b/dist/html2canvas.js
+index 84cb30d701da7baf13f14107fb28b3ea42db49f6..577c41abbdd73578cc236a008b2fed88e0e5299d 100644
+--- a/dist/html2canvas.js
++++ b/dist/html2canvas.js
+@@ -5201,4 +5201,16 @@
+     var IGNORE_ATTRIBUTE = 'data-html2canvas-ignore';
++    var waitForFontLoading = function (ready, timeout) {
++        if (typeof timeout !== 'number' || !Number.isFinite(timeout)) {
++            return ready;
++        }
++        if (timeout <= 0) {
++            return Promise.resolve();
++        }
++        return Promise.race([
++            ready,
++            new Promise(function (resolve) { return setTimeout(resolve, timeout); })
++        ]);
++    };
+     var DocumentCloner = /** @class */ (function () {
+         function DocumentCloner(context, element, options) {
+             this.context = context;
+@@ -5245,7 +5257,7 @@
+                                 return [2 /*return*/, Promise.reject("Error finding the " + this.referenceElement.nodeName + " in the cloned document")];
+                             }
+                             if (!(documentClone.fonts && documentClone.fonts.ready)) return [3 /*break*/, 2];
+-                            return [4 /*yield*/, documentClone.fonts.ready];
++                            return [4 /*yield*/, waitForFontLoading(documentClone.fonts.ready, this.options.fontReadyTimeout)];
+                         case 1:
+                             _a.sent();
+                             _a.label = 2;
+@@ -7745,6 +7757,7 @@
+                         allowTaint: (_l = opts.allowTaint) !== null && _l !== void 0 ? _l : false,
+                         onclone: opts.onclone,
+                         ignoreElements: opts.ignoreElements,
++                        fontReadyTimeout: opts.fontReadyTimeout,
+                         inlineImages: foreignObjectRendering,
+                         copyStyles: foreignObjectRendering
+                     };
+diff --git a/dist/types/dom/document-cloner.d.ts b/dist/types/dom/document-cloner.d.ts
+index 9a30cfb86a5f4203a2a46566f2ff29cf84e8c977..46017cfad6af97280d40eef2bed26821bb56ba24 100644
+--- a/dist/types/dom/document-cloner.d.ts
++++ b/dist/types/dom/document-cloner.d.ts
+@@ -4,6 +4,7 @@ export interface CloneOptions {
+     ignoreElements?: (element: Element) => boolean;
+     onclone?: (document: Document, element: HTMLElement) => void;
+     allowTaint?: boolean;
++    fontReadyTimeout?: number;
+ }
+ export interface WindowOptions {
+     scrollX: number;

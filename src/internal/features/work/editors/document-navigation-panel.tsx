@@ -31,6 +31,7 @@ import {
   DocumentPageNavigation,
   type DocumentNavigationPage,
 } from './document-page-navigation';
+import type { WorkDocumentPageThumbnailSource } from './document-page-thumbnail';
 import { DocumentTaskPane } from './document-task-pane';
 
 type DocumentNavigationView = 'headings' | 'pages';
@@ -40,12 +41,14 @@ export function DocumentNavigationPanel({
   editor,
   modal = false,
   pages = [],
+  pageThumbnailSource,
   onClose,
 }: {
   currentPage?: number;
   editor: Editor;
   modal?: boolean;
   pages?: readonly DocumentNavigationPage[];
+  pageThumbnailSource?: WorkDocumentPageThumbnailSource;
   onClose: () => void | Promise<void>;
 }) {
   const tabsId = useId();
@@ -299,6 +302,7 @@ export function DocumentNavigationPanel({
           <DocumentPageNavigation
             currentPage={currentPage}
             pages={pages}
+            thumbnailSource={pageThumbnailSource}
             onSelectPage={(page) => navigateTo(page.selectionPosition)}
           />
         </div>

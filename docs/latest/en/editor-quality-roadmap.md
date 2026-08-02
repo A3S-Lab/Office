@@ -213,11 +213,15 @@ branches, keyboard traversal, and responsive left-side placement. Its search
 returns full-text results with section context, bounded excerpts, match
 highlights, and safe selection-based jumps that do not create history entries.
 Compact result selection closes the modal pane before restoring the exact body
-selection and focus. The same pane now offers a page view with measured textual
-previews, physical-page and restarted-page-number labels, active-page tracking,
-arrow/Home/End keyboard traversal, and selection-safe jumps to each page. A
-page preview is derived from the measured text ranges assigned to that page, so
-pages split from one long paragraph do not repeat the paragraph's opening text.
+selection and focus. The same pane now offers a page view with real rasters
+cropped from the live paginated surface, physical-page and restarted-page-number
+labels, active-page tracking, arrow/Home/End keyboard traversal, and
+selection-safe jumps to each page. The current and adjacent pages enter a
+serialized capture queue first; the rest use bounded viewport admission,
+debounced source-mutation refresh, and off-screen image release. Measured text
+is retained only as a loading or failure fallback. Capture readiness does not
+depend on unrelated document fonts or animation frames that background agent
+tabs can suspend.
 The dedicated Find/Replace task pane now has deterministic phone-width coverage
 for query entry, match navigation, single replacement, disabled-action focus
 recovery, content synchronization, and modal close-to-invoker focus restoration.
@@ -238,9 +242,9 @@ citation switch. Citation source validation is now attached to the exact
 invalid tag or title field, moves keyboard focus to that field, and clears only
 when its value changes. A deterministic phone workflow covers validation,
 source persistence, citation insertion, and exact close-to-invoker focus
-restoration. Raster-quality page thumbnails and bounded page,
-outline/search-result virtualization for 100-page fixtures remain part of this
-priority.
+restoration. Raster-quality page thumbnails and bounded raster admission are
+implemented. Full page-button, outline, and search-result virtualization for
+100-page fixtures remains part of this priority.
 
 Exit evidence:
 

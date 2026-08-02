@@ -1,5 +1,6 @@
 import type { jsPDF as JsPdf } from 'jspdf';
 import type { WorkArtifact, WorkSpreadsheetPaperSize } from './work-types';
+import { mountWorkLiveDocumentCapture } from './work-document-page-capture';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 
@@ -57,7 +58,7 @@ export async function exportWorkArtifactPdf(
   let pdf: JsPdf | null = null;
 
   if (liveDocument) {
-    const capture = mountLiveDocumentPdfCapture(liveDocument);
+    const capture = mountWorkLiveDocumentCapture(liveDocument);
     try {
       const batches = workLiveDocumentPdfCaptureBatches(
         livePageIndexes,
@@ -262,92 +263,6 @@ export function workLiveDocumentPdfCaptureBatches(
     current.pageIndexes.push(pageIndex);
   }
   return batches;
-}
-
-function mountLiveDocumentPdfCapture(surface: WorkLiveDocumentPdfSurface): {
-  backgroundColor: string;
-  host: HTMLDivElement;
-  snapshot: HTMLElement;
-  viewport: HTMLDivElement;
-} {
-  const host = document.createElement('div');
-  host.className = 'work-pdf-export-surface';
-  host.setAttribute('aria-hidden', 'true');
-
-  const viewport = document.createElement('div');
-  viewport.className = 'work-document-live-pdf-viewport';
-  const backgroundColor =
-    getComputedStyle(surface.element).backgroundColor || '#ffffff';
-  Object.assign(viewport.style, {
-    backgroundColor,
-    height: `${surface.pageHeight}px`,
-    overflow: 'hidden',
-    position: 'relative',
-    width: `${surface.pageWidth}px`,
-  });
-
-  const snapshot = surface.element.cloneNode(true) as HTMLElement;
-  snapshot.removeAttribute('data-work-pdf-live-document');
-  snapshot.removeAttribute('aria-label');
-  snapshot.classList.remove(
-    'page-chrome-editing',
-    'work-document-preview-page',
-  );
-  snapshot.classList.add(
-    'document',
-    'work-document-live-pdf-snapshot',
-    'work-pdf-export-page',
-  );
-  snapshot.dataset.documentCommentAppearance = 'plain';
-  snapshot.setAttribute('aria-hidden', 'true');
-  const surfaceHeight =
-    surface.pageCount * surface.pageHeight +
-    (surface.pageCount - 1) * surface.pageGap;
-  Object.assign(snapshot.style, {
-    borderColor: 'transparent',
-    boxShadow: 'none',
-    height: `${surfaceHeight}px`,
-    left: '0',
-    margin: '0',
-    minHeight: `${surfaceHeight}px`,
-    position: 'absolute',
-    top: '0',
-    width: `${surface.pageWidth}px`,
-  });
-  normalizeLiveDocumentPdfSnapshot(snapshot);
-
-  viewport.append(snapshot);
-  host.append(viewport);
-  document.body.append(host);
-  return { backgroundColor, host, snapshot, viewport };
-}
-
-function normalizeLiveDocumentPdfSnapshot(snapshot: HTMLElement): void {
-  snapshot
-    .querySelectorAll('.work-document-selection-toolbar')
-    .forEach((element) => {
-      element.remove();
-    });
-  for (const editor of snapshot.querySelectorAll<HTMLElement>(
-    '.work-document-page-chrome-inline-editor',
-  )) {
-    const content = editor.querySelector<HTMLElement>(
-      '[data-document-page-chrome-engine="tiptap"]',
-    );
-    const replacement = document.createElement('div');
-    replacement.className = 'work-document-page-chrome-html';
-    replacement.innerHTML = content?.innerHTML ?? '';
-    editor.replaceWith(replacement);
-  }
-  for (const element of snapshot.querySelectorAll<HTMLElement>('*')) {
-    element.removeAttribute('contenteditable');
-    element.classList.remove(
-      'ProseMirror-focused',
-      'ProseMirror-selectednode',
-      'is-editor-empty',
-      'selectedCell',
-    );
-  }
 }
 
 function finiteDatasetNumber(

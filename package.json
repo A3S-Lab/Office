@@ -160,6 +160,7 @@
   },
   "private": false,
   "patchedDependencies": {
-    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet%2Freact@1.0.4.patch"
+    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet%2Freact@1.0.4.patch",
+    "html2canvas@1.4.1": "patches/html2canvas@1.4.1.patch"
   }
 }
