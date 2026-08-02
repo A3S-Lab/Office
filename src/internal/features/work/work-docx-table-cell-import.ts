@@ -15,6 +15,12 @@ import {
   docxThemeColor,
   resolveDocxThemeResolver,
 } from './work-docx-theme';
+import {
+  type DocxTableStyleLayer,
+  type DocxTableStyleSource,
+  docxTableCellStyleLayers,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 
 export type ImportedDocxTableCellVerticalAlign = 'top' | 'middle' | 'bottom';
 export type ImportedDocxTableCellBorderStyle =
@@ -60,20 +66,27 @@ const TABLE_CELL_MARKER_PATTERN = /__A3S_WORK_TABLE_CELL_\d+__/g;
 export function markDocxTableCells(
   document: Document,
   themeSource?: DocxThemeSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxTableCellMarkers {
   const cells: ImportedDocxTableCellMarker[] = [];
   const theme = resolveDocxThemeResolver(themeSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const cell of descendants(document, 'tc')) {
     const properties = directChild(cell, 'tcPr');
-    const shading = properties ? directChild(properties, 'shd') : undefined;
-    const verticalAlignment = properties
-      ? directChild(properties, 'vAlign')
+    const table = closestAncestor(cell, 'tbl');
+    const directTableProperties = table
+      ? directChild(table, 'tblPr')
       : undefined;
-    const borders = importedTableCellBorders(cell, properties, theme);
-    const backgroundColor = importedTableCellBackgroundColor(shading, theme);
-    const verticalAlign = tableVerticalAlign(
-      attribute(verticalAlignment ?? cell, 'val'),
-    );
+    const layers: DocxTableStyleLayer[] = [
+      ...docxTableCellStyleLayers(cell, tableStyles),
+      ...(directTableProperties
+        ? [{ tableProperties: directTableProperties }]
+        : []),
+      ...(properties ? [{ cellProperties: properties }] : []),
+    ];
+    const borders = importedTableCellBorders(cell, layers, theme);
+    const backgroundColor = importedTableCellBackgroundColor(layers, theme);
+    const verticalAlign = importedTableCellVerticalAlign(layers);
     if (!backgroundColor && !verticalAlign && !borders) continue;
     const paragraph = firstTableCellParagraph(document, cell);
     if (!paragraph) continue;
@@ -146,31 +159,34 @@ function applyCellFormat(
 
 function importedTableCellBorders(
   cell: Element,
-  properties: Element | undefined,
+  layers: readonly DocxTableStyleLayer[],
   theme: DocxThemeResolver,
 ): ImportedDocxTableCellBorders | null {
-  const tableBorders = tableBordersForCell(cell, theme);
-  const cellBorders = borderEdges(
-    properties ? directChild(properties, 'tcBorders') : undefined,
-    theme,
-  );
   const borders: ImportedDocxTableCellBorders = {};
-  for (const edge of TABLE_BORDER_EDGES) {
-    const border = cellBorders[edge] ?? tableBorders[edge];
-    if (border) borders[edge] = border;
+  for (const layer of layers) {
+    if (layer.tableProperties) {
+      mergeBorders(
+        borders,
+        tableBordersForCell(cell, layer.tableProperties, theme),
+      );
+    }
+    if (layer.cellProperties) {
+      mergeBorders(
+        borders,
+        borderEdges(directChild(layer.cellProperties, 'tcBorders'), theme),
+      );
+    }
   }
   return Object.keys(borders).length ? borders : null;
 }
 
 function tableBordersForCell(
   cell: Element,
+  properties: Element,
   theme: DocxThemeResolver,
 ): ImportedDocxTableCellBorders {
   const table = closestAncestor(cell, 'tbl');
-  const properties = table ? directChild(table, 'tblPr') : undefined;
-  const borders = properties
-    ? borderElementMap(directChild(properties, 'tblBorders'))
-    : new Map<string, Element>();
+  const borders = borderElementMap(directChild(properties, 'tblBorders'));
   if (!table || !borders.size) return {};
 
   const row = closestAncestor(cell, 'tr');
@@ -203,6 +219,16 @@ function tableBordersForCell(
       theme,
     ),
   });
+}
+
+function mergeBorders(
+  target: ImportedDocxTableCellBorders,
+  source: ImportedDocxTableCellBorders,
+): void {
+  for (const edge of TABLE_BORDER_EDGES) {
+    const border = source[edge];
+    if (border) target[edge] = border;
+  }
 }
 
 function borderEdges(
@@ -277,10 +303,27 @@ function parseBorder(
 }
 
 function importedTableCellBackgroundColor(
-  shading: Element | undefined,
+  layers: readonly DocxTableStyleLayer[],
   theme: DocxThemeResolver,
 ): string | null {
-  if (!shading) return null;
+  let color: string | null = null;
+  for (const layer of layers) {
+    const tableShading = layer.tableProperties
+      ? directChild(layer.tableProperties, 'shd')
+      : undefined;
+    const cellShading = layer.cellProperties
+      ? directChild(layer.cellProperties, 'shd')
+      : undefined;
+    if (tableShading) color = tableCellBackgroundColor(tableShading, theme);
+    if (cellShading) color = tableCellBackgroundColor(cellShading, theme);
+  }
+  return color;
+}
+
+function tableCellBackgroundColor(
+  shading: Element,
+  theme: DocxThemeResolver,
+): string | null {
   const themed = docxThemeColor(
     theme,
     attribute(shading, 'themeFill'),
@@ -288,6 +331,21 @@ function importedTableCellBackgroundColor(
     attribute(shading, 'themeFillShade'),
   );
   return themed ? `#${themed}` : ooxmlColor(attribute(shading, 'fill'));
+}
+
+function importedTableCellVerticalAlign(
+  layers: readonly DocxTableStyleLayer[],
+): ImportedDocxTableCellVerticalAlign | null {
+  let alignment: ImportedDocxTableCellVerticalAlign | null = null;
+  for (const layer of layers) {
+    const element = layer.cellProperties
+      ? directChild(layer.cellProperties, 'vAlign')
+      : undefined;
+    if (!element) continue;
+    const value = tableVerticalAlign(attribute(element, 'val'));
+    if (value) alignment = value;
+  }
+  return alignment;
 }
 
 function tableBorderStyle(

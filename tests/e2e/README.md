@@ -54,9 +54,13 @@ flatten existing edges, outside borders retain independent cell-edge data in
 edit and preview, and browser diagnostics stay clean, plus a real theme-backed
 DOCX table workflow proving tint/shade resolution for cell fill and four
 independent border edges across edit and preview with screenshot,
-accessibility, console, and page-error evidence, plus a real multi-page DOCX
-table workflow proving that a splittable row continues at paragraph
-boundaries across three physical pages, repeated heading rows remain visible
+accessibility, console, and page-error evidence, plus a real inherited-table-
+style DOCX workflow proving based-on resolution, first-row fill, white bold
+header text and double border, horizontal banding, and last-row presentation
+across edit and preview with screenshot, accessibility, console, and page-error
+evidence, plus a real multi-page DOCX table workflow proving that a splittable
+row continues at paragraph boundaries across three physical pages, repeated
+heading rows remain visible
 on both continuation pages, and the final row content and following paragraph
 remain keyboard reachable, plus a
 phone caption and cross-reference workflow covering dialog focus, accessible

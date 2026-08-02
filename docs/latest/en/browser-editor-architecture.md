@@ -482,11 +482,12 @@ pagination and the paper ruler.
 
 Run-format import uses the same style index. It merges document run defaults,
 paragraph-style run properties, direct paragraph run properties, bounded
-character-style `basedOn` chains, and direct run properties. Unique sentinels
-survive Mammoth conversion and become ordinary inline spans before the
-TipTap/ProseMirror model is created. This currently preserves visible font
-families, half-point sizes, direct hexadecimal colors, Word highlights, and
-run shading. The importer also reads the DOCX font and color schemes, resolves
+character-style `basedOn` chains, contextual table-style properties, and direct
+run properties. Unique sentinels survive Mammoth conversion and become
+ordinary inline semantics before the TipTap/ProseMirror model is created. This
+currently preserves visible bold, italic, underline, strikethrough, font
+families, half-point sizes, direct hexadecimal colors, Word highlights, and run
+shading. The importer also reads the DOCX font and color schemes, resolves
 major/minor theme font references, system or sRGB theme colors, and tint/shade
 transforms. Superscript and subscript remain structured, mutually exclusive
 TipTap marks; their ribbon and keyboard commands switch vertical position
@@ -554,11 +555,22 @@ render identically in edit and preview, export as independent `w:tcBorders`,
 and reopen without being flattened. Explicit table-level outer and inside
 borders resolve onto their owning cell edges during import. Direct
 `themeColor`/`themeFill` values and their tint or shade transforms resolve from
-the DOCX package theme into stable edit, preview, and export RGB values.
+the DOCX package theme into stable edit, preview, and export RGB values. A
+default or referenced `w:style w:type="table"` resolves through a bounded,
+cycle-safe `w:basedOn` chain. `w:tblLook` flags or bitmasks, row and column band
+sizes, `gridSpan`, and `gridBefore`/`gridAfter` select `wholeTable`, row/column
+bands, first/last rows or columns, and corner-cell conditions in Word precedence
+order. Their cell fills, per-edge borders, and run emphasis, fonts, and colors
+enter the marker pipeline after paragraph styles and before direct paragraph,
+character-style, or run formatting. Direct table and cell properties remain
+higher-priority layers for cell presentation. Theme-derived conditional
+presentation is materialized as stable RGB for editing, preview, and regenerated
+DOCX output.
 Command availability comes from the ProseMirror table state, so actions that
 cannot apply to the current selection remain disabled. Loss-preserving semantic
-theme references, percentage-width column authoring, nested-table editing, and
-arbitrary conditional table-style inheritance remain explicit fidelity gaps.
+theme references, conditional table-style paragraph layout beyond run
+properties, percentage-width column authoring, nested-table editing, and
+complex merged-cell conditional flow remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf

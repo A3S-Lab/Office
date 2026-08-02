@@ -260,11 +260,14 @@ interaction model.
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit, a
   reusable table-border pen with all, outside, inside, and individual-edge
-  targets, per-edge DOCX border preservation, direct DOCX theme-color,
-  tint, and shade resolution for table borders and cell fills across edit,
-  preview, and RGB-stable export, and paragraph-boundary continuation for
-  splittable table rows that exceed a full physical page, including repeated
-  heading rows on every continuation page,
+  targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
+  inheritance with whole-table, banded row or column, first/last row or column,
+  and corner-cell formatting. Conditional fills, borders, bold, italic,
+  underline, strikethrough, fonts, and text colors are materialized before
+  direct table, cell, paragraph, and run formatting. Theme tint and shade
+  values resolve for table borders and cell fills across edit, preview, and
+  RGB-stable export. Splittable table rows that exceed a full physical page
+  continue at paragraph boundaries with repeated heading rows on every page,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked
   changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared
@@ -272,9 +275,9 @@ interaction model.
   preview, and browser PDF export share one live pagination result. Tail edits
   reuse the stable physical-page prefix, including resolved first/odd/even
   headers, footers, page numbers, and navigation descriptors.
-  A real 120-paragraph single-row DOCX is covered by deterministic A3S Test
-  evidence across three physical pages through the final table content and the
-  following paragraph.
+  Real DOCX fixtures provide deterministic A3S Test evidence for inherited
+  table styling across edit and preview, and for a 120-paragraph row across
+  three physical pages through the final table content and following paragraph.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

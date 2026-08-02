@@ -10,9 +10,18 @@ import {
   resolveDocxThemeResolver,
   type DocxThemeResolver,
 } from './work-docx-theme';
+import {
+  type DocxTableStyleSource,
+  docxTableRunPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxRunFormatting {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strike?: boolean;
   fontFamily?: string;
   fontSize?: number;
   color?: string;
@@ -38,10 +47,12 @@ export function markDocxRunFormatting(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
   themeSource?: DocxThemeSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxRunFormattingMarkers {
   const runs: ImportedDocxRunFormattingMarker[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
   const theme = resolveDocxThemeResolver(themeSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const run of descendants(document, 'r')) {
     const runText = directRunText(run);
     if (!runText || runText.includes('__A3S_')) continue;
@@ -50,7 +61,12 @@ export function markDocxRunFormatting(
     const paragraphProperties = directChild(paragraph, 'pPr');
     const runProperties = directChild(run, 'rPr');
     const formatting = resolvedRunFormatting(
-      docxRunPropertySources(paragraphProperties, runProperties, styles),
+      docxRunPropertySources(
+        paragraphProperties,
+        runProperties,
+        styles,
+        docxTableRunPropertySources(run, tableStyles),
+      ),
       theme,
     );
     if (!Object.keys(formatting).length) continue;
@@ -69,11 +85,9 @@ export function applyImportedDocxRunFormattingMarkers(
 ): void {
   const replacements = new Map<string, string>();
   for (const marker of markers.runs) {
-    replacements.set(
-      marker.startMarker,
-      formattingSpanStart(document, marker.formatting),
-    );
-    replacements.set(marker.endMarker, '</span>');
+    const markup = formattingMarkup(document, marker.formatting);
+    replacements.set(marker.startMarker, markup.start);
+    replacements.set(marker.endMarker, markup.end);
   }
   document.body.innerHTML = document.body.innerHTML.replace(
     RUN_FORMATTING_MARKER_PATTERN,
@@ -100,8 +114,18 @@ function resolvedRunFormatting(
   let fontSize: number | undefined;
   let color: string | undefined;
   let backgroundColor: string | undefined;
+  let bold: boolean | undefined;
+  let italic: boolean | undefined;
+  let underline: boolean | undefined;
+  let strike: boolean | undefined;
 
   for (const properties of propertySources) {
+    bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
+    italic = overriddenBoolean(italic, onOffProperty(properties, 'i'));
+    underline = overriddenBoolean(underline, underlineProperty(properties));
+    strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
+    strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
+
     const runFonts = directChild(properties, 'rFonts');
     if (runFonts) {
       assignFont(
@@ -173,6 +197,10 @@ function resolvedRunFormatting(
     fonts.complex,
   ]);
   return {
+    ...(bold !== undefined ? { bold } : {}),
+    ...(italic !== undefined ? { italic } : {}),
+    ...(underline !== undefined ? { underline } : {}),
+    ...(strike !== undefined ? { strike } : {}),
     ...(fontFamily ? { fontFamily } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(color ? { color } : {}),
@@ -200,10 +228,10 @@ function markerText(document: Document, marker: string): Element {
   return text;
 }
 
-function formattingSpanStart(
+function formattingMarkup(
   document: Document,
   formatting: ImportedDocxRunFormatting,
-): string {
+): { start: string; end: string } {
   const span = document.createElement('span');
   if (formatting.fontFamily) span.style.fontFamily = formatting.fontFamily;
   if (formatting.fontSize !== undefined)
@@ -212,7 +240,47 @@ function formattingSpanStart(
   if (formatting.backgroundColor)
     span.style.backgroundColor = formatting.backgroundColor;
   const html = span.outerHTML;
-  return html.slice(0, html.indexOf('>') + 1);
+  const tags = [
+    ...(formatting.bold ? ['strong'] : []),
+    ...(formatting.italic ? ['em'] : []),
+    ...(formatting.underline ? ['u'] : []),
+    ...(formatting.strike ? ['s'] : []),
+  ];
+  return {
+    start: `${html.slice(0, html.indexOf('>') + 1)}${tags
+      .map((tag) => `<${tag}>`)
+      .join('')}`,
+    end: `${[...tags]
+      .reverse()
+      .map((tag) => `</${tag}>`)
+      .join('')}</span>`,
+  };
+}
+
+function overriddenBoolean(
+  current: boolean | undefined,
+  next: boolean | undefined,
+): boolean | undefined {
+  return next === undefined ? current : next;
+}
+
+function onOffProperty(
+  properties: Element,
+  propertyName: string,
+): boolean | undefined {
+  const element = directChild(properties, propertyName);
+  if (!element) return undefined;
+  const value = wordAttribute(element, 'val')?.trim().toLowerCase();
+  return value !== '0' && value !== 'false' && value !== 'off';
+}
+
+function underlineProperty(properties: Element): boolean | undefined {
+  const element = directChild(properties, 'u');
+  if (!element) return undefined;
+  const value = wordAttribute(element, 'val')?.trim().toLowerCase();
+  return (
+    value !== '0' && value !== 'false' && value !== 'off' && value !== 'none'
+  );
 }
 
 function directRunText(run: Element): string {

@@ -1,0 +1,91 @@
+suite "office-word-styled-table" {
+    version = 1
+
+    scenario "preserve-conditional-table-style" {
+        name = "Preserve inherited Word table styles in editing and preview"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-styled-table"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-styled-table-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-styled-table.docx"]
+        }
+
+        wait "document-loaded" {
+            text = "Styled report table"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "header-style-is-inherited" {
+            visible = css(".work-document-editable table tr:first-child td[data-office-cell-fill='#4472c4'][data-office-cell-border-bottom-color='#ffffff'][data-office-cell-border-bottom-style='double']")
+        }
+
+        expect "header-run-is-bold" {
+            visible = css(".work-document-editable table tr:first-child td strong")
+        }
+
+        expect "header-run-is-white" {
+            visible = css(".work-document-editable table tr:first-child td span[style*='#ffffff'], .work-document-editable table tr:first-child td span[style*='rgb(255, 255, 255)']")
+        }
+
+        expect "body-band-is-inherited" {
+            visible = css(".work-document-editable table tr:nth-child(2) td[data-office-cell-fill='#f8cbad']")
+        }
+
+        expect "last-row-style-is-inherited" {
+            visible = css(".work-document-editable table tr:nth-child(3) td[data-office-cell-fill='#a5a5a5']")
+        }
+
+        click "preview-document" {
+            target = role("button", "预览")
+        }
+
+        expect "preview-keeps-header-style" {
+            visible = css(".work-document-preview-page table tr:first-child td[data-office-cell-fill='#4472c4'][data-office-cell-border-bottom-color='#ffffff'] strong")
+        }
+
+        expect "preview-keeps-body-band" {
+            visible = css(".work-document-preview-page table tr:nth-child(2) td[data-office-cell-fill='#f8cbad']")
+        }
+
+        expect "preview-keeps-last-row-style" {
+            visible = css(".work-document-preview-page table tr:nth-child(3) td[data-office-cell-fill='#a5a5a5']")
+        }
+
+        screenshot "styled-table-preview" {
+            path = "screenshots/word-styled-table-preview.png"
+        }
+
+        accessibility "styled-table-semantics" {
+            path = "evidence/word-styled-table.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

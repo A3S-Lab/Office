@@ -170,6 +170,16 @@ Direct table and cell theme colors now resolve through the package theme,
 including `themeTint`, `themeShade`, `themeFillTint`, and `themeFillShade`.
 The resolved colors remain identical in edit and preview and export as stable
 RGB values, instead of falling back to stale OOXML color attributes.
+DOCX table styles now resolve the default or referenced table style through a
+bounded, cycle-safe `basedOn` chain. `tblLook` flags or bitmasks, row and column
+band sizes, grid spans, and row grid offsets select whole-table, banded row or
+column, first/last row or column, and corner-cell conditions in Word precedence
+order. Conditional fills, per-edge borders, fonts, colors, bold, italic,
+underline, and strikethrough enter the same edit and preview model before
+direct table, cell, paragraph, and run formatting. Theme-derived style colors
+are materialized as stable RGB on export. A real conditional-style DOCX fixture
+is covered by deterministic A3S Test evidence for header, body-band, and last-
+row presentation with a clean browser diagnostic run.
 Splittable rows taller than a complete continuation-page body now fragment at
 measured paragraph boundaries instead of overflowing as one atomic row. The
 same layout path repeats leading heading rows on each continuation page. A real
@@ -181,10 +191,11 @@ Desktop insertion keeps an 8 × 10 keyboard matrix without duplicate cell
 semantics, while phone insertion uses focused row and column controls with
 44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
 row extension, compact-ribbon deletion, and editor-focus recovery. Native Word
-list identities, arbitrary multilevel numbering, inherited conditional table
-styles, loss-preserving semantic theme references, percentage-width column
-authoring, nested tables, and more complex merged-cell multi-page row cases
-remain part of this priority rather than being treated as complete.
+list identities, arbitrary multilevel numbering, conditional table-style
+paragraph layout beyond run properties, loss-preserving semantic theme
+references, percentage-width column authoring, nested tables, and more complex
+merged-cell multi-page row cases remain part of this priority rather than being
+treated as complete.
 
 Exit evidence:
 

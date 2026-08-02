@@ -113,6 +113,7 @@ export function docxRunPropertySources(
   paragraphProperties: Element | undefined,
   runProperties: Element | undefined,
   resolver: DocxParagraphStyleResolver,
+  contextualProperties: readonly Element[] = [],
 ): Element[] {
   const sources: Element[] = [];
   if (resolver.defaultRunProperties)
@@ -133,6 +134,8 @@ export function docxRunPropertySources(
         'runProperties',
       ),
     );
+
+  sources.push(...contextualProperties);
 
   const paragraphRunProperties = paragraphProperties
     ? directChild(paragraphProperties, 'rPr')

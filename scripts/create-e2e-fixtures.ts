@@ -43,6 +43,10 @@ const themeTableDocumentPath = path.join(
   fixtureDirectory,
   'word-theme-table.docx',
 );
+const styledTableDocumentPath = path.join(
+  fixtureDirectory,
+  'word-styled-table.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -57,6 +61,7 @@ await Bun.write(
   await createMultiPageWordTableFixture(),
 );
 await Bun.write(themeTableDocumentPath, await createThemeTableWordFixture());
+await Bun.write(styledTableDocumentPath, await createStyledTableWordFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -71,6 +76,7 @@ console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);
 console.log(`Created ${multiPageTableDocumentPath}`);
 console.log(`Created ${themeTableDocumentPath}`);
+console.log(`Created ${styledTableDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -367,6 +373,179 @@ async function createThemeTableWordFixture(): Promise<Buffer> {
     ),
   );
   return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+async function createStyledTableWordFixture(): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic Word conditional table-style fixture',
+    title: 'A3S Office styled table fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            heading: HeadingLevel.HEADING_1,
+            children: [new TextRun({ text: 'Styled report table' })],
+          }),
+          new Table({
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Region' })],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Revenue' })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'North' })],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: '$120,000' })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Total' })],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: '$120,000' })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'After styled table.' })],
+          }),
+        ],
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  const stylesXmlFile = archive.file('word/styles.xml');
+  const contentTypesFile = archive.file('[Content_Types].xml');
+  const relationshipsFile = archive.file('word/_rels/document.xml.rels');
+  if (
+    !documentXmlFile ||
+    !stylesXmlFile ||
+    !contentTypesFile ||
+    !relationshipsFile
+  ) {
+    throw new Error('Expected a complete DOCX package for the styled table.');
+  }
+  const [documentXml, stylesXml, contentTypes, relationships] =
+    await Promise.all([
+      documentXmlFile.async('string'),
+      stylesXmlFile.async('string'),
+      contentTypesFile.async('string'),
+      relationshipsFile.async('string'),
+    ]);
+  const tableProperties = /<w:tblPr>[\s\S]*?<\/w:tblPr>/.exec(documentXml)?.[0];
+  if (!tableProperties) {
+    throw new Error('Failed to locate the styled-table properties.');
+  }
+  const conditionalTableProperties = tableProperties
+    .replace(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/, '')
+    .replace(
+      '<w:tblPr>',
+      '<w:tblPr><w:tblStyle w:val="A3SReportTable"/><w:tblLook w:firstRow="1" w:lastRow="1" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>',
+    );
+  archive.file(
+    'word/document.xml',
+    documentXml.replace(tableProperties, conditionalTableProperties),
+  );
+  archive.file(
+    'word/styles.xml',
+    stylesXml.replace(
+      '</w:styles>',
+      `${wordTableStyleFixtureXml()}</w:styles>`,
+    ),
+  );
+  archive.file('word/theme/theme1.xml', wordThemeFixtureXml());
+  archive.file(
+    '[Content_Types].xml',
+    contentTypes.includes('/word/theme/theme1.xml')
+      ? contentTypes
+      : contentTypes.replace(
+          '</Types>',
+          '<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/></Types>',
+        ),
+  );
+  archive.file(
+    'word/_rels/document.xml.rels',
+    relationships.includes('/relationships/theme')
+      ? relationships
+      : relationships.replace(
+          '</Relationships>',
+          '<Relationship Id="rIdA3SStyledTableTheme" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/></Relationships>',
+        ),
+  );
+  return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+function wordTableStyleFixtureXml(): string {
+  return [
+    '<w:style w:type="table" w:styleId="A3SBaseTable">',
+    '<w:name w:val="A3S Base Table"/>',
+    '<w:tblPr><w:tblBorders>',
+    '<w:top w:val="single" w:sz="6" w:themeColor="accent1"/>',
+    '<w:right w:val="single" w:sz="6" w:themeColor="accent1"/>',
+    '<w:bottom w:val="single" w:sz="6" w:themeColor="accent1"/>',
+    '<w:left w:val="single" w:sz="6" w:themeColor="accent1"/>',
+    '<w:insideH w:val="dashed" w:sz="6" w:themeColor="accent3"/>',
+    '<w:insideV w:val="nil"/>',
+    '</w:tblBorders></w:tblPr>',
+    '<w:tcPr><w:shd w:val="clear" w:fill="FFFFFF"/></w:tcPr>',
+    '<w:rPr><w:color w:themeColor="dk1"/></w:rPr>',
+    '<w:tblStylePr w:type="band1Horz"><w:tcPr>',
+    '<w:shd w:val="clear" w:themeFill="accent2" w:themeFillTint="99"/>',
+    '</w:tcPr></w:tblStylePr>',
+    '<w:tblStylePr w:type="firstRow"><w:tcPr>',
+    '<w:shd w:val="clear" w:themeFill="accent1"/>',
+    '<w:tcBorders><w:bottom w:val="double" w:sz="12" w:themeColor="lt1"/></w:tcBorders>',
+    '</w:tcPr><w:rPr><w:b/><w:color w:themeColor="lt1"/></w:rPr>',
+    '</w:tblStylePr>',
+    '</w:style>',
+    '<w:style w:type="table" w:styleId="A3SReportTable">',
+    '<w:name w:val="A3S Report Table"/>',
+    '<w:basedOn w:val="A3SBaseTable"/>',
+    '<w:tblStylePr w:type="lastRow"><w:tcPr>',
+    '<w:shd w:val="clear" w:themeFill="accent3"/>',
+    '</w:tcPr><w:rPr><w:b/></w:rPr></w:tblStylePr>',
+    '</w:style>',
+  ].join('');
 }
 
 function wordThemeFixtureXml(): string {
