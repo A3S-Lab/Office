@@ -225,7 +225,7 @@ test('aligns safe table-cell boundaries into row fragments', () => {
   ]);
 });
 
-test('keeps rows larger than the continuation page atomic', () => {
+test('splits rows larger than a continuation page at safe cell boundaries', () => {
   expect(
     createDocumentTableRowFragmentPlan(
       [
@@ -245,8 +245,13 @@ test('keeps rows larger than the continuation page atomic', () => {
     ),
   ).toEqual([
     {
-      height: 120,
-      cellRanges: [{ from: 10, to: 30 }],
+      height: 60,
+      cellRanges: [{ from: 10, to: 20 }],
+    },
+    {
+      height: 60,
+      cellRanges: [{ from: 20, to: 30 }],
+      cellBreaks: [{ cellIndex: 0, position: 20, alignmentOffset: 0 }],
     },
   ]);
 });

@@ -9,6 +9,9 @@ import {
   HeadingLevel,
   Packer,
   Paragraph,
+  Table,
+  TableCell,
+  TableRow,
   TextRun,
 } from 'docx';
 import JSZip from 'jszip';
@@ -32,6 +35,10 @@ const longCommentDocumentPath = path.join(
   fixtureDirectory,
   'word-comments-120.docx',
 );
+const multiPageTableDocumentPath = path.join(
+  fixtureDirectory,
+  'word-multi-page-table.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -41,6 +48,10 @@ await Bun.write(
   await createLongWordRevisionFixture(),
 );
 await Bun.write(longCommentDocumentPath, await createLongWordCommentFixture());
+await Bun.write(
+  multiPageTableDocumentPath,
+  await createMultiPageWordTableFixture(),
+);
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -53,6 +64,7 @@ console.log(`Created ${pdfPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);
+console.log(`Created ${multiPageTableDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -196,6 +208,59 @@ async function createLongWordCommentFixture(): Promise<Buffer> {
             ],
           });
         }),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
+}
+
+async function createMultiPageWordTableFixture(): Promise<Buffer> {
+  const paragraphCount = 120;
+  const bodyParagraphs = Array.from({ length: paragraphCount }, (_, index) => {
+    const marker = String(index + 1).padStart(3, '0');
+    return new Paragraph({
+      children: [
+        new TextRun({
+          text: `Deterministic multi-page table row ${marker}.`,
+        }),
+      ],
+    });
+  });
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic multi-page Word table-row fixture',
+    title: 'A3S Office multi-page table fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            heading: HeadingLevel.HEADING_1,
+            children: [new TextRun({ text: 'Multi-page table layout' })],
+          }),
+          new Table({
+            rows: [
+              new TableRow({
+                tableHeader: true,
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: 'Repeated heading' })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                cantSplit: false,
+                children: [new TableCell({ children: bodyParagraphs })],
+              }),
+            ],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'After multi-page table.' })],
+          }),
+        ],
       },
     ],
   });

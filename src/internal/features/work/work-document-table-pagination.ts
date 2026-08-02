@@ -47,7 +47,7 @@ export function createDocumentTableRowFragmentPlan(
   if (
     !cells.length ||
     !Number.isFinite(maximumFragmentedRowHeight) ||
-    height > maximumFragmentedRowHeight
+    maximumFragmentedRowHeight <= 0
   ) {
     return atomic();
   }

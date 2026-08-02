@@ -166,14 +166,21 @@ row controls are also available. Common cell shading, vertical alignment,
 explicit per-edge borders, fixed grid widths, layout mode, and explicit row
 heights round-trip through editable HTML and DOCX. Table-level outer and inside
 DOCX borders resolve to cell edges on import without flattening mixed styles.
-Desktop
-insertion keeps an 8 × 10 keyboard matrix without duplicate cell
+Splittable rows taller than a complete continuation-page body now fragment at
+measured paragraph boundaries instead of overflowing as one atomic row. The
+same layout path repeats leading heading rows on each continuation page. A real
+DOCX fixture with one 120-paragraph body row deterministically produces three
+physical pages; A3S Test verifies the page-two and page-three cell breaks and
+repeated headings, keyboard access to the final marker and following paragraph,
+and an error-free browser run.
+Desktop insertion keeps an 8 × 10 keyboard matrix without duplicate cell
 semantics, while phone insertion uses focused row and column controls with
 44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
 row extension, compact-ribbon deletion, and editor-focus recovery. Native Word
 list identities, arbitrary multilevel numbering, theme-derived table borders,
-percentage-width column authoring, nested tables, and all multi-page
-row cases remain part of this priority rather than being treated as complete.
+percentage-width column authoring, nested tables, and more complex merged-cell
+multi-page row cases remain part of this priority rather than being treated as
+complete.
 
 Exit evidence:
 

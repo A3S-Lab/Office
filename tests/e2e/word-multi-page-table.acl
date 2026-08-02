@@ -1,0 +1,86 @@
+suite "office-word-multi-page-table" {
+    version = 1
+
+    scenario "paginate-a-splittable-table-row" {
+        name = "Continue a splittable Word table row across physical pages"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-multi-page-table"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-multi-page-table-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-multi-page-table.docx"]
+        }
+
+        wait "document-loaded" {
+            text = "Multi-page table layout"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "three-physical-pages-ready" {
+            visible = css(".work-document-page-stack[data-page-count='3']")
+        }
+
+        expect "second-page-splits-the-table-cell" {
+            visible = css(".work-document-table-cell-page-break[data-page-index='2']")
+        }
+
+        expect "second-page-repeats-the-heading" {
+            visible = css(".work-document-table-cell-page-break[data-page-index='2'] .work-document-table-cell-repeated-header")
+        }
+
+        expect "third-page-splits-the-table-cell" {
+            visible = css(".work-document-table-cell-page-break[data-page-index='3']")
+        }
+
+        expect "third-page-repeats-the-heading" {
+            visible = css(".work-document-table-cell-page-break[data-page-index='3'] .work-document-table-cell-repeated-header")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        expect "final-table-marker-is-reachable" {
+            text = "Deterministic multi-page table row 120."
+        }
+
+        expect "content-after-table-is-reachable" {
+            text = "After multi-page table."
+        }
+
+        expect "trailing-paragraph-is-visible" {
+            visible = css(".work-document-editable .ProseMirror p:last-child")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
