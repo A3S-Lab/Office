@@ -61,7 +61,10 @@ recovery across object cut and paste, presenter-view keyboard navigation and
 phone layout, plus a phone chart-inspector workflow covering responsive modal
 semantics, background isolation, forward and reverse focus containment, dirty
 draft cancellation, screenshot and accessibility evidence, and exact
-selected-chart focus restoration; PDF import
+selected-chart focus restoration, plus phone comment review covering full-
+editor modal semantics, touch-sized review controls, background isolation,
+forward and reverse focus containment, dirty-comment cancellation, and exact
+New Comment and View Comments invoker restoration; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard
 navigation, plus a phone page-drawer workflow proving toolbar ownership,
 selection, modal close behavior, and an unobstructed document canvas; the

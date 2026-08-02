@@ -1,13 +1,20 @@
 import { MapPin, Trash2, X } from 'lucide-react';
+import { useRef } from 'react';
 import {
   Button,
   CollectionState,
   IconButton,
 } from '../../../design-system/primitives';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import type { WorkSlide } from '../work-types';
 import { CommittedOfficeTextArea } from './office-controls';
 import type { PresentationEditorCommands } from './presentation-command-types';
-import { handleOfficeTaskPaneKeyDown } from './office-task-pane';
+import {
+  handleOfficeTaskPaneKeyDown,
+  useOfficeTaskPaneModal,
+} from './office-task-pane';
+
+const PRESENTATION_COMMENTS_PANE_MODAL_QUERY = '(max-width: 640px)';
 
 export type PresentationCommentsPanelCommands = Pick<
   PresentationEditorCommands,
@@ -32,30 +39,47 @@ export function PresentationCommentsPanel({
   slides,
   activeCommentId,
   commands,
+  restoreFocusTarget,
 }: {
   slides: WorkSlide[];
   activeCommentId: string | null;
   commands: PresentationCommentsPanelCommands;
+  restoreFocusTarget?: () => HTMLElement | null;
 }) {
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const modal = useOfficeTaskPaneModal(PRESENTATION_COMMENTS_PANE_MODAL_QUERY);
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
+  const focusScope = useDialogFocusScope<HTMLElement>({
+    active: modal,
+    initialFocus: () => closeRef.current,
+    getActiveScope: () => panelRef.current,
+    restoreFocusTarget,
+  });
   const comments = presentationCommentViews(slides);
   return (
     <section
+      {...modalAttributes}
+      ref={panelRef}
       className="work-presentation-comments-panel"
       aria-label="演示批注审阅"
-      onKeyDown={(event) =>
-        handleOfficeTaskPaneKeyDown(event, commands.closeComments)
-      }
+      onKeyDown={(event) => {
+        focusScope.handleKeyDown(event);
+        if (!event.defaultPrevented)
+          handleOfficeTaskPaneKeyDown(event, commands.closeComments);
+      }}
     >
       <header>
         <div>
           <strong>演示批注</strong>
           <span>
-            {comments.length
-              ? `${comments.length} 条传统 PPTX 批注`
-              : '没有批注'}
+            {comments.length ? `${comments.length} 条批注` : '没有批注'}
           </span>
         </div>
         <IconButton
+          ref={closeRef}
           className="close"
           label="关闭演示批注审阅"
           onClick={commands.closeComments}

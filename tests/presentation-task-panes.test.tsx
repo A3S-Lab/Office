@@ -95,7 +95,7 @@ test('dismisses the presentation chart task pane with Escape', () => {
 });
 
 test('keeps the docked chart pane as a non-modal region', () => {
-  const mediaQuery = installPresentationChartMatchMedia(false);
+  const mediaQuery = installPresentationTaskPaneMatchMedia(false);
   const view = render(
     <PresentationChartPanel
       chart={chart()}
@@ -114,7 +114,7 @@ test('keeps the docked chart pane as a non-modal region', () => {
 });
 
 test('contains phone chart-pane focus and restores the selected chart', async () => {
-  const mediaQuery = installPresentationChartMatchMedia(true);
+  const mediaQuery = installPresentationTaskPaneMatchMedia(true);
 
   function Harness() {
     const [open, setOpen] = useState(false);
@@ -165,6 +165,95 @@ test('contains phone chart-pane focus and restores the selected chart', async ()
     await waitFor(() => expect(panel).not.toBeInTheDocument());
     expect(selectedChart).not.toHaveAttribute('inert');
     await waitFor(() => expect(selectedChart).toHaveFocus());
+  } finally {
+    view.unmount();
+    mediaQuery.restore();
+  }
+});
+
+test('contains phone comment-review focus and restores its exact invoker', async () => {
+  const mediaQuery = installPresentationTaskPaneMatchMedia(true);
+
+  function Harness() {
+    const [open, setOpen] = useState(false);
+    const invokerRef = useRef<HTMLButtonElement>(null);
+    return (
+      <div>
+        <button ref={invokerRef} type="button" onClick={() => setOpen(true)}>
+          查看批注（1）
+        </button>
+        {open && (
+          <PresentationCommentsPanel
+            slides={[
+              {
+                id: 'slide-1',
+                name: 'Slide 1',
+                background: '#ffffff',
+                elements: [],
+                comments: [
+                  {
+                    id: 'comment-1',
+                    author: 'A3S',
+                    date: '2026-07-29T00:00:00.000Z',
+                    text: 'Original comment',
+                    x: 10,
+                    y: 10,
+                  },
+                ],
+              },
+            ]}
+            activeCommentId="comment-1"
+            commands={{
+              closeComments: () => setOpen(false),
+              deletePresentationComment: () => undefined,
+              locatePresentationComment: () => undefined,
+              updatePresentationComment: () => undefined,
+            }}
+            restoreFocusTarget={() => invokerRef.current}
+          />
+        )}
+        <button type="button">演讲者备注</button>
+      </div>
+    );
+  }
+
+  const view = render(<Harness />);
+  try {
+    const invoker = screen.getByRole('button', { name: '查看批注（1）' });
+    const notes = screen.getByRole('button', { name: '演讲者备注' });
+    fireEvent.click(invoker);
+
+    const panel = screen.getByRole('dialog', { name: '演示批注审阅' });
+    const close = screen.getByRole('button', {
+      name: '关闭演示批注审阅',
+    });
+    const remove = screen.getByRole('button', { name: '删除演示批注 1' });
+    const comment = screen.getByRole('textbox', {
+      name: '编辑演示批注 1',
+    });
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByText('1 条批注')).toBeVisible();
+    expect(screen.queryByText(/传统 PPTX/)).not.toBeInTheDocument();
+    expect(invoker).toHaveAttribute('inert');
+    expect(notes).toHaveAttribute('inert');
+    expect(mediaQuery.queries).toContain('(max-width: 640px)');
+    await waitFor(() => expect(close).toHaveFocus());
+
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+    expect(remove).toHaveFocus();
+    fireEvent.keyDown(remove, { key: 'Tab' });
+    expect(close).toHaveFocus();
+
+    fireEvent.change(comment, { target: { value: 'Unsaved comment' } });
+    fireEvent.keyDown(comment, { key: 'Escape' });
+    expect(comment).toHaveValue('Original comment');
+    expect(panel).toBeVisible();
+
+    fireEvent.keyDown(comment, { key: 'Escape' });
+    await waitFor(() => expect(panel).not.toBeInTheDocument());
+    expect(invoker).not.toHaveAttribute('inert');
+    expect(notes).not.toHaveAttribute('inert');
+    await waitFor(() => expect(invoker).toHaveFocus());
   } finally {
     view.unmount();
     mediaQuery.restore();
@@ -373,7 +462,7 @@ function chart(): WorkSlideChart {
   };
 }
 
-function installPresentationChartMatchMedia(initialMatches: boolean): {
+function installPresentationTaskPaneMatchMedia(initialMatches: boolean): {
   queries: string[];
   restore(): void;
 } {

@@ -83,6 +83,12 @@ All notable changes to A3S Office will be documented in this file.
   ribbon, slide workspace, and status bar remain inert, Tab stays contained,
   dirty fields consume the first Escape, and closing restores the selected
   chart without changing the desktop docked inspector.
+- Made Presentation comment review a full-editor modal on phones while keeping
+  the desktop review strip docked. The phone surface uses readable review
+  typography and touch-sized actions, isolates the ribbon, slide workspace,
+  and status bar, contains forward and reverse Tab navigation, lets a dirty
+  comment consume Escape before close, and restores the exact New Comment,
+  View Comments, or comment-marker invoker.
 - Kept common Presentation arrangement commands visible at desktop width by
   compacting group, ungroup, and layer actions without removing their labels
   from accessible names and tooltips.

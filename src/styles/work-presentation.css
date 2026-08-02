@@ -1,6 +1,7 @@
 .work-presentation-editor {
   --work-office-control-accent: #db663b;
 
+  position: relative;
   display: flex;
   min-width: 0;
   min-height: 0;

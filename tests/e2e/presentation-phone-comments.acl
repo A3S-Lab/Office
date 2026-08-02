@@ -1,0 +1,156 @@
+suite "office-presentation-phone-comments" {
+    version = 1
+
+    scenario "contain-comment-review-and-restore-invokers" {
+        name = "Contain phone Presentation comment review and restore exact ribbon invokers"
+        surface = "web"
+        timeout_ms = 45000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        wait "presentation-card-ready" {
+            visible = css(".playground-artifact-card.presentation")
+        }
+
+        click "open-presentation" {
+            target = css(".playground-artifact-card.presentation")
+        }
+
+        wait "presentation-ready" {
+            visible = css(".work-slide-canvas.interactive")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        click "add-comment" {
+            target = role("button", "新建批注")
+        }
+
+        fill "enter-comment" {
+            target = label("批注内容")
+            value = "需要补充这项结论的数据来源"
+        }
+
+        click "submit-comment" {
+            target = role("button", "添加批注")
+        }
+
+        wait "comment-review-ready" {
+            visible = css(".work-presentation-comments-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "ribbon-is-inert" {
+            visible = css(".work-presentation-ribbon[inert]")
+        }
+
+        expect "workspace-is-inert" {
+            visible = css(".work-presentation-workspace[inert]")
+        }
+
+        expect "status-is-inert" {
+            visible = css(".work-presentation-status[inert]")
+        }
+
+        expect "close-receives-initial-focus" {
+            visible = css(".work-presentation-comments-panel button[aria-label='关闭演示批注审阅']:focus")
+        }
+
+        press "reverse-tab-wraps-to-delete" {
+            key = "Shift+Tab"
+        }
+
+        expect "reverse-focus-stays-in-review" {
+            visible = css(".work-presentation-comments-panel button[aria-label='删除演示批注 1']:focus")
+        }
+
+        press "forward-tab-wraps-to-close" {
+            key = "Tab"
+        }
+
+        expect "forward-focus-stays-in-review" {
+            visible = css(".work-presentation-comments-panel button[aria-label='关闭演示批注审阅']:focus")
+        }
+
+        fill "enter-uncommitted-comment-draft" {
+            target = label("编辑演示批注 1")
+            value = "尚未提交的批注草稿"
+        }
+
+        press "cancel-comment-draft" {
+            key = "Escape"
+        }
+
+        expect "review-remains-after-draft-cancel" {
+            visible = css(".work-presentation-comments-panel[role='dialog'] textarea[aria-label='编辑演示批注 1']")
+        }
+
+        accessibility "modal-accessibility-tree" {
+            path = "evidence/presentation-phone-comments-accessibility.json"
+            interactive = true
+        }
+
+        screenshot "modal-comment-review" {
+            path = "screenshots/presentation-phone-comments.png"
+        }
+
+        press "close-comment-review" {
+            key = "Escape"
+        }
+
+        expect "new-comment-invoker-focus-restored" {
+            visible = css(".work-presentation-ribbon button[aria-label='新建批注']:focus")
+        }
+
+        expect "ribbon-is-interactive-again" {
+            visible = css(".work-presentation-ribbon:not([inert])")
+        }
+
+        expect "workspace-is-interactive-again" {
+            visible = css(".work-presentation-workspace:not([inert])")
+        }
+
+        expect "status-is-interactive-again" {
+            visible = css(".work-presentation-status:not([inert])")
+        }
+
+        click "reopen-comment-review" {
+            target = role("button", "查看批注（1）")
+        }
+
+        expect "reopened-review-is-modal" {
+            visible = css(".work-presentation-comments-panel[role='dialog'][aria-modal='true']")
+        }
+
+        click "close-reopened-review" {
+            target = role("button", "关闭演示批注审阅")
+        }
+
+        expect "view-comments-invoker-focus-restored" {
+            visible = css(".work-presentation-ribbon button[aria-label='查看批注（1）']:focus")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

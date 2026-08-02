@@ -33,7 +33,7 @@ export function usePresentationReviewCommands({
   onChange: (content: WorkPresentationContent) => void;
   onClearSelection: () => void;
   onCloseComments: () => void;
-  onOpenComments: () => void;
+  onOpenComments: (invoker?: HTMLElement | null) => void;
   onSelectComment: (id: string | null) => void;
   onSelectSlide: (id: string) => void;
   selectedElement: WorkSlideElement | null;
@@ -41,6 +41,7 @@ export function usePresentationReviewCommands({
 }): PresentationReviewCommands {
   const officeDialog = useOfficeDialog();
   const addComment = useCallback(() => {
+    const invoker = activePresentationReviewInvoker();
     void officeDialog
       .prompt({
         title: '批注内容',
@@ -73,7 +74,7 @@ export function usePresentationReviewCommands({
           onChange,
         );
         onSelectComment(comment.id);
-        onOpenComments();
+        onOpenComments(invoker);
       });
   }, [
     content,
@@ -87,8 +88,9 @@ export function usePresentationReviewCommands({
 
   const openComment = useCallback(
     (commentId: string) => {
+      const invoker = activePresentationReviewInvoker();
       onSelectComment(commentId);
-      onOpenComments();
+      onOpenComments(invoker);
     },
     [onOpenComments, onSelectComment],
   );
@@ -146,4 +148,11 @@ export function usePresentationReviewCommands({
     openComment,
     updateComment,
   };
+}
+
+function activePresentationReviewInvoker(): HTMLElement | null {
+  return typeof document !== 'undefined' &&
+    document.activeElement instanceof HTMLElement
+    ? document.activeElement
+    : null;
 }

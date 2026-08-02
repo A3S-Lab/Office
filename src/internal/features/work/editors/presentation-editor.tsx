@@ -144,6 +144,7 @@ function PresentationEditingSurface({
   );
   const [zoom, setZoom] = useState(90);
   const slideshowReturnFocusRef = useRef<HTMLElement | null>(null);
+  const commentsInvokerRef = useRef<HTMLElement | null>(null);
   const presentationRootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLElement>(null);
   const objectFocusStateRef = useRef<PresentationObjectFocusState>({
@@ -380,19 +381,43 @@ function PresentationEditingSurface({
   const closeComments = useCallback(() => {
     setTaskPane((current) => (current === 'comments' ? null : current));
   }, []);
-  const openComments = useCallback(() => {
-    if (designMode !== 'slide') {
-      setDesignMode('slide');
-      selection.clear();
-    }
-    setTaskPane('comments');
-  }, [designMode, selection.clear]);
+  const openComments = useCallback(
+    (invoker?: HTMLElement | null) => {
+      const activeElement =
+        typeof document !== 'undefined' &&
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      const candidate = invoker ?? activeElement;
+      const fallback =
+        presentationRootRef.current?.querySelector<HTMLElement>(
+          '.work-presentation-ribbon button[aria-label^="查看批注"]',
+        ) ?? null;
+      commentsInvokerRef.current =
+        candidate?.isConnected &&
+        !candidate.matches(':disabled') &&
+        !candidate.closest('[hidden], [aria-hidden="true"]')
+          ? candidate
+          : fallback;
+      if (designMode !== 'slide') {
+        setDesignMode('slide');
+        selection.clear();
+      }
+      setTaskPane('comments');
+    },
+    [designMode, selection.clear],
+  );
   const toggleComments = useCallback(() => {
     if (commentsOpen) {
       closeComments();
       return;
     }
-    openComments();
+    openComments(
+      typeof document !== 'undefined' &&
+        document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null,
+    );
   }, [closeComments, commentsOpen, openComments]);
   const setDesignPanelOpen = useCallback((open: boolean) => {
     setTaskPane((current) =>
@@ -740,6 +765,21 @@ function PresentationEditingSurface({
           slides={content.slides}
           activeCommentId={activeCommentId}
           commands={presentationCommands}
+          restoreFocusTarget={() => {
+            const invoker = commentsInvokerRef.current;
+            if (
+              invoker?.isConnected &&
+              !invoker.matches(':disabled') &&
+              !invoker.closest('[hidden], [aria-hidden="true"]')
+            ) {
+              return invoker;
+            }
+            return (
+              presentationRootRef.current?.querySelector<HTMLElement>(
+                '.work-presentation-ribbon button[aria-label^="查看批注"]',
+              ) ?? null
+            );
+          }}
         />
       )}
       <div className="work-presentation-workspace">

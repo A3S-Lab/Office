@@ -366,6 +366,14 @@ Excel and WPS.
   Escape cancels a dirty field before closing; and close restores the selected
   chart. Deterministic phone evidence covers semantics, focus order, isolation,
   screenshot, accessibility tree, console, and page errors.
+- Keep comment review as a docked desktop strip and a full-editor modal on
+  phones. The compact surface uses readable review text and 44 px primary
+  actions, isolates the ribbon, workspace, and status bar, contains Tab and
+  Shift+Tab, lets a dirty comment consume Escape before the panel closes, and
+  restores the exact New Comment, View Comments, or comment-marker invoker.
+  Deterministic phone evidence covers both invoker paths, modal semantics,
+  focus order, isolation, screenshot, accessibility tree, console, and page
+  errors.
 - Keep F5 and Shift+F5 as direct slideshow paths with an in-page fallback when
   the browser denies fullscreen.
 - Move bounded geometry, text fitting, connector routing, snapping, and

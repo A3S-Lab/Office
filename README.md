@@ -297,11 +297,13 @@ interaction model.
   native slide and object context actions, guides, comments, transitions,
   editor-scoped formatting and clipboard shortcuts that restore the selected
   object, a docked desktop chart inspector that becomes a focus-contained modal
-  surface whenever it overlays the canvas, a dismissible phone slide navigator,
-  a top-aligned phone canvas with a priority-aware status bar, one-step
-  slideshow from the beginning or current slide, keyboard-complete playback,
-  and a responsive presenter view with one navigation strip, current/next
-  context, speaker notes, and a session timer.
+  surface whenever it overlays the canvas, docked desktop comment review that
+  becomes a readable, touch-sized, focus-contained full-editor modal on phones
+  with dirty-draft cancellation and exact invoker restoration, a dismissible
+  phone slide navigator, a top-aligned phone canvas with a priority-aware status
+  bar, one-step slideshow from the beginning or current slide,
+  keyboard-complete playback, and a responsive presenter view with one
+  navigation strip, current/next context, speaker notes, and a session timer.
   _PPTX import/export; PDF export._
 - **PDF** — PDFium rendering, navigation, search, form filling, annotations,
   annotation color, opacity, compatible stroke-width controls, history,
