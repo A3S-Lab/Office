@@ -7,6 +7,11 @@ import {
   docxParagraphPropertySources,
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
+import {
+  type DocxTableStyleSource,
+  docxTableParagraphPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxParagraphSpacingMarker {
@@ -26,12 +31,18 @@ const PARAGRAPH_SPACING_MARKER_PATTERN = /__A3S_WORK_PARAGRAPH_SPACING_\d+__/g;
 export function markDocxParagraphSpacing(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxParagraphSpacingMarkers {
   const paragraphs: ImportedDocxParagraphSpacingMarker[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
-    const sources = docxParagraphPropertySources(properties, styles);
+    const sources = docxParagraphPropertySources(
+      properties,
+      styles,
+      docxTableParagraphPropertySources(paragraph, tableStyles),
+    );
     if (sources.some((source) => directChild(source, 'numPr'))) continue;
     const spacing = paragraphSpacing(sources);
     if (!Object.keys(spacing).length) continue;

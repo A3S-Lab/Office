@@ -4,6 +4,11 @@ import {
   docxParagraphPropertySources,
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
+import {
+  type DocxTableStyleSource,
+  docxTableParagraphPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxParagraphPaginationMarker {
@@ -24,14 +29,20 @@ const PARAGRAPH_PAGINATION_MARKER_PATTERN =
 export function markDocxParagraphPagination(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxParagraphPaginationMarkers {
   const paragraphs: ImportedDocxParagraphPaginationMarker[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
     if (properties && directChild(properties, 'numPr')) continue;
     const pagination = paragraphPagination(
-      docxParagraphPropertySources(properties, styles),
+      docxParagraphPropertySources(
+        properties,
+        styles,
+        docxTableParagraphPropertySources(paragraph, tableStyles),
+      ),
     );
     if (!Object.keys(pagination).length) continue;
     properties ??= insertParagraphProperties(document, paragraph);

@@ -89,6 +89,7 @@ export function resolveDocxParagraphStyleResolver(
 export function docxParagraphPropertySources(
   directProperties: Element | undefined,
   resolver: DocxParagraphStyleResolver,
+  contextualProperties: readonly Element[] = [],
 ): Element[] {
   const sources: Element[] = [];
   if (resolver.defaultProperties) sources.push(resolver.defaultProperties);
@@ -105,6 +106,7 @@ export function docxParagraphPropertySources(
       ...stylePropertySources(resolver.styles, styleId, 'paragraphProperties'),
     );
 
+  sources.push(...contextualProperties);
   if (directProperties) sources.push(directProperties);
   return sources;
 }

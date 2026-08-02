@@ -7,6 +7,11 @@ import {
   docxParagraphPropertySources,
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
+import {
+  type DocxTableStyleSource,
+  docxTableParagraphPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxParagraphIndentMarker {
@@ -27,12 +32,18 @@ const PARAGRAPH_INDENT_MARKER_PATTERN = /__A3S_WORK_PARAGRAPH_INDENT_\d+__/g;
 export function markDocxParagraphIndents(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxParagraphIndentMarkers {
   const paragraphs: ImportedDocxParagraphIndentMarker[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
-    const sources = docxParagraphPropertySources(properties, styles);
+    const sources = docxParagraphPropertySources(
+      properties,
+      styles,
+      docxTableParagraphPropertySources(paragraph, tableStyles),
+    );
     if (sources.some((source) => directChild(source, 'numPr'))) continue;
     const indent = paragraphIndent(sources);
     if (!indent.left && !indent.right && !indent.firstLine) continue;

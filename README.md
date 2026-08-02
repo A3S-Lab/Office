@@ -264,9 +264,11 @@ interaction model.
   inheritance with whole-table, banded row or column, first/last row or column,
   and corner-cell formatting. Conditional fills, borders, bold, italic,
   underline, strikethrough, fonts, and text colors are materialized before
-  direct table, cell, paragraph, and run formatting. Theme tint and shade
-  values resolve for table borders and cell fills across edit, preview, and
-  RGB-stable export. Splittable table rows that exceed a full physical page
+  direct table, cell, paragraph, and run formatting. Conditional paragraph
+  alignment, direction, indents, spacing and line rules, pagination rules, and
+  tab stops use the same precedence chain. Theme tint and shade values resolve
+  for table borders and cell fills across edit, preview, and RGB-stable export.
+  Splittable table rows that exceed a full physical page
   continue at paragraph boundaries with repeated heading rows on every page,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked
   changes, notes,

@@ -110,6 +110,7 @@ import {
   markDocxTableCells,
   type ImportedDocxTableCellMarkers,
 } from './work-docx-table-cell-import';
+import { createDocxTableStyleResolver } from './work-docx-table-styles';
 import {
   applyImportedDocxTableRowMarkers,
   hasImportedDocxTableRowMarkers,
@@ -221,25 +222,31 @@ export async function prepareDocxImport(
   const paragraphStyles = createDocxParagraphStyleResolver(
     paragraphStylesDocument,
   );
+  const tableStyles = createDocxTableStyleResolver(paragraphStylesDocument);
   const paragraphDirectionMarkers = markDocxParagraphDirections(
     document,
     paragraphStyles,
+    tableStyles,
   );
   const paragraphAlignmentMarkers = markDocxParagraphAlignments(
     document,
     paragraphStyles,
+    tableStyles,
   );
   const paragraphIndentMarkers = markDocxParagraphIndents(
     document,
     paragraphStyles,
+    tableStyles,
   );
   const paragraphSpacingMarkers = markDocxParagraphSpacing(
     document,
     paragraphStyles,
+    tableStyles,
   );
   const paragraphPaginationMarkers = markDocxParagraphPagination(
     document,
     paragraphStyles,
+    tableStyles,
   );
   const themePath = archive
     .paths('word/theme/')
@@ -249,13 +256,17 @@ export async function prepareDocxImport(
     document,
     paragraphStyles,
     themeDocument,
-    paragraphStylesDocument,
+    tableStyles,
   );
-  const tabStopMarkers = markDocxParagraphTabStops(document, paragraphStyles);
+  const tabStopMarkers = markDocxParagraphTabStops(
+    document,
+    paragraphStyles,
+    tableStyles,
+  );
   const tableCellMarkers = markDocxTableCells(
     document,
     themeDocument,
-    paragraphStylesDocument,
+    tableStyles,
   );
   const tableRowMarkers = markDocxTableRows(document);
   const tableSizingMarkers = markDocxTableSizing(document);

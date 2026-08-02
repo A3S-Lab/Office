@@ -560,17 +560,18 @@ default or referenced `w:style w:type="table"` resolves through a bounded,
 cycle-safe `w:basedOn` chain. `w:tblLook` flags or bitmasks, row and column band
 sizes, `gridSpan`, and `gridBefore`/`gridAfter` select `wholeTable`, row/column
 bands, first/last rows or columns, and corner-cell conditions in Word precedence
-order. Their cell fills, per-edge borders, and run emphasis, fonts, and colors
-enter the marker pipeline after paragraph styles and before direct paragraph,
-character-style, or run formatting. Direct table and cell properties remain
-higher-priority layers for cell presentation. Theme-derived conditional
-presentation is materialized as stable RGB for editing, preview, and regenerated
-DOCX output.
+order. Their cell fills, per-edge borders, run emphasis, fonts, and colors, plus
+paragraph alignment, direction, indents, spacing and line rules, pagination
+rules, and tab stops enter the marker pipeline after paragraph styles and before
+direct paragraph, character-style, or run formatting. Direct table and cell
+properties remain higher-priority layers for cell presentation. Theme-derived
+conditional presentation is materialized as stable RGB for editing, preview,
+and regenerated DOCX output.
 Command availability comes from the ProseMirror table state, so actions that
 cannot apply to the current selection remain disabled. Loss-preserving semantic
-theme references, conditional table-style paragraph layout beyond run
-properties, percentage-width column authoring, nested-table editing, and
-complex merged-cell conditional flow remain explicit fidelity gaps.
+theme references, less-common conditional paragraph properties outside the
+supported layout set, percentage-width column authoring, nested-table editing,
+and complex merged-cell conditional flow remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf

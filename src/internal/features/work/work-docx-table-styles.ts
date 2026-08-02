@@ -165,6 +165,17 @@ export function docxTableRunPropertySources(
   return sources;
 }
 
+export function docxTableParagraphPropertySources(
+  element: Element,
+  resolver: DocxTableStyleResolver,
+): Element[] {
+  const cell = closestAncestor(element, 'tc');
+  if (!cell) return [];
+  return docxTableCellStyleLayers(cell, resolver)
+    .map(({ paragraphProperties }) => paragraphProperties)
+    .filter((properties): properties is Element => Boolean(properties));
+}
+
 function styleLayer(parent: ParentNode): DocxTableStyleLayer {
   return {
     tableProperties: directChild(parent, 'tblPr'),

@@ -56,7 +56,8 @@ DOCX table workflow proving tint/shade resolution for cell fill and four
 independent border edges across edit and preview with screenshot,
 accessibility, console, and page-error evidence, plus a real inherited-table-
 style DOCX workflow proving based-on resolution, first-row fill, white bold
-header text and double border, horizontal banding, and last-row presentation
+header text and double border, horizontal banding, last-row presentation, and
+conditional paragraph alignment, spacing, pagination, and indent semantics
 across edit and preview with screenshot, accessibility, console, and page-error
 evidence, plus a real multi-page DOCX table workflow proving that a splittable
 row continues at paragraph boundaries across three physical pages, repeated

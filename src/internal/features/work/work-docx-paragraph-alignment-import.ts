@@ -3,6 +3,11 @@ import {
   docxParagraphPropertySources,
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
+import {
+  type DocxTableStyleSource,
+  docxTableParagraphPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export type ImportedDocxParagraphAlignment =
@@ -29,12 +34,18 @@ const PARAGRAPH_ALIGNMENT_MARKER_PATTERN =
 export function markDocxParagraphAlignments(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxParagraphAlignmentMarkers {
   const paragraphs: ImportedDocxParagraphAlignmentMarker[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
-    const sources = docxParagraphPropertySources(properties, styles);
+    const sources = docxParagraphPropertySources(
+      properties,
+      styles,
+      docxTableParagraphPropertySources(paragraph, tableStyles),
+    );
     const alignment = paragraphAlignment(sources);
     if (!alignment) continue;
     properties ??= insertParagraphProperties(document, paragraph);

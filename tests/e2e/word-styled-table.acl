@@ -45,12 +45,24 @@ suite "office-word-styled-table" {
             visible = css(".work-document-editable table tr:first-child td span[style*='#ffffff'], .work-document-editable table tr:first-child td span[style*='rgb(255, 255, 255)']")
         }
 
+        expect "header-paragraph-layout-is-inherited" {
+            visible = css(".work-document-editable table tr:first-child td p[style*='text-align: center'][data-office-space-after='0'][data-office-keep-lines='true'][data-office-keep-with-next='true']")
+        }
+
         expect "body-band-is-inherited" {
             visible = css(".work-document-editable table tr:nth-child(2) td[data-office-cell-fill='#f8cbad']")
         }
 
+        expect "body-paragraph-layout-is-inherited" {
+            visible = css(".work-document-editable table tr:nth-child(2) td p[data-office-space-after='4'][data-office-keep-lines='true'][data-office-widow-control='true']")
+        }
+
         expect "last-row-style-is-inherited" {
             visible = css(".work-document-editable table tr:nth-child(3) td[data-office-cell-fill='#a5a5a5']")
+        }
+
+        expect "last-row-paragraph-layout-is-inherited" {
+            visible = css(".work-document-editable table tr:nth-child(3) td p[style*='text-align: right'][data-office-indent-right='12']")
         }
 
         click "preview-document" {
@@ -67,6 +79,18 @@ suite "office-word-styled-table" {
 
         expect "preview-keeps-last-row-style" {
             visible = css(".work-document-preview-page table tr:nth-child(3) td[data-office-cell-fill='#a5a5a5']")
+        }
+
+        expect "preview-keeps-header-paragraph-layout" {
+            visible = css(".work-document-preview-page table tr:first-child td p[style*='text-align: center'][data-office-space-after='0'][data-office-keep-lines='true'][data-office-keep-with-next='true']")
+        }
+
+        expect "preview-keeps-body-paragraph-layout" {
+            visible = css(".work-document-preview-page table tr:nth-child(2) td p[data-office-space-after='4'][data-office-keep-lines='true'][data-office-widow-control='true']")
+        }
+
+        expect "preview-keeps-last-row-paragraph-layout" {
+            visible = css(".work-document-preview-page table tr:nth-child(3) td p[style*='text-align: right'][data-office-indent-right='12']")
         }
 
         screenshot "styled-table-preview" {

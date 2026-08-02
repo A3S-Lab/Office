@@ -11,6 +11,11 @@ import {
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
 import {
+  type DocxTableStyleSource,
+  docxTableParagraphPropertySources,
+  resolveDocxTableStyleResolver,
+} from './work-docx-table-styles';
+import {
   attribute,
   descendants,
   directChild,
@@ -38,15 +43,21 @@ const INLINE_TAB_MARKER_PATTERN = /__A3S_WORK_INLINE_TAB_\d+__/g;
 export function markDocxParagraphTabStops(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxParagraphTabStopMarkers {
   const paragraphs: ImportedDocxParagraphTabStopMarker[] = [];
   const inlineTabs: string[] = [];
   const styles = resolveDocxParagraphStyleResolver(styleSource);
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
 
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
     const tabStops = resolvedParagraphTabStops(
-      docxParagraphPropertySources(properties, styles),
+      docxParagraphPropertySources(
+        properties,
+        styles,
+        docxTableParagraphPropertySources(paragraph, tableStyles),
+      ),
     );
     if (tabStops.length) {
       properties ??= insertParagraphProperties(document, paragraph);
