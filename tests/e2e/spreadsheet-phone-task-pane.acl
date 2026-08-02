@@ -1,0 +1,118 @@
+suite "office-spreadsheet-phone-task-pane" {
+    version = 1
+
+    scenario "contain-task-pane-focus-and-restore-the-invoker" {
+        name = "Contain Spreadsheet task-pane focus and restore its phone invoker"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        wait "quarterly-plan-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-quarterly-plan" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-grid-ready" {
+            visible = css(".fortune-sheet-overlay")
+        }
+
+        click "open-data-tab" {
+            target = role("tab", "数据")
+        }
+
+        click "open-pivot-task-pane" {
+            target = role("button", "数据透视表")
+        }
+
+        expect "task-pane-is-modal" {
+            visible = css(".work-spreadsheet-workbook-panel[data-view='pivots'][role='dialog'][aria-modal='true']")
+        }
+
+        expect "ribbon-is-inert" {
+            visible = css(".work-spreadsheet-ribbon[inert]")
+        }
+
+        expect "canvas-is-inert" {
+            visible = css(".work-spreadsheet-canvas[inert]")
+        }
+
+        expect "worksheet-footer-is-inert" {
+            visible = css(".work-spreadsheet-footer[inert]")
+        }
+
+        expect "close-receives-initial-focus" {
+            visible = css(".work-spreadsheet-workbook-panel button[aria-label='关闭数据透视表']:focus")
+        }
+
+        press "tab-to-first-pane-action" {
+            key = "Tab"
+        }
+
+        expect "tab-stays-in-pane" {
+            visible = css(".work-spreadsheet-pivot-manager .create:focus")
+        }
+
+        press "shift-tab-to-close" {
+            key = "Shift+Tab"
+        }
+
+        expect "reverse-tab-stays-in-pane" {
+            visible = css(".work-spreadsheet-workbook-panel button[aria-label='关闭数据透视表']:focus")
+        }
+
+        accessibility "modal-accessibility-tree" {
+            path = "evidence/spreadsheet-phone-task-pane-accessibility.json"
+            interactive = true
+        }
+
+        screenshot "modal-task-pane" {
+            path = "screenshots/spreadsheet-phone-task-pane.png"
+        }
+
+        press "close-task-pane" {
+            key = "Escape"
+        }
+
+        expect "invoker-focus-restored" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='数据透视表'][aria-expanded='false']:focus")
+        }
+
+        expect "ribbon-is-interactive-again" {
+            visible = css(".work-spreadsheet-ribbon:not([inert])")
+        }
+
+        expect "canvas-is-interactive-again" {
+            visible = css(".work-spreadsheet-canvas:not([inert])")
+        }
+
+        expect "worksheet-footer-is-interactive-again" {
+            visible = css(".work-spreadsheet-footer:not([inert])")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

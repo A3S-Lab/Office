@@ -280,6 +280,8 @@ interaction model.
   editor-owned Cmd/Ctrl+F search bar that finds displayed values, raw values,
   formulas, and sparse cells without opening browser Find, with a viewport-safe
   phone layout, touch-sized controls, and exact grid-focus restoration,
+  desktop workbook task panes that become focus-contained phone dialogs with
+  an inert workbook background and exact ribbon-invoker restoration,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

@@ -75,6 +75,9 @@ All notable changes to A3S Office will be documented in this file.
 - Kept the phone Spreadsheet Find bar inside the viewport with a 40 px input
   and 40 px previous, next, and close actions, while preserving exact result
   navigation and grid-focus restoration after Escape.
+- Made Spreadsheet workbook task panes modal at phone widths, isolated the
+  ribbon, grid, and worksheet footer while open, contained forward and reverse
+  Tab navigation, and restored the exact ribbon invoker after Escape.
 - Kept common Presentation arrangement commands visible at desktop width by
   compacting group, ungroup, and layer actions without removing their labels
   from accessible names and tooltips.

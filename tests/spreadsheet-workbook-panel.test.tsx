@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { useRef, useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SpreadsheetWorkbookPanel } from '../src/internal/features/work/editors/spreadsheet-workbook-panel';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -16,6 +17,55 @@ const commands = {
   recalculateFormula: () => true,
   setSpreadsheetContent: () => true,
 };
+
+test('contains phone focus and restores the workbook-panel trigger', async () => {
+  const mediaQuery = installTaskPaneMatchMedia(true);
+
+  function Harness() {
+    const [open, setOpen] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    return (
+      <div>
+        <button ref={triggerRef} type="button" onClick={() => setOpen(true)}>
+          打开数据透视表
+        </button>
+        {open && (
+          <SpreadsheetWorkbookPanel
+            content={content}
+            view="pivots"
+            activeSheetId="sheet-1"
+            can={can}
+            commands={commands}
+            restoreFocusTarget={() => triggerRef.current}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  render(<Harness />);
+  const trigger = screen.getByRole('button', { name: '打开数据透视表' });
+  fireEvent.click(trigger);
+
+  const panel = screen.getByRole('dialog', { name: '数据透视表管理器' });
+  const close = screen.getByRole('button', { name: '关闭数据透视表' });
+  const create = screen.getByRole('button', { name: '根据当前选区新建' });
+  expect(panel).toHaveAttribute('aria-modal', 'true');
+  expect(trigger).toHaveAttribute('inert');
+  await waitFor(() => expect(close).toHaveFocus());
+
+  fireEvent.keyDown(close, { key: 'Tab' });
+  expect(create).toHaveFocus();
+  fireEvent.keyDown(create, { key: 'Tab', shiftKey: true });
+  expect(close).toHaveFocus();
+
+  fireEvent.keyDown(close, { key: 'Escape' });
+  await waitFor(() => expect(panel).not.toBeInTheDocument());
+  expect(trigger).not.toHaveAttribute('inert');
+  await waitFor(() => expect(trigger).toHaveFocus());
+  mediaQuery.restore();
+});
 
 test('keeps workbook panel controls outside its scrollable body', () => {
   const closed: boolean[] = [];
@@ -40,6 +90,40 @@ test('keeps workbook panel controls outside its scrollable body', () => {
   fireEvent.keyDown(body, { key: 'Escape' });
   expect(closed).toEqual([true]);
 });
+
+function installTaskPaneMatchMedia(initialMatches: boolean): {
+  restore(): void;
+} {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    window,
+    'matchMedia',
+  );
+  const mediaQuery = {
+    matches: initialMatches,
+    media: '(max-width: 900px)',
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => true,
+  } as MediaQueryList;
+
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: () => mediaQuery,
+  });
+
+  return {
+    restore() {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'matchMedia', originalDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'matchMedia');
+      }
+    },
+  };
+}
 
 test('dismisses an open workbook panel with Escape outside the panel', () => {
   const closed: boolean[] = [];

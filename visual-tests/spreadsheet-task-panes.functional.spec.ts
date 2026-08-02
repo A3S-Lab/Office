@@ -8,7 +8,7 @@ test('Spreadsheet closes a ribbon-opened workbook pane with Escape', async ({
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   const trigger = page.getByRole('button', { name: '插入图表' });
   await trigger.click();
-  const chartPane = page.getByRole('region', { name: '图表管理器' });
+  const chartPane = spreadsheetWorkbookPane(page, '图表管理器');
   await expect(chartPane).toBeVisible();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -25,7 +25,7 @@ test('Spreadsheet keeps workbook tools in a bounded right task pane', async ({
   await page.getByRole('tab', { name: '数据', exact: true }).click();
   const trigger = page.getByRole('button', { name: '数据透视表' });
   await trigger.click();
-  const pane = page.getByRole('region', { name: '数据透视表管理器' });
+  const pane = spreadsheetWorkbookPane(page, '数据透视表管理器');
   await expect(pane).toBeVisible();
   await expect(
     pane.getByRole('button', { name: '关闭数据透视表' }),
@@ -96,7 +96,31 @@ test('Spreadsheet task pane fills the phone workspace without page overflow', as
   await openSpreadsheetFixture(page);
 
   await page.getByRole('tab', { name: '数据', exact: true }).click();
-  await page.getByRole('button', { name: '数据透视表' }).click();
+  const trigger = page.getByRole('button', { name: '数据透视表' });
+  await trigger.click();
+
+  const pane = page.getByRole('dialog', { name: '数据透视表管理器' });
+  const close = pane.getByRole('button', { name: '关闭数据透视表' });
+  const create = pane.getByRole('button', { name: '根据当前选区新建' });
+  await expect(pane).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.work-spreadsheet-ribbon')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-spreadsheet-canvas')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-spreadsheet-footer')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(close).toBeFocused();
+
+  await close.press('Tab');
+  await expect(create).toBeFocused();
+  await create.press('Shift+Tab');
+  await expect(close).toBeFocused();
 
   const geometry = await page
     .locator('.work-spreadsheet-workspace')
@@ -132,6 +156,14 @@ test('Spreadsheet task pane fills the phone workspace without page overflow', as
   expect(geometry.paneBodyScrollWidth).toBeLessThanOrEqual(
     geometry.paneBodyClientWidth + 1,
   );
+
+  await close.press('Escape');
+  await expect(pane).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(page.locator('.work-spreadsheet-ribbon')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
 });
 
 test('Spreadsheet cancels a dirty chart draft before closing its pane', async ({
@@ -141,7 +173,7 @@ test('Spreadsheet cancels a dirty chart draft before closing its pane', async ({
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: '插入图表' }).click();
-  const chartPane = page.getByRole('region', { name: '图表管理器' });
+  const chartPane = spreadsheetWorkbookPane(page, '图表管理器');
   await chartPane.getByRole('button', { name: '根据当前选区新建' }).click();
   const chartName = chartPane.getByRole('textbox', { name: '图表对象名称' });
   const savedName = await chartName.inputValue();
@@ -165,9 +197,7 @@ test('Spreadsheet cancels dirty conditional formatting before closing its pane',
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: '条件格式' }).click();
-  const conditionalPane = page.getByRole('region', {
-    name: '条件格式管理器',
-  });
+  const conditionalPane = spreadsheetWorkbookPane(page, '条件格式管理器');
   const reference = conditionalPane.getByRole('textbox', {
     name: '条件格式范围',
   });
@@ -189,10 +219,7 @@ test('Spreadsheet cancels dirty calculation settings before closing its pane', a
 
   await page.getByRole('tab', { name: '公式', exact: true }).click();
   await page.getByRole('button', { name: '公式与计算' }).click();
-  const formulaPane = page.getByRole('region', {
-    name: '公式与计算',
-    exact: true,
-  });
+  const formulaPane = spreadsheetWorkbookPane(page, '公式与计算');
   const fullPrecision = formulaPane.getByRole('checkbox', {
     name: '使用完整精度',
   });
@@ -264,10 +291,7 @@ async function expectTextDraftBeforePaneClose(
   await openSpreadsheetFixture(page);
   await page.getByRole('tab', { name: options.tab, exact: true }).click();
   await page.getByRole('button', { name: options.button }).click();
-  const pane = page.getByRole('region', {
-    name: options.region,
-    exact: true,
-  });
+  const pane = spreadsheetWorkbookPane(page, options.region);
   const field = pane.getByRole('textbox', {
     name: options.field,
     exact: true,
@@ -291,4 +315,8 @@ async function openSpreadsheetFixture(page: Page) {
     })
     .click();
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+}
+
+function spreadsheetWorkbookPane(page: Page, name: string) {
+  return page.locator(`.work-spreadsheet-workbook-panel[aria-label="${name}"]`);
 }

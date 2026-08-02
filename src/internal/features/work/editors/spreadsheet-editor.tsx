@@ -265,9 +265,11 @@ export function SpreadsheetEditor({
   }, [preview]);
   const closeWorkbookPanel = useCallback(() => {
     const trigger = panelTriggerRef.current;
-    panelTriggerRef.current = null;
     setPanel(null);
-    if (trigger?.isConnected) trigger.focus();
+    requestAnimationFrame(() => {
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      if (panelTriggerRef.current === trigger) panelTriggerRef.current = null;
+    });
   }, []);
   const workbookHooks = useMemo<Hooks>(
     () => ({
@@ -772,19 +774,16 @@ export function SpreadsheetEditor({
           onOpenFind={openSpreadsheetFind}
           onTabChange={(tab) => {
             setRibbonTab(tab);
-            panelTriggerRef.current = null;
-            setPanel(null);
+            if (panel) closeWorkbookPanel();
           }}
-          onTogglePanel={(nextPanel, trigger) =>
-            setPanel((current) => {
-              if (current === nextPanel) {
-                panelTriggerRef.current = null;
-                return null;
-              }
-              panelTriggerRef.current = trigger;
-              return nextPanel;
-            })
-          }
+          onTogglePanel={(nextPanel, trigger) => {
+            if (panel === nextPanel) {
+              closeWorkbookPanel();
+              return;
+            }
+            panelTriggerRef.current = trigger;
+            setPanel(nextPanel);
+          }}
           panel={panel}
           toolbarCell={toolbarCell}
         />
@@ -852,6 +851,7 @@ export function SpreadsheetEditor({
             }
             can={spreadsheetCan}
             commands={spreadsheetCommands}
+            restoreFocusTarget={() => panelTriggerRef.current}
             onClose={closeWorkbookPanel}
           />
         )}

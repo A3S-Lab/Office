@@ -53,7 +53,10 @@ phone caption and cross-reference workflow covering dialog focus, accessible
 numbering, keyboard deletion, and the live missing-reference transition;
 the phone Spreadsheet
 worksheet-rename workflow plus viewport-safe, touch-sized Find controls,
-exact-result navigation, and grid-focus restoration; Presentation focus
+exact-result navigation, and grid-focus restoration, together with modal
+workbook task panes that isolate the ribbon, grid, and worksheet footer,
+contain forward and reverse focus, and restore the exact ribbon invoker;
+Presentation focus
 recovery across object cut and paste plus presenter-view keyboard navigation
 and phone layout; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard

@@ -1,12 +1,13 @@
 import type { Selection } from '@fortune-sheet/core';
 import { Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Button,
   CollectionState,
   IconButton,
   InlineNotice,
 } from '../../../design-system/primitives';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import { isValidSpreadsheetDefinedName } from '../work-spreadsheet-ranges';
 import { createWorkId } from '../work-templates';
 import type {
@@ -24,6 +25,7 @@ import { SpreadsheetFormulaPanel } from './spreadsheet-formula-panel';
 import {
   handleOfficeTaskPaneKeyDown,
   useOfficeTaskPaneEscape,
+  useOfficeTaskPaneModal,
 } from './office-task-pane';
 import { useOfficeDraft } from './use-office-draft';
 import { SpreadsheetPivotPanel } from './spreadsheet-pivot-panel';
@@ -50,6 +52,7 @@ interface SpreadsheetWorkbookPanelProps {
     SpreadsheetEditorCommands,
     'recalculateFormula' | 'setSpreadsheetContent'
   >;
+  restoreFocusTarget?: () => HTMLElement | null;
   onClose: () => void;
 }
 
@@ -61,24 +64,47 @@ export function SpreadsheetWorkbookPanel({
   selection,
   can,
   commands,
+  restoreFocusTarget,
   onClose,
 }: SpreadsheetWorkbookPanelProps) {
   const title = panelTitle(view);
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const modal = useOfficeTaskPaneModal();
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
+  const focusScope = useDialogFocusScope<HTMLElement>({
+    active: modal,
+    initialFocus: () => closeRef.current,
+    getActiveScope: () => panelRef.current,
+    restoreFocusTarget,
+  });
   useOfficeTaskPaneEscape(true, onClose);
   return (
     <section
+      {...modalAttributes}
+      ref={panelRef}
       id={id}
       className="work-spreadsheet-workbook-panel"
       aria-label={title.label}
       data-view={view}
-      onKeyDown={(event) => handleOfficeTaskPaneKeyDown(event, onClose)}
+      onKeyDown={(event) => {
+        focusScope.handleKeyDown(event);
+        if (!event.defaultPrevented)
+          handleOfficeTaskPaneKeyDown(event, onClose);
+      }}
     >
       <header>
         <div>
           <strong>{title.heading}</strong>
           <span>{title.description}</span>
         </div>
-        <IconButton label={`关闭${title.heading}`} onClick={onClose}>
+        <IconButton
+          ref={closeRef}
+          label={`关闭${title.heading}`}
+          onClick={onClose}
+        >
           <X size={14} />
         </IconButton>
       </header>

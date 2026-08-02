@@ -335,6 +335,12 @@ remains one coherent history.
 - Keep the phone Find surface within the viewport with a 40 px input and 40 px
   previous, next, and close actions. The deterministic phone workflow must
   prove an exact cell result and return focus to the grid after Escape.
+- Keep workbook task panes as bounded desktop regions and focus-contained phone
+  dialogs. At phone widths the ribbon, grid, and worksheet footer remain inert;
+  Tab and Shift+Tab stay in the pane; Escape cancels a dirty draft before it
+  closes the pane and restores the exact ribbon invoker. Deterministic browser
+  evidence covers the modal semantics, focus order, isolation, screenshot,
+  accessibility tree, console, and page errors.
 - Preserve direct type-to-edit after focus recovery and keep multi-cell paste,
   selection, copy, and undo coherent when React replays vendor state updates.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,
