@@ -281,6 +281,68 @@ test('Shared Office color picker exposes phone-sized touch targets', async ({
   );
 });
 
+test('Phone Spreadsheet find keeps its input and actions touch-sized', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '季度执行计划 XLSX · 本次会话' })
+    .click();
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  await grid.waitFor();
+  await grid.focus();
+  await page.keyboard.press('Control+f');
+
+  const query = page.getByRole('textbox', { name: '查找当前工作表' });
+  await expect(query).toBeFocused();
+  const geometry = await page
+    .locator('.work-spreadsheet-find-bar')
+    .evaluate((bar) => {
+      const input = bar.querySelector<HTMLElement>(
+        '[aria-label="查找当前工作表"]',
+      );
+      const buttons = Array.from(
+        bar.querySelectorAll<HTMLElement>(
+          '.work-spreadsheet-find-actions button',
+        ),
+      );
+      if (!input || buttons.length !== 3) {
+        throw new Error('Phone Spreadsheet Find controls are incomplete.');
+      }
+      const barBounds = bar.getBoundingClientRect();
+      const inputBounds = input.getBoundingClientRect();
+      return {
+        barLeft: barBounds.left,
+        barRight: barBounds.right,
+        buttonBounds: buttons.map((button) => {
+          const bounds = button.getBoundingClientRect();
+          return { height: bounds.height, width: bounds.width };
+        }),
+        inputHeight: inputBounds.height,
+        inputWidth: inputBounds.width,
+        viewportWidth: document.documentElement.clientWidth,
+      };
+    });
+
+  expect(geometry.barLeft).toBeGreaterThanOrEqual(0);
+  expect(geometry.barRight).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.inputHeight).toBeGreaterThanOrEqual(40);
+  expect(geometry.inputWidth).toBeGreaterThanOrEqual(96);
+  for (const bounds of geometry.buttonBounds) {
+    expect(bounds.height).toBeGreaterThanOrEqual(40);
+    expect(bounds.width).toBeGreaterThanOrEqual(40);
+  }
+
+  await query.fill('客户洞察报告');
+  await expect(page.getByText('1 个匹配', { exact: true })).toBeVisible();
+  await query.press('Enter');
+  await expect(page.locator('.fortune-name-box')).toHaveText('A4');
+  await query.press('Escape');
+  await expect(query).toHaveCount(0);
+  await expect(grid).toBeFocused();
+});
+
 test('Word page color keeps its custom controls visible at phone height', async ({
   page,
 }) => {

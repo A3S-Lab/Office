@@ -94,6 +94,31 @@
     right: 8px;
     left: 8px;
     width: auto;
+    min-height: 50px;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .work-spreadsheet-find-bar > svg {
+    display: none;
+  }
+
+  .work-spreadsheet-find-bar > .work-office-text-field {
+    height: 40px;
+    min-width: 96px;
+    min-height: 40px;
+    padding-inline: 9px;
+  }
+
+  .work-spreadsheet-find-bar > output {
+    min-width: 42px;
+  }
+
+  .work-spreadsheet-find-actions .ds-icon-button {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 7px;
   }
 }
 

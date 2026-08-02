@@ -72,6 +72,9 @@ All notable changes to A3S Office will be documented in this file.
 - Added an editor-owned Spreadsheet Find bar with Cmd/Ctrl+F interception,
   displayed-value, raw-value, formula, and sparse-cell matching, deterministic
   cell navigation, repeated-shortcut refocus, and grid-focus restoration.
+- Kept the phone Spreadsheet Find bar inside the viewport with a 40 px input
+  and 40 px previous, next, and close actions, while preserving exact result
+  navigation and grid-focus restoration after Escape.
 - Kept common Presentation arrangement commands visible at desktop width by
   compacting group, ungroup, and layer actions without removing their labels
   from accessible names and tooltips.

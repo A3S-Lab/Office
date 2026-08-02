@@ -332,6 +332,9 @@ remains one coherent history.
 - Keep Cmd/Ctrl+F inside the editor through the compact Spreadsheet Find bar,
   including displayed, raw, formula, and sparse-cell matching, deterministic
   navigation, repeated-shortcut refocus, and grid-focus restoration on close.
+- Keep the phone Find surface within the viewport with a 40 px input and 40 px
+  previous, next, and close actions. The deterministic phone workflow must
+  prove an exact cell result and return focus to the grid after Escape.
 - Preserve direct type-to-edit after focus recovery and keep multi-cell paste,
   selection, copy, and undo coherent when React replays vendor state updates.
 - Preserve XLSX relationships, names, styles, formulas, comments, charts,

@@ -1,0 +1,86 @@
+suite "office-spreadsheet-phone-find" {
+    version = 1
+
+    scenario "find-a-cell-and-return-focus-on-phone" {
+        name = "Find a Spreadsheet cell and return focus to the phone grid"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        wait "quarterly-plan-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-quarterly-plan" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-grid-ready" {
+            visible = css(".fortune-sheet-overlay")
+        }
+
+        focus "focus-spreadsheet-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "open-find" {
+            key = "Control+f"
+        }
+
+        expect "find-is-open" {
+            visible = css(".work-spreadsheet-find-bar")
+        }
+
+        fill "find-customer-insight-report" {
+            target = label("查找当前工作表")
+            value = "客户洞察报告"
+        }
+
+        expect "one-result-found" {
+            text = "1 个匹配"
+        }
+
+        press "select-result" {
+            key = "Enter"
+        }
+
+        expect "cell-a4-selected" {
+            text = "A4"
+        }
+
+        screenshot "phone-find-result" {
+            path = "screenshots/spreadsheet-phone-find.png"
+        }
+
+        press "close-find" {
+            key = "Escape"
+        }
+
+        expect "grid-focus-restored" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -52,8 +52,10 @@ row extension, compact-ribbon deletion, and focused editing recovery, plus a
 phone caption and cross-reference workflow covering dialog focus, accessible
 numbering, keyboard deletion, and the live missing-reference transition;
 the phone Spreadsheet
-worksheet-rename workflow; Presentation focus recovery across object cut and
-paste plus presenter-view keyboard navigation and phone layout; PDF import
+worksheet-rename workflow plus viewport-safe, touch-sized Find controls,
+exact-result navigation, and grid-focus restoration; Presentation focus
+recovery across object cut and paste plus presenter-view keyboard navigation
+and phone layout; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard
 navigation, plus a phone page-drawer workflow proving toolbar ownership,
 selection, modal close behavior, and an unobstructed document canvas; the
