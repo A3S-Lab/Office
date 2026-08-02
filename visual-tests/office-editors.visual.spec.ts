@@ -373,6 +373,175 @@ test('Word paragraph layout popovers use touch-sized phone controls', async ({
   await expect(paginationTrigger).toBeFocused();
 });
 
+test('Word list galleries use touch-sized phone controls and preserve editing focus', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  const body = page.getByRole('textbox', { name: '文档正文' });
+  const toolbar = page.getByRole('toolbar', { name: '开始工具栏' });
+  const nextRibbonPage = page.getByRole('button', {
+    name: '向右查看更多开始工具',
+  });
+  await expect(nextRibbonPage).toBeVisible();
+  const ribbonEdgeGeometry = await Promise.all([
+    toolbar.boundingBox(),
+    nextRibbonPage.boundingBox(),
+  ]);
+  const [toolbarBox, nextRibbonPageBox] = ribbonEdgeGeometry;
+  if (!(toolbarBox && nextRibbonPageBox)) {
+    throw new Error('Phone ribbon edge geometry is unavailable.');
+  }
+  expect(nextRibbonPageBox.x).toBeGreaterThanOrEqual(
+    toolbarBox.x + toolbarBox.width - 1,
+  );
+
+  for (let pageIndex = 0; pageIndex < 2; pageIndex += 1) {
+    const previousScroll = await toolbar.evaluate(
+      (element) => element.scrollLeft,
+    );
+    await nextRibbonPage.click();
+    await expect
+      .poll(() => toolbar.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(previousScroll);
+  }
+
+  const bulletItem = page
+    .locator('.work-document-editable .ProseMirror ul > li > p')
+    .first();
+  await bulletItem.click();
+
+  const bulletTrigger = page.getByRole('button', { name: '项目符号库' });
+  const numberingTrigger = page.getByRole('button', { name: '编号库' });
+  const triggerGeometry = await Promise.all(
+    [bulletTrigger, numberingTrigger].map(async (trigger) => {
+      const box = await trigger.boundingBox();
+      if (!box)
+        throw new Error('List-gallery trigger geometry is unavailable.');
+      return box;
+    }),
+  );
+  expect(
+    Math.min(...triggerGeometry.map(({ width }) => width)),
+  ).toBeGreaterThanOrEqual(23);
+  expect(
+    Math.min(...triggerGeometry.map(({ height }) => height)),
+  ).toBeGreaterThanOrEqual(23);
+  expect(Math.min(...triggerGeometry.map(({ x }) => x))).toBeGreaterThanOrEqual(
+    toolbarBox.x + 1,
+  );
+  expect(
+    Math.max(...triggerGeometry.map(({ x, width }) => x + width)),
+  ).toBeLessThanOrEqual(toolbarBox.x + toolbarBox.width - 1);
+
+  await bulletTrigger.click();
+  const bulletPanel = page.getByRole('dialog', { name: '项目符号库' });
+  await expect(bulletPanel).toBeVisible();
+  const bulletGeometry = await bulletPanel.evaluate((element) => {
+    const panel = element.getBoundingClientRect();
+    const options = [
+      ...element.querySelectorAll<HTMLButtonElement>(
+        '.work-document-list-options > button',
+      ),
+    ];
+    const clear = element.querySelector<HTMLButtonElement>(
+      '.work-document-list-clear',
+    );
+    if (options.length !== 3 || !clear) {
+      throw new Error('Bullet-gallery phone controls are incomplete.');
+    }
+    return {
+      left: panel.left,
+      right: panel.right,
+      optionHeights: options.map(
+        (option) => option.getBoundingClientRect().height,
+      ),
+      clearHeight: clear.getBoundingClientRect().height,
+    };
+  });
+  expect(bulletGeometry.left).toBeGreaterThanOrEqual(15);
+  expect(bulletGeometry.right).toBeLessThanOrEqual(375);
+  expect(Math.min(...bulletGeometry.optionHeights)).toBeGreaterThanOrEqual(43);
+
+  await bulletPanel.getByRole('menuitemradio', { name: '方块' }).click();
+  await expect(bulletItem.locator('xpath=ancestor::ul[1]')).toHaveAttribute(
+    'data-office-bullet-style',
+    'square',
+  );
+  await expect(body).toBeFocused();
+
+  const orderedItem = page
+    .locator('.work-document-editable .ProseMirror ol > li > p')
+    .first();
+  await orderedItem.click();
+  await numberingTrigger.click();
+  const numberingPanel = page.getByRole('dialog', { name: '编号库' });
+  await expect(numberingPanel).toBeVisible();
+  const numberingGeometry = await numberingPanel.evaluate((element) => {
+    const panel = element.getBoundingClientRect();
+    const actions = [
+      ...element.querySelectorAll<HTMLButtonElement>(
+        '.work-document-numbering-actions > button, .work-document-numbering-start > button, .work-document-list-clear',
+      ),
+    ];
+    const numberField = element.querySelector<HTMLElement>(
+      '.work-document-numbering-start .work-office-number-field',
+    );
+    if (actions.length !== 4 || !numberField) {
+      throw new Error('Numbering-gallery phone controls are incomplete.');
+    }
+    return {
+      left: panel.left,
+      right: panel.right,
+      actionHeights: actions.map(
+        (action) => action.getBoundingClientRect().height,
+      ),
+      numberFieldHeight: numberField.getBoundingClientRect().height,
+    };
+  });
+  expect(numberingGeometry.left).toBeGreaterThanOrEqual(15);
+  expect(numberingGeometry.right).toBeLessThanOrEqual(375);
+  expect(bulletGeometry.clearHeight).toBeGreaterThanOrEqual(43);
+  expect(Math.min(...numberingGeometry.actionHeights)).toBeGreaterThanOrEqual(
+    43,
+  );
+  expect(numberingGeometry.numberFieldHeight).toBeGreaterThanOrEqual(43);
+
+  await numberingPanel
+    .getByRole('menuitemradio', { name: '大写罗马数字' })
+    .click();
+  await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
+    'type',
+    'I',
+  );
+  await expect(body).toBeFocused();
+
+  await numberingTrigger.click();
+  await expect(numberingPanel).toBeVisible();
+  await numberingPanel.getByRole('textbox', { name: '起始编号' }).fill('4');
+  await numberingPanel.getByRole('button', { name: '应用起始值' }).click();
+  await expect(orderedItem.locator('xpath=ancestor::ol[1]')).toHaveAttribute(
+    'start',
+    '4',
+  );
+  await expect(body).toBeFocused();
+
+  await numberingTrigger.click();
+  await expect(numberingPanel).toBeVisible();
+  await expect(
+    numberingPanel.getByRole('textbox', { name: '起始编号' }),
+  ).toHaveValue('4');
+  await page.keyboard.press('Escape');
+  await expect(numberingTrigger).toBeFocused();
+});
+
 test('PDF prioritizes page and zoom controls at compact workspace width', async ({
   page,
 }) => {

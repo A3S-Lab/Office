@@ -53,6 +53,9 @@
 .work-document-list-panel {
   display: grid;
   width: min(300px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: 8px;
   padding: 10px;
   border-color: var(--a3s-line-strong);
@@ -247,8 +250,45 @@
     width: calc(100vw - 32px);
   }
 
+  .work-document-list-clear,
+  .work-document-numbering-actions > button,
+  .work-document-numbering-start > button {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .work-document-list-clear {
+    width: 100%;
+    justify-self: stretch;
+    justify-content: flex-start;
+  }
+
   .work-document-numbering-start {
     grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .work-document-numbering-start .work-office-number-field {
+    height: 44px;
+    grid-template-columns: minmax(0, 1fr) 88px;
+  }
+
+  .work-document-numbering-start .work-office-number-field > input {
+    font-size: 12px;
+  }
+
+  .work-document-numbering-start .work-office-number-steppers {
+    grid-template-columns: repeat(2, 44px);
+    grid-template-rows: 44px;
+  }
+
+  .work-document-numbering-start
+    .work-office-number-steppers
+    > button:first-child {
+    border-right: 1px solid var(--a3s-line);
+    border-bottom: 0;
   }
 
   .work-document-numbering-start > button {

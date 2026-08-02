@@ -252,7 +252,10 @@ interaction model.
   tracked-revision and anchored-comment review that preserve native scroll
   distance, sparse current/selection/draft pins, and Home/End reachability;
   paragraph styles and phone-sized paragraph-spacing and pagination controls
-  with touch targets and exact invoker-focus restoration;
+  with touch targets and exact invoker-focus restoration; stable compact-ribbon
+  edge paging and viewport-bounded list galleries with touch-sized numbering
+  actions, selection-preserving bullet and numbering commands, and explicit
+  Escape-to-invoker focus restoration;
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked

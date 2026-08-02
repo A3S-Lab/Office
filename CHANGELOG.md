@@ -81,6 +81,10 @@ All notable changes to A3S Office will be documented in this file.
 - Rebuilt Presentation transition controls as standard ribbon groups, paged
   compact Office ribbons by complete command groups, and reset stale ribbon
   scroll state when the available width grows.
+- Reserved both compact-ribbon navigation edges while tools overflow, bounded
+  Word list galleries to the phone viewport, enlarged their numbering controls
+  for touch, and restored the TipTap selection after list commands so active
+  style and start-value settings remain available when a gallery is reopened.
 - Made open popovers explicit editor-shortcut boundaries so Escape closes the
   PDF annotation-style popover without cancelling the selected annotation
   tool.

@@ -80,6 +80,7 @@ export function WorkOfficeRibbon<T extends string>({
   const selectedPanel = panels[selectedTab];
   const hasSelectedPanel =
     selectedPanel !== null && selectedPanel !== undefined;
+  const hasRibbonOverflow = ribbonOverflow.backward || ribbonOverflow.forward;
   const updateRibbonOverflow = useCallback(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
@@ -293,11 +294,12 @@ export function WorkOfficeRibbon<T extends string>({
       >
         {hasSelectedPanel && (
           <>
-            {ribbonOverflow.backward && (
+            {hasRibbonOverflow && (
               <button
                 type="button"
                 className="work-office-ribbon-scroll previous"
                 aria-label={`向左查看更多${selectedLabel}工具`}
+                disabled={!ribbonOverflow.backward}
                 onClick={() => scrollRibbon(-1)}
               >
                 <ChevronLeft size={15} />
@@ -306,22 +308,19 @@ export function WorkOfficeRibbon<T extends string>({
             <div
               ref={toolbarRef}
               className={`work-office-toolbar ${toolbarClassName}`.trim()}
-              data-has-overflow={
-                ribbonOverflow.backward || ribbonOverflow.forward
-                  ? 'true'
-                  : undefined
-              }
+              data-has-overflow={hasRibbonOverflow ? 'true' : undefined}
               role="toolbar"
               aria-label={`${selectedLabel}工具栏`}
               onScroll={updateRibbonOverflow}
             >
               {selectedPanel}
             </div>
-            {ribbonOverflow.forward && (
+            {hasRibbonOverflow && (
               <button
                 type="button"
                 className="work-office-ribbon-scroll next"
                 aria-label={`向右查看更多${selectedLabel}工具`}
+                disabled={!ribbonOverflow.forward}
                 onClick={() => scrollRibbon(1)}
               >
                 <ChevronRight size={15} />
@@ -338,15 +337,19 @@ function ribbonItemGeometry(
   toolbar: HTMLDivElement,
 ): WorkOfficeRibbonItemGeometry[] {
   return Array.from(toolbar.children).flatMap((element) =>
-    element instanceof HTMLElement
-      ? [
-          {
-            left: element.offsetLeft,
-            right: element.offsetLeft + element.offsetWidth,
-          },
-        ]
-      : [],
+    element instanceof HTMLElement ? [ribbonItemBounds(toolbar, element)] : [],
   );
+}
+
+function ribbonItemBounds(
+  toolbar: HTMLDivElement,
+  element: HTMLElement,
+): WorkOfficeRibbonItemGeometry {
+  const left =
+    element.offsetParent === toolbar
+      ? element.offsetLeft
+      : element.offsetLeft - toolbar.offsetLeft;
+  return { left, right: left + element.offsetWidth };
 }
 
 function scrollSelectedRibbonTabIntoView(

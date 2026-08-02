@@ -1,0 +1,155 @@
+suite "office-word-list-formatting-phone" {
+    version = 1
+
+    scenario "format-word-lists-on-phone" {
+        name = "Format Word bullets and numbering from phone galleries"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-list-formatting-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "show-font-tools" {
+            target = role("button", "向右查看更多开始工具")
+        }
+
+        expect "backward-ribbon-navigation-is-ready" {
+            visible = css("button[aria-label='向左查看更多开始工具']")
+        }
+
+        click "show-paragraph-tools" {
+            target = role("button", "向右查看更多开始工具")
+        }
+
+        click "select-bullet-list" {
+            target = css(".work-document-editable .ProseMirror ul > li > p")
+        }
+
+        click "open-bullet-library" {
+            target = role("button", "项目符号库")
+        }
+
+        expect "bullet-library-ready" {
+            visible = css(".work-document-bullet-panel[role='dialog'][aria-label='项目符号库']")
+        }
+
+        click "apply-square-bullets" {
+            target = role("menuitemradio", "方块")
+        }
+
+        expect "square-bullets-are-committed" {
+            visible = css(".ProseMirror ul[data-office-bullet-style='square']")
+        }
+
+        expect "bullet-command-restores-editing-focus" {
+            visible = css("[role='textbox'][aria-label='文档正文']:focus")
+        }
+
+        click "select-numbered-list" {
+            target = css(".work-document-editable .ProseMirror ol > li > p")
+        }
+
+        click "open-numbering-library" {
+            target = role("button", "编号库")
+        }
+
+        expect "numbering-library-ready" {
+            visible = css(".work-document-numbering-panel[role='dialog'][aria-label='编号库']")
+        }
+
+        click "apply-upper-roman-numbering" {
+            target = role("menuitemradio", "大写罗马数字")
+        }
+
+        expect "roman-numbering-is-committed" {
+            visible = css(".ProseMirror ol[type='I']")
+        }
+
+        expect "numbering-style-restores-editing-focus" {
+            visible = css("[role='textbox'][aria-label='文档正文']:focus")
+        }
+
+        click "reopen-numbering-library" {
+            target = role("button", "编号库")
+        }
+
+        wait "numbering-start-setting-mounted" {
+            text = "起始编号"
+        }
+
+        expect "numbering-start-setting-ready" {
+            visible = css(".work-document-numbering-panel input[aria-label='起始编号']")
+        }
+
+        fill "set-numbering-start" {
+            target = css(".work-document-numbering-panel input[aria-label='起始编号']")
+            value = "4"
+        }
+
+        snapshot "numbering-start-value-updated" {
+            interactive = true
+        }
+
+        expect "numbering-start-can-be-applied" {
+            visible = css(".work-document-numbering-panel button[type='submit']:not(:disabled)")
+        }
+
+        click "apply-numbering-start" {
+            target = role("button", "应用起始值")
+        }
+
+        expect "numbering-start-is-committed" {
+            visible = css(".ProseMirror ol[type='I'][start='4']")
+        }
+
+        expect "numbering-start-restores-editing-focus" {
+            visible = css("[role='textbox'][aria-label='文档正文']:focus")
+        }
+
+        click "open-numbering-library-for-dismissal" {
+            target = role("button", "编号库")
+        }
+
+        press "dismiss-numbering-library" {
+            key = "Escape"
+        }
+
+        expect "escape-restores-numbering-trigger-focus" {
+            visible = css("button[aria-label='编号库'][aria-expanded='false']:focus")
+        }
+
+        accessibility "list-formatting-semantics" {
+            path = "evidence/list-formatting-semantics.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

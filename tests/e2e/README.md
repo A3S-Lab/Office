@@ -22,7 +22,11 @@ bun run test:e2e
 The suites cover focused Word page-color, the complete phone Page Setup flow
 with grouped header/footer formatting controls, phone paragraph-spacing and
 pagination popovers with committed document semantics and exact invoker-focus
-restoration, compact comments-drawer, a phone citation workflow with
+restoration, a phone list-gallery workflow covering bounded ribbon paging,
+square bullets, upper-Roman numbering, a custom start value, viewport-safe
+touch controls, TipTap selection and editor-focus recovery, and
+Escape-to-invoker focus restoration, compact comments-drawer, a phone citation
+workflow with
 field-level validation, save, insertion, and close-to-invoker focus
 restoration, full-text navigation, the complete phone Find/Replace workflow,
 page-preview, bounded page-button virtualization for a

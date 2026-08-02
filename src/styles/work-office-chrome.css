@@ -292,6 +292,8 @@
 .work-office-ribbon-panel {
   position: relative;
   min-width: 0;
+  display: flex;
+  align-items: stretch;
 }
 
 .work-office-ribbon-panel[data-empty="true"] {
@@ -299,9 +301,10 @@
 }
 
 .work-office-ribbon .work-office-toolbar {
+  width: auto;
   height: 74px;
   min-height: 74px;
-  flex-basis: 74px;
+  flex: 1 1 auto;
   align-items: stretch;
   gap: 0;
   padding: 5px 10px 5px;
@@ -317,12 +320,12 @@
 }
 
 .work-office-ribbon-scroll {
-  position: absolute;
   z-index: 4;
-  top: 5px;
   display: grid;
   width: 27px;
   height: 63px;
+  flex: 0 0 27px;
+  margin-block: 5px 6px;
   padding: 0;
   place-items: center;
   border: 1px solid
@@ -335,11 +338,11 @@
 }
 
 .work-office-ribbon-scroll.previous {
-  left: 4px;
+  margin-left: 4px;
 }
 
 .work-office-ribbon-scroll.next {
-  right: 4px;
+  margin-right: 4px;
 }
 
 .work-office-ribbon-scroll:hover,
@@ -356,6 +359,21 @@
     var(--a3s-panel)
   );
   box-shadow: 0 5px 16px rgb(20 27 43 / 14%);
+}
+
+.work-office-ribbon-scroll:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
+.work-office-ribbon-scroll:disabled:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 18%,
+    var(--a3s-line)
+  );
+  background: color-mix(in srgb, var(--a3s-panel) 94%, transparent);
+  box-shadow: 0 3px 12px rgb(20 27 43 / 10%);
 }
 
 .work-office-ribbon-group {

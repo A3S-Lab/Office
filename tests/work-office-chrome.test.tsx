@@ -129,3 +129,54 @@ test('pages compact ribbon tabs instead of compressing their labels', async () =
     ).toBeInTheDocument(),
   );
 });
+
+test('reserves both ribbon navigation edges while tools overflow', async () => {
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Test ribbon"
+      tabs={[{ id: 'home', label: '开始' }]}
+      defaultTab="home"
+      panels={{
+        home: (
+          <>
+            <span>First group</span>
+            <span>Second group</span>
+          </>
+        ),
+      }}
+    />,
+  );
+
+  const toolbar = screen.getByRole('toolbar', { name: '开始工具栏' });
+  Object.defineProperty(toolbar, 'clientWidth', {
+    configurable: true,
+    value: 100,
+  });
+  Object.defineProperty(toolbar, 'offsetLeft', {
+    configurable: true,
+    value: 31,
+  });
+  Array.from(toolbar.children).forEach((child, index) => {
+    Object.defineProperties(child, {
+      offsetLeft: { configurable: true, value: 31 + index * 80 },
+      offsetWidth: { configurable: true, value: 80 },
+    });
+  });
+
+  fireEvent(window, new Event('resize'));
+  const previous = await waitFor(() =>
+    screen.getByRole('button', { name: '向左查看更多开始工具' }),
+  );
+  const next = screen.getByRole('button', {
+    name: '向右查看更多开始工具',
+  });
+  expect(previous).toBeDisabled();
+  expect(next).toBeEnabled();
+
+  toolbar.scrollLeft = 70;
+  fireEvent.scroll(toolbar);
+  await waitFor(() => {
+    expect(previous).toBeEnabled();
+    expect(next).toBeDisabled();
+  });
+});

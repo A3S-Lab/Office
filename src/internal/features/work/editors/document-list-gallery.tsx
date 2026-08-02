@@ -422,7 +422,11 @@ function runDocumentListMenuCommand(
   const handled = command();
   if (!handled) return false;
   close();
-  editor.commands.focus();
+  queueMicrotask(() => {
+    if (!editor.isDestroyed) {
+      editor.commands.focus(undefined, { scrollIntoView: false });
+    }
+  });
   return true;
 }
 

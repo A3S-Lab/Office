@@ -149,7 +149,15 @@ Current implementation evidence includes the responsive paragraph-style
 gallery and a typed list slice with disc/circle/square bullets, five common
 ordered formats, restart/continue/start commands, keyboard-operated galleries,
 single-transaction undo behavior, and DOCX round trips for the declared list
-styles. Tables now expose separate Design and Layout contextual tabs, five
+styles. Compact ribbon overflow now reserves both navigation edges so tool
+width does not change after paging. Phone list galleries stay within the
+viewport and provide 44 px clear, restart, start-value, stepper, and commit
+controls. Closing a list command restores the TipTap selection as well as DOM
+focus, so reopening the numbering gallery retains its active style and start
+settings. A deterministic phone workflow covers two ribbon advances, square
+bullets, upper-Roman numbering, a custom start value, editor-focus recovery,
+and Escape-to-invoker restoration. Tables now expose separate Design and
+Layout contextual tabs, five
 keyboard-operated style presets, multi-cell fill and uniform border commands,
 horizontal and vertical alignment, exact column-width and row-height fields,
 equal row/column distribution, content/window autofit, row/column operations,
