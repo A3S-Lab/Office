@@ -872,6 +872,12 @@
   min-width: 0;
 }
 
+.work-document-page-navigation > ol > li.work-document-page-navigation-spacer {
+  min-height: 0;
+  contain: strict;
+  pointer-events: none;
+}
+
 .work-document-page-navigation > ol > li > button {
   display: grid;
   width: 100%;
@@ -958,11 +964,13 @@
 .work-document-page-thumbnail-label {
   display: flex;
   min-width: 0;
+  min-height: 11px;
   align-items: baseline;
   justify-content: center;
   gap: 6px;
   font-size: 9px;
   font-variant-numeric: tabular-nums;
+  line-height: 11px;
 }
 
 .work-document-page-thumbnail-label > small {

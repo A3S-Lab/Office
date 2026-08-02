@@ -243,8 +243,11 @@ invalid tag or title field, moves keyboard focus to that field, and clears only
 when its value changes. A deterministic phone workflow covers validation,
 source persistence, citation insertion, and exact close-to-invoker focus
 restoration. Raster-quality page thumbnails and bounded raster admission are
-implemented. Full page-button, outline, and search-result virtualization for
-100-page fixtures remains part of this priority.
+implemented. Page buttons now use a bounded window with physical scroll spacers
+and sparse current/focus pins. A deterministic 120-page DOCX workflow proves
+Home/End navigation, selection, focus retention, and bounded mounting. Outline
+and search-result virtualization for representative long documents remains part
+of this priority.
 
 Exit evidence:
 

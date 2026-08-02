@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/core';
-import { expect, test } from '@rstest/core';
+import { expect, rstest, test } from '@rstest/core';
 import { useState } from 'react';
 import {
   act,
@@ -240,7 +240,14 @@ test('switches to page previews and jumps to the selected page', async () => {
     expect(firstPage).toHaveAttribute('aria-current', 'page');
     expect(secondPage).toHaveTextContent('交付计划');
 
+    firstPage.focus();
+    fireEvent.click(firstPage);
+    expect(editor.state.selection.$from.parent.inlineContent).toBe(true);
+    expect(firstPage).toHaveFocus();
+
+    secondPage.focus();
     fireEvent.click(secondPage);
+    expect(secondPage).toHaveFocus();
     expect(secondPage).toHaveAttribute('aria-current', 'page');
     expect(
       editor.state.doc.textBetween(
@@ -249,10 +256,68 @@ test('switches to page previews and jumps to the selected page', async () => {
       ),
     ).toBe('交付计划');
 
-    secondPage.focus();
     fireEvent.keyDown(secondPage, { key: 'Home' });
     await waitFor(() => expect(firstPage).toHaveFocus());
   } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
+test('resolves a document-section page boundary to inline text', () => {
+  const sectionedDocument = [
+    '<section data-document-section data-section-id="section-1">',
+    '<h1>第一页标题</h1>',
+    '<p>第一页正文。</p>',
+    '</section>',
+  ].join('');
+  const { editor, element } = createEditor(sectionedDocument);
+  const warning = rstest.spyOn(console, 'warn').mockImplementation(() => {});
+
+  try {
+    let secondBlockBoundary: number | undefined;
+    editor.state.doc.descendants((node, position) => {
+      if (node.type.name === 'paragraph' && secondBlockBoundary === undefined) {
+        secondBlockBoundary = position;
+      }
+    });
+    if (secondBlockBoundary === undefined) {
+      throw new Error('Expected a paragraph inside the document section.');
+    }
+
+    render(
+      <DocumentNavigationPanel
+        currentPage={1}
+        editor={editor}
+        pages={[
+          {
+            physicalPage: 1,
+            pageNumber: 1,
+            orientation: 'portrait',
+            previewText: '第一页标题',
+            selectionPosition: 2,
+          },
+          {
+            physicalPage: 2,
+            pageNumber: 2,
+            orientation: 'portrait',
+            previewText: '第一页正文',
+            selectionPosition: secondBlockBoundary,
+          },
+        ]}
+        onClose={() => undefined}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: '页面' }));
+    fireEvent.click(screen.getByRole('button', { name: '第 2 页' }));
+
+    expect(editor.state.selection.$from.parent.inlineContent).toBe(true);
+    expect(warning.mock.calls.flat().join(' ')).not.toContain(
+      'TextSelection endpoint not pointing into a node with inline content',
+    );
+  } finally {
+    warning.mockRestore();
     editor.destroy();
     element.remove();
   }
@@ -323,7 +388,7 @@ test('refreshes the outline after a controlled document replacement', () => {
   }
 });
 
-function createEditor(): {
+function createEditor(content = documentHtml): {
   editor: Editor;
   element: HTMLDivElement;
 } {
@@ -333,7 +398,7 @@ function createEditor(): {
     editor: new Editor({
       element,
       extensions: createWorkDocumentExtensions(),
-      content: documentHtml,
+      content,
     }),
     element,
   };

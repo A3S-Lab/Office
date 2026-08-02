@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
 import { jsPDF } from 'jspdf';
 
 const fixtureDirectory = path.resolve(
@@ -9,9 +10,14 @@ const fixtureDirectory = path.resolve(
 );
 const pdfPath = path.join(fixtureDirectory, 'pdf-thumbnail-keyboard.pdf');
 const picturePath = path.join(fixtureDirectory, 'word-picture.png');
+const longDocumentPath = path.join(
+  fixtureDirectory,
+  'word-page-navigation-120.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
+await Bun.write(longDocumentPath, await createLongWordNavigationFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -21,7 +27,40 @@ await Bun.write(
 );
 
 console.log(`Created ${pdfPath}`);
+console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${picturePath}`);
+
+async function createLongWordNavigationFixture(): Promise<Buffer> {
+  const pageCount = 120;
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic long-document page navigation fixture',
+    title: 'A3S Office 120-page navigation fixture',
+    sections: [
+      {
+        children: Array.from({ length: pageCount }, (_, index) => {
+          const page = index + 1;
+          const paddedPage = String(page).padStart(3, '0');
+          return new Paragraph({
+            pageBreakBefore: index > 0,
+            children: [
+              new TextRun({
+                bold: true,
+                size: 32,
+                text: `A3S Office long document - Page ${paddedPage}`,
+              }),
+              new TextRun({
+                break: 1,
+                text: `Deterministic navigation marker ${paddedPage}.`,
+              }),
+            ],
+          });
+        }),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
+}
 
 function createPdfThumbnailKeyboardFixture(): ArrayBuffer {
   const pdf = new jsPDF({

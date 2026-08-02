@@ -247,7 +247,8 @@ interaction model.
 - **Document** — Pagination, sections, focused page-setup tabs, clean page
   margins with on-demand header/footer editing, outline navigation with
   contextual full-text results, keyboard-operated live physical-page raster
-  thumbnails with viewport-bounded capture, styles,
+  thumbnails with viewport-bounded capture and a virtualized long-document
+  page-button window that preserves Home/End reachability, styles,
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit,
   viewport-safe comment drafting,

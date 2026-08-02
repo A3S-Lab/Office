@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { TextSelection } from '@tiptap/pm/state';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import {
   type CSSProperties,
@@ -217,10 +218,20 @@ export function DocumentNavigationPanel({
 
   const navigateTo = async (
     selection: number | { from: number; to: number },
+    focusEditor = true,
   ) => {
+    const resolvedSelection =
+      typeof selection === 'number'
+        ? TextSelection.near(
+            editor.state.doc.resolve(
+              Math.min(editor.state.doc.content.size, Math.max(0, selection)),
+            ),
+            1,
+          ).from
+        : selection;
     const chain = editor.chain();
-    if (!modal) chain.focus();
-    chain.setTextSelection(selection).scrollIntoView().run();
+    if (!modal && focusEditor) chain.focus();
+    chain.setTextSelection(resolvedSelection).scrollIntoView().run();
     if (!modal) return;
     await onClose();
     requestAnimationFrame(() => {
@@ -303,7 +314,7 @@ export function DocumentNavigationPanel({
             currentPage={currentPage}
             pages={pages}
             thumbnailSource={pageThumbnailSource}
-            onSelectPage={(page) => navigateTo(page.selectionPosition)}
+            onSelectPage={(page) => navigateTo(page.selectionPosition, false)}
           />
         </div>
       ) : (

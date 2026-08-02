@@ -201,9 +201,14 @@ live page, strips editing state, and crops one exact page offset. It deliberatel
 does not wait for the document-wide font set or a browser animation frame:
 pagination readiness is the layout authority, while unrelated fonts and
 background agent tabs must not stall a preview. Text excerpts remain a bounded
-loading or failure fallback. This bounds raster work, but the page buttons,
-outline, and search-result collections still require full virtualization proof
-against the representative 100-page fixtures.
+loading or failure fallback. Above 48 pages, the navigation pane mounts a
+contiguous window of at most 24 page buttons, plus the selected and roving pages
+when either falls outside that window. Variable-height spacers preserve the
+physical scroll range, while Home and End materialize and focus their sparse
+destinations without relying on a browser animation frame. A deterministic
+120-page DOCX A3S Test proves bounded mounting, first/last-page keyboard access,
+selection, focus retention, and spacer geometry. Raster work and page-button
+DOM are therefore bounded; outline and search-result virtualization remain open.
 
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell

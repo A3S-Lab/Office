@@ -23,7 +23,8 @@ The suites cover focused Word page-color, the complete phone Page Setup flow
 with grouped header/footer formatting controls, compact comments-drawer, a
 phone citation workflow with field-level validation, save, insertion, and
 close-to-invoker focus restoration, full-text navigation, the complete phone
-Find/Replace workflow, page-preview,
+Find/Replace workflow, page-preview, bounded page-button virtualization for a
+real 120-page DOCX with animation-frame-independent Home/End keyboard focus,
 selected-text AI question-composer regressions, and durable picture insertion
 from a project-relative fixture after the browser-managed file input is reset,
 plus phone-width picture alternative-text editing that retains the image
@@ -42,8 +43,9 @@ navigation, plus a phone page-drawer workflow proving toolbar ownership,
 selection, modal close behavior, and an unobstructed document canvas; the
 phone Markdown source, visual, and split-mode workflow with
 unambiguous accessible controls; and the public
-Playground-to-documentation-center navigation contract, including the
-documentation tree and the same-deployment return to the Playground homepage.
+Playground-to-documentation-center navigation contract, including Simplified
+Chinese as the default language, language and release-version switching, the
+documentation tree, and the same-deployment return to the Playground homepage.
 Each suite owns only its browser surface. Keep the preview process under the
 terminal that started it and stop that process separately when testing is
 complete.

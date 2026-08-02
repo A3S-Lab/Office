@@ -1,0 +1,135 @@
+suite "office-word-page-windowing" {
+    version = 1
+
+    scenario "navigate-a-120-page-word-document" {
+        name = "Keep long Word page navigation bounded and keyboard reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-page-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-long-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-page-navigation-120.docx"]
+        }
+
+        wait "long-document-loaded" {
+            text = "A3S Office long document - Page 001"
+        }
+
+        wait "pagination-ready" {
+            text = "120 页"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        click "open-pages" {
+            target = css(".work-document-navigation-tabs [data-tab-id='pages']")
+        }
+
+        wait "page-navigation-ready" {
+            visible = css(".work-document-page-navigation[data-document-page-count='120'][data-document-page-windowed='true']")
+        }
+
+        expect "windowed-navigation-ready" {
+            visible = css(".work-document-page-navigation[data-document-page-count='120'][data-document-page-windowed='true']:not([data-document-page-mounted-count='120'])")
+        }
+
+        expect "far-page-is-not-mounted-in-the-initial-window" {
+            visible = css(".work-document-page-navigation:not(:has([data-document-page-thumbnail='1']))")
+        }
+
+        expect "virtual-scroll-geometry-ready" {
+            visible = css("[data-document-page-spacer='before']")
+        }
+
+        focus "focus-last-page" {
+            target = css("[data-document-page-thumbnail='120']")
+        }
+
+        press "focus-first-page" {
+            key = "Home"
+        }
+
+        expect "first-page-mounted-and-focused" {
+            visible = css("[data-document-page-thumbnail='1']:focus")
+        }
+
+        press "select-first-page" {
+            key = "Enter"
+        }
+
+        expect "first-page-selected" {
+            visible = css("[data-document-page-thumbnail='1'][aria-current='page']")
+        }
+
+        press "return-focus-to-last-page" {
+            key = "End"
+        }
+
+        expect "last-page-mounted-and-focused" {
+            visible = css("[data-document-page-thumbnail='120']:focus")
+        }
+
+        expect "current-page-remains-mounted" {
+            visible = css("[data-document-page-thumbnail='1'][aria-current='page']")
+        }
+
+        expect "middle-spacer-preserves-the-distance" {
+            visible = css("[data-document-page-spacer='between']")
+        }
+
+        press "select-last-page" {
+            key = "Enter"
+        }
+
+        expect "last-page-selected" {
+            visible = css("[data-document-page-thumbnail='120'][aria-current='page']")
+        }
+
+        press "return-focus-to-first-page" {
+            key = "Home"
+        }
+
+        expect "first-page-focused" {
+            visible = css("[data-document-page-thumbnail='1']:focus")
+        }
+
+        screenshot "bounded-page-navigation" {
+            path = "screenshots/word-page-windowing.png"
+        }
+
+        accessibility "bounded-page-tree" {
+            path = "evidence/word-page-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
