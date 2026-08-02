@@ -6,8 +6,8 @@ suite "office-docs-navigation" {
         surface = "web"
         timeout_ms = 30000
 
-        viewport "desktop-navigation" {
-            width = 1440
+        viewport "responsive-navigation" {
+            width = 1200
             height = 900
         }
 
@@ -59,12 +59,41 @@ suite "office-docs-navigation" {
             url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
+        viewport "compact-version-navigation" {
+            width = 700
+            height = 900
+        }
+
+        snapshot "observe-compact-version-navigation" {
+            interactive = true
+        }
+
+        click "open-responsive-navigation" {
+            target = css(".rp-nav-hamburger__sm")
+        }
+
+        snapshot "observe-responsive-navigation" {
+            interactive = true
+        }
+
+        expect "responsive-navigation-open" {
+            visible = css(".rp-nav-screen--open")
+        }
+
         click "open-version-menu" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) > .rp-nav-menu__item__container")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions")
+        }
+
+        snapshot "observe-version-menu" {
+            interactive = true
+        }
+
+        expect "version-0-1-0-visible" {
+            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href*='/0.1.0/components/document.html']")
         }
 
         click "select-version-0-1-0" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) a[aria-label='0.1.0']")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href*='/0.1.0/components/document.html']")
         }
 
         wait "versioned-document-route" {
@@ -75,12 +104,32 @@ suite "office-docs-navigation" {
             text = "自定义选区菜单"
         }
 
+        click "reopen-responsive-navigation" {
+            target = css(".rp-nav-hamburger__sm")
+        }
+
+        snapshot "observe-responsive-navigation-reopened" {
+            interactive = true
+        }
+
+        expect "responsive-navigation-reopened" {
+            visible = css(".rp-nav-screen--open")
+        }
+
         click "open-language-menu" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(1) > .rp-nav-menu__item__container")
+            target = css(".rp-nav-screen--open .rp-nav-screen-langs")
+        }
+
+        snapshot "observe-language-menu" {
+            interactive = true
+        }
+
+        expect "english-language-visible" {
+            visible = css(".rp-nav-screen--open .rp-nav-screen-langs-group a[lang='en']")
         }
 
         click "select-english" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(1) a[aria-label='English']")
+            target = css(".rp-nav-screen--open .rp-nav-screen-langs-group a[lang='en']")
         }
 
         wait "english-versioned-document-route" {
@@ -95,12 +144,32 @@ suite "office-docs-navigation" {
             visible = css("html[lang=en]")
         }
 
+        click "reopen-responsive-navigation-for-latest" {
+            target = css(".rp-nav-hamburger__sm")
+        }
+
+        snapshot "observe-responsive-navigation-for-latest" {
+            interactive = true
+        }
+
+        expect "responsive-navigation-open-for-latest" {
+            visible = css(".rp-nav-screen--open")
+        }
+
         click "open-latest-menu" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) > .rp-nav-menu__item__container")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions")
+        }
+
+        snapshot "observe-latest-menu" {
+            interactive = true
+        }
+
+        expect "latest-version-visible" {
+            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/en/components/document.html']")
         }
 
         click "select-latest" {
-            target = css(".rp-nav__others > .rp-nav-menu__item:nth-of-type(2) a[aria-label='latest']")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/en/components/document.html']")
         }
 
         wait "latest-english-document-route" {
