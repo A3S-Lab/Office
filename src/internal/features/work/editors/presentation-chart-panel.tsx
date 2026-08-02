@@ -1,5 +1,7 @@
 import { Plus, Trash2, X } from 'lucide-react';
+import { useRef } from 'react';
 import { Button, IconButton } from '../../../design-system/primitives';
+import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import {
   createPresentationChartSeries,
   normalizeDoughnutHoleSize,
@@ -35,7 +37,12 @@ import { PresentationChartDataLabelEditor } from './presentation-chart-data-labe
 import { PresentationChartLayoutEditor } from './presentation-chart-layout-editor';
 import { PresentationChartSeriesAnalysisEditor } from './presentation-chart-series-analysis-editor';
 import { SpreadsheetChartSeriesStyleEditor } from './spreadsheet-chart-series-style-editor';
-import { handleOfficeTaskPaneKeyDown } from './office-task-pane';
+import {
+  handleOfficeTaskPaneKeyDown,
+  useOfficeTaskPaneModal,
+} from './office-task-pane';
+
+const PRESENTATION_CHART_PANE_MODAL_QUERY = '(max-width: 1100px)';
 
 const CHART_TYPES: WorkSlideChartType[] = [
   'column',
@@ -54,12 +61,26 @@ export function PresentationChartPanel({
   onChange,
   onDelete,
   onClose,
+  restoreFocusTarget,
 }: {
   chart: WorkSlideChart;
   onChange: (chart: WorkSlideChart) => void;
   onDelete: () => void;
   onClose: () => void;
+  restoreFocusTarget?: () => HTMLElement | null;
 }) {
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const modal = useOfficeTaskPaneModal(PRESENTATION_CHART_PANE_MODAL_QUERY);
+  const modalAttributes = modal
+    ? ({ role: 'dialog', 'aria-modal': true } as const)
+    : {};
+  const focusScope = useDialogFocusScope<HTMLElement>({
+    active: modal,
+    initialFocus: () => closeRef.current,
+    getActiveScope: () => panelRef.current,
+    restoreFocusTarget,
+  });
   const numericXAxis = presentationChartUsesNumericXAxis(chart.type);
   const updateSeries = (
     index: number,
@@ -74,9 +95,15 @@ export function PresentationChartPanel({
   };
   return (
     <section
+      {...modalAttributes}
+      ref={panelRef}
       className="work-presentation-chart-panel"
       aria-label="演示图表数据"
-      onKeyDown={(event) => handleOfficeTaskPaneKeyDown(event, onClose)}
+      onKeyDown={(event) => {
+        focusScope.handleKeyDown(event);
+        if (!event.defaultPrevented)
+          handleOfficeTaskPaneKeyDown(event, onClose);
+      }}
     >
       <header>
         <div>
@@ -89,6 +116,7 @@ export function PresentationChartPanel({
             删除图表
           </Button>
           <IconButton
+            ref={closeRef}
             className="close"
             label="关闭演示图表数据"
             onClick={(event) => {

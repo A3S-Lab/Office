@@ -78,6 +78,11 @@ All notable changes to A3S Office will be documented in this file.
 - Made Spreadsheet workbook task panes modal at phone widths, isolated the
   ribbon, grid, and worksheet footer while open, contained forward and reverse
   Tab navigation, and restored the exact ribbon invoker after Escape.
+- Made the Presentation chart inspector a modal surface whenever its responsive
+  layout overlays the canvas. The close action receives initial focus, the
+  ribbon, slide workspace, and status bar remain inert, Tab stays contained,
+  dirty fields consume the first Escape, and closing restores the selected
+  chart without changing the desktop docked inspector.
 - Kept common Presentation arrangement commands visible at desktop width by
   compacting group, ungroup, and layer actions without removing their labels
   from accessible names and tooltips.

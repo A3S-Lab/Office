@@ -1,0 +1,139 @@
+suite "office-presentation-phone-chart-pane" {
+    version = 1
+
+    scenario "contain-chart-pane-focus-and-restore-selection" {
+        name = "Contain the phone Presentation chart pane and restore the selected chart"
+        surface = "web"
+        timeout_ms = 45000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        wait "presentation-ready" {
+            visible = css(".playground-artifact-card.presentation")
+        }
+
+        click "open-presentation" {
+            target = css(".playground-artifact-card.presentation")
+        }
+
+        wait "slide-canvas-ready" {
+            visible = css(".work-slide-canvas.interactive")
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "insert-chart" {
+            target = role("button", "图表")
+        }
+
+        expect "chart-pane-is-modal" {
+            visible = css(".work-presentation-chart-panel[role='dialog'][aria-modal='true']")
+        }
+
+        expect "ribbon-is-inert" {
+            visible = css(".work-presentation-ribbon[inert]")
+        }
+
+        expect "workspace-is-inert" {
+            visible = css(".work-presentation-layout[inert]")
+        }
+
+        expect "status-is-inert" {
+            visible = css(".work-presentation-status[inert]")
+        }
+
+        expect "close-receives-initial-focus" {
+            visible = css(".work-presentation-chart-panel button[aria-label='关闭演示图表数据']:focus")
+        }
+
+        focus "focus-first-action" {
+            target = css(".work-presentation-chart-panel button[aria-label='删除演示图表']")
+        }
+
+        press "reverse-tab-wraps-to-last-action" {
+            key = "Shift+Tab"
+        }
+
+        expect "reverse-focus-stays-in-pane" {
+            visible = css(".work-presentation-chart-panel button[aria-label='添加图表系列']:focus")
+        }
+
+        press "forward-tab-wraps-to-first-action" {
+            key = "Tab"
+        }
+
+        expect "forward-focus-stays-in-pane" {
+            visible = css(".work-presentation-chart-panel button[aria-label='删除演示图表']:focus")
+        }
+
+        fill "enter-invalid-series-draft" {
+            target = label("演示图表系列 1 数据")
+            value = "32, wrong, 61"
+        }
+
+        expect "invalid-draft-is-visible" {
+            visible = css("textarea[aria-label='演示图表系列 1 数据'][aria-invalid='true']")
+        }
+
+        press "cancel-draft" {
+            key = "Escape"
+        }
+
+        expect "pane-remains-after-draft-cancel" {
+            visible = css(".work-presentation-chart-panel textarea[aria-label='演示图表系列 1 数据']:not([aria-invalid])")
+        }
+
+        accessibility "modal-accessibility-tree" {
+            path = "evidence/presentation-phone-chart-pane-accessibility.json"
+            interactive = true
+        }
+
+        screenshot "modal-chart-pane" {
+            path = "screenshots/presentation-phone-chart-pane.png"
+        }
+
+        press "close-chart-pane" {
+            key = "Escape"
+        }
+
+        expect "selected-chart-focus-restored" {
+            visible = css(".work-slide-element.chart.selected:focus")
+        }
+
+        expect "ribbon-is-interactive-again" {
+            visible = css(".work-presentation-ribbon:not([inert])")
+        }
+
+        expect "workspace-is-interactive-again" {
+            visible = css(".work-presentation-layout:not([inert])")
+        }
+
+        expect "status-is-interactive-again" {
+            visible = css(".work-presentation-status:not([inert])")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

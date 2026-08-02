@@ -55,10 +55,7 @@ test('Presentation closes the contextual chart pane with Escape', async ({
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: '图表', exact: true }).click();
-  const chartPane = page.getByRole('region', {
-    name: '演示图表数据',
-    exact: true,
-  });
+  const chartPane = page.locator('.work-presentation-chart-panel');
   await expect(chartPane).toBeVisible();
 
   const values = page.getByRole('textbox', {
@@ -89,23 +86,33 @@ test('Presentation closes the contextual chart pane with Escape', async ({
   await expect(chartPane).toBeHidden();
 });
 
-test('Presentation keeps the chart inspector beside the canvas and preserves selection when it closes', async ({
+test('Presentation contains the chart inspector and preserves selection when it closes', async ({
   page,
-}) => {
+}, testInfo) => {
   await openPresentationFixture(page);
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: '图表', exact: true }).click();
 
   const workspace = page.locator('.work-presentation-workspace');
-  const chartPane = page.getByRole('region', {
-    name: '演示图表数据',
-    exact: true,
-  });
+  const chartPane = page.locator('.work-presentation-chart-panel');
   const selectedChart = page.locator('.work-slide-element.chart.selected');
   await expect(workspace).toBeVisible();
   await expect(chartPane).toBeVisible();
   await expect(selectedChart).toHaveCount(1);
+  if (testInfo.project.name === 'desktop-1280') {
+    await expect(chartPane).not.toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('.work-presentation-ribbon')).not.toHaveAttribute(
+      'inert',
+      '',
+    );
+  } else {
+    await expect(chartPane).toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('.work-presentation-ribbon')).toHaveAttribute(
+      'inert',
+      '',
+    );
+  }
 
   const geometry = await page.evaluate(() => {
     const panel = document.querySelector<HTMLElement>(
@@ -153,10 +160,7 @@ test('Presentation task-pane text fields cancel a draft before the pane closes',
 
   await page.getByRole('tab', { name: '插入', exact: true }).click();
   await page.getByRole('button', { name: '图表', exact: true }).click();
-  const chartPane = page.getByRole('region', {
-    name: '演示图表数据',
-    exact: true,
-  });
+  const chartPane = page.locator('.work-presentation-chart-panel');
   const title = chartPane.getByRole('textbox', { name: '演示图表标题' });
   const originalTitle = await title.inputValue();
 
@@ -172,6 +176,78 @@ test('Presentation task-pane text fields cancel a draft before the pane closes',
 
   await title.press('Escape');
   await expect(chartPane).toBeHidden();
+});
+
+test('Presentation contains the phone chart pane and restores chart focus', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 700 });
+  await openPresentationFixture(page);
+
+  await page.getByRole('tab', { name: '插入', exact: true }).click();
+  await page.getByRole('button', { name: '图表', exact: true }).click();
+
+  const pane = page.getByRole('dialog', {
+    name: '演示图表数据',
+    exact: true,
+  });
+  const close = pane.getByRole('button', { name: '关闭演示图表数据' });
+  const removeChart = pane.getByRole('button', {
+    name: '删除演示图表',
+    exact: true,
+  });
+  const addSeries = pane.getByRole('button', { name: '添加图表系列' });
+  const selectedChart = page.locator('.work-slide-element.chart.selected');
+
+  await expect(pane).toHaveAttribute('aria-modal', 'true');
+  await expect(page.locator('.work-presentation-ribbon')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-presentation-layout')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-presentation-status')).toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(close).toBeFocused();
+
+  await removeChart.focus();
+  await removeChart.press('Shift+Tab');
+  await expect(addSeries).toBeFocused();
+  await addSeries.press('Tab');
+  await expect(removeChart).toBeFocused();
+
+  const values = pane.getByRole('textbox', {
+    name: '演示图表系列 1 数据',
+  });
+  await values.fill('32, wrong, 61');
+  await expect(values).toHaveAttribute('aria-invalid', 'true');
+  await values.press('Escape');
+  await expect(values).toHaveValue('32, 48, 61');
+  await expect(pane).toBeVisible();
+
+  await values.press('Escape');
+  await expect(pane).toBeHidden();
+  await expect(selectedChart).toBeFocused();
+  await expect(page.locator('.work-presentation-ribbon')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-presentation-layout')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
+  await expect(page.locator('.work-presentation-status')).not.toHaveAttribute(
+    'inert',
+    '',
+  );
 });
 
 test('Presentation applies the live transition timing draft to every slide', async ({

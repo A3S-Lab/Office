@@ -360,6 +360,12 @@ Excel and WPS.
   history, import, and export.
 - Keep native slide and object context actions available independently of
   optional AI integrations.
+- Keep the chart inspector as a bounded desktop region and a focus-contained
+  dialog whenever the responsive layout overlays the canvas. The ribbon,
+  workspace, and status bar remain inert; Tab and Shift+Tab stay inside;
+  Escape cancels a dirty field before closing; and close restores the selected
+  chart. Deterministic phone evidence covers semantics, focus order, isolation,
+  screenshot, accessibility tree, console, and page errors.
 - Keep F5 and Shift+F5 as direct slideshow paths with an in-page fallback when
   the browser denies fullscreen.
 - Move bounded geometry, text fitting, connector routing, snapping, and

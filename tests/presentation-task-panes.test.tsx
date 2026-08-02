@@ -1,6 +1,6 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { PresentationChartPanel } from '../src/internal/features/work/editors/presentation-chart-panel';
 import { PresentationCommentsPanel } from '../src/internal/features/work/editors/presentation-comments-panel';
 import { PresentationDesignPanel } from '../src/internal/features/work/editors/presentation-design-panel';
@@ -72,7 +72,7 @@ test('selects a newly inserted chart and opens its task pane', () => {
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(screen.getByRole('button', { name: '图表' }));
 
-  expect(screen.getByRole('region', { name: '演示图表数据' })).toBeVisible();
+  expect(screen.getByLabelText('演示图表数据')).toBeVisible();
 });
 
 test('dismisses the presentation chart task pane with Escape', () => {
@@ -88,10 +88,87 @@ test('dismisses the presentation chart task pane with Escape', () => {
     />,
   );
 
-  fireEvent.keyDown(screen.getByRole('region', { name: '演示图表数据' }), {
+  fireEvent.keyDown(screen.getByLabelText('演示图表数据'), {
     key: 'Escape',
   });
   expect(closes).toBe(1);
+});
+
+test('keeps the docked chart pane as a non-modal region', () => {
+  const mediaQuery = installPresentationChartMatchMedia(false);
+  const view = render(
+    <PresentationChartPanel
+      chart={chart()}
+      onChange={() => undefined}
+      onDelete={() => undefined}
+      onClose={() => undefined}
+    />,
+  );
+  try {
+    const panel = screen.getByRole('region', { name: '演示图表数据' });
+    expect(panel).not.toHaveAttribute('aria-modal');
+  } finally {
+    view.unmount();
+    mediaQuery.restore();
+  }
+});
+
+test('contains phone chart-pane focus and restores the selected chart', async () => {
+  const mediaQuery = installPresentationChartMatchMedia(true);
+
+  function Harness() {
+    const [open, setOpen] = useState(false);
+    const selectedChartRef = useRef<HTMLButtonElement>(null);
+    return (
+      <div>
+        <button
+          ref={selectedChartRef}
+          type="button"
+          onClick={() => setOpen(true)}
+        >
+          已选图表
+        </button>
+        {open && (
+          <PresentationChartPanel
+            chart={chart()}
+            onChange={() => undefined}
+            onDelete={() => undefined}
+            restoreFocusTarget={() => selectedChartRef.current}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const view = render(<Harness />);
+  try {
+    const selectedChart = screen.getByRole('button', { name: '已选图表' });
+    fireEvent.click(selectedChart);
+
+    const panel = screen.getByRole('dialog', { name: '演示图表数据' });
+    const close = screen.getByRole('button', { name: '关闭演示图表数据' });
+    const removeChart = screen.getByRole('button', { name: '删除演示图表' });
+    const addSeries = screen.getByRole('button', { name: '添加图表系列' });
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+    expect(selectedChart).toHaveAttribute('inert');
+    expect(mediaQuery.queries).toContain('(max-width: 1100px)');
+    await waitFor(() => expect(close).toHaveFocus());
+
+    removeChart.focus();
+    fireEvent.keyDown(removeChart, { key: 'Tab', shiftKey: true });
+    expect(addSeries).toHaveFocus();
+    fireEvent.keyDown(addSeries, { key: 'Tab' });
+    expect(removeChart).toHaveFocus();
+
+    fireEvent.keyDown(close, { key: 'Escape' });
+    await waitFor(() => expect(panel).not.toBeInTheDocument());
+    expect(selectedChart).not.toHaveAttribute('inert');
+    await waitFor(() => expect(selectedChart).toHaveFocus());
+  } finally {
+    view.unmount();
+    mediaQuery.restore();
+  }
 });
 
 test('lets a chart field consume Escape before dismissing its task pane', async () => {
@@ -100,7 +177,7 @@ test('lets a chart field consume Escape before dismissing its task pane', async 
   fireEvent.click(screen.getByRole('tab', { name: '插入' }));
   fireEvent.click(screen.getByRole('button', { name: '图表' }));
 
-  const chartPane = screen.getByRole('region', { name: '演示图表数据' });
+  const chartPane = screen.getByLabelText('演示图表数据');
   const values = screen.getByRole('textbox', {
     name: '演示图表系列 1 数据',
   });
@@ -293,5 +370,43 @@ function chart(): WorkSlideChart {
     title: 'Quarterly revenue',
     categories: ['Q1', 'Q2'],
     series: [{ name: 'Revenue', values: [12, 18] }],
+  };
+}
+
+function installPresentationChartMatchMedia(initialMatches: boolean): {
+  queries: string[];
+  restore(): void;
+} {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(
+    window,
+    'matchMedia',
+  );
+  const queries: string[] = [];
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string) => {
+      queries.push(query);
+      return {
+        matches: initialMatches,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => true,
+      } as MediaQueryList;
+    },
+  });
+
+  return {
+    queries,
+    restore() {
+      if (originalDescriptor) {
+        Object.defineProperty(window, 'matchMedia', originalDescriptor);
+      } else {
+        Reflect.deleteProperty(window, 'matchMedia');
+      }
+    },
   };
 }

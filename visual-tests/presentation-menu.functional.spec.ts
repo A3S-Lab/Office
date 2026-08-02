@@ -251,7 +251,7 @@ test('Presentation returns object keyboard control after ribbon formatting', asy
 
 test('Presentation returns keyboard control to newly inserted objects', async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto('/');
   await page
     .getByRole('button', { name: '业务策略汇报 PPTX · 本次会话' })
@@ -280,6 +280,15 @@ test('Presentation returns keyboard control to newly inserted objects', async ({
     ':scope > .work-slide-element[data-slide-element-selected="true"]',
   );
   await expect(selectedChart).toHaveCount(1);
+  if (testInfo.project.name === 'compact-768') {
+    const chartPane = page.getByRole('dialog', { name: '演示图表数据' });
+    const close = chartPane.getByRole('button', {
+      name: '关闭演示图表数据',
+    });
+    await expect(close).toBeFocused();
+    await close.press('Escape');
+    await expect(chartPane).toBeHidden();
+  }
   await expect(selectedChart).toBeFocused();
   const chartTopBefore = await selectedChart.evaluate(
     (element) => element.style.top,

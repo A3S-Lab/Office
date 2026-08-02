@@ -49,8 +49,12 @@ export function useOfficeTaskPaneEscape(
   }, [active, onClose]);
 }
 
-export function useOfficeTaskPaneModal(): boolean {
-  const [matches, setMatches] = useState(officeTaskPaneModalMatches);
+export function useOfficeTaskPaneModal(
+  query = OFFICE_TASK_PANE_MODAL_QUERY,
+): boolean {
+  const [matches, setMatches] = useState(() =>
+    officeTaskPaneModalMatches(query),
+  );
 
   useEffect(() => {
     if (
@@ -59,7 +63,7 @@ export function useOfficeTaskPaneModal(): boolean {
     ) {
       return;
     }
-    const mediaQuery = window.matchMedia(OFFICE_TASK_PANE_MODAL_QUERY);
+    const mediaQuery = window.matchMedia(query);
     const update = () => setMatches(mediaQuery.matches);
     update();
     if (typeof mediaQuery.addEventListener === 'function') {
@@ -68,17 +72,17 @@ export function useOfficeTaskPaneModal(): boolean {
     }
     mediaQuery.addListener(update);
     return () => mediaQuery.removeListener(update);
-  }, []);
+  }, [query]);
 
   return matches;
 }
 
-function officeTaskPaneModalMatches(): boolean {
+function officeTaskPaneModalMatches(query: string): boolean {
   if (
     typeof window === 'undefined' ||
     typeof window.matchMedia !== 'function'
   ) {
     return false;
   }
-  return window.matchMedia(OFFICE_TASK_PANE_MODAL_QUERY).matches;
+  return window.matchMedia(query).matches;
 }

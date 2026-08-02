@@ -57,8 +57,11 @@ exact-result navigation, and grid-focus restoration, together with modal
 workbook task panes that isolate the ribbon, grid, and worksheet footer,
 contain forward and reverse focus, and restore the exact ribbon invoker;
 Presentation focus
-recovery across object cut and paste plus presenter-view keyboard navigation
-and phone layout; PDF import
+recovery across object cut and paste, presenter-view keyboard navigation and
+phone layout, plus a phone chart-inspector workflow covering responsive modal
+semantics, background isolation, forward and reverse focus containment, dirty
+draft cancellation, screenshot and accessibility evidence, and exact
+selected-chart focus restoration; PDF import
 from a project-relative fixture plus focus-synchronized thumbnail keyboard
 navigation, plus a phone page-drawer workflow proving toolbar ownership,
 selection, modal close behavior, and an unobstructed document canvas; the

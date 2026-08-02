@@ -792,6 +792,11 @@ function PresentationEditingSurface({
               })
             }
             onDelete={presentationCommands.deleteSelection}
+            restoreFocusTarget={() =>
+              presentationRootRef.current?.querySelector<HTMLElement>(
+                '.work-slide-element.chart.selected',
+              ) ?? null
+            }
             onClose={closeChartPane}
           />
         )}
