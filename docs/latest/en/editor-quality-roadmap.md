@@ -204,9 +204,8 @@ Exit evidence:
   accept/reject, citations, navigation, find/replace, outline, and references.
 - Define conflict behavior when a controlled host update changes a reviewed
   range.
-- Keep outlines, search results, and revision review on their bounded shared
-  window, and incrementally derive or virtualize comments and page chrome for
-  large files.
+- Keep outlines, search results, revision review, and comment review on bounded
+  windows, and incrementally derive page chrome for large files.
 
 Current implementation evidence includes a persistent Word-style navigation
 pane with a typed heading hierarchy, active-heading tracking, collapsible
@@ -239,10 +238,20 @@ individual accept/reject decisions retain the same action focus on the next
 revision. A real DOCX fixture with 120 native OOXML insertions proves bounded
 mounting, first/last access, the 120-to-119 decision transition, focus
 continuity, spacer geometry, and an error-free browser run.
-New comment
-drafts stay inside the visible review rail even for document-wide selections,
-and discard confirmation is limited to drafts or replies that contain written
-content. Cancelling a task-pane switch now returns keyboard focus to the exact
+Comment collections above 48 items now mount at most 32 contiguous cards while
+the active comment and comments with unsent replies remain pinned. Anchor
+geometry is collected in one linear pass, connector rendering is limited to
+mounted cards, and measured card heights are reused when a card leaves the
+window. Arrow, PageUp/PageDown, Home, and End traverse the complete collection;
+keyboard navigation keeps the document selection, physical page, review
+window, and focus synchronized. Deleting a comment moves focus and selection
+to its adjacent surviving comment. A real DOCX fixture with 120 native OOXML
+comments proves anchor import, bounded mounting, first/last access, the
+120-to-119 deletion transition, page synchronization, and an error-free browser
+run. New comment drafts stay inside the visible review rail even for
+document-wide selections, and discard confirmation is limited to drafts or
+replies that contain written content. Cancelling a task-pane switch now returns
+keyboard focus to the exact
 unfinished comment, reply, or citation field on desktop and compact layouts,
 so protected content can be edited immediately. The same editing context is
 retained when users cancel comment deletion, citation deletion, or an internal
@@ -259,7 +268,8 @@ window model now bounds heading and search-result rows above 48 items to at most
 real 120-page fixture contributes 120 headings and 120 matches; deterministic
 browser evidence proves first/last keyboard access, exact final-result
 selection, physical spacer geometry, and zero console or page errors. Comments
-and page-chrome derivation remain the large-file work in this priority.
+now have the same bounded long-review evidence; incremental page-chrome
+derivation remains the large-file work in this priority.
 
 Exit evidence:
 

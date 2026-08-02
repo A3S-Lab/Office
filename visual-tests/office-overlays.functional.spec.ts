@@ -87,6 +87,7 @@ test('Creation feedback stays clear of the editor status bar', async ({
   const toast = page.locator('.playground-toast.success');
   const status = page.locator('.work-markdown-status');
   await expect(toast).toBeVisible();
+  await expect(toast).toHaveCSS('pointer-events', 'none');
   await expect(status).toBeVisible();
 
   const boxes = await Promise.all([toast.boundingBox(), status.boundingBox()]);

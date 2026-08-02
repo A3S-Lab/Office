@@ -477,6 +477,7 @@ input:focus-visible,
   box-shadow: var(--a3s-shadow-soft);
   color: var(--a3s-ink);
   font-size: 11px;
+  pointer-events: none;
   animation: playground-toast-in 180ms ease-out;
 }
 

@@ -13,6 +13,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -30,6 +31,13 @@ import {
   DocumentCommentComposer,
   type DocumentCommentDraft,
 } from './document-comment-composer';
+import {
+  DOCUMENT_COMMENT_WINDOW_LIMIT,
+  documentCommentKeyboardDestination,
+  focusDocumentCommentItem,
+  scrollDocumentCommentItemIntoView,
+  useDocumentCommentWindow,
+} from './document-comment-window';
 import { OfficeTextArea, useOfficeDialog } from './office-controls';
 import { useOfficeTaskPaneModal } from './office-task-pane';
 
@@ -57,6 +65,10 @@ const emptyLayout: CommentTrackLayout = {
   trackHeight: 1,
   items: [],
 };
+
+interface PendingCommentFocus {
+  commentId: string | null;
+}
 
 export function DocumentCommentsPanel({
   editor,
@@ -93,10 +105,17 @@ export function DocumentCommentsPanel({
   const [draftDirty, setDraftDirty] = useState(false);
   const [layout, setLayout] = useState<CommentTrackLayout>(emptyLayout);
   const panelRef = useRef<HTMLElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLOListElement>(null);
   const cardRefs = useRef(new Map<string, HTMLElement>());
+  const anchorRefs = useRef(new Map<string, HTMLButtonElement>());
+  const measuredCardHeightsRef = useRef(new Map<string, number>());
+  const layoutRef = useRef<CommentTrackLayout>(emptyLayout);
   const completedDraftIdRef = useRef<string | null>(null);
+  const pendingFocusRef = useRef<PendingCommentFocus | null>(null);
+  const pendingRevealCommentIdRef = useRef<string | null>(null);
   const frameRef = useRef(0);
+  const pendingFocusFrameRef = useRef(0);
+  const windowFrameRef = useRef(0);
   const officeDialog = useOfficeDialog();
   const modal = useOfficeTaskPaneModal();
   const modalAttributes = modal
@@ -107,6 +126,59 @@ export function DocumentCommentsPanel({
     Boolean(value.trim()),
   );
   const commentsDirty = draftDirty || repliesDirty;
+  const commentsById = useMemo(
+    () => new Map(comments.map((comment) => [comment.id, comment] as const)),
+    [comments],
+  );
+  const commentKeys = useMemo(
+    () => comments.map((comment) => comment.id),
+    [comments],
+  );
+  const commentIndexById = useMemo(
+    () => new Map(commentKeys.map((id, index) => [id, index] as const)),
+    [commentKeys],
+  );
+  const effectiveActiveCommentId =
+    activeCommentId && commentsById.has(activeCommentId)
+      ? activeCommentId
+      : (comments.find((comment) => !comment.resolved)?.id ??
+        comments[0]?.id ??
+        null);
+  const dirtyReplyKeys = useMemo(
+    () =>
+      Object.entries(drafts)
+        .filter(([, value]) => Boolean(value.trim()))
+        .map(([id]) => id),
+    [drafts],
+  );
+  const commentWindow = useDocumentCommentWindow({
+    keys: commentKeys,
+    onRovingKeyChange: setActiveCommentId,
+    pinnedKeys: dirtyReplyKeys,
+    rovingKey: effectiveActiveCommentId,
+  });
+  const mountedCommentIndicesKey = commentWindow.mountedIndices.join(',');
+  const mountedCommentIds = useMemo(
+    () =>
+      new Set(
+        commentWindow.mountedIndices.flatMap((index) => {
+          const id = commentKeys[index];
+          return id ? [id] : [];
+        }),
+      ),
+    [commentKeys, commentWindow.mountedIndices],
+  );
+  const layoutItemsById = useMemo(
+    () => new Map(layout.items.map((item) => [item.id, item] as const)),
+    [layout.items],
+  );
+  const visibleConnectorItems = useMemo(
+    () =>
+      layout.items.filter(
+        (item) => item.kind === 'draft' || mountedCommentIds.has(item.id),
+      ),
+    [layout.items, mountedCommentIds],
+  );
 
   useEffect(() => {
     onDirtyChange?.(commentsDirty);
@@ -175,22 +247,30 @@ export function DocumentCommentsPanel({
     });
     if (!confirmed) return;
     const nextComment = comments[index + 1] ?? comments[index - 1];
+    pendingFocusRef.current = { commentId: nextComment?.id ?? null };
+    setActiveCommentId(nextComment?.id ?? null);
     setDrafts((current) => {
       const next = { ...current };
       delete next[commentId];
       return next;
     });
     onDelete(commentId);
-    requestAnimationFrame(() => {
-      const nextTarget = nextComment
-        ? cardRefs.current
-            .get(nextComment.id)
-            ?.querySelector<HTMLElement>('.work-document-comment-anchor')
-        : panelRef.current?.querySelector<HTMLElement>('.ds-icon-button.close');
-      if (nextTarget) nextTarget.focus({ preventScroll: true });
-      else if (!editor.isDestroyed)
-        editor.view.dom.focus({ preventScroll: true });
-    });
+    if (nextComment) selectDocumentComment(editor, nextComment);
+  };
+  const handleCommentAnchorKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const nextIndex = documentCommentKeyboardDestination(
+      event.key,
+      index,
+      comments.length,
+    );
+    if (nextIndex === null) return;
+    event.preventDefault();
+    const nextComment = comments[nextIndex];
+    if (nextComment) selectDocumentComment(editor, nextComment);
+    commentWindow.focusAt(nextIndex);
   };
 
   const measure = useCallback(() => {
@@ -224,22 +304,31 @@ export function DocumentCommentsPanel({
       Math.min(scrollRect?.bottom ?? trackRect.bottom, panelRect.bottom) -
       trackRect.top -
       8;
-    const commentsById = new Map(
-      comments.map((comment) => [comment.id, comment] as const),
-    );
     const marks = [
       ...editor.view.dom.querySelectorAll<HTMLElement>(
         '[data-document-comment][data-comment-id]',
       ),
     ];
+    const anchorRectsById = new Map<string, CommentAnchorRect>();
 
     for (const mark of marks) {
       const id = mark.dataset.commentId ?? '';
-      mark.classList.toggle('is-active-comment', id === activeCommentId);
+      mark.classList.toggle(
+        'is-active-comment',
+        id === effectiveActiveCommentId,
+      );
       mark.classList.toggle(
         'is-resolved-comment',
         Boolean(commentsById.get(id)?.resolved),
       );
+      const anchorRect = [...mark.getClientRects()].at(-1);
+      if (id && anchorRect) {
+        anchorRectsById.set(id, {
+          right: anchorRect.right,
+          top: anchorRect.top,
+          height: anchorRect.height,
+        });
+      }
     }
 
     const entries: Array<{
@@ -248,25 +337,13 @@ export function DocumentCommentsPanel({
       commentId?: string;
       from: number;
       anchorRect?: CommentAnchorRect;
-    }> = comments.map((comment) => {
-      const anchorRect = marks
-        .filter((mark) => mark.dataset.commentId === comment.id)
-        .flatMap((mark) => [...mark.getClientRects()])
-        .at(-1);
-      return {
-        id: comment.id,
-        kind: 'comment',
-        commentId: comment.id,
-        from: comment.from,
-        anchorRect: anchorRect
-          ? {
-              right: anchorRect.right,
-              top: anchorRect.top,
-              height: anchorRect.height,
-            }
-          : undefined,
-      };
-    });
+    }> = comments.map((comment) => ({
+      id: comment.id,
+      kind: 'comment',
+      commentId: comment.id,
+      from: comment.from,
+      anchorRect: anchorRectsById.get(comment.id),
+    }));
     if (draft) {
       const range = documentCommentDraftRange(editor) ?? draft;
       entries.push({
@@ -284,9 +361,34 @@ export function DocumentCommentsPanel({
     let nextCardTop = 8;
     const items = entries.map((entry) => {
       const { anchorRect } = entry;
-      const cardHeight =
-        cardRefs.current.get(entry.id)?.getBoundingClientRect().height ??
-        (entry.kind === 'draft' ? 164 : 112);
+      const card = cardRefs.current.get(entry.id);
+      const measuredCardHeight = card?.getBoundingClientRect().height ?? 0;
+      let cardHeight = 164;
+      if (entry.kind === 'comment') {
+        const comment = commentsById.get(entry.id);
+        const measurementKey = comment
+          ? commentCardMeasurementKey(
+              comment,
+              comment.id === effectiveActiveCommentId,
+            )
+          : entry.id;
+        if (measuredCardHeight > 0) {
+          measuredCardHeightsRef.current.set(
+            measurementKey,
+            measuredCardHeight,
+          );
+        }
+        cardHeight =
+          measuredCardHeightsRef.current.get(measurementKey) ??
+          (comment
+            ? estimateCommentCardHeight(
+                comment,
+                comment.id === effectiveActiveCommentId,
+              )
+            : 112);
+      } else if (measuredCardHeight > 0) {
+        cardHeight = measuredCardHeight;
+      }
       const preferredTop = anchorRect
         ? anchorRect.top - trackRect.top - 18
         : nextCardTop;
@@ -330,19 +432,78 @@ export function DocumentCommentsPanel({
       trackHeight: Math.max(1, nextCardTop),
       items,
     };
+    layoutRef.current = nextLayout;
     setLayout((current) =>
       sameCommentTrackLayout(current, nextLayout) ? current : nextLayout,
     );
-  }, [activeCommentId, comments, draft, editor, surfaceRef]);
+  }, [
+    comments,
+    commentsById,
+    draft,
+    editor,
+    effectiveActiveCommentId,
+    surfaceRef,
+  ]);
 
   const scheduleMeasure = useCallback(() => {
     cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(measure);
   }, [measure]);
 
+  const updateWindowFromViewport = useCallback(() => {
+    const surface = surfaceRef.current;
+    const panel = panelRef.current;
+    const track = trackRef.current;
+    if (!surface || !panel || !track) return;
+    const focusedCard = panel.ownerDocument.activeElement?.closest<HTMLElement>(
+      '.work-document-comment-card[data-comment-id]',
+    );
+    const focusedCommentId = focusedCard?.dataset.commentId;
+    const focusedIndex = focusedCommentId
+      ? commentIndexById.get(focusedCommentId)
+      : undefined;
+    if (focusedIndex !== undefined) {
+      commentWindow.onViewportAnchorChange(focusedIndex);
+      return;
+    }
+    const scroll = surface.closest<HTMLElement>('.work-document-scroll');
+    const scrollRect = scroll?.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const trackRect = track.getBoundingClientRect();
+    const panelHeader = panel.firstElementChild;
+    const panelHeaderRect =
+      panelHeader instanceof HTMLElement
+        ? panelHeader.getBoundingClientRect()
+        : undefined;
+    const visibleTop =
+      Math.max(
+        scrollRect?.top ?? trackRect.top,
+        panelRect.top,
+        panelHeaderRect?.bottom ?? panelRect.top,
+      ) - trackRect.top;
+    const visibleComments = layoutRef.current.items.filter(
+      (item) => item.kind === 'comment',
+    );
+    let anchor = visibleComments[0];
+    for (const item of visibleComments) {
+      if (item.cardTop > visibleTop + 8) break;
+      anchor = item;
+    }
+    const index = anchor ? commentIndexById.get(anchor.id) : undefined;
+    if (index !== undefined) commentWindow.onViewportAnchorChange(index);
+  }, [commentIndexById, commentWindow.onViewportAnchorChange, surfaceRef]);
+
+  const scheduleWindowUpdate = useCallback(() => {
+    cancelAnimationFrame(windowFrameRef.current);
+    windowFrameRef.current = requestAnimationFrame(updateWindowFromViewport);
+  }, [updateWindowFromViewport]);
+
   useLayoutEffect(() => {
     measure();
-    return () => cancelAnimationFrame(frameRef.current);
+    return () => {
+      cancelAnimationFrame(frameRef.current);
+      cancelAnimationFrame(windowFrameRef.current);
+    };
   }, [measure]);
 
   useEffect(() => {
@@ -373,6 +534,33 @@ export function DocumentCommentsPanel({
     );
   }, [activeCommentId, comments, draft]);
 
+  useLayoutEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending || pendingFocusFrameRef.current) return;
+    pendingFocusFrameRef.current = requestAnimationFrame(() => {
+      pendingFocusFrameRef.current = 0;
+      const current = pendingFocusRef.current;
+      if (!current) return;
+      const target = current.commentId
+        ? anchorRefs.current.get(current.commentId)
+        : panelRef.current?.querySelector<HTMLElement>('.ds-icon-button.close');
+      if (!target) return;
+      pendingFocusRef.current = null;
+      focusDocumentCommentItem(target);
+    });
+  }, [comments, effectiveActiveCommentId, mountedCommentIndicesKey]);
+
+  useEffect(() => () => cancelAnimationFrame(pendingFocusFrameRef.current), []);
+
+  useLayoutEffect(() => {
+    const commentId = pendingRevealCommentIdRef.current;
+    if (!commentId) return;
+    const card = cardRefs.current.get(commentId);
+    if (!card) return;
+    pendingRevealCommentIdRef.current = null;
+    scrollDocumentCommentItemIntoView(card);
+  }, [effectiveActiveCommentId, mountedCommentIndicesKey]);
+
   useEffect(() => {
     const surface = surfaceRef.current;
     const panel = panelRef.current;
@@ -396,15 +584,25 @@ export function DocumentCommentsPanel({
       subtree: true,
     });
     const scroll = surface.closest<HTMLElement>('.work-document-scroll');
-    scroll?.addEventListener('scroll', scheduleMeasure, { passive: true });
+    const handleScroll = draft ? scheduleMeasure : scheduleWindowUpdate;
+    scroll?.addEventListener('scroll', handleScroll, { passive: true });
+    panel.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', scheduleMeasure);
     return () => {
       observer?.disconnect();
       mutationObserver?.disconnect();
-      scroll?.removeEventListener('scroll', scheduleMeasure);
+      scroll?.removeEventListener('scroll', handleScroll);
+      panel.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', scheduleMeasure);
     };
-  }, [editor, scheduleMeasure, surfaceRef]);
+  }, [
+    draft,
+    editor,
+    mountedCommentIndicesKey,
+    scheduleMeasure,
+    scheduleWindowUpdate,
+    surfaceRef,
+  ]);
 
   useEffect(() => {
     if (editor.isDestroyed) return;
@@ -417,6 +615,7 @@ export function DocumentCommentsPanel({
       );
       const id = anchor?.dataset.commentId;
       if (id && comments.some((comment) => comment.id === id)) {
+        pendingRevealCommentIdRef.current = id;
         setActiveCommentId(id);
       }
     };
@@ -432,14 +631,14 @@ export function DocumentCommentsPanel({
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        {layout.items.map((item) => {
-          const comment = comments.find(
-            (candidate) => candidate.id === item.commentId,
-          );
+        {visibleConnectorItems.map((item) => {
+          const comment = item.commentId
+            ? commentsById.get(item.commentId)
+            : undefined;
           const bendX = Math.max(item.startX + 16, item.endX - 28);
           const className = [
             comment?.resolved ? 'resolved' : '',
-            activeCommentId === item.commentId ? 'active' : '',
+            effectiveActiveCommentId === item.commentId ? 'active' : '',
             item.kind === 'draft' ? 'draft active' : '',
           ]
             .filter(Boolean)
@@ -476,61 +675,82 @@ export function DocumentCommentsPanel({
             <X size={14} />
           </IconButton>
         </header>
-        <div
+        <ol
           ref={trackRef}
           className="work-document-comment-track"
+          aria-label="文档批注"
+          data-document-comment-count={comments.length}
+          data-document-comment-mounted-count={
+            commentWindow.mountedIndices.length
+          }
+          data-document-comment-track-height={Math.round(layout.trackHeight)}
+          data-document-comment-window-end={commentWindow.range.end}
+          data-document-comment-window-limit={DOCUMENT_COMMENT_WINDOW_LIMIT}
+          data-document-comment-window-start={commentWindow.range.start}
+          data-document-comment-windowed={
+            commentWindow.range.windowed ? 'true' : 'false'
+          }
           style={{ minHeight: `${layout.trackHeight}px` }}
         >
           {draft && (
-            <DocumentCommentComposer
-              key={draft.id}
-              ref={(element) => {
-                const id = `draft:${draft.id}`;
-                if (element) cardRefs.current.set(id, element);
-                else cardRefs.current.delete(id);
-              }}
-              draft={draft}
-              top={
-                layout.items.find((item) => item.kind === 'draft')?.cardTop ?? 8
-              }
-              onCancel={() => void cancelDraft()}
-              onDirtyChange={setDraftDirty}
-              onSubmit={onSubmitDraft}
-            />
+            <li className="work-document-comment-draft-item" key={draft.id}>
+              <DocumentCommentComposer
+                ref={(element) => {
+                  const id = `draft:${draft.id}`;
+                  if (element) cardRefs.current.set(id, element);
+                  else cardRefs.current.delete(id);
+                }}
+                draft={draft}
+                top={layoutItemsById.get(`draft:${draft.id}`)?.cardTop ?? 8}
+                onCancel={() => void cancelDraft()}
+                onDirtyChange={setDraftDirty}
+                onSubmit={onSubmitDraft}
+              />
+            </li>
           )}
-          {comments.map((comment, index) => {
-            const item = layout.items.find(
-              (candidate) => candidate.id === comment.id,
-            );
-            const active = activeCommentId === comment.id;
+          {commentWindow.mountedIndices.map((index) => {
+            const comment = comments[index];
+            if (!comment) return null;
+            const item = layoutItemsById.get(comment.id);
+            const active = effectiveActiveCommentId === comment.id;
             return (
-              <article
+              <li
+                aria-posinset={index + 1}
+                aria-setsize={comments.length}
                 ref={(element) => {
                   if (element) cardRefs.current.set(comment.id, element);
                   else cardRefs.current.delete(comment.id);
                 }}
-                className={`${comment.resolved ? 'resolved' : ''}${active ? ' active' : ''}`}
+                className={`work-document-comment-card${comment.resolved ? ' resolved' : ''}${active ? ' active' : ''}`}
                 data-comment-id={comment.id}
+                data-document-comment-card-top={Math.round(item?.cardTop ?? 8)}
+                data-document-comment-item={index + 1}
                 key={comment.id}
                 style={{ top: `${item?.cardTop ?? 8}px` }}
-                onFocusCapture={() => setActiveCommentId(comment.id)}
+                onFocusCapture={() => commentWindow.onItemFocus(index)}
               >
                 <button
+                  ref={(element) => {
+                    commentWindow.registerItem(comment.id, element);
+                    if (element) anchorRefs.current.set(comment.id, element);
+                    else anchorRefs.current.delete(comment.id);
+                  }}
                   type="button"
                   className="work-document-comment-anchor"
                   aria-label={`定位批注 ${index + 1}`}
+                  aria-current={active ? 'location' : undefined}
+                  tabIndex={commentWindow.rovingIndex === index ? 0 : -1}
+                  onKeyDown={(event) =>
+                    handleCommentAnchorKeyDown(event, index)
+                  }
                   onClick={() => {
                     setActiveCommentId(comment.id);
                     editor
                       .chain()
                       .focus()
-                      .setTextSelection({
-                        from: Math.min(
-                          comment.from,
-                          editor.state.doc.content.size,
-                        ),
-                        to: Math.min(comment.to, editor.state.doc.content.size),
-                      })
+                      .setTextSelection(
+                        documentCommentSelection(editor, comment),
+                      )
                       .run();
                   }}
                 >
@@ -617,18 +837,20 @@ export function DocumentCommentsPanel({
                     删除
                   </Button>
                 </footer>
-              </article>
+              </li>
             );
           })}
           {!comments.length && !draft && (
-            <CollectionState
-              className="work-document-comments-empty"
-              role="status"
-            >
-              选择文字并添加批注。
-            </CollectionState>
+            <li className="work-document-comment-empty-item">
+              <CollectionState
+                className="work-document-comments-empty"
+                role="status"
+              >
+                选择文字并添加批注。
+              </CollectionState>
+            </li>
           )}
-        </div>
+        </ol>
       </aside>
       {officeDialog.dialog}
     </Fragment>
@@ -685,6 +907,63 @@ function sameCommentTrackLayout(
       Math.abs(candidate.endY - item.endY) <= 0.5
     );
   });
+}
+
+function commentCardMeasurementKey(
+  comment: WorkDocumentCommentView,
+  active: boolean,
+): string {
+  const replies = (comment.replies ?? [])
+    .map((reply) => `${reply.id}:${reply.text.length}`)
+    .join('|');
+  return `${comment.id}:${active ? 'active' : 'idle'}:${comment.text.length}:${replies}`;
+}
+
+function estimateCommentCardHeight(
+  comment: WorkDocumentCommentView,
+  active: boolean,
+): number {
+  const bodyLines = estimatedWrappedLines(comment.text, 34);
+  const replyHeight = (comment.replies ?? []).reduce(
+    (height, reply) => height + 32 + estimatedWrappedLines(reply.text, 31) * 14,
+    0,
+  );
+  return 78 + bodyLines * 15 + replyHeight + (active ? 92 : 0);
+}
+
+function selectDocumentComment(
+  editor: Editor,
+  comment: WorkDocumentCommentView,
+): void {
+  if (editor.isDestroyed) return;
+  editor.commands.setTextSelection(documentCommentSelection(editor, comment));
+}
+
+function documentCommentSelection(
+  editor: Editor,
+  comment: WorkDocumentCommentView,
+): { from: number; to: number } {
+  const maximum = Math.max(1, editor.state.doc.content.size - 1);
+  return {
+    from: Math.min(comment.from, maximum),
+    to: Math.min(comment.to, maximum),
+  };
+}
+
+function estimatedWrappedLines(
+  value: string,
+  charactersPerLine: number,
+): number {
+  return Math.max(
+    1,
+    value
+      .split('\n')
+      .reduce(
+        (lines, line) =>
+          lines + Math.max(1, Math.ceil(line.length / charactersPerLine)),
+        0,
+      ),
+  );
 }
 
 function commentAuthorInitials(author: string): string {

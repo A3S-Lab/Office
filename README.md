@@ -249,12 +249,13 @@ interaction model.
   contextual full-text results, keyboard-operated live physical-page raster
   thumbnails with viewport-bounded capture, and shared virtualized
   long-document windows for page buttons, heading rows, full-text results, and
-  tracked-revision review that preserve native scroll distance, sparse
-  current/selection pins, and Home/End reachability; paragraph styles;
+  tracked-revision and anchored-comment review that preserve native scroll
+  distance, sparse current/selection/draft pins, and Home/End reachability;
+  paragraph styles;
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit,
-  viewport-safe comment drafting,
-  focus-preserving comment review and citation drafts, tracked changes, notes,
+  viewport-safe comment drafting and focus-preserving citation drafts, tracked
+  changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared
   edit/preview/PDF typography and page-chrome placement. Editing, read-only
   preview, and browser PDF export share one live pagination result.

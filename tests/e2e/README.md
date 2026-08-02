@@ -34,6 +34,10 @@ plus phone-width picture alternative-text editing that retains the image
 selection and restores the exact ribbon invoker after save and cancel, and a
 phone tracked-changes workflow with in-pane recording controls, truthful empty
 states, exact decision focus, and close-to-invoker restoration, plus a real
+120-comment native OOXML DOCX workflow covering bounded card and connector
+mounting, Home/End reachability, document-selection and physical-page
+synchronization, the 120-to-119 deletion transition, adjacent focus continuity,
+and non-blocking status feedback, plus a real
 120-revision DOCX workflow covering bounded mounted rows, physical spacer
 geometry, Home/End reachability, keyboard acceptance, the 120-to-119 count
 transition, and same-action focus continuity, plus a phone

@@ -1,7 +1,16 @@
 import { Buffer } from 'node:buffer';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
+import {
+  CommentRangeEnd,
+  CommentRangeStart,
+  CommentReference,
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  TextRun,
+} from 'docx';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 
@@ -19,6 +28,10 @@ const longRevisionDocumentPath = path.join(
   fixtureDirectory,
   'word-revisions-120.docx',
 );
+const longCommentDocumentPath = path.join(
+  fixtureDirectory,
+  'word-comments-120.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -27,6 +40,7 @@ await Bun.write(
   longRevisionDocumentPath,
   await createLongWordRevisionFixture(),
 );
+await Bun.write(longCommentDocumentPath, await createLongWordCommentFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -38,6 +52,7 @@ await Bun.write(
 console.log(`Created ${pdfPath}`);
 console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
+console.log(`Created ${longCommentDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -139,6 +154,52 @@ async function createLongWordRevisionFixture(): Promise<Buffer> {
       type: 'uint8array',
     }),
   );
+}
+
+async function createLongWordCommentFixture(): Promise<Buffer> {
+  const commentCount = 120;
+  const fixtureDate = new Date('2026-08-02T00:00:00.000Z');
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic long Word comment-review fixture',
+    title: 'A3S Office 120-comment review fixture',
+    comments: {
+      children: Array.from({ length: commentCount }, (_, index) => {
+        const comment = String(index + 1).padStart(3, '0');
+        return {
+          id: index,
+          author: 'A3S Test',
+          initials: 'AT',
+          date: fixtureDate,
+          children: [
+            new Paragraph({
+              children: [new TextRun({ text: `Review comment ${comment}.` })],
+            }),
+          ],
+        };
+      }),
+    },
+    sections: [
+      {
+        children: Array.from({ length: commentCount }, (_, index) => {
+          const comment = String(index + 1).padStart(3, '0');
+          return new Paragraph({
+            pageBreakBefore: index > 0 && index % 8 === 0,
+            children: [
+              new TextRun({ text: `Comment context ${comment}: ` }),
+              new CommentRangeStart(index),
+              new TextRun({
+                text: `Deterministic comment marker ${comment}.`,
+              }),
+              new CommentRangeEnd(index),
+              new CommentReference(index),
+            ],
+          });
+        }),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
 }
 
 function createPdfThumbnailKeyboardFixture(): ArrayBuffer {

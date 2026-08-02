@@ -1,0 +1,135 @@
+suite "office-word-comment-windowing" {
+    version = 1
+
+    scenario "review-a-120-comment-word-document" {
+        name = "Keep long Word comment review bounded and keyboard reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-comment-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-long-comment-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-comments-120.docx"]
+        }
+
+        wait "long-comment-document-loaded" {
+            text = "Deterministic comment marker 001"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        expect "comment-count-ready" {
+            visible = css("button[aria-label='查看批注（120）']")
+        }
+
+        click "open-comment-review" {
+            target = role("button", "查看批注（120）")
+        }
+
+        expect "windowed-comment-list-ready" {
+            visible = css(".work-document-comment-track[data-document-comment-count='120'][data-document-comment-windowed='true']")
+        }
+
+        expect "comment-mounting-is-bounded" {
+            visible = css(".work-document-comment-track[data-document-comment-count='120']:not([data-document-comment-mounted-count='120'])")
+        }
+
+        focus "focus-first-comment" {
+            target = css("button[aria-label='定位批注 1']")
+        }
+
+        press "focus-last-comment" {
+            key = "End"
+        }
+
+        expect "last-comment-is-focused" {
+            visible = css("[data-document-comment-item='120'] button[aria-label='定位批注 120']:focus")
+        }
+
+        expect "last-comment-page-is-current" {
+            text = "第 15 页，共 15 页"
+        }
+
+        expect "last-comment-window-is-bounded" {
+            visible = css(".work-document-comment-track[data-document-comment-window-start='88'][data-document-comment-window-end='120'][data-document-comment-window-limit='32'][data-document-comment-mounted-count='32']")
+        }
+
+        screenshot "last-comment-review" {
+            path = "screenshots/word-comment-windowing-last.png"
+        }
+
+        click "delete-last-comment" {
+            target = role("button", "删除批注 120")
+        }
+
+        expect "delete-review-is-visible" {
+            text = "删除批注？"
+        }
+
+        click "confirm-delete-last-comment" {
+            target = css(".ds-dialog[role='dialog'] > footer .ds-button.danger")
+        }
+
+        expect "comment-count-updated" {
+            visible = css(".work-document-comment-track[data-document-comment-count='119']")
+        }
+
+        expect "delete-focus-follows-previous-comment" {
+            visible = css("button[aria-label='定位批注 119']:focus")
+        }
+
+        expect "delete-keeps-last-window-aligned" {
+            visible = css(".work-document-comment-track[data-document-comment-window-start='87'][data-document-comment-window-end='119'][data-document-comment-mounted-count='32']")
+        }
+
+        press "return-to-first-comment" {
+            key = "Home"
+        }
+
+        expect "first-comment-is-focused" {
+            visible = css("[data-document-comment-item='1'] button[aria-label='定位批注 1']:focus")
+        }
+
+        expect "first-comment-page-is-current" {
+            text = "第 1 页，共 15 页"
+        }
+
+        expect "first-comment-window-is-bounded" {
+            visible = css(".work-document-comment-track[data-document-comment-windowed='true'][data-document-comment-window-start='0'][data-document-comment-window-end='32'][data-document-comment-mounted-count='32']")
+        }
+
+        screenshot "bounded-comment-review" {
+            path = "screenshots/word-comment-windowing.png"
+        }
+
+        accessibility "bounded-comment-tree" {
+            path = "evidence/word-comment-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

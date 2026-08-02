@@ -679,7 +679,7 @@ test('document comment drafts clean up and stacked comments do not overlap', asy
   await composer.getByRole('button', { name: '添加批注', exact: true }).click();
 
   const cards = page.locator(
-    '.work-document-comment-track > article[data-comment-id]',
+    '.work-document-comment-track > .work-document-comment-card[data-comment-id]',
   );
   await expect(cards).toHaveCount(2);
   await expect(
@@ -1317,7 +1317,7 @@ async function expectFloatingSurfaceWithinViewport(
 async function documentCommentAlignmentOffset(page: Page): Promise<number> {
   return page.evaluate(() => {
     const card = document.querySelector<HTMLElement>(
-      '.work-document-comment-track > article[data-comment-id]',
+      '.work-document-comment-track > .work-document-comment-card[data-comment-id]',
     );
     const id = card?.dataset.commentId;
     const mark = [

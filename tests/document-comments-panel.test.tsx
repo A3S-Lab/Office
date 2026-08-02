@@ -8,7 +8,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { DocumentCommentsPanel } from '../src/internal/features/work/editors/document-comments-panel';
 import type { DocumentCommentDraft } from '../src/internal/features/work/editors/document-comment-composer';
 import type { WorkDocumentCommentView } from '../src/internal/features/work/work-document-comments';
@@ -143,6 +143,103 @@ test('closes an empty comment draft directly and confirms written content', asyn
   }
 });
 
+test('keeps long comment review bounded and keyboard reachable', async () => {
+  const editor = new Editor({
+    extensions: [StarterKit],
+    content: '<p>Alpha</p>',
+  });
+
+  try {
+    const view = render(
+      <CommentsPanelHarness
+        editor={editor}
+        comments={longComments(120)}
+        onDelete={() => undefined}
+      />,
+    );
+    const track = view.container.querySelector('.work-document-comment-track');
+    if (!(track instanceof HTMLElement)) {
+      throw new Error('Document comment track is missing.');
+    }
+
+    expect(track.tagName).toBe('OL');
+    expect(track).toHaveAttribute('aria-label', '文档批注');
+    expect(track).toHaveAttribute('data-document-comment-count', '120');
+    expect(track).toHaveAttribute('data-document-comment-windowed', 'true');
+    expect(
+      view.container.querySelectorAll('[data-document-comment-item]').length,
+    ).toBeLessThanOrEqual(34);
+
+    const firstComment = screen.getByRole('button', { name: '定位批注 1' });
+    firstComment.focus();
+    fireEvent.keyDown(firstComment, { key: 'End' });
+
+    const lastComment = await screen.findByRole('button', {
+      name: '定位批注 120',
+    });
+    await waitFor(() => expect(lastComment).toHaveFocus());
+    expect(editor.state.selection.from).toBe(editor.state.doc.content.size - 1);
+    expect(editor.state.selection.to).toBe(editor.state.doc.content.size - 1);
+    expect(track).toHaveAttribute('data-document-comment-window-start', '88');
+    expect(
+      view.container.querySelectorAll('[data-document-comment-item]').length,
+    ).toBeLessThanOrEqual(34);
+
+    fireEvent.keyDown(lastComment, { key: 'Home' });
+    const restoredFirstComment = await screen.findByRole('button', {
+      name: '定位批注 1',
+    });
+    await waitFor(() => expect(restoredFirstComment).toHaveFocus());
+    expect(editor.state.selection.from).toBe(1);
+    expect(editor.state.selection.to).toBe(2);
+    expect(track).toHaveAttribute('data-document-comment-window-start', '0');
+
+    fireEvent.keyDown(restoredFirstComment, { key: 'PageDown' });
+    const ninthComment = await screen.findByRole('button', {
+      name: '定位批注 9',
+    });
+    await waitFor(() => expect(ninthComment).toHaveFocus());
+  } finally {
+    editor.destroy();
+  }
+});
+
+test('moves focus to the adjacent mounted comment after deletion', async () => {
+  const editor = new Editor({
+    extensions: [StarterKit],
+    content: '<p>Alpha</p>',
+  });
+
+  try {
+    render(<StatefulLongCommentsHarness editor={editor} />);
+    const firstComment = screen.getByRole('button', { name: '定位批注 1' });
+    firstComment.focus();
+    fireEvent.keyDown(firstComment, { key: 'End' });
+    const lastComment = await screen.findByRole('button', {
+      name: '定位批注 120',
+    });
+    await waitFor(() => expect(lastComment).toHaveFocus());
+
+    fireEvent.click(screen.getByRole('button', { name: '删除批注 120' }));
+    fireEvent.click(
+      within(screen.getByRole('dialog', { name: '删除批注？' })).getByRole(
+        'button',
+        { name: '删除' },
+      ),
+    );
+
+    const adjacentComment = await screen.findByRole('button', {
+      name: '定位批注 119',
+    });
+    await waitFor(() => expect(adjacentComment).toHaveFocus());
+    expect(
+      screen.queryByRole('button', { name: '定位批注 120' }),
+    ).not.toBeInTheDocument();
+  } finally {
+    editor.destroy();
+  }
+});
+
 function CommentsPanelHarness({
   editor,
   comments = [comment],
@@ -172,5 +269,34 @@ function CommentsPanelHarness({
         onClose={() => undefined}
       />
     </div>
+  );
+}
+
+function longComments(count: number): WorkDocumentCommentView[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    return {
+      id: `comment-${number}`,
+      author: 'Reviewer',
+      date: '2026-08-02T00:00:00.000Z',
+      text: `Review comment ${number}.`,
+      resolved: false,
+      from: number * 2 - 1,
+      to: number * 2,
+      anchorText: `Marker ${number}`,
+    };
+  });
+}
+
+function StatefulLongCommentsHarness({ editor }: { editor: Editor }) {
+  const [comments, setComments] = useState(() => longComments(120));
+  return (
+    <CommentsPanelHarness
+      editor={editor}
+      comments={comments}
+      onDelete={(id) =>
+        setComments((current) => current.filter((comment) => comment.id !== id))
+      }
+    />
   );
 }
