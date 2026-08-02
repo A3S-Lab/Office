@@ -1,0 +1,79 @@
+suite "office-word-theme-table" {
+    version = 1
+
+    scenario "resolve-theme-table-presentation" {
+        name = "Render Word theme table borders and shading consistently"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-theme-table"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-theme-table-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-theme-table.docx"]
+        }
+
+        wait "document-loaded" {
+            text = "Theme table rendering"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "theme-fill-is-resolved" {
+            visible = css(".work-document-editable table td[data-office-cell-fill='#f8cbad']")
+        }
+
+        expect "theme-border-tint-is-resolved" {
+            visible = css(".work-document-editable table td[data-office-cell-border-top-color='#a2b9e2'][data-office-cell-border-top-style='solid'][data-office-cell-border-top-width='1.5']")
+        }
+
+        expect "theme-border-shade-is-resolved" {
+            visible = css(".work-document-editable table td[data-office-cell-border-right-color='#335593'][data-office-cell-border-right-style='double'][data-office-cell-border-right-width='2']")
+        }
+
+        expect "theme-border-edges-stay-independent" {
+            visible = css(".work-document-editable table td[data-office-cell-border-bottom-color='#ed7d31'][data-office-cell-border-bottom-style='dashed'][data-office-cell-border-left-color='#a5a5a5'][data-office-cell-border-left-style='dotted']")
+        }
+
+        click "preview-document" {
+            target = role("button", "预览")
+        }
+
+        expect "preview-keeps-theme-presentation" {
+            visible = css(".work-document-preview-page table td[data-office-cell-fill='#f8cbad'][data-office-cell-border-top-color='#a2b9e2'][data-office-cell-border-right-color='#335593']")
+        }
+
+        screenshot "word-theme-table-preview" {
+            path = "screenshots/word-theme-table-preview.png"
+        }
+
+        accessibility "theme-table-semantics" {
+            path = "evidence/word-theme-table.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

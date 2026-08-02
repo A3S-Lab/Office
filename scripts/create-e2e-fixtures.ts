@@ -39,6 +39,10 @@ const multiPageTableDocumentPath = path.join(
   fixtureDirectory,
   'word-multi-page-table.docx',
 );
+const themeTableDocumentPath = path.join(
+  fixtureDirectory,
+  'word-theme-table.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -52,6 +56,7 @@ await Bun.write(
   multiPageTableDocumentPath,
   await createMultiPageWordTableFixture(),
 );
+await Bun.write(themeTableDocumentPath, await createThemeTableWordFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -65,6 +70,7 @@ console.log(`Created ${longDocumentPath}`);
 console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${longCommentDocumentPath}`);
 console.log(`Created ${multiPageTableDocumentPath}`);
+console.log(`Created ${themeTableDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -265,6 +271,131 @@ async function createMultiPageWordTableFixture(): Promise<Buffer> {
     ],
   });
   return Packer.toBuffer(document);
+}
+
+async function createThemeTableWordFixture(): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic Word theme-table fixture',
+    title: 'A3S Office theme table fixture',
+    sections: [
+      {
+        children: [
+          new Paragraph({
+            heading: HeadingLevel.HEADING_1,
+            children: [new TextRun({ text: 'Theme table rendering' })],
+          }),
+          new Table({
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: 'Theme border and fill' }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'After theme table.' })],
+          }),
+        ],
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  const contentTypesFile = archive.file('[Content_Types].xml');
+  const relationshipsFile = archive.file('word/_rels/document.xml.rels');
+  if (!documentXmlFile || !contentTypesFile || !relationshipsFile) {
+    throw new Error('Expected a complete DOCX package for the theme fixture.');
+  }
+  const [documentXml, contentTypes, relationships] = await Promise.all([
+    documentXmlFile.async('string'),
+    contentTypesFile.async('string'),
+    relationshipsFile.async('string'),
+  ]);
+  const themedBorders = [
+    '<w:tblBorders>',
+    '<w:top w:val="single" w:sz="9" w:color="4472C4" w:themeColor="accent1" w:themeTint="80"/>',
+    '<w:left w:val="dotted" w:sz="6" w:color="A5A5A5" w:themeColor="accent3"/>',
+    '<w:bottom w:val="dashed" w:sz="6" w:color="ED7D31" w:themeColor="accent2"/>',
+    '<w:right w:val="double" w:sz="12" w:color="4472C4" w:themeColor="accent1" w:themeShade="BF"/>',
+    '<w:insideH w:val="nil"/>',
+    '<w:insideV w:val="nil"/>',
+    '</w:tblBorders>',
+  ].join('');
+  const withBorders = documentXml.replace(
+    /<w:tblBorders>[\s\S]*?<\/w:tblBorders>/,
+    themedBorders,
+  );
+  if (withBorders === documentXml) {
+    throw new Error('Failed to apply deterministic theme table borders.');
+  }
+  const withCellShading = withBorders.replace(
+    '<w:tc>',
+    [
+      '<w:tc>',
+      '<w:tcPr>',
+      '<w:shd w:val="clear" w:fill="ED7D31" w:themeFill="accent2" w:themeFillTint="99"/>',
+      '</w:tcPr>',
+    ].join(''),
+  );
+  if (withCellShading === withBorders) {
+    throw new Error('Failed to apply deterministic theme table shading.');
+  }
+  archive.file('word/document.xml', withCellShading);
+  archive.file('word/theme/theme1.xml', wordThemeFixtureXml());
+  archive.file(
+    '[Content_Types].xml',
+    contentTypes.replace(
+      '</Types>',
+      '<Override PartName="/word/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/></Types>',
+    ),
+  );
+  archive.file(
+    'word/_rels/document.xml.rels',
+    relationships.replace(
+      '</Relationships>',
+      '<Relationship Id="rIdA3STheme" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/></Relationships>',
+    ),
+  );
+  return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+function wordThemeFixtureXml(): string {
+  return [
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="A3S Office Test Theme">',
+    '<a:themeElements>',
+    '<a:clrScheme name="A3S Office">',
+    '<a:dk1><a:srgbClr val="000000"/></a:dk1>',
+    '<a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>',
+    '<a:dk2><a:srgbClr val="172033"/></a:dk2>',
+    '<a:lt2><a:srgbClr val="F7F8FA"/></a:lt2>',
+    '<a:accent1><a:srgbClr val="4472C4"/></a:accent1>',
+    '<a:accent2><a:srgbClr val="ED7D31"/></a:accent2>',
+    '<a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>',
+    '<a:accent4><a:srgbClr val="FFC000"/></a:accent4>',
+    '<a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>',
+    '<a:accent6><a:srgbClr val="70AD47"/></a:accent6>',
+    '<a:hlink><a:srgbClr val="0563C1"/></a:hlink>',
+    '<a:folHlink><a:srgbClr val="954F72"/></a:folHlink>',
+    '</a:clrScheme>',
+    '<a:fontScheme name="A3S Office">',
+    '<a:majorFont><a:latin typeface="Aptos Display"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont>',
+    '<a:minorFont><a:latin typeface="Aptos"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont>',
+    '</a:fontScheme>',
+    '<a:fmtScheme name="A3S Office"/>',
+    '</a:themeElements>',
+    '</a:theme>',
+  ].join('');
 }
 
 function createPdfThumbnailKeyboardFixture(): ArrayBuffer {

@@ -515,7 +515,7 @@ This slice is not yet a Microsoft Word or WPS line-layout fidelity claim.
 Language-complete font substitution, variable font axes, the remaining
 character and table style properties, arbitrary floating-object offsets,
 cropping, contour wrapping and layering, row-internal table splitting inside a
-single paragraph or an oversized multi-page row, nested tables, footnote
+single long paragraph or complex merged-cell flow, nested tables, footnote
 balancing, multi-column flow, and mixed-size sections require the later layout
 stages below.
 
@@ -526,12 +526,13 @@ height on continuation pages. A table-aware widget creates the paper gap and
 an `aria-hidden`, non-editable copy of the rendered header with the original
 column group. The editable row remains the only canonical content. TipTap row
 attributes preserve `cantSplit` and `tblHeader` through structured HTML and
-DOCX import/export. Ordinary rows whose full height fits a continuation page
-can split at synchronized boundaries between direct cell blocks. One
+DOCX import/export. Eligible rows, including rows taller than a complete body
+page, split at synchronized boundaries between direct cell blocks. One
 non-editable widget per cell aligns the page gap and paints a clipped slice of
 the same measured header overlay. The leading cell alone extends the paper-gap
-paint across the page margins. `cantSplit` rows, single long paragraphs, and
-oversized rows are still atomic and may overflow.
+paint across the page margins. `cantSplit` rows and a single indivisible long
+paragraph remain atomic and may overflow; nested tables and complex merged-cell
+flows require a later fragmentation model.
 
 Table creation is selection-safe: a non-empty text selection is preserved and
 the chosen table is inserted after its containing block instead of replacing
@@ -551,11 +552,13 @@ share those attributes. Fixed DOCX tables round-trip `tblGrid`, `tcW`,
 the browser. Independent top, right, bottom, and left cell-border attributes
 render identically in edit and preview, export as independent `w:tcBorders`,
 and reopen without being flattened. Explicit table-level outer and inside
-borders resolve onto their owning cell edges during import. Command availability
-comes from the ProseMirror table state, so actions that cannot apply to the
-current selection remain disabled. Theme-derived borders, percentage-width
-column authoring, nested-table editing, and arbitrary table-style inheritance
-remain explicit fidelity gaps.
+borders resolve onto their owning cell edges during import. Direct
+`themeColor`/`themeFill` values and their tint or shade transforms resolve from
+the DOCX package theme into stable edit, preview, and export RGB values.
+Command availability comes from the ProseMirror table state, so actions that
+cannot apply to the current selection remain disabled. Loss-preserving semantic
+theme references, percentage-width column authoring, nested-table editing, and
+arbitrary conditional table-style inheritance remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf
@@ -741,11 +744,11 @@ bundle regression.
 - Extend the current horizontal and vertical page rulers with bidirectional and
   locale-complete tab behavior, plus complete style, numbering, and theme
   inheritance beyond the implemented paragraph slices.
-- Complete row-internal splitting for single paragraphs and oversized
-  multi-page rows, and add nested tables, full floating-object geometry beyond
-  the supported square/top-and-bottom image anchors, footnote balancing,
-  columns, and mixed page sections. Row-flow pagination, direct-cell block
-  splitting, repeating headers, and the initial image-wrapping slice are
+- Complete row-internal splitting for single indivisible paragraphs and
+  complex merged-cell flows, and add nested tables, full floating-object
+  geometry beyond the supported square/top-and-bottom image anchors, footnote
+  balancing, columns, and mixed page sections. Row-flow pagination, direct-cell
+  block splitting, repeating headers, and the initial image-wrapping slice are
   already implemented.
 - Keep pagination results as mapped ProseMirror decorations so reflow never
   corrupts selection or undo history.

@@ -51,8 +51,11 @@ table workflow covering touch-sized dimension controls, exact 3 × 3 insertion,
 row extension, compact-ribbon deletion, and focused editing recovery, plus a
 desktop table-border workflow proving that the reusable border pen does not
 flatten existing edges, outside borders retain independent cell-edge data in
-edit and preview, and browser diagnostics stay clean, plus a real multi-page
-DOCX table workflow proving that a splittable row continues at paragraph
+edit and preview, and browser diagnostics stay clean, plus a real theme-backed
+DOCX table workflow proving tint/shade resolution for cell fill and four
+independent border edges across edit and preview with screenshot,
+accessibility, console, and page-error evidence, plus a real multi-page DOCX
+table workflow proving that a splittable row continues at paragraph
 boundaries across three physical pages, repeated heading rows remain visible
 on both continuation pages, and the final row content and following paragraph
 remain keyboard reachable, plus a

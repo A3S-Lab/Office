@@ -9,6 +9,12 @@ import {
   documentTableBordersFromElement,
   renderDocumentTableBorders,
 } from './work-document-table-borders';
+import {
+  type DocxThemeResolver,
+  type DocxThemeSource,
+  docxThemeColor,
+  resolveDocxThemeResolver,
+} from './work-docx-theme';
 
 export type ImportedDocxTableCellVerticalAlign = 'top' | 'middle' | 'bottom';
 export type ImportedDocxTableCellBorderStyle =
@@ -53,16 +59,18 @@ const TABLE_CELL_MARKER_PATTERN = /__A3S_WORK_TABLE_CELL_\d+__/g;
 
 export function markDocxTableCells(
   document: Document,
+  themeSource?: DocxThemeSource,
 ): ImportedDocxTableCellMarkers {
   const cells: ImportedDocxTableCellMarker[] = [];
+  const theme = resolveDocxThemeResolver(themeSource);
   for (const cell of descendants(document, 'tc')) {
     const properties = directChild(cell, 'tcPr');
     const shading = properties ? directChild(properties, 'shd') : undefined;
     const verticalAlignment = properties
       ? directChild(properties, 'vAlign')
       : undefined;
-    const borders = importedTableCellBorders(cell, properties);
-    const backgroundColor = ooxmlColor(attribute(shading ?? cell, 'fill'));
+    const borders = importedTableCellBorders(cell, properties, theme);
+    const backgroundColor = importedTableCellBackgroundColor(shading, theme);
     const verticalAlign = tableVerticalAlign(
       attribute(verticalAlignment ?? cell, 'val'),
     );
@@ -139,10 +147,12 @@ function applyCellFormat(
 function importedTableCellBorders(
   cell: Element,
   properties: Element | undefined,
+  theme: DocxThemeResolver,
 ): ImportedDocxTableCellBorders | null {
-  const tableBorders = tableBordersForCell(cell);
+  const tableBorders = tableBordersForCell(cell, theme);
   const cellBorders = borderEdges(
     properties ? directChild(properties, 'tcBorders') : undefined,
+    theme,
   );
   const borders: ImportedDocxTableCellBorders = {};
   for (const edge of TABLE_BORDER_EDGES) {
@@ -152,7 +162,10 @@ function importedTableCellBorders(
   return Object.keys(borders).length ? borders : null;
 }
 
-function tableBordersForCell(cell: Element): ImportedDocxTableCellBorders {
+function tableBordersForCell(
+  cell: Element,
+  theme: DocxThemeResolver,
+): ImportedDocxTableCellBorders {
   const table = closestAncestor(cell, 'tbl');
   const properties = table ? directChild(table, 'tblPr') : undefined;
   const borders = properties
@@ -173,31 +186,35 @@ function tableBordersForCell(cell: Element): ImportedDocxTableCellBorders {
   if (rowIndex < 0 || cellIndex < 0) return {};
 
   return compactBorders({
-    top: parseBorder(borders.get(rowIndex === 0 ? 'top' : 'insideH')),
+    top: parseBorder(borders.get(rowIndex === 0 ? 'top' : 'insideH'), theme),
     right: parseBorder(
       borderElement(
         borders,
         cellIndex === cells.length - 1 ? ['right', 'end'] : ['insideV'],
       ),
+      theme,
     ),
     bottom: parseBorder(
       borders.get(rowIndex === rows.length - 1 ? 'bottom' : 'insideH'),
+      theme,
     ),
     left: parseBorder(
       borderElement(borders, cellIndex === 0 ? ['left', 'start'] : ['insideV']),
+      theme,
     ),
   });
 }
 
 function borderEdges(
   borders: Element | undefined,
+  theme: DocxThemeResolver,
 ): ImportedDocxTableCellBorders {
   const edges = borderElementMap(borders);
   return compactBorders({
-    top: parseBorder(edges.get('top')),
-    right: parseBorder(borderElement(edges, ['right', 'end'])),
-    bottom: parseBorder(edges.get('bottom')),
-    left: parseBorder(borderElement(edges, ['left', 'start'])),
+    top: parseBorder(edges.get('top'), theme),
+    right: parseBorder(borderElement(edges, ['right', 'end']), theme),
+    bottom: parseBorder(edges.get('bottom'), theme),
+    left: parseBorder(borderElement(edges, ['left', 'start']), theme),
   });
 }
 
@@ -233,12 +250,23 @@ function compactBorders(
   return result;
 }
 
-function parseBorder(edge: Element | undefined): ImportedDocxCellBorder | null {
+function parseBorder(
+  edge: Element | undefined,
+  theme: DocxThemeResolver,
+): ImportedDocxCellBorder | null {
   if (!edge) return null;
   const style = tableBorderStyle(attribute(edge, 'val'));
   if (!style) return null;
   if (style === 'none') return { color: '#000000', style, width: 0 };
-  const color = ooxmlColor(attribute(edge, 'color')) ?? '#000000';
+  const themed = docxThemeColor(
+    theme,
+    attribute(edge, 'themeColor'),
+    attribute(edge, 'themeTint'),
+    attribute(edge, 'themeShade'),
+  );
+  const color = themed
+    ? `#${themed}`
+    : (ooxmlColor(attribute(edge, 'color')) ?? '#000000');
   const size = Number(attribute(edge, 'sz'));
   const width = Number.isFinite(size) && size > 0 ? size / 6 : 1;
   return {
@@ -246,6 +274,20 @@ function parseBorder(edge: Element | undefined): ImportedDocxCellBorder | null {
     style,
     width: Math.max(0.5, Math.min(6, Math.round(width * 2) / 2)),
   };
+}
+
+function importedTableCellBackgroundColor(
+  shading: Element | undefined,
+  theme: DocxThemeResolver,
+): string | null {
+  if (!shading) return null;
+  const themed = docxThemeColor(
+    theme,
+    attribute(shading, 'themeFill'),
+    attribute(shading, 'themeFillTint'),
+    attribute(shading, 'themeFillShade'),
+  );
+  return themed ? `#${themed}` : ooxmlColor(attribute(shading, 'fill'));
 }
 
 function tableBorderStyle(

@@ -251,7 +251,7 @@ export async function prepareDocxImport(
     themeDocument,
   );
   const tabStopMarkers = markDocxParagraphTabStops(document, paragraphStyles);
-  const tableCellMarkers = markDocxTableCells(document);
+  const tableCellMarkers = markDocxTableCells(document, themeDocument);
   const tableRowMarkers = markDocxTableRows(document);
   const tableSizingMarkers = markDocxTableSizing(document);
   const settings = archive.has('word/settings.xml')

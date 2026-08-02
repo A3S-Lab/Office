@@ -260,9 +260,11 @@ interaction model.
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit, a
   reusable table-border pen with all, outside, inside, and individual-edge
-  targets, per-edge DOCX border preservation, and paragraph-boundary
-  continuation for splittable table rows that exceed a full physical page,
-  including repeated heading rows on every continuation page,
+  targets, per-edge DOCX border preservation, direct DOCX theme-color,
+  tint, and shade resolution for table borders and cell fills across edit,
+  preview, and RGB-stable export, and paragraph-boundary continuation for
+  splittable table rows that exceed a full physical page, including repeated
+  heading rows on every continuation page,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked
   changes, notes,
   pointer- and Shift+F10-accessible host-defined selection menus, and shared

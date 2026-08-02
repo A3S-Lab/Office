@@ -111,7 +111,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.tables',
             'Tables',
-            'Table rows, non-splitting rows, repeated headers, common cell shading, vertical alignment, and explicit per-edge borders remain editable; theme-derived borders, exact cell widths, nested tables, and rows that split internally may be normalized.',
+            'Table rows, non-splitting rows, repeated headers, direct or theme-derived cell shading, vertical alignment, explicit per-edge borders, and paragraph-boundary row continuation remain editable. Theme tint and shade values resolve to stable RGB for edit, preview, and export; inherited conditional table styles, semantic theme references after export, nested tables, and complex merged-cell flow may be normalized.',
           ),
         );
       }
