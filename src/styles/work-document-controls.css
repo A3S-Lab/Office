@@ -711,14 +711,14 @@
 }
 
 .work-document-changes-bulk-actions,
-.work-document-change-list article > div {
+.work-document-change-item > div {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
 .work-document-changes-bulk-actions button,
-.work-document-change-list article > div button {
+.work-document-change-item > div button {
   display: inline-flex;
   height: 27px;
   align-items: center;
@@ -748,11 +748,13 @@
 .work-document-change-list {
   display: grid;
   gap: 5px;
+  margin: 0;
   padding: 7px 10px 9px;
+  list-style: none;
   overflow: auto;
 }
 
-.work-document-change-list article {
+.work-document-change-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -764,7 +766,7 @@
   background: var(--a3s-bg);
 }
 
-.work-document-change-list article.deletion {
+.work-document-change-item.deletion {
   border-left-color: var(--a3s-red);
 }
 
@@ -790,7 +792,7 @@
 }
 
 .work-document-change-list
-  article.deletion
+  .work-document-change-item.deletion
   .work-document-change-summary
   > span {
   background: #fff0ee;

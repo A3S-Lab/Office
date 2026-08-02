@@ -1,15 +1,30 @@
 import type { Editor } from '@tiptap/core';
 import { Check, CheckCheck, FileDiff, Undo2, XCircle } from 'lucide-react';
-import { useLayoutEffect, useRef } from 'react';
+import {
+  type KeyboardEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button, CollectionState } from '../../../design-system/primitives';
 import type { WorkDocumentChange } from '../work-document-changes';
+import {
+  DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT,
+  type DocumentNavigationWindowSpacerEntry,
+  useDocumentNavigationWindow,
+} from './document-navigation-window';
 import { DocumentTaskPane } from './document-task-pane';
 import { useOfficeDialog } from './office-controls';
 
 type DocumentChangeDecision = 'accept' | 'reject';
 
+const DOCUMENT_CHANGE_ITEM_HEIGHT = 84;
+const DOCUMENT_CHANGE_ITEM_GAP = 7;
+const DOCUMENT_CHANGE_LIST_PADDING_TOP = 10;
+
 interface PendingDocumentChangeFocus {
-  changeId: string | null;
+  changeKey: string | null;
   decision: DocumentChangeDecision;
 }
 
@@ -29,23 +44,43 @@ export function DocumentChangesPanel({
   const officeDialog = useOfficeDialog();
   const decisionButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusRef = useRef<PendingDocumentChangeFocus | null>(null);
+  const changeKeys = useMemo(
+    () => changes.map(documentChangeWindowKey),
+    [changes],
+  );
+  const [rovingChangeKey, setRovingChangeKey] = useState<string | null>(
+    () => changeKeys[0] ?? null,
+  );
+  const effectiveRovingChangeKey =
+    rovingChangeKey && changeKeys.includes(rovingChangeKey)
+      ? rovingChangeKey
+      : (changeKeys[0] ?? null);
+  const changeWindow = useDocumentNavigationWindow<HTMLOListElement>({
+    estimatedItemHeight: DOCUMENT_CHANGE_ITEM_HEIGHT,
+    itemGap: DOCUMENT_CHANGE_ITEM_GAP,
+    keys: changeKeys,
+    listPaddingTop: DOCUMENT_CHANGE_LIST_PADDING_TOP,
+    onRovingKeyChange: setRovingChangeKey,
+    rovingKey: effectiveRovingChangeKey,
+  });
 
   useLayoutEffect(() => {
     const pending = pendingFocusRef.current;
     if (!pending) return;
-    pendingFocusRef.current = null;
-    const nextButton = pending.changeId
+    const nextButton = pending.changeKey
       ? decisionButtonRefs.current.get(
-          documentChangeDecisionKey(pending.changeId, pending.decision),
+          documentChangeDecisionKey(pending.changeKey, pending.decision),
         )
       : undefined;
     if (nextButton) {
+      pendingFocusRef.current = null;
       nextButton.focus({ preventScroll: true });
       nextButton.scrollIntoView({ block: 'nearest' });
-    } else if (!editor.isDestroyed) {
+    } else if (!pending.changeKey && !editor.isDestroyed) {
+      pendingFocusRef.current = null;
       editor.view.dom.focus({ preventScroll: true });
     }
-  }, [changes, editor]);
+  }, [changeWindow.mountedCount, changes, editor]);
 
   const decideChange = (
     change: WorkDocumentChange,
@@ -53,15 +88,36 @@ export function DocumentChangesPanel({
     decision: DocumentChangeDecision,
   ) => {
     const nextChange = changes[index + 1] ?? changes[index - 1] ?? null;
+    const currentChangeKey = documentChangeWindowKey(change);
+    const nextChangeKey = nextChange
+      ? documentChangeWindowKey(nextChange)
+      : null;
     pendingFocusRef.current = {
-      changeId: nextChange?.id ?? null,
+      changeKey: nextChangeKey,
       decision,
     };
+    setRovingChangeKey(nextChangeKey);
     const handled =
       decision === 'accept'
         ? editor.commands.acceptDocumentChange(change.id)
         : editor.commands.rejectDocumentChange(change.id);
-    if (!handled) pendingFocusRef.current = null;
+    if (!handled) {
+      pendingFocusRef.current = null;
+      setRovingChangeKey(currentChangeKey);
+    }
+  };
+  const handleSummaryKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const nextIndex = documentChangeKeyboardDestination(
+      event.key,
+      index,
+      changes.length,
+    );
+    if (nextIndex === null) return;
+    event.preventDefault();
+    changeWindow.focusAt(nextIndex);
   };
   const acceptAll = async () => {
     const confirmed = await officeDialog.confirm({
@@ -114,68 +170,125 @@ export function DocumentChangesPanel({
             </Button>
           </div>
         )}
-        <div className="work-document-change-list work-document-task-pane-body">
-          {changes.map((change, index) => (
-            <article
-              className={change.kind}
-              key={`${change.kind}-${change.id}`}
-            >
-              <button
-                type="button"
-                className="work-document-change-summary"
-                aria-label={`定位修订 ${index + 1}`}
-                onClick={() =>
-                  editor
-                    .chain()
-                    .focus()
-                    .setTextSelection({
-                      from: Math.min(
-                        change.from,
-                        editor.state.doc.content.size,
-                      ),
-                      to: Math.min(change.to, editor.state.doc.content.size),
-                    })
-                    .run()
-                }
-              >
-                <span>{change.kind === 'insertion' ? '插入' : '删除'}</span>
-                <strong>{change.text.trim() || '（空白字符）'}</strong>
-                <small>
-                  {change.author}
-                  {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
-                </small>
-              </button>
-              <div>
-                <Button
-                  ref={(element) => {
-                    const key = documentChangeDecisionKey(change.id, 'accept');
-                    if (element) decisionButtonRefs.current.set(key, element);
-                    else decisionButtonRefs.current.delete(key);
-                  }}
-                  tone="quiet"
-                  aria-label={`接受修订 ${index + 1}`}
-                  onClick={() => decideChange(change, index, 'accept')}
+        {changes.length > 0 ? (
+          <ol
+            ref={changeWindow.viewportRef}
+            className="work-document-change-list work-document-task-pane-body"
+            aria-label="待处理修订"
+            data-document-change-count={changes.length}
+            data-document-change-mounted-count={changeWindow.mountedCount}
+            data-document-change-window-end={changeWindow.range.end}
+            data-document-change-window-limit={
+              DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT
+            }
+            data-document-change-window-start={changeWindow.range.start}
+            data-document-change-windowed={
+              changeWindow.range.windowed ? 'true' : 'false'
+            }
+            onScroll={changeWindow.onScroll}
+          >
+            {changeWindow.entries.map((entry) => {
+              if (entry.kind === 'spacer') {
+                return (
+                  <DocumentChangeWindowSpacer
+                    entry={entry}
+                    key={`spacer-${entry.start}-${entry.end}`}
+                  />
+                );
+              }
+              const change = changes[entry.index];
+              if (!change) return null;
+              const changeKey = documentChangeWindowKey(change);
+              return (
+                <li
+                  aria-posinset={entry.index + 1}
+                  aria-setsize={changes.length}
+                  className={`work-document-change-item ${change.kind}`}
+                  data-document-change-item={entry.index + 1}
+                  key={changeKey}
+                  onFocusCapture={() => changeWindow.onItemFocus(entry.index)}
                 >
-                  <Check size={13} />
-                  接受
-                </Button>
-                <Button
-                  ref={(element) => {
-                    const key = documentChangeDecisionKey(change.id, 'reject');
-                    if (element) decisionButtonRefs.current.set(key, element);
-                    else decisionButtonRefs.current.delete(key);
-                  }}
-                  tone="quiet"
-                  aria-label={`拒绝修订 ${index + 1}`}
-                  onClick={() => decideChange(change, index, 'reject')}
-                >
-                  <XCircle size={13} />
-                  拒绝
-                </Button>
-              </div>
-            </article>
-          ))}
-          {!changes.length && (
+                  <button
+                    ref={(element) =>
+                      changeWindow.registerItem(changeKey, element)
+                    }
+                    type="button"
+                    className="work-document-change-summary"
+                    tabIndex={changeWindow.rovingIndex === entry.index ? 0 : -1}
+                    aria-label={`定位修订 ${entry.index + 1}`}
+                    onKeyDown={(event) =>
+                      handleSummaryKeyDown(event, entry.index)
+                    }
+                    onClick={() =>
+                      editor
+                        .chain()
+                        .focus()
+                        .setTextSelection({
+                          from: Math.min(
+                            change.from,
+                            editor.state.doc.content.size,
+                          ),
+                          to: Math.min(
+                            change.to,
+                            editor.state.doc.content.size,
+                          ),
+                        })
+                        .run()
+                    }
+                  >
+                    <span>{change.kind === 'insertion' ? '插入' : '删除'}</span>
+                    <strong>{change.text.trim() || '（空白字符）'}</strong>
+                    <small>
+                      {change.author}
+                      {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
+                    </small>
+                  </button>
+                  <div>
+                    <Button
+                      ref={(element) => {
+                        const key = documentChangeDecisionKey(
+                          changeKey,
+                          'accept',
+                        );
+                        if (element)
+                          decisionButtonRefs.current.set(key, element);
+                        else decisionButtonRefs.current.delete(key);
+                      }}
+                      tone="quiet"
+                      aria-label={`接受修订 ${entry.index + 1}`}
+                      onClick={() =>
+                        decideChange(change, entry.index, 'accept')
+                      }
+                    >
+                      <Check size={13} />
+                      接受
+                    </Button>
+                    <Button
+                      ref={(element) => {
+                        const key = documentChangeDecisionKey(
+                          changeKey,
+                          'reject',
+                        );
+                        if (element)
+                          decisionButtonRefs.current.set(key, element);
+                        else decisionButtonRefs.current.delete(key);
+                      }}
+                      tone="quiet"
+                      aria-label={`拒绝修订 ${entry.index + 1}`}
+                      onClick={() =>
+                        decideChange(change, entry.index, 'reject')
+                      }
+                    >
+                      <XCircle size={13} />
+                      拒绝
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <div className="work-document-change-list work-document-task-pane-body">
             <CollectionState
               className="work-document-changes-empty"
               icon={<FileDiff />}
@@ -193,8 +306,8 @@ export function DocumentChangesPanel({
             >
               {trackChanges ? '正在记录新的改动。' : '当前没有记录新的改动。'}
             </CollectionState>
-          )}
-        </div>
+          </div>
+        )}
       </DocumentTaskPane>
       {officeDialog.dialog}
     </>
@@ -202,10 +315,47 @@ export function DocumentChangesPanel({
 }
 
 function documentChangeDecisionKey(
-  changeId: string,
+  changeKey: string,
   decision: DocumentChangeDecision,
 ): string {
-  return `${changeId}:${decision}`;
+  return `${changeKey}:${decision}`;
+}
+
+function documentChangeWindowKey(change: WorkDocumentChange): string {
+  return `${change.kind}:${change.id}`;
+}
+
+function documentChangeKeyboardDestination(
+  key: string,
+  index: number,
+  itemCount: number,
+): number | null {
+  if (!itemCount) return null;
+  if (key === 'ArrowDown') return Math.min(itemCount - 1, index + 1);
+  if (key === 'ArrowUp') return Math.max(0, index - 1);
+  if (key === 'PageDown') return Math.min(itemCount - 1, index + 8);
+  if (key === 'PageUp') return Math.max(0, index - 8);
+  if (key === 'Home') return 0;
+  if (key === 'End') return itemCount - 1;
+  return null;
+}
+
+function DocumentChangeWindowSpacer({
+  entry,
+}: {
+  entry: DocumentNavigationWindowSpacerEntry;
+}) {
+  return (
+    <li
+      aria-hidden="true"
+      className="work-document-change-window-spacer"
+      data-document-change-spacer={entry.position}
+      data-document-change-spacer-end={entry.end}
+      data-document-change-spacer-start={entry.start + 1}
+      role="presentation"
+      style={{ height: `${entry.height}px` }}
+    />
+  );
 }
 
 function formatChangeDate(value: string): string {

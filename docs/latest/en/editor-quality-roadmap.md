@@ -204,8 +204,8 @@ Exit evidence:
   accept/reject, citations, navigation, find/replace, outline, and references.
 - Define conflict behavior when a controlled host update changes a reviewed
   range.
-- Keep outlines and search results on their bounded shared window, and
-  incrementally derive or virtualize comments, revisions, and page chrome for
+- Keep outlines, search results, and revision review on their bounded shared
+  window, and incrementally derive or virtualize comments and page chrome for
   large files.
 
 Current implementation evidence includes a persistent Word-style navigation
@@ -231,7 +231,14 @@ boundary, reports whether new changes are actually being recorded, retains
 focus when that state changes, and keeps the truthful active state after the
 last pending revision is resolved. A deterministic phone workflow covers
 enabling tracking, creating and accepting an insertion, empty-state recovery,
-and exact invoker restoration.
+and exact invoker restoration. Revision collections above 48 items now reuse
+the same bounded window as document navigation, mounting at most 32 contiguous
+rows while physical spacers preserve the complete scroll range. Arrow,
+PageUp/PageDown, Home, and End keep the whole review queue keyboard reachable;
+individual accept/reject decisions retain the same action focus on the next
+revision. A real DOCX fixture with 120 native OOXML insertions proves bounded
+mounting, first/last access, the 120-to-119 decision transition, focus
+continuity, spacer geometry, and an error-free browser run.
 New comment
 drafts stay inside the visible review rail even for document-wide selections,
 and discard confirmation is limited to drafts or replies that contain written
@@ -251,9 +258,8 @@ window model now bounds heading and search-result rows above 48 items to at most
 32 contiguous rows plus sparse active, selected, and keyboard-roving pins. The
 real 120-page fixture contributes 120 headings and 120 matches; deterministic
 browser evidence proves first/last keyboard access, exact final-result
-selection, physical spacer geometry, and zero console or page errors. Comments,
-revisions, and page-chrome derivation remain the large-file work in this
-priority.
+selection, physical spacer geometry, and zero console or page errors. Comments
+and page-chrome derivation remain the large-file work in this priority.
 
 Exit evidence:
 

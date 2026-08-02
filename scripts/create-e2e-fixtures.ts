@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
+import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 
 const fixtureDirectory = path.resolve(
@@ -14,10 +15,18 @@ const longDocumentPath = path.join(
   fixtureDirectory,
   'word-page-navigation-120.docx',
 );
+const longRevisionDocumentPath = path.join(
+  fixtureDirectory,
+  'word-revisions-120.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
 await Bun.write(longDocumentPath, await createLongWordNavigationFixture());
+await Bun.write(
+  longRevisionDocumentPath,
+  await createLongWordRevisionFixture(),
+);
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -28,6 +37,7 @@ await Bun.write(
 
 console.log(`Created ${pdfPath}`);
 console.log(`Created ${longDocumentPath}`);
+console.log(`Created ${longRevisionDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -64,6 +74,71 @@ async function createLongWordNavigationFixture(): Promise<Buffer> {
     ],
   });
   return Packer.toBuffer(document);
+}
+
+async function createLongWordRevisionFixture(): Promise<Buffer> {
+  const revisionCount = 120;
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic long Word revision-review fixture',
+    title: 'A3S Office 120-revision review fixture',
+    sections: [
+      {
+        children: Array.from({ length: revisionCount }, (_, index) => {
+          const revision = String(index + 1).padStart(3, '0');
+          return new Paragraph({
+            children: [
+              new TextRun({ text: `Revision context ${revision}: ` }),
+              new TextRun({
+                text: `Deterministic revision marker ${revision}.`,
+              }),
+            ],
+          });
+        }),
+      },
+    ],
+  });
+  const archive = await JSZip.loadAsync(await Packer.toBuffer(document));
+  const documentXmlFile = archive.file('word/document.xml');
+  const settingsXmlFile = archive.file('word/settings.xml');
+  if (!documentXmlFile || !settingsXmlFile) {
+    throw new Error('Generated Word revision fixture is missing package XML.');
+  }
+
+  let documentXml = await documentXmlFile.async('string');
+  for (let index = 0; index < revisionCount; index += 1) {
+    const revision = String(index + 1).padStart(3, '0');
+    const text = `Deterministic revision marker ${revision}.`;
+    const run = `<w:r><w:t xml:space="preserve">${text}</w:t></w:r>`;
+    if (!documentXml.includes(run)) {
+      throw new Error(`Unable to mark Word fixture revision ${revision}.`);
+    }
+    documentXml = documentXml.replace(
+      run,
+      `<w:ins w:id="${index + 1}" w:author="A3S Test" w:date="2026-08-02T00:00:00.000Z">${run}</w:ins>`,
+    );
+  }
+  const fixtureDate = new Date('2026-08-02T00:00:00.000Z');
+  archive.file('word/document.xml', documentXml, { date: fixtureDate });
+
+  const settingsXml = await settingsXmlFile.async('string');
+  archive.file(
+    'word/settings.xml',
+    settingsXml.includes('<w:trackRevisions')
+      ? settingsXml
+      : settingsXml.replace(
+          '</w:settings>',
+          '<w:trackRevisions/></w:settings>',
+        ),
+    { date: fixtureDate },
+  );
+  return Buffer.from(
+    await archive.generateAsync({
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+      type: 'uint8array',
+    }),
+  );
 }
 
 function createPdfThumbnailKeyboardFixture(): ArrayBuffer {

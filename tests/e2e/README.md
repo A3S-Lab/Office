@@ -33,7 +33,10 @@ from a project-relative fixture after the browser-managed file input is reset,
 plus phone-width picture alternative-text editing that retains the image
 selection and restores the exact ribbon invoker after save and cancel, and a
 phone tracked-changes workflow with in-pane recording controls, truthful empty
-states, exact decision focus, and close-to-invoker restoration, plus a phone
+states, exact decision focus, and close-to-invoker restoration, plus a real
+120-revision DOCX workflow covering bounded mounted rows, physical spacer
+geometry, Home/End reachability, keyboard acceptance, the 120-to-119 count
+transition, and same-action focus continuity, plus a phone
 table workflow covering touch-sized dimension controls, exact 3 × 3 insertion,
 row extension, compact-ribbon deletion, and focused editing recovery, plus a
 phone caption and cross-reference workflow covering dialog focus, accessible

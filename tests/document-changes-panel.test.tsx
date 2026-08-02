@@ -10,8 +10,10 @@ import {
 import { DocumentChangesPanel } from '../src/internal/features/work/editors/document-changes-panel';
 import {
   collectDocumentChanges,
+  type WorkDocumentChange,
   type WorkDocumentChangeKind,
 } from '../src/internal/features/work/work-document-changes';
+import { DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT } from '../src/internal/features/work/editors/document-navigation-window';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 test('keeps the empty review pane aligned with the tracking state', () => {
@@ -59,6 +61,61 @@ test('keeps the empty review pane aligned with the tracking state', () => {
       screen.queryByRole('button', { name: '全部拒绝' }),
     ).not.toBeInTheDocument();
   } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
+test('observes the revision viewport when changes arrive after the empty state', () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const originalResizeObserver = globalThis.ResizeObserver;
+  const observedElements: Element[] = [];
+  let disconnectCount = 0;
+
+  class TestResizeObserver {
+    observe(element: Element) {
+      observedElements.push(element);
+    }
+
+    unobserve() {}
+
+    disconnect() {
+      disconnectCount += 1;
+    }
+  }
+
+  globalThis.ResizeObserver =
+    TestResizeObserver as unknown as typeof ResizeObserver;
+
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[]}
+        trackChanges={false}
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    expect(observedElements).toHaveLength(0);
+
+    view.rerender(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={longDocumentChanges(120)}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    const list = view.container.querySelector('.work-document-change-list');
+    expect(observedElements).toEqual([list]);
+    view.unmount();
+    expect(disconnectCount).toBe(1);
+  } finally {
+    globalThis.ResizeObserver = originalResizeObserver;
     editor.view.dom.remove();
     editor.destroy();
   }
@@ -163,6 +220,86 @@ test('keeps keyboard focus in the review flow after individual decisions', async
   }
 });
 
+test('keeps long revision lists bounded and keyboard reachable', async () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const changes = longDocumentChanges(120);
+
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={changes}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    const list = view.container.querySelector('.work-document-change-list');
+    if (!(list instanceof HTMLElement)) {
+      throw new Error('Document revision list is missing.');
+    }
+
+    expect(list).toHaveAttribute('data-document-change-count', '120');
+    expect(list).toHaveAttribute('data-document-change-windowed', 'true');
+    expect(
+      view.container.querySelectorAll('[data-document-change-item]').length,
+    ).toBeLessThanOrEqual(DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT + 2);
+
+    const firstChange = screen.getByRole('button', {
+      name: '定位修订 1',
+    });
+    firstChange.focus();
+    fireEvent.keyDown(firstChange, { key: 'End' });
+
+    const lastChange = await screen.findByRole('button', {
+      name: '定位修订 120',
+    });
+    await waitFor(() => expect(lastChange).toHaveFocus());
+    expect(
+      view.container.querySelector('[data-document-change-spacer="before"]'),
+    ).toBeInTheDocument();
+    expect(
+      view.container.querySelectorAll('[data-document-change-item]').length,
+    ).toBeLessThanOrEqual(DOCUMENT_NAVIGATION_COLLECTION_WINDOW_LIMIT + 2);
+
+    fireEvent.keyDown(lastChange, { key: 'Home' });
+    const restoredFirstChange = await screen.findByRole('button', {
+      name: '定位修订 1',
+    });
+    await waitFor(() => expect(restoredFirstChange).toHaveFocus());
+    expect(
+      view.container.querySelector('[data-document-change-spacer="after"]'),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(restoredFirstChange, { key: 'ArrowDown' });
+    const secondChange = await screen.findByRole('button', {
+      name: '定位修订 2',
+    });
+    await waitFor(() => expect(secondChange).toHaveFocus());
+
+    fireEvent.keyDown(secondChange, { key: 'PageDown' });
+    const tenthChange = await screen.findByRole('button', {
+      name: '定位修订 10',
+    });
+    await waitFor(() => expect(tenthChange).toHaveFocus());
+
+    fireEvent.keyDown(tenthChange, { key: 'PageUp' });
+    const restoredSecondChange = await screen.findByRole('button', {
+      name: '定位修订 2',
+    });
+    await waitFor(() => expect(restoredSecondChange).toHaveFocus());
+    fireEvent.keyDown(restoredSecondChange, { key: 'ArrowUp' });
+    const finalFirstChange = await screen.findByRole('button', {
+      name: '定位修订 1',
+    });
+    await waitFor(() => expect(finalFirstChange).toHaveFocus());
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
 function createEditor(): Editor {
   let sequence = 0;
   return new Editor({
@@ -192,4 +329,16 @@ function textRange(editor: Editor, text: string): { from: number; to: number } {
   });
   if (!range) throw new Error(`Unable to find "${text}" in the document.`);
   return range;
+}
+
+function longDocumentChanges(count: number): WorkDocumentChange[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `revision-${index + 1}`,
+    kind: index % 2 === 0 ? 'insertion' : 'deletion',
+    author: 'A3S Test',
+    date: '2026-08-02T00:00:00.000Z',
+    from: index * 10 + 1,
+    to: index * 10 + 9,
+    text: `Deterministic revision marker ${String(index + 1).padStart(3, '0')}`,
+  }));
 }

@@ -223,6 +223,16 @@ error-free browser run. Programmatic long-distance selection temporarily uses
 instant document scrolling through the next paint, then restores the surface's
 normal smooth-scroll style so the selected result is visible in the same frame.
 
+Revision review reuses this window model above 48 tracked changes. It mounts at
+most 32 contiguous revision cards, retains the keyboard-roving card as a sparse
+pin, and represents every omitted range with a physical spacer. Arrow,
+PageUp/PageDown, Home, and End can therefore reach the complete queue without
+mounting it. Accepting or rejecting a revision transfers focus to the same
+decision on the adjacent surviving item. A deterministic A3S Test imports a
+real DOCX with 120 native OOXML insertions and proves bounded mounting,
+first/last focus, the 120-to-119 decision transition, spacer geometry, and zero
+console or page errors.
+
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell
 patches from stable Fortune cell operations, and requests only the dirty

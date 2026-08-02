@@ -41,7 +41,9 @@ export interface DocumentNavigationListHandle {
   focusLast: () => void;
 }
 
-export function useDocumentNavigationWindow({
+export function useDocumentNavigationWindow<
+  TViewport extends HTMLElement = HTMLElement,
+>({
   estimatedItemHeight,
   itemGap,
   keys,
@@ -58,7 +60,7 @@ export function useDocumentNavigationWindow({
   pinnedKeys?: readonly (string | null | undefined)[];
   rovingKey: string | null;
 }) {
-  const viewportRef = useRef<HTMLElement>(null);
+  const viewportRef = useRef<TViewport>(null);
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const keysRef = useRef(keys);
   const pendingFocusKeyRef = useRef<string | null>(null);
@@ -89,7 +91,7 @@ export function useDocumentNavigationWindow({
     const observer = new ResizeObserver(update);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, []);
+  }, [keys.length]);
 
   const itemHeights = useMemo(
     () =>

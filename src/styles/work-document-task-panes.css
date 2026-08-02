@@ -303,14 +303,20 @@
   align-content: center;
 }
 
-.work-document-change-list article {
+.work-document-change-window-spacer {
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.work-document-change-item {
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   gap: 8px;
   padding: 8px;
 }
 
-.work-document-change-list article > div {
+.work-document-change-item > div {
   justify-content: flex-end;
 }
 

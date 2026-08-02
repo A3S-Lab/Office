@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { waitFor } from '@testing-library/react';
 import {
   focusSpreadsheetGrid,
   spreadsheetCommandsWithGridFocus,
@@ -106,9 +107,8 @@ test('waits for a lazily mounted spreadsheet overlay before restoring focus', as
   overlay.className = 'fortune-sheet-overlay';
   overlay.tabIndex = -1;
   container.append(overlay);
-  await waitForAnimationFrames(2);
 
-  expect(document.activeElement).toBe(overlay);
+  await waitFor(() => expect(document.activeElement).toBe(overlay));
   container.remove();
 });
 

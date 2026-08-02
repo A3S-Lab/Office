@@ -248,9 +248,9 @@ interaction model.
   margins with on-demand header/footer editing, outline navigation with
   contextual full-text results, keyboard-operated live physical-page raster
   thumbnails with viewport-bounded capture, and shared virtualized
-  long-document windows for page buttons, heading rows, and full-text results
-  that preserve native scroll distance, sparse current/selection pins, and
-  Home/End reachability, styles,
+  long-document windows for page buttons, heading rows, full-text results, and
+  tracked-revision review that preserve native scroll distance, sparse
+  current/selection pins, and Home/End reachability; paragraph styles;
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit,
   viewport-safe comment drafting,
