@@ -850,7 +850,7 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
     bodyName: string,
     closeName: string,
   ) => {
-    const panel = page.getByRole('region', { name: panelName, exact: true });
+    const panel = page.getByRole('dialog', { name: panelName, exact: true });
     const body = page.getByRole('region', { name: bodyName, exact: true });
     const close = panel.getByRole('button', { name: closeName });
     await expect(panel).toBeVisible();
