@@ -652,6 +652,69 @@
   opacity: 0.42;
 }
 
+@media (max-width: 520px) {
+  .work-document-pagination-panel,
+  .work-document-paragraph-spacing-panel {
+    width: min(320px, calc(100vw - 32px));
+    padding: 12px;
+  }
+
+  .work-document-pagination-panel fieldset,
+  .work-document-paragraph-spacing-panel fieldset {
+    gap: 10px;
+  }
+
+  .work-document-pagination-panel legend,
+  .work-document-paragraph-spacing-panel legend {
+    font-size: 12px;
+  }
+
+  .work-document-pagination-panel .work-office-checkbox {
+    min-height: 44px;
+    padding: 8px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .work-document-pagination-panel .work-office-checkbox:not(.disabled):hover {
+    background: var(--a3s-panel-soft);
+  }
+
+  .work-document-paragraph-spacing-field {
+    min-height: 44px;
+    grid-template-columns: 44px minmax(0, 1fr) 18px;
+    font-size: 11px;
+  }
+
+  .work-document-paragraph-spacing-panel .work-office-number-field {
+    height: 44px;
+    grid-template-columns: minmax(0, 1fr) 88px;
+  }
+
+  .work-document-paragraph-spacing-panel .work-office-number-field > input {
+    font-size: 12px;
+  }
+
+  .work-document-paragraph-spacing-panel .work-office-number-steppers {
+    grid-template-columns: repeat(2, 44px);
+    grid-template-rows: 44px;
+  }
+
+  .work-document-paragraph-spacing-panel
+    .work-office-number-steppers
+    > button:first-child {
+    border-right: 1px solid var(--a3s-line);
+    border-bottom: 0;
+  }
+
+  .work-document-pagination-reset,
+  .work-document-paragraph-spacing-reset {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+}
+
 .work-document-ribbon .work-document-font-tools button:not([role="combobox"]),
 .work-document-ribbon
   .work-document-paragraph-tools

@@ -101,16 +101,21 @@ unbounded settings stack. Header and footer formatting actions are divided
 into balanced text-formatting and alignment/insertion rows instead of leaving
 orphaned controls on an accidental wrap line; a deterministic phone workflow
 now covers all three tabs, a live column update, modal isolation, and invoker
-focus restoration. Deterministic text collection now follows CSS font
-weight matching while retaining exact family and normal/italic style
-boundaries, keeping intermediate and synthesized bold weights on the WASM
-layout path when a compatible registered face exists. Editing, read-only
-preview, and PDF composition now share the same base typography and structural
-content styles. Header and footer content occupies the physical page margins
-without shifting body flow, while empty headers remain absent and PDF output
-does not synthesize a filename header. Compact previews keep the same physical
-page geometry and use bounded scrolling instead of changing margins and text
-flow to fit the viewport.
+focus restoration. Paragraph-spacing and paragraph-pagination popovers now
+expand to a viewport-safe 320 px surface on phones. Their numeric fields,
+steppers, checkboxes, and reset actions provide 44 px touch targets while
+preserving direct document commits and exact trigger-focus restoration. A
+deterministic phone workflow proves both semantic changes and captures
+accessibility, console, and page-error evidence. Deterministic text collection
+now follows CSS font weight matching while retaining exact family and
+normal/italic style boundaries, keeping intermediate and synthesized bold
+weights on the WASM layout path when a compatible registered face exists.
+Editing, read-only preview, and PDF composition now share the same base
+typography and structural content styles. Header and footer content occupies
+the physical page margins without shifting body flow, while empty headers
+remain absent and PDF output does not synthesize a filename header. Compact
+previews keep the same physical page geometry and use bounded scrolling instead
+of changing margins and text flow to fit the viewport.
 
 Editing and read-only preview now retain one canonical TipTap surface and the
 same Worker/WASM pagination result, so switching mode preserves shaped runs,

@@ -251,7 +251,8 @@ interaction model.
   long-document windows for page buttons, heading rows, full-text results, and
   tracked-revision and anchored-comment review that preserve native scroll
   distance, sparse current/selection/draft pins, and Home/End reachability;
-  paragraph styles;
+  paragraph styles and phone-sized paragraph-spacing and pagination controls
+  with touch targets and exact invoker-focus restoration;
   grouped bundled, common system, monospace, imported, and host-provided font
   choices with live typeface previews, precision table sizing and autofit,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked

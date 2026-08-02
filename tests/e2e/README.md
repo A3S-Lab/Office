@@ -20,10 +20,12 @@ bun run test:e2e
 ```
 
 The suites cover focused Word page-color, the complete phone Page Setup flow
-with grouped header/footer formatting controls, compact comments-drawer, a
-phone citation workflow with field-level validation, save, insertion, and
-close-to-invoker focus restoration, full-text navigation, the complete phone
-Find/Replace workflow, page-preview, bounded page-button virtualization for a
+with grouped header/footer formatting controls, phone paragraph-spacing and
+pagination popovers with committed document semantics and exact invoker-focus
+restoration, compact comments-drawer, a phone citation workflow with
+field-level validation, save, insertion, and close-to-invoker focus
+restoration, full-text navigation, the complete phone Find/Replace workflow,
+page-preview, bounded page-button virtualization for a
 real 120-page DOCX with animation-frame-independent Home/End keyboard focus,
 bounded heading-outline and full-text-result windows for the same real DOCX,
 including sparse current/selection pins, physical spacer geometry, exact

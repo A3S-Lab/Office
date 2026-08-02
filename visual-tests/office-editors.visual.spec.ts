@@ -284,6 +284,95 @@ test('every editor keeps sidebar access and separate phone header regions', asyn
   }
 });
 
+test('Word paragraph layout popovers use touch-sized phone controls', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop-1280',
+    'The phone contract only needs one browser project.',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+  await page.getByRole('tab', { name: '页面布局' }).click();
+
+  const spacingTrigger = page.getByRole('button', { name: '段落间距' });
+  await spacingTrigger.click();
+  const spacingPanel = page.locator('.work-document-paragraph-spacing-panel');
+  await expect(spacingPanel).toBeVisible();
+  const spacingGeometry = await spacingPanel.evaluate((element) => {
+    const panel = element.getBoundingClientRect();
+    const inputs = [...element.querySelectorAll<HTMLInputElement>('input')];
+    const steppers = [
+      ...element.querySelectorAll<HTMLButtonElement>(
+        '.work-office-number-steppers > button',
+      ),
+    ];
+    const reset = element.querySelector<HTMLButtonElement>(
+      '.work-document-paragraph-spacing-reset',
+    );
+    if (inputs.length !== 2 || steppers.length !== 4 || !reset) {
+      throw new Error('Paragraph-spacing phone controls are incomplete.');
+    }
+    return {
+      left: panel.left,
+      right: panel.right,
+      width: panel.width,
+      inputHeights: inputs.map((input) => input.getBoundingClientRect().height),
+      stepperHeights: steppers.map(
+        (stepper) => stepper.getBoundingClientRect().height,
+      ),
+      resetHeight: reset.getBoundingClientRect().height,
+    };
+  });
+  expect(spacingGeometry.left).toBeGreaterThanOrEqual(15);
+  expect(spacingGeometry.right).toBeLessThanOrEqual(375);
+  expect(spacingGeometry.width).toBeGreaterThanOrEqual(300);
+  expect(Math.min(...spacingGeometry.inputHeights)).toBeGreaterThanOrEqual(43);
+  expect(Math.min(...spacingGeometry.stepperHeights)).toBeGreaterThanOrEqual(
+    43,
+  );
+  expect(spacingGeometry.resetHeight).toBeGreaterThanOrEqual(43);
+  await page.keyboard.press('Escape');
+  await expect(spacingTrigger).toBeFocused();
+
+  const paginationTrigger = page.getByRole('button', { name: '段落分页' });
+  await paginationTrigger.click();
+  const paginationPanel = page.locator('.work-document-pagination-panel');
+  await expect(paginationPanel).toBeVisible();
+  const paginationGeometry = await paginationPanel.evaluate((element) => {
+    const panel = element.getBoundingClientRect();
+    const options = [
+      ...element.querySelectorAll<HTMLElement>('.work-office-checkbox'),
+    ];
+    const reset = element.querySelector<HTMLButtonElement>(
+      '.work-document-pagination-reset',
+    );
+    if (options.length !== 4 || !reset) {
+      throw new Error('Paragraph-pagination phone controls are incomplete.');
+    }
+    return {
+      left: panel.left,
+      right: panel.right,
+      width: panel.width,
+      optionHeights: options.map(
+        (option) => option.getBoundingClientRect().height,
+      ),
+      resetHeight: reset.getBoundingClientRect().height,
+    };
+  });
+  expect(paginationGeometry.left).toBeGreaterThanOrEqual(15);
+  expect(paginationGeometry.right).toBeLessThanOrEqual(375);
+  expect(paginationGeometry.width).toBeGreaterThanOrEqual(300);
+  expect(Math.min(...paginationGeometry.optionHeights)).toBeGreaterThanOrEqual(
+    43,
+  );
+  expect(paginationGeometry.resetHeight).toBeGreaterThanOrEqual(43);
+  await page.keyboard.press('Escape');
+  await expect(paginationTrigger).toBeFocused();
+});
+
 test('PDF prioritizes page and zoom controls at compact workspace width', async ({
   page,
 }) => {
