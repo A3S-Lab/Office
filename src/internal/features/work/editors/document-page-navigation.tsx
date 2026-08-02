@@ -9,6 +9,14 @@ import {
 } from 'react';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import {
+  calculateDocumentNavigationWindowRange,
+  documentNavigationIndexAtOffset,
+  documentNavigationItemStarts,
+  documentNavigationWindowEntries,
+  documentNavigationWindowIndices,
+  type DocumentNavigationWindowRange,
+} from './document-navigation-window';
+import {
   DocumentPageThumbnail,
   type WorkDocumentPageThumbnailSource,
 } from './document-page-thumbnail';
@@ -22,27 +30,6 @@ const DOCUMENT_PAGE_PORTRAIT_WIDTH = 138;
 const DOCUMENT_PAGE_LANDSCAPE_WIDTH = 170;
 const DOCUMENT_PAGE_BUTTON_CHROME_HEIGHT = 36;
 export const DOCUMENT_PAGE_WINDOW_LIMIT = 24;
-
-interface DocumentPageRange {
-  end: number;
-  start: number;
-  windowed: boolean;
-}
-
-interface DocumentPageSpacerEntry {
-  end: number;
-  height: number;
-  kind: 'spacer';
-  position: 'after' | 'before' | 'between';
-  start: number;
-}
-
-interface DocumentPageItemEntry {
-  index: number;
-  kind: 'page';
-}
-
-type DocumentPageListEntry = DocumentPageItemEntry | DocumentPageSpacerEntry;
 
 export interface DocumentNavigationPage {
   backgroundColor?: string;
@@ -124,11 +111,11 @@ export function DocumentPageNavigation({
     [pages, thumbnailSource?.pageHeight, thumbnailSource?.pageWidth],
   );
   const pageStarts = useMemo(
-    () => documentPageStarts(itemHeights),
+    () => documentNavigationItemStarts(itemHeights, DOCUMENT_PAGE_ITEM_GAP),
     [itemHeights],
   );
   const averageItemHeight = itemHeights.length
-    ? pageStarts[pageStarts.length - 1] / itemHeights.length
+    ? (pageStarts[pageStarts.length - 1] ?? 1) / itemHeights.length
     : 1;
   const range = useMemo(
     () =>
@@ -142,16 +129,24 @@ export function DocumentPageNavigation({
   );
   const mountedIndices = useMemo(
     () =>
-      documentMountedPageIndices({
-        pages,
+      documentNavigationWindowIndices({
+        itemCount: pages.length,
+        pinnedIndices: [
+          documentPageIndex(pages, selectedPage),
+          documentPageIndex(pages, rovingPage),
+        ],
         range,
-        rovingPage,
-        selectedPage,
       }),
     [pages, range, rovingPage, selectedPage],
   );
   const listEntries = useMemo(
-    () => documentPageListEntries(mountedIndices, pageStarts, pages.length),
+    () =>
+      documentNavigationWindowEntries(
+        mountedIndices,
+        pageStarts,
+        pages.length,
+        DOCUMENT_PAGE_ITEM_GAP,
+      ),
     [mountedIndices, pageStarts, pages.length],
   );
   const mountedPageKey = mountedIndices.join(',');
@@ -222,7 +217,7 @@ export function DocumentPageNavigation({
       data-document-page-windowed={range.windowed ? 'true' : 'false'}
       onScroll={(event) => {
         if (!range.windowed) return;
-        const nextAnchor = documentPageIndexAtOffset(
+        const nextAnchor = documentNavigationIndexAtOffset(
           pageStarts,
           Math.max(
             0,
@@ -321,29 +316,16 @@ export function calculateDocumentPageRange({
   averageItemHeight: number;
   pageCount: number;
   viewportHeight: number;
-}): DocumentPageRange {
-  const count = Math.max(0, Math.floor(pageCount));
-  if (count <= DOCUMENT_PAGE_WINDOW_THRESHOLD) {
-    return { end: count, start: 0, windowed: false };
-  }
-  const visibleCount = Math.max(
-    1,
-    Math.ceil(Math.max(1, viewportHeight) / Math.max(1, averageItemHeight)),
-  );
-  const windowCount = Math.min(
-    count,
-    DOCUMENT_PAGE_WINDOW_LIMIT,
-    visibleCount + DOCUMENT_PAGE_WINDOW_OVERSCAN * 2,
-  );
-  const boundedAnchor = Math.min(
-    count - 1,
-    Math.max(0, Math.floor(anchorIndex)),
-  );
-  const start = Math.min(
-    count - windowCount,
-    Math.max(0, boundedAnchor - DOCUMENT_PAGE_WINDOW_OVERSCAN),
-  );
-  return { end: start + windowCount, start, windowed: true };
+}): DocumentNavigationWindowRange {
+  return calculateDocumentNavigationWindowRange({
+    anchorIndex,
+    averageItemHeight,
+    itemCount: pageCount,
+    limit: DOCUMENT_PAGE_WINDOW_LIMIT,
+    overscan: DOCUMENT_PAGE_WINDOW_OVERSCAN,
+    threshold: DOCUMENT_PAGE_WINDOW_THRESHOLD,
+    viewportHeight,
+  });
 }
 
 function documentPageIndex(
@@ -370,106 +352,6 @@ function estimatedDocumentPageItemHeight(
   return Math.ceil(
     width * (sourceRatio ?? fallbackRatio) + DOCUMENT_PAGE_BUTTON_CHROME_HEIGHT,
   );
-}
-
-function documentPageStarts(itemHeights: readonly number[]): number[] {
-  const starts = [0];
-  for (const height of itemHeights) {
-    starts.push(
-      (starts[starts.length - 1] ?? 0) +
-        Math.max(1, height) +
-        DOCUMENT_PAGE_ITEM_GAP,
-    );
-  }
-  return starts;
-}
-
-function documentMountedPageIndices({
-  pages,
-  range,
-  rovingPage,
-  selectedPage,
-}: {
-  pages: readonly DocumentNavigationPage[];
-  range: DocumentPageRange;
-  rovingPage: number;
-  selectedPage: number;
-}): number[] {
-  if (!range.windowed) {
-    return Array.from({ length: pages.length }, (_, index) => index);
-  }
-  const mounted = new Set<number>();
-  for (let index = range.start; index < range.end; index += 1) {
-    mounted.add(index);
-  }
-  const selectedIndex = documentPageIndex(pages, selectedPage);
-  const rovingIndex = documentPageIndex(pages, rovingPage);
-  if (selectedIndex >= 0) mounted.add(selectedIndex);
-  if (rovingIndex >= 0) mounted.add(rovingIndex);
-  return [...mounted].sort((left, right) => left - right);
-}
-
-function documentPageListEntries(
-  mountedIndices: readonly number[],
-  pageStarts: readonly number[],
-  pageCount: number,
-): DocumentPageListEntry[] {
-  const entries: DocumentPageListEntry[] = [];
-  let cursor = 0;
-  for (const index of mountedIndices) {
-    if (index > cursor) {
-      entries.push(
-        documentPageSpacerEntry(cursor, index, pageStarts, pageCount),
-      );
-    }
-    entries.push({ index, kind: 'page' });
-    cursor = index + 1;
-  }
-  if (cursor < pageCount) {
-    entries.push(
-      documentPageSpacerEntry(cursor, pageCount, pageStarts, pageCount),
-    );
-  }
-  return entries;
-}
-
-function documentPageSpacerEntry(
-  start: number,
-  end: number,
-  pageStarts: readonly number[],
-  pageCount: number,
-): DocumentPageSpacerEntry {
-  return {
-    end,
-    height: Math.max(
-      0,
-      (pageStarts[end] ?? 0) -
-        (pageStarts[start] ?? 0) -
-        DOCUMENT_PAGE_ITEM_GAP,
-    ),
-    kind: 'spacer',
-    position: start === 0 ? 'before' : end === pageCount ? 'after' : 'between',
-    start,
-  };
-}
-
-function documentPageIndexAtOffset(
-  pageStarts: readonly number[],
-  offset: number,
-  pageCount: number,
-): number {
-  if (pageCount <= 1) return 0;
-  let low = 0;
-  let high = pageCount - 1;
-  while (low <= high) {
-    const middle = Math.floor((low + high) / 2);
-    const start = pageStarts[middle] ?? 0;
-    const next = pageStarts[middle + 1] ?? Number.POSITIVE_INFINITY;
-    if (offset < start) high = middle - 1;
-    else if (offset >= next) low = middle + 1;
-    else return middle;
-  }
-  return Math.min(pageCount - 1, Math.max(0, low));
 }
 
 function focusDocumentPageButton(element: HTMLButtonElement): void {

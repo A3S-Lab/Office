@@ -25,6 +25,9 @@ phone citation workflow with field-level validation, save, insertion, and
 close-to-invoker focus restoration, full-text navigation, the complete phone
 Find/Replace workflow, page-preview, bounded page-button virtualization for a
 real 120-page DOCX with animation-frame-independent Home/End keyboard focus,
+bounded heading-outline and full-text-result windows for the same real DOCX,
+including sparse current/selection pins, physical spacer geometry, exact
+selection of result 120, and same-frame alignment with the final document page,
 selected-text AI question-composer regressions, and durable picture insertion
 from a project-relative fixture after the browser-managed file input is reset,
 plus phone-width picture alternative-text editing that retains the image

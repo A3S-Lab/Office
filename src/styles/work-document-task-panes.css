@@ -783,6 +783,16 @@
   min-width: 0;
 }
 
+.work-document-outline > ol > li.work-document-navigation-window-spacer,
+.work-document-search-results > ol > li.work-document-navigation-window-spacer {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  contain: strict;
+  pointer-events: none;
+}
+
 .work-document-search-result {
   display: flex;
   width: 100%;

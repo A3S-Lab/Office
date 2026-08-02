@@ -56,6 +56,13 @@ mount a window of at most 24 buttons plus the current and keyboard-roving pages
 when needed. Physical scroll spacers retain the document distance, and Home or
 End makes the first or last page reachable without mounting every page.
 
+Heading and full-text collections use the same window contract above 48 rows.
+They mount at most 32 contiguous rows, plus sparse active, selected, and
+keyboard-roving rows when those fall outside the window. Native scroll distance,
+global list positions, Arrow traversal, Home/End, and exact search selection are
+preserved. Long-distance result jumps use an instant programmatic scroll for the
+selection frame and then restore the editor's normal scroll style.
+
 ## Built-in references
 
 The References ribbon inserts captions, cross-references, footnotes, endnotes,

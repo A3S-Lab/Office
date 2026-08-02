@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
 import { jsPDF } from 'jspdf';
 
 const fixtureDirectory = path.resolve(
@@ -41,21 +41,25 @@ async function createLongWordNavigationFixture(): Promise<Buffer> {
         children: Array.from({ length: pageCount }, (_, index) => {
           const page = index + 1;
           const paddedPage = String(page).padStart(3, '0');
-          return new Paragraph({
-            pageBreakBefore: index > 0,
-            children: [
-              new TextRun({
-                bold: true,
-                size: 32,
-                text: `A3S Office long document - Page ${paddedPage}`,
-              }),
-              new TextRun({
-                break: 1,
-                text: `Deterministic navigation marker ${paddedPage}.`,
-              }),
-            ],
-          });
-        }),
+          return [
+            new Paragraph({
+              heading: HeadingLevel.HEADING_1,
+              pageBreakBefore: index > 0,
+              children: [
+                new TextRun({
+                  text: `A3S Office long document - Page ${paddedPage}`,
+                }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `Deterministic navigation marker ${paddedPage}.`,
+                }),
+              ],
+            }),
+          ];
+        }).flat(),
       },
     ],
   });

@@ -208,7 +208,20 @@ physical scroll range, while Home and End materialize and focus their sparse
 destinations without relying on a browser animation frame. A deterministic
 120-page DOCX A3S Test proves bounded mounting, first/last-page keyboard access,
 selection, focus retention, and spacer geometry. Raster work and page-button
-DOM are therefore bounded; outline and search-result virtualization remain open.
+DOM are therefore bounded.
+
+The page list, heading outline, and full-text results reuse one navigation
+window model. Heading and result collections switch to a window above 48 rows,
+mount at most 32 contiguous rows, and add only sparse active, selected, or
+keyboard-roving rows outside that range. Physical before, between, and after
+spacers retain native scroll geometry; global `aria-posinset` and `aria-setsize`
+values remain truthful even when most rows are not mounted. Home and End mount
+their destination without an animation-frame dependency. A real 120-page DOCX
+with 120 built-in headings and 120 text matches proves bounded outline and
+result mounting, first/last keyboard access, exact result selection, and an
+error-free browser run. Programmatic long-distance selection temporarily uses
+instant document scrolling through the next paint, then restores the surface's
+normal smooth-scroll style so the selected result is visible in the same frame.
 
 Spreadsheet now uses a persistent browser Rust/WASM calculation session. The
 editor initializes it with a sparse workbook replacement, sends bounded cell

@@ -1,0 +1,216 @@
+suite "office-word-navigation-windowing" {
+    version = 1
+
+    scenario "navigate-a-120-heading-outline" {
+        name = "Keep a long Word outline bounded and keyboard reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-outline-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-long-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-page-navigation-120.docx"]
+        }
+
+        wait "long-document-loaded" {
+            text = "A3S Office long document - Page 001"
+        }
+
+        wait "pagination-ready" {
+            text = "120 页"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        expect "outline-count-ready" {
+            text = "120 个标题"
+        }
+
+        wait "windowed-outline-ready" {
+            visible = css(".work-document-outline[data-document-navigation-item-count='120'][data-document-navigation-windowed='true']")
+        }
+
+        expect "outline-mounting-is-bounded" {
+            visible = css(".work-document-outline[data-document-navigation-item-count='120']:not([data-document-navigation-mounted-count='120'])")
+        }
+
+        focus "focus-current-heading" {
+            target = css(".work-document-outline-item[aria-current='location']")
+        }
+
+        press "focus-last-heading" {
+            key = "End"
+        }
+
+        expect "last-heading-focused" {
+            visible = css("[data-document-navigation-item='120'] .work-document-outline-item:focus")
+        }
+
+        expect "leading-distance-is-preserved" {
+            visible = css("[data-document-navigation-spacer='before'], [data-document-navigation-spacer='between']")
+        }
+
+        press "focus-first-heading" {
+            key = "Home"
+        }
+
+        expect "first-heading-focused" {
+            visible = css("[data-document-navigation-item='1'] .work-document-outline-item:focus")
+        }
+
+        expect "trailing-distance-is-preserved" {
+            visible = css("[data-document-navigation-spacer='after'], [data-document-navigation-spacer='between']")
+        }
+
+        screenshot "bounded-outline" {
+            path = "screenshots/word-outline-windowing.png"
+        }
+
+        accessibility "bounded-outline-tree" {
+            path = "evidence/word-outline-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/outline-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/outline-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "select-the-last-of-120-search-results" {
+        name = "Keep long Word search results bounded, selectable, and keyboard reachable"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-search-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-long-document" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/word-page-navigation-120.docx"]
+        }
+
+        wait "long-document-loaded" {
+            text = "A3S Office long document - Page 001"
+        }
+
+        wait "pagination-ready" {
+            text = "120 页"
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        click "open-navigation" {
+            target = role("button", "导航窗格")
+        }
+
+        fill "search-all-markers" {
+            target = label("搜索文档")
+            value = "Deterministic navigation marker"
+        }
+
+        expect "search-count-ready" {
+            text = "120 个匹配"
+        }
+
+        wait "windowed-search-ready" {
+            visible = css(".work-document-search-results[data-document-navigation-item-count='120'][data-document-navigation-windowed='true']")
+        }
+
+        expect "search-mounting-is-bounded" {
+            visible = css(".work-document-search-results[data-document-navigation-item-count='120']:not([data-document-navigation-mounted-count='120'])")
+        }
+
+        press "focus-first-result" {
+            key = "ArrowDown"
+        }
+
+        expect "first-result-focused" {
+            visible = css("[data-document-navigation-item='1'] .work-document-search-result:focus")
+        }
+
+        press "focus-last-result" {
+            key = "End"
+        }
+
+        expect "last-result-focused" {
+            visible = css("[data-document-navigation-item='120'] .work-document-search-result:focus")
+        }
+
+        expect "search-distance-is-preserved" {
+            visible = css("[data-document-navigation-spacer='before'], [data-document-navigation-spacer='between']")
+        }
+
+        press "select-last-result" {
+            key = "Enter"
+        }
+
+        expect "last-result-is-current" {
+            visible = css("[data-document-navigation-item='120'] .work-document-search-result[aria-current='location']")
+        }
+
+        expect "last-document-range-is-highlighted" {
+            visible = css(".work-document-find-match.active[data-document-find-active='true'][data-document-find-index='119']")
+        }
+
+        expect "last-document-page-is-current" {
+            text = "第 120 页，共 120 页"
+        }
+
+        screenshot "bounded-search-results" {
+            path = "screenshots/word-search-windowing.png"
+        }
+
+        accessibility "bounded-search-tree" {
+            path = "evidence/word-search-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/search-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/search-page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -1,9 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
-import { ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import {
-  type CSSProperties,
-  type KeyboardEvent,
   useCallback,
   useEffect,
   useId,
@@ -15,7 +13,6 @@ import {
   collectWorkDocumentOutline,
   currentWorkDocumentOutlineItem,
   visibleWorkDocumentOutlineItems,
-  type WorkDocumentOutlineItem,
 } from '../work-document-outline';
 import {
   documentTextMatches,
@@ -28,14 +25,30 @@ import {
   updateDocumentFindHighlights,
 } from './document-find-highlight';
 import { OfficeTextField } from './office-controls';
+import { DocumentOutlineNavigation } from './document-outline-navigation';
 import {
   DocumentPageNavigation,
   type DocumentNavigationPage,
 } from './document-page-navigation';
 import type { WorkDocumentPageThumbnailSource } from './document-page-thumbnail';
+import {
+  documentNavigationMatchId,
+  DocumentSearchNavigation,
+} from './document-search-navigation';
 import { DocumentTaskPane } from './document-task-pane';
+import type { DocumentNavigationListHandle } from './document-navigation-window';
 
 type DocumentNavigationView = 'headings' | 'pages';
+
+interface InstantDocumentScrollState {
+  previousBehavior: string;
+  restoreFrame: number | null;
+}
+
+const instantDocumentScrollStates = new WeakMap<
+  HTMLElement,
+  InstantDocumentScrollState
+>();
 
 export function DocumentNavigationPanel({
   currentPage = 1,
@@ -54,8 +67,8 @@ export function DocumentNavigationPanel({
 }) {
   const tabsId = useId();
   const searchRef = useRef<HTMLInputElement>(null);
-  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
-  const resultRefs = useRef(new Map<string, HTMLButtonElement>());
+  const outlineNavigationRef = useRef<DocumentNavigationListHandle>(null);
+  const searchNavigationRef = useRef<DocumentNavigationListHandle>(null);
   const [, renderEditorState] = useState(0);
   const [navigationView, setNavigationView] =
     useState<DocumentNavigationView>('headings');
@@ -134,29 +147,15 @@ export function DocumentNavigationPanel({
 
   useEffect(() => {
     if (!normalizedQuery) return;
-    const validResultIds = new Set(matches.map(documentMatchId));
+    const validResultIds = new Set(matches.map(documentNavigationMatchId));
     setRovingResultId((current) =>
       current && validResultIds.has(current)
         ? current
         : matches[0]
-          ? documentMatchId(matches[0])
+          ? documentNavigationMatchId(matches[0])
           : null,
     );
   }, [matches, normalizedQuery]);
-
-  const focusItem = useCallback((itemId: string) => {
-    setRovingId(itemId);
-    requestAnimationFrame(() => {
-      itemRefs.current.get(itemId)?.focus({ preventScroll: true });
-    });
-  }, []);
-
-  const focusResult = useCallback((resultId: string) => {
-    setRovingResultId(resultId);
-    requestAnimationFrame(() => {
-      resultRefs.current.get(resultId)?.focus({ preventScroll: true });
-    });
-  }, []);
 
   const toggleCollapsed = useCallback((itemId: string) => {
     setCollapsedIds((current) => {
@@ -166,55 +165,6 @@ export function DocumentNavigationPanel({
       return next;
     });
   }, []);
-
-  const handleItemKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    item: WorkDocumentOutlineItem,
-  ) => {
-    const index = visibleItems.findIndex(
-      (candidate) => candidate.id === item.id,
-    );
-    const focusAt = (requestedIndex: number) => {
-      const next = visibleItems[requestedIndex];
-      if (next) focusItem(next.id);
-    };
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      focusAt(Math.min(visibleItems.length - 1, index + 1));
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      focusAt(Math.max(0, index - 1));
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      focusAt(0);
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      focusAt(visibleItems.length - 1);
-    } else if (
-      event.key === 'ArrowRight' &&
-      !normalizedQuery &&
-      item.hasChildren &&
-      collapsedIds.has(item.id)
-    ) {
-      event.preventDefault();
-      toggleCollapsed(item.id);
-    } else if (
-      event.key === 'ArrowRight' &&
-      !normalizedQuery &&
-      item.hasChildren
-    ) {
-      event.preventDefault();
-      const child = visibleItems[index + 1];
-      if (child?.depth > item.depth) focusItem(child.id);
-    } else if (event.key === 'ArrowLeft' && !normalizedQuery) {
-      event.preventDefault();
-      if (item.hasChildren && !collapsedIds.has(item.id)) {
-        toggleCollapsed(item.id);
-      } else if (item.parentId) {
-        focusItem(item.parentId);
-      }
-    }
-  };
 
   const navigateTo = async (
     selection: number | { from: number; to: number },
@@ -231,42 +181,22 @@ export function DocumentNavigationPanel({
         : selection;
     const chain = editor.chain();
     if (!modal && focusEditor) chain.focus();
-    chain.setTextSelection(resolvedSelection).scrollIntoView().run();
+    runWithInstantDocumentScroll(editor, () =>
+      chain.setTextSelection(resolvedSelection).scrollIntoView().run(),
+    );
     if (!modal) return;
     await onClose();
     requestAnimationFrame(() => {
-      if (!editor.isDestroyed) editor.chain().focus().scrollIntoView().run();
+      if (!editor.isDestroyed) {
+        runWithInstantDocumentScroll(editor, () =>
+          editor.chain().focus().scrollIntoView().run(),
+        );
+      }
     });
   };
 
   const selectMatch = (match: DocumentTextMatch) => {
     void navigateTo({ from: match.from, to: match.to });
-  };
-
-  const handleResultKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    match: DocumentTextMatch,
-  ) => {
-    const index = matches.findIndex(
-      (candidate) => documentMatchId(candidate) === documentMatchId(match),
-    );
-    const focusAt = (requestedIndex: number) => {
-      const next = matches[requestedIndex];
-      if (next) focusResult(documentMatchId(next));
-    };
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      focusAt(Math.min(matches.length - 1, index + 1));
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      focusAt(Math.max(0, index - 1));
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      focusAt(0);
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      focusAt(matches.length - 1);
-    }
   };
 
   return (
@@ -338,15 +268,12 @@ export function DocumentNavigationPanel({
                   event.preventDefault();
                   selectMatch(matches[0]);
                 } else if (event.key === 'ArrowDown') {
-                  const firstTarget = normalizedQuery
-                    ? matches[0]
-                      ? documentMatchId(matches[0])
-                      : null
-                    : visibleItems[0]?.id;
-                  if (!firstTarget) return;
+                  const target = normalizedQuery
+                    ? searchNavigationRef.current
+                    : outlineNavigationRef.current;
+                  if (!target) return;
                   event.preventDefault();
-                  if (normalizedQuery) focusResult(firstTarget);
-                  else focusItem(firstTarget);
+                  target.focusFirst();
                 }
               }}
             />
@@ -359,133 +286,26 @@ export function DocumentNavigationPanel({
               : `${outline.length} 个标题`}
           </div>
           {normalizedQuery ? (
-            <nav
-              className="work-document-task-pane-body work-document-search-results"
-              aria-label="文档搜索结果"
-            >
-              {matches.length ? (
-                <ol>
-                  {matches.map((match, index) => {
-                    const resultId = documentMatchId(match);
-                    const section =
-                      currentWorkDocumentOutlineItem(outline, match.from)
-                        ?.text ?? '文档开头';
-                    return (
-                      <li key={resultId}>
-                        <button
-                          ref={(element) => {
-                            if (element)
-                              resultRefs.current.set(resultId, element);
-                            else resultRefs.current.delete(resultId);
-                          }}
-                          type="button"
-                          className="work-document-search-result"
-                          tabIndex={resultId === rovingResultId ? 0 : -1}
-                          aria-label={`第 ${index + 1} 个匹配：${match.matchedText}`}
-                          aria-current={
-                            selectedMatchIndex === index
-                              ? 'location'
-                              : undefined
-                          }
-                          onFocus={() => setRovingResultId(resultId)}
-                          onKeyDown={(event) =>
-                            handleResultKeyDown(event, match)
-                          }
-                          onClick={() => selectMatch(match)}
-                        >
-                          <span className="work-document-search-section">
-                            {section}
-                          </span>
-                          <span className="work-document-search-excerpt">
-                            {match.truncatedBefore && '…'}
-                            {match.before}
-                            <mark>{match.matchedText}</mark>
-                            {match.after}
-                            {match.truncatedAfter && '…'}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : (
-                <div className="work-document-outline-empty">
-                  尝试更短或不同的文字
-                </div>
-              )}
-            </nav>
+            <DocumentSearchNavigation
+              ref={searchNavigationRef}
+              matches={matches}
+              outline={outline}
+              rovingId={rovingResultId}
+              selectedMatchIndex={selectedMatchIndex}
+              onRovingIdChange={setRovingResultId}
+              onSelect={selectMatch}
+            />
           ) : (
-            <nav
-              className="work-document-task-pane-body work-document-outline"
-              aria-label="文档标题"
-            >
-              {visibleItems.length ? (
-                <ol>
-                  {visibleItems.map((item) => {
-                    const collapsed = collapsedIds.has(item.id);
-                    return (
-                      <li
-                        key={item.id}
-                        className={
-                          activeItem?.id === item.id ? 'active' : undefined
-                        }
-                        style={
-                          {
-                            '--work-document-outline-indent': `${item.depth * 14}px`,
-                          } as CSSProperties
-                        }
-                      >
-                        {item.hasChildren ? (
-                          <button
-                            type="button"
-                            tabIndex={-1}
-                            className="work-document-outline-toggle"
-                            aria-label={`${collapsed ? '展开' : '折叠'} ${item.text}`}
-                            title={collapsed ? '展开下级标题' : '折叠下级标题'}
-                            onClick={() => toggleCollapsed(item.id)}
-                          >
-                            {collapsed ? (
-                              <ChevronRight size={13} />
-                            ) : (
-                              <ChevronDown size={13} />
-                            )}
-                          </button>
-                        ) : (
-                          <span className="work-document-outline-toggle-spacer" />
-                        )}
-                        <button
-                          ref={(element) => {
-                            if (element) itemRefs.current.set(item.id, element);
-                            else itemRefs.current.delete(item.id);
-                          }}
-                          type="button"
-                          className="work-document-outline-item"
-                          tabIndex={item.id === rovingId ? 0 : -1}
-                          aria-current={
-                            activeItem?.id === item.id ? 'location' : undefined
-                          }
-                          aria-expanded={
-                            item.hasChildren ? !collapsed : undefined
-                          }
-                          title={item.text}
-                          onFocus={() => setRovingId(item.id)}
-                          onKeyDown={(event) => handleItemKeyDown(event, item)}
-                          onClick={() => {
-                            void navigateTo(item.from);
-                          }}
-                        >
-                          {item.text}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : (
-                <div className="work-document-outline-empty">
-                  应用标题样式后，可在这里快速跳转
-                </div>
-              )}
-            </nav>
+            <DocumentOutlineNavigation
+              ref={outlineNavigationRef}
+              activeItemId={activeItem?.id ?? null}
+              collapsedIds={collapsedIds}
+              items={visibleItems}
+              rovingId={rovingId}
+              onNavigate={(position) => void navigateTo(position)}
+              onRovingIdChange={setRovingId}
+              onToggleCollapsed={toggleCollapsed}
+            />
           )}
         </div>
       )}
@@ -493,6 +313,39 @@ export function DocumentNavigationPanel({
   );
 }
 
-function documentMatchId(match: DocumentTextMatch): string {
-  return `match-${match.from}-${match.to}`;
+function runWithInstantDocumentScroll<T>(editor: Editor, run: () => T): T {
+  const scrollSurface = editor.view.dom.closest<HTMLElement>(
+    '.work-document-scroll',
+  );
+  if (!scrollSurface) return run();
+  let state = instantDocumentScrollStates.get(scrollSurface);
+  if (!state) {
+    state = {
+      previousBehavior: scrollSurface.style.scrollBehavior,
+      restoreFrame: null,
+    };
+    instantDocumentScrollStates.set(scrollSurface, state);
+  } else if (
+    state.restoreFrame !== null &&
+    typeof cancelAnimationFrame === 'function'
+  ) {
+    cancelAnimationFrame(state.restoreFrame);
+    state.restoreFrame = null;
+  }
+  scrollSurface.style.scrollBehavior = 'auto';
+  scrollSurface.getBoundingClientRect();
+  try {
+    return run();
+  } finally {
+    const restore = () => {
+      if (instantDocumentScrollStates.get(scrollSurface) !== state) return;
+      scrollSurface.style.scrollBehavior = state.previousBehavior;
+      instantDocumentScrollStates.delete(scrollSurface);
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      state.restoreFrame = requestAnimationFrame(restore);
+    } else {
+      restore();
+    }
+  }
 }

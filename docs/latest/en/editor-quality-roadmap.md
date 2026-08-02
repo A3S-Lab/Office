@@ -204,8 +204,9 @@ Exit evidence:
   accept/reject, citations, navigation, find/replace, outline, and references.
 - Define conflict behavior when a controlled host update changes a reviewed
   range.
-- Virtualize or incrementally derive outlines, comments, revisions, and page
-  chrome for large files.
+- Keep outlines and search results on their bounded shared window, and
+  incrementally derive or virtualize comments, revisions, and page chrome for
+  large files.
 
 Current implementation evidence includes a persistent Word-style navigation
 pane with a typed heading hierarchy, active-heading tracking, collapsible
@@ -245,9 +246,14 @@ source persistence, citation insertion, and exact close-to-invoker focus
 restoration. Raster-quality page thumbnails and bounded raster admission are
 implemented. Page buttons now use a bounded window with physical scroll spacers
 and sparse current/focus pins. A deterministic 120-page DOCX workflow proves
-Home/End navigation, selection, focus retention, and bounded mounting. Outline
-and search-result virtualization for representative long documents remains part
-of this priority.
+Home/End navigation, selection, focus retention, and bounded mounting. The same
+window model now bounds heading and search-result rows above 48 items to at most
+32 contiguous rows plus sparse active, selected, and keyboard-roving pins. The
+real 120-page fixture contributes 120 headings and 120 matches; deterministic
+browser evidence proves first/last keyboard access, exact final-result
+selection, physical spacer geometry, and zero console or page errors. Comments,
+revisions, and page-chrome derivation remain the large-file work in this
+priority.
 
 Exit evidence:
 
