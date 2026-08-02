@@ -103,7 +103,9 @@ The images below are committed visual-regression baselines from the real
   baseline across editing, preview, and PDF rendering. Word editing and
   read-only preview retain the same canonical TipTap tree, while browser PDF
   export captures that same Worker/WASM page layout instead of rebuilding
-  content from compatibility HTML.
+  content from compatibility HTML. Caption numbering and cross-reference
+  validity also update in that same transaction graph, including a truthful
+  missing-target state after deletion.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,

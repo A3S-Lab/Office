@@ -80,13 +80,15 @@ function normalizeCaptions(document: Document): WorkDocumentCaptionTarget[] {
     element.dataset.captionLabel = label;
     element.classList.add('work-document-caption');
     const title = element.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    const display = documentCaptionDisplay(kind, number);
+    element.setAttribute('aria-label', title ? `${display} ${title}` : display);
     return {
       id,
       kind,
       number,
       label,
       title,
-      display: documentCaptionDisplay(kind, number),
+      display,
     };
   });
 }

@@ -53,6 +53,11 @@ All notable changes to A3S Office will be documented in this file.
   Desktop keeps the fast 8 × 10 matrix without duplicate table-cell semantics;
   phones use focused row and column controls with 44 px targets and an
   editor-accented, white-text insertion action.
+- Kept Word caption numbers and inline cross-references synchronized in the
+  live TipTap transaction graph. Deleting or reordering a caption now
+  renumbers surviving targets, updates their references, and exposes a visible
+  `Missing reference` state for dangling fields instead of leaving a valid-
+  looking stale number.
 - Kept PDF page navigation, zoom, and history reachable through the compact
   overflow menu while preserving page status in the primary toolbar.
 - Removed internal implementation terminology from the Spreadsheet

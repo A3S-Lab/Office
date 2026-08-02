@@ -135,6 +135,130 @@ describe('document reference commands', () => {
       editor.destroy();
     }
   });
+
+  test('keeps caption numbering and cross-reference state live after deletion', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1">',
+        '<p>Alpha</p><p>Beta</p><p>References</p>',
+        '</section>',
+      ].join(''),
+    });
+
+    try {
+      editor.commands.setTextSelection(textRange(editor, 'Alpha').to);
+      expect(
+        editor.commands.insertDocumentCaption('figure', 'Architecture'),
+      ).toBe(true);
+      editor.commands.setTextSelection(textRange(editor, 'Beta').to);
+      expect(editor.commands.insertDocumentCaption('figure', 'Data flow')).toBe(
+        true,
+      );
+
+      const [architecture, dataFlow] = editorDocumentCaptionTargets(editor);
+      expect(architecture).toMatchObject({ number: 1, title: 'Architecture' });
+      expect(dataFlow).toMatchObject({ number: 2, title: 'Data flow' });
+      if (!architecture || !dataFlow)
+        throw new Error('Expected both caption targets.');
+      expect(
+        editor.view.dom
+          .querySelector<HTMLElement>(`[data-caption-id="${architecture.id}"]`)
+          ?.getAttribute('aria-label'),
+      ).toBe('图 1 Architecture');
+
+      editor.commands.setTextSelection(textRange(editor, 'References').to);
+      expect(editor.commands.insertDocumentCrossReference(architecture)).toBe(
+        true,
+      );
+      expect(editor.commands.insertDocumentCrossReference(dataFlow)).toBe(true);
+
+      const firstCaption = nodePosition(
+        editor,
+        'documentCaption',
+        architecture.id,
+      );
+      editor.view.dispatch(
+        editor.state.tr.delete(
+          firstCaption.position,
+          firstCaption.position + firstCaption.nodeSize,
+        ),
+      );
+
+      expect(editorDocumentCaptionTargets(editor)).toEqual([
+        expect.objectContaining({
+          id: dataFlow.id,
+          number: 1,
+          title: 'Data flow',
+        }),
+      ]);
+      expect(
+        editor.view.dom
+          .querySelector<HTMLElement>(`[data-caption-id="${dataFlow.id}"]`)
+          ?.getAttribute('aria-label'),
+      ).toBe('图 1 Data flow');
+      expect(referenceStates(editor)).toEqual([
+        {
+          targetId: architecture.id,
+          number: 1,
+          orphaned: true,
+          text: '引用缺失',
+        },
+        {
+          targetId: dataFlow.id,
+          number: 1,
+          orphaned: false,
+          text: '图 1',
+        },
+      ]);
+
+      expect(editor.commands.undo()).toBe(true);
+      expect(
+        editorDocumentCaptionTargets(editor).map(({ number }) => number),
+      ).toEqual([1, 2]);
+      expect(referenceStates(editor)).toEqual([
+        {
+          targetId: architecture.id,
+          number: 1,
+          orphaned: false,
+          text: '图 1',
+        },
+        {
+          targetId: dataFlow.id,
+          number: 2,
+          orphaned: false,
+          text: '图 2',
+        },
+      ]);
+
+      const restoredCaption = nodePosition(
+        editor,
+        'documentCaption',
+        architecture.id,
+      );
+      editor.commands.setTextSelection({
+        from: restoredCaption.position + 1,
+        to: restoredCaption.position + restoredCaption.nodeSize - 1,
+      });
+      expect(editor.commands.deleteSelection()).toBe(true);
+      expect(
+        editor.view.dom
+          .querySelector<HTMLElement>(`[data-caption-id="${architecture.id}"]`)
+          ?.getAttribute('aria-label'),
+      ).toBe('图 1');
+      expect(editor.commands.keyboardShortcut('Backspace')).toBe(true);
+      expect(editorDocumentCaptionTargets(editor)).toEqual([
+        expect.objectContaining({ id: dataFlow.id, number: 1 }),
+      ]);
+      expect(referenceStates(editor)[0]).toMatchObject({
+        targetId: architecture.id,
+        orphaned: true,
+        text: '引用缺失',
+      });
+    } finally {
+      editor.destroy();
+    }
+  });
 });
 
 function textRange(editor: Editor, text: string): { from: number; to: number } {
@@ -158,6 +282,44 @@ function nodeCount(editor: Editor, type: string): number {
     if (node.type.name === type) count += 1;
   });
   return count;
+}
+
+function nodePosition(
+  editor: Editor,
+  type: string,
+  id: string,
+): { position: number; nodeSize: number } {
+  let match: { position: number; nodeSize: number } | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (match || node.type.name !== type || node.attrs.id !== id) return;
+    match = { position, nodeSize: node.nodeSize };
+  });
+  if (!match) throw new Error(`Unable to find ${type} ${id}.`);
+  return match;
+}
+
+function referenceStates(editor: Editor): Array<{
+  targetId: string;
+  number: number;
+  orphaned: boolean;
+  text: string;
+}> {
+  const references: Array<{
+    targetId: string;
+    number: number;
+    orphaned: boolean;
+    text: string;
+  }> = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'documentCrossReference') return;
+    references.push({
+      targetId: String(node.attrs.targetId),
+      number: Number(node.attrs.number),
+      orphaned: Boolean(node.attrs.orphaned),
+      text: node.attrs.orphaned ? '引用缺失' : `图 ${node.attrs.number}`,
+    });
+  });
+  return references;
 }
 
 function documentContent(

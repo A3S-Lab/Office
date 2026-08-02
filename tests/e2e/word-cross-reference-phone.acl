@@ -1,0 +1,135 @@
+suite "office-word-cross-reference-phone" {
+    version = 1
+
+    scenario "delete-caption-and-refresh-reference-on-phone" {
+        name = "Keep a Word cross-reference truthful after deleting its caption on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-cross-reference-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "明确不在本期范围内的事项"
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-caption-dialog" {
+            target = role("button", "插入图片题注")
+        }
+
+        expect "caption-field-is-focused" {
+            visible = css("input[aria-label='题注文字']:focus")
+        }
+
+        fill "enter-caption-title" {
+            target = label("题注文字")
+            value = "Architecture"
+        }
+
+        click "insert-caption" {
+            target = role("button", "插入题注")
+        }
+
+        expect "caption-number-is-accessible" {
+            visible = css("figcaption.work-document-caption[aria-label='图 1 Architecture']")
+        }
+
+        click "open-cross-reference-dialog" {
+            target = role("button", "插入交叉引用")
+        }
+
+        expect "caption-is-selected-for-reference" {
+            visible = css(".work-document-reference-list input[type='radio']:checked")
+        }
+
+        expect "caption-title-is-offered" {
+            text = "Architecture"
+        }
+
+        click "insert-cross-reference" {
+            target = role("button", "插入引用")
+        }
+
+        expect "reference-starts-valid" {
+            visible = css(".work-document-cross-reference:not([data-reference-orphaned='true'])")
+        }
+
+        double_click "select-caption-title" {
+            target = css(".work-document-caption")
+        }
+
+        press "remove-caption-title" {
+            key = "Backspace"
+        }
+
+        expect "empty-caption-name-is-current" {
+            visible = css("figcaption.work-document-caption[aria-label='图 1']")
+        }
+
+        press "remove-caption-node" {
+            key = "Backspace"
+        }
+
+        expect "caption-is-removed" {
+            visible = css(".work-document-editable .ProseMirror:not(:has(.work-document-caption))")
+        }
+
+        expect "reference-becomes-missing" {
+            visible = css(".work-document-cross-reference[data-reference-orphaned='true']")
+        }
+
+        expect "missing-reference-is-truthful" {
+            text = "引用缺失"
+        }
+
+        click "reveal-missing-reference" {
+            target = css(".work-document-cross-reference[data-reference-orphaned='true']")
+        }
+
+        screenshot "missing-reference" {
+            path = "screenshots/word-missing-cross-reference-phone.png"
+        }
+
+        accessibility "reference-semantics" {
+            path = "evidence/word-cross-reference-phone.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

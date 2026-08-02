@@ -51,6 +51,16 @@ all matches, and moves the editor selection without adding a history entry.
 Selecting a compact result closes the drawer before restoring the body focus
 and exact text range.
 
+## Built-in references
+
+The References ribbon inserts captions, cross-references, footnotes, endnotes,
+page fields, dates, and citations into the controlled TipTap document. Caption
+numbers are part of each caption's accessible name. Caption deletion and
+reordering update every linked cross-reference in the same transaction: valid
+targets are renumbered and a dangling field renders as `Missing reference`
+instead of retaining a stale number. Undo restores the caption and its linked
+field state together.
+
 ## Host-defined selection menu
 
 The menu factory receives an immutable selection snapshot with exact selected

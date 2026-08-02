@@ -282,6 +282,51 @@ test('Word page and reference commands keep the document ready for typing', asyn
   await expect(body).toBeFocused();
 });
 
+test('Word keeps cross-references truthful when their caption is deleted', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  const body = page.getByRole('textbox', { name: '文档正文' });
+  await body.focus();
+  await body.press('Control+End');
+  await page.getByRole('tab', { name: '引用' }).click();
+  await page.getByRole('button', { name: '插入图片题注' }).click();
+  const captionDialog = page.getByRole('dialog', { name: '插入图片题注' });
+  await captionDialog
+    .getByRole('textbox', { name: '题注文字' })
+    .fill('Architecture');
+  await captionDialog.getByRole('button', { name: '插入题注' }).click();
+
+  const caption = page.locator('.work-document-caption');
+  await expect(caption).toHaveAttribute('aria-label', '图 1 Architecture');
+  await page.getByRole('button', { name: '插入交叉引用' }).click();
+  const referenceDialog = page.getByRole('dialog', { name: '插入交叉引用' });
+  await expect(
+    referenceDialog.getByRole('radio', { name: '图 1 Architecture' }),
+  ).toBeChecked();
+  await referenceDialog.getByRole('button', { name: '插入引用' }).click();
+
+  const reference = page.locator('.work-document-cross-reference');
+  await expect(reference).toHaveText('图 1');
+  await expect(reference).not.toHaveAttribute(
+    'data-reference-orphaned',
+    'true',
+  );
+
+  await caption.selectText();
+  await page.keyboard.press('Backspace');
+  await expect(caption).toHaveAttribute('aria-label', '图 1');
+  await page.keyboard.press('Backspace');
+
+  await expect(caption).toHaveCount(0);
+  await expect(reference).toHaveAttribute('data-reference-orphaned', 'true');
+  await expect(reference).toHaveText('引用缺失');
+  await expect(reference).toHaveCSS('color', 'rgb(181, 59, 59)');
+});
+
 test('Word opens the selected-text menu from the keyboard at the selection', async ({
   page,
 }) => {

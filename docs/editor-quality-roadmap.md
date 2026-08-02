@@ -186,6 +186,12 @@ contextual picture toolbar without a false read error. The phone picture
 workflow keeps its bounded ribbon overflow, retains the selected image while
 alternative text is edited, and restores the exact Alternative text command
 after save or cancel so the next keyboard action cannot mutate document content.
+Caption order and cross-reference validity now share one live transaction
+graph: deleting or reordering a caption renumbers surviving targets, updates
+every linked field, and renders dangling references as an explicit missing
+state. Caption numbers are included in the accessible caption name, and a
+deterministic phone workflow proves dialog focus, insertion, deletion, and the
+missing-reference transition.
 
 Exit evidence:
 
