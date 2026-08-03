@@ -269,6 +269,12 @@ interaction model.
   measurements and partial margin inheritance retain their exact source values.
   Cancel and Escape discard the draft and restore the exact ribbon invoker;
   compact layouts keep tabs, numeric steppers, and footer actions touch-sized. A
+  contextual Picture Properties workflow combines centimeter width and height,
+  a per-image aspect-ratio lock, inline/square/top-and-bottom wrapping,
+  alignment, text distance, and alternative text. It commits only changed
+  fields in one TipTap history entry, preserves untouched imported dimensions
+  exactly, and retains the image selection and invoker focus after apply,
+  cancel, or Escape on desktop and phone layouts. A
   reusable table-border pen with all, outside, inside, and individual-edge
   targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
   inheritance with whole-table, banded row or column, first/last row or column,
@@ -290,8 +296,9 @@ interaction model.
   Real DOCX fixtures provide deterministic A3S Test evidence for inherited
   table styling across edit and preview, a centered 62.5% table with table and
   cell margin overrides, all four Table Properties tabs at 390 px, exact
-  preservation of untouched cell-margin edges, and a 120-paragraph row across
-  three physical pages through the final table content and following paragraph.
+  preservation of untouched cell-margin edges, a complete 390 px Picture
+  Properties flow, and a 120-paragraph row across three physical pages through
+  the final table content and following paragraph.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

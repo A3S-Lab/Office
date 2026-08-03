@@ -8,10 +8,18 @@ import {
   importOfficeFile,
 } from '../src/core';
 import { DocumentPictureRibbon } from '../src/internal/features/work/editors/document-picture-ribbon';
+import {
+  createDocumentPicturePropertiesDraft,
+  documentPicturePropertiesErrors,
+  documentPicturePropertyChanges,
+  withDocumentPictureAspectRatioLock,
+  withDocumentPictureDimension,
+} from '../src/internal/features/work/editors/document-picture-properties-dialog-model';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   documentImageAlternativeText,
   documentImageLayoutOptions,
+  documentImageProperties,
   normalizeDocumentImageLayoutOptions,
 } from '../src/internal/features/work/work-document-image-layout';
 import { measureDocumentLayoutBlocks } from '../src/internal/features/work/work-document-pagination';
@@ -45,6 +53,7 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
           layout: 'square',
           alignment: 'right',
           wrapDistance: 5,
+          lockAspectRatio: true,
         },
       },
       {
@@ -62,6 +71,7 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
     container?.style.getPropertyValue('--work-document-image-wrap-distance'),
   ).toBe('5mm');
   expect(image?.dataset.officeImageLayout).toBe('square');
+  expect(container?.dataset.officeImageLockAspectRatio).toBe('true');
 
   expect(
     normalizeDocumentImageLayoutOptions({
@@ -75,6 +85,108 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
     wrapDistance: 25,
   });
   editor.destroy();
+});
+
+test('commits picture size, layout, and alternative text as one undoable update', () => {
+  const editor = createImageEditor(
+    `<img src="${pixelPng}" alt="Original" title="Original title" width="120" height="80">`,
+  );
+  selectFirstImage(editor);
+  const originalHtml = editor.getHTML();
+  let updateCount = 0;
+  editor.on('update', () => {
+    updateCount += 1;
+  });
+
+  expect(
+    editor.commands.setDocumentImageProperties({
+      width: 240,
+      height: 150,
+      lockAspectRatio: false,
+      layout: 'square',
+      alignment: 'right',
+      wrapDistance: 8,
+      alternativeText: '季度趋势图',
+    }),
+  ).toBe(true);
+
+  expect(updateCount).toBe(1);
+  expect(documentImageProperties(editor)).toEqual({
+    width: 240,
+    height: 150,
+    lockAspectRatio: false,
+    layout: 'square',
+    alignment: 'right',
+    wrapDistance: 8,
+    alternativeText: '季度趋势图',
+  });
+  const container = editor.view.dom.querySelector<HTMLElement>(
+    '[data-resize-container][data-node="image"]',
+  );
+  expect(container?.dataset.officeImageLockAspectRatio).toBe('false');
+  expect(container?.querySelector('img')?.style.width).toBe('240px');
+  expect(container?.querySelector('img')?.style.height).toBe('150px');
+
+  expect(editor.commands.undo()).toBe(true);
+  expect(editor.getHTML()).toBe(originalHtml);
+  editor.destroy();
+});
+
+test('couples picture dimensions only while aspect ratio is locked', () => {
+  const initial = createDocumentPicturePropertiesDraft({
+    properties: {
+      width: 120,
+      height: 80,
+      lockAspectRatio: true,
+      layout: 'inline',
+      alignment: 'center',
+      wrapDistance: 3,
+      alternativeText: 'Original',
+    },
+  });
+  const wider = withDocumentPictureDimension(initial, 'width', '6');
+  expect(wider).toMatchObject({ width: '6', height: '4' });
+
+  const unlocked = withDocumentPictureAspectRatioLock(wider, false);
+  const taller = withDocumentPictureDimension(unlocked, 'height', '5');
+  expect(taller).toMatchObject({ width: '6', height: '5' });
+
+  const relocked = withDocumentPictureAspectRatioLock(taller, true);
+  const resized = withDocumentPictureDimension(relocked, 'width', '2.4');
+  expect(resized).toMatchObject({ width: '2.4', height: '2' });
+});
+
+test('preserves untouched imported dimensions in picture property changes', () => {
+  const initial = createDocumentPicturePropertiesDraft({
+    properties: {
+      width: null,
+      height: 79.125,
+      lockAspectRatio: true,
+      layout: 'square',
+      alignment: 'left',
+      wrapDistance: 4.25,
+      alternativeText: 'Imported title',
+    },
+    renderedWidth: 241.375,
+    renderedHeight: 79.125,
+  });
+  const changed = { ...initial, alternativeText: 'Accessible title' };
+
+  expect(documentPicturePropertyChanges(initial, changed)).toEqual({
+    alternativeText: 'Accessible title',
+  });
+  expect(
+    documentPicturePropertiesErrors({
+      ...initial,
+      width: '0.001',
+      layout: 'topBottom',
+      wrapDistance: '30',
+    }),
+  ).toEqual({
+    width: '请输入 0.01 到 55.87 之间的厘米数。',
+    height: null,
+    wrapDistance: '请输入 0 到 25 之间的毫米数。',
+  });
 });
 
 test('reserves and observes floating image height during pagination', () => {
@@ -108,7 +220,7 @@ test('reserves and observes floating image height during pagination', () => {
   editor.destroy();
 });
 
-test('offers a contextual picture ribbon with typed layout and alt-text actions', async () => {
+test('offers a contextual picture ribbon with one coherent properties workflow', async () => {
   const editor = createImageEditor(
     `<img src="${pixelPng}" alt="Original" width="120" height="80" data-office-image-wrap-distance="7">`,
   );
@@ -143,32 +255,91 @@ test('offers a contextual picture ribbon with typed layout and alt-text actions'
   expect(documentImageLayoutOptions(editor).layout).toBe('inline');
   expect(wrapDistance).toBeDisabled();
 
-  const alternativeTextButton = screen.getByRole('button', {
-    name: '替代文字',
+  const propertiesButton = screen.getByRole('button', {
+    name: '图片属性',
   });
-  alternativeTextButton.focus();
-  fireEvent.click(alternativeTextButton);
-  fireEvent.click(screen.getByRole('button', { name: '取消' }));
-  await waitFor(() => {
-    expect(editor.isActive('image')).toBe(true);
-    expect(alternativeTextButton).toHaveFocus();
-  });
+  propertiesButton.focus();
+  fireEvent.click(propertiesButton);
+  expect(screen.getByRole('dialog', { name: '图片属性' })).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: '图片宽度（厘米）' })).toHaveValue(
+    '3.18',
+  );
+  expect(screen.getByRole('textbox', { name: '图片高度（厘米）' })).toHaveValue(
+    '2.12',
+  );
+  expect(screen.getByRole('checkbox', { name: '锁定纵横比' })).toBeChecked();
 
-  fireEvent.click(alternativeTextButton);
+  fireEvent.change(screen.getByRole('textbox', { name: '图片宽度（厘米）' }), {
+    target: { value: '6' },
+  });
+  expect(screen.getByRole('textbox', { name: '图片高度（厘米）' })).toHaveValue(
+    '4',
+  );
+  fireEvent.click(screen.getByRole('checkbox', { name: '锁定纵横比' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '图片高度（厘米）' }), {
+    target: { value: '5' },
+  });
+  fireEvent.click(screen.getByRole('radio', { name: '四周环绕' }));
+  fireEvent.click(screen.getByRole('radio', { name: '右对齐' }));
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '图片与文字距离（毫米）' }),
+    { target: { value: '8' } },
+  );
   fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
     target: { value: '季度趋势图' },
   });
-  fireEvent.click(screen.getByRole('button', { name: '保存' }));
+
+  const beforeProperties = editor.getHTML();
+  let updateCount = 0;
+  editor.on('update', () => {
+    updateCount += 1;
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
   await waitFor(() => {
-    expect(documentImageAlternativeText(editor)).toBe('季度趋势图');
+    expect(screen.queryByRole('dialog', { name: '图片属性' })).toBeNull();
     expect(editor.isActive('image')).toBe(true);
-    expect(alternativeTextButton).toHaveFocus();
+    expect(propertiesButton).toHaveFocus();
+  });
+  expect(updateCount).toBe(1);
+  expect(documentImageProperties(editor)).toMatchObject({
+    width: expect.closeTo(226.77, 1),
+    height: expect.closeTo(188.98, 1),
+    lockAspectRatio: false,
+    layout: 'square',
+    alignment: 'right',
+    wrapDistance: 8,
+    alternativeText: '季度趋势图',
   });
   expect(editor.getHTML()).toContain('alt="季度趋势图"');
 
-  fireEvent.click(alternativeTextButton);
-  expect(screen.getByRole('dialog', { name: '图片说明' })).toBeInTheDocument();
+  expect(editor.commands.undo()).toBe(true);
+  expect(editor.getHTML()).toBe(beforeProperties);
+
+  selectFirstImage(editor);
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  fireEvent.click(propertiesButton);
+  fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
+    target: { value: '不应保存' },
+  });
   fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  await waitFor(() => {
+    expect(editor.isActive('image')).toBe(true);
+    expect(propertiesButton).toHaveFocus();
+  });
+  expect(documentImageAlternativeText(editor)).toBe('Original');
+
+  fireEvent.click(propertiesButton);
+  fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
+    target: { value: '仍不应保存' },
+  });
+  fireEvent.keyDown(screen.getByRole('textbox', { name: '图片替代文字' }), {
+    key: 'Escape',
+  });
+  await waitFor(() => {
+    expect(editor.isActive('image')).toBe(true);
+    expect(propertiesButton).toHaveFocus();
+  });
+  expect(documentImageAlternativeText(editor)).toBe('Original');
 
   selectFirstImage(editor);
   fireEvent.click(screen.getByRole('button', { name: '删除图片' }));
@@ -190,13 +361,13 @@ test('disables stale picture commands when the image selection is gone', () => {
   const view = render(<DocumentPictureRibbon editor={editor} />);
 
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: '替代文字' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '图片属性' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeDisabled();
 
   selectFirstImage(editor);
   view.rerender(<DocumentPictureRibbon editor={editor} />);
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeEnabled();
-  expect(screen.getByRole('button', { name: '替代文字' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '图片属性' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeEnabled();
 
   view.unmount();

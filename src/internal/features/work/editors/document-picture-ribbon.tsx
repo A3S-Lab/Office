@@ -1,21 +1,19 @@
 import type { Editor } from '@tiptap/core';
-import { NodeSelection } from '@tiptap/pm/state';
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   Rows3,
-  ScanText,
   TextWrap,
   Trash2,
 } from 'lucide-react';
 import {
-  documentImageAlternativeText,
   documentImageLayoutOptions,
   type WorkDocumentImageAlignment,
   type WorkDocumentImageLayout,
 } from '../work-document-image-layout';
-import { OfficeSelect, useOfficeDialog } from './office-controls';
+import { DocumentPicturePropertiesControl } from './document-picture-properties-dialog';
+import { OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
@@ -33,7 +31,6 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
   const image = documentImageLayoutOptions(editor);
   const imageSelected = editor.isActive('image');
   const wrapDistanceValue = String(image.wrapDistance);
-  const officeDialog = useOfficeDialog();
   const updateLayout = (layout: WorkDocumentImageLayout) =>
     editor.commands.setDocumentImageLayoutOptions({ layout });
   const updateAlignment = (alignment: WorkDocumentImageAlignment) =>
@@ -107,34 +104,7 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
         />
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="图片">
-        <PictureButton
-          label="替代文字"
-          disabled={!imageSelected}
-          onClick={() => {
-            const imagePosition = selectedDocumentImagePosition(editor);
-            void officeDialog
-              .prompt({
-                title: '图片说明',
-                description: '简要描述图片中的关键信息，留空表示装饰性图片。',
-                fieldLabel: '图片替代文字',
-                initialValue: documentImageAlternativeText(editor),
-                multiline: true,
-                confirmLabel: '保存',
-              })
-              .then((value) => {
-                if (!restoreDocumentImageSelection(editor, imagePosition)) {
-                  return;
-                }
-                if (value !== null) {
-                  editor.commands.setDocumentImageAlternativeText(value, {
-                    restoreFocus: false,
-                  });
-                }
-              });
-          }}
-        >
-          <ScanText size={18} />
-        </PictureButton>
+        <DocumentPicturePropertiesControl editor={editor} />
         <PictureButton
           label="删除图片"
           disabled={!imageSelected}
@@ -143,31 +113,8 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <Trash2 size={18} />
         </PictureButton>
       </WorkOfficeRibbonGroup>
-      {officeDialog.dialog}
     </>
   );
-}
-
-function selectedDocumentImagePosition(editor: Editor): number | null {
-  const selection = editor.state.selection;
-  return selection instanceof NodeSelection &&
-    selection.node.type.name === 'image'
-    ? selection.from
-    : null;
-}
-
-function restoreDocumentImageSelection(
-  editor: Editor,
-  position: number | null,
-): boolean {
-  if (
-    position === null ||
-    editor.isDestroyed ||
-    editor.state.doc.nodeAt(position)?.type.name !== 'image'
-  ) {
-    return false;
-  }
-  return editor.commands.setNodeSelection(position);
 }
 
 function imageWrapDistanceOptionsForValue(value: string) {

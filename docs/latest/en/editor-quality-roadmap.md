@@ -248,9 +248,12 @@ immediately for same-file reselection without invalidating an in-flight read.
 Unit coverage verifies single-read ownership and the A3S Test picture fixture
 verifies that a relative-path PNG reaches the Word canvas and opens its
 contextual picture toolbar without a false read error. The phone picture
-workflow keeps its bounded ribbon overflow, retains the selected image while
-alternative text is edited, and restores the exact Alternative text command
-after save or cancel so the next keyboard action cannot mutate document content.
+workflow now exercises one Picture Properties dialog for centimeter width and
+height, per-image aspect-ratio locking, square wrapping, alignment, text
+distance, and alternative text. The complete draft commits as one undo entry,
+untouched imported dimensions keep their exact source values, the selected
+image remains active, and apply, cancel, and Escape restore the exact Picture
+Properties command so the next keyboard action cannot mutate document content.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates
 every linked field, and renders dangling references as an explicit missing

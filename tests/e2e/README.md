@@ -36,8 +36,10 @@ including sparse current/selection pins, physical spacer geometry, exact
 selection of result 120, and same-frame alignment with the final document page,
 selected-text AI question-composer regressions, and durable picture insertion
 from a project-relative fixture after the browser-managed file input is reset,
-plus phone-width picture alternative-text editing that retains the image
-selection and restores the exact ribbon invoker after save and cancel, and a
+plus a phone-width Picture Properties workflow covering centimeter size,
+aspect-ratio locking, wrapping, alignment, text distance, alternative text,
+retained image selection, and exact invoker restoration after apply and cancel,
+and a
 phone tracked-changes workflow with in-pane recording controls, truthful empty
 states, exact decision focus, and close-to-invoker restoration, plus a real
 120-comment native OOXML DOCX workflow covering bounded card and connector

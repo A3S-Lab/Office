@@ -9,9 +9,10 @@ const pixelPng = Buffer.from(
   'base64',
 );
 
-test('picture contextual ribbon keeps selection, dialog focus, and cleanup coherent', async ({
+test('picture contextual ribbon keeps properties, focus, and cleanup coherent', async ({
   page,
 }) => {
+  const originalViewport = page.viewportSize();
   await page.goto('/');
   await openDocumentFixture(page);
   await waitForDocumentFixture(page);
@@ -52,29 +53,70 @@ test('picture contextual ribbon keeps selection, dialog focus, and cleanup coher
   await expect(body).toBeFocused();
   await expect(pictureTab).toHaveAttribute('aria-selected', 'true');
 
-  const alternativeTextButton = page.getByRole('button', {
-    name: '替代文字',
+  const propertiesButton = page.getByRole('button', {
+    name: '图片属性',
   });
-  await alternativeTextButton.click();
-  const dialog = page.getByRole('dialog', { name: '图片说明' });
+  await propertiesButton.click();
+  const dialog = page.getByRole('dialog', { name: '图片属性' });
   const alternativeText = dialog.getByRole('textbox', {
     name: '图片替代文字',
   });
-  await expect(alternativeText).toBeFocused();
+  await expect(
+    dialog.getByRole('textbox', { name: '图片宽度（厘米）' }),
+  ).toBeFocused();
   await alternativeText.fill('不应保存的说明');
   await dialog.getByRole('button', { name: '取消' }).click();
   await expect(dialog).toBeHidden();
-  await expect(alternativeTextButton).toBeFocused();
+  await expect(propertiesButton).toBeFocused();
   await expect(pictureTab).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    imageContainer.locator('img[alt="quarterly-plan.png"]'),
+  ).toHaveCount(1);
 
-  await alternativeTextButton.click();
+  await propertiesButton.click();
+  const width = dialog.getByRole('textbox', {
+    name: '图片宽度（厘米）',
+  });
+  const height = dialog.getByRole('textbox', {
+    name: '图片高度（厘米）',
+  });
+  await width.fill('5');
+  await expect(height).toHaveValue('5');
+  await dialog.getByRole('checkbox', { name: '锁定纵横比' }).uncheck();
+  await height.fill('3');
   await alternativeText.fill('季度计划趋势图');
-  await dialog.getByRole('button', { name: '保存' }).click();
+  await dialog.getByRole('button', { name: '确定' }).click();
   await expect(imageContainer.locator('img[alt="季度计划趋势图"]')).toHaveCount(
     1,
   );
-  await expect(alternativeTextButton).toBeFocused();
+  await expect(imageContainer.locator('img')).toHaveAttribute('width', '189');
+  await expect(imageContainer.locator('img')).toHaveAttribute('height', '113');
+  await expect(imageContainer).toHaveAttribute(
+    'data-office-image-lock-aspect-ratio',
+    'false',
+  );
+  await expect(propertiesButton).toBeFocused();
   await expect(imageContainer).toHaveClass(/ProseMirror-selectednode/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await propertiesButton.press('Enter');
+  await expect(dialog).toBeVisible();
+  const dialogBounds = await dialog.boundingBox();
+  expect(dialogBounds?.x).toBeGreaterThanOrEqual(0);
+  expect(
+    (dialogBounds?.x ?? 0) + (dialogBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(390);
+  const widthBounds = await width.boundingBox();
+  expect(widthBounds?.height).toBeGreaterThanOrEqual(40);
+  await alternativeText.fill('仍不应保存的说明');
+  await alternativeText.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(propertiesButton).toBeFocused();
+  await expect(imageContainer.locator('img[alt="季度计划趋势图"]')).toHaveCount(
+    1,
+  );
+
+  if (originalViewport) await page.setViewportSize(originalViewport);
 
   await page.getByRole('button', { name: '删除图片' }).click();
   await expect(imageContainer).toHaveCount(0);

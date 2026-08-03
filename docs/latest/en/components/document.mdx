@@ -73,6 +73,19 @@ targets are renumbered and a dangling field renders as `Missing reference`
 instead of retaining a stale number. Undo restores the caption and its linked
 field state together.
 
+## Built-in picture properties
+
+Selecting a body image opens the contextual Picture ribbon. Fast wrapping and
+alignment commands remain available, while **Picture Properties** edits width
+and height in centimeters, a per-image aspect-ratio lock, wrapping, alignment,
+text distance, and alternative text in one responsive dialog.
+
+Apply creates one undo entry and changes only fields edited by the user. An
+imported pixel dimension that was merely displayed as a rounded centimeter
+value therefore remains exact. Cancel or Escape leaves the document unchanged,
+keeps the image selected, and restores keyboard focus to the Picture Properties
+button.
+
 ## Host-defined selection menu
 
 The menu factory receives an immutable selection snapshot with exact selected

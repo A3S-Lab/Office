@@ -1,8 +1,8 @@
-suite "office-word-picture-alt-text-phone" {
+suite "office-word-picture-properties-phone" {
     version = 1
 
-    scenario "restore-picture-command-focus-after-alt-text" {
-        name = "Keep the selected Word picture active after editing alternative text on a phone"
+    scenario "edit-picture-properties-and-restore-focus" {
+        name = "Edit Word picture size, layout, and alternative text as one phone workflow"
         surface = "web"
         timeout_ms = 30000
 
@@ -48,12 +48,39 @@ suite "office-word-picture-alt-text-phone" {
             target = role("button", "向右查看更多图片工具")
         }
 
-        click "open-alternative-text" {
-            target = role("button", "替代文字")
+        click "open-picture-properties" {
+            target = role("button", "图片属性")
         }
 
-        expect "alternative-text-dialog-ready" {
+        expect "picture-properties-dialog-ready" {
             visible = css("[role='dialog'][aria-labelledby]")
+        }
+
+        fill "set-picture-width" {
+            target = label("图片宽度（厘米）")
+            value = "5"
+        }
+
+        uncheck "unlock-picture-aspect-ratio" {
+            target = css("[role='dialog'] input[aria-label='锁定纵横比']")
+        }
+
+        fill "set-picture-height" {
+            target = label("图片高度（厘米）")
+            value = "3"
+        }
+
+        click "use-square-wrapping" {
+            target = css("[role='dialog'] input[name='picture-properties-layout'][value='square'] + span")
+        }
+
+        click "align-picture-right" {
+            target = css("[role='dialog'] input[name='picture-properties-alignment'][value='right'] + span")
+        }
+
+        fill "set-picture-text-distance" {
+            target = label("图片与文字距离（毫米）")
+            value = "8"
         }
 
         fill "describe-picture" {
@@ -61,27 +88,27 @@ suite "office-word-picture-alt-text-phone" {
             value = "Blue project diagram"
         }
 
-        click "save-alternative-text" {
-            target = role("button", "保存")
+        click "apply-picture-properties" {
+            target = role("button", "确定")
         }
 
-        expect "alternative-text-saved" {
-            visible = css(".work-document-editable [data-resize-container][data-node='image'] img[alt='Blue project diagram']")
+        expect "picture-properties-saved" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='square'][data-office-image-alignment='right'][data-office-image-wrap-distance='8'][data-office-image-lock-aspect-ratio='false'] img[alt='Blue project diagram'][width='189'][height='113']")
         }
 
         expect "picture-selection-retained" {
             visible = css(".work-document-editable [data-resize-container][data-node='image'].ProseMirror-selectednode")
         }
 
-        expect "alternative-text-invoker-focused" {
-            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='替代文字']:focus")
+        expect "picture-properties-invoker-focused" {
+            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='图片属性']:focus")
         }
 
         press "reopen-from-restored-focus" {
             key = "Enter"
         }
 
-        expect "alternative-text-dialog-reopened" {
+        expect "picture-properties-dialog-reopened" {
             visible = css("[role='dialog'][aria-labelledby]")
         }
 
@@ -90,11 +117,11 @@ suite "office-word-picture-alt-text-phone" {
         }
 
         expect "invoker-focus-restored-after-cancel" {
-            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='替代文字']:focus")
+            visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='图片属性']:focus")
         }
 
-        screenshot "picture-alternative-text-phone" {
-            path = "screenshots/word-picture-alt-text-phone.png"
+        screenshot "picture-properties-phone" {
+            path = "screenshots/word-picture-properties-phone.png"
         }
 
         console "browser-console" {

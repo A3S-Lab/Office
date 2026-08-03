@@ -1,6 +1,8 @@
 import { type Editor, mergeAttributes, ResizableNodeView } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
+import { closeHistory } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { NodeSelection } from '@tiptap/pm/state';
 
 export type WorkDocumentImageLayout = 'inline' | 'square' | 'topBottom';
 export type WorkDocumentImageAlignment = 'left' | 'center' | 'right';
@@ -11,6 +13,14 @@ export interface WorkDocumentImageLayoutOptions {
   wrapDistance: number;
 }
 
+export interface WorkDocumentImageProperties
+  extends WorkDocumentImageLayoutOptions {
+  width: number | null;
+  height: number | null;
+  lockAspectRatio: boolean;
+  alternativeText: string;
+}
+
 export interface DocumentImageCommandOptions {
   restoreFocus?: boolean;
 }
@@ -18,6 +28,10 @@ export interface DocumentImageCommandOptions {
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentImage: {
+      setDocumentImageProperties: (
+        value: Partial<WorkDocumentImageProperties>,
+        options?: DocumentImageCommandOptions,
+      ) => ReturnType;
       setDocumentImageAlternativeText: (
         alternativeText: string,
         options?: DocumentImageCommandOptions,
@@ -34,42 +48,33 @@ const DEFAULT_IMAGE_LAYOUT: WorkDocumentImageLayout = 'inline';
 const DEFAULT_IMAGE_ALIGNMENT: WorkDocumentImageAlignment = 'center';
 const DEFAULT_WRAP_DISTANCE_MILLIMETERS = 3;
 const MAX_WRAP_DISTANCE_MILLIMETERS = 25;
+const DEFAULT_LOCK_ASPECT_RATIO = true;
 
 export const DocumentImage = Image.extend({
   addCommands() {
     return {
       ...(this.parent?.() ?? {}),
+      setDocumentImageProperties:
+        (value, options = {}) =>
+        ({ chain, state, tr }) => {
+          if (!isDocumentImageSelection(state.selection)) return false;
+          const attributes = documentImageAttributesForChanges(value);
+          if (!Object.keys(attributes).length) return false;
+          closeHistory(tr);
+          let commandChain = chain();
+          if (options.restoreFocus !== false) {
+            commandChain = commandChain.focus();
+          }
+          return commandChain.updateAttributes('image', attributes).run();
+        },
       setDocumentImageAlternativeText:
         (alternativeText, options = {}) =>
-        ({ chain, editor }) => {
-          if (!editor.isActive('image')) return false;
-          const normalized = alternativeText.trim();
-          let commandChain = chain();
-          if (options.restoreFocus !== false) {
-            commandChain = commandChain.focus();
-          }
-          return commandChain
-            .updateAttributes('image', {
-              alt: normalized || null,
-              title: normalized || null,
-            })
-            .run();
-        },
+        ({ commands }) =>
+          commands.setDocumentImageProperties({ alternativeText }, options),
       setDocumentImageLayoutOptions:
         (value, options = {}) =>
-        ({ chain, editor }) => {
-          if (!editor.isActive('image')) return false;
-          const current = documentImageLayoutOptions(editor);
-          const next = normalizeDocumentImageLayoutOptions({
-            ...current,
-            ...value,
-          });
-          let commandChain = chain();
-          if (options.restoreFocus !== false) {
-            commandChain = commandChain.focus();
-          }
-          return commandChain.updateAttributes('image', next).run();
-        },
+        ({ commands }) =>
+          commands.setDocumentImageProperties(value, options),
     };
   },
 
@@ -116,6 +121,18 @@ export const DocumentImage = Image.extend({
             style: `--work-document-image-wrap-distance:${formatImageLayoutNumber(distance)}mm`,
           };
         },
+      },
+      lockAspectRatio: {
+        default: DEFAULT_LOCK_ASPECT_RATIO,
+        parseHTML: (element) =>
+          normalizeDocumentImageLockAspectRatio(
+            element.getAttribute('data-office-image-lock-aspect-ratio'),
+          ),
+        renderHTML: (attributes) => ({
+          'data-office-image-lock-aspect-ratio': String(
+            normalizeDocumentImageLockAspectRatio(attributes.lockAspectRatio),
+          ),
+        }),
       },
     };
   },
@@ -168,13 +185,22 @@ export const DocumentImage = Image.extend({
         },
         onUpdate: (updatedNode) => {
           if (updatedNode.type !== node.type) return false;
+          if (!sameDocumentImageResizeConfiguration(node, updatedNode)) {
+            return false;
+          }
           sync(updatedNode);
           return true;
         },
         options: {
           directions,
           min: { width: minWidth, height: minHeight },
-          preserveAspectRatio: alwaysPreserveAspectRatio === true,
+          preserveAspectRatio:
+            node.attrs.lockAspectRatio === null ||
+            node.attrs.lockAspectRatio === undefined
+              ? alwaysPreserveAspectRatio === true
+              : normalizeDocumentImageLockAspectRatio(
+                  node.attrs.lockAspectRatio,
+                ),
         },
       });
       container = nodeView.dom as HTMLElement;
@@ -190,6 +216,29 @@ export function documentImageLayoutOptions(
 ): WorkDocumentImageLayoutOptions {
   const attributes = editor.getAttributes('image') as Record<string, unknown>;
   return normalizeDocumentImageLayoutOptions(attributes);
+}
+
+export function documentImageProperties(
+  editor: Editor,
+): WorkDocumentImageProperties {
+  const attributes = editor.getAttributes('image') as Record<string, unknown>;
+  return {
+    ...normalizeDocumentImageLayoutOptions(attributes),
+    width: normalizeDocumentImageDimension(attributes.width),
+    height: normalizeDocumentImageDimension(attributes.height),
+    lockAspectRatio: normalizeDocumentImageLockAspectRatio(
+      attributes.lockAspectRatio,
+    ),
+    alternativeText: documentImageAlternativeText(editor),
+  };
+}
+
+export function setDocumentImageProperties(
+  editor: Editor,
+  value: Partial<WorkDocumentImageProperties>,
+  options: DocumentImageCommandOptions = {},
+): boolean {
+  return editor.commands.setDocumentImageProperties(value, options);
 }
 
 export function setDocumentImageLayoutOptions(
@@ -274,8 +323,76 @@ export function normalizeDocumentImageWrapDistance(value: unknown): number {
   );
 }
 
+export function normalizeDocumentImageDimension(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) && number > 0
+    ? Math.round(number * 100) / 100
+    : null;
+}
+
+export function normalizeDocumentImageLockAspectRatio(value: unknown): boolean {
+  return value === false || value === 'false' || value === 0 || value === '0'
+    ? false
+    : DEFAULT_LOCK_ASPECT_RATIO;
+}
+
 function formatImageLayoutNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
+}
+
+function documentImageAttributesForChanges(
+  value: Partial<WorkDocumentImageProperties>,
+): Record<string, unknown> {
+  const attributes: Record<string, unknown> = {};
+  if (Object.hasOwn(value, 'width')) {
+    attributes.width = normalizeDocumentImageDimension(value.width);
+  }
+  if (Object.hasOwn(value, 'height')) {
+    attributes.height = normalizeDocumentImageDimension(value.height);
+  }
+  if (Object.hasOwn(value, 'lockAspectRatio')) {
+    attributes.lockAspectRatio = normalizeDocumentImageLockAspectRatio(
+      value.lockAspectRatio,
+    );
+  }
+  if (Object.hasOwn(value, 'layout')) {
+    attributes.layout = normalizeDocumentImageLayout(value.layout);
+  }
+  if (Object.hasOwn(value, 'alignment')) {
+    attributes.alignment = normalizeDocumentImageAlignment(value.alignment);
+  }
+  if (Object.hasOwn(value, 'wrapDistance')) {
+    attributes.wrapDistance = normalizeDocumentImageWrapDistance(
+      value.wrapDistance,
+    );
+  }
+  if (Object.hasOwn(value, 'alternativeText')) {
+    const alternativeText = value.alternativeText?.trim() ?? '';
+    attributes.alt = alternativeText || null;
+    attributes.title = alternativeText || null;
+  }
+  return attributes;
+}
+
+function isDocumentImageSelection(selection: unknown): boolean {
+  return (
+    selection instanceof NodeSelection && selection.node.type.name === 'image'
+  );
+}
+
+function sameDocumentImageResizeConfiguration(
+  initial: ProseMirrorNode,
+  current: ProseMirrorNode,
+): boolean {
+  return (
+    normalizeDocumentImageDimension(initial.attrs.width) ===
+      normalizeDocumentImageDimension(current.attrs.width) &&
+    normalizeDocumentImageDimension(initial.attrs.height) ===
+      normalizeDocumentImageDimension(current.attrs.height) &&
+    normalizeDocumentImageLockAspectRatio(initial.attrs.lockAspectRatio) ===
+      normalizeDocumentImageLockAspectRatio(current.attrs.lockAspectRatio)
+  );
 }
 
 function applyInitialImageHtmlAttributes(
@@ -305,6 +422,9 @@ function syncDocumentImageNodeView(
   const wrapDistance = normalizeDocumentImageWrapDistance(
     attributes.wrapDistance,
   );
+  const lockAspectRatio = normalizeDocumentImageLockAspectRatio(
+    attributes.lockAspectRatio,
+  );
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -312,6 +432,7 @@ function syncDocumentImageNodeView(
   element.dataset.officeImageAlignment = alignment;
   element.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
+  element.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -323,6 +444,7 @@ function syncDocumentImageNodeView(
   container.dataset.officeImageAlignment = alignment;
   container.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
+  container.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,

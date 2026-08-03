@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Replaced the isolated Word alternative-text prompt with one responsive
+  Picture Properties workflow for centimeter width and height, a per-image
+  aspect-ratio lock, wrapping, alignment, text distance, and alternative text.
+- Applied each Picture Properties draft as one separated TipTap history entry,
+  while cancel and Escape leave the document unchanged, retain the selected
+  image, and restore the exact ribbon invoker.
+- Preserved untouched imported image dimensions instead of materializing their
+  rounded centimeter display values, and added unit, Playwright, and phone A3S
+  Test coverage for size coupling, compact controls, focus, and diagnostics.
 - Expanded Word Table Properties into Table, Row, Column, and Cell tabs with
   one validated TipTap transaction for preferred table geometry, selected-row
   sizing and pagination, current-column width, and selected-cell alignment and

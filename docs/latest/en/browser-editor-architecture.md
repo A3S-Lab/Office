@@ -386,8 +386,14 @@ stable ProseMirror position, and distribute list-container height without
 double-counting nested content.
 
 Document image nodes carry typed layout, alignment, wrap-distance, alternative
-text, and size attributes. The selected image exposes the same operations
-through a contextual Picture ribbon. Inline images stay in normal flow;
+text, size, and per-image aspect-ratio-lock attributes. The contextual Picture
+ribbon keeps fast layout actions and opens one responsive Picture Properties
+dialog for centimeter width and height, aspect-ratio locking, wrapping,
+alignment, text distance, and alternative text. Applying the complete draft
+updates only changed attributes in one separated TipTap history entry; cancel
+and Escape preserve the node and return focus to the exact invoker. Dimensions
+that were only projected into rounded centimeter fields retain their exact
+imported pixel values when untouched. Inline images stay in normal flow;
 supported left- or right-aligned square images use browser floats, and
 top-and-bottom images clear surrounding text. Paragraphs following a square
 float remain on the DOM visual-line path because the available line width

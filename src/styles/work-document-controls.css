@@ -592,6 +592,140 @@
   line-height: 1.4;
 }
 
+.work-document-picture-properties-dialog {
+  width: min(560px, 100%);
+}
+
+.work-document-picture-properties-dialog form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 26px;
+}
+
+.work-document-picture-properties-section {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-picture-properties-section.position,
+.work-document-picture-properties-alt-text {
+  grid-column: 1 / -1;
+}
+
+.work-document-picture-properties-section > legend {
+  margin-bottom: 9px;
+  color: var(--a3s-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.work-document-picture-properties-number-row {
+  display: grid;
+  min-height: 34px;
+  grid-template-columns: 64px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-document-picture-properties-number-row .work-office-number-field {
+  width: 100%;
+  height: 34px;
+}
+
+.work-document-picture-properties-number-row small,
+.work-document-picture-properties-alt-text small {
+  color: var(--a3s-faint);
+  font-size: 10px;
+}
+
+.work-document-picture-properties-section > .work-office-checkbox {
+  min-height: 34px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+
+.work-document-picture-properties-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.work-document-picture-properties-choice-grid label {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.work-document-picture-properties-choice-grid input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.work-document-picture-properties-choice-grid label > span {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 580;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.work-document-picture-properties-choice-grid label:hover > span {
+  border-color: color-mix(in srgb, var(--a3s-blue) 35%, var(--a3s-line));
+  background: var(--a3s-panel-soft);
+  color: var(--a3s-ink);
+}
+
+.work-document-picture-properties-choice-grid input:checked + span {
+  border-color: color-mix(in srgb, var(--a3s-blue) 72%, var(--a3s-line));
+  background: color-mix(in srgb, var(--a3s-blue) 9%, var(--a3s-panel));
+  color: var(--a3s-blue);
+}
+
+.work-document-picture-properties-choice-grid input:focus-visible + span {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 58%, transparent);
+  outline-offset: 2px;
+}
+
+.work-document-picture-properties-section > p[role="alert"] {
+  margin: -5px 0 0 72px;
+  color: var(--a3s-red);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.work-document-picture-properties-alt-text {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+  font-weight: 620;
+}
+
+.work-document-picture-properties-alt-text .work-office-text-area {
+  min-height: 86px;
+  resize: vertical;
+}
+
 .work-office-table-picker-panel {
   --work-office-table-picker-accent: var(
     --work-office-control-accent,
@@ -952,6 +1086,63 @@
 }
 
 @media (max-width: 520px) {
+  .work-document-picture-properties-dialog form {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .work-document-picture-properties-section.position,
+  .work-document-picture-properties-alt-text {
+    grid-column: auto;
+  }
+
+  .work-document-picture-properties-number-row {
+    min-height: 44px;
+    grid-template-columns: 64px minmax(0, 1fr) 32px;
+  }
+
+  .work-document-picture-properties-number-row .work-office-number-field {
+    height: 44px;
+    grid-template-columns: minmax(0, 1fr) 88px;
+  }
+
+  .work-document-picture-properties-number-row
+    .work-office-number-field
+    > input {
+    font-size: 12px;
+  }
+
+  .work-document-picture-properties-number-row .work-office-number-steppers {
+    grid-template-columns: repeat(2, 44px);
+    grid-template-rows: 44px;
+  }
+
+  .work-document-picture-properties-number-row
+    .work-office-number-steppers
+    > button:first-child {
+    border-right: 1px solid var(--a3s-line);
+    border-bottom: 0;
+  }
+
+  .work-document-picture-properties-choice-grid label > span {
+    min-height: 44px;
+    padding-inline: 4px;
+  }
+
+  .work-document-picture-properties-section > .work-office-checkbox {
+    min-height: 44px;
+    padding-block: 8px;
+  }
+
+  .work-document-picture-properties-dialog > footer .ds-button {
+    min-height: 44px;
+    padding-inline: 16px;
+  }
+
+  .work-document-picture-properties-alt-text .work-office-text-area {
+    min-height: 96px;
+  }
+
   .work-document-table-properties-tabs {
     margin-bottom: 14px;
   }
