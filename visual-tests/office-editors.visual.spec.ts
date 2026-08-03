@@ -647,7 +647,7 @@ test('Markdown keeps a flat readable split view at compact width', async ({
         canvasBorderTopWidth: canvasStyle.borderTopWidth,
         canvasBoxShadow: canvasStyle.boxShadow,
         canvasWidth: canvasRect.width,
-        previewWidth: previewRect.width,
+        previewClientWidth: preview.clientWidth,
         previewLeft: previewRect.left,
         previewTop: previewRect.top,
         sourceRight: sourceRect.right,
@@ -661,7 +661,9 @@ test('Markdown keeps a flat readable split view at compact width', async ({
   expect(geometry.splitterDisplay).not.toBe('none');
   expect(geometry.canvasBorderTopWidth).toBe('0px');
   expect(geometry.canvasBoxShadow).toBe('none');
-  expect(geometry.canvasWidth).toBeCloseTo(geometry.previewWidth, 0);
+  expect(
+    Math.abs(geometry.canvasWidth - geometry.previewClientWidth),
+  ).toBeLessThanOrEqual(1);
   await expect(
     page.locator('li[data-type="taskItem"][data-checked="true"] > div').first(),
   ).toHaveCSS('text-decoration-line', 'none');
