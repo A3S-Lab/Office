@@ -324,7 +324,8 @@ interaction model.
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut
-  hints, keyboard-operated cells and sheet tabs, direct type-to-edit,
+  hints that becomes a touch-sized, scrollable bottom action sheet on phones,
+  keyboard-operated cells and sheet tabs, direct type-to-edit,
   permission-resilient multi-cell cut/copy/paste, clear, F2 editing, and
   focus-safe Escape behavior, direct
   font-family, vertical-alignment, text-wrap, number/percent, and decimal

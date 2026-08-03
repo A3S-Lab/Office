@@ -416,6 +416,61 @@ test('Phone Spreadsheet find keeps its input and actions touch-sized', async ({
   await expect(grid).toBeFocused();
 });
 
+test('Phone Spreadsheet context menu uses a touch-sized bottom action sheet', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: '季度执行计划 XLSX · 本次会话' })
+    .click();
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  await grid.waitFor();
+  await grid.click({ button: 'right', position: { x: 120, y: 80 } });
+
+  const menu = page.locator('.workspace-context-menu');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem').first()).toBeFocused();
+
+  const geometry = await menu.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const buttons = [
+      ...element.querySelectorAll<HTMLButtonElement>('button[role="menuitem"]'),
+    ];
+    if (!buttons.length) {
+      throw new Error('Phone Spreadsheet context-menu actions are missing.');
+    }
+    const style = getComputedStyle(element);
+    return {
+      bottomGap: document.documentElement.clientHeight - bounds.bottom,
+      clientHeight: element.clientHeight,
+      left: bounds.left,
+      minimumActionHeight: Math.min(
+        ...buttons.map((button) => button.getBoundingClientRect().height),
+      ),
+      overflowY: style.overflowY,
+      position: style.position,
+      rightGap: document.documentElement.clientWidth - bounds.right,
+      scrollHeight: element.scrollHeight,
+    };
+  });
+
+  expect(geometry.position).toBe('fixed');
+  expect(geometry.left).toBeGreaterThanOrEqual(7);
+  expect(geometry.left).toBeLessThanOrEqual(9);
+  expect(geometry.rightGap).toBeGreaterThanOrEqual(7);
+  expect(geometry.rightGap).toBeLessThanOrEqual(9);
+  expect(geometry.bottomGap).toBeGreaterThanOrEqual(7);
+  expect(geometry.bottomGap).toBeLessThanOrEqual(9);
+  expect(geometry.minimumActionHeight).toBeGreaterThanOrEqual(44);
+  expect(geometry.overflowY).toBe('auto');
+  expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(grid).toBeFocused();
+});
+
 test('Word page color keeps its custom controls visible at phone height', async ({
   page,
 }) => {

@@ -59,6 +59,11 @@ Phone, 768 px, and desktop browser checks keep overlay and persistent-pane
 behavior distinct. Shared Office color palettes now replace their dense
 desktop grid with eight larger columns on phones; spatial keyboard movement
 follows the rendered column count across theme and standard-color sections.
+Shared editor context menus remain pointer- or selection-anchored on desktop,
+but become safe-area-aware bottom action sheets below 640 px. Their actions are
+at least 44 px tall, long menus scroll inside a bounded surface, Escape returns
+focus to the editing target, and deterministic Spreadsheet evidence captures
+the phone layout, accessibility tree, console, and page errors.
 
 ## Priority 1: Word-Compatible Document Editing
 

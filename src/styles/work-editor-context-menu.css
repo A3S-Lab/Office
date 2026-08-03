@@ -98,6 +98,59 @@
   background: var(--a3s-line);
 }
 
+@media (max-width: 640px) {
+  .workspace-context-menu {
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 8px !important;
+    top: auto !important;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: min(62dvh, 480px);
+    padding: 8px;
+    border-radius: 12px;
+    scrollbar-color: var(--a3s-overlay-border) transparent;
+    scrollbar-width: thin;
+  }
+
+  .workspace-context-menu::before {
+    width: 32px;
+    height: 4px;
+    margin: 1px 0 5px;
+    border-radius: 999px;
+    background: var(--a3s-overlay-border);
+    content: "";
+    justify-self: center;
+  }
+
+  .work-office-context-menu > button {
+    min-height: 44px;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .work-office-context-menu > button > svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .work-office-context-menu kbd {
+    font-size: 10px;
+  }
+
+  .workspace-context-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .workspace-context-menu::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: var(--a3s-overlay-border);
+  }
+}
+
 @media (forced-colors: active) {
   .work-office-context-menu {
     border-color: CanvasText;

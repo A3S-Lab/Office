@@ -100,6 +100,13 @@ keeping the pane open; a second Escape closes the clean pane. Field-level
 numeric drafts still consume Escape before the pane-level draft, so incomplete
 input cannot trigger either a workbook mutation or an accidental close.
 
+Shared editor context menus keep their pointer or keyboard-selection anchor on
+desktop. Below 640 px they use a safe-area-aware bottom action sheet instead:
+every action is at least 44 px tall, long command sets scroll inside a bounded
+surface, and Escape retains the same exact editing-target focus restoration.
+The responsive change is presentation-only; command ordering, shortcuts, and
+host-provided actions remain identical.
+
 Review actions distinguish reversible, local decisions from broad destructive
 ones. Individual revision decisions remain direct commands. Accepting or
 rejecting every revision requires confirmation, and an empty revision pane does

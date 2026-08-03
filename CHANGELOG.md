@@ -10,6 +10,9 @@ All notable changes to A3S Office will be documented in this file.
 - Replaced the unusable stacked Markdown phone split with a full-workspace
   Source/Preview switch whose controls remain touch-sized while preserving the
   controlled Markdown value and synchronized visual tree.
+- Promoted shared editor context menus to a viewport-bound phone action sheet
+  with 44 px rows, bounded internal scrolling, safe-area spacing, and the same
+  keyboard dismissal and focus restoration as the desktop menu.
 - Kept the documentation language and version selectors visible at ordinary
   laptop widths; the site opens in Simplified Chinese on `latest` and retains
   the frozen `0.1.0` documentation for version switching.
