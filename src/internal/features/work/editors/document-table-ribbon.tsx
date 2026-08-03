@@ -61,6 +61,7 @@ import {
 } from './work-office-chrome';
 import { useOfficeDraft } from './use-office-draft';
 import { DocumentTableMarginsPopover } from './document-table-margins-popover';
+import { DocumentTablePropertiesControl } from './document-table-properties-dialog';
 
 const borderOptions = [
   { value: 'solid-1', label: '细实线', style: 'solid', width: 1 },
@@ -293,37 +294,11 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         </RibbonButton>
       </RibbonGroup>
       <DocumentTableSizeRibbonGroup editor={editor} sizing={sizing} />
-      <RibbonGroup label="表格位置">
-        <RibbonButton
-          label="表格左对齐"
-          visibleLabel="左对齐"
-          active={sizing?.alignment === 'left'}
-          onClick={() =>
-            editor.chain().focus().setDocumentTableAlignment('left').run()
-          }
-        >
-          <AlignLeft size={18} />
-        </RibbonButton>
-        <RibbonButton
-          label="表格居中"
-          visibleLabel="居中"
-          active={sizing?.alignment === 'center'}
-          onClick={() =>
-            editor.chain().focus().setDocumentTableAlignment('center').run()
-          }
-        >
-          <AlignCenter size={18} />
-        </RibbonButton>
-        <RibbonButton
-          label="表格右对齐"
-          visibleLabel="右对齐"
-          active={sizing?.alignment === 'right'}
-          onClick={() =>
-            editor.chain().focus().setDocumentTableAlignment('right').run()
-          }
-        >
-          <AlignRight size={18} />
-        </RibbonButton>
+      <RibbonGroup label="表格属性">
+        <DocumentTablePropertiesControl
+          editor={editor}
+          renderedTableWidth={measuredTableWidth(editor)}
+        />
         <DocumentTableMarginsPopover editor={editor} />
       </RibbonGroup>
       <RibbonGroup label="单元格对齐">

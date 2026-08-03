@@ -27,6 +27,11 @@ export interface DocumentTableGeometry {
   cellMargins: DocumentTableCellMargins;
 }
 
+export type DocumentTableProperties = Pick<
+  DocumentTableGeometry,
+  'width' | 'alignment' | 'indent'
+>;
+
 const MAX_TABLE_SIZE = 100_000;
 const MAX_CELL_MARGIN = 1_000;
 const TABLE_MARGIN_DATASET_KEYS = {
@@ -111,6 +116,18 @@ export function normalizeDocumentTableAlignment(
 ): DocumentTableAlignment | null {
   return value === 'center' || value === 'right' || value === 'left'
     ? value
+    : null;
+}
+
+export function normalizeDocumentTableProperties(
+  value: unknown,
+): DocumentTableProperties | null {
+  if (!isRecord(value)) return null;
+  const width = normalizeDocumentTablePreferredWidth(value.width);
+  const alignment = normalizeDocumentTableAlignment(value.alignment);
+  const indent = normalizeDimension(value.indent, MAX_TABLE_SIZE);
+  return width && alignment && indent !== null
+    ? { width, alignment, indent }
     : null;
 }
 
@@ -410,7 +427,7 @@ function geometryForLegacyLayoutMode(value: unknown): DocumentTableGeometry {
   return cloneGeometry(DEFAULT_DOCUMENT_TABLE_GEOMETRY);
 }
 
-function normalizeDocumentTablePreferredWidth(
+export function normalizeDocumentTablePreferredWidth(
   value: unknown,
 ): DocumentTablePreferredWidth | null {
   if (!isRecord(value)) return null;

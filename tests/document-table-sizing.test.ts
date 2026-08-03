@@ -45,6 +45,7 @@ describe('document table sizing', () => {
       preferredWidthType: 'pixels',
       preferredWidth: 300,
       alignment: 'left',
+      indent: 0,
     });
     expect(editor.getHTML()).toContain('data-office-table-layout="fixed"');
     expect(editor.getHTML()).toContain('colwidth="120"');
@@ -157,6 +158,58 @@ describe('document table sizing', () => {
     expect(editor.getHTML()).toContain(
       'data-office-table-cell-margin-left="12"',
     );
+
+    editor.destroy();
+  });
+
+  test('updates preferred width, alignment, and indent atomically', () => {
+    const editor = createSizingEditor();
+    editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+    let updateCount = 0;
+    editor.on('update', () => {
+      updateCount += 1;
+    });
+
+    expect(
+      editor.commands.setDocumentTableProperties({
+        width: { type: 'percent', value: 62.5 },
+        alignment: 'left',
+        indent: 18.9,
+      }),
+    ).toBe(true);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      preferredWidthType: 'percent',
+      preferredWidth: 62.5,
+      alignment: 'left',
+      indent: 18.9,
+    });
+    expect(editor.getHTML()).toContain('data-office-table-width="62.5"');
+    expect(editor.getHTML()).toContain('data-office-table-indent="18.9"');
+    expect(updateCount).toBe(1);
+
+    expect(
+      editor.commands.setDocumentTableProperties({
+        width: { type: 'auto', value: null },
+        alignment: 'center',
+        indent: 18.9,
+      }),
+    ).toBe(true);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      preferredWidthType: 'auto',
+      preferredWidth: null,
+      alignment: 'center',
+      indent: 18.9,
+    });
+    expect(updateCount).toBe(2);
+
+    expect(
+      editor.commands.setDocumentTableProperties({
+        width: { type: 'percent', value: 0 },
+        alignment: 'left',
+        indent: 0,
+      }),
+    ).toBe(false);
+    expect(updateCount).toBe(2);
 
     editor.destroy();
   });

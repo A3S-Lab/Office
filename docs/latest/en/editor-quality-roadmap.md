@@ -174,7 +174,15 @@ override keeps matching edit and preview geometry. Table insertion or removal
 does not reinterpret an imported autofit table as fixed merely because it has
 grid widths. The Layout ribbon reports the rendered column width for autofit
 tables and labels noncanonical preferred widths as Current width instead of
-misreporting them as fixed. Table-level outer and inside
+misreporting them as fixed.
+Whole-table geometry now uses one Table Properties dialog for auto,
+percentage, or centimeter preferred width, left/center/right placement, and
+left indent. It validates the draft and commits width, placement, and indent in
+one transaction; Cancel and Escape preserve the last committed geometry and
+restore the exact ribbon invoker. The deterministic styled-table workflow
+checks truthful 62.5% centered import values, compact 390 px touch controls, an
+atomic change to 72% left placement with a 0.5 cm indent, cancellation safety,
+and matching preview geometry. Table-level outer and inside
 DOCX borders resolve to cell edges on import without flattening mixed styles.
 Direct table and cell theme colors now resolve through the package theme,
 including `themeTint`, `themeShade`, `themeFillTint`, and `themeFillShade`.

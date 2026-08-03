@@ -4,7 +4,7 @@ suite "office-word-styled-table" {
     scenario "preserve-conditional-table-style" {
         name = "Preserve inherited Word table styles in editing and preview"
         surface = "web"
-        timeout_ms = 60000
+        timeout_ms = 90000
 
         viewport "desktop" {
             width = 1280
@@ -118,6 +118,114 @@ suite "office-word-styled-table" {
             visible = css(".work-document-table-margins-popover button[aria-expanded='false']:focus")
         }
 
+        click "open-table-properties" {
+            target = role("button", "表格属性")
+        }
+
+        expect "imported-preferred-width-is-percent" {
+            visible = css(".work-document-table-properties-dialog label:has(input[type='radio'][value='percent']:checked) > span")
+        }
+
+        expect "imported-preferred-width-is-truthful" {
+            visible = css(".work-document-table-properties-dialog input[aria-label='表格宽度（百分比）'][value='62.5']")
+        }
+
+        expect "imported-table-alignment-is-center" {
+            visible = css(".work-document-table-properties-dialog label:has(input[type='radio'][value='center']:checked) > span")
+        }
+
+        expect "current-width-type-receives-focus" {
+            visible = css(".work-document-table-properties-dialog label:has(input[type='radio'][value='percent']:checked:focus) > span")
+        }
+
+        viewport "compact-table-properties" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        expect "compact-width-steppers-are-available" {
+            visible = css(".work-document-table-properties-dialog button[aria-label='增加表格宽度（百分比）']")
+        }
+
+        screenshot "compact-table-properties-dialog" {
+            path = "screenshots/word-table-properties-phone.png"
+        }
+
+        fill "change-table-width" {
+            target = label("表格宽度（百分比）")
+            value = "72"
+        }
+
+        click "align-table-left" {
+            target = css(".work-document-table-properties-dialog label:has(input[type='radio'][value='left'])")
+        }
+
+        fill "change-table-indent" {
+            target = label("表格左缩进（厘米）")
+            value = "0.5"
+        }
+
+        click "apply-table-properties" {
+            target = role("button", "确定")
+        }
+
+        wait "table-properties-are-applied-atomically" {
+            visible = css(".work-document-editable table[data-office-table-width-type='percent'][data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9']")
+        }
+
+        expect "table-properties-trigger-regains-focus" {
+            visible = css(".work-office-ribbon-group[aria-label='表格属性'] button[aria-label='表格属性']:focus")
+        }
+
+        click "reopen-table-properties-for-cancel" {
+            target = role("button", "表格属性")
+        }
+
+        fill "draft-cancelled-table-width" {
+            target = label("表格宽度（百分比）")
+            value = "80"
+        }
+
+        click "cancel-table-properties" {
+            target = role("button", "取消")
+        }
+
+        expect "cancel-keeps-committed-table-properties" {
+            visible = css(".work-document-editable table[data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9']")
+        }
+
+        expect "cancel-restores-table-properties-trigger" {
+            visible = css(".work-office-ribbon-group[aria-label='表格属性'] button[aria-label='表格属性']:focus")
+        }
+
+        click "reopen-table-properties-for-escape" {
+            target = role("button", "表格属性")
+        }
+
+        fill "draft-escaped-table-width" {
+            target = label("表格宽度（百分比）")
+            value = "84"
+        }
+
+        press "escape-table-properties" {
+            key = "Escape"
+        }
+
+        expect "escape-keeps-committed-table-properties" {
+            visible = css(".work-document-editable table[data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9']")
+        }
+
+        expect "escape-restores-table-properties-trigger" {
+            visible = css(".work-office-ribbon-group[aria-label='表格属性'] button[aria-label='表格属性']:focus")
+        }
+
+        viewport "restore-desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
         click "preview-document" {
             target = role("button", "预览")
         }
@@ -135,7 +243,7 @@ suite "office-word-styled-table" {
         }
 
         expect "preview-keeps-table-geometry" {
-            visible = css(".work-document-preview-page table[data-office-table-layout='autofit'][data-office-table-width-type='percent'][data-office-table-width='62.5'][data-office-table-alignment='center'][data-office-table-cell-margin-left='18.9']")
+            visible = css(".work-document-preview-page table[data-office-table-layout='autofit'][data-office-table-width-type='percent'][data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9'][data-office-table-cell-margin-left='18.9']")
         }
 
         expect "preview-keeps-cell-margin-override" {

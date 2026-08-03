@@ -551,6 +551,13 @@ map. The layout algorithm, auto/percentage/pixel preferred width, alignment,
 indent, table-level cell margins, cell-level margin overrides, and explicit row
 heights are independent typed attributes rather than transient DOM
 measurements. Edit, preview, print, and DOCX import/export share that geometry.
+Whole-table width, placement, and indent are edited through one Table
+Properties dialog instead of separate alignment commands. The dialog exposes
+auto, percentage, and centimeter entry modes, reads the current imported
+geometry without approximation, validates the complete draft, and dispatches
+one TipTap transaction. Cancel and Escape leave the model untouched and restore
+the exact ribbon invoker. At compact widths the dialog keeps 44 px choice,
+stepper, and commit targets inside the viewport.
 DOCX tables independently round-trip `tblGrid`, `tcW`, `tblLayout`, `tblW`,
 `jc`, `tblInd`, `tblCellMar`, `tcMar`, and `trHeight`; numeric fiftieth-percent
 and string percentage widths keep their actual size instead of collapsing to a

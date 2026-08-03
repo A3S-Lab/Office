@@ -261,7 +261,12 @@ interaction model.
   choices with live typeface previews, independent table layout algorithms,
   auto, percentage, or pixel preferred widths, left/center/right placement,
   indentation, table-level cell margins, cell-level margin overrides, and
-  rendered column measurements for autofit tables; a
+  rendered column measurements for autofit tables. One Table Properties dialog
+  presents auto, percentage, and centimeter width choices together with table
+  placement and left indent, validates the complete draft, and commits the
+  geometry in one TipTap transaction. Cancel and Escape discard the draft and
+  restore the exact ribbon invoker; compact layouts keep the numeric steppers
+  and footer actions touch-sized. A
   reusable table-border pen with all, outside, inside, and individual-edge
   targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
   inheritance with whole-table, banded row or column, first/last row or column,

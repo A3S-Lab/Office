@@ -16,6 +16,7 @@ import {
   normalizeDocumentTableAlignment,
   normalizeDocumentTableCellMargins,
   normalizeDocumentTableGeometry,
+  normalizeDocumentTableProperties,
   renderDocumentTableGeometry,
   type DocumentTableAlignment,
   type DocumentTableCellMargins,
@@ -23,6 +24,7 @@ import {
   type DocumentTableLayoutAlgorithm,
   type DocumentTableLayoutMode,
   type DocumentTablePreferredWidthType,
+  type DocumentTableProperties,
 } from './work-document-table-geometry';
 
 export {
@@ -37,6 +39,7 @@ export type {
   DocumentTableLayoutMode,
   DocumentTablePreferredWidth,
   DocumentTablePreferredWidthType,
+  DocumentTableProperties,
 } from './work-document-table-geometry';
 
 export interface DocumentTableSizingState {
@@ -48,6 +51,7 @@ export interface DocumentTableSizingState {
   preferredWidthType: DocumentTablePreferredWidthType;
   preferredWidth: number | null;
   alignment: DocumentTableAlignment;
+  indent: number;
   cellMargins: DocumentTableCellMargins;
   selectedColumnCount: number;
   selectedRowCount: number;
@@ -76,6 +80,9 @@ declare module '@tiptap/core' {
       ) => ReturnType;
       setDocumentTableAlignment: (
         alignment: DocumentTableAlignment,
+      ) => ReturnType;
+      setDocumentTableProperties: (
+        properties: DocumentTableProperties,
       ) => ReturnType;
       setDocumentTableCellMargins: (
         margins: DocumentTableCellMargins,
@@ -163,6 +170,8 @@ export const DocumentTableSizing = Extension.create({
         setTableLayoutMode(props, mode, renderedTableWidth),
       setDocumentTableAlignment: (alignment) => (props) =>
         setTableAlignment(props, alignment),
+      setDocumentTableProperties: (properties) => (props) =>
+        setTableProperties(props, properties),
       setDocumentTableCellMargins: (margins) => (props) =>
         setTableCellMargins(props, margins),
       distributeDocumentTableColumns: (renderedSelectionWidth) => (props) =>
@@ -232,6 +241,7 @@ export function documentTableSizing(
     preferredWidthType: geometry.width.type,
     preferredWidth: geometry.width.value,
     alignment: geometry.alignment,
+    indent: geometry.indent,
     cellMargins: geometry.cellMargins,
     selectedColumnCount: columns.length,
     selectedRowCount: rows.length,
@@ -359,6 +369,23 @@ function setTableAlignment(
   setTableGeometryAttribute(transaction, context, {
     ...tableGeometry(context.table),
     alignment,
+  });
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
+  return true;
+}
+
+function setTableProperties(
+  { dispatch, state }: CommandProps,
+  requestedProperties: DocumentTableProperties,
+): boolean {
+  const properties = normalizeDocumentTableProperties(requestedProperties);
+  const context = tableSizingContext(state);
+  if (!context || !properties) return false;
+  if (!dispatch) return true;
+  const transaction = state.tr;
+  setTableGeometryAttribute(transaction, context, {
+    ...tableGeometry(context.table),
+    ...properties,
   });
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;

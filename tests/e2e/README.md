@@ -58,8 +58,12 @@ accessibility, console, and page-error evidence, plus a real inherited-table-
 style DOCX workflow proving based-on resolution, first-row fill, white bold
 header text and double border, horizontal banding, last-row presentation, and
 conditional paragraph alignment, spacing, pagination, and indent semantics
-across edit and preview with screenshot, accessibility, console, and page-error
-evidence, plus a real multi-page DOCX table workflow proving that a splittable
+across edit and preview. The same workflow verifies truthful 62.5% centered
+geometry in the unified Table Properties dialog, compact 390 px touch controls,
+an atomic change to 72% left placement with a 0.5 cm indent, cancellation and
+Escape safety, invoker-focus restoration, and matching preview geometry, with
+screenshot, accessibility, console, and page-error evidence. A real multi-page
+DOCX table workflow proves that a splittable
 row continues at paragraph boundaries across three physical pages, repeated
 heading rows remain visible
 on both continuation pages, and the final row content and following paragraph

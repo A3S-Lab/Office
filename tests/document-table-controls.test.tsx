@@ -461,7 +461,9 @@ test('aligns table cells and applies Word-style sizing from Layout', () => {
   ).toBe(true);
 
   view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
-  fireEvent.click(screen.getByRole('button', { name: '表格居中' }));
+  fireEvent.click(screen.getByRole('button', { name: '表格属性' }));
+  fireEvent.click(screen.getByRole('radio', { name: '居中' }));
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
   expect(firstTableAttributes(editor)).toMatchObject({
     geometry: expect.objectContaining({ alignment: 'center' }),
   });
@@ -495,6 +497,125 @@ test('aligns table cells and applies Word-style sizing from Layout', () => {
   expect(tableCellAttributes(editor).every(({ colwidth }) => !colwidth)).toBe(
     true,
   );
+});
+
+test('edits whole-table width and position with validation and cancel safety', async () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '表格属性' });
+  trigger.focus();
+  fireEvent.click(trigger);
+
+  expect(screen.getByRole('dialog', { name: '表格属性' })).toBeInTheDocument();
+  const percentageWidth = screen.getByRole('radio', { name: '百分比' });
+  expect(percentageWidth).toBeChecked();
+  await waitFor(() => expect(percentageWidth).toHaveFocus());
+  expect(
+    screen.getByRole('textbox', { name: '表格宽度（百分比）' }),
+  ).toHaveValue('100');
+
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '表格宽度（百分比）' }),
+    { target: { value: '0' } },
+  );
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+  expect(screen.getByRole('alert')).toHaveTextContent('请输入 1 到 100');
+
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '表格宽度（百分比）' }),
+    { target: { value: '62.5' } },
+  );
+  fireEvent.click(screen.getByRole('radio', { name: '左对齐' }));
+  const indent = screen.getByRole('textbox', {
+    name: '表格左缩进（厘米）',
+  });
+  fireEvent.change(indent, { target: { value: '' } });
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+  expect(screen.getByRole('alert')).toHaveTextContent('请输入 0 到 30');
+
+  fireEvent.click(screen.getByRole('radio', { name: '居中' }));
+  expect(indent).toBeDisabled();
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.getByRole('button', { name: '确定' })).toBeEnabled();
+
+  fireEvent.click(screen.getByRole('radio', { name: '左对齐' }));
+  expect(indent).toBeEnabled();
+  expect(screen.getByRole('button', { name: '确定' })).toBeDisabled();
+  fireEvent.change(indent, {
+    target: { value: '0.5' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      width: { type: 'percent', value: 62.5 },
+      alignment: 'left',
+      indent: expect.closeTo(18.9, 1),
+    }),
+  });
+  expect(screen.queryByRole('dialog', { name: '表格属性' })).toBeNull();
+  await waitFor(() => expect(trigger).toHaveFocus());
+
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('radio', { name: '居中' }));
+  expect(
+    screen.getByRole('textbox', { name: '表格左缩进（厘米）' }),
+  ).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: '取消' }));
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      alignment: 'left',
+      indent: expect.closeTo(18.9, 1),
+    }),
+  });
+
+  fireEvent.click(trigger);
+  const width = screen.getByRole('textbox', { name: '表格宽度（百分比）' });
+  fireEvent.change(width, { target: { value: '80' } });
+  fireEvent.keyDown(width, { key: 'Escape' });
+  expect(screen.queryByRole('dialog', { name: '表格属性' })).toBeNull();
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      width: { type: 'percent', value: 62.5 },
+    }),
+  });
+  await waitFor(() => expect(trigger).toHaveFocus());
+});
+
+test('supports centimeter and automatic preferred table widths', async () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  const trigger = screen.getByRole('button', { name: '表格属性' });
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('radio', { name: '厘米' }));
+  const width = screen.getByRole('textbox', { name: '表格宽度（厘米）' });
+  expect(width).toHaveValue('15');
+  fireEvent.change(width, { target: { value: '10' } });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      width: {
+        type: 'pixels',
+        value: expect.closeTo(377.95, 1),
+      },
+    }),
+  });
+
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole('radio', { name: '自动' }));
+  expect(screen.queryByRole('textbox', { name: /表格宽度/ })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({
+      width: { type: 'auto', value: null },
+    }),
+  });
 });
 
 test('shows the rendered column width for an autofit table', () => {
