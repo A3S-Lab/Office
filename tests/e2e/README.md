@@ -101,6 +101,9 @@ synchronized preview content, and touch-sized actions; and the public
 Playground-to-documentation-center navigation contract, including Simplified
 Chinese as the default language, language and release-version switching, the
 documentation tree, and the same-deployment return to the Playground homepage.
+The responsive Office-shell workflow also crosses from a persistent desktop
+sidebar into a 390 px workspace, proves the phone drawer stays closed without
+moving search focus, and restores the prior persistent sidebar on return.
 Each suite owns only its browser surface. Keep the preview process under the
 terminal that started it and stop that process separately when testing is
 complete.

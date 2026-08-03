@@ -15,14 +15,18 @@ import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import { documentationEntryUrl, legacyDocsPath } from './site-routes';
 import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
+import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
 
 function Playground() {
-  const [sidebarOpen, setSidebarOpen] = useState(
-    () => window.innerWidth >= 840,
-  );
+  const sidebarModal = useMediaQuery('(max-width: 839px)');
+  const {
+    closeAll: closeSidebarForEditor,
+    open: sidebarOpen,
+    setOpen: setSidebarOpen,
+  } = usePlaygroundSidebarState(sidebarModal);
   const [artifacts, setArtifacts] = useState<OfficeArtifact[]>(
     createInitialArtifacts,
   );
@@ -32,7 +36,6 @@ function Playground() {
   const [lastAgentRequest, setLastAgentRequest] =
     useState<EditorAgentRequest | null>(null);
   const [notice, setNotice] = useState<PlaygroundNotice | null>(null);
-  const sidebarModal = useMediaQuery('(max-width: 839px)');
   const assistantModal = useMediaQuery('(max-width: 1040px)');
   const fileInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
@@ -76,7 +79,7 @@ function Playground() {
     setActiveArtifactId(artifactId);
     setLastAgentRequest(null);
     setAssistantOpen(false);
-    setSidebarOpen(false);
+    closeSidebarForEditor();
   };
 
   const newArtifact = (templateId: string) => {
@@ -85,7 +88,7 @@ function Playground() {
     setActiveArtifactId(artifact.id);
     setLastAgentRequest(null);
     setAssistantOpen(false);
-    setSidebarOpen(false);
+    closeSidebarForEditor();
     showNotice(`${artifact.title} 已创建`, 'success');
   };
 
@@ -112,7 +115,7 @@ function Playground() {
       setActiveArtifactId(opened.id);
       setLastAgentRequest(null);
       setAssistantOpen(false);
-      setSidebarOpen(false);
+      closeSidebarForEditor();
       showNotice(`${file.name} 已打开`, 'success');
     } catch (error) {
       showNotice(

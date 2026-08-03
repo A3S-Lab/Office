@@ -52,6 +52,11 @@ Office sidebar, Presentation slide drawer, AI assistant, and editor dialogs.
 Each surface receives focus on entry, wraps forward and reverse Tab navigation,
 isolates obscured content with `inert`, lets only the top overlay handle Escape,
 and restores the current semantic invoker even when React remounts that control.
+The Office shell keeps persistent desktop navigation and the temporary compact
+drawer as separate states. Crossing into the compact breakpoint therefore
+closes the drawer in the same render without obscuring the workspace or moving
+its active focus, while returning to desktop restores the user's persistent
+sidebar preference.
 Compact Word navigation, find, layout, citations, changes, and comments task
 panes now use the same modal boundary while retaining persistent side-pane
 behavior on desktop.

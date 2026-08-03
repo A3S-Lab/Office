@@ -36,6 +36,59 @@ test('Office sidebar becomes modal only when it overlays the page', async ({
   await expect(sidebar).toBeHidden();
 });
 
+test('Office sidebar preserves desktop preference without covering a resized phone workspace', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+
+  const sidebar = page.getByLabel('A3S Office 导航');
+  const mainPane = page.locator('.playground-main-pane');
+  const search = page.getByRole('textbox', { name: '搜索文件' });
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).not.toHaveAttribute('role', 'dialog');
+  await search.focus();
+
+  await page.setViewportSize({ width: 390, height: 700 });
+
+  await expect(sidebar).toBeHidden();
+  await expect(
+    page.getByRole('button', { name: '展开办公侧边栏' }),
+  ).toBeVisible();
+  await expect(mainPane).not.toHaveAttribute('inert', '');
+  await expect(search).toBeFocused();
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).not.toHaveAttribute('role', 'dialog');
+  await expect(search).toBeFocused();
+});
+
+test('Opening an editor on phone does not restore a stale desktop sidebar', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  await expect(page.getByLabel('A3S Office 导航')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page
+    .getByRole('button', { name: '新项目方案 DOCX · 本次会话' })
+    .click();
+  const editor = page.getByLabel('文字编辑器');
+  await expect(editor).toBeVisible();
+  await expect(page.getByLabel('A3S Office 导航')).toBeHidden();
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await expect(editor).toBeVisible();
+  await expect(page.getByLabel('A3S Office 导航')).toBeHidden();
+  await expect(
+    page.getByRole('button', { name: '展开办公侧边栏' }),
+  ).toBeVisible();
+});
+
 test('AI assistant becomes modal only when it overlays the editor', async ({
   page,
 }) => {

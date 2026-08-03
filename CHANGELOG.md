@@ -13,6 +13,9 @@ All notable changes to A3S Office will be documented in this file.
 - Promoted shared editor context menus to a viewport-bound phone action sheet
   with 44 px rows, bounded internal scrolling, safe-area spacing, and the same
   keyboard dismissal and focus restoration as the desktop menu.
+- Separated persistent desktop sidebar state from the temporary phone drawer,
+  so resizing across the compact breakpoint closes the overlay immediately,
+  preserves workspace focus, and restores the prior desktop preference.
 - Kept the documentation language and version selectors visible at ordinary
   laptop widths; the site opens in Simplified Chinese on `latest` and retains
   the frozen `0.1.0` documentation for version switching.

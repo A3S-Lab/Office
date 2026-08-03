@@ -94,6 +94,9 @@ The images below are committed visual-regression baselines from the real
   panes, responsive chart inspectors, dialogs, menus, and popovers share
   bounded keyboard navigation, background isolation, topmost Escape handling,
   and focus restoration.
+  Persistent desktop navigation and the temporary phone drawer keep separate
+  open states, so live breakpoint changes never turn a desktop sidebar into an
+  unexpected blocking modal or steal focus from the workspace.
   Shared color palettes expand to an eight-column touch layout on phones while
   preserving spatial arrow-key navigation.
 - **Editor-scoped zoom** — Status controls and Ctrl/Cmd + mouse-wheel gestures
