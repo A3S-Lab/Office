@@ -258,7 +258,10 @@ interaction model.
   actions, selection-preserving bullet and numbering commands, and explicit
   Escape-to-invoker focus restoration;
   grouped bundled, common system, monospace, imported, and host-provided font
-  choices with live typeface previews, precision table sizing and autofit, a
+  choices with live typeface previews, independent table layout algorithms,
+  auto, percentage, or pixel preferred widths, left/center/right placement,
+  indentation, table-level cell margins, cell-level margin overrides, and
+  rendered column measurements for autofit tables; a
   reusable table-border pen with all, outside, inside, and individual-edge
   targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
   inheritance with whole-table, banded row or column, first/last row or column,
@@ -278,8 +281,9 @@ interaction model.
   reuse the stable physical-page prefix, including resolved first/odd/even
   headers, footers, page numbers, and navigation descriptors.
   Real DOCX fixtures provide deterministic A3S Test evidence for inherited
-  table styling across edit and preview, and for a 120-paragraph row across
-  three physical pages through the final table content and following paragraph.
+  table styling across edit and preview, a centered 62.5% table with table and
+  cell margin overrides, and a 120-paragraph row across three physical pages
+  through the final table content and following paragraph.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

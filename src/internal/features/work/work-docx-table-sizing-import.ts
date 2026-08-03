@@ -1,14 +1,28 @@
 import {
+  DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
+  DEFAULT_DOCUMENT_TABLE_GEOMETRY,
+  applyDocumentTableGeometryToElement,
+  type DocumentTableAlignment,
+  type DocumentTableCellMargins,
+  type DocumentTableGeometry,
+  type DocumentTableLayoutAlgorithm,
+  type DocumentTablePreferredWidth,
+} from './work-document-table-geometry';
+import {
+  docxTablePropertySources,
+  resolveDocxTableStyleResolver,
+  type DocxTableStyleSource,
+} from './work-docx-table-styles';
+import {
   attribute,
   descendants,
   directChild,
   directChildren,
 } from './work-ooxml-package';
-import type { DocumentTableLayoutMode } from './work-document-table-sizing';
 
 export interface ImportedDocxTableSizingMarker {
   marker: string;
-  layoutMode: DocumentTableLayoutMode;
+  geometry: DocumentTableGeometry;
   columnWidths: number[];
 }
 
@@ -24,29 +38,26 @@ const PIXELS_PER_TWIP = 96 / 1440;
 
 export function markDocxTableSizing(
   document: Document,
+  tableStyleSource?: DocxTableStyleSource,
 ): ImportedDocxTableSizingMarkers {
   const tables: ImportedDocxTableSizingMarker[] = [];
+  const tableStyles = resolveDocxTableStyleResolver(tableStyleSource);
   for (const table of descendants(document, 'tbl')) {
     const paragraph = firstTableParagraph(document, table);
     if (!paragraph) continue;
-    const properties = directChild(table, 'tblPr');
-    const layout = properties
-      ? directChild(properties, 'tblLayout')
-      : undefined;
-    const preferredWidth = properties
-      ? directChild(properties, 'tblW')
-      : undefined;
     const grid = directChild(table, 'tblGrid');
     const columnWidths = grid
       ? directChildren(grid, 'gridCol')
-          .map((column) => twipsToPixels(Number(attribute(column, 'w'))))
+          .map((column) => twipsToPixels(Number(attribute(column, 'w')), false))
           .filter((width): width is number => width !== null)
       : [];
     const marker = `__A3S_WORK_TABLE_SIZING_${tables.length + 1}__`;
     insertMarker(document, paragraph, marker);
     tables.push({
       marker,
-      layoutMode: importedTableLayoutMode(layout, preferredWidth),
+      geometry: importedTableGeometry(
+        docxTablePropertySources(table, tableStyles),
+      ),
       columnWidths,
     });
   }
@@ -66,8 +77,8 @@ export function applyImportedDocxTableSizingMarkers(
     node.data = node.data.replace(TABLE_SIZING_MARKER_PATTERN, (marker) => {
       const sizing = tableByMarker.get(marker);
       if (table instanceof HTMLTableElement && sizing) {
-        table.dataset.officeTableLayout = sizing.layoutMode;
-        if (sizing.layoutMode === 'fixed' && sizing.columnWidths.length) {
+        applyDocumentTableGeometryToElement(table, sizing.geometry);
+        if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
         }
       }
@@ -83,15 +94,124 @@ export function hasImportedDocxTableSizingMarkers(
   return markers.tables.length > 0;
 }
 
-function importedTableLayoutMode(
-  layout: Element | undefined,
-  preferredWidth: Element | undefined,
-): DocumentTableLayoutMode {
-  const layoutType = layout ? attribute(layout, 'type') : null;
-  const widthType = preferredWidth ? attribute(preferredWidth, 'type') : null;
-  if (layoutType === 'autofit' || widthType === 'auto') return 'contents';
-  if (widthType === 'pct') return 'window';
-  return 'fixed';
+function importedTableGeometry(
+  propertySources: readonly Element[],
+): DocumentTableGeometry {
+  let layout: DocumentTableLayoutAlgorithm =
+    DEFAULT_DOCUMENT_TABLE_GEOMETRY.layout;
+  let width: DocumentTablePreferredWidth = { type: 'auto', value: null };
+  let alignment: DocumentTableAlignment =
+    DEFAULT_DOCUMENT_TABLE_GEOMETRY.alignment;
+  let indent = DEFAULT_DOCUMENT_TABLE_GEOMETRY.indent;
+  let cellMargins: DocumentTableCellMargins = {
+    ...DEFAULT_DOCUMENT_TABLE_CELL_MARGINS,
+  };
+  for (const properties of propertySources) {
+    const layoutElement = directChild(properties, 'tblLayout');
+    const layoutValue = layoutElement
+      ? importedTableLayout(attribute(layoutElement, 'type'))
+      : null;
+    if (layoutValue) layout = layoutValue;
+
+    const widthElement = directChild(properties, 'tblW');
+    const widthValue = widthElement
+      ? importedTablePreferredWidth(widthElement)
+      : null;
+    if (widthValue) width = widthValue;
+
+    const alignmentElement = directChild(properties, 'jc');
+    const alignmentValue = alignmentElement
+      ? importedTableAlignment(attribute(alignmentElement, 'val'))
+      : null;
+    if (alignmentValue) alignment = alignmentValue;
+
+    const indentElement = directChild(properties, 'tblInd');
+    const indentValue = indentElement
+      ? tableWidthPixels(indentElement, true)
+      : null;
+    if (indentValue !== null) indent = indentValue;
+
+    const marginElement = directChild(properties, 'tblCellMar');
+    if (marginElement) {
+      cellMargins = {
+        ...cellMargins,
+        ...importedCellMargins(marginElement),
+      };
+    }
+  }
+  return { layout, width, alignment, indent, cellMargins };
+}
+
+function importedTableLayout(
+  value: string | null,
+): DocumentTableLayoutAlgorithm | null {
+  if (value === 'fixed') return 'fixed';
+  return value === 'autofit' ? 'autofit' : null;
+}
+
+function importedTablePreferredWidth(
+  width: Element,
+): DocumentTablePreferredWidth | null {
+  const type = attribute(width, 'type');
+  if (type === 'auto' || type === 'nil') return { type: 'auto', value: null };
+  if (type === 'pct') {
+    const value = percentageValue(attribute(width, 'w'));
+    return value === null ? null : { type: 'percent', value };
+  }
+  if (type === 'dxa') {
+    const value = tableWidthPixels(width, false);
+    return value === null ? null : { type: 'pixels', value };
+  }
+  return null;
+}
+
+function importedTableAlignment(
+  value: string | null,
+): DocumentTableAlignment | null {
+  if (value === 'center') return 'center';
+  if (value === 'right' || value === 'end') return 'right';
+  if (value === 'left' || value === 'start') return 'left';
+  return null;
+}
+
+function importedCellMargins(
+  margins: Element,
+): Partial<DocumentTableCellMargins> {
+  const children = new Map(
+    directChildren(margins).map((margin) => [margin.localName, margin]),
+  );
+  const result: Partial<DocumentTableCellMargins> = {};
+  assignMargin(result, 'top', children.get('top'));
+  assignMargin(result, 'right', children.get('right') ?? children.get('end'));
+  assignMargin(result, 'bottom', children.get('bottom'));
+  assignMargin(result, 'left', children.get('left') ?? children.get('start'));
+  return result;
+}
+
+function assignMargin(
+  target: Partial<DocumentTableCellMargins>,
+  side: keyof DocumentTableCellMargins,
+  element: Element | undefined,
+): void {
+  if (!element) return;
+  const value = tableWidthPixels(element, true);
+  if (value !== null) target[side] = value;
+}
+
+function tableWidthPixels(element: Element, allowZero: boolean): number | null {
+  const type = attribute(element, 'type');
+  if (type && type !== 'dxa') return null;
+  return twipsToPixels(Number(attribute(element, 'w')), allowZero);
+}
+
+function percentageValue(value: string | null): number | null {
+  const normalized = value?.trim();
+  if (!normalized) return null;
+  const percentage = normalized.endsWith('%')
+    ? Number(normalized.slice(0, -1))
+    : Number(normalized) / 50;
+  if (!Number.isFinite(percentage) || percentage <= 0) return null;
+  return Math.round(percentage * 100) / 100;
 }
 
 function applyColumnWidths(
@@ -153,8 +273,10 @@ function insertMarker(
   paragraph.insertBefore(run, properties?.nextSibling ?? paragraph.firstChild);
 }
 
-function twipsToPixels(value: number): number | null {
-  if (!Number.isFinite(value) || value <= 0) return null;
+function twipsToPixels(value: number, allowZero: boolean): number | null {
+  if (!Number.isFinite(value) || value < 0 || (!allowZero && value === 0)) {
+    return null;
+  }
   return Math.round(value * PIXELS_PER_TWIP * 100) / 100;
 }
 

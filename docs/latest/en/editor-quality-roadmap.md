@@ -164,7 +164,17 @@ width and row-height fields, equal row/column distribution, content/window
 autofit, row/column operations, merge/split, repeat-header, and non-splitting
 row controls are also available. Common cell shading, vertical alignment,
 explicit per-edge borders, fixed grid widths, layout mode, and explicit row
-heights round-trip through editable HTML and DOCX. Table-level outer and inside
+heights round-trip through editable HTML and DOCX. Table geometry now models
+the layout algorithm, auto/percentage/pixel preferred width, alignment, indent,
+table-level cell margins, and cell-level margin overrides independently.
+`tblLayout`, `tblW`, `jc`, `tblInd`, `tblCellMar`, `tcMar`, `tblGrid`, and
+`tcW` round-trip without treating grid data as the preferred table width. A
+real fixture proves that a centered 62.5% table with a first-cell margin
+override keeps matching edit and preview geometry. Table insertion or removal
+does not reinterpret an imported autofit table as fixed merely because it has
+grid widths. The Layout ribbon reports the rendered column width for autofit
+tables and labels noncanonical preferred widths as Current width instead of
+misreporting them as fixed. Table-level outer and inside
 DOCX borders resolve to cell edges on import without flattening mixed styles.
 Direct table and cell theme colors now resolve through the package theme,
 including `themeTint`, `themeShade`, `themeFillTint`, and `themeFillShade`.

@@ -544,13 +544,18 @@ shading, and a reusable border pen with whole-selection, outside, inside, side,
 inside-horizontal, and inside-vertical targets. Layout owns row and column
 insertion or deletion, cell merge and split, horizontal and vertical alignment, repeated headers,
 atomic rows, centimeter-based column width and row height fields, equal row and
-column distribution, content/window autofit, and table deletion. Physical
+column distribution, content/window autofit, table alignment, four-edge cell
+margins, and table deletion. Physical
 column widths remain coherent across merged cells through ProseMirror's table
-map; explicit row heights and the table layout mode are typed attributes rather
-than transient DOM measurements. Edit, preview, print, and DOCX import/export
-share those attributes. Fixed DOCX tables round-trip `tblGrid`, `tcW`,
-`tblLayout`, and `trHeight`, while window/content autofit remains responsive in
-the browser. Independent top, right, bottom, and left cell-border attributes
+map. The layout algorithm, auto/percentage/pixel preferred width, alignment,
+indent, table-level cell margins, cell-level margin overrides, and explicit row
+heights are independent typed attributes rather than transient DOM
+measurements. Edit, preview, print, and DOCX import/export share that geometry.
+DOCX tables independently round-trip `tblGrid`, `tcW`, `tblLayout`, `tblW`,
+`jc`, `tblInd`, `tblCellMar`, `tcMar`, and `trHeight`; numeric fiftieth-percent
+and string percentage widths keep their actual size instead of collapsing to a
+full-width table. Window/content autofit remains responsive in the browser.
+Independent top, right, bottom, and left cell-border attributes
 render identically in edit and preview, export as independent `w:tcBorders`,
 and reopen without being flattened. Explicit table-level outer and inside
 borders resolve onto their owning cell edges during import. Direct
@@ -567,6 +572,9 @@ direct paragraph, character-style, or run formatting. Direct table and cell
 properties remain higher-priority layers for cell presentation. Theme-derived
 conditional presentation is materialized as stable RGB for editing, preview,
 and regenerated DOCX output.
+The real styled-table fixture exercises a centered 62.5% table, table margins,
+a first-cell margin override, and matching edit/preview geometry through A3S
+Test.
 Command availability comes from the ProseMirror table state, so actions that
 cannot apply to the current selection remain disabled. Loss-preserving semantic
 theme references, less-common conditional paragraph properties outside the

@@ -212,6 +212,11 @@
   align-items: center;
 }
 
+.work-document-table-margins-popover {
+  display: flex;
+  align-items: center;
+}
+
 .work-office-table-insert-popover {
   display: flex;
   align-items: center;
@@ -589,6 +594,82 @@
   padding: 10px 12px 12px;
 }
 
+.work-document-table-margins-panel {
+  width: 258px;
+  padding: 10px 12px 12px;
+}
+
+.work-document-table-margins-panel fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.work-document-table-margins-panel legend {
+  color: var(--a3s-ink);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.work-document-table-margins-panel fieldset > p {
+  margin: 0;
+  color: var(--a3s-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.work-document-table-margins-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 9px;
+}
+
+.work-document-table-margins-grid > .work-document-table-margin-field {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 4px;
+  color: var(--a3s-muted);
+  font-size: 9px;
+}
+
+.work-document-table-margins-grid .work-office-number-field {
+  min-width: 0;
+}
+
+.work-document-table-margins-grid small {
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
+.work-document-table-margins-reset {
+  justify-self: end;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--a3s-blue);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.work-document-table-margins-reset:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--a3s-blue) 8%, transparent);
+}
+
+.work-document-table-margins-reset:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 65%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-table-margins-reset:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
 .work-document-pagination-panel fieldset {
   display: grid;
   gap: 8px;
@@ -664,18 +745,21 @@
 
 @media (max-width: 520px) {
   .work-document-pagination-panel,
-  .work-document-paragraph-spacing-panel {
+  .work-document-paragraph-spacing-panel,
+  .work-document-table-margins-panel {
     width: min(320px, calc(100vw - 32px));
     padding: 12px;
   }
 
   .work-document-pagination-panel fieldset,
-  .work-document-paragraph-spacing-panel fieldset {
+  .work-document-paragraph-spacing-panel fieldset,
+  .work-document-table-margins-panel fieldset {
     gap: 10px;
   }
 
   .work-document-pagination-panel legend,
-  .work-document-paragraph-spacing-panel legend {
+  .work-document-paragraph-spacing-panel legend,
+  .work-document-table-margins-panel legend {
     font-size: 12px;
   }
 
@@ -718,9 +802,21 @@
   }
 
   .work-document-pagination-reset,
-  .work-document-paragraph-spacing-reset {
+  .work-document-paragraph-spacing-reset,
+  .work-document-table-margins-reset {
     min-height: 44px;
     padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .work-document-table-margins-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .work-document-table-margins-grid > .work-document-table-margin-field {
+    min-height: 44px;
+    grid-template-columns: 30px minmax(0, 1fr) 28px;
     font-size: 11px;
   }
 }

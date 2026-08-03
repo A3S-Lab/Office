@@ -461,14 +461,75 @@ test('aligns table cells and applies Word-style sizing from Layout', () => {
   ).toBe(true);
 
   view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  fireEvent.click(screen.getByRole('button', { name: '表格居中' }));
+  expect(firstTableAttributes(editor)).toMatchObject({
+    geometry: expect.objectContaining({ alignment: 'center' }),
+  });
+
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
+  fireEvent.click(screen.getByRole('button', { name: '单元格边距' }));
+  const leftMargin = screen.getByRole('textbox', {
+    name: '单元格左边距（厘米）',
+  });
+  fireEvent.change(leftMargin, { target: { value: '0.5' } });
+  fireEvent.blur(leftMargin);
+  expect(
+    Number(
+      (
+        firstTableAttributes(editor).geometry as {
+          cellMargins?: { left?: number };
+        }
+      ).cellMargins?.left,
+    ),
+  ).toBeCloseTo(18.9, 1);
+
+  view.rerender(<DocumentTableLayoutRibbon editor={editor} />);
   fireEvent.click(screen.getByRole('combobox', { name: '表格自动调整' }));
   fireEvent.click(screen.getByRole('option', { name: '适应内容' }));
   expect(firstTableAttributes(editor)).toMatchObject({
-    layoutMode: 'contents',
+    geometry: expect.objectContaining({
+      layout: 'autofit',
+      width: { type: 'auto', value: null },
+    }),
   });
   expect(tableCellAttributes(editor).every(({ colwidth }) => !colwidth)).toBe(
     true,
   );
+});
+
+test('shows the rendered column width for an autofit table', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: [
+      '<section data-document-section="true">',
+      '<table data-office-table-layout="autofit" ',
+      'data-office-table-width-type="percent" data-office-table-width="62.5">',
+      '<tbody><tr><td colwidth="6.67"><p>A</p></td>',
+      '<td colwidth="6.67"><p>B</p></td></tr></tbody></table>',
+      '</section>',
+    ].join(''),
+  });
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  const table = editor.view.dom.querySelector<HTMLTableElement>('table');
+  const columns = Array.from(
+    editor.view.dom.querySelectorAll<HTMLElement>('colgroup > col'),
+  );
+  if (!table || columns.length !== 2) {
+    throw new Error('Expected one two-column table.');
+  }
+  table.getBoundingClientRect = () => elementRect(320, 48);
+  for (const column of columns) {
+    column.getBoundingClientRect = () => elementRect(160, 0);
+  }
+
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  expect(screen.getByRole('textbox', { name: '列宽（厘米）' })).toHaveValue(
+    '4.23',
+  );
+  expect(
+    screen.getByRole('combobox', { name: '表格自动调整' }),
+  ).toHaveTextContent('当前宽度');
 });
 
 test('disables row and column distribution for a one-cell table', () => {
@@ -795,6 +856,20 @@ function firstTableParagraphAlignment(currentEditor: Editor): unknown {
     return false;
   });
   return alignment;
+}
+
+function elementRect(width: number, height: number): DOMRect {
+  return {
+    bottom: height,
+    height,
+    left: 0,
+    right: width,
+    top: 0,
+    width,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  } as DOMRect;
 }
 
 function mockMatchMedia(matches: boolean): () => void {

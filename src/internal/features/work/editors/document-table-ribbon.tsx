@@ -53,12 +53,14 @@ import {
   OfficeColorPicker,
   OfficeNumberField,
   OfficeSelect,
+  type OfficeSelectOption,
 } from './office-controls';
 import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 import { useOfficeDraft } from './use-office-draft';
+import { DocumentTableMarginsPopover } from './document-table-margins-popover';
 
 const borderOptions = [
   { value: 'solid-1', label: '细实线', style: 'solid', width: 1 },
@@ -99,6 +101,12 @@ const tableLayoutOptions = [
   value: DocumentTableLayoutMode;
   label: string;
 }[];
+type DocumentTableLayoutControlValue = DocumentTableLayoutMode | 'current';
+const currentTableLayoutOption = {
+  value: 'current',
+  label: '当前宽度',
+  disabled: true,
+} as const satisfies OfficeSelectOption<DocumentTableLayoutControlValue>;
 
 const PIXELS_PER_CENTIMETER = 96 / 2.54;
 
@@ -285,6 +293,39 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         </RibbonButton>
       </RibbonGroup>
       <DocumentTableSizeRibbonGroup editor={editor} sizing={sizing} />
+      <RibbonGroup label="表格位置">
+        <RibbonButton
+          label="表格左对齐"
+          visibleLabel="左对齐"
+          active={sizing?.alignment === 'left'}
+          onClick={() =>
+            editor.chain().focus().setDocumentTableAlignment('left').run()
+          }
+        >
+          <AlignLeft size={18} />
+        </RibbonButton>
+        <RibbonButton
+          label="表格居中"
+          visibleLabel="居中"
+          active={sizing?.alignment === 'center'}
+          onClick={() =>
+            editor.chain().focus().setDocumentTableAlignment('center').run()
+          }
+        >
+          <AlignCenter size={18} />
+        </RibbonButton>
+        <RibbonButton
+          label="表格右对齐"
+          visibleLabel="右对齐"
+          active={sizing?.alignment === 'right'}
+          onClick={() =>
+            editor.chain().focus().setDocumentTableAlignment('right').run()
+          }
+        >
+          <AlignRight size={18} />
+        </RibbonButton>
+        <DocumentTableMarginsPopover editor={editor} />
+      </RibbonGroup>
       <RibbonGroup label="单元格对齐">
         <RibbonButton
           label="单元格水平左对齐"
@@ -406,6 +447,19 @@ function DocumentTableSizeRibbonGroup({
 }) {
   const measuredRowSelection = measuredTableSelectionSize(editor, 'rows');
   const measuredColumnSelection = measuredTableSelectionSize(editor, 'columns');
+  const measuredColumnWidth = measuredCurrentTableDimension(editor, 'columns');
+  const displayedColumnWidth =
+    sizing?.layoutAlgorithm === 'autofit'
+      ? (measuredColumnWidth ?? sizing.columnWidth)
+      : (sizing?.columnWidth ?? measuredColumnWidth);
+  const tableLayoutValue: DocumentTableLayoutControlValue =
+    sizing?.layoutAlgorithm === 'autofit' && sizing.layoutMode === 'fixed'
+      ? 'current'
+      : (sizing?.layoutMode ?? 'window');
+  const displayedTableLayoutOptions: readonly OfficeSelectOption<DocumentTableLayoutControlValue>[] =
+    tableLayoutValue === 'current'
+      ? [currentTableLayoutOption, ...tableLayoutOptions]
+      : tableLayoutOptions;
   const canDistributeRows = editor
     .can()
     .chain()
@@ -441,10 +495,7 @@ function DocumentTableSizeRibbonGroup({
         <TableDimensionField
           label="宽度"
           ariaLabel="列宽（厘米）"
-          value={
-            sizing?.columnWidth ??
-            measuredCurrentTableDimension(editor, 'columns')
-          }
+          value={displayedColumnWidth}
           onValueChange={(width) =>
             editor
               .chain()
@@ -460,9 +511,10 @@ function DocumentTableSizeRibbonGroup({
       <OfficeSelect
         ariaLabel="表格自动调整"
         className="work-document-table-layout-select"
-        value={sizing?.layoutMode ?? 'window'}
-        options={tableLayoutOptions}
-        onValueChange={(layoutMode) =>
+        value={tableLayoutValue}
+        options={displayedTableLayoutOptions}
+        onValueChange={(layoutMode) => {
+          if (layoutMode === 'current') return;
           editor
             .chain()
             .focus()
@@ -470,8 +522,8 @@ function DocumentTableSizeRibbonGroup({
               layoutMode,
               layoutMode === 'fixed' ? measuredTableWidth(editor) : undefined,
             )
-            .run()
-        }
+            .run();
+        }}
       />
       <RibbonButton
         label="平均分布行"

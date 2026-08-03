@@ -907,7 +907,6 @@ async function tableToDocx(
           rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
           ...documentTableCellDocxOptions(cell, docx),
           ...documentTableCellSizingDocxOptions(cell, docx),
-          margins: { top: 80, right: 100, bottom: 80, left: 100 },
         }),
       );
     }

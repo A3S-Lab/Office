@@ -41,6 +41,10 @@ describe('document table sizing', () => {
       rowHeight: 38,
       rowHeightRule: 'exact',
       layoutMode: 'fixed',
+      layoutAlgorithm: 'fixed',
+      preferredWidthType: 'pixels',
+      preferredWidth: 300,
+      alignment: 'left',
     });
     expect(editor.getHTML()).toContain('data-office-table-layout="fixed"');
     expect(editor.getHTML()).toContain('colwidth="120"');
@@ -64,7 +68,12 @@ describe('document table sizing', () => {
       [160, 180],
       [160, 180],
     ]);
-    expect(tableAttributes(editor)).toMatchObject({ layoutMode: 'fixed' });
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'fixed',
+      layoutAlgorithm: 'fixed',
+      preferredWidthType: 'pixels',
+      preferredWidth: 340,
+    });
 
     expect(editor.commands.setDocumentTableRowHeight(44, 'atLeast')).toBe(true);
     expect(
@@ -103,7 +112,12 @@ describe('document table sizing', () => {
     ).toBe(true);
 
     expect(editor.commands.setDocumentTableLayoutMode('contents')).toBe(true);
-    expect(tableAttributes(editor)).toMatchObject({ layoutMode: 'contents' });
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'contents',
+      layoutAlgorithm: 'autofit',
+      preferredWidthType: 'auto',
+      preferredWidth: null,
+    });
     expect(
       tableColumnWidths(editor).every((widths) =>
         widths.every((width) => !width),
@@ -119,6 +133,30 @@ describe('document table sizing', () => {
       [210, 210],
       [210, 210],
     ]);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'fixed',
+      layoutAlgorithm: 'fixed',
+      preferredWidthType: 'pixels',
+      preferredWidth: 420,
+    });
+
+    expect(editor.commands.setDocumentTableAlignment('center')).toBe(true);
+    expect(
+      editor.commands.setDocumentTableCellMargins({
+        top: 4,
+        right: 10,
+        bottom: 6,
+        left: 12,
+      }),
+    ).toBe(true);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      alignment: 'center',
+      cellMargins: { top: 4, right: 10, bottom: 6, left: 12 },
+    });
+    expect(editor.getHTML()).toContain('data-office-table-alignment="center"');
+    expect(editor.getHTML()).toContain(
+      'data-office-table-cell-margin-left="12"',
+    );
 
     editor.destroy();
   });
@@ -160,7 +198,81 @@ describe('document table sizing', () => {
     editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
 
     expect(editor.commands.setCellAttribute('colwidth', [175])).toBe(true);
-    expect(tableAttributes(editor)).toMatchObject({ layoutMode: 'fixed' });
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'fixed',
+      layoutAlgorithm: 'fixed',
+    });
+
+    editor.destroy();
+  });
+
+  test('preserves imported autofit geometry when a table is inserted', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content:
+        '<section data-document-section="true"><p>Before table</p></section>',
+    });
+
+    expect(
+      editor.commands.setContent(
+        [
+          '<section data-document-section="true">',
+          '<table data-office-table-layout="window"><tbody><tr>',
+          '<td colwidth="135"><p>A</p></td>',
+          '<td colwidth="165"><p>B</p></td>',
+          '</tr></tbody></table>',
+          '</section>',
+        ].join(''),
+      ),
+    ).toBe(true);
+    editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'window',
+      layoutAlgorithm: 'autofit',
+      preferredWidthType: 'percent',
+      preferredWidth: 100,
+    });
+
+    editor.destroy();
+  });
+
+  test('preserves remaining table geometry when an earlier table is removed', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true">',
+        '<table data-office-table-layout="fixed"><tbody><tr>',
+        '<td colwidth="90"><p>First</p></td>',
+        '</tr></tbody></table>',
+        '<table data-office-table-layout="window"><tbody><tr>',
+        '<td colwidth="135"><p>A</p></td>',
+        '<td colwidth="165"><p>B</p></td>',
+        '</tr></tbody></table>',
+        '</section>',
+      ].join(''),
+    });
+
+    expect(
+      editor.commands.setContent(
+        [
+          '<section data-document-section="true">',
+          '<table data-office-table-layout="window"><tbody><tr>',
+          '<td colwidth="135"><p>A</p></td>',
+          '<td colwidth="165"><p>B</p></td>',
+          '</tr></tbody></table>',
+          '</section>',
+        ].join(''),
+      ),
+    ).toBe(true);
+    editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'window',
+      layoutAlgorithm: 'autofit',
+      preferredWidthType: 'percent',
+      preferredWidth: 100,
+    });
 
     editor.destroy();
   });
@@ -182,7 +294,12 @@ describe('document table sizing', () => {
       editor.commands.setDocumentTableColumnWidth(125, [190, 190, 190]),
     ).toBe(true);
     expect(tableColumnWidths(editor)).toEqual([[125, 190, 190]]);
-    expect(tableAttributes(editor)).toMatchObject({ layoutMode: 'fixed' });
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutMode: 'fixed',
+      layoutAlgorithm: 'fixed',
+      preferredWidthType: 'pixels',
+      preferredWidth: 505,
+    });
 
     editor.destroy();
   });
@@ -206,16 +323,6 @@ function createSizingEditor(): Editor {
       '</section>',
     ].join(''),
   });
-}
-
-function tableAttributes(editor: Editor): Record<string, unknown> {
-  let attributes: Record<string, unknown> = {};
-  editor.state.doc.descendants((node) => {
-    if (node.type.name !== 'table') return true;
-    attributes = node.attrs;
-    return false;
-  });
-  return attributes;
 }
 
 function tableRowAttributes(editor: Editor): Record<string, unknown>[] {

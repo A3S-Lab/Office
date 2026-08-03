@@ -178,7 +178,8 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
   await revealRibbonControl(page, '表格布局', autofit);
   await autofit.click();
   await page.getByRole('option', { name: '适应内容' }).click();
-  await expect(table).toHaveAttribute('data-office-table-layout', 'contents');
+  await expect(table).toHaveAttribute('data-office-table-layout', 'autofit');
+  await expect(table).toHaveAttribute('data-office-table-width-type', 'auto');
   await expect
     .poll(() =>
       table

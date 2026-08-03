@@ -8,14 +8,47 @@ import {
   documentTableRowHeight,
   type DocumentTableRowHeightRule,
 } from './work-document-table-row';
+import {
+  applyDocumentTableGeometryToElement,
+  documentTableGeometryForLayoutMode,
+  documentTableGeometryFromElement,
+  documentTableLayoutMode,
+  normalizeDocumentTableAlignment,
+  normalizeDocumentTableCellMargins,
+  normalizeDocumentTableGeometry,
+  renderDocumentTableGeometry,
+  type DocumentTableAlignment,
+  type DocumentTableCellMargins,
+  type DocumentTableGeometry,
+  type DocumentTableLayoutAlgorithm,
+  type DocumentTableLayoutMode,
+  type DocumentTablePreferredWidthType,
+} from './work-document-table-geometry';
 
-export type DocumentTableLayoutMode = 'window' | 'contents' | 'fixed';
+export {
+  normalizeDocumentTableGeometry,
+  normalizeDocumentTableLayoutMode,
+} from './work-document-table-geometry';
+export type {
+  DocumentTableAlignment,
+  DocumentTableCellMargins,
+  DocumentTableGeometry,
+  DocumentTableLayoutAlgorithm,
+  DocumentTableLayoutMode,
+  DocumentTablePreferredWidth,
+  DocumentTablePreferredWidthType,
+} from './work-document-table-geometry';
 
 export interface DocumentTableSizingState {
   columnWidth: number | null;
   rowHeight: number | null;
   rowHeightRule: DocumentTableRowHeightRule | null;
   layoutMode: DocumentTableLayoutMode;
+  layoutAlgorithm: DocumentTableLayoutAlgorithm;
+  preferredWidthType: DocumentTablePreferredWidthType;
+  preferredWidth: number | null;
+  alignment: DocumentTableAlignment;
+  cellMargins: DocumentTableCellMargins;
   selectedColumnCount: number;
   selectedRowCount: number;
 }
@@ -41,6 +74,12 @@ declare module '@tiptap/core' {
         mode: DocumentTableLayoutMode,
         renderedTableWidth?: number,
       ) => ReturnType;
+      setDocumentTableAlignment: (
+        alignment: DocumentTableAlignment,
+      ) => ReturnType;
+      setDocumentTableCellMargins: (
+        margins: DocumentTableCellMargins,
+      ) => ReturnType;
       distributeDocumentTableColumns: (
         renderedSelectionWidth?: number,
       ) => ReturnType;
@@ -58,25 +97,19 @@ class WorkDocumentTableView extends TableView {
     view?: ConstructorParameters<typeof TableView>[2],
   ) {
     super(node, cellMinWidth, view);
-    this.syncLayout(node);
+    this.syncGeometry(node);
   }
 
   override update(node: ProseMirrorNode): boolean {
     const updated = super.update(node);
-    if (updated) this.syncLayout(node);
+    if (updated) this.syncGeometry(node);
     return updated;
   }
 
-  private syncLayout(node: ProseMirrorNode): void {
-    const mode = normalizeDocumentTableLayoutMode(node.attrs.layoutMode);
-    this.table.dataset.officeTableLayout = mode;
-    if (mode === 'window') {
-      this.clearStaleColumnWidths();
-      this.table.style.width = '100%';
-    } else if (mode === 'contents') {
-      this.clearStaleColumnWidths();
-      this.table.style.width = '';
-    }
+  private syncGeometry(node: ProseMirrorNode): void {
+    const geometry = tableGeometry(node);
+    applyDocumentTableGeometryToElement(this.table, geometry);
+    if (!tableHasExplicitColumnWidths(node)) this.clearStaleColumnWidths();
   }
 
   private clearStaleColumnWidths(): void {
@@ -92,15 +125,20 @@ export const DocumentTable = Table.extend({
   addAttributes() {
     return {
       ...(this.parent?.() ?? {}),
-      layoutMode: {
-        default: 'window',
+      geometry: {
+        default: null,
         parseHTML: (element: HTMLElement) =>
-          normalizeDocumentTableLayoutMode(element.dataset.officeTableLayout),
-        renderHTML: (attributes: Record<string, unknown>) => ({
-          'data-office-table-layout': normalizeDocumentTableLayoutMode(
+          documentTableGeometryFromElement(element),
+        renderHTML: (attributes: Record<string, unknown>) =>
+          renderDocumentTableGeometry(
+            attributes.geometry,
             attributes.layoutMode,
           ),
-        }),
+      },
+      layoutMode: {
+        default: null,
+        parseHTML: () => null,
+        renderHTML: () => ({}),
       },
     };
   },
@@ -123,6 +161,10 @@ export const DocumentTableSizing = Extension.create({
           setSelectedRowHeight(props, height, rule),
       setDocumentTableLayoutMode: (mode, renderedTableWidth) => (props) =>
         setTableLayoutMode(props, mode, renderedTableWidth),
+      setDocumentTableAlignment: (alignment) => (props) =>
+        setTableAlignment(props, alignment),
+      setDocumentTableCellMargins: (margins) => (props) =>
+        setTableCellMargins(props, margins),
       distributeDocumentTableColumns: (renderedSelectionWidth) => (props) =>
         distributeColumns(props, renderedSelectionWidth),
       distributeDocumentTableRows: (renderedSelectionHeight) => (props) =>
@@ -133,21 +175,29 @@ export const DocumentTableSizing = Extension.create({
   addProseMirrorPlugins() {
     return [
       new Plugin({
-        appendTransaction: (transactions, _oldState, newState) => {
+        appendTransaction: (transactions, oldState, newState) => {
           if (!transactions.some((transaction) => transaction.docChanged)) {
             return null;
           }
+          const previousTables = documentTables(oldState.doc);
+          const currentTables = documentTables(newState.doc);
+          if (previousTables.length !== currentTables.length) return null;
           const transaction = newState.tr;
+          let tableIndex = 0;
           newState.doc.descendants((node, position) => {
             if (node.type.spec.tableRole !== 'table') return true;
+            const previous = previousTables[tableIndex];
+            tableIndex += 1;
             if (
-              normalizeDocumentTableLayoutMode(node.attrs.layoutMode) ===
-                'window' &&
-              tableHasExplicitColumnWidths(node)
+              tableColumnWidthSignature(previous) !==
+                tableColumnWidthSignature(node) &&
+              tableHasExplicitColumnWidths(node) &&
+              tableGeometry(node).layout !== 'fixed'
             ) {
               transaction.setNodeMarkup(position, undefined, {
                 ...node.attrs,
-                layoutMode: 'fixed',
+                geometry: fixedGeometryForTable(node),
+                layoutMode: null,
               });
             }
             return false;
@@ -172,22 +222,20 @@ export function documentTableSizing(
   const rowSizes = tableRowSizes(context.table).filter((_size, index) =>
     rows.includes(index),
   );
+  const geometry = tableGeometry(context.table);
   return {
     columnWidth: commonPositiveValue(widths),
     rowHeight: commonNullableValue(rowSizes.map(({ height }) => height)),
     rowHeightRule: commonNullableValue(rowSizes.map(({ rule }) => rule)),
-    layoutMode: normalizeDocumentTableLayoutMode(
-      context.table.attrs.layoutMode,
-    ),
+    layoutMode: documentTableLayoutMode(geometry),
+    layoutAlgorithm: geometry.layout,
+    preferredWidthType: geometry.width.type,
+    preferredWidth: geometry.width.value,
+    alignment: geometry.alignment,
+    cellMargins: geometry.cellMargins,
     selectedColumnCount: columns.length,
     selectedRowCount: rows.length,
   };
-}
-
-export function normalizeDocumentTableLayoutMode(
-  value: unknown,
-): DocumentTableLayoutMode {
-  return value === 'contents' || value === 'fixed' ? value : 'window';
 }
 
 function setSelectedColumnWidth(
@@ -222,7 +270,7 @@ function setSelectedColumnWidth(
       context.left,
     );
   }
-  setTableLayoutAttribute(transaction, context, 'fixed');
+  setFixedTableGeometryFromColumns(transaction, context);
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
@@ -268,7 +316,7 @@ function setTableLayoutMode(
   if (!context) return false;
   if (!dispatch) return true;
   const transaction = state.tr;
-  setTableLayoutAttribute(transaction, context, requestedMode);
+  let preferredWidth = renderedTableWidth;
   if (requestedMode === 'fixed') {
     const existing = tableColumnWidths(context.table, context.map);
     const total = distributionTotal(
@@ -282,9 +330,53 @@ function setTableLayoutMode(
       equalDimensions(total, context.map.width, MIN_COLUMN_WIDTH),
       0,
     );
+    preferredWidth = total;
   } else {
     clearPhysicalColumnWidths(transaction, context);
   }
+  setTableGeometryAttribute(
+    transaction,
+    context,
+    documentTableGeometryForLayoutMode(
+      requestedMode,
+      tableGeometry(context.table),
+      preferredWidth,
+    ),
+  );
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
+  return true;
+}
+
+function setTableAlignment(
+  { dispatch, state }: CommandProps,
+  requestedAlignment: DocumentTableAlignment,
+): boolean {
+  const alignment = normalizeDocumentTableAlignment(requestedAlignment);
+  const context = tableSizingContext(state);
+  if (!context || !alignment) return false;
+  if (!dispatch) return true;
+  const transaction = state.tr;
+  setTableGeometryAttribute(transaction, context, {
+    ...tableGeometry(context.table),
+    alignment,
+  });
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
+  return true;
+}
+
+function setTableCellMargins(
+  { dispatch, state }: CommandProps,
+  requestedMargins: DocumentTableCellMargins,
+): boolean {
+  const cellMargins = normalizeDocumentTableCellMargins(requestedMargins);
+  const context = tableSizingContext(state);
+  if (!context || !cellMargins) return false;
+  if (!dispatch) return true;
+  const transaction = state.tr;
+  setTableGeometryAttribute(transaction, context, {
+    ...tableGeometry(context.table),
+    cellMargins,
+  });
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
@@ -314,7 +406,7 @@ function distributeColumns(
     equalDimensions(total, columns.length, MIN_COLUMN_WIDTH),
     columns[0] ?? 0,
   );
-  setTableLayoutAttribute(transaction, context, 'fixed');
+  setFixedTableGeometryFromColumns(transaction, context);
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
@@ -487,18 +579,56 @@ function setPhysicalRowHeights(
   });
 }
 
-function setTableLayoutAttribute(
+function setTableGeometryAttribute(
   transaction: CommandProps['tr'],
   context: TableSizingContext,
-  layoutMode: DocumentTableLayoutMode,
+  geometry: DocumentTableGeometry,
 ): void {
   const position = context.tableStart - 1;
   const table = transaction.doc.nodeAt(position);
   if (!table) return;
   transaction.setNodeMarkup(position, undefined, {
     ...table.attrs,
-    layoutMode,
+    geometry: normalizeDocumentTableGeometry(geometry),
+    layoutMode: null,
   });
+}
+
+function setFixedTableGeometryFromColumns(
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+): void {
+  const table = transaction.doc.nodeAt(context.tableStart - 1);
+  if (!table || table.type.spec.tableRole !== 'table') return;
+  setTableGeometryAttribute(transaction, context, fixedGeometryForTable(table));
+}
+
+function tableGeometry(table: ProseMirrorNode): DocumentTableGeometry {
+  return normalizeDocumentTableGeometry(
+    table.attrs.geometry,
+    table.attrs.layoutMode,
+  );
+}
+
+function fixedGeometryForTable(table: ProseMirrorNode): DocumentTableGeometry {
+  const geometry = tableGeometry(table);
+  const widths = tableColumnWidths(table, TableMap.get(table));
+  const total = widths.every(
+    (width): width is number => width !== null && width > 0,
+  )
+    ? widths.reduce((sum, width) => sum + width, 0)
+    : null;
+  return {
+    ...geometry,
+    layout: 'fixed',
+    width:
+      total === null
+        ? geometry.width
+        : {
+            type: 'pixels',
+            value: Math.round(total * 100) / 100,
+          },
+  };
 }
 
 function tableColumnWidths(
@@ -547,6 +677,27 @@ function tableHasExplicitColumnWidths(table: ProseMirrorNode): boolean {
     return !found;
   });
   return found;
+}
+
+function documentTables(document: ProseMirrorNode): ProseMirrorNode[] {
+  const tables: ProseMirrorNode[] = [];
+  document.descendants((node) => {
+    if (node.type.spec.tableRole !== 'table') return true;
+    tables.push(node);
+    return false;
+  });
+  return tables;
+}
+
+function tableColumnWidthSignature(table: ProseMirrorNode | undefined): string {
+  if (!table) return '';
+  const widths: unknown[] = [];
+  table.descendants((node) => {
+    if (!isTableCell(node)) return true;
+    widths.push(node.attrs.colwidth ?? null);
+    return false;
+  });
+  return JSON.stringify(widths);
 }
 
 function isTableCell(node: ProseMirrorNode): boolean {

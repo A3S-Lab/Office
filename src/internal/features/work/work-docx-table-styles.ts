@@ -102,6 +102,27 @@ export function resolveDocxTableStyleResolver(
     : createDocxTableStyleResolver(source);
 }
 
+export function docxTablePropertySources(
+  table: Element,
+  resolver: DocxTableStyleResolver,
+): readonly Element[] {
+  const directTableProperties = directChild(table, 'tblPr');
+  const styleReference = directTableProperties
+    ? directChild(directTableProperties, 'tblStyle')
+    : undefined;
+  const styleId =
+    (styleReference
+      ? wordAttribute(styleReference, 'val')?.trim()
+      : undefined) || resolver.defaultStyleId;
+  const sources = styleId
+    ? tableStyleChain(resolver.tableStyles, styleId)
+        .map(({ tableProperties }) => tableProperties)
+        .filter((properties): properties is Element => Boolean(properties))
+    : [];
+  if (directTableProperties) sources.push(directTableProperties);
+  return sources;
+}
+
 export function docxTableCellStyleLayers(
   cell: Element,
   resolver: DocxTableStyleResolver,

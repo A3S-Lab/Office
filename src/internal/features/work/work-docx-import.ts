@@ -269,7 +269,7 @@ export async function prepareDocxImport(
     tableStyles,
   );
   const tableRowMarkers = markDocxTableRows(document);
-  const tableSizingMarkers = markDocxTableSizing(document);
+  const tableSizingMarkers = markDocxTableSizing(document, tableStyles);
   const settings = archive.has('word/settings.xml')
     ? await archive.xml('word/settings.xml')
     : null;

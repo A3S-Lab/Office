@@ -22,6 +22,12 @@ import {
   uniformDocumentTableBorder,
   uniformDocumentTableBorders,
 } from './work-document-table-borders';
+import {
+  documentTableCellMarginOverridesFromElement,
+  normalizeDocumentTableCellMarginOverrides,
+  renderDocumentTableCellMarginOverrides,
+  type DocumentTableCellMarginOverrides,
+} from './work-document-table-geometry';
 
 export {
   documentTableBordersFromElement,
@@ -50,6 +56,7 @@ export interface DocumentTableCellFormat {
   borderStyle: DocumentTableBorderStyle;
   borderWidth: number;
   borders: DocumentTableCellBorders;
+  margins: DocumentTableCellMarginOverrides | null;
 }
 
 export type DocumentTableCellFormatPatch = Partial<
@@ -139,6 +146,7 @@ export const DEFAULT_DOCUMENT_TABLE_CELL_FORMAT: DocumentTableCellFormat = {
     style: 'solid',
     width: 1,
   }),
+  margins: null,
 };
 
 export const DEFAULT_DOCUMENT_TABLE_HEADER_FORMAT: DocumentTableCellFormat = {
@@ -330,6 +338,13 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         renderDocumentTableBorders(
           formatFromAttributes(attributes, defaults).borders,
         ),
+    },
+    margins: {
+      default: defaults.margins,
+      parseHTML: (element: HTMLElement) =>
+        documentTableCellMarginOverridesFromElement(element),
+      renderHTML: (attributes: Record<string, unknown>) =>
+        renderDocumentTableCellMarginOverrides(attributes.margins),
     },
   };
 }
@@ -539,6 +554,15 @@ function normalizeFormatPatch(
     if (width === null) return null;
     normalized.borderWidth = width;
   }
+  if (patch.margins !== undefined) {
+    if (patch.margins === null) {
+      normalized.margins = null;
+    } else {
+      const margins = normalizeDocumentTableCellMarginOverrides(patch.margins);
+      if (!margins) return null;
+      normalized.margins = margins;
+    }
+  }
   return normalized;
 }
 
@@ -575,6 +599,7 @@ function formatFromAttributes(
     borderStyle: representative.style,
     borderWidth: representative.width,
     borders,
+    margins: normalizeDocumentTableCellMarginOverrides(attributes.margins),
   };
 }
 

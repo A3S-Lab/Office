@@ -111,7 +111,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.tables',
             'Tables',
-            'Table rows, non-splitting rows, repeated headers, cell shading, vertical alignment, per-edge borders, and paragraph-boundary row continuation remain editable. Common inherited Word table styles apply whole-table, banded row or column, first or last row or column, corner-cell, border, fill, text-emphasis, paragraph alignment, direction, indents, spacing, line, pagination, and tab-stop rules before direct table, cell, paragraph, and run formatting. Theme tint and shade values resolve to stable RGB for edit, preview, and export; less-common conditional paragraph properties, semantic theme references after export, nested tables, and complex merged-cell flow may be normalized.',
+            'Table rows, non-splitting rows, repeated headers, cell shading, vertical alignment, per-edge borders, and paragraph-boundary row continuation remain editable. Layout algorithm, preferred auto, percentage, or pixel width, alignment, indent, table-level cell margins, and cell-level margin overrides are preserved independently across edit, preview, and DOCX export. Common inherited Word table styles apply whole-table, banded row or column, first or last row or column, corner-cell, border, fill, text-emphasis, paragraph alignment, direction, indents, spacing, line, pagination, and tab-stop rules before direct table, cell, paragraph, and run formatting. Theme tint and shade values resolve to stable RGB for edit, preview, and export; less-common conditional paragraph properties, semantic theme references after export, nested tables, and complex merged-cell flow may be normalized.',
           ),
         );
       }

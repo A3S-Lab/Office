@@ -7,10 +7,13 @@ import {
   normalizeDocumentTableVerticalAlign,
   normalizeTableColor,
 } from './work-document-table-cell-formatting';
+import { documentTableCellMarginOverridesFromElement } from './work-document-table-geometry';
 
 type TableCellPresentationOptions = Partial<
-  Pick<ITableCellOptions, 'borders' | 'shading' | 'verticalAlign'>
+  Pick<ITableCellOptions, 'borders' | 'margins' | 'shading' | 'verticalAlign'>
 >;
+
+const TWIPS_PER_PIXEL = 1440 / 96;
 
 export function documentTableCellDocxOptions(
   cell: HTMLTableCellElement,
@@ -41,6 +44,7 @@ export function documentTableCellDocxOptions(
   const borders = hasDocumentTableBorderPresentation(cell)
     ? documentTableBordersFromElement(cell, fallbackBorder)
     : null;
+  const margins = documentTableCellMarginOverridesFromElement(cell);
 
   return {
     ...(backgroundColor
@@ -71,7 +75,21 @@ export function documentTableCellDocxOptions(
           },
         }
       : {}),
+    ...(margins
+      ? {
+          margins: Object.fromEntries(
+            Object.entries(margins).map(([side, value]) => [
+              side,
+              pixelsToTwips(value),
+            ]),
+          ),
+        }
+      : {}),
   };
+}
+
+function pixelsToTwips(pixels: number): number {
+  return Math.max(0, Math.round(pixels * TWIPS_PER_PIXEL));
 }
 
 function documentTableCellDocxBorder(

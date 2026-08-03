@@ -478,14 +478,43 @@ async function createStyledTableWordFixture(): Promise<Buffer> {
   }
   const conditionalTableProperties = tableProperties
     .replace(/<w:tblBorders>[\s\S]*?<\/w:tblBorders>/, '')
+    .replace(/<w:tblW\b[^>]*\/>/, '')
+    .replace(/<w:tblLayout\b[^>]*\/>/, '')
+    .replace(/<w:jc\b[^>]*\/>/, '')
+    .replace(/<w:tblCellMar>[\s\S]*?<\/w:tblCellMar>/, '')
     .replace(
       '<w:tblPr>',
-      '<w:tblPr><w:tblStyle w:val="A3SReportTable"/><w:tblLook w:firstRow="1" w:lastRow="1" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>',
+      [
+        '<w:tblPr>',
+        '<w:tblStyle w:val="A3SReportTable"/>',
+        '<w:tblW w:type="pct" w:w="3125"/>',
+        '<w:jc w:val="center"/>',
+        '<w:tblLayout w:type="autofit"/>',
+        '<w:tblCellMar>',
+        '<w:top w:type="dxa" w:w="0"/>',
+        '<w:left w:type="dxa" w:w="144"/>',
+        '<w:bottom w:type="dxa" w:w="72"/>',
+        '<w:right w:type="dxa" w:w="216"/>',
+        '</w:tblCellMar>',
+        '<w:tblLook w:firstRow="1" w:lastRow="1" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>',
+      ].join(''),
     );
-  archive.file(
-    'word/document.xml',
-    documentXml.replace(tableProperties, conditionalTableProperties),
+  const cellMargins =
+    '<w:tcMar><w:top w:type="dxa" w:w="120"/><w:right w:type="dxa" w:w="240"/></w:tcMar>';
+  const tableGeometryXml = documentXml.replace(
+    tableProperties,
+    conditionalTableProperties,
   );
+  const geometryDocumentXml = tableGeometryXml.includes('<w:tcPr>')
+    ? tableGeometryXml.replace('<w:tcPr>', `<w:tcPr>${cellMargins}`)
+    : tableGeometryXml.replace(
+        '<w:tc>',
+        `<w:tc><w:tcPr>${cellMargins}</w:tcPr>`,
+      );
+  if (!geometryDocumentXml.includes(cellMargins)) {
+    throw new Error('Failed to add the styled-table cell margins.');
+  }
+  archive.file('word/document.xml', geometryDocumentXml);
   archive.file(
     'word/styles.xml',
     stylesXml.replace(

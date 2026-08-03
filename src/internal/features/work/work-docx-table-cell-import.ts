@@ -21,6 +21,11 @@ import {
   docxTableCellStyleLayers,
   resolveDocxTableStyleResolver,
 } from './work-docx-table-styles';
+import {
+  renderDocumentTableCellMarginOverrides,
+  type DocumentTableCellMarginOverrides,
+  type DocumentTableCellMarginSide,
+} from './work-document-table-geometry';
 
 export type ImportedDocxTableCellVerticalAlign = 'top' | 'middle' | 'bottom';
 export type ImportedDocxTableCellBorderStyle =
@@ -35,6 +40,7 @@ export interface ImportedDocxTableCellMarker {
   backgroundColor?: string;
   verticalAlign?: ImportedDocxTableCellVerticalAlign;
   borders?: ImportedDocxTableCellBorders;
+  margins?: DocumentTableCellMarginOverrides;
 }
 
 export interface ImportedDocxTableCellMarkers {
@@ -62,6 +68,7 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const TABLE_CELL_MARKER_PATTERN = /__A3S_WORK_TABLE_CELL_\d+__/g;
+const PIXELS_PER_TWIP = 96 / 1440;
 
 export function markDocxTableCells(
   document: Document,
@@ -87,7 +94,8 @@ export function markDocxTableCells(
     const borders = importedTableCellBorders(cell, layers, theme);
     const backgroundColor = importedTableCellBackgroundColor(layers, theme);
     const verticalAlign = importedTableCellVerticalAlign(layers);
-    if (!backgroundColor && !verticalAlign && !borders) continue;
+    const margins = importedTableCellMargins(layers);
+    if (!backgroundColor && !verticalAlign && !borders && !margins) continue;
     const paragraph = firstTableCellParagraph(document, cell);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_CELL_${cells.length + 1}__`;
@@ -97,6 +105,7 @@ export function markDocxTableCells(
       ...(backgroundColor ? { backgroundColor } : {}),
       ...(verticalAlign ? { verticalAlign } : {}),
       ...(borders ? { borders } : {}),
+      ...(margins ? { margins } : {}),
     });
   }
   return { cells };
@@ -155,6 +164,56 @@ function applyCellFormat(
     }
     cell.style.cssText = `${cell.style.cssText}; ${rendered.style}`;
   }
+  if (format.margins) {
+    const rendered = renderDocumentTableCellMarginOverrides(format.margins);
+    for (const [name, value] of Object.entries(rendered)) {
+      if (name !== 'style') cell.setAttribute(name, value);
+    }
+    if (rendered.style) {
+      cell.style.cssText = `${cell.style.cssText}; ${rendered.style}`;
+    }
+  }
+}
+
+function importedTableCellMargins(
+  layers: readonly DocxTableStyleLayer[],
+): DocumentTableCellMarginOverrides | null {
+  const margins: DocumentTableCellMarginOverrides = {};
+  for (const layer of layers) {
+    const marginElement = layer.cellProperties
+      ? directChild(layer.cellProperties, 'tcMar')
+      : undefined;
+    if (!marginElement) continue;
+    const children = new Map(
+      directChildren(marginElement).map((margin) => [margin.localName, margin]),
+    );
+    assignCellMargin(margins, 'top', children.get('top'));
+    assignCellMargin(
+      margins,
+      'right',
+      children.get('right') ?? children.get('end'),
+    );
+    assignCellMargin(margins, 'bottom', children.get('bottom'));
+    assignCellMargin(
+      margins,
+      'left',
+      children.get('left') ?? children.get('start'),
+    );
+  }
+  return Object.keys(margins).length ? margins : null;
+}
+
+function assignCellMargin(
+  target: DocumentTableCellMarginOverrides,
+  side: DocumentTableCellMarginSide,
+  element: Element | undefined,
+): void {
+  if (!element) return;
+  const type = attribute(element, 'type');
+  if (type && type !== 'dxa') return;
+  const twips = Number(attribute(element, 'w'));
+  if (!Number.isFinite(twips) || twips < 0) return;
+  target[side] = Math.round(twips * PIXELS_PER_TWIP * 100) / 100;
 }
 
 function importedTableCellBorders(

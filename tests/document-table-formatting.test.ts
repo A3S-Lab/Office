@@ -62,6 +62,7 @@ describe('document table formatting', () => {
       borderColor: '#4472c4',
       borderStyle: 'double',
       borderWidth: 2,
+      margins: null,
     });
     expect(cells[1]).toMatchObject({
       backgroundColor: '#fff2cc',
@@ -76,6 +77,44 @@ describe('document table formatting', () => {
     expect(html).toContain('data-office-cell-vertical-align="middle"');
     expect(html).toContain('data-office-cell-border-style="double"');
     expect(html).toContain('border: 2px double #4472c4');
+    editor.destroy();
+  });
+
+  test('keeps partial cell-margin overrides in editable HTML', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<table><tbody><tr><td ',
+        'data-office-cell-margin-top="8" ',
+        'data-office-cell-margin-right="16" ',
+        'style="padding-top: 8px; padding-right: 16px">',
+        '<p>Inset</p></td></tr></tbody></table>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(firstTablePosition(editor) + 4);
+
+    expect(tableCellAttributes(editor)[0]?.margins).toEqual({
+      top: 8,
+      right: 16,
+    });
+    expect(
+      editor.commands.setDocumentTableCellFormat({
+        margins: { top: 4, right: 6, bottom: 4, left: 6 },
+      }),
+    ).toBe(true);
+    expect(tableCellAttributes(editor)[0]?.margins).toEqual({
+      top: 4,
+      right: 6,
+      bottom: 4,
+      left: 6,
+    });
+    expect(editor.getHTML()).toContain('data-office-cell-margin-left="6"');
+    const rendered = document.createElement('div');
+    rendered.innerHTML = editor.getHTML();
+    expect(rendered.querySelector<HTMLElement>('td')?.style.paddingLeft).toBe(
+      '6px',
+    );
+
     editor.destroy();
   });
 

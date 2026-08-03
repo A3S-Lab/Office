@@ -33,6 +33,14 @@ suite "office-word-styled-table" {
             visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
         }
 
+        expect "table-geometry-matches-word" {
+            visible = css(".work-document-editable table[data-office-table-layout='autofit'][data-office-table-width-type='percent'][data-office-table-width='62.5'][data-office-table-alignment='center'][data-office-table-cell-margin-left='9.6'][data-office-table-cell-margin-right='14.4']")
+        }
+
+        expect "cell-margin-override-is-preserved" {
+            visible = css(".work-document-editable table tr:first-child td:first-child[data-office-cell-margin-top='8'][data-office-cell-margin-right='16']")
+        }
+
         expect "header-style-is-inherited" {
             visible = css(".work-document-editable table tr:first-child td[data-office-cell-fill='#4472c4'][data-office-cell-border-bottom-color='#ffffff'][data-office-cell-border-bottom-style='double']")
         }
@@ -65,6 +73,51 @@ suite "office-word-styled-table" {
             visible = css(".work-document-editable table tr:nth-child(3) td p[style*='text-align: right'][data-office-indent-right='12']")
         }
 
+        click "select-table-cell" {
+            target = css(".work-document-editable table tr:first-child td:first-child")
+        }
+
+        click "open-table-layout" {
+            target = role("tab", "表格布局")
+        }
+
+        expect "custom-autofit-width-is-truthful" {
+            text = "当前宽度"
+        }
+
+        click "open-cell-margins" {
+            target = role("button", "单元格边距")
+        }
+
+        expect "cell-margin-dialog-is-semantic" {
+            visible = css("[role='dialog'][aria-label='单元格边距设置'] .work-document-table-margin-field")
+        }
+
+        fill "change-left-cell-margin" {
+            target = label("单元格左边距（厘米）")
+            value = "0.5"
+        }
+
+        press "commit-left-cell-margin" {
+            key = "Enter"
+        }
+
+        wait "left-cell-margin-is-applied" {
+            visible = css(".work-document-editable table[data-office-table-cell-margin-left='18.9']")
+        }
+
+        screenshot "table-cell-margin-dialog" {
+            path = "screenshots/word-table-cell-margins.png"
+        }
+
+        press "close-cell-margin-dialog" {
+            key = "Escape"
+        }
+
+        expect "cell-margin-trigger-regains-focus" {
+            visible = css(".work-document-table-margins-popover button[aria-expanded='false']:focus")
+        }
+
         click "preview-document" {
             target = role("button", "预览")
         }
@@ -79,6 +132,14 @@ suite "office-word-styled-table" {
 
         expect "preview-keeps-last-row-style" {
             visible = css(".work-document-preview-page table tr:nth-child(3) td[data-office-cell-fill='#a5a5a5']")
+        }
+
+        expect "preview-keeps-table-geometry" {
+            visible = css(".work-document-preview-page table[data-office-table-layout='autofit'][data-office-table-width-type='percent'][data-office-table-width='62.5'][data-office-table-alignment='center'][data-office-table-cell-margin-left='18.9']")
+        }
+
+        expect "preview-keeps-cell-margin-override" {
+            visible = css(".work-document-preview-page table tr:first-child td:first-child[data-office-cell-margin-top='8'][data-office-cell-margin-right='16']")
         }
 
         expect "preview-keeps-header-paragraph-layout" {

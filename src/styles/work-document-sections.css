@@ -352,16 +352,16 @@
 
 .work-document-preview-page table,
 .work-document-print-body table {
-  width: 100%;
-  max-width: 100%;
+  width: auto;
   margin: 18px 0 22px;
-  table-layout: fixed;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
+.work-document-preview-page table[data-office-table-layout="autofit"],
+.work-document-print-body table[data-office-table-layout="autofit"],
 .work-document-preview-page table[data-office-table-layout="contents"],
 .work-document-print-body table[data-office-table-layout="contents"] {
-  width: max-content;
   table-layout: auto;
 }
 
@@ -379,8 +379,11 @@
 
 .work-document-preview-page :is(th, td),
 .work-document-print-body :is(th, td) {
-  min-width: 80px;
-  padding: 7px 9px;
+  min-width: 25px;
+  padding: var(--work-table-cell-margin-top, 0px)
+    var(--work-table-cell-margin-right, 7.2px)
+    var(--work-table-cell-margin-bottom, 0px)
+    var(--work-table-cell-margin-left, 7.2px);
   border: 1px solid #cfd5df;
   vertical-align: top;
 }
@@ -513,8 +516,7 @@
   font-size: 11px;
 }
 
-:is(.work-document-preview-page, .work-pdf-export-page.document) img,
-:is(.work-document-preview-page, .work-pdf-export-page.document) table {
+:is(.work-document-preview-page, .work-pdf-export-page.document) img {
   max-width: 100%;
 }
 

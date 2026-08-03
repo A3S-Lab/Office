@@ -1,10 +1,10 @@
 import type { ITableCellOptions, ITableOptions, ITableRowOptions } from 'docx';
 import { normalizeDocumentTableRowHeightRule } from './work-document-table-row';
-import { normalizeDocumentTableLayoutMode } from './work-document-table-sizing';
+import { documentTableGeometryFromElement } from './work-document-table-geometry';
 
 type TableSizingDocxOptions = Pick<
   ITableOptions,
-  'columnWidths' | 'layout' | 'width'
+  'alignment' | 'columnWidths' | 'indent' | 'layout' | 'margins' | 'width'
 >;
 type TableCellSizingDocxOptions = Pick<ITableCellOptions, 'width'>;
 type TableRowSizingDocxOptions = Pick<ITableRowOptions, 'height'>;
@@ -15,30 +15,47 @@ export function documentTableSizingDocxOptions(
   table: HTMLTableElement,
   docx: typeof import('docx'),
 ): TableSizingDocxOptions {
-  const mode = normalizeDocumentTableLayoutMode(
-    table.dataset.officeTableLayout,
-  );
+  const geometry = documentTableGeometryFromElement(table);
   const pixelWidths = documentTableColumnWidths(table);
   const columnWidths = pixelWidths?.map(pixelsToTwips);
-  if (mode === 'contents') {
-    return {
-      layout: docx.TableLayoutType.AUTOFIT,
-      width: { size: 0, type: docx.WidthType.AUTO },
-    };
-  }
-  if (mode === 'fixed' && columnWidths?.length) {
-    return {
-      columnWidths,
-      layout: docx.TableLayoutType.FIXED,
-      width: {
-        size: columnWidths.reduce((sum, width) => sum + width, 0),
-        type: docx.WidthType.DXA,
-      },
-    };
-  }
   return {
-    layout: docx.TableLayoutType.FIXED,
-    width: { size: 100, type: docx.WidthType.PERCENTAGE },
+    ...(columnWidths?.length ? { columnWidths } : {}),
+    layout:
+      geometry.layout === 'fixed'
+        ? docx.TableLayoutType.FIXED
+        : docx.TableLayoutType.AUTOFIT,
+    width:
+      geometry.width.type === 'percent' && geometry.width.value !== null
+        ? {
+            size: geometry.width.value,
+            type: docx.WidthType.PERCENTAGE,
+          }
+        : geometry.width.type === 'pixels' && geometry.width.value !== null
+          ? {
+              size: pixelsToTwips(geometry.width.value),
+              type: docx.WidthType.DXA,
+            }
+          : { size: 0, type: docx.WidthType.AUTO },
+    alignment:
+      geometry.alignment === 'center'
+        ? docx.AlignmentType.CENTER
+        : geometry.alignment === 'right'
+          ? docx.AlignmentType.RIGHT
+          : docx.AlignmentType.LEFT,
+    ...(geometry.indent > 0
+      ? {
+          indent: {
+            size: pixelsToTwips(geometry.indent),
+            type: docx.WidthType.DXA,
+          },
+        }
+      : {}),
+    margins: {
+      top: pixelsToNonNegativeTwips(geometry.cellMargins.top),
+      right: pixelsToNonNegativeTwips(geometry.cellMargins.right),
+      bottom: pixelsToNonNegativeTwips(geometry.cellMargins.bottom),
+      left: pixelsToNonNegativeTwips(geometry.cellMargins.left),
+    },
   };
 }
 
@@ -104,4 +121,8 @@ function rowHeightPixels(row: HTMLTableRowElement): number | null {
 
 function pixelsToTwips(pixels: number): number {
   return Math.max(1, Math.round(pixels * TWIPS_PER_PIXEL));
+}
+
+function pixelsToNonNegativeTwips(pixels: number): number {
+  return Math.max(0, Math.round(pixels * TWIPS_PER_PIXEL));
 }

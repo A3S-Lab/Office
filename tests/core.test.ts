@@ -451,6 +451,74 @@ describe('office core', () => {
     );
   });
 
+  test('round-trips independent DOCX table width, position, and cell margins', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<table data-office-table-layout="autofit" ',
+      'data-office-table-width-type="percent" ',
+      'data-office-table-width="62.5" ',
+      'data-office-table-alignment="center" ',
+      'data-office-table-indent="8" ',
+      'data-office-table-cell-margin-top="0" ',
+      'data-office-table-cell-margin-right="14.4" ',
+      'data-office-table-cell-margin-bottom="4.8" ',
+      'data-office-table-cell-margin-left="9.6"><tbody><tr>',
+      '<td colwidth="160" data-office-cell-margin-top="8" ',
+      'data-office-cell-margin-right="16"><p>Geometry</p></td>',
+      '</tr></tbody></table>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+
+    expect(xml).toMatch(/<w:tblW\b(?=[^>]*w:type="pct")(?=[^>]*w:w="62\.5%")/);
+    expect(xml).toContain('<w:tblLayout w:type="autofit"/>');
+    expect(xml).toContain('<w:jc w:val="center"/>');
+    expect(xml).toMatch(/<w:tblInd\b(?=[^>]*w:type="dxa")(?=[^>]*w:w="120")/);
+    expect(xml).toMatch(
+      /<w:tblCellMar>[\s\S]*?<w:top\b[^>]*w:w="0"[\s\S]*?<w:left\b[^>]*w:w="144"[\s\S]*?<w:bottom\b[^>]*w:w="72"[\s\S]*?<w:right\b[^>]*w:w="216"/,
+    );
+    expect(xml).toMatch(
+      /<w:tcMar>[\s\S]*?<w:top\b[^>]*w:w="120"[\s\S]*?<w:right\b[^>]*w:w="240"/,
+    );
+
+    const imported = await importOfficeFile(
+      new File([blob], 'table-geometry.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    expect(imported.content.html).toContain(
+      'data-office-table-layout="autofit"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-table-width-type="percent"',
+    );
+    expect(imported.content.html).toContain('data-office-table-width="62.5"');
+    expect(imported.content.html).toContain(
+      'data-office-table-alignment="center"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-table-cell-margin-left="9.6"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-cell-margin-right="16"',
+    );
+    expect(imported.compatibility.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.tables',
+        message: expect.stringContaining(
+          'preferred auto, percentage, or pixel width',
+        ),
+      }),
+    );
+  });
+
   test('materializes DOCX export from the structured model instead of stale HTML', async () => {
     const artifact = await importOfficeFile(
       new File(['<p>HTML cache</p>'], 'model-source.html', {
