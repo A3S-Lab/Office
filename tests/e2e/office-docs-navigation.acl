@@ -59,29 +59,16 @@ suite "office-docs-navigation" {
             url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
-        viewport "compact-version-navigation" {
-            width = 700
-            height = 900
-        }
-
-        snapshot "observe-compact-version-navigation" {
+        snapshot "observe-desktop-version-navigation" {
             interactive = true
         }
 
-        click "open-responsive-navigation" {
-            target = css(".rp-nav-hamburger__sm")
-        }
-
-        snapshot "observe-responsive-navigation" {
-            interactive = true
-        }
-
-        expect "responsive-navigation-open" {
-            visible = css(".rp-nav-screen--open")
+        expect "desktop-document-controls-visible" {
+            visible = css(".rp-nav__others")
         }
 
         click "open-version-menu" {
-            target = css(".rp-nav-screen--open .rp-nav-screen-versions")
+            target = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.1.0']) > .rp-nav-menu__item__container")
         }
 
         snapshot "observe-version-menu" {
@@ -89,11 +76,11 @@ suite "office-docs-navigation" {
         }
 
         expect "version-0-1-0-visible" {
-            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href*='/0.1.0/components/document.html']")
+            visible = css(".rp-nav__others a[aria-label='0.1.0'][href*='/0.1.0/components/document.html']")
         }
 
         click "select-version-0-1-0" {
-            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href*='/0.1.0/components/document.html']")
+            target = css(".rp-nav__others a[aria-label='0.1.0'][href*='/0.1.0/components/document.html']")
         }
 
         wait "versioned-document-route" {
@@ -102,6 +89,11 @@ suite "office-docs-navigation" {
 
         expect "versioned-document-ready" {
             text = "自定义选区菜单"
+        }
+
+        viewport "compact-language-navigation" {
+            width = 700
+            height = 900
         }
 
         click "reopen-responsive-navigation" {

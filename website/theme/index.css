@@ -50,6 +50,27 @@ body {
   letter-spacing: -0.02em;
 }
 
+/*
+ * Rspress moves language and version controls into an unlabeled overflow
+ * menu at 1280px. The documentation navigation still has enough room at
+ * ordinary laptop widths, so keep these two primary document controls
+ * visible and reserve the overflow menu for genuinely compact layouts.
+ */
+@media (min-width: 1120px) and (max-width: 1280px) {
+  .rp-nav .rp-nav__right {
+    gap: 16px;
+  }
+
+  .rp-nav .rp-nav__others {
+    display: flex;
+    gap: 12px;
+  }
+
+  .rp-nav .rp-nav-hamburger__md {
+    display: none;
+  }
+}
+
 .office-docs-playground-link {
   display: inline-flex;
   height: 30px;

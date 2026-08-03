@@ -4,6 +4,9 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Kept the documentation language and version selectors visible at ordinary
+  laptop widths; the site opens in Simplified Chinese on `latest` and retains
+  the frozen `0.1.0` documentation for version switching.
 - Separated Word Table Properties updates from preceding edits in TipTap
   history, so undoing a property change no longer removes a newly inserted
   table.
