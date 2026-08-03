@@ -275,6 +275,17 @@ export function DocumentEditor({
       taskPaneInvokerRef.current = active;
     }
   }, []);
+  const taskPaneRestoreTarget = useCallback(() => {
+    const invoker = taskPaneInvokerRef.current;
+    if (
+      invoker?.isConnected &&
+      !invoker.matches(':disabled') &&
+      !invoker.closest('[hidden], [aria-hidden="true"]')
+    ) {
+      return invoker;
+    }
+    return editor && !editor.isDestroyed ? editor.view.dom : null;
+  }, [editor]);
   const rememberTaskPaneDraftFocus = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       const target = event.target;
@@ -373,22 +384,24 @@ export function DocumentEditor({
       taskPaneDialog.confirm,
     ],
   );
+  const restoreClosedTaskPaneFocus = useCallback(() => {
+    requestAnimationFrame(() => {
+      const target = taskPaneModal
+        ? taskPaneRestoreTarget()
+        : editor && !editor.isDestroyed
+          ? editor.view.dom
+          : null;
+      target?.focus({ preventScroll: true });
+    });
+  }, [editor, taskPaneModal, taskPaneRestoreTarget]);
   const closeTaskPane = useCallback(async () => {
     if (!(await requestEditorViewChange(null, false))) return;
-    if (!taskPaneModal) {
-      requestAnimationFrame(() => {
-        if (editor && !editor.isDestroyed) editor.view.dom.focus();
-      });
-    }
-  }, [editor, requestEditorViewChange, taskPaneModal]);
+    restoreClosedTaskPaneFocus();
+  }, [requestEditorViewChange, restoreClosedTaskPaneFocus]);
   const closeCommentsPanel = useCallback(async () => {
     if (!(await requestEditorViewChange(null, true))) return;
-    if (!taskPaneModal) {
-      requestAnimationFrame(() => {
-        if (editor && !editor.isDestroyed) editor.view.dom.focus();
-      });
-    }
-  }, [editor, requestEditorViewChange, taskPaneModal]);
+    restoreClosedTaskPaneFocus();
+  }, [requestEditorViewChange, restoreClosedTaskPaneFocus]);
   const toggleTaskPane = useCallback(
     async (pane: Exclude<DocumentTaskPane, DocumentFindReplaceMode>) => {
       if (taskPane !== pane) rememberTaskPaneInvoker();
@@ -465,17 +478,7 @@ export function DocumentEditor({
       return pane?.querySelector<HTMLElement>('.ds-icon-button.close') ?? null;
     },
     getActiveScope: activeTaskPaneElement,
-    restoreFocusTarget: () => {
-      const invoker = taskPaneInvokerRef.current;
-      if (
-        invoker?.isConnected &&
-        !invoker.matches(':disabled') &&
-        !invoker.closest('[hidden], [aria-hidden="true"]')
-      ) {
-        return invoker;
-      }
-      return editor && !editor.isDestroyed ? editor.view.dom : null;
-    },
+    restoreFocusTarget: taskPaneRestoreTarget,
   });
 
   useOfficeTaskPaneEscape(Boolean(taskPane) && !taskPaneModal, closeTaskPane);
