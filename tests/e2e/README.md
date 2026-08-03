@@ -94,7 +94,8 @@ from a project-relative fixture plus focus-synchronized thumbnail keyboard
 navigation, plus a phone page-drawer workflow proving toolbar ownership,
 selection, modal close behavior, and an unobstructed document canvas; the
 phone Markdown source, visual, and split-mode workflow with
-unambiguous accessible controls; and the public
+unambiguous accessible controls, a source-first full-workspace phone switch,
+synchronized preview content, and touch-sized actions; and the public
 Playground-to-documentation-center navigation contract, including Simplified
 Chinese as the default language, language and release-version switching, the
 documentation tree, and the same-deployment return to the Playground homepage.

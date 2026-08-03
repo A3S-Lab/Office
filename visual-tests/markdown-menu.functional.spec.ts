@@ -45,7 +45,7 @@ test('Markdown split mode keeps source editable and preview read-only', async ({
   const previewPane = page.getByRole('region', {
     name: 'Markdown 预览窗格',
   });
-  await expect(sourcePane.getByText('编辑', { exact: true })).toBeVisible();
+  await expect(sourcePane.getByText('源码', { exact: true })).toBeVisible();
   await expect(previewPane.getByText('预览', { exact: true })).toBeVisible();
 
   const source = page.getByRole('textbox', { name: 'Markdown 源码' });

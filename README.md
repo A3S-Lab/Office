@@ -303,8 +303,11 @@ interaction model.
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
   source-aware ribbon formatting and shortcuts, empty-source guidance, task
-  lists, tables, links, images, code, and keyboard-accessible host-defined
-  selection menus across both editing surfaces. _Markdown import/export._
+  lists, tables, links, images, code, a flat reading surface with a comfortable
+  line length, and keyboard-accessible host-defined selection menus across both
+  editing surfaces. At phone widths, Source and Preview each use the complete
+  workspace instead of being compressed into two stacked panes. _Markdown
+  import/export._
 - **Spreadsheet** — Multiple sheets, formulas, dependency-aware recalculation,
   live selection statistics, an A3S-owned worksheet bar with lifecycle and
   color controls, safe deletion confirmation, in-place rename validation, a

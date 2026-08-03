@@ -365,11 +365,16 @@ After the Document gates above are stable:
   restore selections, rebase on host replacements, and avoid duplicate visual
   history records during synchronization.
 - Keep the default split view directly resizable without breaking synchronized
-  scrolling or the stacked compact layout.
+  scrolling; at phone widths, give Source or Preview the complete workspace
+  through one explicit, touch-sized switch.
+- Keep the preview a calm reading surface with a bounded line length and one
+  visual hierarchy across headings, prose, quotations, code, tables, and task
+  lists.
 
 Exit evidence: canonical Markdown fixtures round-trip without semantic drift,
-custom structural Extensions have serialization tests, and source/visual undo
-remains one coherent history.
+custom structural Extensions have serialization tests, source/visual undo
+remains one coherent history, and desktop split plus phone full-pane behavior
+pass visual and deterministic E2E regression.
 
 ## Priority 3: Spreadsheet
 

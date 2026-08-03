@@ -36,13 +36,37 @@ suite "office-markdown-phone-modes" {
             visible = css(".work-markdown-workspace.split")
         }
 
+        expect "phone-split-starts-with-source" {
+            visible = css(".work-markdown-compact-switch button[aria-label='显示源码窗格'][aria-pressed='true']")
+        }
+
+        click "show-phone-preview" {
+            target = role("button", "显示预览窗格")
+        }
+
+        expect "phone-preview-uses-workspace" {
+            visible = css(".work-markdown-workspace.split[data-compact-pane='preview'] .work-markdown-pane.visual")
+        }
+
+        click "return-to-phone-source" {
+            target = role("button", "显示源码窗格")
+        }
+
         fill "write-markdown-source" {
             target = css(".work-markdown-pane.source textarea")
             value = "# 手机工作流\n\n- [x] 源码编辑\n- [ ] 预览同步"
         }
 
+        click "show-synchronized-preview" {
+            target = role("button", "显示预览窗格")
+        }
+
         wait "preview-synchronized" {
             text = "预览同步"
+        }
+
+        click "restore-phone-source" {
+            target = role("button", "显示源码窗格")
         }
 
         click "open-view-tab" {
@@ -82,7 +106,15 @@ suite "office-markdown-phone-modes" {
         }
 
         expect "split-workspace-restored" {
-            visible = css(".work-markdown-workspace.split .work-markdown-pane.visual[data-readonly='true']")
+            visible = css(".work-markdown-workspace.split[data-compact-pane='source'] .work-markdown-pane.source")
+        }
+
+        click "show-final-phone-preview" {
+            target = role("button", "显示预览窗格")
+        }
+
+        expect "final-preview-selected" {
+            visible = css(".work-markdown-workspace.split[data-compact-pane='preview'] button[aria-label='显示预览窗格'][aria-pressed='true']")
         }
 
         screenshot "phone-markdown-modes" {

@@ -108,7 +108,7 @@ test('keeps the default split view to one editor and one read-only preview', asy
   ).toBeDisabled();
   expect(
     within(screen.getByRole('region', { name: 'Markdown 源码窗格' })).getByText(
-      '编辑',
+      '源码',
     ),
   ).toBeInTheDocument();
   expect(
@@ -116,6 +116,22 @@ test('keeps the default split view to one editor and one read-only preview', asy
       '预览',
     ),
   ).toBeInTheDocument();
+  const splitWorkspace = source.closest('.work-markdown-workspace');
+  const compactSwitch = screen.getByRole('group', { name: '分屏显示内容' });
+  const showSource = within(compactSwitch).getByRole('button', {
+    name: '显示源码窗格',
+  });
+  const showPreview = within(compactSwitch).getByRole('button', {
+    name: '显示预览窗格',
+  });
+  expect(splitWorkspace).toHaveAttribute('data-compact-pane', 'source');
+  expect(showSource).toHaveAttribute('aria-pressed', 'true');
+  expect(showPreview).toHaveAttribute('aria-pressed', 'false');
+
+  fireEvent.click(showPreview);
+  expect(splitWorkspace).toHaveAttribute('data-compact-pane', 'preview');
+  expect(showSource).toHaveAttribute('aria-pressed', 'false');
+  expect(showPreview).toHaveAttribute('aria-pressed', 'true');
 
   fireEvent.click(await screen.findByRole('tab', { name: '视图' }));
   fireEvent.click(

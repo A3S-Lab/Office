@@ -34,7 +34,9 @@ const fixtures: VisualFixture[] = [
         })
         .click(),
     ready: async (page) => {
-      await page.locator('.work-markdown-editor .ProseMirror').waitFor();
+      await page
+        .locator('.work-markdown-editor .ProseMirror')
+        .waitFor({ state: 'attached' });
     },
   },
   {
@@ -605,7 +607,7 @@ test('PDF keeps page and zoom controls inside the desktop command row', async ({
   expect(geometry.zoomRight).toBeLessThanOrEqual(geometry.toolbarRight + 1);
 });
 
-test('Markdown keeps source and preview side by side at compact width', async ({
+test('Markdown keeps a flat readable split view at compact width', async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -631,12 +633,21 @@ test('Markdown keeps source and preview side by side at compact width', async ({
       const splitter = workspace.querySelector<HTMLElement>(
         '.work-markdown-splitter',
       );
-      if (!(source && preview && splitter)) {
+      const canvas = preview?.querySelector<HTMLElement>(
+        '.work-markdown-canvas',
+      );
+      if (!(source && preview && splitter && canvas)) {
         throw new Error('Markdown split workspace is incomplete.');
       }
       const sourceRect = source.getBoundingClientRect();
       const previewRect = preview.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      const canvasStyle = getComputedStyle(canvas);
       return {
+        canvasBorderTopWidth: canvasStyle.borderTopWidth,
+        canvasBoxShadow: canvasStyle.boxShadow,
+        canvasWidth: canvasRect.width,
+        previewWidth: previewRect.width,
         previewLeft: previewRect.left,
         previewTop: previewRect.top,
         sourceRight: sourceRect.right,
@@ -648,6 +659,12 @@ test('Markdown keeps source and preview side by side at compact width', async ({
   expect(geometry.sourceTop).toBeCloseTo(geometry.previewTop, 0);
   expect(geometry.sourceRight).toBeLessThanOrEqual(geometry.previewLeft);
   expect(geometry.splitterDisplay).not.toBe('none');
+  expect(geometry.canvasBorderTopWidth).toBe('0px');
+  expect(geometry.canvasBoxShadow).toBe('none');
+  expect(geometry.canvasWidth).toBeCloseTo(geometry.previewWidth, 0);
+  await expect(
+    page.locator('li[data-type="taskItem"][data-checked="true"] > div').first(),
+  ).toHaveCSS('text-decoration-line', 'none');
 });
 
 test('presentation transition controls keep standard ribbon geometry', async ({

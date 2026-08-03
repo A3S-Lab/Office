@@ -1,5 +1,6 @@
 .work-markdown-editor {
   --work-office-accent: #586574;
+  --work-markdown-reading-width: 760px;
   --work-markdown-zoom: 100;
 
   display: flex;
@@ -44,6 +45,10 @@
 .work-markdown-workspace[data-split-resizing="true"] {
   cursor: col-resize;
   user-select: none;
+}
+
+.work-markdown-compact-switch {
+  display: none;
 }
 
 .work-markdown-pane {
@@ -108,20 +113,20 @@
   z-index: 2;
   top: 0;
   display: flex;
-  height: 28px;
-  flex: 0 0 28px;
+  height: 32px;
+  flex: 0 0 32px;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--a3s-line);
-  background: color-mix(in srgb, var(--a3s-panel) 94%, transparent);
-  color: var(--a3s-faint);
-  font-size: 9px;
-  font-weight: 620;
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--a3s-panel) 97%, var(--a3s-bg));
+  color: var(--a3s-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.035em;
 }
 
 .work-markdown-pane.source {
-  background: var(--a3s-panel);
+  background: color-mix(in srgb, var(--a3s-panel) 96%, var(--a3s-bg));
 }
 
 .work-markdown-pane.source textarea {
@@ -130,42 +135,55 @@
   min-height: 100%;
   flex: 1;
   resize: none;
-  padding: 34px clamp(24px, 5vw, 72px) 72px;
+  padding: 38px clamp(28px, 5vw, 72px) 80px;
   border: 0;
   outline: 0;
   background: transparent;
   color: var(--a3s-ink);
   font-family: var(--font-mono);
-  font-size: calc(13px * var(--work-markdown-zoom) / 100);
-  line-height: 1.75;
+  font-size: calc(14px * var(--work-markdown-zoom) / 100);
+  line-height: 1.8;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   tab-size: 2;
 }
 
+.work-markdown-pane.source textarea::placeholder {
+  color: var(--a3s-faint);
+}
+
+.work-markdown-pane.source textarea::selection {
+  background: color-mix(in srgb, var(--work-office-accent) 18%, transparent);
+}
+
 .work-markdown-workspace.split .work-markdown-pane.source textarea {
-  min-height: calc(100% - 28px);
-  padding: 26px clamp(20px, 3vw, 44px) 60px;
+  min-height: calc(100% - 32px);
+  padding: 32px clamp(24px, 3.5vw, 46px) 72px;
 }
 
 .work-markdown-pane.visual {
-  background: var(--a3s-bg);
+  background: color-mix(in srgb, var(--a3s-bg) 82%, var(--a3s-panel));
 }
 
 .work-markdown-canvas {
-  width: min(900px, calc(100% - 48px));
-  min-height: calc(100% - 48px);
-  margin: 24px auto;
+  width: min(880px, calc(100% - 64px));
+  min-height: calc(100% - 64px);
+  margin: 32px auto;
   border: 1px solid var(--a3s-line);
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--a3s-panel);
-  box-shadow: 0 8px 28px rgb(22 28 40 / 7%);
+  box-shadow:
+    0 1px 2px rgb(22 28 40 / 4%),
+    0 12px 34px rgb(22 28 40 / 5%);
 }
 
 .work-markdown-workspace.split .work-markdown-canvas {
-  width: calc(100% - 28px);
-  min-height: calc(100% - 28px - 28px);
-  margin: 14px;
+  width: 100%;
+  min-height: calc(100% - 32px);
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .work-markdown-canvas > div {
@@ -174,16 +192,19 @@
 
 .work-markdown-canvas .tiptap {
   min-height: 100%;
-  padding: 48px clamp(34px, 7vw, 82px) 90px;
+  max-width: var(--work-markdown-reading-width);
+  margin: 0 auto;
+  padding: 56px clamp(42px, 7vw, 86px) 96px;
   outline: 0;
   color: var(--a3s-ink);
-  font-size: calc(15px * var(--work-markdown-zoom) / 100);
-  line-height: 1.75;
+  font-family: var(--a3s-ui-font);
+  font-size: calc(16px * var(--work-markdown-zoom) / 100);
+  line-height: 1.8;
   overflow-wrap: anywhere;
 }
 
 .work-markdown-workspace.split .work-markdown-canvas .tiptap {
-  padding: 34px clamp(24px, 4vw, 48px) 68px;
+  padding: 42px clamp(28px, 4vw, 52px) 80px;
 }
 
 .work-markdown-canvas .tiptap > :first-child {
@@ -200,30 +221,27 @@
 .work-markdown-canvas .tiptap h4,
 .work-markdown-canvas .tiptap h5,
 .work-markdown-canvas .tiptap h6 {
-  margin: 1.4em 0 0.55em;
+  margin: 1.65em 0 0.6em;
   color: var(--a3s-ink);
-  font-weight: 720;
-  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
 }
 
 .work-markdown-canvas .tiptap h1 {
-  padding-bottom: 0.28em;
-  border-bottom: 1px solid var(--a3s-line);
-  font-size: 2em;
+  font-size: 1.9em;
 }
 
 .work-markdown-canvas .tiptap h2 {
-  padding-bottom: 0.24em;
-  border-bottom: 1px solid var(--a3s-line);
-  font-size: 1.55em;
+  font-size: 1.45em;
 }
 
 .work-markdown-canvas .tiptap h3 {
-  font-size: 1.25em;
+  font-size: 1.2em;
 }
 
 .work-markdown-canvas .tiptap p {
-  margin: 0.75em 0;
+  margin: 0.85em 0;
 }
 
 .work-markdown-canvas .tiptap ul,
@@ -280,10 +298,39 @@
 }
 
 .work-markdown-canvas .tiptap li[data-type="taskItem"] > label input {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   margin: 0;
-  accent-color: var(--work-office-accent);
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 4px;
+  appearance: none;
+  background-color: var(--a3s-panel);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px;
+  opacity: 1;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.work-markdown-canvas .tiptap li[data-type="taskItem"] > label input:checked {
+  border-color: var(--work-office-accent);
+  background-color: var(--work-office-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='m2.5 6 2.1 2.1L9.5 3.5' fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'/%3E%3C/svg%3E");
+}
+
+.work-markdown-canvas
+  .tiptap
+  li[data-type="taskItem"]
+  > label
+  input:not(:disabled):hover {
+  border-color: color-mix(
+    in srgb,
+    var(--work-office-accent) 72%,
+    var(--a3s-line)
+  );
 }
 
 .work-markdown-canvas .tiptap li[data-type="taskItem"] > div {
@@ -300,8 +347,6 @@
   li[data-type="taskItem"][data-checked="true"]
   > div {
   color: var(--a3s-muted);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--a3s-muted) 65%, transparent);
 }
 
 .work-markdown-canvas
@@ -313,28 +358,39 @@
 }
 
 .work-markdown-canvas .tiptap blockquote {
-  margin: 1em 0;
-  padding: 0.1em 0 0.1em 1em;
-  border-left: 3px solid var(--a3s-line-strong);
+  margin: 1.25em 0;
+  padding: 0.7em 1em;
+  border-left: 3px solid
+    color-mix(in srgb, var(--work-office-accent) 68%, var(--a3s-line));
+  border-radius: 0 7px 7px 0;
+  background: color-mix(in srgb, var(--a3s-panel-soft) 82%, transparent);
   color: var(--a3s-muted);
 }
 
+.work-markdown-canvas .tiptap blockquote > :first-child {
+  margin-top: 0;
+}
+
+.work-markdown-canvas .tiptap blockquote > :last-child {
+  margin-bottom: 0;
+}
+
 .work-markdown-canvas .tiptap code {
-  padding: 0.15em 0.34em;
+  padding: 0.16em 0.38em;
   border-radius: 4px;
   background: var(--a3s-panel-soft);
-  color: color-mix(in srgb, var(--a3s-red) 82%, var(--a3s-ink));
+  color: color-mix(in srgb, var(--work-office-accent) 76%, var(--a3s-ink));
   font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
 .work-markdown-canvas .tiptap pre {
-  margin: 1em 0;
-  padding: 16px 18px;
+  margin: 1.3em 0;
+  padding: 18px 20px;
   overflow: auto;
   border: 1px solid var(--a3s-line);
-  border-radius: 8px;
-  background: var(--a3s-panel-soft);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--a3s-panel-soft) 90%, var(--a3s-bg));
   color: var(--a3s-ink);
   line-height: 1.6;
 }
@@ -369,23 +425,37 @@
 
 .work-markdown-canvas .tiptap table {
   width: 100%;
-  margin: 1.25em 0;
-  border-collapse: collapse;
-  table-layout: fixed;
+  margin: 1.5em 0;
+  overflow: hidden;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
 }
 
 .work-markdown-canvas .tiptap th,
 .work-markdown-canvas .tiptap td {
   position: relative;
   min-width: 80px;
-  padding: 8px 10px;
-  border: 1px solid var(--a3s-line-strong);
+  padding: 9px 12px;
+  border: 0;
+  border-right: 1px solid var(--a3s-line);
+  border-bottom: 1px solid var(--a3s-line);
   vertical-align: top;
 }
 
+.work-markdown-canvas .tiptap tr > :last-child {
+  border-right: 0;
+}
+
+.work-markdown-canvas .tiptap tr:last-child > * {
+  border-bottom: 0;
+}
+
 .work-markdown-canvas .tiptap th {
-  background: var(--a3s-panel-soft);
-  font-weight: 680;
+  background: color-mix(in srgb, var(--a3s-panel-soft) 84%, var(--a3s-panel));
+  font-weight: 660;
   text-align: left;
 }
 
@@ -426,12 +496,66 @@
 @media (max-width: 640px) {
   .work-markdown-workspace.split {
     display: grid;
-    grid-template-rows: repeat(2, minmax(220px, 1fr));
+    grid-template-rows: 56px minmax(0, 1fr);
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .work-markdown-workspace.split .work-markdown-pane.visual {
-    border-top: 1px solid var(--a3s-line);
+  .work-markdown-compact-switch {
+    z-index: 3;
+    display: grid;
+    min-width: 0;
+    margin: 0;
+    grid-row: 1;
+    grid-column: 1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--a3s-line);
+    background: color-mix(in srgb, var(--a3s-panel) 97%, var(--a3s-bg));
+  }
+
+  .work-markdown-compact-switch button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--a3s-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 640;
+    cursor: pointer;
+  }
+
+  .work-markdown-compact-switch button[aria-pressed="true"] {
+    border-color: var(--a3s-line);
+    background: var(--a3s-panel);
+    box-shadow: 0 1px 2px rgb(22 28 40 / 6%);
+    color: var(--a3s-ink);
+  }
+
+  .work-markdown-compact-switch button:focus-visible {
+    outline: 2px solid
+      color-mix(in srgb, var(--work-office-accent) 48%, transparent);
+    outline-offset: 1px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  .work-markdown-workspace.split[data-compact-pane="source"]
+    .work-markdown-pane.visual,
+  .work-markdown-workspace.split[data-compact-pane="preview"]
+    .work-markdown-pane.source {
+    display: none;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane-label {
+    display: none;
   }
 
   .work-markdown-splitter {
@@ -448,8 +572,21 @@
   }
 
   .work-markdown-canvas .tiptap {
-    padding-right: 28px;
-    padding-left: 28px;
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-pane.source textarea {
+    min-height: 100%;
+    padding: 28px 20px 64px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-canvas {
+    min-height: 100%;
+  }
+
+  .work-markdown-workspace.split .work-markdown-canvas .tiptap {
+    padding: 30px 22px 68px;
   }
 
   .work-markdown-status .work-office-save-status {

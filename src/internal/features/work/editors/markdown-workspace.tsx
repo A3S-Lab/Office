@@ -23,6 +23,7 @@ import type {
 } from './markdown-source-commands';
 
 export type MarkdownViewMode = 'visual' | 'source' | 'split';
+type MarkdownCompactPane = 'source' | 'preview';
 
 const DEFAULT_MARKDOWN_SPLIT_PERCENT = 50;
 const MIN_MARKDOWN_SPLIT_PERCENT = 30;
@@ -95,6 +96,7 @@ export function MarkdownWorkspace({
   const [sourcePanePercent, setSourcePanePercent] = useState(
     DEFAULT_MARKDOWN_SPLIT_PERCENT,
   );
+  const [compactPane, setCompactPane] = useState<MarkdownCompactPane>('source');
   const [resizing, setResizing] = useState(false);
   const showSource = !readOnly && mode !== 'visual';
   const showVisual = readOnly || mode !== 'source';
@@ -237,16 +239,38 @@ export function MarkdownWorkspace({
     <div
       ref={workspaceRef}
       className={`work-markdown-workspace ${mode}`}
+      data-compact-pane={mode === 'split' ? compactPane : undefined}
       data-split-resizing={resizing || undefined}
       style={workspaceStyle}
     >
+      {mode === 'split' && (
+        <fieldset className="work-markdown-compact-switch">
+          <legend className="sr-only">分屏显示内容</legend>
+          <button
+            type="button"
+            aria-label="显示源码窗格"
+            aria-pressed={compactPane === 'source'}
+            onClick={() => setCompactPane('source')}
+          >
+            源码
+          </button>
+          <button
+            type="button"
+            aria-label="显示预览窗格"
+            aria-pressed={compactPane === 'preview'}
+            onClick={() => setCompactPane('preview')}
+          >
+            预览
+          </button>
+        </fieldset>
+      )}
       {showSource && (
         <section
           aria-label="Markdown 源码窗格"
           className="work-markdown-pane source"
         >
           {mode === 'split' && (
-            <header className="work-markdown-pane-label">编辑</header>
+            <header className="work-markdown-pane-label">源码</header>
           )}
           <textarea
             ref={sourceRef}

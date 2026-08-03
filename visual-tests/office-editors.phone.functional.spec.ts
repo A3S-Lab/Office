@@ -3,6 +3,79 @@ import { openPdfFixture, waitForPdfFixture } from './pdf-test-support';
 
 test.use({ viewport: { width: 390, height: 700 } });
 
+test('Phone Markdown split view gives one pane the full workspace', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '# 产品说明 MD · 本次会话' }).click();
+
+  const workspace = page.locator('.work-markdown-workspace.split');
+  const switcher = page.getByRole('group', { name: '分屏显示内容' });
+  const showSource = switcher.getByRole('button', {
+    name: '显示源码窗格',
+  });
+  const showPreview = switcher.getByRole('button', {
+    name: '显示预览窗格',
+  });
+  const sourcePane = page.getByRole('region', {
+    name: 'Markdown 源码窗格',
+  });
+  const previewPane = page.getByRole('region', {
+    name: 'Markdown 预览窗格',
+  });
+
+  await expect(switcher).toBeVisible();
+  await expect(showSource).toHaveAttribute('aria-pressed', 'true');
+  await expect(showPreview).toHaveAttribute('aria-pressed', 'false');
+  await expect(sourcePane).toBeVisible();
+  await expect(previewPane).toBeHidden();
+
+  const sourceGeometry = await workspace.evaluate((element) => {
+    const switchElement = element.querySelector<HTMLElement>(
+      '.work-markdown-compact-switch',
+    );
+    const source = element.querySelector<HTMLElement>(
+      '.work-markdown-pane.source',
+    );
+    const buttons = [
+      ...element.querySelectorAll<HTMLButtonElement>(
+        '.work-markdown-compact-switch button',
+      ),
+    ];
+    if (!(switchElement && source) || buttons.length !== 2) {
+      throw new Error('Phone Markdown split controls are incomplete.');
+    }
+    const workspaceBounds = element.getBoundingClientRect();
+    const switchBounds = switchElement.getBoundingClientRect();
+    const sourceBounds = source.getBoundingClientRect();
+    return {
+      buttonHeights: buttons.map(
+        (button) => button.getBoundingClientRect().height,
+      ),
+      sourceHeight: sourceBounds.height,
+      switchHeight: switchBounds.height,
+      workspaceHeight: workspaceBounds.height,
+    };
+  });
+  expect(Math.min(...sourceGeometry.buttonHeights)).toBeGreaterThanOrEqual(44);
+  expect(sourceGeometry.sourceHeight).toBeGreaterThanOrEqual(
+    sourceGeometry.workspaceHeight - sourceGeometry.switchHeight - 1,
+  );
+
+  await showPreview.click();
+  await expect(showPreview).toHaveAttribute('aria-pressed', 'true');
+  await expect(showSource).toHaveAttribute('aria-pressed', 'false');
+  await expect(sourcePane).toBeHidden();
+  await expect(previewPane).toBeVisible();
+  await expect(
+    previewPane.getByRole('heading', { name: 'A3S Office' }),
+  ).toBeVisible();
+  await expect(previewPane.locator('.work-markdown-canvas')).toHaveCSS(
+    'border-top-width',
+    '0px',
+  );
+});
+
 test('Presentation prioritizes its canvas and uses a dismissible slide drawer', async ({
   page,
 }) => {
