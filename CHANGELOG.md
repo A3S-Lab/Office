@@ -4,6 +4,9 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Separated Word Table Properties updates from preceding edits in TipTap
+  history, so undoing a property change no longer removes a newly inserted
+  table.
 - Replaced the isolated Word alternative-text prompt with one responsive
   Picture Properties workflow for centimeter width and height, a per-image
   aspect-ratio lock, wrapping, alignment, text distance, and alternative text.

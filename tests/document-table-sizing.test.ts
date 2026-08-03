@@ -280,6 +280,36 @@ describe('document table sizing', () => {
     editor.destroy();
   });
 
+  test('keeps an inserted table when undoing its property dialog update', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content:
+        '<section data-document-section="true"><p>Before table</p></section>',
+    });
+    editor.commands.setTextSelection(3);
+
+    expect(
+      editor.commands.insertTable({ rows: 2, cols: 2, withHeaderRow: true }),
+    ).toBe(true);
+    const insertedHtml = editor.getHTML();
+
+    expect(
+      editor.commands.setDocumentTablePropertyChanges({
+        table: {
+          width: { type: 'percent', value: 80 },
+          alignment: 'center',
+          indent: 0,
+        },
+      }),
+    ).toBe(true);
+    expect(editor.getHTML()).not.toBe(insertedHtml);
+
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getHTML()).toBe(insertedHtml);
+
+    editor.destroy();
+  });
+
   test('updates physical widths coherently through merged cells', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),

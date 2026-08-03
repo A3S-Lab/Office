@@ -1,5 +1,6 @@
 import { type CommandProps, Extension } from '@tiptap/core';
 import { Table, TableView } from '@tiptap/extension-table';
+import { closeHistory } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { Plugin, type EditorState } from '@tiptap/pm/state';
 import { NodeSelection } from '@tiptap/pm/state';
@@ -421,6 +422,7 @@ function setTablePropertyChanges(
   if (!dispatch) return true;
 
   const transaction = state.tr;
+  closeHistory(transaction);
   if (changes.column) {
     const preservedWidths = normalizeRenderedDimensions(
       changes.column.renderedColumnWidths,
