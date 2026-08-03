@@ -584,6 +584,71 @@ test('edits whole-table width and position with validation and cancel safety', a
   await waitFor(() => expect(trigger).toHaveFocus());
 });
 
+test('applies table, row, column, and cell tabs as one undoable dialog action', () => {
+  editor = createTableEditor({ partialCellMargins: true });
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  const originalHtml = editor.getHTML();
+  let updateCount = 0;
+  editor.on('update', () => {
+    updateCount += 1;
+  });
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '表格属性' }));
+  expect(
+    screen.getByRole('tablist', { name: '表格属性分类' }),
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('tab', { name: '行' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '指定行高' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '当前行高（厘米）' }), {
+    target: { value: '1.2' },
+  });
+  fireEvent.click(screen.getByRole('combobox', { name: '行高规则' }));
+  fireEvent.click(screen.getByRole('option', { name: '固定值' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '允许跨页断行' }));
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: '在各页顶端重复标题行' }),
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '列' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '当前列宽（厘米）' }), {
+    target: { value: '4' },
+  });
+
+  fireEvent.click(screen.getByRole('tab', { name: '单元格' }));
+  fireEvent.click(screen.getByRole('radio', { name: '居中' }));
+  expect(
+    screen.getByRole('checkbox', { name: '使用表格默认边距' }),
+  ).not.toBeChecked();
+  fireEvent.change(
+    screen.getByRole('textbox', { name: '当前单元格左边距（厘米）' }),
+    { target: { value: '0.4' } },
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(updateCount).toBe(1);
+  expect(tableRowAttributes(editor)[0]).toMatchObject({
+    rowHeight: expect.closeTo(45.35, 1),
+    rowHeightRule: 'exact',
+    cantSplit: true,
+    repeatHeader: false,
+  });
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    colwidth: [expect.closeTo(151.18, 1)],
+    verticalAlign: 'middle',
+    margins: {
+      top: 8,
+      right: 16,
+      left: expect.closeTo(15.12, 1),
+    },
+  });
+
+  expect(editor.commands.undo()).toBe(true);
+  expect(editor.getHTML()).toBe(originalHtml);
+});
+
 test('supports centimeter and automatic preferred table widths', async () => {
   editor = createTableEditor();
   editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
@@ -760,14 +825,21 @@ function createPlainEditor(): Editor {
   return currentEditor;
 }
 
-function createTableEditor(): Editor {
+function createTableEditor({
+  partialCellMargins = false,
+}: {
+  partialCellMargins?: boolean;
+} = {}): Editor {
+  const firstCellMargins = partialCellMargins
+    ? ' data-office-cell-margin-top="8" data-office-cell-margin-right="16"'
+    : '';
   return new Editor({
     extensions: createWorkDocumentExtensions(),
     content: [
       '<section data-document-section="true">',
       '<table><tbody>',
       '<tr data-office-repeat-header="true">',
-      '<th><p>Title A</p></th><th><p>Title B</p></th>',
+      `<th${firstCellMargins}><p>Title A</p></th><th><p>Title B</p></th>`,
       '</tr>',
       '<tr><td><p>Value A</p></td><td><p>Value B</p></td></tr>',
       '</tbody></table>',

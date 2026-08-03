@@ -175,14 +175,21 @@ does not reinterpret an imported autofit table as fixed merely because it has
 grid widths. The Layout ribbon reports the rendered column width for autofit
 tables and labels noncanonical preferred widths as Current width instead of
 misreporting them as fixed.
-Whole-table geometry now uses one Table Properties dialog for auto,
-percentage, or centimeter preferred width, left/center/right placement, and
-left indent. It validates the draft and commits width, placement, and indent in
-one transaction; Cancel and Escape preserve the last committed geometry and
-restore the exact ribbon invoker. The deterministic styled-table workflow
-checks truthful 62.5% centered import values, compact 390 px touch controls, an
-atomic change to 72% left placement with a 0.5 cm indent, cancellation safety,
-and matching preview geometry. Table-level outer and inside
+The Table Properties dialog now owns four coherent tabs: Table, Row, Column,
+and Cell. It combines auto, percentage, or centimeter preferred width,
+left/center/right placement, and left indent with selected-row height and rule,
+page splitting, repeated headings, current-column width, selected-cell vertical
+alignment, and four-edge margins. The complete validated draft commits in one
+TipTap transaction and one undo record; Cancel and Escape preserve the last
+committed state and restore the exact ribbon invoker. Values the user did not
+edit retain their exact imported pixels and partial inheritance instead of
+round-tripping through the two-decimal centimeter display. The deterministic
+styled-table workflow checks truthful 62.5% centered import values, all four
+tabs and touch-sized controls at 390 px, an atomic change to 72% left placement
+with a 0.5 cm indent, a 1.2 cm exact row, disabled page splitting and repeated
+headings, a 4 cm column, centered cell content, a 0.4 cm left cell margin,
+cancellation safety, exact untouched 8 px and 16 px margin edges, and matching
+preview geometry with clean browser diagnostics. Table-level outer and inside
 DOCX borders resolve to cell edges on import without flattening mixed styles.
 Direct table and cell theme colors now resolve through the package theme,
 including `themeTint`, `themeShade`, `themeFillTint`, and `themeFillShade`.

@@ -214,6 +214,72 @@ describe('document table sizing', () => {
     editor.destroy();
   });
 
+  test('commits table, row, column, and cell properties as one undoable update', () => {
+    const editor = createSizingEditor();
+    editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+    const originalHtml = editor.getHTML();
+    let updateCount = 0;
+    editor.on('update', () => {
+      updateCount += 1;
+    });
+
+    expect(
+      editor.commands.setDocumentTablePropertyChanges({
+        table: {
+          width: { type: 'percent', value: 72 },
+          alignment: 'left',
+          indent: 18.9,
+        },
+        row: {
+          height: 45,
+          heightRule: 'exact',
+          cantSplit: true,
+          repeatHeader: false,
+        },
+        column: {
+          width: 150,
+          renderedColumnWidths: [120, 180],
+        },
+        cell: {
+          verticalAlign: 'middle',
+          margins: { top: 4, right: 8, bottom: 6, left: 10 },
+        },
+      }),
+    ).toBe(true);
+
+    expect(updateCount).toBe(1);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      layoutAlgorithm: 'fixed',
+      preferredWidthType: 'percent',
+      preferredWidth: 72,
+      alignment: 'left',
+      indent: 18.9,
+      columnWidth: 150,
+      rowHeight: 45,
+      rowHeightRule: 'exact',
+    });
+    expect(tableColumnWidths(editor)).toEqual([
+      [150, 180],
+      [150, 180],
+      [150, 180],
+    ]);
+    expect(tableRowAttributes(editor)[0]).toMatchObject({
+      rowHeight: 45,
+      rowHeightRule: 'exact',
+      cantSplit: true,
+      repeatHeader: false,
+    });
+    expect(tableCellAttributes(editor)[0]).toMatchObject({
+      verticalAlign: 'middle',
+      margins: { top: 4, right: 8, bottom: 6, left: 10 },
+    });
+
+    expect(editor.commands.undo()).toBe(true);
+    expect(editor.getHTML()).toBe(originalHtml);
+
+    editor.destroy();
+  });
+
   test('updates physical widths coherently through merged cells', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),
@@ -405,6 +471,18 @@ function tableColumnWidths(editor: Editor): Array<Array<number | null>> {
     return false;
   });
   return rows;
+}
+
+function tableCellAttributes(editor: Editor): Record<string, unknown>[] {
+  const attributes: Record<string, unknown>[] = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'tableCell' && node.type.name !== 'tableHeader') {
+      return true;
+    }
+    attributes.push(node.attrs);
+    return false;
+  });
+  return attributes;
 }
 
 function tableCellPositions(editor: Editor): number[] {

@@ -264,7 +264,9 @@ export function DocumentToolbar({
       const insideEditor =
         event.target instanceof Node &&
         Boolean(editorDom?.contains(event.target));
-      if (insideEditor && key === 'z') {
+      const documentHistoryTarget =
+        insideEditor || !isDocumentNativeTextUndoTarget(event.target);
+      if (documentHistoryTarget && key === 'z') {
         event.preventDefault();
         const command = event.shiftKey
           ? editor.chain().focus().redo()
@@ -272,7 +274,7 @@ export function DocumentToolbar({
         command.run();
         return;
       }
-      if (insideEditor && key === 'y' && !event.shiftKey) {
+      if (documentHistoryTarget && key === 'y' && !event.shiftKey) {
         event.preventDefault();
         editor.chain().focus().redo().run();
         return;
@@ -696,6 +698,33 @@ export function DocumentToolbar({
     </>
   );
 }
+
+function isDocumentNativeTextUndoTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    (target instanceof HTMLInputElement &&
+      documentNativeUndoInputTypes.has(target.type)) ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable ||
+    Boolean(target.closest('[contenteditable="true"]'))
+  );
+}
+
+const documentNativeUndoInputTypes = new Set([
+  'date',
+  'datetime-local',
+  'email',
+  'month',
+  'number',
+  'password',
+  'search',
+  'tel',
+  'text',
+  'time',
+  'url',
+  'week',
+]);
 
 function ToolbarButton({
   label,

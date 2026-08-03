@@ -138,6 +138,10 @@ suite "office-word-styled-table" {
             visible = css(".work-document-table-properties-dialog label:has(input[type='radio'][value='percent']:checked:focus) > span")
         }
 
+        expect "all-property-tabs-are-present" {
+            visible = css(".work-document-table-properties-dialog [role='tablist'][aria-label='表格属性分类'] [role='tab']:nth-child(4)")
+        }
+
         viewport "compact-table-properties" {
             width = 390
             height = 844
@@ -166,6 +170,81 @@ suite "office-word-styled-table" {
             value = "0.5"
         }
 
+        click "open-row-properties" {
+            target = role("tab", "行")
+        }
+
+        expect "row-properties-are-visible" {
+            visible = css(".work-document-table-properties-dialog [role='tabpanel'][aria-labelledby$='-row-tab']")
+        }
+
+        check "enable-exact-row-height" {
+            target = label("指定行高")
+        }
+
+        fill "change-current-row-height" {
+            target = label("当前行高（厘米）")
+            value = "1.2"
+        }
+
+        click "open-row-height-rule" {
+            target = role("combobox", "行高规则")
+        }
+
+        click "choose-exact-row-height" {
+            target = role("option", "固定值")
+        }
+
+        uncheck "prevent-row-page-splitting" {
+            target = css(".work-document-table-properties-dialog input[aria-label='允许跨页断行']")
+        }
+
+        uncheck "disable-repeated-heading-row" {
+            target = css(".work-document-table-properties-dialog input[aria-label='在各页顶端重复标题行']")
+        }
+
+        click "open-column-properties" {
+            target = role("tab", "列")
+        }
+
+        expect "column-properties-are-visible" {
+            visible = css(".work-document-table-properties-dialog [role='tabpanel'][aria-labelledby$='-column-tab']")
+        }
+
+        fill "change-current-column-width" {
+            target = label("当前列宽（厘米）")
+            value = "4"
+        }
+
+        click "open-cell-properties" {
+            target = role("tab", "单元格")
+        }
+
+        expect "cell-properties-are-visible" {
+            visible = css(".work-document-table-properties-dialog [role='tabpanel'][aria-labelledby$='-cell-tab']")
+        }
+
+        click "vertically-center-current-cell" {
+            target = css(".work-document-table-properties-dialog label:has(input[name='table-properties-vertical-alignment'][value='middle'])")
+        }
+
+        uncheck "use-current-cell-margins" {
+            target = css(".work-document-table-properties-dialog input[aria-label='使用表格默认边距']")
+        }
+
+        fill "change-current-cell-left-margin" {
+            target = label("当前单元格左边距（厘米）")
+            value = "0.4"
+        }
+
+        expect "compact-cell-margin-control-is-touch-sized" {
+            visible = css(".work-document-table-properties-dialog .work-document-table-properties-margin .work-office-number-field")
+        }
+
+        screenshot "complete-compact-table-properties-dialog" {
+            path = "screenshots/word-table-properties-complete-phone.png"
+        }
+
         click "apply-table-properties" {
             target = role("button", "确定")
         }
@@ -176,6 +255,18 @@ suite "office-word-styled-table" {
 
         expect "table-properties-trigger-regains-focus" {
             visible = css(".work-office-ribbon-group[aria-label='表格属性'] button[aria-label='表格属性']:focus")
+        }
+
+        expect "row-properties-are-applied-in-the-same-transaction" {
+            visible = css(".work-document-editable table tr:first-child[data-office-row-height='45.35'][data-office-row-height-rule='exact'][data-office-cant-split='true'][data-office-repeat-header='false']")
+        }
+
+        expect "column-width-is-applied-in-the-same-transaction" {
+            visible = css(".work-document-editable table colgroup > col:first-child[style*='151.18px']")
+        }
+
+        expect "cell-properties-are-applied-in-the-same-transaction" {
+            visible = css(".work-document-editable table tr:first-child td:first-child[data-office-cell-vertical-align='middle'][data-office-cell-margin-left='15.12']")
         }
 
         click "reopen-table-properties-for-cancel" {
@@ -243,7 +334,15 @@ suite "office-word-styled-table" {
         }
 
         expect "preview-keeps-table-geometry" {
-            visible = css(".work-document-preview-page table[data-office-table-layout='autofit'][data-office-table-width-type='percent'][data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9'][data-office-table-cell-margin-left='18.9']")
+            visible = css(".work-document-preview-page table[data-office-table-layout='fixed'][data-office-table-width-type='percent'][data-office-table-width='72'][data-office-table-alignment='left'][data-office-table-indent='18.9'][data-office-table-cell-margin-left='18.9']")
+        }
+
+        expect "preview-keeps-row-properties" {
+            visible = css(".work-document-preview-page table tr:first-child[data-office-row-height='45.35'][data-office-row-height-rule='exact'][data-office-cant-split='true'][data-office-repeat-header='false']")
+        }
+
+        expect "preview-keeps-cell-properties" {
+            visible = css(".work-document-preview-page table tr:first-child td:first-child[data-office-cell-vertical-align='middle'][data-office-cell-margin-left='15.12']")
         }
 
         expect "preview-keeps-cell-margin-override" {

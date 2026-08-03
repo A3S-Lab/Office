@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRef, useState } from 'react';
 import { Dialog } from '../src/internal/design-system/primitives';
 import { useOfficeDialog } from '../src/internal/features/work/editors/office-dialog';
+import { OfficeSelect } from '../src/internal/features/work/editors/office-select';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
@@ -99,6 +100,42 @@ test('keeps portal dialogs inside their Office theme boundary', async () => {
   expect(dialog.closest('.ds-dialog-backdrop')).not.toHaveAttribute('inert');
   fireEvent.keyDown(dialog, { key: 'Escape' });
   await waitFor(() => expect(trigger).toHaveFocus());
+});
+
+test('keeps portal select menus inside the active modal focus scope', async () => {
+  function Fixture() {
+    const [value, setValue] = useState<'minimum' | 'exact'>('minimum');
+    return (
+      <section data-a3s-office>
+        <Dialog title="行高" onClose={() => undefined}>
+          <OfficeSelect
+            ariaLabel="行高规则"
+            value={value}
+            options={[
+              { value: 'minimum', label: '最小值' },
+              { value: 'exact', label: '固定值' },
+            ]}
+            onValueChange={setValue}
+          />
+        </Dialog>
+      </section>
+    );
+  }
+
+  render(<Fixture />);
+  const dialog = screen.getByRole('dialog', { name: '行高' });
+  const trigger = screen.getByRole('combobox', { name: '行高规则' });
+  fireEvent.click(trigger);
+
+  const option = screen.getByRole('option', { name: '固定值' });
+  expect(option.closest('[role="dialog"]')).toBe(dialog);
+  await waitFor(() =>
+    expect(screen.getByRole('option', { name: '最小值' })).toHaveFocus(),
+  );
+
+  fireEvent.click(option);
+  expect(trigger).toHaveTextContent('固定值');
+  expect(trigger).toHaveFocus();
 });
 
 test('recovers focus when the focused dialog control is removed', async () => {

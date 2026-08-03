@@ -262,11 +262,13 @@ interaction model.
   auto, percentage, or pixel preferred widths, left/center/right placement,
   indentation, table-level cell margins, cell-level margin overrides, and
   rendered column measurements for autofit tables. One Table Properties dialog
-  presents auto, percentage, and centimeter width choices together with table
-  placement and left indent, validates the complete draft, and commits the
-  geometry in one TipTap transaction. Cancel and Escape discard the draft and
-  restore the exact ribbon invoker; compact layouts keep the numeric steppers
-  and footer actions touch-sized. A
+  presents table, row, column, and cell tabs. It combines preferred width,
+  placement, and indent with selected-row height and pagination, current-column
+  width, and selected-cell vertical alignment and margins. The complete draft
+  commits in one TipTap transaction and one undo record while untouched imported
+  measurements and partial margin inheritance retain their exact source values.
+  Cancel and Escape discard the draft and restore the exact ribbon invoker;
+  compact layouts keep tabs, numeric steppers, and footer actions touch-sized. A
   reusable table-border pen with all, outside, inside, and individual-edge
   targets, per-edge DOCX border preservation, and bounded `basedOn` table-style
   inheritance with whole-table, banded row or column, first/last row or column,
@@ -287,8 +289,9 @@ interaction model.
   headers, footers, page numbers, and navigation descriptors.
   Real DOCX fixtures provide deterministic A3S Test evidence for inherited
   table styling across edit and preview, a centered 62.5% table with table and
-  cell margin overrides, and a 120-paragraph row across three physical pages
-  through the final table content and following paragraph.
+  cell margin overrides, all four Table Properties tabs at 390 px, exact
+  preservation of untouched cell-margin edges, and a 120-paragraph row across
+  three physical pages through the final table content and following paragraph.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

@@ -385,12 +385,58 @@
 }
 
 .work-document-table-properties-dialog {
-  width: min(480px, 100%);
+  width: min(520px, 100%);
 }
 
 .work-document-table-properties-dialog form {
   display: grid;
+  gap: 0;
+}
+
+.work-document-table-properties-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  margin: -4px 0 18px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-table-properties-tabs > button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.work-document-table-properties-tabs > button[aria-selected="true"] {
+  background: var(--a3s-panel);
+  color: var(--a3s-blue);
+  box-shadow: 0 1px 3px rgb(20 28 42 / 10%);
+}
+
+.work-document-table-properties-tabs > button:hover {
+  color: var(--a3s-ink);
+}
+
+.work-document-table-properties-tabs > button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--a3s-blue) 58%, transparent);
+  outline-offset: 1px;
+}
+
+.work-document-table-properties-panel {
+  display: grid;
+  min-height: 260px;
+  align-content: start;
   gap: 20px;
+  outline: none;
 }
 
 .work-document-table-properties-section {
@@ -478,6 +524,65 @@
 .work-document-table-properties-number-row small {
   color: var(--a3s-faint);
   font-size: 10px;
+}
+
+.work-document-table-properties-select-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 180px);
+  align-items: center;
+  gap: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-document-table-properties-select-row .work-office-select,
+.work-document-table-properties-select-row button[role="combobox"] {
+  width: 100%;
+}
+
+.work-document-table-properties-checkboxes {
+  display: grid;
+  gap: 6px;
+}
+
+.work-document-table-properties-checkboxes .work-office-checkbox,
+.work-document-table-properties-section > .work-office-checkbox {
+  min-height: 34px;
+  padding: 5px 6px;
+  border-radius: 6px;
+}
+
+.work-document-table-properties-margin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.work-document-table-properties-margin {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 6px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
+.work-document-table-properties-margin .work-office-number-field {
+  width: 100%;
+  height: 34px;
+}
+
+.work-document-table-properties-margin small {
+  color: var(--a3s-faint);
+  font-size: 9px;
+}
+
+.work-document-table-properties-margin > p[role="alert"] {
+  grid-column: 2 / -1;
+  margin: -3px 0 0;
+  color: var(--a3s-red);
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .work-document-table-properties-section > p[role="alert"] {
@@ -847,7 +952,17 @@
 }
 
 @media (max-width: 520px) {
-  .work-document-table-properties-dialog form {
+  .work-document-table-properties-tabs {
+    margin-bottom: 14px;
+  }
+
+  .work-document-table-properties-tabs > button {
+    min-height: 44px;
+    padding-inline: 4px;
+  }
+
+  .work-document-table-properties-panel {
+    min-height: 0;
     gap: 18px;
   }
 
@@ -892,6 +1007,47 @@
 
   .work-document-table-properties-section > p[role="alert"] {
     margin-left: 72px;
+  }
+
+  .work-document-table-properties-select-row {
+    min-height: 44px;
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .work-document-table-properties-select-row button[role="combobox"] {
+    min-height: 44px;
+  }
+
+  .work-document-table-properties-checkboxes .work-office-checkbox,
+  .work-document-table-properties-section > .work-office-checkbox {
+    min-height: 44px;
+    padding-block: 8px;
+  }
+
+  .work-document-table-properties-margin-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .work-document-table-properties-margin {
+    min-height: 44px;
+    grid-template-columns: 44px minmax(0, 1fr) 32px;
+  }
+
+  .work-document-table-properties-margin .work-office-number-field {
+    height: 44px;
+    grid-template-columns: minmax(0, 1fr) 88px;
+  }
+
+  .work-document-table-properties-margin .work-office-number-steppers {
+    grid-template-columns: repeat(2, 44px);
+    grid-template-rows: 44px;
+  }
+
+  .work-document-table-properties-margin
+    .work-office-number-steppers
+    > button:first-child {
+    border-right: 1px solid var(--a3s-line);
+    border-bottom: 0;
   }
 
   .work-document-pagination-panel,

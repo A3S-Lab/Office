@@ -298,6 +298,13 @@ export function DocumentTableLayoutRibbon({ editor }: { editor: Editor }) {
         <DocumentTablePropertiesControl
           editor={editor}
           renderedTableWidth={measuredTableWidth(editor)}
+          renderedRowHeight={
+            measuredCurrentTableDimension(editor, 'rows') ?? undefined
+          }
+          renderedColumnWidth={
+            measuredCurrentTableDimension(editor, 'columns') ?? undefined
+          }
+          renderedColumnWidths={measuredTableColumnWidths(editor)}
         />
         <DocumentTableMarginsPopover editor={editor} />
       </RibbonGroup>

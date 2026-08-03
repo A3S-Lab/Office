@@ -220,6 +220,34 @@ test('keeps body link shortcuts out of non-document editing surfaces', async () 
   );
 });
 
+test('routes history shortcuts from ribbon controls without stealing native text undo', () => {
+  editor = createEditor();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  const ribbonButton = document.createElement('button');
+  ribbonButton.textContent = '表格属性';
+  const ribbonToggle = document.createElement('input');
+  ribbonToggle.type = 'checkbox';
+  const fileName = document.createElement('input');
+  root.append(editor.view.dom, ribbonButton, ribbonToggle, fileName);
+  document.body.append(root);
+  render(toolbar(editor, createCalls()));
+
+  const originalHtml = editor.getHTML();
+  editor.chain().focus().insertContent('已修改').run();
+  const changedHtml = editor.getHTML();
+  expect(changedHtml).not.toBe(originalHtml);
+
+  fireEvent.keyDown(fileName, { key: 'z', ctrlKey: true });
+  expect(editor.getHTML()).toBe(changedHtml);
+
+  fireEvent.keyDown(ribbonToggle, { key: 'z', ctrlKey: true });
+  expect(editor.getHTML()).toBe(originalHtml);
+
+  fireEvent.keyDown(ribbonButton, { key: 'y', ctrlKey: true });
+  expect(editor.getHTML()).toBe(changedHtml);
+});
+
 test('disables document zoom buttons at the supported boundaries', () => {
   editor = createEditor();
   const calls = createCalls();

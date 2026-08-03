@@ -190,6 +190,127 @@ test('table sizing stays usable on desktop and compact ribbons', async ({
     .toBe('');
 });
 
+test('table properties keep table, row, column, and cell changes in one workflow', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  await page.locator('.work-document-editable .ProseMirror p').first().click();
+  await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '插入表格' }).click();
+  await page
+    .getByRole('dialog', { name: '选择表格大小' })
+    .getByRole('button', { name: '2 行 2 列' })
+    .click();
+  await page.getByRole('tab', { name: '表格布局' }).click();
+
+  const properties = page.getByRole('button', { name: '表格属性' });
+  await revealRibbonControl(page, '表格布局', properties);
+  await properties.click();
+  const dialog = page.getByRole('dialog', { name: '表格属性' });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole('tablist', { name: '表格属性分类' }),
+  ).toBeVisible();
+  await expect(dialog.getByRole('tab')).toHaveCount(4);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const dialogBounds = await dialog.boundingBox();
+  expect(dialogBounds?.x).toBeGreaterThanOrEqual(0);
+  expect(
+    (dialogBounds?.x ?? 0) + (dialogBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(390);
+  for (const name of ['表格', '行', '列', '单元格']) {
+    const bounds = await dialog
+      .getByRole('tab', { name, exact: true })
+      .boundingBox();
+    expect(bounds?.height).toBeGreaterThanOrEqual(40);
+  }
+
+  await dialog.getByRole('tab', { name: '表格', exact: true }).click();
+  await dialog.getByRole('textbox', { name: '表格宽度（百分比）' }).fill('80');
+
+  await dialog.getByRole('tab', { name: '行', exact: true }).click();
+  await dialog.getByRole('checkbox', { name: '指定行高' }).check();
+  await dialog.getByRole('textbox', { name: '当前行高（厘米）' }).fill('1.2');
+  await dialog.getByRole('combobox', { name: '行高规则' }).click();
+  await page.getByRole('option', { name: '固定值' }).click();
+  await dialog.getByRole('checkbox', { name: '允许跨页断行' }).uncheck();
+  await dialog
+    .getByRole('checkbox', { name: '在各页顶端重复标题行' })
+    .uncheck();
+
+  await dialog.getByRole('tab', { name: '列', exact: true }).click();
+  await dialog.getByRole('textbox', { name: '当前列宽（厘米）' }).fill('4');
+
+  await dialog.getByRole('tab', { name: '单元格', exact: true }).click();
+  const verticalCenter = dialog.getByRole('radio', { name: '居中' });
+  await dialog
+    .locator(
+      'label:has(input[name="table-properties-vertical-alignment"][value="middle"])',
+    )
+    .click();
+  await expect(verticalCenter).toBeChecked();
+  await dialog.getByRole('checkbox', { name: '使用表格默认边距' }).uncheck();
+  const leftMargin = dialog.getByRole('textbox', {
+    name: '当前单元格左边距（厘米）',
+  });
+  await leftMargin.fill('0.4');
+  const leftMarginBounds = await leftMargin.boundingBox();
+  expect(leftMarginBounds?.height).toBeGreaterThanOrEqual(40);
+
+  await dialog.getByRole('button', { name: '确定' }).click();
+
+  const table = page.locator('.work-document-editable table').first();
+  const firstRow = table.locator('tr').first();
+  const firstCell = firstRow.locator(':is(th, td)').first();
+  await expect(table).toHaveAttribute('data-office-table-width', '80');
+  await expect(firstRow).toHaveAttribute('data-office-row-height', '45.35');
+  await expect(firstRow).toHaveAttribute(
+    'data-office-row-height-rule',
+    'exact',
+  );
+  await expect(firstRow).toHaveAttribute('data-office-cant-split', 'true');
+  await expect(firstRow).toHaveAttribute('data-office-repeat-header', 'false');
+  await expect(firstCell).toHaveAttribute(
+    'data-office-cell-vertical-align',
+    'middle',
+  );
+  await expect(firstCell).toHaveAttribute(
+    'data-office-cell-margin-left',
+    '15.12',
+  );
+  await expect
+    .poll(async () =>
+      Number.parseFloat(
+        await table
+          .locator('colgroup > col')
+          .first()
+          .evaluate(
+            (column) =>
+              (column as HTMLElement).style.width ||
+              getComputedStyle(column).width,
+          ),
+      ),
+    )
+    .toBeCloseTo(151.18, 1);
+
+  await page.keyboard.press('Control+z');
+  await expect(table).toHaveAttribute('data-office-table-width', '100');
+  await expect(firstRow).not.toHaveAttribute('data-office-row-height');
+  await expect(firstRow).not.toHaveAttribute('data-office-cant-split');
+  await expect(firstCell).toHaveAttribute(
+    'data-office-cell-vertical-align',
+    'top',
+  );
+  await expect(firstCell).not.toHaveAttribute('data-office-cell-margin-left');
+  expect(pageErrors).toEqual([]);
+});
+
 test('table contextual tabs clean up after deletion through real ribbon overflow', async ({
   page,
 }) => {

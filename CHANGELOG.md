@@ -2,6 +2,22 @@
 
 All notable changes to A3S Office will be documented in this file.
 
+## Unreleased
+
+- Expanded Word Table Properties into Table, Row, Column, and Cell tabs with
+  one validated TipTap transaction for preferred table geometry, selected-row
+  sizing and pagination, current-column width, and selected-cell alignment and
+  margins.
+- Preserved untouched imported table dimensions and partial cell-margin
+  inheritance at their exact source values instead of quantizing them through
+  the centimeter display fields.
+- Kept custom select menus inside the active modal focus scope and routed
+  document undo and redo shortcuts from non-text ribbon controls without
+  intercepting native input history.
+- Extended the deterministic styled-DOCX A3S Test workflow across the complete
+  responsive Table Properties dialog, preview fidelity, accessibility, and
+  empty console and page-error diagnostics.
+
 ## 0.1.0 - 2026-08-02
 
 - Extracted the complete A3S Web document, spreadsheet, presentation, and PDF

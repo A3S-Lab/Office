@@ -3,13 +3,21 @@ export function officeOverlayPortalRoot(
   ...anchors: Array<Element | null | undefined>
 ): HTMLElement {
   for (const anchor of anchors) {
-    const officeRoot = anchor?.closest<HTMLElement>('[data-a3s-office]');
-    if (officeRoot) return officeRoot;
+    const portalRoot = closestOfficeOverlayRoot(anchor);
+    if (portalRoot) return portalRoot;
   }
   const activeElement = ownerDocument.activeElement;
   if (activeElement instanceof Element) {
-    const officeRoot = activeElement.closest<HTMLElement>('[data-a3s-office]');
-    if (officeRoot) return officeRoot;
+    const portalRoot = closestOfficeOverlayRoot(activeElement);
+    if (portalRoot) return portalRoot;
   }
   return ownerDocument.body;
+}
+
+function closestOfficeOverlayRoot(anchor: Element | null | undefined) {
+  return (
+    anchor?.closest<HTMLElement>('[role="dialog"][aria-modal="true"]') ??
+    anchor?.closest<HTMLElement>('[data-a3s-office]') ??
+    null
+  );
 }

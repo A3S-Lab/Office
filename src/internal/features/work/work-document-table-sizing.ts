@@ -6,6 +6,7 @@ import { NodeSelection } from '@tiptap/pm/state';
 import { isInTable, selectedRect, TableMap } from '@tiptap/pm/tables';
 import {
   documentTableRowHeight,
+  documentTableRowRepeats,
   type DocumentTableRowHeightRule,
 } from './work-document-table-row';
 import {
@@ -26,6 +27,13 @@ import {
   type DocumentTablePreferredWidthType,
   type DocumentTableProperties,
 } from './work-document-table-geometry';
+import {
+  MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+  MIN_DOCUMENT_TABLE_ROW_HEIGHT,
+  normalizeDocumentTableDimension,
+  normalizeDocumentTablePropertyChanges,
+  type DocumentTablePropertyChanges,
+} from './work-document-table-property-changes';
 
 export {
   normalizeDocumentTableGeometry,
@@ -41,6 +49,7 @@ export type {
   DocumentTablePreferredWidthType,
   DocumentTableProperties,
 } from './work-document-table-geometry';
+export type { DocumentTablePropertyChanges } from './work-document-table-property-changes';
 
 export interface DocumentTableSizingState {
   columnWidth: number | null;
@@ -59,9 +68,6 @@ export interface DocumentTableSizingState {
 
 const DEFAULT_COLUMN_WIDTH = 120;
 const DEFAULT_ROW_HEIGHT = 36;
-const MIN_COLUMN_WIDTH = 25;
-const MIN_ROW_HEIGHT = 12;
-const MAX_TABLE_DIMENSION = 4_000;
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -83,6 +89,9 @@ declare module '@tiptap/core' {
       ) => ReturnType;
       setDocumentTableProperties: (
         properties: DocumentTableProperties,
+      ) => ReturnType;
+      setDocumentTablePropertyChanges: (
+        changes: DocumentTablePropertyChanges,
       ) => ReturnType;
       setDocumentTableCellMargins: (
         margins: DocumentTableCellMargins,
@@ -172,6 +181,8 @@ export const DocumentTableSizing = Extension.create({
         setTableAlignment(props, alignment),
       setDocumentTableProperties: (properties) => (props) =>
         setTableProperties(props, properties),
+      setDocumentTablePropertyChanges: (changes) => (props) =>
+        setTablePropertyChanges(props, changes),
       setDocumentTableCellMargins: (margins) => (props) =>
         setTableCellMargins(props, margins),
       distributeDocumentTableColumns: (renderedSelectionWidth) => (props) =>
@@ -253,10 +264,9 @@ function setSelectedColumnWidth(
   width: number,
   renderedColumnWidths?: readonly number[],
 ): boolean {
-  const normalized = normalizedDimension(
+  const normalized = normalizeDocumentTableDimension(
     width,
-    MIN_COLUMN_WIDTH,
-    MAX_TABLE_DIMENSION,
+    MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
   );
   const context = tableSizingContext(state);
   if (!context || normalized === null) return false;
@@ -265,7 +275,7 @@ function setSelectedColumnWidth(
   const preservedWidths = normalizeRenderedDimensions(
     renderedColumnWidths,
     context.map.width,
-    MIN_COLUMN_WIDTH,
+    MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
   );
   if (preservedWidths) {
     for (let column = context.left; column < context.right; column += 1) {
@@ -293,7 +303,7 @@ function setSelectedRowHeight(
   const normalized =
     height === null
       ? null
-      : normalizedDimension(height, MIN_ROW_HEIGHT, MAX_TABLE_DIMENSION);
+      : normalizeDocumentTableDimension(height, MIN_DOCUMENT_TABLE_ROW_HEIGHT);
   const context = tableSizingContext(state);
   if (!context || (height !== null && normalized === null)) return false;
   if (rule !== 'atLeast' && rule !== 'exact') return false;
@@ -337,7 +347,11 @@ function setTableLayoutMode(
     setPhysicalColumnWidths(
       transaction,
       context,
-      equalDimensions(total, context.map.width, MIN_COLUMN_WIDTH),
+      equalDimensions(
+        total,
+        context.map.width,
+        MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+      ),
       0,
     );
     preferredWidth = total;
@@ -391,6 +405,71 @@ function setTableProperties(
   return true;
 }
 
+function setTablePropertyChanges(
+  { dispatch, state }: CommandProps,
+  requestedChanges: DocumentTablePropertyChanges,
+): boolean {
+  const changes = normalizeDocumentTablePropertyChanges(requestedChanges);
+  const context = tableSizingContext(state);
+  if (!context || !changes) return false;
+  if (
+    changes.row?.repeatHeader === true &&
+    !canRepeatSelectedTableRows(context)
+  ) {
+    return false;
+  }
+  if (!dispatch) return true;
+
+  const transaction = state.tr;
+  if (changes.column) {
+    const preservedWidths = normalizeRenderedDimensions(
+      changes.column.renderedColumnWidths,
+      context.map.width,
+      MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+    );
+    if (preservedWidths) {
+      for (let column = context.left; column < context.right; column += 1) {
+        preservedWidths[column] = changes.column.width;
+      }
+      setPhysicalColumnWidths(transaction, context, preservedWidths, 0);
+    } else {
+      setPhysicalColumnWidths(
+        transaction,
+        context,
+        numberRange(context.left, context.right).map(
+          () => changes.column?.width ?? DEFAULT_COLUMN_WIDTH,
+        ),
+        context.left,
+      );
+    }
+    setFixedTableGeometryFromColumns(transaction, context);
+  }
+
+  if (changes.table) {
+    const currentTable = transaction.doc.nodeAt(context.tableStart - 1);
+    setTableGeometryAttribute(transaction, context, {
+      ...tableGeometry(currentTable ?? context.table),
+      ...changes.table,
+    });
+  }
+
+  if (changes.row) {
+    setPhysicalRowProperties(
+      transaction,
+      context,
+      numberRange(context.top, context.bottom),
+      changes.row,
+    );
+  }
+
+  if (changes.cell) {
+    setSelectedCellProperties(transaction, context, changes.cell);
+  }
+
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
+  return true;
+}
+
 function setTableCellMargins(
   { dispatch, state }: CommandProps,
   requestedMargins: DocumentTableCellMargins,
@@ -430,7 +509,7 @@ function distributeColumns(
   setPhysicalColumnWidths(
     transaction,
     context,
-    equalDimensions(total, columns.length, MIN_COLUMN_WIDTH),
+    equalDimensions(total, columns.length, MIN_DOCUMENT_TABLE_COLUMN_WIDTH),
     columns[0] ?? 0,
   );
   setFixedTableGeometryFromColumns(transaction, context);
@@ -456,7 +535,11 @@ function distributeRows(
     renderedSelectionHeight,
     DEFAULT_ROW_HEIGHT,
   );
-  const [height] = equalDimensions(total, rows.length, MIN_ROW_HEIGHT);
+  const [height] = equalDimensions(
+    total,
+    rows.length,
+    MIN_DOCUMENT_TABLE_ROW_HEIGHT,
+  );
   const transaction = state.tr;
   setPhysicalRowHeights(
     transaction,
@@ -606,6 +689,62 @@ function setPhysicalRowHeights(
   });
 }
 
+function setPhysicalRowProperties(
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+  rows: readonly number[],
+  properties: NonNullable<DocumentTablePropertyChanges['row']>,
+): void {
+  const selectedRows = new Set(rows);
+  context.table.forEach((_row, offset, index) => {
+    if (!selectedRows.has(index)) return;
+    const position = context.tableStart + offset;
+    const current = transaction.doc.nodeAt(position);
+    if (!current) return;
+    transaction.setNodeMarkup(position, undefined, {
+      ...current.attrs,
+      rowHeight: properties.height,
+      rowHeightRule: properties.height === null ? null : properties.heightRule,
+      cantSplit: properties.cantSplit,
+      ...(properties.repeatHeader === undefined
+        ? {}
+        : { repeatHeader: properties.repeatHeader }),
+    });
+  });
+}
+
+function setSelectedCellProperties(
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+  properties: NonNullable<DocumentTablePropertyChanges['cell']>,
+): void {
+  const positions = context.map.cellsInRect({
+    left: context.left,
+    right: context.right,
+    top: context.top,
+    bottom: context.bottom,
+  });
+  for (const relativePosition of positions) {
+    const position = context.tableStart + relativePosition;
+    const current = transaction.doc.nodeAt(position);
+    if (!current || !isTableCell(current)) continue;
+    transaction.setNodeMarkup(position, undefined, {
+      ...current.attrs,
+      verticalAlign: properties.verticalAlign,
+      margins: properties.margins,
+    });
+  }
+}
+
+function canRepeatSelectedTableRows(context: TableSizingContext): boolean {
+  let leadingRepeatCount = 0;
+  for (let index = 0; index < context.table.childCount; index += 1) {
+    if (!documentTableRowRepeats(context.table.child(index))) break;
+    leadingRepeatCount += 1;
+  }
+  return context.top <= leadingRepeatCount;
+}
+
 function setTableGeometryAttribute(
   transaction: CommandProps['tr'],
   context: TableSizingContext,
@@ -734,16 +873,6 @@ function isTableCell(node: ProseMirrorNode): boolean {
   );
 }
 
-function normalizedDimension(
-  value: number,
-  minimum: number,
-  maximum: number,
-): number | null {
-  if (!Number.isFinite(value) || value < minimum || value > maximum)
-    return null;
-  return Math.round(value * 100) / 100;
-}
-
 function normalizeRenderedDimensions(
   values: readonly number[] | undefined,
   expectedCount: number,
@@ -751,7 +880,7 @@ function normalizeRenderedDimensions(
 ): number[] | null {
   if (!values || values.length !== expectedCount) return null;
   const normalized = values.map((value) =>
-    normalizedDimension(value, minimum, MAX_TABLE_DIMENSION),
+    normalizeDocumentTableDimension(value, minimum),
   );
   return normalized.every((value) => value !== null)
     ? (normalized as number[])

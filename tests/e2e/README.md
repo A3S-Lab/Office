@@ -60,9 +60,13 @@ header text and double border, horizontal banding, last-row presentation, and
 conditional paragraph alignment, spacing, pagination, and indent semantics
 across edit and preview. The same workflow verifies truthful 62.5% centered
 geometry in the unified Table Properties dialog, compact 390 px touch controls,
-an atomic change to 72% left placement with a 0.5 cm indent, cancellation and
-Escape safety, invoker-focus restoration, and matching preview geometry, with
-screenshot, accessibility, console, and page-error evidence. A real multi-page
+all four Table, Row, Column, and Cell tabs, and one atomic change covering 72%
+left placement with a 0.5 cm indent, a 1.2 cm exact row, disabled row splitting
+and repeated headings, a 4 cm column, centered cell content, and a 0.4 cm left
+cell margin. It also proves cancellation and Escape safety, invoker-focus
+restoration, exact retention of untouched imported 8 px and 16 px margin
+edges, and matching preview geometry, with screenshot, accessibility, console,
+and page-error evidence. A real multi-page
 DOCX table workflow proves that a splittable
 row continues at paragraph boundaries across three physical pages, repeated
 heading rows remain visible
