@@ -369,8 +369,14 @@ test('Word opens the selected-text menu from the keyboard at the selection', asy
       menuTop: menuRect.top,
     };
   });
-  expect(geometry.menuLeft).toBeCloseTo(geometry.expectedLeft, 0);
-  expect(geometry.menuTop).toBeCloseTo(geometry.expectedTop, 0);
+  // Moving focus into the menu can round the live selection rectangle by one
+  // CSS pixel, depending on the browser and viewport width.
+  expect(
+    Math.abs(geometry.menuLeft - geometry.expectedLeft),
+  ).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.menuTop - geometry.expectedTop)).toBeLessThanOrEqual(
+    1,
+  );
 
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
