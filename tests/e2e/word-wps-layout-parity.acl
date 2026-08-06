@@ -1,0 +1,75 @@
+suite "office-word-wps-layout-parity" {
+    version = 1
+
+    scenario "capture-styled-document-layout" {
+        name = "Capture the WPS comparison document with deterministic pagination"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-wps-layout-parity"
+        }
+
+        expect "playground-ready" {
+            visible = css("input[type='file'][accept*='.docx']")
+        }
+
+        upload "open-wps-comparison-document" {
+            target = css("input[type='file'][accept*='.docx']")
+            paths = [".a3s-test/fixtures/word-styled-table.docx"]
+        }
+
+        wait "document-loaded" {
+            text = "Styled report table"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "wasm-pagination-is-authoritative" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-engine='wasm'][data-pagination-text-engine='wasm']")
+        }
+
+        expect "page-count-matches-wps" {
+            visible = css(".work-document-page-stack[data-page-count='1']")
+        }
+
+        expect "physical-page-metadata-is-a4-portrait" {
+            visible = css(".work-document-page[data-pdf-page-count='1'][data-pdf-page-size='a4'][data-pdf-orientation='portrait']")
+        }
+
+        expect "styled-table-remains-on-the-first-page" {
+            visible = css(".work-document-page-sheet[data-page-index='1']")
+        }
+
+        screenshot "a3s-styled-document-layout" {
+            path = "screenshots/word-wps-layout-parity.png"
+        }
+
+        click "open-export-menu" {
+            target = css(".work-export-button")
+        }
+
+        download "export-a3s-pdf" {
+            target = css(".work-export-menu-panel [role='menuitem']:nth-child(2)")
+            path = "downloads/word-styled-table-a3s.pdf"
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}
