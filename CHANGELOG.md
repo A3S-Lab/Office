@@ -4,6 +4,15 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.2.0 - 2026-08-06
+
+- Added a real WPS Writer page-layout gate that exports a deterministic A4 DOCX
+  through WPS, captures normalized A3S and WPS pages, and rejects page-size,
+  semantic-landmark, browser-error, or bounded pixel regressions.
+- Matched WPS automatic Word line spacing without changing the original OOXML
+  multiple used for DOCX export, removed editor-only spacing around imported
+  tables, and removed the transparent paginated-page border from content
+  geometry.
 - Reworked the default Markdown split view into a flat writing-and-reading
   workspace with a bounded text measure, clearer typography for headings,
   quotations, code, tables, and task lists, and no nested preview card chrome.

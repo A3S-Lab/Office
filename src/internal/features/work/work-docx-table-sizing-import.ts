@@ -77,6 +77,7 @@ export function applyImportedDocxTableSizingMarkers(
     node.data = node.data.replace(TABLE_SIZING_MARKER_PATTERN, (marker) => {
       const sizing = tableByMarker.get(marker);
       if (table instanceof HTMLTableElement && sizing) {
+        table.dataset.officeTableImported = 'true';
         applyDocumentTableGeometryToElement(table, sizing.geometry);
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);

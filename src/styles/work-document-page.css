@@ -37,7 +37,7 @@
 }
 
 .work-document-page.paginated {
-  border-color: transparent;
+  border: 0;
   background-color: transparent !important;
   box-shadow: none;
 }
@@ -578,6 +578,26 @@
   margin: 0 0 var(--work-document-render-paragraph-after);
 }
 
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  :is(p, h1, h2, h3, h4, h5, h6)[data-office-auto-line-height] {
+  line-height: var(--work-document-office-auto-line-height) !important;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  :is(p, h1, h2, h3, h4, h5, h6)[data-office-auto-line-height]
+  > :where(span, a, strong, em, u, s, code) {
+  position: relative;
+  top: var(--work-document-office-auto-line-shift, 0);
+}
+
 .work-document-page .tiptap .work-document-tab,
 .work-pdf-export-page.document .work-document-tab {
   position: relative;
@@ -812,6 +832,12 @@
 .work-document-page .tiptap .tableWrapper {
   margin: 18px 0 22px;
   overflow-x: auto;
+}
+
+.work-document-page
+  .tiptap
+  .tableWrapper:has(> table[data-office-table-imported="true"]) {
+  margin: 0;
 }
 
 .work-document-page .tiptap table {

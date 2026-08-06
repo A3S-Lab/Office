@@ -68,6 +68,7 @@ describe('DOCX table geometry', () => {
 
     const table = html.querySelector('table');
     expect(table?.dataset).toMatchObject({
+      officeTableImported: 'true',
       officeTableLayout: 'autofit',
       officeTableWidthType: 'percent',
       officeTableWidth: '50',

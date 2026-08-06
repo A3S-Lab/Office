@@ -11,7 +11,10 @@ import {
 } from '../src/internal/features/work/work-docx-paragraph-direction-import';
 import { markDocxParagraphIndents } from '../src/internal/features/work/work-docx-paragraph-indent-import';
 import { markDocxParagraphPagination } from '../src/internal/features/work/work-docx-paragraph-pagination-import';
-import { markDocxParagraphSpacing } from '../src/internal/features/work/work-docx-paragraph-spacing-import';
+import {
+  applyImportedDocxParagraphSpacingMarkers,
+  markDocxParagraphSpacing,
+} from '../src/internal/features/work/work-docx-paragraph-spacing-import';
 import { markDocxParagraphTabStops } from '../src/internal/features/work/work-docx-tab-stop-import';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
 
@@ -327,6 +330,26 @@ describe('DOCX paragraph styles', () => {
       lineHeight: '1.5',
       lineRule: 'auto',
     });
+
+    const html = new DOMParser().parseFromString(
+      `<p>${markers.paragraphs[0]?.marker}Spaced paragraph</p>`,
+      'text/html',
+    );
+    applyImportedDocxParagraphSpacingMarkers(html, markers);
+
+    const paragraph = html.body.querySelector('p');
+    expect(paragraph?.style.lineHeight).toBe('1.5');
+    expect(paragraph?.dataset.officeAutoLineHeight).toBe('1.725');
+    expect(
+      paragraph?.style.getPropertyValue(
+        '--work-document-office-auto-line-height',
+      ),
+    ).toBe('1.725');
+    expect(
+      paragraph?.style.getPropertyValue(
+        '--work-document-office-auto-line-shift',
+      ),
+    ).toBe('-0.2875em');
   });
 
   test('merges inherited tab stops by position and honors direct clears', () => {

@@ -1,6 +1,8 @@
-import type {
-  DocumentParagraphLineRule,
-  DocumentParagraphSpacing,
+import {
+  documentAutoLineHeight,
+  renderDocumentAutoLineHeight,
+  type DocumentParagraphLineRule,
+  type DocumentParagraphSpacing,
 } from './work-document-paragraph-formatting';
 import {
   type DocxParagraphStyleSource,
@@ -138,6 +140,25 @@ function applyParagraphSpacing(
   }
   if (spacing.lineHeight) element.style.lineHeight = spacing.lineHeight;
   if (spacing.lineRule) element.dataset.officeLineRule = spacing.lineRule;
+  if (spacing.lineRule === 'auto') {
+    const autoLineHeight = documentAutoLineHeight(spacing.lineHeight);
+    for (const [name, value] of Object.entries(
+      renderDocumentAutoLineHeight(spacing.lineHeight, autoLineHeight),
+    )) {
+      if (name === 'style') {
+        for (const declaration of value.split(';')) {
+          const separator = declaration.indexOf(':');
+          if (separator < 0) continue;
+          element.style.setProperty(
+            declaration.slice(0, separator).trim(),
+            declaration.slice(separator + 1).trim(),
+          );
+        }
+      } else {
+        element.setAttribute(name, value);
+      }
+    }
+  }
 }
 
 function insertParagraphMarker(

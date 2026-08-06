@@ -126,6 +126,11 @@ class WorkDocumentTableView extends TableView {
   private syncGeometry(node: ProseMirrorNode): void {
     const geometry = tableGeometry(node);
     applyDocumentTableGeometryToElement(this.table, geometry);
+    if (node.attrs.officeImported) {
+      this.table.dataset.officeTableImported = 'true';
+    } else {
+      delete this.table.dataset.officeTableImported;
+    }
     if (!tableHasExplicitColumnWidths(node)) this.clearStaleColumnWidths();
   }
 
@@ -156,6 +161,15 @@ export const DocumentTable = Table.extend({
         default: null,
         parseHTML: () => null,
         renderHTML: () => ({}),
+      },
+      officeImported: {
+        default: false,
+        parseHTML: (element: HTMLElement) =>
+          element.dataset.officeTableImported === 'true',
+        renderHTML: (attributes: Record<string, unknown>) =>
+          attributes.officeImported
+            ? { 'data-office-table-imported': 'true' }
+            : {},
       },
     };
   },

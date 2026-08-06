@@ -302,6 +302,11 @@ interaction model.
   preservation of untouched cell-margin edges, a complete 390 px Picture
   Properties flow, and a 120-paragraph row across three physical pages through
   the final table content and following paragraph.
+  A direct-formatting A4 fixture also runs through a real WPS Writer PDF export
+  and a page-only browser comparison. Its automatic line spacing, paragraph
+  gaps, centered fixed table, row heights, borders, fills, and cell margins
+  stay within the checked one-pixel layout-landmark budget while preserving
+  the original OOXML line multiples for DOCX export.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,
@@ -511,6 +516,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)
 - [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
 - [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)

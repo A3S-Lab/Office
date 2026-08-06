@@ -5,6 +5,7 @@ export const MAX_DOCUMENT_INDENT_LEVEL = 8;
 export const DOCUMENT_RULER_INDENT_STEP_PX = 6;
 export const MAX_DOCUMENT_INDENT_PX =
   DOCUMENT_INDENT_STEP_PX * MAX_DOCUMENT_INDENT_LEVEL;
+export const DOCUMENT_WORD_SINGLE_LINE_HEIGHT = 1.15;
 
 export interface DocumentParagraphIndent {
   left: number;
@@ -95,6 +96,18 @@ export const DocumentParagraphFormatting = Extension.create({
               const lineRule = normalizedLineRule(attributes.lineRule);
               return lineRule ? { 'data-office-line-rule': lineRule } : {};
             },
+          },
+          autoLineHeight: {
+            default: null,
+            parseHTML: (element: HTMLElement) =>
+              normalizedAutoLineHeight(element.dataset.officeAutoLineHeight),
+            renderHTML: (attributes: Record<string, unknown>) =>
+              normalizedLineRule(attributes.lineRule) === 'auto'
+                ? renderDocumentAutoLineHeight(
+                    attributes.lineHeight,
+                    attributes.autoLineHeight,
+                  )
+                : {},
           },
           spaceBefore: pointSpacingAttribute(
             'spaceBefore',
@@ -405,9 +418,11 @@ function setDocumentLineHeightCommand(
   lineHeight: string | null,
 ): boolean {
   const value = normalizedLineHeight(lineHeight);
+  const lineRule = value ? lineRuleForLineHeight(value) : null;
   const attributes = {
     lineHeight: value,
-    lineRule: value ? lineRuleForLineHeight(value) : null,
+    lineRule,
+    autoLineHeight: lineRule === 'auto' ? documentAutoLineHeight(value) : null,
   };
   return chain()
     .focus()
@@ -542,13 +557,16 @@ function setDocumentParagraphSpacingCommand(
   const nodeTypes = activeParagraphNodeTypes(editor);
   if (!nodeTypes.length) return false;
   const lineHeight = normalizedLineHeight(spacing.lineHeight);
+  const lineRule =
+    normalizedLineRule(spacing.lineRule) ??
+    (lineHeight ? lineRuleForLineHeight(lineHeight) : null);
   const attributes = {
     spaceBefore: normalizedPointSpacing(spacing.before),
     spaceAfter: normalizedPointSpacing(spacing.after),
     lineHeight,
-    lineRule:
-      normalizedLineRule(spacing.lineRule) ??
-      (lineHeight ? lineRuleForLineHeight(lineHeight) : null),
+    lineRule,
+    autoLineHeight:
+      lineRule === 'auto' ? documentAutoLineHeight(lineHeight) : null,
   };
   let commandChain = chain();
   if (options.restoreFocus !== false) commandChain = commandChain.focus();
@@ -572,6 +590,7 @@ function clearDocumentFormattingCommand({
       firstLineIndent: 0,
       lineHeight: null,
       lineRule: null,
+      autoLineHeight: null,
       paragraphDirection: null,
       spaceBefore: null,
       spaceAfter: null,
@@ -614,6 +633,68 @@ function normalizedLineHeight(value: unknown): string | null {
   return /^(?:\d+(?:\.\d+)?|\d+(?:\.\d+)?(?:px|pt|%))$/i.test(normalized)
     ? normalized
     : null;
+}
+
+export function documentAutoLineHeight(value: unknown): number | null {
+  const multiple = lineHeightMultiple(value);
+  if (multiple === null) return null;
+  return formatLineMetric(multiple * DOCUMENT_WORD_SINGLE_LINE_HEIGHT);
+}
+
+export function documentAutoLineLeadingShift(value: unknown): number | null {
+  const multiple = lineHeightMultiple(value);
+  if (multiple === null) return null;
+  return formatLineMetric(
+    ((1 - multiple) * DOCUMENT_WORD_SINGLE_LINE_HEIGHT) / 2,
+  );
+}
+
+export function renderDocumentAutoLineHeight(
+  lineHeight: unknown,
+  autoLineHeight: unknown = documentAutoLineHeight(lineHeight),
+): Record<string, string> {
+  const renderedLineHeight =
+    normalizedAutoLineHeight(autoLineHeight) ??
+    documentAutoLineHeight(lineHeight);
+  if (renderedLineHeight === null) return {};
+  const shift = documentAutoLineLeadingShift(lineHeight);
+  return {
+    'data-office-auto-line-height': String(
+      formatLineMetric(renderedLineHeight),
+    ),
+    style: [
+      `--work-document-office-auto-line-height: ${formatLineMetric(renderedLineHeight)}`,
+      ...(shift === null
+        ? []
+        : [
+            `--work-document-office-auto-line-shift: ${formatLineMetric(shift)}em`,
+          ]),
+    ].join('; '),
+  };
+}
+
+function lineHeightMultiple(value: unknown): number | null {
+  const normalized = normalizedLineHeight(value);
+  if (!normalized) return null;
+  const percentage = /^(\d+(?:\.\d+)?)%$/.exec(normalized);
+  const multiple = percentage
+    ? Number(percentage[1]) / 100
+    : /^\d+(?:\.\d+)?$/.test(normalized)
+      ? Number(normalized)
+      : Number.NaN;
+  return Number.isFinite(multiple) && multiple > 0 ? multiple : null;
+}
+
+function normalizedAutoLineHeight(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 && number <= 20
+    ? formatLineMetric(number)
+    : null;
+}
+
+function formatLineMetric(value: number): number {
+  return Number(value.toFixed(4));
 }
 
 function normalizedLineRule(value: unknown): DocumentParagraphLineRule | null {

@@ -1,0 +1,36 @@
+---
+title: SpreadsheetEditor
+description: 工作簿内容、计算内核配置、事件与宿主扩展接口。
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` 是受控工作簿组件，提供工作表、公式、图表、条件格式、数据透视表
+与打印布局模型。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | 是 | — | 受控工作簿内容。 |
+| `onChange` | `(content: SpreadsheetContent) => void` | 是 | — | 返回完整的新工作簿。 |
+| `preview` | `boolean` | 否 | `false` | 只读工作簿。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 保存、导出、历史记录与审批等操作。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 公式与工作簿计算内核地址。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把当前单元格或区域发送给宿主 AI 流程。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | 内容类型标识。 |
+| `sheets` | `WorkSpreadsheetSheet[]` | 工作表、单元格、公式、样式、图片、图表与数据透视表。 |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | 计算模式、迭代、精度与加载行为。 |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | 工作簿级与工作表级名称。 |
+| `printAreas`, `printTitles` | 表格打印字段 | 打印区域与重复打印的行、列。 |
+| `pageBreaks`, `pageSetups` | 表格页面字段 | 分页符、纸张、方向、缩放、边距、页眉与页脚。 |
+
+工作簿 Extension 上下文目前还不是稳定公共 API。宿主流程应使用 `fileActions`，
+结构化 AI 操作应使用 `onAgentRequest`；不要从包的内部路径导入命令运行时模块。

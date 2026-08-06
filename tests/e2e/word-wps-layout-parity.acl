@@ -1,7 +1,7 @@
 suite "office-word-wps-layout-parity" {
     version = 1
 
-    scenario "capture-styled-document-layout" {
+    scenario "capture-direct-formatting-document-layout" {
         name = "Capture the WPS comparison document with deterministic pagination"
         surface = "web"
         timeout_ms = 60000
@@ -22,11 +22,11 @@ suite "office-word-wps-layout-parity" {
 
         upload "open-wps-comparison-document" {
             target = css("input[type='file'][accept*='.docx']")
-            paths = [".a3s-test/fixtures/word-styled-table.docx"]
+            paths = [".a3s-test/fixtures/word-wps-layout.docx"]
         }
 
         wait "document-loaded" {
-            text = "Styled report table"
+            text = "Quarterly revenue report"
         }
 
         wait "pagination-ready" {
@@ -37,7 +37,7 @@ suite "office-word-wps-layout-parity" {
             visible = css(".work-document-editable .ProseMirror[data-pagination-engine='wasm']")
         }
 
-        expect "unregistered-theme-font-uses-dom-measurement" {
+        expect "system-font-uses-dom-measurement" {
             visible = css(".work-document-editable .ProseMirror[data-pagination-text-engine='dom']")
         }
 
@@ -49,11 +49,23 @@ suite "office-word-wps-layout-parity" {
             visible = css(".work-document-page[data-pdf-page-count='1'][data-pdf-page-size='a4'][data-pdf-orientation='portrait']")
         }
 
-        expect "styled-table-remains-on-the-first-page" {
+        expect "title-uses-wps-automatic-line-metric" {
+            visible = css(".work-document-section > p[data-office-line-rule='auto'][data-office-auto-line-height='1.84']")
+        }
+
+        expect "body-uses-wps-automatic-line-metric" {
+            visible = css(".work-document-section > p[data-office-line-rule='auto'][data-office-auto-line-height='1.2075']")
+        }
+
+        expect "table-keeps-docx-flow-spacing" {
+            visible = css(".tableWrapper > table[data-office-table-imported='true']")
+        }
+
+        expect "direct-formatting-table-remains-on-the-first-page" {
             visible = css(".work-document-page-sheet[data-page-index='1']")
         }
 
-        screenshot "a3s-styled-document-layout" {
+        screenshot "a3s-wps-comparison-layout" {
             path = "screenshots/word-wps-layout-parity.png"
         }
 

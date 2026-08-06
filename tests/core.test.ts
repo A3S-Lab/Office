@@ -251,6 +251,40 @@ describe('office core', () => {
     });
   });
 
+  test('round-trips Word automatic line multiples without exporting the WPS render metric', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<p style="line-height: 1.5;',
+      ' --work-document-office-auto-line-height: 1.725"',
+      ' data-office-line-rule="auto"',
+      ' data-office-auto-line-height="1.725">',
+      '<span style="font-family: Arial; font-size: 16pt">',
+      'Automatic line spacing</span></p>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = await archive.file('word/document.xml')?.async('string');
+
+    expect(xml).toContain(
+      '<w:spacing w:after="120" w:line="360" w:lineRule="auto"/>',
+    );
+
+    const imported = await importOfficeFile(
+      new File([blob], 'automatic-line-spacing.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    expect(imported.content.html).toContain('line-height: 1.5');
+    expect(imported.content.html).toContain(
+      'data-office-auto-line-height="1.725"',
+    );
+  });
+
   test('round-trips structured DOCX lists, nesting, starts, and RTL items', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document')

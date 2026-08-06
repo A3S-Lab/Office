@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  AlignmentType,
+  BorderStyle,
   CommentRangeEnd,
   CommentRangeStart,
   CommentReference,
@@ -9,10 +11,14 @@ import {
   HeadingLevel,
   Packer,
   Paragraph,
+  ShadingType,
   Table,
   TableCell,
+  TableLayoutType,
   TableRow,
   TextRun,
+  VerticalAlignTable,
+  WidthType,
 } from 'docx';
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
@@ -47,6 +53,10 @@ const styledTableDocumentPath = path.join(
   fixtureDirectory,
   'word-styled-table.docx',
 );
+const wpsLayoutDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-layout.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -62,6 +72,7 @@ await Bun.write(
 );
 await Bun.write(themeTableDocumentPath, await createThemeTableWordFixture());
 await Bun.write(styledTableDocumentPath, await createStyledTableWordFixture());
+await Bun.write(wpsLayoutDocumentPath, await createWpsLayoutWordFixture());
 await Bun.write(
   picturePath,
   Buffer.from(
@@ -77,6 +88,7 @@ console.log(`Created ${longCommentDocumentPath}`);
 console.log(`Created ${multiPageTableDocumentPath}`);
 console.log(`Created ${themeTableDocumentPath}`);
 console.log(`Created ${styledTableDocumentPath}`);
+console.log(`Created ${wpsLayoutDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -542,6 +554,196 @@ async function createStyledTableWordFixture(): Promise<Buffer> {
         ),
   );
   return archive.generateAsync({ type: 'nodebuffer' });
+}
+
+async function createWpsLayoutWordFixture(): Promise<Buffer> {
+  const bodyRun = (
+    text: string,
+    options: { bold?: boolean; color?: string } = {},
+  ) =>
+    new TextRun({
+      text,
+      font: 'Arial',
+      size: 21,
+      bold: options.bold ?? false,
+      italics: false,
+      color: options.color ?? '000000',
+    });
+  const tableParagraph = (
+    text: string,
+    options: {
+      alignment?: (typeof AlignmentType)[keyof typeof AlignmentType];
+      bold?: boolean;
+      color?: string;
+    } = {},
+  ) =>
+    new Paragraph({
+      alignment: options.alignment ?? AlignmentType.LEFT,
+      spacing: { before: 0, after: 0, line: 240 },
+      children: [bodyRun(text, { bold: options.bold, color: options.color })],
+    });
+  const cell = (
+    text: string,
+    options: {
+      alignment?: (typeof AlignmentType)[keyof typeof AlignmentType];
+      bold?: boolean;
+      color?: string;
+      fill: string;
+      width: number;
+    },
+  ) =>
+    new TableCell({
+      width: { size: options.width, type: WidthType.DXA },
+      verticalAlign: VerticalAlignTable.CENTER,
+      margins: { top: 120, right: 240, bottom: 120, left: 240 },
+      shading: {
+        type: ShadingType.CLEAR,
+        color: 'auto',
+        fill: options.fill,
+      },
+      children: [
+        tableParagraph(text, {
+          alignment: options.alignment,
+          bold: options.bold,
+          color: options.color,
+        }),
+      ],
+    });
+  const border = {
+    style: BorderStyle.SINGLE,
+    size: 6,
+    color: '4472C4',
+  } as const;
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS and A3S Office layout-parity fixture',
+    title: 'A3S Office WPS layout fixture',
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Arial',
+            size: 21,
+            bold: false,
+            italics: false,
+            color: '000000',
+          },
+          paragraph: {
+            spacing: { before: 0, after: 160, line: 252 },
+          },
+        },
+      },
+    },
+    sections: [
+      {
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: {
+              top: 1440,
+              right: 1440,
+              bottom: 1440,
+              left: 1440,
+              header: 720,
+              footer: 720,
+              gutter: 0,
+            },
+          },
+        },
+        children: [
+          new Paragraph({
+            spacing: { before: 0, after: 240, line: 384 },
+            children: [
+              new TextRun({
+                text: 'Quarterly revenue report',
+                font: 'Arial',
+                size: 32,
+                bold: false,
+                italics: false,
+                color: '2E74B5',
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { before: 0, after: 160, line: 252 },
+            children: [
+              bodyRun(
+                'Direct formatting keeps this reference stable in WPS and A3S Office.',
+              ),
+            ],
+          }),
+          new Table({
+            width: { size: 5000, type: WidthType.DXA },
+            columnWidths: [3000, 2000],
+            alignment: AlignmentType.CENTER,
+            layout: TableLayoutType.FIXED,
+            margins: { top: 120, right: 240, bottom: 120, left: 240 },
+            borders: {
+              top: border,
+              right: border,
+              bottom: border,
+              left: border,
+              insideHorizontal: border,
+              insideVertical: border,
+            },
+            rows: [
+              new TableRow({
+                tableHeader: true,
+                cantSplit: true,
+                children: [
+                  cell('Region', {
+                    bold: true,
+                    color: 'FFFFFF',
+                    fill: '4472C4',
+                    width: 3000,
+                  }),
+                  cell('Revenue', {
+                    alignment: AlignmentType.RIGHT,
+                    bold: true,
+                    color: 'FFFFFF',
+                    fill: '4472C4',
+                    width: 2000,
+                  }),
+                ],
+              }),
+              new TableRow({
+                cantSplit: true,
+                children: [
+                  cell('North', { fill: 'FCE4D6', width: 3000 }),
+                  cell('$120,000', {
+                    alignment: AlignmentType.RIGHT,
+                    fill: 'FCE4D6',
+                    width: 2000,
+                  }),
+                ],
+              }),
+              new TableRow({
+                cantSplit: true,
+                children: [
+                  cell('Total', {
+                    bold: true,
+                    fill: 'E7E6E6',
+                    width: 3000,
+                  }),
+                  cell('$120,000', {
+                    alignment: AlignmentType.RIGHT,
+                    bold: true,
+                    fill: 'E7E6E6',
+                    width: 2000,
+                  }),
+                ],
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { before: 160, after: 0, line: 252 },
+            children: [bodyRun('End of report.')],
+          }),
+        ],
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
 }
 
 function wordTableStyleFixtureXml(): string {

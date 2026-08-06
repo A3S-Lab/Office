@@ -368,6 +368,13 @@ describe('document formatting', () => {
     expect(editor.getHTML()).toContain('data-office-space-before="12"');
     expect(editor.getHTML()).toContain('data-office-space-after="6"');
     expect(editor.getHTML()).toContain('data-office-line-rule="auto"');
+    expect(editor.getHTML()).toContain('data-office-auto-line-height="1.725"');
+    expect(editor.getHTML()).toContain(
+      '--work-document-office-auto-line-height: 1.725',
+    );
+    expect(editor.getHTML()).toContain(
+      '--work-document-office-auto-line-shift: -0.2875em',
+    );
     expect(editor.getHTML()).toContain('margin-top: 12pt');
     expect(editor.getHTML()).toContain('margin-bottom: 6pt');
     expect(editor.getHTML()).toContain('line-height: 1.5');

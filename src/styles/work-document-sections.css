@@ -358,6 +358,11 @@
   border-collapse: collapse;
 }
 
+.work-document-preview-page table[data-office-table-imported="true"],
+.work-document-print-body table[data-office-table-imported="true"] {
+  margin: 0;
+}
+
 .work-document-preview-page table[data-office-table-layout="autofit"],
 .work-document-print-body table[data-office-table-layout="autofit"],
 .work-document-preview-page table[data-office-table-layout="contents"],
