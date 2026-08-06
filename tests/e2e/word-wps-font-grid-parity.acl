@@ -1,0 +1,184 @@
+suite "office-word-wps-font-grid-parity" {
+    version = 1
+
+    scenario "preserve-system-font-line-metrics" {
+        name = "Preserve WPS system-font line metrics across sizes and automatic spacing"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-wps-font-matrix"
+        }
+
+        expect "playground-ready" {
+            visible = css("input[type='file'][accept*='.docx']")
+        }
+
+        upload "open-font-matrix" {
+            target = css("input[type='file'][accept*='.docx']")
+            paths = [".a3s-test/fixtures/word-wps-font-matrix.docx"]
+        }
+
+        wait "font-matrix-loaded" {
+            text = "Microsoft YaHei 16pt 3 line 360"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "font-matrix-stays-on-one-wps-page" {
+            visible = css(".work-document-page-stack[data-page-count='1']")
+        }
+
+        expect "calibri-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.2207']")
+        }
+
+        expect "segoe-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.3301']")
+        }
+
+        expect "yahei-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.7143']")
+        }
+
+        screenshot "font-matrix-layout" {
+            path = "screenshots/word-wps-font-matrix.png"
+        }
+
+        console "font-matrix-console" {
+            path = "diagnostics/word-wps-font-matrix-console.json"
+            clear = false
+        }
+
+        page_errors "font-matrix-errors" {
+            path = "diagnostics/word-wps-font-matrix-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "preserve-cjk-font-line-metrics" {
+        name = "Preserve WPS CJK font metrics for Latin and Chinese text"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-wps-cjk-font-matrix"
+        }
+
+        expect "playground-ready" {
+            visible = css("input[type='file'][accept*='.docx']")
+        }
+
+        upload "open-cjk-font-matrix" {
+            target = css("input[type='file'][accept*='.docx']")
+            paths = [".a3s-test/fixtures/word-wps-cjk-font-matrix.docx"]
+        }
+
+        wait "cjk-font-matrix-loaded" {
+            text = "DengXian"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "cjk-font-matrix-stays-on-one-wps-page" {
+            visible = css(".work-document-page-stack[data-page-count='1']")
+        }
+
+        expect "simsun-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.2976']")
+        }
+
+        expect "dengxian-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.3548']")
+        }
+
+        screenshot "cjk-font-matrix-layout" {
+            path = "screenshots/word-wps-cjk-font-matrix.png"
+        }
+
+        console "cjk-font-matrix-console" {
+            path = "diagnostics/word-wps-cjk-font-matrix-console.json"
+            clear = false
+        }
+
+        page_errors "cjk-font-matrix-errors" {
+            path = "diagnostics/word-wps-cjk-font-matrix-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "preserve-document-grid-line-pitch" {
+        name = "Preserve the WPS document-grid line pitch and system-font metrics"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-wps-grid-matrix"
+        }
+
+        expect "playground-ready" {
+            visible = css("input[type='file'][accept*='.docx']")
+        }
+
+        upload "open-grid-matrix" {
+            target = css("input[type='file'][accept*='.docx']")
+            paths = [".a3s-test/fixtures/word-wps-grid-matrix.docx"]
+        }
+
+        wait "grid-matrix-loaded" {
+            text = "Microsoft YaHei 16pt grid row 3"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "grid-type-and-pitch-are-preserved" {
+            visible = css(".work-document-section[data-section-document-grid-type='lines'][data-section-document-grid-line-pitch='12']")
+        }
+
+        expect "grid-css-pitch-is-renderable" {
+            visible = css(".work-document-section[style*='--work-document-word-grid-line-pitch']")
+        }
+
+        expect "grid-matrix-stays-on-one-wps-page" {
+            visible = css(".work-document-page-stack[data-page-count='1']")
+        }
+
+        screenshot "grid-matrix-layout" {
+            path = "screenshots/word-wps-grid-matrix.png"
+        }
+
+        console "grid-matrix-console" {
+            path = "diagnostics/word-wps-grid-matrix-console.json"
+            clear = false
+        }
+
+        page_errors "grid-matrix-errors" {
+            path = "diagnostics/word-wps-grid-matrix-errors.json"
+            clear = false
+        }
+    }
+}

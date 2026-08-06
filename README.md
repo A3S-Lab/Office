@@ -307,6 +307,10 @@ interaction model.
   gaps, centered fixed table, row heights, borders, fills, and cell margins
   stay within the checked one-pixel layout-landmark budget while preserving
   the original OOXML line multiples for DOCX export.
+  Separate 30-row common-font, 36-row CJK-font, and 18-row document-grid
+  matrices now gate text-band positions against WPS. The browser keeps the
+  measured per-font automatic-line advance, while DOCX round trips retain the
+  section `docGrid` type and line pitch and each run's `snapToGrid` override.
   _DOCX import/export; PDF export._
 - **Markdown** — GFM source, visual editing, synchronized and resizable split
   preview, source-native undo/redo with typing coalescing and selection restore,

@@ -42,6 +42,20 @@ and file semantics.
 | `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
 | `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
 
+## DOCX text and grid fidelity
+
+Imported section layouts retain an optional `WorkDocumentGrid` with its OOXML
+grid type and point-based line pitch. Imported runs retain explicit
+`snapToGrid` values. Both properties survive editing and DOCX export; a
+gridless source remains gridless instead of receiving the document generator's
+default grid.
+
+For automatic Word line spacing, the browser combines the original paragraph
+multiple with a measured WPS advance for the resolved run font. These render
+metrics are internal compatibility data: export continues to use the original
+OOXML paragraph multiple, so a browser-only calibration cannot rewrite the
+document's line-spacing semantics.
+
 ## Built-in navigation
 
 The View ribbon opens a persistent heading outline on wide layouts and a

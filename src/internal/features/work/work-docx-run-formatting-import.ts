@@ -16,6 +16,7 @@ import {
   resolveDocxTableStyleResolver,
 } from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
+import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -23,6 +24,8 @@ export interface ImportedDocxRunFormatting {
   underline?: boolean;
   strike?: boolean;
   fontFamily?: string;
+  wordLineHeightFactor?: number;
+  wordSnapToGrid?: boolean;
   fontSize?: number;
   color?: string;
   backgroundColor?: string;
@@ -118,6 +121,7 @@ function resolvedRunFormatting(
   let italic: boolean | undefined;
   let underline: boolean | undefined;
   let strike: boolean | undefined;
+  let snapToGrid: boolean | undefined;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
@@ -125,6 +129,10 @@ function resolvedRunFormatting(
     underline = overriddenBoolean(underline, underlineProperty(properties));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
+    snapToGrid = overriddenBoolean(
+      snapToGrid,
+      onOffProperty(properties, 'snapToGrid'),
+    );
 
     const runFonts = directChild(properties, 'rFonts');
     if (runFonts) {
@@ -218,8 +226,14 @@ function resolvedRunFormatting(
     ...(strike !== undefined || hasRunPropertySource
       ? { strike: strike ?? false }
       : {}),
-    ...(fontFamily ? { fontFamily } : {}),
+    ...(fontFamily
+      ? {
+          fontFamily,
+          wordLineHeightFactor: documentWordLineHeightFactor(fontFamily),
+        }
+      : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
+    ...(snapToGrid !== undefined ? { wordSnapToGrid: snapToGrid } : {}),
     ...(color ? { color } : {}),
     ...(backgroundColor ? { backgroundColor } : {}),
   };
@@ -260,6 +274,14 @@ function formattingMarkup(
     span.style.textDecorationLine = 'none';
   }
   if (formatting.fontFamily) span.style.fontFamily = formatting.fontFamily;
+  if (formatting.wordLineHeightFactor !== undefined) {
+    const factor = formatLineHeightFactor(formatting.wordLineHeightFactor);
+    span.dataset.officeWordLineHeightFactor = factor;
+    span.style.setProperty('--work-document-word-line-height-factor', factor);
+  }
+  if (formatting.wordSnapToGrid !== undefined) {
+    span.dataset.officeWordSnapToGrid = String(formatting.wordSnapToGrid);
+  }
   if (formatting.fontSize !== undefined)
     span.style.fontSize = `${formatNumber(formatting.fontSize)}pt`;
   if (formatting.color) span.style.color = formatting.color;
@@ -403,4 +425,8 @@ function wordHighlightColor(value: string): string {
 
 function formatNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
+}
+
+function formatLineHeightFactor(value: number): string {
+  return Number(value.toFixed(4)).toString();
 }

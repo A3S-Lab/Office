@@ -8,6 +8,7 @@ import {
   CommentRangeStart,
   CommentReference,
   Document,
+  DocumentGridType,
   HeadingLevel,
   Packer,
   Paragraph,
@@ -57,6 +58,18 @@ const wpsLayoutDocumentPath = path.join(
   fixtureDirectory,
   'word-wps-layout.docx',
 );
+const wpsFontMatrixDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-font-matrix.docx',
+);
+const wpsCjkFontMatrixDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-cjk-font-matrix.docx',
+);
+const wpsGridMatrixDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-grid-matrix.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -74,6 +87,18 @@ await Bun.write(themeTableDocumentPath, await createThemeTableWordFixture());
 await Bun.write(styledTableDocumentPath, await createStyledTableWordFixture());
 await Bun.write(wpsLayoutDocumentPath, await createWpsLayoutWordFixture());
 await Bun.write(
+  wpsFontMatrixDocumentPath,
+  await createWpsFontMatrixWordFixture(),
+);
+await Bun.write(
+  wpsCjkFontMatrixDocumentPath,
+  await createWpsCjkFontMatrixWordFixture(),
+);
+await Bun.write(
+  wpsGridMatrixDocumentPath,
+  await createWpsGridMatrixWordFixture(),
+);
+await Bun.write(
   picturePath,
   Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAYAAADMtn8nAAAB+klEQVR4nO3bwQnCUBRFwZRjT25TidUKukoDsQARMfj5OTCL2V94nOVbLut9B5qW2QOA4wQMYQKGsLeAn9sOnJSAIUzAECZgCBMwhAkYwgQMYQKGMAFDmIAhTMAQJmAIEzCECRjChgX86xvUbLMPAUcIWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJ+E8BX28P+EjAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwCcPGGYQsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACRsWMDCegCFMwBAmYAgTMIQJGMIEDGEChjABQ5iAIUzAECZgCBMwhAkYwr4GDHQIGMIEDGEChrAXam5Zu0ZEGKIAAAAASUVORK5CYII=',
@@ -89,6 +114,9 @@ console.log(`Created ${multiPageTableDocumentPath}`);
 console.log(`Created ${themeTableDocumentPath}`);
 console.log(`Created ${styledTableDocumentPath}`);
 console.log(`Created ${wpsLayoutDocumentPath}`);
+console.log(`Created ${wpsFontMatrixDocumentPath}`);
+console.log(`Created ${wpsCjkFontMatrixDocumentPath}`);
+console.log(`Created ${wpsGridMatrixDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -744,6 +772,154 @@ async function createWpsLayoutWordFixture(): Promise<Buffer> {
     ],
   });
   return Packer.toBuffer(document);
+}
+
+async function createWpsFontMatrixWordFixture(): Promise<Buffer> {
+  const samples = [
+    ['Arial', 21],
+    ['Arial', 32],
+    ['Times New Roman', 21],
+    ['Times New Roman', 32],
+    ['Calibri', 21],
+    ['Calibri', 32],
+    ['Segoe UI', 21],
+    ['Segoe UI', 32],
+    ['Microsoft YaHei', 21],
+    ['Microsoft YaHei', 32],
+  ] as const;
+  return createWpsTextMatrixWordFixture(
+    'WPS Latin and Chinese system-font line metrics',
+    samples.flatMap(([font, size]) =>
+      [240, 240, 360].map((line, index) => ({
+        font,
+        label: `${font} ${size / 2}pt ${index + 1} line ${line}`,
+        line,
+        size,
+      })),
+    ),
+  );
+}
+
+async function createWpsCjkFontMatrixWordFixture(): Promise<Buffer> {
+  const fonts = [
+    'Microsoft YaHei',
+    'SimSun',
+    'SimHei',
+    'FangSong',
+    'KaiTi',
+    'DengXian',
+  ] as const;
+  const chineseSample = '\u4e2d\u6587\u6d4b\u8bd5';
+  return createWpsTextMatrixWordFixture(
+    'WPS CJK system-font line metrics',
+    fonts.flatMap((font) =>
+      ['Latin sample', chineseSample].flatMap((sample) =>
+        [240, 240, 360].map((line, index) => ({
+          font,
+          label: `${font} ${sample} ${index + 1}`,
+          line,
+          size: 21,
+        })),
+      ),
+    ),
+  );
+}
+
+async function createWpsGridMatrixWordFixture(): Promise<Buffer> {
+  const samples = [
+    ['Arial', 21],
+    ['Arial', 32],
+    ['Segoe UI', 21],
+    ['Segoe UI', 32],
+    ['Microsoft YaHei', 21],
+    ['Microsoft YaHei', 32],
+  ] as const;
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS document-grid layout fixture',
+    title: 'A3S Office WPS document-grid matrix',
+    sections: [
+      {
+        properties: {
+          grid: { type: DocumentGridType.LINES, linePitch: 240 },
+          page: wpsMatrixPageProperties(),
+        },
+        children: samples.flatMap(([font, size]) =>
+          Array.from(
+            { length: 3 },
+            (_, index) =>
+              new Paragraph({
+                spacing: { before: 0, after: 0, line: 240 },
+                children: [
+                  new TextRun({
+                    text: `${font} ${size / 2}pt grid row ${index + 1}`,
+                    font,
+                    size,
+                    bold: false,
+                    italics: false,
+                    color: '000000',
+                  }),
+                ],
+              }),
+          ),
+        ),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
+}
+
+async function createWpsTextMatrixWordFixture(
+  title: string,
+  samples: readonly {
+    font: string;
+    label: string;
+    line: number;
+    size: number;
+  }[],
+): Promise<Buffer> {
+  const document = new Document({
+    creator: 'A3S Lab',
+    description: 'Deterministic WPS system-font layout fixture',
+    title,
+    sections: [
+      {
+        properties: { page: wpsMatrixPageProperties() },
+        children: samples.map(
+          ({ font, label, line, size }) =>
+            new Paragraph({
+              spacing: { before: 0, after: 0, line },
+              children: [
+                new TextRun({
+                  text: label,
+                  font,
+                  size,
+                  bold: false,
+                  italics: false,
+                  color: '000000',
+                }),
+              ],
+            }),
+        ),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
+}
+
+function wpsMatrixPageProperties() {
+  return {
+    size: { width: 11_906, height: 16_838 },
+    margin: {
+      top: 1_440,
+      right: 1_440,
+      bottom: 1_440,
+      left: 1_440,
+      header: 720,
+      footer: 720,
+      gutter: 0,
+    },
+  };
 }
 
 function wordTableStyleFixtureXml(): string {

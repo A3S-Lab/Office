@@ -1,7 +1,5 @@
 import { Editor } from '@tiptap/core';
-import FontFamily from '@tiptap/extension-text-style/font-family';
 import FontSize from '@tiptap/extension-text-style/font-size';
-import { TextStyle } from '@tiptap/extension-text-style';
 import TextAlign from '@tiptap/extension-text-align';
 import StarterKit from '@tiptap/starter-kit';
 import { describe, expect, test } from '@rstest/core';
@@ -30,14 +28,18 @@ import {
   setDocumentParagraphSpacing,
 } from '../src/internal/features/work/work-document-paragraph-formatting';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import {
+  DocumentFontFamily,
+  DocumentTextStyle,
+} from '../src/internal/features/work/work-document-word-line-metrics';
 
 function createEditor(content = '<p>A3S Office</p>'): Editor {
   return new Editor({
     extensions: [
       StarterKit,
       DocumentSection,
-      TextStyle,
-      FontFamily,
+      DocumentTextStyle,
+      DocumentFontFamily,
       FontSize,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       DocumentParagraphFormatting,
@@ -178,9 +180,36 @@ describe('document formatting', () => {
     expect(editor.getHTML()).toContain('margin-left: 24px');
     expect(editor.getHTML()).toContain('margin-right: 18px');
     expect(editor.getHTML()).toContain('text-indent: -12px');
+    expect(editor.getHTML()).toContain('font-family: Arial');
+    expect(editor.getHTML()).toContain('font-size: 12pt');
     expect(editor.getHTML()).toContain(
-      'style="font-family: Arial; font-size: 12pt;"',
+      'data-office-word-line-height-factor="1.15"',
     );
+    expect(editor.getHTML()).toContain(
+      '--work-document-word-line-height-factor: 1.15',
+    );
+
+    editor.destroy();
+  });
+
+  test('updates and clears the WPS line metric with the font family', () => {
+    const editor = createEditor();
+
+    editor
+      .chain()
+      .setTextSelection({ from: 1, to: 11 })
+      .setFontFamily('Microsoft YaHei')
+      .run();
+
+    expect(editor.getHTML()).toContain(
+      'data-office-word-line-height-factor="1.7143"',
+    );
+    editor
+      .chain()
+      .setTextSelection({ from: 1, to: 11 })
+      .unsetFontFamily()
+      .run();
+    expect(editor.getHTML()).toBe('<p>A3S Office</p>');
 
     editor.destroy();
   });

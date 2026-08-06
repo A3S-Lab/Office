@@ -598,6 +598,82 @@
   top: var(--work-document-office-auto-line-shift, 0);
 }
 
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  :is(p, h1, h2, h3, h4, h5, h6)[data-office-auto-line-height]
+  > :where(
+    span,
+    a,
+    strong,
+    em,
+    u,
+    s,
+    code
+  )[data-office-word-line-height-factor] {
+  line-height: calc(
+    var(--work-document-office-auto-line-multiple, 1) *
+    var(--work-document-word-line-height-factor)
+  );
+  top: calc(
+    (1 - var(--work-document-office-auto-line-multiple, 1)) *
+    var(--work-document-word-line-height-factor) *
+    0.5em
+  );
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  section:is(
+    [data-section-document-grid-type="lines"],
+    [data-section-document-grid-type="linesAndChars"],
+    [data-section-document-grid-type="snapToChars"]
+  )
+  :is(p, h1, h2, h3, h4, h5, h6)[data-office-auto-line-height] {
+  line-height: round(
+    up,
+    calc(var(--work-document-office-auto-line-height, 1.15) * 1em),
+    var(--work-document-word-grid-line-pitch)
+  ) !important;
+}
+
+:where(
+    .work-document-page .tiptap,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  section:is(
+    [data-section-document-grid-type="lines"],
+    [data-section-document-grid-type="linesAndChars"],
+    [data-section-document-grid-type="snapToChars"]
+  )
+  :is(p, h1, h2, h3, h4, h5, h6)[data-office-auto-line-height]
+  > :where(
+    span,
+    a,
+    strong,
+    em,
+    u,
+    s,
+    code
+  )[data-office-word-line-height-factor] {
+  vertical-align: top;
+  line-height: round(
+    up,
+    calc(
+      var(--work-document-office-auto-line-multiple, 1) *
+      var(--work-document-word-line-height-factor) *
+      1em
+    ),
+    var(--work-document-word-grid-line-pitch)
+  );
+}
+
 .work-document-page .tiptap .work-document-tab,
 .work-pdf-export-page.document .work-document-tab {
   position: relative;

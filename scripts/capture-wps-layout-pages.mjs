@@ -116,6 +116,35 @@ try {
       };
     });
   });
+  const a3sRunLayout = await documentPage.evaluate(() => {
+    const page = document.querySelector('.work-document-page');
+    if (!(page instanceof HTMLElement)) {
+      throw new Error('A3S document page was not found.');
+    }
+    const pageBox = page.getBoundingClientRect();
+    return Array.from(
+      page.querySelectorAll('[data-office-word-line-height-factor]'),
+    ).map((element) => {
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return {
+        text: element.textContent?.trim() ?? '',
+        x: box.x - pageBox.x,
+        y: box.y - pageBox.y,
+        width: box.width,
+        height: box.height,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        position: style.position,
+        top: style.top,
+        wordLineHeightFactor:
+          element.getAttribute('data-office-word-line-height-factor') ?? '',
+        wordSnapToGrid:
+          element.getAttribute('data-office-word-snap-to-grid') ?? '',
+      };
+    });
+  });
 
   const pdfPage = await context.newPage();
   captureErrors(pdfPage);
@@ -172,6 +201,7 @@ try {
         a3sPage: documentBox,
         wpsPage: wpsBox,
         a3sLayout,
+        a3sRunLayout,
         pagination: {
           engine: await editor.getAttribute('data-pagination-engine'),
           pages: await editor.getAttribute('data-pagination-pages'),

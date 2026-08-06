@@ -33,6 +33,7 @@ describe('DOCX run formatting', () => {
           <w:rPr>
             <w:rStyle w:val="Emphasis"/>
             <w:rFonts w:eastAsia="SimSun"/>
+            <w:snapToGrid w:val="false"/>
           </w:rPr>
           <w:t>Styled text</w:t>
         </w:r>
@@ -68,6 +69,8 @@ describe('DOCX run formatting', () => {
       underline: false,
       strike: false,
       fontFamily: 'SimSun, Arial',
+      wordLineHeightFactor: 1.2976,
+      wordSnapToGrid: false,
       fontSize: 14,
       color: '#112233',
       backgroundColor: '#ffff00',
@@ -79,7 +82,8 @@ describe('DOCX run formatting', () => {
       <w:p>
         <w:r>
           <w:rPr>
-            <w:rFonts w:ascii="Arial"/>
+            <w:rFonts w:ascii="Segoe UI"/>
+            <w:snapToGrid w:val="false"/>
             <w:sz w:val="24"/>
             <w:color w:val="336699"/>
           </w:rPr>
@@ -99,7 +103,12 @@ describe('DOCX run formatting', () => {
 
     const span = html.querySelector('p > span');
     expect(span?.textContent).toBe('A3S Office');
-    expect(span?.getAttribute('style')).toContain('font-family: Arial');
+    expect(span?.style.fontFamily).toBe('"Segoe UI"');
+    expect(span?.dataset.officeWordLineHeightFactor).toBe('1.3301');
+    expect(span?.getAttribute('style')).toContain(
+      '--work-document-word-line-height-factor: 1.3301',
+    );
+    expect(span?.dataset.officeWordSnapToGrid).toBe('false');
     expect(span?.getAttribute('style')).toContain('font-size: 12pt');
     expect(span?.getAttribute('style')).toContain('color: #336699');
     expect(html.body.textContent).not.toContain('__A3S_');
@@ -167,6 +176,7 @@ describe('DOCX run formatting', () => {
       underline: false,
       strike: false,
       fontFamily: 'Aptos',
+      wordLineHeightFactor: 1.15,
       fontSize: 16,
       color: '#2e74b5',
     });

@@ -149,6 +149,21 @@ result is a one-pixel maximum landmark delta, a 1.4612% thresholded difference,
 and 0.7308 mean absolute error. Original OOXML line multiples remain the DOCX
 round-trip authority instead of being replaced by the browser-only WPS metric.
 
+Three focused matrices now extend that gate beyond Arial and table geometry.
+The common-font matrix contains 30 rows across Arial, Times New Roman, Calibri,
+Segoe UI, and Microsoft YaHei at two sizes and two automatic spacing multiples.
+The CJK matrix contains 36 Latin and Chinese rows across Microsoft YaHei,
+SimSun, SimHei, FangSong, KaiTi, and DengXian. The explicit document-grid matrix
+contains 18 rows across three fonts and two sizes. Browser layout uses the
+measured WPS per-font advance without changing the source OOXML spacing
+multiple. DOCX import and export also retain each section's `docGrid` type and
+line pitch and each run's `snapToGrid` override. The deterministic browser
+suite requires one page, exact semantic metric markers, and empty console and
+page-error diagnostics; the WPS comparison rejects a text-band top drift above
+three pixels or a consecutive-band advance drift above four pixels. The current
+maximum top/advance deltas are 3/1 pixels for common fonts, 2/2 pixels for CJK
+fonts, and 1/1 pixels for the document grid.
+
 Exit evidence:
 
 - Deterministic page goldens cover Latin, CJK, Arabic, Hebrew, lists, sections,

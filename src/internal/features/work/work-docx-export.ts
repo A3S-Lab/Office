@@ -46,6 +46,7 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
+import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
 import { documentSections } from './work-document-section';
 import type {
@@ -96,10 +97,11 @@ export async function createDocxBlob(
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
   let usesOddEvenPageChrome = false;
-  for (const section of documentSections({
+  const sourceSections = documentSections({
     ...content,
     html: noteCollection.html,
-  })) {
+  });
+  for (const section of sourceSections) {
     const parsed = new DOMParser().parseFromString(section.html, 'text/html');
     const children: FileChild[] = [];
     for (const node of parsed.body.children) {
@@ -155,10 +157,11 @@ export async function createDocxBlob(
     await packed.arrayBuffer(),
     content.bibliography,
   );
-  const patched = await patchDocxPageColor(
+  const layoutPatched = await patchDocxDocumentLayout(
     bibliographyPatched,
-    content.pageColor,
+    sourceSections,
   );
+  const patched = await patchDocxPageColor(layoutPatched, content.pageColor);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -685,6 +688,8 @@ async function inlineRuns(
       font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
       shading: backgroundColor ? { fill: backgroundColor } : inherited.shading,
+      snapToGrid:
+        dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,
       rightToLeft:
         direction === undefined ? inherited.rightToLeft : direction === 'rtl',
     };

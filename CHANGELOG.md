@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.2.1 - 2026-08-06
+
+- Matched WPS Writer automatic line layout across common Latin and Chinese
+  system fonts with measured per-font advances while retaining the original
+  OOXML line-spacing multiple as the DOCX round-trip authority.
+- Preserved section-level Word document-grid type and line pitch plus run-level
+  `snapToGrid` overrides across DOCX import and export, and stopped exporting a
+  generated document grid when the source document does not define one.
+- Added deterministic 30-row common-font, 36-row CJK-font, and 18-row document-
+  grid fixtures with A3S Test browser coverage and real WPS PDF layout gates.
+
 ## 0.2.0 - 2026-08-06
 
 - Added a real WPS Writer page-layout gate that exports a deterministic A4 DOCX

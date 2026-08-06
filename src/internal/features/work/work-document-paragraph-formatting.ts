@@ -1,11 +1,13 @@
 import { type CommandProps, Extension, type Editor } from '@tiptap/core';
+import { DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT } from './work-document-word-line-metrics';
 
 export const DOCUMENT_INDENT_STEP_PX = 24;
 export const MAX_DOCUMENT_INDENT_LEVEL = 8;
 export const DOCUMENT_RULER_INDENT_STEP_PX = 6;
 export const MAX_DOCUMENT_INDENT_PX =
   DOCUMENT_INDENT_STEP_PX * MAX_DOCUMENT_INDENT_LEVEL;
-export const DOCUMENT_WORD_SINGLE_LINE_HEIGHT = 1.15;
+export const DOCUMENT_WORD_SINGLE_LINE_HEIGHT =
+  DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT;
 
 export interface DocumentParagraphIndent {
   left: number;
@@ -657,6 +659,7 @@ export function renderDocumentAutoLineHeight(
     normalizedAutoLineHeight(autoLineHeight) ??
     documentAutoLineHeight(lineHeight);
   if (renderedLineHeight === null) return {};
+  const multiple = lineHeightMultiple(lineHeight);
   const shift = documentAutoLineLeadingShift(lineHeight);
   return {
     'data-office-auto-line-height': String(
@@ -664,6 +667,11 @@ export function renderDocumentAutoLineHeight(
     ),
     style: [
       `--work-document-office-auto-line-height: ${formatLineMetric(renderedLineHeight)}`,
+      ...(multiple === null
+        ? []
+        : [
+            `--work-document-office-auto-line-multiple: ${formatLineMetric(multiple)}`,
+          ]),
       ...(shift === null
         ? []
         : [

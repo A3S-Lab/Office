@@ -3,8 +3,6 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
-import { TextStyle } from '@tiptap/extension-text-style';
-import FontFamily from '@tiptap/extension-text-style/font-family';
 import FontSize from '@tiptap/extension-text-style/font-size';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
@@ -42,6 +40,10 @@ import { DocumentParagraphFormatting } from './work-document-paragraph-formattin
 import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
+import {
+  DocumentFontFamily,
+  DocumentTextStyle,
+} from './work-document-word-line-metrics';
 import { DocumentTableCommands } from './work-document-table-commands';
 import {
   DocumentTableCell,
@@ -136,8 +138,8 @@ export function createWorkDocumentExtensions(
     DocumentTableCommands,
     DocumentTableFormatting,
     DocumentTableSizing,
-    TextStyle,
-    FontFamily,
+    DocumentTextStyle,
+    DocumentFontFamily,
     FontSize,
     Color,
     Highlight.configure({ multicolor: true }),

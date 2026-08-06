@@ -18,6 +18,8 @@ import {
 import { documentModelForHtml } from './work-document-model';
 import type {
   WorkDocumentContent,
+  WorkDocumentGrid,
+  WorkDocumentGridType,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
 } from './work-types';
@@ -46,6 +48,8 @@ export interface DocumentSectionNodeAttributes {
   showPageNumbers: boolean;
   pageNumberStart: number | null;
   pageChrome: string;
+  documentGridType: WorkDocumentGridType | '';
+  documentGridLinePitch: number | null;
 }
 
 const SECTION_SELECTOR = 'section[data-document-section]';
@@ -165,6 +169,9 @@ export function documentSectionNodeAttributes(
     showPageNumbers: Boolean(legacy.showPageNumbers),
     pageNumberStart: validPageNumber(layout.pageNumberStart) ?? null,
     pageChrome: serializeDocumentPageChrome(pageChrome),
+    documentGridType: layout.documentGrid?.type ?? '',
+    documentGridLinePitch:
+      normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
   };
 }
 
@@ -191,6 +198,7 @@ export function documentSectionLayoutFromNodeAttributes(
     base.pageChrome,
   );
   const legacy = documentPageChromeLegacyFields(pageChrome);
+  const documentGrid = documentGridFromNodeAttributes(attributes, base);
   return {
     pageSize:
       attributes.pageSize === 'letter'
@@ -233,6 +241,7 @@ export function documentSectionLayoutFromNodeAttributes(
     showPageNumbers: legacy.showPageNumbers,
     pageNumberStart: validPageNumber(attributes.pageNumberStart ?? undefined),
     pageChrome,
+    ...(documentGrid ? { documentGrid } : {}),
   };
 }
 
@@ -263,6 +272,11 @@ export function documentSectionDomAttributes(
         ? ''
         : String(attributes.pageNumberStart),
     'data-section-page-chrome': attributes.pageChrome,
+    'data-section-document-grid-type': attributes.documentGridType,
+    'data-section-document-grid-line-pitch':
+      attributes.documentGridLinePitch === null
+        ? ''
+        : String(attributes.documentGridLinePitch),
   };
 }
 
@@ -292,6 +306,10 @@ export function documentSectionLayoutFromElement(
       pageNumberStart:
         numberValue(element.dataset.sectionPageNumberStart) ?? null,
       pageChrome: element.dataset.sectionPageChrome ?? '',
+      documentGridType: element.dataset
+        .sectionDocumentGridType as WorkDocumentGridType,
+      documentGridLinePitch:
+        numberValue(element.dataset.sectionDocumentGridLinePitch) ?? null,
     },
     fallback,
   );
@@ -394,4 +412,41 @@ function numberValue(value: string | undefined): number | undefined {
   if (!value?.trim()) return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function documentGridFromNodeAttributes(
+  attributes: Partial<DocumentSectionNodeAttributes>,
+  base: WorkDocumentSectionLayout,
+): WorkDocumentGrid | undefined {
+  if (
+    attributes.documentGridType === undefined &&
+    attributes.documentGridLinePitch === undefined
+  ) {
+    return normalizedDocumentGrid(base.documentGrid);
+  }
+  return normalizedDocumentGrid({
+    type: attributes.documentGridType as WorkDocumentGridType,
+    linePitch: Number(attributes.documentGridLinePitch),
+  });
+}
+
+function normalizedDocumentGrid(
+  value: WorkDocumentGrid | undefined,
+): WorkDocumentGrid | undefined {
+  if (!value || !validDocumentGridType(value.type)) return undefined;
+  const linePitch = Number(value.linePitch);
+  if (!Number.isFinite(linePitch) || linePitch <= 0) return undefined;
+  return {
+    type: value.type,
+    linePitch: Math.min(720, Number(linePitch.toFixed(2))),
+  };
+}
+
+function validDocumentGridType(value: unknown): value is WorkDocumentGridType {
+  return (
+    value === 'default' ||
+    value === 'lines' ||
+    value === 'linesAndChars' ||
+    value === 'snapToChars'
+  );
 }

@@ -190,6 +190,7 @@ describe('office core', () => {
     const xml = await archive.file('word/document.xml')?.async('string');
 
     expect(xml).toBeDefined();
+    expect(xml).not.toContain('<w:docGrid');
     expect(xml).toContain('<w:rFonts w:ascii="Arial"');
     expect(xml).toContain('w:hAnsi="Arial"');
     expect(xml).toContain('<w:sz w:val="24"/>');
@@ -282,6 +283,80 @@ describe('office core', () => {
     expect(imported.content.html).toContain('line-height: 1.5');
     expect(imported.content.html).toContain(
       'data-office-auto-line-height="1.725"',
+    );
+  });
+
+  test('round-trips the Word document grid and run grid override', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<section data-document-section="true" data-section-id="grid-section"',
+      ' data-section-document-grid-type="lines"',
+      ' data-section-document-grid-line-pitch="18">',
+      '<p data-office-line-rule="auto"',
+      ' data-office-auto-line-height="1.15" style="line-height: 1">',
+      '<span style="font-family: Microsoft YaHei; font-size: 10.5pt"',
+      ' data-office-word-line-height-factor="1.7143"',
+      ' data-office-word-snap-to-grid="false">Grid off</span>',
+      '<span style="font-family: Arial; font-size: 10.5pt"',
+      ' data-office-word-line-height-factor="1.15"',
+      ' data-office-word-snap-to-grid="true">Grid on</span>',
+      '</p></section>',
+      '<section data-document-section="true" data-section-id="grid-section-2"',
+      ' data-section-document-grid-type="linesAndChars"',
+      ' data-section-document-grid-line-pitch="24">',
+      '<p><span style="font-family: Arial; font-size: 10.5pt">',
+      'Second grid</span></p></section>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = await archive.file('word/document.xml')?.async('string');
+
+    expect(xml).toContain('<w:docGrid w:type="lines" w:linePitch="360"/>');
+    expect(xml).toContain(
+      '<w:docGrid w:type="linesAndChars" w:linePitch="480"/>',
+    );
+    expect(xml).toContain('<w:snapToGrid w:val="false"/>');
+    expect(xml).toContain('<w:snapToGrid/>');
+    const snapToGrid = Array.from(
+      (xml ?? '').matchAll(/<w:snapToGrid(?:\s[^>]*)?\/>/g),
+      ([element]) => element,
+    );
+    expect(snapToGrid).toHaveLength(2);
+    const runProperties = Array.from(
+      (xml ?? '').matchAll(/<w:rPr(?:\s[^>]*)?>[\s\S]*?<\/w:rPr>/g),
+      ([element]) => element,
+    );
+    expect(
+      runProperties.filter((element) => element.includes('<w:snapToGrid')),
+    ).toHaveLength(2);
+
+    const imported = await importOfficeFile(
+      new File([blob], 'document-grid.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    expect(imported.content.html).toContain(
+      'data-section-document-grid-type="lines"',
+    );
+    expect(imported.content.html).toContain(
+      'data-section-document-grid-line-pitch="18"',
+    );
+    expect(imported.content.html).toContain(
+      'data-section-document-grid-type="linesAndChars"',
+    );
+    expect(imported.content.html).toContain(
+      'data-section-document-grid-line-pitch="24"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-word-snap-to-grid="false"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-word-snap-to-grid="true"',
     );
   });
 

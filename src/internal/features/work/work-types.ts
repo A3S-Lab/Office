@@ -69,6 +69,17 @@ export type WorkDocumentSectionBreakType =
   | 'oddPage'
   | 'nextColumn';
 
+export type WorkDocumentGridType =
+  | 'default'
+  | 'lines'
+  | 'linesAndChars'
+  | 'snapToChars';
+
+export interface WorkDocumentGrid {
+  type: WorkDocumentGridType;
+  linePitch: number;
+}
+
 export interface WorkDocumentSectionLayout {
   pageSize: 'a4' | 'letter';
   orientation: 'portrait' | 'landscape';
@@ -80,6 +91,7 @@ export interface WorkDocumentSectionLayout {
   showPageNumbers?: boolean;
   pageNumberStart?: number;
   pageChrome?: WorkDocumentPageChrome;
+  documentGrid?: WorkDocumentGrid;
 }
 
 export type WorkDocumentAttributeValue =

@@ -126,11 +126,14 @@ import {
 import {
   attribute,
   descendants,
+  directChild,
   firstDescendant,
   OoxmlPackage,
 } from './work-ooxml-package';
 import type {
   WorkDocumentContent,
+  WorkDocumentGrid,
+  WorkDocumentGridType,
   WorkDocumentMargins,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -524,6 +527,7 @@ async function parseSectionLayout(
     : previous.pageSize;
   const marginsElement = firstDescendant(section, 'pgMar');
   const columnsElement = firstDescendant(section, 'cols');
+  const documentGridElement = directChild(section, 'docGrid');
   const pageChrome = await importSectionPageChrome(
     section,
     archive,
@@ -544,9 +548,30 @@ async function parseSectionLayout(
     columns: columnsElement
       ? importDocxColumns(columnsElement, previous.columns)
       : { ...previous.columns },
+    ...(documentGridElement
+      ? { documentGrid: parseDocumentGrid(documentGridElement) }
+      : previous.documentGrid
+        ? { documentGrid: { ...previous.documentGrid } }
+        : {}),
     breakAfter: parseSectionBreak(firstDescendant(section, 'type')),
     ...pageChrome,
     pageNumberStart: pageNumberStart > 0 ? pageNumberStart : undefined,
+  };
+}
+
+function parseDocumentGrid(element: Element): WorkDocumentGrid {
+  const sourceType = attribute(element, 'type');
+  const type: WorkDocumentGridType =
+    sourceType === 'lines' ||
+    sourceType === 'linesAndChars' ||
+    sourceType === 'snapToChars'
+      ? sourceType
+      : 'default';
+  const sourceLinePitch = numberAttribute(element, 'linePitch');
+  return {
+    type,
+    linePitch:
+      sourceLinePitch > 0 ? Number((sourceLinePitch / 20).toFixed(2)) : 18,
   };
 }
 

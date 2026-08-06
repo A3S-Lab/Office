@@ -61,6 +61,8 @@ export const DocumentSection = Node.create({
       showPageNumbers: hiddenAttribute(false),
       pageNumberStart: hiddenAttribute(null),
       pageChrome: hiddenAttribute(''),
+      documentGridType: hiddenAttribute(''),
+      documentGridLinePitch: hiddenAttribute(null),
     };
   },
 
@@ -140,6 +142,12 @@ export const DocumentSection = Node.create({
               'sectionPageNumberStart',
             ),
             pageChrome: node.dataset.sectionPageChrome ?? '',
+            documentGridType: (node.dataset.sectionDocumentGridType ??
+              '') as DocumentSectionNodeAttributes['documentGridType'],
+            documentGridLinePitch: nullableNumberAttribute(
+              node,
+              'sectionDocumentGridLinePitch',
+            ),
           } satisfies DocumentSectionNodeAttributes;
         },
       },
@@ -157,6 +165,11 @@ export const DocumentSection = Node.create({
       `--work-document-column-count:${columns.count}`,
       `--work-document-column-gap:${columns.spacing}mm`,
       `--work-document-column-rule:${columns.separator ? '1px solid var(--a3s-line-strong)' : 'none'}`,
+      ...(layout.documentGrid
+        ? [
+            `--work-document-word-grid-line-pitch:${layout.documentGrid.linePitch}pt`,
+          ]
+        : []),
     ].join(';');
     return [
       'section',

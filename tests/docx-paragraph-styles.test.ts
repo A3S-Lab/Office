@@ -202,6 +202,7 @@ describe('DOCX paragraph styles', () => {
       underline: false,
       strike: false,
       fontFamily: 'Arial',
+      wordLineHeightFactor: 1.15,
       fontSize: 12,
     });
   });
