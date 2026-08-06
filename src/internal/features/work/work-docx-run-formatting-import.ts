@@ -190,17 +190,34 @@ function resolvedRunFormatting(
     }
   }
 
-  const fontFamily = uniqueFonts([
+  let fontFamily = uniqueFonts([
     fonts.eastAsia,
     fonts.hAnsi,
     fonts.ascii,
     fonts.complex,
   ]);
+  if (!fontFamily) {
+    fontFamily = uniqueFonts([
+      docxThemeFont(theme, 'minorEastAsia'),
+      docxThemeFont(theme, 'minorHAnsi'),
+      docxThemeFont(theme, 'minorAscii'),
+      docxThemeFont(theme, 'minorBidi'),
+    ]);
+  }
+  const hasRunPropertySource = propertySources.length > 0;
   return {
-    ...(bold !== undefined ? { bold } : {}),
-    ...(italic !== undefined ? { italic } : {}),
-    ...(underline !== undefined ? { underline } : {}),
-    ...(strike !== undefined ? { strike } : {}),
+    ...(bold !== undefined || hasRunPropertySource
+      ? { bold: bold ?? false }
+      : {}),
+    ...(italic !== undefined || hasRunPropertySource
+      ? { italic: italic ?? false }
+      : {}),
+    ...(underline !== undefined || hasRunPropertySource
+      ? { underline: underline ?? false }
+      : {}),
+    ...(strike !== undefined || hasRunPropertySource
+      ? { strike: strike ?? false }
+      : {}),
     ...(fontFamily ? { fontFamily } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(color ? { color } : {}),
@@ -233,6 +250,15 @@ function formattingMarkup(
   formatting: ImportedDocxRunFormatting,
 ): { start: string; end: string } {
   const span = document.createElement('span');
+  if (formatting.bold === false) span.style.fontWeight = 'normal';
+  if (formatting.italic === false) span.style.fontStyle = 'normal';
+  if (
+    (formatting.underline === false || formatting.strike === false) &&
+    !formatting.underline &&
+    !formatting.strike
+  ) {
+    span.style.textDecorationLine = 'none';
+  }
   if (formatting.fontFamily) span.style.fontFamily = formatting.fontFamily;
   if (formatting.fontSize !== undefined)
     span.style.fontSize = `${formatNumber(formatting.fontSize)}pt`;

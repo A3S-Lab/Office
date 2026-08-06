@@ -206,7 +206,7 @@ describe('DOCX table style import', () => {
     expect(markers.runs[1]?.formatting).toMatchObject({
       color: '#000000',
     });
-    expect(markers.runs[1]?.formatting.bold).toBeUndefined();
+    expect(markers.runs[1]?.formatting.bold).toBe(false);
 
     const html = new DOMParser().parseFromString(
       `<table><tbody><tr><td><p>${markers.runs[0]?.startMarker}Styled header${markers.runs[0]?.endMarker}</p></td></tr><tr><td><p>${markers.runs[1]?.startMarker}Ordinary body${markers.runs[1]?.endMarker}</p></td></tr></tbody></table>`,

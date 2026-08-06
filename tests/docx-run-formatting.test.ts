@@ -63,6 +63,10 @@ describe('DOCX run formatting', () => {
 
     expect(markers.runs).toHaveLength(1);
     expect(markers.runs[0]?.formatting).toEqual({
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
       fontFamily: 'SimSun, Arial',
       fontSize: 14,
       color: '#112233',
@@ -131,5 +135,53 @@ describe('DOCX run formatting', () => {
       fontFamily: 'Aptos',
       color: '#4472c4',
     });
+  });
+
+  test('uses the minor theme font and neutralizes omitted heading emphasis', () => {
+    const document = wordXml(`
+      <w:p>
+        <w:pPr><w:pStyle w:val="Heading1"/></w:pPr>
+        <w:r><w:t>Styled report table</w:t></w:r>
+      </w:p>
+    `);
+    const styles = stylesXml(`
+      <w:docDefaults><w:rPrDefault/><w:pPrDefault/></w:docDefaults>
+      <w:style w:type="paragraph" w:styleId="Heading1">
+        <w:rPr><w:color w:val="2E74B5"/><w:sz w:val="32"/></w:rPr>
+      </w:style>
+    `);
+    const theme = themeXml(`
+      <a:themeElements>
+        <a:fontScheme name="Office">
+          <a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont>
+          <a:minorFont><a:latin typeface="Aptos"/></a:minorFont>
+        </a:fontScheme>
+      </a:themeElements>
+    `);
+
+    const markers = markDocxRunFormatting(document, styles, theme);
+
+    expect(markers.runs[0]?.formatting).toEqual({
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
+      fontFamily: 'Aptos',
+      fontSize: 16,
+      color: '#2e74b5',
+    });
+    const marker = markers.runs[0];
+    if (!marker) throw new Error('Expected a heading run marker.');
+    const html = new DOMParser().parseFromString(
+      `<h1>${marker.startMarker}Styled report table${marker.endMarker}</h1>`,
+      'text/html',
+    );
+
+    applyImportedDocxRunFormattingMarkers(html, markers);
+
+    const span = html.querySelector('h1 > span');
+    expect(span?.style.fontFamily).toBe('Aptos');
+    expect(span?.style.fontWeight).toBe('normal');
+    expect(span?.style.fontStyle).toBe('normal');
   });
 });

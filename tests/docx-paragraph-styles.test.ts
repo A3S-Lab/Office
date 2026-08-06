@@ -194,6 +194,10 @@ describe('DOCX paragraph styles', () => {
       prepared.paragraphPaginationMarkers.paragraphs[0]?.pagination,
     ).toEqual({ keepWithNext: true });
     expect(prepared.runFormattingMarkers.runs[0]?.formatting).toEqual({
+      bold: false,
+      italic: false,
+      underline: false,
+      strike: false,
       fontFamily: 'Arial',
       fontSize: 12,
     });
