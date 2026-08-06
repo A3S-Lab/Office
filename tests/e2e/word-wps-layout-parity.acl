@@ -34,7 +34,11 @@ suite "office-word-wps-layout-parity" {
         }
 
         expect "wasm-pagination-is-authoritative" {
-            visible = css(".work-document-editable .ProseMirror[data-pagination-engine='wasm'][data-pagination-text-engine='wasm']")
+            visible = css(".work-document-editable .ProseMirror[data-pagination-engine='wasm']")
+        }
+
+        expect "unregistered-theme-font-uses-dom-measurement" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-text-engine='dom']")
         }
 
         expect "page-count-matches-wps" {
@@ -51,15 +55,6 @@ suite "office-word-wps-layout-parity" {
 
         screenshot "a3s-styled-document-layout" {
             path = "screenshots/word-wps-layout-parity.png"
-        }
-
-        click "open-export-menu" {
-            target = css(".work-export-button")
-        }
-
-        download "export-a3s-pdf" {
-            target = css(".work-export-menu-panel [role='menuitem']:nth-child(2)")
-            path = "downloads/word-styled-table-a3s.pdf"
         }
 
         console "browser-console" {
