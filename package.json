@@ -94,6 +94,8 @@
     "test:e2e:writer-ribbon:check": "a3s-test check tests/e2e/word-ribbon-collapse.acl --json",
     "test:e2e:writer-shortcuts": "a3s-test run tests/e2e/word-wps-shortcuts.acl --json",
     "test:e2e:writer-shortcuts:check": "a3s-test check tests/e2e/word-wps-shortcuts.acl --json",
+    "test:e2e:writer-layout": "a3s-test run tests/e2e/word-insert-page-layout.acl --json",
+    "test:e2e:writer-layout:check": "a3s-test check tests/e2e/word-insert-page-layout.acl --json",
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"

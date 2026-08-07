@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
 import {
   fireEvent,
@@ -7,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
 import { DocumentTableInsertPopover } from '../src/internal/features/work/editors/document-table-insert-popover';
 import {
   DocumentTableDesignRibbon,
@@ -901,6 +901,13 @@ function documentToolbar(
   return (
     <DocumentToolbar
       editor={currentEditor}
+      layout={{
+        pageSize: 'a4',
+        orientation: 'portrait',
+        margins: { top: 25, right: 23, bottom: 25, left: 23 },
+        columns: { count: 1, spacing: 12, separator: false },
+        breakAfter: 'nextPage',
+      }}
       layoutOpen={false}
       navigationOpen={false}
       pageColor="#ffffff"
@@ -917,6 +924,8 @@ function documentToolbar(
       onClosePageChrome={noop}
       onTogglePageChromePageNumber={noop}
       onToggleLayout={noop}
+      onLayoutChange={noop}
+      onOpenLayout={noop}
       onToggleNavigation={noop}
       onTogglePageNumbers={noop}
       onToggleRulers={noop}

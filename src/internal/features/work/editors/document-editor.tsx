@@ -11,14 +11,13 @@ import {
   useState,
 } from 'react';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
-import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import {
   isWorkspaceContextMenuKeyboardEvent,
   type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
 } from '../../workspace/components/workspace-context-menu';
+import { WorkEditorLoadingState } from '../components/work-editor-loading-state';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
-import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   collectDocumentChanges,
   type WorkDocumentChangeKind,
@@ -29,50 +28,59 @@ import {
   retainAnchoredDocumentComments,
 } from '../work-document-comments';
 import { createWorkDocumentExtensions } from '../work-document-extensions';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import { documentMargins, millimetersToPixels } from '../work-document-layout';
 import {
   createWorkDocumentModel,
   resolveWorkDocumentEditorInput,
 } from '../work-document-model';
-import { documentParagraphIndent } from '../work-document-paragraph-formatting';
-import { documentParagraphTabStops } from '../work-document-tab-stops';
-import {
-  documentPageMetrics,
-  documentPaginationSurfaceHeight,
-  DocumentPagination,
-} from '../work-document-pagination';
 import { normalizeDocumentPageChrome } from '../work-document-page-chrome';
 import {
   documentPageColor,
   normalizeDocumentPageColor,
 } from '../work-document-page-color';
 import {
+  DocumentPagination,
+  documentPageMetrics,
+  documentPaginationSurfaceHeight,
+} from '../work-document-pagination';
+import { documentParagraphIndent } from '../work-document-paragraph-formatting';
+import {
   documentInitialSectionLayout,
   normalizeDocumentHtml,
   syncDocumentContentFromHtml,
 } from '../work-document-section';
 import { activeDocumentSection } from '../work-document-section-editor';
+import {
+  createWorkDocumentSelectionSnapshot,
+  documentPlainTextAsHtml,
+  type WorkGetDocumentSelectionMenuItems,
+} from '../work-document-selection-menu';
+import { documentParagraphTabStops } from '../work-document-tab-stops';
 import { createWorkId } from '../work-templates';
 import type { WorkDocumentContent, WorkDocumentNode } from '../work-types';
 import { DocumentChangesPanel } from './document-changes-panel';
 import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
 import { restoreDocumentEditorFocus } from './document-editor-focus';
-import {
-  DocumentFindReplacePanel,
-  type DocumentFindReplaceMode,
-} from './document-find-replace-panel';
+import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import {
   clampDocumentZoom,
   documentCurrentPage,
   documentPageCount,
   documentWordCount,
 } from './document-editor-support';
-import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
-import { DocumentLayoutPanel } from './document-layout-panel';
+import {
+  type DocumentFindReplaceMode,
+  DocumentFindReplacePanel,
+} from './document-find-replace-panel';
+import {
+  DocumentLayoutPanel,
+  type DocumentLayoutPanelTab,
+} from './document-layout-panel';
 import { DocumentNavigationPanel } from './document-navigation-panel';
-import { DocumentPageStack } from './document-page-stack';
 import { DocumentPageChromeRichTextEditor } from './document-page-chrome-editor';
+import { DocumentPageStack } from './document-page-stack';
 import { DocumentRuler } from './document-ruler';
 import {
   DocumentSelectionContextMenu,
@@ -88,22 +96,17 @@ import {
   useOfficeTaskPaneModal,
 } from './office-task-pane';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
+import { useDocumentComments } from './use-document-comments';
+import { useDocumentInsertCommands } from './use-document-insert-commands';
+import { useDocumentLayoutFonts } from './use-document-layout-fonts';
+import { useDocumentPageChrome } from './use-document-page-chrome';
+import { useDocumentPagination } from './use-document-pagination';
+import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
   WorkOfficeStatusBar,
 } from './work-office-chrome';
-import { useDocumentPagination } from './use-document-pagination';
-import { useDocumentInsertCommands } from './use-document-insert-commands';
-import { useDocumentPageChrome } from './use-document-page-chrome';
-import { useDocumentLayoutFonts } from './use-document-layout-fonts';
-import { useDocumentComments } from './use-document-comments';
-import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
-import {
-  createWorkDocumentSelectionSnapshot,
-  documentPlainTextAsHtml,
-  type WorkGetDocumentSelectionMenuItems,
-} from '../work-document-selection-menu';
 
 export interface DocumentEditorProps {
   artifactId?: string;
@@ -173,6 +176,8 @@ export function DocumentEditor({
   const initialContentRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
+  const [layoutPanelTab, setLayoutPanelTab] =
+    useState<DocumentLayoutPanelTab>('page');
   const [findReplaceFocusRequest, setFindReplaceFocusRequest] = useState(0);
   const [citationsDirty, setCitationsDirty] = useState(false);
   const [commentsDirty, setCommentsDirty] = useState(false);
@@ -678,6 +683,23 @@ export function DocumentEditor({
   const updateLayout = (next: typeof layout) => {
     editor.commands.updateActiveDocumentSection(next);
   };
+  const updateToolbarLayout = (next: typeof layout) => {
+    updateLayout(next);
+    restoreDocumentBodyFocus();
+  };
+  const openLayoutPanel = (target: DocumentLayoutPanelTab) => {
+    setLayoutPanelTab(target);
+    if (layoutOpen) return;
+    void toggleTaskPane('layout').then((accepted) => {
+      if (accepted) resetPageChrome();
+    });
+  };
+  const toggleLayoutPanel = () => {
+    setLayoutPanelTab('page');
+    void toggleTaskPane('layout').then((accepted) => {
+      if (accepted) resetPageChrome();
+    });
+  };
   const addSection = () => {
     editor.commands.insertDocumentSection(layout.breakAfter);
     restoreDocumentBodyFocus();
@@ -774,6 +796,7 @@ export function DocumentEditor({
         <DocumentToolbar
           editor={editor}
           fileActions={fileActions}
+          layout={layout}
           layoutFonts={layoutFonts}
           layoutOpen={layoutOpen}
           navigationOpen={navigationOpen}
@@ -790,11 +813,9 @@ export function DocumentEditor({
           onPageChromeEditingPartChange={editPageChrome}
           onClosePageChrome={closePageChrome}
           onTogglePageChromePageNumber={toggleVisiblePageNumber}
-          onToggleLayout={() => {
-            void toggleTaskPane('layout').then((accepted) => {
-              if (accepted) resetPageChrome();
-            });
-          }}
+          onToggleLayout={toggleLayoutPanel}
+          onLayoutChange={updateToolbarLayout}
+          onOpenLayout={openLayoutPanel}
           onToggleNavigation={() => void toggleTaskPane('navigation')}
           onToggleRulers={() => {
             setShowRulers((value) => !value);
@@ -1147,8 +1168,10 @@ export function DocumentEditor({
         {!preview && layoutOpen && section && (
           <DocumentLayoutPanel
             layout={layout}
+            activeTab={layoutPanelTab}
             sectionIndex={section.index}
             sectionCount={section.count}
+            onActiveTabChange={setLayoutPanelTab}
             onChange={updateLayout}
             onInsertSection={addSection}
             onMergeSection={() =>

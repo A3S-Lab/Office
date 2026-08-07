@@ -2,7 +2,6 @@ import type { Editor } from '@tiptap/core';
 import {
   BookOpen,
   CheckCheck,
-  Columns3,
   FileDiff,
   FilePlus2,
   FileText,
@@ -13,14 +12,12 @@ import {
   ListChecks,
   MessageSquarePlus,
   MessagesSquare,
-  Palette,
   PanelBottomOpen,
   PanelLeftOpen,
   PanelTopOpen,
-  RefreshCw,
   Redo2,
+  RefreshCw,
   Ruler,
-  Settings2,
   Table2,
   Undo2,
   ZoomIn,
@@ -29,45 +26,42 @@ import {
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
+import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
   DOCUMENT_LINK_VALIDATION_MESSAGE,
   normalizeDocumentHref,
 } from '../work-document-links';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
-import type { WorkDocumentLayoutFont } from '../work-document-fonts';
+import type { WorkDocumentSectionLayout } from '../work-types';
 import {
-  MAX_DOCUMENT_ZOOM,
-  MIN_DOCUMENT_ZOOM,
-} from './document-editor-support';
-import {
+  type DocumentRibbonTabId,
   documentPageChromeRibbonTab,
   documentPictureRibbonTab,
   documentRibbonTabs,
   documentTableRibbonTabs,
-  type DocumentRibbonTabId,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import {
+  MAX_DOCUMENT_ZOOM,
+  MIN_DOCUMENT_ZOOM,
+} from './document-editor-support';
+import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentHomeRibbon } from './document-home-ribbon';
+import type { DocumentLayoutPanelTab } from './document-layout-panel';
 import {
   type DocumentPageChromeEditingPart,
   DocumentPageChromeRibbon,
 } from './document-page-chrome-ribbon';
-import { DocumentParagraphSpacingPopover } from './document-paragraph-spacing-popover';
-import { DocumentPaginationPopover } from './document-pagination-popover';
+import { DocumentPageLayoutRibbon } from './document-page-layout-ribbon';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
 import { DocumentTableInsertPopover } from './document-table-insert-popover';
 import {
   DocumentTableDesignRibbon,
   DocumentTableLayoutRibbon,
 } from './document-table-ribbon';
-import type { DocumentFindReplaceMode } from './document-find-replace-panel';
-import {
-  OfficeColorPicker,
-  OfficeSelect,
-  useOfficeDialog,
-} from './office-controls';
-import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { runDocumentWpsShortcut } from './document-wps-shortcuts';
+import { OfficeSelect, useOfficeDialog } from './office-controls';
+import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
   type WorkOfficeFileAction,
   WorkOfficeRibbon,
@@ -80,6 +74,7 @@ export type DocumentViewMode = 'page' | 'web';
 interface DocumentToolbarProps {
   editor: Editor;
   layoutOpen: boolean;
+  layout: WorkDocumentSectionLayout;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   navigationOpen: boolean;
   pageColor: string;
@@ -96,6 +91,8 @@ interface DocumentToolbarProps {
   onClosePageChrome: () => void;
   onTogglePageChromePageNumber: () => void;
   onToggleLayout: () => void;
+  onLayoutChange: (layout: WorkDocumentSectionLayout) => void;
+  onOpenLayout: (target: DocumentLayoutPanelTab) => void;
   onToggleNavigation: () => void;
   onTogglePageNumbers: () => void;
   onToggleRulers: () => void;
@@ -133,6 +130,7 @@ interface DocumentToolbarProps {
 export function DocumentToolbar({
   editor,
   layoutOpen,
+  layout,
   layoutFonts = [],
   navigationOpen,
   pageColor,
@@ -149,6 +147,8 @@ export function DocumentToolbar({
   onClosePageChrome,
   onTogglePageChromePageNumber,
   onToggleLayout,
+  onLayoutChange,
+  onOpenLayout,
   onToggleNavigation,
   onTogglePageNumbers,
   onToggleRulers,
@@ -402,17 +402,7 @@ export function DocumentToolbar({
           ),
           insert: (
             <>
-              <RibbonGroup label="插图与表格" priority="high">
-                <ToolbarButton
-                  label="插入图片"
-                  displayLabel
-                  onClick={onRequestImage}
-                >
-                  <ImageIcon size={19} />
-                </ToolbarButton>
-                <DocumentTableInsertPopover editor={editor} />
-              </RibbonGroup>
-              <RibbonGroup label="页面">
+              <RibbonGroup label="页面" priority="high">
                 <ToolbarButton
                   label="插入分页符"
                   shortcut="Cmd/Ctrl+Enter"
@@ -427,6 +417,30 @@ export function DocumentToolbar({
                   }
                 >
                   <FilePlus2 size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
+              <RibbonGroup label="表格" priority="high">
+                <DocumentTableInsertPopover editor={editor} />
+              </RibbonGroup>
+              <RibbonGroup label="插图">
+                <ToolbarButton
+                  label="插入图片"
+                  displayLabel
+                  onClick={onRequestImage}
+                >
+                  <ImageIcon size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
+              <RibbonGroup label="链接" priority="low">
+                <ToolbarButton
+                  label={editor.isActive('link') ? '取消链接' : '添加链接'}
+                  shortcut="Cmd/Ctrl+K"
+                  ariaKeyShortcuts="Control+K Meta+K"
+                  displayLabel
+                  active={editor.isActive('link')}
+                  onClick={() => void toggleLink()}
+                >
+                  <Link2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
               <RibbonGroup label="页眉和页脚">
@@ -444,41 +458,8 @@ export function DocumentToolbar({
                 >
                   <PanelBottomOpen size={19} />
                 </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="链接" priority="low">
                 <ToolbarButton
-                  label={editor.isActive('link') ? '取消链接' : '添加链接'}
-                  shortcut="Cmd/Ctrl+K"
-                  ariaKeyShortcuts="Control+K Meta+K"
-                  displayLabel
-                  active={editor.isActive('link')}
-                  onClick={() => void toggleLink()}
-                >
-                  <Link2 size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="页码和日期" priority="low">
-                <DocumentFieldSelect onInsertField={onInsertField} />
-              </RibbonGroup>
-            </>
-          ),
-          page: (
-            <>
-              <RibbonGroup label="段落" priority="high">
-                <DocumentParagraphSpacingPopover editor={editor} />
-                <DocumentPaginationPopover editor={editor} />
-              </RibbonGroup>
-              <RibbonGroup label="页面设置" priority="high">
-                <ToolbarButton
-                  label="页面设置"
-                  displayLabel
-                  active={layoutOpen}
-                  onClick={onToggleLayout}
-                >
-                  <Settings2 size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="显示页码"
+                  label="页码"
                   displayLabel
                   active={showPageNumbers}
                   onClick={onTogglePageNumbers}
@@ -486,41 +467,23 @@ export function DocumentToolbar({
                   <Hash size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="页面背景" priority="low">
-                <OfficeColorPicker
-                  ariaLabel="页面颜色"
-                  className="work-document-page-color-picker"
-                  triggerLabel="页面颜色"
-                  triggerIcon={<Palette size={18} />}
-                  value={pageColor}
-                  onValueChange={onPageColorChange}
-                />
-              </RibbonGroup>
-              <RibbonGroup label="分隔符">
-                <ToolbarButton
-                  label="插入分页符"
-                  shortcut="Cmd/Ctrl+Enter"
-                  ariaKeyShortcuts="Control+Enter Meta+Enter"
-                  displayLabel
-                  onClick={() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContent({ type: 'pageBreak' })
-                      .run()
-                  }
-                >
-                  <FilePlus2 size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="插入分节符"
-                  displayLabel
-                  onClick={onInsertSection}
-                >
-                  <Columns3 size={19} />
-                </ToolbarButton>
+              <RibbonGroup label="文本" priority="low">
+                <DocumentFieldSelect onInsertField={onInsertField} />
               </RibbonGroup>
             </>
+          ),
+          page: (
+            <DocumentPageLayoutRibbon
+              editor={editor}
+              layout={layout}
+              layoutOpen={layoutOpen}
+              pageColor={pageColor}
+              onLayoutChange={onLayoutChange}
+              onOpenLayout={onOpenLayout}
+              onToggleLayout={onToggleLayout}
+              onPageColorChange={onPageColorChange}
+              onInsertSection={onInsertSection}
+            />
           ),
           references: (
             <>

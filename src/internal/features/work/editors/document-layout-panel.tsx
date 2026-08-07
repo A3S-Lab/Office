@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
-import { clampDocumentMargin } from '../work-document-layout';
 import { Button, Tabs } from '../../../design-system/primitives';
+import { clampDocumentMargin } from '../work-document-layout';
 import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
@@ -14,27 +14,37 @@ import { DocumentPageChromePanel } from './document-page-chrome-panel';
 import { DocumentTaskPane } from './document-task-pane';
 import { CommittedOfficeNumberField, OfficeSelect } from './office-controls';
 
-type DocumentLayoutPanelTab = 'columns' | 'headerFooter' | 'page';
+export type DocumentLayoutPanelTab = 'columns' | 'headerFooter' | 'page';
 
 export function DocumentLayoutPanel({
   layout,
+  activeTab: controlledActiveTab,
   sectionIndex,
   sectionCount,
+  onActiveTabChange,
   onChange,
   onInsertSection,
   onMergeSection,
   onClose,
 }: {
   layout: WorkDocumentSectionLayout;
+  activeTab?: DocumentLayoutPanelTab;
   sectionIndex: number;
   sectionCount: number;
+  onActiveTabChange?: (tab: DocumentLayoutPanelTab) => void;
   onChange: (layout: WorkDocumentSectionLayout) => void;
   onInsertSection: () => void;
   onMergeSection: () => void;
   onClose: () => void;
 }) {
   const tabsId = useId();
-  const [activeTab, setActiveTab] = useState<DocumentLayoutPanelTab>('page');
+  const [internalActiveTab, setInternalActiveTab] =
+    useState<DocumentLayoutPanelTab>('page');
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const changeActiveTab = (tab: DocumentLayoutPanelTab) => {
+    if (controlledActiveTab === undefined) setInternalActiveTab(tab);
+    onActiveTabChange?.(tab);
+  };
   const marginFields: Array<[keyof WorkDocumentMargins, string]> = [
     ['top', '上'],
     ['right', '右'],
@@ -77,7 +87,7 @@ export function DocumentLayoutPanel({
             panelId: `${tabsId}-header-footer-panel`,
           },
         ]}
-        onChange={setActiveTab}
+        onChange={changeActiveTab}
       />
       <div className="work-document-task-pane-body work-document-layout-body">
         {activeTab === 'page' && (

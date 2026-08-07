@@ -116,7 +116,18 @@ expand to a viewport-safe 320 px surface on phones. Their numeric fields,
 steppers, checkboxes, and reset actions provide 44 px touch targets while
 preserving direct document commits and exact trigger-focus restoration. A
 deterministic phone workflow proves both semantic changes and captures
-accessibility, console, and page-error evidence. Deterministic text collection
+accessibility, console, and page-error evidence.
+
+The Writer Insert ribbon now follows the WPS Pages, Table, Illustrations,
+Links, Header and Footer, and Text sequence, including page-number visibility
+with the other page-chrome commands. Page Layout exposes direct normal, narrow,
+moderate, wide, orientation, paper-size, and one-to-three-column presets. Custom
+margins and advanced columns open the matching controlled Page Setup tab. A
+deterministic desktop workflow proves live landscape and two-column rendering,
+advanced-tab routing, Escape close, accessibility output, and empty browser
+diagnostics.
+
+Deterministic text collection
 now follows CSS font weight matching while retaining exact family and
 normal/italic style boundaries, keeping intermediate and synthesized bold
 weights on the WASM layout path when a compatible registered face exists.

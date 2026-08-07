@@ -52,6 +52,36 @@
   width: 82px;
 }
 
+.work-document-ribbon
+  .work-office-ribbon-group
+  > .work-document-page-setup-choice {
+  display: grid;
+  width: 84px;
+  align-content: center;
+  gap: 2px;
+  padding-inline: 1px;
+}
+
+.work-document-page-setup-choice > span {
+  overflow: hidden;
+  padding-inline: 2px;
+  color: var(--a3s-faint);
+  font-size: 8px;
+  line-height: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-ribbon
+  .work-document-page-setup-choice
+  .work-office-select
+  > button[role="combobox"] {
+  min-width: 0;
+  height: 28px;
+  gap: 4px;
+  padding-inline: 6px 5px;
+}
+
 .work-document-selection-toolbar {
   z-index: 70;
   display: flex;

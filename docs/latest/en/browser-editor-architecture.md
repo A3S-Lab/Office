@@ -48,6 +48,11 @@ model:
    Header and footer TipTap surfaces register the same WPS alignment and
    copy-format shortcuts. Cross-surface paste retains compatible marks and
    paragraph attributes while falling back from unsupported heading nodes.
+   Writer orders Insert commands as Pages, Table, Illustrations, Links, Header
+   and Footer, and Text. Page Layout keeps direct margin, orientation, paper,
+   and equal-column presets in the ribbon; custom margins and advanced columns
+   open the corresponding controlled Page Setup tab instead of duplicating a
+   second settings model.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

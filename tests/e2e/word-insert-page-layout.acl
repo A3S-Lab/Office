@@ -1,0 +1,130 @@
+suite "office-word-insert-page-layout" {
+    version = 1
+
+    scenario "use-wps-writer-insert-and-page-layout" {
+        name = "Use WPS-style Writer Insert and Page Layout commands"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1600
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-insert-page-layout"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editor")
+        }
+
+        click "open-insert" {
+            target = role("tab", "插入")
+        }
+
+        expect "insert-page-group-is-available" {
+            visible = css(".document-toolbar .work-office-ribbon-group[aria-label='页面']")
+        }
+
+        expect "page-number-lives-in-insert" {
+            visible = css(".document-toolbar [aria-label='页眉和页脚'] button[aria-label='页码']")
+        }
+
+        click "open-page-layout" {
+            target = role("tab", "页面布局")
+        }
+
+        expect "page-setup-group-is-available" {
+            visible = css(".document-toolbar .work-office-ribbon-group[aria-label='页面设置']")
+        }
+
+        click "open-orientation" {
+            target = role("combobox", "页面方向")
+        }
+
+        click "use-landscape" {
+            target = role("option", "横向")
+        }
+
+        expect "landscape-is-applied" {
+            visible = css(".work-document-page.landscape")
+        }
+
+        click "open-columns" {
+            target = role("combobox", "分栏")
+        }
+
+        click "use-two-columns" {
+            target = role("option", "两栏")
+        }
+
+        expect "two-columns-are-rendered" {
+            visible = css(".work-document-section[data-section-column-count='2']")
+        }
+
+        click "reopen-columns" {
+            target = role("combobox", "分栏")
+        }
+
+        click "open-advanced-columns" {
+            target = role("option", "更多分栏")
+        }
+
+        expect "advanced-columns-tab-is-selected" {
+            visible = css(".work-document-layout-panel [role='tab'][aria-label='分栏与分节'][aria-selected='true']")
+        }
+
+        expect "advanced-columns-keep-preset" {
+            visible = css("input[aria-label='分栏数量'][value='2']")
+        }
+
+        press "close-advanced-columns" {
+            key = "Escape"
+        }
+
+        click "open-margins" {
+            target = role("combobox", "页边距")
+        }
+
+        click "open-custom-margins" {
+            target = role("option", "自定义页边距")
+        }
+
+        expect "custom-margins-open-page-tab" {
+            visible = css(".work-document-layout-panel [role='tab'][aria-label='页面'][aria-selected='true']")
+        }
+
+        expect "custom-page-controls-are-ready" {
+            visible = css(".work-document-layout-panel button[role='combobox'][aria-label='纸张大小']")
+        }
+
+        screenshot "writer-insert-page-layout" {
+            path = "screenshots/writer-insert-page-layout.png"
+        }
+
+        accessibility "writer-insert-page-layout-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

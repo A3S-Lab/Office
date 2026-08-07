@@ -1,4 +1,3 @@
-import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
 import {
   fireEvent,
@@ -7,9 +6,19 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
+import { Editor } from '@tiptap/core';
 import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
+import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
+
+const toolbarLayout: WorkDocumentSectionLayout = {
+  pageSize: 'a4',
+  orientation: 'portrait',
+  margins: { top: 25, right: 23, bottom: 25, left: 23 },
+  columns: { count: 1, spacing: 12, separator: false },
+  breakAfter: 'nextPage',
+};
 
 interface ToolbarCalls {
   captions: string[];
@@ -113,14 +122,14 @@ test('wires every Insert and Page Layout action to document state or its owner',
   );
   fireEvent.click(screen.getByRole('option', { name: '当前日期' }));
   expect(calls.fields).toEqual(['date']);
+  fireEvent.click(screen.getByRole('button', { name: '页码' }));
+  expect(calls.pageNumbers).toBe(1);
 
   fireEvent.click(screen.getByRole('tab', { name: '页面布局' }));
   expect(screen.getByRole('button', { name: '段落间距' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '段落分页' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: '页面设置' }));
-  fireEvent.click(screen.getByRole('button', { name: '显示页码' }));
   expect(calls.layout).toBe(1);
-  expect(calls.pageNumbers).toBe(1);
 
   fireEvent.click(screen.getByRole('button', { name: '页面颜色' }));
   const colorDialog = screen.getByRole('dialog', { name: '页面颜色' });
@@ -136,6 +145,26 @@ test('wires every Insert and Page Layout action to document state or its owner',
   fireEvent.click(screen.getByRole('button', { name: '插入分节符' }));
   expect(nodeCount(editor, 'pageBreak')).toBe(secondBreakCount + 1);
   expect(calls.sections).toBe(1);
+});
+
+test('orders Insert and Page Layout groups like WPS Writer', () => {
+  editor = createEditor();
+  render(toolbar(editor, createCalls()));
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  expect(activeRibbonGroupLabels()).toEqual([
+    '页面',
+    '表格',
+    '插图',
+    '链接',
+    '页眉和页脚',
+    '文本',
+  ]);
+  expect(screen.getByRole('button', { name: '页码' })).toBeVisible();
+
+  fireEvent.click(screen.getByRole('tab', { name: '页面布局' }));
+  expect(activeRibbonGroupLabels()).toEqual(['页面设置', '段落', '页面背景']);
+  expect(screen.queryByRole('button', { name: '页码' })).toBeNull();
 });
 
 test('wires every References, Review, and View action without silent buttons', () => {
@@ -412,6 +441,7 @@ function toolbar(currentEditor: Editor, calls: ToolbarCalls, zoom = 100) {
           onSelect: () => calls.files.push('save-copy'),
         },
       ]}
+      layout={toolbarLayout}
       layoutOpen={false}
       navigationOpen={false}
       pageColor="#ffffff"
@@ -436,6 +466,8 @@ function toolbar(currentEditor: Editor, calls: ToolbarCalls, zoom = 100) {
       onToggleLayout={() => {
         calls.layout += 1;
       }}
+      onLayoutChange={() => undefined}
+      onOpenLayout={() => undefined}
       onToggleNavigation={() => {
         calls.navigation += 1;
       }}
@@ -537,6 +569,15 @@ function nodeCount(currentEditor: Editor, type: string): number {
     if (node.type.name === type) count += 1;
   });
   return count;
+}
+
+function activeRibbonGroupLabels(): string[] {
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '.document-toolbar .work-office-ribbon-group',
+    ),
+    (group) => group.getAttribute('aria-label') ?? '',
+  );
 }
 
 function textRange(
