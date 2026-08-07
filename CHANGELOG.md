@@ -4,6 +4,8 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.3.0 - 2026-08-07
+
 - Added a Writer command catalog for stable ribbon grouping and WPS-compatible
   shortcut metadata, moved undo and redo into a compact quick-access toolbar,
   added persistent plus temporary ribbon collapse behavior, and made lower

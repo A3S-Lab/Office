@@ -1,0 +1,37 @@
+---
+title: SpreadsheetEditor
+description: Spreadsheet content, calculation-kernel configuration, events, and host extension points.
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` is a controlled workbook surface with worksheet, formula,
+chart, conditional-format, pivot, and print-layout models.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | Yes | — | Controlled workbook content. |
+| `onChange` | `(content: SpreadsheetContent) => void` | Yes | — | Emits the complete next workbook. |
+| `preview` | `boolean` | No | `false` | Read-only workbook rendering. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host save, export, history, and approval actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Formula and workbook-kernel resource URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends the active cell or range to the host AI flow. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | Content discriminator. |
+| `sheets` | `WorkSpreadsheetSheet[]` | Worksheets, cells, formulas, styles, images, charts, and pivots. |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | Calculation mode, iteration, precision, and load behavior. |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | Workbook- and worksheet-scoped names. |
+| `printAreas`, `printTitles` | spreadsheet print fields | Print areas and repeated rows or columns. |
+| `pageBreaks`, `pageSetups` | spreadsheet page fields | Breaks, paper, orientation, scale, margins, headers, and footers. |
+
+The public workbook extension context is not yet stable. Use `fileActions` for
+host workflows and `onAgentRequest` for structured AI actions. Do not import
+command runtime modules from internal package paths.

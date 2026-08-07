@@ -1,0 +1,45 @@
+---
+title: PresentationEditor
+description: 演示文稿内容、放映事件、几何内核与宿主扩展接口。
+---
+
+# PresentationEditor
+
+`PresentationEditor` 使用类型化场景图保存幻灯片，只在编辑文本框时挂载 TipTap。
+
+## 属性
+
+| 属性 | 类型 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `content` | `PresentationContent` | 是 | — | 受控演示文稿内容。 |
+| `onChange` | `(content: PresentationContent) => void` | 是 | — | 返回完整的新演示文稿。 |
+| `preview` | `boolean` | 否 | `false` | 只读演示文稿。 |
+| `saveStatus` | `string` | 否 | `'Saved automatically'` | 由宿主管理的保存状态。 |
+| `fileActions` | `readonly OfficeFileAction[]` | 否 | `[]` | 宿主文件操作。 |
+| `kernelWasmUrl` | `string` | 否 | 内置内核 | 吸附、对齐与几何计算内核地址。 |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | 否 | — | 把幻灯片或对象上下文发送给宿主 AI 流程。 |
+| `onStartSlideshow` | `() => void` | 否 | — | 内置放映开始后通知宿主。 |
+| `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
+
+## 内容结构
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `type` | `'presentation'` | 内容类型标识。 |
+| `slides` | `WorkSlide[]` | 幻灯片、元素、备注、批注与切换效果。 |
+| `width`, `height` | `number` | 演示文稿画布尺寸。 |
+| `masters` | `WorkPresentationMaster[]` | 母版背景与元素。 |
+| `layouts` | `WorkPresentationLayout[]` | 关联母版的版式、占位符与继承元素。 |
+
+稳定的宿主接入应使用 `fileActions`、`onAgentRequest` 和
+`onStartSlideshow`。内部场景命令运行时不是公共 Extension API。
+
+## 内置放映
+
+观众模式与演讲者模式共用同一组导航控件。方向键和 Page Up / Page Down 切换
+幻灯片，空格前进，Home 与 End 跳到首尾，Escape 退出。焦点位于放映按钮时这些
+快捷键仍然有效，输入框和可编辑内容则保留正常键盘行为。
+
+演讲者模式显示当前页、下一页提示、演讲者备注和可暂停计时器。计时器属于同一次放映，
+切换观众与演讲者模式不会归零。手机宽度下，当前幻灯片保持全宽，下一页缩为标题提示，
+备注可以独立滚动，导航控件仍然可用。

@@ -1,0 +1,24 @@
+[
+  "index",
+  {
+    "type": "section-header",
+    "label": "Frameworks"
+  },
+  "react",
+  "vue",
+  "web-component",
+  {
+    "type": "section-header",
+    "label": "Editor API"
+  },
+  "document",
+  "markdown",
+  "spreadsheet",
+  "presentation",
+  "pdf",
+  {
+    "type": "section-header",
+    "label": "Customization"
+  },
+  "extensions"
+]

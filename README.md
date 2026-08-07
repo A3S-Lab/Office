@@ -535,6 +535,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.3.0 documentation](https://a3s-lab.github.io/Office/docs/0.3.0/)
 - [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)
 - [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
