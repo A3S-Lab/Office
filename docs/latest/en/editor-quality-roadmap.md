@@ -473,6 +473,18 @@ pass visual and deterministic E2E regression.
 
 ## Priority 3: Spreadsheet
 
+The first WPS-alignment slice now adopts the Writer-proven shared ribbon
+behavior without importing Writer's document model. Spreadsheet owns one
+command catalog for stable tab order, labels, locations, and shortcut metadata;
+Undo and Redo live in quick access; the ribbon compacts by group priority,
+persists a double-click collapse, and temporarily exposes a selected tab.
+Conditional Formatting is located under Home and Styles, executable ascending
+and descending sorts are under Data, and workbook recalculation is available
+from Formulas and F9. Focused unit and component tests plus desktop and compact
+Playwright coverage prove the command placement and interaction path. The
+deterministic A3S Test manifest validates independently and records the same
+desktop workflow when a browser capability is installed.
+
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

@@ -16,11 +16,11 @@ import {
   moveSpreadsheetKeyboardSelection,
   runSpreadsheetSelectionMoveShortcut,
   runSpreadsheetSelectionScopeShortcut,
-  scopeSpreadsheetKeyboardSelection,
-  spreadsheetSelectionContainsFocus,
   type SpreadsheetKeyboardSelection,
   type SpreadsheetSelectionMove,
   type SpreadsheetSelectionScope,
+  scopeSpreadsheetKeyboardSelection,
+  spreadsheetSelectionContainsFocus,
 } from './spreadsheet-keyboard-navigation';
 import {
   activateSpreadsheetSheet,
@@ -437,6 +437,12 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             event,
             can.addSheet,
             commands.addSheet,
+          ),
+        F9: ({ can, commands }, event) =>
+          runSpreadsheetRecalculationShortcut(
+            event,
+            can.recalculateFormula,
+            commands.recalculateFormula,
           ),
         Delete: ({ can, commands }, event) =>
           runSpreadsheetClearShortcut(
@@ -1278,6 +1284,22 @@ function runSpreadsheetAddSheetShortcut(
     return false;
   }
   return execute();
+}
+
+function runSpreadsheetRecalculationShortcut(
+  event: KeyboardEvent,
+  canExecute: SpreadsheetEditorCanCommands['recalculateFormula'],
+  execute: SpreadsheetEditorCommands['recalculateFormula'],
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !canExecute('workbook')
+  ) {
+    return false;
+  }
+  return execute('workbook');
 }
 
 function liveRange(

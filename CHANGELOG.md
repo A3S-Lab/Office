@@ -4,6 +4,14 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a Spreadsheet command catalog and adopted the shared WPS-oriented
+  quick-access, adaptive, and collapsible ribbon. Conditional Formatting now
+  lives under Home and Styles, Data exposes executable ascending and descending
+  sort commands, and workbook recalculation is visible and executable with F9.
+- Added focused component and controller coverage, desktop and compact
+  Playwright regression, and a schema-validated deterministic A3S Test workflow
+  for the aligned Spreadsheet ribbon.
+
 ## 0.3.0 - 2026-08-07
 
 - Added a Writer command catalog for stable ribbon grouping and WPS-compatible

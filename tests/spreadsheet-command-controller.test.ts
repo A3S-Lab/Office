@@ -90,6 +90,19 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('owns the WPS F9 workbook recalculation shortcut', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    const recalculate = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'F9',
+    });
+
+    expect(editor.handleKeyDown(recalculate)).toBe(true);
+    expect(recalculate.defaultPrevented).toBe(true);
+    expect(fixture.calculation.requests).toEqual([{ scope: 'workbook' }]);
+  });
+
   test('routes context-menu clear and paste through one workbook command port', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [3, 2], column: [4, 3] }];

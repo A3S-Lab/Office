@@ -348,6 +348,10 @@ interaction model.
   phone layout, touch-sized controls, and exact grid-focus restoration,
   desktop workbook task panes that become focus-contained phone dialogs with
   an inert workbook background and exact ribbon-invoker restoration,
+  a WPS-familiar command catalog and tab order, quick-access Undo and Redo,
+  a priority-aware adaptive and collapsible ribbon with temporary tab
+  expansion, Conditional Formatting under Home and Styles, executable sorting
+  under Data, and visible F9 workbook recalculation,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

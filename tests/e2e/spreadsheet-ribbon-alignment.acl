@@ -1,0 +1,118 @@
+suite "office-spreadsheet-ribbon-alignment" {
+    version = 1
+
+    scenario "use-wps-aligned-spreadsheet-ribbon" {
+        name = "Use the WPS-aligned Spreadsheet command layout"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        expect "quick-access-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-quick-access[role='toolbar']")
+        }
+
+        expect "undo-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-quick-access button[aria-keyshortcuts='Control+Z Meta+Z']")
+        }
+
+        expect "redo-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-quick-access button[aria-keyshortcuts='Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y']")
+        }
+
+        expect "conditional-formatting-is-on-home" {
+            visible = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='home'][aria-selected='true']")
+        }
+
+        expect "home-styles-command-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) .work-office-ribbon-group[aria-label='样式'] button[aria-label^='条件格式']")
+        }
+
+        click "open-data" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
+        }
+
+        expect "ascending-sort-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='升序']")
+        }
+
+        expect "descending-sort-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='降序']")
+        }
+
+        click "open-formulas" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='formulas']")
+        }
+
+        expect "f9-recalculation-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-keyshortcuts='F9']")
+        }
+
+        press "recalculate-workbook" {
+            key = "F9"
+        }
+
+        double_click "collapse-formulas-ribbon" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='formulas']")
+        }
+
+        expect "ribbon-collapsed" {
+            visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-expanded='false']")
+        }
+
+        click "temporarily-open-data" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
+        }
+
+        expect "temporary-data-panel-open" {
+            visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-panel:not([hidden]) button[aria-label='升序']")
+        }
+
+        screenshot "spreadsheet-ribbon-alignment" {
+            path = "screenshots/spreadsheet-ribbon-alignment.png"
+        }
+
+        click "return-to-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        expect "temporary-panel-closed" {
+            visible = css(".work-spreadsheet-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-expanded='false']")
+        }
+
+        accessibility "spreadsheet-ribbon-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

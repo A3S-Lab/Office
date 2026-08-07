@@ -6,6 +6,47 @@ import type {
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import { SpreadsheetEditorRibbon } from '../src/internal/features/work/editors/spreadsheet-editor-ribbon';
 
+test('uses the shared quick access and collapsible adaptive ribbon', () => {
+  const { container } = render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(() => true)}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  expect(
+    screen.getByRole('toolbar', { name: '快速访问工具栏' }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '撤销' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Z Meta+Z',
+  );
+  expect(screen.getByRole('button', { name: '重做' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
+  );
+  expect(screen.queryByText('撤销与恢复')).not.toBeInTheDocument();
+
+  const ribbon = container.querySelector('.work-spreadsheet-ribbon');
+  expect(ribbon).not.toHaveAttribute('data-collapsed');
+  fireEvent.doubleClick(screen.getByRole('tab', { name: '开始' }));
+  expect(ribbon).toHaveAttribute('data-collapsed', 'true');
+  expect(screen.getByRole('button', { name: '展开功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+});
+
 test('routes number-format controls through typed spreadsheet commands', () => {
   const formats: Array<{ attribute: string; value: unknown }> = [];
   const commands = spreadsheetCommands((attribute, value) => {
@@ -118,8 +159,67 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
   );
 
   expect(screen.getByRole('button', { name: '插入图表' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '条件格式' })).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '条件格式' }),
+  ).not.toBeInTheDocument();
   expect(screen.queryByText('0')).not.toBeInTheDocument();
+});
+
+test('keeps conditional formatting in Home and sorting in Data', () => {
+  const panels: string[] = [];
+  const sorts: string[] = [];
+  const { rerender } = render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        (direction) => {
+          sorts.push(direction);
+          return true;
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={(panel) => panels.push(panel)}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '条件格式' }));
+  expect(panels).toEqual(['conditional-formatting']);
+
+  rerender(
+    <SpreadsheetEditorRibbon
+      activeTab="data"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        (direction) => {
+          sorts.push(direction);
+          return true;
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '升序' }));
+  fireEvent.click(screen.getByRole('button', { name: '降序' }));
+  expect(sorts).toEqual(['ascending', 'descending']);
 });
 
 test('exposes the spreadsheet find shortcut through the home ribbon', () => {
@@ -154,10 +254,13 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     activateSheet: () => true,
     addSheet: () => true,
     clearSelectedCells: () => true,
+    deleteSelectedStructure: () => true,
     deleteSheet: () => true,
     duplicateSheet: () => true,
     hideSheet: () => true,
+    insertSelectedStructure: () => true,
     moveSheet: () => true,
+    moveSelection: () => true,
     pasteCells: () => true,
     recalculateFormula: () => true,
     renameSheet: () => true,
@@ -165,8 +268,12 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     setCellFormat: () => true,
     setGridLines: () => true,
     setSheetColor: () => true,
+    setSelectedStructureHidden: () => true,
+    setSelectedStructureSize: () => true,
     setSpreadsheetContent: () => true,
     setZoom: () => true,
+    selectCellRange: () => true,
+    sortSelectedCells: () => true,
     toggleCellMerge: () => true,
     undo: () => false,
   };
@@ -174,15 +281,20 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
 
 function spreadsheetCommands(
   setCellFormat: SpreadsheetEditorCommands['setCellFormat'],
+  sortSelectedCells: SpreadsheetEditorCommands['sortSelectedCells'] = () =>
+    true,
 ): SpreadsheetEditorCommands {
   return {
     activateSheet: () => true,
     addSheet: () => true,
     clearSelectedCells: () => true,
+    deleteSelectedStructure: () => true,
     deleteSheet: () => true,
     duplicateSheet: () => true,
     hideSheet: () => true,
+    insertSelectedStructure: () => true,
     moveSheet: () => true,
+    moveSelection: () => true,
     pasteCells: () => true,
     recalculateFormula: () => true,
     renameSheet: () => true,
@@ -190,8 +302,12 @@ function spreadsheetCommands(
     setCellFormat,
     setGridLines: () => true,
     setSheetColor: () => true,
+    setSelectedStructureHidden: () => true,
+    setSelectedStructureSize: () => true,
     setSpreadsheetContent: () => true,
     setZoom: () => true,
+    selectCellRange: () => true,
+    sortSelectedCells,
     toggleCellMerge: () => true,
     undo: () => false,
   };

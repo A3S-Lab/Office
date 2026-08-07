@@ -19,20 +19,28 @@ import {
   Percent,
   Printer,
   Redo2,
+  RefreshCw,
   Search,
   ShieldCheck,
+  SortAsc,
+  SortDesc,
   TableProperties,
   Underline,
   Undo2,
   WrapText,
 } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { spreadsheetChartCount } from '../work-spreadsheet-charts';
 import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
 import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import {
+  type SpreadsheetRibbonTabId,
+  spreadsheetCommandCatalog,
+  spreadsheetRibbonTabs,
+} from './spreadsheet-command-catalog';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
@@ -44,10 +52,10 @@ import {
 } from './spreadsheet-editor-support';
 import {
   adjustSpreadsheetNumberFormat,
+  type SpreadsheetNumberFormatPreset,
   spreadsheetNumberFormatCode,
   spreadsheetNumberFormatPreset,
   spreadsheetNumberFormatValue,
-  type SpreadsheetNumberFormatPreset,
 } from './spreadsheet-number-format';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
@@ -57,16 +65,6 @@ import {
   WorkOfficeRibbonButton,
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
-
-const spreadsheetRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'pageLayout', label: '页面布局', compactLabel: '布局' },
-  { id: 'formulas', label: '公式' },
-  { id: 'data', label: '数据' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
-] as const;
 
 const spreadsheetNumberFormatOptions: readonly {
   value: SpreadsheetNumberFormatPreset;
@@ -79,8 +77,7 @@ const spreadsheetNumberFormatOptions: readonly {
   { value: 'custom', label: '自定义', disabled: true },
 ];
 
-export type SpreadsheetRibbonTabId =
-  (typeof spreadsheetRibbonTabs)[number]['id'];
+export type { SpreadsheetRibbonTabId } from './spreadsheet-command-catalog';
 
 export function SpreadsheetEditorRibbon({
   activeTab,
@@ -145,33 +142,39 @@ export function SpreadsheetEditorRibbon({
       defaultTab="home"
       activeTab={activeTab}
       onTabChange={onTabChange}
+      adaptive
+      collapsible
       fileActions={fileActions}
+      quickAccessActions={[
+        {
+          id: spreadsheetCommandCatalog.undo.id,
+          label: spreadsheetCommandCatalog.undo.label,
+          icon: <Undo2 size={15} />,
+          shortcut: spreadsheetCommandCatalog.undo.shortcut.label,
+          ariaKeyShortcuts: spreadsheetCommandCatalog.undo.shortcut.aria,
+          disabled: !can.undo(),
+          onSelect: () => {
+            commands.undo();
+          },
+        },
+        {
+          id: spreadsheetCommandCatalog.redo.id,
+          label: spreadsheetCommandCatalog.redo.label,
+          icon: <Redo2 size={15} />,
+          shortcut: spreadsheetCommandCatalog.redo.shortcut.label,
+          ariaKeyShortcuts: spreadsheetCommandCatalog.redo.shortcut.aria,
+          disabled: !can.redo(),
+          onSelect: () => {
+            commands.redo();
+          },
+        },
+      ]}
       className="work-spreadsheet-ribbon"
       toolbarClassName="work-spreadsheet-ribbon-toolbar"
       panels={{
         home: (
           <>
-            <WorkOfficeRibbonGroup label="撤销与恢复">
-              <WorkOfficeRibbonButton
-                label="撤销"
-                title="撤销（Cmd/Ctrl+Z）"
-                aria-keyshortcuts="Control+Z Meta+Z"
-                disabled={!can.undo()}
-                onClick={commands.undo}
-              >
-                <Undo2 size={19} />
-              </WorkOfficeRibbonButton>
-              <WorkOfficeRibbonButton
-                label="重做"
-                title="重做（Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y）"
-                aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
-                disabled={!can.redo()}
-                onClick={commands.redo}
-              >
-                <Redo2 size={19} />
-              </WorkOfficeRibbonButton>
-            </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="字体">
+            <WorkOfficeRibbonGroup label="字体" priority="high">
               <OfficeSelect
                 className="work-spreadsheet-font-family"
                 ariaLabel="字体"
@@ -205,9 +208,9 @@ export function SpreadsheetEditorRibbon({
                 }
               />
               <WorkOfficeRibbonButton
-                label="加粗"
-                title="加粗（Cmd/Ctrl+B）"
-                aria-keyshortcuts="Control+B Meta+B"
+                label={spreadsheetCommandCatalog.bold.label}
+                title={`${spreadsheetCommandCatalog.bold.label}（${spreadsheetCommandCatalog.bold.shortcut.label}）`}
+                aria-keyshortcuts={spreadsheetCommandCatalog.bold.shortcut.aria}
                 displayLabel={false}
                 active={Number(toolbarCell?.bl) === 1}
                 disabled={
@@ -226,9 +229,11 @@ export function SpreadsheetEditorRibbon({
                 <Bold size={15} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
-                label="斜体"
-                title="斜体（Cmd/Ctrl+I）"
-                aria-keyshortcuts="Control+I Meta+I"
+                label={spreadsheetCommandCatalog.italic.label}
+                title={`${spreadsheetCommandCatalog.italic.label}（${spreadsheetCommandCatalog.italic.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.italic.shortcut.aria
+                }
                 displayLabel={false}
                 active={Number(toolbarCell?.it) === 1}
                 disabled={
@@ -247,9 +252,11 @@ export function SpreadsheetEditorRibbon({
                 <Italic size={15} />
               </WorkOfficeRibbonButton>
               <WorkOfficeRibbonButton
-                label="下划线"
-                title="下划线（Cmd/Ctrl+U）"
-                aria-keyshortcuts="Control+U Meta+U"
+                label={spreadsheetCommandCatalog.underline.label}
+                title={`${spreadsheetCommandCatalog.underline.label}（${spreadsheetCommandCatalog.underline.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.underline.shortcut.aria
+                }
                 displayLabel={false}
                 active={Number(toolbarCell?.un) === 1}
                 disabled={
@@ -306,7 +313,7 @@ export function SpreadsheetEditorRibbon({
                 onValueChange={(value) => commands.setCellFormat('bg', value)}
               />
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="对齐">
+            <WorkOfficeRibbonGroup label="对齐" priority="high">
               <WorkOfficeRibbonButton
                 label="左对齐"
                 displayLabel={false}
@@ -381,7 +388,7 @@ export function SpreadsheetEditorRibbon({
                 <WrapText size={15} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="数字">
+            <WorkOfficeRibbonGroup label="数字" priority="high">
               <OfficeSelect
                 className="work-spreadsheet-number-format"
                 ariaLabel="数字格式"
@@ -454,6 +461,17 @@ export function SpreadsheetEditorRibbon({
                 <DecimalsArrowRight size={16} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="样式">
+              <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="conditional-formatting"
+                label={spreadsheetCommandCatalog.conditionalFormatting.label}
+                count={managedConditionalFormatCount(content)}
+                icon={<Palette size={19} />}
+                active={panel === 'conditional-formatting'}
+                onToggle={onTogglePanel}
+              />
+            </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="单元格">
               <WorkOfficeRibbonButton
                 label={toolbarCell?.mc ? '取消合并' : '合并单元格'}
@@ -468,11 +486,11 @@ export function SpreadsheetEditorRibbon({
                 <Merge size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="编辑">
+            <WorkOfficeRibbonGroup label="编辑" priority="low">
               <WorkOfficeRibbonButton
-                label="查找"
-                title="查找（Cmd/Ctrl+F）"
-                aria-keyshortcuts="Control+F Meta+F"
+                label={spreadsheetCommandCatalog.find.label}
+                title={`${spreadsheetCommandCatalog.find.label}（${spreadsheetCommandCatalog.find.shortcut.label}）`}
+                aria-keyshortcuts={spreadsheetCommandCatalog.find.shortcut.aria}
                 active={findOpen}
                 onClick={onOpenFind}
               >
@@ -482,37 +500,24 @@ export function SpreadsheetEditorRibbon({
           </>
         ),
         insert: (
-          <>
-            <WorkOfficeRibbonGroup label="图表">
-              <SpreadsheetRibbonTool
-                controlsId={panelId}
-                panel="charts"
-                label="插入图表"
-                count={spreadsheetChartCount(content)}
-                icon={<BarChart3 size={19} />}
-                active={panel === 'charts'}
-                onToggle={onTogglePanel}
-              />
-            </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="样式">
-              <SpreadsheetRibbonTool
-                controlsId={panelId}
-                panel="conditional-formatting"
-                label="条件格式"
-                count={managedConditionalFormatCount(content)}
-                icon={<Palette size={19} />}
-                active={panel === 'conditional-formatting'}
-                onToggle={onTogglePanel}
-              />
-            </WorkOfficeRibbonGroup>
-          </>
+          <WorkOfficeRibbonGroup label="图表" priority="high">
+            <SpreadsheetRibbonTool
+              controlsId={panelId}
+              panel="charts"
+              label={spreadsheetCommandCatalog.insertChart.label}
+              count={spreadsheetChartCount(content)}
+              icon={<BarChart3 size={19} />}
+              active={panel === 'charts'}
+              onToggle={onTogglePanel}
+            />
+          </WorkOfficeRibbonGroup>
         ),
         pageLayout: (
-          <WorkOfficeRibbonGroup label="页面设置">
+          <WorkOfficeRibbonGroup label="页面设置" priority="high">
             <SpreadsheetRibbonTool
               controlsId={panelId}
               panel="print-area"
-              label="打印设置"
+              label={spreadsheetCommandCatalog.printSettings.label}
               count={spreadsheetPrintSettingCount(content)}
               icon={<Printer size={19} />}
               active={panel === 'print-area'}
@@ -522,49 +527,78 @@ export function SpreadsheetEditorRibbon({
         ),
         formulas: (
           <>
-            <WorkOfficeRibbonGroup label="定义的名称">
+            <WorkOfficeRibbonGroup label="定义的名称" priority="high">
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="names"
-                label="名称管理器"
+                label={spreadsheetCommandCatalog.nameManager.label}
                 count={content.namedRanges?.length ?? 0}
                 icon={<Bookmark size={19} />}
                 active={panel === 'names'}
                 onToggle={onTogglePanel}
               />
             </WorkOfficeRibbonGroup>
-            <WorkOfficeRibbonGroup label="计算">
+            <WorkOfficeRibbonGroup label="计算" priority="high">
               <SpreadsheetRibbonTool
                 controlsId={panelId}
                 panel="formulas"
-                label="公式与计算"
+                label={spreadsheetCommandCatalog.formulaManager.label}
                 count={formulaCount}
                 icon={<Calculator size={19} />}
                 active={panel === 'formulas'}
                 onToggle={onTogglePanel}
               />
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.recalculateWorkbook.label}
+                title={`${spreadsheetCommandCatalog.recalculateWorkbook.label}（${spreadsheetCommandCatalog.recalculateWorkbook.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.recalculateWorkbook.shortcut.aria
+                }
+                disabled={!can.recalculateFormula('workbook')}
+                onClick={() => commands.recalculateFormula('workbook')}
+              >
+                <RefreshCw size={19} />
+              </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
           </>
         ),
         data: (
-          <WorkOfficeRibbonGroup label="分析">
-            <SpreadsheetRibbonTool
-              controlsId={panelId}
-              panel="pivots"
-              label="数据透视表"
-              count={pivotCount}
-              icon={<TableProperties size={19} />}
-              active={panel === 'pivots'}
-              onToggle={onTogglePanel}
-            />
-          </WorkOfficeRibbonGroup>
+          <>
+            <WorkOfficeRibbonGroup label="排序和筛选" priority="high">
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.sortAscending.label}
+                disabled={!can.sortSelectedCells('ascending')}
+                onClick={() => commands.sortSelectedCells('ascending')}
+              >
+                <SortAsc size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.sortDescending.label}
+                disabled={!can.sortSelectedCells('descending')}
+                onClick={() => commands.sortSelectedCells('descending')}
+              >
+                <SortDesc size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="分析">
+              <SpreadsheetRibbonTool
+                controlsId={panelId}
+                panel="pivots"
+                label={spreadsheetCommandCatalog.pivotTable.label}
+                count={pivotCount}
+                icon={<TableProperties size={19} />}
+                active={panel === 'pivots'}
+                onToggle={onTogglePanel}
+              />
+            </WorkOfficeRibbonGroup>
+          </>
         ),
         review: (
-          <WorkOfficeRibbonGroup label="保护">
+          <WorkOfficeRibbonGroup label="保护" priority="high">
             <SpreadsheetRibbonTool
               controlsId={panelId}
               panel="protection"
-              label="工作表保护"
+              label={spreadsheetCommandCatalog.protectSheet.label}
               count={protectedSheetCount(content.sheets)}
               icon={<ShieldCheck size={19} />}
               active={panel === 'protection'}
@@ -573,10 +607,10 @@ export function SpreadsheetEditorRibbon({
           </WorkOfficeRibbonGroup>
         ),
         view: (
-          <WorkOfficeRibbonGroup label="工作簿视图">
+          <WorkOfficeRibbonGroup label="工作簿视图" priority="high">
             <WorkOfficeRibbonButton
               label={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
-              visibleLabel="网格线"
+              visibleLabel={spreadsheetCommandCatalog.gridLines.label}
               active={gridLinesVisible}
               disabled={!can.setGridLines(!gridLinesVisible)}
               onClick={() => commands.setGridLines(!gridLinesVisible)}
