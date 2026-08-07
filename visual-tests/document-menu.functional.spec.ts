@@ -118,7 +118,7 @@ test('Word transient ribbon commands return keyboard control to the document', a
 
   await page.getByRole('button', { name: '标尺', exact: true }).click();
   await expect(body).toBeFocused();
-  await page.getByRole('button', { name: '缩放至 125%' }).click();
+  await page.getByRole('button', { name: '缩放至 100%' }).click();
   await expect(body).toBeFocused();
 
   await page.getByRole('tab', { name: '审阅' }).click();
@@ -256,8 +256,6 @@ test('Word page and reference commands keep the document ready for typing', asyn
   await body.focus();
 
   await page.getByRole('tab', { name: '页面布局' }).click();
-  await page.getByRole('button', { name: '显示页码' }).click();
-  await expect(body).toBeFocused();
   await page.getByRole('button', { name: '插入分节符' }).click();
   await expect(body).toBeFocused();
 
@@ -267,6 +265,8 @@ test('Word page and reference commands keep the document ready for typing', asyn
   await expect(body).toBeFocused();
 
   await page.getByRole('tab', { name: '插入' }).click();
+  await page.getByRole('button', { name: '页码', exact: true }).click();
+  await expect(body).toBeFocused();
   await page.getByRole('combobox', { name: '插入页码或日期' }).click();
   await expect(page.getByRole('option', { name: '页码或日期' })).toBeDisabled();
   await expect(
