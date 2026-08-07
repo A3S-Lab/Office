@@ -403,7 +403,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "last-freeze-command-focused" {
-            visible = css(".work-spreadsheet-freeze-popover button[role='menuitem']:last-child:focus")
+            visible = css("[role='menu'][aria-label='冻结窗格选项'] button[role='menuitem']:last-child:focus")
         }
 
         press "focus-unfreeze-command" {
@@ -430,6 +430,125 @@ suite "office-spreadsheet-ribbon-alignment" {
 
         page_errors "freeze-panes-browser-errors" {
             path = "diagnostics/freeze-panes-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "use-wps-rows-and-columns-from-home" {
+        name = "Use WPS row and column actions from the Home cells group"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-row-two" {
+            key = "ArrowDown"
+        }
+
+        press "select-row-three" {
+            key = "ArrowDown"
+        }
+
+        press "select-customer-report" {
+            key = "ArrowDown"
+        }
+
+        expect "customer-report-cell-selected" {
+            text = "A4"
+        }
+
+        expect "rows-and-columns-command-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='单元格'] button[aria-label='行和列'][aria-haspopup='menu']")
+        }
+
+        click "open-rows-and-columns-menu" {
+            target = role("button", "行和列")
+        }
+
+        expect "rows-and-columns-menu-visible" {
+            visible = css("[role='menu'][aria-label='行和列选项']")
+        }
+
+        expect "insert-above-focused" {
+            visible = css("[role='menu'][aria-label='行和列选项'] button[role='menuitem']:first-child:focus")
+        }
+
+        screenshot "spreadsheet-rows-and-columns-compact" {
+            path = "screenshots/spreadsheet-rows-and-columns-compact.png"
+        }
+
+        press "insert-row-above" {
+            key = "Enter"
+        }
+
+        expect "inserted-row-selected" {
+            text = "A4:L4"
+        }
+
+        expect "grid-focus-restored-after-insert" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "reopen-rows-and-columns-menu" {
+            target = role("button", "行和列")
+        }
+
+        click "delete-inserted-row" {
+            target = role("menuitem", "删除所选行")
+        }
+
+        expect "customer-report-cell-restored" {
+            text = "A4"
+        }
+
+        expect "customer-report-content-restored" {
+            text = "客户洞察报告"
+        }
+
+        expect "grid-focus-restored-after-delete" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        accessibility "spreadsheet-rows-and-columns-accessibility" {
+            path = "evidence/rows-and-columns-accessibility.json"
+            interactive = true
+        }
+
+        console "rows-and-columns-browser-console" {
+            path = "diagnostics/rows-and-columns-console.json"
+            clear = false
+        }
+
+        page_errors "rows-and-columns-browser-errors" {
+            path = "diagnostics/rows-and-columns-page-errors.json"
             clear = false
         }
     }

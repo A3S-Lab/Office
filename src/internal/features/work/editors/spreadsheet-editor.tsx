@@ -1237,6 +1237,12 @@ export function spreadsheetCommandsWithGridFocus(
     cancelFormatPainter: afterSuccessfulCommand(commands.cancelFormatPainter),
     copySelection: afterSuccessfulCommand(commands.copySelection),
     cutSelection: afterSuccessfulCommand(commands.cutSelection),
+    deleteSelectedStructure: afterSuccessfulCommand(
+      commands.deleteSelectedStructure,
+    ),
+    insertSelectedStructure: afterSuccessfulCommand(
+      commands.insertSelectedStructure,
+    ),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),

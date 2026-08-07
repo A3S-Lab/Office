@@ -620,7 +620,7 @@
   --work-office-menu-accent: var(--work-spreadsheet-menu-accent);
 }
 
-.work-spreadsheet-freeze-trigger > span::after {
+.work-spreadsheet-ribbon-menu-trigger > span::after {
   display: inline-block;
   margin-left: 4px;
   border-top: 4px solid currentcolor;
@@ -630,21 +630,21 @@
   vertical-align: 2px;
 }
 
-.work-spreadsheet-freeze-popover {
+.work-spreadsheet-ribbon-menu {
   --work-office-menu-accent: var(--work-office-control-accent, #159469);
 
   width: min(264px, calc(100vw - 32px));
 }
 
-.work-spreadsheet-freeze-popover > button {
+.work-spreadsheet-ribbon-menu > button {
   grid-template-columns: 20px minmax(0, 1fr);
 }
 
-.work-spreadsheet-freeze-popover > button > span:last-child {
+.work-spreadsheet-ribbon-menu > button > span:last-child {
   white-space: normal;
 }
 
-.work-spreadsheet-freeze-item-icon {
+.work-spreadsheet-ribbon-menu-item-icon {
   display: grid;
   width: 20px;
   height: 20px;
@@ -652,9 +652,19 @@
   color: var(--work-office-menu-accent);
 }
 
-.work-spreadsheet-freeze-item-icon > svg {
+.work-spreadsheet-ribbon-menu-item-icon > svg {
   width: 16px;
   height: 16px;
+}
+
+.work-spreadsheet-ribbon-menu > button.danger {
+  color: color-mix(in srgb, var(--a3s-red) 88%, var(--a3s-ink));
+}
+
+.work-spreadsheet-ribbon-menu
+  > button.danger
+  .work-spreadsheet-ribbon-menu-item-icon {
+  color: currentcolor;
 }
 
 .work-spreadsheet-sheet-list {

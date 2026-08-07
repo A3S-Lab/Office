@@ -519,6 +519,16 @@ guard closing a repeated command. A pure workbook model owns the boundary,
 selection retention, no-op checks, and one controlled update. Focused model,
 controller, component, focus, XLSX round-trip, desktop, compact, and
 schema-validated A3S Test coverage prove the complete freeze and unfreeze path.
+The sixth slice exposes the existing row and column structure commands under
+Home and Cells through one WPS-familiar Rows and Columns menu. Its six actions
+insert selected rows above or below, insert selected columns to the left or
+right, or delete selected rows or columns. Availability remains derived from
+the live workbook selection and protection state; the ribbon does not create a
+second mutation model. Arrow, Home, End, Enter, and Escape operate the menu,
+successful commands return focus to the grid, and desktop plus compact
+Playwright coverage exercises an insert-and-restore workflow. Focused catalog,
+component, and focus tests plus the schema-validated A3S Test manifest keep the
+information architecture and command boundary stable.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.

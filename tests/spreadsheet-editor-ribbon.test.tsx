@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
@@ -199,6 +205,124 @@ test('exposes locked format-painter state and exits on another click', () => {
   expect(formatPainter).toHaveTextContent('连续');
   fireEvent.click(formatPainter);
   expect(actions).toEqual(['cancel']);
+});
+
+test('operates WPS row and column actions from the Home cells group', async () => {
+  const actions: string[] = [];
+  const commands = spreadsheetCommands(
+    () => true,
+    () => true,
+    {
+      deleteSelectedStructure: (axis) => {
+        actions.push(`delete:${axis}`);
+        return true;
+      },
+      insertSelectedStructure: (axis, position) => {
+        actions.push(`insert:${axis}:${position}`);
+        return true;
+      },
+    },
+  );
+
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={commands}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '行和列' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '行和列选项' });
+  const insertAbove = within(menu).getByRole('menuitem', {
+    name: '在上方插入行',
+  });
+  const deleteColumns = within(menu).getByRole('menuitem', {
+    name: '删除所选列',
+  });
+  expect(
+    within(menu).getByRole('menuitem', { name: '在下方插入行' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '在左侧插入列' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '在右侧插入列' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '删除所选行' }),
+  ).toBeInTheDocument();
+
+  await waitFor(() => expect(insertAbove).toHaveFocus());
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(deleteColumns).toHaveFocus();
+  fireEvent.click(deleteColumns);
+  expect(actions).toEqual(['delete:column']);
+  expect(screen.queryByRole('menu', { name: '行和列选项' })).toBeNull();
+  expect(trigger).toHaveFocus();
+
+  fireEvent.click(trigger);
+  fireEvent.click(
+    within(screen.getByRole('menu', { name: '行和列选项' })).getByRole(
+      'menuitem',
+      { name: '在上方插入行' },
+    ),
+  );
+  expect(actions).toEqual(['delete:column', 'insert:row:before']);
+});
+
+test('disables unavailable WPS row and column actions independently', () => {
+  const can = spreadsheetCan();
+  can.insertSelectedStructure = (axis, position) =>
+    axis === 'row' && position === 'before';
+  can.deleteSelectedStructure = (axis) => axis === 'row';
+
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={can}
+      commands={spreadsheetCommands(() => true)}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '行和列' }));
+  const menu = screen.getByRole('menu', { name: '行和列选项' });
+  expect(
+    within(menu).getByRole('menuitem', { name: '在上方插入行' }),
+  ).toBeEnabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '在下方插入行' }),
+  ).toBeDisabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '在左侧插入列' }),
+  ).toBeDisabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '删除所选行' }),
+  ).toBeEnabled();
+  expect(
+    within(menu).getByRole('menuitem', { name: '删除所选列' }),
+  ).toBeDisabled();
 });
 
 test('routes font, vertical alignment, and wrapping through cell formats', () => {
@@ -511,13 +635,15 @@ function spreadsheetCommands(
   setCellFormat: SpreadsheetEditorCommands['setCellFormat'],
   sortSelectedCells: SpreadsheetEditorCommands['sortSelectedCells'] = () =>
     true,
-  clipboard: Partial<
+  overrides: Partial<
     Pick<
       SpreadsheetEditorCommands,
       | 'activateFormatPainter'
       | 'cancelFormatPainter'
       | 'copySelection'
       | 'cutSelection'
+      | 'deleteSelectedStructure'
+      | 'insertSelectedStructure'
       | 'pasteSelection'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
@@ -526,28 +652,28 @@ function spreadsheetCommands(
 ): SpreadsheetEditorCommands {
   return {
     activateSheet: () => true,
-    activateFormatPainter: clipboard.activateFormatPainter ?? (() => true),
+    activateFormatPainter: overrides.activateFormatPainter ?? (() => true),
     addSheet: () => true,
     applyFormatPainter: () => true,
-    cancelFormatPainter: clipboard.cancelFormatPainter ?? (() => true),
+    cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
     clearSelectedCells: () => true,
-    copySelection: clipboard.copySelection ?? (() => true),
-    cutSelection: clipboard.cutSelection ?? (() => true),
-    deleteSelectedStructure: () => true,
+    copySelection: overrides.copySelection ?? (() => true),
+    cutSelection: overrides.cutSelection ?? (() => true),
+    deleteSelectedStructure: overrides.deleteSelectedStructure ?? (() => true),
     deleteSheet: () => true,
     duplicateSheet: () => true,
     hideSheet: () => true,
-    insertSelectedStructure: () => true,
+    insertSelectedStructure: overrides.insertSelectedStructure ?? (() => true),
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
     pasteCells: () => true,
-    pasteSelection: clipboard.pasteSelection ?? (() => true),
+    pasteSelection: overrides.pasteSelection ?? (() => true),
     recalculateFormula: () => true,
     renameSheet: () => true,
     redo: () => false,
     setCellFormat,
-    setFreezePanes: clipboard.setFreezePanes ?? (() => true),
+    setFreezePanes: overrides.setFreezePanes ?? (() => true),
     setGridLines: () => true,
     setSheetColor: () => true,
     setSelectedStructureHidden: () => true,
@@ -556,7 +682,7 @@ function spreadsheetCommands(
     setZoom: () => true,
     selectCellRange: () => true,
     sortSelectedCells,
-    toggleAutoFilter: clipboard.toggleAutoFilter ?? (() => true),
+    toggleAutoFilter: overrides.toggleAutoFilter ?? (() => true),
     toggleCellMerge: () => true,
     undo: () => false,
   };

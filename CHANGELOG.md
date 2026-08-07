@@ -38,6 +38,13 @@ All notable changes to A3S Office will be documented in this file.
   desktop plus compact Web regression. Delayed grid-focus recovery now yields
   to deliberate pointer and Tab navigation so repeated ribbon actions remain
   usable immediately after a controlled workbook remount.
+- Added a WPS-familiar Rows and Columns menu to Spreadsheet Home and Cells.
+  The existing typed workbook commands now expose row insertion above or below,
+  column insertion left or right, and selected-row or selected-column deletion
+  without duplicating the structure-editing model.
+- Added independent command availability, Arrow/Home/End/Enter/Escape menu
+  behavior, exact grid-focus restoration, desktop and compact Web workflow
+  regression, and schema-validated deterministic A3S Test coverage.
 
 ## 0.3.0 - 2026-08-07
 

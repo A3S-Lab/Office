@@ -124,6 +124,36 @@ export const spreadsheetCommandCatalog = {
     label: '条件格式',
     location: { area: 'ribbon', tab: 'home', group: 'styles' },
   },
+  insertRowsAbove: {
+    id: 'cells.insertRowsAbove',
+    label: '在上方插入行',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  insertRowsBelow: {
+    id: 'cells.insertRowsBelow',
+    label: '在下方插入行',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  insertColumnsLeft: {
+    id: 'cells.insertColumnsLeft',
+    label: '在左侧插入列',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  insertColumnsRight: {
+    id: 'cells.insertColumnsRight',
+    label: '在右侧插入列',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  deleteRows: {
+    id: 'cells.deleteRows',
+    label: '删除所选行',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
+  deleteColumns: {
+    id: 'cells.deleteColumns',
+    label: '删除所选列',
+    location: { area: 'ribbon', tab: 'home', group: 'cells' },
+  },
   find: {
     id: 'editing.find',
     label: '查找',

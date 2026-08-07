@@ -357,6 +357,9 @@ interaction model.
   style-only writes, Conditional Formatting under Home and Styles, executable
   sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
   `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu,
+  a Home and Cells Rows and Columns menu for inserting above, below, left, or
+  right and deleting selected rows or columns through the shared structure
+  command port,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,

@@ -7,6 +7,10 @@ import {
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   BarChart3,
+  BetweenHorizontalEnd,
+  BetweenHorizontalStart,
+  BetweenVerticalEnd,
+  BetweenVerticalStart,
   Bold,
   Bookmark,
   Calculator,
@@ -14,6 +18,7 @@ import {
   Copy,
   DecimalsArrowLeft,
   DecimalsArrowRight,
+  Columns3,
   Grid3X3,
   Italic,
   ListFilter,
@@ -32,6 +37,7 @@ import {
   ShieldCheck,
   SortAsc,
   SortDesc,
+  Rows3,
   TableProperties,
   Underline,
   Undo2,
@@ -569,6 +575,7 @@ export function SpreadsheetEditorRibbon({
               >
                 <Merge size={19} />
               </WorkOfficeRibbonButton>
+              <SpreadsheetRowsAndColumnsMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="编辑" priority="low">
               <WorkOfficeRibbonButton
@@ -779,15 +786,15 @@ function SpreadsheetFreezePanesMenu({
       panelLabel="冻结窗格选项"
       panelRole="menu"
       portal
-      className="work-spreadsheet-freeze-popover-root"
-      panelClassName="work-office-context-menu work-spreadsheet-freeze-popover"
+      className="work-spreadsheet-ribbon-menu-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu"
       disabled={disabled}
       focusFirstOnOpen
       onPanelKeyDown={moveOfficeMenuFocus}
       trigger={(triggerProps, { open }) => (
         <button
           {...triggerProps}
-          className={`with-label work-spreadsheet-freeze-trigger${active || open ? ' active' : ''}`}
+          className={`with-label work-spreadsheet-ribbon-menu-trigger${active || open ? ' active' : ''}`}
           aria-pressed={active}
           title={active ? '冻结窗格（已启用）' : '冻结窗格'}
         >
@@ -809,7 +816,118 @@ function SpreadsheetFreezePanesMenu({
               commands.setFreezePanes(preset);
             }}
           >
-            <span className="work-spreadsheet-freeze-item-icon">{icon}</span>
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              {icon}
+            </span>
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
+  );
+}
+
+function SpreadsheetRowsAndColumnsMenu({
+  can,
+  commands,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+}) {
+  const items: readonly {
+    id: string;
+    label: string;
+    icon: ReactNode;
+    danger?: boolean;
+    disabled: boolean;
+    execute: () => boolean;
+  }[] = [
+    {
+      id: spreadsheetCommandCatalog.insertRowsAbove.id,
+      label: spreadsheetCommandCatalog.insertRowsAbove.label,
+      icon: <BetweenHorizontalStart size={16} />,
+      disabled: !can.insertSelectedStructure('row', 'before'),
+      execute: () => commands.insertSelectedStructure('row', 'before'),
+    },
+    {
+      id: spreadsheetCommandCatalog.insertRowsBelow.id,
+      label: spreadsheetCommandCatalog.insertRowsBelow.label,
+      icon: <BetweenHorizontalEnd size={16} />,
+      disabled: !can.insertSelectedStructure('row', 'after'),
+      execute: () => commands.insertSelectedStructure('row', 'after'),
+    },
+    {
+      id: spreadsheetCommandCatalog.insertColumnsLeft.id,
+      label: spreadsheetCommandCatalog.insertColumnsLeft.label,
+      icon: <BetweenVerticalStart size={16} />,
+      disabled: !can.insertSelectedStructure('column', 'before'),
+      execute: () => commands.insertSelectedStructure('column', 'before'),
+    },
+    {
+      id: spreadsheetCommandCatalog.insertColumnsRight.id,
+      label: spreadsheetCommandCatalog.insertColumnsRight.label,
+      icon: <BetweenVerticalEnd size={16} />,
+      disabled: !can.insertSelectedStructure('column', 'after'),
+      execute: () => commands.insertSelectedStructure('column', 'after'),
+    },
+    {
+      id: spreadsheetCommandCatalog.deleteRows.id,
+      label: spreadsheetCommandCatalog.deleteRows.label,
+      icon: <Rows3 size={16} />,
+      danger: true,
+      disabled: !can.deleteSelectedStructure('row'),
+      execute: () => commands.deleteSelectedStructure('row'),
+    },
+    {
+      id: spreadsheetCommandCatalog.deleteColumns.id,
+      label: spreadsheetCommandCatalog.deleteColumns.label,
+      icon: <Columns3 size={16} />,
+      danger: true,
+      disabled: !can.deleteSelectedStructure('column'),
+      execute: () => commands.deleteSelectedStructure('column'),
+    },
+  ];
+  const disabled = items.every((item) => item.disabled);
+
+  return (
+    <Popover
+      label="行和列"
+      panelLabel="行和列选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-menu-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu"
+      disabled={disabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
+          title="行和列"
+        >
+          <Rows3 size={19} />
+          <span>行和列</span>
+        </button>
+      )}
+    >
+      {(close) =>
+        items.map(({ id, label, icon, danger, disabled, execute }) => (
+          <button
+            key={id}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            className={danger ? 'danger' : undefined}
+            disabled={disabled}
+            onClick={() => {
+              close();
+              execute();
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              {icon}
+            </span>
             <span>{label}</span>
           </button>
         ))

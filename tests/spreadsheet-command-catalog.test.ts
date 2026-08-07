@@ -51,6 +51,36 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'styles',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.insertRowsAbove.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.insertRowsBelow.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.insertColumnsLeft.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.insertColumnsRight.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.deleteRows.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.deleteColumns.location).toEqual({
+    area: 'ribbon',
+    group: 'cells',
+    tab: 'home',
+  });
   expect(spreadsheetCommandCatalog.insertChart.location).toEqual({
     area: 'ribbon',
     group: 'charts',

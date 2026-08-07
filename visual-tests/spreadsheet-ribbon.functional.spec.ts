@@ -108,6 +108,71 @@ test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const cells = ribbon.getByRole('region', { name: '单元格' });
+  const trigger = cells.getByRole('button', { name: '行和列' });
+
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('A4');
+  await expect(formulaBar).toHaveText('客户洞察报告');
+
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  await trigger.click();
+  const menu = page.getByRole('menu', { name: '行和列选项' });
+  await expect(menu).toBeVisible();
+  const insertAbove = menu.getByRole('menuitem', { name: '在上方插入行' });
+  await expect(insertAbove).toBeFocused();
+  await expect(menu.getByRole('menuitem')).toHaveCount(6);
+
+  const menuBounds = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((menuBounds?.x ?? 0) + (menuBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((menuBounds?.y ?? 0) + (menuBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('rows-and-columns-menu.png'),
+    animations: 'disabled',
+  });
+
+  await insertAbove.press('Enter');
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('A4:L4');
+  await expect(formulaBar).toHaveText('');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('A5');
+  await expect(formulaBar).toHaveText('客户洞察报告');
+
+  await page.keyboard.press('ArrowUp');
+  await trigger.click();
+  const restoreMenu = page.getByRole('menu', { name: '行和列选项' });
+  await restoreMenu
+    .getByRole('menuitem', { name: '删除所选行' })
+    .press('Enter');
+  await expect(grid).toBeFocused();
+  await expect(nameBox).toHaveText('A4');
+  await expect(formulaBar).toHaveText('客户洞察报告');
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet applies one-shot and locked WPS format-painter patterns', async ({
   page,
 }) => {

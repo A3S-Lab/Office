@@ -54,6 +54,12 @@ workflow, while dedicated presets freeze the top row or first column and an
 active worksheet exposes Unfreeze Panes. One controlled update retains the
 selection, the menu supports Arrow, Home, End, Enter, and Escape with exact
 grid-focus restoration, and the boundary survives XLSX export and reopen.
+The sixth milestone makes the existing row and column structure commands
+discoverable under Home and Cells through one WPS-familiar Rows and Columns
+menu. Users can insert selected rows above or below, insert selected columns to
+the left or right, and delete selected rows or columns. Each item derives its
+availability from the live selection, uses the shared typed command port, and
+returns focus to the grid for uninterrupted keyboard editing.
 
 ## Product Rules
 

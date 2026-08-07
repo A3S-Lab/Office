@@ -204,6 +204,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     cancelFormatPainter: record('cancelFormatPainter'),
     copySelection: record('copySelection'),
     cutSelection: record('cutSelection', false),
+    deleteSelectedStructure: record('deleteSelectedStructure'),
+    insertSelectedStructure: record('insertSelectedStructure'),
     openAutoFilterMenu: record('openAutoFilterMenu'),
     pasteSelection: record('pasteSelection'),
     redo: record('redo'),
@@ -223,6 +225,8 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
   expect(ribbon.setFreezePanes('topRow')).toBe(true);
+  expect(ribbon.insertSelectedStructure('row', 'before')).toBe(true);
+  expect(ribbon.deleteSelectedStructure('column')).toBe(true);
   expect(ribbon.toggleAutoFilter()).toBe(true);
   expect(ribbon.openAutoFilterMenu()).toBe(true);
   expect(ribbon.activateFormatPainter('once')).toBe(true);
@@ -237,6 +241,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setCellFormat:bl,1',
     'setGridLines:false',
     'setFreezePanes:topRow',
+    'insertSelectedStructure:row,before',
+    'deleteSelectedStructure:column',
     'toggleAutoFilter:',
     'openAutoFilterMenu:',
     'activateFormatPainter:once',
@@ -248,6 +254,8 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
+    'grid',
     'grid',
     'grid',
     'grid',
