@@ -40,6 +40,18 @@ test('uses typed commands and explicit navigation in the page-chrome ribbon', as
     'aria-keyshortcuts',
     'Control+B Meta+B',
   );
+  expect(screen.getByRole('button', { name: '页眉页脚下标' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+= Meta+=',
+  );
+  expect(screen.getByRole('button', { name: '页眉页脚上标' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+= Meta+Shift+=',
+  );
+  expect(screen.getByRole('button', { name: '页眉页脚居中' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+E Meta+E',
+  );
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚斜体' }));
   fireEvent.click(screen.getByRole('button', { name: '页眉页脚下划线' }));
   for (const label of [

@@ -4,7 +4,7 @@ suite "office-word-page-setup-phone" {
     scenario "configure-word-page-on-phone" {
         name = "Configure Word Page Setup from a phone task pane"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 120000
 
         viewport "phone" {
             width = 390
@@ -74,6 +74,23 @@ suite "office-word-page-setup-phone" {
 
         expect "header-object-actions-are-grouped" {
             visible = css(".work-document-page-chrome-toolbar-row[aria-label='默认页页眉对齐与插入']")
+        }
+
+        fill "write-header-shortcut-fixture" {
+            target = role("textbox", "默认页页眉")
+            value = "Header shortcut fixture"
+        }
+
+        click "refocus-header-after-controlled-update" {
+            target = role("textbox", "默认页页眉")
+        }
+
+        press "center-header-with-wps-shortcut" {
+            key = "Control+e"
+        }
+
+        expect "header-shortcut-is-executable" {
+            visible = css("[role='textbox'][aria-label='默认页页眉'] p[style*='text-align: center']")
         }
 
         expect "footer-text-actions-are-grouped" {

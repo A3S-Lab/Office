@@ -202,17 +202,19 @@ track-changes shortcuts execute inside the document while host text inputs and
 modal surfaces retain their native keyboard behavior. WPS copy-format and
 paste-format shortcuts share a permission-free local formatting clipboard with
 the one-shot format painter; applying it keeps links and review marks intact
-and commits direct character and paragraph formatting in one transaction. Undo
-and redo use the quick-access row, while double-clicking the active tab
-persistently collapses the ribbon; tab activation temporarily overlays commands
-and outside pointer input closes that overlay without moving document layout.
-The toolbar's measured width compacts low-priority groups first, normal-priority
-groups second, and retains high-priority groups before horizontal paging. A
-deterministic desktop workflow checks comfortable, adaptive, collapsed, and
-temporary states, accessibility
-output, and empty console and page-error diagnostics. Compact ribbon overflow
-now reserves both navigation edges so tool
-width does not change after paging. Phone list galleries stay within the
+and commits direct character and paragraph formatting in one transaction.
+Header and footer surfaces use the same WPS alignment and format-copy commands,
+falling back to their compatible paragraph schema when body heading formats are
+pasted. Undo and redo use the quick-access row, while double-clicking the active
+tab persistently collapses the ribbon; tab activation temporarily overlays
+commands and outside pointer input closes that overlay without moving document
+layout. The toolbar's measured width compacts low-priority groups first,
+normal-priority groups second, and retains high-priority groups before
+horizontal paging. A deterministic desktop workflow checks comfortable,
+adaptive, collapsed, and temporary states, accessibility output, and empty
+console and page-error diagnostics. Compact ribbon overflow now reserves both
+navigation edges so tool width does not change after paging. Phone list
+galleries stay within the
 viewport and provide 44 px clear, restart, start-value, stepper, and commit
 controls. Closing a list command restores the TipTap selection as well as DOM
 focus, so reopening the numbering gallery retains its active style and start

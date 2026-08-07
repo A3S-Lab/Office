@@ -116,6 +116,14 @@ export function useDialogFocusScope<T extends HTMLElement>({
         optionsRef.current.getActiveScope?.() ??
         (scopeRef.current as HTMLElement | null);
       if (!currentScope) return;
+      if (
+        event.target instanceof Node &&
+        currentScope.contains(event.target) &&
+        event.key !== 'Escape' &&
+        event.key !== 'Tab'
+      ) {
+        return;
+      }
       handleScopedKeyDown(event, currentScope, optionsRef.current);
     };
     const handleDocumentFocus = (event: FocusEvent) => {

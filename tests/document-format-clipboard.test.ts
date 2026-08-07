@@ -6,6 +6,7 @@ import {
   hasDocumentFormatClipboard,
   pasteDocumentFormatting,
 } from '../src/internal/features/work/editors/document-format-clipboard';
+import { createDocumentPageChromeEditorExtensions } from '../src/internal/features/work/editors/document-page-chrome-editor';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 let editor: Editor | null = null;
@@ -91,6 +92,53 @@ test('keeps a required list paragraph when the copied block type is a heading', 
   expect(editor.isActive('heading')).toBe(false);
   expect(editor.isActive('bold')).toBe(true);
   expect(editor.isActive('italic')).toBe(false);
+});
+
+test('applies compatible body formatting when the target omits heading nodes', () => {
+  editor = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  expect(copyDocumentFormatting(editor)).toBe(true);
+  const pageChromeEditor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p><em>Header target</em></p>',
+  });
+  pageChromeEditor.commands.setTextSelection(
+    textRange(pageChromeEditor, 'Header target'),
+  );
+
+  expect(pasteDocumentFormatting(pageChromeEditor)).toBe(true);
+  expect(pageChromeEditor.isActive('paragraph')).toBe(true);
+  expect(pageChromeEditor.isActive('bold')).toBe(true);
+  expect(pageChromeEditor.isActive('italic')).toBe(false);
+  expect(pageChromeEditor.getAttributes('paragraph').textAlign).toBe('center');
+
+  pageChromeEditor.destroy();
+});
+
+test('filters unsupported body marks at a page-chrome cursor', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p><mark data-color="#fff2cc"><strong>Source</strong></mark></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  expect(copyDocumentFormatting(editor)).toBe(true);
+  const pageChromeEditor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p>Header</p>',
+  });
+  pageChromeEditor.commands.setTextSelection(
+    textRange(pageChromeEditor, 'Header').to,
+  );
+
+  expect(pasteDocumentFormatting(pageChromeEditor)).toBe(true);
+  pageChromeEditor.commands.insertContent(' typed');
+  pageChromeEditor.commands.setTextSelection(
+    textRange(pageChromeEditor, ' typed'),
+  );
+  expect(pageChromeEditor.isActive('bold')).toBe(true);
+  expect(pageChromeEditor.schema.marks.highlight).toBeUndefined();
+
+  pageChromeEditor.destroy();
 });
 
 function createEditor(): Editor {

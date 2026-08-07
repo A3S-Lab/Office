@@ -45,6 +45,9 @@ model:
    plus a one-shot format painter without requiring browser clipboard access;
    paste replaces only direct character and paragraph formatting, preserving
    links, comments, and revision semantics in one document transaction.
+   Header and footer TipTap surfaces register the same WPS alignment and
+   copy-format shortcuts. Cross-surface paste retains compatible marks and
+   paragraph attributes while falling back from unsupported heading nodes.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

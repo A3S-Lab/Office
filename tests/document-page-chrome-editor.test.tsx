@@ -13,11 +13,41 @@ import {
   documentPageChromeEditorState,
   normalizeDocumentPageChromeHref,
 } from '../src/internal/features/work/editors/document-page-chrome-editor';
+import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { sanitizeDocumentPageChromeHtml } from '../src/internal/features/work/work-document-page-chrome';
 
 const pixelPng =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC' +
   'AAAAC0lEQVR42mP8/x8AAusB9Y9Z9WQAAAAASUVORK5CYII=';
+
+test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
+  clearDocumentFormatClipboard();
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: '<p><strong>Source</strong> and <em>Target</em></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+
+  fireEvent.keyDown(editor.view.dom, { key: 'e', ctrlKey: true });
+  expect(editor.getAttributes('paragraph').textAlign).toBe('center');
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'c',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'v',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getHTML()).toContain('<strong>Target</strong>');
+  expect(editor.getHTML()).not.toContain('<em>Target</em>');
+
+  editor.destroy();
+  clearDocumentFormatClipboard();
+});
 
 test('applies typed page-chrome commands to a TipTap document', () => {
   const editor = new Editor({

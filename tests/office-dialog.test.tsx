@@ -168,6 +168,28 @@ test('recovers focus when the focused dialog control is removed', async () => {
   );
 });
 
+test('lets an editor handle command keys before the modal scope consumes them', () => {
+  const handled: string[] = [];
+  render(
+    <Dialog title="编辑页眉" onClose={() => undefined}>
+      <textarea
+        aria-label="页眉内容"
+        defaultValue="Header"
+        onKeyDown={(event) => {
+          if (event.ctrlKey && event.key === 'e') handled.push('center');
+        }}
+      />
+    </Dialog>,
+  );
+
+  fireEvent.keyDown(screen.getByRole('textbox', { name: '页眉内容' }), {
+    key: 'e',
+    ctrlKey: true,
+  });
+
+  expect(handled).toEqual(['center']);
+});
+
 function OfficeDialogHarness() {
   const dialog = useOfficeDialog();
   const editorRef = useRef<HTMLTextAreaElement>(null);

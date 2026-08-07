@@ -21,10 +21,15 @@ import {
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
 import {
+  type DocumentPageChromeAlignment,
   documentPageChromeEditorState,
   loadDocumentPageChromeImage,
   normalizeDocumentPageChromeHref,
 } from './document-page-chrome-editor';
+import {
+  type DocumentCommandId,
+  getDocumentCommandDefinition,
+} from './document-command-catalog';
 import {
   OfficeColorPicker,
   OfficeFileInput,
@@ -182,8 +187,7 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚下标"
-          shortcut="Cmd/Ctrl+,"
-          ariaKeyShortcuts="Control+, Meta+,"
+          {...pageChromeCommandShortcut('subscript')}
           active={state.subscript}
           onClick={() => editor.chain().focus().toggleDocumentSubscript().run()}
         >
@@ -191,8 +195,7 @@ export function DocumentPageChromeRibbon({
         </PageChromeRibbonButton>
         <PageChromeRibbonButton
           label="页眉页脚上标"
-          shortcut="Cmd/Ctrl+."
-          ariaKeyShortcuts="Control+. Meta+."
+          {...pageChromeCommandShortcut('superscript')}
           active={state.superscript}
           onClick={() =>
             editor.chain().focus().toggleDocumentSuperscript().run()
@@ -215,6 +218,9 @@ export function DocumentPageChromeRibbon({
           <PageChromeRibbonButton
             key={alignment}
             label={alignmentLabel(alignment)}
+            {...pageChromeCommandShortcut(
+              pageChromeAlignmentCommandIds[alignment],
+            )}
             active={state.alignment === alignment}
             onClick={() => editor.chain().focus().setTextAlign(alignment).run()}
           >
@@ -305,6 +311,23 @@ function PageChromeRibbonButton({
 function pickerColor(color: string): string {
   return /^#[\da-f]{6}$/i.test(color) ? color : '#4d5668';
 }
+
+function pageChromeCommandShortcut(commandId: DocumentCommandId): {
+  shortcut?: string;
+  ariaKeyShortcuts?: string;
+} {
+  const shortcut = getDocumentCommandDefinition(commandId).shortcut;
+  return shortcut
+    ? { shortcut: shortcut.label, ariaKeyShortcuts: shortcut.aria }
+    : {};
+}
+
+const pageChromeAlignmentCommandIds = {
+  center: 'alignCenter',
+  justify: 'alignJustify',
+  left: 'alignLeft',
+  right: 'alignRight',
+} as const satisfies Record<DocumentPageChromeAlignment, DocumentCommandId>;
 
 function alignmentLabel(
   alignment: 'center' | 'justify' | 'left' | 'right',

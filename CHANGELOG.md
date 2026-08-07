@@ -17,6 +17,9 @@ All notable changes to A3S Office will be documented in this file.
 - Added a permission-free Writer formatting clipboard with WPS
   `Ctrl+Shift+C` / `Ctrl+Shift+V`, a one-shot format painter, semantic-mark
   preservation, and single-transaction formatting paste.
+- Extended WPS alignment and format-copy shortcuts into page headers and
+  footers, corrected their superscript and subscript shortcut descriptions,
+  and added schema-safe body-format projection for page-chrome editors.
 
 ## 0.2.2 - 2026-08-07
 

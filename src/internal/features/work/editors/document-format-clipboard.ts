@@ -52,20 +52,17 @@ export function pasteDocumentFormatting(editor: Editor): boolean {
     empty,
   );
   const blockType = state.schema.nodes[documentFormatClipboard.block.type];
-  if (!blockType || !blockPositions.length) return false;
+  if (!blockPositions.length) return false;
 
   for (const position of blockPositions) {
     const node = transaction.doc.nodeAt(position);
     if (!node || !isDocumentFormatBlockName(node.type.name)) continue;
     const resolved = transaction.doc.resolve(position);
     const index = resolved.index();
-    const compatibleBlockType = resolved.parent.canReplaceWith(
-      index,
-      index + 1,
-      blockType,
-    )
-      ? blockType
-      : node.type;
+    const compatibleBlockType =
+      blockType && resolved.parent.canReplaceWith(index, index + 1, blockType)
+        ? blockType
+        : node.type;
     transaction.setNodeMarkup(
       position,
       compatibleBlockType,
@@ -85,13 +82,17 @@ export function pasteDocumentFormatting(editor: Editor): boolean {
     editor.view.dispatch(transaction.scrollIntoView());
     let commandChain = editor.chain().focus();
     for (const markName of documentFormatMarkNames) {
-      commandChain = commandChain.unsetMark(markName);
+      if (state.schema.marks[markName]) {
+        commandChain = commandChain.unsetMark(markName);
+      }
     }
     for (const mark of documentFormatClipboard.marks) {
-      commandChain = commandChain.setMark(
-        mark.type,
-        cloneFormattingRecord(mark.attrs),
-      );
+      if (state.schema.marks[mark.type]) {
+        commandChain = commandChain.setMark(
+          mark.type,
+          cloneFormattingRecord(mark.attrs),
+        );
+      }
     }
     return commandChain.run();
   }
@@ -162,7 +163,9 @@ function documentFormatBlockAtSelection(
     if (!isDocumentFormatBlockName(node.type.name)) continue;
     const attrs: Record<string, unknown> = {};
     for (const name of documentFormatBlockAttributeNames) {
-      attrs[name] = cloneFormattingValue(node.attrs[name]);
+      if (Object.hasOwn(node.attrs, name)) {
+        attrs[name] = cloneFormattingValue(node.attrs[name]);
+      }
     }
     if (node.type.name === 'heading') attrs.level = node.attrs.level;
     return { type: node.type.name, attrs };

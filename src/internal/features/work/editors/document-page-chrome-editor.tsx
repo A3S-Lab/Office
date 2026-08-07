@@ -40,6 +40,7 @@ import {
   useOfficeDialog,
 } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
+import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
 
 export type DocumentPageChromeAlignment =
   | 'center'
@@ -392,6 +393,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentSuperscript,
     DocumentPageChromeCommands,
     TextAlign.configure({ types: ['paragraph'] }),
+    DocumentPageChromeWpsShortcuts,
     Placeholder.configure({ placeholder }),
   ];
 }
