@@ -11,6 +11,10 @@ All notable changes to A3S Office will be documented in this file.
 - Added focused component and controller coverage, desktop and compact
   Playwright regression, and a schema-validated deterministic A3S Test workflow
   for the aligned Spreadsheet ribbon.
+- Added executable Paste, Cut, and Copy commands to the Spreadsheet Home
+  clipboard group. Ribbon clicks and WPS `Cmd/Ctrl+V`, `Cmd/Ctrl+X`, and
+  `Cmd/Ctrl+C` shortcuts now share one typed command port, permission-resilient
+  browser/local clipboard fallback, and grid-focus restoration.
 
 ## 0.3.0 - 2026-08-07
 

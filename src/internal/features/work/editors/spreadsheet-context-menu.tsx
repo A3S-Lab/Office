@@ -309,7 +309,7 @@ export async function writeSpreadsheetClipboardText(
   }
 }
 
-async function copySpreadsheetSelection(
+export async function copySpreadsheetSelection(
   clipboard: SpreadsheetClipboardPort,
   value: string,
   cut: boolean,
@@ -324,7 +324,7 @@ async function copySpreadsheetSelection(
   }
 }
 
-async function pasteSpreadsheetSelection(
+export async function pasteSpreadsheetSelection(
   clipboard: SpreadsheetClipboardPort,
   paste: SpreadsheetContextCommands['pasteCells'],
 ): Promise<void> {

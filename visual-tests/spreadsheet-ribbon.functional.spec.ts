@@ -59,6 +59,55 @@ test('Spreadsheet follows the WPS ribbon information architecture', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
+    origin: new URL(page.url()).origin,
+  });
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await expect(nameBox).toHaveText('A1');
+  await page.keyboard.type('A3S');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await expect(formulaBar).toHaveText('A3S');
+
+  const clipboard = page
+    .locator('.work-spreadsheet-ribbon')
+    .getByRole('region', { name: '剪贴板' });
+  const paste = clipboard.getByRole('button', { name: '粘贴' });
+  const cut = clipboard.getByRole('button', { name: '剪切' });
+  const copy = clipboard.getByRole('button', { name: '复制' });
+  await expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
+  await expect(cut).toHaveAttribute('aria-keyshortcuts', 'Control+X Meta+X');
+  await expect(copy).toHaveAttribute('aria-keyshortcuts', 'Control+C Meta+C');
+
+  await copy.click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe('A3S');
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B1');
+  await paste.click();
+  await expect(formulaBar).toHaveText('A3S');
+  await expect(grid).toBeFocused();
+
+  await cut.click();
+  await expect(formulaBar).toHaveText('');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 async function openSpreadsheetFixture(page: Page): Promise<void> {
   await page.goto('/');
   await page

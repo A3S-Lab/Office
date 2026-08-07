@@ -53,6 +53,36 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-Shift-z', 'Mod-y'],
     },
   },
+  paste: {
+    id: 'clipboard.paste',
+    label: '粘贴',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+V',
+      aria: 'Control+V Meta+V',
+      editor: ['Mod-v'],
+    },
+  },
+  cut: {
+    id: 'clipboard.cut',
+    label: '剪切',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+X',
+      aria: 'Control+X Meta+X',
+      editor: ['Mod-x'],
+    },
+  },
+  copy: {
+    id: 'clipboard.copy',
+    label: '复制',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+C',
+      aria: 'Control+C Meta+C',
+      editor: ['Mod-c'],
+    },
+  },
   bold: {
     id: 'font.bold',
     label: '加粗',

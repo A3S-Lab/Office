@@ -350,7 +350,9 @@ interaction model.
   an inert workbook background and exact ribbon-invoker restoration,
   a WPS-familiar command catalog and tab order, quick-access Undo and Redo,
   a priority-aware adaptive and collapsible ribbon with temporary tab
-  expansion, Conditional Formatting under Home and Styles, executable sorting
+  expansion, an executable Home clipboard group whose Paste, Cut, and Copy
+  commands share the permission-resilient local fallback with their WPS
+  shortcuts, Conditional Formatting under Home and Styles, executable sorting
   under Data, and visible F9 workbook recalculation,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,

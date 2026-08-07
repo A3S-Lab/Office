@@ -484,6 +484,12 @@ from Formulas and F9. Focused unit and component tests plus desktop and compact
 Playwright coverage prove the command placement and interaction path. The
 deterministic A3S Test manifest validates independently and records the same
 desktop workflow when a browser capability is installed.
+The second slice adds Paste, Cut, and Copy as the first Home group instead of
+leaving core clipboard behavior discoverable only through shortcuts and context
+menus. Buttons and `Cmd/Ctrl+V`, `Cmd/Ctrl+X`, and `Cmd/Ctrl+C` all cross the
+same typed command port, retain the permission-resilient browser/local
+clipboard fallback, and restore grid focus after a successful command. Desktop
+and compact browser regression executes the complete copy-paste-cut path.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.

@@ -66,9 +66,11 @@ model:
    command catalog and workbook semantics. It keeps the WPS tab order, places
    Conditional Formatting under Home and Styles, exposes real sorting under
    Data, and owns F9 workbook recalculation in the root-scoped keyboard
-   controller. The catalog is the source of truth for labels, locations, and
-   shortcut metadata; the typed workbook command port remains the source of
-   truth for execution and availability.
+   controller. Paste, Cut, and Copy live in the first Home group; both button
+   clicks and WPS shortcuts cross one clipboard command port before using the
+   permission-resilient browser/local clipboard implementation. The catalog is
+   the source of truth for labels, locations, and shortcut metadata; typed
+   command ports remain the source of truth for execution and availability.
    The
    labelled status surface provides arrow-key traversal across view and zoom
    controls; compact Web widths remove secondary section, proofing, citation,

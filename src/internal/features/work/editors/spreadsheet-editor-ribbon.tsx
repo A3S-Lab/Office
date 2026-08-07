@@ -10,6 +10,8 @@ import {
   Bold,
   Bookmark,
   Calculator,
+  ClipboardPaste,
+  Copy,
   DecimalsArrowLeft,
   DecimalsArrowRight,
   Grid3X3,
@@ -20,6 +22,7 @@ import {
   Printer,
   Redo2,
   RefreshCw,
+  Scissors,
   Search,
   ShieldCheck,
   SortAsc,
@@ -174,6 +177,37 @@ export function SpreadsheetEditorRibbon({
       panels={{
         home: (
           <>
+            <WorkOfficeRibbonGroup label="剪贴板" priority="high">
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.paste.label}
+                title={`${spreadsheetCommandCatalog.paste.label}（${spreadsheetCommandCatalog.paste.shortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.paste.shortcut.aria
+                }
+                disabled={!can.pasteSelection()}
+                onClick={commands.pasteSelection}
+              >
+                <ClipboardPaste size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.cut.label}
+                title={`${spreadsheetCommandCatalog.cut.label}（${spreadsheetCommandCatalog.cut.shortcut.label}）`}
+                aria-keyshortcuts={spreadsheetCommandCatalog.cut.shortcut.aria}
+                disabled={!can.cutSelection()}
+                onClick={commands.cutSelection}
+              >
+                <Scissors size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.copy.label}
+                title={`${spreadsheetCommandCatalog.copy.label}（${spreadsheetCommandCatalog.copy.shortcut.label}）`}
+                aria-keyshortcuts={spreadsheetCommandCatalog.copy.shortcut.aria}
+                disabled={!can.copySelection()}
+                onClick={commands.copySelection}
+              >
+                <Copy size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="字体" priority="high">
               <OfficeSelect
                 className="work-spreadsheet-font-family"

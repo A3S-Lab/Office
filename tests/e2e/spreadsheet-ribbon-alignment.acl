@@ -40,6 +40,22 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon .work-office-quick-access button[aria-keyshortcuts='Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y']")
         }
 
+        expect "home-clipboard-group-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) .work-office-ribbon-group[aria-label='剪贴板']")
+        }
+
+        expect "paste-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='粘贴'][aria-keyshortcuts='Control+V Meta+V']")
+        }
+
+        expect "cut-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='剪切'][aria-keyshortcuts='Control+X Meta+X']")
+        }
+
+        expect "copy-shortcut-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='复制'][aria-keyshortcuts='Control+C Meta+C']")
+        }
+
         expect "conditional-formatting-is-on-home" {
             visible = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='home'][aria-selected='true']")
         }

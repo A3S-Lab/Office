@@ -4,6 +4,7 @@ import { createOfficeEditorRuntime } from '../src/internal/features/work/editors
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCalculationCommandPort,
+  type SpreadsheetClipboardCommandPort,
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
@@ -88,6 +89,55 @@ describe('spreadsheet command controller', () => {
       },
       { scope: 'workbook' },
     ]);
+  });
+
+  test('routes WPS clipboard actions through one typed command port', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetClipboard');
+    expect(editor.can().pasteSelection()).toBe(true);
+    expect(editor.can().cutSelection()).toBe(true);
+    expect(editor.can().copySelection()).toBe(true);
+    expect(editor.commands.pasteSelection()).toBe(true);
+    expect(editor.commands.cutSelection()).toBe(true);
+    expect(editor.commands.copySelection()).toBe(true);
+    expect(fixture.clipboard.calls).toEqual(['paste', 'cut', 'copy']);
+
+    editor.updateContext({
+      ...fixture.context,
+      clipboard: {
+        ...fixture.clipboard,
+        canCopySelection: false,
+        canCutSelection: false,
+        canPasteSelection: false,
+      },
+    });
+    expect(editor.can().pasteSelection()).toBe(false);
+    expect(editor.can().cutSelection()).toBe(false);
+    expect(editor.can().copySelection()).toBe(false);
+    expect(editor.commands.pasteSelection()).toBe(false);
+    expect(editor.commands.cutSelection()).toBe(false);
+    expect(editor.commands.copySelection()).toBe(false);
+    expect(fixture.clipboard.calls).toEqual(['paste', 'cut', 'copy']);
+  });
+
+  test('owns WPS clipboard shortcuts through the same command port', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    for (const shortcut of [
+      { key: 'c', metaKey: true },
+      { ctrlKey: true, key: 'x' },
+      { key: 'v', metaKey: true },
+    ]) {
+      const event = new KeyboardEvent('keydown', {
+        ...shortcut,
+        cancelable: true,
+      });
+      expect(editor.handleKeyDown(event)).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+    }
+    expect(fixture.clipboard.calls).toEqual(['copy', 'cut', 'paste']);
   });
 
   test('owns the WPS F9 workbook recalculation shortcut', () => {
@@ -670,6 +720,7 @@ describe('spreadsheet command controller', () => {
 });
 
 function commandFixture(): {
+  clipboard: RecordingSpreadsheetClipboard;
   changes: WorkSpreadsheetContent[];
   calculation: RecordingSpreadsheetCalculation;
   context: SpreadsheetCommandContext;
@@ -689,16 +740,19 @@ function commandFixture(): {
   } satisfies WorkSpreadsheetContent;
   const changes: WorkSpreadsheetContent[] = [];
   const calculation = new RecordingSpreadsheetCalculation();
+  const clipboard = new RecordingSpreadsheetClipboard();
   const formulaBarValues: unknown[] = [];
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     calculation,
+    clipboard,
     changes,
     formulaBarValues,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
       calculation,
+      clipboard,
       content,
       editable: true,
       fallbackRange: { row: [0, 1], column: [0, 2] },
@@ -720,6 +774,28 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetClipboard implements SpreadsheetClipboardCommandPort {
+  calls: string[] = [];
+  canCopySelection = true;
+  canCutSelection = true;
+  canPasteSelection = true;
+
+  copySelection(): boolean {
+    this.calls.push('copy');
+    return true;
+  }
+
+  cutSelection(): boolean {
+    this.calls.push('cut');
+    return true;
+  }
+
+  pasteSelection(): boolean {
+    this.calls.push('paste');
+    return true;
+  }
 }
 
 function spreadsheetEditor(context: SpreadsheetCommandContext) {

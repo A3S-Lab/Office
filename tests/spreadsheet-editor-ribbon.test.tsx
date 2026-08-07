@@ -1,5 +1,5 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type {
   SpreadsheetEditorCanCommands,
   SpreadsheetEditorCommands,
@@ -85,6 +85,56 @@ test('routes number-format controls through typed spreadsheet commands', () => {
     { attribute: 'ct', value: { fa: '0%', t: 'n' } },
     { attribute: 'ct', value: { fa: '0.00%', t: 'n' } },
   ]);
+});
+
+test('routes the WPS Home clipboard group through typed commands', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          copySelection: () => {
+            actions.push('copy');
+            return true;
+          },
+          cutSelection: () => {
+            actions.push('cut');
+            return true;
+          },
+          pasteSelection: () => {
+            actions.push('paste');
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const clipboard = screen.getByRole('region', { name: '剪贴板' });
+  const paste = within(clipboard).getByRole('button', { name: '粘贴' });
+  const cut = within(clipboard).getByRole('button', { name: '剪切' });
+  const copy = within(clipboard).getByRole('button', { name: '复制' });
+  expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
+  expect(cut).toHaveAttribute('aria-keyshortcuts', 'Control+X Meta+X');
+  expect(copy).toHaveAttribute('aria-keyshortcuts', 'Control+C Meta+C');
+
+  fireEvent.click(paste);
+  fireEvent.click(cut);
+  fireEvent.click(copy);
+  expect(actions).toEqual(['paste', 'cut', 'copy']);
 });
 
 test('routes font, vertical alignment, and wrapping through cell formats', () => {
@@ -254,6 +304,8 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     activateSheet: () => true,
     addSheet: () => true,
     clearSelectedCells: () => true,
+    copySelection: () => true,
+    cutSelection: () => true,
     deleteSelectedStructure: () => true,
     deleteSheet: () => true,
     duplicateSheet: () => true,
@@ -262,6 +314,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     moveSheet: () => true,
     moveSelection: () => true,
     pasteCells: () => true,
+    pasteSelection: () => true,
     recalculateFormula: () => true,
     renameSheet: () => true,
     redo: () => false,
@@ -283,11 +336,19 @@ function spreadsheetCommands(
   setCellFormat: SpreadsheetEditorCommands['setCellFormat'],
   sortSelectedCells: SpreadsheetEditorCommands['sortSelectedCells'] = () =>
     true,
+  clipboard: Partial<
+    Pick<
+      SpreadsheetEditorCommands,
+      'copySelection' | 'cutSelection' | 'pasteSelection'
+    >
+  > = {},
 ): SpreadsheetEditorCommands {
   return {
     activateSheet: () => true,
     addSheet: () => true,
     clearSelectedCells: () => true,
+    copySelection: clipboard.copySelection ?? (() => true),
+    cutSelection: clipboard.cutSelection ?? (() => true),
     deleteSelectedStructure: () => true,
     deleteSheet: () => true,
     duplicateSheet: () => true,
@@ -296,6 +357,7 @@ function spreadsheetCommands(
     moveSheet: () => true,
     moveSelection: () => true,
     pasteCells: () => true,
+    pasteSelection: clipboard.pasteSelection ?? (() => true),
     recalculateFormula: () => true,
     renameSheet: () => true,
     redo: () => false,

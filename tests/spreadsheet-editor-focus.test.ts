@@ -1,10 +1,10 @@
 import { expect, test } from '@rstest/core';
 import { waitFor } from '@testing-library/react';
+import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import {
   focusSpreadsheetGrid,
   spreadsheetCommandsWithGridFocus,
 } from '../src/internal/features/work/editors/spreadsheet-editor';
-import type { SpreadsheetEditorCommands } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import {
   isSpreadsheetCellEditingTarget,
   isSpreadsheetNativeTextUndoTarget,
@@ -167,6 +167,9 @@ test('returns grid focus after successful ribbon commands only', () => {
       return result;
     };
   const commands = {
+    copySelection: record('copySelection'),
+    cutSelection: record('cutSelection', false),
+    pasteSelection: record('pasteSelection'),
     redo: record('redo'),
     setCellFormat: record('setCellFormat'),
     setGridLines: record('setGridLines'),
@@ -181,16 +184,22 @@ test('returns grid focus after successful ribbon commands only', () => {
 
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
+  expect(ribbon.copySelection()).toBe(true);
+  expect(ribbon.cutSelection()).toBe(false);
+  expect(ribbon.pasteSelection()).toBe(true);
   expect(ribbon.undo()).toBe(false);
   expect(ribbon.setZoom(125)).toBe(true);
 
   expect(calls).toEqual([
     'setCellFormat:bl,1',
     'setGridLines:false',
+    'copySelection:',
+    'cutSelection:',
+    'pasteSelection:',
     'undo:',
     'setZoom:125',
   ]);
-  expect(focused).toEqual(['grid', 'grid']);
+  expect(focused).toEqual(['grid', 'grid', 'grid', 'grid']);
 });
 
 function waitForAnimationFrames(count: number): Promise<void> {

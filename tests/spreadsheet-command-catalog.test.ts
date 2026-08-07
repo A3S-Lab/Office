@@ -21,6 +21,26 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
   expect(spreadsheetCommandCatalog.redo.location).toEqual({
     area: 'quickAccess',
   });
+  expect(spreadsheetCommandCatalog.paste.location).toEqual({
+    area: 'ribbon',
+    group: 'clipboard',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.cut.shortcut).toEqual({
+    aria: 'Control+X Meta+X',
+    editor: ['Mod-x'],
+    label: 'Cmd/Ctrl+X',
+  });
+  expect(spreadsheetCommandCatalog.copy.shortcut).toEqual({
+    aria: 'Control+C Meta+C',
+    editor: ['Mod-c'],
+    label: 'Cmd/Ctrl+C',
+  });
+  expect(spreadsheetCommandCatalog.paste.shortcut).toEqual({
+    aria: 'Control+V Meta+V',
+    editor: ['Mod-v'],
+    label: 'Cmd/Ctrl+V',
+  });
   expect(spreadsheetCommandCatalog.conditionalFormatting.location).toEqual({
     area: 'ribbon',
     group: 'styles',

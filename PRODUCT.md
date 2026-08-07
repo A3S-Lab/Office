@@ -32,6 +32,9 @@ access, places Conditional Formatting under Home and Styles, exposes real sort
 commands under Data, and makes workbook recalculation discoverable and
 executable through F9. The shared ribbon must remain adaptive, persistently
 collapsible, and temporarily expandable without moving the workbook surface.
+The next milestone makes the existing permission-resilient Paste, Cut, and
+Copy behavior discoverable in the Home clipboard group and routes both ribbon
+clicks and WPS shortcuts through the same typed command port.
 
 ## Product Rules
 

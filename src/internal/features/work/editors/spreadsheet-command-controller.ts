@@ -6,6 +6,7 @@ import {
   type OfficeEditorExtension,
 } from './office-editor-extension';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
+import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
   isSpreadsheetNativeTextUndoTarget,
   selectSpreadsheetFormulaBarContents,
@@ -132,6 +133,15 @@ export interface SpreadsheetHistoryCommandPort {
   undo: () => boolean;
 }
 
+export interface SpreadsheetClipboardCommandPort {
+  canCopySelection: boolean;
+  canCutSelection: boolean;
+  canPasteSelection: boolean;
+  copySelection: () => boolean;
+  cutSelection: () => boolean;
+  pasteSelection: () => boolean;
+}
+
 export interface SpreadsheetFormulaBarCommandPort {
   setValue: (value: unknown) => void;
 }
@@ -144,6 +154,8 @@ export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
   addSheet: () => boolean;
   clearSelectedCells: () => boolean;
+  copySelection: () => boolean;
+  cutSelection: () => boolean;
   deleteSelectedStructure: (axis: SpreadsheetStructureAxis) => boolean;
   deleteSheet: (sheetId: string) => boolean;
   duplicateSheet: (sheetId: string) => boolean;
@@ -158,6 +170,7 @@ export interface SpreadsheetEditorCommands {
   ) => boolean;
   moveSelection: (move: SpreadsheetSelectionMove, extend: boolean) => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
+  pasteSelection: () => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
@@ -186,6 +199,7 @@ export type SpreadsheetEditorCanCommands =
 export interface SpreadsheetCommandContext {
   activeSheetId: string;
   calculation: SpreadsheetCalculationCommandPort | null;
+  clipboard: SpreadsheetClipboardCommandPort;
   content: WorkSpreadsheetContent;
   editable: boolean;
   fallbackRange: SpreadsheetCommandRange;
@@ -221,6 +235,29 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             context.onChange(content);
             return true;
           },
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetClipboard',
+      addCommands: () => ({
+        copySelection: {
+          canExecute: ({ clipboard }) => clipboard.canCopySelection,
+          execute: ({ clipboard }) =>
+            clipboard.canCopySelection && clipboard.copySelection(),
+        },
+        cutSelection: {
+          canExecute: ({ clipboard }) => clipboard.canCutSelection,
+          execute: ({ clipboard }) =>
+            clipboard.canCutSelection && clipboard.cutSelection(),
+        },
+        pasteSelection: {
+          canExecute: ({ clipboard }) => clipboard.canPasteSelection,
+          execute: ({ clipboard }) =>
+            clipboard.canPasteSelection && clipboard.pasteSelection(),
         },
       }),
     }),
@@ -376,6 +413,12 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             commands.setCellFormat,
             'bl',
           ),
+        'Mod-c': ({ can, commands }, event) =>
+          runSpreadsheetClipboardShortcut(
+            event,
+            can.copySelection,
+            commands.copySelection,
+          ),
         'Mod-i': ({ can, commands, context }, event) =>
           runSpreadsheetCellFormatShortcut(
             event,
@@ -383,6 +426,18 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             can.setCellFormat,
             commands.setCellFormat,
             'it',
+          ),
+        'Mod-v': ({ can, commands }, event) =>
+          runSpreadsheetClipboardShortcut(
+            event,
+            can.pasteSelection,
+            commands.pasteSelection,
+          ),
+        'Mod-x': ({ can, commands }, event) =>
+          runSpreadsheetClipboardShortcut(
+            event,
+            can.cutSelection,
+            commands.cutSelection,
           ),
         'Mod-u': ({ can, commands, context }, event) =>
           runSpreadsheetCellFormatShortcut(

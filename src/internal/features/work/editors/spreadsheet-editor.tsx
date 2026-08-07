@@ -42,7 +42,7 @@ import {
 } from '../work-spreadsheet-pivots';
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
-import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
+import { useOfficeDialog } from './office-dialog';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
@@ -51,7 +51,9 @@ import {
 } from './spreadsheet-command-controller';
 import {
   browserSpreadsheetClipboard,
+  copySpreadsheetSelection,
   parseSpreadsheetClipboardText,
+  pasteSpreadsheetSelection,
   spreadsheetCoreContextMenuItems,
   spreadsheetSortContextMenuItems,
   spreadsheetStructureContextMenuItems,
@@ -74,20 +76,19 @@ import {
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
-import { SpreadsheetFindBar } from './spreadsheet-find-bar';
 import type { SpreadsheetFindMatch } from './spreadsheet-find';
-import { useOfficeDialog } from './office-dialog';
+import { SpreadsheetFindBar } from './spreadsheet-find-bar';
 import { SpreadsheetSheetBar } from './spreadsheet-sheet-bar';
 import {
   SpreadsheetWorkbookPanel,
   type SpreadsheetWorkbookPanelView,
 } from './spreadsheet-workbook-panel';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import {
   stepOfficeZoom,
   useOfficeEditorWheelZoom,
 } from './use-office-editor-wheel-zoom';
-import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
@@ -462,6 +463,50 @@ export function SpreadsheetEditor({
   const selectionSummary = multipleCellsSelected
     ? spreadsheetSelectionSummary(toolbarSheet, toolbarSelection)
     : null;
+  const currentClipboardSelection = () => {
+    if (previewRef.current) return null;
+    const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
+    const sheet = contentRef.current.sheets.find(
+      (candidate) => candidate.id === sheetId,
+    );
+    const selection =
+      selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
+    if (!selection) return null;
+    const range = spreadsheetSingleRange(selection);
+    const maximumCells =
+      (range.row[1] - range.row[0] + 1) *
+      (range.column[1] - range.column[0] + 1);
+    return spreadsheetAgentSelection(
+      contentRef.current,
+      sheetId,
+      selection,
+      maximumCells,
+    );
+  };
+  const runSpreadsheetClipboardCopy = (cut: boolean): boolean => {
+    const selection = currentClipboardSelection();
+    const commands = spreadsheetCommandsRef.current;
+    if (!selection || (cut && !commands)) return false;
+    void copySpreadsheetSelection(
+      browserSpreadsheetClipboard,
+      selection.clipboard,
+      cut,
+    ).then((copied) => {
+      if (copied && cut && !commands?.clearSelectedCells()) {
+        showToast('选区已复制，但无法清除原内容。', 'error');
+      }
+    });
+    return true;
+  };
+  const runSpreadsheetClipboardPaste = (): boolean => {
+    const commands = spreadsheetCommandsRef.current;
+    if (!commands) return false;
+    void pasteSpreadsheetSelection(
+      browserSpreadsheetClipboard,
+      commands.pasteCells,
+    );
+    return true;
+  };
   const activateReadOnlySpreadsheetSheet = useCallback((sheetId: string) => {
     if (!previewRef.current) return false;
     const sheet = contentRef.current.sheets.find(
@@ -483,6 +528,15 @@ export function SpreadsheetEditor({
     {
       activeSheetId,
       calculation,
+      clipboard: {
+        canCopySelection: !preview && Boolean(toolbarSheet),
+        canCutSelection: !preview && Boolean(toolbarSheet && workbookInstance),
+        canPasteSelection:
+          !preview && Boolean(toolbarSheet && workbookInstance),
+        copySelection: () => runSpreadsheetClipboardCopy(false),
+        cutSelection: () => runSpreadsheetClipboardCopy(true),
+        pasteSelection: runSpreadsheetClipboardPaste,
+      },
       content: contentRef.current,
       editable: !preview,
       fallbackRange: selectedRange,
@@ -591,26 +645,6 @@ export function SpreadsheetEditor({
       );
     }
   };
-  const currentClipboardSelection = () => {
-    if (previewRef.current) return null;
-    const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
-    const sheet = contentRef.current.sheets.find(
-      (candidate) => candidate.id === sheetId,
-    );
-    const selection =
-      selectionState?.selection ?? sheet?.luckysheet_select_save?.at(-1);
-    if (!selection) return null;
-    const range = spreadsheetSingleRange(selection);
-    const maximumCells =
-      (range.row[1] - range.row[0] + 1) *
-      (range.column[1] - range.column[0] + 1);
-    return spreadsheetAgentSelection(
-      contentRef.current,
-      sheetId,
-      selection,
-      maximumCells,
-    );
-  };
   const handleSpreadsheetKeyDownCapture = (
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
@@ -626,14 +660,6 @@ export function SpreadsheetEditor({
       return;
     }
     handleSpreadsheetEditingEscape(event);
-    const handled = runSpreadsheetClipboardShortcut(event.nativeEvent, {
-      clipboard: browserSpreadsheetClipboard,
-      clearSelectedCells: spreadsheetCommands.clearSelectedCells,
-      pasteCells: spreadsheetCommands.pasteCells,
-      readSelectionText: () => currentClipboardSelection()?.clipboard ?? null,
-      restoreFocus: restoreSpreadsheetGridFocus,
-    });
-    if (handled) event.stopPropagation();
   };
   const handleSpreadsheetCopy = (
     event: ReactClipboardEvent<HTMLElement>,
@@ -1106,6 +1132,9 @@ export function spreadsheetCommandsWithGridFocus(
 
   return {
     ...commands,
+    copySelection: afterSuccessfulCommand(commands.copySelection),
+    cutSelection: afterSuccessfulCommand(commands.cutSelection),
+    pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
     setGridLines: afterSuccessfulCommand(commands.setGridLines),
