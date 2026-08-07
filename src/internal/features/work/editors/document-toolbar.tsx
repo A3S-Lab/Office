@@ -332,6 +332,7 @@ export function DocumentToolbar({
             setActiveTab(tab);
           }
         }}
+        adaptive
         collapsible
         fileActions={fileActions}
         quickAccessActions={[
@@ -373,7 +374,7 @@ export function DocumentToolbar({
           ),
           insert: (
             <>
-              <RibbonGroup label="插图与表格">
+              <RibbonGroup label="插图与表格" priority="high">
                 <ToolbarButton
                   label="插入图片"
                   displayLabel
@@ -416,7 +417,7 @@ export function DocumentToolbar({
                   <PanelBottomOpen size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="链接">
+              <RibbonGroup label="链接" priority="low">
                 <ToolbarButton
                   label={editor.isActive('link') ? '取消链接' : '添加链接'}
                   shortcut="Cmd/Ctrl+K"
@@ -428,18 +429,18 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="页码和日期">
+              <RibbonGroup label="页码和日期" priority="low">
                 <DocumentFieldSelect onInsertField={onInsertField} />
               </RibbonGroup>
             </>
           ),
           page: (
             <>
-              <RibbonGroup label="段落">
+              <RibbonGroup label="段落" priority="high">
                 <DocumentParagraphSpacingPopover editor={editor} />
                 <DocumentPaginationPopover editor={editor} />
               </RibbonGroup>
-              <RibbonGroup label="页面设置">
+              <RibbonGroup label="页面设置" priority="high">
                 <ToolbarButton
                   label="页面设置"
                   displayLabel
@@ -457,7 +458,7 @@ export function DocumentToolbar({
                   <Hash size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="页面背景">
+              <RibbonGroup label="页面背景" priority="low">
                 <OfficeColorPicker
                   ariaLabel="页面颜色"
                   className="work-document-page-color-picker"
@@ -495,7 +496,7 @@ export function DocumentToolbar({
           ),
           references: (
             <>
-              <RibbonGroup label="脚注与尾注">
+              <RibbonGroup label="脚注与尾注" priority="high">
                 <ToolbarButton
                   label="插入脚注"
                   displayLabel
@@ -534,7 +535,7 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="文献">
+              <RibbonGroup label="文献" priority="high">
                 <ToolbarButton
                   label={`文献库${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
                   displayLabel
@@ -544,7 +545,7 @@ export function DocumentToolbar({
                   <BookOpen size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="更新">
+              <RibbonGroup label="更新" priority="low">
                 <ToolbarButton
                   label="更新页码和日期"
                   displayLabel
@@ -563,7 +564,7 @@ export function DocumentToolbar({
           ),
           review: (
             <>
-              <RibbonGroup label="校对">
+              <RibbonGroup label="校对" priority="high">
                 <ToolbarButton
                   label="拼写检查"
                   displayLabel
@@ -573,7 +574,7 @@ export function DocumentToolbar({
                   <CheckCheck size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="批注">
+              <RibbonGroup label="批注" priority="high">
                 <ToolbarButton
                   label="添加批注"
                   displayLabel
@@ -592,7 +593,7 @@ export function DocumentToolbar({
                   <MessagesSquare size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="修订">
+              <RibbonGroup label="修订" priority="high">
                 <ToolbarButton
                   label="修订模式"
                   displayLabel
@@ -614,7 +615,7 @@ export function DocumentToolbar({
           ),
           view: (
             <>
-              <RibbonGroup label="显示">
+              <RibbonGroup label="显示" priority="high">
                 <ToolbarButton
                   label="标尺"
                   displayLabel
@@ -638,7 +639,7 @@ export function DocumentToolbar({
                   <PanelLeftOpen size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="文档视图">
+              <RibbonGroup label="文档视图" priority="high">
                 <ToolbarButton
                   label="页面视图"
                   displayLabel
@@ -656,7 +657,7 @@ export function DocumentToolbar({
                   <Globe2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label={`缩放 ${zoom}%`}>
+              <RibbonGroup label={`缩放 ${zoom}%`} priority="low">
                 <ToolbarButton
                   label="缩小文档"
                   disabled={zoom <= MIN_DOCUMENT_ZOOM}

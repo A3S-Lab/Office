@@ -34,9 +34,11 @@ model:
    selection before the next keystroke.
    Writer keeps tab, group, label, and shortcut metadata in one internal
    command catalog. Undo and redo live in a keyboard-described quick-access
-   toolbar. Its ribbon can remain collapsed; activating a tab temporarily
-   overlays that tab's commands without moving the document, and an outside
-   pointer action returns to the compact row.
+   toolbar. The ribbon measures its own toolbar instead of the browser viewport
+   and compacts low-priority, then normal-priority groups before exposing group
+   paging. It can remain collapsed; activating a tab temporarily overlays that
+   tab's commands without moving the document, and an outside pointer action
+   returns to the compact row.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

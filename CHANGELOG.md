@@ -6,7 +6,8 @@ All notable changes to A3S Office will be documented in this file.
 
 - Added a Writer command catalog for stable ribbon grouping and WPS-compatible
   shortcut metadata, moved undo and redo into a compact quick-access toolbar,
-  and added persistent plus temporary ribbon collapse behavior.
+  added persistent plus temporary ribbon collapse behavior, and made lower
+  priority groups compact before the ribbon falls back to horizontal paging.
 - Aligned Writer superscript and subscript with the WPS `Ctrl+Shift+=` and
   `Ctrl+=` shortcuts and added deterministic desktop browser coverage for the
   expanded, collapsed, and temporary ribbon states.

@@ -1,5 +1,18 @@
 export const WORK_OFFICE_RIBBON_SCROLL_INSET = 34;
 
+export type WorkOfficeRibbonDensity =
+  | 'comfortable'
+  | 'compact-low'
+  | 'compact-normal';
+
+export function calculateRibbonDensity(
+  clientWidth: number,
+): WorkOfficeRibbonDensity {
+  if (clientWidth <= 0 || clientWidth >= 1120) return 'comfortable';
+  if (clientWidth >= 760) return 'compact-low';
+  return 'compact-normal';
+}
+
 export interface WorkOfficeRibbonItemGeometry {
   left: number;
   right: number;

@@ -6,7 +6,10 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { WorkOfficeRibbon } from '../src/internal/features/work/editors/work-office-chrome';
+import {
+  WorkOfficeRibbon,
+  WorkOfficeRibbonGroup,
+} from '../src/internal/features/work/editors/work-office-chrome';
 
 test('supports complete keyboard navigation in the shared file menu', async () => {
   render(
@@ -185,6 +188,61 @@ test('reserves both ribbon navigation edges while tools overflow', async () => {
     expect(previous).toBeEnabled();
     expect(next).toBeDisabled();
   });
+});
+
+test('adapts lower-priority groups before using ribbon overflow', async () => {
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Adaptive ribbon"
+      tabs={[{ id: 'home', label: 'Home' }]}
+      defaultTab="home"
+      adaptive
+      panels={{
+        home: (
+          <>
+            <WorkOfficeRibbonGroup label="Primary" priority="high">
+              <button type="button">Primary command</button>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="Secondary" priority="low">
+              <button type="button">Secondary command</button>
+            </WorkOfficeRibbonGroup>
+          </>
+        ),
+      }}
+    />,
+  );
+
+  const toolbar = screen.getByRole('toolbar', { name: 'Home工具栏' });
+  let width = 1000;
+  Object.defineProperty(toolbar, 'clientWidth', {
+    configurable: true,
+    get: () => width,
+  });
+
+  fireEvent(window, new Event('resize'));
+  await waitFor(() =>
+    expect(toolbar).toHaveAttribute('data-density', 'compact-low'),
+  );
+  expect(screen.getByRole('region', { name: 'Primary' })).toHaveAttribute(
+    'data-priority',
+    'high',
+  );
+  expect(screen.getByRole('region', { name: 'Secondary' })).toHaveAttribute(
+    'data-priority',
+    'low',
+  );
+
+  width = 700;
+  fireEvent(window, new Event('resize'));
+  await waitFor(() =>
+    expect(toolbar).toHaveAttribute('data-density', 'compact-normal'),
+  );
+
+  width = 1280;
+  fireEvent(window, new Event('resize'));
+  await waitFor(() =>
+    expect(toolbar).toHaveAttribute('data-density', 'comfortable'),
+  );
 });
 
 test('supports quick access commands and a temporarily expanded collapsed ribbon', async () => {

@@ -20,9 +20,10 @@ bun run test:e2e
 ```
 
 The suites cover focused Word page-color, a desktop Writer quick-access and
-collapsible-ribbon workflow covering expanded, persistent collapsed, and
-temporary tab states without document layout movement, plus accessibility,
-screenshot, console, and page-error evidence; the complete phone Page Setup flow
+adaptive, collapsible-ribbon workflow covering comfortable, priority-compacted,
+persistent collapsed, and temporary tab states without document layout
+movement, plus accessibility, screenshot, console, and page-error evidence;
+the complete phone Page Setup flow
 with grouped header/footer formatting controls, phone paragraph-spacing and
 pagination popovers with committed document semantics and exact invoker-focus
 restoration, a phone list-gallery workflow covering bounded ribbon paging,

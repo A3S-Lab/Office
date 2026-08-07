@@ -112,6 +112,28 @@
   width: 112px;
 }
 
+.work-document-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"]
+  .work-document-style-gallery,
+.work-document-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"])
+  .work-document-style-gallery {
+  display: none;
+}
+
+.work-document-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"]
+  .work-document-style-select,
+.work-document-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"])
+  .work-document-style-select {
+  display: block;
+}
+
 @media (max-width: 900px) {
   .work-document-style-gallery {
     display: none;

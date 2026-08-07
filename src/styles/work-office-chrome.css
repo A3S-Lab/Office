@@ -491,6 +491,53 @@
   white-space: nowrap;
 }
 
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"],
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"]) {
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"]
+  > div,
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"])
+  > div {
+  gap: 0;
+}
+
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"]
+  button.with-label,
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"])
+  button.with-label {
+  width: 38px;
+  min-width: 38px;
+  padding-inline: 4px;
+}
+
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-low"]
+  .work-office-ribbon-group[data-priority="low"]
+  button.with-label
+  > span,
+.work-office-ribbon
+  .work-office-toolbar[data-density="compact-normal"]
+  .work-office-ribbon-group:not([data-priority="high"])
+  button.with-label
+  > span {
+  display: none;
+}
+
 .work-office-ribbon .work-office-toolbar button.with-label {
   width: auto;
   min-width: 56px;

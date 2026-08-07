@@ -1,5 +1,6 @@
 import { expect, test } from '@rstest/core';
 import {
+  calculateRibbonDensity,
   calculateRibbonOverflow,
   calculateRibbonScrollTarget,
 } from '../src/internal/features/work/editors/work-office-ribbon-overflow';
@@ -11,6 +12,14 @@ const compactSpreadsheetGroups = [
   { left: 688, right: 886 },
   { left: 886, right: 958 },
 ];
+
+test('adapts ribbon group density to the measured toolbar width', () => {
+  expect(calculateRibbonDensity(0)).toBe('comfortable');
+  expect(calculateRibbonDensity(1120)).toBe('comfortable');
+  expect(calculateRibbonDensity(1119)).toBe('compact-low');
+  expect(calculateRibbonDensity(760)).toBe('compact-low');
+  expect(calculateRibbonDensity(759)).toBe('compact-normal');
+});
 
 test('pages compact ribbons to complete groups with room for navigation', () => {
   expect(

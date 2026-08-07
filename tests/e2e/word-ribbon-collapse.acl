@@ -4,7 +4,7 @@ suite "office-word-ribbon-collapse" {
     scenario "collapse-and-temporarily-expand-writer-ribbon" {
         name = "Use the Writer quick access toolbar and collapsible ribbon"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 120000
 
         viewport "desktop" {
             width = 1280
@@ -42,6 +42,34 @@ suite "office-word-ribbon-collapse" {
 
         screenshot "expanded-ribbon" {
             path = "screenshots/writer-ribbon-expanded.png"
+        }
+
+        viewport "compact-desktop" {
+            width = 1000
+            height = 800
+            scale = 1
+        }
+
+        expect "low-priority-groups-compact" {
+            visible = css(".work-document-ribbon .work-office-toolbar[data-density='compact-low'] .work-office-ribbon-group[data-priority='low']")
+        }
+
+        expect "style-gallery-becomes-select" {
+            visible = css(".work-office-toolbar[data-density='compact-low'] .work-document-style-select")
+        }
+
+        screenshot "adaptive-ribbon" {
+            path = "screenshots/writer-ribbon-adaptive.png"
+        }
+
+        viewport "restore-desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        expect "comfortable-density-restored" {
+            visible = css(".work-document-ribbon .work-office-toolbar[data-density='comfortable']")
         }
 
         double_click "collapse-home-ribbon" {

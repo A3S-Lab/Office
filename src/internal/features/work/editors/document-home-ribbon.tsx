@@ -87,7 +87,7 @@ export function DocumentHomeRibbon({
 
   return (
     <>
-      <RibbonGroup label="字体">
+      <RibbonGroup label="字体" priority="high">
         <div className="work-document-font-tools">
           <div className="work-document-font-selects">
             <OfficeSelect
@@ -214,7 +214,7 @@ export function DocumentHomeRibbon({
           </div>
         </div>
       </RibbonGroup>
-      <RibbonGroup label="段落">
+      <RibbonGroup label="段落" priority="high">
         <div className="work-document-paragraph-tools">
           <div className="work-document-paragraph-actions">
             <DocumentListGallery editor={editor} />
@@ -302,10 +302,10 @@ export function DocumentHomeRibbon({
           </div>
         </div>
       </RibbonGroup>
-      <RibbonGroup label="样式">
+      <RibbonGroup label="样式" priority="low">
         <DocumentStyleGallery editor={editor} />
       </RibbonGroup>
-      <RibbonGroup label="编辑">
+      <RibbonGroup label="编辑" priority="low">
         <ToolbarButton
           label="查找"
           shortcut="Cmd/Ctrl+F"

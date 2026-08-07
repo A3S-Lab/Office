@@ -22,9 +22,11 @@ import { Popover, Tabs } from '../../../design-system/primitives';
 import { OfficeSlider } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
+  calculateRibbonDensity,
   calculateRibbonOverflow,
   calculateRibbonScrollTarget,
   type WorkOfficeRibbonItemGeometry,
+  type WorkOfficeRibbonDensity,
 } from './work-office-ribbon-overflow';
 
 export interface WorkOfficeRibbonTab<T extends string> {
@@ -62,6 +64,7 @@ export function WorkOfficeRibbon<T extends string>({
   panels,
   fileActions,
   quickAccessActions,
+  adaptive = false,
   collapsible = false,
   collapsed: controlledCollapsed,
   defaultCollapsed = false,
@@ -77,6 +80,7 @@ export function WorkOfficeRibbon<T extends string>({
   panels: Record<T, ReactNode>;
   fileActions?: readonly WorkOfficeFileAction[];
   quickAccessActions?: readonly WorkOfficeQuickAccessAction[];
+  adaptive?: boolean;
   collapsible?: boolean;
   collapsed?: boolean;
   defaultCollapsed?: boolean;
@@ -88,6 +92,8 @@ export function WorkOfficeRibbon<T extends string>({
   const [internalTab, setInternalTab] = useState(defaultTab);
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const [temporarilyExpanded, setTemporarilyExpanded] = useState(false);
+  const [ribbonDensity, setRibbonDensity] =
+    useState<WorkOfficeRibbonDensity>('comfortable');
   const [ribbonOverflow, setRibbonOverflow] = useState({
     backward: false,
     forward: false,
@@ -111,6 +117,12 @@ export function WorkOfficeRibbon<T extends string>({
   const updateRibbonOverflow = useCallback(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
+    const nextDensity = adaptive
+      ? calculateRibbonDensity(toolbar.clientWidth)
+      : 'comfortable';
+    setRibbonDensity((current) =>
+      current === nextDensity ? current : nextDensity,
+    );
     const { backward, forward } = calculateRibbonOverflow({
       clientWidth: toolbar.clientWidth,
       items: ribbonItemGeometry(toolbar),
@@ -124,7 +136,7 @@ export function WorkOfficeRibbon<T extends string>({
         ? current
         : { backward, forward },
     );
-  }, []);
+  }, [adaptive]);
   const scrollRibbon = (direction: -1 | 1) => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
@@ -390,6 +402,7 @@ export function WorkOfficeRibbon<T extends string>({
             <div
               ref={toolbarRef}
               className={`work-office-toolbar ${toolbarClassName}`.trim()}
+              data-density={ribbonDensity}
               data-has-overflow={hasRibbonOverflow ? 'true' : undefined}
               role="toolbar"
               aria-label={`${selectedLabel}工具栏`}
@@ -609,13 +622,19 @@ function WorkOfficeFileMenu({
 
 export function WorkOfficeRibbonGroup({
   label,
+  priority = 'normal',
   children,
 }: {
   label: string;
+  priority?: 'high' | 'normal' | 'low';
   children: ReactNode;
 }) {
   return (
-    <section className="work-office-ribbon-group" aria-label={label}>
+    <section
+      className="work-office-ribbon-group"
+      aria-label={label}
+      data-priority={priority}
+    >
       <div>{children}</div>
       <span aria-hidden="true">{label}</span>
     </section>

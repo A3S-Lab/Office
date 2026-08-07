@@ -199,10 +199,12 @@ styles. Writer now has one command catalog for stable WPS-oriented tab and
 group placement plus shortcut metadata. Undo and redo use the quick-access
 row, while double-clicking the active tab persistently collapses the ribbon;
 tab activation temporarily overlays commands and outside pointer input closes
-that overlay without moving document layout. A deterministic desktop workflow
-checks expanded, collapsed, and temporary states, accessibility output, and
-empty console and page-error diagnostics. Compact ribbon overflow now reserves
-both navigation edges so tool
+that overlay without moving document layout. The toolbar's measured width
+compacts low-priority groups first, normal-priority groups second, and retains
+high-priority groups before horizontal paging. A deterministic desktop workflow
+checks comfortable, adaptive, collapsed, and temporary states, accessibility
+output, and empty console and page-error diagnostics. Compact ribbon overflow
+now reserves both navigation edges so tool
 width does not change after paging. Phone list galleries stay within the
 viewport and provide 44 px clear, restart, start-value, stepper, and commit
 controls. Closing a list command restores the TipTap selection as well as DOM
