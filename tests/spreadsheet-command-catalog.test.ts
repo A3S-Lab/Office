@@ -41,6 +41,11 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['Mod-v'],
     label: 'Cmd/Ctrl+V',
   });
+  expect(spreadsheetCommandCatalog.formatPainter.location).toEqual({
+    area: 'ribbon',
+    group: 'clipboard',
+    tab: 'home',
+  });
   expect(spreadsheetCommandCatalog.conditionalFormatting.location).toEqual({
     area: 'ribbon',
     group: 'styles',

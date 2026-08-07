@@ -490,6 +490,16 @@ menus. Buttons and `Cmd/Ctrl+V`, `Cmd/Ctrl+X`, and `Cmd/Ctrl+C` all cross the
 same typed command port, retain the permission-resilient browser/local
 clipboard fallback, and restore grid focus after a successful command. Desktop
 and compact browser regression executes the complete copy-paste-cut path.
+The third slice adds Format Painter beside the clipboard commands. A single
+click captures the selected native cell-style pattern for one target, while a
+double click keeps the session locked across repeated and cross-sheet targets.
+Single-cell targets expand to the source dimensions and larger selections tile
+the pattern. Values, formulas, comments, links, and merges stay untouched;
+another click or Escape cancels the mode. A 50,000-cell source and target guard,
+duplicate-target suppression, one controlled batch per application, accessible
+pressed/live state, and copy cursor keep the Web interaction bounded and
+predictable. Focused model, hook, controller, and component tests plus desktop
+and compact browser regression cover the complete one-shot and locked paths.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.

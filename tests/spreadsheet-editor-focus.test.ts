@@ -167,6 +167,9 @@ test('returns grid focus after successful ribbon commands only', () => {
       return result;
     };
   const commands = {
+    activateFormatPainter: record('activateFormatPainter'),
+    applyFormatPainter: record('applyFormatPainter'),
+    cancelFormatPainter: record('cancelFormatPainter'),
     copySelection: record('copySelection'),
     cutSelection: record('cutSelection', false),
     pasteSelection: record('pasteSelection'),
@@ -184,6 +187,8 @@ test('returns grid focus after successful ribbon commands only', () => {
 
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
+  expect(ribbon.activateFormatPainter('once')).toBe(true);
+  expect(ribbon.cancelFormatPainter()).toBe(true);
   expect(ribbon.copySelection()).toBe(true);
   expect(ribbon.cutSelection()).toBe(false);
   expect(ribbon.pasteSelection()).toBe(true);
@@ -193,13 +198,15 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(calls).toEqual([
     'setCellFormat:bl,1',
     'setGridLines:false',
+    'activateFormatPainter:once',
+    'cancelFormatPainter:',
     'copySelection:',
     'cutSelection:',
     'pasteSelection:',
     'undo:',
     'setZoom:125',
   ]);
-  expect(focused).toEqual(['grid', 'grid', 'grid', 'grid']);
+  expect(focused).toEqual(['grid', 'grid', 'grid', 'grid', 'grid', 'grid']);
 });
 
 function waitForAnimationFrames(count: number): Promise<void> {

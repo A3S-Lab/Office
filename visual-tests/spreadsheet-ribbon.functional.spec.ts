@@ -108,6 +108,74 @@ test('Spreadsheet runs clipboard commands from the WPS Home group', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet applies one-shot and locked WPS format-painter patterns', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const editor = page.locator('.work-spreadsheet-editor');
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const bold = ribbon.getByRole('button', { name: '加粗' });
+  const formatPainter = ribbon.getByRole('button', { name: '格式刷' });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await expect(nameBox).toHaveText('A1');
+  await page.keyboard.type('Source');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await bold.click();
+  await expect(grid).toBeFocused();
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B1');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await bold.click();
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Shift+ArrowRight');
+  await formatPainter.click();
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+  await expect(editor).toHaveAttribute('data-format-painter', 'once');
+  await expect(grid).toHaveCSS('cursor', 'copy');
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('C1');
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'false');
+  await expect(editor).not.toHaveAttribute('data-format-painter');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('D1');
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+
+  await page.keyboard.press('ArrowLeft');
+  await formatPainter.dblclick();
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+  await expect(formatPainter).toContainText('连续');
+  await expect(editor).toHaveAttribute('data-format-painter', 'locked');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('C2');
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('C3');
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.press('Escape');
+  await expect(formatPainter).toHaveAttribute('aria-pressed', 'false');
+  await expect(editor).not.toHaveAttribute('data-format-painter');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 async function openSpreadsheetFixture(page: Page): Promise<void> {
   await page.goto('/');
   await page

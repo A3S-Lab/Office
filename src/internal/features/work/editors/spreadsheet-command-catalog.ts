@@ -83,6 +83,11 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-c'],
     },
   },
+  formatPainter: {
+    id: 'clipboard.formatPainter',
+    label: '格式刷',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+  },
   bold: {
     id: 'font.bold',
     label: '加粗',

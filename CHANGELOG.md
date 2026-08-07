@@ -15,6 +15,13 @@ All notable changes to A3S Office will be documented in this file.
   clipboard group. Ribbon clicks and WPS `Cmd/Ctrl+V`, `Cmd/Ctrl+X`, and
   `Cmd/Ctrl+C` shortcuts now share one typed command port, permission-resilient
   browser/local clipboard fallback, and grid-focus restoration.
+- Added a WPS-style Spreadsheet Format Painter to the Home clipboard group.
+  Single-click one-shot and double-click locked sessions copy native cell-style
+  patterns across ranges and sheets without changing values, formulas,
+  comments, links, or merges; another click or Escape exits cleanly.
+- Added bounded format capture and target guards, duplicate-target suppression,
+  one controlled workbook batch per application, accessible pressed/live
+  state, and desktop plus compact Web regression coverage.
 
 ## 0.3.0 - 2026-08-07
 

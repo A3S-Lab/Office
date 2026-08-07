@@ -35,6 +35,12 @@
   font-size: 12px;
 }
 
+.work-spreadsheet-editor[data-format-painter]
+  .work-spreadsheet-canvas
+  :is(.fortune-container, .fortune-sheet-overlay, canvas) {
+  cursor: copy !important;
+}
+
 .work-spreadsheet-find-bar {
   position: absolute;
   z-index: 30;

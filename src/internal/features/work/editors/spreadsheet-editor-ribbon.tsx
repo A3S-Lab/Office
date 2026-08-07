@@ -17,6 +17,7 @@ import {
   Grid3X3,
   Italic,
   Merge,
+  Paintbrush,
   Palette,
   Percent,
   Printer,
@@ -53,6 +54,7 @@ import {
   spreadsheetFontFamilyOptions,
   spreadsheetFontSizeOptions,
 } from './spreadsheet-editor-support';
+import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   adjustSpreadsheetNumberFormat,
   type SpreadsheetNumberFormatPreset,
@@ -89,6 +91,7 @@ export function SpreadsheetEditorRibbon({
   content,
   fileActions,
   findOpen,
+  formatPainterMode = null,
   gridLinesVisible,
   multipleCellsSelected,
   panelId,
@@ -104,6 +107,7 @@ export function SpreadsheetEditorRibbon({
   content: WorkSpreadsheetContent;
   fileActions?: readonly WorkOfficeFileAction[];
   findOpen: boolean;
+  formatPainterMode?: SpreadsheetFormatPainterMode | null;
   gridLinesVisible: boolean;
   multipleCellsSelected: boolean;
   panelId: string;
@@ -206,6 +210,28 @@ export function SpreadsheetEditorRibbon({
                 onClick={commands.copySelection}
               >
                 <Copy size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.formatPainter.label}
+                title={spreadsheetFormatPainterTitle(formatPainterMode)}
+                active={formatPainterMode !== null}
+                badge={formatPainterMode === 'locked' ? '连续' : undefined}
+                disabled={
+                  formatPainterMode === null
+                    ? !can.activateFormatPainter('once')
+                    : !can.cancelFormatPainter()
+                }
+                onClick={(event) => {
+                  if (event.detail > 1) return;
+                  if (formatPainterMode === null) {
+                    commands.activateFormatPainter('once');
+                  } else {
+                    commands.cancelFormatPainter();
+                  }
+                }}
+                onDoubleClick={() => commands.activateFormatPainter('locked')}
+              >
+                <Paintbrush size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="字体" priority="high">
@@ -656,6 +682,18 @@ export function SpreadsheetEditorRibbon({
       }}
     />
   );
+}
+
+function spreadsheetFormatPainterTitle(
+  mode: SpreadsheetFormatPainterMode | null,
+): string {
+  if (mode === 'locked') {
+    return '格式刷已锁定（再次点击或按 Escape 退出）';
+  }
+  if (mode === 'once') {
+    return '格式刷已开启（选择目标区域，按 Escape 退出）';
+  }
+  return '格式刷（单击应用一次，双击锁定连续应用）';
 }
 
 function SpreadsheetRibbonTool({

@@ -32,9 +32,15 @@ access, places Conditional Formatting under Home and Styles, exposes real sort
 commands under Data, and makes workbook recalculation discoverable and
 executable through F9. The shared ribbon must remain adaptive, persistently
 collapsible, and temporarily expandable without moving the workbook surface.
-The next milestone makes the existing permission-resilient Paste, Cut, and
+The second milestone makes the existing permission-resilient Paste, Cut, and
 Copy behavior discoverable in the Home clipboard group and routes both ribbon
 clicks and WPS shortcuts through the same typed command port.
+The third milestone adds Format Painter beside those clipboard commands. A
+single click applies the captured native cell-format pattern once, a double
+click locks it across repeated or cross-sheet targets, and another click or
+Escape exits without copying values, formulas, comments, links, or merges.
+Large source and target ranges fail with recoverable feedback, while desktop
+and compact Web retain the same pressed state, copy cursor, and grid focus.
 
 ## Product Rules
 

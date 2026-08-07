@@ -352,8 +352,10 @@ interaction model.
   a priority-aware adaptive and collapsible ribbon with temporary tab
   expansion, an executable Home clipboard group whose Paste, Cut, and Copy
   commands share the permission-resilient local fallback with their WPS
-  shortcuts, Conditional Formatting under Home and Styles, executable sorting
-  under Data, and visible F9 workbook recalculation,
+  shortcuts, a WPS-style Format Painter with single-use and double-click locked
+  sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
+  style-only writes, Conditional Formatting under Home and Styles, executable
+  sorting under Data, and visible F9 workbook recalculation,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

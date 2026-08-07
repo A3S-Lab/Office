@@ -109,6 +109,14 @@ test('routes the WPS Home clipboard group through typed commands', () => {
             actions.push('paste');
             return true;
           },
+          activateFormatPainter: (mode) => {
+            actions.push(`format-painter:${mode}`);
+            return true;
+          },
+          cancelFormatPainter: () => {
+            actions.push('format-painter:cancel');
+            return true;
+          },
         },
       )}
       content={{ type: 'spreadsheet', sheets: [] }}
@@ -127,14 +135,70 @@ test('routes the WPS Home clipboard group through typed commands', () => {
   const paste = within(clipboard).getByRole('button', { name: '粘贴' });
   const cut = within(clipboard).getByRole('button', { name: '剪切' });
   const copy = within(clipboard).getByRole('button', { name: '复制' });
+  const formatPainter = within(clipboard).getByRole('button', {
+    name: '格式刷',
+  });
   expect(paste).toHaveAttribute('aria-keyshortcuts', 'Control+V Meta+V');
   expect(cut).toHaveAttribute('aria-keyshortcuts', 'Control+X Meta+X');
   expect(copy).toHaveAttribute('aria-keyshortcuts', 'Control+C Meta+C');
+  expect(formatPainter).toHaveAttribute('aria-pressed', 'false');
+  expect(formatPainter).toHaveAttribute(
+    'title',
+    '格式刷（单击应用一次，双击锁定连续应用）',
+  );
 
   fireEvent.click(paste);
   fireEvent.click(cut);
   fireEvent.click(copy);
-  expect(actions).toEqual(['paste', 'cut', 'copy']);
+  fireEvent.click(formatPainter);
+  fireEvent.doubleClick(formatPainter);
+  expect(actions).toEqual([
+    'paste',
+    'cut',
+    'copy',
+    'format-painter:once',
+    'format-painter:locked',
+  ]);
+});
+
+test('exposes locked format-painter state and exits on another click', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          cancelFormatPainter: () => {
+            actions.push('cancel');
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      formatPainterMode="locked"
+      gridLinesVisible
+      findOpen={false}
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const formatPainter = screen.getByRole('button', { name: '格式刷' });
+  expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+  expect(formatPainter).toHaveAttribute(
+    'title',
+    '格式刷已锁定（再次点击或按 Escape 退出）',
+  );
+  expect(formatPainter).toHaveTextContent('连续');
+  fireEvent.click(formatPainter);
+  expect(actions).toEqual(['cancel']);
 });
 
 test('routes font, vertical alignment, and wrapping through cell formats', () => {
@@ -304,6 +368,9 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     activateSheet: () => true,
     addSheet: () => true,
     clearSelectedCells: () => true,
+    activateFormatPainter: () => true,
+    applyFormatPainter: () => true,
+    cancelFormatPainter: () => true,
     copySelection: () => true,
     cutSelection: () => true,
     deleteSelectedStructure: () => true,
@@ -339,13 +406,20 @@ function spreadsheetCommands(
   clipboard: Partial<
     Pick<
       SpreadsheetEditorCommands,
-      'copySelection' | 'cutSelection' | 'pasteSelection'
+      | 'activateFormatPainter'
+      | 'cancelFormatPainter'
+      | 'copySelection'
+      | 'cutSelection'
+      | 'pasteSelection'
     >
   > = {},
 ): SpreadsheetEditorCommands {
   return {
     activateSheet: () => true,
+    activateFormatPainter: clipboard.activateFormatPainter ?? (() => true),
     addSheet: () => true,
+    applyFormatPainter: () => true,
+    cancelFormatPainter: clipboard.cancelFormatPainter ?? (() => true),
     clearSelectedCells: () => true,
     copySelection: clipboard.copySelection ?? (() => true),
     cutSelection: clipboard.cutSelection ?? (() => true),

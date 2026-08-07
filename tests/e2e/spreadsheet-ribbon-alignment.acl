@@ -56,6 +56,50 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='复制'][aria-keyshortcuts='Control+C Meta+C']")
         }
 
+        expect "format-painter-visible" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-panel:not([hidden]) button[aria-label='格式刷'][aria-pressed='false']")
+        }
+
+        click "activate-one-shot-format-painter" {
+            target = role("button", "格式刷")
+        }
+
+        expect "one-shot-format-painter-active" {
+            visible = css(".work-spreadsheet-editor[data-format-painter='once'] button[aria-label='格式刷'][aria-pressed='true']")
+        }
+
+        press "apply-one-shot-format-painter" {
+            key = "ArrowRight"
+        }
+
+        expect "one-shot-format-painter-complete" {
+            visible = css(".work-spreadsheet-editor:not([data-format-painter]) button[aria-label='格式刷'][aria-pressed='false']")
+        }
+
+        double_click "lock-format-painter" {
+            target = css("button[aria-label='格式刷']")
+        }
+
+        expect "locked-format-painter-active" {
+            visible = css(".work-spreadsheet-editor[data-format-painter='locked'] button[aria-label='格式刷'][aria-pressed='true']")
+        }
+
+        press "apply-locked-format-painter" {
+            key = "ArrowDown"
+        }
+
+        expect "locked-format-painter-remains-active" {
+            visible = css(".work-spreadsheet-editor[data-format-painter='locked'] button[aria-label='格式刷'][aria-pressed='true']")
+        }
+
+        press "exit-format-painter" {
+            key = "Escape"
+        }
+
+        expect "format-painter-exited" {
+            visible = css(".work-spreadsheet-editor:not([data-format-painter]) button[aria-label='格式刷'][aria-pressed='false']")
+        }
+
         expect "conditional-formatting-is-on-home" {
             visible = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='home'][aria-selected='true']")
         }

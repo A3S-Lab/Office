@@ -12,6 +12,7 @@ import {
   selectSpreadsheetFormulaBarContents,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   isSpreadsheetGridKeyboardTarget,
   moveSpreadsheetKeyboardSelection,
@@ -142,6 +143,15 @@ export interface SpreadsheetClipboardCommandPort {
   pasteSelection: () => boolean;
 }
 
+export interface SpreadsheetFormatPainterCommandPort {
+  active: boolean;
+  canActivate: boolean;
+  mode: SpreadsheetFormatPainterMode | null;
+  activate: (mode: SpreadsheetFormatPainterMode) => boolean;
+  applySelection: (target: SpreadsheetCommandSelection) => boolean;
+  cancel: () => boolean;
+}
+
 export interface SpreadsheetFormulaBarCommandPort {
   setValue: (value: unknown) => void;
 }
@@ -152,7 +162,10 @@ export interface SpreadsheetViewCommandPort {
 
 export interface SpreadsheetEditorCommands {
   activateSheet: (sheetId: string) => boolean;
+  activateFormatPainter: (mode: SpreadsheetFormatPainterMode) => boolean;
   addSheet: () => boolean;
+  applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
+  cancelFormatPainter: () => boolean;
   clearSelectedCells: () => boolean;
   copySelection: () => boolean;
   cutSelection: () => boolean;
@@ -204,6 +217,7 @@ export interface SpreadsheetCommandContext {
   editable: boolean;
   fallbackRange: SpreadsheetCommandRange;
   formulaBar: SpreadsheetFormulaBarCommandPort | null;
+  formatPainter: SpreadsheetFormatPainterCommandPort;
   history: SpreadsheetHistoryCommandPort | null;
   onChange: (content: WorkSpreadsheetContent) => void;
   selection: SpreadsheetCommandSelection | null;
@@ -235,6 +249,29 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             context.onChange(content);
             return true;
           },
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetFormatPainter',
+      addCommands: () => ({
+        activateFormatPainter: {
+          canExecute: ({ formatPainter }) => formatPainter.canActivate,
+          execute: ({ formatPainter }, mode) =>
+            formatPainter.canActivate && formatPainter.activate(mode),
+        },
+        applyFormatPainter: {
+          canExecute: ({ formatPainter }) => formatPainter.active,
+          execute: ({ formatPainter }, target) =>
+            formatPainter.active && formatPainter.applySelection(target),
+        },
+        cancelFormatPainter: {
+          canExecute: ({ formatPainter }) => formatPainter.active,
+          execute: ({ formatPainter }) =>
+            formatPainter.active && formatPainter.cancel(),
         },
       }),
     }),
@@ -492,6 +529,12 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             event,
             can.addSheet,
             commands.addSheet,
+          ),
+        Escape: ({ can, commands }, event) =>
+          runSpreadsheetFormatPainterEscape(
+            event,
+            can.cancelFormatPainter,
+            commands.cancelFormatPainter,
           ),
         F9: ({ can, commands }, event) =>
           runSpreadsheetRecalculationShortcut(
@@ -1295,6 +1338,22 @@ function runSpreadsheetClearShortcut(
     isOfficeShortcutBlocked(event.target) ||
     isSpreadsheetNativeTextUndoTarget(event.target) ||
     !isSpreadsheetGridKeyboardTarget(event.target) ||
+    !canExecute()
+  ) {
+    return false;
+  }
+  return execute();
+}
+
+function runSpreadsheetFormatPainterEscape(
+  event: KeyboardEvent,
+  canExecute: SpreadsheetEditorCanCommands['cancelFormatPainter'],
+  execute: SpreadsheetEditorCommands['cancelFormatPainter'],
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
     !canExecute()
   ) {
     return false;

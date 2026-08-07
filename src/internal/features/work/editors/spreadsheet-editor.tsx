@@ -91,6 +91,10 @@ import {
 } from './use-office-editor-wheel-zoom';
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
+import {
+  type SpreadsheetFormatPainterMode,
+  useSpreadsheetFormatPainter,
+} from './use-spreadsheet-format-painter';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
@@ -175,6 +179,9 @@ export function SpreadsheetEditor({
   const panelTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [selectionState, setSelectionState] =
     useState<SpreadsheetSelectionState | null>(null);
+  const formatPainterSelectionHandlerRef = useRef(
+    (_sheetId: string, _selection: Selection) => undefined,
+  );
   const [contextMenu, setContextMenu] =
     useState<SpreadsheetContextMenuState | null>(null);
   const officeDialog = useOfficeDialog();
@@ -281,6 +288,7 @@ export function SpreadsheetEditor({
       },
       afterSelectionChange: (sheetId, selection) => {
         setSelectionState({ sheetId, selection });
+        formatPainterSelectionHandlerRef.current(sheetId, selection);
       },
       beforeUpdateCell: (row, column) => {
         const sheet = contentRef.current.sheets.find(
@@ -463,6 +471,15 @@ export function SpreadsheetEditor({
   const selectionSummary = multipleCellsSelected
     ? spreadsheetSelectionSummary(toolbarSheet, toolbarSelection)
     : null;
+  const { commandPort: formatPainter, mode: formatPainterMode } =
+    useSpreadsheetFormatPainter({
+      content: materializedContent,
+      editable: !preview,
+      onError: (message) => showToast(message, 'error'),
+      sourceRange: selectedRange,
+      sourceSheetId: toolbarSheetId,
+      workbook: workbookInstance,
+    });
   const currentClipboardSelection = () => {
     if (previewRef.current) return null;
     const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
@@ -550,6 +567,7 @@ export function SpreadsheetEditor({
             formulaBar.textContent = value == null ? '' : String(value);
         },
       },
+      formatPainter,
       history,
       onChange: (next) => {
         contentRef.current = next;
@@ -567,6 +585,12 @@ export function SpreadsheetEditor({
   );
   const spreadsheetCommands = spreadsheetEditor.commands;
   spreadsheetCommandsRef.current = spreadsheetCommands;
+  formatPainterSelectionHandlerRef.current = (sheetId, selection) => {
+    spreadsheetCommandsRef.current?.applyFormatPainter({
+      sheetId,
+      selection,
+    });
+  };
   const spreadsheetCan = spreadsheetEditor.can();
   const restoreSpreadsheetGridFocus = useCallback(
     () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
@@ -769,6 +793,7 @@ export function SpreadsheetEditor({
     <section
       ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
+      data-format-painter={formatPainterMode ?? undefined}
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
@@ -792,6 +817,7 @@ export function SpreadsheetEditor({
           content={content}
           fileActions={fileActions}
           findOpen={findOpen}
+          formatPainterMode={formatPainterMode}
           gridLinesVisible={gridLinesVisible}
           multipleCellsSelected={multipleCellsSelected}
           panelId={panelId}
@@ -812,6 +838,9 @@ export function SpreadsheetEditor({
           toolbarCell={toolbarCell}
         />
       )}
+      <output className="sr-only" aria-live="polite" aria-atomic="true">
+        {spreadsheetFormatPainterStatus(formatPainterMode)}
+      </output>
       <div className="work-spreadsheet-workspace">
         <div
           ref={spreadsheetCanvasRef}
@@ -1132,6 +1161,10 @@ export function spreadsheetCommandsWithGridFocus(
 
   return {
     ...commands,
+    activateFormatPainter: afterSuccessfulCommand(
+      commands.activateFormatPainter,
+    ),
+    cancelFormatPainter: afterSuccessfulCommand(commands.cancelFormatPainter),
     copySelection: afterSuccessfulCommand(commands.copySelection),
     cutSelection: afterSuccessfulCommand(commands.cutSelection),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
@@ -1141,6 +1174,18 @@ export function spreadsheetCommandsWithGridFocus(
     toggleCellMerge: afterSuccessfulCommand(commands.toggleCellMerge),
     undo: afterSuccessfulCommand(commands.undo),
   };
+}
+
+function spreadsheetFormatPainterStatus(
+  mode: SpreadsheetFormatPainterMode | null,
+): string {
+  if (mode === 'locked') {
+    return '格式刷已锁定，可连续选择目标区域；再次点击格式刷或按 Escape 退出。';
+  }
+  if (mode === 'once') {
+    return '格式刷已开启，请选择一个目标区域；按 Escape 退出。';
+  }
+  return '';
 }
 
 function spreadsheetGridFocusTarget(

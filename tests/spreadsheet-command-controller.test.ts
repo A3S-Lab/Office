@@ -8,6 +8,7 @@ import {
   type SpreadsheetCommandContext,
   type SpreadsheetCommandRange,
   type SpreadsheetEditorCommands,
+  type SpreadsheetFormatPainterCommandPort,
   type SpreadsheetWorkbookCommandPort,
 } from '../src/internal/features/work/editors/spreadsheet-command-controller';
 import type { WorkSpreadsheetContent } from '../src/internal/features/work/work-types';
@@ -138,6 +139,57 @@ describe('spreadsheet command controller', () => {
       expect(event.defaultPrevented).toBe(true);
     }
     expect(fixture.clipboard.calls).toEqual(['copy', 'cut', 'paste']);
+  });
+
+  test('routes the WPS format painter lifecycle through one typed command port', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+    const target = {
+      sheetId: 'sheet-2',
+      selection: { row: [3, 4], column: [1, 2] },
+    };
+
+    expect(editor.extensionNames).toContain('spreadsheetFormatPainter');
+    expect(editor.can().activateFormatPainter('once')).toBe(true);
+    expect(editor.commands.activateFormatPainter('once')).toBe(true);
+    expect(editor.can().applyFormatPainter(target)).toBe(true);
+    expect(editor.commands.applyFormatPainter(target)).toBe(true);
+    expect(editor.can().cancelFormatPainter()).toBe(true);
+    expect(editor.commands.cancelFormatPainter()).toBe(true);
+    expect(fixture.formatPainter.calls).toEqual([
+      'activate:once',
+      'apply:sheet-2:3-4:1-2',
+      'cancel',
+    ]);
+
+    editor.updateContext({
+      ...fixture.context,
+      formatPainter: {
+        ...fixture.formatPainter,
+        active: false,
+        canActivate: false,
+      },
+    });
+    expect(editor.can().activateFormatPainter('locked')).toBe(false);
+    expect(editor.commands.activateFormatPainter('locked')).toBe(false);
+    expect(editor.can().applyFormatPainter(target)).toBe(false);
+    expect(editor.commands.applyFormatPainter(target)).toBe(false);
+    expect(editor.can().cancelFormatPainter()).toBe(false);
+    expect(editor.commands.cancelFormatPainter()).toBe(false);
+  });
+
+  test('uses Escape to leave an active format painter without editing cells', () => {
+    const fixture = commandFixture();
+    fixture.formatPainter.active = true;
+    const editor = spreadsheetEditor(fixture.context);
+    const escapeEvent = new KeyboardEvent('keydown', {
+      cancelable: true,
+      key: 'Escape',
+    });
+
+    expect(editor.handleKeyDown(escapeEvent)).toBe(true);
+    expect(escapeEvent.defaultPrevented).toBe(true);
+    expect(fixture.formatPainter.calls).toEqual(['cancel']);
   });
 
   test('owns the WPS F9 workbook recalculation shortcut', () => {
@@ -742,12 +794,14 @@ function commandFixture(): {
   const calculation = new RecordingSpreadsheetCalculation();
   const clipboard = new RecordingSpreadsheetClipboard();
   const formulaBarValues: unknown[] = [];
+  const formatPainter = new RecordingSpreadsheetFormatPainter();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
     calculation,
     clipboard,
     changes,
     formulaBarValues,
+    formatPainter,
     workbook,
     context: {
       activeSheetId: 'sheet-1',
@@ -759,6 +813,7 @@ function commandFixture(): {
       formulaBar: {
         setValue: (value) => formulaBarValues.push(value),
       },
+      formatPainter,
       history: null,
       onChange: (next) => changes.push(next),
       selection: {
@@ -774,6 +829,43 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetFormatPainter
+  implements SpreadsheetFormatPainterCommandPort
+{
+  active = false;
+  canActivate = true;
+  calls: string[] = [];
+  mode: 'once' | 'locked' | null = null;
+
+  activate(mode: 'once' | 'locked'): boolean {
+    this.active = true;
+    this.mode = mode;
+    this.calls.push(`activate:${mode}`);
+    return true;
+  }
+
+  applySelection(
+    target: Parameters<
+      SpreadsheetFormatPainterCommandPort['applySelection']
+    >[0],
+  ): boolean {
+    if (!this.active) return false;
+    const range = target.selection;
+    this.calls.push(
+      `apply:${target.sheetId}:${range.row[0]}-${range.row[1]}:${range.column[0]}-${range.column[1]}`,
+    );
+    return true;
+  }
+
+  cancel(): boolean {
+    if (!this.active) return false;
+    this.active = false;
+    this.mode = null;
+    this.calls.push('cancel');
+    return true;
+  }
 }
 
 class RecordingSpreadsheetClipboard implements SpreadsheetClipboardCommandPort {
