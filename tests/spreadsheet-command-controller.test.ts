@@ -452,6 +452,48 @@ describe('spreadsheet command controller', () => {
     expect(fixture.changes[1].sheets[0].zoomRatio).toBe(1.75);
   });
 
+  test('routes WPS Freeze Panes presets through controlled workbook state', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [
+      {
+        row: [2, 2],
+        column: [1, 1],
+        row_focus: 2,
+        column_focus: 1,
+      },
+    ];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetView');
+    expect(editor.can().setFreezePanes('selection')).toBe(true);
+    expect(editor.commands.setFreezePanes('selection')).toBe(true);
+    expect(fixture.context.content.sheets[0]?.frozen).toBeUndefined();
+    expect(fixture.changes[0]?.sheets[0]?.frozen).toEqual({
+      type: 'rangeBoth',
+      range: { row_focus: 1, column_focus: 0 },
+    });
+
+    editor.updateContext({
+      ...fixture.context,
+      content: fixture.changes[0],
+    });
+    expect(editor.can().setFreezePanes('selection')).toBe(false);
+    expect(editor.can().setFreezePanes('none')).toBe(true);
+    expect(editor.commands.setFreezePanes('none')).toBe(true);
+    expect(fixture.changes[1]?.sheets[0]?.frozen).toBeUndefined();
+
+    fixture.workbook.selection = [
+      {
+        row: [0, 0],
+        column: [0, 0],
+        row_focus: 0,
+        column_focus: 0,
+      },
+    ];
+    editor.updateContext(fixture.context);
+    expect(editor.can().setFreezePanes('selection')).toBe(false);
+  });
+
   test('routes history shortcuts through the history extension', () => {
     const fixture = commandFixture();
     const calls: string[] = [];

@@ -266,6 +266,81 @@ test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet freezes panes from the WPS View window group', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const editor = page.locator('.work-spreadsheet-editor');
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B3');
+
+  await ribbon.getByRole('tab', { name: '视图' }).click();
+  const trigger = ribbon.getByRole('button', { name: '冻结窗格' });
+  await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  await trigger.click();
+  const menu = page.getByRole('menu', { name: '冻结窗格选项' });
+  await expect(menu).toBeVisible();
+  const customFreeze = menu.getByRole('menuitem', {
+    name: '冻结至第 2 行、A 列',
+  });
+  await expect(customFreeze).toBeFocused();
+
+  const menuBounds = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((menuBounds?.x ?? 0) + (menuBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((menuBounds?.y ?? 0) + (menuBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+
+  await customFreeze.press('Enter');
+  await expect(editor).toHaveAttribute('data-freeze-panes', 'active');
+  await expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  await expect(grid).toBeFocused();
+  expect(
+    await page
+      .locator('.fortune-cols-freeze-handle')
+      .evaluate((element) => Number.parseFloat(element.style.left)),
+  ).toBeGreaterThan(0);
+  expect(
+    await page
+      .locator('.fortune-rows-freeze-handle')
+      .evaluate((element) => Number.parseFloat(element.style.top)),
+  ).toBeGreaterThan(0);
+
+  await trigger.click();
+  const activeMenu = page.getByRole('menu', { name: '冻结窗格选项' });
+  const unfreeze = activeMenu.getByRole('menuitem', { name: '取消冻结窗格' });
+  const firstColumn = activeMenu.getByRole('menuitem', { name: '冻结首列' });
+  await expect(unfreeze).toBeFocused();
+  await page.screenshot({
+    path: testInfo.outputPath('freeze-panes-active-menu.png'),
+    animations: 'disabled',
+  });
+  await activeMenu.press('End');
+  await expect(firstColumn).toBeFocused();
+  await activeMenu.press('Home');
+  await expect(unfreeze).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(editor).not.toHaveAttribute('data-freeze-panes');
+  await expect(trigger).toHaveAttribute('aria-pressed', 'false');
+  await expect(grid).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 async function openSpreadsheetFixture(page: Page): Promise<void> {
   await page.goto('/');
   await page

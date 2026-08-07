@@ -406,6 +406,68 @@ test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
   expect(actions).toEqual(['toggle-filter']);
 });
 
+test('operates WPS Freeze Panes from the View window group', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="view"
+      freezePanesActive
+      freezePanesSelection={{
+        row: [2, 2],
+        column: [1, 1],
+        row_focus: 2,
+        column_focus: 1,
+      }}
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          setFreezePanes: (preset) => {
+            actions.push(preset);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => undefined}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const trigger = screen.getByRole('button', { name: '冻结窗格' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  expect(trigger).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '冻结窗格选项' });
+  expect(
+    within(menu).getByRole('menuitem', { name: '取消冻结窗格' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', {
+      name: '冻结至第 2 行、A 列',
+    }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '冻结首行' }),
+  ).toBeInTheDocument();
+  const firstColumn = within(menu).getByRole('menuitem', {
+    name: '冻结首列',
+  });
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(firstColumn).toHaveFocus();
+  fireEvent.click(firstColumn);
+  expect(actions).toEqual(['firstColumn']);
+  expect(screen.queryByRole('menu', { name: '冻结窗格选项' })).toBeNull();
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,
@@ -430,6 +492,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     renameSheet: () => true,
     redo: () => false,
     setCellFormat: () => true,
+    setFreezePanes: () => true,
     setGridLines: () => true,
     setSheetColor: () => true,
     setSelectedStructureHidden: () => true,
@@ -456,6 +519,7 @@ function spreadsheetCommands(
       | 'copySelection'
       | 'cutSelection'
       | 'pasteSelection'
+      | 'setFreezePanes'
       | 'toggleAutoFilter'
     >
   > = {},
@@ -483,6 +547,7 @@ function spreadsheetCommands(
     renameSheet: () => true,
     redo: () => false,
     setCellFormat,
+    setFreezePanes: clipboard.setFreezePanes ?? (() => true),
     setGridLines: () => true,
     setSheetColor: () => true,
     setSelectedStructureHidden: () => true,

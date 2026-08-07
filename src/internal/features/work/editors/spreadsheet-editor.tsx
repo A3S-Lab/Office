@@ -96,6 +96,7 @@ import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
+import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type WorkOfficeFileAction,
@@ -829,6 +830,7 @@ export function SpreadsheetEditor({
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
       data-auto-filter={autoFilterActive ? 'active' : undefined}
       data-format-painter={formatPainterMode ?? undefined}
+      data-freeze-panes={toolbarSheet?.frozen ? 'active' : undefined}
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
       onCopyCapture={(event) => handleSpreadsheetCopy(event, false)}
@@ -854,6 +856,8 @@ export function SpreadsheetEditor({
           fileActions={fileActions}
           findOpen={findOpen}
           formatPainterMode={formatPainterMode}
+          freezePanesActive={Boolean(toolbarSheet?.frozen)}
+          freezePanesSelection={toolbarSelection}
           gridLinesVisible={gridLinesVisible}
           multipleCellsSelected={multipleCellsSelected}
           panelId={panelId}
@@ -875,7 +879,11 @@ export function SpreadsheetEditor({
         />
       )}
       <output className="sr-only" aria-live="polite" aria-atomic="true">
-        {[spreadsheetFormatPainterStatus(formatPainterMode), autoFilterStatus]
+        {[
+          spreadsheetFormatPainterStatus(formatPainterMode),
+          autoFilterStatus,
+          spreadsheetFreezePanesStatus(toolbarSheet?.frozen),
+        ]
           .filter(Boolean)
           .join(' ')}
       </output>
@@ -1105,13 +1113,25 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
   let focusObserver: MutationObserver | null = null;
   let focusObservationTimeout: number | null = null;
   let focusOutHandler: ((event: FocusEvent) => void) | null = null;
+  let pointerDownHandler: ((event: PointerEvent) => void) | null = null;
+  let tabKeyHandler: ((event: KeyboardEvent) => void) | null = null;
+  let focusRestorationStopped = false;
 
   const stopObservingFocusTarget = () => {
+    focusRestorationStopped = true;
     focusObserver?.disconnect();
     focusObserver = null;
     if (focusOutHandler) {
       container.removeEventListener('focusout', focusOutHandler);
       focusOutHandler = null;
+    }
+    if (pointerDownHandler) {
+      document.removeEventListener('pointerdown', pointerDownHandler, true);
+      pointerDownHandler = null;
+    }
+    if (tabKeyHandler) {
+      document.removeEventListener('keydown', tabKeyHandler, true);
+      tabKeyHandler = null;
     }
     if (focusObservationTimeout !== null) {
       window.clearTimeout(focusObservationTimeout);
@@ -1123,6 +1143,7 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
   };
 
   const restoreFocus = (force: boolean) => {
+    if (focusRestorationStopped) return;
     const activeElement = document.activeElement;
     if (!force && isSpreadsheetCellEditingTarget(activeElement)) {
       stopObservingFocusTarget();
@@ -1154,6 +1175,17 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
     requestAnimationFrame(() => restoreFocus(false));
   };
   container.addEventListener('focusout', focusOutHandler);
+
+  pointerDownHandler = (event) => {
+    if (event.target instanceof Node && !container.contains(event.target)) {
+      stopObservingFocusTarget();
+    }
+  };
+  tabKeyHandler = (event) => {
+    if (event.key === 'Tab') stopObservingFocusTarget();
+  };
+  document.addEventListener('pointerdown', pointerDownHandler, true);
+  document.addEventListener('keydown', tabKeyHandler, true);
 
   if (typeof MutationObserver !== 'undefined') {
     focusObserver = new MutationObserver(() => {
@@ -1208,6 +1240,7 @@ export function spreadsheetCommandsWithGridFocus(
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
+    setFreezePanes: afterSuccessfulCommand(commands.setFreezePanes),
     setGridLines: afterSuccessfulCommand(commands.setGridLines),
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     toggleCellMerge: afterSuccessfulCommand(commands.toggleCellMerge),

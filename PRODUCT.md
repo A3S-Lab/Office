@@ -48,6 +48,12 @@ multi-row selection remains exact. `Cmd/Ctrl+Shift+L` toggles the filter and
 provide a complete keyboard path. Empty data, merged ranges, and pivot sheets
 fail without mutating the workbook, and filter ranges plus filtered row state
 survive controlled updates and XLSX round trips.
+The fifth milestone adds Freeze Panes under View and Window. The current-cell
+command freezes rows above and columns left of the selection, matching the WPS
+workflow, while dedicated presets freeze the top row or first column and an
+active worksheet exposes Unfreeze Panes. One controlled update retains the
+selection, the menu supports Arrow, Home, End, Enter, and Escape with exact
+grid-focus restoration, and the boundary survives XLSX export and reopen.
 
 ## Product Rules
 

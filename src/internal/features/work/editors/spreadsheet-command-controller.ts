@@ -8,10 +8,15 @@ import {
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
+  finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
   selectSpreadsheetFormulaBarContents,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
+import {
+  type SpreadsheetFreezePanePreset,
+  updateSpreadsheetFreezePanes,
+} from './spreadsheet-freeze-panes';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
   isSpreadsheetGridKeyboardTarget,
@@ -197,6 +202,7 @@ export interface SpreadsheetEditorCommands {
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
+  setFreezePanes: (preset: SpreadsheetFreezePanePreset) => boolean;
   setGridLines: (visible: boolean) => boolean;
   selectCellRange: (scope: SpreadsheetSelectionScope) => boolean;
   setSheetColor: (sheetId: string, color: string | null) => boolean;
@@ -847,6 +853,10 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
     >({
       name: 'spreadsheetView',
       addCommands: () => ({
+        setFreezePanes: {
+          canExecute: canSetFreezePanes,
+          execute: setFreezePanes,
+        },
         setGridLines: {
           canExecute: hasActiveSheet,
           execute: (context, visible) =>
@@ -1310,6 +1320,44 @@ function updateSpreadsheetSheet(
   };
   context.onChange(next);
   return true;
+}
+
+function canSetFreezePanes(
+  context: SpreadsheetCommandContext,
+  preset: SpreadsheetFreezePanePreset,
+): boolean {
+  return Boolean(
+    context.editable &&
+      updateSpreadsheetFreezePanes(
+        context.content,
+        context.activeSheetId,
+        preset,
+        liveFreezePanesSelection(context),
+      ),
+  );
+}
+
+function setFreezePanes(
+  context: SpreadsheetCommandContext,
+  preset: SpreadsheetFreezePanePreset,
+): boolean {
+  return applySpreadsheetSheetChange(
+    context,
+    updateSpreadsheetFreezePanes(
+      context.content,
+      context.activeSheetId,
+      preset,
+      liveFreezePanesSelection(context),
+    ),
+  );
+}
+
+function liveFreezePanesSelection(
+  context: SpreadsheetCommandContext,
+): Selection {
+  return finiteSpreadsheetSelection(
+    context.workbook?.getSelection()?.at(-1) ?? context.fallbackRange,
+  );
 }
 
 function canEditSelectedCells(context: SpreadsheetCommandContext): boolean {

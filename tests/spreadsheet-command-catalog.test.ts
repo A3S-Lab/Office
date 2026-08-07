@@ -81,4 +81,9 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['F9'],
     label: 'F9',
   });
+  expect(spreadsheetCommandCatalog.freezePanes.location).toEqual({
+    area: 'ribbon',
+    group: 'window',
+    tab: 'view',
+  });
 });

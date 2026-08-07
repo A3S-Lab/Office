@@ -30,6 +30,14 @@ All notable changes to A3S Office will be documented in this file.
   explicit-range filtering, safe empty/merge/pivot rejection, controlled
   selection and hidden-row preservation, accessible vendor filter controls,
   XLSX round-trip coverage, and desktop plus compact Web regression.
+- Added WPS-style Spreadsheet Freeze Panes under View and Window. The current
+  cell freezes the rows above and columns to its left, with separate top-row,
+  first-column, and unfreeze commands behind one controlled workbook update.
+- Added Arrow, Home, End, Enter, and Escape menu operation, pressed and live
+  state, selection and grid-focus restoration, XLSX round-trip coverage, and
+  desktop plus compact Web regression. Delayed grid-focus recovery now yields
+  to deliberate pointer and Tab navigation so repeated ribbon actions remain
+  usable immediately after a controlled workbook remount.
 
 ## 0.3.0 - 2026-08-07
 

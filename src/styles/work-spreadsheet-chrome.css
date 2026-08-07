@@ -620,6 +620,43 @@
   --work-office-menu-accent: var(--work-spreadsheet-menu-accent);
 }
 
+.work-spreadsheet-freeze-trigger > span::after {
+  display: inline-block;
+  margin-left: 4px;
+  border-top: 4px solid currentcolor;
+  border-right: 3px solid transparent;
+  border-left: 3px solid transparent;
+  content: "";
+  vertical-align: 2px;
+}
+
+.work-spreadsheet-freeze-popover {
+  --work-office-menu-accent: var(--work-office-control-accent, #159469);
+
+  width: min(264px, calc(100vw - 32px));
+}
+
+.work-spreadsheet-freeze-popover > button {
+  grid-template-columns: 20px minmax(0, 1fr);
+}
+
+.work-spreadsheet-freeze-popover > button > span:last-child {
+  white-space: normal;
+}
+
+.work-spreadsheet-freeze-item-icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: var(--work-office-menu-accent);
+}
+
+.work-spreadsheet-freeze-item-icon > svg {
+  width: 16px;
+  height: 16px;
+}
+
 .work-spreadsheet-sheet-list {
   min-width: 220px;
 }

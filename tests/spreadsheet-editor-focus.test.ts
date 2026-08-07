@@ -130,6 +130,38 @@ test('recovers from a delayed workbook blur after the grid is mounted', async ()
   container.remove();
 });
 
+test('does not steal focus from deliberate pointer or Tab navigation', async () => {
+  const trigger = document.createElement('button');
+  const container = document.createElement('div');
+  const overlay = document.createElement('main');
+  overlay.className = 'fortune-sheet-overlay';
+  overlay.tabIndex = -1;
+  container.append(overlay);
+  document.body.append(trigger, container);
+  trigger.focus();
+
+  focusSpreadsheetGrid(container);
+  expect(document.activeElement).toBe(overlay);
+
+  trigger.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+  trigger.focus();
+  await waitForAnimationFrames(3);
+
+  expect(document.activeElement).toBe(trigger);
+
+  focusSpreadsheetGrid(container);
+  expect(document.activeElement).toBe(overlay);
+  overlay.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+  );
+  trigger.focus();
+  await waitForAnimationFrames(3);
+
+  expect(document.activeElement).toBe(trigger);
+  trigger.remove();
+  container.remove();
+});
+
 test('does not steal focus when a hidden cell editor resumes editing', async () => {
   const container = document.createElement('div');
   const overlay = document.createElement('main');
@@ -176,6 +208,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     pasteSelection: record('pasteSelection'),
     redo: record('redo'),
     setCellFormat: record('setCellFormat'),
+    setFreezePanes: record('setFreezePanes'),
     setGridLines: record('setGridLines'),
     setZoom: record('setZoom'),
     toggleCellMerge: record('toggleCellMerge'),
@@ -189,6 +222,7 @@ test('returns grid focus after successful ribbon commands only', () => {
 
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
+  expect(ribbon.setFreezePanes('topRow')).toBe(true);
   expect(ribbon.toggleAutoFilter()).toBe(true);
   expect(ribbon.openAutoFilterMenu()).toBe(true);
   expect(ribbon.activateFormatPainter('once')).toBe(true);
@@ -202,6 +236,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(calls).toEqual([
     'setCellFormat:bl,1',
     'setGridLines:false',
+    'setFreezePanes:topRow',
     'toggleAutoFilter:',
     'openAutoFilterMenu:',
     'activateFormatPainter:once',
@@ -213,6 +248,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

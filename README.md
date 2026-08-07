@@ -356,8 +356,10 @@ interaction model.
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
   style-only writes, Conditional Formatting under Home and Styles, executable
   sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
-  `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu, and
-  visible F9 workbook recalculation,
+  `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu,
+  a View and Window Freeze Panes menu for current-cell, top-row, first-column,
+  and unfreeze patterns with XLSX round trips, and visible F9 workbook
+  recalculation,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

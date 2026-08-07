@@ -200,6 +200,11 @@ export const spreadsheetCommandCatalog = {
     label: '网格线',
     location: { area: 'ribbon', tab: 'view', group: 'workbookViews' },
   },
+  freezePanes: {
+    id: 'view.freezePanes',
+    label: '冻结窗格',
+    location: { area: 'ribbon', tab: 'view', group: 'window' },
+  },
 } as const satisfies Record<string, SpreadsheetCommandDefinition>;
 
 export type SpreadsheetCommandId = keyof typeof spreadsheetCommandCatalog;

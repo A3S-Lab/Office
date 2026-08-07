@@ -1,4 +1,4 @@
-import type { Cell } from '@fortune-sheet/core';
+import type { Cell, Selection } from '@fortune-sheet/core';
 import {
   AlignCenter,
   AlignLeft,
@@ -21,6 +21,9 @@ import {
   Paintbrush,
   Palette,
   Percent,
+  PanelLeft,
+  PanelTop,
+  PanelsTopLeft,
   Printer,
   Redo2,
   RefreshCw,
@@ -33,8 +36,10 @@ import {
   Underline,
   Undo2,
   WrapText,
+  X,
 } from 'lucide-react';
 import { type ReactNode, useMemo } from 'react';
+import { Popover } from '../../../design-system/primitives';
 import { spreadsheetChartCount } from '../work-spreadsheet-charts';
 import { spreadsheetFormulaCount } from '../work-spreadsheet-formula-analysis';
 import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
@@ -57,6 +62,10 @@ import {
 } from './spreadsheet-editor-support';
 import type { SpreadsheetFormatPainterMode } from './spreadsheet-format-painter';
 import {
+  type SpreadsheetFreezePanePreset,
+  spreadsheetFreezePanesSelectionLabel,
+} from './spreadsheet-freeze-panes';
+import {
   adjustSpreadsheetNumberFormat,
   type SpreadsheetNumberFormatPreset,
   spreadsheetNumberFormatCode,
@@ -65,6 +74,7 @@ import {
 } from './spreadsheet-number-format';
 import { spreadsheetPrintSettingCount } from './spreadsheet-print-settings-panel';
 import type { SpreadsheetWorkbookPanelView } from './spreadsheet-workbook-panel';
+import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
   type WorkOfficeFileAction,
   WorkOfficeRibbon,
@@ -83,6 +93,13 @@ const spreadsheetNumberFormatOptions: readonly {
   { value: 'custom', label: '自定义', disabled: true },
 ];
 
+const defaultSpreadsheetFreezePanesSelection: Selection = {
+  row: [0, 0],
+  column: [0, 0],
+  row_focus: 0,
+  column_focus: 0,
+};
+
 export type { SpreadsheetRibbonTabId } from './spreadsheet-command-catalog';
 
 export function SpreadsheetEditorRibbon({
@@ -94,6 +111,8 @@ export function SpreadsheetEditorRibbon({
   fileActions,
   findOpen,
   formatPainterMode = null,
+  freezePanesActive = false,
+  freezePanesSelection = defaultSpreadsheetFreezePanesSelection,
   gridLinesVisible,
   multipleCellsSelected,
   panelId,
@@ -111,6 +130,8 @@ export function SpreadsheetEditorRibbon({
   fileActions?: readonly WorkOfficeFileAction[];
   findOpen: boolean;
   formatPainterMode?: SpreadsheetFormatPainterMode | null;
+  freezePanesActive?: boolean;
+  freezePanesSelection?: Selection;
   gridLinesVisible: boolean;
   multipleCellsSelected: boolean;
   panelId: string;
@@ -682,20 +703,118 @@ export function SpreadsheetEditorRibbon({
           </WorkOfficeRibbonGroup>
         ),
         view: (
-          <WorkOfficeRibbonGroup label="工作簿视图" priority="high">
-            <WorkOfficeRibbonButton
-              label={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
-              visibleLabel={spreadsheetCommandCatalog.gridLines.label}
-              active={gridLinesVisible}
-              disabled={!can.setGridLines(!gridLinesVisible)}
-              onClick={() => commands.setGridLines(!gridLinesVisible)}
-            >
-              <Grid3X3 size={19} />
-            </WorkOfficeRibbonButton>
-          </WorkOfficeRibbonGroup>
+          <>
+            <WorkOfficeRibbonGroup label="工作簿视图" priority="high">
+              <WorkOfficeRibbonButton
+                label={gridLinesVisible ? '隐藏网格线' : '显示网格线'}
+                visibleLabel={spreadsheetCommandCatalog.gridLines.label}
+                active={gridLinesVisible}
+                disabled={!can.setGridLines(!gridLinesVisible)}
+                onClick={() => commands.setGridLines(!gridLinesVisible)}
+              >
+                <Grid3X3 size={19} />
+              </WorkOfficeRibbonButton>
+            </WorkOfficeRibbonGroup>
+            <WorkOfficeRibbonGroup label="窗口" priority="high">
+              <SpreadsheetFreezePanesMenu
+                active={freezePanesActive}
+                can={can}
+                commands={commands}
+                selection={freezePanesSelection}
+              />
+            </WorkOfficeRibbonGroup>
+          </>
         ),
       }}
     />
+  );
+}
+
+function SpreadsheetFreezePanesMenu({
+  active,
+  can,
+  commands,
+  selection,
+}: {
+  active: boolean;
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+  selection: Selection;
+}) {
+  const presets: readonly {
+    preset: SpreadsheetFreezePanePreset;
+    label: string;
+    icon: ReactNode;
+  }[] = [
+    ...(active
+      ? [
+          {
+            preset: 'none' as const,
+            label: '取消冻结窗格',
+            icon: <X size={16} />,
+          },
+        ]
+      : []),
+    {
+      preset: 'selection',
+      label: spreadsheetFreezePanesSelectionLabel(selection),
+      icon: <PanelsTopLeft size={16} />,
+    },
+    {
+      preset: 'topRow',
+      label: '冻结首行',
+      icon: <PanelTop size={16} />,
+    },
+    {
+      preset: 'firstColumn',
+      label: '冻结首列',
+      icon: <PanelLeft size={16} />,
+    },
+  ];
+  const disabled = !presets.some(({ preset }) => can.setFreezePanes(preset));
+
+  return (
+    <Popover
+      label={spreadsheetCommandCatalog.freezePanes.label}
+      panelLabel="冻结窗格选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-freeze-popover-root"
+      panelClassName="work-office-context-menu work-spreadsheet-freeze-popover"
+      disabled={disabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-freeze-trigger${active || open ? ' active' : ''}`}
+          aria-pressed={active}
+          title={active ? '冻结窗格（已启用）' : '冻结窗格'}
+        >
+          <PanelsTopLeft size={19} />
+          <span>{spreadsheetCommandCatalog.freezePanes.label}</span>
+        </button>
+      )}
+    >
+      {(close) =>
+        presets.map(({ preset, label, icon }) => (
+          <button
+            key={preset}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            disabled={!can.setFreezePanes(preset)}
+            onClick={() => {
+              close();
+              commands.setFreezePanes(preset);
+            }}
+          >
+            <span className="work-spreadsheet-freeze-item-icon">{icon}</span>
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
   );
 }
 

@@ -510,6 +510,15 @@ controlled mutation, preserves filter-owned row visibility when toggled, and
 round-trips the active range and hidden rows through XLSX. Focused model, hook,
 controller, component, import/export, desktop, and compact regression cover the
 complete enable, apply, disable, and restore path.
+The fifth slice adds Freeze Panes under View and Window. A current-cell freeze
+uses the WPS boundary of rows above and columns left, while dedicated top-row
+and first-column presets cover the two common one-axis workflows. The active
+menu exposes Unfreeze Panes, disables a no-op boundary, supports Arrow, Home,
+End, Enter, and Escape, and returns focus to the grid without a delayed focus
+guard closing a repeated command. A pure workbook model owns the boundary,
+selection retention, no-op checks, and one controlled update. Focused model,
+controller, component, focus, XLSX round-trip, desktop, compact, and
+schema-validated A3S Test coverage prove the complete freeze and unfreeze path.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.
