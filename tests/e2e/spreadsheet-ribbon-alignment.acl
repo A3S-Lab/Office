@@ -175,4 +175,143 @@ suite "office-spreadsheet-ribbon-alignment" {
             clear = false
         }
     }
+
+    scenario "use-wps-autofilter-from-grid" {
+        name = "Use WPS AutoFilter toggle and header menu habits"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        click "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-second-row" {
+            key = "ArrowDown"
+        }
+
+        press "select-table-header" {
+            key = "ArrowDown"
+        }
+
+        click "open-data-tab" {
+            target = css(".work-spreadsheet-ribbon [role='tab'][data-tab-id='data']")
+        }
+
+        expect "autofilter-command-visible" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='自动筛选'][aria-keyshortcuts='Control+Shift+L Meta+Shift+L']")
+        }
+
+        click "enable-autofilter" {
+            target = role("button", "自动筛选")
+        }
+
+        expect "autofilter-active" {
+            visible = css(".work-spreadsheet-editor[data-auto-filter='active'] button[aria-label='自动筛选'][aria-pressed='true']")
+        }
+
+        expect "status-filter-trigger-visible" {
+            visible = css(".luckysheet-filter-options[role='button'][aria-label='状态 筛选'][aria-haspopup='dialog']")
+        }
+
+        press "disable-autofilter-by-shortcut" {
+            key = "Control+Shift+L"
+        }
+
+        expect "autofilter-disabled" {
+            visible = css(".work-spreadsheet-editor:not([data-auto-filter]) button[aria-label='自动筛选'][aria-pressed='false']")
+        }
+
+        press "enable-autofilter-by-shortcut" {
+            key = "Control+Shift+L"
+        }
+
+        press "select-income-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-january-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-february-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-march-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-progress-header" {
+            key = "ArrowRight"
+        }
+
+        press "select-status-header" {
+            key = "ArrowRight"
+        }
+
+        press "open-status-filter-menu" {
+            key = "Alt+ArrowDown"
+        }
+
+        expect "status-filter-dialog-visible" {
+            visible = css(".fortune-filter-menu[role='dialog'][aria-label='状态 筛选']")
+        }
+
+        expect "filter-search-labeled" {
+            visible = css(".fortune-filter-menu input[aria-label='搜索筛选值']")
+        }
+
+        screenshot "spreadsheet-autofilter-compact" {
+            path = "screenshots/spreadsheet-autofilter-compact.png"
+        }
+
+        press "close-filter-dialog" {
+            key = "Escape"
+        }
+
+        expect "filter-dialog-closed" {
+            visible = css(".luckysheet-filter-options[aria-label='状态 筛选'][aria-expanded='false']")
+        }
+
+        accessibility "spreadsheet-autofilter-accessibility" {
+            path = "evidence/autofilter-accessibility.json"
+            interactive = true
+        }
+
+        console "autofilter-browser-console" {
+            path = "diagnostics/autofilter-console.json"
+            clear = false
+        }
+
+        page_errors "autofilter-browser-errors" {
+            path = "diagnostics/autofilter-page-errors.json"
+            clear = false
+        }
+    }
 }

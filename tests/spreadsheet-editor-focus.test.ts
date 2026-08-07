@@ -172,12 +172,14 @@ test('returns grid focus after successful ribbon commands only', () => {
     cancelFormatPainter: record('cancelFormatPainter'),
     copySelection: record('copySelection'),
     cutSelection: record('cutSelection', false),
+    openAutoFilterMenu: record('openAutoFilterMenu'),
     pasteSelection: record('pasteSelection'),
     redo: record('redo'),
     setCellFormat: record('setCellFormat'),
     setGridLines: record('setGridLines'),
     setZoom: record('setZoom'),
     toggleCellMerge: record('toggleCellMerge'),
+    toggleAutoFilter: record('toggleAutoFilter'),
     undo: record('undo', false),
   } as unknown as SpreadsheetEditorCommands;
   const focused: string[] = [];
@@ -187,6 +189,8 @@ test('returns grid focus after successful ribbon commands only', () => {
 
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
+  expect(ribbon.toggleAutoFilter()).toBe(true);
+  expect(ribbon.openAutoFilterMenu()).toBe(true);
   expect(ribbon.activateFormatPainter('once')).toBe(true);
   expect(ribbon.cancelFormatPainter()).toBe(true);
   expect(ribbon.copySelection()).toBe(true);
@@ -198,6 +202,8 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(calls).toEqual([
     'setCellFormat:bl,1',
     'setGridLines:false',
+    'toggleAutoFilter:',
+    'openAutoFilterMenu:',
     'activateFormatPainter:once',
     'cancelFormatPainter:',
     'copySelection:',
@@ -206,7 +212,15 @@ test('returns grid focus after successful ribbon commands only', () => {
     'undo:',
     'setZoom:125',
   ]);
-  expect(focused).toEqual(['grid', 'grid', 'grid', 'grid', 'grid', 'grid']);
+  expect(focused).toEqual([
+    'grid',
+    'grid',
+    'grid',
+    'grid',
+    'grid',
+    'grid',
+    'grid',
+  ]);
 });
 
 function waitForAnimationFrames(count: number): Promise<void> {

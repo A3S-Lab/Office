@@ -22,6 +22,14 @@ All notable changes to A3S Office will be documented in this file.
 - Added bounded format capture and target guards, duplicate-target suppression,
   one controlled workbook batch per application, accessible pressed/live
   state, and desktop plus compact Web regression coverage.
+- Added WPS-style Spreadsheet AutoFilter under Data and Sort and Filter.
+  `Cmd/Ctrl+Shift+L` toggles filtering, `Alt+ArrowDown` opens the selected
+  header menu, and arrows, Space, Enter, and Escape operate it without leaving
+  the grid.
+- Added finite current-region discovery for single-cell selections, exact
+  explicit-range filtering, safe empty/merge/pivot rejection, controlled
+  selection and hidden-row preservation, accessible vendor filter controls,
+  XLSX round-trip coverage, and desktop plus compact Web regression.
 
 ## 0.3.0 - 2026-08-07
 

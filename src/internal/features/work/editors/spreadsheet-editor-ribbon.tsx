@@ -16,6 +16,7 @@ import {
   DecimalsArrowRight,
   Grid3X3,
   Italic,
+  ListFilter,
   Merge,
   Paintbrush,
   Palette,
@@ -86,6 +87,7 @@ export type { SpreadsheetRibbonTabId } from './spreadsheet-command-catalog';
 
 export function SpreadsheetEditorRibbon({
   activeTab,
+  autoFilterActive = false,
   can,
   commands,
   content,
@@ -102,6 +104,7 @@ export function SpreadsheetEditorRibbon({
   toolbarCell,
 }: {
   activeTab: SpreadsheetRibbonTabId;
+  autoFilterActive?: boolean;
   can: SpreadsheetEditorCanCommands;
   commands: SpreadsheetEditorCommands;
   content: WorkSpreadsheetContent;
@@ -638,6 +641,18 @@ export function SpreadsheetEditorRibbon({
                 onClick={() => commands.sortSelectedCells('descending')}
               >
                 <SortDesc size={19} />
+              </WorkOfficeRibbonButton>
+              <WorkOfficeRibbonButton
+                label={spreadsheetCommandCatalog.autoFilter.label}
+                title={`${spreadsheetCommandCatalog.autoFilter.label}（${spreadsheetCommandCatalog.autoFilter.shortcut.label}）；表头菜单（${spreadsheetCommandCatalog.autoFilter.menuShortcut.label}）`}
+                aria-keyshortcuts={
+                  spreadsheetCommandCatalog.autoFilter.shortcut.aria
+                }
+                active={autoFilterActive}
+                disabled={!can.toggleAutoFilter()}
+                onClick={() => commands.toggleAutoFilter()}
+              >
+                <ListFilter size={19} />
               </WorkOfficeRibbonButton>
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="分析">

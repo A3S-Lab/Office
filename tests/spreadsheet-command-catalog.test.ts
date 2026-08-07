@@ -61,6 +61,21 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'sortAndFilter',
     tab: 'data',
   });
+  expect(spreadsheetCommandCatalog.autoFilter.location).toEqual({
+    area: 'ribbon',
+    group: 'sortAndFilter',
+    tab: 'data',
+  });
+  expect(spreadsheetCommandCatalog.autoFilter.shortcut).toEqual({
+    aria: 'Control+Shift+L Meta+Shift+L',
+    editor: ['Mod-Shift-l'],
+    label: 'Cmd/Ctrl+Shift+L',
+  });
+  expect(spreadsheetCommandCatalog.autoFilter.menuShortcut).toEqual({
+    aria: 'Alt+ArrowDown',
+    editor: ['Alt-ArrowDown'],
+    label: 'Alt+↓',
+  });
   expect(spreadsheetCommandCatalog.recalculateWorkbook.shortcut).toEqual({
     aria: 'F9',
     editor: ['F9'],

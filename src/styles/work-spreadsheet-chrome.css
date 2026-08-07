@@ -181,6 +181,116 @@
   display: none !important;
 }
 
+.work-spreadsheet-editor .luckysheet-filter-options {
+  display: grid;
+  min-width: 20px;
+  min-height: 20px;
+  place-items: center;
+  border: 1px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent) 58%, var(--a3s-line));
+  border-radius: 3px;
+  background: var(--a3s-panel);
+  color: var(--work-spreadsheet-header-text);
+  cursor: pointer;
+}
+
+.work-spreadsheet-editor .luckysheet-filter-options .caret.down {
+  border-top-color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .luckysheet-filter-options:hover,
+.work-spreadsheet-editor .luckysheet-filter-options:focus-visible {
+  background: var(--work-spreadsheet-chrome-hover);
+  color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .luckysheet-filter-options:focus-visible {
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent) 72%, white);
+  outline-offset: 1px;
+}
+
+.work-spreadsheet-editor .luckysheet-filter-options-active {
+  background: var(--work-spreadsheet-accent);
+  color: white;
+}
+
+.work-spreadsheet-editor .fortune-filter-menu {
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: min(620px, calc(100dvh - 16px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: var(--a3s-overlay-radius);
+  background: var(--a3s-overlay-surface);
+  box-shadow: var(--a3s-shadow-soft);
+  color: var(--a3s-ink);
+  font: 500 12px / 1.4 var(--a3s-ui-font);
+  scrollbar-color: var(--a3s-line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.work-spreadsheet-editor
+  .fortune-filter-menu
+  .luckysheet-cols-menuitem:focus-visible,
+.work-spreadsheet-editor
+  .fortune-filter-menu
+  .fortune-byvalue-btn:focus-visible,
+.work-spreadsheet-editor .fortune-filter-menu .select-item:focus-visible,
+.work-spreadsheet-editor .fortune-filter-menu .button-basic:focus-visible,
+.work-spreadsheet-editor .fortune-filter-menu input:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid
+    color-mix(in srgb, var(--work-spreadsheet-accent) 70%, white);
+  outline-offset: -1px;
+}
+
+.work-spreadsheet-editor
+  .fortune-filter-menu
+  .filtermenu-input-container
+  input {
+  border-color: var(--a3s-line-strong);
+  border-radius: 5px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font-family: var(--a3s-ui-font);
+}
+
+.work-spreadsheet-editor
+  .fortune-filter-menu
+  .filtermenu-input-container
+  input::placeholder {
+  color: var(--a3s-muted);
+}
+
+.work-spreadsheet-editor .fortune-filter-menu input[type="checkbox"] {
+  accent-color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .fortune-filter-menu .fortune-byvalue-btn {
+  color: var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-editor .fortune-filter-menu .button-primary {
+  background: var(--work-spreadsheet-accent);
+  color: white;
+}
+
+.work-spreadsheet-editor .fortune-filter-menu .button-default {
+  border-color: var(--a3s-line-strong);
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+}
+
+@media (max-width: 640px) {
+  .work-spreadsheet-editor
+    .fortune-filter-menu
+    .filtermenu-input-container
+    input {
+    font-size: 16px;
+  }
+}
+
 .work-spreadsheet-editor .fortune-modal-container {
   background: rgb(9 12 22 / 42%);
   backdrop-filter: blur(3px);

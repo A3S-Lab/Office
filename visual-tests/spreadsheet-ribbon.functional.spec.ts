@@ -176,6 +176,96 @@ test('Spreadsheet applies one-shot and locked WPS format-painter patterns', asyn
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet follows WPS AutoFilter range and keyboard habits', async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const editor = page.locator('.work-spreadsheet-editor');
+  const canvas = page.locator('.work-spreadsheet-canvas');
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('A3');
+
+  await ribbon.getByRole('tab', { name: '数据' }).click();
+  const filter = ribbon.getByRole('button', { name: '自动筛选' });
+  await expect(filter).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+L Meta+Shift+L',
+  );
+  await filter.click();
+  await expect(editor).toHaveAttribute('data-auto-filter', 'active');
+  await expect(filter).toHaveAttribute('aria-pressed', 'true');
+  await expect(canvas.locator('.luckysheet-filter-options')).toHaveCount(7);
+  await expect(canvas.getByRole('button', { name: '状态 筛选' })).toBeVisible();
+
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('Control+Shift+L');
+  await expect(editor).not.toHaveAttribute('data-auto-filter');
+  await expect(canvas.locator('.luckysheet-filter-options')).toHaveCount(0);
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('Control+Shift+L');
+  await expect(editor).toHaveAttribute('data-auto-filter', 'active');
+  await expect(canvas.locator('.luckysheet-filter-options')).toHaveCount(7);
+
+  for (let index = 0; index < 6; index += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await expect(nameBox).toHaveText('G3');
+  await page.keyboard.press('Alt+ArrowDown');
+  const dialog = canvas.getByRole('dialog', { name: '状态 筛选' });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole('textbox', { name: '搜索筛选值' }),
+  ).toBeVisible();
+  const dialogBounds = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+  expect(dialogBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(
+    (dialogBounds?.x ?? 0) + (dialogBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(viewport?.width ?? 0);
+  expect(
+    (dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0),
+  ).toBeLessThanOrEqual(viewport?.height ?? 0);
+
+  await dialog
+    .getByRole('button', { name: '清除', exact: true })
+    .press('Enter');
+  const atRisk = dialog.getByRole('checkbox', { name: '显示 有风险' });
+  await atRisk.focus();
+  await page.keyboard.press('Space');
+  await expect(atRisk).toBeChecked();
+  await dialog.getByRole('button', { name: /确\s*认/ }).press('Enter');
+  await expect(dialog).toHaveCount(0);
+  await expect(canvas.getByRole('button', { name: '状态 筛选' })).toHaveClass(
+    /luckysheet-filter-options-active/,
+  );
+
+  await grid.focus();
+  await page.keyboard.press('Control+Shift+L');
+  await expect(editor).not.toHaveAttribute('data-auto-filter');
+  await page.keyboard.press('Control+Shift+L');
+  await expect(editor).toHaveAttribute('data-auto-filter', 'active');
+  await page.keyboard.press('Alt+ArrowDown');
+  const resetDialog = canvas.getByRole('dialog', { name: '状态 筛选' });
+  await expect(resetDialog).toBeVisible();
+  for (const checkbox of await resetDialog.getByRole('checkbox').all()) {
+    await expect(checkbox).toBeChecked();
+  }
+  await page.keyboard.press('Escape');
+  await expect(resetDialog).toHaveCount(0);
+  await expect(canvas.getByRole('button', { name: '状态 筛选' })).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 async function openSpreadsheetFixture(page: Page): Promise<void> {
   await page.goto('/');
   await page

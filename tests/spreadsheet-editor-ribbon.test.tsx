@@ -363,6 +363,49 @@ test('exposes the spreadsheet find shortcut through the home ribbon', () => {
   expect(openCount).toBe(1);
 });
 
+test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="data"
+      autoFilterActive
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          toggleAutoFilter: () => {
+            actions.push('toggle-filter');
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      multipleCellsSelected={false}
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => undefined}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const filter = screen.getByRole('button', { name: '自动筛选' });
+  expect(filter).toHaveAttribute('aria-pressed', 'true');
+  expect(filter).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+L Meta+Shift+L',
+  );
+  expect(filter).toHaveAttribute(
+    'title',
+    '自动筛选（Cmd/Ctrl+Shift+L）；表头菜单（Alt+↓）',
+  );
+  fireEvent.click(filter);
+  expect(actions).toEqual(['toggle-filter']);
+});
+
 function spreadsheetCan(): SpreadsheetEditorCanCommands {
   return {
     activateSheet: () => true,
@@ -380,6 +423,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     insertSelectedStructure: () => true,
     moveSheet: () => true,
     moveSelection: () => true,
+    openAutoFilterMenu: () => true,
     pasteCells: () => true,
     pasteSelection: () => true,
     recalculateFormula: () => true,
@@ -394,6 +438,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     setZoom: () => true,
     selectCellRange: () => true,
     sortSelectedCells: () => true,
+    toggleAutoFilter: () => true,
     toggleCellMerge: () => true,
     undo: () => false,
   };
@@ -411,6 +456,7 @@ function spreadsheetCommands(
       | 'copySelection'
       | 'cutSelection'
       | 'pasteSelection'
+      | 'toggleAutoFilter'
     >
   > = {},
 ): SpreadsheetEditorCommands {
@@ -430,6 +476,7 @@ function spreadsheetCommands(
     insertSelectedStructure: () => true,
     moveSheet: () => true,
     moveSelection: () => true,
+    openAutoFilterMenu: () => true,
     pasteCells: () => true,
     pasteSelection: clipboard.pasteSelection ?? (() => true),
     recalculateFormula: () => true,
@@ -444,6 +491,7 @@ function spreadsheetCommands(
     setZoom: () => true,
     selectCellRange: () => true,
     sortSelectedCells,
+    toggleAutoFilter: clipboard.toggleAutoFilter ?? (() => true),
     toggleCellMerge: () => true,
     undo: () => false,
   };

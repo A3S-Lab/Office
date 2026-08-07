@@ -143,6 +143,14 @@ export interface SpreadsheetClipboardCommandPort {
   pasteSelection: () => boolean;
 }
 
+export interface SpreadsheetAutoFilterCommandPort {
+  active: boolean;
+  canOpenMenu: boolean;
+  canToggle: boolean;
+  openMenu: () => boolean;
+  toggle: () => boolean;
+}
+
 export interface SpreadsheetFormatPainterCommandPort {
   active: boolean;
   canActivate: boolean;
@@ -182,6 +190,7 @@ export interface SpreadsheetEditorCommands {
     direction: SpreadsheetSheetMoveDirection,
   ) => boolean;
   moveSelection: (move: SpreadsheetSelectionMove, extend: boolean) => boolean;
+  openAutoFilterMenu: () => boolean;
   pasteCells: (values: readonly (readonly unknown[])[]) => boolean;
   pasteSelection: () => boolean;
   recalculateFormula: (scope: 'selection' | 'workbook') => boolean;
@@ -202,6 +211,7 @@ export interface SpreadsheetEditorCommands {
   setSpreadsheetContent: (content: WorkSpreadsheetContent) => boolean;
   setZoom: (percent: number) => boolean;
   sortSelectedCells: (direction: SpreadsheetSortDirection) => boolean;
+  toggleAutoFilter: () => boolean;
   toggleCellMerge: (merged: boolean) => boolean;
   undo: () => boolean;
 }
@@ -211,6 +221,7 @@ export type SpreadsheetEditorCanCommands =
 
 export interface SpreadsheetCommandContext {
   activeSheetId: string;
+  autoFilter: SpreadsheetAutoFilterCommandPort;
   calculation: SpreadsheetCalculationCommandPort | null;
   clipboard: SpreadsheetClipboardCommandPort;
   content: WorkSpreadsheetContent;
@@ -272,6 +283,24 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           canExecute: ({ formatPainter }) => formatPainter.active,
           execute: ({ formatPainter }) =>
             formatPainter.active && formatPainter.cancel(),
+        },
+      }),
+    }),
+    createOfficeEditorExtension<
+      SpreadsheetCommandContext,
+      SpreadsheetEditorCommands
+    >({
+      name: 'spreadsheetAutoFilter',
+      addCommands: () => ({
+        openAutoFilterMenu: {
+          canExecute: ({ autoFilter }) => autoFilter.canOpenMenu,
+          execute: ({ autoFilter }) =>
+            autoFilter.canOpenMenu && autoFilter.openMenu(),
+        },
+        toggleAutoFilter: {
+          canExecute: ({ autoFilter }) => autoFilter.canToggle,
+          execute: ({ autoFilter }) =>
+            autoFilter.canToggle && autoFilter.toggle(),
         },
       }),
     }),
@@ -490,6 +519,18 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
         'Mod-y': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
+        'Mod-Shift-l': ({ can, commands }, event) =>
+          runSpreadsheetAutoFilterShortcut(
+            event,
+            can.toggleAutoFilter,
+            commands.toggleAutoFilter,
+          ),
+        'Alt-ArrowDown': ({ can, commands }, event) =>
+          runSpreadsheetAutoFilterShortcut(
+            event,
+            can.openAutoFilterMenu,
+            commands.openAutoFilterMenu,
+          ),
         'Control-PageUp': ({ context, commands }, event) =>
           runSpreadsheetSheetNavigationShortcut(
             event,
@@ -1310,6 +1351,19 @@ function runSpreadsheetHistoryShortcut(
   return execute();
 }
 
+function isSpreadsheetAutoFilterTextTarget(
+  target: EventTarget | null,
+): boolean {
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        Boolean(target.closest('[contenteditable="true"]'))))
+  );
+}
+
 function runSpreadsheetCellFormatShortcut(
   event: KeyboardEvent,
   context: SpreadsheetCommandContext,
@@ -1337,6 +1391,24 @@ function runSpreadsheetClearShortcut(
     event.repeat ||
     isOfficeShortcutBlocked(event.target) ||
     isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !isSpreadsheetGridKeyboardTarget(event.target) ||
+    !canExecute()
+  ) {
+    return false;
+  }
+  return execute();
+}
+
+function runSpreadsheetAutoFilterShortcut(
+  event: KeyboardEvent,
+  canExecute: () => boolean,
+  execute: () => boolean,
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    isSpreadsheetAutoFilterTextTarget(event.target) ||
     !isSpreadsheetGridKeyboardTarget(event.target) ||
     !canExecute()
   ) {

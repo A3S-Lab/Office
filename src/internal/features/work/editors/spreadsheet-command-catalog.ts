@@ -29,6 +29,7 @@ export interface SpreadsheetCommandDefinition {
   id: string;
   label: string;
   location: SpreadsheetCommandLocation;
+  menuShortcut?: SpreadsheetCommandShortcut;
   shortcut?: SpreadsheetCommandShortcut;
 }
 
@@ -168,6 +169,21 @@ export const spreadsheetCommandCatalog = {
     id: 'data.sortDescending',
     label: '降序',
     location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
+  },
+  autoFilter: {
+    id: 'data.autoFilter',
+    label: '自动筛选',
+    location: { area: 'ribbon', tab: 'data', group: 'sortAndFilter' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+L',
+      aria: 'Control+Shift+L Meta+Shift+L',
+      editor: ['Mod-Shift-l'],
+    },
+    menuShortcut: {
+      label: 'Alt+↓',
+      aria: 'Alt+ArrowDown',
+      editor: ['Alt-ArrowDown'],
+    },
   },
   pivotTable: {
     id: 'data.pivotTable',

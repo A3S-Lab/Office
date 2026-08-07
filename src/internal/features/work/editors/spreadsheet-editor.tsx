@@ -91,6 +91,7 @@ import {
 } from './use-office-editor-wheel-zoom';
 import { useOfficeHistory } from './use-office-history';
 import { useSpreadsheetCalculation } from './use-spreadsheet-calculation';
+import { useSpreadsheetAutoFilter } from './use-spreadsheet-auto-filter';
 import {
   type SpreadsheetFormatPainterMode,
   useSpreadsheetFormatPainter,
@@ -480,6 +481,24 @@ export function SpreadsheetEditor({
       sourceSheetId: toolbarSheetId,
       workbook: workbookInstance,
     });
+  const {
+    active: autoFilterActive,
+    commandPort: autoFilter,
+    reserveAltKey: reserveAutoFilterAltKey,
+    status: autoFilterStatus,
+  } = useSpreadsheetAutoFilter({
+    canvasRef: spreadsheetCanvasRef,
+    content: materializedContent,
+    editable: !preview,
+    mountRevision: workbookMountRevision,
+    onChange: (next) => {
+      contentRef.current = next;
+      onChange(next);
+    },
+    selection: toolbarSelection,
+    sheetId: toolbarSheetId,
+    workbook: workbookInstance,
+  });
   const currentClipboardSelection = () => {
     if (previewRef.current) return null;
     const sheetId = selectionState?.sheetId ?? activeSheetIdRef.current;
@@ -544,6 +563,7 @@ export function SpreadsheetEditor({
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
       activeSheetId,
+      autoFilter,
       calculation,
       clipboard: {
         canCopySelection: !preview && Boolean(toolbarSheet),
@@ -673,6 +693,20 @@ export function SpreadsheetEditor({
     event: React.KeyboardEvent<HTMLElement>,
   ) => {
     if (
+      event.key === 'Alt' &&
+      !event.repeat &&
+      event.target instanceof Element &&
+      event.target.closest('.fortune-sheet-overlay') &&
+      reserveAutoFilterAltKey()
+    ) {
+      // Fortune moves focus into its hidden cell editor on a bare Alt keydown.
+      // Keep the header grid focused so the following ArrowDown reaches the
+      // WPS-compatible AutoFilter shortcut.
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (
       (event.metaKey || event.ctrlKey) &&
       !event.altKey &&
       !event.shiftKey &&
@@ -793,6 +827,7 @@ export function SpreadsheetEditor({
     <section
       ref={spreadsheetRootRef}
       className={`work-spreadsheet-editor ${preview ? 'preview' : ''}`}
+      data-auto-filter={autoFilterActive ? 'active' : undefined}
       data-format-painter={formatPainterMode ?? undefined}
       aria-label="表格工作区"
       onKeyDownCapture={handleSpreadsheetKeyDownCapture}
@@ -812,6 +847,7 @@ export function SpreadsheetEditor({
       {!preview && (
         <SpreadsheetEditorRibbon
           activeTab={ribbonTab}
+          autoFilterActive={autoFilterActive}
           can={spreadsheetCan}
           commands={spreadsheetRibbonCommands}
           content={content}
@@ -839,7 +875,9 @@ export function SpreadsheetEditor({
         />
       )}
       <output className="sr-only" aria-live="polite" aria-atomic="true">
-        {spreadsheetFormatPainterStatus(formatPainterMode)}
+        {[spreadsheetFormatPainterStatus(formatPainterMode), autoFilterStatus]
+          .filter(Boolean)
+          .join(' ')}
       </output>
       <div className="work-spreadsheet-workspace">
         <div
@@ -1171,6 +1209,7 @@ export function spreadsheetCommandsWithGridFocus(
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
     setGridLines: afterSuccessfulCommand(commands.setGridLines),
+    toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     toggleCellMerge: afterSuccessfulCommand(commands.toggleCellMerge),
     undo: afterSuccessfulCommand(commands.undo),
   };

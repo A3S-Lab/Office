@@ -3,6 +3,7 @@ import { describe, expect, test } from '@rstest/core';
 import { createOfficeEditorRuntime } from '../src/internal/features/work/editors/office-editor-extension';
 import {
   createSpreadsheetEditorExtensions,
+  type SpreadsheetAutoFilterCommandPort,
   type SpreadsheetCalculationCommandPort,
   type SpreadsheetClipboardCommandPort,
   type SpreadsheetCommandContext,
@@ -190,6 +191,91 @@ describe('spreadsheet command controller', () => {
     expect(editor.handleKeyDown(escapeEvent)).toBe(true);
     expect(escapeEvent.defaultPrevented).toBe(true);
     expect(fixture.formatPainter.calls).toEqual(['cancel']);
+  });
+
+  test('routes the AutoFilter lifecycle through one typed command port', () => {
+    const fixture = commandFixture();
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.extensionNames).toContain('spreadsheetAutoFilter');
+    expect(editor.can().toggleAutoFilter()).toBe(true);
+    expect(editor.commands.toggleAutoFilter()).toBe(true);
+    fixture.autoFilter.active = true;
+    fixture.autoFilter.canOpenMenu = true;
+    expect(editor.can().openAutoFilterMenu()).toBe(true);
+    expect(editor.commands.openAutoFilterMenu()).toBe(true);
+    expect(fixture.autoFilter.calls).toEqual(['toggle', 'open']);
+
+    editor.updateContext({
+      ...fixture.context,
+      autoFilter: {
+        ...fixture.autoFilter,
+        canOpenMenu: false,
+        canToggle: false,
+      },
+    });
+    expect(editor.can().toggleAutoFilter()).toBe(false);
+    expect(editor.commands.toggleAutoFilter()).toBe(false);
+    expect(editor.can().openAutoFilterMenu()).toBe(false);
+    expect(editor.commands.openAutoFilterMenu()).toBe(false);
+  });
+
+  test('owns WPS AutoFilter toggle and header-menu shortcuts', () => {
+    const fixture = commandFixture();
+    fixture.autoFilter.active = true;
+    fixture.autoFilter.canOpenMenu = true;
+    const editor = spreadsheetEditor(fixture.context);
+
+    for (const init of [
+      { ctrlKey: true, key: 'l', shiftKey: true },
+      { altKey: true, key: 'ArrowDown' },
+    ]) {
+      const event = new KeyboardEvent('keydown', {
+        ...init,
+        cancelable: true,
+      });
+      expect(editor.handleKeyDown(event)).toBe(true);
+      expect(event.defaultPrevented).toBe(true);
+    }
+    expect(fixture.autoFilter.calls).toEqual(['toggle', 'open']);
+  });
+
+  test('leaves AutoFilter shortcuts with native text controls', () => {
+    const fixture = commandFixture();
+    fixture.autoFilter.active = true;
+    fixture.autoFilter.canOpenMenu = true;
+    const editor = spreadsheetEditor(fixture.context);
+    const container = document.createElement('div');
+    container.className = 'fortune-container';
+    const input = document.createElement('input');
+    container.append(input);
+    document.body.append(container);
+    const handled: boolean[] = [];
+    input.addEventListener('keydown', (event) => {
+      handled.push(editor.handleKeyDown(event));
+    });
+
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        bubbles: true,
+        cancelable: true,
+        ctrlKey: true,
+        key: 'l',
+        shiftKey: true,
+      }),
+    );
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        altKey: true,
+        bubbles: true,
+        cancelable: true,
+        key: 'ArrowDown',
+      }),
+    );
+
+    expect(handled).toEqual([false, false]);
+    expect(fixture.autoFilter.calls).toEqual([]);
+    container.remove();
   });
 
   test('owns the WPS F9 workbook recalculation shortcut', () => {
@@ -772,11 +858,13 @@ describe('spreadsheet command controller', () => {
 });
 
 function commandFixture(): {
+  autoFilter: RecordingSpreadsheetAutoFilter;
   clipboard: RecordingSpreadsheetClipboard;
   changes: WorkSpreadsheetContent[];
   calculation: RecordingSpreadsheetCalculation;
   context: SpreadsheetCommandContext;
   formulaBarValues: unknown[];
+  formatPainter: RecordingSpreadsheetFormatPainter;
   workbook: RecordingSpreadsheetWorkbook;
 } {
   const content = {
@@ -791,12 +879,14 @@ function commandFixture(): {
     ],
   } satisfies WorkSpreadsheetContent;
   const changes: WorkSpreadsheetContent[] = [];
+  const autoFilter = new RecordingSpreadsheetAutoFilter();
   const calculation = new RecordingSpreadsheetCalculation();
   const clipboard = new RecordingSpreadsheetClipboard();
   const formulaBarValues: unknown[] = [];
   const formatPainter = new RecordingSpreadsheetFormatPainter();
   const workbook = new RecordingSpreadsheetWorkbook();
   return {
+    autoFilter,
     calculation,
     clipboard,
     changes,
@@ -805,6 +895,7 @@ function commandFixture(): {
     workbook,
     context: {
       activeSheetId: 'sheet-1',
+      autoFilter,
       calculation,
       clipboard,
       content,
@@ -829,6 +920,27 @@ function commandFixture(): {
       workbook,
     },
   };
+}
+
+class RecordingSpreadsheetAutoFilter
+  implements SpreadsheetAutoFilterCommandPort
+{
+  active = false;
+  canOpenMenu = false;
+  canToggle = true;
+  calls: string[] = [];
+
+  openMenu(): boolean {
+    if (!this.canOpenMenu) return false;
+    this.calls.push('open');
+    return true;
+  }
+
+  toggle(): boolean {
+    if (!this.canToggle) return false;
+    this.calls.push('toggle');
+    return true;
+  }
 }
 
 class RecordingSpreadsheetFormatPainter

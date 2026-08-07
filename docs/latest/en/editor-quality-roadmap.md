@@ -500,11 +500,22 @@ duplicate-target suppression, one controlled batch per application, accessible
 pressed/live state, and copy cursor keep the Web interaction bounded and
 predictable. Focused model, hook, controller, and component tests plus desktop
 and compact browser regression cover the complete one-shot and locked paths.
+The fourth slice adds AutoFilter under Data and Sort and Filter. A single-cell
+selection expands to the bounded contiguous current region, while an explicit
+multi-row selection keeps its exact coordinates. `Cmd/Ctrl+Shift+L` toggles
+the filter and `Alt+ArrowDown` opens the selected header menu. Arrow keys,
+Space, Enter, and Escape operate the value checklist and restore grid focus.
+The model rejects empty data, merged intersections, and pivot sheets before a
+controlled mutation, preserves filter-owned row visibility when toggled, and
+round-trips the active range and hidden rows through XLSX. Focused model, hook,
+controller, component, import/export, desktop, and compact regression cover the
+complete enable, apply, disable, and restore path.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,
-  sorting, filtering, validation, charts, pivots, and print layout.
+  advanced sorting and filter predicates, validation, charts, pivots, and print
+  layout.
 - Keep lightweight selection statistics responsive for dense and sparse sheets.
 - Keep common number and percent presets plus decimal-place commands available
   from the primary ribbon while the native format engine expands.

@@ -355,7 +355,9 @@ interaction model.
   shortcuts, a WPS-style Format Painter with single-use and double-click locked
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
   style-only writes, Conditional Formatting under Home and Styles, executable
-  sorting under Data, and visible F9 workbook recalculation,
+  sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
+  `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu, and
+  visible F9 workbook recalculation,
   Shift+F11 creation, Ctrl/Cmd+PageUp/PageDown switching in edit and read-only
   preview,
   one shared cell/worksheet context-menu surface with executable shortcut

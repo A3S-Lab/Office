@@ -41,6 +41,13 @@ click locks it across repeated or cross-sheet targets, and another click or
 Escape exits without copying values, formulas, comments, links, or merges.
 Large source and target ranges fail with recoverable feedback, while desktop
 and compact Web retain the same pressed state, copy cursor, and grid focus.
+The fourth milestone adds AutoFilter under Data and Sort and Filter. A
+single-cell selection expands to its finite current region, while an explicit
+multi-row selection remains exact. `Cmd/Ctrl+Shift+L` toggles the filter and
+`Alt+ArrowDown` opens the active header menu; arrows, Space, Enter, and Escape
+provide a complete keyboard path. Empty data, merged ranges, and pivot sheets
+fail without mutating the workbook, and filter ranges plus filtered row state
+survive controlled updates and XLSX round trips.
 
 ## Product Rules
 
