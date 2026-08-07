@@ -33,6 +33,7 @@ export interface WorkOfficeRibbonTab<T extends string> {
   id: T;
   label: string;
   compactLabel?: string;
+  contextual?: boolean;
 }
 
 export interface WorkOfficeFileAction {
@@ -108,6 +109,9 @@ export function WorkOfficeRibbon<T extends string>({
   const selectedTab = activeTab ?? internalTab;
   const selectedLabel =
     tabs.find((tab) => tab.id === selectedTab)?.label ?? tabs[0]?.label ?? '';
+  const contextualTabActive = Boolean(
+    tabs.find((tab) => tab.id === selectedTab)?.contextual,
+  );
   const selectedPanel = panels[selectedTab];
   const hasSelectedPanel =
     selectedPanel !== null && selectedPanel !== undefined;
@@ -308,6 +312,7 @@ export function WorkOfficeRibbon<T extends string>({
       className={`work-office-ribbon ${className}`.trim()}
       aria-label={ariaLabel}
       data-collapsed={collapsed ? 'true' : undefined}
+      data-contextual-active={contextualTabActive ? 'true' : undefined}
     >
       <div className="work-office-ribbon-tabs-row">
         {fileActions?.length ? (

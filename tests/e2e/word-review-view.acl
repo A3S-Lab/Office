@@ -1,0 +1,140 @@
+suite "office-word-review-view" {
+    version = 1
+
+    scenario "review-changes-and-fit-document" {
+        name = "Use WPS-style Writer Review and View commands"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1600
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-review-view"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editor")
+        }
+
+        click "open-review" {
+            target = role("tab", "审阅")
+        }
+
+        expect "changes-group-is-available" {
+            visible = css(".document-toolbar .work-office-ribbon-group[aria-label='更改']")
+        }
+
+        click "enable-track-changes" {
+            target = role("button", "修订模式")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        type "write-tail-change" {
+            target = css(".work-document-editable .ProseMirror")
+            value = " 视图缩放验证"
+        }
+
+        press "move-to-document-start" {
+            key = "Control+Home"
+        }
+
+        type "write-leading-change" {
+            target = css(".work-document-editable .ProseMirror")
+            value = "审阅验证 "
+        }
+
+        expect "two-changes-are-visible" {
+            visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订（2）']")
+        }
+
+        click "move-to-next-change" {
+            target = role("button", "下一处修订")
+        }
+
+        click "reject-tail-change" {
+            target = role("button", "拒绝修订")
+        }
+
+        expect "one-change-remains" {
+            visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订（1）']")
+        }
+
+        click "accept-leading-change" {
+            target = role("button", "接受修订")
+        }
+
+        expect "all-changes-are-resolved" {
+            visible = css(".work-office-ribbon-group[aria-label='修订'] button[aria-label='查看修订']")
+        }
+
+        click "open-view" {
+            target = role("tab", "视图")
+        }
+
+        expect "document-view-comes-first" {
+            visible = css(".document-toolbar .work-office-ribbon-group:first-child[aria-label='文档视图']")
+        }
+
+        click "use-actual-size" {
+            target = role("button", "缩放至 100%")
+        }
+
+        expect "actual-size-is-applied" {
+            text = "100%"
+        }
+
+        click "fit-page-width" {
+            target = role("button", "页宽")
+        }
+
+        expect "page-width-is-calculated" {
+            text = "106%"
+        }
+
+        click "fit-single-page" {
+            target = role("button", "单页")
+        }
+
+        expect "single-page-is-calculated" {
+            text = "50%"
+        }
+
+        screenshot "writer-review-view" {
+            path = "screenshots/writer-review-view.png"
+        }
+
+        accessibility "writer-review-view-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

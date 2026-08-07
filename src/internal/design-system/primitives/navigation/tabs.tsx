@@ -7,6 +7,7 @@ export type TabItem<T extends string> = {
   compactLabel?: string;
   icon?: ReactNode;
   badge?: ReactNode;
+  contextual?: boolean;
   disabled?: boolean;
   tabId?: string;
   panelId?: string;
@@ -54,6 +55,7 @@ export function Tabs<T extends string>({
             role="tab"
             id={item.tabId}
             data-tab-id={item.id}
+            data-contextual={item.contextual ? 'true' : undefined}
             aria-label={item.label}
             aria-selected={selected}
             aria-controls={item.panelId}

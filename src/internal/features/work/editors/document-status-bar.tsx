@@ -3,7 +3,7 @@ import {
   clampDocumentZoom,
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
-} from './document-editor-support';
+} from './document-zoom';
 import type { DocumentViewMode } from './document-toolbar';
 import {
   WorkOfficeStatusBar,

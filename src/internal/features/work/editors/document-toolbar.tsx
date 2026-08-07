@@ -1,7 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import {
   BookOpen,
+  Check,
   CheckCheck,
+  ChevronDown,
+  ChevronUp,
   FileDiff,
   FilePlus2,
   FileText,
@@ -18,13 +21,20 @@ import {
   Redo2,
   RefreshCw,
   Ruler,
+  Scan,
+  StretchHorizontal,
   Table2,
   Undo2,
+  XCircle,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
+import {
+  collectDocumentChanges,
+  type WorkDocumentChange,
+} from '../work-document-changes';
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
 import {
@@ -42,9 +52,9 @@ import {
   getDocumentCommandDefinition,
 } from './document-command-catalog';
 import {
-  MAX_DOCUMENT_ZOOM,
-  MIN_DOCUMENT_ZOOM,
-} from './document-editor-support';
+  actionableDocumentChangeIndex,
+  adjacentDocumentChangeIndex,
+} from './document-review-navigation';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import type { DocumentLayoutPanelTab } from './document-layout-panel';
@@ -60,6 +70,11 @@ import {
   DocumentTableLayoutRibbon,
 } from './document-table-ribbon';
 import { runDocumentWpsShortcut } from './document-wps-shortcuts';
+import {
+  type DocumentZoomFit,
+  MAX_DOCUMENT_ZOOM,
+  MIN_DOCUMENT_ZOOM,
+} from './document-zoom';
 import { OfficeSelect, useOfficeDialog } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import {
@@ -100,6 +115,7 @@ interface DocumentToolbarProps {
   onToggleSpellcheck: () => void;
   onViewModeChange: (mode: DocumentViewMode) => void;
   onZoomChange: (zoom: number) => void;
+  onZoomFit: (fit: DocumentZoomFit) => void;
   onInsertSection: () => void;
   onInsertNote: (kind: WorkDocumentNoteKind) => void;
   onInsertCaption: (kind: WorkDocumentCaptionKind) => void;
@@ -156,6 +172,7 @@ export function DocumentToolbar({
   onToggleSpellcheck,
   onViewModeChange,
   onZoomChange,
+  onZoomFit,
   onInsertSection,
   onInsertNote,
   onInsertCaption,
@@ -186,6 +203,21 @@ export function DocumentToolbar({
   const imageSelected = editor.isActive('image');
   const tableSelected = editor.isActive('table');
   const hasRefreshableFields = documentHasRefreshableFields(editor);
+  const documentChanges = collectDocumentChanges(editor.state.doc);
+  const previousChangeIndex = adjacentDocumentChangeIndex(
+    documentChanges,
+    editor.state.selection,
+    -1,
+  );
+  const nextChangeIndex = adjacentDocumentChangeIndex(
+    documentChanges,
+    editor.state.selection,
+    1,
+  );
+  const actionableChangeIndex = actionableDocumentChangeIndex(
+    documentChanges,
+    editor.state.selection,
+  );
   const undoCommand = getDocumentCommandDefinition('undo');
   const redoCommand = getDocumentCommandDefinition('redo');
   const refreshFieldsCommand = getDocumentCommandDefinition('refreshFields');
@@ -343,6 +375,58 @@ export function DocumentToolbar({
     toggleLink,
   ]);
 
+  const selectDocumentChange = (change: WorkDocumentChange) => {
+    const maximum = editor.state.doc.content.size;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({
+        from: Math.min(change.from, maximum),
+        to: Math.min(change.to, maximum),
+      })
+      .scrollIntoView()
+      .run();
+  };
+  const navigateDocumentChange = (direction: -1 | 1) => {
+    const changes = collectDocumentChanges(editor.state.doc);
+    const index = adjacentDocumentChangeIndex(
+      changes,
+      editor.state.selection,
+      direction,
+    );
+    if (index !== null) selectDocumentChange(changes[index]);
+  };
+  const decideDocumentChange = (decision: 'accept' | 'reject') => {
+    const changes = collectDocumentChanges(editor.state.doc);
+    const index = actionableDocumentChangeIndex(
+      changes,
+      editor.state.selection,
+    );
+    if (index === null) return;
+    const change = changes[index];
+    const nextIds = [changes[index + 1]?.id, changes[index - 1]?.id].filter(
+      (id): id is string => Boolean(id),
+    );
+    const handled =
+      decision === 'accept'
+        ? editor.commands.acceptDocumentChange(change.id)
+        : editor.commands.rejectDocumentChange(change.id);
+    if (!handled) return;
+    const remaining = collectDocumentChanges(editor.state.doc);
+    const next = nextIds
+      .map((id) => remaining.find((candidate) => candidate.id === id))
+      .find((candidate) => Boolean(candidate));
+    if (next) selectDocumentChange(next);
+    else {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(Math.min(change.from, editor.state.doc.content.size))
+        .scrollIntoView()
+        .run();
+    }
+  };
+
   return (
     <>
       <WorkOfficeRibbon
@@ -487,7 +571,7 @@ export function DocumentToolbar({
           ),
           references: (
             <>
-              <RibbonGroup label="脚注与尾注" priority="high">
+              <RibbonGroup label="脚注" priority="high">
                 <ToolbarButton
                   label="插入脚注"
                   displayLabel
@@ -526,7 +610,7 @@ export function DocumentToolbar({
                   <Link2 size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="文献" priority="high">
+              <RibbonGroup label="引文和书目" priority="high">
                 <ToolbarButton
                   label={`文献库${citationSourceCount ? `（${citationSourceCount}）` : ''}`}
                   displayLabel
@@ -614,10 +698,64 @@ export function DocumentToolbar({
                   <ListChecks size={19} />
                 </ToolbarButton>
               </RibbonGroup>
+              <RibbonGroup label="更改" priority="high">
+                <ToolbarButton
+                  label="接受修订"
+                  displayLabel
+                  disabled={actionableChangeIndex === null}
+                  title="接受当前修订并转到下一处"
+                  onClick={() => decideDocumentChange('accept')}
+                >
+                  <Check size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="拒绝修订"
+                  displayLabel
+                  disabled={actionableChangeIndex === null}
+                  title="拒绝当前修订并转到下一处"
+                  onClick={() => decideDocumentChange('reject')}
+                >
+                  <XCircle size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="上一处修订"
+                  displayLabel
+                  disabled={previousChangeIndex === null}
+                  onClick={() => navigateDocumentChange(-1)}
+                >
+                  <ChevronUp size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="下一处修订"
+                  displayLabel
+                  disabled={nextChangeIndex === null}
+                  onClick={() => navigateDocumentChange(1)}
+                >
+                  <ChevronDown size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
             </>
           ),
           view: (
             <>
+              <RibbonGroup label="文档视图" priority="high">
+                <ToolbarButton
+                  label="页面视图"
+                  displayLabel
+                  active={viewMode === 'page'}
+                  onClick={() => onViewModeChange('page')}
+                >
+                  <FileText size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="网页视图"
+                  displayLabel
+                  active={viewMode === 'web'}
+                  onClick={() => onViewModeChange('web')}
+                >
+                  <Globe2 size={19} />
+                </ToolbarButton>
+              </RibbonGroup>
               <RibbonGroup label="显示" priority="high">
                 <ToolbarButton
                   label="标尺"
@@ -642,24 +780,6 @@ export function DocumentToolbar({
                   <PanelLeftOpen size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="文档视图" priority="high">
-                <ToolbarButton
-                  label="页面视图"
-                  displayLabel
-                  active={viewMode === 'page'}
-                  onClick={() => onViewModeChange('page')}
-                >
-                  <FileText size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="网页视图"
-                  displayLabel
-                  active={viewMode === 'web'}
-                  onClick={() => onViewModeChange('web')}
-                >
-                  <Globe2 size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
               <RibbonGroup label={`缩放 ${zoom}%`} priority="low">
                 <ToolbarButton
                   label="缩小文档"
@@ -668,16 +788,27 @@ export function DocumentToolbar({
                 >
                   <ZoomOut size={17} />
                 </ToolbarButton>
-                {[75, 100, 125].map((value) => (
-                  <ToolbarButton
-                    key={value}
-                    label={`缩放至 ${value}%`}
-                    active={zoom === value}
-                    onClick={() => onZoomChange(value)}
-                  >
-                    {value}%
-                  </ToolbarButton>
-                ))}
+                <ToolbarButton
+                  label="缩放至 100%"
+                  active={zoom === 100}
+                  onClick={() => onZoomChange(100)}
+                >
+                  100%
+                </ToolbarButton>
+                <ToolbarButton
+                  label="单页"
+                  displayLabel
+                  onClick={() => onZoomFit('page')}
+                >
+                  <Scan size={17} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label="页宽"
+                  displayLabel
+                  onClick={() => onZoomFit('width')}
+                >
+                  <StretchHorizontal size={17} />
+                </ToolbarButton>
                 <ToolbarButton
                   label="放大文档"
                   disabled={zoom >= MAX_DOCUMENT_ZOOM}

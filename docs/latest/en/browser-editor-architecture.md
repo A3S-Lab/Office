@@ -52,7 +52,13 @@ model:
    and Footer, and Text. Page Layout keeps direct margin, orientation, paper,
    and equal-column presets in the ribbon; custom margins and advanced columns
    open the corresponding controlled Page Setup tab instead of duplicating a
-   second settings model.
+   second settings model. References separates footnotes, captions, citations
+   and bibliography, and field updates; Review derives previous, next, accept,
+   and reject availability from the live revision ranges and moves the
+   selection to the next resolvable change. View keeps document modes before
+   display controls and calculates One Page and Page Width zoom from the live
+   page metrics and scroll viewport. Picture, Table, and Header and Footer tabs
+   carry explicit contextual semantics and disappear with their selection.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

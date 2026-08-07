@@ -65,11 +65,15 @@ import { DocumentCommentsPanel } from './document-comments-panel';
 import { restoreDocumentEditorFocus } from './document-editor-focus';
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import {
-  clampDocumentZoom,
   documentCurrentPage,
   documentPageCount,
   documentWordCount,
 } from './document-editor-support';
+import {
+  clampDocumentZoom,
+  type DocumentZoomFit,
+  documentZoomForFit,
+} from './document-zoom';
 import {
   type DocumentFindReplaceMode,
   DocumentFindReplacePanel,
@@ -722,6 +726,31 @@ export function DocumentEditor({
     setZoom(clampDocumentZoom(nextZoom));
     restoreDocumentBodyFocus();
   };
+  const fitToolbarZoom = (fit: DocumentZoomFit) => {
+    setViewMode('page');
+    requestAnimationFrame(() => {
+      const viewport = workspaceRef.current?.querySelector<HTMLElement>(
+        '.work-document-scroll',
+      );
+      if (!viewport) return;
+      const style = getComputedStyle(viewport);
+      setZoom(
+        documentZoomForFit(fit, {
+          pageHeight: kernelPage.height,
+          pageWidth: kernelPage.width,
+          viewportHeight: viewport.clientHeight,
+          viewportWidth: viewport.clientWidth,
+          viewportPadding: {
+            top: cssPixelValue(style.paddingTop),
+            right: cssPixelValue(style.paddingRight),
+            bottom: cssPixelValue(style.paddingBottom),
+            left: cssPixelValue(style.paddingLeft),
+          },
+        }),
+      );
+      restoreDocumentBodyFocus();
+    });
+  };
   const changeSpellcheck = (enabled: boolean) => {
     setSpellcheckEnabled(enabled);
     restoreDocumentBodyFocus();
@@ -825,6 +854,7 @@ export function DocumentEditor({
           onToggleSpellcheck={() => changeSpellcheck(!spellcheckEnabled)}
           onViewModeChange={changeViewMode}
           onZoomChange={changeToolbarZoom}
+          onZoomFit={fitToolbarZoom}
           onTogglePageNumbers={toggleBodyPageNumbers}
           onInsertSection={addSection}
           onInsertNote={documentInsert.insertNote}
@@ -1227,4 +1257,9 @@ export function DocumentEditor({
       {!preview && taskPaneDialog.dialog}
     </section>
   );
+}
+
+function cssPixelValue(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

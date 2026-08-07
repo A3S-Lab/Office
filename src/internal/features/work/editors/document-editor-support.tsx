@@ -21,9 +21,6 @@ import type {
   WorkDocumentSelectionMenuItem,
 } from '../work-document-selection-menu';
 
-export const MIN_DOCUMENT_ZOOM = 50;
-export const MAX_DOCUMENT_ZOOM = 200;
-
 export function documentEditorSelectionText(
   editor: Pick<Editor, 'state'>,
 ): string {
@@ -254,13 +251,6 @@ export function documentWordCount(value: string): number {
       /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[\p{L}\p{N}]+/gu,
     ),
   ).length;
-}
-
-export function clampDocumentZoom(zoom: number): number {
-  return Math.min(
-    MAX_DOCUMENT_ZOOM,
-    Math.max(MIN_DOCUMENT_ZOOM, Math.round(zoom)),
-  );
 }
 
 async function copyDocumentSelection(selection: string): Promise<void> {

@@ -112,6 +112,17 @@
   font-size: 12px;
 }
 
+.work-office-ribbon-tabs > button[data-contextual="true"] {
+  background: color-mix(in srgb, var(--work-office-accent) 7%, transparent);
+  box-shadow: inset 0 2px
+    color-mix(in srgb, var(--work-office-accent) 48%, transparent);
+  color: color-mix(in srgb, var(--work-office-accent) 82%, var(--a3s-ink));
+}
+
+.work-office-ribbon-tabs > button[data-contextual="true"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--work-office-accent) 11%, transparent);
+}
+
 .work-office-ribbon-tabs > button::after {
   right: 4px;
   left: 4px;
@@ -137,6 +148,11 @@
 
 .work-office-ribbon-tabs.ds-tabs > button[aria-selected="true"]::after {
   background: var(--work-office-accent);
+}
+
+.work-office-ribbon[data-contextual-active="true"] > .work-office-ribbon-panel {
+  box-shadow: inset 0 1px
+    color-mix(in srgb, var(--work-office-accent) 28%, transparent);
 }
 
 .work-office-ribbon-tab-navigation {

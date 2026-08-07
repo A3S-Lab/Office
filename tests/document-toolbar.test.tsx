@@ -9,6 +9,7 @@ import {
 import { Editor } from '@tiptap/core';
 import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
+import { collectDocumentChanges } from '../src/internal/features/work/work-document-changes';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
 
@@ -28,6 +29,7 @@ interface ToolbarCalls {
   pageColors: string[];
   pageChromeParts: string[];
   viewModes: string[];
+  zoomFits: string[];
   zooms: number[];
   closePageChrome: number;
   comments: number;
@@ -167,6 +169,25 @@ test('orders Insert and Page Layout groups like WPS Writer', () => {
   expect(screen.queryByRole('button', { name: '页码' })).toBeNull();
 });
 
+test('orders References, Review, and View groups like WPS Writer', () => {
+  editor = createEditor();
+  render(toolbar(editor, createCalls()));
+
+  fireEvent.click(screen.getByRole('tab', { name: '引用' }));
+  expect(activeRibbonGroupLabels()).toEqual([
+    '脚注',
+    '题注',
+    '引文和书目',
+    '更新',
+  ]);
+
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  expect(activeRibbonGroupLabels()).toEqual(['校对', '批注', '修订', '更改']);
+
+  fireEvent.click(screen.getByRole('tab', { name: '视图' }));
+  expect(activeRibbonGroupLabels()).toEqual(['文档视图', '显示', '缩放 100%']);
+});
+
 test('wires every References, Review, and View action without silent buttons', () => {
   editor = createEditor();
   editor.commands.insertDocumentField('date');
@@ -226,19 +247,38 @@ test('wires every References, Review, and View action without silent buttons', (
   fireEvent.click(screen.getByRole('button', { name: '导航窗格' }));
   fireEvent.click(screen.getByRole('button', { name: '页面视图' }));
   fireEvent.click(screen.getByRole('button', { name: '网页视图' }));
-  for (const label of [
-    '缩小文档',
-    '缩放至 75%',
-    '缩放至 100%',
-    '缩放至 125%',
-    '放大文档',
-  ]) {
+  for (const label of ['缩小文档', '缩放至 100%', '单页', '页宽', '放大文档']) {
     fireEvent.click(screen.getByRole('button', { name: label }));
   }
   expect(calls.rulers).toBe(1);
   expect(calls.navigation).toBe(1);
   expect(calls.viewModes).toEqual(['page', 'web']);
-  expect(calls.zooms).toEqual([90, 75, 100, 125, 110]);
+  expect(calls.zooms).toEqual([90, 100, 110]);
+  expect(calls.zoomFits).toEqual(['page', 'width']);
+});
+
+test('navigates, accepts, and rejects tracked changes from the Review ribbon', () => {
+  editor = createEditorWithChanges();
+  const changes = collectDocumentChanges(editor.state.doc);
+  editor.commands.setTextSelection({
+    from: changes[0].from,
+    to: changes[0].to,
+  });
+  render(toolbar(editor, createCalls()));
+
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  fireEvent.click(screen.getByRole('button', { name: '下一处修订' }));
+  expect(editor.state.selection.from).toBe(changes[1].from);
+  expect(editor.state.selection.to).toBe(changes[1].to);
+
+  fireEvent.click(screen.getByRole('button', { name: '拒绝修订' }));
+  expect(
+    collectDocumentChanges(editor.state.doc).map((change) => change.id),
+  ).toEqual(['change-one']);
+
+  fireEvent.click(screen.getByRole('button', { name: '接受修订' }));
+  expect(collectDocumentChanges(editor.state.doc)).toHaveLength(0);
+  expect(editor.state.selection.empty).toBe(true);
 });
 
 test('only enables field refresh when the document contains fields', () => {
@@ -483,6 +523,7 @@ function toolbar(currentEditor: Editor, calls: ToolbarCalls, zoom = 100) {
       }}
       onViewModeChange={(mode) => calls.viewModes.push(mode)}
       onZoomChange={(zoom) => calls.zooms.push(zoom)}
+      onZoomFit={(fit) => calls.zoomFits.push(fit)}
       onInsertSection={() => {
         calls.sections += 1;
       }}
@@ -533,6 +574,7 @@ function createCalls(): ToolbarCalls {
     pageColors: [],
     pageChromeParts: [],
     viewModes: [],
+    zoomFits: [],
     zooms: [],
     closePageChrome: 0,
     comments: 0,
@@ -558,6 +600,16 @@ function createEditor(): Editor {
     extensions: createWorkDocumentExtensions(),
     content:
       '<section data-document-section="true"><p>Toolbar text</p></section>',
+  });
+  document.body.append(currentEditor.view.dom);
+  return currentEditor;
+}
+
+function createEditorWithChanges(): Editor {
+  const currentEditor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content:
+      '<section data-document-section="true"><p><ins data-document-change="true" data-change-kind="insertion" data-change-id="change-one">First</ins> plain <ins data-document-change="true" data-change-kind="insertion" data-change-id="change-two">Second</ins></p></section>',
   });
   document.body.append(currentEditor.view.dom);
   return currentEditor;

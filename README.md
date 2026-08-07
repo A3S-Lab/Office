@@ -259,10 +259,13 @@ interaction model.
   adaptive and persistently collapsible ribbon whose tabs can temporarily
   expose commands; WPS-oriented Insert groups and direct Page Layout presets
   for margins, orientation, paper size, and columns, with matching advanced
-  Page Setup destinations; editor-scoped WPS formatting, paragraph, style, and
-  review shortcuts, plus a permission-free formatting clipboard and one-shot
-  format painter shared with compatible header and footer formatting, paragraph
-  styles and phone-sized paragraph-spacing and pagination controls
+  Page Setup destinations; WPS-oriented References, Review, and View groups,
+  direct tracked-change navigation and decisions, contextual object tabs, and
+  viewport-calculated 100%, one-page, and page-width zoom; editor-scoped WPS
+  formatting, paragraph, style, and review shortcuts, plus a permission-free
+  formatting clipboard and one-shot format painter shared with compatible
+  header and footer formatting, paragraph styles and phone-sized
+  paragraph-spacing and pagination controls
   with touch targets and exact invoker-focus restoration; stable compact-ribbon
   edge paging and viewport-bounded list galleries with touch-sized numbering
   actions, selection-preserving bullet and numbering commands, and explicit

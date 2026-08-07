@@ -127,6 +127,17 @@ deterministic desktop workflow proves live landscape and two-column rendering,
 advanced-tab routing, Escape close, accessibility output, and empty browser
 diagnostics.
 
+References, Review, and View now follow the WPS-oriented information sequence
+without advertising an unimplemented table-of-contents command. Review adds
+direct previous/next and accept/reject commands backed by live revision ranges;
+resolving a change selects the next available revision and collapses to a safe
+caret when none remain. View orders document modes before display controls and
+replaces arbitrary presets with 100%, One Page, and Page Width. The fit commands
+use live page and viewport measurements, while contextual Picture, Table, and
+Header and Footer tabs are explicitly distinguished. A deterministic desktop
+workflow records two changes, navigates and resolves them, exercises both fit
+modes, and saves accessibility plus empty console and page-error evidence.
+
 Deterministic text collection
 now follows CSS font weight matching while retaining exact family and
 normal/italic style boundaries, keeping intermediate and synthesized bold

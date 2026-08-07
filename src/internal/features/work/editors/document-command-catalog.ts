@@ -10,17 +10,29 @@ export const documentRibbonTabs = [
 export const documentPictureRibbonTab = {
   id: 'picture',
   label: '图片',
+  contextual: true,
 } as const;
 
 export const documentTableRibbonTabs = [
-  { id: 'tableDesign', label: '表格设计', compactLabel: '设计' },
-  { id: 'tableLayout', label: '表格布局', compactLabel: '布局' },
+  {
+    id: 'tableDesign',
+    label: '表格设计',
+    compactLabel: '设计',
+    contextual: true,
+  },
+  {
+    id: 'tableLayout',
+    label: '表格布局',
+    compactLabel: '布局',
+    contextual: true,
+  },
 ] as const;
 
 export const documentPageChromeRibbonTab = {
   id: 'pageChrome',
   label: '页眉和页脚',
   compactLabel: '页眉页脚',
+  contextual: true,
 } as const;
 
 export type DocumentStandardRibbonTabId =

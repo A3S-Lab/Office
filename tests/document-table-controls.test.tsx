@@ -145,6 +145,8 @@ test('shows Word-style table Design and Layout tabs only inside a table', async 
 
   const tableDesignTab = screen.getByRole('tab', { name: '表格设计' });
   const tableLayoutTab = screen.getByRole('tab', { name: '表格布局' });
+  expect(tableDesignTab).toHaveAttribute('data-contextual', 'true');
+  expect(tableLayoutTab).toHaveAttribute('data-contextual', 'true');
   await waitFor(() =>
     expect(tableDesignTab).toHaveAttribute('aria-selected', 'true'),
   );
@@ -933,6 +935,7 @@ function documentToolbar(
       onToggleSpellcheck={noop}
       onViewModeChange={noop}
       onZoomChange={noop}
+      onZoomFit={noop}
       onInsertSection={noop}
       onInsertNote={noop}
       onInsertCaption={noop}

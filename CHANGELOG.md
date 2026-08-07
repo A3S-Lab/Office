@@ -28,6 +28,13 @@ All notable changes to A3S Office will be documented in this file.
   routed to the matching Page Setup tab. Deterministic browser coverage proves
   live landscape and two-column rendering, Escape close, accessibility, and
   empty console and page-error diagnostics.
+- Aligned Writer References, Review, and View grouping with WPS terminology and
+  order, added direct previous/next plus accept/reject revision commands, and
+  marked Picture, Table, and Header and Footer tabs as contextual tools.
+- Replaced arbitrary Writer zoom presets with WPS-style 100%, One Page, and Page
+  Width commands. Fit zoom is calculated from the live page and editor viewport;
+  deterministic browser coverage resolves two tracked changes, verifies both
+  fit modes, and captures accessible, error-free evidence.
 
 ## 0.2.2 - 2026-08-07
 
