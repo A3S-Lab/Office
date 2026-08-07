@@ -94,6 +94,31 @@ export const documentCommandCatalog = {
       editor: ['Mod-Shift-,', 'Mod-['],
     },
   },
+  copyFormat: {
+    id: 'clipboard.copyFormat',
+    label: '复制格式',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+C',
+      aria: 'Control+Shift+C Meta+Shift+C',
+      editor: ['Mod-Shift-c'],
+    },
+  },
+  pasteFormat: {
+    id: 'clipboard.pasteFormat',
+    label: '粘贴格式',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+V',
+      aria: 'Control+Shift+V Meta+Shift+V',
+      editor: ['Mod-Shift-v'],
+    },
+  },
+  formatPainter: {
+    id: 'clipboard.formatPainter',
+    label: '格式刷',
+    location: { area: 'ribbon', tab: 'home', group: 'clipboard' },
+  },
   bold: {
     id: 'font.bold',
     label: '加粗',

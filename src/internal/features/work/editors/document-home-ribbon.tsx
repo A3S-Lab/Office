@@ -39,6 +39,7 @@ import {
   type DocumentCommandId,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
+import { DocumentFormatTools } from './document-format-tools';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
@@ -99,6 +100,7 @@ export function DocumentHomeRibbon({
 
   return (
     <>
+      <DocumentFormatTools editor={editor} />
       <RibbonGroup label="字体" priority="high">
         <div className="work-document-font-tools">
           <div className="work-document-font-selects">

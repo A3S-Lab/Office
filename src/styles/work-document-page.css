@@ -65,6 +65,10 @@
   z-index: 1;
 }
 
+.work-document-editable .ProseMirror[data-document-format-painter="true"] {
+  cursor: copy;
+}
+
 .work-document-page.letter {
   width: 816px;
   min-height: 1056px;

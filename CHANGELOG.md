@@ -14,6 +14,9 @@ All notable changes to A3S Office will be documented in this file.
 - Made the displayed WPS Writer shortcuts executable inside the document for
   font sizing, paragraph alignment and line spacing, heading styles, spelling,
   field refresh, comments, and track changes without capturing host inputs.
+- Added a permission-free Writer formatting clipboard with WPS
+  `Ctrl+Shift+C` / `Ctrl+Shift+V`, a one-shot format painter, semantic-mark
+  preservation, and single-transaction formatting paste.
 
 ## 0.2.2 - 2026-08-07
 

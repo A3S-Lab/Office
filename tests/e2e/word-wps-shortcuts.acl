@@ -28,6 +28,50 @@ suite "office-word-wps-shortcuts" {
             visible = css(".work-document-editable .ProseMirror")
         }
 
+        expect "format-copy-shortcuts-described" {
+            visible = css("[aria-label='剪贴板'] button[aria-label='复制格式'][aria-keyshortcuts='Control+Shift+C Meta+Shift+C']")
+        }
+
+        click "select-format-source" {
+            target = css(".work-document-editable .ProseMirror h1")
+        }
+
+        press "move-to-source-start" {
+            key = "Home"
+        }
+
+        press "select-format-source-line" {
+            key = "Shift+End"
+        }
+
+        press "italicize-format-source" {
+            key = "Control+i"
+        }
+
+        press "copy-source-format" {
+            key = "Control+Shift+c"
+        }
+
+        click "select-format-target" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "move-to-target-start" {
+            key = "Home"
+        }
+
+        press "select-format-target-line" {
+            key = "Shift+End"
+        }
+
+        press "paste-source-format" {
+            key = "Control+Shift+v"
+        }
+
+        expect "format-and-heading-style-pasted" {
+            visible = css(".work-document-editable .ProseMirror h1:has(em) ~ h1:has(em)")
+        }
+
         click "focus-first-paragraph" {
             target = css(".work-document-editable .ProseMirror p")
         }

@@ -40,7 +40,11 @@ model:
    tab's commands without moving the document, and an outside pointer action
    returns to the compact row. Writer routes its catalogued WPS font-size,
    alignment, line-spacing, heading, spelling, field-refresh, comment, and
-   track-changes shortcuts only while the document surface owns the event.
+   track-changes shortcuts only while the document surface owns the event. Its
+   local formatting clipboard powers WPS copy-format and paste-format shortcuts
+   plus a one-shot format painter without requiring browser clipboard access;
+   paste replaces only direct character and paragraph formatting, preserving
+   links, comments, and revision semantics in one document transaction.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

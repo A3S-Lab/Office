@@ -11,6 +11,7 @@ import {
   changeDocumentFontSize,
   documentFontFamilyOptions,
 } from '../src/internal/features/work/editors/document-formatting-options';
+import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { DocumentHomeRibbon } from '../src/internal/features/work/editors/document-home-ribbon';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { MAX_DOCUMENT_INDENT_LEVEL } from '../src/internal/features/work/work-document-paragraph-formatting';
@@ -24,6 +25,67 @@ let editor: Editor | null = null;
 afterEach(() => {
   editor?.destroy();
   editor = null;
+  clearDocumentFormatClipboard();
+});
+
+test('copies, pastes, and paints formatting from the Home clipboard group', () => {
+  editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: '<p><strong>Source</strong> and <em>Target</em></p>',
+  });
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  render(
+    <DocumentHomeRibbon
+      editor={editor}
+      findReplaceMode={null}
+      onFindText={() => undefined}
+    />,
+  );
+  const clipboard = screen.getByRole('region', { name: '剪贴板' });
+  const copyFormat = within(clipboard).getByRole('button', {
+    name: '复制格式',
+  });
+  const pasteFormat = within(clipboard).getByRole('button', {
+    name: '粘贴格式',
+  });
+  const formatPainter = within(clipboard).getByRole('button', {
+    name: '格式刷',
+  });
+
+  expect(copyFormat).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+C Meta+Shift+C',
+  );
+  expect(pasteFormat).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+V Meta+Shift+V',
+  );
+  expect(pasteFormat).toBeDisabled();
+  fireEvent.click(copyFormat);
+  expect(pasteFormat).toBeEnabled();
+
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  fireEvent.click(pasteFormat);
+  expect(editor.getHTML()).toContain('<strong>Target</strong>');
+  expect(editor.getHTML()).not.toContain('<em>Target</em>');
+
+  expect(editor.commands.undo()).toBe(true);
+  expect(editor.getHTML()).toContain('<em>Target</em>');
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  fireEvent.click(formatPainter);
+  expect(formatPainter).toHaveAttribute('aria-pressed', 'true');
+  editor.commands.setTextSelection(textRange(editor, 'Target'));
+  fireEvent.pointerUp(editor.view.dom);
+  expect(editor.getHTML()).toContain('<strong>Target</strong>');
+  expect(editor.getHTML()).not.toContain('<em>Target</em>');
+  expect(formatPainter).toHaveAttribute('aria-pressed', 'false');
+  expect(editor.view.dom).not.toHaveAttribute('data-document-format-painter');
+
+  editor.commands.setTextSelection(textRange(editor, 'Source'));
+  fireEvent.click(formatPainter);
+  fireEvent.keyDown(editor.view.dom, { key: 'Escape' });
+  expect(formatPainter).toHaveAttribute('aria-pressed', 'false');
+  expect(editor.view.dom).not.toHaveAttribute('data-document-format-painter');
 });
 
 test('switches superscript and subscript without stacking both marks', () => {

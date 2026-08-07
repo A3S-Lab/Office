@@ -258,7 +258,8 @@ interaction model.
   a WPS-familiar command catalog, quick-access undo and redo, a priority-aware
   adaptive and persistently collapsible ribbon whose tabs can temporarily
   expose commands, editor-scoped WPS formatting, paragraph, style, and review
-  shortcuts, paragraph
+  shortcuts, plus a permission-free formatting clipboard and one-shot format
+  painter, paragraph
   styles and phone-sized paragraph-spacing and pagination controls
   with touch targets and exact invoker-focus restoration; stable compact-ribbon
   edge paging and viewport-bounded list galleries with touch-sized numbering

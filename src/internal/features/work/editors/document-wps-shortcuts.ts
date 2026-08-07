@@ -1,4 +1,8 @@
 import type { Editor } from '@tiptap/core';
+import {
+  copyDocumentFormatting,
+  pasteDocumentFormatting,
+} from './document-format-clipboard';
 import { changeDocumentFontSize } from './document-formatting-options';
 
 export interface DocumentWpsShortcutCallbacks {
@@ -52,6 +56,14 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'c') {
+      copyDocumentFormatting(editor);
+      return true;
+    }
+    if (key === 'v') {
+      pasteDocumentFormatting(editor);
+      return true;
+    }
     if (key === 'e') {
       callbacks.onToggleTrackChanges();
       return true;

@@ -66,4 +66,10 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
   expect(
     getDocumentCommandDefinition('insertComment').shortcut?.editor,
   ).toEqual(['Mod-Alt-m']);
+  expect(getDocumentCommandDefinition('copyFormat').shortcut?.editor).toEqual([
+    'Mod-Shift-c',
+  ]);
+  expect(getDocumentCommandDefinition('pasteFormat').shortcut?.editor).toEqual([
+    'Mod-Shift-v',
+  ]);
 });

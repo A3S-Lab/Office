@@ -8,6 +8,7 @@ import {
   within,
 } from '@testing-library/react';
 import { DocumentToolbar } from '../src/internal/features/work/editors/document-toolbar';
+import { clearDocumentFormatClipboard } from '../src/internal/features/work/editors/document-format-clipboard';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 interface ToolbarCalls {
@@ -46,6 +47,7 @@ afterEach(() => {
   if (editorRoot) editorRoot.remove();
   else editorElement?.remove();
   editor = null;
+  clearDocumentFormatClipboard();
 });
 
 test('wires every Insert and Page Layout action to document state or its owner', async () => {
@@ -327,6 +329,39 @@ test('routes WPS Writer formatting and review shortcuts inside the document', ()
   expect(calls.trackChanges).toBe(1);
   expect(calls.insertComments).toBe(1);
   expect(calls.spellcheck).toBe(1);
+});
+
+test('routes WPS copy-format and paste-format shortcuts inside the document', () => {
+  editor = createEditor();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  const auxiliaryInput = document.createElement('input');
+  root.append(editor.view.dom, auxiliaryInput);
+  document.body.append(root);
+  render(toolbar(editor, createCalls()));
+
+  editor.commands.setTextSelection(textRange(editor, 'Toolbar'));
+  editor.commands.setBold();
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'c',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+
+  editor.commands.setTextSelection(textRange(editor, 'text'));
+  fireEvent.keyDown(auxiliaryInput, {
+    key: 'v',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getHTML()).not.toContain('<strong>text</strong>');
+
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'v',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getHTML()).toContain('<strong>text</strong>');
 });
 
 test('keeps quick access undo and redo connected to document history', () => {
