@@ -9,6 +9,7 @@ export interface DocumentWpsShortcutCallbacks {
   canInsertComment: boolean;
   canRefreshFields: boolean;
   onInsertComment: () => void;
+  onOpenWordCount: () => void;
   onRefreshFields: () => void;
   onToggleSpellcheck: () => void;
   onToggleTrackChanges: () => void;
@@ -56,6 +57,10 @@ export function runDocumentWpsShortcut(
   }
 
   if (event.shiftKey) {
+    if (key === 'g') {
+      callbacks.onOpenWordCount();
+      return true;
+    }
     if (key === 'c') {
       copyDocumentFormatting(editor);
       return true;

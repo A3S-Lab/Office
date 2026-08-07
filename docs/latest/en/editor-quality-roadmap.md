@@ -138,6 +138,15 @@ Header and Footer tabs are explicitly distinguished. A deterministic desktop
 workflow records two changes, navigates and resolves them, exercises both fit
 modes, and saves accessibility plus empty console and page-error evidence.
 
+Writer's status bar now exposes its word count as a real command instead of a
+passive label. Clicking it or pressing the WPS `Ctrl+Shift+G` shortcut opens
+live page, word, character-with-and-without-spaces, and paragraph statistics,
+then restores the invoking status control or document caret. The labelled view
+and zoom toolbar supports arrow-key traversal. At compact Web widths, status
+items are removed by priority while page position and zoom remain available; a
+deterministic desktop-to-phone workflow captures both states with accessibility
+and browser-diagnostic evidence.
+
 Deterministic text collection
 now follows CSS font weight matching while retaining exact family and
 normal/italic style boundaries, keeping intermediate and synthesized bold

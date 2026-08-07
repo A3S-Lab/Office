@@ -52,6 +52,7 @@ export interface DocumentCommandShortcut {
 
 export type DocumentCommandLocation =
   | { area: 'quickAccess' }
+  | { area: 'status' }
   | {
       area: 'ribbon';
       tab: DocumentStandardRibbonTabId;
@@ -372,6 +373,16 @@ export const documentCommandCatalog = {
     id: 'view.navigationPane',
     label: '导航窗格',
     location: { area: 'ribbon', tab: 'view', group: 'show' },
+  },
+  wordCount: {
+    id: 'status.wordCount',
+    label: '字数统计',
+    location: { area: 'status' },
+    shortcut: {
+      label: 'Cmd/Ctrl+Shift+G',
+      aria: 'Control+Shift+G Meta+Shift+G',
+      editor: ['Mod-Shift-g'],
+    },
   },
 } as const satisfies Record<string, DocumentCommandDefinition>;
 

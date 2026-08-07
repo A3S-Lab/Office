@@ -649,6 +649,15 @@
   cursor: pointer;
 }
 
+.work-office-status button.work-office-status-text-button {
+  width: auto;
+  min-width: 0;
+  padding: 0 5px;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+
 .work-office-status button:hover:not(:disabled),
 .work-office-status button[aria-pressed="true"] {
   background: var(--a3s-panel-soft);

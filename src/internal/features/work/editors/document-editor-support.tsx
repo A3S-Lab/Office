@@ -253,6 +253,35 @@ export function documentWordCount(value: string): number {
   ).length;
 }
 
+export interface DocumentTextStatistics {
+  characterCountWithSpaces: number;
+  characterCountWithoutSpaces: number;
+  paragraphCount: number;
+  wordCount: number;
+}
+
+export function documentTextStatistics(
+  editor: Pick<Editor, 'getText' | 'state'>,
+): DocumentTextStatistics {
+  const text = editor.getText({ blockSeparator: '\n' });
+  const characters = Array.from(text).filter(
+    (character) => character !== '\n' && character !== '\r',
+  );
+  let paragraphCount = 0;
+  editor.state.doc.descendants((node) => {
+    if (node.isTextblock) paragraphCount += 1;
+  });
+
+  return {
+    characterCountWithSpaces: characters.length,
+    characterCountWithoutSpaces: characters.filter(
+      (character) => !/\s/u.test(character),
+    ).length,
+    paragraphCount,
+    wordCount: documentWordCount(text),
+  };
+}
+
 async function copyDocumentSelection(selection: string): Promise<void> {
   try {
     if (!navigator.clipboard?.writeText)

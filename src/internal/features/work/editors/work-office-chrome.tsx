@@ -10,6 +10,7 @@ import {
 import {
   type ButtonHTMLAttributes,
   Fragment,
+  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
@@ -25,8 +26,8 @@ import {
   calculateRibbonDensity,
   calculateRibbonOverflow,
   calculateRibbonScrollTarget,
-  type WorkOfficeRibbonItemGeometry,
   type WorkOfficeRibbonDensity,
+  type WorkOfficeRibbonItemGeometry,
 } from './work-office-ribbon-overflow';
 
 export interface WorkOfficeRibbonTab<T extends string> {
@@ -683,20 +684,63 @@ export function WorkOfficeRibbonButton({
 }
 
 export function WorkOfficeStatusBar({
+  ariaLabel = '编辑器状态栏',
   children,
   controls,
+  controlsLabel = '视图与缩放',
   className = '',
 }: {
+  ariaLabel?: string;
   children: ReactNode;
   controls?: ReactNode;
+  controlsLabel?: string;
   className?: string;
 }) {
   return (
-    <footer className={`work-office-status ${className}`.trim()}>
+    <section
+      className={`work-office-status ${className}`.trim()}
+      aria-label={ariaLabel}
+    >
       <div className="work-office-status-info">{children}</div>
-      {controls && <div className="work-office-status-view">{controls}</div>}
-    </footer>
+      {controls && (
+        <div
+          className="work-office-status-view"
+          role="toolbar"
+          aria-label={controlsLabel}
+          onKeyDown={moveOfficeToolbarFocus}
+        >
+          {controls}
+        </div>
+      )}
+    </section>
   );
+}
+
+function moveOfficeToolbarFocus(event: KeyboardEvent<HTMLDivElement>): void {
+  if (
+    !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) ||
+    (event.target instanceof HTMLElement &&
+      event.target.getAttribute('role') === 'slider')
+  ) {
+    return;
+  }
+  const controls = [
+    ...event.currentTarget.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), [role="slider"]:not([aria-disabled="true"])',
+    ),
+  ];
+  if (!controls.length) return;
+  const currentIndex = controls.indexOf(document.activeElement as HTMLElement);
+  const nextIndex =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? controls.length - 1
+        : event.key === 'ArrowRight'
+          ? (currentIndex + 1 + controls.length) % controls.length
+          : (currentIndex - 1 + controls.length) % controls.length;
+  event.preventDefault();
+  controls[nextIndex]?.focus();
 }
 
 export function WorkOfficeZoomControls({

@@ -98,6 +98,8 @@
     "test:e2e:writer-layout:check": "a3s-test check tests/e2e/word-insert-page-layout.acl --json",
     "test:e2e:writer-review-view": "a3s-test run tests/e2e/word-review-view.acl --json",
     "test:e2e:writer-review-view:check": "a3s-test check tests/e2e/word-review-view.acl --json",
+    "test:e2e:writer-status": "a3s-test run tests/e2e/word-status-bar.acl --json",
+    "test:e2e:writer-status:check": "a3s-test check tests/e2e/word-status-bar.acl --json",
     "test:wps-layout": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-wps-layout-parity.ps1",
     "test:watch": "rstest --watch",
     "typecheck": "tsc --noEmit"

@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from '@rstest/core';
 import { Editor } from '@tiptap/core';
-import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { runDocumentWpsShortcut } from '../src/internal/features/work/editors/document-wps-shortcuts';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 let editor: Editor | null = null;
 
@@ -82,9 +82,22 @@ test('executes scoped WPS Writer review shortcuts and ignores unrelated keys', (
     ),
   ).toBe(true);
   expect(
+    runDocumentWpsShortcut(
+      editor,
+      shortcut({ key: 'g', shiftKey: true }),
+      callbacks,
+    ),
+  ).toBe(true);
+  expect(
     runDocumentWpsShortcut(editor, shortcut({ key: 'p' }), callbacks),
   ).toBe(false);
-  expect(calls).toEqual(['track', 'comment', 'spellcheck', 'refresh']);
+  expect(calls).toEqual([
+    'track',
+    'comment',
+    'spellcheck',
+    'refresh',
+    'wordCount',
+  ]);
 });
 
 function createEditor(): Editor {
@@ -120,6 +133,7 @@ function createCallbacks(calls: string[] = []) {
     canInsertComment: true,
     canRefreshFields: true,
     onInsertComment: () => calls.push('comment'),
+    onOpenWordCount: () => calls.push('wordCount'),
     onRefreshFields: () => calls.push('refresh'),
     onToggleSpellcheck: () => calls.push('spellcheck'),
     onToggleTrackChanges: () => calls.push('track'),

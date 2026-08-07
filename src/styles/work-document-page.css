@@ -995,6 +995,38 @@
   box-shadow: 0 8px 30px rgb(30 38 55 / 7%);
 }
 
+.work-document-statistics {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--a3s-line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.work-document-statistics > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 9px 12px;
+  background: var(--a3s-panel);
+  font-size: 12px;
+}
+
+.work-document-statistics > div + div {
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-document-statistics dt {
+  color: var(--a3s-muted);
+}
+
+.work-document-statistics dd {
+  margin: 0;
+  color: var(--a3s-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 620;
+}
+
 @media (max-width: 1080px) {
   .work-export-button {
     padding: 0 9px;
@@ -1022,12 +1054,52 @@
 }
 
 @media (max-width: 760px) {
-  .work-document-footer .work-office-status-info [aria-label="分节状态"],
-  .work-document-footer .work-office-status-info button {
+  .work-document-footer
+    .work-office-status-info
+    [data-document-status-item="section"],
+  .work-document-footer
+    .work-office-status-info
+    [data-document-status-item="spellcheck"] {
     display: none;
   }
 
   .work-document-footer .work-office-status-slider {
     width: 58px;
+  }
+}
+
+@media (max-width: 520px) {
+  .work-document-footer.work-office-status {
+    height: 40px;
+    flex-basis: 40px;
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  .work-document-footer .work-office-status-info {
+    gap: 8px;
+  }
+
+  .work-document-footer
+    .work-office-status-info
+    [data-document-status-item="word-count"],
+  .work-document-footer
+    .work-office-status-view
+    [data-document-status-control="view-mode"] {
+    display: none;
+  }
+
+  .work-document-footer .work-office-status-view {
+    gap: 2px;
+  }
+
+  .work-document-footer.work-office-status button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .work-document-footer .work-office-status-slider {
+    width: 48px;
+    margin-inline: 0;
   }
 }

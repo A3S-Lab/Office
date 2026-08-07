@@ -35,6 +35,10 @@ All notable changes to A3S Office will be documented in this file.
   Width commands. Fit zoom is calculated from the live page and editor viewport;
   deterministic browser coverage resolves two tracked changes, verifies both
   fit modes, and captures accessible, error-free evidence.
+- Made Writer's status-bar word count actionable with live page, word,
+  character, and paragraph details plus the WPS `Ctrl+Shift+G` shortcut. The
+  labelled view-and-zoom toolbar supports arrow-key traversal, while compact
+  Web layouts retain page and zoom controls before lower-priority status items.
 
 ## 0.2.2 - 2026-08-07
 

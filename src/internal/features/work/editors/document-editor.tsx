@@ -67,13 +67,8 @@ import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
 import {
   documentCurrentPage,
   documentPageCount,
-  documentWordCount,
+  documentTextStatistics,
 } from './document-editor-support';
-import {
-  clampDocumentZoom,
-  type DocumentZoomFit,
-  documentZoomForFit,
-} from './document-zoom';
 import {
   type DocumentFindReplaceMode,
   DocumentFindReplacePanel,
@@ -91,9 +86,15 @@ import {
   type DocumentSelectionMenuState,
 } from './document-selection-context-menu';
 import { DocumentSelectionToolbar } from './document-selection-toolbar';
+import { DocumentStatisticsDialog } from './document-statistics-dialog';
 import { DocumentStatusBar } from './document-status-bar';
 import { DocumentToolbar, type DocumentViewMode } from './document-toolbar';
 import { DocumentVerticalRuler } from './document-vertical-ruler';
+import {
+  clampDocumentZoom,
+  type DocumentZoomFit,
+  documentZoomForFit,
+} from './document-zoom';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
 import {
   useOfficeTaskPaneEscape,
@@ -166,6 +167,7 @@ export function DocumentEditor({
   const taskPaneInvokerRef = useRef<HTMLElement | null>(null);
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
+  const statisticsInvokerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(content);
   const onChangeRef = useRef(onChange);
   const trackChangesRef = useRef(Boolean(content.trackChanges));
@@ -200,6 +202,7 @@ export function DocumentEditor({
   const [selectionMenu, setSelectionMenu] =
     useState<DocumentSelectionMenuState | null>(null);
   const [selectionVersion, setSelectionVersion] = useState(0);
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   contentRef.current = content;
   onChangeRef.current = onChange;
@@ -682,10 +685,19 @@ export function DocumentEditor({
     Math.max(1, layout.pageNumberStart ?? 1) + pageCount - 1;
   const changes = collectDocumentChanges(editor.state.doc);
   const citationCount = documentCitationCount(editor);
+  const textStatistics = documentTextStatistics(editor);
   const paragraphIndent = documentParagraphIndent(editor);
   const paragraphTabStops = documentParagraphTabStops(editor);
   const updateLayout = (next: typeof layout) => {
     editor.commands.updateActiveDocumentSection(next);
+  };
+  const openDocumentStatistics = () => {
+    const activeElement = document.activeElement;
+    statisticsInvokerRef.current =
+      activeElement instanceof HTMLElement && activeElement.isConnected
+        ? activeElement
+        : editor.view.dom;
+    setStatisticsOpen(true);
   };
   const updateToolbarLayout = (next: typeof layout) => {
     updateLayout(next);
@@ -892,6 +904,7 @@ export function DocumentEditor({
             restoreDocumentBodyFocus();
           }}
           onToggleChanges={() => void toggleTaskPane('changes')}
+          onOpenWordCount={openDocumentStatistics}
           onOpenFindReplace={openFindReplace}
         />
       )}
@@ -1237,9 +1250,10 @@ export function DocumentEditor({
           sectionIndex={section?.index ?? 0}
           spellcheckEnabled={spellcheckEnabled}
           viewMode={viewMode}
-          wordCount={documentWordCount(editor.getText())}
+          wordCount={textStatistics.wordCount}
           zoom={zoom}
           onSpellcheckChange={changeSpellcheck}
+          onOpenWordCount={openDocumentStatistics}
           onViewModeChange={changeViewMode}
           onZoomChange={setZoom}
         />
@@ -1255,6 +1269,14 @@ export function DocumentEditor({
       )}
       {!preview && documentInsert.dialog}
       {!preview && taskPaneDialog.dialog}
+      {!preview && statisticsOpen && (
+        <DocumentStatisticsDialog
+          pageCount={pageCount}
+          statistics={textStatistics}
+          restoreFocusTarget={() => statisticsInvokerRef.current}
+          onClose={() => setStatisticsOpen(false)}
+        />
+      )}
     </section>
   );
 }

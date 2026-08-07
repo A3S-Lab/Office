@@ -1,10 +1,11 @@
 import { CheckCheck, Cloud, FileText, Globe2 } from 'lucide-react';
+import { getDocumentCommandDefinition } from './document-command-catalog';
+import type { DocumentViewMode } from './document-toolbar';
 import {
   clampDocumentZoom,
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
 } from './document-zoom';
-import type { DocumentViewMode } from './document-toolbar';
 import {
   WorkOfficeStatusBar,
   WorkOfficeZoomControls,
@@ -23,6 +24,7 @@ interface DocumentStatusBarProps {
   wordCount: number;
   zoom: number;
   onSpellcheckChange: (enabled: boolean) => void;
+  onOpenWordCount: () => void;
   onViewModeChange: (mode: DocumentViewMode) => void;
   onZoomChange: (zoom: number) => void;
 }
@@ -40,16 +42,22 @@ export function DocumentStatusBar({
   wordCount,
   zoom,
   onSpellcheckChange,
+  onOpenWordCount,
   onViewModeChange,
   onZoomChange,
 }: DocumentStatusBarProps) {
+  const wordCountCommand = getDocumentCommandDefinition('wordCount');
+
   return (
     <WorkOfficeStatusBar
+      ariaLabel="文档状态栏"
+      controlsLabel="文档视图与缩放"
       className="work-document-footer"
       controls={
         <>
           <button
             type="button"
+            data-document-status-control="view-mode"
             aria-label="页面视图"
             title="页面视图"
             aria-pressed={viewMode === 'page'}
@@ -59,6 +67,7 @@ export function DocumentStatusBar({
           </button>
           <button
             type="button"
+            data-document-status-control="view-mode"
             aria-label="网页视图"
             title="网页视图"
             aria-pressed={viewMode === 'web'}
@@ -66,7 +75,10 @@ export function DocumentStatusBar({
           >
             <Globe2 size={13} />
           </button>
-          <span className="work-office-status-divider" />
+          <span
+            className="work-office-status-divider"
+            data-document-status-control="view-mode"
+          />
           <WorkOfficeZoomControls
             zoom={zoom}
             minimum={MIN_DOCUMENT_ZOOM}
@@ -81,15 +93,26 @@ export function DocumentStatusBar({
         </>
       }
     >
-      <output aria-label="页码状态">
+      <output aria-label="页码状态" data-document-status-item="page">
         第 {currentPage} 页，共 {pageCount} 页
       </output>
-      <output aria-label="分节状态">
+      <output aria-label="分节状态" data-document-status-item="section">
         第 {sectionIndex + 1} 节，共 {sectionCount} 节
       </output>
-      <output aria-label="字数统计">字数：{wordCount}</output>
       <button
         type="button"
+        className="work-office-status-text-button"
+        data-document-status-item="word-count"
+        aria-label={`字数统计：${wordCount}`}
+        aria-keyshortcuts={wordCountCommand.shortcut?.aria}
+        title={`${wordCountCommand.label}（${wordCountCommand.shortcut?.label}）`}
+        onClick={onOpenWordCount}
+      >
+        字数：{wordCount}
+      </button>
+      <button
+        type="button"
+        data-document-status-item="spellcheck"
         aria-label={`校对：${spellcheckEnabled ? '已开启' : '已关闭'}`}
         title={`校对：${spellcheckEnabled ? '已开启' : '已关闭'}`}
         aria-pressed={spellcheckEnabled}

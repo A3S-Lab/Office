@@ -1,0 +1,92 @@
+suite "office-word-status-bar" {
+    version = 1
+
+    scenario "open-word-count-and-prioritize-phone-status" {
+        name = "Use the WPS-style Writer word count and responsive status bar"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-status-bar"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        expect "status-bar-is-labelled" {
+            visible = css(".work-document-footer[aria-label='文档状态栏']")
+        }
+
+        expect "word-count-shortcut-is-described" {
+            visible = css("button[data-document-status-item='word-count'][aria-keyshortcuts='Control+Shift+G Meta+Shift+G']")
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "open-word-count" {
+            key = "Control+Shift+g"
+        }
+
+        expect "statistics-dialog-is-complete" {
+            visible = css("[role='dialog'].work-document-statistics-dialog .work-document-statistics")
+        }
+
+        screenshot "writer-word-count" {
+            path = "screenshots/writer-word-count.png"
+        }
+
+        click "close-word-count" {
+            target = role("button", "确定")
+        }
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        expect "page-status-remains-visible" {
+            visible = css(".work-document-footer [data-document-status-item='page']")
+        }
+
+        expect "zoom-remains-visible" {
+            visible = css(".work-document-footer [aria-label='文档缩放']")
+        }
+
+        screenshot "writer-phone-status" {
+            path = "screenshots/writer-phone-status.png"
+        }
+
+        accessibility "writer-status-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

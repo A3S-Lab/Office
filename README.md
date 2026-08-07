@@ -261,7 +261,9 @@ interaction model.
   for margins, orientation, paper size, and columns, with matching advanced
   Page Setup destinations; WPS-oriented References, Review, and View groups,
   direct tracked-change navigation and decisions, contextual object tabs, and
-  viewport-calculated 100%, one-page, and page-width zoom; editor-scoped WPS
+  viewport-calculated 100%, one-page, and page-width zoom; an actionable status
+  bar with live word-count details, WPS `Ctrl+Shift+G`, keyboard-traversable
+  view and zoom controls, and compact Web prioritization; editor-scoped WPS
   formatting, paragraph, style, and review shortcuts, plus a permission-free
   formatting clipboard and one-shot format painter shared with compatible
   header and footer formatting, paragraph styles and phone-sized

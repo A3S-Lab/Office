@@ -51,10 +51,6 @@ import {
   documentTableRibbonTabs,
   getDocumentCommandDefinition,
 } from './document-command-catalog';
-import {
-  actionableDocumentChangeIndex,
-  adjacentDocumentChangeIndex,
-} from './document-review-navigation';
 import type { DocumentFindReplaceMode } from './document-find-replace-panel';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import type { DocumentLayoutPanelTab } from './document-layout-panel';
@@ -64,6 +60,10 @@ import {
 } from './document-page-chrome-ribbon';
 import { DocumentPageLayoutRibbon } from './document-page-layout-ribbon';
 import { DocumentPictureRibbon } from './document-picture-ribbon';
+import {
+  actionableDocumentChangeIndex,
+  adjacentDocumentChangeIndex,
+} from './document-review-navigation';
 import { DocumentTableInsertPopover } from './document-table-insert-popover';
 import {
   DocumentTableDesignRibbon,
@@ -140,6 +140,7 @@ interface DocumentToolbarProps {
   ) => boolean | undefined | Promise<boolean | undefined>;
   onToggleTrackChanges: () => void;
   onToggleChanges: () => void;
+  onOpenWordCount: () => void;
   onOpenFindReplace: (mode: DocumentFindReplaceMode) => void;
 }
 
@@ -195,6 +196,7 @@ export function DocumentToolbar({
   onRibbonTabChange,
   onToggleTrackChanges,
   onToggleChanges,
+  onOpenWordCount,
   onOpenFindReplace,
 }: DocumentToolbarProps) {
   const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>('home');
@@ -292,6 +294,7 @@ export function DocumentToolbar({
           canInsertComment,
           canRefreshFields: hasRefreshableFields,
           onInsertComment,
+          onOpenWordCount,
           onRefreshFields,
           onToggleSpellcheck,
           onToggleTrackChanges,
@@ -369,6 +372,7 @@ export function DocumentToolbar({
     hasRefreshableFields,
     onInsertComment,
     onOpenFindReplace,
+    onOpenWordCount,
     onRefreshFields,
     onToggleSpellcheck,
     onToggleTrackChanges,

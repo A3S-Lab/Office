@@ -30,6 +30,9 @@ test('keeps Writer command ids and WPS locations unique', () => {
     tab: 'view',
     group: 'show',
   });
+  expect(getDocumentCommandDefinition('wordCount').location).toEqual({
+    area: 'status',
+  });
 });
 
 test('defines the WPS Writer shortcut contract in one catalog', () => {
@@ -71,5 +74,8 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
   ]);
   expect(getDocumentCommandDefinition('pasteFormat').shortcut?.editor).toEqual([
     'Mod-Shift-v',
+  ]);
+  expect(getDocumentCommandDefinition('wordCount').shortcut?.editor).toEqual([
+    'Mod-Shift-g',
   ]);
 });
