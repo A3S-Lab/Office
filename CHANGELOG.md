@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.2.2 - 2026-08-07
+
+- Selected the Word `ascii`, `hAnsi`, `eastAsia`, or complex-script font slot
+  from each run's actual text while preserving `bCs`, `iCs`, `szCs`, `cs`,
+  `rtl`, and font-hint behavior for multilingual DOCX content.
+- Added a deterministic 30-row Latin, Chinese, Arabic, Hebrew, and mixed-format
+  fixture with A3S Test coverage and a real WPS Writer PDF layout gate.
+- Added a calibrated Chromium native-PDF fallback for WPS reference captures
+  when the embedded PDF renderer cannot initialize the exported document.
+
 ## 0.2.1 - 2026-08-06
 
 - Matched WPS Writer automatic line layout across common Latin and Chinese
