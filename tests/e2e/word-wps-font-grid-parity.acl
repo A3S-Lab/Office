@@ -181,4 +181,79 @@ suite "office-word-wps-font-grid-parity" {
             clear = false
         }
     }
+
+    scenario "preserve-script-font-slots-and-mixed-formatting" {
+        name = "Preserve WPS Arabic, Hebrew, CJK, Latin, and mixed-run metrics"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-wps-script-matrix"
+        }
+
+        expect "playground-ready" {
+            visible = css("input[type='file'][accept*='.docx']")
+        }
+
+        upload "open-script-matrix" {
+            target = css("input[type='file'][accept*='.docx']")
+            paths = [".a3s-test/fixtures/word-wps-script-matrix.docx"]
+        }
+
+        wait "script-matrix-loaded" {
+            text = "Mixed 6"
+        }
+
+        wait "pagination-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready']")
+        }
+
+        expect "rtl-paragraph-direction-is-preserved" {
+            visible = css(".work-document-editable p[dir='rtl']")
+        }
+
+        expect "complex-script-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.15'][style*='Arial']")
+        }
+
+        expect "latin-script-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.3301'][style*='Segoe UI']")
+        }
+
+        expect "cjk-script-uses-wps-line-factor" {
+            visible = css("[data-office-word-line-height-factor='1.7143'][style*='Microsoft YaHei']")
+        }
+
+        expect "mixed-bold-formatting-is-preserved" {
+            visible = css(".work-document-editable span strong")
+        }
+
+        expect "mixed-italic-formatting-is-preserved" {
+            visible = css(".work-document-editable span em")
+        }
+
+        expect "script-matrix-stays-on-one-wps-page" {
+            visible = css(".work-document-page-stack[data-page-count='1']")
+        }
+
+        screenshot "script-matrix-layout" {
+            path = "screenshots/word-wps-script-matrix.png"
+        }
+
+        console "script-matrix-console" {
+            path = "diagnostics/word-wps-script-matrix-console.json"
+            clear = false
+        }
+
+        page_errors "script-matrix-errors" {
+            path = "diagnostics/word-wps-script-matrix-errors.json"
+            clear = false
+        }
+    }
 }

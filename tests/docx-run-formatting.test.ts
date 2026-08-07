@@ -68,8 +68,8 @@ describe('DOCX run formatting', () => {
       italic: false,
       underline: false,
       strike: false,
-      fontFamily: 'SimSun, Arial',
-      wordLineHeightFactor: 1.2976,
+      fontFamily: 'Arial, SimSun',
+      wordLineHeightFactor: 1.15,
       wordSnapToGrid: false,
       fontSize: 14,
       color: '#112233',
@@ -143,6 +143,102 @@ describe('DOCX run formatting', () => {
     expect(markers.runs[0]?.formatting).toMatchObject({
       fontFamily: 'Aptos',
       color: '#4472c4',
+    });
+  });
+
+  test('selects the Word font slot that matches each run script', () => {
+    const run = (text: string) => `
+      <w:p><w:r>
+        <w:rPr>
+          <w:rFonts
+            w:ascii="Segoe UI"
+            w:hAnsi="Calibri"
+            w:eastAsia="Microsoft YaHei"
+            w:cs="Arial"
+          />
+        </w:rPr>
+        <w:t>${text}</w:t>
+      </w:r></w:p>
+    `;
+    const document = wordXml(
+      [
+        run('A3S Office'),
+        run('\u00e9'),
+        run('\u4e2d\u6587\u6d4b\u8bd5'),
+        run('\u0627\u062e\u062a\u0628\u0627\u0631'),
+        run('(\u0627\u062e\u062a\u0628\u0627\u0631)'),
+        run('\u05d1\u05d3\u05d9\u05e7\u05d4'),
+      ].join(''),
+    );
+
+    const formatting = markDocxRunFormatting(document).runs.map(
+      (marker) => marker.formatting,
+    );
+
+    expect(formatting).toEqual([
+      expect.objectContaining({
+        fontFamily: '"Segoe UI", Calibri, "Microsoft YaHei", Arial',
+        wordLineHeightFactor: 1.3301,
+      }),
+      expect.objectContaining({
+        fontFamily: 'Calibri, "Segoe UI", "Microsoft YaHei", Arial',
+        wordLineHeightFactor: 1.2207,
+      }),
+      expect.objectContaining({
+        fontFamily: '"Microsoft YaHei", Calibri, "Segoe UI", Arial',
+        wordLineHeightFactor: 1.7143,
+      }),
+      expect.objectContaining({
+        fontFamily: 'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
+        wordLineHeightFactor: 1.15,
+      }),
+      expect.objectContaining({
+        fontFamily: 'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
+        wordLineHeightFactor: 1.15,
+      }),
+      expect.objectContaining({
+        fontFamily: 'Arial, Calibri, "Segoe UI", "Microsoft YaHei"',
+        wordLineHeightFactor: 1.15,
+      }),
+    ]);
+  });
+
+  test('uses complex-script emphasis and size for a complex run', () => {
+    const document = wordXml(`
+      <w:p><w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="Segoe UI" w:cs="Arial"/>
+          <w:b w:val="false"/><w:bCs/>
+          <w:i w:val="false"/><w:iCs/>
+          <w:sz w:val="22"/><w:szCs w:val="28"/>
+        </w:rPr>
+        <w:t>\u0627\u062e\u062a\u0628\u0627\u0631</w:t>
+      </w:r></w:p>
+    `);
+
+    expect(markDocxRunFormatting(document).runs[0]?.formatting).toMatchObject({
+      bold: true,
+      italic: true,
+      fontFamily: 'Arial, "Segoe UI"',
+      wordLineHeightFactor: 1.15,
+      fontSize: 14,
+    });
+  });
+
+  test('honors an explicit complex-script run marker for neutral text', () => {
+    const document = wordXml(`
+      <w:p><w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="Segoe UI" w:cs="Arial"/>
+          <w:rtl/>
+        </w:rPr>
+        <w:t>123</w:t>
+      </w:r></w:p>
+    `);
+
+    expect(markDocxRunFormatting(document).runs[0]?.formatting).toMatchObject({
+      fontFamily: 'Arial, "Segoe UI"',
+      wordLineHeightFactor: 1.15,
     });
   });
 

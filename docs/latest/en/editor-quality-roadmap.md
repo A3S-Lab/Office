@@ -149,7 +149,7 @@ result is a one-pixel maximum landmark delta, a 1.4612% thresholded difference,
 and 0.7308 mean absolute error. Original OOXML line multiples remain the DOCX
 round-trip authority instead of being replaced by the browser-only WPS metric.
 
-Three focused matrices now extend that gate beyond Arial and table geometry.
+Four focused matrices now extend that gate beyond Arial and table geometry.
 The common-font matrix contains 30 rows across Arial, Times New Roman, Calibri,
 Segoe UI, and Microsoft YaHei at two sizes and two automatic spacing multiples.
 The CJK matrix contains 36 Latin and Chinese rows across Microsoft YaHei,
@@ -163,6 +163,15 @@ page-error diagnostics; the WPS comparison rejects a text-band top drift above
 three pixels or a consecutive-band advance drift above four pixels. The current
 maximum top/advance deltas are 3/1 pixels for common fonts, 2/2 pixels for CJK
 fonts, and 1/1 pixels for the document grid.
+
+The fourth matrix adds 30 Latin, CJK, Arabic, Hebrew, and mixed-formatting rows
+at two sizes. DOCX import now chooses the Word `ascii`, `hAnsi`, `eastAsia`, or
+`cs` font slot from the run text and honors `bCs`, `iCs`, `szCs`, `cs`, `rtl`,
+and `rFonts` hints before calculating the WPS line-height factor. The same
+fixture proves paragraph RTL direction, complex-script emphasis, mixed-run
+bold and italic formatting, one-page pagination, and empty browser diagnostics.
+Its real WPS 12.1 reference has 30 matching text bands with a three-pixel
+maximum top delta and a three-pixel maximum consecutive-band advance delta.
 
 Exit evidence:
 

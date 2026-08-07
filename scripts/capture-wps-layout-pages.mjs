@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const { values } = parseArgs({
@@ -37,6 +38,7 @@ const chromiumPath =
   values.chromium ??
   process.env.A3S_OFFICE_VISUAL_CHROMIUM_EXECUTABLE ??
   process.env.AGENT_BROWSER_EXECUTABLE_PATH;
+const PDF_REFERENCE_EMBED_TIMEOUT_MS = 20_000;
 
 await Promise.all(
   [a3sOutputPath, wpsOutputPath, layoutOutputPath].map((outputPath) =>
@@ -46,7 +48,7 @@ await Promise.all(
 
 const browser = await chromium.launch({
   ...(chromiumPath ? { executablePath: path.resolve(chromiumPath) } : {}),
-  args: ['--no-sandbox'],
+  args: ['--no-sandbox', '--allow-file-access-from-files'],
 });
 
 const browserErrors = [];
@@ -152,47 +154,81 @@ try {
   await pdfPage
     .locator("input[type='file'][accept='.pdf,application/pdf']")
     .setInputFiles(pdfPath);
-  await pdfPage.locator('.work-pdf-embed[data-ready="true"]').waitFor();
-  await pdfPage.evaluate(async () => {
-    const host = document.querySelector('embedpdf-container');
-    if (!host) throw new Error('PDF viewer host was not found.');
-    const registry = await host.registry;
-    const documentId = registry
-      .getPlugin('document-manager')
-      .provides()
-      .getActiveDocumentId();
-    const zoom = registry.getPlugin('zoom').provides().forDocument(documentId);
-    zoom.requestZoom(1.334);
-    await new Promise((resolve) => setTimeout(resolve, 1_500));
-    const renderedPage = Array.from(
-      host.shadowRoot.querySelectorAll('div'),
-    ).find((element) => {
-      const box = element.getBoundingClientRect();
-      return (
-        element.getAttribute('style')?.includes('touch-action: none') &&
-        box.width > 790 &&
-        box.width < 800 &&
-        box.height > 1_120 &&
-        box.height < 1_125
-      );
+  let referenceRenderer = 'embedpdf';
+  let referenceFallback;
+  let wpsBox;
+  try {
+    await pdfPage.waitForFunction(
+      () =>
+        document.querySelector('.work-pdf-embed[data-ready="true"]') ||
+        document.querySelector('.work-pdf-state[role="alert"]'),
+      undefined,
+      { timeout: PDF_REFERENCE_EMBED_TIMEOUT_MS },
+    );
+    if (await pdfPage.locator('.work-pdf-state[role="alert"]').count()) {
+      throw new Error('The embedded PDF viewer rejected the WPS reference.');
+    }
+    await pdfPage.evaluate(async () => {
+      const host = document.querySelector('embedpdf-container');
+      if (!host) throw new Error('PDF viewer host was not found.');
+      const registry = await host.registry;
+      const documentId = registry
+        .getPlugin('document-manager')
+        .provides()
+        .getActiveDocumentId();
+      const zoom = registry
+        .getPlugin('zoom')
+        .provides()
+        .forDocument(documentId);
+      zoom.requestZoom(1.334);
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
+      const renderedPage = Array.from(
+        host.shadowRoot.querySelectorAll('div'),
+      ).find((element) => {
+        const box = element.getBoundingClientRect();
+        return (
+          element.getAttribute('style')?.includes('touch-action: none') &&
+          box.width > 790 &&
+          box.width < 800 &&
+          box.height > 1_120 &&
+          box.height < 1_125
+        );
+      });
+      if (!renderedPage)
+        throw new Error('Rendered WPS PDF page was not found.');
+      renderedPage.dataset.wpsReferencePage = 'true';
     });
-    if (!renderedPage) throw new Error('Rendered WPS PDF page was not found.');
-    renderedPage.dataset.wpsReferencePage = 'true';
-  });
-  const wpsSheet = pdfPage.locator('[data-wps-reference-page="true"]');
-  const wpsBox = await wpsSheet.boundingBox();
-  assertPageSize(wpsBox, 'WPS reference page');
-  await pdfPage.screenshot({
-    animations: 'disabled',
-    caret: 'hide',
-    clip: {
-      x: wpsBox.x,
-      y: wpsBox.y,
-      width: 794,
-      height: 1123,
-    },
-    path: wpsOutputPath,
-  });
+    const wpsSheet = pdfPage.locator('[data-wps-reference-page="true"]');
+    wpsBox = await wpsSheet.boundingBox();
+    assertPageSize(wpsBox, 'WPS reference page');
+    await pdfPage.screenshot({
+      animations: 'disabled',
+      caret: 'hide',
+      clip: {
+        x: wpsBox.x,
+        y: wpsBox.y,
+        width: 794,
+        height: 1123,
+      },
+      path: wpsOutputPath,
+    });
+  } catch (error) {
+    const diagnostics = await pdfPage.evaluate(() => ({
+      bodyText: document.body.innerText.slice(-2_000),
+      state: document
+        .querySelector('.work-pdf-state')
+        ?.outerHTML.slice(0, 2_000),
+    }));
+    referenceRenderer = 'chromium-native-pdf';
+    referenceFallback = {
+      cause: error instanceof Error ? error.message : String(error),
+      diagnostics,
+    };
+    console.warn(
+      `Embedded PDF capture failed; using Chromium native PDF rendering: ${JSON.stringify(referenceFallback)}`,
+    );
+    wpsBox = await captureNativePdfReference(browser, pdfPath, wpsOutputPath);
+  }
 
   await writeFile(
     layoutOutputPath,
@@ -200,6 +236,8 @@ try {
       {
         a3sPage: documentBox,
         wpsPage: wpsBox,
+        referenceRenderer,
+        ...(referenceFallback ? { referenceFallback } : {}),
         a3sLayout,
         a3sRunLayout,
         pagination: {
@@ -221,6 +259,36 @@ try {
   }
 } finally {
   await browser.close();
+}
+
+async function captureNativePdfReference(browser, pdfFile, outputPath) {
+  const nativeContext = await browser.newContext({
+    colorScheme: 'light',
+    deviceScaleFactor: 1,
+    locale: 'zh-CN',
+    reducedMotion: 'reduce',
+    viewport: { width: 1200, height: 1400 },
+  });
+  try {
+    const page = await nativeContext.newPage();
+    await page.goto(pathToFileURL(pdfFile).href, {
+      timeout: 30_000,
+      waitUntil: 'load',
+    });
+    await page.waitForTimeout(2_000);
+    await page.mouse.click(31, 28);
+    await page.waitForTimeout(1_000);
+    const pageBox = { x: 203, y: 58, width: 794, height: 1123 };
+    await page.screenshot({
+      animations: 'disabled',
+      caret: 'hide',
+      clip: pageBox,
+      path: outputPath,
+    });
+    return pageBox;
+  } finally {
+    await nativeContext.close();
+  }
 }
 
 async function setDocumentZoom(page, target) {

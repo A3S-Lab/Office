@@ -70,6 +70,10 @@ const wpsGridMatrixDocumentPath = path.join(
   fixtureDirectory,
   'word-wps-grid-matrix.docx',
 );
+const wpsScriptMatrixDocumentPath = path.join(
+  fixtureDirectory,
+  'word-wps-script-matrix.docx',
+);
 
 await mkdir(fixtureDirectory, { recursive: true });
 await Bun.write(pdfPath, createPdfThumbnailKeyboardFixture());
@@ -99,6 +103,10 @@ await Bun.write(
   await createWpsGridMatrixWordFixture(),
 );
 await Bun.write(
+  wpsScriptMatrixDocumentPath,
+  await createWpsScriptMatrixWordFixture(),
+);
+await Bun.write(
   picturePath,
   Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAYAAADMtn8nAAAB+klEQVR4nO3bwQnCUBRFwZRjT25TidUKukoDsQARMfj5OTCL2V94nOVbLut9B5qW2QOA4wQMYQKGsLeAn9sOnJSAIUzAECZgCBMwhAkYwgQMYQKGMAFDmIAhTMAQJmAIEzCECRjChgX86xvUbLMPAUcIWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJWMCECVjAhAlYwIQJ+E8BX28P+EjAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwAImTMACJkzAAiZMwCcPGGYQsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACROwgAkTsIAJE7CACRsWMDCegCFMwBAmYAgTMIQJGMIEDGEChjABQ5iAIUzAECZgCBMwhAkYwr4GDHQIGMIEDGEChrAXam5Zu0ZEGKIAAAAASUVORK5CYII=',
@@ -117,6 +125,7 @@ console.log(`Created ${wpsLayoutDocumentPath}`);
 console.log(`Created ${wpsFontMatrixDocumentPath}`);
 console.log(`Created ${wpsCjkFontMatrixDocumentPath}`);
 console.log(`Created ${wpsGridMatrixDocumentPath}`);
+console.log(`Created ${wpsScriptMatrixDocumentPath}`);
 console.log(`Created ${picturePath}`);
 
 async function createLongWordNavigationFixture(): Promise<Buffer> {
@@ -863,6 +872,123 @@ async function createWpsGridMatrixWordFixture(): Promise<Buffer> {
               }),
           ),
         ),
+      },
+    ],
+  });
+  return Packer.toBuffer(document);
+}
+
+async function createWpsScriptMatrixWordFixture(): Promise<Buffer> {
+  const font = {
+    ascii: 'Segoe UI',
+    hAnsi: 'Calibri',
+    eastAsia: 'Microsoft YaHei',
+    cs: 'Arial',
+  } as const;
+  const scriptSamples = [
+    {
+      bidirectional: false,
+      label: 'Latin script sample',
+      rightToLeft: false,
+    },
+    {
+      bidirectional: false,
+      label: '\u4e2d\u6587\u5b57\u4f53\u6d4b\u8bd5',
+      rightToLeft: false,
+    },
+    {
+      bidirectional: true,
+      label:
+        '\u0627\u062e\u062a\u0628\u0627\u0631 \u0627\u0644\u062e\u0637 \u0627\u0644\u0639\u0631\u0628\u064a',
+      rightToLeft: true,
+    },
+    {
+      bidirectional: true,
+      label:
+        '\u05d1\u05d3\u05d9\u05e7\u05ea \u05d2\u05d5\u05e4\u05df \u05e2\u05d1\u05e8\u05d9',
+      rightToLeft: true,
+    },
+  ] as const;
+  const scriptParagraphs = scriptSamples.flatMap(
+    ({ bidirectional, label, rightToLeft }) =>
+      [24, 32].flatMap((size) =>
+        [240, 240, 360].map(
+          (line) =>
+            new Paragraph({
+              bidirectional,
+              spacing: { before: 0, after: 0, line },
+              children: [
+                new TextRun({
+                  text: label,
+                  font,
+                  size,
+                  sizeComplexScript: size,
+                  rightToLeft,
+                  bold: false,
+                  boldComplexScript: false,
+                  italics: false,
+                  italicsComplexScript: false,
+                  color: '000000',
+                }),
+              ],
+            }),
+        ),
+      ),
+  );
+  const mixedParagraphs = Array.from(
+    { length: 6 },
+    (_, index) =>
+      new Paragraph({
+        spacing: { before: 0, after: 0, line: index === 5 ? 360 : 240 },
+        children: [
+          new TextRun({
+            text: `Mixed ${index + 1} `,
+            font,
+            size: 21,
+            bold: index % 2 === 0,
+            italics: index % 2 !== 0,
+            color: '000000',
+          }),
+          new TextRun({
+            text: '\u0627\u0644\u0639\u0631\u0628\u064a\u0629 ',
+            font,
+            size: 21,
+            sizeComplexScript: 21,
+            rightToLeft: true,
+            boldComplexScript: index % 2 === 0,
+            italicsComplexScript: index % 2 !== 0,
+            color: '000000',
+          }),
+          new TextRun({
+            text: '\u05e2\u05d1\u05e8\u05d9\u05ea ',
+            font,
+            size: 21,
+            sizeComplexScript: 21,
+            rightToLeft: true,
+            boldComplexScript: index % 2 === 0,
+            italicsComplexScript: index % 2 !== 0,
+            color: '000000',
+          }),
+          new TextRun({
+            text: '\u4e2d\u6587',
+            font,
+            size: 21,
+            bold: index % 2 === 0,
+            italics: index % 2 !== 0,
+            color: '000000',
+          }),
+        ],
+      }),
+  );
+  const document = new Document({
+    creator: 'A3S Lab',
+    description:
+      'Deterministic WPS Arabic, Hebrew, CJK, Latin, and mixed-run layout fixture',
+    title: 'A3S Office WPS script and mixed-formatting matrix',
+    sections: [
+      {
+        properties: { page: wpsMatrixPageProperties() },
+        children: [...scriptParagraphs, ...mixedParagraphs],
       },
     ],
   });

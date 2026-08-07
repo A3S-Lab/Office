@@ -46,6 +46,15 @@ const WORD_NAMESPACE =
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const RUN_FORMATTING_MARKER_PATTERN = /__A3S_WORK_RUN_(?:START|END)_\d+__/g;
 
+type DocxFontSlot = 'ascii' | 'hAnsi' | 'eastAsia' | 'complex';
+
+interface DocxRunFonts {
+  ascii?: string;
+  hAnsi?: string;
+  eastAsia?: string;
+  complex?: string;
+}
+
 export function markDocxRunFormatting(
   document: Document,
   styleSource?: DocxParagraphStyleSource,
@@ -71,6 +80,7 @@ export function markDocxRunFormatting(
         docxTableRunPropertySources(run, tableStyles),
       ),
       theme,
+      runText,
     );
     if (!Object.keys(formatting).length) continue;
     const index = runs.length + 1;
@@ -107,25 +117,35 @@ export function hasImportedDocxRunFormattingMarkers(
 function resolvedRunFormatting(
   propertySources: readonly Element[],
   theme: DocxThemeResolver,
+  runText: string,
 ): ImportedDocxRunFormatting {
-  const fonts: {
-    ascii?: string;
-    hAnsi?: string;
-    eastAsia?: string;
-    complex?: string;
-  } = {};
+  const fonts: DocxRunFonts = {};
   let fontSize: number | undefined;
+  let complexFontSize: number | undefined;
   let color: string | undefined;
   let backgroundColor: string | undefined;
   let bold: boolean | undefined;
+  let complexBold: boolean | undefined;
   let italic: boolean | undefined;
+  let complexItalic: boolean | undefined;
   let underline: boolean | undefined;
   let strike: boolean | undefined;
   let snapToGrid: boolean | undefined;
+  let complexScriptFormatting: boolean | undefined;
+  let rightToLeft: boolean | undefined;
+  let fontHint: DocxFontSlot | undefined;
 
   for (const properties of propertySources) {
     bold = overriddenBoolean(bold, onOffProperty(properties, 'b'));
+    complexBold = overriddenBoolean(
+      complexBold,
+      onOffProperty(properties, 'bCs'),
+    );
     italic = overriddenBoolean(italic, onOffProperty(properties, 'i'));
+    complexItalic = overriddenBoolean(
+      complexItalic,
+      onOffProperty(properties, 'iCs'),
+    );
     underline = overriddenBoolean(underline, underlineProperty(properties));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
@@ -133,9 +153,18 @@ function resolvedRunFormatting(
       snapToGrid,
       onOffProperty(properties, 'snapToGrid'),
     );
+    complexScriptFormatting = overriddenBoolean(
+      complexScriptFormatting,
+      onOffProperty(properties, 'cs'),
+    );
+    rightToLeft = overriddenBoolean(
+      rightToLeft,
+      onOffProperty(properties, 'rtl'),
+    );
 
     const runFonts = directChild(properties, 'rFonts');
     if (runFonts) {
+      fontHint = resolvedFontHint(runFonts) ?? fontHint;
       assignFont(
         fonts,
         'ascii',
@@ -160,6 +189,13 @@ function resolvedRunFormatting(
 
     const size = numericAttribute(directChild(properties, 'sz'), 'val');
     if (size !== undefined && size > 0) fontSize = Math.min(512, size / 2);
+    const complexSize = numericAttribute(
+      directChild(properties, 'szCs'),
+      'val',
+    );
+    if (complexSize !== undefined && complexSize > 0) {
+      complexFontSize = Math.min(512, complexSize / 2);
+    }
 
     const colorElement = directChild(properties, 'color');
     if (colorElement) {
@@ -198,27 +234,39 @@ function resolvedRunFormatting(
     }
   }
 
-  let fontFamily = uniqueFonts([
-    fonts.eastAsia,
-    fonts.hAnsi,
-    fonts.ascii,
-    fonts.complex,
-  ]);
+  const fontSlot =
+    complexScriptFormatting === true || rightToLeft === true
+      ? 'complex'
+      : docxFontSlotForText(runText, fontHint);
+  const usesComplexFormatting = fontSlot === 'complex';
+  const resolvedBold = usesComplexFormatting ? (complexBold ?? bold) : bold;
+  const resolvedItalic = usesComplexFormatting
+    ? (complexItalic ?? italic)
+    : italic;
+  const resolvedFontSize = usesComplexFormatting
+    ? (complexFontSize ?? fontSize)
+    : fontSize;
+  let fontFamily = uniqueFonts(orderedFonts(fonts, fontSlot));
   if (!fontFamily) {
-    fontFamily = uniqueFonts([
-      docxThemeFont(theme, 'minorEastAsia'),
-      docxThemeFont(theme, 'minorHAnsi'),
-      docxThemeFont(theme, 'minorAscii'),
-      docxThemeFont(theme, 'minorBidi'),
-    ]);
+    fontFamily = uniqueFonts(
+      orderedFonts(
+        {
+          ascii: docxThemeFont(theme, 'minorAscii'),
+          hAnsi: docxThemeFont(theme, 'minorHAnsi'),
+          eastAsia: docxThemeFont(theme, 'minorEastAsia'),
+          complex: docxThemeFont(theme, 'minorBidi'),
+        },
+        fontSlot,
+      ),
+    );
   }
   const hasRunPropertySource = propertySources.length > 0;
   return {
-    ...(bold !== undefined || hasRunPropertySource
-      ? { bold: bold ?? false }
+    ...(resolvedBold !== undefined || hasRunPropertySource
+      ? { bold: resolvedBold ?? false }
       : {}),
-    ...(italic !== undefined || hasRunPropertySource
-      ? { italic: italic ?? false }
+    ...(resolvedItalic !== undefined || hasRunPropertySource
+      ? { italic: resolvedItalic ?? false }
       : {}),
     ...(underline !== undefined || hasRunPropertySource
       ? { underline: underline ?? false }
@@ -232,7 +280,7 @@ function resolvedRunFormatting(
           wordLineHeightFactor: documentWordLineHeightFactor(fontFamily),
         }
       : {}),
-    ...(fontSize !== undefined ? { fontSize } : {}),
+    ...(resolvedFontSize !== undefined ? { fontSize: resolvedFontSize } : {}),
     ...(snapToGrid !== undefined ? { wordSnapToGrid: snapToGrid } : {}),
     ...(color ? { color } : {}),
     ...(backgroundColor ? { backgroundColor } : {}),
@@ -348,17 +396,81 @@ function closestAncestor(element: Element, localName: string): Element | null {
 }
 
 function assignFont(
-  fonts: {
-    ascii?: string;
-    hAnsi?: string;
-    eastAsia?: string;
-    complex?: string;
-  },
-  key: 'ascii' | 'hAnsi' | 'eastAsia' | 'complex',
+  fonts: DocxRunFonts,
+  key: DocxFontSlot,
   value: string | null,
 ): void {
   const normalized = value?.trim();
   if (normalized) fonts[key] = normalized;
+}
+
+function resolvedFontHint(element: Element): DocxFontSlot | undefined {
+  const hint = wordAttribute(element, 'hint')?.trim().toLowerCase();
+  if (hint === 'eastasia') return 'eastAsia';
+  if (hint === 'cs') return 'complex';
+  if (hint === 'default') return 'ascii';
+  return undefined;
+}
+
+function orderedFonts(
+  fonts: DocxRunFonts,
+  preferred: DocxFontSlot,
+): Array<string | undefined> {
+  const order: Record<DocxFontSlot, readonly DocxFontSlot[]> = {
+    ascii: ['ascii', 'hAnsi', 'eastAsia', 'complex'],
+    hAnsi: ['hAnsi', 'ascii', 'eastAsia', 'complex'],
+    eastAsia: ['eastAsia', 'hAnsi', 'ascii', 'complex'],
+    complex: ['complex', 'hAnsi', 'ascii', 'eastAsia'],
+  };
+  return order[preferred].map((slot) => fonts[slot]);
+}
+
+function docxFontSlotForText(
+  text: string,
+  hint: DocxFontSlot | undefined,
+): DocxFontSlot {
+  for (const character of text) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint === undefined || isNeutralCodePoint(codePoint)) continue;
+    if (isComplexScriptCodePoint(codePoint)) return 'complex';
+    if (isEastAsianCodePoint(codePoint)) return 'eastAsia';
+    return codePoint <= 0x7f ? 'ascii' : 'hAnsi';
+  }
+  return hint ?? 'ascii';
+}
+
+function isNeutralCodePoint(codePoint: number): boolean {
+  return (
+    codePoint <= 0x20 ||
+    (codePoint <= 0x7f &&
+      !(
+        (codePoint >= 0x41 && codePoint <= 0x5a) ||
+        (codePoint >= 0x61 && codePoint <= 0x7a)
+      )) ||
+    (codePoint >= 0x300 && codePoint <= 0x36f) ||
+    (codePoint >= 0x2000 && codePoint <= 0x206f)
+  );
+}
+
+function isComplexScriptCodePoint(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x0590 && codePoint <= 0x08ff) ||
+    (codePoint >= 0xfb1d && codePoint <= 0xfdff) ||
+    (codePoint >= 0xfe70 && codePoint <= 0xfeff) ||
+    (codePoint >= 0x1ee00 && codePoint <= 0x1eeff)
+  );
+}
+
+function isEastAsianCodePoint(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x1100 && codePoint <= 0x11ff) ||
+    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) ||
+    (codePoint >= 0xac00 && codePoint <= 0xd7af) ||
+    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
+    (codePoint >= 0xfe10 && codePoint <= 0xfe6f) ||
+    (codePoint >= 0xff00 && codePoint <= 0xffef) ||
+    (codePoint >= 0x20000 && codePoint <= 0x323af)
+  );
 }
 
 function resolvedFont(

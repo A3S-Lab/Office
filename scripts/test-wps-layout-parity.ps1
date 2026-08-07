@@ -81,6 +81,10 @@ try {
         -Name 'word-wps-grid-matrix' `
         -Fixture (Join-Path $root '.a3s-test/fixtures/word-wps-grid-matrix.docx') `
         -ExpectedBandCount 18
+    Invoke-WpsParityCapture `
+        -Name 'word-wps-script-matrix' `
+        -Fixture (Join-Path $root '.a3s-test/fixtures/word-wps-script-matrix.docx') `
+        -ExpectedBandCount 30
 } finally {
     Pop-Location
 }
