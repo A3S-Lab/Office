@@ -243,13 +243,13 @@ test('wires every direct character-format action to the TipTap selection', () =>
   expect(editor.getText()).toBe('Format this text');
 });
 
-test('steps font size and keeps Undo and Redo connected to editor history', () => {
+test('steps font size while preserving the active selection', () => {
   editor = new Editor({
     extensions: createWorkDocumentExtensions(),
     content: '<p>History text</p>',
   });
   editor.commands.setTextSelection(textRange(editor, 'History text'));
-  const view = render(
+  render(
     <DocumentHomeRibbon
       editor={editor}
       findReplaceMode={null}
@@ -262,26 +262,6 @@ test('steps font size and keeps Undo and Redo connected to editor history', () =
   fireEvent.click(screen.getByRole('button', { name: '减小字号' }));
   expect(editor.getAttributes('textStyle').fontSize).toBe('10.5pt');
   fireEvent.click(screen.getByRole('button', { name: '加粗' }));
-  expect(editor.getHTML()).toContain('<strong>History text</strong>');
-
-  view.rerender(
-    <DocumentHomeRibbon
-      editor={editor}
-      findReplaceMode={null}
-      onFindText={() => undefined}
-    />,
-  );
-  fireEvent.click(screen.getByRole('button', { name: '撤销' }));
-  expect(editor.getHTML()).not.toContain('<strong>History text</strong>');
-
-  view.rerender(
-    <DocumentHomeRibbon
-      editor={editor}
-      findReplaceMode={null}
-      onFindText={() => undefined}
-    />,
-  );
-  fireEvent.click(screen.getByRole('button', { name: '重做' }));
   expect(editor.getHTML()).toContain('<strong>History text</strong>');
 });
 

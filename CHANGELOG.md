@@ -4,6 +4,13 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a Writer command catalog for stable ribbon grouping and WPS-compatible
+  shortcut metadata, moved undo and redo into a compact quick-access toolbar,
+  and added persistent plus temporary ribbon collapse behavior.
+- Aligned Writer superscript and subscript with the WPS `Ctrl+Shift+=` and
+  `Ctrl+=` shortcuts and added deterministic desktop browser coverage for the
+  expanded, collapsed, and temporary ribbon states.
+
 ## 0.2.2 - 2026-08-07
 
 - Selected the Word `ascii`, `hAnsi`, `eastAsia`, or complex-script font slot

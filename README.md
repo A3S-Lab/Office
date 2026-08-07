@@ -255,7 +255,9 @@ interaction model.
   long-document windows for page buttons, heading rows, full-text results, and
   tracked-revision and anchored-comment review that preserve native scroll
   distance, sparse current/selection/draft pins, and Home/End reachability;
-  paragraph styles and phone-sized paragraph-spacing and pagination controls
+  a WPS-familiar command catalog, quick-access undo and redo, a persistently
+  collapsible ribbon whose tabs can temporarily expose commands, paragraph
+  styles and phone-sized paragraph-spacing and pagination controls
   with touch targets and exact invoker-focus restoration; stable compact-ribbon
   edge paging and viewport-bounded list galleries with touch-sized numbering
   actions, selection-preserving bullet and numbering commands, and explicit

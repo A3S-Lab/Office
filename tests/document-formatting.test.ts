@@ -56,11 +56,11 @@ describe('document formatting', () => {
     });
     editor.commands.setTextSelection(textRange(editor, '2'));
 
-    expect(editor.commands.keyboardShortcut('Mod-.')).toBe(true);
+    expect(editor.commands.keyboardShortcut('Mod-Shift-=')).toBe(true);
     expect(editor.getHTML()).toContain('<sup>2</sup>');
     expect(editor.getHTML()).not.toContain('<sub>2</sub>');
 
-    expect(editor.commands.keyboardShortcut('Mod-,')).toBe(true);
+    expect(editor.commands.keyboardShortcut('Mod-=')).toBe(true);
     expect(editor.getHTML()).toContain('<sub>2</sub>');
     expect(editor.getHTML()).not.toContain('<sup>2</sup>');
     editor.destroy();

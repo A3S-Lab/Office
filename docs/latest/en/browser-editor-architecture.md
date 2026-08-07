@@ -32,6 +32,11 @@ model:
    from host-page controls while its own shortcuts remain deterministic.
    Successful object and grid commands restore focus to the latest controlled
    selection before the next keystroke.
+   Writer keeps tab, group, label, and shortcut metadata in one internal
+   command catalog. Undo and redo live in a keyboard-described quick-access
+   toolbar. Its ribbon can remain collapsed; activating a tab temporarily
+   overlays that tab's commands without moving the document, and an outside
+   pointer action returns to the compact row.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

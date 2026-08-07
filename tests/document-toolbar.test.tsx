@@ -53,6 +53,19 @@ test('wires every Insert and Page Layout action to document state or its owner',
   const calls = createCalls();
   render(toolbar(editor, calls));
 
+  const quickAccess = screen.getByRole('toolbar', {
+    name: '快速访问工具栏',
+  });
+  expect(
+    within(quickAccess).getByRole('button', { name: '撤销' }),
+  ).toHaveAttribute('aria-keyshortcuts', 'Control+Z Meta+Z');
+  expect(
+    within(quickAccess).getByRole('button', { name: '重做' }),
+  ).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y',
+  );
+
   fireEvent.click(screen.getByRole('button', { name: '文件' }));
   fireEvent.click(screen.getByRole('menuitem', { name: '保存副本' }));
   expect(calls.files).toEqual(['save-copy']);
@@ -245,6 +258,29 @@ test('routes history shortcuts from ribbon controls without stealing native text
   expect(editor.getHTML()).toBe(originalHtml);
 
   fireEvent.keyDown(ribbonButton, { key: 'y', ctrlKey: true });
+  expect(editor.getHTML()).toBe(changedHtml);
+});
+
+test('keeps quick access undo and redo connected to document history', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const view = render(toolbar(editor, calls));
+  const originalHtml = editor.getHTML();
+
+  editor.chain().focus().insertContent('Quick access change').run();
+  const changedHtml = editor.getHTML();
+  expect(changedHtml).not.toBe(originalHtml);
+  view.rerender(toolbar(editor, calls));
+
+  let quickAccess = screen.getByRole('toolbar', {
+    name: '快速访问工具栏',
+  });
+  fireEvent.click(within(quickAccess).getByRole('button', { name: '撤销' }));
+  expect(editor.getHTML()).toBe(originalHtml);
+  view.rerender(toolbar(editor, calls));
+
+  quickAccess = screen.getByRole('toolbar', { name: '快速访问工具栏' });
+  fireEvent.click(within(quickAccess).getByRole('button', { name: '重做' }));
   expect(editor.getHTML()).toBe(changedHtml);
 });
 

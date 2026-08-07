@@ -14,14 +14,12 @@ import {
   Italic,
   PilcrowLeft,
   PilcrowRight,
-  Redo2,
   Replace,
   Search,
   Strikethrough,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
   Underline as UnderlineIcon,
-  Undo2,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useSyncExternalStore } from 'react';
 import {
@@ -37,6 +35,10 @@ import {
   documentFontSizeOptionsForValue,
   documentFontSizeValue,
 } from './document-formatting-options';
+import {
+  type DocumentCommandId,
+  getDocumentCommandDefinition,
+} from './document-command-catalog';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import {
   WorkOfficeRibbonButton,
@@ -85,26 +87,6 @@ export function DocumentHomeRibbon({
 
   return (
     <>
-      <RibbonGroup label="撤销">
-        <ToolbarButton
-          label="撤销"
-          shortcut="Cmd/Ctrl+Z"
-          ariaKeyShortcuts="Control+Z Meta+Z"
-          disabled={!editor.can().chain().focus().undo().run()}
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <Undo2 size={16} />
-        </ToolbarButton>
-        <ToolbarButton
-          label="重做"
-          shortcut="Cmd/Ctrl+Shift+Z 或 Cmd/Ctrl+Y"
-          ariaKeyShortcuts="Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y"
-          disabled={!editor.can().chain().focus().redo().run()}
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <Redo2 size={16} />
-        </ToolbarButton>
-      </RibbonGroup>
       <RibbonGroup label="字体">
         <div className="work-document-font-tools">
           <div className="work-document-font-selects">
@@ -135,6 +117,7 @@ export function DocumentHomeRibbon({
             />
             <ToolbarButton
               label="增大字号"
+              {...commandShortcut('growFont')}
               disabled={!canChangeDocumentFontSize(editor, 1)}
               onClick={() => changeDocumentFontSize(editor, 1)}
             >
@@ -142,6 +125,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="减小字号"
+              {...commandShortcut('shrinkFont')}
               disabled={!canChangeDocumentFontSize(editor, -1)}
               onClick={() => changeDocumentFontSize(editor, -1)}
             >
@@ -185,8 +169,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="下标"
-              shortcut="Cmd/Ctrl+,"
-              ariaKeyShortcuts="Control+, Meta+,"
+              {...commandShortcut('subscript')}
               active={editor.isActive('subscript')}
               onClick={() => editor.commands.toggleDocumentSubscript()}
             >
@@ -194,8 +177,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="上标"
-              shortcut="Cmd/Ctrl+."
-              ariaKeyShortcuts="Control+. Meta+."
+              {...commandShortcut('superscript')}
               active={editor.isActive('superscript')}
               onClick={() => editor.commands.toggleDocumentSuperscript()}
             >
@@ -265,6 +247,7 @@ export function DocumentHomeRibbon({
           <div className="work-document-alignment-actions">
             <ToolbarButton
               label="左对齐"
+              {...commandShortcut('alignLeft')}
               active={editor.isActive({ textAlign: 'left' })}
               onClick={() => editor.chain().focus().setTextAlign('left').run()}
             >
@@ -272,6 +255,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="居中"
+              {...commandShortcut('alignCenter')}
               active={editor.isActive({ textAlign: 'center' })}
               onClick={() =>
                 editor.chain().focus().setTextAlign('center').run()
@@ -281,6 +265,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="右对齐"
+              {...commandShortcut('alignRight')}
               active={editor.isActive({ textAlign: 'right' })}
               onClick={() => editor.chain().focus().setTextAlign('right').run()}
             >
@@ -288,6 +273,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="两端对齐"
+              {...commandShortcut('alignJustify')}
               active={editor.isActive({ textAlign: 'justify' })}
               onClick={() =>
                 editor.chain().focus().setTextAlign('justify').run()
@@ -373,6 +359,16 @@ function ToolbarButton({
       {children}
     </WorkOfficeRibbonButton>
   );
+}
+
+function commandShortcut(commandId: DocumentCommandId): {
+  shortcut?: string;
+  ariaKeyShortcuts?: string;
+} {
+  const shortcut = getDocumentCommandDefinition(commandId).shortcut;
+  return shortcut
+    ? { shortcut: shortcut.label, ariaKeyShortcuts: shortcut.aria }
+    : {};
 }
 
 const RibbonGroup = WorkOfficeRibbonGroup;

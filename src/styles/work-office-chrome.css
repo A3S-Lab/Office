@@ -2,6 +2,7 @@
   --work-office-accent: var(--a3s-blue);
   --work-office-control-accent: var(--work-office-accent);
 
+  position: relative;
   z-index: 8;
   display: flex;
   min-width: 0;
@@ -183,6 +184,64 @@
   opacity: 0.28;
 }
 
+.work-office-quick-access {
+  display: flex;
+  height: 36px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1px;
+  padding: 0 5px;
+  border-right: 1px solid var(--a3s-line);
+}
+
+.work-office-quick-access > button,
+.work-office-ribbon-collapse {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  outline: 0;
+  background: transparent;
+  color: var(--a3s-muted);
+  cursor: pointer;
+}
+
+.work-office-quick-access > button:hover:not(:disabled),
+.work-office-quick-access > button:focus-visible,
+.work-office-ribbon-collapse:hover,
+.work-office-ribbon-collapse:focus-visible {
+  background: color-mix(
+    in srgb,
+    var(--work-office-accent) 8%,
+    var(--a3s-panel)
+  );
+  color: var(--work-office-accent);
+}
+
+.work-office-quick-access > button:focus-visible,
+.work-office-ribbon-collapse:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-office-accent);
+}
+
+.work-office-quick-access > button:disabled {
+  cursor: default;
+  opacity: 0.34;
+}
+
+.work-office-quick-access > button > span {
+  display: grid;
+  place-items: center;
+}
+
+.work-office-ribbon-collapse {
+  flex: 0 0 26px;
+  align-self: center;
+  margin: 0 5px 0 2px;
+}
+
 .work-office-file-menu {
   position: relative;
   display: flex;
@@ -294,6 +353,23 @@
   min-width: 0;
   display: flex;
   align-items: stretch;
+}
+
+.work-office-ribbon-panel[hidden] {
+  display: none;
+}
+
+.work-office-ribbon[data-collapsed="true"]
+  .work-office-ribbon-panel:not([hidden]) {
+  position: absolute;
+  z-index: 10;
+  top: 36px;
+  right: 0;
+  left: 0;
+  border-top: 1px solid var(--a3s-line);
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-panel);
+  box-shadow: 0 12px 26px rgb(24 31 46 / 15%);
 }
 
 .work-office-ribbon-panel[data-empty="true"] {

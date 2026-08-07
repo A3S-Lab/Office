@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { WorkOfficeRibbon } from '../src/internal/features/work/editors/work-office-chrome';
 
 test('supports complete keyboard navigation in the shared file menu', async () => {
@@ -179,4 +185,89 @@ test('reserves both ribbon navigation edges while tools overflow', async () => {
     expect(previous).toBeEnabled();
     expect(next).toBeDisabled();
   });
+});
+
+test('supports quick access commands and a temporarily expanded collapsed ribbon', async () => {
+  const calls: string[] = [];
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Test ribbon"
+      tabs={[
+        { id: 'home', label: '开始' },
+        { id: 'insert', label: '插入' },
+      ]}
+      defaultTab="home"
+      collapsible
+      quickAccessActions={[
+        {
+          id: 'save',
+          label: '保存',
+          shortcut: 'Ctrl+S',
+          ariaKeyShortcuts: 'Control+S Meta+S',
+          icon: <span>Save</span>,
+          onSelect: () => calls.push('save'),
+        },
+      ]}
+      panels={{
+        home: <button type="button">Home command</button>,
+        insert: <button type="button">Insert command</button>,
+      }}
+    />,
+  );
+
+  const quickAccess = screen.getByRole('toolbar', {
+    name: '快速访问工具栏',
+  });
+  const save = within(quickAccess).getByRole('button', { name: '保存' });
+  expect(save).toHaveAttribute('aria-keyshortcuts', 'Control+S Meta+S');
+  fireEvent.click(save);
+  expect(calls).toEqual(['save']);
+
+  fireEvent.click(screen.getByRole('button', { name: '折叠功能区' }));
+  expect(
+    screen.queryByRole('toolbar', { name: '开始工具栏' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '展开功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+
+  fireEvent.click(screen.getByRole('tab', { name: '插入' }));
+  expect(screen.getByRole('toolbar', { name: '插入工具栏' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '展开功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+
+  fireEvent.pointerDown(document.body);
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('toolbar', { name: '插入工具栏' }),
+    ).not.toBeInTheDocument(),
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '展开功能区' }));
+  expect(screen.getByRole('toolbar', { name: '插入工具栏' })).toBeVisible();
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+});
+
+test('toggles ribbon collapse by double-clicking the active tab', () => {
+  render(
+    <WorkOfficeRibbon
+      ariaLabel="Test ribbon"
+      tabs={[{ id: 'home', label: '开始' }]}
+      defaultTab="home"
+      collapsible
+      panels={{ home: <span>Home tools</span> }}
+    />,
+  );
+
+  fireEvent.doubleClick(screen.getByRole('tab', { name: '开始' }));
+  expect(
+    screen.queryByRole('toolbar', { name: '开始工具栏' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '展开功能区' })).toBeVisible();
 });

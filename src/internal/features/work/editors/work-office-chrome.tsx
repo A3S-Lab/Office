@@ -2,6 +2,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Eye,
   Minus,
   Plus,
@@ -11,6 +12,7 @@ import {
   Fragment,
   type ReactNode,
   useCallback,
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -41,6 +43,16 @@ export interface WorkOfficeFileAction {
   onSelect: () => void | Promise<void>;
 }
 
+export interface WorkOfficeQuickAccessAction {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  shortcut?: string;
+  ariaKeyShortcuts?: string;
+  disabled?: boolean;
+  onSelect: () => void | Promise<void>;
+}
+
 export function WorkOfficeRibbon<T extends string>({
   ariaLabel,
   tabs,
@@ -49,6 +61,11 @@ export function WorkOfficeRibbon<T extends string>({
   onTabChange,
   panels,
   fileActions,
+  quickAccessActions,
+  collapsible = false,
+  collapsed: controlledCollapsed,
+  defaultCollapsed = false,
+  onCollapsedChange,
   className = '',
   toolbarClassName = '',
 }: {
@@ -59,11 +76,18 @@ export function WorkOfficeRibbon<T extends string>({
   onTabChange?: (tab: T) => void;
   panels: Record<T, ReactNode>;
   fileActions?: readonly WorkOfficeFileAction[];
+  quickAccessActions?: readonly WorkOfficeQuickAccessAction[];
+  collapsible?: boolean;
+  collapsed?: boolean;
+  defaultCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
   className?: string;
   toolbarClassName?: string;
 }) {
   const reactId = useId().replaceAll(':', '');
   const [internalTab, setInternalTab] = useState(defaultTab);
+  const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
+  const [temporarilyExpanded, setTemporarilyExpanded] = useState(false);
   const [ribbonOverflow, setRibbonOverflow] = useState({
     backward: false,
     forward: false,
@@ -74,12 +98,15 @@ export function WorkOfficeRibbon<T extends string>({
   });
   const tabListRef = useRef<HTMLDivElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const ribbonRef = useRef<HTMLElement>(null);
   const selectedTab = activeTab ?? internalTab;
   const selectedLabel =
     tabs.find((tab) => tab.id === selectedTab)?.label ?? tabs[0]?.label ?? '';
   const selectedPanel = panels[selectedTab];
   const hasSelectedPanel =
     selectedPanel !== null && selectedPanel !== undefined;
+  const collapsed = collapsible && (controlledCollapsed ?? internalCollapsed);
+  const panelExpanded = hasSelectedPanel && (!collapsed || temporarilyExpanded);
   const hasRibbonOverflow = ribbonOverflow.backward || ribbonOverflow.forward;
   const updateRibbonOverflow = useCallback(() => {
     const toolbar = toolbarRef.current;
@@ -139,19 +166,46 @@ export function WorkOfficeRibbon<T extends string>({
   };
   const selectTab = (tab: T) => {
     if (activeTab === undefined) setInternalTab(tab);
+    if (collapsed) setTemporarilyExpanded(true);
     onTabChange?.(tab);
   };
+  const changeCollapsed = useCallback(
+    (nextCollapsed: boolean) => {
+      if (controlledCollapsed === undefined) {
+        setInternalCollapsed(nextCollapsed);
+      }
+      setTemporarilyExpanded(false);
+      onCollapsedChange?.(nextCollapsed);
+    },
+    [controlledCollapsed, onCollapsedChange],
+  );
+
+  useEffect(() => {
+    if (!collapsed || !temporarilyExpanded) return;
+    const closeTemporaryPanel = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        ribbonRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setTemporarilyExpanded(false);
+    };
+    document.addEventListener('pointerdown', closeTemporaryPanel, true);
+    return () =>
+      document.removeEventListener('pointerdown', closeTemporaryPanel, true);
+  }, [collapsed, temporarilyExpanded]);
 
   useLayoutEffect(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
     toolbar.scrollLeft = 0;
     updateRibbonOverflow();
-  }, [selectedTab, hasSelectedPanel, updateRibbonOverflow]);
+  }, [selectedTab, panelExpanded, updateRibbonOverflow]);
 
   useLayoutEffect(() => {
     const toolbar = toolbarRef.current;
-    if (!toolbar) return;
+    if (!toolbar || !panelExpanded) return;
     let frame = requestAnimationFrame(updateRibbonOverflow);
     const scheduleOverflowUpdate = () => {
       cancelAnimationFrame(frame);
@@ -188,7 +242,7 @@ export function WorkOfficeRibbon<T extends string>({
       mutationObserver?.disconnect();
       window.removeEventListener('resize', scheduleOverflowUpdate);
     };
-  }, [hasSelectedPanel, updateRibbonOverflow]);
+  }, [panelExpanded, updateRibbonOverflow]);
 
   useLayoutEffect(() => {
     const tabList = tabListRef.current;
@@ -238,12 +292,17 @@ export function WorkOfficeRibbon<T extends string>({
 
   return (
     <section
+      ref={ribbonRef}
       className={`work-office-ribbon ${className}`.trim()}
       aria-label={ariaLabel}
+      data-collapsed={collapsed ? 'true' : undefined}
     >
       <div className="work-office-ribbon-tabs-row">
         {fileActions?.length ? (
           <WorkOfficeFileMenu actions={fileActions} />
+        ) : null}
+        {quickAccessActions?.length ? (
+          <WorkOfficeQuickAccessToolbar actions={quickAccessActions} />
         ) : null}
         <div className="work-office-ribbon-tab-strip">
           <Tabs
@@ -259,6 +318,11 @@ export function WorkOfficeRibbon<T extends string>({
               panelId: `${reactId}-panel`,
             }))}
             onChange={selectTab}
+            onTabDoubleClick={(tab) => {
+              if (collapsible && tab === selectedTab) {
+                changeCollapsed(!collapsed);
+              }
+            }}
           />
           {(tabOverflow.backward || tabOverflow.forward) && (
             <nav
@@ -284,11 +348,29 @@ export function WorkOfficeRibbon<T extends string>({
             </nav>
           )}
         </div>
+        {collapsible && (
+          <button
+            type="button"
+            className="work-office-ribbon-collapse"
+            aria-label={collapsed ? '展开功能区' : '折叠功能区'}
+            title={collapsed ? '展开功能区' : '折叠功能区'}
+            aria-controls={`${reactId}-panel`}
+            aria-expanded={panelExpanded}
+            onClick={() => changeCollapsed(!collapsed)}
+          >
+            {collapsed ? (
+              <ChevronDown size={14} aria-hidden="true" />
+            ) : (
+              <ChevronUp size={14} aria-hidden="true" />
+            )}
+          </button>
+        )}
       </div>
       <div
         id={`${reactId}-panel`}
         className="work-office-ribbon-panel"
         data-empty={hasSelectedPanel ? undefined : 'true'}
+        hidden={!panelExpanded}
         role="tabpanel"
         aria-labelledby={`${reactId}-tab-${selectedTab}`}
       >
@@ -330,6 +412,38 @@ export function WorkOfficeRibbon<T extends string>({
         )}
       </div>
     </section>
+  );
+}
+
+function WorkOfficeQuickAccessToolbar({
+  actions,
+}: {
+  actions: readonly WorkOfficeQuickAccessAction[];
+}) {
+  return (
+    <div
+      className="work-office-quick-access"
+      role="toolbar"
+      aria-label="快速访问工具栏"
+    >
+      {actions.map((action) => (
+        <button
+          key={action.id}
+          type="button"
+          aria-label={action.label}
+          aria-keyshortcuts={action.ariaKeyShortcuts}
+          title={
+            action.shortcut
+              ? `${action.label}（${action.shortcut}）`
+              : action.label
+          }
+          disabled={action.disabled}
+          onClick={() => void action.onSelect()}
+        >
+          <span aria-hidden="true">{action.icon}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 

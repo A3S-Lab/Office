@@ -18,9 +18,11 @@ import {
   PanelLeftOpen,
   PanelTopOpen,
   RefreshCw,
+  Redo2,
   Ruler,
   Settings2,
   Table2,
+  Undo2,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react';
@@ -37,6 +39,14 @@ import {
   MAX_DOCUMENT_ZOOM,
   MIN_DOCUMENT_ZOOM,
 } from './document-editor-support';
+import {
+  documentPageChromeRibbonTab,
+  documentPictureRibbonTab,
+  documentRibbonTabs,
+  documentTableRibbonTabs,
+  type DocumentRibbonTabId,
+  getDocumentCommandDefinition,
+} from './document-command-catalog';
 import { DocumentHomeRibbon } from './document-home-ribbon';
 import {
   type DocumentPageChromeEditingPart,
@@ -64,31 +74,6 @@ import {
   WorkOfficeRibbonGroup,
 } from './work-office-chrome';
 
-const documentRibbonTabs = [
-  { id: 'home', label: '开始' },
-  { id: 'insert', label: '插入' },
-  { id: 'page', label: '页面布局', compactLabel: '布局' },
-  { id: 'references', label: '引用' },
-  { id: 'review', label: '审阅' },
-  { id: 'view', label: '视图' },
-] as const;
-
-const documentPictureRibbonTab = { id: 'picture', label: '图片' } as const;
-const documentTableRibbonTabs = [
-  { id: 'tableDesign', label: '表格设计', compactLabel: '设计' },
-  { id: 'tableLayout', label: '表格布局', compactLabel: '布局' },
-] as const;
-const documentPageChromeRibbonTab = {
-  id: 'pageChrome',
-  label: '页眉和页脚',
-  compactLabel: '页眉页脚',
-} as const;
-
-type DocumentRibbonTabId =
-  | (typeof documentRibbonTabs)[number]['id']
-  | typeof documentPictureRibbonTab.id
-  | (typeof documentTableRibbonTabs)[number]['id']
-  | typeof documentPageChromeRibbonTab.id;
 export type DocumentViewMode = 'page' | 'web';
 
 interface DocumentToolbarProps {
@@ -200,6 +185,8 @@ export function DocumentToolbar({
   const imageSelected = editor.isActive('image');
   const tableSelected = editor.isActive('table');
   const hasRefreshableFields = documentHasRefreshableFields(editor);
+  const undoCommand = getDocumentCommandDefinition('undo');
+  const redoCommand = getDocumentCommandDefinition('redo');
   const ribbonTabs = pageChromeEditor
     ? [...documentRibbonTabs, documentPageChromeRibbonTab]
     : imageSelected
@@ -345,7 +332,32 @@ export function DocumentToolbar({
             setActiveTab(tab);
           }
         }}
+        collapsible
         fileActions={fileActions}
+        quickAccessActions={[
+          {
+            id: undoCommand.id,
+            label: undoCommand.label,
+            icon: <Undo2 size={15} />,
+            shortcut: undoCommand.shortcut?.label,
+            ariaKeyShortcuts: undoCommand.shortcut?.aria,
+            disabled: editor.isDestroyed || !editor.can().chain().undo().run(),
+            onSelect: () => {
+              editor.chain().focus().undo().run();
+            },
+          },
+          {
+            id: redoCommand.id,
+            label: redoCommand.label,
+            icon: <Redo2 size={15} />,
+            shortcut: redoCommand.shortcut?.label,
+            ariaKeyShortcuts: redoCommand.shortcut?.aria,
+            disabled: editor.isDestroyed || !editor.can().chain().redo().run(),
+            onSelect: () => {
+              editor.chain().focus().redo().run();
+            },
+          },
+        ]}
         className="work-document-ribbon"
         toolbarClassName="document-toolbar"
         panels={{

@@ -17,6 +17,7 @@ export function Tabs<T extends string>({
   value,
   items,
   onChange,
+  onTabDoubleClick,
   variant = 'segment',
   size = 'standard',
   className = '',
@@ -26,6 +27,7 @@ export function Tabs<T extends string>({
   value: T;
   items: readonly TabItem<T>[];
   onChange: (value: T) => void;
+  onTabDoubleClick?: (value: T) => void;
   variant?: 'segment' | 'line';
   size?: 'standard' | 'compact';
   className?: string;
@@ -58,6 +60,7 @@ export function Tabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             disabled={item.disabled}
             onClick={() => onChange(item.id)}
+            onDoubleClick={() => onTabDoubleClick?.(item.id)}
             onKeyDown={(event) =>
               tabNavigation.handleTabKeyDown(event, item.id)
             }

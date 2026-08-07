@@ -1,0 +1,98 @@
+suite "office-word-ribbon-collapse" {
+    version = 1
+
+    scenario "collapse-and-temporarily-expand-writer-ribbon" {
+        name = "Use the Writer quick access toolbar and collapsible ribbon"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editor")
+        }
+
+        expect "quick-access-visible" {
+            visible = css(".work-office-quick-access[aria-label='快速访问工具栏']")
+        }
+
+        expect "undo-shortcut-visible" {
+            visible = css(".work-office-quick-access button[aria-label='撤销'][aria-keyshortcuts='Control+Z Meta+Z']")
+        }
+
+        expect "redo-shortcut-visible" {
+            visible = css(".work-office-quick-access button[aria-label='重做'][aria-keyshortcuts='Control+Shift+Z Meta+Shift+Z Control+Y Meta+Y']")
+        }
+
+        screenshot "expanded-ribbon" {
+            path = "screenshots/writer-ribbon-expanded.png"
+        }
+
+        double_click "collapse-home-ribbon" {
+            target = css(".work-office-ribbon-tabs [role='tab'][aria-label='开始']")
+        }
+
+        expect "ribbon-collapsed" {
+            visible = css(".work-document-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-label='展开功能区'][aria-expanded='false']")
+        }
+
+        expect "document-remains-visible" {
+            visible = css(".work-document-page")
+        }
+
+        screenshot "collapsed-ribbon" {
+            path = "screenshots/writer-ribbon-collapsed.png"
+        }
+
+        click "temporarily-open-insert" {
+            target = role("tab", "插入")
+        }
+
+        expect "insert-panel-open" {
+            visible = css(".work-document-ribbon[data-collapsed='true'] .work-office-ribbon-panel:not([hidden]) [aria-label='插入工具栏']")
+        }
+
+        screenshot "temporary-insert-ribbon" {
+            path = "screenshots/writer-ribbon-temporary-insert.png"
+        }
+
+        click "return-to-document" {
+            target = css(".work-document-page")
+        }
+
+        expect "temporary-panel-closed" {
+            visible = css(".work-document-ribbon[data-collapsed='true'] .work-office-ribbon-collapse[aria-label='展开功能区'][aria-expanded='false']")
+        }
+
+        accessibility "writer-ribbon-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

@@ -28,7 +28,7 @@ export const DocumentSubscript = Subscript.extend({
   },
   addKeyboardShortcuts() {
     return {
-      'Mod-,': () => this.editor.commands.toggleDocumentSubscript(),
+      'Mod-=': () => this.editor.commands.toggleDocumentSubscript(),
     };
   },
 });
@@ -50,7 +50,7 @@ export const DocumentSuperscript = Superscript.extend({
   },
   addKeyboardShortcuts() {
     return {
-      'Mod-.': () => this.editor.commands.toggleDocumentSuperscript(),
+      'Mod-Shift-=': () => this.editor.commands.toggleDocumentSuperscript(),
     };
   },
 });
