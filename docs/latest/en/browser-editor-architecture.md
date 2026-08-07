@@ -38,7 +38,9 @@ model:
    and compacts low-priority, then normal-priority groups before exposing group
    paging. It can remain collapsed; activating a tab temporarily overlays that
    tab's commands without moving the document, and an outside pointer action
-   returns to the compact row.
+   returns to the compact row. Writer routes its catalogued WPS font-size,
+   alignment, line-spacing, heading, spelling, field-refresh, comment, and
+   track-changes shortcuts only while the document surface owns the event.
 2. Each editor owns its selection model and exposes typed commands to the
    shell. A command never searches rendered text or infers intent from labels.
 3. Interactive editing stays on the main thread. Presentation keeps object

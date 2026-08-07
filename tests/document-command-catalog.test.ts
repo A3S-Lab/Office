@@ -33,6 +33,14 @@ test('keeps Writer command ids and WPS locations unique', () => {
 });
 
 test('defines the WPS Writer shortcut contract in one catalog', () => {
+  expect(getDocumentCommandDefinition('growFont').shortcut?.editor).toEqual([
+    'Mod-Shift-.',
+    'Mod-]',
+  ]);
+  expect(getDocumentCommandDefinition('shrinkFont').shortcut?.editor).toEqual([
+    'Mod-Shift-,',
+    'Mod-[',
+  ]);
   expect(getDocumentCommandDefinition('subscript').shortcut).toEqual({
     label: 'Cmd/Ctrl+=',
     aria: 'Control+= Meta+=',
@@ -49,4 +57,13 @@ test('defines the WPS Writer shortcut contract in one catalog', () => {
   expect(getDocumentCommandDefinition('trackChanges').shortcut?.editor).toEqual(
     ['Mod-Shift-e'],
   );
+  expect(
+    getDocumentCommandDefinition('lineSpacingSingle').shortcut?.editor,
+  ).toEqual(['Mod-1']);
+  expect(getDocumentCommandDefinition('heading2').shortcut?.editor).toEqual([
+    'Mod-Alt-2',
+  ]);
+  expect(
+    getDocumentCommandDefinition('insertComment').shortcut?.editor,
+  ).toEqual(['Mod-Alt-m']);
 });

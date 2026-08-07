@@ -67,6 +67,7 @@ import {
   useOfficeDialog,
 } from './office-controls';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
+import { runDocumentWpsShortcut } from './document-wps-shortcuts';
 import {
   type WorkOfficeFileAction,
   WorkOfficeRibbon,
@@ -187,6 +188,10 @@ export function DocumentToolbar({
   const hasRefreshableFields = documentHasRefreshableFields(editor);
   const undoCommand = getDocumentCommandDefinition('undo');
   const redoCommand = getDocumentCommandDefinition('redo');
+  const refreshFieldsCommand = getDocumentCommandDefinition('refreshFields');
+  const spellingCommand = getDocumentCommandDefinition('spelling');
+  const insertCommentCommand = getDocumentCommandDefinition('insertComment');
+  const trackChangesCommand = getDocumentCommandDefinition('trackChanges');
   const ribbonTabs = pageChromeEditor
     ? [...documentRibbonTabs, documentPageChromeRibbonTab]
     : imageSelected
@@ -241,9 +246,7 @@ export function DocumentToolbar({
       if (
         event.defaultPrevented ||
         event.repeat ||
-        event.altKey ||
-        isOfficeShortcutBlocked(event.target) ||
-        !(event.metaKey || event.ctrlKey)
+        isOfficeShortcutBlocked(event.target)
       ) {
         return;
       }
@@ -251,6 +254,21 @@ export function DocumentToolbar({
       const insideEditor =
         event.target instanceof Node &&
         Boolean(editorDom?.contains(event.target));
+      if (
+        insideEditor &&
+        runDocumentWpsShortcut(editor, event, {
+          canInsertComment,
+          canRefreshFields: hasRefreshableFields,
+          onInsertComment,
+          onRefreshFields,
+          onToggleSpellcheck,
+          onToggleTrackChanges,
+        })
+      ) {
+        event.preventDefault();
+        return;
+      }
+      if (event.altKey || !(event.metaKey || event.ctrlKey)) return;
       const documentHistoryTarget =
         insideEditor || !isDocumentNativeTextUndoTarget(event.target);
       if (documentHistoryTarget && key === 'z') {
@@ -294,7 +312,7 @@ export function DocumentToolbar({
       editor.chain().focus().insertContent({ type: 'pageBreak' }).run();
     };
     const detach = () => {
-      root?.removeEventListener('keydown', onKeyDown);
+      root?.removeEventListener('keydown', onKeyDown, true);
       root = null;
       editorDom = null;
     };
@@ -303,7 +321,7 @@ export function DocumentToolbar({
       if (editor.isDestroyed) return;
       editorDom = editor.view.dom;
       root = editorDom.closest<HTMLElement>('.work-document-editor');
-      root?.addEventListener('keydown', onKeyDown);
+      root?.addEventListener('keydown', onKeyDown, true);
     };
     attach();
     editor.on('mount', attach);
@@ -313,7 +331,17 @@ export function DocumentToolbar({
       editor.off('unmount', detach);
       detach();
     };
-  }, [editor, onOpenFindReplace, toggleLink]);
+  }, [
+    canInsertComment,
+    editor,
+    hasRefreshableFields,
+    onInsertComment,
+    onOpenFindReplace,
+    onRefreshFields,
+    onToggleSpellcheck,
+    onToggleTrackChanges,
+    toggleLink,
+  ]);
 
   return (
     <>
@@ -549,10 +577,12 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="更新页码和日期"
                   displayLabel
+                  shortcut={refreshFieldsCommand.shortcut?.label}
+                  ariaKeyShortcuts={refreshFieldsCommand.shortcut?.aria}
                   disabled={!hasRefreshableFields}
                   title={
                     hasRefreshableFields
-                      ? '更新页码和日期'
+                      ? `更新页码和日期（${refreshFieldsCommand.shortcut?.label}）`
                       : '文档中没有可更新的页码或日期'
                   }
                   onClick={onRefreshFields}
@@ -568,6 +598,8 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="拼写检查"
                   displayLabel
+                  shortcut={spellingCommand.shortcut?.label}
+                  ariaKeyShortcuts={spellingCommand.shortcut?.aria}
                   active={spellcheckEnabled}
                   onClick={onToggleSpellcheck}
                 >
@@ -578,8 +610,14 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="添加批注"
                   displayLabel
+                  shortcut={insertCommentCommand.shortcut?.label}
+                  ariaKeyShortcuts={insertCommentCommand.shortcut?.aria}
                   disabled={!canInsertComment}
-                  title={canInsertComment ? '添加批注' : '请先选择未批注的文字'}
+                  title={
+                    canInsertComment
+                      ? `添加批注（${insertCommentCommand.shortcut?.label}）`
+                      : '请先选择未批注的文字'
+                  }
                   onClick={onInsertComment}
                 >
                   <MessageSquarePlus size={19} />
@@ -597,6 +635,8 @@ export function DocumentToolbar({
                 <ToolbarButton
                   label="修订模式"
                   displayLabel
+                  shortcut={trackChangesCommand.shortcut?.label}
+                  ariaKeyShortcuts={trackChangesCommand.shortcut?.aria}
                   active={trackChanges}
                   onClick={onToggleTrackChanges}
                 >

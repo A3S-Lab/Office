@@ -50,10 +50,22 @@ import { DocumentStyleGallery } from './document-style-gallery';
 
 const documentLineHeightOptions = [
   { value: 'default', label: '默认行距' },
-  { value: '1', label: '单倍' },
+  {
+    value: '1',
+    label: '单倍',
+    meta: getDocumentCommandDefinition('lineSpacingSingle').shortcut?.label,
+  },
   { value: '1.15', label: '1.15 倍' },
-  { value: '1.5', label: '1.5 倍' },
-  { value: '2', label: '2 倍' },
+  {
+    value: '1.5',
+    label: '1.5 倍',
+    meta: getDocumentCommandDefinition('lineSpacingOneAndHalf').shortcut?.label,
+  },
+  {
+    value: '2',
+    label: '2 倍',
+    meta: getDocumentCommandDefinition('lineSpacingDouble').shortcut?.label,
+  },
 ] as const;
 
 export function DocumentHomeRibbon({
@@ -135,8 +147,7 @@ export function DocumentHomeRibbon({
           <div className="work-document-font-actions">
             <ToolbarButton
               label="加粗"
-              shortcut="Cmd/Ctrl+B"
-              ariaKeyShortcuts="Control+B Meta+B"
+              {...commandShortcut('bold')}
               active={editor.isActive('bold')}
               onClick={() => editor.chain().focus().toggleBold().run()}
             >
@@ -144,8 +155,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="斜体"
-              shortcut="Cmd/Ctrl+I"
-              ariaKeyShortcuts="Control+I Meta+I"
+              {...commandShortcut('italic')}
               active={editor.isActive('italic')}
               onClick={() => editor.chain().focus().toggleItalic().run()}
             >
@@ -153,8 +163,7 @@ export function DocumentHomeRibbon({
             </ToolbarButton>
             <ToolbarButton
               label="下划线"
-              shortcut="Cmd/Ctrl+U"
-              ariaKeyShortcuts="Control+U Meta+U"
+              {...commandShortcut('underline')}
               active={editor.isActive('underline')}
               onClick={() => editor.chain().focus().toggleUnderline().run()}
             >
@@ -308,8 +317,7 @@ export function DocumentHomeRibbon({
       <RibbonGroup label="编辑" priority="low">
         <ToolbarButton
           label="查找"
-          shortcut="Cmd/Ctrl+F"
-          ariaKeyShortcuts="Control+F Meta+F"
+          {...commandShortcut('find')}
           active={findReplaceMode === 'find'}
           onClick={() => onFindText(false)}
         >
@@ -317,8 +325,7 @@ export function DocumentHomeRibbon({
         </ToolbarButton>
         <ToolbarButton
           label="替换"
-          shortcut="Cmd/Ctrl+H"
-          ariaKeyShortcuts="Control+H Meta+H"
+          {...commandShortcut('replace')}
           active={findReplaceMode === 'replace'}
           onClick={() => onFindText(true)}
         >

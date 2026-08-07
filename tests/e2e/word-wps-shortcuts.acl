@@ -1,0 +1,102 @@
+suite "office-word-wps-shortcuts" {
+    version = 1
+
+    scenario "execute-wps-writer-shortcuts-inside-the-document" {
+        name = "Execute WPS Writer formatting and review shortcuts"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            visible = css(".work-document-editable .ProseMirror")
+        }
+
+        click "focus-first-paragraph" {
+            target = css(".work-document-editable .ProseMirror p")
+        }
+
+        press "center-paragraph" {
+            key = "Control+e"
+        }
+
+        expect "paragraph-centered" {
+            visible = css(".work-document-editable .ProseMirror p[style*='text-align: center']")
+        }
+
+        press "use-single-line-spacing" {
+            key = "Control+1"
+        }
+
+        expect "single-line-spacing-applied" {
+            visible = css(".work-document-editable .ProseMirror p[style*='line-height: 1']")
+        }
+
+        press "apply-heading-two" {
+            key = "Control+Alt+2"
+        }
+
+        expect "heading-two-applied" {
+            visible = css(".work-document-editable .ProseMirror h2")
+        }
+
+        press "toggle-spellcheck" {
+            key = "F7"
+        }
+
+        expect "spellcheck-disabled" {
+            visible = css("[role='textbox'][aria-label='文档正文'][spellcheck='false']")
+        }
+
+        click "refocus-heading" {
+            target = css(".work-document-editable .ProseMirror h2")
+        }
+
+        press "toggle-track-changes" {
+            key = "Control+Shift+e"
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        expect "review-shortcuts-described" {
+            visible = css("button[aria-label='添加批注'][aria-keyshortcuts='Control+Alt+M Meta+Alt+M']")
+        }
+
+        expect "track-changes-enabled" {
+            visible = css("button[aria-label='修订模式'][aria-keyshortcuts='Control+Shift+E Meta+Shift+E'][aria-pressed='true']")
+        }
+
+        accessibility "writer-shortcut-accessibility" {
+            path = "evidence/accessibility.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

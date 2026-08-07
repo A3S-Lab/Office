@@ -187,7 +187,11 @@ test('only enables adding a comment for an eligible text selection', () => {
   );
 
   expect(addComment).not.toBeDisabled();
-  expect(addComment).toHaveAttribute('title', '添加批注');
+  expect(addComment).toHaveAttribute('title', '添加批注（Cmd/Ctrl+Alt+M）');
+  expect(addComment).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Alt+M Meta+Alt+M',
+  );
   fireEvent.click(addComment);
   expect(inserted).toEqual([true]);
 

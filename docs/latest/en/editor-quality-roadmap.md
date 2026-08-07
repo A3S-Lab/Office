@@ -196,13 +196,17 @@ gallery and a typed list slice with disc/circle/square bullets, five common
 ordered formats, restart/continue/start commands, keyboard-operated galleries,
 single-transaction undo behavior, and DOCX round trips for the declared list
 styles. Writer now has one command catalog for stable WPS-oriented tab and
-group placement plus shortcut metadata. Undo and redo use the quick-access
-row, while double-clicking the active tab persistently collapses the ribbon;
-tab activation temporarily overlays commands and outside pointer input closes
-that overlay without moving document layout. The toolbar's measured width
-compacts low-priority groups first, normal-priority groups second, and retains
-high-priority groups before horizontal paging. A deterministic desktop workflow
-checks comfortable, adaptive, collapsed, and temporary states, accessibility
+group placement plus shortcut metadata. Its displayed WPS font-size,
+alignment, line-spacing, heading, spelling, field-refresh, comment, and
+track-changes shortcuts execute inside the document while host text inputs and
+modal surfaces retain their native keyboard behavior. Undo and redo use the
+quick-access row, while double-clicking the active tab persistently collapses
+the ribbon; tab activation temporarily overlays commands and outside pointer
+input closes that overlay without moving document layout. The toolbar's
+measured width compacts low-priority groups first, normal-priority groups
+second, and retains high-priority groups before horizontal paging. A
+deterministic desktop workflow checks comfortable, adaptive, collapsed, and
+temporary states, accessibility
 output, and empty console and page-error diagnostics. Compact ribbon overflow
 now reserves both navigation edges so tool
 width does not change after paging. Phone list galleries stay within the

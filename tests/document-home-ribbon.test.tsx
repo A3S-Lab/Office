@@ -336,7 +336,9 @@ test('wires paragraph alignment, direction, spacing, and indent controls', () =>
   expect(editor.getHTML()).not.toContain('data-office-indent-level');
   fireEvent.click(within(paragraph).getByRole('button', { name: '增加缩进' }));
   fireEvent.click(within(paragraph).getByRole('combobox', { name: '行距' }));
-  fireEvent.click(screen.getByRole('option', { name: '1.5 倍' }));
+  const oneAndHalfSpacing = screen.getByRole('option', { name: '1.5 倍' });
+  expect(oneAndHalfSpacing).toHaveTextContent('Cmd/Ctrl+5');
+  fireEvent.click(oneAndHalfSpacing);
 
   expect(editor.getHTML()).toContain('dir="ltr"');
   expect(editor.getHTML()).toContain('data-office-indent-level="1"');
@@ -364,11 +366,16 @@ test('shows paragraph styles and applies the active style idempotently', () => {
   const paragraph = within(gallery).getByRole('radio', {
     name: '应用样式：正文',
   });
+  const headingOne = within(gallery).getByRole('radio', {
+    name: '应用样式：标题 1',
+  });
 
   expect(paragraph).toBeChecked();
-  fireEvent.click(
-    within(gallery).getByRole('radio', { name: '应用样式：标题 1' }),
+  expect(headingOne).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Alt+1 Meta+Alt+1',
   );
+  fireEvent.click(headingOne);
   expect(editor.getHTML()).toContain('<h1>Project brief</h1>');
   const headingHtml = editor.getHTML();
 

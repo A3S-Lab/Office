@@ -151,7 +151,11 @@ test('wires every References, Review, and View action without silent buttons', (
   }
   fireEvent.click(screen.getByRole('button', { name: '插入交叉引用' }));
   fireEvent.click(screen.getByRole('button', { name: '文献库（2）' }));
-  fireEvent.click(screen.getByRole('button', { name: '更新页码和日期' }));
+  const refreshFields = screen.getByRole('button', {
+    name: '更新页码和日期',
+  });
+  expect(refreshFields).toHaveAttribute('aria-keyshortcuts', 'F9');
+  fireEvent.click(refreshFields);
   expect(calls.notes).toEqual(['footnote', 'endnote']);
   expect(calls.captions).toEqual(['figure', 'table']);
   expect(calls.crossReferences).toBe(1);
@@ -159,6 +163,18 @@ test('wires every References, Review, and View action without silent buttons', (
   expect(calls.refreshFields).toBe(1);
 
   fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  expect(screen.getByRole('button', { name: '拼写检查' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'F7',
+  );
+  expect(screen.getByRole('button', { name: '添加批注' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Alt+M Meta+Alt+M',
+  );
+  expect(screen.getByRole('button', { name: '修订模式' })).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+Shift+E Meta+Shift+E',
+  );
   for (const label of [
     '拼写检查',
     '添加批注',
@@ -259,6 +275,58 @@ test('routes history shortcuts from ribbon controls without stealing native text
 
   fireEvent.keyDown(ribbonButton, { key: 'y', ctrlKey: true });
   expect(editor.getHTML()).toBe(changedHtml);
+});
+
+test('routes WPS Writer formatting and review shortcuts inside the document', () => {
+  editor = createEditor();
+  const calls = createCalls();
+  const root = document.createElement('section');
+  root.className = 'work-document-editor';
+  const auxiliaryInput = document.createElement('input');
+  root.append(editor.view.dom, auxiliaryInput);
+  document.body.append(root);
+  render(toolbar(editor, calls));
+  editor.commands.setTextSelection(textRange(editor, 'Toolbar text'));
+
+  fireEvent.keyDown(auxiliaryInput, { key: 'e', ctrlKey: true });
+  expect(editor.getAttributes('paragraph').textAlign).toBeNull();
+
+  fireEvent.keyDown(editor.view.dom, { key: 'e', ctrlKey: true });
+  expect(editor.getAttributes('paragraph').textAlign).toBe('center');
+
+  fireEvent.keyDown(editor.view.dom, {
+    key: '>',
+    code: 'Period',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  expect(editor.getAttributes('textStyle').fontSize).toBe('12pt');
+
+  fireEvent.keyDown(editor.view.dom, { key: '1', ctrlKey: true });
+  expect(editor.getAttributes('paragraph').lineHeight).toBe('1');
+
+  fireEvent.keyDown(editor.view.dom, {
+    key: '2',
+    code: 'Digit2',
+    altKey: true,
+    ctrlKey: true,
+  });
+  expect(editor.isActive('heading', { level: 2 })).toBe(true);
+
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'e',
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  fireEvent.keyDown(editor.view.dom, {
+    key: 'm',
+    altKey: true,
+    ctrlKey: true,
+  });
+  fireEvent.keyDown(editor.view.dom, { key: 'F7' });
+  expect(calls.trackChanges).toBe(1);
+  expect(calls.insertComments).toBe(1);
+  expect(calls.spellcheck).toBe(1);
 });
 
 test('keeps quick access undo and redo connected to document history', () => {

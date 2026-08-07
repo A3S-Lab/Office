@@ -1,12 +1,33 @@
 import type { Editor } from '@tiptap/core';
 import { type KeyboardEvent, useId, useRef } from 'react';
+import { getDocumentCommandDefinition } from './document-command-catalog';
 import { OfficeSelect } from './office-controls';
 
 const documentParagraphStyles = [
-  { value: 'paragraph', label: '正文', level: null },
-  { value: 'h1', label: '标题 1', level: 1 },
-  { value: 'h2', label: '标题 2', level: 2 },
-  { value: 'h3', label: '标题 3', level: 3 },
+  {
+    value: 'paragraph',
+    label: '正文',
+    level: null,
+    shortcut: undefined,
+  },
+  {
+    value: 'h1',
+    label: '标题 1',
+    level: 1,
+    shortcut: getDocumentCommandDefinition('heading1').shortcut,
+  },
+  {
+    value: 'h2',
+    label: '标题 2',
+    level: 2,
+    shortcut: getDocumentCommandDefinition('heading2').shortcut,
+  },
+  {
+    value: 'h3',
+    label: '标题 3',
+    level: 3,
+    shortcut: getDocumentCommandDefinition('heading3').shortcut,
+  },
 ] as const;
 
 type DocumentParagraphStyle = (typeof documentParagraphStyles)[number];
@@ -45,7 +66,11 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
               key={style.value}
               className={active ? 'active' : ''}
               data-document-style={style.value}
-              title={style.label}
+              title={
+                style.shortcut
+                  ? `${style.label}（${style.shortcut.label}）`
+                  : style.label
+              }
             >
               <input
                 ref={(input) => {
@@ -54,6 +79,7 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
                 type="radio"
                 name={groupName}
                 aria-label={`应用样式：${style.label}`}
+                aria-keyshortcuts={style.shortcut?.aria}
                 checked={active}
                 tabIndex={active ? 0 : -1}
                 onChange={() => applyDocumentParagraphStyle(editor, style)}
@@ -81,7 +107,10 @@ export function DocumentStyleGallery({ editor }: { editor: Editor }) {
         ariaLabel="段落样式"
         className="work-document-style-select"
         value={activeStyle}
-        options={documentParagraphStyles}
+        options={documentParagraphStyles.map((style) => ({
+          ...style,
+          meta: style.shortcut?.label,
+        }))}
         onValueChange={(value) => {
           const style = documentParagraphStyles.find(
             (candidate) => candidate.value === value,

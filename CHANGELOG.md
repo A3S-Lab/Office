@@ -11,6 +11,9 @@ All notable changes to A3S Office will be documented in this file.
 - Aligned Writer superscript and subscript with the WPS `Ctrl+Shift+=` and
   `Ctrl+=` shortcuts and added deterministic desktop browser coverage for the
   expanded, collapsed, and temporary ribbon states.
+- Made the displayed WPS Writer shortcuts executable inside the document for
+  font sizing, paragraph alignment and line spacing, heading styles, spelling,
+  field refresh, comments, and track changes without capturing host inputs.
 
 ## 0.2.2 - 2026-08-07
 
