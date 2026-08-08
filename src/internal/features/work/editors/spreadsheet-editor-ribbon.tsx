@@ -14,6 +14,7 @@ import {
   Bold,
   Bookmark,
   Calculator,
+  ChevronDown,
   ClipboardPaste,
   Copy,
   DecimalsArrowLeft,
@@ -52,6 +53,7 @@ import { spreadsheetPivotCount } from '../work-spreadsheet-pivots';
 import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
+import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
 import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
@@ -120,7 +122,6 @@ export function SpreadsheetEditorRibbon({
   freezePanesActive = false,
   freezePanesSelection = defaultSpreadsheetFreezePanesSelection,
   gridLinesVisible,
-  multipleCellsSelected,
   panelId,
   onOpenFind,
   onTabChange,
@@ -139,7 +140,6 @@ export function SpreadsheetEditorRibbon({
   freezePanesActive?: boolean;
   freezePanesSelection?: Selection;
   gridLinesVisible: boolean;
-  multipleCellsSelected: boolean;
   panelId: string;
   onOpenFind: () => void;
   onTabChange: (tab: SpreadsheetRibbonTabId) => void;
@@ -477,6 +477,7 @@ export function SpreadsheetEditorRibbon({
               >
                 <WrapText size={15} />
               </WorkOfficeRibbonButton>
+              <SpreadsheetMergeMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="数字" priority="high">
               <OfficeSelect
@@ -563,18 +564,6 @@ export function SpreadsheetEditorRibbon({
               />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="单元格">
-              <WorkOfficeRibbonButton
-                label={toolbarCell?.mc ? '取消合并' : '合并单元格'}
-                disabled={
-                  !can.toggleCellMerge(Boolean(toolbarCell?.mc)) ||
-                  (!toolbarCell?.mc && !multipleCellsSelected)
-                }
-                onClick={() =>
-                  commands.toggleCellMerge(Boolean(toolbarCell?.mc))
-                }
-              >
-                <Merge size={19} />
-              </WorkOfficeRibbonButton>
               <SpreadsheetRowsAndColumnsMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="编辑" priority="low">
@@ -734,6 +723,121 @@ export function SpreadsheetEditorRibbon({
         ),
       }}
     />
+  );
+}
+
+function SpreadsheetMergeMenu({
+  can,
+  commands,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+}) {
+  const items: readonly {
+    command: SpreadsheetCellMergeCommand;
+    id: string;
+    label: string;
+    icon: ReactNode;
+  }[] = [
+    {
+      command: 'merge-and-center',
+      id: spreadsheetCommandCatalog.mergeAndCenter.id,
+      label: spreadsheetCommandCatalog.mergeAndCenter.label,
+      icon: <Merge size={16} />,
+    },
+    {
+      command: 'merge-cells',
+      id: spreadsheetCommandCatalog.mergeCells.id,
+      label: spreadsheetCommandCatalog.mergeCells.label,
+      icon: <Grid3X3 size={16} />,
+    },
+    {
+      command: 'merge-across',
+      id: spreadsheetCommandCatalog.mergeAcross.id,
+      label: spreadsheetCommandCatalog.mergeAcross.label,
+      icon: <Rows3 size={16} />,
+    },
+    {
+      command: 'unmerge-cells',
+      id: spreadsheetCommandCatalog.unmergeCells.id,
+      label: spreadsheetCommandCatalog.unmergeCells.label,
+      icon: <X size={16} />,
+    },
+    {
+      command: 'unmerge-and-fill',
+      id: spreadsheetCommandCatalog.unmergeAndFill.id,
+      label: spreadsheetCommandCatalog.unmergeAndFill.label,
+      icon: <Grid3X3 size={16} />,
+    },
+  ];
+  const primaryDisabled = !can.mergeSelectedCells('merge-and-center');
+  const menuDisabled = items.every(
+    ({ command }) => can.mergeSelectedCells(command) === false,
+  );
+
+  return (
+    <Popover
+      label="更多合并方式"
+      panelLabel="合并选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-split-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu"
+      disabled={menuDisabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <>
+          <button
+            type="button"
+            className="with-label work-spreadsheet-ribbon-split-primary"
+            aria-label={spreadsheetCommandCatalog.mergeAndCenter.label}
+            aria-keyshortcuts={
+              spreadsheetCommandCatalog.mergeAndCenter.shortcut.aria
+            }
+            title={`${spreadsheetCommandCatalog.mergeAndCenter.label}（${spreadsheetCommandCatalog.mergeAndCenter.shortcut.label}）`}
+            disabled={primaryDisabled}
+            onClick={() => commands.mergeSelectedCells('merge-and-center')}
+          >
+            <Merge size={19} />
+            <span>{spreadsheetCommandCatalog.mergeAndCenter.label}</span>
+          </button>
+          <button
+            {...triggerProps}
+            className={`work-spreadsheet-ribbon-split-disclosure${open ? ' active' : ''}`}
+            title="更多合并方式"
+          >
+            <ChevronDown size={13} aria-hidden="true" />
+          </button>
+        </>
+      )}
+    >
+      {(close) =>
+        items.map(({ command, id, label, icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-keyshortcuts={
+              command === 'merge-and-center'
+                ? spreadsheetCommandCatalog.mergeAndCenter.shortcut.aria
+                : undefined
+            }
+            disabled={!can.mergeSelectedCells(command)}
+            onClick={() => {
+              close();
+              commands.mergeSelectedCells(command);
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              {icon}
+            </span>
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
   );
 }
 

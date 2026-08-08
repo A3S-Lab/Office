@@ -45,6 +45,13 @@ All notable changes to A3S Office will be documented in this file.
 - Added independent command availability, Arrow/Home/End/Enter/Escape menu
   behavior, exact grid-focus restoration, desktop and compact Web workflow
   regression, and schema-validated deterministic A3S Test coverage.
+- Added a WPS-familiar Merge and Center split control to Spreadsheet Home and
+  Alignment. Its menu executes Merge and Center, Merge Cells, Merge Across,
+  Unmerge Cells, and Unmerge and Fill, while `Ctrl+M` shares the primary path.
+- Kept every merge intent within one controlled Fortune workbook batch, used
+  the native merge model for availability and unmerge ranges, restored grid or
+  invoker focus exactly, and added focused, XLSX round-trip, desktop, and
+  compact Web regression coverage.
 
 ## 0.3.0 - 2026-08-07
 

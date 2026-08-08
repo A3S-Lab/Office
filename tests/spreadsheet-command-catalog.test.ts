@@ -51,6 +51,28 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'styles',
     tab: 'home',
   });
+  expect(spreadsheetCommandCatalog.mergeAndCenter.location).toEqual({
+    area: 'ribbon',
+    group: 'alignment',
+    tab: 'home',
+  });
+  expect(spreadsheetCommandCatalog.mergeAndCenter.shortcut).toEqual({
+    aria: 'Control+M',
+    editor: ['Control-m'],
+    label: 'Ctrl+M',
+  });
+  for (const command of [
+    spreadsheetCommandCatalog.mergeCells,
+    spreadsheetCommandCatalog.mergeAcross,
+    spreadsheetCommandCatalog.unmergeCells,
+    spreadsheetCommandCatalog.unmergeAndFill,
+  ]) {
+    expect(command.location).toEqual({
+      area: 'ribbon',
+      group: 'alignment',
+      tab: 'home',
+    });
+  }
   expect(spreadsheetCommandCatalog.insertRowsAbove.location).toEqual({
     area: 'ribbon',
     group: 'cells',

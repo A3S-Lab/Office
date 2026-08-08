@@ -529,6 +529,17 @@ successful commands return focus to the grid, and desktop plus compact
 Playwright coverage exercises an insert-and-restore workflow. Focused catalog,
 component, and focus tests plus the schema-validated A3S Test manifest keep the
 information architecture and command boundary stable.
+The seventh slice moves cell merging into Home and Alignment as a WPS-familiar
+split control. Its primary action and `Ctrl+M` execute Merge and Center, while
+the disclosure menu also offers Merge Cells, Merge Across, Unmerge Cells, and
+Unmerge and Fill. Availability comes from the current selection and Fortune's
+native merge ranges. Each intent is translated into one `batchCallApis`
+transaction, so alignment, native merge state, and fill propagation share one
+controlled update. Arrow, Home, End, Enter, and Escape operate the menu;
+successful actions return focus to the grid and Escape returns to the exact
+disclosure invoker. Focused model, controller, component, and focus tests plus
+XLSX round-trip, desktop, compact, and deterministic A3S Test coverage protect
+the workflow.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.

@@ -69,20 +69,124 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
-  test('uses explicit merge and recalculation commands', () => {
+  test('runs WPS merge commands as one workbook batch', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().mergeSelectedCells('merge-and-center')).toBe(true);
+    expect(editor.commands.mergeSelectedCells('merge-and-center')).toBe(true);
+
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'mergeCells',
+          args: [
+            [{ row: [0, 1], column: [0, 2] }],
+            'merge-all',
+            { id: 'sheet-1' },
+          ],
+        },
+        {
+          name: 'setCellFormatByRange',
+          args: ['ht', '0', { row: [0, 1], column: [0, 2] }, { id: 'sheet-1' }],
+        },
+      ],
+    ]);
+
+    expect(editor.can().mergeSelectedCells('merge-across')).toBe(true);
+    expect(editor.commands.mergeSelectedCells('merge-across')).toBe(true);
+    expect(fixture.workbook.clearBatches.at(-1)).toEqual([
+      {
+        name: 'mergeCells',
+        args: [
+          [{ row: [0, 1], column: [0, 2] }],
+          'merge-horizontal',
+          { id: 'sheet-1' },
+        ],
+      },
+    ]);
+  });
+
+  test('unmerges and fills through the native merge model', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      config: {
+        merge: {
+          '0_0': { r: 0, c: 0, rs: 2, cs: 2 },
+        },
+      },
+      data: [
+        [
+          {
+            v: 'North',
+            m: 'North',
+            ht: '0',
+            mc: { r: 0, c: 0, rs: 2, cs: 2 },
+          },
+          { mc: { r: 0, c: 0 } },
+        ],
+        [{ mc: { r: 0, c: 0 } }, { mc: { r: 0, c: 0 } }],
+      ],
+    };
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 1] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.can().mergeSelectedCells('merge-cells')).toBe(false);
+    expect(editor.can().mergeSelectedCells('unmerge-and-fill')).toBe(true);
+    expect(editor.commands.mergeSelectedCells('unmerge-and-fill')).toBe(true);
+
+    expect(fixture.workbook.clearBatches).toEqual([
+      [
+        {
+          name: 'cancelMerge',
+          args: [[{ row: [0, 1], column: [0, 1] }], { id: 'sheet-1' }],
+        },
+        {
+          name: 'setCellValuesByRange',
+          args: [
+            [
+              [
+                { v: 'North', m: 'North', ht: '0' },
+                { v: 'North', m: 'North', ht: '0' },
+              ],
+              [
+                { v: 'North', m: 'North', ht: '0' },
+                { v: 'North', m: 'North', ht: '0' },
+              ],
+            ],
+            { row: [0, 1], column: [0, 1] },
+            null,
+            { id: 'sheet-1' },
+          ],
+        },
+      ],
+    ]);
+  });
+
+  test('uses Ctrl+M for the WPS merge-and-center command', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const event = new KeyboardEvent('keydown', {
+      cancelable: true,
+      ctrlKey: true,
+      key: 'm',
+    });
+
+    expect(editor.handleKeyDown(event)).toBe(true);
+    expect(event.defaultPrevented).toBe(true);
+    expect(fixture.workbook.clearBatches).toHaveLength(1);
+  });
+
+  test('uses explicit recalculation commands', () => {
     const fixture = commandFixture();
     const { commands } = spreadsheetEditor(fixture.context);
 
-    expect(commands.toggleCellMerge(false)).toBe(true);
     expect(commands.recalculateFormula('selection')).toBe(true);
     expect(commands.recalculateFormula('workbook')).toBe(true);
 
-    expect(fixture.workbook.merges).toEqual([
-      {
-        range: { row: [0, 1], column: [0, 2] },
-        sheetId: 'sheet-1',
-      },
-    ]);
     expect(fixture.calculation.requests).toEqual([
       {
         scope: 'selection',
@@ -1060,10 +1164,6 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     sheetId: string | undefined;
     value: unknown;
   }> = [];
-  merges: Array<{
-    range: SpreadsheetCommandRange;
-    sheetId: string | undefined;
-  }> = [];
   pastes: Array<{
     range: SpreadsheetCommandRange;
     sheetId: string | undefined;
@@ -1096,15 +1196,6 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
     hidden: boolean;
     indices: string[];
   }> = [];
-
-  cancelMerge(
-    ranges: SpreadsheetCommandRange[],
-    options?: { id?: string },
-  ): void {
-    this.merges.push(
-      ...ranges.map((range) => ({ range, sheetId: options?.id })),
-    );
-  }
 
   batchCallApis(apiCalls: Array<{ name: string; args: unknown[] }>): void {
     this.clearBatches.push(apiCalls);
@@ -1187,16 +1278,6 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
       sheetId: options?.id,
       sizes,
     });
-  }
-
-  mergeCells(
-    ranges: SpreadsheetCommandRange[],
-    _type: string,
-    options?: { id?: string },
-  ): void {
-    this.merges.push(
-      ...ranges.map((range) => ({ range, sheetId: options?.id })),
-    );
   }
 
   setCellValuesByRange(

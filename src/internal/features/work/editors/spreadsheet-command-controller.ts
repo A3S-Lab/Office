@@ -8,6 +8,11 @@ import {
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
 import {
+  canApplySpreadsheetCellMerge,
+  spreadsheetCellMergeApiCalls,
+  type SpreadsheetCellMergeCommand,
+} from './spreadsheet-cell-merge';
+import {
   finiteSpreadsheetSelection,
   isSpreadsheetNativeTextUndoTarget,
   selectSpreadsheetFormulaBarContents,
@@ -44,10 +49,6 @@ import {
 
 export interface SpreadsheetWorkbookCommandPort {
   batchCallApis: (apiCalls: Array<{ name: string; args: unknown[] }>) => void;
-  cancelMerge: (
-    ranges: SpreadsheetCommandRange[],
-    options?: { id?: string },
-  ) => void;
   getSelection: () => SpreadsheetCommandRange[] | undefined;
   getCellsByRange: (
     range: SpreadsheetCommandRange,
@@ -73,11 +74,6 @@ export interface SpreadsheetWorkbookCommandPort {
   showRowOrColumn: (
     rowOrColumnInfo: string[],
     type: SpreadsheetStructureAxis,
-  ) => void;
-  mergeCells: (
-    ranges: SpreadsheetCommandRange[],
-    type: string,
-    options?: { id?: string },
   ) => void;
   setCellValuesByRange: (
     values: unknown[][],
@@ -190,6 +186,7 @@ export interface SpreadsheetEditorCommands {
     axis: SpreadsheetStructureAxis,
     position: SpreadsheetStructureInsertPosition,
   ) => boolean;
+  mergeSelectedCells: (command: SpreadsheetCellMergeCommand) => boolean;
   moveSheet: (
     sheetId: string,
     direction: SpreadsheetSheetMoveDirection,
@@ -218,7 +215,6 @@ export interface SpreadsheetEditorCommands {
   setZoom: (percent: number) => boolean;
   sortSelectedCells: (direction: SpreadsheetSortDirection) => boolean;
   toggleAutoFilter: () => boolean;
-  toggleCellMerge: (merged: boolean) => boolean;
   undo: () => boolean;
 }
 
@@ -525,6 +521,12 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
         'Mod-y': ({ can, commands }, event) =>
           runSpreadsheetHistoryShortcut(event, can.redo, commands.redo),
+        'Control-m': ({ can, commands }, event) =>
+          runSpreadsheetMergeShortcut(
+            event,
+            can.mergeSelectedCells,
+            commands.mergeSelectedCells,
+          ),
         'Mod-Shift-l': ({ can, commands }, event) =>
           runSpreadsheetAutoFilterShortcut(
             event,
@@ -824,9 +826,9 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
           canExecute: canEditSelectedCells,
           execute: formatCells,
         },
-        toggleCellMerge: {
-          canExecute: canEditSelectedCells,
-          execute: toggleCellMerge,
+        mergeSelectedCells: {
+          canExecute: canMergeSelectedCells,
+          execute: mergeSelectedCells,
         },
       }),
     }),
@@ -1266,20 +1268,36 @@ function isSpreadsheetCellTypeFormat(
   );
 }
 
-function toggleCellMerge(
+function canMergeSelectedCells(
   context: SpreadsheetCommandContext,
-  merged: boolean,
+  command: SpreadsheetCellMergeCommand,
+): boolean {
+  if (!canEditSelectedCells(context)) return false;
+  return canApplySpreadsheetCellMerge(
+    context.content.sheets.find((sheet) => sheet.id === context.targetSheetId),
+    liveRange(context),
+    command,
+  );
+}
+
+function mergeSelectedCells(
+  context: SpreadsheetCommandContext,
+  command: SpreadsheetCellMergeCommand,
 ): boolean {
   if (!context.workbook || !context.targetSheetId) return false;
-  const ranges = [liveRange(context)];
-  if (merged) {
-    context.workbook.cancelMerge(ranges, { id: context.targetSheetId });
-  } else {
-    context.workbook.mergeCells(ranges, 'merge-all', {
-      id: context.targetSheetId,
-    });
+  const calls = spreadsheetCellMergeApiCalls(
+    context.content.sheets.find((sheet) => sheet.id === context.targetSheetId),
+    context.targetSheetId,
+    liveRange(context),
+    command,
+  );
+  if (!calls.length) return false;
+  try {
+    context.workbook.batchCallApis(calls);
+    return true;
+  } catch {
+    return false;
   }
-  return true;
 }
 
 function recalculateSpreadsheet(
@@ -1428,6 +1446,22 @@ function runSpreadsheetCellFormatShortcut(
   }
   const value = Number(context.toolbarCell?.[attribute]) === 1 ? 0 : 1;
   return canExecute(attribute, value) && execute(attribute, value);
+}
+
+function runSpreadsheetMergeShortcut(
+  event: KeyboardEvent,
+  canExecute: SpreadsheetEditorCanCommands['mergeSelectedCells'],
+  execute: SpreadsheetEditorCommands['mergeSelectedCells'],
+): boolean {
+  if (
+    event.repeat ||
+    isOfficeShortcutBlocked(event.target) ||
+    isSpreadsheetNativeTextUndoTarget(event.target) ||
+    !canExecute('merge-and-center')
+  ) {
+    return false;
+  }
+  return execute('merge-and-center');
 }
 
 function runSpreadsheetClearShortcut(

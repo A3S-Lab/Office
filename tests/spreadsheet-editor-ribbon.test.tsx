@@ -21,7 +21,6 @@ test('uses the shared quick access and collapsible adaptive ribbon', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -68,7 +67,6 @@ test('routes number-format controls through typed spreadsheet commands', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={{ v: 0.5, m: '50.0%', ct: { fa: '0.0%', t: 'n' } }}
       onTabChange={() => undefined}
@@ -128,7 +126,6 @@ test('routes the WPS Home clipboard group through typed commands', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -187,7 +184,6 @@ test('exposes locked format-painter state and exits on another click', () => {
       formatPainterMode="locked"
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -232,7 +228,6 @@ test('operates WPS row and column actions from the Home cells group', async () =
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -297,7 +292,6 @@ test('disables unavailable WPS row and column actions independently', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -338,7 +332,6 @@ test('routes font, vertical alignment, and wrapping through cell formats', () =>
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={{ ff: 'Arial', vt: 0, tb: '2' }}
       onTabChange={() => undefined}
@@ -387,7 +380,6 @@ test('omits empty resource counts from spreadsheet ribbon actions', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -420,7 +412,6 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -446,7 +437,6 @@ test('keeps conditional formatting in Home and sorting in Data', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       gridLinesVisible
       findOpen={false}
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onTabChange={() => undefined}
@@ -470,7 +460,6 @@ test('exposes the spreadsheet find shortcut through the home ribbon', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       findOpen={false}
       gridLinesVisible
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onOpenFind={() => {
@@ -485,6 +474,73 @@ test('exposes the spreadsheet find shortcut through the home ribbon', () => {
   expect(find).toHaveAttribute('aria-keyshortcuts', 'Control+F Meta+F');
   fireEvent.click(find);
   expect(openCount).toBe(1);
+});
+
+test('places the WPS merge split control in the Home alignment group', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          mergeSelectedCells: (command) => {
+            actions.push(command);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      gridLinesVisible
+      findOpen={false}
+      panel={null}
+      toolbarCell={null}
+      onTabChange={() => undefined}
+      onOpenFind={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const alignment = screen.getByRole('region', { name: '对齐' });
+  const cells = screen.getByRole('region', { name: '单元格' });
+  const mergeAndCenter = within(alignment).getByRole('button', {
+    name: '合并居中',
+  });
+  expect(mergeAndCenter).toHaveAttribute('aria-keyshortcuts', 'Control+M');
+  expect(
+    within(cells).queryByRole('button', { name: '合并单元格' }),
+  ).toBeNull();
+
+  fireEvent.click(mergeAndCenter);
+  expect(actions).toEqual(['merge-and-center']);
+
+  fireEvent.click(
+    within(alignment).getByRole('button', { name: '更多合并方式' }),
+  );
+  const menu = screen.getByRole('menu', { name: '合并选项' });
+  expect(
+    within(menu).getByRole('menuitem', { name: '合并居中' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '合并单元格' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '跨行合并' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '取消合并单元格' }),
+  ).toBeInTheDocument();
+  const unmergeAndFill = within(menu).getByRole('menuitem', {
+    name: '取消合并并填充',
+  });
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(unmergeAndFill).toHaveFocus();
+  fireEvent.click(unmergeAndFill);
+
+  expect(actions).toEqual(['merge-and-center', 'unmerge-and-fill']);
+  expect(screen.queryByRole('menu', { name: '合并选项' })).toBeNull();
 });
 
 test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
@@ -507,7 +563,6 @@ test('exposes WPS AutoFilter state and routes the Data ribbon action', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       findOpen={false}
       gridLinesVisible
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onOpenFind={() => undefined}
@@ -556,7 +611,6 @@ test('operates WPS Freeze Panes from the View window group', () => {
       content={{ type: 'spreadsheet', sheets: [] }}
       findOpen={false}
       gridLinesVisible
-      multipleCellsSelected={false}
       panel={null}
       toolbarCell={null}
       onOpenFind={() => undefined}
@@ -607,6 +661,7 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     duplicateSheet: () => true,
     hideSheet: () => true,
     insertSelectedStructure: () => true,
+    mergeSelectedCells: () => true,
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
@@ -626,7 +681,6 @@ function spreadsheetCan(): SpreadsheetEditorCanCommands {
     selectCellRange: () => true,
     sortSelectedCells: () => true,
     toggleAutoFilter: () => true,
-    toggleCellMerge: () => true,
     undo: () => false,
   };
 }
@@ -644,6 +698,7 @@ function spreadsheetCommands(
       | 'cutSelection'
       | 'deleteSelectedStructure'
       | 'insertSelectedStructure'
+      | 'mergeSelectedCells'
       | 'pasteSelection'
       | 'setFreezePanes'
       | 'toggleAutoFilter'
@@ -664,6 +719,7 @@ function spreadsheetCommands(
     duplicateSheet: () => true,
     hideSheet: () => true,
     insertSelectedStructure: overrides.insertSelectedStructure ?? (() => true),
+    mergeSelectedCells: overrides.mergeSelectedCells ?? (() => true),
     moveSheet: () => true,
     moveSelection: () => true,
     openAutoFilterMenu: () => true,
@@ -683,7 +739,6 @@ function spreadsheetCommands(
     selectCellRange: () => true,
     sortSelectedCells,
     toggleAutoFilter: overrides.toggleAutoFilter ?? (() => true),
-    toggleCellMerge: () => true,
     undo: () => false,
   };
 }

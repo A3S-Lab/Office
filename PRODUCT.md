@@ -60,6 +60,13 @@ menu. Users can insert selected rows above or below, insert selected columns to
 the left or right, and delete selected rows or columns. Each item derives its
 availability from the live selection, uses the shared typed command port, and
 returns focus to the grid for uninterrupted keyboard editing.
+The seventh milestone moves cell merging into the WPS-familiar Home and
+Alignment group. The split control keeps Merge and Center as the primary
+action, while its menu exposes Merge and Center, Merge Cells, Merge Across,
+Unmerge Cells, and Unmerge and Fill. `Ctrl+M` follows the same typed command
+path. Every action reads the native Fortune merge model, emits one controlled
+workbook batch, and restores grid focus; the menu retains Arrow, Home, End,
+Enter, and Escape behavior on desktop and compact Web.
 
 ## Product Rules
 

@@ -552,4 +552,144 @@ suite "office-spreadsheet-ribbon-alignment" {
             clear = false
         }
     }
+
+    scenario "use-wps-merge-from-home" {
+        name = "Use WPS merge commands from the Home alignment group"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        type "enter-merge-content" {
+            target = css(".fortune-sheet-overlay")
+            value = "North"
+        }
+
+        press "commit-merge-content" {
+            key = "Enter"
+        }
+
+        press "return-to-content" {
+            key = "ArrowUp"
+        }
+
+        press "extend-selection-to-b1" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-to-c1" {
+            key = "Shift+ArrowRight"
+        }
+
+        press "extend-selection-to-c2" {
+            key = "Shift+ArrowDown"
+        }
+
+        expect "merge-range-selected" {
+            text = "A1:C2"
+        }
+
+        expect "merge-and-center-is-in-alignment" {
+            visible = css(".work-spreadsheet-ribbon .work-office-ribbon-group[aria-label='对齐'] button[aria-label='合并居中'][aria-keyshortcuts='Control+M']")
+        }
+
+        click "merge-and-center" {
+            target = role("button", "合并居中")
+        }
+
+        expect "grid-focus-restored-after-merge" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        click "open-merge-menu" {
+            target = role("button", "更多合并方式")
+        }
+
+        expect "merge-menu-visible" {
+            visible = css("[role='menu'][aria-label='合并选项']")
+        }
+
+        expect "unmerge-and-fill-enabled" {
+            visible = css("[role='menu'][aria-label='合并选项'] button[role='menuitem']:last-child:not(:disabled)")
+        }
+
+        screenshot "spreadsheet-merge-menu-compact" {
+            path = "screenshots/spreadsheet-merge-menu-compact.png"
+        }
+
+        press "focus-unmerge-and-fill" {
+            key = "End"
+        }
+
+        expect "unmerge-and-fill-focused" {
+            visible = css("[role='menu'][aria-label='合并选项'] button[role='menuitem']:last-child:focus")
+        }
+
+        press "unmerge-and-fill" {
+            key = "Enter"
+        }
+
+        expect "grid-focus-restored-after-unmerge" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "select-sheet-start" {
+            key = "Control+Home"
+        }
+
+        press "select-filled-cell" {
+            key = "ArrowRight"
+        }
+
+        expect "filled-cell-selected" {
+            text = "B1"
+        }
+
+        expect "filled-cell-content-retained" {
+            text = "North"
+        }
+
+        accessibility "spreadsheet-merge-accessibility" {
+            path = "evidence/merge-accessibility.json"
+            interactive = true
+        }
+
+        console "merge-browser-console" {
+            path = "diagnostics/merge-console.json"
+            clear = false
+        }
+
+        page_errors "merge-browser-errors" {
+            path = "diagnostics/merge-page-errors.json"
+            clear = false
+        }
+    }
 }

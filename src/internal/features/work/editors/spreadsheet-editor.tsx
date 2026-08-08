@@ -859,7 +859,6 @@ export function SpreadsheetEditor({
           freezePanesActive={Boolean(toolbarSheet?.frozen)}
           freezePanesSelection={toolbarSelection}
           gridLinesVisible={gridLinesVisible}
-          multipleCellsSelected={multipleCellsSelected}
           panelId={panelId}
           onOpenFind={openSpreadsheetFind}
           onTabChange={(tab) => {
@@ -1243,13 +1242,13 @@ export function spreadsheetCommandsWithGridFocus(
     insertSelectedStructure: afterSuccessfulCommand(
       commands.insertSelectedStructure,
     ),
+    mergeSelectedCells: afterSuccessfulCommand(commands.mergeSelectedCells),
     pasteSelection: afterSuccessfulCommand(commands.pasteSelection),
     redo: afterSuccessfulCommand(commands.redo),
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
     setFreezePanes: afterSuccessfulCommand(commands.setFreezePanes),
     setGridLines: afterSuccessfulCommand(commands.setGridLines),
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
-    toggleCellMerge: afterSuccessfulCommand(commands.toggleCellMerge),
     undo: afterSuccessfulCommand(commands.undo),
   };
 }

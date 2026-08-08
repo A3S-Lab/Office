@@ -206,6 +206,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     cutSelection: record('cutSelection', false),
     deleteSelectedStructure: record('deleteSelectedStructure'),
     insertSelectedStructure: record('insertSelectedStructure'),
+    mergeSelectedCells: record('mergeSelectedCells'),
     openAutoFilterMenu: record('openAutoFilterMenu'),
     pasteSelection: record('pasteSelection'),
     redo: record('redo'),
@@ -213,7 +214,6 @@ test('returns grid focus after successful ribbon commands only', () => {
     setFreezePanes: record('setFreezePanes'),
     setGridLines: record('setGridLines'),
     setZoom: record('setZoom'),
-    toggleCellMerge: record('toggleCellMerge'),
     toggleAutoFilter: record('toggleAutoFilter'),
     undo: record('undo', false),
   } as unknown as SpreadsheetEditorCommands;
@@ -227,6 +227,7 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.setFreezePanes('topRow')).toBe(true);
   expect(ribbon.insertSelectedStructure('row', 'before')).toBe(true);
   expect(ribbon.deleteSelectedStructure('column')).toBe(true);
+  expect(ribbon.mergeSelectedCells('merge-and-center')).toBe(true);
   expect(ribbon.toggleAutoFilter()).toBe(true);
   expect(ribbon.openAutoFilterMenu()).toBe(true);
   expect(ribbon.activateFormatPainter('once')).toBe(true);
@@ -243,6 +244,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setFreezePanes:topRow',
     'insertSelectedStructure:row,before',
     'deleteSelectedStructure:column',
+    'mergeSelectedCells:merge-and-center',
     'toggleAutoFilter:',
     'openAutoFilterMenu:',
     'activateFormatPainter:once',
@@ -254,6 +256,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

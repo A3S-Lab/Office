@@ -119,6 +119,36 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-u'],
     },
   },
+  mergeAndCenter: {
+    id: 'alignment.mergeAndCenter',
+    label: '合并居中',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+    shortcut: {
+      label: 'Ctrl+M',
+      aria: 'Control+M',
+      editor: ['Control-m'],
+    },
+  },
+  mergeCells: {
+    id: 'alignment.mergeCells',
+    label: '合并单元格',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  mergeAcross: {
+    id: 'alignment.mergeAcross',
+    label: '跨行合并',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  unmergeCells: {
+    id: 'alignment.unmergeCells',
+    label: '取消合并单元格',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
+  unmergeAndFill: {
+    id: 'alignment.unmergeAndFill',
+    label: '取消合并并填充',
+    location: { area: 'ribbon', tab: 'home', group: 'alignment' },
+  },
   conditionalFormatting: {
     id: 'styles.conditionalFormatting',
     label: '条件格式',

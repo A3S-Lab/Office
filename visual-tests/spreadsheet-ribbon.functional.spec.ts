@@ -173,6 +173,92 @@ test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet merges and fills cells from the WPS Home alignment group', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const alignment = page
+    .locator('.work-spreadsheet-ribbon')
+    .getByRole('region', { name: '对齐' });
+  const mergeAndCenter = alignment.getByRole('button', {
+    name: '合并居中',
+  });
+  const moreMergeOptions = alignment.getByRole('button', {
+    name: '更多合并方式',
+  });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await page.keyboard.type('North');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect(nameBox).toHaveText('A1:C2');
+
+  await expect(mergeAndCenter).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Control+M',
+  );
+  await mergeAndCenter.click();
+  await expect(grid).toBeFocused();
+
+  await moreMergeOptions.click();
+  const menu = page.getByRole('menu', { name: '合并选项' });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveCount(5);
+  await expect(menu.getByRole('menuitem', { name: '合并居中' })).toBeDisabled();
+  const unmergeAndFill = menu.getByRole('menuitem', {
+    name: '取消合并并填充',
+  });
+  await expect(unmergeAndFill).toBeEnabled();
+
+  const menuBounds = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((menuBounds?.x ?? 0) + (menuBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((menuBounds?.y ?? 0) + (menuBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('merge-menu.png'),
+    animations: 'disabled',
+  });
+
+  await menu.press('End');
+  await expect(unmergeAndFill).toBeFocused();
+  await unmergeAndFill.press('Enter');
+  await expect(grid).toBeFocused();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('ArrowRight');
+  await expect(nameBox).toHaveText('B1');
+  await expect(formulaBar).toHaveText('North');
+
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.keyboard.press('Control+M');
+  await expect(grid).toBeFocused();
+  await moreMergeOptions.click();
+  await expect(
+    page.getByRole('menu', { name: '合并选项' }).getByRole('menuitem', {
+      name: '取消合并单元格',
+    }),
+  ).toBeEnabled();
+  await page.keyboard.press('Escape');
+  await expect(moreMergeOptions).toBeFocused();
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet applies one-shot and locked WPS format-painter patterns', async ({
   page,
 }) => {
