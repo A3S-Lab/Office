@@ -286,6 +286,36 @@ async fn layout_profile_has_a_strict_deterministic_json_contract() {
 }
 
 #[tokio::test]
+async fn layout_profile_accepts_independent_surface_and_pixel_quantization() {
+    let fixture = exact_image_deck().await;
+    let mut profile = renderer()
+        .inspect_unit(
+            &fixture.path,
+            fixture.revision,
+            slide_unit(1),
+            environment(),
+            TEST_TIMEOUT_MS,
+        )
+        .await
+        .unwrap()
+        .profile;
+    profile.dpi_x_milli = 144_000;
+    profile.dpi_y_milli = 144_000;
+    profile.surface_width_micrometers = 210_009;
+    profile.surface_height_micrometers = 297_004;
+    profile.output_width_px = 1_191;
+    profile.output_height_px = 1_684;
+
+    profile.validate().unwrap();
+
+    profile.output_width_px += 1;
+    assert_eq!(
+        profile.validate().unwrap_err().code,
+        "use.office.layout_profile_invalid"
+    );
+}
+
+#[tokio::test]
 async fn layout_output_budget_is_checked_before_publication() {
     let fixture = exact_image_deck().await;
     let renderer = renderer();

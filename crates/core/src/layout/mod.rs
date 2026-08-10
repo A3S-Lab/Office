@@ -349,11 +349,14 @@ pub(crate) fn is_sha256(value: &str) -> bool {
 
 pub(crate) fn dimension_matches_dpi(pixels: u32, dpi_milli: u32, micrometers: u32) -> bool {
     const MICROMETERS_PER_INCH_MILLI: u128 = 25_400_000;
-    const ROUNDING_TOLERANCE_MICROMETERS: u128 = 2;
 
     let declared = u128::from(micrometers) * u128::from(dpi_milli);
     let derived = u128::from(pixels) * MICROMETERS_PER_INCH_MILLI;
-    declared.abs_diff(derived) <= u128::from(dpi_milli) * ROUNDING_TOLERANCE_MICROMETERS
+    // The physical size and pixel count are independently rounded from the
+    // same exact surface. Their cross-multiplied difference can therefore
+    // contain up to half a micrometer plus half a pixel of quantization.
+    let quantization_tolerance = (u128::from(dpi_milli) + MICROMETERS_PER_INCH_MILLI).div_ceil(2);
+    declared.abs_diff(derived) <= quantization_tolerance
 }
 
 pub(crate) fn layout_error(code: &'static str, message: impl Into<String>) -> UseError {

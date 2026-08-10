@@ -295,11 +295,7 @@ fn observe_page(
     dpi_milli: u32,
 ) -> UseResult<NativeOfficePdfPageGeometry> {
     let number = u32::try_from(offset + 1).map_err(|_| invalid_page_geometry())?;
-    let media = page_box(page.boundaries().media().map_err(map_page_error)?)?;
-    let crop = match page.boundaries().crop() {
-        Ok(boundary) => page_box(boundary)?,
-        Err(_) => media,
-    };
+    let (media, crop) = visible_page_boxes(page)?;
     let rotation_degrees = rotation_degrees(page.rotation().map_err(map_page_error)?);
     let (width_millipoints, height_millipoints) = if matches!(rotation_degrees, 90 | 270) {
         (crop.height_millipoints(), crop.width_millipoints())
@@ -329,6 +325,24 @@ fn observe_page(
     };
     geometry.validate(dpi_milli)?;
     Ok(geometry)
+}
+
+fn visible_page_boxes(
+    page: &pdfium_render::prelude::PdfPage<'_>,
+) -> UseResult<(NativeOfficePdfPageBox, NativeOfficePdfPageBox)> {
+    let boundaries = page.boundaries();
+    let media = match boundaries.media() {
+        Ok(boundary) => page_box(boundary)?,
+        Err(_) => {
+            let visible = page_box(boundaries.bounding().map_err(map_page_error)?)?;
+            return Ok((visible, visible));
+        }
+    };
+    let crop = match boundaries.crop() {
+        Ok(boundary) => page_box(boundary)?,
+        Err(_) => page_box(boundaries.bounding().map_err(map_page_error)?)?,
+    };
+    Ok((media, crop))
 }
 
 fn page_box(boundary: PdfPageBoundaryBox) -> UseResult<NativeOfficePdfPageBox> {
