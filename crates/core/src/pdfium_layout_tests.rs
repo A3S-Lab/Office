@@ -114,6 +114,28 @@ fn pdf_inventory_rejects_invalid_page_geometry_and_limits() {
 }
 
 #[test]
+fn pdf_inventory_accepts_quantized_wps_a4_geometry_but_rejects_wrong_pixels() {
+    // WPS records this A4 page as 595.3 x 841.9 points. At 144 DPI the
+    // authoritative millipoint conversion rounds to 1191 x 1684 pixels; a
+    // pixel-to-micrometer round trip cannot preserve the independently rounded
+    // physical dimensions exactly.
+    let observed = inventory(vec![page(1, 0, 595_300, 841_900)]);
+
+    observed.validate().unwrap();
+    assert_eq!(observed.pages[0].surface_width_micrometers, 210_009);
+    assert_eq!(observed.pages[0].surface_height_micrometers, 297_004);
+    assert_eq!(observed.pages[0].output_width_px, 1_191);
+    assert_eq!(observed.pages[0].output_height_px, 1_684);
+
+    let mut wrong_pixels = observed;
+    wrong_pixels.pages[0].output_width_px += 1;
+    assert_eq!(
+        wrong_pixels.validate().unwrap_err().code,
+        "use.office.pdf_page_geometry_invalid"
+    );
+}
+
+#[test]
 fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
     let inventory = inventory(vec![page(1, 0, 612_000, 792_000)]);
     let text = "A\n🌍".to_string();
@@ -610,6 +632,76 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     blank_text.validate(&blank_inventory).unwrap();
 }
 
+#[tokio::test]
+async fn pdfium_resolves_media_boxes_inherited_from_the_page_tree() {
+    let Some(library) = std::env::var_os("A3S_OFFICE_TEST_PDFIUM_LIBRARY") else {
+        return;
+    };
+    let directory = tempfile::tempdir().unwrap();
+    let source = directory.path().join("inherited-media-box.pdf");
+    std::fs::write(&source, inherited_media_box_pdf()).unwrap();
+    let renderer = NativeOfficePdfiumLayoutRenderer::from_library(
+        library,
+        format!(
+            "{:x}",
+            sha2::Sha256::digest(b"a3s-office-test-font-manifest-v1")
+        ),
+    )
+    .await
+    .unwrap();
+    let revision = renderer
+        .source_revision(&source, 1024 * 1024, TEST_TIMEOUT_MS)
+        .await
+        .unwrap();
+    let inventory = renderer
+        .inventory_pages(
+            &source,
+            revision,
+            NativeOfficePdfPageInventoryOptions {
+                max_pages: 1,
+                max_source_bytes: 1024 * 1024,
+                dpi_milli: 72_000,
+                timeout_ms: TEST_TIMEOUT_MS,
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(inventory.total_pages, 1);
+    assert_eq!(
+        inventory.pages[0].media_box,
+        text_box(0, 0, 200_000, 100_000)
+    );
+    assert_eq!(
+        inventory.pages[0].crop_box,
+        text_box(0, 0, 200_000, 100_000)
+    );
+    assert_eq!(inventory.pages[0].output_width_px, 200);
+    assert_eq!(inventory.pages[0].output_height_px, 100);
+
+    let inspection = renderer
+        .inspect_inventoried_page(
+            &source,
+            &inventory,
+            inventory.pages[0].unit.clone(),
+            NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+        )
+        .unwrap();
+    let output = directory.path().join("inherited-media-box.png");
+    let receipt = renderer
+        .render(inspection.into_render_request(&output, TEST_MAX_OUTPUT_BYTES, TEST_TIMEOUT_MS))
+        .await
+        .unwrap();
+    assert_eq!(
+        (receipt.raster.width_px, receipt.raster.height_px),
+        (200, 100)
+    );
+    assert_eq!(
+        rgba_pixel(&std::fs::read(output).unwrap(), 100, 50),
+        [255, 0, 0, 255]
+    );
+}
+
 fn inventory(pages: Vec<NativeOfficePdfPageGeometry>) -> NativeOfficePdfPageInventory {
     NativeOfficePdfPageInventory {
         kind: NativeOfficeLayoutSourceKind::Pdf,
@@ -717,6 +809,16 @@ fn two_page_pdf() -> Vec<u8> {
         b"<< /Title (Second page) /Parent 8 0 R /Prev 9 0 R /Dest [4 0 R /Fit] >>".to_vec(),
     ];
     encode_pdf(&objects)
+}
+
+fn inherited_media_box_pdf() -> Vec<u8> {
+    let red = b"1 0 0 rg\n0 0 200 100 re f\n";
+    encode_pdf(&[
+        b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
+        b"<< /Type /Pages /Count 1 /Kids [3 0 R] /MediaBox [0 0 200 100] >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /Resources << >> /Contents 4 0 R >>".to_vec(),
+        pdf_stream(red),
+    ])
 }
 
 fn zero_page_pdf() -> Vec<u8> {

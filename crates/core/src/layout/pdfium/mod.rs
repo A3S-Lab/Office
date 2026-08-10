@@ -6,10 +6,7 @@ mod text;
 use a3s_use_core::{UseError, UseResult};
 use serde::{Deserialize, Serialize};
 
-use super::{
-    dimension_matches_dpi, layout_error, validate_revision, validate_unit,
-    NativeOfficeLayoutSourceKind,
-};
+use super::{layout_error, validate_revision, validate_unit, NativeOfficeLayoutSourceKind};
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision};
 
 pub use outline::{
@@ -129,16 +126,6 @@ impl NativeOfficePdfPageGeometry {
             || self.surface_height_micrometers != expected_height_micrometers
             || self.output_width_px != expected_width_px
             || self.output_height_px != expected_height_px
-            || !dimension_matches_dpi(
-                self.output_width_px,
-                dpi_milli,
-                self.surface_width_micrometers,
-            )
-            || !dimension_matches_dpi(
-                self.output_height_px,
-                dpi_milli,
-                self.surface_height_micrometers,
-            )
         {
             return Err(invalid_page_geometry());
         }
