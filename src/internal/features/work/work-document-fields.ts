@@ -14,6 +14,17 @@ export interface WorkDocumentFieldContext {
   now?: Date;
 }
 
+export type WorkDocumentFieldContextResolver = (
+  position: number,
+) => WorkDocumentFieldContext | null;
+
+export interface WorkDocumentFieldRefreshOptions {
+  resolveContext?: WorkDocumentFieldContextResolver;
+  now?: Date;
+  addToHistory?: boolean;
+  updateClock?: boolean;
+}
+
 const FIELD_SELECTOR = 'span[data-document-field]';
 
 const FIELD_COMMANDS: Record<WorkDocumentFieldKind, string> = {

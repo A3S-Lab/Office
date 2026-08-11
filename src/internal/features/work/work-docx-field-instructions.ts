@@ -4,6 +4,26 @@ export interface DocxFieldOccurrence {
   instruction: string;
   start: Element;
   end: Element;
+  syntax: 'simple' | 'complex' | 'orphan';
+  complete: boolean;
+  nested: boolean;
+  containsNested: boolean;
+  sameParagraph: boolean;
+  inDeletion: boolean;
+}
+
+interface ParsedDocxFields {
+  occurrences: DocxFieldOccurrence[];
+  hasUnmatchedEnd: boolean;
+  hasUnclosedBegin: boolean;
+}
+
+interface UndecoratedDocxFieldOccurrence {
+  instruction: string;
+  start: Element;
+  end: Element;
+  syntax: DocxFieldOccurrence['syntax'];
+  closed: boolean;
 }
 
 export function docxFieldInstructions(root: ParentNode): string[] {
@@ -11,22 +31,76 @@ export function docxFieldInstructions(root: ParentNode): string[] {
 }
 
 export function docxFieldOccurrences(root: ParentNode): DocxFieldOccurrence[] {
-  const fields: DocxFieldOccurrence[] = descendants(root, 'fldSimple').map(
-    (field) => ({
-      instruction: attribute(field, 'instr') ?? '',
-      start: field,
-      end: field,
-    }),
+  return parseDocxFields(root).occurrences.filter((field) =>
+    Boolean(field.instruction),
   );
-  const stack: Array<{ instruction: string; start: Element }> = [];
-  for (const element of Array.from(root.querySelectorAll('*'))) {
+}
+
+export function docxFieldOccurrenceIsInlineEditable(
+  field: DocxFieldOccurrence,
+): boolean {
+  return (
+    field.syntax !== 'orphan' &&
+    field.complete &&
+    !field.nested &&
+    !field.containsNested &&
+    field.sameParagraph &&
+    !field.inDeletion
+  );
+}
+
+export function hasInvalidDocxFieldStructure(root: ParentNode): boolean {
+  const parsed = parseDocxFields(root);
+  return (
+    parsed.hasUnmatchedEnd ||
+    parsed.hasUnclosedBegin ||
+    parsed.occurrences.some(
+      (field) =>
+        (field.syntax !== 'orphan' &&
+          (!field.complete ||
+            field.nested ||
+            field.containsNested ||
+            !field.sameParagraph ||
+            field.inDeletion)) ||
+        (field.syntax === 'orphan' && field.inDeletion),
+    )
+  );
+}
+
+function parseDocxFields(root: ParentNode): ParsedDocxFields {
+  const elements = Array.from(root.querySelectorAll('*'));
+  const fields: UndecoratedDocxFieldOccurrence[] = descendants(
+    root,
+    'fldSimple',
+  ).map((field) => ({
+    instruction: attribute(field, 'instr') ?? '',
+    start: field,
+    end: field,
+    syntax: 'simple',
+    closed: true,
+  }));
+  const stack: Array<{
+    instruction: string;
+    start: Element;
+  }> = [];
+  let hasUnmatchedEnd = false;
+  for (const element of elements) {
     if (element.localName === 'fldChar') {
       const fieldType = attribute(element, 'fldCharType');
       if (fieldType === 'begin') {
         stack.push({ instruction: '', start: element });
       } else if (fieldType === 'end' && stack.length) {
         const field = stack.pop();
-        if (field) fields.push({ ...field, end: element });
+        if (field) {
+          fields.push({
+            ...field,
+            end: element,
+            syntax: 'complex',
+            closed: true,
+          });
+        }
+      } else if (fieldType === 'end') {
+        hasUnmatchedEnd = true;
       }
       continue;
     }
@@ -37,13 +111,25 @@ export function docxFieldOccurrences(root: ParentNode): DocxFieldOccurrence[] {
         instruction: element.textContent ?? '',
         start: element,
         end: element,
+        syntax: 'orphan',
+        closed: false,
       });
     }
   }
-  fields.push(...stack.map((field) => ({ ...field, end: field.start })));
-  return fields
-    .map((field) => ({ ...field, instruction: field.instruction.trim() }))
-    .filter((field) => Boolean(field.instruction));
+  const hasUnclosedBegin = stack.length > 0;
+  fields.push(
+    ...stack.map((field) => ({
+      ...field,
+      end: field.start,
+      syntax: 'complex' as const,
+      closed: false,
+    })),
+  );
+  return {
+    occurrences: decorateFieldOccurrences(elements, fields),
+    hasUnmatchedEnd,
+    hasUnclosedBegin,
+  };
 }
 
 export function docxFieldResultText(field: DocxFieldOccurrence): string {
@@ -85,4 +171,63 @@ function closestAncestor(element: Element, localName: string): Element | null {
     current = current.parentElement;
   }
   return null;
+}
+
+function decorateFieldOccurrences(
+  elements: Element[],
+  fields: UndecoratedDocxFieldOccurrence[],
+): DocxFieldOccurrence[] {
+  const indexes = new Map(elements.map((element, index) => [element, index]));
+  const ranges = fields.map((field) => fieldRange(field, indexes));
+  return fields.map((field, index) => {
+    const range = ranges[index] ?? { start: -1, end: -1 };
+    const startParagraph = closestAncestor(field.start, 'p');
+    const endParagraph = closestAncestor(field.end, 'p');
+    const instruction = field.instruction.trim();
+    return {
+      instruction,
+      start: field.start,
+      end: field.end,
+      syntax: field.syntax,
+      complete:
+        field.syntax !== 'orphan' && field.closed && Boolean(instruction),
+      nested: ranges.some(
+        (candidate, candidateIndex) =>
+          candidateIndex !== index && containsRange(candidate, range),
+      ),
+      containsNested: ranges.some(
+        (candidate, candidateIndex) =>
+          candidateIndex !== index && containsRange(range, candidate),
+      ),
+      sameParagraph: Boolean(startParagraph) && startParagraph === endParagraph,
+      inDeletion: elements
+        .slice(range.start, range.end + 1)
+        .some((element) => Boolean(closestAncestor(element, 'del'))),
+    };
+  });
+}
+
+function fieldRange(
+  field: UndecoratedDocxFieldOccurrence,
+  indexes: Map<Element, number>,
+): { start: number; end: number } {
+  const start = indexes.get(field.start) ?? -1;
+  if (field.syntax !== 'simple') {
+    return { start, end: indexes.get(field.end) ?? start };
+  }
+  const children = Array.from(field.start.querySelectorAll('*'));
+  const last = children.at(-1) ?? field.start;
+  return { start, end: indexes.get(last) ?? start };
+}
+
+function containsRange(
+  outer: { start: number; end: number },
+  inner: { start: number; end: number },
+): boolean {
+  return (
+    outer.start >= 0 &&
+    inner.start >= 0 &&
+    outer.start < inner.start &&
+    outer.end >= inner.end
+  );
 }

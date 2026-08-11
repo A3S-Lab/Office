@@ -116,7 +116,14 @@ The images below are committed visual-regression baselines from the real
   missing-reference states that undo repairs. Footnote and endnote references
   remain paired with one editable definition, renumber live in independent
   reference-order sequences, receive new identities when copied, and are
-  deleted or restored together through one undoable transaction.
+  deleted or restored together through one undoable transaction. Body `PAGE`,
+  `NUMPAGES`, `SECTION`, `SECTIONPAGES`, `DATE`, and `TIME` fields are atomic,
+  copied under fresh stable identities, and resolve from the live Worker/WASM
+  page containing each field. Automatic reflow updates numeric fields without
+  adding history or ticking clock fields; F9 refreshes every field in one
+  undoable action. Safe inline DOCX fields round-trip natively, while nested,
+  incomplete, cross-paragraph, deleted, or instructionless structures stay
+  text and produce an explicit compatibility warning.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,

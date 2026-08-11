@@ -11,6 +11,10 @@ import type {
   OfficeKernelPageMetrics,
   OfficeKernelTextLayoutParagraphResult,
 } from '../../../kernel/office-kernel-protocol';
+import type {
+  WorkDocumentFieldContext,
+  WorkDocumentFieldContextResolver,
+} from '../work-document-fields';
 import {
   documentLayoutFontKey,
   type WorkDocumentLayoutFont,
@@ -20,18 +24,18 @@ import {
   planIncrementalDocumentLayout,
 } from '../work-document-incremental-layout';
 import {
+  type ResolvedDocumentPageChrome,
+  resolveDocumentPageChrome,
+} from '../work-document-page-chrome';
+import {
   collectDocumentTextLayoutParagraphs,
-  documentPageBodyHeight,
-  documentPageChromeHeights,
-  measureDocumentLayoutBlocks,
   type DocumentPaginationSnapshot,
   type DocumentPaginationVisualPageChrome,
+  documentPageBodyHeight,
+  documentPageChromeHeights,
   type MeasuredDocumentLayoutBlock,
+  measureDocumentLayoutBlocks,
 } from '../work-document-pagination';
-import {
-  resolveDocumentPageChrome,
-  type ResolvedDocumentPageChrome,
-} from '../work-document-page-chrome';
 import type { WorkDocumentSectionLayout } from '../work-types';
 
 export interface DocumentPaginationResult {
@@ -78,6 +82,7 @@ export interface UseDocumentPaginationValue {
   pageCount: number | null;
   pages: readonly DocumentPaginationPageDescriptor[];
   paginating: boolean;
+  resolveFieldContext: WorkDocumentFieldContextResolver | null;
 }
 
 export function useDocumentPagination({
@@ -548,6 +553,14 @@ export function useDocumentPagination({
     pageKey,
   ]);
 
+  const resolveFieldContext = useMemo(
+    () =>
+      pagination
+        ? createDocumentFieldPaginationContextResolver(pagination)
+        : null,
+    [pagination],
+  );
+
   return useMemo(() => {
     const currentPage = pagination
       ? pageForPosition(pagination, editor?.state.selection.from ?? 0)
@@ -565,8 +578,46 @@ export function useDocumentPagination({
         : null,
       pages: pagination?.pages ?? [],
       paginating: enabled && pagination === null,
+      resolveFieldContext,
     };
-  }, [editor, enabled, pagination, selectionVersion]);
+  }, [editor, enabled, pagination, resolveFieldContext, selectionVersion]);
+}
+
+export function createDocumentFieldPaginationContextResolver(
+  pagination: DocumentPaginationResult,
+): WorkDocumentFieldContextResolver {
+  const pagesByPhysicalNumber = new Map(
+    pagination.pages.map((page) => [page.physicalPage, page] as const),
+  );
+  const sectionPhysicalPages = new Map<string, Set<number>>();
+  for (const block of pagination.blocks) {
+    const sectionId = block.section?.id;
+    const physicalPage = pagination.pageByBlockId.get(block.block.id);
+    if (!sectionId || !physicalPage) continue;
+    const pages = sectionPhysicalPages.get(sectionId) ?? new Set<number>();
+    pages.add(physicalPage);
+    sectionPhysicalPages.set(sectionId, pages);
+  }
+  return (position): WorkDocumentFieldContext | null => {
+    const block = blockForPosition(pagination.blocks, position);
+    const section = block?.section;
+    const physicalPage = block
+      ? pagination.pageByBlockId.get(block.block.id)
+      : undefined;
+    const page = physicalPage
+      ? pagesByPhysicalNumber.get(physicalPage)
+      : undefined;
+    if (!section || !page) return null;
+    return {
+      pageNumber: page.pageNumber,
+      totalPages: Math.max(1, pagination.layout.pages.length),
+      sectionNumber: section.index + 1,
+      sectionPages: Math.max(
+        1,
+        sectionPhysicalPages.get(section.id)?.size ?? 0,
+      ),
+    };
+  };
 }
 
 export function documentPaginationPageDescriptors(
@@ -817,21 +868,27 @@ export function pageForPosition(
   pagination: DocumentPaginationResult,
   position: number,
 ): number {
-  const rangedBlock = pagination.blocks.find((block) =>
+  const block = blockForPosition(pagination.blocks, position);
+  return block ? (pagination.pageByBlockId.get(block.block.id) ?? 1) : 1;
+}
+
+function blockForPosition(
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+  position: number,
+): MeasuredDocumentLayoutBlock | undefined {
+  const rangedBlock = blocks.find((block) =>
     block.selectionRanges?.some(
       (range) => range.from <= position && position < range.to,
     ),
   );
-  if (rangedBlock) {
-    return pagination.pageByBlockId.get(rangedBlock.block.id) ?? 1;
-  }
+  if (rangedBlock) return rangedBlock;
 
   let lower = 0;
-  let upper = pagination.blocks.length - 1;
-  let containing = pagination.blocks[0];
+  let upper = blocks.length - 1;
+  let containing = blocks[0];
   while (lower <= upper) {
     const middle = Math.floor((lower + upper) / 2);
-    const candidate = pagination.blocks[middle];
+    const candidate = blocks[middle];
     if (candidate.from <= position) {
       containing = candidate;
       lower = middle + 1;
@@ -839,9 +896,7 @@ export function pageForPosition(
       upper = middle - 1;
     }
   }
-  return containing
-    ? (pagination.pageByBlockId.get(containing.block.id) ?? 1)
-    : 1;
+  return containing;
 }
 
 function pageMetricsKey(page: OfficeKernelPageMetrics): string {

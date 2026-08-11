@@ -1,0 +1,147 @@
+suite "office-word-fields-phone" {
+    version = 1
+
+    scenario "insert-refresh-and-undo-live-fields-on-phone" {
+        name = "Keep Word page fields live and atomically undoable on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-fields-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "明确不在本期范围内的事项"
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "select-document" {
+            key = "Control+a"
+        }
+
+        press "clear-document" {
+            key = "Backspace"
+        }
+
+        type "write-one-page-fixture" {
+            target = css(".work-document-editable .ProseMirror")
+            value = "字段第一页"
+        }
+
+        wait "one-page-layout-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready'][data-pagination-pages='1']")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "show-field-tools" {
+            target = role("button", "向右查看更多插入工具")
+        }
+
+        click "open-first-field-menu" {
+            target = role("combobox", "插入页码或日期")
+        }
+
+        click "insert-first-page-field" {
+            target = role("option", "页码")
+        }
+
+        expect "first-page-field-is-live" {
+            visible = css(".work-document-field[data-field-kind='page'][data-field-display='1']")
+        }
+
+        press "insert-page-break" {
+            key = "Control+Enter"
+        }
+
+        wait "two-page-layout-ready" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready'][data-pagination-pages='2']")
+        }
+
+        click "open-second-field-menu" {
+            target = role("combobox", "插入页码或日期")
+        }
+
+        click "insert-second-page-field" {
+            target = role("option", "页码")
+        }
+
+        click "open-total-pages-menu" {
+            target = role("combobox", "插入页码或日期")
+        }
+
+        click "insert-total-pages-field" {
+            target = role("option", "总页数")
+        }
+
+        wait "physical-pagination-drives-field-results" {
+            visible = css(".work-document-editable .ProseMirror[data-pagination-state='ready'][data-pagination-pages='2']:has(.work-document-field[data-field-kind='page'][data-field-display='1']):has(.work-document-field[data-field-kind='page'][data-field-display='2']):has(.work-document-field[data-field-kind='numPages'][data-field-display='2'])")
+        }
+
+        press "refresh-fields-with-f9" {
+            key = "F9"
+        }
+
+        expect "refresh-restores-document-focus" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        press "undo-total-pages-insertion" {
+            key = "Control+z"
+        }
+
+        expect "field-insertion-and-refresh-undo-as-one-action" {
+            visible = css(".work-document-editable .ProseMirror:has(.work-document-field[data-field-kind='page'][data-field-display='1']):has(.work-document-field[data-field-kind='page'][data-field-display='2']):not(:has(.work-document-field[data-field-kind='numPages']))")
+        }
+
+        press "redo-total-pages-insertion" {
+            key = "Control+y"
+        }
+
+        expect "redo-restores-live-total-pages" {
+            visible = css(".work-document-field[data-field-kind='numPages'][data-field-display='2']")
+        }
+
+        screenshot "live-word-fields" {
+            path = "screenshots/word-fields-phone.png"
+        }
+
+        accessibility "field-and-ribbon-semantics" {
+            path = "evidence/word-fields-phone.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

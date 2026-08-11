@@ -7,7 +7,9 @@ import {
 } from './work-docx-caption-fields';
 import {
   type DocxFieldOccurrence,
+  docxFieldOccurrenceIsInlineEditable,
   docxFieldOccurrences,
+  hasInvalidDocxFieldStructure,
 } from './work-docx-field-instructions';
 import { attribute, descendants } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
@@ -24,9 +26,17 @@ export function diagnoseDocxCaptions(
   const sequences = fields.filter((field) =>
     docxCaptionSequenceKind(field.instruction),
   );
-  const bodyFields = fields.filter((field) =>
-    docxDocumentFieldKind(field.instruction),
+  const bodyFields = fields.filter(
+    (field) =>
+      field.syntax !== 'orphan' &&
+      Boolean(docxDocumentFieldKind(field.instruction)),
   );
+  const editableBodyFields = bodyFields.filter(
+    docxFieldOccurrenceIsInlineEditable,
+  );
+  const hasUnsupportedFieldStructure =
+    hasInvalidDocxFieldStructure(document) ||
+    bodyFields.some((field) => !docxFieldOccurrenceIsInlineEditable(field));
   const bookmarkNames = new Set([
     ...captionBookmarkNames(sequences),
     ...pairedBookmarkNames(document),
@@ -44,7 +54,7 @@ export function diagnoseDocxCaptions(
             } satisfies WorkCompatibilityIssue,
           ]
         : []),
-      ...(bodyFields.length
+      ...(editableBodyFields.length
         ? [
             {
               code: 'docx.fields.body',
@@ -55,10 +65,23 @@ export function diagnoseDocxCaptions(
             } satisfies WorkCompatibilityIssue,
           ]
         : []),
+      ...(hasUnsupportedFieldStructure
+        ? [
+            {
+              code: 'docx.fields.structure',
+              feature: 'Field structure',
+              message:
+                'Incomplete, nested, cross-paragraph, deleted, or instructionless fields cannot form one editable inline field; their current results are retained as text.',
+              severity: 'warning',
+            } satisfies WorkCompatibilityIssue,
+          ]
+        : []),
     ],
-    hasUnsupportedFields: fields.some(
-      (field) => !isSupportedCaptionField(field.instruction, bookmarkNames),
-    ),
+    hasUnsupportedFields:
+      hasUnsupportedFieldStructure ||
+      fields.some(
+        (field) => !isSupportedCaptionField(field.instruction, bookmarkNames),
+      ),
   };
 }
 

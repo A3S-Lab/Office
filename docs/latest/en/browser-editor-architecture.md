@@ -70,8 +70,22 @@ model:
    reference section and newly inserted endnotes use the final section. The
    structured HTML parser
    gives note markers precedence over generic superscript so native DOCX notes
-   survive repeated import and export. Page Layout
-   keeps direct margin, orientation, paper,
+   survive repeated import and export. The Insert Text group creates atomic
+   `PAGE`, `NUMPAGES`, `SECTION`,
+   `SECTIONPAGES`, `DATE`, and `TIME` fields. A position resolver maps every
+   field to its measured Worker/WASM layout block, physical page descriptor,
+   owning section, and the set of physical pages occupied by that section, so
+   continuous sections sharing one page retain truthful section-page counts.
+   Pagination-driven numeric refreshes do not add undo history and deliberately
+   leave clock fields unchanged; the scoped F9 command refreshes date and time
+   too, as one history action. A transaction-mapped identity plugin lets moved
+   fields keep their IDs while copied atoms receive fresh, redo-stable IDs.
+   DOCX import atomizes only complete, non-nested inline `w:fldSimple` or
+   complex fields. Nested, incomplete, cross-paragraph, deleted, and
+   instructionless structures keep their rendered result as text and emit a
+   structural compatibility warning instead of being flattened into a false
+   editable field. Native export writes live simple fields and requests a Word
+   field update on open. Page Layout keeps direct margin, orientation, paper,
    and equal-column presets in the ribbon; custom margins and advanced columns
    open the corresponding controlled Page Setup tab instead of duplicating a
    second settings model. References separates footnotes, captions, citations

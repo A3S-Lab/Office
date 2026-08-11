@@ -17,7 +17,10 @@ import type {
   WorkDocumentCaptionKind,
   WorkDocumentCaptionTarget,
 } from '../work-document-captions';
-import type { WorkDocumentFieldKind } from '../work-document-fields';
+import type {
+  WorkDocumentFieldContextResolver,
+  WorkDocumentFieldKind,
+} from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import type { WorkDocumentContent } from '../work-types';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
@@ -52,9 +55,11 @@ export interface DocumentInsertCommands {
 export function useDocumentInsertCommands({
   contentRef,
   editor,
+  resolveFieldContext,
 }: {
   contentRef: MutableRefObject<WorkDocumentContent>;
   editor: Editor | null;
+  resolveFieldContext?: WorkDocumentFieldContextResolver | null;
 }): DocumentInsertCommands {
   const officeDialog = useOfficeDialog();
   const [insertDialog, setInsertDialog] = useState<DocumentInsertDialog | null>(
@@ -158,14 +163,20 @@ export function useDocumentInsertCommands({
     (kind: WorkDocumentFieldKind) => {
       if (!editor) return;
       if (!editor.chain().focus().insertDocumentField(kind).run()) return;
-      editor.commands.refreshDocumentFields(contentRef.current);
+      editor.commands.refreshDocumentFields(contentRef.current, {
+        resolveContext: resolveFieldContext ?? undefined,
+        addToHistory: false,
+      });
     },
-    [contentRef, editor],
+    [contentRef, editor, resolveFieldContext],
   );
 
   const refreshFields = useCallback(
-    () => editor?.commands.refreshDocumentFields(contentRef.current) ?? false,
-    [contentRef, editor],
+    () =>
+      editor?.commands.refreshDocumentFields(contentRef.current, {
+        resolveContext: resolveFieldContext ?? undefined,
+      }) ?? false,
+    [contentRef, editor, resolveFieldContext],
   );
   const submitCaption = () => {
     if (!editor || insertDialog?.kind !== 'caption') return;

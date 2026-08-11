@@ -1,26 +1,27 @@
 import { expect, test } from '@rstest/core';
 import { Schema } from '@tiptap/pm/model';
 import {
-  createDocumentTableRowFragmentPlan,
+  createDocumentFieldPaginationContextResolver,
+  type DocumentPaginationResult,
+  deriveDocumentPaginationPageDescriptors,
+  documentPaginationPageDescriptors,
+  pageForPosition,
+} from '../src/internal/features/work/editors/use-document-pagination';
+import type { MeasuredDocumentLayoutBlock } from '../src/internal/features/work/work-document-pagination';
+import {
   createDocumentLineFragments,
+  createDocumentTableRowFragmentPlan,
   createShapedDocumentLineFragments,
   documentPageBodyHeight,
   documentPaginationSurfaceHeight,
   findDocumentLineStartOffset,
   reusableDocumentLayoutBlocks,
 } from '../src/internal/features/work/work-document-pagination';
-import type { MeasuredDocumentLayoutBlock } from '../src/internal/features/work/work-document-pagination';
-import {
-  deriveDocumentPaginationPageDescriptors,
-  documentPaginationPageDescriptors,
-  pageForPosition,
-  type DocumentPaginationResult,
-} from '../src/internal/features/work/editors/use-document-pagination';
-import {
-  type OfficeKernelLayoutResult,
-  OFFICE_KERNEL_PROTOCOL_VERSION,
-} from '../src/internal/kernel/office-kernel-protocol';
 import type { WorkDocumentSectionLayout } from '../src/internal/features/work/work-types';
+import {
+  OFFICE_KERNEL_PROTOCOL_VERSION,
+  type OfficeKernelLayoutResult,
+} from '../src/internal/kernel/office-kernel-protocol';
 
 test('treats page chrome as overlays and keeps complete physical pages', () => {
   const page = {
@@ -406,6 +407,60 @@ test('counts a continuous section on every physical page it occupies', () => {
   expect(pages[1]).toMatchObject({
     sectionId: 'section-b',
     sectionPage: 2,
+  });
+});
+
+test('resolves body fields from their real page and continuous section', () => {
+  const firstSection = sectionLayout({ pageNumberStart: 3 });
+  const secondSection = sectionLayout();
+  const element = document.createElement('p');
+  const blocks = [
+    {
+      ...measuredBlock('a', 'section-a', 0, firstSection, element),
+      from: 1,
+      to: 20,
+    },
+    {
+      ...measuredBlock('b', 'section-b', 1, secondSection, element),
+      from: 21,
+      to: 40,
+    },
+    {
+      ...measuredBlock('c', 'section-b', 1, secondSection, element),
+      from: 41,
+      to: 60,
+    },
+  ];
+  const layout = paginationLayout([['a', 'b'], ['c']]);
+  const pagination: DocumentPaginationResult = {
+    layout,
+    blocks,
+    pages: documentPaginationPageDescriptors(layout, blocks),
+    pageByBlockId: new Map([
+      ['a', 1],
+      ['b', 1],
+      ['c', 2],
+    ]),
+  };
+  const resolve = createDocumentFieldPaginationContextResolver(pagination);
+
+  expect(resolve(10)).toEqual({
+    pageNumber: 3,
+    totalPages: 2,
+    sectionNumber: 1,
+    sectionPages: 1,
+  });
+  expect(resolve(30)).toEqual({
+    pageNumber: 3,
+    totalPages: 2,
+    sectionNumber: 2,
+    sectionPages: 2,
+  });
+  expect(resolve(50)).toEqual({
+    pageNumber: 4,
+    totalPages: 2,
+    sectionNumber: 2,
+    sectionPages: 2,
   });
 });
 

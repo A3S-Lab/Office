@@ -5,8 +5,7 @@ import {
   Node,
 } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { documentPageDescriptors } from './work-document-pages';
-import { syncDocumentContentFromHtml } from './work-document-section';
+import { createDocumentFieldIdentityPlugin } from './work-document-field-identity';
 import {
   documentFieldDisplay,
   documentFieldInstruction,
@@ -15,7 +14,10 @@ import {
   docxDocumentFieldKind,
   type WorkDocumentFieldContext,
   type WorkDocumentFieldKind,
+  type WorkDocumentFieldRefreshOptions,
 } from './work-document-fields';
+import { documentPageDescriptors } from './work-document-pages';
+import { syncDocumentContentFromHtml } from './work-document-section';
 import { createWorkId } from './work-templates';
 import type { WorkDocumentContent } from './work-types';
 
@@ -23,7 +25,10 @@ declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     documentField: {
       insertDocumentField: (kind: WorkDocumentFieldKind) => ReturnType;
-      refreshDocumentFields: (content: WorkDocumentContent) => ReturnType;
+      refreshDocumentFields: (
+        content: WorkDocumentContent,
+        options?: WorkDocumentFieldRefreshOptions,
+      ) => ReturnType;
     };
   }
 }
@@ -35,12 +40,16 @@ export const DocumentField = Node.create({
   atom: true,
   selectable: true,
 
+  addProseMirrorPlugins() {
+    return [createDocumentFieldIdentityPlugin(this.name)];
+  },
+
   addCommands() {
     return {
       insertDocumentField: (kind) => (props) =>
         insertDocumentFieldCommand(props, kind),
-      refreshDocumentFields: (content) => (props) =>
-        refreshDocumentFieldsCommand(props, content),
+      refreshDocumentFields: (content, options) => (props) =>
+        refreshDocumentFieldsCommand(props, content, options),
     };
   },
 
@@ -138,32 +147,62 @@ function insertDocumentFieldCommand(
 function refreshDocumentFieldsCommand(
   { editor, state, tr }: CommandProps,
   content: WorkDocumentContent,
+  options: WorkDocumentFieldRefreshOptions = {},
 ): boolean {
-  const canonical = syncDocumentContentFromHtml(content, editor.getHTML());
-  const displays = documentPageDescriptors(canonical).flatMap((page) =>
-    page.segments.flatMap((segment) => {
-      const document = new DOMParser().parseFromString(
-        segment.html,
-        'text/html',
+  const fallbackFields = options.resolveContext
+    ? []
+    : documentPageDescriptors(
+        syncDocumentContentFromHtml(content, editor.getHTML()),
+      ).flatMap((page) =>
+        page.segments.flatMap((segment) => {
+          const document = new DOMParser().parseFromString(
+            segment.html,
+            'text/html',
+          );
+          return Array.from(
+            document.body.querySelectorAll<HTMLElement>(
+              '[data-document-field]',
+            ),
+          ).map((element) => ({
+            id: element.dataset.fieldId?.trim() ?? '',
+            display:
+              element.dataset.fieldDisplay?.trim() ||
+              element.textContent?.trim() ||
+              '',
+          }));
+        }),
       );
-      return Array.from(
-        document.body.querySelectorAll<HTMLElement>('[data-document-field]'),
-      ).map(
-        (element) =>
-          element.dataset.fieldDisplay?.trim() ||
-          element.textContent?.trim() ||
-          '',
-      );
-    }),
+  const fallbackById = new Map(
+    fallbackFields.flatMap(({ id, display }) => (id ? [[id, display]] : [])),
   );
+  const now = validDate(options.now) ?? new Date();
   let fieldIndex = 0;
   state.doc.descendants((node, position) => {
     if (node.type.name !== 'documentField') return;
-    const display = displays[fieldIndex];
+    const kind =
+      documentFieldKind(node.attrs.kind) ??
+      docxDocumentFieldKind(stringAttribute(node.attrs.instruction));
+    const fallback = fallbackFields[fieldIndex]?.display;
     fieldIndex += 1;
+    if (!kind) return;
+    if (options.updateClock === false && (kind === 'date' || kind === 'time')) {
+      return;
+    }
+    const context = options.resolveContext?.(position);
+    const display = context
+      ? documentFieldDisplay(
+          kind,
+          { ...context, now: validDate(context.now) ?? now },
+          stringAttribute(node.attrs.instruction),
+          stringAttribute(node.attrs.display),
+        )
+      : (fallbackById.get(stringAttribute(node.attrs.id)) ?? fallback);
     if (!display || node.attrs.display === display) return;
     tr.setNodeMarkup(position, undefined, { ...node.attrs, display });
   });
+  if (tr.docChanged && options.addToHistory === false) {
+    tr.setMeta('addToHistory', false);
+  }
   return tr.docChanged;
 }
 
@@ -223,4 +262,12 @@ function hiddenAttribute(defaultValue: unknown) {
     default: defaultValue,
     rendered: false,
   };
+}
+
+function validDate(value: Date | undefined): Date | null {
+  return value && Number.isFinite(value.getTime()) ? value : null;
+}
+
+function stringAttribute(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }

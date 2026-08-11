@@ -280,7 +280,6 @@ export function DocumentEditor({
     editor,
     onBeforeDraft: () => setTaskPane(null),
   });
-  const documentInsert = useDocumentInsertCommands({ contentRef, editor });
   const rememberTaskPaneInvoker = useCallback(() => {
     const active = document.activeElement;
     if (active instanceof HTMLElement && active.isConnected) {
@@ -624,6 +623,19 @@ export function DocumentEditor({
     layoutFonts,
     loadedLayoutFontIds,
   });
+  const documentInsert = useDocumentInsertCommands({
+    contentRef,
+    editor,
+    resolveFieldContext: pagination.resolveFieldContext,
+  });
+  useEffect(() => {
+    if (!editor || !pagination.resolveFieldContext) return;
+    editor.commands.refreshDocumentFields(contentRef.current, {
+      resolveContext: pagination.resolveFieldContext,
+      addToHistory: false,
+      updateClock: false,
+    });
+  }, [contentRef, editor, pagination.resolveFieldContext]);
 
   const pageCount = editor
     ? (pagination.pageCount ?? documentPageCount(editor))

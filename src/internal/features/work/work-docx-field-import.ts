@@ -1,12 +1,13 @@
 import {
-  docxFieldOccurrences,
-  docxFieldResultText,
-  type DocxFieldOccurrence,
-} from './work-docx-field-instructions';
-import {
   docxDocumentFieldKind,
   type WorkDocumentFieldKind,
 } from './work-document-fields';
+import {
+  type DocxFieldOccurrence,
+  docxFieldOccurrenceIsInlineEditable,
+  docxFieldOccurrences,
+  docxFieldResultText,
+} from './work-docx-field-instructions';
 
 export interface ImportedDocxFieldMarkers {
   fields: ImportedDocxFieldMarker[];
@@ -30,7 +31,7 @@ export function markDocxBodyFields(
 ): ImportedDocxFieldMarkers {
   const fields = docxFieldOccurrences(document).flatMap((field, index) => {
     const kind = docxDocumentFieldKind(field.instruction);
-    if (!kind || !canMarkField(field)) return [];
+    if (!kind || !docxFieldOccurrenceIsInlineEditable(field)) return [];
     const marker: ImportedDocxFieldMarker = {
       start: `__A3S_WORK_FIELD_START_${index + 1}__`,
       end: `__A3S_WORK_FIELD_END_${index + 1}__`,
@@ -71,10 +72,6 @@ export function hasImportedDocxFieldMarkers(
   markers: ImportedDocxFieldMarkers,
 ): boolean {
   return markers.fields.length > 0;
-}
-
-function canMarkField(field: DocxFieldOccurrence): boolean {
-  return field.start !== field.end || field.start.localName === 'fldSimple';
 }
 
 function insertFieldBoundaryMarkers(
