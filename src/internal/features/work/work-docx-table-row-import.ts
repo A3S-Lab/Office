@@ -1,11 +1,24 @@
+import {
+  applyDocumentTableRowIdentityToElement,
+  normalizeDocumentTableRowIdentity,
+  type WorkDocumentTableRowIdentity,
+} from './work-document-table-row-identity';
+import { normalizeDocumentParagraphId } from './work-document-paragraph-identity';
+import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { attribute, descendants, directChild } from './work-ooxml-package';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from './work-docx-settings-xml';
 
 export interface ImportedDocxTableRowMarker {
   marker: string;
   cantSplit?: boolean;
   repeatHeader?: boolean;
+  rowId?: string;
   rowHeight?: number;
   rowHeightRule?: 'atLeast' | 'exact';
+  rowTextId?: string;
 }
 
 export interface ImportedDocxTableRowMarkers {
@@ -14,6 +27,8 @@ export interface ImportedDocxTableRowMarkers {
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const TABLE_ROW_MARKER_PATTERN = /__A3S_WORK_TABLE_ROW_\d+__/g;
 const PIXELS_PER_TWIP = 96 / 1440;
@@ -21,8 +36,18 @@ const PIXELS_PER_TWIP = 96 / 1440;
 export function markDocxTableRows(
   document: Document,
 ): ImportedDocxTableRowMarkers {
+  const wordRows = descendants(document, 'tr').filter((row) =>
+    DOCX_WORDPROCESSING_NAMESPACES.has(row.namespaceURI ?? ''),
+  );
+  const identities = new Map<Element, WorkDocumentTableRowIdentity>();
+  const identityCounts = wordIdentityIdCounts(document);
+  for (const row of wordRows) {
+    const identity = wordTableRowIdentity(row);
+    if (!identity) continue;
+    identities.set(row, identity);
+  }
   const rows: ImportedDocxTableRowMarker[] = [];
-  for (const row of descendants(document, 'tr')) {
+  for (const row of wordRows) {
     const properties = directChild(row, 'trPr');
     const cantSplit = properties
       ? directChild(properties, 'cantSplit')
@@ -35,7 +60,14 @@ export function markDocxTableRows(
       ? twipsToPixels(Number(attribute(height, 'val')))
       : null;
     const rowHeightRule = tableRowHeightRule(attribute(height ?? row, 'hRule'));
-    if (!cantSplit && !repeatHeader && rowHeight === null) continue;
+    const rowIdentity = identities.get(row);
+    const uniqueIdentity =
+      rowIdentity && identityCounts.get(rowIdentity.rowId) === 1
+        ? rowIdentity
+        : null;
+    if (!cantSplit && !repeatHeader && rowHeight === null && !uniqueIdentity) {
+      continue;
+    }
     const paragraph = firstTableRowParagraph(document, row);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_ROW_${rows.length + 1}__`;
@@ -44,11 +76,29 @@ export function markDocxTableRows(
       marker,
       ...(cantSplit ? { cantSplit: onOffValue(cantSplit) } : {}),
       ...(repeatHeader ? { repeatHeader: onOffValue(repeatHeader) } : {}),
+      ...(uniqueIdentity ?? {}),
       ...(rowHeight !== null ? { rowHeight } : {}),
       ...(rowHeight !== null && rowHeightRule ? { rowHeightRule } : {}),
     });
   }
   return { rows };
+}
+
+function wordIdentityIdCounts(document: Document): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const localName of ['p', 'tr']) {
+    for (const element of descendants(document, localName)) {
+      if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+        continue;
+      }
+      const paragraphId = normalizeDocumentParagraphId(
+        word2010Attribute(element, 'paraId'),
+      );
+      if (!paragraphId) continue;
+      counts.set(paragraphId, (counts.get(paragraphId) ?? 0) + 1);
+    }
+  }
+  return counts;
 }
 
 export function applyImportedDocxTableRowMarkers(
@@ -62,6 +112,7 @@ export function applyImportedDocxTableRowMarkers(
     node.data = node.data.replace(TABLE_ROW_MARKER_PATTERN, (marker) => {
       const properties = rowByMarker.get(marker);
       if (row instanceof HTMLTableRowElement && properties) {
+        applyDocumentTableRowIdentityToElement(row, properties);
         setBooleanAttribute(
           row,
           'data-office-cant-split',
@@ -103,7 +154,9 @@ function firstTableRowParagraph(
       (paragraph) => closestAncestor(paragraph, 'tr') === row,
     );
   if (existing) return existing;
-  const paragraph = document.createElementNS(WORD_NAMESPACE, 'w:p');
+  const namespace = cell.namespaceURI ?? WORD_NAMESPACE;
+  const prefix = cell.prefix ? `${cell.prefix}:` : '';
+  const paragraph = document.createElementNS(namespace, `${prefix}p`);
   cell.append(paragraph);
   return paragraph;
 }
@@ -113,13 +166,34 @@ function insertRowMarker(
   paragraph: Element,
   marker: string,
 ): void {
-  const run = document.createElementNS(WORD_NAMESPACE, 'w:r');
-  const text = document.createElementNS(WORD_NAMESPACE, 'w:t');
+  const namespace = paragraph.namespaceURI ?? WORD_NAMESPACE;
+  const prefix = paragraph.prefix ? `${paragraph.prefix}:` : '';
+  const run = document.createElementNS(namespace, `${prefix}r`);
+  const text = document.createElementNS(namespace, `${prefix}t`);
   text.setAttributeNS(XML_NAMESPACE, 'xml:space', 'preserve');
   text.textContent = marker;
   run.append(text);
   const properties = directChild(paragraph, 'pPr');
   paragraph.insertBefore(run, properties?.nextSibling ?? paragraph.firstChild);
+}
+
+function wordTableRowIdentity(
+  row: Element,
+): WorkDocumentTableRowIdentity | null {
+  return normalizeDocumentTableRowIdentity({
+    rowId: word2010Attribute(row, 'paraId'),
+    rowTextId: word2010Attribute(row, 'textId'),
+  });
+}
+
+function word2010Attribute(element: Element, localName: string): string | null {
+  return (
+    Array.from(element.attributes).find(
+      (item) =>
+        xmlAttributeLocalName(item) === localName &&
+        xmlAttributeNamespace(element, item) === WORD_2010_NAMESPACE,
+    )?.value ?? null
+  );
 }
 
 function onOffValue(element: Element): boolean {

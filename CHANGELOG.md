@@ -36,6 +36,14 @@ All notable changes to A3S Office will be documented in this file.
   edits and moves retain it and copies or splits receive independent paragraph
   IDs. Changed text versions, duplicate identities, relationship-bound content,
   and Microsoft/OOXML semantic branches fail closed.
+- Preserved passive non-OOXML vendor extensions on stable `w:tbl`, `w:tr`, and
+  `w:tc` scopes plus their property nodes. Native row `w14:paraId` and
+  `w14:textId` identities now survive body and page-chrome HTML; table and cell
+  identity is conservatively derived from directly owned row and paragraph
+  IDs. Row text or structure edits rotate the row version, copied identities
+  are repaired, nested rows and cells no longer leak into outer-table export,
+  and duplicate, cross-kind, relationship-bound, or semantic branches fail
+  closed while generated table geometry and formatting remain authoritative.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

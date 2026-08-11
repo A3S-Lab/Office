@@ -840,12 +840,28 @@ async function tableToDocx(
 ): Promise<InstanceType<typeof docx.Table>> {
   const rows: InstanceType<typeof docx.TableRow>[] = [];
   let inferLeadingHeader = true;
-  for (const row of Array.from(element.rows)) {
+  const ownedRows = Array.from(element.rows).filter(
+    (row) => row.closest('table') === element,
+  );
+  for (const row of ownedRows) {
+    const ownedCells = Array.from(row.cells).filter(
+      (cell) => cell.closest('tr') === row,
+    );
+    const rowIdentityMarker = ownedCells.length
+      ? noteContext.paragraphIdentityPatches.rowMarker(row)
+      : null;
     const cells: InstanceType<typeof docx.TableCell>[] = [];
-    for (const cell of Array.from(row.cells)) {
+    for (const [cellIndex, cell] of ownedCells.entries()) {
       const children: Array<
         InstanceType<typeof docx.Paragraph> | InstanceType<typeof docx.Table>
       > = [];
+      if (cellIndex === 0 && rowIdentityMarker) {
+        children.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun(rowIdentityMarker)],
+          }),
+        );
+      }
       const blocks = Array.from(cell.children);
       if (blocks.length) {
         for (const block of blocks) {
@@ -883,10 +899,8 @@ async function tableToDocx(
     const explicitHeader = dataBoolean(row.dataset.officeRepeatHeader);
     const inferredHeader =
       inferLeadingHeader &&
-      row.cells.length > 0 &&
-      Array.from(row.cells).every(
-        (cell) => cell.tagName.toLowerCase() === 'th',
-      );
+      ownedCells.length > 0 &&
+      ownedCells.every((cell) => cell.tagName.toLowerCase() === 'th');
     const tableHeader = explicitHeader ?? inferredHeader;
     if (!tableHeader) inferLeadingHeader = false;
     rows.push(
@@ -944,10 +958,14 @@ async function noteParagraphs(
       continue;
     }
     if (tag === 'table') {
-      for (const row of Array.from((element as HTMLTableElement).rows)) {
+      const table = element as HTMLTableElement;
+      for (const row of Array.from(table.rows).filter(
+        (candidate) => candidate.closest('table') === table,
+      )) {
         paragraphs.push(
           new docx.Paragraph({
             text: Array.from(row.cells)
+              .filter((cell) => cell.closest('tr') === row)
               .map((cell) => cell.textContent?.trim() ?? '')
               .join(' · '),
             ...paragraphDirectionOptions(row),

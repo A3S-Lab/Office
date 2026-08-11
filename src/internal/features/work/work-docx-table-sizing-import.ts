@@ -225,9 +225,9 @@ function applyColumnWidths(
   columnWidths: readonly number[],
 ): void {
   const occupiedUntilRow: number[] = [];
-  Array.from(table.rows).forEach((row, rowIndex) => {
+  ownedTableRows(table).forEach((row, rowIndex) => {
     let columnIndex = 0;
-    for (const cell of Array.from(row.cells)) {
+    for (const cell of ownedTableRowCells(row)) {
       while ((occupiedUntilRow[columnIndex] ?? 0) > rowIndex) {
         columnIndex += 1;
       }
@@ -253,9 +253,9 @@ function applyColumnPercentages(
   columnPercentages: readonly number[],
 ): void {
   const occupiedUntilRow: number[] = [];
-  Array.from(table.rows).forEach((row, rowIndex) => {
+  ownedTableRows(table).forEach((row, rowIndex) => {
     let columnIndex = 0;
-    for (const cell of Array.from(row.cells)) {
+    for (const cell of ownedTableRowCells(row)) {
       while ((occupiedUntilRow[columnIndex] ?? 0) > rowIndex) columnIndex += 1;
       const percentages = columnPercentages.slice(
         columnIndex,
@@ -272,6 +272,14 @@ function applyColumnPercentages(
       columnIndex += cell.colSpan;
     }
   });
+}
+
+function ownedTableRows(table: HTMLTableElement): HTMLTableRowElement[] {
+  return Array.from(table.rows).filter((row) => row.closest('table') === table);
+}
+
+function ownedTableRowCells(row: HTMLTableRowElement): HTMLTableCellElement[] {
+  return Array.from(row.cells).filter((cell) => cell.closest('tr') === row);
 }
 
 function importedColumnPercentages(

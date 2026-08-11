@@ -1,5 +1,6 @@
 import {
   applyDocumentParagraphIdentityToElement,
+  normalizeDocumentParagraphId,
   normalizeDocumentParagraphIdentity,
   type WorkDocumentParagraphIdentity,
 } from './work-document-paragraph-identity';
@@ -29,6 +30,7 @@ const MAX_PARAGRAPH_IDENTITIES = 65_536;
 export function markDocxParagraphIdentities(
   document: Document,
 ): ImportedDocxParagraphIdentityMarkers {
+  const counts = wordIdentityIdCounts(document);
   const candidates = descendants(document, 'p').flatMap((element) => {
     if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
       return [];
@@ -39,13 +41,6 @@ export function markDocxParagraphIdentities(
   if (candidates.length > MAX_PARAGRAPH_IDENTITIES) {
     throw new Error('DOCX exceeds the paragraph-identity limit.');
   }
-  const counts = new Map<string, number>();
-  for (const candidate of candidates) {
-    counts.set(
-      candidate.identity.paragraphId,
-      (counts.get(candidate.identity.paragraphId) ?? 0) + 1,
-    );
-  }
   const paragraphs: ImportedDocxParagraphIdentityMarker[] = [];
   for (const candidate of candidates) {
     if (counts.get(candidate.identity.paragraphId) !== 1) continue;
@@ -54,6 +49,23 @@ export function markDocxParagraphIdentities(
     paragraphs.push({ marker, ...candidate.identity });
   }
   return { paragraphs };
+}
+
+function wordIdentityIdCounts(document: Document): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const localName of ['p', 'tr']) {
+    for (const element of descendants(document, localName)) {
+      if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+        continue;
+      }
+      const paragraphId = normalizeDocumentParagraphId(
+        word2010Attribute(element, 'paraId'),
+      );
+      if (!paragraphId) continue;
+      counts.set(paragraphId, (counts.get(paragraphId) ?? 0) + 1);
+    }
+  }
+  return counts;
 }
 
 export function applyImportedDocxParagraphIdentityMarkers(

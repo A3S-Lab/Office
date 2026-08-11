@@ -96,8 +96,15 @@ sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
 edits and moves retain it, and copies or splits receive new paragraph IDs.
 Changed text versions, duplicate identities, relationship-bound content, and
 Microsoft/OOXML semantic branches are dropped; generated paragraph semantics
-stay authoritative. Unsupported run, table, note, comment, and other inline
-markup may still normalize. Source font-table metadata and source-only internal
+stay authoritative. Stable tables retain equivalent passive extensions on the
+table, row, and cell scopes and their property nodes. Native row `w14:paraId`
+plus `w14:textId` survives body and page-chrome HTML; tables and cells derive
+conservative identities from directly owned row and paragraph IDs. Row content
+or structure changes rotate the version, copies receive independent IDs, and
+nested rows or cells remain isolated from outer-table export. Ambiguous,
+cross-kind, unsafe, or semantic branches are dropped while generated table
+geometry wins. Unsupported run, note, comment, and other inline markup may
+still normalize. Source font-table metadata and source-only internal
 obfuscated-font payloads survive with relationship IDs rewritten to the final
 package graph. External references, mismatched relationship or content types,
 duplicate identities, and generated-path collisions are disconnected. Native

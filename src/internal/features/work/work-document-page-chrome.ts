@@ -4,6 +4,11 @@ import {
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
   normalizeDocumentParagraphIdentity,
 } from './work-document-paragraph-identity';
+import {
+  DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
+  DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
+  normalizeDocumentTableRowIdentity,
+} from './work-document-table-row-identity';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -36,6 +41,10 @@ const IMAGE_IDENTITY_ATTRIBUTES = [
 const PARAGRAPH_IDENTITY_ATTRIBUTES = [
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
+] as const;
+const TABLE_ROW_IDENTITY_ATTRIBUTES = [
+  DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
+  DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
 ] as const;
 
 const ALLOWED_TAGS = new Set([
@@ -266,6 +275,7 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
       element.removeAttribute('type');
   }
   if (tag === 'p') normalizeParagraphIdentityAttributes(element);
+  if (tag === 'tr') normalizeTableRowIdentityAttributes(element);
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -287,11 +297,28 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
           ? new Set(['dir', 'start', 'style', 'type'])
           : tag === 'p'
             ? new Set(['dir', 'style', ...PARAGRAPH_IDENTITY_ATTRIBUTES])
-            : new Set(['colspan', 'dir', 'rowspan', 'style']);
+            : tag === 'tr'
+              ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
+              : new Set(['colspan', 'dir', 'rowspan', 'style']);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);
   }
+}
+
+function normalizeTableRowIdentityAttributes(element: HTMLElement): void {
+  const identity = normalizeDocumentTableRowIdentity({
+    rowId: element.getAttribute(TABLE_ROW_IDENTITY_ATTRIBUTES[0]),
+    rowTextId: element.getAttribute(TABLE_ROW_IDENTITY_ATTRIBUTES[1]),
+  });
+  if (!identity) {
+    for (const name of TABLE_ROW_IDENTITY_ATTRIBUTES) {
+      element.removeAttribute(name);
+    }
+    return;
+  }
+  element.setAttribute(TABLE_ROW_IDENTITY_ATTRIBUTES[0], identity.rowId);
+  element.setAttribute(TABLE_ROW_IDENTITY_ATTRIBUTES[1], identity.rowTextId);
 }
 
 function normalizeParagraphIdentityAttributes(element: HTMLElement): void {

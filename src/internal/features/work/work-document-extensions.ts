@@ -48,6 +48,7 @@ import {
 } from './work-document-table-cell-formatting';
 import { DocumentTableCommands } from './work-document-table-commands';
 import { DocumentTableRow } from './work-document-table-row';
+import { DocumentTableRowIdentity } from './work-document-table-row-identity';
 import {
   DocumentTable,
   DocumentTableSizing,
@@ -138,6 +139,7 @@ export function createWorkDocumentExtensions(
     DocumentTableCell,
     DocumentTableHeader,
     DocumentTableRow,
+    DocumentTableRowIdentity,
     DocumentTableCommands,
     DocumentTableFormatting,
     DocumentTableSizing,

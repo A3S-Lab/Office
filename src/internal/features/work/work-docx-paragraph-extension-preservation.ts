@@ -1,5 +1,8 @@
 import type JSZip from 'jszip';
-import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
+import {
+  normalizeDocumentParagraphId,
+  normalizeDocumentParagraphIdentity,
+} from './work-document-paragraph-identity';
 import {
   DOCX_WORDPROCESSING_NAMESPACES,
   mergeDocxIgnorableExtensionsAtPairs,
@@ -138,15 +141,33 @@ function indexParagraphs(
   const paragraphIdCounts = new Map<string, number>();
   let count = 0;
   for (const part of parts) {
+    for (const localName of ['p', 'tr']) {
+      for (const element of descendants(part.document, localName)) {
+        if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+          continue;
+        }
+        count += 1;
+        if (count > MAX_PARAGRAPH_IDENTITIES) {
+          throw new Error(
+            `${source ? 'Registered source' : 'Generated'} DOCX exceeds the paragraph-identity limit.`,
+          );
+        }
+        const paragraphId = normalizeDocumentParagraphId(
+          word2010Attribute(element, 'paraId'),
+        );
+        if (!paragraphId) continue;
+        const paragraphIdKey = `${part.family}\u0000${paragraphId}`;
+        paragraphIdCounts.set(
+          paragraphIdKey,
+          (paragraphIdCounts.get(paragraphIdKey) ?? 0) + 1,
+        );
+      }
+    }
+  }
+  for (const part of parts) {
     for (const element of descendants(part.document, 'p')) {
       if (!DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
         continue;
-      }
-      count += 1;
-      if (count > MAX_PARAGRAPH_IDENTITIES) {
-        throw new Error(
-          `${source ? 'Registered source' : 'Generated'} DOCX exceeds the paragraph-identity limit.`,
-        );
       }
       const identity = normalizeDocumentParagraphIdentity({
         paragraphId: word2010Attribute(element, 'paraId'),
@@ -155,10 +176,6 @@ function indexParagraphs(
       if (!identity) continue;
       const paragraphIdKey = `${part.family}\u0000${identity.paragraphId}`;
       const identityKey = `${paragraphIdKey}\u0000${identity.textId}`;
-      paragraphIdCounts.set(
-        paragraphIdKey,
-        (paragraphIdCounts.get(paragraphIdKey) ?? 0) + 1,
-      );
       const records = byIdentity.get(identityKey) ?? [];
       records.push({ element, identityKey, paragraphIdKey, part });
       byIdentity.set(identityKey, records);

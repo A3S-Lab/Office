@@ -495,8 +495,16 @@ retain these identities; text edits rotate `textId`, formatting-only edits and
 moves keep it, and copies or splits receive new paragraph IDs. Source-only,
 duplicate, changed-text, relationship-bound, Microsoft/OOXML semantic, and
 ambiguous branches are dropped; generated paragraph and drawing semantics stay
-authoritative. Unknown run, table, note, comment, and other inline markup may
-still normalize. Source font-table metadata and source-only internal obfuscated
+authoritative. Stable table hierarchies use native row `w14:paraId` plus
+`w14:textId`, ordered directly owned row IDs for tables, and directly owned
+paragraph IDs for cells. Passive extensions on `w:tbl`/`w:tblPr`,
+`w:tr`/`w:trPr`, and `w:tc`/`w:tcPr` survive body or page-chrome regeneration.
+Row text or structural edits rotate the row version; formatting-only edits and
+moves retain it, copies receive independent IDs, and nested rows or cells are
+isolated from their outer table. Duplicate or cross-kind identities and unsafe
+extension branches fail closed, while generated table geometry and formatting
+win. Unknown run, note, comment, and other inline markup may still normalize.
+Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate
 identities, and paths that collide with generated payloads are not reconnected.

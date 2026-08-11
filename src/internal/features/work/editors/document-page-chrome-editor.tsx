@@ -30,6 +30,7 @@ import {
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
 import { DocumentImage } from '../work-document-image-layout';
 import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
+import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
 import {
   DocumentPageChromeCommands,
   normalizeDocumentPageChromeHref,
@@ -395,6 +396,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentPageChromeCommands,
     TextAlign.configure({ types: ['paragraph'] }),
     DocumentParagraphIdentity.configure({ types: ['paragraph'] }),
+    DocumentTableRowIdentity,
     DocumentPageChromeWpsShortcuts,
     Placeholder.configure({ placeholder }),
   ];

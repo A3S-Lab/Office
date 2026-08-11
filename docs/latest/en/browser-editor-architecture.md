@@ -928,8 +928,17 @@ sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
 edits and moves retain it, and copies or splits receive new paragraph IDs.
 Changed text versions, duplicate identities, relationship-bound content, and
 Microsoft/OOXML semantic branches fail closed; generated paragraph semantics
-remain authoritative. Unknown run, table, note, comment, and other inline
-markup remains the next loss-preservation boundary.
+remain authoritative. The table-identity slice applies the same policy to
+`w:tbl`, `w:tr`, and `w:tc` plus their property nodes. Rows carry native
+`w14:paraId` and `w14:textId` through body and page-chrome HTML. Tables match by
+their ordered directly owned row IDs, while cells match by their owning row and
+directly owned paragraph IDs. Text or structural edits rotate a row version;
+formatting-only edits and moves retain it, and copies receive independent IDs.
+Nested DOM row and cell collections are filtered to their closest owning table
+or row. Missing, duplicate, cross-kind, relationship-bound, or semantic
+identities fail closed, and generated table geometry remains authoritative.
+Unknown run, note, comment, and other inline markup remains the next
+loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

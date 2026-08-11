@@ -101,10 +101,14 @@ export function documentTableRowSizingDocxOptions(
 }
 
 function documentTableColumnWidths(table: HTMLTableElement): number[] | null {
-  const row = table.rows[0];
+  const row = Array.from(table.rows).find(
+    (candidate) => candidate.closest('table') === table,
+  );
   if (!row) return null;
   const widths: number[] = [];
-  for (const cell of Array.from(row.cells)) {
+  for (const cell of Array.from(row.cells).filter(
+    (candidate) => candidate.closest('tr') === row,
+  )) {
     const cellWidths = cellColumnWidths(cell);
     if (!cellWidths || cellWidths.length !== cell.colSpan) return null;
     widths.push(...cellWidths);

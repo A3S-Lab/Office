@@ -5,6 +5,11 @@ import {
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
 import {
+  DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
+  DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
+  normalizeDocumentTableRowIdentity,
+} from './work-document-table-row-identity';
+import {
   attribute,
   bytesToDataUrl,
   contentTypeForPart,
@@ -399,9 +404,19 @@ async function tableHtml(
       );
       cells.push(`<td>${paragraphs.join('')}</td>`);
     }
-    rows.push(`<tr>${cells.join('')}</tr>`);
+    rows.push(`<tr${tableRowIdentityAttributes(row)}>${cells.join('')}</tr>`);
   }
   return `<table><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function tableRowIdentityAttributes(row: Element): string {
+  const identity = normalizeDocumentTableRowIdentity({
+    rowId: namespacedAttribute(row, WORD_2010_NAMESPACE, 'paraId'),
+    rowTextId: namespacedAttribute(row, WORD_2010_NAMESPACE, 'textId'),
+  });
+  return identity
+    ? ` ${DOCUMENT_TABLE_ROW_ID_ATTRIBUTE}="${identity.rowId}" ${DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE}="${identity.rowTextId}"`
+    : '';
 }
 
 function containsPageNumber(document: Document): boolean {

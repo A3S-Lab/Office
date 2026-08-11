@@ -120,9 +120,17 @@ survives sanitized body and page-chrome HTML. Text edits rotate the version ID,
 formatting-only edits and moves retain it, and copies or splits receive new
 paragraph IDs. Changed text versions, duplicate identities, relationship-bound
 content, and Microsoft/OOXML semantic branches fail closed; generated paragraph
-semantics remain authoritative. Unknown run, table, note, comment, and other
-inline markup remains an explicit next boundary rather than being covered by
-this claim.
+semantics remain authoritative. Stable table scopes now preserve equivalent
+passive extensions on `w:tbl`/`w:tblPr`, `w:tr`/`w:trPr`, and
+`w:tc`/`w:tcPr`. Rows retain native `w14:paraId` plus `w14:textId`; tables and
+cells derive conservative identities from directly owned row and paragraph
+IDs. Row text or structural edits rotate the version, formatting-only edits and
+moves retain it, copies receive independent IDs, and nested DOM collections no
+longer leak into outer-table export. Missing, duplicate, cross-kind,
+relationship-bound, and Microsoft/OOXML semantic identities fail closed while
+generated table semantics remain authoritative. Unknown run, note, comment,
+and other inline markup remains an explicit next boundary rather than being
+covered by this claim.
 
 Exit evidence:
 

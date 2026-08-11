@@ -7,6 +7,10 @@ import {
   type WorkDocumentParagraphIdentity,
   type WorkDocumentParagraphIdentityRegistry,
 } from './work-document-paragraph-identity';
+import {
+  applyDocumentTableRowIdentityToElement,
+  documentTableRowIdentityFromElement,
+} from './work-document-table-row-identity';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import { descendants, directChildren, parseXml } from './work-ooxml-package';
 import {
@@ -21,6 +25,7 @@ import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 interface DocxParagraphIdentityPatch {
   marker: string;
   identity: WorkDocumentParagraphIdentity;
+  target: 'paragraph' | 'tableRow';
 }
 
 const WORD_2010_NAMESPACE =
@@ -39,20 +44,43 @@ export class DocxParagraphIdentityPatchCollector {
   constructor(private readonly source: string) {}
 
   marker(element: HTMLElement): string {
-    if (this.patches.length >= MAX_PARAGRAPH_IDENTITY_PATCHES) {
-      throw new Error('Document exceeds the paragraph-identity limit.');
-    }
     const identity = uniqueDocumentParagraphIdentity(
       documentParagraphIdentityFromElement(element) ?? {},
       this.registry,
     );
     applyDocumentParagraphIdentityToElement(element, identity);
+    return this.registerPatch(identity, 'paragraph');
+  }
+
+  rowMarker(element: HTMLTableRowElement): string {
+    const current = documentTableRowIdentityFromElement(element);
+    const identity = uniqueDocumentParagraphIdentity(
+      {
+        paragraphId: current?.rowId,
+        textId: current?.rowTextId,
+      },
+      this.registry,
+    );
+    applyDocumentTableRowIdentityToElement(element, {
+      rowId: identity.paragraphId,
+      rowTextId: identity.textId,
+    });
+    return this.registerPatch(identity, 'tableRow');
+  }
+
+  private registerPatch(
+    identity: WorkDocumentParagraphIdentity,
+    target: DocxParagraphIdentityPatch['target'],
+  ): string {
+    if (this.patches.length >= MAX_PARAGRAPH_IDENTITY_PATCHES) {
+      throw new Error('Document exceeds the paragraph-identity limit.');
+    }
     let marker = '';
     do {
       marker = `__A3S_PARAGRAPH_IDENTITY_${this.nextMarker}__`;
       this.nextMarker += 1;
     } while (this.source.includes(marker));
-    this.patches.push({ marker, identity });
+    this.patches.push({ marker, identity, target });
     return marker;
   }
 }
@@ -86,8 +114,15 @@ export async function patchDocxParagraphIdentities(
     )) {
       const match = paragraphIdentityPatch(paragraph, byMarker);
       if (!match) continue;
-      match.run.remove();
-      setParagraphIdentity(document, paragraph, match.patch.identity);
+      if (match.patch.target === 'tableRow') {
+        const row = closestWordAncestor(paragraph.parentElement, 'tr');
+        if (!row || !paragraphHasOnlyMarkerRun(paragraph, match.run)) continue;
+        paragraph.remove();
+        setWord2010Identity(document, row, match.patch.identity);
+      } else {
+        match.run.remove();
+        setWord2010Identity(document, paragraph, match.patch.identity);
+      }
       applied.add(match.patch.marker);
       changed = true;
     }
@@ -130,19 +165,45 @@ function runHasOnlyMarkerText(run: Element, markerText: Element): boolean {
   );
 }
 
-function setParagraphIdentity(
+function paragraphHasOnlyMarkerRun(paragraph: Element, markerRun: Element) {
+  return directChildren(paragraph).every(
+    (child) =>
+      child === markerRun ||
+      (child.localName === 'pPr' &&
+        DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')),
+  );
+}
+
+function closestWordAncestor(
+  element: Element | null,
+  localName: string,
+): Element | null {
+  let current = element;
+  while (current) {
+    if (
+      current.localName === localName &&
+      DOCX_WORDPROCESSING_NAMESPACES.has(current.namespaceURI ?? '')
+    ) {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
+function setWord2010Identity(
   document: Document,
-  paragraph: Element,
+  element: Element,
   identity: WorkDocumentParagraphIdentity,
 ): void {
   const root = document.documentElement;
   const prefix = ensureNamespacePrefix(root, 'w14', WORD_2010_NAMESPACE);
-  paragraph.setAttributeNS(
+  element.setAttributeNS(
     WORD_2010_NAMESPACE,
     `${prefix}:paraId`,
     identity.paragraphId,
   );
-  paragraph.setAttributeNS(
+  element.setAttributeNS(
     WORD_2010_NAMESPACE,
     `${prefix}:textId`,
     identity.textId,

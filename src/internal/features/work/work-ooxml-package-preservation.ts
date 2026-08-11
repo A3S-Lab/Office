@@ -8,6 +8,7 @@ import {
 import { preserveDocxParagraphExtensions } from './work-docx-paragraph-extension-preservation';
 import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
 import { preserveDocxStyleExtensions } from './work-docx-style-extension-preservation';
+import { preserveDocxTableExtensions } from './work-docx-table-extension-preservation';
 import { attribute, directChildren, parseXml } from './work-ooxml-package';
 import {
   isExcludedDocxContentType,
@@ -183,6 +184,12 @@ export async function preserveDocxSourcePackage(
   const sourceParagraphPartPaths = docxParagraphPartPaths(
     sourceByLower,
     sourceTypes,
+  );
+  await preserveDocxTableExtensions(
+    generated,
+    source,
+    paragraphPartPaths,
+    sourceParagraphPartPaths,
   );
   await preserveDocxParagraphExtensions(
     generated,
