@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Preserved imported Word numbering identities, abstract-numbering identities,
+  and levels in the controlled document model. Separated list runs that belong
+  to one native Word list now reuse one DOCX numbering instance on export
+  instead of silently restarting under unrelated generated identities.
 - Added a Spreadsheet command catalog and adopted the shared WPS-oriented
   quick-access, adaptive, and collapsible ribbon. Conditional Formatting now
   lives under Home and Styles, Data exposes executable ascending and descending

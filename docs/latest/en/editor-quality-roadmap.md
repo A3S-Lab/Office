@@ -319,6 +319,13 @@ semantic theme references, percentage-width column authoring, nested tables,
 and more complex merged-cell multi-page row cases remain part of this priority
 rather than being treated as complete.
 
+Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
+as explicit numbering, abstract-numbering, and level metadata. Export reuses a
+single generated DOCX numbering instance across separated runs with the same
+native identity, retaining continuation semantics instead of assigning each
+run an unrelated list. Arbitrary level-text patterns and the remaining native
+multilevel formats still belong to this priority.
+
 Exit evidence:
 
 - Formatting and table operations have command, interaction, undo, DOCX, and

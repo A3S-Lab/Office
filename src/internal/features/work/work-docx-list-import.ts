@@ -3,6 +3,9 @@ import { attribute, descendants, directChild } from './work-ooxml-package';
 export interface ImportedDocxListMarker {
   marker: string;
   start: number;
+  numberingId: number;
+  abstractNumberingId?: number;
+  level: number;
   type?: ImportedDocxOrderedListType;
   bulletStyle?: ImportedDocxBulletListStyle;
 }
@@ -66,12 +69,14 @@ export function markDocxLists(
     const start = effectiveListStart(concrete, abstract, level);
     const type = effectiveOrderedListType(concrete, abstract, level);
     const bulletStyle = effectiveBulletListStyle(concrete, abstract, level);
-    if (start <= 1 && !type && !bulletStyle) continue;
     const marker = `__A3S_WORK_LIST_START_${lists.length + 1}__`;
     insertParagraphMarker(document, paragraph, marker);
     lists.push({
       marker,
       start,
+      numberingId: numId,
+      ...(abstractId === null ? {} : { abstractNumberingId: abstractId }),
+      level,
       ...(type ? { type } : {}),
       ...(bulletStyle ? { bulletStyle } : {}),
     });
@@ -93,6 +98,13 @@ export function applyImportedDocxListMarkers(
     node.data = node.data.replace(LIST_START_MARKER_PATTERN, (marker) => {
       const imported = listByMarker.get(marker);
       if (imported && list instanceof HTMLElement) {
+        list.dataset.officeNumberingId = String(imported.numberingId);
+        list.dataset.officeNumberingLevel = String(imported.level);
+        if (imported.abstractNumberingId !== undefined) {
+          list.dataset.officeAbstractNumberingId = String(
+            imported.abstractNumberingId,
+          );
+        }
         if (list.tagName.toLowerCase() === 'ol') {
           if (imported.start > 1) {
             list.setAttribute('start', String(imported.start));

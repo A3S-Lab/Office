@@ -42,6 +42,7 @@ declare module '@tiptap/core' {
 export const DocumentBulletList = BulletList.extend({
   addAttributes() {
     return {
+      ...documentListIdentityAttributes(),
       bulletStyle: {
         default: 'disc',
         parseHTML: (element: HTMLElement) =>
@@ -60,7 +61,14 @@ export const DocumentBulletList = BulletList.extend({
   },
 });
 
-export const DocumentOrderedList = OrderedList;
+export const DocumentOrderedList = OrderedList.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      ...documentListIdentityAttributes(),
+    };
+  },
+});
 
 export const DocumentListCommands = Extension.create({
   name: 'documentListCommands',
@@ -275,4 +283,34 @@ function validNumberingStart(value: number): boolean {
     value >= 1 &&
     value <= MAX_DOCUMENT_NUMBERING_START
   );
+}
+
+function documentListIdentityAttributes() {
+  return {
+    officeNumberingId: identityAttribute('officeNumberingId'),
+    officeAbstractNumberingId: identityAttribute('officeAbstractNumberingId'),
+    officeNumberingLevel: identityAttribute('officeNumberingLevel'),
+  };
+}
+
+function identityAttribute(
+  datasetKey:
+    | 'officeNumberingId'
+    | 'officeAbstractNumberingId'
+    | 'officeNumberingLevel',
+) {
+  const htmlName = `data-${datasetKey.replace(
+    /[A-Z]/g,
+    (letter) => `-${letter.toLowerCase()}`,
+  )}`;
+  return {
+    default: null,
+    parseHTML: (element: HTMLElement) => element.dataset[datasetKey] ?? null,
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = attributes[datasetKey];
+      return typeof value === 'string' && value.length
+        ? { [htmlName]: value }
+        : {};
+    },
+  };
 }

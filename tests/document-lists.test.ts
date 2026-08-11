@@ -3,6 +3,7 @@ import { closeHistory } from '@tiptap/pm/history';
 import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
+import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
 import {
   DocumentPagination,
   measureDocumentLayoutBlocks,
@@ -254,13 +255,51 @@ describe('document lists', () => {
     const markers = markDocxLists(source, numbering);
 
     expect(
-      markers.lists.map(({ start, type }) => ({ start, type: type ?? null })),
+      markers.lists.map(
+        ({ start, type, numberingId, abstractNumberingId, level }) => ({
+          start,
+          type: type ?? null,
+          numberingId,
+          abstractNumberingId,
+          level,
+        }),
+      ),
     ).toEqual([
-      { start: 3, type: null },
-      { start: 1, type: 'a' },
-      { start: 1, type: 'A' },
-      { start: 1, type: 'i' },
-      { start: 1, type: 'I' },
+      {
+        start: 3,
+        type: null,
+        numberingId: 42,
+        abstractNumberingId: 7,
+        level: 0,
+      },
+      {
+        start: 1,
+        type: 'a',
+        numberingId: 42,
+        abstractNumberingId: 7,
+        level: 1,
+      },
+      {
+        start: 1,
+        type: 'A',
+        numberingId: 42,
+        abstractNumberingId: 7,
+        level: 2,
+      },
+      {
+        start: 1,
+        type: 'i',
+        numberingId: 42,
+        abstractNumberingId: 7,
+        level: 3,
+      },
+      {
+        start: 1,
+        type: 'I',
+        numberingId: 42,
+        abstractNumberingId: 7,
+        level: 4,
+      },
     ]);
 
     const imported = new DOMParser().parseFromString(
@@ -279,13 +318,46 @@ describe('document lists', () => {
       lists.map((list) => ({
         start: list.getAttribute('start'),
         type: list.getAttribute('type'),
+        numberingId: list.dataset.officeNumberingId,
+        abstractNumberingId: list.dataset.officeAbstractNumberingId,
+        level: list.dataset.officeNumberingLevel,
       })),
     ).toEqual([
-      { start: '3', type: null },
-      { start: null, type: 'a' },
-      { start: null, type: 'A' },
-      { start: null, type: 'i' },
-      { start: null, type: 'I' },
+      {
+        start: '3',
+        type: null,
+        numberingId: '42',
+        abstractNumberingId: '7',
+        level: '0',
+      },
+      {
+        start: null,
+        type: 'a',
+        numberingId: '42',
+        abstractNumberingId: '7',
+        level: '1',
+      },
+      {
+        start: null,
+        type: 'A',
+        numberingId: '42',
+        abstractNumberingId: '7',
+        level: '2',
+      },
+      {
+        start: null,
+        type: 'i',
+        numberingId: '42',
+        abstractNumberingId: '7',
+        level: '3',
+      },
+      {
+        start: null,
+        type: 'I',
+        numberingId: '42',
+        abstractNumberingId: '7',
+        level: '4',
+      },
     ]);
 
     const content = createWorkDocumentModelFromContent({
@@ -373,6 +445,66 @@ describe('document lists', () => {
         (list) => list.attrs?.bulletStyle,
       ),
     ).toEqual(['disc', 'circle', 'square']);
+  });
+
+  test('reuses one DOCX numbering identity for separated imported list runs', async () => {
+    const identity =
+      'data-office-numbering-id="42" data-office-abstract-numbering-id="7"';
+    const blob = await createDocxBlob({
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        `<ol ${identity}><li><p>First</p></li><li><p>Second</p></li></ol>`,
+        '<p>Interruption</p>',
+        `<ol ${identity} start="3"><li><p>Third</p></li></ol>`,
+      ].join(''),
+    });
+    const { default: JSZip } = await import('jszip');
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const documentXml = await archive.file('word/document.xml')?.async('text');
+    const numberingXml = await archive
+      .file('word/numbering.xml')
+      ?.async('text');
+    expect(documentXml).toBeDefined();
+    expect(numberingXml).toBeDefined();
+
+    const paragraphNumberingIds = Array.from(
+      documentXml?.matchAll(/<w:numId w:val="(\d+)"\/>/g) ?? [],
+      (match) => match[1],
+    );
+    expect(paragraphNumberingIds).toHaveLength(3);
+    expect(new Set(paragraphNumberingIds).size).toBe(1);
+  });
+
+  test('keeps mixed native levels under their shared numbering identity', async () => {
+    const identity =
+      'data-office-numbering-id="42" data-office-abstract-numbering-id="7"';
+    const blob = await createDocxBlob({
+      type: 'document',
+      pageSize: 'a4',
+      html: [
+        `<ol ${identity} data-office-numbering-level="0"><li><p>Parent</p>`,
+        `<ul ${identity} data-office-numbering-level="1" `,
+        'data-office-bullet-style="square"><li><p>Child</p></li></ul>',
+        '</li></ol>',
+      ].join(''),
+    });
+    const { default: JSZip } = await import('jszip');
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const documentXml =
+      (await archive.file('word/document.xml')?.async('text')) ?? '';
+    const numberingXml =
+      (await archive.file('word/numbering.xml')?.async('text')) ?? '';
+
+    const paragraphNumberingIds = Array.from(
+      documentXml.matchAll(/<w:numId w:val="(\d+)"\/>/g),
+      (match) => match[1],
+    );
+    expect(paragraphNumberingIds).toHaveLength(2);
+    expect(new Set(paragraphNumberingIds).size).toBe(1);
+    expect(numberingXml).toMatch(
+      /<w:lvl w:ilvl="1"[^>]*>[\s\S]*?<w:numFmt w:val="bullet"\/>[\s\S]*?<w:lvlText w:val="■"\/>/,
+    );
   });
 });
 

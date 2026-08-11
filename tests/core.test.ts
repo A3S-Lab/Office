@@ -421,8 +421,27 @@ describe('office core', () => {
     expect(imported.content.type).toBe('document');
     if (imported.content.type !== 'document')
       throw new Error('Expected an imported document artifact.');
-    expect(imported.content.html).toContain('<ol start="3">');
-    expect(imported.content.html).toContain('<ol type="a">');
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedOrderedLists = Array.from(
+      importedDocument.body.querySelectorAll('ol'),
+    );
+    expect(importedOrderedLists[0]).toHaveAttribute('start', '3');
+    expect(importedOrderedLists[0]).toHaveAttribute('data-office-numbering-id');
+    expect(importedOrderedLists[0]).toHaveAttribute(
+      'data-office-abstract-numbering-id',
+    );
+    expect(importedOrderedLists[0]).toHaveAttribute(
+      'data-office-numbering-level',
+      '0',
+    );
+    expect(importedOrderedLists[1]).toHaveAttribute('type', 'a');
+    expect(importedOrderedLists[1]).toHaveAttribute(
+      'data-office-numbering-level',
+      '1',
+    );
     expect(imported.content.html).toContain(
       'data-office-bullet-style="square"',
     );

@@ -65,6 +65,11 @@ interface DocxNoteContext {
   commentRangeSeen: Map<string, number>;
   numbering: Array<INumberingOptions['config'][number]>;
   nextNumberingReference: number;
+  numberingReferences: Map<string, string>;
+  numberingLevels: Map<
+    string,
+    Array<INumberingOptions['config'][number]['levels'][number]>
+  >;
 }
 
 interface DocxTextRevision {
@@ -93,6 +98,8 @@ export async function createDocxBlob(
     commentRangeSeen: new Map(),
     numbering: [],
     nextNumberingReference: 1,
+    numberingReferences: new Map(),
+    numberingLevels: new Map(),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -380,7 +387,7 @@ async function listToDocxParagraphs(
   depth = 0,
 ): Promise<Array<InstanceType<typeof docx.Paragraph>>> {
   const paragraphs: Array<InstanceType<typeof docx.Paragraph>> = [];
-  const level = Math.min(8, Math.max(0, depth));
+  const level = listNumberingLevel(list, depth);
   const ordered = list.tagName.toLowerCase() === 'ol';
   const numbering = ordered
     ? registerOrderedListNumbering(list, level, docx, noteContext)
@@ -450,29 +457,30 @@ function registerOrderedListNumbering(
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
 ): { reference: string; level: number } {
+  const identity = importedListIdentity(list);
+  const existingReference = identity
+    ? noteContext.numberingReferences.get(identity)
+    : undefined;
+  if (existingReference && identity) {
+    const levels = noteContext.numberingLevels.get(identity);
+    if (levels) {
+      levels[level] = orderedListLevelOptions(list, level, docx);
+    }
+    return { reference: existingReference, level };
+  }
   const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
   noteContext.nextNumberingReference += 1;
-  noteContext.numbering.push({
-    reference,
-    levels: Array.from({ length: 9 }, (_, currentLevel) => ({
-      level: currentLevel,
-      format:
-        currentLevel === level
-          ? orderedListLevelFormat(list, currentLevel, docx)
-          : defaultOrderedListLevelFormat(currentLevel, docx),
-      text: `%${currentLevel + 1}.`,
-      start: currentLevel === level ? orderedListStart(list) : 1,
-      suffix: docx.LevelSuffix.TAB,
-      style: {
-        paragraph: {
-          indent: {
-            left: (currentLevel + 1) * 720,
-            hanging: 360,
-          },
-        },
-      },
-    })),
-  });
+  const levels = Array.from({ length: 9 }, (_, currentLevel) =>
+    currentLevel === level
+      ? orderedListLevelOptions(list, currentLevel, docx)
+      : defaultOrderedListLevelOptions(currentLevel, docx),
+  );
+  const configuration = { reference, levels };
+  if (identity) {
+    noteContext.numberingReferences.set(identity, reference);
+    noteContext.numberingLevels.set(identity, levels);
+  }
+  noteContext.numbering.push(configuration);
   return { reference, level };
 }
 
@@ -482,29 +490,30 @@ function registerBulletListNumbering(
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
 ): { reference: string; level: number } {
+  const identity = importedListIdentity(list);
+  const existingReference = identity
+    ? noteContext.numberingReferences.get(identity)
+    : undefined;
+  if (existingReference && identity) {
+    const levels = noteContext.numberingLevels.get(identity);
+    if (levels) {
+      levels[level] = bulletListLevelOptions(list, level, docx);
+    }
+    return { reference: existingReference, level };
+  }
   const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
   noteContext.nextNumberingReference += 1;
-  noteContext.numbering.push({
-    reference,
-    levels: Array.from({ length: 9 }, (_, currentLevel) => ({
-      level: currentLevel,
-      format: docx.LevelFormat.BULLET,
-      text:
-        currentLevel === level
-          ? bulletListMarker(list)
-          : defaultBulletListMarker(currentLevel),
-      start: 1,
-      suffix: docx.LevelSuffix.TAB,
-      style: {
-        paragraph: {
-          indent: {
-            left: (currentLevel + 1) * 720,
-            hanging: 360,
-          },
-        },
-      },
-    })),
-  });
+  const levels = Array.from({ length: 9 }, (_, currentLevel) =>
+    currentLevel === level
+      ? bulletListLevelOptions(list, currentLevel, docx)
+      : defaultBulletListLevelOptions(currentLevel, docx),
+  );
+  const configuration = { reference, levels };
+  if (identity) {
+    noteContext.numberingReferences.set(identity, reference);
+    noteContext.numberingLevels.set(identity, levels);
+  }
+  noteContext.numbering.push(configuration);
   return { reference, level };
 }
 
@@ -530,6 +539,79 @@ function defaultOrderedListLevelFormat(
   return docx.LevelFormat.DECIMAL;
 }
 
+function orderedListLevelOptions(
+  list: HTMLElement,
+  level: number,
+  docx: typeof import('docx'),
+) {
+  return {
+    ...defaultOrderedListLevelOptions(level, docx),
+    format: orderedListLevelFormat(list, level, docx),
+    start: orderedListStart(list),
+  };
+}
+
+function defaultOrderedListLevelOptions(
+  level: number,
+  docx: typeof import('docx'),
+) {
+  return listLevelOptions(
+    level,
+    defaultOrderedListLevelFormat(level, docx),
+    `%${level + 1}.`,
+    1,
+    docx,
+  );
+}
+
+function bulletListLevelOptions(
+  list: HTMLElement,
+  level: number,
+  docx: typeof import('docx'),
+) {
+  return listLevelOptions(
+    level,
+    docx.LevelFormat.BULLET,
+    bulletListMarker(list),
+    1,
+    docx,
+  );
+}
+
+function defaultBulletListLevelOptions(
+  level: number,
+  docx: typeof import('docx'),
+) {
+  return listLevelOptions(
+    level,
+    docx.LevelFormat.BULLET,
+    defaultBulletListMarker(level),
+    1,
+    docx,
+  );
+}
+
+function listLevelOptions(
+  level: number,
+  format: typeof import('docx')['LevelFormat'][keyof typeof import('docx')['LevelFormat']],
+  text: string,
+  start: number,
+  docx: typeof import('docx'),
+) {
+  return {
+    level,
+    format,
+    text,
+    start,
+    suffix: docx.LevelSuffix.TAB,
+    style: {
+      paragraph: {
+        indent: { left: (level + 1) * 720, hanging: 360 },
+      },
+    },
+  };
+}
+
 function orderedListStart(list: HTMLElement): number {
   const value = Number(list.getAttribute('start'));
   return Number.isSafeInteger(value) && value > 0
@@ -549,6 +631,20 @@ function defaultBulletListMarker(level: number): string {
   if (level % 3 === 1) return '○';
   if (level % 3 === 2) return '■';
   return '●';
+}
+
+function importedListIdentity(list: HTMLElement): string | null {
+  const numberingId = list.dataset.officeNumberingId;
+  if (!numberingId) return null;
+  const abstractNumberingId = list.dataset.officeAbstractNumberingId ?? '';
+  return `${numberingId}:${abstractNumberingId}`;
+}
+
+function listNumberingLevel(list: HTMLElement, fallback: number): number {
+  const imported = Number(list.dataset.officeNumberingLevel);
+  return Number.isSafeInteger(imported) && imported >= 0 && imported <= 8
+    ? imported
+    : Math.min(8, Math.max(0, fallback));
 }
 
 function directListItemContentRoot(item: HTMLElement): HTMLElement {
