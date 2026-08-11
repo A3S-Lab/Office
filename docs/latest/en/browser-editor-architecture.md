@@ -612,8 +612,8 @@ Windows parity workflow exports the same fixture through WPS, captures both
 differences. Language-complete font substitution, variable font axes, the
 remaining character and table style properties, arbitrary floating-object
 offsets, cropping, contour wrapping and layering, row-internal table splitting
-inside a single long paragraph or complex merged-cell flow, nested tables,
-footnote balancing, multi-column flow, and mixed-size sections require the
+inside a single long paragraph or complex merged-cell flow, footnote balancing,
+multi-column flow, and mixed-size sections require the
 later layout stages below.
 
 Top-level tables now enter pagination as row flows. DOM measurement supplies
@@ -628,8 +628,9 @@ page, split at synchronized boundaries between direct cell blocks. One
 non-editable widget per cell aligns the page gap and paints a clipped slice of
 the same measured header overlay. The leading cell alone extends the paper-gap
 paint across the page margins. `cantSplit` rows and a single indivisible long
-paragraph remain atomic and may overflow; nested tables and complex merged-cell
-flows require a later fragmentation model.
+paragraph remain atomic and may overflow. Nested tables contribute their own
+row boundaries to the containing cell's synchronized fragment plan; complex
+merged-cell flows require a later fragmentation model.
 
 Table creation is selection-safe: a non-empty text selection is preserved and
 the chosen table is inserted after its containing block instead of replacing
@@ -680,7 +681,9 @@ order. Their cell fills, per-edge borders, run emphasis, fonts, and colors, plus
 paragraph alignment, direction, indents, spacing and line rules, pagination
 rules, and tab stops enter the marker pipeline after paragraph styles and before
 direct paragraph, character-style, or run formatting. Direct table and cell
-properties remain higher-priority layers for cell presentation. Theme-derived
+properties remain higher-priority layers for cell presentation. Nested tables
+retain independent geometry and formatting through the same marker and export
+paths, and target the innermost active table during editing. Theme-derived
 presentation resolves to stable RGB for editing and preview, while untouched
 run colors, run shading, cell fills, and per-edge borders retain semantic theme
 references on regenerated DOCX output. Explicit color edits export direct RGB.
@@ -689,8 +692,8 @@ a first-cell margin override, and matching edit/preview geometry through A3S
 Test.
 Command availability comes from the ProseMirror table state, so actions that
 cannot apply to the current selection remain disabled. Less-common conditional
-paragraph properties outside the supported layout set, nested-table editing,
-and complex merged-cell conditional flow remain explicit fidelity gaps.
+paragraph properties outside the supported layout set and complex merged-cell
+conditional flow remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,
 left/center/right/decimal alignment, and leader styles. A leaf

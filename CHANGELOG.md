@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Completed editable nested Word tables across insertion, targeted inner-table
+  sizing, DOCX import/export, and pagination. Outer rows can now split at
+  nested-row boundaries instead of forcing a tall inner table to overflow as
+  one atomic block.
 - Added percentage-based table-column authoring in the Layout ribbon and Table
   Properties dialog. Percentage preferences survive merged cells and DOCX
   `tcW` round-trips while pixel `tblGrid` widths remain browser fallbacks.

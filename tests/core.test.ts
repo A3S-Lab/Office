@@ -616,6 +616,49 @@ describe('office core', () => {
     expect(imported.content.html).toContain('colwidth="180"');
   });
 
+  test('round-trips nested DOCX tables as editable table content', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<table data-office-table-layout="fixed"><tbody><tr>',
+      '<td colwidth="300"><p>Outer before</p>',
+      '<table data-office-table-layout="fixed"><tbody><tr>',
+      '<td colwidth="120"><p>Nested left</p></td>',
+      '<td colwidth="180"><p>Nested right</p></td>',
+      '</tr></tbody></table><p>Outer after</p></td>',
+      '</tr></tbody></table>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(xml).toMatch(
+      /<w:tc\b[^>]*>[\s\S]*Outer before[\s\S]*<w:tbl\b[\s\S]*Nested left[\s\S]*Nested right[\s\S]*<\/w:tbl>[\s\S]*Outer after[\s\S]*<\/w:tc>/,
+    );
+
+    const imported = await importOfficeFile(
+      new File([blob], 'nested-table.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const outerTable = html.querySelector('table');
+    const nestedTable = outerTable?.querySelector(
+      ':scope > tbody > tr > td > table',
+    );
+    expect(nestedTable).not.toBeNull();
+    expect(nestedTable?.textContent).toContain('Nested left');
+    expect(nestedTable?.textContent).toContain('Nested right');
+    expect(outerTable?.textContent).toContain('Outer after');
+  });
+
   test('round-trips independent DOCX table width, position, and cell margins', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {

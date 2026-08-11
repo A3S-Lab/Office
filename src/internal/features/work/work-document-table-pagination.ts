@@ -332,6 +332,16 @@ function measureDocumentTableCellFragments(
       } else {
         boundaries.push({ position, y });
       }
+      if (_block.type.name === 'table') {
+        addNestedTableRowBoundaries(
+          editor,
+          _block,
+          position,
+          rowRect,
+          scaleY,
+          boundaries,
+        );
+      }
     });
     const cellStyle = element ? getComputedStyle(element) : null;
     const cellRect = element?.getBoundingClientRect();
@@ -354,6 +364,9 @@ function measureDocumentTableCellFragments(
       position: to,
       y: Math.max(contentStart, Math.min(row.height, contentEnd)),
     });
+    boundaries.sort(
+      (left, right) => left.y - right.y || left.position - right.position,
+    );
     result.push({
       cellIndex,
       from,
@@ -377,6 +390,46 @@ function measureDocumentTableCellFragments(
     });
   });
   return result;
+}
+
+function addNestedTableRowBoundaries(
+  editor: Editor,
+  table: ProseMirrorNode,
+  tablePosition: number,
+  outerRowRect: DOMRect,
+  scaleY: number,
+  boundaries: DocumentTableCellBoundary[],
+): void {
+  table.forEach((nestedRow, rowOffset, rowIndex) => {
+    const rowPosition = tablePosition + rowOffset + 1;
+    if (rowIndex > 0) {
+      const rowElement = elementForNode(editor, rowPosition);
+      const rowRect = rowElement?.getBoundingClientRect();
+      if (rowRect) {
+        boundaries.push({
+          position: rowPosition,
+          y: Math.max(
+            0,
+            (rowRect.top - outerRowRect.top) / Math.max(scaleY, 0.01),
+          ),
+        });
+      }
+    }
+    nestedRow.forEach((nestedCell, cellOffset) => {
+      const contentStart = rowPosition + cellOffset + 2;
+      nestedCell.forEach((block, blockOffset) => {
+        if (block.type.name !== 'table') return;
+        addNestedTableRowBoundaries(
+          editor,
+          block,
+          contentStart + blockOffset,
+          outerRowRect,
+          scaleY,
+          boundaries,
+        );
+      });
+    });
+  });
 }
 
 function documentTablePaginationBreak(

@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { describe, expect, test } from '@rstest/core';
 import { waitFor } from '@testing-library/react';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
@@ -71,6 +72,50 @@ describe('document tables', () => {
     editor.off('update', countUpdate);
     editor.destroy();
     editorElement.remove();
+  });
+
+  test('inserts and edits a nested table inside the active cell', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true">',
+        '<table><tbody><tr><td><p>Outer cell</p></td></tr></tbody></table>',
+        '</section>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(
+      documentTextRange(editor, 'Outer cell').to,
+    );
+
+    expect(
+      editor.commands.insertDocumentTable(
+        { rows: 2, columns: 2 },
+        { headerRow: false, restoreFocus: false },
+      ),
+    ).toBe(true);
+    const tables: ProseMirrorNode[] = [];
+    editor.state.doc.descendants((node) => {
+      if (node.type.name === 'table') tables.push(node);
+      return true;
+    });
+    expect(tables).toHaveLength(2);
+    expect(tables[0]?.childCount).toBe(1);
+    expect(tables[1]?.childCount).toBe(2);
+    expect(editor.commands.setDocumentTableColumnWidth(90)).toBe(true);
+    expect(tables[0]?.firstChild?.firstChild?.attrs.colwidth).toBeNull();
+    const nestedWidths: unknown[] = [];
+    editor.state.doc.descendants((node) => {
+      if (node.type.name !== 'table') return true;
+      if (!node.textContent.includes('Outer cell')) {
+        node.forEach((row) => {
+          nestedWidths.push(row.firstChild?.attrs.colwidth);
+        });
+      }
+      return true;
+    });
+    expect(nestedWidths).toEqual([[90], [90]]);
+
+    editor.destroy();
   });
 
   test('keeps row pagination properties in the TipTap document model', () => {
@@ -217,6 +262,33 @@ describe('document tables', () => {
     editor.destroy();
   });
 
+  test('splits a nested table at its own row boundaries', () => {
+    const editor = createNestedTablePaginationEditor();
+    mockNestedTableGeometry(editor);
+
+    const snapshot = measureDocumentLayoutBlocks(
+      editor,
+      null,
+      0,
+      new Map(),
+      50,
+    );
+
+    expect(snapshot.blocks).toHaveLength(3);
+    expect(snapshot.blocks.map(({ block }) => block.height)).toEqual([
+      40, 40, 40,
+    ]);
+    expect(snapshot.blocks.map(({ block }) => block.flowIndex)).toEqual([
+      0, 1, 2,
+    ]);
+    expect(snapshot.blocks[1]?.selectionRanges?.[0]).toMatchObject({
+      from: expect.any(Number),
+      to: expect.any(Number),
+    });
+
+    editor.destroy();
+  });
+
   test('renders an internal row break inside every cell boundary', () => {
     const editor = createSplitRowEditor(false);
     mockSplitRowGeometry(editor);
@@ -358,6 +430,61 @@ function createSplitRowEditor(cantSplit: boolean): Editor {
       '</section>',
       '<p></p>',
     ].join(''),
+  });
+}
+
+function createNestedTablePaginationEditor(): Editor {
+  return new Editor({
+    extensions: [...createWorkDocumentExtensions(), DocumentPagination],
+    content: [
+      '<section data-document-section="true">',
+      '<table><tbody><tr><td>',
+      '<table><tbody>',
+      '<tr><td><p>Nested one</p></td></tr>',
+      '<tr><td><p>Nested two</p></td></tr>',
+      '<tr><td><p>Nested three</p></td></tr>',
+      '</tbody></table>',
+      '</td></tr></tbody></table>',
+      '</section>',
+    ].join(''),
+  });
+}
+
+function mockNestedTableGeometry(editor: Editor): void {
+  const wrapper = editor.view.dom.querySelector<HTMLElement>('.tableWrapper');
+  const outerTable = wrapper?.querySelector<HTMLElement>(':scope > table');
+  const outerRow = outerTable?.querySelector<HTMLElement>(
+    ':scope > tbody > tr',
+  );
+  const outerCell = outerRow?.querySelector<HTMLElement>(':scope > td');
+  const nestedTable = outerCell?.querySelector<HTMLElement>(
+    ':scope > .tableWrapper > table, :scope > table',
+  );
+  const nestedRows = Array.from(
+    nestedTable?.querySelectorAll<HTMLElement>(':scope > tbody > tr') ?? [],
+  );
+  if (
+    !wrapper ||
+    !outerTable ||
+    !outerRow ||
+    !outerCell ||
+    !nestedTable ||
+    nestedRows.length !== 3
+  ) {
+    throw new Error('Expected a mounted nested table.');
+  }
+  setElementBox(wrapper, { top: 0, left: 0, width: 300, height: 120 });
+  setElementBox(outerTable, { top: 0, left: 0, width: 300, height: 120 });
+  setElementBox(outerRow, { top: 0, left: 0, width: 300, height: 120 });
+  setElementBox(outerCell, { top: 0, left: 0, width: 300, height: 120 });
+  setElementBox(nestedTable, { top: 0, left: 0, width: 300, height: 120 });
+  nestedRows.forEach((row, index) => {
+    setElementBox(row, {
+      top: index * 40,
+      left: 0,
+      width: 300,
+      height: 40,
+    });
   });
 }
 

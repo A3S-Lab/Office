@@ -318,9 +318,11 @@ Desktop insertion keeps an 8 × 10 keyboard matrix without duplicate cell
 semantics, while phone insertion uses focused row and column controls with
 44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
 row extension, compact-ribbon deletion, and editor-focus recovery.
-Percentage-width column authoring, nested tables, and more complex merged-cell
-multi-page row cases remain part of this priority rather than being treated as
-complete.
+Percentage-width column authoring now retains pixel grid fallbacks, and nested
+tables remain editable through targeted inner-table commands and DOCX
+round-trips. Outer rows paginate at nested-row boundaries instead of treating a
+tall inner table as one atomic block. More complex merged-cell multi-page row
+cases remain part of this priority rather than being treated as complete.
 
 Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
 as explicit numbering, abstract-numbering, and level metadata. Export reuses a
