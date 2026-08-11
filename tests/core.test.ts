@@ -659,6 +659,48 @@ describe('office core', () => {
     expect(outerTable?.textContent).toContain('Outer after');
   });
 
+  test('round-trips combined row and column spans in DOCX tables', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<table data-office-table-layout="fixed"><tbody>',
+      '<tr><td rowspan="3" colspan="2" colwidth="100,140">',
+      '<p>Merged one</p><p>Merged two</p><p>Merged three</p></td>',
+      '<td colwidth="80"><p>Side one</p></td></tr>',
+      '<tr><td colwidth="80"><p>Side two</p></td></tr>',
+      '<tr><td colwidth="80"><p>Side three</p></td></tr>',
+      '</tbody></table>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(xml).toMatch(/<w:gridSpan\b[^>]*w:val="2"/);
+    expect(xml).toMatch(/<w:vMerge\b[^>]*w:val="restart"/);
+    expect((xml.match(/<w:vMerge\/?/g) ?? []).length).toBeGreaterThanOrEqual(3);
+
+    const imported = await importOfficeFile(
+      new File([blob], 'merged-table.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const html = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const merged = html.querySelector<HTMLTableCellElement>(
+      'table > tbody > tr:first-child > td:first-child',
+    );
+    expect(merged?.rowSpan).toBe(3);
+    expect(merged?.colSpan).toBe(2);
+    expect(merged?.textContent).toContain('Merged three');
+    expect(html.querySelectorAll('table > tbody > tr')).toHaveLength(3);
+  });
+
   test('round-trips independent DOCX table width, position, and cell margins', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {

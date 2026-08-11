@@ -289,6 +289,72 @@ describe('document tables', () => {
     editor.destroy();
   });
 
+  test('continues a row-spanning cell through each physical row', () => {
+    const editor = createRowSpanningTableEditor();
+    mockRowSpanningTableGeometry(editor);
+
+    const snapshot = measureDocumentLayoutBlocks(
+      editor,
+      null,
+      0,
+      new Map(),
+      50,
+    );
+
+    expect(snapshot.blocks).toHaveLength(3);
+    expect(snapshot.blocks.map(({ block }) => block.height)).toEqual([
+      40, 40, 40,
+    ]);
+    expect(
+      snapshot.blocks.map((block) => block.selectionRanges?.length),
+    ).toEqual([2, 2, 2]);
+    expect(snapshot.blocks[1]?.tableBreak?.cellBreaks).toMatchObject([
+      { cellIndex: 0, alignmentOffset: 0 },
+    ]);
+    expect(snapshot.blocks[2]?.tableBreak?.cellBreaks).toMatchObject([
+      { cellIndex: 0, alignmentOffset: 0 },
+    ]);
+    const spanningRanges = snapshot.blocks.map(
+      (block) => block.selectionRanges?.[0],
+    );
+    expect(spanningRanges[0]?.to).toBe(spanningRanges[1]?.from);
+    expect(spanningRanges[1]?.to).toBe(spanningRanges[2]?.from);
+    const continuation = snapshot.blocks[1];
+    if (!continuation?.tableBreak?.cellBreaks) {
+      throw new Error('Expected a row-span continuation break.');
+    }
+    editor.commands.applyDocumentPagination(1, [
+      {
+        beforeBlockId: continuation.block.id,
+        pageIndex: 1,
+        spacerHeight: 120,
+        remainingBodyHeight: 20,
+        page: {
+          width: 300,
+          height: 200,
+          marginTop: 20,
+          marginRight: 20,
+          marginBottom: 20,
+          marginLeft: 20,
+          headerHeight: 10,
+          footerHeight: 10,
+          pageGap: 30,
+        },
+        position: continuation.from,
+        inlineOffsetLeft: continuation.inlineOffsetLeft,
+        inlineOffsetRight: continuation.inlineOffsetRight,
+        tableBreak: continuation.tableBreak,
+      },
+    ]);
+    const pageBreak = editor.view.dom.querySelector<HTMLElement>(
+      '.work-document-table-cell-page-break[data-cell-index="0"]',
+    );
+    expect(pageBreak?.classList.contains('is-leading')).toBe(true);
+    expect(pageBreak?.closest('td')?.getAttribute('rowspan')).toBe('3');
+
+    editor.destroy();
+  });
+
   test('renders an internal row break inside every cell boundary', () => {
     const editor = createSplitRowEditor(false);
     mockSplitRowGeometry(editor);
@@ -447,6 +513,73 @@ function createNestedTablePaginationEditor(): Editor {
       '</td></tr></tbody></table>',
       '</section>',
     ].join(''),
+  });
+}
+
+function createRowSpanningTableEditor(): Editor {
+  return new Editor({
+    extensions: [...createWorkDocumentExtensions(), DocumentPagination],
+    content: [
+      '<section data-document-section="true">',
+      '<table><tbody>',
+      '<tr><td rowspan="3"><p>Span one</p><p>Span two</p><p>Span three</p></td><td><p>Side one</p></td></tr>',
+      '<tr><td><p>Side two</p></td></tr>',
+      '<tr><td><p>Side three</p></td></tr>',
+      '</tbody></table>',
+      '</section>',
+    ].join(''),
+  });
+}
+
+function mockRowSpanningTableGeometry(editor: Editor): void {
+  const wrapper = editor.view.dom.querySelector<HTMLElement>('.tableWrapper');
+  const table = wrapper?.querySelector<HTMLElement>(':scope > table');
+  const rows = Array.from(
+    table?.querySelectorAll<HTMLElement>(':scope > tbody > tr') ?? [],
+  );
+  const spanningCell = rows[0]?.querySelector<HTMLElement>(
+    ':scope > td[rowspan="3"]',
+  );
+  const sideCells = rows.map((row) =>
+    row.querySelector<HTMLElement>(':scope > td:last-child'),
+  );
+  const spanningParagraphs = Array.from(
+    spanningCell?.querySelectorAll<HTMLElement>(':scope > p') ?? [],
+  );
+  if (
+    !wrapper ||
+    !table ||
+    rows.length !== 3 ||
+    !spanningCell ||
+    sideCells.some((cell) => !cell) ||
+    spanningParagraphs.length !== 3
+  ) {
+    throw new Error('Expected a mounted row-spanning table.');
+  }
+  setElementBox(wrapper, { top: 0, left: 0, width: 300, height: 120 });
+  setElementBox(table, { top: 0, left: 0, width: 300, height: 120 });
+  rows.forEach((row, index) => {
+    setElementBox(row, {
+      top: index * 40,
+      left: 0,
+      width: 300,
+      height: 40,
+    });
+    setElementBox(sideCells[index], {
+      top: index * 40,
+      left: 150,
+      width: 150,
+      height: 40,
+    });
+  });
+  setElementBox(spanningCell, { top: 0, left: 0, width: 150, height: 120 });
+  spanningParagraphs.forEach((paragraph, index) => {
+    setElementBox(paragraph, {
+      top: index * 40,
+      left: 8,
+      width: 134,
+      height: 40,
+    });
   });
 }
 

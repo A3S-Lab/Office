@@ -53,6 +53,7 @@ export interface DocumentTableCellFragmentMeasurement {
   from: number;
   to: number;
   boundaries: DocumentTableCellBoundary[];
+  continuesFromPreviousRow?: boolean;
   tableOffsetLeft?: number;
   outerWidth?: number;
   contentOffsetLeft?: number;

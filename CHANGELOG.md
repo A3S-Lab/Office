@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Continued row-spanning Word table cells across every covered physical row
+  during pagination. Combined `rowspan`/`colspan` cells now receive contiguous
+  selection ranges and in-cell page-break widgets, while DOCX `vMerge` and
+  `gridSpan` round-trip together.
 - Completed editable nested Word tables across insertion, targeted inner-table
   sizing, DOCX import/export, and pagination. Outer rows can now split at
   nested-row boundaries instead of forcing a tall inner table to overflow as

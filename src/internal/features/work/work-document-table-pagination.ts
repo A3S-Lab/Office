@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { TableMap } from '@tiptap/pm/tables';
 import {
   documentInlineOffsets,
   elementForNode,
@@ -11,6 +12,7 @@ import {
 import type {
   DocumentTableCellBoundary,
   DocumentTableCellFragmentMeasurement,
+  DocumentTableCellPageBreak,
   DocumentTablePaginationBreak,
   DocumentTableRowFragmentPlan,
   MeasuredDocumentLayoutBlock,
@@ -217,8 +219,19 @@ export function measureDocumentTableRows(
     1,
     maximumFragmentedRowHeight - repeatHeaderHeight,
   );
+  const tableMap = TableMap.get(tableNode);
+  const rowCells = rows.map((row, rowIndex) =>
+    measureDocumentTableCellFragments(
+      editor,
+      tableNode,
+      tableMap,
+      tableFrom,
+      row,
+      rowIndex,
+    ),
+  );
   const rowPlans = rows.map((row, rowIndex) => {
-    const cells = measureDocumentTableCellFragments(editor, row);
+    const cells = rowCells[rowIndex] ?? [];
     const canSplit =
       rowIndex >= leadingHeaderRowCount && !documentTableRowCantSplit(row.node);
     return createDocumentTableRowFragmentPlan(
@@ -241,7 +254,10 @@ export function measureDocumentTableRows(
   let flowIndex = 0;
   for (const [rowIndex, row] of rows.entries()) {
     const fragments = rowPlans[rowIndex] ?? [];
+    const cells = rowCells[rowIndex] ?? [];
     for (const [fragmentIndex, fragment] of fragments.entries()) {
+      const continuedCellBreaks =
+        fragmentIndex === 0 ? continuedDocumentTableCellBreaks(cells) : [];
       const first = flowIndex === 0;
       const last = flowIndex + 1 === flowCount;
       const repeatsHeader =
@@ -286,7 +302,11 @@ export function measureDocumentTableRows(
           repeatedHeaderOverlayHtml: repeatsHeader
             ? tableBreak.repeatedHeaderOverlayHtml
             : '',
-          ...(fragment.cellBreaks ? { cellBreaks: fragment.cellBreaks } : {}),
+          ...(fragment.cellBreaks?.length
+            ? { cellBreaks: fragment.cellBreaks }
+            : continuedCellBreaks.length
+              ? { cellBreaks: continuedCellBreaks }
+              : {}),
         },
       });
       flowIndex += 1;
@@ -297,7 +317,11 @@ export function measureDocumentTableRows(
 
 function measureDocumentTableCellFragments(
   editor: Editor,
+  table: ProseMirrorNode,
+  tableMap: TableMap,
+  tableFrom: number,
   row: MeasuredDocumentTableRow,
+  rowIndex: number,
 ): DocumentTableCellFragmentMeasurement[] {
   const rowRect = row.element.getBoundingClientRect();
   const tableElement = row.element.closest('table');
@@ -311,10 +335,20 @@ function measureDocumentTableCellFragments(
       ? rowRect.height / row.element.offsetHeight
       : 1;
   const result: DocumentTableCellFragmentMeasurement[] = [];
-  row.node.forEach((cell, cellOffset, cellIndex) => {
-    const from = row.from + cellOffset + 2;
-    const to = row.from + cellOffset + cell.nodeSize;
-    const element = elementForNode(editor, from - 1);
+  const cellOffsets = new Map<number, number>();
+  for (let column = 0; column < tableMap.width; column += 1) {
+    const offset = tableMap.map[rowIndex * tableMap.width + column];
+    if (offset !== undefined && !cellOffsets.has(offset)) {
+      cellOffsets.set(offset, column);
+    }
+  }
+  for (const [cellOffset, cellIndex] of cellOffsets) {
+    const cell = table.nodeAt(cellOffset);
+    if (!cell) continue;
+    const cellPosition = tableFrom + cellOffset + 1;
+    const from = cellPosition + 1;
+    const to = cellPosition + cell.nodeSize - 1;
+    const element = elementForNode(editor, cellPosition);
     const boundaries: DocumentTableCellBoundary[] = [];
     cell.forEach((_block, blockOffset, blockIndex) => {
       const position = from + blockOffset;
@@ -322,11 +356,9 @@ function measureDocumentTableCellFragments(
       if (!blockElement) return;
       const rect = blockElement.getBoundingClientRect();
       const style = getComputedStyle(blockElement);
-      const y = Math.max(
-        0,
+      const y =
         (rect.top - rowRect.top) / Math.max(scaleY, 0.01) -
-          nonNegativePixels(style.marginTop),
-      );
+        nonNegativePixels(style.marginTop);
       if (blockIndex === 0) {
         boundaries.push({ position: from, y });
       } else {
@@ -352,9 +384,11 @@ function measureDocumentTableCellFragments(
           nonNegativePixels(cellStyle?.borderTopWidth ?? '') +
           nonNegativePixels(cellStyle?.paddingTop ?? '')
         : 0);
-    if (!boundaries.length)
+    if (!boundaries.length) {
       boundaries.push({ position: from, y: contentStart });
-    boundaries[0] = { position: from, y: contentStart };
+    } else {
+      boundaries[0] = { position: from, y: contentStart };
+    }
     const contentEnd = cellRect
       ? (cellRect.bottom - rowRect.top) / Math.max(scaleY, 0.01) -
         nonNegativePixels(cellStyle?.borderBottomWidth ?? '') -
@@ -362,16 +396,25 @@ function measureDocumentTableCellFragments(
       : row.height;
     boundaries.push({
       position: to,
-      y: Math.max(contentStart, Math.min(row.height, contentEnd)),
+      y: Math.max(contentStart, contentEnd),
     });
     boundaries.sort(
       (left, right) => left.y - right.y || left.position - right.position,
     );
-    result.push({
-      cellIndex,
+    const clipped = clipDocumentTableCellBoundaries(
+      boundaries,
       from,
       to,
-      boundaries,
+      row.height,
+    );
+    result.push({
+      cellIndex,
+      from: clipped.from,
+      to: clipped.to,
+      boundaries: clipped.boundaries,
+      ...(cellPosition < row.from + 1
+        ? { continuesFromPreviousRow: true }
+        : {}),
       ...(cellRect && tableRect
         ? {
             tableOffsetLeft: Math.max(
@@ -388,8 +431,75 @@ function measureDocumentTableCellFragments(
           }
         : {}),
     });
-  });
+  }
   return result;
+}
+
+function continuedDocumentTableCellBreaks(
+  cells: readonly DocumentTableCellFragmentMeasurement[],
+): DocumentTableCellPageBreak[] {
+  return cells.flatMap((cell) => {
+    if (!cell.continuesFromPreviousRow) return [];
+    const boundary = cell.boundaries[0] ?? { position: cell.from, y: 0 };
+    return [
+      {
+        cellIndex: cell.cellIndex,
+        position: boundary.position,
+        alignmentOffset: Math.max(0, -boundary.y),
+        ...(cell.tableOffsetLeft === undefined
+          ? {}
+          : { tableOffsetLeft: cell.tableOffsetLeft }),
+        ...(cell.outerWidth === undefined
+          ? {}
+          : { outerWidth: cell.outerWidth }),
+        ...(cell.contentOffsetLeft === undefined
+          ? {}
+          : { contentOffsetLeft: cell.contentOffsetLeft }),
+      },
+    ];
+  });
+}
+
+function clipDocumentTableCellBoundaries(
+  boundaries: readonly DocumentTableCellBoundary[],
+  fallbackFrom: number,
+  fallbackTo: number,
+  rowHeight: number,
+): {
+  from: number;
+  to: number;
+  boundaries: DocumentTableCellBoundary[];
+} {
+  let from = fallbackFrom;
+  let to = fallbackTo;
+  let startY = 0;
+  for (const boundary of boundaries) {
+    if (boundary.y > 0.5) break;
+    from = boundary.position;
+    startY = boundary.y;
+  }
+  for (const boundary of boundaries) {
+    if (boundary.y < rowHeight - 0.5) continue;
+    to = boundary.position;
+    break;
+  }
+  if (to <= from) to = fallbackTo;
+  const clipped: DocumentTableCellBoundary[] = [
+    { position: from, y: Math.max(0, startY) },
+  ];
+  for (const boundary of boundaries) {
+    if (
+      boundary.position <= from ||
+      boundary.position >= to ||
+      boundary.y <= 0.5 ||
+      boundary.y >= rowHeight - 0.5
+    ) {
+      continue;
+    }
+    clipped.push(boundary);
+  }
+  clipped.push({ position: to, y: rowHeight });
+  return { from, to, boundaries: clipped };
 }
 
 function addNestedTableRowBoundaries(
@@ -408,10 +518,7 @@ function addNestedTableRowBoundaries(
       if (rowRect) {
         boundaries.push({
           position: rowPosition,
-          y: Math.max(
-            0,
-            (rowRect.top - outerRowRect.top) / Math.max(scaleY, 0.01),
-          ),
+          y: (rowRect.top - outerRowRect.top) / Math.max(scaleY, 0.01),
         });
       }
     }

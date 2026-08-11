@@ -321,8 +321,10 @@ row extension, compact-ribbon deletion, and editor-focus recovery.
 Percentage-width column authoring now retains pixel grid fallbacks, and nested
 tables remain editable through targeted inner-table commands and DOCX
 round-trips. Outer rows paginate at nested-row boundaries instead of treating a
-tall inner table as one atomic block. More complex merged-cell multi-page row
-cases remain part of this priority rather than being treated as complete.
+tall inner table as one atomic block. Row-spanning cells participate in every
+covered physical row with contiguous content ranges and in-cell page-break
+widgets; combined row and column spans retain `vMerge` and `gridSpan` through
+DOCX round-trips.
 
 Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
 as explicit numbering, abstract-numbering, and level metadata. Export reuses a
