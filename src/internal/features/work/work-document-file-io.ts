@@ -48,6 +48,7 @@ export async function importWorkDocumentFile(
           prepared.citationMarkers,
           prepared.listMarkers,
           prepared.imageLayoutMarkers,
+          prepared.paragraphIdentityMarkers,
           prepared.paragraphAlignmentMarkers,
           prepared.runFormattingMarkers,
           prepared.paragraphDirectionMarkers,

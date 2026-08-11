@@ -1,4 +1,9 @@
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import {
+  DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
+  DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
+  normalizeDocumentParagraphIdentity,
+} from './work-document-paragraph-identity';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -27,6 +32,10 @@ const IMAGE_IDENTITY_ATTRIBUTES = [
   'data-office-image-doc-properties-id',
   'data-office-image-anchor-id',
   'data-office-image-edit-id',
+] as const;
+const PARAGRAPH_IDENTITY_ATTRIBUTES = [
+  DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
+  DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
 ] as const;
 
 const ALLOWED_TAGS = new Set([
@@ -256,6 +265,7 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     if (type && !['1', 'A', 'a', 'I', 'i'].includes(type))
       element.removeAttribute('type');
   }
+  if (tag === 'p') normalizeParagraphIdentityAttributes(element);
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
@@ -275,11 +285,28 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
           ])
         : tag === 'ol'
           ? new Set(['dir', 'start', 'style', 'type'])
-          : new Set(['colspan', 'dir', 'rowspan', 'style']);
+          : tag === 'p'
+            ? new Set(['dir', 'style', ...PARAGRAPH_IDENTITY_ATTRIBUTES])
+            : new Set(['colspan', 'dir', 'rowspan', 'style']);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);
   }
+}
+
+function normalizeParagraphIdentityAttributes(element: HTMLElement): void {
+  const identity = normalizeDocumentParagraphIdentity({
+    paragraphId: element.getAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[0]),
+    textId: element.getAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[1]),
+  });
+  if (!identity) {
+    for (const name of PARAGRAPH_IDENTITY_ATTRIBUTES) {
+      element.removeAttribute(name);
+    }
+    return;
+  }
+  element.setAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[0], identity.paragraphId);
+  element.setAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[1], identity.textId);
 }
 
 function normalizeImageIdentityAttributes(element: HTMLElement): void {

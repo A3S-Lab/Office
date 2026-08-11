@@ -33,6 +33,11 @@ export interface DocxIgnorableExtensionOptions {
   semanticKey?: (element: Element, role: DocxExtensionDocumentRole) => string;
   isAdditionalSemanticNamespace?: (namespace: string) => boolean;
   allowExtensionNamespace?: (namespace: string) => boolean;
+  allowMatchedElementMerge?: (
+    generated: Element,
+    source: Element,
+    depth: number,
+  ) => boolean;
   allowSemanticElement?: (
     element: Element,
     generatedSemanticNames: ReadonlySet<string>,
@@ -111,6 +116,12 @@ function mergeKnownElement(
   context: ExtensionMergeContext,
   depth: number,
 ): void {
+  if (
+    context.options.allowMatchedElementMerge &&
+    !context.options.allowMatchedElementMerge(generated, source, depth)
+  ) {
+    return;
+  }
   mergePassiveAttributes(generated, source, context);
   if (depth >= MAX_EXTENSION_DEPTH) return;
 

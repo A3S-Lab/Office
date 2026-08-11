@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, and stable picture drawings in document, header, or footer parts, plus eligible source font-table metadata, are preserved against the final package graph. Generated Word semantics remain authoritative; source-only, malformed, ambiguous, relationship-bound, or Microsoft/OOXML semantic extension branches and unsupported paragraph, run, table, or other inline markup may normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, and unchanged native-identity paragraphs in document, header, or footer parts, plus eligible source font-table metadata, are preserved against the final package graph. Paragraph text edits rotate their native version IDs. Generated Word semantics remain authoritative; source-only, changed-text, malformed, ambiguous, relationship-bound, or Microsoft/OOXML semantic extension branches and unsupported run, table, note, comment, or other inline markup may normalize.',
       'info',
     ),
   ];

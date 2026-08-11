@@ -921,8 +921,15 @@ drawing-property ID; header and footer imports retain both through sanitized
 editable HTML. Strict/transitional UTF-8/UTF-16 sources share the same path.
 Source-only or duplicate drawings, relationship-bound content,
 Microsoft/OOXML semantic namespaces, and ambiguous identities fail closed,
-while generated geometry and media win. Unknown paragraph, run, table, note,
-comment, and other inline markup remains the next loss-preservation boundary.
+while generated geometry and media win. The paragraph-identity slice preserves
+the same class of passive extension on uniquely matched, unchanged paragraphs
+and their paragraph properties. Native `w14:paraId` plus `w14:textId` survives
+sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
+edits and moves retain it, and copies or splits receive new paragraph IDs.
+Changed text versions, duplicate identities, relationship-bound content, and
+Microsoft/OOXML semantic branches fail closed; generated paragraph semantics
+remain authoritative. Unknown run, table, note, comment, and other inline
+markup remains the next loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

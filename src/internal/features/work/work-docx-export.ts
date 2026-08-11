@@ -70,6 +70,10 @@ import {
 } from './work-docx-image-wrap';
 import { patchDocxNumberingRestartRules } from './work-docx-numbering';
 import { patchDocxPageColor } from './work-docx-page-color';
+import {
+  DocxParagraphIdentityPatchCollector,
+  patchDocxParagraphIdentities,
+} from './work-docx-paragraph-identity';
 import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
@@ -102,6 +106,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
+  paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
 }
 
 interface DocxTextRevision {
@@ -150,6 +155,9 @@ export async function createDocxBlob(
     imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
+    paragraphIdentityPatches: new DocxParagraphIdentityPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -247,8 +255,12 @@ export async function createDocxBlob(
     imageIdentityPatched,
     noteContext.bookmarkPatches.patches,
   );
-  const patched = await patchDocxPageColor(
+  const paragraphIdentityPatched = await patchDocxParagraphIdentities(
     bookmarkPatched,
+    noteContext.paragraphIdentityPatches.patches,
+  );
+  const patched = await patchDocxPageColor(
+    paragraphIdentityPatched,
     normalizedContent.pageColor,
   );
   const preserved = sourcePackage
@@ -426,7 +438,7 @@ async function blockToFileChildren(
     return [
       docxCaptionParagraph(
         element,
-        await inlineRuns(element, docx, noteContext),
+        await paragraphRuns(element, docx, noteContext),
         docx,
         paragraphBidirectional(element),
       ),
@@ -452,10 +464,10 @@ async function blockToFileChildren(
   }
   if (tag === 'ul' || tag === 'ol') {
     return listToDocxParagraphs(element, docx, noteContext, (block) =>
-      inlineRuns(block, docx, noteContext),
+      paragraphRuns(block, docx, noteContext),
     );
   }
-  const runs = await inlineRuns(element, docx, noteContext);
+  const runs = await paragraphRuns(element, docx, noteContext);
   const heading =
     tag === 'h1'
       ? docx.HeadingLevel.HEADING_1
@@ -514,6 +526,17 @@ async function pageChromeBlocks(
     );
   }
   return children;
+}
+
+async function paragraphRuns(
+  element: HTMLElement,
+  docx: typeof import('docx'),
+  noteContext: DocxNoteContext,
+): Promise<ParagraphChild[]> {
+  return [
+    new docx.TextRun(noteContext.paragraphIdentityPatches.marker(element)),
+    ...(await inlineRuns(element, docx, noteContext)),
+  ];
 }
 
 async function inlineRuns(

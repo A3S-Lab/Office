@@ -37,6 +37,7 @@ import {
 } from './work-document-note-nodes';
 import { DocumentPageBreak } from './work-document-page-break';
 import { DocumentParagraphFormatting } from './work-document-paragraph-formatting';
+import { DocumentParagraphIdentity } from './work-document-paragraph-identity';
 import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
@@ -146,6 +147,7 @@ export function createWorkDocumentExtensions(
     Color,
     DocumentHighlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    DocumentParagraphIdentity,
     DocumentParagraphFormatting,
     DocumentParagraphTabStops,
     DocumentTab,

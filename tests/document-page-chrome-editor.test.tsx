@@ -22,8 +22,10 @@ const pixelPng =
 
 test('retains only normalized native image identities in page chrome', () => {
   const valid = sanitizeDocumentPageChromeHtml(
-    `<p><img src="${pixelPng}" alt="Header" data-office-image-object-id="1a2b3c4d" data-office-image-doc-properties-id="42" data-office-image-anchor-id="1a2b3c4d" data-office-image-edit-id="0a0b0c0d" data-untrusted="drop" onerror="drop()"></p>`,
+    `<p data-office-paragraph-id="2a2b3c4d" data-office-paragraph-text-id="2a2b3c4e"><img src="${pixelPng}" alt="Header" data-office-image-object-id="1a2b3c4d" data-office-image-doc-properties-id="42" data-office-image-anchor-id="1a2b3c4d" data-office-image-edit-id="0a0b0c0d" data-untrusted="drop" onerror="drop()"></p>`,
   );
+  expect(valid).toContain('data-office-paragraph-id="2A2B3C4D"');
+  expect(valid).toContain('data-office-paragraph-text-id="2A2B3C4E"');
   expect(valid).toContain('data-office-image-object-id="1A2B3C4D"');
   expect(valid).toContain('data-office-image-doc-properties-id="42"');
   expect(valid).toContain('data-office-image-anchor-id="1A2B3C4D"');
@@ -32,9 +34,26 @@ test('retains only normalized native image identities in page chrome', () => {
   expect(valid).not.toContain('onerror');
 
   const invalid = sanitizeDocumentPageChromeHtml(
-    `<p><img src="${pixelPng}" data-office-image-object-id="invalid" data-office-image-doc-properties-id="-1" data-office-image-anchor-id="invalid" data-office-image-edit-id="invalid"></p>`,
+    `<p data-office-paragraph-id="invalid" data-office-paragraph-text-id="invalid"><img src="${pixelPng}" data-office-image-object-id="invalid" data-office-image-doc-properties-id="-1" data-office-image-anchor-id="invalid" data-office-image-edit-id="invalid"></p>`,
   );
+  expect(invalid).not.toContain('data-office-paragraph-');
   expect(invalid).not.toContain('data-office-image-');
+});
+
+test('keeps native page-chrome identities through edits', () => {
+  const editor = new Editor({
+    extensions: createDocumentPageChromeEditorExtensions(),
+    content: `<p data-office-paragraph-id="2A2B3C4D" data-office-paragraph-text-id="2A2B3C4E"><img src="${pixelPng}" data-office-image-object-id="1A2B3C4D" data-office-image-doc-properties-id="42" data-office-image-anchor-id="1A2B3C4D" data-office-image-edit-id="0A0B0C0D">Header</p>`,
+  });
+  expect(editor.getHTML()).toContain('data-office-paragraph-id="2A2B3C4D"');
+  expect(editor.getHTML()).toContain('data-office-image-object-id="1A2B3C4D"');
+  expect(editor.commands.insertContentAt(3, '!')).toBe(true);
+  expect(editor.getHTML()).toContain('data-office-paragraph-id="2A2B3C4D"');
+  expect(editor.getHTML()).not.toContain(
+    'data-office-paragraph-text-id="2A2B3C4E"',
+  );
+  expect(editor.getHTML()).toContain('data-office-image-object-id="1A2B3C4D"');
+  editor.destroy();
 });
 
 test('executes WPS alignment and format-copy shortcuts in page chrome', () => {

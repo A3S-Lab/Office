@@ -114,8 +114,15 @@ drawing-property IDs survive sanitized page-chrome HTML and strict/transitional
 UTF-8/UTF-16 sources. Microsoft/OOXML semantic namespaces, source-only or
 duplicate drawings, relationship-bound content, and ambiguous identities fail
 closed. Generated Word geometry and media remain authoritative. Equivalent
-unknown paragraph, run, table, note, comment, and other inline markup remains
-an explicit next boundary rather than being covered by this claim.
+passive extensions now follow uniquely matched, unchanged paragraphs and their
+paragraph properties using native `w14:paraId` plus `w14:textId`. The identity
+survives sanitized body and page-chrome HTML. Text edits rotate the version ID,
+formatting-only edits and moves retain it, and copies or splits receive new
+paragraph IDs. Changed text versions, duplicate identities, relationship-bound
+content, and Microsoft/OOXML semantic branches fail closed; generated paragraph
+semantics remain authoritative. Unknown run, table, note, comment, and other
+inline markup remains an explicit next boundary rather than being covered by
+this claim.
 
 Exit evidence:
 

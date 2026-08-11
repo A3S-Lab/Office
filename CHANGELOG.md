@@ -29,6 +29,13 @@ All notable changes to A3S Office will be documented in this file.
   UTF-8/UTF-16 sources. Header and footer image identities now survive editable
   page-chrome HTML. Relationship-bound, source-only, duplicate, Microsoft/OOXML
   semantic, and ambiguous drawing branches remain disconnected.
+- Preserved passive non-OOXML vendor extensions on stable paragraphs and their
+  paragraph properties in regenerated document, header, and footer parts.
+  Native `w14:paraId` plus `w14:textId` identities survive sanitized body and
+  page-chrome HTML; text edits rotate the version ID, while formatting-only
+  edits and moves retain it and copies or splits receive independent paragraph
+  IDs. Changed text versions, duplicate identities, relationship-bound content,
+  and Microsoft/OOXML semantic branches fail closed.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

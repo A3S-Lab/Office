@@ -1,6 +1,5 @@
 import type { Editor, Extensions } from '@tiptap/core';
 import Color from '@tiptap/extension-color';
-import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
@@ -29,6 +28,8 @@ import {
   DocumentSuperscript,
 } from '../work-document-character-formatting';
 import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
+import { DocumentImage } from '../work-document-image-layout';
+import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
 import {
   DocumentPageChromeCommands,
   normalizeDocumentPageChromeHref,
@@ -385,7 +386,7 @@ export function createDocumentPageChromeEditorExtensions(
         resizable: false,
       },
     }),
-    Image.configure({ allowBase64: true, inline: true }),
+    DocumentImage.configure({ allowBase64: true, inline: true }),
     TextStyle,
     Color,
     Underline,
@@ -393,6 +394,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentSuperscript,
     DocumentPageChromeCommands,
     TextAlign.configure({ types: ['paragraph'] }),
+    DocumentParagraphIdentity.configure({ types: ['paragraph'] }),
     DocumentPageChromeWpsShortcuts,
     Placeholder.configure({ placeholder }),
   ];

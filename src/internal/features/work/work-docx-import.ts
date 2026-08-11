@@ -88,6 +88,12 @@ import {
   markDocxParagraphIndents,
 } from './work-docx-paragraph-indent-import';
 import {
+  applyImportedDocxParagraphIdentityMarkers,
+  hasImportedDocxParagraphIdentityMarkers,
+  type ImportedDocxParagraphIdentityMarkers,
+  markDocxParagraphIdentities,
+} from './work-docx-paragraph-identity-import';
+import {
   applyImportedDocxParagraphPaginationMarkers,
   hasImportedDocxParagraphPaginationMarkers,
   type ImportedDocxParagraphPaginationMarkers,
@@ -161,6 +167,7 @@ export interface PreparedDocxImport {
   citationMarkers: ImportedDocxCitationMarkers;
   listMarkers: ImportedDocxListMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
+  paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
@@ -202,6 +209,7 @@ export async function prepareDocxImport(
       citationMarkers: { citations: [], bibliographies: [] },
       listMarkers: { lists: [] },
       imageLayoutMarkers: { images: [] },
+      paragraphIdentityMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
@@ -219,6 +227,7 @@ export async function prepareDocxImport(
 
   const document = await archive.xml('word/document.xml');
   const pageColor = importDocxPageColor(document);
+  const paragraphIdentityMarkers = markDocxParagraphIdentities(document);
   const numbering = archive.has('word/numbering.xml')
     ? await archive.xml('word/numbering.xml')
     : null;
@@ -302,6 +311,7 @@ export async function prepareDocxImport(
         hasImportedDocxFieldMarkers(fieldMarkers) ||
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+        hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
         hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -324,6 +334,7 @@ export async function prepareDocxImport(
       citationMarkers,
       listMarkers,
       imageLayoutMarkers,
+      paragraphIdentityMarkers,
       paragraphAlignmentMarkers,
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
@@ -365,6 +376,7 @@ export async function prepareDocxImport(
       hasImportedDocxFieldMarkers(fieldMarkers) ||
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
+      hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
       hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -387,6 +399,7 @@ export async function prepareDocxImport(
     citationMarkers,
     listMarkers,
     imageLayoutMarkers,
+    paragraphIdentityMarkers,
     paragraphAlignmentMarkers,
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
@@ -419,6 +432,9 @@ export function applyDocxSectionsToHtml(
   },
   listMarkers: ImportedDocxListMarkers = { lists: [] },
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers = { images: [] },
+  paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers = {
+    paragraphs: [],
+  },
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers = {
     paragraphs: [],
   },
@@ -474,6 +490,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxTableRowMarkers(document, tableRowMarkers);
   applyImportedDocxChangeMarkers(document, changeMarkers);
   applyImportedDocxCommentMarkers(document, commentMarkers);
+  applyImportedDocxParagraphIdentityMarkers(document, paragraphIdentityMarkers);
   const notes = extractMammothDocumentNotes(document);
   const sourceNodes = Array.from(document.body.childNodes);
   document.body.replaceChildren();

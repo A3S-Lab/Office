@@ -5,6 +5,7 @@ import {
   preserveDocxNumberingExtensions,
   type DocxSourceNumberingIdentity,
 } from './work-docx-numbering-extension-preservation';
+import { preserveDocxParagraphExtensions } from './work-docx-paragraph-extension-preservation';
 import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
 import { preserveDocxStyleExtensions } from './work-docx-style-extension-preservation';
 import { attribute, directChildren, parseXml } from './work-ooxml-package';
@@ -175,11 +176,25 @@ export async function preserveDocxSourcePackage(
       sourceNumberingPath,
     );
   }
+  const paragraphPartPaths = docxParagraphPartPaths(
+    generatedByLower,
+    generatedTypes,
+  );
+  const sourceParagraphPartPaths = docxParagraphPartPaths(
+    sourceByLower,
+    sourceTypes,
+  );
+  await preserveDocxParagraphExtensions(
+    generated,
+    source,
+    paragraphPartPaths,
+    sourceParagraphPartPaths,
+  );
   await preserveDocxDrawingExtensions(
     generated,
     source,
-    docxDrawingPartPaths(generatedByLower, generatedTypes),
-    docxDrawingPartPaths(sourceByLower, sourceTypes),
+    paragraphPartPaths,
+    sourceParagraphPartPaths,
   );
   preserveContentTypes(generatedTypes, sourceTypes, preservedPaths, generated);
 
@@ -368,7 +383,7 @@ function isDocxNumberingContentType(type: string | undefined): boolean {
   );
 }
 
-function docxDrawingPartPaths(
+function docxParagraphPartPaths(
   pathsByLower: ReadonlyMap<string, string>,
   contentTypes: OoxmlContentTypes,
 ): string[] {

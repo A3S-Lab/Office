@@ -3,6 +3,7 @@ import {
   normalizeDocumentPageChrome,
 } from './work-document-page-chrome';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
+import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
 import {
   attribute,
   bytesToDataUrl,
@@ -37,6 +38,8 @@ const WORDPROCESSING_DRAWING_NAMESPACES = new Set([
 ]);
 const WORDPROCESSING_DRAWING_2010_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing';
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
 
 export async function importSectionPageChrome(
   section: Element,
@@ -211,7 +214,18 @@ async function paragraphHtml(
     }
     html += await containerRunsHtml(child, field, archive, relationships);
   }
-  return `<p${alignment ? ` style="text-align: ${alignment}"` : ''}>${html}</p>`;
+  const identityAttributes = paragraphIdentityAttributes(paragraph);
+  return `<p${alignment ? ` style="text-align: ${alignment}"` : ''}${identityAttributes}>${html}</p>`;
+}
+
+function paragraphIdentityAttributes(paragraph: Element): string {
+  const identity = normalizeDocumentParagraphIdentity({
+    paragraphId: namespacedAttribute(paragraph, WORD_2010_NAMESPACE, 'paraId'),
+    textId: namespacedAttribute(paragraph, WORD_2010_NAMESPACE, 'textId'),
+  });
+  return identity
+    ? ` data-office-paragraph-id="${identity.paragraphId}" data-office-paragraph-text-id="${identity.textId}"`
+    : '';
 }
 
 async function containerRunsHtml(
@@ -329,8 +343,20 @@ function drawingIdentityAttributes(drawing: Element): string {
     : undefined;
   const identity = normalizeDocumentImageIdentity({
     docPropertiesId: properties?.getAttribute('id'),
-    anchorId: anchor ? drawing2010Attribute(anchor, 'anchorId') : null,
-    editId: anchor ? drawing2010Attribute(anchor, 'editId') : null,
+    anchorId: anchor
+      ? namespacedAttribute(
+          anchor,
+          WORDPROCESSING_DRAWING_2010_NAMESPACE,
+          'anchorId',
+        )
+      : null,
+    editId: anchor
+      ? namespacedAttribute(
+          anchor,
+          WORDPROCESSING_DRAWING_2010_NAMESPACE,
+          'editId',
+        )
+      : null,
   });
   if (!identity) return '';
   return [
@@ -341,15 +367,15 @@ function drawingIdentityAttributes(drawing: Element): string {
   ].join('');
 }
 
-function drawing2010Attribute(
+function namespacedAttribute(
   element: Element,
+  namespace: string,
   localName: string,
 ): string | null {
   for (const item of Array.from(element.attributes)) {
     if (
       xmlAttributeLocalName(item) === localName &&
-      xmlAttributeNamespace(element, item) ===
-        WORDPROCESSING_DRAWING_2010_NAMESPACE
+      xmlAttributeNamespace(element, item) === namespace
     ) {
       return item.value;
     }

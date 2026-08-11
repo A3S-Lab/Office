@@ -89,15 +89,21 @@ matched picture drawings in regenerated document, header, and footer parts.
 The match uses normalized anchor plus drawing-property IDs, which header and footer
 import now retains in sanitized editable HTML. Source-only, duplicate,
 relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
-are dropped; generated image geometry and media stay authoritative. Unsupported
-paragraph, run, table, and other inline markup may still normalize. Source
-font-table metadata and source-only internal obfuscated-font payloads survive
-with relationship IDs rewritten to the final package graph. External
-references, mismatched relationship or content types, duplicate identities,
-and generated-path collisions are disconnected. Native DOCX applications can
-use the retained embedded fonts, but browser editing, preview, and PDF output
-continue to use registered A3S fonts or substitution and may wrap text
-differently.
+are dropped; generated image geometry and media stay authoritative. Passive
+extensions also follow uniquely matched, unchanged paragraphs and their
+paragraph properties by native `w14:paraId` plus `w14:textId`. Both IDs survive
+sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
+edits and moves retain it, and copies or splits receive new paragraph IDs.
+Changed text versions, duplicate identities, relationship-bound content, and
+Microsoft/OOXML semantic branches are dropped; generated paragraph semantics
+stay authoritative. Unsupported run, table, note, comment, and other inline
+markup may still normalize. Source font-table metadata and source-only internal
+obfuscated-font payloads survive with relationship IDs rewritten to the final
+package graph. External references, mismatched relationship or content types,
+duplicate identities, and generated-path collisions are disconnected. Native
+DOCX applications can use the retained embedded fonts, but browser editing,
+preview, and PDF output continue to use registered A3S fonts or substitution
+and may wrap text differently.
 
 Persist the source Blob with the artifact and call `registerSourceBlob` after a
 browser reload. Export fails explicitly when an artifact declares a source but

@@ -487,18 +487,22 @@ relationship-bound content, and ambiguous one-to-many numbering mappings are
 dropped. Generated Word style and numbering semantics still win. In regenerated
 document, header, and footer parts, relationship-free passive extensions from
 non-OOXML ignorable namespaces also follow uniquely matched picture drawings,
-using normalized anchor and drawing-property IDs. Header and footer imports retain
-those image identities in sanitized editable HTML. Source-only, duplicate,
-relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
-are dropped; generated image geometry and media remain authoritative. Unknown
-paragraph, run, table, and other inline markup may still normalize. Source
-font-table metadata and source-only internal obfuscated font payloads are also
-retained, with relationship references rewritten after ID collisions. External
-fonts, wrong relationship or content types, duplicate identities, and paths
-that collide with generated payloads are not reconnected. Native DOCX consumers
-can use the retained embedded fonts; the browser editor, preview, and PDF
-renderer do not load document-embedded font binaries and may substitute fonts
-or wrap text differently.
+using normalized anchor and drawing-property IDs. Header and footer imports
+retain those image identities in sanitized editable HTML. Passive extensions
+also follow uniquely matched, unchanged paragraphs and their paragraph
+properties by native `w14:paraId` plus `w14:textId`. Body and page-chrome HTML
+retain these identities; text edits rotate `textId`, formatting-only edits and
+moves keep it, and copies or splits receive new paragraph IDs. Source-only,
+duplicate, changed-text, relationship-bound, Microsoft/OOXML semantic, and
+ambiguous branches are dropped; generated paragraph and drawing semantics stay
+authoritative. Unknown run, table, note, comment, and other inline markup may
+still normalize. Source font-table metadata and source-only internal obfuscated
+font payloads are also retained, with relationship references rewritten after
+ID collisions. External fonts, wrong relationship or content types, duplicate
+identities, and paths that collide with generated payloads are not reconnected.
+Native DOCX consumers can use the retained embedded fonts; the browser editor,
+preview, and PDF renderer do not load document-embedded font binaries and may
+substitute fonts or wrap text differently.
 
 ## Native automation
 
