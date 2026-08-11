@@ -94,6 +94,9 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
     wrapDistance: 25,
     wrapSide: 'bothSides',
   });
+  expect(normalizeDocumentImageLayoutOptions({ layout: 'none' }).layout).toBe(
+    'none',
+  );
   editor.destroy();
 });
 
@@ -379,6 +382,13 @@ test('preserves untouched imported dimensions in picture property changes', () =
     crop: null,
     relativeHeight: null,
   });
+  expect(
+    documentPicturePropertiesErrors({
+      ...initial,
+      layout: 'none',
+      wrapDistance: '30',
+    }).wrapDistance,
+  ).toBeNull();
 });
 
 test('validates and commits floating image layer options', () => {
@@ -521,6 +531,40 @@ test('reserves and observes floating image height during pagination', () => {
   editor.destroy();
 });
 
+test('keeps a free-floating image out of the paginated body flow', () => {
+  const editor = new Editor({
+    extensions: createWorkDocumentExtensions(),
+    content: [
+      '<section data-document-section="true">',
+      `<img src="${pixelPng}" alt="Free floating" width="120" height="80"`,
+      ' data-office-image-layout="none"',
+      ' data-office-image-alignment="right"',
+      ' data-office-image-horizontal-offset="12.5"',
+      ' data-office-image-vertical-offset="7.25">',
+      '<p>Text continues underneath the image.</p>',
+      '</section>',
+    ].join(''),
+  });
+  const container = editor.view.dom.querySelector<HTMLElement>(
+    '[data-resize-container][data-node="image"]',
+  );
+  if (!container) throw new Error('Expected an image resize container.');
+  Object.defineProperty(container, 'offsetHeight', {
+    configurable: true,
+    value: 80,
+  });
+
+  const imageBlock = measureDocumentLayoutBlocks(editor).blocks.find(
+    ({ element }) => element === container,
+  );
+
+  expect(container.dataset.officeImageLayout).toBe('none');
+  expect(imageBlock?.block.height).toBe(1);
+  expect(imageBlock?.block.keepTogether).toBe(true);
+  expect(imageBlock?.observeResize).toBe(true);
+  editor.destroy();
+});
+
 test('offers a contextual picture ribbon with one coherent properties workflow', async () => {
   const editor = createImageEditor(
     `<img src="${pixelPng}" alt="Original" width="120" height="80" data-office-image-wrap-distance="7">`,
@@ -555,6 +599,10 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   expect(documentImageLayoutOptions(editor).layout).toBe('through');
   fireEvent.click(screen.getByRole('button', { name: '上下环绕' }));
   expect(documentImageLayoutOptions(editor).layout).toBe('topBottom');
+  fireEvent.click(screen.getByRole('button', { name: '自由浮动' }));
+  view.rerender(<DocumentPictureRibbon editor={editor} />);
+  expect(documentImageLayoutOptions(editor).layout).toBe('none');
+  expect(wrapDistance).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: '嵌入文字' }));
   view.rerender(<DocumentPictureRibbon editor={editor} />);
   expect(documentImageLayoutOptions(editor).layout).toBe('inline');
@@ -584,6 +632,13 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   fireEvent.change(screen.getByRole('textbox', { name: '图片高度（厘米）' }), {
     target: { value: '5' },
   });
+  fireEvent.click(screen.getByRole('radio', { name: '自由浮动' }));
+  expect(
+    screen.getByRole('combobox', { name: '图片文字环绕侧' }),
+  ).toBeDisabled();
+  expect(
+    screen.getByRole('textbox', { name: '图片与文字距离（毫米）' }),
+  ).toBeDisabled();
   fireEvent.click(screen.getByRole('radio', { name: '紧密环绕' }));
   fireEvent.click(screen.getByRole('combobox', { name: '图片文字环绕侧' }));
   fireEvent.click(screen.getByRole('option', { name: '较宽一侧' }));
@@ -717,6 +772,7 @@ test('disables stale picture commands when the image selection is gone', () => {
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '紧密环绕' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '穿越环绕' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '自由浮动' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '图片属性' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeDisabled();
 
@@ -725,6 +781,7 @@ test('disables stale picture commands when the image selection is gone', () => {
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '紧密环绕' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '穿越环绕' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '自由浮动' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '图片属性' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeEnabled();
 
@@ -777,6 +834,16 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-wrap-side="left"',
     ' data-office-image-wrap-polygon="0,0;0,21600;7200,10800;21600,21600;21600,0;0,0"',
     ' data-office-image-wrap-polygon-edited="false">',
+    `<img src="${pixelPng}" alt="Free floating" width="115" height="68"`,
+    ' data-office-image-layout="none"',
+    ' data-office-image-alignment="left"',
+    ' data-office-image-horizontal-offset="15.5"',
+    ' data-office-image-vertical-offset="-4"',
+    ' data-office-image-horizontal-reference="margin"',
+    ' data-office-image-vertical-reference="page"',
+    ' data-office-image-relative-height="1024"',
+    ' data-office-image-behind-document="true"',
+    ' data-office-image-allow-overlap="true">',
     `<img src="${pixelPng}" alt="Inline crop" width="90" height="60"`,
     ' data-office-image-crop-bottom="10"',
     ' data-office-image-crop-left="20">',
@@ -787,7 +854,7 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   const documentXml = await archive.file('word/document.xml')?.async('string');
 
   expect(documentXml).toBeDefined();
-  expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(5);
+  expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(6);
   expect(documentXml).toMatch(
     /<wp:anchor\b(?=[^>]*relativeHeight="50331648")(?=[^>]*behindDoc="0")(?=[^>]*allowOverlap="1")(?=[^>]*layoutInCell="0")(?=[^>]*locked="1")/,
   );
@@ -796,6 +863,7 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(documentXml).toMatch(/<wp:wrapSquare\b(?=[^>]*wrapText="right")/);
   expect(documentXml).toContain('<wp:wrapTopAndBottom');
+  expect(documentXml).toContain('<wp:wrapNone');
   expect(documentXml).toMatch(
     /<wp:wrapTight\b(?=[^>]*wrapText="largest")(?=[^>]*distL="144000")(?=[^>]*distR="144000")/,
   );
@@ -817,6 +885,12 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(documentXml).toMatch(
     /<wp:positionV relativeFrom="margin"><wp:posOffset>261000<\/wp:posOffset>/,
+  );
+  expect(documentXml).toMatch(
+    /<wp:positionH relativeFrom="margin"><wp:posOffset>558000<\/wp:posOffset>/,
+  );
+  expect(documentXml).toMatch(
+    /<wp:positionV relativeFrom="page"><wp:posOffset>-144000<\/wp:posOffset>/,
   );
   expect(documentXml).toMatch(
     /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
@@ -900,6 +974,17 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(throughContour?.dataset.officeImageWrapPolygon).toBe(
     '0,0;0,21600;7200,10800;21600,21600;21600,0;0,0',
   );
+  const freeFloating = importedHtml.querySelector<HTMLImageElement>(
+    'img[alt="Free floating"]',
+  );
+  expect(freeFloating?.dataset.officeImageLayout).toBe('none');
+  expect(freeFloating?.dataset.officeImageHorizontalOffset).toBe('15.5');
+  expect(freeFloating?.dataset.officeImageVerticalOffset).toBe('-4');
+  expect(freeFloating?.dataset.officeImageHorizontalReference).toBe('margin');
+  expect(freeFloating?.dataset.officeImageVerticalReference).toBe('page');
+  expect(freeFloating?.dataset.officeImageRelativeHeight).toBe('1024');
+  expect(freeFloating?.dataset.officeImageBehindDocument).toBe('true');
+  expect(freeFloating?.dataset.officeImageAllowOverlap).toBe('true');
   const alignedImage = importedHtml.querySelector<HTMLImageElement>(
     'img[alt="Right chart"]',
   );
@@ -940,6 +1025,7 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(regeneratedXml).toMatch(/<wp:wrapTight\b(?=[^>]*wrapText="largest")/);
   expect(regeneratedXml).toMatch(/<wp:wrapThrough\b(?=[^>]*wrapText="left")/);
+  expect(regeneratedXml).toContain('<wp:wrapNone');
   expect(regeneratedXml).toContain('<wp:lineTo x="10800" y="16200"/>');
   expect(regeneratedXml).toMatch(
     /<wp:anchor\b(?=[^>]*relativeHeight="50331648")(?=[^>]*behindDoc="0")(?=[^>]*allowOverlap="1")(?=[^>]*layoutInCell="0")(?=[^>]*locked="1")/,

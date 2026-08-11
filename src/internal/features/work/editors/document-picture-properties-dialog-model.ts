@@ -155,6 +155,7 @@ export function documentPicturePropertiesErrors(
     height: imageDimensionError(draft.height),
     wrapDistance:
       draft.layout === 'inline' ||
+      draft.layout === 'none' ||
       validNumber(draft.wrapDistance, 0, MAXIMUM_WRAP_DISTANCE_MILLIMETERS)
         ? null
         : '请输入 0 到 25 之间的毫米数。',

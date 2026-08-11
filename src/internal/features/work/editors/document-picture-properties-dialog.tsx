@@ -54,6 +54,7 @@ const layoutOptions = [
   { value: 'tight', label: '紧密环绕', icon: TextWrap },
   { value: 'through', label: '穿越环绕', icon: TextWrap },
   { value: 'topBottom', label: '上下环绕', icon: Rows3 },
+  { value: 'none', label: '自由浮动', icon: TextWrap },
 ] as const satisfies readonly {
   value: WorkDocumentImageLayout;
   label: string;
@@ -349,7 +350,11 @@ function PictureLayoutSection({
           ariaLabel="图片文字环绕侧"
           value={draft.wrapSide}
           options={wrapSideOptions}
-          disabled={draft.layout === 'inline' || draft.layout === 'topBottom'}
+          disabled={
+            draft.layout === 'inline' ||
+            draft.layout === 'topBottom' ||
+            draft.layout === 'none'
+          }
           onValueChange={(wrapSide) =>
             onDraftChange((current) => ({ ...current, wrapSide }))
           }
@@ -363,7 +368,7 @@ function PictureLayoutSection({
         min={0}
         max={25}
         step={0.5}
-        disabled={draft.layout === 'inline'}
+        disabled={draft.layout === 'inline' || draft.layout === 'none'}
         invalid={Boolean(errors.wrapDistance)}
         onValueChange={(wrapDistance) =>
           onDraftChange((current) => ({ ...current, wrapDistance }))

@@ -110,11 +110,14 @@ function documentImageFloatingOptions(
       left: distance,
     },
     wrap: {
-      type: wrapsBesideImage(image.layout)
-        ? image.layout === 'square'
-          ? docx.TextWrappingType.SQUARE
-          : docx.TextWrappingType.TIGHT
-        : docx.TextWrappingType.TOP_AND_BOTTOM,
+      type:
+        image.layout === 'none'
+          ? docx.TextWrappingType.NONE
+          : wrapsBesideImage(image.layout)
+            ? image.layout === 'square'
+              ? docx.TextWrappingType.SQUARE
+              : docx.TextWrappingType.TIGHT
+            : docx.TextWrappingType.TOP_AND_BOTTOM,
       ...(wrapsBesideImage(image.layout)
         ? { side: textWrappingSide(image.wrapSide, docx) }
         : {}),

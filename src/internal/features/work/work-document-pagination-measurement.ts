@@ -5,6 +5,7 @@ import type {
   OfficeKernelTextLayoutParagraphResult,
 } from '../../kernel/office-kernel-protocol';
 import { millimetersToPixels } from './work-document-layout';
+import { normalizeDocumentImageLayout } from './work-document-image-layout';
 import { measureParagraphLineFragments } from './work-document-line-measurement';
 import {
   documentBlockId,
@@ -223,7 +224,7 @@ function measureSectionBlocks(
       measuredDocumentBlock({
         block: {
           id,
-          height: Math.max(1, outerHeight(element)),
+          height: documentBlockFlowHeight(node, element),
           breakBefore: paragraphPagination.pageBreakBefore,
           breakAfter: node.type.name === 'pageBreak',
           keepTogether:
@@ -385,7 +386,7 @@ function measureDocumentListItemBlock(
       ...measuredDocumentBlock({
         block: {
           id,
-          height: Math.max(1, outerHeight(element)),
+          height: documentBlockFlowHeight(node, element),
           breakBefore: pagination.pageBreakBefore,
           breakAfter: node.type.name === 'pageBreak',
           keepTogether:
@@ -440,6 +441,19 @@ function fitDocumentBlocksToContainer(
     candidate.block.height -= amount;
     remaining -= amount;
   }
+}
+
+function documentBlockFlowHeight(
+  node: ProseMirrorNode,
+  element: HTMLElement,
+): number {
+  if (
+    node.type.name === 'image' &&
+    normalizeDocumentImageLayout(node.attrs.layout) === 'none'
+  ) {
+    return 1;
+  }
+  return Math.max(1, outerHeight(element));
 }
 
 function reusableDocumentListLayoutBlocks(

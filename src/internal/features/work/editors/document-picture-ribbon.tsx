@@ -79,6 +79,14 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
         >
           <Rows3 size={18} />
         </PictureButton>
+        <PictureButton
+          label="自由浮动"
+          active={image.layout === 'none'}
+          disabled={!imageSelected}
+          onClick={() => updateLayout('none')}
+        >
+          <TextWrap size={18} />
+        </PictureButton>
       </WorkOfficeRibbonGroup>
       <WorkOfficeRibbonGroup label="位置">
         <PictureButton
@@ -111,7 +119,11 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           ariaLabel="图片与文字距离"
           value={wrapDistanceValue}
           options={imageWrapDistanceOptionsForValue(wrapDistanceValue)}
-          disabled={!imageSelected || image.layout === 'inline'}
+          disabled={
+            !imageSelected ||
+            image.layout === 'inline' ||
+            image.layout === 'none'
+          }
           onValueChange={(value) =>
             editor.commands.setDocumentImageLayoutOptions({
               wrapDistance: Number(value),

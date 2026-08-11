@@ -149,6 +149,30 @@ suite "office-word-picture-properties-phone" {
             visible = css(".work-office-ribbon-group[aria-label='图片'] button[aria-label='图片属性']:focus")
         }
 
+        press "open-properties-for-free-floating" {
+            key = "Enter"
+        }
+
+        expect "free-floating-dialog-ready" {
+            visible = css("[role='dialog'][aria-labelledby]")
+        }
+
+        click "use-free-floating-layout" {
+            target = css("[role='dialog'] input[name='picture-properties-layout'][value='none'] + span")
+        }
+
+        expect "free-floating-disables-wrap-controls" {
+            visible = css("[role='dialog'] input[aria-label='图片与文字距离（毫米）']:disabled")
+        }
+
+        click "apply-free-floating-layout" {
+            target = role("button", "确定")
+        }
+
+        expect "free-floating-layout-saved" {
+            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='none'][data-office-image-behind-document='true'] img[alt='Blue project diagram']")
+        }
+
         screenshot "picture-properties-phone" {
             path = "screenshots/word-picture-properties-phone.png"
         }

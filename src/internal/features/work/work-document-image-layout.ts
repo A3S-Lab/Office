@@ -20,7 +20,8 @@ export type WorkDocumentImageLayout =
   | 'square'
   | 'tight'
   | 'through'
-  | 'topBottom';
+  | 'topBottom'
+  | 'none';
 export type WorkDocumentImageAlignment = 'left' | 'center' | 'right';
 export type WorkDocumentImageHorizontalReference = 'column' | 'margin' | 'page';
 export type WorkDocumentImageVerticalReference =
@@ -496,7 +497,8 @@ export function normalizeDocumentImageLayout(
   return value === 'square' ||
     value === 'tight' ||
     value === 'through' ||
-    value === 'topBottom'
+    value === 'topBottom' ||
+    value === 'none'
     ? value
     : DEFAULT_IMAGE_LAYOUT;
 }

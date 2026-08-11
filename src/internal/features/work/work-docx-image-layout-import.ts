@@ -149,6 +149,7 @@ export function hasImportedDocxImageLayoutMarkers(
 }
 
 function anchorLayout(anchor: Element): WorkDocumentImageLayout | null {
+  if (directChild(anchor, 'wrapNone')) return 'none';
   if (directChild(anchor, 'wrapTopAndBottom')) return 'topBottom';
   if (directChild(anchor, 'wrapSquare')) return 'square';
   if (directChild(anchor, 'wrapTight')) return 'tight';
@@ -201,6 +202,7 @@ function anchorWrapElement(
   if (layout === 'tight') return directChild(anchor, 'wrapTight');
   if (layout === 'through') return directChild(anchor, 'wrapThrough');
   if (layout === 'topBottom') return directChild(anchor, 'wrapTopAndBottom');
+  if (layout === 'none') return directChild(anchor, 'wrapNone');
   return undefined;
 }
 

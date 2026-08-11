@@ -123,7 +123,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.images',
             'Images',
-            'Inline images and supported square, tight, through, or top-and-bottom floating images remain embedded with editable size, alternative text, alignment, wrap side and distance, signed horizontal or vertical offsets relative to the column, paragraph, margin, or page, four-edge percentage cropping, and drawing-layer options. Aligned and precise DOCX anchors retain their distinct position semantics; inline and floating crop geometry round-trips as DrawingML source rectangles; tight or through anchors retain their ordered wrap polygons; and supported floating images preserve relative Z-order, behind-text placement, overlap and cell-layout policy, and anchor locking. Unsupported drawing types may be normalized.',
+            'Inline images and supported square, tight, through, top-and-bottom, or no-wrap free-floating images remain embedded with editable size, alternative text, alignment, wrap side and distance where applicable, signed horizontal or vertical offsets relative to the column, paragraph, margin, or page, four-edge percentage cropping, and drawing-layer options. Aligned and precise DOCX anchors retain their distinct position semantics; inline and floating crop geometry round-trips as DrawingML source rectangles; tight or through anchors retain their ordered wrap polygons; no-wrap anchors remain outside the body text flow and use behind-text placement to choose their side of the text; and supported floating images preserve relative Z-order, overlap and cell-layout policy, and anchor locking. Unsupported drawing types may be normalized.',
           ),
         );
       }
