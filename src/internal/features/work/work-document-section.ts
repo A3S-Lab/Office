@@ -1,21 +1,23 @@
-import { clampDocumentMargin, documentMargins } from './work-document-layout';
+import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
+import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { normalizeDocumentCaptionsHtml } from './work-document-captions';
 import { normalizeDocumentCitationsHtml } from './work-document-citations';
-import { normalizeDocumentFieldsHtml } from './work-document-fields';
-import { normalizeDocumentNotesHtml } from './work-document-notes';
 import {
   DEFAULT_DOCUMENT_COLUMNS,
   normalizeDocumentColumns,
   parseDocumentColumns,
   serializeDocumentColumns,
 } from './work-document-columns';
+import { normalizeDocumentFieldsHtml } from './work-document-fields';
+import { clampDocumentMargin, documentMargins } from './work-document-layout';
+import { documentModelForHtml } from './work-document-model';
+import { normalizeDocumentNotesHtml } from './work-document-notes';
 import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
   parseDocumentPageChrome,
   serializeDocumentPageChrome,
 } from './work-document-page-chrome';
-import { documentModelForHtml } from './work-document-model';
 import type {
   WorkDocumentContent,
   WorkDocumentGrid,
@@ -362,11 +364,15 @@ function normalizeDocumentSemanticHtml(
   source: string,
   bibliography: WorkDocumentContent['bibliography'],
 ): string {
-  return normalizeDocumentCitationsHtml(
-    normalizeDocumentFieldsHtml(
-      normalizeDocumentCaptionsHtml(normalizeDocumentNotesHtml(source)),
+  return normalizeDocumentBookmarkReferencesHtml(
+    normalizeDocumentBookmarksHtml(
+      normalizeDocumentCitationsHtml(
+        normalizeDocumentFieldsHtml(
+          normalizeDocumentCaptionsHtml(normalizeDocumentNotesHtml(source)),
+        ),
+        bibliography,
+      ),
     ),
-    bibliography,
   );
 }
 

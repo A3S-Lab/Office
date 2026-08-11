@@ -100,6 +100,7 @@ function normalizeReferences(
   for (const element of Array.from(
     document.body.querySelectorAll<HTMLElement>(REFERENCE_SELECTOR),
   )) {
+    if (element.dataset.referenceTargetType === 'bookmark') continue;
     const id = element.dataset.referenceTargetId?.trim() ?? '';
     const target = targets.get(id);
     element.dataset.documentCrossReference = 'true';

@@ -180,7 +180,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.fields',
             'Fields',
-            'Fields beyond supported body fields, citations, bibliographies, caption SEQ fields, and caption REF fields are converted to their current displayed value.',
+            'Fields beyond supported body fields, citations, bibliographies, caption SEQ fields, and bookmark or caption REF fields are converted to their current displayed value.',
           ),
         );
       }

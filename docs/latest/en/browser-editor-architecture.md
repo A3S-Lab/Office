@@ -55,9 +55,13 @@ model:
    and Footer, and Text. The Links group creates paired body-bookmark
    boundaries around a selection or caret, keeps copy identity separate, and
    represents internal destinations as `#name` marks with an explicit
-   missing-target class. DOCX import/export maps those boundaries to native
-   `w:bookmarkStart`/`w:bookmarkEnd` ranges and maps internal links to
-   `w:anchor` rather than relationship-backed external hyperlinks. Page Layout
+   missing-target class. The References target picker also exposes those body
+   bookmarks alongside captions; bookmark cross-reference atoms retain target
+   identity, source instruction, live display text, and a missing-target state.
+   DOCX import/export maps the boundaries to native
+   `w:bookmarkStart`/`w:bookmarkEnd` ranges, bookmark cross-references to `REF`
+   fields, and internal links to `w:anchor` rather than relationship-backed
+   external hyperlinks. Page Layout
    keeps direct margin, orientation, paper,
    and equal-column presets in the ribbon; custom margins and advanced columns
    open the corresponding controlled Page Setup tab instead of duplicating a

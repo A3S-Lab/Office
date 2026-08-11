@@ -2,14 +2,16 @@ import type { Editor } from '@tiptap/core';
 import {
   Fragment,
   type KeyboardEvent,
-  useCallback,
   type MutableRefObject,
   type ReactNode,
+  useCallback,
   useId,
   useRef,
   useState,
 } from 'react';
 import { Button, Dialog } from '../../../design-system/primitives';
+import type { WorkDocumentBookmarkReferenceTarget } from '../work-document-bookmark-references';
+import { editorDocumentBookmarkReferenceTargets } from '../work-document-bookmarks';
 import { editorDocumentCaptionTargets } from '../work-document-caption-nodes';
 import type {
   WorkDocumentCaptionKind,
@@ -18,8 +20,8 @@ import type {
 import type { WorkDocumentFieldKind } from '../work-document-fields';
 import type { WorkDocumentNoteKind } from '../work-document-notes';
 import type { WorkDocumentContent } from '../work-types';
-import { readOfficeFileAsDataUrl } from './office-file-data';
 import { OfficeTextField, useOfficeDialog } from './office-controls';
+import { readOfficeFileAsDataUrl } from './office-file-data';
 
 type DocumentInsertDialog =
   | {
@@ -29,9 +31,13 @@ type DocumentInsertDialog =
     }
   | {
       kind: 'crossReference';
-      selectedId: string;
-      targets: WorkDocumentCaptionTarget[];
+      selectedKey: string;
+      targets: WorkDocumentCrossReferenceTarget[];
     };
+
+type WorkDocumentCrossReferenceTarget =
+  | (WorkDocumentCaptionTarget & { type: 'caption' })
+  | WorkDocumentBookmarkReferenceTarget;
 
 export interface DocumentInsertCommands {
   dialog: ReactNode;
@@ -126,18 +132,24 @@ export function useDocumentInsertCommands({
 
   const insertCrossReference = useCallback(() => {
     if (!editor) return;
-    const targets = editorDocumentCaptionTargets(editor);
+    const targets: WorkDocumentCrossReferenceTarget[] = [
+      ...editorDocumentCaptionTargets(editor).map((target) => ({
+        ...target,
+        type: 'caption' as const,
+      })),
+      ...editorDocumentBookmarkReferenceTargets(editor),
+    ];
     if (!targets.length) {
       void officeDialog.notice({
-        title: '还没有题注',
-        description: '请先插入图片或表格题注。',
+        title: '还没有可引用目标',
+        description: '请先插入图片或表格题注，或在正文中添加书签。',
       });
       return;
     }
     rememberInvoker();
     setInsertDialog({
       kind: 'crossReference',
-      selectedId: targets[0]?.id ?? '',
+      selectedKey: targets[0] ? referenceTargetKey(targets[0]) : '',
       targets,
     });
   }, [editor, officeDialog, rememberInvoker]);
@@ -172,7 +184,7 @@ export function useDocumentInsertCommands({
   const submitCrossReference = () => {
     if (!editor || insertDialog?.kind !== 'crossReference') return;
     const target = insertDialog.targets.find(
-      (candidate) => candidate.id === insertDialog.selectedId,
+      (candidate) => referenceTargetKey(candidate) === insertDialog.selectedKey,
     );
     if (!target) return;
     const inserted = editor
@@ -205,9 +217,10 @@ export function useDocumentInsertCommands({
     event.stopPropagation();
     const target = insertDialog.targets[nextIndex];
     if (!target) return;
-    setInsertDialog({ ...insertDialog, selectedId: target.id });
+    const targetKey = referenceTargetKey(target);
+    setInsertDialog({ ...insertDialog, selectedKey: targetKey });
     requestAnimationFrame(() =>
-      referenceInputRefs.current.get(target.id)?.focus({ preventScroll: true }),
+      referenceInputRefs.current.get(targetKey)?.focus({ preventScroll: true }),
     );
   };
 
@@ -266,7 +279,7 @@ export function useDocumentInsertCommands({
       {insertDialog?.kind === 'crossReference' && (
         <Dialog
           title="插入交叉引用"
-          description="选择正文中已有的图片或表格题注。"
+          description="选择正文中已有的图片、表格题注或书签。"
           className="work-document-reference-dialog"
           restoreFocusTarget={() => invokerRef.current}
           onClose={() => setInsertDialog(null)}
@@ -277,7 +290,7 @@ export function useDocumentInsertCommands({
               </Button>
               <Button
                 tone="primary"
-                disabled={!insertDialog.selectedId}
+                disabled={!insertDialog.selectedKey}
                 onClick={submitCrossReference}
               >
                 插入引用
@@ -288,36 +301,48 @@ export function useDocumentInsertCommands({
           <div
             className="work-document-reference-list"
             role="radiogroup"
-            aria-label="可引用题注"
+            aria-label="可引用目标"
           >
-            {insertDialog.targets.map((target, index) => (
-              <label key={target.id} onDoubleClick={submitCrossReference}>
-                <input
-                  ref={(element) => {
-                    if (element)
-                      referenceInputRefs.current.set(target.id, element);
-                    else referenceInputRefs.current.delete(target.id);
-                  }}
-                  type="radio"
-                  name="document-cross-reference"
-                  value={target.id}
-                  checked={target.id === insertDialog.selectedId}
-                  data-autofocus={
-                    target.id === insertDialog.selectedId ? '' : undefined
-                  }
-                  tabIndex={target.id === insertDialog.selectedId ? 0 : -1}
-                  onChange={() =>
-                    setInsertDialog({
-                      ...insertDialog,
-                      selectedId: target.id,
-                    })
-                  }
-                  onKeyDown={(event) => moveReferenceSelection(event, index)}
-                />
-                <strong>{target.display}</strong>
-                <span>{target.title || '（无题注文字）'}</span>
-              </label>
-            ))}
+            {insertDialog.targets.map((target, index) => {
+              const targetKey = referenceTargetKey(target);
+              return (
+                <label key={targetKey} onDoubleClick={submitCrossReference}>
+                  <input
+                    ref={(element) => {
+                      if (element)
+                        referenceInputRefs.current.set(targetKey, element);
+                      else referenceInputRefs.current.delete(targetKey);
+                    }}
+                    type="radio"
+                    name="document-cross-reference"
+                    value={targetKey}
+                    checked={targetKey === insertDialog.selectedKey}
+                    data-autofocus={
+                      targetKey === insertDialog.selectedKey ? '' : undefined
+                    }
+                    tabIndex={targetKey === insertDialog.selectedKey ? 0 : -1}
+                    onChange={() =>
+                      setInsertDialog({
+                        ...insertDialog,
+                        selectedKey: targetKey,
+                      })
+                    }
+                    onKeyDown={(event) => moveReferenceSelection(event, index)}
+                  />
+                  <strong>
+                    {target.type === 'bookmark'
+                      ? `书签 ${target.name}`
+                      : target.display}
+                  </strong>
+                  <span>
+                    {target.title ||
+                      (target.type === 'bookmark'
+                        ? '（空书签）'
+                        : '（无题注文字）')}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </Dialog>
       )}
@@ -333,4 +358,8 @@ export function useDocumentInsertCommands({
     insertNote,
     refreshFields,
   };
+}
+
+function referenceTargetKey(target: WorkDocumentCrossReferenceTarget): string {
+  return `${target.type}:${target.id}`;
 }

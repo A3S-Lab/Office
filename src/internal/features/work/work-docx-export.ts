@@ -7,6 +7,7 @@ import type {
   ISectionOptions,
   ParagraphChild,
 } from 'docx';
+import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
 import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { normalizeDocumentHref } from './work-document-links';
 import {
@@ -122,7 +123,9 @@ export async function createDocxBlob(
   const docx = await import('docx');
   const normalizedContent = {
     ...content,
-    html: normalizeDocumentBookmarksHtml(content.html),
+    html: normalizeDocumentBookmarkReferencesHtml(
+      normalizeDocumentBookmarksHtml(content.html),
+    ),
   };
   const noteCollection = collectDocumentNotes(normalizedContent.html);
   const comments = anchoredDocumentComments(normalizedContent);

@@ -170,6 +170,7 @@ describe('document bookmarks', () => {
         '<w:p><w:bookmarkStart w:id="1" w:name="Target"/><w:r><w:t>First</w:t></w:r><w:bookmarkEnd w:id="1"/></w:p>',
         '<w:p><w:bookmarkStart w:id="2" w:name="Target"/><w:r><w:t>Second</w:t></w:r><w:bookmarkEnd w:id="2"/></w:p>',
         '<w:p><w:bookmarkStart w:id="3" w:name="9 bad"/><w:r><w:t>Third</w:t></w:r><w:bookmarkEnd w:id="3"/></w:p>',
+        '<w:p><w:fldSimple w:instr="REF Target \\h"><w:r><w:t>Second</w:t></w:r></w:fldSimple></w:p>',
         '</w:body></w:document>',
       ].join(''),
     );
@@ -179,12 +180,23 @@ describe('document bookmarks', () => {
       'Target',
       'Bookmark_9_bad',
     ]);
+    expect(markers.references).toEqual([
+      expect.objectContaining({
+        targetId: markers.bookmarks[1]?.id,
+        targetName: 'Target',
+        instruction: 'REF Target \\h',
+        display: 'Second',
+      }),
+    ]);
+    const reference = markers.references[0];
+    if (!reference) throw new Error('Expected a bookmark REF marker.');
 
     const html = new DOMParser().parseFromString(
       [
         `<p>${markers.bookmarks[0]?.start}First${markers.bookmarks[0]?.end}</p>`,
         `<p>${markers.bookmarks[1]?.start}Second${markers.bookmarks[1]?.end}</p>`,
         `<p>${markers.bookmarks[2]?.start}Third${markers.bookmarks[2]?.end}</p>`,
+        `<p>${reference.start}Second${reference.end}</p>`,
         '<p><a href="#Target">Duplicate target</a> ',
         '<a href="#9 BAD">Normalized target</a></p>',
       ].join(''),
@@ -205,6 +217,16 @@ describe('document bookmarks', () => {
         link.getAttribute('href'),
       ),
     ).toEqual(['#Target', '#Bookmark_9_bad']);
+    expect(
+      html.body.querySelector<HTMLElement>(
+        'span[data-reference-target-type="bookmark"]',
+      )?.dataset,
+    ).toMatchObject({
+      referenceTargetId: markers.bookmarks[1]?.id,
+      referenceTargetName: 'Target',
+      referenceInstruction: 'REF Target \\h',
+      referenceDisplay: 'Second',
+    });
   });
 
   test('round-trips cross-paragraph bookmarks and internal versus external hyperlinks in DOCX', async () => {

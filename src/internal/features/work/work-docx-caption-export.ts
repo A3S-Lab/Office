@@ -1,4 +1,5 @@
 import type { ParagraphChild } from 'docx';
+import { documentBookmarkReferenceInstruction } from './work-document-bookmark-references';
 import {
   documentCaptionKind,
   documentCaptionLabel,
@@ -39,6 +40,23 @@ export function docxCrossReferenceRuns(
 ): ParagraphChild[] {
   if (element.dataset.referenceOrphaned === 'true')
     return [new docx.TextRun('引用缺失')];
+  if (element.dataset.referenceTargetType === 'bookmark') {
+    const targetName = element.dataset.referenceTargetName?.trim();
+    if (!targetName) return [new docx.TextRun('引用缺失')];
+    const display =
+      element.dataset.referenceDisplay?.trim() ||
+      element.textContent?.trim() ||
+      targetName;
+    return [
+      new docx.SimpleField(
+        documentBookmarkReferenceInstruction(
+          targetName,
+          element.dataset.referenceInstruction,
+        ),
+        display,
+      ),
+    ];
+  }
   const kind = documentCaptionKind(element.dataset.captionKind) ?? 'figure';
   const number = positiveInteger(element.dataset.captionNumber);
   const targetId = element.dataset.referenceTargetId?.trim();

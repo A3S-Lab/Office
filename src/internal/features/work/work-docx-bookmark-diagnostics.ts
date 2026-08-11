@@ -1,8 +1,13 @@
 import {
+  docxBookmarkReferenceTarget,
+  supportedDocxBookmarkReferenceInstruction,
+} from './work-document-bookmark-references';
+import {
   normalizeDocumentBookmarkName,
   normalizeDocumentBookmarkNativeId,
 } from './work-document-bookmarks';
 import { normalizeDocumentHref } from './work-document-links';
+import { docxFieldOccurrences } from './work-docx-field-instructions';
 import {
   attribute,
   descendants,
@@ -22,7 +27,7 @@ export async function diagnoseDocxBookmarksAndLinks(
   const issues: WorkCompatibilityIssue[] = [
     bookmarkIssue(
       'docx.bookmarks-links',
-      'Paired body bookmarks remain editable native bookmark ranges. Internal hyperlinks retain Word anchor semantics without external relationships, while supported web and email links retain external hyperlink relationships.',
+      'Paired body bookmarks remain editable native bookmark ranges. Bookmark REF fields stay live and editable, internal hyperlinks retain Word anchor semantics without external relationships, and supported web and email links retain external hyperlink relationships.',
       'info',
     ),
   ];
@@ -90,10 +95,28 @@ export async function diagnoseDocxBookmarksAndLinks(
   }
 
   const targetNames = new Set(
-    starts
-      .map((start) => attribute(start, 'name')?.trim().toLowerCase())
-      .filter((name): name is string => Boolean(name)),
+    starts.flatMap((start) => {
+      const name = attribute(start, 'name')?.trim().toLowerCase() ?? '';
+      return name ? [name] : [];
+    }),
   );
+  const bookmarkReferences = docxFieldOccurrences(document).filter((field) => {
+    const target = docxBookmarkReferenceTarget(field.instruction);
+    return Boolean(target && targetNames.has(target.toLowerCase()));
+  });
+  if (
+    bookmarkReferences.some(
+      (field) => !supportedDocxBookmarkReferenceInstruction(field.instruction),
+    )
+  ) {
+    issues.push(
+      bookmarkIssue(
+        'docx.bookmark-references.switches',
+        'Bookmark REF fields with relative-position, paragraph-number, or other advanced switches normalize to bookmarked text with an optional hyperlink switch.',
+      ),
+    );
+  }
+
   const danglingAnchors = hyperlinks.some((hyperlink) => {
     const anchor = attribute(hyperlink, 'anchor')?.trim();
     return Boolean(anchor && !targetNames.has(anchor.toLowerCase()));

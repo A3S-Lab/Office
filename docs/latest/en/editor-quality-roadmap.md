@@ -410,9 +410,15 @@ relationship, supported web and email destinations retain hyperlink
 relationships, and deleting a bookmark gives every dangling internal link an
 explicit state that undo repairs. DOCX inspection reports ambiguous boundary
 pairs, normalized names, column-scoped bookmarks, missing targets, unsupported
-destinations, and advanced hyperlink metadata separately. Unit round trips
-cover cross-paragraph native ranges and internal-versus-external relationships;
-a deterministic phone workflow covers dialog focus, insertion, deletion, and
+destinations, and advanced hyperlink metadata separately. Body bookmarks are
+also available in the cross-reference picker: their live display follows target
+edits, deletion produces an explicit missing-reference state, undo repairs it,
+and copy normalization retargets self-references to the copied identity. Native
+DOCX import/export preserves ordinary bookmark `REF` fields with the supported
+hyperlink switch and diagnoses advanced switches separately. Unit round trips
+cover cross-paragraph native ranges, internal-versus-external relationships,
+and bookmark fields; a deterministic phone workflow covers dialog focus,
+reference insertion, deletion, the missing-reference transition, and exact
 editor-focus recovery.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates

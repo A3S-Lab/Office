@@ -84,7 +84,8 @@ remain keyboard reachable, plus a
 phone caption and cross-reference workflow covering dialog focus, accessible
 numbering, keyboard deletion, and the live missing-reference transition;
 the phone bookmark workflow covering focused name entry, a complete paired
-bookmark range, current-target deletion, and exact editor-focus recovery;
+bookmark range, live bookmark-REF insertion, current-target deletion, the
+missing-reference transition, and exact editor-focus recovery;
 the phone Spreadsheet
 worksheet-rename workflow plus viewport-safe, touch-sized Find controls,
 exact-result navigation, and grid-focus restoration, a safe-area-aware bottom

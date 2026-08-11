@@ -11,7 +11,7 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
-import { activeDocumentSectionFromState } from './work-document-section-editor';
+import type { WorkDocumentBookmarkReferenceTarget } from './work-document-bookmark-references';
 import {
   documentCaptionDisplay,
   documentCaptionKind,
@@ -19,7 +19,12 @@ import {
   type WorkDocumentCaptionKind,
   type WorkDocumentCaptionTarget,
 } from './work-document-captions';
+import { activeDocumentSectionFromState } from './work-document-section-editor';
 import { createWorkId } from './work-templates';
+
+type WorkDocumentCrossReferenceTarget =
+  | WorkDocumentCaptionTarget
+  | WorkDocumentBookmarkReferenceTarget;
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -29,7 +34,7 @@ declare module '@tiptap/core' {
         title: string,
       ) => ReturnType;
       insertDocumentCrossReference: (
-        target: WorkDocumentCaptionTarget,
+        target: WorkDocumentCrossReferenceTarget,
       ) => ReturnType;
     };
   }
@@ -135,7 +140,11 @@ export const DocumentCrossReference = Node.create({
 
   addAttributes() {
     return {
+      targetType: hiddenAttribute('caption'),
       targetId: hiddenAttribute(''),
+      targetName: hiddenAttribute(''),
+      instruction: hiddenAttribute(''),
+      display: hiddenAttribute(''),
       kind: hiddenAttribute('figure'),
       number: hiddenAttribute(1),
       orphaned: hiddenAttribute(false),
@@ -149,7 +158,15 @@ export const DocumentCrossReference = Node.create({
         getAttrs: (node) => {
           if (!(node instanceof HTMLElement)) return false;
           return {
+            targetType:
+              node.dataset.referenceTargetType === 'bookmark'
+                ? 'bookmark'
+                : 'caption',
             targetId: node.dataset.referenceTargetId ?? '',
+            targetName: node.dataset.referenceTargetName ?? '',
+            instruction: node.dataset.referenceInstruction ?? '',
+            display:
+              node.dataset.referenceDisplay ?? node.textContent?.trim() ?? '',
             kind: documentCaptionKind(node.dataset.captionKind) ?? 'figure',
             number: positiveInteger(node.dataset.captionNumber),
             orphaned: node.dataset.referenceOrphaned === 'true',
@@ -160,6 +177,26 @@ export const DocumentCrossReference = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
+    const targetType =
+      node.attrs.targetType === 'bookmark' ? 'bookmark' : 'caption';
+    if (targetType === 'bookmark') {
+      const display = stringAttribute(node.attrs.display);
+      const orphaned = Boolean(node.attrs.orphaned);
+      return [
+        'span',
+        mergeAttributes(HTMLAttributes, {
+          'data-document-cross-reference': 'true',
+          'data-reference-target-type': 'bookmark',
+          'data-reference-target-id': stringAttribute(node.attrs.targetId),
+          'data-reference-target-name': stringAttribute(node.attrs.targetName),
+          'data-reference-instruction': stringAttribute(node.attrs.instruction),
+          'data-reference-display': display,
+          'data-reference-orphaned': orphaned ? 'true' : undefined,
+          class: 'work-document-cross-reference',
+        }),
+        orphaned ? '引用缺失' : display,
+      ];
+    }
     const kind = documentCaptionKind(node.attrs.kind) ?? 'figure';
     const number = positiveInteger(node.attrs.number);
     const orphaned = Boolean(node.attrs.orphaned);
@@ -181,6 +218,9 @@ export const DocumentCrossReference = Node.create({
 
   renderText({ node }) {
     if (node.attrs.orphaned) return '引用缺失';
+    if (node.attrs.targetType === 'bookmark') {
+      return stringAttribute(node.attrs.display);
+    }
     const kind = documentCaptionKind(node.attrs.kind) ?? 'figure';
     return documentCaptionDisplay(kind, positiveInteger(node.attrs.number));
   },
@@ -242,18 +282,33 @@ function insertDocumentCaptionCommand(
 
 function insertDocumentCrossReferenceCommand(
   { dispatch, editor, tr }: CommandProps,
-  target: WorkDocumentCaptionTarget,
+  target: WorkDocumentCrossReferenceTarget,
 ): boolean {
   const referenceType = editor.schema.nodes.documentCrossReference;
   if (!referenceType || !target.id.trim()) return false;
+  const bookmark = isBookmarkCrossReferenceTarget(target) ? target : null;
+  const caption = bookmark ? null : (target as WorkDocumentCaptionTarget);
+  if (bookmark && !bookmark.name.trim()) return false;
   if (!dispatch) return true;
   tr.replaceSelectionWith(
-    referenceType.create({
-      targetId: target.id,
-      kind: target.kind,
-      number: target.number,
-      orphaned: false,
-    }),
+    referenceType.create(
+      bookmark
+        ? {
+            targetType: 'bookmark',
+            targetId: bookmark.id,
+            targetName: bookmark.name,
+            instruction: bookmark.instruction,
+            display: bookmark.display,
+            orphaned: false,
+          }
+        : {
+            targetType: 'caption',
+            targetId: caption?.id,
+            kind: caption?.kind,
+            number: caption?.number,
+            orphaned: false,
+          },
+    ),
     false,
   );
   tr.scrollIntoView();
@@ -303,7 +358,12 @@ function synchronizeDocumentCaptionState(
   });
 
   state.doc.descendants((node, position) => {
-    if (node.type.name !== 'documentCrossReference') return;
+    if (
+      node.type.name !== 'documentCrossReference' ||
+      node.attrs.targetType === 'bookmark'
+    ) {
+      return;
+    }
     const targetId =
       typeof node.attrs.targetId === 'string' ? node.attrs.targetId.trim() : '';
     const target = targets.get(targetId);
@@ -470,4 +530,14 @@ function hiddenAttribute(defaultValue: unknown) {
 function positiveInteger(value: unknown): number {
   const number = Number(value);
   return Number.isSafeInteger(number) && number > 0 ? number : 1;
+}
+
+function stringAttribute(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function isBookmarkCrossReferenceTarget(
+  target: WorkDocumentCrossReferenceTarget,
+): target is WorkDocumentBookmarkReferenceTarget {
+  return 'type' in target && target.type === 'bookmark';
 }

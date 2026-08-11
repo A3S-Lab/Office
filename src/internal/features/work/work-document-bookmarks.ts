@@ -15,6 +15,14 @@ import {
   type Transaction,
 } from '@tiptap/pm/state';
 import { Mapping } from '@tiptap/pm/transform';
+import {
+  documentBookmarkReferenceDisplay,
+  documentBookmarkReferenceInstruction,
+  retargetDomBookmarkReferences,
+  synchronizeDocumentBookmarkReferenceNodes,
+  type WorkDocumentBookmarkReferenceRename,
+  type WorkDocumentBookmarkReferenceTarget,
+} from './work-document-bookmark-references';
 import { createWorkId } from './work-templates';
 
 export type WorkDocumentBookmarkBoundaryKind = 'start' | 'end';
@@ -55,12 +63,7 @@ interface BookmarkRegistry {
   nativeIds: Set<number>;
 }
 
-interface BookmarkRename {
-  from: number;
-  to: number;
-  previousName: string;
-  nextName: string;
-}
+type BookmarkRename = WorkDocumentBookmarkReferenceRename;
 
 const BOOKMARK_NAME_PATTERN = /^[\p{L}_][\p{L}\p{N}_]*$/u;
 const BOOKMARK_UI_NAME_PATTERN = /^[\p{L}][\p{L}\p{N}_]*$/u;
@@ -225,6 +228,28 @@ export function editorDocumentBookmarks(
   }));
 }
 
+export function editorDocumentBookmarkReferenceTargets(
+  editor: Editor,
+): WorkDocumentBookmarkReferenceTarget[] {
+  return collectDocumentBookmarkPairs(
+    editor.state.doc,
+    'documentBookmarkBoundary',
+  ).pairs.map((bookmark) => {
+    const display = documentBookmarkReferenceDisplay(
+      editor.state.doc,
+      bookmark,
+    );
+    return {
+      type: 'bookmark',
+      id: bookmark.id,
+      name: bookmark.name,
+      title: display,
+      display,
+      instruction: documentBookmarkReferenceInstruction(bookmark.name),
+    };
+  });
+}
+
 export function activeDocumentBookmark(
   editor: Editor,
 ): WorkDocumentBookmark | null {
@@ -262,9 +287,26 @@ export function normalizeDocumentBookmarksHtml(source: string): string {
   for (const orphan of collection.orphans) orphan.remove();
   const registry = createBookmarkRegistry();
   for (const pair of collection.pairs) {
+    const previous = {
+      id: bookmarkInternalId(pair.id),
+      name: normalizeDocumentBookmarkName(pair.name) ?? '',
+    };
     const identity = uniqueDocumentBookmarkIdentity(pair, registry);
     applyBookmarkIdentityToElement(pair.start, identity, 'start');
     applyBookmarkIdentityToElement(pair.end, identity, 'end');
+    if (
+      previous.id &&
+      previous.name &&
+      (previous.id !== identity.id || previous.name !== identity.name)
+    ) {
+      retargetDomBookmarkReferences(
+        document.body,
+        pair.start,
+        pair.end,
+        previous,
+        identity,
+      );
+    }
   }
   synchronizeDomInternalLinks(document.body, registry.names);
   return document.body.innerHTML;
@@ -383,10 +425,16 @@ function normalizeDocumentBookmarks(
       updates.set(pair.to, identity);
     }
     if (!sameBookmarkIdentity(pair, identity)) {
-      if (pair.name && pair.name !== identity.name) {
+      if (
+        pair.id &&
+        pair.name &&
+        (pair.id !== identity.id || pair.name !== identity.name)
+      ) {
         renames.push({
           from: pair.from,
           to: pair.to,
+          previousId: pair.id,
+          nextId: identity.id,
           previousName: pair.name,
           nextName: identity.name,
         });
@@ -408,6 +456,7 @@ function normalizeDocumentBookmarks(
     });
   }
   synchronizeInternalLinkMarks(state, tr, effectivePairs, renames);
+  synchronizeDocumentBookmarkReferenceNodes(state, tr, effectivePairs, renames);
   for (const orphan of [...collection.orphans].sort(
     (left, right) => right.position - left.position,
   )) {

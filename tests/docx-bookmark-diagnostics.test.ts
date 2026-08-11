@@ -1,6 +1,7 @@
 import { describe, expect, test } from '@rstest/core';
 import JSZip from 'jszip';
 import { diagnoseDocxBookmarksAndLinks } from '../src/internal/features/work/work-docx-bookmark-diagnostics';
+import { diagnoseDocxCaptions } from '../src/internal/features/work/work-docx-caption-diagnostics';
 import { OoxmlPackage } from '../src/internal/features/work/work-ooxml-package';
 
 const WORD_NAMESPACE =
@@ -18,6 +19,7 @@ describe('DOCX bookmark and hyperlink diagnostics', () => {
       [
         '<w:p><w:bookmarkStart w:id="7" w:name="Target"/>',
         '<w:r><w:t>Target</w:t></w:r><w:bookmarkEnd w:id="7"/></w:p>',
+        '<w:p><w:fldSimple w:instr="REF Target \\h"><w:r><w:t>Target</w:t></w:r></w:fldSimple></w:p>',
         '<w:p><w:hyperlink w:anchor="Target"><w:r><w:t>Jump</w:t></w:r></w:hyperlink>',
         '<w:hyperlink r:id="rId7"><w:r><w:t>Site</w:t></w:r></w:hyperlink></w:p>',
       ].join(''),
@@ -30,6 +32,7 @@ describe('DOCX bookmark and hyperlink diagnostics', () => {
         severity: 'info',
       }),
     ]);
+    expect(diagnoseDocxCaptions(document).hasUnsupportedFields).toBe(false);
   });
 
   test('separates structural, identity, range, target, destination, and metadata warnings', async () => {
@@ -41,6 +44,7 @@ describe('DOCX bookmark and hyperlink diagnostics', () => {
         '<w:r><w:t>First</w:t></w:r><w:bookmarkEnd w:id="2"/></w:p>',
         '<w:p><w:bookmarkStart w:id="3" w:name="target"/>',
         '<w:r><w:t>Second</w:t></w:r><w:bookmarkEnd w:id="3"/></w:p>',
+        '<w:p><w:fldSimple w:instr="REF Target \\p"><w:r><w:t>above</w:t></w:r></w:fldSimple></w:p>',
         '<w:p><w:hyperlink w:anchor="Missing"><w:r><w:t>Jump</w:t></w:r></w:hyperlink>',
         '<w:hyperlink r:id="rId8" w:tooltip="Legacy tip"><w:r><w:t>FTP</w:t></w:r></w:hyperlink></w:p>',
       ].join(''),
@@ -55,10 +59,12 @@ describe('DOCX bookmark and hyperlink diagnostics', () => {
       'docx.bookmarks.structure',
       'docx.bookmarks.identity',
       'docx.bookmarks.columns',
+      'docx.bookmark-references.switches',
       'docx.hyperlinks.missing-target',
       'docx.hyperlinks.external',
       'docx.hyperlinks.metadata',
     ]);
+    expect(diagnoseDocxCaptions(document).hasUnsupportedFields).toBe(false);
   });
 });
 

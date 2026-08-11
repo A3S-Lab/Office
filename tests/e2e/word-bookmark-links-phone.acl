@@ -1,8 +1,8 @@
 suite "office-word-bookmark-links-phone" {
     version = 1
 
-    scenario "create-and-delete-a-word-bookmark-on-phone" {
-        name = "Create and delete a native Word bookmark without losing editor focus on a phone"
+    scenario "create-reference-and-delete-a-word-bookmark-on-phone" {
+        name = "Keep a live Word bookmark reference truthful after deleting its target on a phone"
         surface = "web"
         timeout_ms = 30000
 
@@ -69,6 +69,38 @@ suite "office-word-bookmark-links-phone" {
             path = "screenshots/word-bookmark-links-phone.png"
         }
 
+        click "open-references-tab" {
+            target = role("tab", "引用")
+        }
+
+        click "open-cross-reference-dialog" {
+            target = role("button", "插入交叉引用")
+        }
+
+        expect "bookmark-is-selected-for-reference" {
+            visible = css(".work-document-reference-list input[type='radio']:checked")
+        }
+
+        expect "bookmark-name-is-offered" {
+            text = "Architecture_target"
+        }
+
+        click "insert-cross-reference" {
+            target = role("button", "插入引用")
+        }
+
+        expect "bookmark-reference-starts-valid" {
+            visible = css(".work-document-cross-reference[data-reference-target-type='bookmark']:not([data-reference-orphaned='true'])")
+        }
+
+        click "return-to-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        expect "bookmark-remains-current" {
+            visible = role("button", "删除书签")
+        }
+
         click "delete-current-bookmark" {
             target = role("button", "删除书签")
         }
@@ -77,8 +109,24 @@ suite "office-word-bookmark-links-phone" {
             visible = css(".work-document-editable .ProseMirror:not(:has(span[data-document-bookmark-boundary]))")
         }
 
+        expect "bookmark-reference-becomes-missing" {
+            visible = css(".work-document-cross-reference[data-reference-target-type='bookmark'][data-reference-orphaned='true']")
+        }
+
+        expect "missing-reference-is-truthful" {
+            text = "引用缺失"
+        }
+
         expect "document-focus-is-restored" {
             visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        click "reveal-missing-reference" {
+            target = css(".work-document-cross-reference[data-reference-orphaned='true']")
+        }
+
+        screenshot "missing-bookmark-reference" {
+            path = "screenshots/word-missing-bookmark-reference-phone.png"
         }
 
         accessibility "bookmark-dialog-and-command-semantics" {

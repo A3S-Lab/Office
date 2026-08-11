@@ -1,4 +1,8 @@
 import {
+  documentBookmarkReferenceInstruction,
+  docxBookmarkReferenceTarget,
+} from './work-document-bookmark-references';
+import {
   normalizeDocumentBookmarkName,
   normalizeDocumentBookmarkNativeId,
 } from './work-document-bookmarks';
@@ -6,11 +10,16 @@ import {
   docxCaptionBookmark,
   docxCaptionSequenceKind,
 } from './work-docx-caption-fields';
-import { docxFieldOccurrences } from './work-docx-field-instructions';
+import {
+  type DocxFieldOccurrence,
+  docxFieldOccurrences,
+  docxFieldResultText,
+} from './work-docx-field-instructions';
 import { attribute, descendants } from './work-ooxml-package';
 
 export interface ImportedDocxBookmarkMarkers {
   bookmarks: ImportedDocxBookmarkMarker[];
+  references: ImportedDocxBookmarkReferenceMarker[];
 }
 
 interface ImportedDocxBookmarkMarker {
@@ -20,6 +29,15 @@ interface ImportedDocxBookmarkMarker {
   name: string;
   sourceName: string;
   nativeId: number;
+}
+
+interface ImportedDocxBookmarkReferenceMarker {
+  start: string;
+  end: string;
+  targetId: string;
+  targetName: string;
+  instruction: string;
+  display: string;
 }
 
 interface DocxBookmarkPair {
@@ -39,6 +57,11 @@ export function markDocxBookmarks(
   document: Document,
 ): ImportedDocxBookmarkMarkers {
   const captionBookmarks = captionBookmarkStarts(document);
+  const captionNames = new Set(
+    Array.from(captionBookmarks)
+      .map((bookmark) => attribute(bookmark, 'name')?.trim().toLowerCase())
+      .filter((name): name is string => Boolean(name)),
+  );
   const pairs = docxBookmarkPairs(document).filter(
     (pair) =>
       !captionBookmarks.has(pair.start) && pair.sourceName !== '_GoBack',
@@ -85,13 +108,61 @@ export function markDocxBookmarks(
     pair.end.remove();
     bookmarks.push(marker);
   }
-  return { bookmarks };
+  const targets = new Map<string, ImportedDocxBookmarkMarker>();
+  for (const bookmark of bookmarks) {
+    targets.set(bookmark.sourceName.toLowerCase(), bookmark);
+  }
+  const references = docxFieldOccurrences(document).flatMap((field, index) => {
+    const sourceTarget = docxBookmarkReferenceTarget(field.instruction);
+    const target = sourceTarget
+      ? targets.get(sourceTarget.toLowerCase())
+      : null;
+    if (
+      !sourceTarget ||
+      !target ||
+      captionNames.has(sourceTarget.toLowerCase()) ||
+      !canMarkField(field)
+    ) {
+      return [];
+    }
+    const marker = importedBookmarkReferenceMarker(
+      index + 1,
+      target,
+      field.instruction,
+      docxFieldResultText(field),
+      document.documentElement.textContent ?? '',
+    );
+    insertFieldBoundaryMarkers(document, field, marker.start, marker.end);
+    return [marker];
+  });
+  return { bookmarks, references };
 }
 
 export function applyImportedDocxBookmarkMarkers(
   document: Document,
   markers: ImportedDocxBookmarkMarkers,
 ): void {
+  for (const reference of markers.references) {
+    const element = document.createElement('span');
+    element.dataset.documentCrossReference = 'true';
+    element.dataset.referenceTargetType = 'bookmark';
+    element.dataset.referenceTargetId = reference.targetId;
+    element.dataset.referenceTargetName = reference.targetName;
+    element.dataset.referenceInstruction = reference.instruction;
+    const convertedDisplay = replaceBookmarkReferenceMarkerRange(
+      document.body,
+      reference.start,
+      reference.end,
+      element,
+    );
+    const display =
+      reference.display.trim() ||
+      convertedDisplay.trim() ||
+      reference.targetName;
+    element.dataset.referenceDisplay = display;
+    element.className = 'work-document-cross-reference';
+    element.textContent = display;
+  }
   const targetNames = new Map<string, string>();
   for (const bookmark of markers.bookmarks) {
     targetNames.set(bookmark.sourceName.toLowerCase(), bookmark.name);
@@ -116,7 +187,7 @@ export function applyImportedDocxBookmarkMarkers(
 export function hasImportedDocxBookmarkMarkers(
   markers: ImportedDocxBookmarkMarkers,
 ): boolean {
-  return markers.bookmarks.length > 0;
+  return markers.bookmarks.length > 0 || markers.references.length > 0;
 }
 
 function docxBookmarkPairs(document: Document): DocxBookmarkPair[] {
@@ -190,17 +261,82 @@ function importedBookmarkMarker(
   };
 }
 
+function importedBookmarkReferenceMarker(
+  index: number,
+  target: ImportedDocxBookmarkMarker,
+  sourceInstruction: string,
+  display: string,
+  occupiedText: string,
+): ImportedDocxBookmarkReferenceMarker {
+  const base = `${index}_${stableHash(`${target.id}:${sourceInstruction}`)}`;
+  let suffix = base;
+  let collision = 2;
+  while (
+    occupiedText.includes(`__A3S_WORK_BOOKMARK_REFERENCE_START_${suffix}__`) ||
+    occupiedText.includes(`__A3S_WORK_BOOKMARK_REFERENCE_END_${suffix}__`)
+  ) {
+    suffix = `${base}_${collision}`;
+    collision += 1;
+  }
+  return {
+    start: `__A3S_WORK_BOOKMARK_REFERENCE_START_${suffix}__`,
+    end: `__A3S_WORK_BOOKMARK_REFERENCE_END_${suffix}__`,
+    targetId: target.id,
+    targetName: target.name,
+    instruction: documentBookmarkReferenceInstruction(
+      target.name,
+      sourceInstruction,
+    ),
+    display,
+  };
+}
+
 function insertBoundaryMarker(
   document: Document,
   boundary: Element,
   marker: string,
 ): void {
+  boundary.parentNode?.insertBefore(markerRun(document, marker), boundary);
+}
+
+function insertFieldBoundaryMarkers(
+  document: Document,
+  field: DocxFieldOccurrence,
+  start: string,
+  end: string,
+): void {
+  if (
+    field.start.localName === 'fldChar' &&
+    field.end.localName === 'fldChar'
+  ) {
+    field.start.parentNode?.insertBefore(
+      markerText(document, start),
+      field.start,
+    );
+    field.end.parentNode?.insertBefore(
+      markerText(document, end),
+      field.end.nextSibling,
+    );
+    return;
+  }
+  field.start.parentNode?.insertBefore(markerRun(document, start), field.start);
+  field.end.parentNode?.insertBefore(
+    markerRun(document, end),
+    field.end.nextSibling,
+  );
+}
+
+function markerRun(document: Document, marker: string): Element {
   const run = document.createElementNS(WORD_NAMESPACE, 'w:r');
+  run.append(markerText(document, marker));
+  return run;
+}
+
+function markerText(document: Document, marker: string): Element {
   const text = document.createElementNS(WORD_NAMESPACE, 'w:t');
   text.setAttributeNS(XML_NAMESPACE, 'xml:space', 'preserve');
   text.textContent = marker;
-  run.append(text);
-  boundary.parentNode?.insertBefore(run, boundary);
+  return text;
 }
 
 function replaceBookmarkMarker(
@@ -229,6 +365,36 @@ function replaceBookmarkMarker(
   if (after) fragment.append(root.ownerDocument.createTextNode(after));
   text.replaceWith(fragment);
   return true;
+}
+
+function replaceBookmarkReferenceMarkerRange(
+  root: HTMLElement,
+  start: string,
+  end: string,
+  replacement: HTMLElement,
+): string {
+  const nodes = textNodes(root);
+  const startNode = nodes.find((node) => node.data.includes(start));
+  const endNode = nodes.find((node) => node.data.includes(end));
+  if (!startNode || !endNode) return '';
+  const range = root.ownerDocument.createRange();
+  range.setStart(startNode, startNode.data.indexOf(start));
+  range.setEnd(endNode, endNode.data.indexOf(end) + end.length);
+  const content = range.cloneContents();
+  removeMarkerText(content, start);
+  removeMarkerText(content, end);
+  const display = content.textContent ?? '';
+  range.deleteContents();
+  range.insertNode(replacement);
+  return display;
+}
+
+function removeMarkerText(root: ParentNode, marker: string): void {
+  for (const node of textNodes(root)) node.data = node.data.replace(marker, '');
+}
+
+function canMarkField(field: DocxFieldOccurrence): boolean {
+  return field.start !== field.end || field.start.localName === 'fldSimple';
 }
 
 function safeImportedBookmarkName(source: string, index: number): string {

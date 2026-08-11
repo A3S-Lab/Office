@@ -1,6 +1,6 @@
-import { Editor } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Editor } from '@tiptap/core';
 import { useRef } from 'react';
 import { useDocumentInsertCommands } from '../src/internal/features/work/editors/use-document-insert-commands';
 import { editorDocumentCaptionTargets } from '../src/internal/features/work/work-document-caption-nodes';
@@ -73,6 +73,31 @@ test('moves through cross-reference targets with arrow keys', async () => {
   }
 });
 
+test('offers a body bookmark as a cross-reference target', () => {
+  const { editor, element } = createEditor();
+  editor.commands.setTextSelection(textRange(editor, 'Alpha'));
+  editor.commands.insertDocumentBookmark('Alpha_target');
+
+  try {
+    render(<InsertDialogHarness editor={editor} />);
+    fireEvent.click(screen.getByRole('button', { name: '打开交叉引用' }));
+
+    const target = screen.getByRole('radio', {
+      name: '书签 Alpha_target Alpha',
+    });
+    expect(target).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: '插入引用' }));
+
+    expect(editor.getHTML()).toContain('data-reference-target-type="bookmark"');
+    expect(editor.getHTML()).toContain(
+      'data-reference-target-name="Alpha_target"',
+    );
+  } finally {
+    editor.destroy();
+    element.remove();
+  }
+});
+
 function InsertDialogHarness({ editor }: { editor: Editor }) {
   const contentRef = useRef<WorkDocumentContent>({
     type: 'document',
@@ -110,4 +135,19 @@ function createEditor(): {
     }),
     element,
   };
+}
+
+function textRange(editor: Editor, text: string): { from: number; to: number } {
+  let range: { from: number; to: number } | null = null;
+  editor.state.doc.descendants((node, position) => {
+    if (range || !node.isText || !node.text) return;
+    const offset = node.text.indexOf(text);
+    if (offset < 0) return;
+    range = {
+      from: position + offset,
+      to: position + offset + text.length,
+    };
+  });
+  if (!range) throw new Error(`Unable to find "${text}".`);
+  return range;
 }

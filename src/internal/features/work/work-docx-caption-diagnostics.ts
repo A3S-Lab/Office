@@ -1,15 +1,15 @@
+import { docxBookmarkReferenceTarget } from './work-document-bookmark-references';
+import { documentCitationTagsFromInstruction } from './work-document-citations';
+import { docxDocumentFieldKind } from './work-document-fields';
 import {
   docxCaptionBookmark,
-  docxCaptionReferenceTarget,
   docxCaptionSequenceKind,
 } from './work-docx-caption-fields';
 import {
-  docxFieldOccurrences,
   type DocxFieldOccurrence,
+  docxFieldOccurrences,
 } from './work-docx-field-instructions';
-import { documentCitationTagsFromInstruction } from './work-document-citations';
-import { docxDocumentFieldKind } from './work-document-fields';
-import { attribute } from './work-ooxml-package';
+import { attribute, descendants } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
 
 export interface DocxCaptionDiagnostics {
@@ -27,7 +27,10 @@ export function diagnoseDocxCaptions(
   const bodyFields = fields.filter((field) =>
     docxDocumentFieldKind(field.instruction),
   );
-  const bookmarkNames = captionBookmarkNames(sequences);
+  const bookmarkNames = new Set([
+    ...captionBookmarkNames(sequences),
+    ...pairedBookmarkNames(document),
+  ]);
   return {
     issues: [
       ...(sequences.length
@@ -66,7 +69,7 @@ function captionBookmarkNames(fields: DocxFieldOccurrence[]): Set<string> {
     if (!paragraph) continue;
     const bookmark = docxCaptionBookmark(paragraph, field);
     const name = attribute(bookmark ?? paragraph, 'name')?.trim();
-    if (name) names.add(name);
+    if (name) names.add(name.toLowerCase());
   }
   return names;
 }
@@ -83,8 +86,23 @@ function isSupportedCaptionField(
   }
   if (docxDocumentFieldKind(instruction)) return true;
   if (docxCaptionSequenceKind(instruction)) return true;
-  const target = docxCaptionReferenceTarget(instruction);
-  return Boolean(target && bookmarkNames.has(target));
+  const target = docxBookmarkReferenceTarget(instruction);
+  return Boolean(target && bookmarkNames.has(target.toLowerCase()));
+}
+
+function pairedBookmarkNames(document: Document): Set<string> {
+  const endIds = new Set(
+    descendants(document, 'bookmarkEnd').map(
+      (bookmark) => attribute(bookmark, 'id')?.trim() ?? '',
+    ),
+  );
+  return new Set(
+    descendants(document, 'bookmarkStart').flatMap((bookmark) => {
+      const id = attribute(bookmark, 'id')?.trim() ?? '';
+      const name = attribute(bookmark, 'name')?.trim().toLowerCase() ?? '';
+      return id && name && endIds.has(id) ? [name] : [];
+    }),
+  );
 }
 
 function closestAncestor(element: Element, localName: string): Element | null {

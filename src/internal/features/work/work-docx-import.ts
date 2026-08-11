@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { normalizeDocumentBookmarkReferencesHtml } from './work-document-bookmark-references';
 import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
 import { normalizeDocumentCaptionsHtml } from './work-document-captions';
 import { normalizeDocumentCitationsHtml } from './work-document-citations';
@@ -194,7 +195,7 @@ export async function prepareDocxImport(
       conversionBuffer: buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
       captionMarkers: { captions: [], references: [] },
-      bookmarkMarkers: { bookmarks: [] },
+      bookmarkMarkers: { bookmarks: [], references: [] },
       changeMarkers: { changes: [] },
       commentMarkers: { comments: [], ranges: [] },
       fieldMarkers: { fields: [] },
@@ -405,7 +406,10 @@ export function applyDocxSectionsToHtml(
   html: string,
   sections: PreparedDocxImport['sections'],
   captionMarkers: ImportedDocxCaptionMarkers = { captions: [], references: [] },
-  bookmarkMarkers: ImportedDocxBookmarkMarkers = { bookmarks: [] },
+  bookmarkMarkers: ImportedDocxBookmarkMarkers = {
+    bookmarks: [],
+    references: [],
+  },
   changeMarkers: ImportedDocxChangeMarkers = { changes: [] },
   commentMarkers: ImportedDocxCommentMarkers = { comments: [], ranges: [] },
   fieldMarkers: ImportedDocxFieldMarkers = { fields: [] },
@@ -498,14 +502,16 @@ export function applyDocxSectionsToHtml(
     document.body.append(missing);
   }
   placeMammothDocumentNotes(document, notes);
-  return normalizeDocumentBookmarksHtml(
-    normalizeDocumentCitationsHtml(
-      normalizeDocumentFieldsHtml(
-        normalizeDocumentCaptionsHtml(
-          normalizeDocumentNotesHtml(document.body.innerHTML),
+  return normalizeDocumentBookmarkReferencesHtml(
+    normalizeDocumentBookmarksHtml(
+      normalizeDocumentCitationsHtml(
+        normalizeDocumentFieldsHtml(
+          normalizeDocumentCaptionsHtml(
+            normalizeDocumentNotesHtml(document.body.innerHTML),
+          ),
         ),
+        bibliography,
       ),
-      bibliography,
     ),
   );
 }

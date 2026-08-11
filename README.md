@@ -110,9 +110,10 @@ The images below are committed visual-regression baselines from the real
   content from compatibility HTML. Caption numbering and cross-reference
   validity also update in that same transaction graph, including a truthful
   missing-target state after deletion. Paired Word bookmarks can span blocks,
-  retain stable native identities through edits, and keep internal links
-  distinct from external hyperlink relationships; deleting a target exposes a
-  truthful missing-link state that undo repairs.
+  retain stable native identities through edits, drive live editable REF
+  fields, and keep internal links distinct from external hyperlink
+  relationships; deleting a target exposes truthful missing-link and
+  missing-reference states that undo repairs.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,
