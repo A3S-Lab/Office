@@ -112,7 +112,7 @@ export async function createDocxBlob(
     numberingLevels: new Map(),
     numberingRestartRules: [],
     numberingRestartRulesByIdentity: new Map(),
-    themePatches: new DocxThemePatchCollector(content.html),
+    themePatches: new DocxThemePatchCollector(JSON.stringify(content)),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
