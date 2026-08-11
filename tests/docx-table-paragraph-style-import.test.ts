@@ -1,15 +1,21 @@
 import { describe, expect, test } from '@rstest/core';
 import JSZip from 'jszip';
 import { prepareDocxImport } from '../src/internal/features/work/work-docx-import';
+import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
+import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
 import { markDocxParagraphAlignments } from '../src/internal/features/work/work-docx-paragraph-alignment-import';
 import { markDocxParagraphDirections } from '../src/internal/features/work/work-docx-paragraph-direction-import';
 import { markDocxParagraphIndents } from '../src/internal/features/work/work-docx-paragraph-indent-import';
-import { markDocxParagraphPagination } from '../src/internal/features/work/work-docx-paragraph-pagination-import';
+import {
+  applyImportedDocxParagraphPaginationMarkers,
+  markDocxParagraphPagination,
+} from '../src/internal/features/work/work-docx-paragraph-pagination-import';
 import { markDocxParagraphSpacing } from '../src/internal/features/work/work-docx-paragraph-spacing-import';
 import { createDocxParagraphStyleResolver } from '../src/internal/features/work/work-docx-paragraph-styles';
 import { markDocxParagraphTabStops } from '../src/internal/features/work/work-docx-tab-stop-import';
 import { createDocxTableStyleResolver } from '../src/internal/features/work/work-docx-table-styles';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import type { WorkDocumentNode } from '../src/internal/features/work/work-types';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -62,12 +68,20 @@ describe('DOCX conditional table paragraph styles', () => {
       ).paragraphs.map(({ pagination }) => pagination),
     ).toEqual([
       {
+        contextualSpacing: false,
         keepLines: true,
         keepWithNext: false,
+        outlineLevel: 1,
         pageBreakBefore: true,
         widowControl: false,
       },
-      { keepLines: true, keepWithNext: true, widowControl: true },
+      {
+        contextualSpacing: true,
+        keepLines: true,
+        keepWithNext: true,
+        outlineLevel: 4,
+        widowControl: true,
+      },
     ]);
     expect(
       markDocxParagraphTabStops(
@@ -120,8 +134,10 @@ describe('DOCX conditional table paragraph styles', () => {
     expect(
       prepared.paragraphPaginationMarkers.paragraphs[0]?.pagination,
     ).toEqual({
+      contextualSpacing: false,
       keepLines: true,
       keepWithNext: false,
+      outlineLevel: 1,
       pageBreakBefore: true,
       widowControl: false,
     });
@@ -129,6 +145,60 @@ describe('DOCX conditional table paragraph styles', () => {
       { position: 72, alignment: 'decimal', leader: 'underscore' },
       { position: 96, alignment: 'right', leader: 'hyphen' },
     ]);
+
+    const html = new DOMParser().parseFromString(
+      [
+        '<table><tbody><tr><td>',
+        `<p>${prepared.paragraphPaginationMarkers.paragraphs[0]?.marker}Header</p>`,
+        '</td></tr><tr><td>',
+        `<p>${prepared.paragraphPaginationMarkers.paragraphs[1]?.marker}Body</p>`,
+        '</td></tr></tbody></table>',
+      ].join(''),
+      'text/html',
+    );
+    applyImportedDocxParagraphPaginationMarkers(
+      html,
+      prepared.paragraphPaginationMarkers,
+    );
+    const paragraphs = Array.from(html.body.querySelectorAll('p'));
+    expect(paragraphs[0]).toHaveAttribute(
+      'data-office-contextual-spacing',
+      'false',
+    );
+    expect(paragraphs[0]).toHaveAttribute('data-office-outline-level', '1');
+    expect(paragraphs[1]).toHaveAttribute(
+      'data-office-contextual-spacing',
+      'true',
+    );
+    expect(paragraphs[1]).toHaveAttribute('data-office-outline-level', '4');
+
+    const controlled = createWorkDocumentModelFromContent({
+      type: 'document',
+      pageSize: 'a4',
+      html: html.body.innerHTML,
+    });
+    expect(
+      collectNodes(controlled.model?.root, 'paragraph').map(({ attrs }) => ({
+        contextualSpacing: attrs?.contextualSpacing,
+        outlineLevel: attrs?.outlineLevel,
+      })),
+    ).toEqual([
+      { contextualSpacing: false, outlineLevel: 1 },
+      { contextualSpacing: true, outlineLevel: 4 },
+    ]);
+
+    const blob = await createDocxBlob({
+      type: 'document',
+      pageSize: 'a4',
+      html: html.body.innerHTML,
+    });
+    const exported = await JSZip.loadAsync(await blob.arrayBuffer());
+    const documentXml =
+      (await exported.file('word/document.xml')?.async('text')) ?? '';
+    expect(documentXml).toContain('<w:contextualSpacing w:val="false"/>');
+    expect(documentXml).toContain('<w:outlineLvl w:val="1"/>');
+    expect(documentXml).toContain('<w:contextualSpacing/>');
+    expect(documentXml).toContain('<w:outlineLvl w:val="4"/>');
   });
 });
 
@@ -151,6 +221,7 @@ function tableDocumentXml(withSection = false): Document {
                   <w:ind w:right="0"/>
                   <w:spacing w:line="360"/>
                   <w:keepNext w:val="0"/>
+                  <w:outlineLvl w:val="1"/>
                   <w:tabs>
                     <w:tab w:val="clear" w:pos="720"/>
                     <w:tab w:val="right" w:pos="1440" w:leader="hyphen"/>
@@ -206,6 +277,8 @@ function tableParagraphStylesXml(): Document {
             <w:spacing w:before="240" w:line="300"/>
             <w:keepLines/>
             <w:keepNext/>
+            <w:contextualSpacing/>
+            <w:outlineLvl w:val="4"/>
             <w:tabs>
               <w:tab w:val="center" w:pos="720" w:leader="dot"/>
             </w:tabs>
@@ -221,6 +294,8 @@ function tableParagraphStylesXml(): Document {
             <w:spacing w:after="0"/>
             <w:pageBreakBefore/>
             <w:widowControl w:val="0"/>
+            <w:contextualSpacing w:val="0"/>
+            <w:outlineLvl w:val="2"/>
             <w:tabs>
               <w:tab w:val="clear" w:pos="360"/>
               <w:tab w:val="decimal" w:pos="1080" w:leader="underscore"/>
@@ -234,4 +309,20 @@ function tableParagraphStylesXml(): Document {
 
 function serializeXml(document: Document): string {
   return new XMLSerializer().serializeToString(document);
+}
+
+function collectNodes(
+  root: WorkDocumentNode | undefined,
+  type: string,
+): WorkDocumentNode[] {
+  if (!root) return [];
+  const result: WorkDocumentNode[] = [];
+  const pending = [root];
+  while (pending.length) {
+    const node = pending.shift();
+    if (!node) continue;
+    if (node.type === type) result.push(node);
+    pending.unshift(...(node.content ?? []));
+  }
+  return result;
 }

@@ -150,6 +150,8 @@ const documentFormatBlockAttributeNames = [
   'keepWithNext',
   'pageBreakBefore',
   'widowControl',
+  'contextualSpacing',
+  'outlineLevel',
   'paragraphDirection',
   'tabStops',
 ] as const;

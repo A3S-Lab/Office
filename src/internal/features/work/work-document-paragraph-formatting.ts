@@ -213,6 +213,12 @@ export const DocumentParagraphFormatting = Extension.create({
             'officeWidowControl',
             'data-office-widow-control',
           ),
+          contextualSpacing: directBooleanAttribute(
+            'contextualSpacing',
+            'officeContextualSpacing',
+            'data-office-contextual-spacing',
+          ),
+          outlineLevel: outlineLevelAttribute(),
         },
       },
       {
@@ -600,6 +606,8 @@ function clearDocumentFormattingCommand({
       keepWithNext: null,
       pageBreakBefore: null,
       widowControl: null,
+      contextualSpacing: null,
+      outlineLevel: null,
       tabStops: null,
     })
     .updateAttributes('listItem', {
@@ -852,17 +860,24 @@ function paragraphDirectionAttribute() {
 }
 
 function directBooleanAttribute(
-  modelKey: 'keepLines' | 'keepWithNext' | 'pageBreakBefore' | 'widowControl',
+  modelKey:
+    | 'keepLines'
+    | 'keepWithNext'
+    | 'pageBreakBefore'
+    | 'widowControl'
+    | 'contextualSpacing',
   datasetKey:
     | 'officeKeepLines'
     | 'officeKeepWithNext'
     | 'officePageBreakBefore'
-    | 'officeWidowControl',
+    | 'officeWidowControl'
+    | 'officeContextualSpacing',
   htmlName:
     | 'data-office-keep-lines'
     | 'data-office-keep-with-next'
     | 'data-office-page-break-before'
-    | 'data-office-widow-control',
+    | 'data-office-widow-control'
+    | 'data-office-contextual-spacing',
 ) {
   return {
     default: null,
@@ -873,6 +888,28 @@ function directBooleanAttribute(
       return value === null ? {} : { [htmlName]: String(value) };
     },
   };
+}
+
+function outlineLevelAttribute() {
+  return {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      normalizedOutlineLevel(element.dataset.officeOutlineLevel),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = normalizedOutlineLevel(attributes.outlineLevel);
+      return value === null
+        ? {}
+        : { 'data-office-outline-level': String(value) };
+    },
+  };
+}
+
+function normalizedOutlineLevel(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number >= 0 && number <= 9
+    ? number
+    : null;
 }
 
 const documentParagraphPaginationKeys = [

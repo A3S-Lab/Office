@@ -120,11 +120,18 @@ export function paragraphIndent(
 }
 
 export function paragraphPaginationOptions(element: HTMLElement) {
+  const outlineLevel = Number(element.dataset.officeOutlineLevel);
   return {
     keepLines: dataBoolean(element.dataset.officeKeepLines),
     keepNext: dataBoolean(element.dataset.officeKeepWithNext),
     pageBreakBefore: dataBoolean(element.dataset.officePageBreakBefore),
     widowControl: dataBoolean(element.dataset.officeWidowControl),
+    contextualSpacing: dataBoolean(element.dataset.officeContextualSpacing),
+    ...(Number.isSafeInteger(outlineLevel) &&
+    outlineLevel >= 0 &&
+    outlineLevel <= 9
+      ? { outlineLevel }
+      : {}),
   };
 }
 

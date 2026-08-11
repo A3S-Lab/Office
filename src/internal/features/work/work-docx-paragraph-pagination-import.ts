@@ -13,8 +13,14 @@ import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxParagraphPaginationMarker {
   marker: string;
-  pagination: Partial<DocumentParagraphPagination>;
+  pagination: ImportedDocxParagraphPagination;
 }
+
+export type ImportedDocxParagraphPagination =
+  Partial<DocumentParagraphPagination> & {
+    contextualSpacing?: boolean;
+    outlineLevel?: number;
+  };
 
 export interface ImportedDocxParagraphPaginationMarkers {
   paragraphs: ImportedDocxParagraphPaginationMarker[];
@@ -83,18 +89,24 @@ export function hasImportedDocxParagraphPaginationMarkers(
 
 function paragraphPagination(
   sources: readonly Element[],
-): Partial<DocumentParagraphPagination> {
-  const pagination: Partial<DocumentParagraphPagination> = {};
+): ImportedDocxParagraphPagination {
+  const pagination: ImportedDocxParagraphPagination = {};
   for (const properties of sources) {
     const keepLines = directChild(properties, 'keepLines');
     const keepWithNext = directChild(properties, 'keepNext');
     const pageBreakBefore = directChild(properties, 'pageBreakBefore');
     const widowControl = directChild(properties, 'widowControl');
+    const contextualSpacing = directChild(properties, 'contextualSpacing');
+    const outlineLevel = directChild(properties, 'outlineLvl');
     if (keepLines) pagination.keepLines = onOffValue(keepLines);
     if (keepWithNext) pagination.keepWithNext = onOffValue(keepWithNext);
     if (pageBreakBefore)
       pagination.pageBreakBefore = onOffValue(pageBreakBefore);
     if (widowControl) pagination.widowControl = onOffValue(widowControl);
+    if (contextualSpacing)
+      pagination.contextualSpacing = onOffValue(contextualSpacing);
+    const outline = integerValue(outlineLevel);
+    if (outline !== null && outline <= 9) pagination.outlineLevel = outline;
   }
   return pagination;
 }
@@ -136,7 +148,7 @@ function closestParagraphBlock(element: Element | null): HTMLElement | null {
 
 function applyParagraphPagination(
   element: HTMLElement,
-  pagination: Partial<DocumentParagraphPagination>,
+  pagination: ImportedDocxParagraphPagination,
 ): void {
   setBooleanAttribute(element, 'data-office-keep-lines', pagination.keepLines);
   setBooleanAttribute(
@@ -154,6 +166,22 @@ function applyParagraphPagination(
     'data-office-widow-control',
     pagination.widowControl,
   );
+  setBooleanAttribute(
+    element,
+    'data-office-contextual-spacing',
+    pagination.contextualSpacing,
+  );
+  if (pagination.outlineLevel !== undefined) {
+    element.dataset.officeOutlineLevel = String(pagination.outlineLevel);
+  }
+}
+
+function integerValue(element: Element | undefined): number | null {
+  if (!element) return null;
+  const value = Number(
+    attribute(element, 'val') ?? attribute(element, 'w:val'),
+  );
+  return Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
 function setBooleanAttribute(

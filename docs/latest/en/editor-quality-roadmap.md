@@ -312,12 +312,10 @@ and an error-free browser run.
 Desktop insertion keeps an 8 × 10 keyboard matrix without duplicate cell
 semantics, while phone insertion uses focused row and column controls with
 44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
-row extension, compact-ribbon deletion, and editor-focus recovery. Native Word
-list identities, arbitrary multilevel numbering, less-common conditional table-
-style paragraph properties outside the supported layout set, loss-preserving
-semantic theme references, percentage-width column authoring, nested tables,
-and more complex merged-cell multi-page row cases remain part of this priority
-rather than being treated as complete.
+row extension, compact-ribbon deletion, and editor-focus recovery.
+Loss-preserving semantic theme references, percentage-width column authoring,
+nested tables, and more complex merged-cell multi-page row cases remain part
+of this priority rather than being treated as complete.
 
 Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
 as explicit numbering, abstract-numbering, and level metadata. Export reuses a
@@ -335,6 +333,14 @@ level alignment, physical or logical indentation, hanging or first-line
 offsets, and `lvlRestart` rules now follow the same round-trip path. Logical
 `start` and `end` indentation remain distinct for RTL numbering instead of
 being flattened to physical left and right values.
+
+Conditional table-style paragraph properties now retain contextual spacing and
+outline levels through the same default-style, paragraph-style, inherited table
+style, conditional region, and direct-format precedence chain. Both properties
+enter the controlled editor model, participate in format copy and explicit
+format clearing, and return to DOCX paragraph properties. Focused package and
+round-trip evidence covers direct overrides against `wholeTable` and
+`firstRow` conditions.
 
 Exit evidence:
 
