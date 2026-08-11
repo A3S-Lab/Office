@@ -94,6 +94,7 @@
 .work-document-page .tiptap,
 .work-document-preview-page,
 .work-pdf-export-page.document {
+  isolation: isolate;
   color: #20232b;
   font-family: var(--work-document-render-font-family);
   font-size: var(--work-document-render-font-size);
@@ -823,6 +824,15 @@
   width: fit-content;
   max-width: 100%;
   margin-block: 18px;
+}
+
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:not(
+    [data-office-image-layout="inline"]
+  ) {
+  position: relative;
+  z-index: var(--work-document-image-z-index, 1);
 }
 
 .work-document-page

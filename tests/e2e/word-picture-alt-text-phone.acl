@@ -91,6 +91,27 @@ suite "office-word-picture-properties-phone" {
             value = "8"
         }
 
+        fill "set-picture-layer" {
+            target = label("图片绘图层级顺序")
+            value = "50331648"
+        }
+
+        check "place-picture-behind-text" {
+            target = css("[role='dialog'] input[aria-label='图片衬于文字下方']")
+        }
+
+        check "allow-picture-overlap" {
+            target = css("[role='dialog'] input[aria-label='允许图片重叠']")
+        }
+
+        uncheck "disable-cell-layout" {
+            target = css("[role='dialog'] input[aria-label='图片随表格单元格布局']")
+        }
+
+        check "lock-picture-anchor" {
+            target = css("[role='dialog'] input[aria-label='锁定图片锚点']")
+        }
+
         fill "describe-picture" {
             target = label("图片替代文字")
             value = "Blue project diagram"
@@ -101,7 +122,7 @@ suite "office-word-picture-properties-phone" {
         }
 
         expect "picture-properties-saved" {
-            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='tight'][data-office-image-wrap-side='largest'][data-office-image-wrap-polygon-edited='false'][data-office-image-alignment='right'][data-office-image-wrap-distance='8'][data-office-image-lock-aspect-ratio='false'] img[alt='Blue project diagram'][width='189'][height='113']")
+            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='tight'][data-office-image-wrap-side='largest'][data-office-image-wrap-polygon-edited='false'][data-office-image-alignment='right'][data-office-image-wrap-distance='8'][data-office-image-lock-aspect-ratio='false'][data-office-image-relative-height='50331648'][data-office-image-behind-document='true'][data-office-image-allow-overlap='true'][data-office-image-layout-in-cell='false'][data-office-image-lock-anchor='true'] img[alt='Blue project diagram'][width='189'][height='113']")
         }
 
         expect "picture-selection-retained" {

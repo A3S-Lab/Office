@@ -534,6 +534,12 @@
 }
 
 :is(.work-document-preview-page, .work-pdf-export-page.document)
+  img[data-office-image-layout]:not([data-office-image-layout="inline"]) {
+  position: relative;
+  z-index: var(--work-document-image-z-index, 1);
+}
+
+:is(.work-document-preview-page, .work-pdf-export-page.document)
   img[data-office-image-layout="inline"][data-office-image-alignment="left"],
 :is(.work-document-preview-page, .work-pdf-export-page.document)
   img[data-office-image-layout="topBottom"][data-office-image-alignment="left"] {

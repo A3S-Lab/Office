@@ -6,6 +6,10 @@ import type {
   WorkDocumentImageWrapSide,
   WorkDocumentImageVerticalReference,
 } from '../work-document-image-layout';
+import {
+  MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT,
+  normalizeDocumentImageLayer,
+} from '../work-document-image-layout';
 import { normalizeDocumentImageWrapSide } from '../work-document-image-wrap-contour';
 
 export const IMAGE_PIXELS_PER_CENTIMETER = 96 / 2.54;
@@ -35,6 +39,11 @@ export interface DocumentPicturePropertiesDraft {
   cropRight: string;
   cropBottom: string;
   cropLeft: string;
+  relativeHeight: string;
+  behindDocument: boolean;
+  allowOverlap: boolean;
+  layoutInCell: boolean;
+  lockAnchor: boolean;
 }
 
 export interface DocumentPicturePropertiesErrors {
@@ -44,6 +53,7 @@ export interface DocumentPicturePropertiesErrors {
   horizontalOffset: string | null;
   verticalOffset: string | null;
   crop: string | null;
+  relativeHeight: string | null;
 }
 
 const FALLBACK_IMAGE_WIDTH_PIXELS = 320;
@@ -66,6 +76,7 @@ export function createDocumentPicturePropertiesDraft(
     source.renderedHeight,
     FALLBACK_IMAGE_HEIGHT_PIXELS,
   );
+  const layer = normalizeDocumentImageLayer(source.properties.layer ?? {});
   return {
     width: centimeters(width),
     height: centimeters(height),
@@ -91,6 +102,11 @@ export function createDocumentPicturePropertiesDraft(
     cropRight: formatNumber(source.properties.crop?.right ?? 0),
     cropBottom: formatNumber(source.properties.crop?.bottom ?? 0),
     cropLeft: formatNumber(source.properties.crop?.left ?? 0),
+    relativeHeight: String(layer.relativeHeight),
+    behindDocument: layer.behindDocument,
+    allowOverlap: layer.allowOverlap,
+    layoutInCell: layer.layoutInCell,
+    lockAnchor: layer.lockAnchor,
   };
 }
 
@@ -156,6 +172,11 @@ export function documentPicturePropertiesErrors(
         ? null
         : '请输入 -558.7 到 558.7 之间的毫米数。',
     crop: imageCropError(draft),
+    relativeHeight:
+      draft.layout === 'inline' ||
+      validInteger(draft.relativeHeight, 0, MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT)
+        ? null
+        : `请输入 0 到 ${MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT} 之间的整数。`,
   };
 }
 
@@ -168,7 +189,8 @@ export function hasDocumentPicturePropertiesErrors(
       errors.wrapDistance ||
       errors.horizontalOffset ||
       errors.verticalOffset ||
-      errors.crop,
+      errors.crop ||
+      errors.relativeHeight,
   );
 }
 
@@ -238,6 +260,21 @@ export function documentPicturePropertyChanges(
     };
     changes.crop = Object.values(crop).some((edge) => edge > 0) ? crop : null;
   }
+  if (
+    !sameDraftNumber(initial.relativeHeight, current.relativeHeight) ||
+    initial.behindDocument !== current.behindDocument ||
+    initial.allowOverlap !== current.allowOverlap ||
+    initial.layoutInCell !== current.layoutInCell ||
+    initial.lockAnchor !== current.lockAnchor
+  ) {
+    changes.layer = normalizeDocumentImageLayer({
+      relativeHeight: current.relativeHeight,
+      behindDocument: current.behindDocument,
+      allowOverlap: current.allowOverlap,
+      layoutInCell: current.layoutInCell,
+      lockAnchor: current.lockAnchor,
+    });
+  }
   return Object.keys(changes).length ? changes : null;
 }
 
@@ -274,6 +311,16 @@ function validSignedNumber(value: string, maximumMagnitude: number): boolean {
   if (!value.trim()) return false;
   const number = Number(value);
   return Number.isFinite(number) && Math.abs(number) <= maximumMagnitude;
+}
+
+function validInteger(
+  value: string,
+  minimum: number,
+  maximum: number,
+): boolean {
+  if (!value.trim()) return false;
+  const number = Number(value);
+  return Number.isInteger(number) && number >= minimum && number <= maximum;
 }
 
 function imageCropError(draft: DocumentPicturePropertiesDraft): string | null {

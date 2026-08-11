@@ -1,13 +1,16 @@
 import {
+  applyDocumentImageLayerToElement,
   applyDocumentImageCropToElement,
   isContourImageLayout,
   normalizeDocumentImageAlignment,
+  normalizeDocumentImageLayer,
   normalizeDocumentImageLayoutOptions,
   normalizeDocumentImageCrop,
   normalizeDocumentImagePosition,
   wrapsBesideImage,
   type WorkDocumentImageLayout,
   type WorkDocumentImageCrop,
+  type WorkDocumentImageLayer,
   type WorkDocumentImageLayoutOptions,
   type WorkDocumentImagePosition,
 } from './work-document-image-layout';
@@ -31,6 +34,7 @@ export interface ImportedDocxImageLayoutMarker {
   position: WorkDocumentImagePosition | null;
   crop: WorkDocumentImageCrop | null;
   contour: WorkDocumentImageWrapContour | null;
+  layer: WorkDocumentImageLayer | null;
 }
 
 export interface ImportedDocxImageLayoutMarkers {
@@ -84,6 +88,7 @@ export function markDocxImageLayouts(
       contour: isContourImageLayout(layout)
         ? anchorWrapContour(anchor, layout)
         : null,
+      layer: anchor.localName === 'anchor' ? anchorLayer(anchor) : null,
     });
   }
   return { images };
@@ -129,6 +134,7 @@ export function applyImportedDocxImageLayoutMarkers(
         state.active.position,
         state.active.crop,
         state.active.contour,
+        state.active.layer,
       );
       state.applied = true;
     }
@@ -248,6 +254,16 @@ function anchorCrop(anchor: Element): WorkDocumentImageCrop | null {
   });
 }
 
+function anchorLayer(anchor: Element): WorkDocumentImageLayer {
+  return normalizeDocumentImageLayer({
+    relativeHeight: attribute(anchor, 'relativeHeight'),
+    behindDocument: anchorBooleanAttribute(anchor, 'behindDoc', false),
+    allowOverlap: anchorBooleanAttribute(anchor, 'allowOverlap', false),
+    layoutInCell: anchorBooleanAttribute(anchor, 'layoutInCell', true),
+    lockAnchor: anchorBooleanAttribute(anchor, 'locked', false),
+  });
+}
+
 function cropPercentage(source: Element, name: string): number {
   const value = attribute(source, name)?.trim() ?? '';
   if (!value) return 0;
@@ -285,6 +301,7 @@ function applyImageLayout(
   position: WorkDocumentImagePosition | null,
   crop: WorkDocumentImageCrop | null,
   contour: WorkDocumentImageWrapContour | null,
+  layer: WorkDocumentImageLayer | null,
 ): void {
   image.dataset.officeImageLayout = options.layout;
   image.dataset.officeImageAlignment = options.alignment;
@@ -322,6 +339,18 @@ function applyImageLayout(
   }
   applyDocumentImageCropToElement(image, crop);
   applyDocumentImageWrapContourToElement(image, contour);
+  if (layer) applyDocumentImageLayerToElement(image, layer);
+}
+
+function anchorBooleanAttribute(
+  element: Element,
+  name: string,
+  fallback: boolean,
+): boolean {
+  const value = attribute(element, name)?.trim().toLowerCase();
+  if (value === '1' || value === 'true' || value === 'on') return true;
+  if (value === '0' || value === 'false' || value === 'off') return false;
+  return fallback;
 }
 
 function numericAttribute(

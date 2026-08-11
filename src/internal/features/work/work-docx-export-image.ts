@@ -1,12 +1,14 @@
 import type { IFloating, ParagraphChild } from 'docx';
 import {
   documentImageCropFromElement,
+  documentImageLayerFromElement,
   documentImageLayoutFromElement,
   documentImagePositionFromElement,
   wrapsBesideImage,
 } from './work-document-image-layout';
 import { documentImageWrapContourFromElement } from './work-document-image-wrap-contour';
 import type { DocxImageCropPatchCollector } from './work-docx-image-crop';
+import type { DocxImageLayerPatchCollector } from './work-docx-image-layer';
 import type { DocxImageWrapPatchCollector } from './work-docx-image-wrap';
 
 export async function imageToDocx(
@@ -14,6 +16,7 @@ export async function imageToDocx(
   docx: typeof import('docx'),
   cropPatches?: DocxImageCropPatchCollector,
   wrapPatches?: DocxImageWrapPatchCollector,
+  layerPatches?: DocxImageLayerPatchCollector,
 ): Promise<ParagraphChild> {
   const source = element.getAttribute('src');
   const alt =
@@ -41,6 +44,8 @@ export async function imageToDocx(
       imageLayout,
       documentImageWrapContourFromElement(element),
     );
+    const layer = documentImageLayerFromElement(element);
+    const layerMarker = layerPatches?.marker(imageLayout.layout, layer);
     return new docx.ImageRun({
       type,
       data: await blob.arrayBuffer(),
@@ -49,7 +54,7 @@ export async function imageToDocx(
         height: Math.max(24, Math.round(dimensions.height * scale)),
       },
       altText: {
-        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}`,
+        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}${layerMarker ?? ''}`,
         description: alt,
         title: alt,
       },
@@ -67,6 +72,7 @@ function documentImageFloatingOptions(
   const image = documentImageLayoutFromElement(element);
   const position = documentImagePositionFromElement(element);
   if (image.layout === 'inline') return undefined;
+  const layer = documentImageLayerFromElement(element);
   const distance = Math.round(image.wrapDistance * 36_000);
   const align =
     image.alignment === 'left'
@@ -92,10 +98,11 @@ function documentImageFloatingOptions(
       ),
       offset: millimetersToEmus(position?.verticalOffset ?? 0),
     },
-    allowOverlap: false,
-    behindDocument: false,
-    layoutInCell: true,
-    lockAnchor: false,
+    allowOverlap: layer.allowOverlap,
+    behindDocument: layer.behindDocument,
+    layoutInCell: layer.layoutInCell,
+    lockAnchor: layer.lockAnchor,
+    zIndex: layer.relativeHeight,
     margins: {
       top: distance,
       right: distance,

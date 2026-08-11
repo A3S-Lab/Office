@@ -42,6 +42,14 @@ export interface WorkDocumentImageCrop {
   left: number;
 }
 
+export interface WorkDocumentImageLayer {
+  relativeHeight: number;
+  behindDocument: boolean;
+  allowOverlap: boolean;
+  layoutInCell: boolean;
+  lockAnchor: boolean;
+}
+
 export interface WorkDocumentImageLayoutOptions {
   layout: WorkDocumentImageLayout;
   alignment: WorkDocumentImageAlignment;
@@ -58,6 +66,7 @@ export interface WorkDocumentImageProperties
   position?: WorkDocumentImagePosition | null;
   crop?: WorkDocumentImageCrop | null;
   contour?: WorkDocumentImageWrapContour | null;
+  layer?: WorkDocumentImageLayer | null;
 }
 
 export type {
@@ -99,6 +108,15 @@ const DEFAULT_HORIZONTAL_REFERENCE: WorkDocumentImageHorizontalReference =
 const DEFAULT_VERTICAL_REFERENCE: WorkDocumentImageVerticalReference =
   'paragraph';
 const MAX_IMAGE_OFFSET_MILLIMETERS = 558.7;
+export const MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT = 0xffff_ffff;
+const DEFAULT_IMAGE_LAYER: WorkDocumentImageLayer = {
+  relativeHeight: 0,
+  behindDocument: false,
+  allowOverlap: false,
+  layoutInCell: true,
+  lockAnchor: false,
+};
+const DOCUMENT_IMAGE_CSS_LAYER_RANGE = 1_000_000;
 
 export const DocumentImage = Image.extend({
   addCommands() {
@@ -241,6 +259,27 @@ export const DocumentImage = Image.extend({
           documentImageWrapContourFromElement(element)?.edited ?? false,
         renderHTML: () => ({}),
       },
+      relativeHeight: imageRelativeHeightAttribute(),
+      behindDocument: imageLayerBooleanAttribute(
+        'behindDocument',
+        'data-office-image-behind-document',
+        DEFAULT_IMAGE_LAYER.behindDocument,
+      ),
+      allowOverlap: imageLayerBooleanAttribute(
+        'allowOverlap',
+        'data-office-image-allow-overlap',
+        DEFAULT_IMAGE_LAYER.allowOverlap,
+      ),
+      layoutInCell: imageLayerBooleanAttribute(
+        'layoutInCell',
+        'data-office-image-layout-in-cell',
+        DEFAULT_IMAGE_LAYER.layoutInCell,
+      ),
+      lockAnchor: imageLayerBooleanAttribute(
+        'lockAnchor',
+        'data-office-image-lock-anchor',
+        DEFAULT_IMAGE_LAYER.lockAnchor,
+      ),
     };
   },
 
@@ -329,11 +368,12 @@ export function documentImageProperties(
   editor: Editor,
 ): WorkDocumentImageProperties {
   const attributes = editor.getAttributes('image') as Record<string, unknown>;
+  const layout = normalizeDocumentImageLayoutOptions(attributes);
   const position = normalizeDocumentImagePosition(attributes);
   const crop = normalizeDocumentImageCrop(attributes);
   const contour = effectiveDocumentImageWrapContour(attributes);
   return {
-    ...normalizeDocumentImageLayoutOptions(attributes),
+    ...layout,
     width: normalizeDocumentImageDimension(attributes.width),
     height: normalizeDocumentImageDimension(attributes.height),
     lockAspectRatio: normalizeDocumentImageLockAspectRatio(
@@ -343,6 +383,9 @@ export function documentImageProperties(
     ...(position ? { position } : {}),
     ...(crop ? { crop } : {}),
     ...(contour ? { contour } : {}),
+    ...(layout.layout === 'inline'
+      ? {}
+      : { layer: normalizeDocumentImageLayer(attributes) }),
   };
 }
 
@@ -421,6 +464,18 @@ export function documentImageCropFromElement(
     cropRight: element.getAttribute('data-office-image-crop-right'),
     cropBottom: element.getAttribute('data-office-image-crop-bottom'),
     cropLeft: element.getAttribute('data-office-image-crop-left'),
+  });
+}
+
+export function documentImageLayerFromElement(
+  element: Element,
+): WorkDocumentImageLayer {
+  return normalizeDocumentImageLayer({
+    relativeHeight: element.getAttribute('data-office-image-relative-height'),
+    behindDocument: element.getAttribute('data-office-image-behind-document'),
+    allowOverlap: element.getAttribute('data-office-image-allow-overlap'),
+    layoutInCell: element.getAttribute('data-office-image-layout-in-cell'),
+    lockAnchor: element.getAttribute('data-office-image-lock-anchor'),
   });
 }
 
@@ -555,6 +610,55 @@ export function normalizeDocumentImageCropEdge(value: unknown): number {
   return Math.round(Math.min(99.99, Math.max(0, number)) * 100) / 100;
 }
 
+export function normalizeDocumentImageLayer(
+  value: Partial<Record<keyof WorkDocumentImageLayer, unknown>>,
+): WorkDocumentImageLayer {
+  return {
+    relativeHeight: normalizeDocumentImageRelativeHeight(value.relativeHeight),
+    behindDocument: normalizeDocumentImageLayerBoolean(
+      value.behindDocument,
+      DEFAULT_IMAGE_LAYER.behindDocument,
+    ),
+    allowOverlap: normalizeDocumentImageLayerBoolean(
+      value.allowOverlap,
+      DEFAULT_IMAGE_LAYER.allowOverlap,
+    ),
+    layoutInCell: normalizeDocumentImageLayerBoolean(
+      value.layoutInCell,
+      DEFAULT_IMAGE_LAYER.layoutInCell,
+    ),
+    lockAnchor: normalizeDocumentImageLayerBoolean(
+      value.lockAnchor,
+      DEFAULT_IMAGE_LAYER.lockAnchor,
+    ),
+  };
+}
+
+export function normalizeDocumentImageRelativeHeight(value: unknown): number {
+  const number =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? Number(value)
+        : DEFAULT_IMAGE_LAYER.relativeHeight;
+  if (!Number.isFinite(number)) return DEFAULT_IMAGE_LAYER.relativeHeight;
+  return Math.round(
+    Math.min(MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT, Math.max(0, number)),
+  );
+}
+
+export function documentImageLayerCssZIndex(
+  layer: WorkDocumentImageLayer,
+): number {
+  const rank = Math.round(
+    (layer.relativeHeight / MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT) *
+      DOCUMENT_IMAGE_CSS_LAYER_RANGE,
+  );
+  return layer.behindDocument
+    ? rank - DOCUMENT_IMAGE_CSS_LAYER_RANGE - 1
+    : rank + 1;
+}
+
 function formatImageLayoutNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
@@ -627,6 +731,16 @@ function documentImageAttributesForChanges(
       : null;
     attributes.wrapPolygonEdited = contour?.edited ?? false;
   }
+  if (Object.hasOwn(value, 'layer')) {
+    const layer = value.layer
+      ? normalizeDocumentImageLayer(value.layer)
+      : DEFAULT_IMAGE_LAYER;
+    attributes.relativeHeight = layer.relativeHeight;
+    attributes.behindDocument = layer.behindDocument;
+    attributes.allowOverlap = layer.allowOverlap;
+    attributes.layoutInCell = layer.layoutInCell;
+    attributes.lockAnchor = layer.lockAnchor;
+  }
   return attributes;
 }
 
@@ -684,6 +798,7 @@ function syncDocumentImageNodeView(
   const crop = normalizeDocumentImageCrop(attributes);
   const wrapSide = normalizeDocumentImageWrapSide(attributes.wrapSide);
   const contour = effectiveDocumentImageWrapContour(attributes);
+  const layer = normalizeDocumentImageLayer(attributes);
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -696,6 +811,7 @@ function syncDocumentImageNodeView(
   syncDocumentImagePosition(element, position);
   applyDocumentImageCropToElement(element, crop);
   applyDocumentImageWrapContourToElement(element, contour);
+  applyDocumentImageLayerToElement(element, layer);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -712,6 +828,7 @@ function syncDocumentImageNodeView(
   syncDocumentImagePosition(container, position);
   applyDocumentImageCropToElement(container, crop);
   applyDocumentImageWrapContourToElement(container, contour);
+  applyDocumentImageLayerToElement(container, layer);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -780,6 +897,40 @@ function imageWrapPolygonAttribute() {
         style: `--work-document-image-wrap-contour:${documentImageWrapContourCss(contour)}`,
       };
     },
+  };
+}
+
+function imageRelativeHeightAttribute() {
+  return {
+    default: DEFAULT_IMAGE_LAYER.relativeHeight,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageRelativeHeight(
+        element.getAttribute('data-office-image-relative-height'),
+      ),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const layer = normalizeDocumentImageLayer(attributes);
+      return {
+        'data-office-image-relative-height': String(layer.relativeHeight),
+        style: `--work-document-image-z-index:${documentImageLayerCssZIndex(layer)}`,
+      };
+    },
+  };
+}
+
+function imageLayerBooleanAttribute(
+  key: keyof Omit<WorkDocumentImageLayer, 'relativeHeight'>,
+  name: string,
+  fallback: boolean,
+) {
+  return {
+    default: fallback,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageLayerBoolean(element.getAttribute(name), fallback),
+    renderHTML: (attributes: Record<string, unknown>) => ({
+      [name]: String(
+        normalizeDocumentImageLayerBoolean(attributes[key], fallback),
+      ),
+    }),
   };
 }
 
@@ -870,6 +1021,35 @@ export function applyDocumentImageCropToElement(
   for (const [name, value] of documentImageCropStyleEntries(crop)) {
     element.style.setProperty(name, value);
   }
+}
+
+export function applyDocumentImageLayerToElement(
+  element: HTMLElement,
+  layer: WorkDocumentImageLayer,
+): void {
+  const normalized = normalizeDocumentImageLayer(layer);
+  element.dataset.officeImageRelativeHeight = String(normalized.relativeHeight);
+  element.dataset.officeImageBehindDocument = String(normalized.behindDocument);
+  element.dataset.officeImageAllowOverlap = String(normalized.allowOverlap);
+  element.dataset.officeImageLayoutInCell = String(normalized.layoutInCell);
+  element.dataset.officeImageLockAnchor = String(normalized.lockAnchor);
+  element.style.setProperty(
+    '--work-document-image-z-index',
+    String(documentImageLayerCssZIndex(normalized)),
+  );
+}
+
+function normalizeDocumentImageLayerBoolean(
+  value: unknown,
+  fallback: boolean,
+): boolean {
+  if (value === true || value === 1 || value === '1' || value === 'true') {
+    return true;
+  }
+  if (value === false || value === 0 || value === '0' || value === 'false') {
+    return false;
+  }
+  return fallback;
 }
 
 function documentImageCropStyle(crop: WorkDocumentImageCrop): string {

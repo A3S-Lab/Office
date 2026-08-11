@@ -18,8 +18,10 @@ import {
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   documentImageAlternativeText,
+  documentImageLayerCssZIndex,
   documentImageLayoutOptions,
   documentImageProperties,
+  normalizeDocumentImageLayer,
   normalizeDocumentImageLayoutOptions,
 } from '../src/internal/features/work/work-document-image-layout';
 import {
@@ -160,6 +162,61 @@ test('keeps edited image wrap contours in the model and live presentation', () =
   editor.destroy();
 });
 
+test('keeps floating image drawing layers in the model and presentation', () => {
+  const editor = createImageEditor(
+    [
+      `<img src="${pixelPng}" alt="Layered" width="120" height="80"`,
+      ' data-office-image-layout="square"',
+      ' data-office-image-relative-height="50331648"',
+      ' data-office-image-behind-document="true"',
+      ' data-office-image-allow-overlap="true"',
+      ' data-office-image-layout-in-cell="false"',
+      ' data-office-image-lock-anchor="true">',
+    ].join(''),
+  );
+  selectFirstImage(editor);
+
+  const layer = {
+    relativeHeight: 50_331_648,
+    behindDocument: true,
+    allowOverlap: true,
+    layoutInCell: false,
+    lockAnchor: true,
+  };
+  expect(documentImageProperties(editor)).toMatchObject({ layer });
+  const container = editor.view.dom.querySelector<HTMLElement>(
+    '[data-resize-container][data-node="image"]',
+  );
+  expect(container?.dataset.officeImageRelativeHeight).toBe('50331648');
+  expect(container?.dataset.officeImageBehindDocument).toBe('true');
+  expect(container?.dataset.officeImageAllowOverlap).toBe('true');
+  expect(container?.dataset.officeImageLayoutInCell).toBe('false');
+  expect(container?.dataset.officeImageLockAnchor).toBe('true');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-z-index'),
+  ).toBe(String(documentImageLayerCssZIndex(layer)));
+  expect(documentImageLayerCssZIndex(layer)).toBeLessThan(0);
+  expect(
+    documentImageLayerCssZIndex({ ...layer, behindDocument: false }),
+  ).toBeGreaterThan(0);
+  expect(
+    normalizeDocumentImageLayer({
+      relativeHeight: 9_000_000_000,
+      behindDocument: 'false',
+      allowOverlap: '1',
+      layoutInCell: '0',
+      lockAnchor: true,
+    }),
+  ).toEqual({
+    relativeHeight: 4_294_967_295,
+    behindDocument: false,
+    allowOverlap: true,
+    layoutInCell: false,
+    lockAnchor: true,
+  });
+  editor.destroy();
+});
+
 test('commits picture size, layout, and alternative text as one undoable update', () => {
   const editor = createImageEditor(
     `<img src="${pixelPng}" alt="Original" title="Original title" width="120" height="80">`,
@@ -188,6 +245,13 @@ test('commits picture size, layout, and alternative text as one undoable update'
         verticalReference: 'page',
       },
       crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
+      layer: {
+        relativeHeight: 50_331_648,
+        behindDocument: true,
+        allowOverlap: true,
+        layoutInCell: false,
+        lockAnchor: true,
+      },
     }),
   ).toBe(true);
 
@@ -208,6 +272,13 @@ test('commits picture size, layout, and alternative text as one undoable update'
       verticalReference: 'page',
     },
     crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
+    layer: {
+      relativeHeight: 50_331_648,
+      behindDocument: true,
+      allowOverlap: true,
+      layoutInCell: false,
+      lockAnchor: true,
+    },
   });
   const container = editor.view.dom.querySelector<HTMLElement>(
     '[data-resize-container][data-node="image"]',
@@ -218,6 +289,8 @@ test('commits picture size, layout, and alternative text as one undoable update'
   expect(container?.dataset.officeImageWrapSide).toBe('largest');
   expect(container?.dataset.officeImageCropTop).toBe('12.5');
   expect(container?.dataset.officeImageCropLeft).toBe('10');
+  expect(container?.dataset.officeImageRelativeHeight).toBe('50331648');
+  expect(container?.dataset.officeImageBehindDocument).toBe('true');
   expect(
     container?.style.getPropertyValue('--work-document-image-crop-scale-x'),
   ).toBe('1.18');
@@ -304,7 +377,46 @@ test('preserves untouched imported dimensions in picture property changes', () =
     horizontalOffset: null,
     verticalOffset: null,
     crop: null,
+    relativeHeight: null,
   });
+});
+
+test('validates and commits floating image layer options', () => {
+  const initial = createDocumentPicturePropertiesDraft({
+    properties: {
+      width: 120,
+      height: 80,
+      lockAspectRatio: true,
+      layout: 'square',
+      alignment: 'left',
+      wrapDistance: 3,
+      alternativeText: 'Layered image',
+    },
+  });
+  const layered = {
+    ...initial,
+    relativeHeight: '50331648',
+    behindDocument: true,
+    allowOverlap: true,
+    layoutInCell: false,
+    lockAnchor: true,
+  };
+  expect(documentPicturePropertiesErrors(layered).relativeHeight).toBeNull();
+  expect(documentPicturePropertyChanges(initial, layered)).toEqual({
+    layer: {
+      relativeHeight: 50_331_648,
+      behindDocument: true,
+      allowOverlap: true,
+      layoutInCell: false,
+      lockAnchor: true,
+    },
+  });
+  expect(
+    documentPicturePropertiesErrors({
+      ...layered,
+      relativeHeight: '4.5',
+    }).relativeHeight,
+  ).not.toBeNull();
 });
 
 test('validates and commits precise floating-image anchor positions', () => {
@@ -493,6 +605,15 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   fireEvent.click(screen.getByRole('option', { name: '页面' }));
   fireEvent.click(screen.getByRole('combobox', { name: '垂直相对于' }));
   fireEvent.click(screen.getByRole('option', { name: '页边距' }));
+  fireEvent.change(screen.getByRole('textbox', { name: '图片绘图层级顺序' }), {
+    target: { value: '50331648' },
+  });
+  fireEvent.click(screen.getByRole('checkbox', { name: '图片衬于文字下方' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: '允许图片重叠' }));
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: '图片随表格单元格布局' }),
+  );
+  fireEvent.click(screen.getByRole('checkbox', { name: '锁定图片锚点' }));
   for (const [name, value] of [
     ['图片上方裁剪（百分比）', '12.5'],
     ['图片右侧裁剪（百分比）', '5'],
@@ -535,6 +656,13 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
       verticalReference: 'margin',
     },
     crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
+    layer: {
+      relativeHeight: 50_331_648,
+      behindDocument: true,
+      allowOverlap: true,
+      layoutInCell: false,
+      lockAnchor: true,
+    },
   });
   expect(editor.getHTML()).toContain('alt="季度趋势图"');
 
@@ -613,11 +741,18 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-layout="square"',
     ' data-office-image-alignment="right"',
     ' data-office-image-wrap-distance="5"',
-    ' data-office-image-wrap-side="right">',
+    ' data-office-image-wrap-side="right"',
+    ' data-office-image-relative-height="50331648"',
+    ' data-office-image-behind-document="false"',
+    ' data-office-image-allow-overlap="true"',
+    ' data-office-image-layout-in-cell="false"',
+    ' data-office-image-lock-anchor="true">',
     `<img src="${pixelPng}" alt="Centered diagram" width="140" height="90"`,
     ' data-office-image-layout="topBottom"',
     ' data-office-image-alignment="center"',
-    ' data-office-image-wrap-distance="2">',
+    ' data-office-image-wrap-distance="2"',
+    ' data-office-image-relative-height="0"',
+    ' data-office-image-behind-document="true">',
     `<img src="${pixelPng}" alt="Precisely positioned" width="100" height="70"`,
     ' data-office-image-layout="square"',
     ' data-office-image-horizontal-offset="-12.5"',
@@ -653,6 +788,12 @@ test('round-trips supported floating image anchors through DOCX', async () => {
 
   expect(documentXml).toBeDefined();
   expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(5);
+  expect(documentXml).toMatch(
+    /<wp:anchor\b(?=[^>]*relativeHeight="50331648")(?=[^>]*behindDoc="0")(?=[^>]*allowOverlap="1")(?=[^>]*layoutInCell="0")(?=[^>]*locked="1")/,
+  );
+  expect(documentXml).toMatch(
+    /<wp:anchor\b(?=[^>]*relativeHeight="0")(?=[^>]*behindDoc="1")/,
+  );
   expect(documentXml).toMatch(/<wp:wrapSquare\b(?=[^>]*wrapText="right")/);
   expect(documentXml).toContain('<wp:wrapTopAndBottom');
   expect(documentXml).toMatch(
@@ -685,6 +826,7 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   );
   expect(documentXml).not.toContain('__A3S_IMAGE_CROP_');
   expect(documentXml).not.toContain('__A3S_IMAGE_WRAP_');
+  expect(documentXml).not.toContain('__A3S_IMAGE_LAYER_');
 
   const imported = await importOfficeFile(
     new File([blob], 'floating-images.docx', { type: blob.type }),
@@ -764,6 +906,22 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(alignedImage?.dataset.officeImageHorizontalOffset).toBeUndefined();
   expect(alignedImage?.dataset.officeImageVerticalOffset).toBe('0');
   expect(alignedImage?.dataset.officeImageWrapSide).toBe('right');
+  expect(alignedImage?.dataset.officeImageRelativeHeight).toBe('50331648');
+  expect(alignedImage?.dataset.officeImageBehindDocument).toBe('false');
+  expect(alignedImage?.dataset.officeImageAllowOverlap).toBe('true');
+  expect(alignedImage?.dataset.officeImageLayoutInCell).toBe('false');
+  expect(alignedImage?.dataset.officeImageLockAnchor).toBe('true');
+  expect(
+    alignedImage?.style.getPropertyValue('--work-document-image-z-index'),
+  ).toBe('11720');
+  const behindImage = importedHtml.querySelector<HTMLImageElement>(
+    'img[alt="Centered diagram"]',
+  );
+  expect(behindImage?.dataset.officeImageRelativeHeight).toBe('0');
+  expect(behindImage?.dataset.officeImageBehindDocument).toBe('true');
+  expect(
+    behindImage?.style.getPropertyValue('--work-document-image-z-index'),
+  ).toBe('-1000001');
 
   const regenerated = await createArtifactBlob(imported);
   const regeneratedArchive = await JSZip.loadAsync(
@@ -783,6 +941,12 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(regeneratedXml).toMatch(/<wp:wrapTight\b(?=[^>]*wrapText="largest")/);
   expect(regeneratedXml).toMatch(/<wp:wrapThrough\b(?=[^>]*wrapText="left")/);
   expect(regeneratedXml).toContain('<wp:lineTo x="10800" y="16200"/>');
+  expect(regeneratedXml).toMatch(
+    /<wp:anchor\b(?=[^>]*relativeHeight="50331648")(?=[^>]*behindDoc="0")(?=[^>]*allowOverlap="1")(?=[^>]*layoutInCell="0")(?=[^>]*locked="1")/,
+  );
+  expect(regeneratedXml).toMatch(
+    /<wp:anchor\b(?=[^>]*relativeHeight="0")(?=[^>]*behindDoc="1")/,
+  );
 });
 
 function createImageEditor(content: string): Editor {

@@ -18,6 +18,7 @@ import {
 import { Button, Dialog } from '../../../design-system/primitives';
 import {
   documentImageProperties,
+  MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT,
   type WorkDocumentImageAlignment,
   type WorkDocumentImageHorizontalReference,
   type WorkDocumentImageLayout,
@@ -206,6 +207,11 @@ function DocumentPicturePropertiesDialog({
         />
         <PictureLayoutSection draft={draft} onDraftChange={setDraft} />
         <PictureAlignmentSection
+          draft={draft}
+          errors={errors}
+          onDraftChange={setDraft}
+        />
+        <PictureLayerSection
           draft={draft}
           errors={errors}
           onDraftChange={setDraft}
@@ -467,6 +473,82 @@ function PictureAlignmentSection({
       </div>
       {errors.horizontalOffset && <p role="alert">{errors.horizontalOffset}</p>}
       {errors.verticalOffset && <p role="alert">{errors.verticalOffset}</p>}
+    </fieldset>
+  );
+}
+
+function PictureLayerSection({
+  draft,
+  errors,
+  onDraftChange,
+}: {
+  draft: DocumentPicturePropertiesDraft;
+  errors: DocumentPicturePropertiesErrors;
+  onDraftChange: React.Dispatch<
+    React.SetStateAction<DocumentPicturePropertiesDraft>
+  >;
+}) {
+  const disabled = draft.layout === 'inline';
+  return (
+    <fieldset className="work-document-picture-properties-section layer">
+      <legend>图层与锚点</legend>
+      <PictureNumberRow
+        label="层级顺序"
+        ariaLabel="图片绘图层级顺序"
+        value={draft.relativeHeight}
+        unit="序号"
+        min={0}
+        max={MAX_DOCUMENT_IMAGE_RELATIVE_HEIGHT}
+        step={1}
+        disabled={disabled}
+        invalid={Boolean(errors.relativeHeight)}
+        onValueChange={(relativeHeight) =>
+          onDraftChange((current) => ({ ...current, relativeHeight }))
+        }
+      />
+      {errors.relativeHeight && <p role="alert">{errors.relativeHeight}</p>}
+      <div className="work-document-picture-properties-layer-options">
+        <OfficeCheckbox
+          ariaLabel="图片衬于文字下方"
+          checked={draft.behindDocument}
+          disabled={disabled}
+          onCheckedChange={(behindDocument) =>
+            onDraftChange((current) => ({ ...current, behindDocument }))
+          }
+        >
+          衬于文字下方
+        </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel="允许图片重叠"
+          checked={draft.allowOverlap}
+          disabled={disabled}
+          onCheckedChange={(allowOverlap) =>
+            onDraftChange((current) => ({ ...current, allowOverlap }))
+          }
+        >
+          允许对象重叠
+        </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel="图片随表格单元格布局"
+          checked={draft.layoutInCell}
+          disabled={disabled}
+          onCheckedChange={(layoutInCell) =>
+            onDraftChange((current) => ({ ...current, layoutInCell }))
+          }
+        >
+          随单元格布局
+        </OfficeCheckbox>
+        <OfficeCheckbox
+          ariaLabel="锁定图片锚点"
+          checked={draft.lockAnchor}
+          disabled={disabled}
+          onCheckedChange={(lockAnchor) =>
+            onDraftChange((current) => ({ ...current, lockAnchor }))
+          }
+        >
+          锁定锚点
+        </OfficeCheckbox>
+      </div>
     </fieldset>
   );
 }
