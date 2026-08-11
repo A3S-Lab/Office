@@ -14,11 +14,13 @@ import type {
 } from '../work-document-table-geometry';
 import type { DocumentTablePropertiesSource } from './document-table-properties-dialog-model';
 import {
+  draftForColumnWidthType,
   draftForTableWidthType,
   type DocumentTablePropertiesDraft,
   type DocumentTablePropertiesErrors,
   type DocumentTablePropertiesTab,
 } from './document-table-properties-dialog-model';
+import type { DocumentTableColumnWidthType } from '../work-document-table-column-widths';
 import {
   OfficeCheckbox,
   OfficeNumberField,
@@ -41,6 +43,14 @@ const widthOptions = [
   { value: 'pixels', label: '厘米' },
 ] as const satisfies readonly {
   value: DocumentTablePreferredWidthType;
+  label: string;
+}[];
+
+const columnWidthOptions = [
+  { value: 'pixels', label: '厘米' },
+  { value: 'percent', label: '百分比' },
+] as const satisfies readonly {
+  value: DocumentTableColumnWidthType;
   label: string;
 }[];
 
@@ -346,23 +356,45 @@ function RowSection({ draft, setDraft, errors, source }: SectionProps) {
   );
 }
 
-function ColumnSection({ draft, setDraft, errors }: SectionProps) {
+function ColumnSection({ draft, setDraft, errors, source }: SectionProps) {
   return (
     <fieldset className="work-document-table-properties-section">
       <legend>当前列尺寸</legend>
+      <div className="work-document-table-properties-choice-grid width">
+        {columnWidthOptions.map((option) => (
+          <label key={option.value}>
+            <input
+              type="radio"
+              name="table-properties-column-width-type"
+              value={option.value}
+              checked={draft.column.widthType === option.value}
+              onChange={() =>
+                setDraft((current) =>
+                  draftForColumnWidthType(current, option.value, source),
+                )
+              }
+            />
+            <span>{option.label}</span>
+          </label>
+        ))}
+      </div>
       <NumberRow
         label="列宽"
-        ariaLabel="当前列宽（厘米）"
+        ariaLabel={
+          draft.column.widthType === 'percent'
+            ? '当前列宽（百分比）'
+            : '当前列宽（厘米）'
+        }
         value={draft.column.width}
-        unit="厘米"
-        min={0.5}
-        max={30}
-        step={0.1}
+        unit={draft.column.widthType === 'percent' ? '%' : '厘米'}
+        min={draft.column.widthType === 'percent' ? 1 : 0.5}
+        max={draft.column.widthType === 'percent' ? 100 : 30}
+        step={draft.column.widthType === 'percent' ? 1 : 0.1}
         invalid={Boolean(errors.columnWidth)}
         onValueChange={(width) =>
           setDraft((current) => ({
             ...current,
-            column: { width },
+            column: { ...current.column, width },
           }))
         }
       />

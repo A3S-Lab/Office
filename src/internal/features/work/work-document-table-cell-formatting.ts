@@ -32,6 +32,10 @@ import {
   parseDocxThemeReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
+import {
+  documentTableColumnPercentagesFromElement,
+  renderDocumentTableColumnPercentages,
+} from './work-document-table-column-widths';
 
 export {
   documentTableBordersFromElement,
@@ -290,6 +294,13 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
       parseHTML: (element: HTMLElement) => serializedCellBorderThemes(element),
       renderHTML: (attributes: Record<string, unknown>) =>
         renderedCellBorderThemes(attributes.borderThemes),
+    },
+    columnWidthPercentages: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        documentTableColumnPercentagesFromElement(element),
+      renderHTML: (attributes: Record<string, unknown>) =>
+        renderDocumentTableColumnPercentages(attributes.columnWidthPercentages),
     },
     backgroundColor: {
       default: defaults.backgroundColor,

@@ -267,13 +267,16 @@ table-level cell margins, and cell-level margin overrides independently.
 real fixture proves that a centered 62.5% table with a first-cell margin
 override keeps matching edit and preview geometry. Table insertion or removal
 does not reinterpret an imported autofit table as fixed merely because it has
-grid widths. The Layout ribbon reports the rendered column width for autofit
-tables and labels noncanonical preferred widths as Current width instead of
+grid widths. Percentage column preferences round-trip as `tcW` while stable
+pixel `tblGrid` widths remain browser-layout fallbacks, including across merged
+cells. The Layout ribbon reports the rendered column width for autofit tables
+and labels noncanonical preferred widths as Current width instead of
 misreporting them as fixed.
 The Table Properties dialog now owns four coherent tabs: Table, Row, Column,
-and Cell. It combines auto, percentage, or centimeter preferred width,
+and Cell. It combines auto, percentage, or centimeter preferred table width,
 left/center/right placement, and left indent with selected-row height and rule,
-page splitting, repeated headings, current-column width, selected-cell vertical
+page splitting, repeated headings, percentage or centimeter current-column
+width, selected-cell vertical
 alignment, and four-edge margins. The complete validated draft commits in one
 TipTap transaction and one undo record; Cancel and Escape preserve the last
 committed state and restore the exact ribbon invoker. Values the user did not

@@ -15,6 +15,7 @@ import type {
   DocumentTablePropertyChanges,
   DocumentTableSizingState,
 } from '../work-document-table-sizing';
+import type { DocumentTableColumnWidthType } from '../work-document-table-column-widths';
 
 export const PIXELS_PER_CENTIMETER = 96 / 2.54;
 
@@ -35,6 +36,7 @@ export interface DocumentTablePropertiesDraft {
     repeatHeader: boolean;
   };
   column: {
+    widthType: DocumentTableColumnWidthType;
     width: string;
   };
   cell: {
@@ -109,11 +111,15 @@ export function createDocumentTablePropertiesDraft(
       repeatHeader: source.rowOptions.repeatHeader,
     },
     column: {
-      width: centimeters(
-        source.renderedColumnWidth ??
-          source.sizing.columnWidth ??
-          FALLBACK_COLUMN_WIDTH_CENTIMETERS * PIXELS_PER_CENTIMETER,
-      ),
+      widthType: source.sizing.columnWidthType,
+      width:
+        source.sizing.columnWidthType === 'percent'
+          ? formatNumber(source.sizing.columnWidth ?? 100)
+          : centimeters(
+              source.renderedColumnWidth ??
+                source.sizing.columnWidth ??
+                FALLBACK_COLUMN_WIDTH_CENTIMETERS * PIXELS_PER_CENTIMETER,
+            ),
     },
     cell: {
       verticalAlign: source.cellFormat.verticalAlign,
@@ -140,7 +146,10 @@ export function documentTablePropertiesErrors(
     rowHeight: draft.row.heightEnabled
       ? dimensionError(draft.row.height)
       : null,
-    columnWidth: dimensionError(draft.column.width),
+    columnWidth:
+      draft.column.widthType === 'percent'
+        ? percentageError(draft.column.width)
+        : dimensionError(draft.column.width),
     cellMargins,
   };
 }
@@ -175,12 +184,44 @@ export function draftForTableWidthType(
   return { ...current, table: { ...current.table, widthType, width } };
 }
 
+export function draftForColumnWidthType(
+  current: DocumentTablePropertiesDraft,
+  widthType: DocumentTableColumnWidthType,
+  source: Pick<
+    DocumentTablePropertiesSource,
+    'renderedColumnWidth' | 'renderedTableWidth' | 'sizing'
+  >,
+): DocumentTablePropertiesDraft {
+  if (widthType === current.column.widthType) return current;
+  const width =
+    widthType === 'percent'
+      ? formatNumber(
+          source.sizing.columnWidthType === 'percent'
+            ? (source.sizing.columnWidth ?? 100)
+            : source.renderedColumnWidth && source.renderedTableWidth
+              ? (source.renderedColumnWidth / source.renderedTableWidth) * 100
+              : 100 / Math.max(1, source.sizing.selectedColumnCount),
+        )
+      : centimeters(
+          source.renderedColumnWidth ??
+            (source.sizing.columnWidthType === 'pixels'
+              ? source.sizing.columnWidth
+              : null) ??
+            FALLBACK_COLUMN_WIDTH_CENTIMETERS * PIXELS_PER_CENTIMETER,
+        );
+  return { ...current, column: { widthType, width } };
+}
+
 export function documentTablePropertyChanges(
   initial: DocumentTablePropertiesDraft,
   current: DocumentTablePropertiesDraft,
   source: Pick<
     DocumentTablePropertiesSource,
-    'canRepeatHeader' | 'cellFormat' | 'renderedColumnWidths' | 'sizing'
+    | 'canRepeatHeader'
+    | 'cellFormat'
+    | 'renderedColumnWidths'
+    | 'renderedTableWidth'
+    | 'sizing'
   >,
 ): DocumentTablePropertyChanges | null {
   const errors = documentTablePropertiesErrors(current);
@@ -216,10 +257,18 @@ export function documentTablePropertyChanges(
     };
   }
 
-  if (!sameDraftNumber(initial.column.width, current.column.width)) {
+  if (
+    initial.column.widthType !== current.column.widthType ||
+    !sameDraftNumber(initial.column.width, current.column.width)
+  ) {
     changes.column = {
-      width: rounded(Number(current.column.width) * PIXELS_PER_CENTIMETER),
+      type: current.column.widthType,
+      width:
+        current.column.widthType === 'percent'
+          ? rounded(Number(current.column.width))
+          : rounded(Number(current.column.width) * PIXELS_PER_CENTIMETER),
       renderedColumnWidths: source.renderedColumnWidths,
+      renderedTableWidth: source.renderedTableWidth,
     };
   }
 
@@ -358,6 +407,10 @@ function tableIndentError(draft: DocumentTablePropertiesDraft): string | null {
 
 function dimensionError(value: string): string | null {
   return validNumber(value, 0.5, 30) ? null : '请输入 0.5 到 30 之间的厘米数。';
+}
+
+function percentageError(value: string): string | null {
+  return validNumber(value, 1, 100) ? null : '请输入 1 到 100 之间的百分比。';
 }
 
 function validNumber(value: string, minimum: number, maximum: number): boolean {

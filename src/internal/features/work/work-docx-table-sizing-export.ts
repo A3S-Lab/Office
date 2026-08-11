@@ -1,6 +1,7 @@
 import type { ITableCellOptions, ITableOptions, ITableRowOptions } from 'docx';
 import { normalizeDocumentTableRowHeightRule } from './work-document-table-row';
 import { documentTableGeometryFromElement } from './work-document-table-geometry';
+import { documentTableColumnPercentagesFromElement } from './work-document-table-column-widths';
 
 type TableSizingDocxOptions = Pick<
   ITableOptions,
@@ -64,6 +65,15 @@ export function documentTableCellSizingDocxOptions(
   docx: typeof import('docx'),
 ): TableCellSizingDocxOptions {
   const widths = cellColumnWidths(cell);
+  const percentages = documentTableColumnPercentagesFromElement(cell);
+  if (percentages?.length) {
+    return {
+      width: {
+        size: percentages.reduce((sum, width) => sum + width, 0),
+        type: docx.WidthType.PERCENTAGE,
+      },
+    };
+  }
   if (!widths?.length) return {};
   return {
     width: {

@@ -639,7 +639,8 @@ Design owns keyboard-operated style presets, the header row, multi-cell
 shading, and a reusable border pen with whole-selection, outside, inside, side,
 inside-horizontal, and inside-vertical targets. Layout owns row and column
 insertion or deletion, cell merge and split, horizontal and vertical alignment, repeated headers,
-atomic rows, centimeter-based column width and row height fields, equal row and
+atomic rows, percentage- or centimeter-based column width and centimeter-based
+row height fields, equal row and
 column distribution, content/window autofit, table alignment, four-edge cell
 margins, and table deletion. Physical
 column widths remain coherent across merged cells through ProseMirror's table
@@ -662,7 +663,9 @@ areas.
 DOCX tables independently round-trip `tblGrid`, `tcW`, `tblLayout`, `tblW`,
 `jc`, `tblInd`, `tblCellMar`, `tcMar`, and `trHeight`; numeric fiftieth-percent
 and string percentage widths keep their actual size instead of collapsing to a
-full-width table. Window/content autofit remains responsive in the browser.
+full-width table. Per-column percentage preferences are editable and export as
+`tcW`, including merged cells, while `tblGrid` pixels remain browser layout
+fallbacks. Window/content autofit remains responsive in the browser.
 Independent top, right, bottom, and left cell-border attributes
 render identically in edit and preview, export as independent `w:tcBorders`,
 and reopen without being flattened. Explicit table-level outer and inside
@@ -686,8 +689,7 @@ a first-cell margin override, and matching edit/preview geometry through A3S
 Test.
 Command availability comes from the ProseMirror table state, so actions that
 cannot apply to the current selection remain disabled. Less-common conditional
-paragraph properties outside the supported layout set, percentage-width column
-authoring, nested-table editing,
+paragraph properties outside the supported layout set, nested-table editing,
 and complex merged-cell conditional flow remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,

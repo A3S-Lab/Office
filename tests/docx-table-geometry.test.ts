@@ -8,6 +8,7 @@ import {
   markDocxTableSizing,
 } from '../src/internal/features/work/work-docx-table-sizing-import';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import { documentTableCellSizingDocxOptions } from '../src/internal/features/work/work-docx-table-sizing-export';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -57,6 +58,7 @@ describe('DOCX table geometry', () => {
           },
         },
         columnWidths: [80, 120],
+        columnPercentages: [],
       },
     ]);
 
@@ -131,6 +133,44 @@ describe('DOCX table geometry', () => {
       alignment: 'right',
       indent: 0,
       cellMargins: { top: 4, right: 6, bottom: 4, left: 6 },
+    });
+  });
+
+  test('preserves percentage column preferences independently from pixel grid fallbacks', () => {
+    const document = wordDocumentXml(`
+      <w:tbl>
+        <w:tblPr><w:tblW w:type="pct" w:w="5000"/><w:tblLayout w:type="fixed"/></w:tblPr>
+        <w:tblGrid><w:gridCol w:w="1200"/><w:gridCol w:w="1800"/></w:tblGrid>
+        <w:tr>
+          <w:tc><w:tcPr><w:tcW w:type="pct" w:w="2000"/></w:tcPr><w:p><w:r><w:t>A</w:t></w:r></w:p></w:tc>
+          <w:tc><w:tcPr><w:tcW w:type="pct" w:w="3000"/></w:tcPr><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
+        </w:tr>
+      </w:tbl>
+    `);
+    const markers = markDocxTableSizing(document);
+    expect(markers.tables[0]).toMatchObject({
+      columnWidths: [80, 120],
+      columnPercentages: [40, 60],
+    });
+    const html = new DOMParser().parseFromString(
+      `<table><tbody><tr><td><p>${markers.tables[0]?.marker}A</p></td><td><p>B</p></td></tr></tbody></table>`,
+      'text/html',
+    );
+    applyImportedDocxTableSizingMarkers(html, markers);
+    const cells = Array.from(html.querySelectorAll<HTMLTableCellElement>('td'));
+    expect(cells.map((cell) => cell.dataset.officeColumnWidthsPercent)).toEqual(
+      ['40', '60'],
+    );
+    const docx = {
+      WidthType: { PERCENTAGE: 'pct', DXA: 'dxa' },
+    } as unknown as typeof import('docx');
+    const [firstCell, secondCell] = cells;
+    if (!firstCell || !secondCell) throw new Error('Expected two table cells.');
+    expect(documentTableCellSizingDocxOptions(firstCell, docx)).toEqual({
+      width: { size: 40, type: 'pct' },
+    });
+    expect(documentTableCellSizingDocxOptions(secondCell, docx)).toEqual({
+      width: { size: 60, type: 'pct' },
     });
   });
 

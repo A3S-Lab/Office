@@ -4,6 +4,9 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added percentage-based table-column authoring in the Layout ribbon and Table
+  Properties dialog. Percentage preferences survive merged cells and DOCX
+  `tcW` round-trips while pixel `tblGrid` widths remain browser fallbacks.
 - Preserved semantic Word theme color references for run text, run shading,
   table-cell fills, and independent cell borders, including tint and shade.
   Untouched formatting now writes the original theme attributes with a correct

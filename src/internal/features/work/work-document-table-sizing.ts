@@ -35,6 +35,11 @@ import {
   normalizeDocumentTablePropertyChanges,
   type DocumentTablePropertyChanges,
 } from './work-document-table-property-changes';
+import {
+  normalizeDocumentTableColumnPercent,
+  normalizeDocumentTableColumnPercentages,
+  type DocumentTableColumnWidthType,
+} from './work-document-table-column-widths';
 
 export {
   normalizeDocumentTableGeometry,
@@ -54,6 +59,7 @@ export type { DocumentTablePropertyChanges } from './work-document-table-propert
 
 export interface DocumentTableSizingState {
   columnWidth: number | null;
+  columnWidthType: DocumentTableColumnWidthType;
   rowHeight: number | null;
   rowHeightRule: DocumentTableRowHeightRule | null;
   layoutMode: DocumentTableLayoutMode;
@@ -76,6 +82,11 @@ declare module '@tiptap/core' {
       setDocumentTableColumnWidth: (
         width: number,
         renderedColumnWidths?: readonly number[],
+      ) => ReturnType;
+      setDocumentTableColumnWidthPercent: (
+        width: number,
+        renderedColumnWidths?: readonly number[],
+        renderedTableWidth?: number,
       ) => ReturnType;
       setDocumentTableRowHeight: (
         height: number | null,
@@ -186,6 +197,14 @@ export const DocumentTableSizing = Extension.create({
     return {
       setDocumentTableColumnWidth: (width, renderedColumnWidths) => (props) =>
         setSelectedColumnWidth(props, width, renderedColumnWidths),
+      setDocumentTableColumnWidthPercent:
+        (width, renderedColumnWidths, renderedTableWidth) => (props) =>
+          setSelectedColumnWidthPercent(
+            props,
+            width,
+            renderedColumnWidths,
+            renderedTableWidth,
+          ),
       setDocumentTableRowHeight:
         (height, rule = 'atLeast') =>
         (props) =>
@@ -226,6 +245,8 @@ export const DocumentTableSizing = Extension.create({
             if (
               tableColumnWidthSignature(previous) !==
                 tableColumnWidthSignature(node) &&
+              tableColumnPercentageSignature(previous) ===
+                tableColumnPercentageSignature(node) &&
               tableHasExplicitColumnWidths(node) &&
               tableGeometry(node).layout !== 'fixed'
             ) {
@@ -254,12 +275,17 @@ export function documentTableSizing(
   const widths = tableColumnWidths(context.table, context.map).filter(
     (_width, index) => columns.includes(index),
   );
+  const percentages = tableColumnPercentages(context.table, context.map).filter(
+    (_width, index) => columns.includes(index),
+  );
+  const columnPercentage = commonPositiveValue(percentages);
   const rowSizes = tableRowSizes(context.table).filter((_size, index) =>
     rows.includes(index),
   );
   const geometry = tableGeometry(context.table);
   return {
-    columnWidth: commonPositiveValue(widths),
+    columnWidth: columnPercentage ?? commonPositiveValue(widths),
+    columnWidthType: columnPercentage === null ? 'pixels' : 'percent',
     rowHeight: commonNullableValue(rowSizes.map(({ height }) => height)),
     rowHeightRule: commonNullableValue(rowSizes.map(({ rule }) => rule)),
     layoutMode: documentTableLayoutMode(geometry),
@@ -305,7 +331,53 @@ function setSelectedColumnWidth(
       context.left,
     );
   }
+  clearPhysicalColumnPercentages(
+    transaction,
+    context,
+    numberRange(context.left, context.right),
+  );
   setFixedTableGeometryFromColumns(transaction, context);
+  dispatchTableSizingTransaction(dispatch, transaction, context, state);
+  return true;
+}
+
+function setSelectedColumnWidthPercent(
+  { dispatch, state }: CommandProps,
+  width: number,
+  renderedColumnWidths?: readonly number[],
+  renderedTableWidth?: number,
+): boolean {
+  const normalized = normalizeDocumentTableColumnPercent(width);
+  const context = tableSizingContext(state);
+  if (!context || normalized === null) return false;
+  const fallbackWidths = percentageFallbackWidths(
+    context,
+    normalized,
+    renderedColumnWidths,
+    renderedTableWidth,
+  );
+  if (!fallbackWidths) return false;
+  if (!dispatch) return true;
+  const transaction = state.tr;
+  setPhysicalColumnWidths(transaction, context, fallbackWidths, 0);
+  const percentages = renderedPercentages(
+    context,
+    renderedColumnWidths,
+    renderedTableWidth,
+  );
+  for (let column = context.left; column < context.right; column += 1) {
+    percentages[column] = normalized;
+  }
+  setPhysicalColumnPercentages(transaction, context, percentages, 0);
+  const geometry = tableGeometry(context.table);
+  setTableGeometryAttribute(transaction, context, {
+    ...geometry,
+    layout: 'fixed',
+    width:
+      geometry.width.type === 'auto'
+        ? { type: 'percent', value: 100 }
+        : geometry.width,
+  });
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
 }
@@ -372,6 +444,11 @@ function setTableLayoutMode(
     preferredWidth = total;
   } else {
     clearPhysicalColumnWidths(transaction, context);
+    clearPhysicalColumnPercentages(
+      transaction,
+      context,
+      numberRange(0, context.map.width),
+    );
   }
   setTableGeometryAttribute(
     transaction,
@@ -438,27 +515,55 @@ function setTablePropertyChanges(
   const transaction = state.tr;
   closeHistory(transaction);
   if (changes.column) {
-    const preservedWidths = normalizeRenderedDimensions(
-      changes.column.renderedColumnWidths,
-      context.map.width,
-      MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
-    );
-    if (preservedWidths) {
-      for (let column = context.left; column < context.right; column += 1) {
-        preservedWidths[column] = changes.column.width;
-      }
-      setPhysicalColumnWidths(transaction, context, preservedWidths, 0);
+    if (changes.column.type === 'percent') {
+      const fallbackWidths = percentageFallbackWidths(
+        context,
+        changes.column.width,
+        changes.column.renderedColumnWidths,
+        changes.column.renderedTableWidth,
+      );
+      if (!fallbackWidths) return false;
+      setPhysicalColumnWidths(transaction, context, fallbackWidths, 0);
     } else {
-      setPhysicalColumnWidths(
+      const preservedWidths = normalizeRenderedDimensions(
+        changes.column.renderedColumnWidths,
+        context.map.width,
+        MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+      );
+      if (preservedWidths) {
+        for (let column = context.left; column < context.right; column += 1) {
+          preservedWidths[column] = changes.column.width;
+        }
+        setPhysicalColumnWidths(transaction, context, preservedWidths, 0);
+      } else {
+        setPhysicalColumnWidths(
+          transaction,
+          context,
+          numberRange(context.left, context.right).map(
+            () => changes.column?.width ?? DEFAULT_COLUMN_WIDTH,
+          ),
+          context.left,
+        );
+      }
+    }
+    if (changes.column.type === 'percent') {
+      const percentages = renderedPercentages(
+        context,
+        changes.column.renderedColumnWidths,
+        changes.column.renderedTableWidth,
+      );
+      for (let column = context.left; column < context.right; column += 1) {
+        percentages[column] = changes.column.width;
+      }
+      setPhysicalColumnPercentages(transaction, context, percentages, 0);
+    } else {
+      clearPhysicalColumnPercentages(
         transaction,
         context,
-        numberRange(context.left, context.right).map(
-          () => changes.column?.width ?? DEFAULT_COLUMN_WIDTH,
-        ),
-        context.left,
+        numberRange(context.left, context.right),
       );
+      setFixedTableGeometryFromColumns(transaction, context);
     }
-    setFixedTableGeometryFromColumns(transaction, context);
   }
 
   if (changes.table) {
@@ -528,6 +633,7 @@ function distributeColumns(
     equalDimensions(total, columns.length, MIN_DOCUMENT_TABLE_COLUMN_WIDTH),
     columns[0] ?? 0,
   );
+  clearPhysicalColumnPercentages(transaction, context, columns);
   setFixedTableGeometryFromColumns(transaction, context);
   dispatchTableSizingTransaction(dispatch, transaction, context, state);
   return true;
@@ -664,6 +770,70 @@ function setPhysicalColumnWidths(
       });
     }
   });
+}
+
+function setPhysicalColumnPercentages(
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+  percentages: readonly number[],
+  startColumn: number,
+): void {
+  const touched = new Set<string>();
+  percentages.forEach((percentage, widthIndex) => {
+    const column = startColumn + widthIndex;
+    if (column < 0 || column >= context.map.width) return;
+    for (let row = 0; row < context.map.height; row += 1) {
+      const relativePosition =
+        context.map.map[row * context.map.width + column];
+      if (relativePosition === undefined) continue;
+      const widthIndexInCell = column - context.map.colCount(relativePosition);
+      const key = `${relativePosition}:${widthIndexInCell}`;
+      if (touched.has(key)) continue;
+      touched.add(key);
+      const documentPosition = context.tableStart + relativePosition;
+      const current = transaction.doc.nodeAt(documentPosition);
+      if (!current) continue;
+      const values =
+        normalizeDocumentTableColumnPercentages(
+          current.attrs.columnWidthPercentages,
+          Number(current.attrs.colspan ?? 1),
+        ) ??
+        Array.from(
+          { length: Number(current.attrs.colspan ?? 1) },
+          () => percentage,
+        );
+      values[widthIndexInCell] = percentage;
+      transaction.setNodeMarkup(documentPosition, undefined, {
+        ...current.attrs,
+        columnWidthPercentages: values,
+      });
+    }
+  });
+}
+
+function clearPhysicalColumnPercentages(
+  transaction: CommandProps['tr'],
+  context: TableSizingContext,
+  columns: readonly number[],
+): void {
+  const touched = new Set<number>();
+  for (const column of columns) {
+    for (let row = 0; row < context.map.height; row += 1) {
+      const relativePosition =
+        context.map.map[row * context.map.width + column];
+      if (relativePosition === undefined || touched.has(relativePosition))
+        continue;
+      touched.add(relativePosition);
+      const position = context.tableStart + relativePosition;
+      const current = transaction.doc.nodeAt(position);
+      if (current?.attrs.columnWidthPercentages) {
+        transaction.setNodeMarkup(position, undefined, {
+          ...current.attrs,
+          columnWidthPercentages: null,
+        });
+      }
+    }
+  }
 }
 
 function clearPhysicalColumnWidths(
@@ -832,6 +1002,26 @@ function tableColumnWidths(
   });
 }
 
+function tableColumnPercentages(
+  table: ProseMirrorNode,
+  map: TableMap,
+): Array<number | null> {
+  return Array.from({ length: map.width }, (_unused, column) => {
+    for (let row = 0; row < map.height; row += 1) {
+      const position = map.map[row * map.width + column];
+      if (position === undefined) continue;
+      const cell = table.nodeAt(position);
+      const index = column - map.colCount(position);
+      const percentages = normalizeDocumentTableColumnPercentages(
+        cell?.attrs.columnWidthPercentages,
+        Number(cell?.attrs.colspan ?? 1),
+      );
+      if (percentages?.[index] !== undefined) return percentages[index] ?? null;
+    }
+    return null;
+  });
+}
+
 function tableRowSizes(table: ProseMirrorNode): Array<{
   height: number | null;
   rule: DocumentTableRowHeightRule | null;
@@ -880,6 +1070,83 @@ function tableColumnWidthSignature(table: ProseMirrorNode | undefined): string {
     return false;
   });
   return JSON.stringify(widths);
+}
+
+function tableColumnPercentageSignature(
+  table: ProseMirrorNode | undefined,
+): string {
+  if (!table) return '';
+  const widths: unknown[] = [];
+  table.descendants((node) => {
+    if (!isTableCell(node)) return true;
+    widths.push(node.attrs.columnWidthPercentages ?? null);
+    return false;
+  });
+  return JSON.stringify(widths);
+}
+
+function renderedPercentages(
+  context: TableSizingContext,
+  renderedColumnWidths: readonly number[] | undefined,
+  renderedTableWidth: number | undefined,
+): number[] {
+  const existing = tableColumnPercentages(context.table, context.map);
+  const rendered = normalizeRenderedDimensions(
+    renderedColumnWidths,
+    context.map.width,
+    1,
+  );
+  const physical = tableColumnWidths(context.table, context.map);
+  const total =
+    Number.isFinite(renderedTableWidth) && Number(renderedTableWidth) > 0
+      ? Number(renderedTableWidth)
+      : rendered
+        ? rendered.reduce((sum, value) => sum + value, 0)
+        : physical.every((value) => value !== null && value > 0)
+          ? physical.reduce<number>((sum, value) => sum + Number(value), 0)
+          : DEFAULT_COLUMN_WIDTH * context.map.width;
+  return existing.map((value, index) => {
+    if (value !== null) return value;
+    const pixels = rendered?.[index] ?? physical[index] ?? DEFAULT_COLUMN_WIDTH;
+    return Math.max(
+      1,
+      Math.min(100, Math.round((Number(pixels) / total) * 10_000) / 100),
+    );
+  });
+}
+
+function percentageFallbackWidths(
+  context: TableSizingContext,
+  selectedPercentage: number,
+  renderedColumnWidths: readonly number[] | undefined,
+  renderedTableWidth: number | undefined,
+): number[] | null {
+  const rendered = normalizeRenderedDimensions(
+    renderedColumnWidths,
+    context.map.width,
+    1,
+  );
+  const physical = tableColumnWidths(context.table, context.map);
+  const total =
+    Number.isFinite(renderedTableWidth) && Number(renderedTableWidth) > 0
+      ? Number(renderedTableWidth)
+      : rendered
+        ? rendered.reduce((sum, value) => sum + value, 0)
+        : physical.every((value) => value !== null && value > 0)
+          ? physical.reduce<number>((sum, value) => sum + Number(value), 0)
+          : null;
+  if (total === null) return null;
+  const widths = (
+    rendered ?? physical.map((value) => value ?? DEFAULT_COLUMN_WIDTH)
+  ).map(Number);
+  const selectedPixels = Math.max(
+    MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+    Math.round((selectedPercentage / 100) * total * 100) / 100,
+  );
+  for (let column = context.left; column < context.right; column += 1) {
+    widths[column] = selectedPixels;
+  }
+  return widths;
 }
 
 function isTableCell(node: ProseMirrorNode): boolean {

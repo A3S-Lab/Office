@@ -237,6 +237,7 @@ describe('document table sizing', () => {
           repeatHeader: false,
         },
         column: {
+          type: 'pixels',
           width: 150,
           renderedColumnWidths: [120, 180],
         },
@@ -330,6 +331,50 @@ describe('document table sizing', () => {
       [155, 140],
     ]);
 
+    editor.destroy();
+  });
+
+  test('authors percentage columns through merged cells without losing pixel fallbacks', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true">',
+        '<table data-office-table-layout="fixed" data-office-table-width-type="percent" data-office-table-width="100"><tbody>',
+        '<tr><td colspan="2" colwidth="120,180"><p>Merged</p></td></tr>',
+        '<tr><td colwidth="120"><p>A</p></td><td colwidth="180"><p>B</p></td></tr>',
+        '</tbody></table></section>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(tableCellPositions(editor)[1] + 2);
+
+    expect(
+      editor.commands.setDocumentTableColumnWidthPercent(35, [120, 180], 300),
+    ).toBe(true);
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      columnWidthType: 'percent',
+      columnWidth: 35,
+      preferredWidthType: 'percent',
+      preferredWidth: 100,
+    });
+    expect(tableColumnWidths(editor)).toEqual([
+      [105, 180],
+      [105, 180],
+    ]);
+    expect(tableColumnPercentages(editor)).toEqual([
+      [35, 60],
+      [35, 60],
+    ]);
+    expect(editor.getHTML()).toContain(
+      'data-office-column-widths-percent="35,60"',
+    );
+
+    expect(editor.commands.setDocumentTableColumnWidth(140, [105, 180])).toBe(
+      true,
+    );
+    expect(documentTableSizing(editor.state)).toMatchObject({
+      columnWidthType: 'pixels',
+      columnWidth: 140,
+    });
     editor.destroy();
   });
 
@@ -495,6 +540,25 @@ function tableColumnWidths(editor: Editor): Array<Array<number | null>> {
         : [];
       for (let index = 0; index < Number(cell.attrs.colspan ?? 1); index += 1) {
         widths.push(colwidth[index] ?? null);
+      }
+    });
+    rows.push(widths);
+    return false;
+  });
+  return rows;
+}
+
+function tableColumnPercentages(editor: Editor): Array<Array<number | null>> {
+  const rows: Array<Array<number | null>> = [];
+  editor.state.doc.descendants((node) => {
+    if (node.type.name !== 'tableRow') return true;
+    const widths: Array<number | null> = [];
+    node.forEach((cell) => {
+      const percentages = Array.isArray(cell.attrs.columnWidthPercentages)
+        ? (cell.attrs.columnWidthPercentages as number[])
+        : [];
+      for (let index = 0; index < Number(cell.attrs.colspan ?? 1); index += 1) {
+        widths.push(percentages[index] ?? null);
       }
     });
     rows.push(widths);

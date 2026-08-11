@@ -9,6 +9,10 @@ import {
   type DocumentTableProperties,
 } from './work-document-table-geometry';
 import type { DocumentTableRowHeightRule } from './work-document-table-row';
+import {
+  normalizeDocumentTableColumnPercent,
+  type DocumentTableColumnWidthType,
+} from './work-document-table-column-widths';
 
 export const MIN_DOCUMENT_TABLE_COLUMN_WIDTH = 25;
 export const MIN_DOCUMENT_TABLE_ROW_HEIGHT = 12;
@@ -23,8 +27,10 @@ export interface DocumentTablePropertyChanges {
     repeatHeader?: boolean;
   };
   column?: {
+    type?: DocumentTableColumnWidthType;
     width: number;
     renderedColumnWidths?: readonly number[];
+    renderedTableWidth?: number;
   };
   cell?: {
     verticalAlign: DocumentTableVerticalAlign;
@@ -78,17 +84,41 @@ export function normalizeDocumentTablePropertyChanges(
 
   if (value.column !== undefined) {
     const column = value.column;
-    if (!isRecord(column) || typeof column.width !== 'number') return null;
-    const width = normalizeDocumentTableDimension(
-      column.width,
-      MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
-    );
+    if (
+      !isRecord(column) ||
+      typeof column.width !== 'number' ||
+      (column.type !== undefined &&
+        column.type !== 'pixels' &&
+        column.type !== 'percent')
+    ) {
+      return null;
+    }
+    const type = column.type ?? 'pixels';
+    const width =
+      type === 'percent'
+        ? normalizeDocumentTableColumnPercent(column.width)
+        : normalizeDocumentTableDimension(
+            column.width,
+            MIN_DOCUMENT_TABLE_COLUMN_WIDTH,
+          );
     if (width === null) return null;
+    if (
+      column.renderedTableWidth !== undefined &&
+      (typeof column.renderedTableWidth !== 'number' ||
+        !Number.isFinite(column.renderedTableWidth) ||
+        column.renderedTableWidth <= 0)
+    ) {
+      return null;
+    }
     changes.column = {
+      type,
       width,
       ...(Array.isArray(column.renderedColumnWidths)
         ? { renderedColumnWidths: column.renderedColumnWidths }
         : {}),
+      ...(column.renderedTableWidth === undefined
+        ? {}
+        : { renderedTableWidth: column.renderedTableWidth }),
     };
   }
 

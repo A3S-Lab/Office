@@ -16,6 +16,7 @@ import { DocumentToolbar } from '../src/internal/features/work/editors/document-
 import { OfficeTableInsertPopover } from '../src/internal/features/work/editors/office-table-insert-popover';
 import { canInsertDocumentComment } from '../src/internal/features/work/work-document-comments';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { documentTableSizing } from '../src/internal/features/work/work-document-table-sizing';
 
 let editor: Editor | null = null;
 
@@ -686,6 +687,30 @@ test('supports centimeter and automatic preferred table widths', async () => {
     geometry: expect.objectContaining({
       width: { type: 'auto', value: null },
     }),
+  });
+});
+
+test('authors a percentage width for the selected table column', () => {
+  editor = createTableEditor();
+  editor.commands.setTextSelection(tableCellPositions(editor)[0] + 2);
+  render(<DocumentTableLayoutRibbon editor={editor} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '表格属性' }));
+  fireEvent.click(screen.getByRole('tab', { name: '列' }));
+  fireEvent.click(screen.getByRole('radio', { name: '百分比' }));
+  const width = screen.getByRole('textbox', { name: '当前列宽（百分比）' });
+  fireEvent.change(width, { target: { value: '35' } });
+  fireEvent.click(screen.getByRole('button', { name: '确定' }));
+
+  expect(tableCellAttributes(editor)[0]).toMatchObject({
+    columnWidthPercentages: [35],
+  });
+  expect(tableCellAttributes(editor)[1]).toMatchObject({
+    columnWidthPercentages: [50],
+  });
+  expect(documentTableSizing(editor.state)).toMatchObject({
+    columnWidthType: 'percent',
+    columnWidth: 35,
   });
 });
 

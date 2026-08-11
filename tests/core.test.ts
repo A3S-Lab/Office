@@ -579,6 +579,43 @@ describe('office core', () => {
     );
   });
 
+  test('round-trips percentage column preferences with pixel grid fallbacks', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = [
+      '<table data-office-table-layout="fixed" data-office-table-width-type="percent" data-office-table-width="100"><tbody><tr>',
+      '<td colwidth="120" data-office-column-widths-percent="40"><p>Left</p></td>',
+      '<td colwidth="180" data-office-column-widths-percent="60"><p>Right</p></td>',
+      '</tr></tbody></table>',
+    ].join('');
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml =
+      (await archive.file('word/document.xml')?.async('string')) ?? '';
+    expect(xml).toContain('<w:gridCol w:w="1800"/>');
+    expect(xml).toContain('<w:gridCol w:w="2700"/>');
+    expect(xml).toMatch(/<w:tcW\b(?=[^>]*w:type="pct")(?=[^>]*w:w="40%")/);
+    expect(xml).toMatch(/<w:tcW\b(?=[^>]*w:type="pct")(?=[^>]*w:w="60%")/);
+
+    const imported = await importOfficeFile(
+      new File([blob], 'percentage-columns.docx', { type: blob.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    expect(imported.content.html).toContain(
+      'data-office-column-widths-percent="40"',
+    );
+    expect(imported.content.html).toContain(
+      'data-office-column-widths-percent="60"',
+    );
+    expect(imported.content.html).toContain('colwidth="120"');
+    expect(imported.content.html).toContain('colwidth="180"');
+  });
+
   test('round-trips independent DOCX table width, position, and cell margins', async () => {
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {

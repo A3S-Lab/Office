@@ -24,6 +24,7 @@ export interface ImportedDocxTableSizingMarker {
   marker: string;
   geometry: DocumentTableGeometry;
   columnWidths: number[];
+  columnPercentages: number[];
 }
 
 export interface ImportedDocxTableSizingMarkers {
@@ -59,6 +60,7 @@ export function markDocxTableSizing(
         docxTablePropertySources(table, tableStyles),
       ),
       columnWidths,
+      columnPercentages: importedColumnPercentages(table, columnWidths),
     });
   }
   return { tables };
@@ -81,6 +83,9 @@ export function applyImportedDocxTableSizingMarkers(
         applyDocumentTableGeometryToElement(table, sizing.geometry);
         if (sizing.columnWidths.length) {
           applyColumnWidths(table, sizing.columnWidths);
+        }
+        if (sizing.columnPercentages.length) {
+          applyColumnPercentages(table, sizing.columnPercentages);
         }
       }
       return '';
@@ -241,6 +246,95 @@ function applyColumnWidths(
       columnIndex += cell.colSpan;
     }
   });
+}
+
+function applyColumnPercentages(
+  table: HTMLTableElement,
+  columnPercentages: readonly number[],
+): void {
+  const occupiedUntilRow: number[] = [];
+  Array.from(table.rows).forEach((row, rowIndex) => {
+    let columnIndex = 0;
+    for (const cell of Array.from(row.cells)) {
+      while ((occupiedUntilRow[columnIndex] ?? 0) > rowIndex) columnIndex += 1;
+      const percentages = columnPercentages.slice(
+        columnIndex,
+        columnIndex + cell.colSpan,
+      );
+      if (percentages.length === cell.colSpan) {
+        cell.dataset.officeColumnWidthsPercent = percentages.join(',');
+      }
+      if (cell.rowSpan > 1) {
+        for (let offset = 0; offset < cell.colSpan; offset += 1) {
+          occupiedUntilRow[columnIndex + offset] = rowIndex + cell.rowSpan;
+        }
+      }
+      columnIndex += cell.colSpan;
+    }
+  });
+}
+
+function importedColumnPercentages(
+  table: Element,
+  columnWidths: readonly number[],
+): number[] {
+  const columnCount = columnWidths.length || logicalTableColumnCount(table);
+  const percentages: Array<number | null> = Array.from(
+    { length: columnCount },
+    () => null,
+  );
+  const rows = directChildren(table, 'tr');
+  for (const row of rows) {
+    let column = rowGridBefore(row);
+    for (const cell of directChildren(row, 'tc')) {
+      const properties = directChild(cell, 'tcPr');
+      const gridSpan = directChild(properties ?? cell, 'gridSpan');
+      const span = Math.max(
+        1,
+        Number(gridSpan ? attribute(gridSpan, 'val') : null) || 1,
+      );
+      const width = directChild(properties ?? cell, 'tcW');
+      const total =
+        width && attribute(width, 'type') === 'pct'
+          ? percentageValue(attribute(width, 'w'))
+          : null;
+      if (total !== null) {
+        const physical = columnWidths.slice(column, column + span);
+        const physicalTotal = physical.reduce((sum, value) => sum + value, 0);
+        for (let offset = 0; offset < span; offset += 1) {
+          if (percentages[column + offset] !== null) continue;
+          const share =
+            physicalTotal > 0
+              ? total * ((physical[offset] ?? 0) / physicalTotal)
+              : total / span;
+          percentages[column + offset] = Math.round(share * 100) / 100;
+        }
+      }
+      column += span;
+    }
+  }
+  return percentages.every((value) => value !== null && value > 0)
+    ? (percentages as number[])
+    : [];
+}
+
+function logicalTableColumnCount(table: Element): number {
+  return directChildren(table, 'tr').reduce((maximum, row) => {
+    const count = directChildren(row, 'tc').reduce((sum, cell) => {
+      const properties = directChild(cell, 'tcPr');
+      const gridSpan = directChild(properties ?? cell, 'gridSpan');
+      const span = Number(gridSpan ? attribute(gridSpan, 'val') : null);
+      return sum + (Number.isSafeInteger(span) && span > 0 ? span : 1);
+    }, rowGridBefore(row));
+    return Math.max(maximum, count);
+  }, 0);
+}
+
+function rowGridBefore(row: Element): number {
+  const properties = directChild(row, 'trPr');
+  const gridBefore = directChild(properties ?? row, 'gridBefore');
+  const value = Number(gridBefore ? attribute(gridBefore, 'val') : null);
+  return Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
 
 function firstTableParagraph(
