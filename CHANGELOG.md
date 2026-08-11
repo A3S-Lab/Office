@@ -52,6 +52,13 @@ All notable changes to A3S Office will be documented in this file.
   the native merge model for availability and unmerge ranges, restored grid or
   invoker focus exactly, and added focused, XLSX round-trip, desktop, and
   compact Web regression coverage.
+- Added the WPS Clear menu to Spreadsheet Home and Editing with Clear All,
+  Clear Formats, Clear Contents, Clear Comments, and Clear Hyperlinks. Delete
+  and Backspace now share the typed Clear Contents path.
+- Preserved content, formats, comments, hyperlinks, and merge geometry according
+  to each Clear mode, including bounded range subtraction for borders,
+  conditional formats, and alternating formats; each intent stays within one
+  controlled workbook batch and restores grid focus.
 
 ## 0.3.0 - 2026-08-07
 

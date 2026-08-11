@@ -259,6 +259,93 @@ test('Spreadsheet merges and fills cells from the WPS Home alignment group', asy
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet clears cell state from the WPS Home editing group', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const formulaBar = page.locator('.fortune-fx-input');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  const bold = ribbon.getByRole('button', { name: '加粗' });
+  const clear = ribbon.getByRole('button', { name: '清除', exact: true });
+
+  await grid.focus();
+  await page.keyboard.press('Shift+F11');
+  await page.keyboard.type('Keep style');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await expect(nameBox).toHaveText('A1');
+  await bold.click();
+  await expect(grid).toBeFocused();
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+
+  await expect(clear).toHaveAttribute('aria-haspopup', 'menu');
+  await clear.click();
+  const menu = page.getByRole('menu', { name: '清除选项' });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveCount(5);
+  const clearAll = menu.getByRole('menuitem', { name: '清除全部' });
+  const clearContents = menu.getByRole('menuitem', { name: '清除内容' });
+  const clearHyperlinks = menu.getByRole('menuitem', { name: '清除超链接' });
+  await expect(clearAll).toBeFocused();
+  await expect(clearContents).toHaveAttribute(
+    'aria-keyshortcuts',
+    'Delete Backspace',
+  );
+
+  const menuBounds = await menu.boundingBox();
+  const viewport = page.viewportSize();
+  expect(menuBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect((menuBounds?.x ?? 0) + (menuBounds?.width ?? 0)).toBeLessThanOrEqual(
+    viewport?.width ?? 0,
+  );
+  expect((menuBounds?.y ?? 0) + (menuBounds?.height ?? 0)).toBeLessThanOrEqual(
+    viewport?.height ?? 0,
+  );
+  await page.screenshot({
+    path: testInfo.outputPath('clear-menu.png'),
+    animations: 'disabled',
+  });
+
+  await menu.press('End');
+  await expect(clearHyperlinks).toBeFocused();
+  await menu.press('Home');
+  await expect(clearAll).toBeFocused();
+  await clearContents.click();
+  await expect(grid).toBeFocused();
+  await expect(formulaBar).toHaveText('');
+  await expect(bold).toHaveAttribute('aria-pressed', 'true');
+
+  await page.keyboard.type('Keep value');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await clear.click();
+  await page
+    .getByRole('menu', { name: '清除选项' })
+    .getByRole('menuitem', { name: '清除格式' })
+    .press('Enter');
+  await expect(grid).toBeFocused();
+  await expect(formulaBar).toHaveText('Keep value');
+  await expect(bold).toHaveAttribute('aria-pressed', 'false');
+
+  await page.keyboard.type('Backspace path');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Backspace');
+  await expect(formulaBar).toHaveText('');
+  await page.keyboard.type('Delete path');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Delete');
+  await expect(formulaBar).toHaveText('');
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet applies one-shot and locked WPS format-painter patterns', async ({
   page,
 }) => {

@@ -20,9 +20,13 @@ import {
   DecimalsArrowLeft,
   DecimalsArrowRight,
   Columns3,
+  Eraser,
+  FileX2,
   Grid3X3,
   Italic,
+  Link2Off,
   ListFilter,
+  MessageSquareX,
   Merge,
   Paintbrush,
   Palette,
@@ -40,6 +44,7 @@ import {
   SortDesc,
   Rows3,
   TableProperties,
+  Trash2,
   Underline,
   Undo2,
   WrapText,
@@ -54,6 +59,7 @@ import { protectedSheetCount } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import type { SpreadsheetCellMergeCommand } from './spreadsheet-cell-merge';
+import type { SpreadsheetCellClearMode } from './spreadsheet-cell-clear';
 import {
   type SpreadsheetRibbonTabId,
   spreadsheetCommandCatalog,
@@ -567,6 +573,7 @@ export function SpreadsheetEditorRibbon({
               <SpreadsheetRowsAndColumnsMenu can={can} commands={commands} />
             </WorkOfficeRibbonGroup>
             <WorkOfficeRibbonGroup label="编辑" priority="low">
+              <SpreadsheetClearMenu can={can} commands={commands} />
               <WorkOfficeRibbonButton
                 label={spreadsheetCommandCatalog.find.label}
                 title={`${spreadsheetCommandCatalog.find.label}（${spreadsheetCommandCatalog.find.shortcut.label}）`}
@@ -1027,6 +1034,103 @@ function SpreadsheetRowsAndColumnsMenu({
             onClick={() => {
               close();
               execute();
+            }}
+          >
+            <span className="work-spreadsheet-ribbon-menu-item-icon">
+              {icon}
+            </span>
+            <span>{label}</span>
+          </button>
+        ))
+      }
+    </Popover>
+  );
+}
+
+function SpreadsheetClearMenu({
+  can,
+  commands,
+}: {
+  can: SpreadsheetEditorCanCommands;
+  commands: SpreadsheetEditorCommands;
+}) {
+  const items: readonly {
+    mode: SpreadsheetCellClearMode;
+    id: string;
+    label: string;
+    icon: ReactNode;
+  }[] = [
+    {
+      mode: 'all',
+      id: spreadsheetCommandCatalog.clearAll.id,
+      label: spreadsheetCommandCatalog.clearAll.label,
+      icon: <Trash2 size={16} />,
+    },
+    {
+      mode: 'formats',
+      id: spreadsheetCommandCatalog.clearFormats.id,
+      label: spreadsheetCommandCatalog.clearFormats.label,
+      icon: <Paintbrush size={16} />,
+    },
+    {
+      mode: 'contents',
+      id: spreadsheetCommandCatalog.clearContents.id,
+      label: spreadsheetCommandCatalog.clearContents.label,
+      icon: <FileX2 size={16} />,
+    },
+    {
+      mode: 'comments',
+      id: spreadsheetCommandCatalog.clearComments.id,
+      label: spreadsheetCommandCatalog.clearComments.label,
+      icon: <MessageSquareX size={16} />,
+    },
+    {
+      mode: 'hyperlinks',
+      id: spreadsheetCommandCatalog.clearHyperlinks.id,
+      label: spreadsheetCommandCatalog.clearHyperlinks.label,
+      icon: <Link2Off size={16} />,
+    },
+  ];
+  const disabled = items.every(({ mode }) => !can.clearSelectedCells(mode));
+
+  return (
+    <Popover
+      label="清除"
+      panelLabel="清除选项"
+      panelRole="menu"
+      portal
+      className="work-spreadsheet-ribbon-menu-root"
+      panelClassName="work-office-context-menu work-spreadsheet-ribbon-menu"
+      disabled={disabled}
+      focusFirstOnOpen
+      onPanelKeyDown={moveOfficeMenuFocus}
+      trigger={(triggerProps, { open }) => (
+        <button
+          {...triggerProps}
+          className={`with-label work-spreadsheet-ribbon-menu-trigger${open ? ' active' : ''}`}
+          title="清除"
+        >
+          <Eraser size={19} />
+          <span>清除</span>
+        </button>
+      )}
+    >
+      {(close) =>
+        items.map(({ mode, id, label, icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            aria-keyshortcuts={
+              mode === 'contents'
+                ? spreadsheetCommandCatalog.clearContents.shortcut.aria
+                : undefined
+            }
+            disabled={!can.clearSelectedCells(mode)}
+            onClick={() => {
+              close();
+              commands.clearSelectedCells(mode);
             }}
           >
             <span className="work-spreadsheet-ribbon-menu-item-icon">

@@ -476,6 +476,60 @@ test('exposes the spreadsheet find shortcut through the home ribbon', () => {
   expect(openCount).toBe(1);
 });
 
+test('operates the WPS Clear menu from the Home editing group', () => {
+  const actions: string[] = [];
+  render(
+    <SpreadsheetEditorRibbon
+      activeTab="home"
+      can={spreadsheetCan()}
+      commands={spreadsheetCommands(
+        () => true,
+        () => true,
+        {
+          clearSelectedCells: (mode = 'contents') => {
+            actions.push(mode);
+            return true;
+          },
+        },
+      )}
+      content={{ type: 'spreadsheet', sheets: [] }}
+      findOpen={false}
+      gridLinesVisible
+      panel={null}
+      toolbarCell={null}
+      onOpenFind={() => undefined}
+      onTabChange={() => undefined}
+      onTogglePanel={() => undefined}
+    />,
+  );
+
+  const editing = screen.getByRole('region', { name: '编辑' });
+  const trigger = within(editing).getByRole('button', { name: '清除' });
+  expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  fireEvent.click(trigger);
+
+  const menu = screen.getByRole('menu', { name: '清除选项' });
+  expect(
+    within(menu).getByRole('menuitem', { name: '清除全部' }),
+  ).toBeInTheDocument();
+  expect(
+    within(menu).getByRole('menuitem', { name: '清除格式' }),
+  ).toBeInTheDocument();
+  const contents = within(menu).getByRole('menuitem', { name: '清除内容' });
+  expect(contents).toHaveAttribute('aria-keyshortcuts', 'Delete Backspace');
+  expect(
+    within(menu).getByRole('menuitem', { name: '清除批注' }),
+  ).toBeInTheDocument();
+  const hyperlinks = within(menu).getByRole('menuitem', {
+    name: '清除超链接',
+  });
+  fireEvent.keyDown(menu, { key: 'End' });
+  expect(hyperlinks).toHaveFocus();
+  fireEvent.click(hyperlinks);
+  expect(actions).toEqual(['hyperlinks']);
+  expect(screen.queryByRole('menu', { name: '清除选项' })).toBeNull();
+});
+
 test('places the WPS merge split control in the Home alignment group', () => {
   const actions: string[] = [];
   render(
@@ -694,6 +748,7 @@ function spreadsheetCommands(
       SpreadsheetEditorCommands,
       | 'activateFormatPainter'
       | 'cancelFormatPainter'
+      | 'clearSelectedCells'
       | 'copySelection'
       | 'cutSelection'
       | 'deleteSelectedStructure'
@@ -711,7 +766,7 @@ function spreadsheetCommands(
     addSheet: () => true,
     applyFormatPainter: () => true,
     cancelFormatPainter: overrides.cancelFormatPainter ?? (() => true),
-    clearSelectedCells: () => true,
+    clearSelectedCells: overrides.clearSelectedCells ?? (() => true),
     copySelection: overrides.copySelection ?? (() => true),
     cutSelection: overrides.cutSelection ?? (() => true),
     deleteSelectedStructure: overrides.deleteSelectedStructure ?? (() => true),

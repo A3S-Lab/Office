@@ -692,4 +692,161 @@ suite "office-spreadsheet-ribbon-alignment" {
             clear = false
         }
     }
+
+    scenario "use-wps-clear-from-home" {
+        name = "Use WPS Clear modes from the Home editing group"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "compact" {
+            width = 768
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        wait "spreadsheet-artifact-ready" {
+            visible = css(".playground-artifact-card.spreadsheet")
+        }
+
+        click "open-spreadsheet" {
+            target = css(".playground-artifact-card.spreadsheet")
+        }
+
+        wait "spreadsheet-ready" {
+            visible = css(".work-spreadsheet-editor .fortune-sheet-overlay")
+        }
+
+        focus "focus-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "create-worksheet" {
+            key = "Shift+F11"
+        }
+
+        type "enter-content" {
+            target = css(".fortune-sheet-overlay")
+            value = "Keep style"
+        }
+
+        press "commit-content" {
+            key = "Enter"
+        }
+
+        press "return-to-content" {
+            key = "ArrowUp"
+        }
+
+        click "apply-bold" {
+            target = role("button", "加粗")
+        }
+
+        click "open-clear-menu" {
+            target = role("button", "清除")
+        }
+
+        expect "clear-menu-visible" {
+            visible = css("[role='menu'][aria-label='清除选项']")
+        }
+
+        expect "clear-all-visible" {
+            visible = role("menuitem", "清除全部")
+        }
+
+        expect "clear-formats-visible" {
+            visible = role("menuitem", "清除格式")
+        }
+
+        expect "clear-contents-visible" {
+            visible = role("menuitem", "清除内容")
+        }
+
+        expect "clear-comments-visible" {
+            visible = role("menuitem", "清除批注")
+        }
+
+        expect "clear-hyperlinks-visible" {
+            visible = role("menuitem", "清除超链接")
+        }
+
+        expect "clear-all-focused" {
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:first-child:focus")
+        }
+
+        expect "clear-contents-shortcuts-visible" {
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem'][aria-keyshortcuts='Delete Backspace']")
+        }
+
+        screenshot "spreadsheet-clear-menu-compact" {
+            path = "screenshots/spreadsheet-clear-menu-compact.png"
+        }
+
+        press "focus-clear-hyperlinks" {
+            key = "End"
+        }
+
+        expect "clear-hyperlinks-focused" {
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:last-child:focus")
+        }
+
+        click "clear-contents" {
+            target = role("menuitem", "清除内容")
+        }
+
+        expect "grid-focus-restored-after-clear-contents" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        expect "bold-format-retained" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
+        }
+
+        type "enter-retained-content" {
+            target = css(".fortune-sheet-overlay")
+            value = "Keep value"
+        }
+
+        press "commit-retained-content" {
+            key = "Enter"
+        }
+
+        press "return-to-retained-content" {
+            key = "ArrowUp"
+        }
+
+        click "reopen-clear-menu" {
+            target = role("button", "清除")
+        }
+
+        click "clear-formats" {
+            target = role("menuitem", "清除格式")
+        }
+
+        expect "content-retained-after-clear-formats" {
+            text = "Keep value"
+        }
+
+        expect "bold-format-cleared" {
+            visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='false']")
+        }
+
+        accessibility "spreadsheet-clear-accessibility" {
+            path = "evidence/clear-accessibility.json"
+            interactive = true
+        }
+
+        console "clear-browser-console" {
+            path = "diagnostics/clear-console.json"
+            clear = false
+        }
+
+        page_errors "clear-browser-errors" {
+            path = "diagnostics/clear-page-errors.json"
+            clear = false
+        }
+    }
 }

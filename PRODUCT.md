@@ -67,6 +67,13 @@ Unmerge Cells, and Unmerge and Fill. `Ctrl+M` follows the same typed command
 path. Every action reads the native Fortune merge model, emits one controlled
 workbook batch, and restores grid focus; the menu retains Arrow, Home, End,
 Enter, and Escape behavior on desktop and compact Web.
+The eighth milestone puts Clear under Home and Editing. Its menu exposes Clear
+All, Clear Formats, Clear Contents, Clear Comments, and Clear Hyperlinks, while
+Delete and Backspace remain the fast path for Clear Contents. Content-only
+clearing retains formats, comments, links, and merge geometry; format-only
+clearing retains content, comments, links, and merge geometry while removing
+direct, border, conditional, and alternating formats. Every mode uses one typed
+command and one controlled workbook batch, then returns focus to the grid.
 
 ## Product Rules
 

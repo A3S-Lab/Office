@@ -184,6 +184,36 @@ export const spreadsheetCommandCatalog = {
     label: '删除所选列',
     location: { area: 'ribbon', tab: 'home', group: 'cells' },
   },
+  clearAll: {
+    id: 'editing.clearAll',
+    label: '清除全部',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  clearFormats: {
+    id: 'editing.clearFormats',
+    label: '清除格式',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  clearContents: {
+    id: 'editing.clearContents',
+    label: '清除内容',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+    shortcut: {
+      label: 'Delete/Backspace',
+      aria: 'Delete Backspace',
+      editor: ['Delete', 'Backspace'],
+    },
+  },
+  clearComments: {
+    id: 'editing.clearComments',
+    label: '清除批注',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
+  clearHyperlinks: {
+    id: 'editing.clearHyperlinks',
+    label: '清除超链接',
+    location: { area: 'ribbon', tab: 'home', group: 'editing' },
+  },
   find: {
     id: 'editing.find',
     label: '查找',

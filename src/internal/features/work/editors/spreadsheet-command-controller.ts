@@ -1,4 +1,4 @@
-import type { Cell, Selection } from '@fortune-sheet/core';
+import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
   createOfficeEditorExtension,
@@ -7,6 +7,10 @@ import {
 } from './office-editor-extension';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { runSpreadsheetClipboardShortcut } from './spreadsheet-clipboard-shortcuts';
+import {
+  clearSpreadsheetSheetSelection,
+  type SpreadsheetCellClearMode,
+} from './spreadsheet-cell-clear';
 import {
   canApplySpreadsheetCellMerge,
   spreadsheetCellMergeApiCalls,
@@ -54,6 +58,7 @@ export interface SpreadsheetWorkbookCommandPort {
     range: SpreadsheetCommandRange,
     options?: { id?: string },
   ) => (Cell | null)[][];
+  getSheet: (options?: { id?: string }) => Sheet;
   insertRowOrColumn: (
     type: SpreadsheetStructureAxis,
     index: number,
@@ -175,7 +180,7 @@ export interface SpreadsheetEditorCommands {
   addSheet: () => boolean;
   applyFormatPainter: (target: SpreadsheetCommandSelection) => boolean;
   cancelFormatPainter: () => boolean;
-  clearSelectedCells: () => boolean;
+  clearSelectedCells: (mode?: SpreadsheetCellClearMode) => boolean;
   copySelection: () => boolean;
   cutSelection: () => boolean;
   deleteSelectedStructure: (axis: SpreadsheetStructureAxis) => boolean;
@@ -814,7 +819,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
       name: 'spreadsheetCellFormatting',
       addCommands: () => ({
         clearSelectedCells: {
-          canExecute: canEditSelectedCells,
+          canExecute: (context) => canEditSelectedCells(context),
           execute: clearSelectedCells,
         },
         pasteCells: {
@@ -1103,24 +1108,40 @@ function spreadsheetStructureExtent(
   return Math.max(sheet.column ?? 0, dataWidth, range[1] + 1);
 }
 
-function clearSelectedCells(context: SpreadsheetCommandContext): boolean {
+function clearSelectedCells(
+  context: SpreadsheetCommandContext,
+  mode: SpreadsheetCellClearMode = 'contents',
+): boolean {
   if (!context.workbook || !context.targetSheetId) return false;
   const range = liveRange(context);
   const calls: Array<{ name: string; args: unknown[] }> = [];
-  for (let row = range.row[0]; row <= range.row[1]; row += 1) {
-    for (let column = range.column[0]; column <= range.column[1]; column += 1) {
-      calls.push({
-        name: 'clearCell',
-        args: [row, column, { id: context.targetSheetId }],
-      });
-    }
-  }
   try {
+    const sheet = context.workbook.getSheet({ id: context.targetSheetId });
+    if (mode === 'contents' || mode === 'all') {
+      for (let row = range.row[0]; row <= range.row[1]; row += 1) {
+        for (
+          let column = range.column[0];
+          column <= range.column[1];
+          column += 1
+        ) {
+          calls.push({
+            name: 'clearCell',
+            args: [row, column, { id: context.targetSheetId }],
+          });
+        }
+      }
+    }
+    calls.push({
+      name: 'updateSheet',
+      args: [[clearSpreadsheetSheetSelection(sheet, range, mode)]],
+    });
     context.workbook.batchCallApis(calls);
   } catch {
     return false;
   }
-  syncSpreadsheetFormulaBar(context, '');
+  if (mode === 'contents' || mode === 'all') {
+    syncSpreadsheetFormulaBar(context, '');
+  }
   return true;
 }
 

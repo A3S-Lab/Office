@@ -362,6 +362,9 @@ interaction model.
   command port, a Home and Alignment Merge and Center split control with
   Merge Cells, Merge Across, Unmerge Cells, Unmerge and Fill, and the WPS
   `Ctrl+M` shortcut through one controlled native workbook batch,
+  a Home and Editing Clear menu for independently removing content, formats,
+  comments, hyperlinks, or all cell state while preserving merge geometry,
+  with Delete and Backspace mapped to Clear Contents,
   a View and Window Freeze Panes menu for current-cell, top-row, first-column,
   and unfreeze patterns with XLSX round trips, and visible F9 workbook
   recalculation,

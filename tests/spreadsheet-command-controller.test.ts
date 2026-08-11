@@ -1,4 +1,4 @@
-import type { Cell } from '@fortune-sheet/core';
+import type { Cell, Sheet } from '@fortune-sheet/core';
 import { describe, expect, test } from '@rstest/core';
 import { createOfficeEditorRuntime } from '../src/internal/features/work/editors/office-editor-extension';
 import {
@@ -405,14 +405,16 @@ describe('spreadsheet command controller', () => {
     expect(editor.commands.pasteCells([['A3S', 'Office']])).toBe(true);
     expect(editor.commands.pasteCells([])).toBe(false);
 
-    expect(fixture.workbook.clearBatches).toEqual([
-      [
-        { name: 'clearCell', args: [2, 3, { id: 'sheet-1' }] },
-        { name: 'clearCell', args: [2, 4, { id: 'sheet-1' }] },
-        { name: 'clearCell', args: [3, 3, { id: 'sheet-1' }] },
-        { name: 'clearCell', args: [3, 4, { id: 'sheet-1' }] },
-      ],
+    expect(fixture.workbook.clearBatches).toHaveLength(1);
+    expect(fixture.workbook.clearBatches[0]?.slice(0, 4)).toEqual([
+      { name: 'clearCell', args: [2, 3, { id: 'sheet-1' }] },
+      { name: 'clearCell', args: [2, 4, { id: 'sheet-1' }] },
+      { name: 'clearCell', args: [3, 3, { id: 'sheet-1' }] },
+      { name: 'clearCell', args: [3, 4, { id: 'sheet-1' }] },
     ]);
+    expect(fixture.workbook.clearBatches[0]?.at(-1)).toMatchObject({
+      name: 'updateSheet',
+    });
     expect(fixture.workbook.pastes).toEqual([
       {
         range: { row: [2, 2], column: [3, 4] },
@@ -427,6 +429,36 @@ describe('spreadsheet command controller', () => {
       },
     ]);
     expect(fixture.formulaBarValues).toEqual(['', 'A3S']);
+  });
+
+  test('routes every WPS Clear variant through one typed workbook batch', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [0, 0], column: [0, 0] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    for (const mode of [
+      'contents',
+      'formats',
+      'comments',
+      'hyperlinks',
+      'all',
+    ] as const) {
+      expect(editor.can().clearSelectedCells(mode)).toBe(true);
+      expect(editor.commands.clearSelectedCells(mode)).toBe(true);
+    }
+
+    expect(
+      fixture.workbook.clearBatches.map((batch) =>
+        batch.map((call) => call.name),
+      ),
+    ).toEqual([
+      ['clearCell', 'updateSheet'],
+      ['updateSheet'],
+      ['updateSheet'],
+      ['updateSheet'],
+      ['clearCell', 'updateSheet'],
+    ]);
+    expect(fixture.formulaBarValues).toEqual(['', '']);
   });
 
   test('routes row and column structure actions through the workbook command port', () => {
@@ -690,7 +722,7 @@ describe('spreadsheet command controller', () => {
       },
     ]);
     expect(fixture.workbook.clearBatches).toHaveLength(1);
-    expect(fixture.workbook.clearBatches[0]).toHaveLength(6);
+    expect(fixture.workbook.clearBatches[0]).toHaveLength(7);
   });
 
   test('owns worksheet creation and standard worksheet navigation shortcuts', () => {
@@ -1158,6 +1190,7 @@ function spreadsheetEditor(context: SpreadsheetCommandContext) {
 class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
   cells: (Cell | null)[][] = [];
   clearBatches: Array<Array<{ name: string; args: unknown[] }>> = [];
+  sheet: Sheet = { id: 'sheet-1', name: 'Sheet 1', data: [[null]] };
   formats: Array<{
     attribute: string;
     range: SpreadsheetCommandRange;
@@ -1207,6 +1240,10 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
 
   getCellsByRange(): (Cell | null)[][] {
     return this.cells;
+  }
+
+  getSheet(): Sheet {
+    return structuredClone(this.sheet);
   }
 
   insertRowOrColumn(

@@ -540,6 +540,16 @@ successful actions return focus to the grid and Escape returns to the exact
 disclosure invoker. Focused model, controller, component, and focus tests plus
 XLSX round-trip, desktop, compact, and deterministic A3S Test coverage protect
 the workflow.
+The eighth slice exposes Clear under Home and Editing with Clear All, Clear
+Formats, Clear Contents, Clear Comments, and Clear Hyperlinks. Delete and
+Backspace execute Clear Contents through the same typed command. Content-only
+clearing retains formats, comments, hyperlinks, and merge geometry;
+format-only clearing retains values, formulas, comments, hyperlinks, and merge
+geometry while subtracting the selected range from direct, border,
+conditional, and alternating formats. Clear All removes cell state but retains
+merge geometry. Each intent produces one controlled workbook batch, successful
+ribbon actions restore grid focus, and Arrow, Home, End, Enter, and Escape
+operate the disclosure menu on desktop and compact Web.
 
 - Replace remaining dense and main-thread workbook work with an A3S-owned
   sparse model and virtualized viewport.

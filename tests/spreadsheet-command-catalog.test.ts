@@ -103,6 +103,24 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     group: 'cells',
     tab: 'home',
   });
+  for (const command of [
+    spreadsheetCommandCatalog.clearAll,
+    spreadsheetCommandCatalog.clearFormats,
+    spreadsheetCommandCatalog.clearContents,
+    spreadsheetCommandCatalog.clearComments,
+    spreadsheetCommandCatalog.clearHyperlinks,
+  ]) {
+    expect(command.location).toEqual({
+      area: 'ribbon',
+      group: 'editing',
+      tab: 'home',
+    });
+  }
+  expect(spreadsheetCommandCatalog.clearContents.shortcut).toEqual({
+    aria: 'Delete Backspace',
+    editor: ['Delete', 'Backspace'],
+    label: 'Delete/Backspace',
+  });
   expect(spreadsheetCommandCatalog.insertChart.location).toEqual({
     area: 'ribbon',
     group: 'charts',
