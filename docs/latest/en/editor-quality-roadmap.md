@@ -433,6 +433,20 @@ undo/redo, final-section endnotes, malformed controlled HTML, diagnostics, and
 native footnote/endnote round trips; a deterministic phone workflow covers
 live renumbering, paired deletion, restoration, accessibility, and browser
 diagnostics.
+Body `PAGE`, `NUMPAGES`, `SECTION`, `SECTIONPAGES`, `DATE`, and `TIME` fields
+now resolve from the measured Worker/WASM page containing each atom, including
+physical-page membership for continuous sections. Pagination refreshes numeric
+results without adding history or advancing clock fields; scoped F9 refreshes
+all field kinds as one undoable action. Transaction mapping preserves moved
+field identities, gives copied atoms fresh redo-stable identities, and keeps
+insertion plus its initial refresh in one history step. Native DOCX simple
+fields round-trip twice, complete inline complex fields import as editable
+atoms, and incomplete, nested, cross-paragraph, deleted, or instructionless
+structures remain text with an explicit compatibility warning. Unit coverage
+exercises live page contexts, continuous sections, copy and undo/redo identity,
+clock-safe automatic refresh, structural diagnostics, and native DOCX output;
+a deterministic phone workflow covers physical PAGE and NUMPAGES results, F9,
+atomic undo/redo, accessibility, and browser diagnostics.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates
 every linked field, and renders dangling references as an explicit missing
