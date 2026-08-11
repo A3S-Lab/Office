@@ -53,6 +53,10 @@ import {
   patchDocxImageCrops,
 } from './work-docx-image-crop';
 import {
+  DocxImageIdentityPatchCollector,
+  patchDocxImageIdentities,
+} from './work-docx-image-identity';
+import {
   DocxImageLayerPatchCollector,
   patchDocxImageLayers,
 } from './work-docx-image-layer';
@@ -93,6 +97,7 @@ interface DocxNoteContext {
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   themePatches: DocxThemePatchCollector;
   imageCropPatches: DocxImageCropPatchCollector;
+  imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
 }
@@ -129,6 +134,7 @@ export async function createDocxBlob(
     numberingRestartRulesByIdentity: new Map(),
     themePatches: new DocxThemePatchCollector(JSON.stringify(content)),
     imageCropPatches: new DocxImageCropPatchCollector(),
+    imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
   };
@@ -219,8 +225,12 @@ export async function createDocxBlob(
     imageWrapPatched,
     noteContext.imageLayerPatches.patches,
   );
-  const patched = await patchDocxPageColor(
+  const imageIdentityPatched = await patchDocxImageIdentities(
     imageLayerPatched,
+    noteContext.imageIdentityPatches.patches,
+  );
+  const patched = await patchDocxPageColor(
+    imageIdentityPatched,
     content.pageColor,
   );
   return new Blob([patched], {
@@ -411,6 +421,7 @@ async function blockToFileChildren(
             noteContext.imageCropPatches,
             noteContext.imageWrapPatches,
             noteContext.imageLayerPatches,
+            noteContext.imageIdentityPatches,
           ),
         ],
       }),
@@ -1017,6 +1028,7 @@ async function inlineRuns(
           noteContext.imageCropPatches,
           noteContext.imageWrapPatches,
           noteContext.imageLayerPatches,
+          noteContext.imageIdentityPatches,
         ),
       ];
     const children: ParagraphChild[] = [];

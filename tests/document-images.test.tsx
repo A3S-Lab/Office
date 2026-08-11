@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { expect, test } from '@rstest/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import JSZip from 'jszip';
@@ -16,6 +17,12 @@ import {
   withDocumentPictureDimension,
 } from '../src/internal/features/work/editors/document-picture-properties-dialog-model';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import {
+  documentImageIdentityFromAttributes,
+  normalizeDocumentImageAnchorId,
+  normalizeDocumentImageEditId,
+  type WorkDocumentImageIdentity,
+} from '../src/internal/features/work/work-document-image-identity';
 import {
   documentImageAlternativeText,
   documentImageLayerCssZIndex,
@@ -220,12 +227,136 @@ test('keeps floating image drawing layers in the model and presentation', () => 
   editor.destroy();
 });
 
+test('gives image copies unique identities and keeps the copied identity through redo', () => {
+  expect(normalizeDocumentImageAnchorId('FFFFFFFF')).toBeNull();
+  expect(normalizeDocumentImageEditId('80000000')).toBeNull();
+  const editor = createImageEditor(
+    [
+      `<img src="${pixelPng}" alt="Source" width="120" height="80"`,
+      ' data-office-image-object-id="1A2B3C4D"',
+      ' data-office-image-doc-properties-id="42"',
+      ' data-office-image-anchor-id="1A2B3C4D"',
+      ' data-office-image-edit-id="0A0B0C0D">',
+      '<p>After</p>',
+    ].join(''),
+  );
+  const source = imageNodes(editor)[0];
+  expect(source?.identity).toEqual({
+    objectId: '1A2B3C4D',
+    docPropertiesId: 42,
+    anchorId: '1A2B3C4D',
+    editId: '0A0B0C0D',
+  });
+  if (!source) throw new Error('Expected a source image.');
+
+  editor.view.dispatch(editor.state.tr.insert(0, source.node));
+  const copied = imageNodes(editor);
+  expect(copied).toHaveLength(2);
+  expect(copied[1]?.identity).toEqual(source.identity);
+  expect(copied[0]?.identity.objectId).not.toBe(source.identity.objectId);
+  expect(copied[0]?.identity.docPropertiesId).not.toBe(
+    source.identity.docPropertiesId,
+  );
+  expect(copied[0]?.identity.anchorId).not.toBe(source.identity.anchorId);
+  expect(copied[0]?.identity.editId).not.toBe(source.identity.editId);
+  const copiedIdentity = copied[0]?.identity;
+
+  expect(editor.commands.undo()).toBe(true);
+  expect(imageNodes(editor).map((image) => image.identity)).toEqual([
+    source.identity,
+  ]);
+  expect(editor.commands.redo()).toBe(true);
+  expect(imageNodes(editor)[0]?.identity).toEqual(copiedIdentity);
+  editor.destroy();
+});
+
+test('repairs duplicate image identities when legacy content is reopened', () => {
+  const duplicateIdentity = [
+    ' data-office-image-object-id="12345678"',
+    ' data-office-image-doc-properties-id="91"',
+    ' data-office-image-anchor-id="12345678"',
+    ' data-office-image-edit-id="23456701"',
+  ].join('');
+  const editor = createImageEditor(
+    [
+      `<img src="${pixelPng}" alt="First"${duplicateIdentity}>`,
+      `<img src="${pixelPng}" alt="Second"${duplicateIdentity}>`,
+    ].join(''),
+  );
+  const images = imageNodes(editor);
+
+  expect(images).toHaveLength(2);
+  expect(images[0]?.identity).toEqual({
+    objectId: '12345678',
+    docPropertiesId: 91,
+    anchorId: '12345678',
+    editId: '23456701',
+  });
+  expect(images[1]?.identity.objectId).not.toBe(images[0]?.identity.objectId);
+  expect(images[1]?.identity.docPropertiesId).not.toBe(
+    images[0]?.identity.docPropertiesId,
+  );
+  expect(images[1]?.identity.anchorId).not.toBe(images[0]?.identity.anchorId);
+  editor.destroy();
+});
+
+test('preserves image identity across move, cut, delete, and undo', () => {
+  const editor = createImageEditor(
+    `<img src="${pixelPng}" alt="Movable" width="120" height="80"><p>After</p>`,
+  );
+  const original = imageNodes(editor)[0];
+  if (!original) throw new Error('Expected an image node.');
+
+  editor.view.dispatch(
+    editor.state.tr.delete(
+      original.position,
+      original.position + original.node.nodeSize,
+    ),
+  );
+  expect(imageNodes(editor)).toHaveLength(0);
+  expect(editor.commands.undo()).toBe(true);
+  expect(imageNodes(editor)[0]?.identity).toEqual(original.identity);
+  expect(editor.commands.redo()).toBe(true);
+  expect(imageNodes(editor)).toHaveLength(0);
+  expect(editor.commands.undo()).toBe(true);
+
+  const restored = imageNodes(editor)[0];
+  if (!restored) throw new Error('Expected the restored image.');
+  const move = editor.state.tr.delete(
+    restored.position,
+    restored.position + restored.node.nodeSize,
+  );
+  move.insert(move.doc.content.size, restored.node);
+  editor.view.dispatch(move);
+  const moved = imageNodes(editor)[0];
+  expect(stableImageIdentity(moved?.identity)).toEqual(
+    stableImageIdentity(original.identity),
+  );
+  expect(moved?.identity.editId).not.toBe(original.identity.editId);
+
+  const cut = moved;
+  if (!cut) throw new Error('Expected the moved image.');
+  editor.view.dispatch(
+    editor.state.tr.delete(cut.position, cut.position + cut.node.nodeSize),
+  );
+  editor.view.dispatch(
+    editor.state.tr.insert(editor.state.doc.content.size, cut.node),
+  );
+  const pasted = imageNodes(editor)[0]?.identity;
+  expect(stableImageIdentity(pasted)).toEqual(
+    stableImageIdentity(cut.identity),
+  );
+  expect(pasted?.editId).not.toBe(cut.identity.editId);
+  editor.destroy();
+});
+
 test('commits picture size, layout, and alternative text as one undoable update', () => {
   const editor = createImageEditor(
     `<img src="${pixelPng}" alt="Original" title="Original title" width="120" height="80">`,
   );
   selectFirstImage(editor);
   const originalHtml = editor.getHTML();
+  const originalIdentity = imageNodes(editor)[0]?.identity;
   let updateCount = 0;
   editor.on('update', () => {
     updateCount += 1;
@@ -259,6 +390,11 @@ test('commits picture size, layout, and alternative text as one undoable update'
   ).toBe(true);
 
   expect(updateCount).toBe(1);
+  const editedIdentity = imageNodes(editor)[0]?.identity;
+  expect(stableImageIdentity(editedIdentity)).toEqual(
+    stableImageIdentity(originalIdentity),
+  );
+  expect(editedIdentity?.editId).not.toBe(originalIdentity?.editId);
   expect(documentImageProperties(editor)).toEqual({
     width: 240,
     height: 150,
@@ -320,6 +456,9 @@ test('commits picture size, layout, and alternative text as one undoable update'
 
   expect(editor.commands.undo()).toBe(true);
   expect(editor.getHTML()).toBe(originalHtml);
+  expect(imageNodes(editor)[0]?.identity).toEqual(originalIdentity);
+  expect(editor.commands.redo()).toBe(true);
+  expect(imageNodes(editor)[0]?.identity).toEqual(editedIdentity);
   editor.destroy();
 });
 
@@ -796,6 +935,10 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   artifact.content.html = [
     `<img src="${pixelPng}" alt="Right chart" width="120" height="80"`,
     ' data-office-image-layout="square"',
+    ' data-office-image-object-id="1A2B3C4D"',
+    ' data-office-image-doc-properties-id="42"',
+    ' data-office-image-anchor-id="1A2B3C4D"',
+    ' data-office-image-edit-id="0A0B0C0D"',
     ' data-office-image-alignment="right"',
     ' data-office-image-wrap-distance="5"',
     ' data-office-image-wrap-side="right"',
@@ -845,6 +988,10 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-behind-document="true"',
     ' data-office-image-allow-overlap="true">',
     `<img src="${pixelPng}" alt="Inline crop" width="90" height="60"`,
+    ' data-office-image-object-id="0BADF00D"',
+    ' data-office-image-doc-properties-id="77"',
+    ' data-office-image-anchor-id="0BADF00D"',
+    ' data-office-image-edit-id="10203040"',
     ' data-office-image-crop-bottom="10"',
     ' data-office-image-crop-left="20">',
   ].join('');
@@ -854,6 +1001,34 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   const documentXml = await archive.file('word/document.xml')?.async('string');
 
   expect(documentXml).toBeDefined();
+  const drawingPropertyIds = Array.from(
+    documentXml?.matchAll(/<wp:docPr\b[^>]*\bid="(\d+)"/g) ?? [],
+    (match) => match[1],
+  );
+  const anchorIds = Array.from(
+    documentXml?.matchAll(/\bwp14:anchorId="([0-9A-F]{8})"/g) ?? [],
+    (match) => match[1],
+  );
+  const editIds = Array.from(
+    documentXml?.matchAll(/\bwp14:editId="([0-9A-F]{8})"/g) ?? [],
+    (match) => match[1],
+  );
+  expect(new Set(drawingPropertyIds).size).toBe(drawingPropertyIds.length);
+  expect(new Set(anchorIds).size).toBe(anchorIds.length);
+  expect(editIds).toHaveLength(anchorIds.length);
+  expect(documentXml).toMatch(/\bmc:Ignorable="[^"]*\bwp14\b[^"]*"/);
+  expect(
+    [...anchorIds, ...editIds].every((id) => {
+      const value = Number.parseInt(id, 16);
+      return value > 0 && value < 0x8000_0000;
+    }),
+  ).toBe(true);
+  expect(documentXml).toMatch(
+    /<wp:anchor\b(?=[^>]*wp14:anchorId="1A2B3C4D")(?=[^>]*wp14:editId="0A0B0C0D")[\s\S]*?<wp:docPr\b(?=[^>]*id="42")(?=[^>]*name="Right chart")/,
+  );
+  expect(documentXml).toMatch(
+    /<wp:inline\b(?=[^>]*wp14:anchorId="0BADF00D")(?=[^>]*wp14:editId="10203040")[\s\S]*?<wp:docPr\b(?=[^>]*id="77")(?=[^>]*name="Inline crop")/,
+  );
   expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(6);
   expect(documentXml).toMatch(
     /<wp:anchor\b(?=[^>]*relativeHeight="50331648")(?=[^>]*behindDoc="0")(?=[^>]*allowOverlap="1")(?=[^>]*layoutInCell="0")(?=[^>]*locked="1")/,
@@ -901,6 +1076,27 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(documentXml).not.toContain('__A3S_IMAGE_CROP_');
   expect(documentXml).not.toContain('__A3S_IMAGE_WRAP_');
   expect(documentXml).not.toContain('__A3S_IMAGE_LAYER_');
+  expect(documentXml).not.toContain('__A3S_IMAGE_IDENTITY_');
+
+  const relationshipsXml = await archive
+    .file('word/_rels/document.xml.rels')
+    ?.async('string');
+  const embeddedRelationshipIds = Array.from(
+    documentXml?.matchAll(/\br:embed="([^"]+)"/g) ?? [],
+    (match) => match[1],
+  );
+  const imageRelationshipIds = new Set(
+    Array.from(
+      relationshipsXml?.matchAll(
+        /<Relationship\b(?=[^>]*Id="([^"]+)")(?=[^>]*Type="[^"]*\/image")/g,
+      ) ?? [],
+      (match) => match[1],
+    ),
+  );
+  expect(embeddedRelationshipIds).not.toHaveLength(0);
+  expect(
+    embeddedRelationshipIds.every((id) => imageRelationshipIds.has(id)),
+  ).toBe(true);
 
   const imported = await importOfficeFile(
     new File([blob], 'floating-images.docx', { type: blob.type }),
@@ -950,6 +1146,10 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     .querySelector<HTMLImageElement>('img[alt="Inline crop"]');
   expect(inlineCrop?.dataset.officeImageCropBottom).toBe('10');
   expect(inlineCrop?.dataset.officeImageCropLeft).toBe('20');
+  expect(inlineCrop?.dataset.officeImageObjectId).toBe('0BADF00D');
+  expect(inlineCrop?.dataset.officeImageDocPropertiesId).toBe('77');
+  expect(inlineCrop?.dataset.officeImageAnchorId).toBe('0BADF00D');
+  expect(inlineCrop?.dataset.officeImageEditId).toBe('10203040');
   const importedHtml = new DOMParser().parseFromString(
     imported.content.html,
     'text/html',
@@ -996,6 +1196,10 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(alignedImage?.dataset.officeImageAllowOverlap).toBe('true');
   expect(alignedImage?.dataset.officeImageLayoutInCell).toBe('false');
   expect(alignedImage?.dataset.officeImageLockAnchor).toBe('true');
+  expect(alignedImage?.dataset.officeImageObjectId).toBe('1A2B3C4D');
+  expect(alignedImage?.dataset.officeImageDocPropertiesId).toBe('42');
+  expect(alignedImage?.dataset.officeImageAnchorId).toBe('1A2B3C4D');
+  expect(alignedImage?.dataset.officeImageEditId).toBe('0A0B0C0D');
   expect(
     alignedImage?.style.getPropertyValue('--work-document-image-z-index'),
   ).toBe('11720');
@@ -1033,6 +1237,12 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(regeneratedXml).toMatch(
     /<wp:anchor\b(?=[^>]*relativeHeight="0")(?=[^>]*behindDoc="1")/,
   );
+  expect(regeneratedXml).toMatch(
+    /<wp:anchor\b(?=[^>]*wp14:anchorId="1A2B3C4D")(?=[^>]*wp14:editId="0A0B0C0D")[\s\S]*?<wp:docPr\b(?=[^>]*id="42")(?=[^>]*name="Right chart")/,
+  );
+  expect(regeneratedXml).toMatch(
+    /<wp:inline\b(?=[^>]*wp14:anchorId="0BADF00D")(?=[^>]*wp14:editId="10203040")[\s\S]*?<wp:docPr\b(?=[^>]*id="77")(?=[^>]*name="Inline crop")/,
+  );
 });
 
 function createImageEditor(content: string): Editor {
@@ -1061,4 +1271,33 @@ function textPosition(editor: Editor, text: string): number {
   });
   if (position === null) throw new Error(`Expected text "${text}".`);
   return position;
+}
+
+function imageNodes(editor: Editor): Array<{
+  node: ProseMirrorNode;
+  position: number;
+  identity: WorkDocumentImageIdentity;
+}> {
+  const images: Array<{
+    node: ProseMirrorNode;
+    position: number;
+    identity: WorkDocumentImageIdentity;
+  }> = [];
+  editor.state.doc.descendants((node, position) => {
+    if (node.type.name !== 'image') return;
+    const identity = documentImageIdentityFromAttributes(node.attrs);
+    if (!identity) throw new Error('Expected a normalized image identity.');
+    images.push({ node, position, identity });
+  });
+  return images;
+}
+
+function stableImageIdentity(identity: WorkDocumentImageIdentity | undefined) {
+  return identity
+    ? {
+        objectId: identity.objectId,
+        docPropertiesId: identity.docPropertiesId,
+        anchorId: identity.anchorId,
+      }
+    : undefined;
 }

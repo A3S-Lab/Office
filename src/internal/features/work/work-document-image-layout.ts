@@ -4,6 +4,16 @@ import { closeHistory } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { NodeSelection } from '@tiptap/pm/state';
 import {
+  applyDocumentImageIdentityToElement,
+  createDocumentImageIdentityPlugin,
+  documentImageIdentityFromAttributes,
+  documentImageIdentityFromElement,
+  normalizeDocumentImageAnchorId,
+  normalizeDocumentImageDocPropertiesId,
+  normalizeDocumentImageEditId,
+  normalizeDocumentImageObjectId,
+} from './work-document-image-identity';
+import {
   applyDocumentImageWrapContourToElement,
   defaultDocumentImageWrapContour,
   documentImageWrapContourCss,
@@ -147,9 +157,56 @@ export const DocumentImage = Image.extend({
     };
   },
 
+  addProseMirrorPlugins() {
+    return [
+      ...(this.parent?.() ?? []),
+      createDocumentImageIdentityPlugin(this.name),
+    ];
+  },
+
   addAttributes() {
     return {
       ...this.parent?.(),
+      objectId: {
+        default: null,
+        parseHTML: (element) =>
+          documentImageIdentityFromElement(element).objectId,
+        renderHTML: (attributes) => {
+          const objectId = normalizeDocumentImageObjectId(attributes.objectId);
+          return objectId ? { 'data-office-image-object-id': objectId } : {};
+        },
+      },
+      docPropertiesId: {
+        default: null,
+        parseHTML: (element) =>
+          documentImageIdentityFromElement(element).docPropertiesId,
+        renderHTML: (attributes) => {
+          const id = normalizeDocumentImageDocPropertiesId(
+            attributes.docPropertiesId,
+          );
+          return id === null
+            ? {}
+            : { 'data-office-image-doc-properties-id': String(id) };
+        },
+      },
+      anchorId: {
+        default: null,
+        parseHTML: (element) =>
+          documentImageIdentityFromElement(element).anchorId,
+        renderHTML: (attributes) => {
+          const anchorId = normalizeDocumentImageAnchorId(attributes.anchorId);
+          return anchorId ? { 'data-office-image-anchor-id': anchorId } : {};
+        },
+      },
+      editId: {
+        default: null,
+        parseHTML: (element) =>
+          documentImageIdentityFromElement(element).editId,
+        renderHTML: (attributes) => {
+          const editId = normalizeDocumentImageEditId(attributes.editId);
+          return editId ? { 'data-office-image-edit-id': editId } : {};
+        },
+      },
       layout: {
         default: DEFAULT_IMAGE_LAYOUT,
         parseHTML: (element) =>
@@ -801,6 +858,7 @@ function syncDocumentImageNodeView(
   const wrapSide = normalizeDocumentImageWrapSide(attributes.wrapSide);
   const contour = effectiveDocumentImageWrapContour(attributes);
   const layer = normalizeDocumentImageLayer(attributes);
+  const identity = documentImageIdentityFromAttributes(attributes);
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -814,6 +872,7 @@ function syncDocumentImageNodeView(
   applyDocumentImageCropToElement(element, crop);
   applyDocumentImageWrapContourToElement(element, contour);
   applyDocumentImageLayerToElement(element, layer);
+  if (identity) applyDocumentImageIdentityToElement(element, identity);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -831,6 +890,7 @@ function syncDocumentImageNodeView(
   applyDocumentImageCropToElement(container, crop);
   applyDocumentImageWrapContourToElement(container, contour);
   applyDocumentImageLayerToElement(container, layer);
+  if (identity) applyDocumentImageIdentityToElement(container, identity);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,

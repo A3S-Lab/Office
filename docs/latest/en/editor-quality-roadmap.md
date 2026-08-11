@@ -389,6 +389,16 @@ commits as one undo entry,
 untouched imported dimensions keep their exact source values, the selected
 image remains active, and apply, cancel, and Escape restore the exact Picture
 Properties command so the next keyboard action cannot mutate document content.
+Image nodes now carry a stable object identity together with their native DOCX
+drawing-property, floating-anchor, and edit identifiers. Transaction mapping
+keeps the pre-existing object stable when a copy is inserted on either side,
+creates a complete independent identity for the copy, and retains identity
+through move, cut-and-paste, delete, undo, and redo. DOCX regeneration assigns
+unique `wp:docPr` identifiers, preserves `wp14:anchorId` plus untouched
+`wp14:editId` values for inline and supported floating drawings, advances the
+edit identifier when the image is changed or moved, and validates every
+emitted image relationship without using the relationship ID as object
+identity.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates
 every linked field, and renders dangling references as an explicit missing

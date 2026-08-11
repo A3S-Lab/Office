@@ -503,6 +503,17 @@ drawing-layer relationships through unsigned `relativeHeight`,
 `behindDoc`, `allowOverlap`, `layoutInCell`, and `locked` anchor attributes.
 The browser maps the unsigned drawing order into bounded foreground and
 behind-text stacking ranges while retaining the exact OOXML value for export.
+Each image node also owns one normalized eight-hex-digit object identity plus
+its DOCX drawing-property, anchor, and edit identifiers. A ProseMirror
+transaction normalizer gives a pasted copy a fresh complete identity while a
+move, cut-and-paste, deletion followed by undo, and redo retain the surviving
+object's identity. Existing nodes and newly inserted images are normalized at
+the editor boundary, and duplicates prioritize the mapped pre-transaction
+object even when a copy is inserted before it. DOCX import retains
+`wp:docPr@id`, `wp14:anchorId`, and a conforming `wp14:editId`. Export keeps the
+drawing-property and anchor identity stable independently of regenerated media
+relationship IDs, retains an untouched edit identifier, and advances the edit
+identifier when the image itself is changed or moved.
 
 The page-layout panel mounts two bounded TipTap surfaces for the active
 header/footer variant. Pagination joins each kernel page placement to typed

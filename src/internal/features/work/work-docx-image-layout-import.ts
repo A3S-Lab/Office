@@ -1,4 +1,10 @@
 import {
+  applyDocumentImageIdentityToElement,
+  createDocumentImageIdentityRegistry,
+  uniqueDocumentImageIdentity,
+  type WorkDocumentImageIdentity,
+} from './work-document-image-identity';
+import {
   applyDocumentImageLayerToElement,
   applyDocumentImageCropToElement,
   isContourImageLayout,
@@ -35,6 +41,7 @@ export interface ImportedDocxImageLayoutMarker {
   crop: WorkDocumentImageCrop | null;
   contour: WorkDocumentImageWrapContour | null;
   layer: WorkDocumentImageLayer | null;
+  identity: WorkDocumentImageIdentity;
 }
 
 export interface ImportedDocxImageLayoutMarkers {
@@ -52,6 +59,7 @@ export function markDocxImageLayouts(
   document: Document,
 ): ImportedDocxImageLayoutMarkers {
   const images: ImportedDocxImageLayoutMarker[] = [];
+  const identityRegistry = createDocumentImageIdentityRegistry();
   const markedRuns = new Set<Element>();
   const drawings = [
     ...descendants(document, 'anchor'),
@@ -62,11 +70,7 @@ export function markDocxImageLayouts(
     if (!run || markedRuns.has(run)) continue;
     const crop = anchorCrop(anchor);
     const layout =
-      anchor.localName === 'inline'
-        ? crop
-          ? 'inline'
-          : null
-        : anchorLayout(anchor);
+      anchor.localName === 'inline' ? 'inline' : anchorLayout(anchor);
     if (!layout) continue;
     markedRuns.add(run);
     const index = images.length + 1;
@@ -89,6 +93,10 @@ export function markDocxImageLayouts(
         ? anchorWrapContour(anchor, layout)
         : null,
       layer: anchor.localName === 'anchor' ? anchorLayer(anchor) : null,
+      identity: uniqueDocumentImageIdentity(
+        drawingIdentitySource(anchor),
+        identityRegistry,
+      ),
     });
   }
   return { images };
@@ -135,6 +143,7 @@ export function applyImportedDocxImageLayoutMarkers(
         state.active.crop,
         state.active.contour,
         state.active.layer,
+        state.active.identity,
       );
       state.applied = true;
     }
@@ -266,6 +275,15 @@ function anchorLayer(anchor: Element): WorkDocumentImageLayer {
   });
 }
 
+function drawingIdentitySource(anchor: Element) {
+  const properties = directChild(anchor, 'docPr');
+  return {
+    docPropertiesId: properties ? attribute(properties, 'id') : null,
+    anchorId: attribute(anchor, 'anchorId'),
+    editId: attribute(anchor, 'editId'),
+  };
+}
+
 function cropPercentage(source: Element, name: string): number {
   const value = attribute(source, name)?.trim() ?? '';
   if (!value) return 0;
@@ -304,7 +322,9 @@ function applyImageLayout(
   crop: WorkDocumentImageCrop | null,
   contour: WorkDocumentImageWrapContour | null,
   layer: WorkDocumentImageLayer | null,
+  identity: WorkDocumentImageIdentity,
 ): void {
+  applyDocumentImageIdentityToElement(image, identity);
   image.dataset.officeImageLayout = options.layout;
   image.dataset.officeImageAlignment = options.alignment;
   image.dataset.officeImageWrapDistance = formatNumber(options.wrapDistance);

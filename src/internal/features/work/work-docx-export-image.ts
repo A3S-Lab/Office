@@ -8,6 +8,7 @@ import {
 } from './work-document-image-layout';
 import { documentImageWrapContourFromElement } from './work-document-image-wrap-contour';
 import type { DocxImageCropPatchCollector } from './work-docx-image-crop';
+import type { DocxImageIdentityPatchCollector } from './work-docx-image-identity';
 import type { DocxImageLayerPatchCollector } from './work-docx-image-layer';
 import type { DocxImageWrapPatchCollector } from './work-docx-image-wrap';
 
@@ -17,6 +18,7 @@ export async function imageToDocx(
   cropPatches?: DocxImageCropPatchCollector,
   wrapPatches?: DocxImageWrapPatchCollector,
   layerPatches?: DocxImageLayerPatchCollector,
+  identityPatches?: DocxImageIdentityPatchCollector,
 ): Promise<ParagraphChild> {
   const source = element.getAttribute('src');
   const alt =
@@ -40,6 +42,7 @@ export async function imageToDocx(
       documentImageCropFromElement(element),
     );
     const imageLayout = documentImageLayoutFromElement(element);
+    const identity = identityPatches?.register(element);
     const wrapMarker = wrapPatches?.marker(
       imageLayout,
       documentImageWrapContourFromElement(element),
@@ -54,9 +57,10 @@ export async function imageToDocx(
         height: Math.max(24, Math.round(dimensions.height * scale)),
       },
       altText: {
-        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}${layerMarker ?? ''}`,
+        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}${layerMarker ?? ''}${identity?.marker ?? ''}`,
         description: alt,
         title: alt,
+        id: identity ? String(identity.docPropertiesId) : undefined,
       },
       floating: documentImageFloatingOptions(element, docx),
     });
