@@ -463,41 +463,43 @@ describe('document mixed-run text layout', () => {
   });
 
   test('uses browser line measurement after a floating document image', () => {
-    const editor = new Editor({
-      extensions: createWorkDocumentExtensions(),
-      content: [
-        '<section data-document-section="true">',
-        '<p>Text before the image</p>',
-        '<img src="data:image/png;base64,AA=="',
-        ' data-office-image-layout="square"',
-        ' data-office-image-alignment="left">',
-        '<p>Text wrapping beside the image</p>',
-        '</section>',
-      ].join(''),
-    });
-    document.body.append(editor.view.dom);
-    const paragraphs = Array.from(
-      editor.view.dom.querySelectorAll<HTMLElement>('p'),
-    );
-    for (const paragraph of paragraphs) {
-      applyTextMetrics(paragraph, 14, 21);
-      Object.defineProperty(paragraph, 'clientWidth', {
-        configurable: true,
-        value: 400,
+    for (const layout of ['square', 'tight', 'through']) {
+      const editor = new Editor({
+        extensions: createWorkDocumentExtensions(),
+        content: [
+          '<section data-document-section="true">',
+          '<p>Text before the image</p>',
+          '<img src="data:image/png;base64,AA=="',
+          ` data-office-image-layout="${layout}"`,
+          ' data-office-image-alignment="left">',
+          '<p>Text wrapping beside the image</p>',
+          '</section>',
+        ].join(''),
       });
-    }
+      document.body.append(editor.view.dom);
+      const paragraphs = Array.from(
+        editor.view.dom.querySelectorAll<HTMLElement>('p'),
+      );
+      for (const paragraph of paragraphs) {
+        applyTextMetrics(paragraph, 14, 21);
+        Object.defineProperty(paragraph, 'clientWidth', {
+          configurable: true,
+          value: 400,
+        });
+      }
 
-    try {
-      expect(
-        collectDocumentTextLayoutParagraphs(
-          editor,
-          [layoutFont],
-          new Set([layoutFont.id]),
-        ).paragraphs.map(({ text }) => text),
-      ).toEqual(['Text before the image']);
-    } finally {
-      editor.view.dom.remove();
-      editor.destroy();
+      try {
+        expect(
+          collectDocumentTextLayoutParagraphs(
+            editor,
+            [layoutFont],
+            new Set([layoutFont.id]),
+          ).paragraphs.map(({ text }) => text),
+        ).toEqual(['Text before the image']);
+      } finally {
+        editor.view.dom.remove();
+        editor.destroy();
+      }
     }
   });
 

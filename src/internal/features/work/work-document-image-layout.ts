@@ -3,8 +3,24 @@ import Image from '@tiptap/extension-image';
 import { closeHistory } from '@tiptap/pm/history';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { NodeSelection } from '@tiptap/pm/state';
+import {
+  applyDocumentImageWrapContourToElement,
+  defaultDocumentImageWrapContour,
+  documentImageWrapContourCss,
+  documentImageWrapContourFromElement,
+  normalizeDocumentImageWrapContour,
+  normalizeDocumentImageWrapSide,
+  serializeDocumentImageWrapPoints,
+  type WorkDocumentImageWrapContour,
+  type WorkDocumentImageWrapSide,
+} from './work-document-image-wrap-contour';
 
-export type WorkDocumentImageLayout = 'inline' | 'square' | 'topBottom';
+export type WorkDocumentImageLayout =
+  | 'inline'
+  | 'square'
+  | 'tight'
+  | 'through'
+  | 'topBottom';
 export type WorkDocumentImageAlignment = 'left' | 'center' | 'right';
 export type WorkDocumentImageHorizontalReference = 'column' | 'margin' | 'page';
 export type WorkDocumentImageVerticalReference =
@@ -30,6 +46,7 @@ export interface WorkDocumentImageLayoutOptions {
   layout: WorkDocumentImageLayout;
   alignment: WorkDocumentImageAlignment;
   wrapDistance: number;
+  wrapSide: WorkDocumentImageWrapSide;
 }
 
 export interface WorkDocumentImageProperties
@@ -40,7 +57,14 @@ export interface WorkDocumentImageProperties
   alternativeText: string;
   position?: WorkDocumentImagePosition | null;
   crop?: WorkDocumentImageCrop | null;
+  contour?: WorkDocumentImageWrapContour | null;
 }
+
+export type {
+  WorkDocumentImageWrapContour,
+  WorkDocumentImageWrapPoint,
+  WorkDocumentImageWrapSide,
+} from './work-document-image-wrap-contour';
 
 export interface DocumentImageCommandOptions {
   restoreFocus?: boolean;
@@ -148,6 +172,20 @@ export const DocumentImage = Image.extend({
           };
         },
       },
+      wrapSide: {
+        default: 'bothSides',
+        parseHTML: (element) =>
+          normalizeDocumentImageWrapSide(
+            element.getAttribute('data-office-image-wrap-side'),
+          ),
+        renderHTML: (attributes) => {
+          const side = normalizeDocumentImageWrapSide(attributes.wrapSide);
+          const layout = normalizeDocumentImageLayout(attributes.layout);
+          return side !== 'bothSides' || wrapsBesideImage(layout)
+            ? { 'data-office-image-wrap-side': side }
+            : {};
+        },
+      },
       lockAspectRatio: {
         default: DEFAULT_LOCK_ASPECT_RATIO,
         parseHTML: (element) =>
@@ -196,6 +234,13 @@ export const DocumentImage = Image.extend({
       cropRight: imageCropNumberAttribute('right'),
       cropBottom: imageCropNumberAttribute('bottom'),
       cropLeft: imageCropNumberAttribute('left'),
+      wrapPolygon: imageWrapPolygonAttribute(),
+      wrapPolygonEdited: {
+        default: false,
+        parseHTML: (element) =>
+          documentImageWrapContourFromElement(element)?.edited ?? false,
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -286,6 +331,7 @@ export function documentImageProperties(
   const attributes = editor.getAttributes('image') as Record<string, unknown>;
   const position = normalizeDocumentImagePosition(attributes);
   const crop = normalizeDocumentImageCrop(attributes);
+  const contour = effectiveDocumentImageWrapContour(attributes);
   return {
     ...normalizeDocumentImageLayoutOptions(attributes),
     width: normalizeDocumentImageDimension(attributes.width),
@@ -296,6 +342,7 @@ export function documentImageProperties(
     alternativeText: documentImageAlternativeText(editor),
     ...(position ? { position } : {}),
     ...(crop ? { crop } : {}),
+    ...(contour ? { contour } : {}),
   };
 }
 
@@ -345,6 +392,7 @@ export function documentImageLayoutFromElement(
     layout: element.getAttribute('data-office-image-layout'),
     alignment: element.getAttribute('data-office-image-alignment'),
     wrapDistance: element.getAttribute('data-office-image-wrap-distance'),
+    wrapSide: element.getAttribute('data-office-image-wrap-side'),
   });
 }
 
@@ -383,13 +431,17 @@ export function normalizeDocumentImageLayoutOptions(
     layout: normalizeDocumentImageLayout(value.layout),
     alignment: normalizeDocumentImageAlignment(value.alignment),
     wrapDistance: normalizeDocumentImageWrapDistance(value.wrapDistance),
+    wrapSide: normalizeDocumentImageWrapSide(value.wrapSide),
   };
 }
 
 export function normalizeDocumentImageLayout(
   value: unknown,
 ): WorkDocumentImageLayout {
-  return value === 'square' || value === 'topBottom'
+  return value === 'square' ||
+    value === 'tight' ||
+    value === 'through' ||
+    value === 'topBottom'
     ? value
     : DEFAULT_IMAGE_LAYOUT;
 }
@@ -533,6 +585,9 @@ function documentImageAttributesForChanges(
       value.wrapDistance,
     );
   }
+  if (Object.hasOwn(value, 'wrapSide')) {
+    attributes.wrapSide = normalizeDocumentImageWrapSide(value.wrapSide);
+  }
   if (Object.hasOwn(value, 'alternativeText')) {
     const alternativeText = value.alternativeText?.trim() ?? '';
     attributes.alt = alternativeText || null;
@@ -562,6 +617,15 @@ function documentImageAttributesForChanges(
     attributes.cropRight = crop?.right ?? 0;
     attributes.cropBottom = crop?.bottom ?? 0;
     attributes.cropLeft = crop?.left ?? 0;
+  }
+  if (Object.hasOwn(value, 'contour')) {
+    const contour = value.contour
+      ? normalizeDocumentImageWrapContour(value.contour)
+      : null;
+    attributes.wrapPolygon = contour
+      ? serializeDocumentImageWrapPoints(contour.points)
+      : null;
+    attributes.wrapPolygonEdited = contour?.edited ?? false;
   }
   return attributes;
 }
@@ -618,6 +682,8 @@ function syncDocumentImageNodeView(
   );
   const position = normalizeDocumentImagePosition(attributes);
   const crop = normalizeDocumentImageCrop(attributes);
+  const wrapSide = normalizeDocumentImageWrapSide(attributes.wrapSide);
+  const contour = effectiveDocumentImageWrapContour(attributes);
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -626,8 +692,10 @@ function syncDocumentImageNodeView(
   element.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
   element.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
+  element.dataset.officeImageWrapSide = wrapSide;
   syncDocumentImagePosition(element, position);
   applyDocumentImageCropToElement(element, crop);
+  applyDocumentImageWrapContourToElement(element, contour);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -640,8 +708,10 @@ function syncDocumentImageNodeView(
   container.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
   container.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
+  container.dataset.officeImageWrapSide = wrapSide;
   syncDocumentImagePosition(container, position);
   applyDocumentImageCropToElement(container, crop);
+  applyDocumentImageWrapContourToElement(container, contour);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -690,6 +760,47 @@ function imageCropNumberAttribute(edge: keyof WorkDocumentImageCrop) {
       return result;
     },
   };
+}
+
+function imageWrapPolygonAttribute() {
+  return {
+    default: null,
+    parseHTML: (element: Element) => {
+      const contour = documentImageWrapContourFromElement(element);
+      return contour ? serializeDocumentImageWrapPoints(contour.points) : null;
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const contour = effectiveDocumentImageWrapContour(attributes);
+      if (!contour) return {};
+      return {
+        'data-office-image-wrap-polygon': serializeDocumentImageWrapPoints(
+          contour.points,
+        ),
+        'data-office-image-wrap-polygon-edited': String(contour.edited),
+        style: `--work-document-image-wrap-contour:${documentImageWrapContourCss(contour)}`,
+      };
+    },
+  };
+}
+
+function effectiveDocumentImageWrapContour(
+  attributes: Record<string, unknown>,
+): WorkDocumentImageWrapContour | null {
+  const contour = normalizeDocumentImageWrapContour(attributes);
+  if (contour) return contour;
+  return isContourImageLayout(normalizeDocumentImageLayout(attributes.layout))
+    ? defaultDocumentImageWrapContour()
+    : null;
+}
+
+export function isContourImageLayout(
+  layout: WorkDocumentImageLayout,
+): layout is 'through' | 'tight' {
+  return layout === 'tight' || layout === 'through';
+}
+
+export function wrapsBesideImage(layout: WorkDocumentImageLayout): boolean {
+  return layout === 'square' || isContourImageLayout(layout);
 }
 
 function syncDocumentImagePosition(

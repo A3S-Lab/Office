@@ -21,6 +21,7 @@ import {
   type WorkDocumentImageAlignment,
   type WorkDocumentImageHorizontalReference,
   type WorkDocumentImageLayout,
+  type WorkDocumentImageWrapSide,
   type WorkDocumentImageVerticalReference,
 } from '../work-document-image-layout';
 import {
@@ -49,6 +50,8 @@ interface PictureDialogSource extends DocumentPicturePropertiesSource {
 const layoutOptions = [
   { value: 'inline', label: '嵌入文字', icon: Rows3 },
   { value: 'square', label: '四周环绕', icon: TextWrap },
+  { value: 'tight', label: '紧密环绕', icon: TextWrap },
+  { value: 'through', label: '穿越环绕', icon: TextWrap },
   { value: 'topBottom', label: '上下环绕', icon: Rows3 },
 ] as const satisfies readonly {
   value: WorkDocumentImageLayout;
@@ -64,6 +67,16 @@ const alignmentOptions = [
   value: WorkDocumentImageAlignment;
   label: string;
   icon: typeof AlignLeft;
+}[];
+
+const wrapSideOptions = [
+  { value: 'bothSides', label: '两侧' },
+  { value: 'left', label: '仅左侧' },
+  { value: 'right', label: '仅右侧' },
+  { value: 'largest', label: '较宽一侧' },
+] as const satisfies readonly {
+  value: WorkDocumentImageWrapSide;
+  label: string;
 }[];
 
 const horizontalReferenceOptions = [
@@ -323,6 +336,18 @@ function PictureLayoutSection({
             </label>
           );
         })}
+      </div>
+      <div className="work-document-picture-properties-wrap-side">
+        <span>环绕侧</span>
+        <OfficeSelect<WorkDocumentImageWrapSide>
+          ariaLabel="图片文字环绕侧"
+          value={draft.wrapSide}
+          options={wrapSideOptions}
+          disabled={draft.layout === 'inline' || draft.layout === 'topBottom'}
+          onValueChange={(wrapSide) =>
+            onDraftChange((current) => ({ ...current, wrapSide }))
+          }
+        />
       </div>
       <PictureNumberRow
         label="文字距离"

@@ -52,6 +52,10 @@ import {
   DocxImageCropPatchCollector,
   patchDocxImageCrops,
 } from './work-docx-image-crop';
+import {
+  DocxImageWrapPatchCollector,
+  patchDocxImageWraps,
+} from './work-docx-image-wrap';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   DocxThemePatchCollector,
@@ -85,6 +89,7 @@ interface DocxNoteContext {
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   themePatches: DocxThemePatchCollector;
   imageCropPatches: DocxImageCropPatchCollector;
+  imageWrapPatches: DocxImageWrapPatchCollector;
 }
 
 interface DocxTextRevision {
@@ -119,6 +124,7 @@ export async function createDocxBlob(
     numberingRestartRulesByIdentity: new Map(),
     themePatches: new DocxThemePatchCollector(JSON.stringify(content)),
     imageCropPatches: new DocxImageCropPatchCollector(),
+    imageWrapPatches: new DocxImageWrapPatchCollector(),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -199,7 +205,11 @@ export async function createDocxBlob(
     themePatched,
     noteContext.imageCropPatches.patches,
   );
-  const patched = await patchDocxPageColor(imageCropPatched, content.pageColor);
+  const imageWrapPatched = await patchDocxImageWraps(
+    imageCropPatched,
+    noteContext.imageWrapPatches.patches,
+  );
+  const patched = await patchDocxPageColor(imageWrapPatched, content.pageColor);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -386,6 +396,7 @@ async function blockToFileChildren(
             element as HTMLImageElement,
             docx,
             noteContext.imageCropPatches,
+            noteContext.imageWrapPatches,
           ),
         ],
       }),
@@ -990,6 +1001,7 @@ async function inlineRuns(
           node as HTMLImageElement,
           docx,
           noteContext.imageCropPatches,
+          noteContext.imageWrapPatches,
         ),
       ];
     const children: ParagraphChild[] = [];

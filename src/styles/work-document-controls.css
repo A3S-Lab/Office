@@ -694,6 +694,16 @@
   gap: 8px 12px;
 }
 
+.work-document-picture-properties-wrap-side {
+  display: grid;
+  min-height: 34px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: var(--a3s-muted);
+  font-size: 11px;
+}
+
 .work-document-picture-properties-crop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

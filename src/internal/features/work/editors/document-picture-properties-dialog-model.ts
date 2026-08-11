@@ -3,8 +3,10 @@ import type {
   WorkDocumentImageHorizontalReference,
   WorkDocumentImageLayout,
   WorkDocumentImageProperties,
+  WorkDocumentImageWrapSide,
   WorkDocumentImageVerticalReference,
 } from '../work-document-image-layout';
+import { normalizeDocumentImageWrapSide } from '../work-document-image-wrap-contour';
 
 export const IMAGE_PIXELS_PER_CENTIMETER = 96 / 2.54;
 
@@ -22,6 +24,7 @@ export interface DocumentPicturePropertiesDraft {
   layout: WorkDocumentImageLayout;
   alignment: WorkDocumentImageAlignment;
   wrapDistance: string;
+  wrapSide: WorkDocumentImageWrapSide;
   alternativeText: string;
   precisePosition: boolean;
   horizontalOffset: string;
@@ -71,6 +74,7 @@ export function createDocumentPicturePropertiesDraft(
     layout: source.properties.layout,
     alignment: source.properties.alignment,
     wrapDistance: formatNumber(source.properties.wrapDistance),
+    wrapSide: normalizeDocumentImageWrapSide(source.properties.wrapSide),
     alternativeText: source.properties.alternativeText,
     precisePosition: Boolean(source.properties.position),
     horizontalOffset: formatNumber(
@@ -195,6 +199,9 @@ export function documentPicturePropertyChanges(
   }
   if (!sameDraftNumber(initial.wrapDistance, current.wrapDistance)) {
     changes.wrapDistance = Number(current.wrapDistance);
+  }
+  if (initial.wrapSide !== current.wrapSide) {
+    changes.wrapSide = current.wrapSide;
   }
   const alternativeText = current.alternativeText.trim();
   if (initial.alternativeText.trim() !== alternativeText) {

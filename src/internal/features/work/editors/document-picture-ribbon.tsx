@@ -56,6 +56,22 @@ export function DocumentPictureRibbon({ editor }: { editor: Editor }) {
           <TextWrap size={18} />
         </PictureButton>
         <PictureButton
+          label="紧密环绕"
+          active={image.layout === 'tight'}
+          disabled={!imageSelected}
+          onClick={() => updateLayout('tight')}
+        >
+          <TextWrap size={18} />
+        </PictureButton>
+        <PictureButton
+          label="穿越环绕"
+          active={image.layout === 'through'}
+          disabled={!imageSelected}
+          onClick={() => updateLayout('through')}
+        >
+          <TextWrap size={18} />
+        </PictureButton>
+        <PictureButton
           label="上下环绕"
           active={image.layout === 'topBottom'}
           disabled={!imageSelected}

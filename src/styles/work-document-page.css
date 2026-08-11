@@ -885,7 +885,46 @@
 
 .work-document-page
   .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-layout="tight"],
+    [data-office-image-layout="through"]
+  )[data-office-image-alignment="left"] {
+  float: left;
+  margin: 0;
+}
+
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-layout="tight"],
+    [data-office-image-layout="through"]
+  )[data-office-image-alignment="right"] {
+  float: right;
+  margin: 0;
+}
+
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-layout="tight"],
+    [data-office-image-layout="through"]
+  ):is(
+    [data-office-image-alignment="left"],
+    [data-office-image-alignment="right"]
+  ) {
+  shape-margin: var(--work-document-image-wrap-distance, 3mm);
+  shape-outside: var(--work-document-image-wrap-contour, inset(0));
+}
+
+.work-document-page
+  .tiptap
   [data-resize-container][data-node="image"][data-office-image-layout="square"][data-office-image-alignment="center"],
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-layout="tight"],
+    [data-office-image-layout="through"]
+  )[data-office-image-alignment="center"],
 .work-document-page
   .tiptap
   [data-resize-container][data-node="image"][data-office-image-layout="topBottom"] {
@@ -902,6 +941,8 @@
   .tiptap
   [data-resize-container][data-node="image"]:is(
     [data-office-image-layout="square"],
+    [data-office-image-layout="tight"],
+    [data-office-image-layout="through"],
     [data-office-image-layout="topBottom"]
   ):is(
     [data-office-image-horizontal-offset],

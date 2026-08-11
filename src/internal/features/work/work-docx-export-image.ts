@@ -3,13 +3,17 @@ import {
   documentImageCropFromElement,
   documentImageLayoutFromElement,
   documentImagePositionFromElement,
+  wrapsBesideImage,
 } from './work-document-image-layout';
+import { documentImageWrapContourFromElement } from './work-document-image-wrap-contour';
 import type { DocxImageCropPatchCollector } from './work-docx-image-crop';
+import type { DocxImageWrapPatchCollector } from './work-docx-image-wrap';
 
 export async function imageToDocx(
   element: HTMLImageElement,
   docx: typeof import('docx'),
   cropPatches?: DocxImageCropPatchCollector,
+  wrapPatches?: DocxImageWrapPatchCollector,
 ): Promise<ParagraphChild> {
   const source = element.getAttribute('src');
   const alt =
@@ -32,6 +36,11 @@ export async function imageToDocx(
     const cropMarker = cropPatches?.marker(
       documentImageCropFromElement(element),
     );
+    const imageLayout = documentImageLayoutFromElement(element);
+    const wrapMarker = wrapPatches?.marker(
+      imageLayout,
+      documentImageWrapContourFromElement(element),
+    );
     return new docx.ImageRun({
       type,
       data: await blob.arrayBuffer(),
@@ -40,7 +49,7 @@ export async function imageToDocx(
         height: Math.max(24, Math.round(dimensions.height * scale)),
       },
       altText: {
-        name: `${alt}${cropMarker ?? ''}`,
+        name: `${alt}${cropMarker ?? ''}${wrapMarker ?? ''}`,
         description: alt,
         title: alt,
       },
@@ -94,15 +103,26 @@ function documentImageFloatingOptions(
       left: distance,
     },
     wrap: {
-      type:
-        image.layout === 'square'
+      type: wrapsBesideImage(image.layout)
+        ? image.layout === 'square'
           ? docx.TextWrappingType.SQUARE
-          : docx.TextWrappingType.TOP_AND_BOTTOM,
-      ...(image.layout === 'square'
-        ? { side: docx.TextWrappingSide.BOTH_SIDES }
+          : docx.TextWrappingType.TIGHT
+        : docx.TextWrappingType.TOP_AND_BOTTOM,
+      ...(wrapsBesideImage(image.layout)
+        ? { side: textWrappingSide(image.wrapSide, docx) }
         : {}),
     },
   };
+}
+
+function textWrappingSide(
+  value: 'bothSides' | 'largest' | 'left' | 'right',
+  docx: typeof import('docx'),
+) {
+  if (value === 'left') return docx.TextWrappingSide.LEFT;
+  if (value === 'right') return docx.TextWrappingSide.RIGHT;
+  if (value === 'largest') return docx.TextWrappingSide.LARGEST;
+  return docx.TextWrappingSide.BOTH_SIDES;
 }
 
 function horizontalPositionReference(

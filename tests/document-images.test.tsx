@@ -22,6 +22,10 @@ import {
   documentImageProperties,
   normalizeDocumentImageLayoutOptions,
 } from '../src/internal/features/work/work-document-image-layout';
+import {
+  documentImageWrapContourCss,
+  normalizeDocumentImageWrapContour,
+} from '../src/internal/features/work/work-document-image-wrap-contour';
 import { measureDocumentLayoutBlocks } from '../src/internal/features/work/work-document-pagination';
 
 const pixelPng =
@@ -43,6 +47,7 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
     layout: 'square',
     alignment: 'right',
     wrapDistance: 5,
+    wrapSide: 'bothSides',
   });
   expect(editor.getJSON()).toMatchObject({
     type: 'doc',
@@ -53,6 +58,7 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
           layout: 'square',
           alignment: 'right',
           wrapDistance: 5,
+          wrapSide: 'bothSides',
           lockAspectRatio: true,
         },
       },
@@ -78,12 +84,79 @@ test('keeps typed image layout in the TipTap model and live node view', () => {
       layout: 'unsupported',
       alignment: 'outside',
       wrapDistance: 99,
+      wrapSide: 'unsupported',
     }),
   ).toEqual({
     layout: 'inline',
     alignment: 'center',
     wrapDistance: 25,
+    wrapSide: 'bothSides',
   });
+  editor.destroy();
+});
+
+test('keeps edited image wrap contours in the model and live presentation', () => {
+  const polygon = '0,0;0,21600;10800,16200;21600,21600;21600,0;0,0';
+  const editor = createImageEditor(
+    [
+      `<img src="${pixelPng}" alt="Contour" width="120" height="80"`,
+      ' data-office-image-layout="tight"',
+      ' data-office-image-alignment="left"',
+      ' data-office-image-wrap-distance="4"',
+      ' data-office-image-wrap-side="largest"',
+      ` data-office-image-wrap-polygon="${polygon}"`,
+      ' data-office-image-wrap-polygon-edited="true">',
+    ].join(''),
+  );
+  selectFirstImage(editor);
+
+  expect(documentImageProperties(editor)).toMatchObject({
+    layout: 'tight',
+    alignment: 'left',
+    wrapDistance: 4,
+    wrapSide: 'largest',
+    contour: {
+      edited: true,
+      points: [
+        { x: 0, y: 0 },
+        { x: 0, y: 21_600 },
+        { x: 10_800, y: 16_200 },
+        { x: 21_600, y: 21_600 },
+        { x: 21_600, y: 0 },
+        { x: 0, y: 0 },
+      ],
+    },
+  });
+  const container = editor.view.dom.querySelector<HTMLElement>(
+    '[data-resize-container][data-node="image"]',
+  );
+  expect(container?.dataset.officeImageWrapPolygon).toBe(polygon);
+  expect(container?.dataset.officeImageWrapPolygonEdited).toBe('true');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-wrap-contour'),
+  ).toBe('polygon(0% 0%, 0% 100%, 50% 75%, 100% 100%, 100% 0%, 0% 0%)');
+  expect(editor.getHTML()).toContain(
+    '--work-document-image-wrap-contour: polygon(',
+  );
+
+  expect(
+    normalizeDocumentImageWrapContour({
+      points: [
+        { x: 0, y: 0 },
+        { x: 21_600, y: 0 },
+      ],
+    }),
+  ).toBeNull();
+  expect(
+    documentImageWrapContourCss({
+      edited: false,
+      points: [
+        { x: 0, y: 0 },
+        { x: 10_800, y: 21_600 },
+        { x: 21_600, y: 0 },
+      ],
+    }),
+  ).toBe('polygon(0% 0%, 50% 100%, 100% 0%)');
   editor.destroy();
 });
 
@@ -106,6 +179,7 @@ test('commits picture size, layout, and alternative text as one undoable update'
       layout: 'square',
       alignment: 'right',
       wrapDistance: 8,
+      wrapSide: 'largest',
       alternativeText: '季度趋势图',
       position: {
         horizontalOffset: -6.5,
@@ -125,6 +199,7 @@ test('commits picture size, layout, and alternative text as one undoable update'
     layout: 'square',
     alignment: 'right',
     wrapDistance: 8,
+    wrapSide: 'largest',
     alternativeText: '季度趋势图',
     position: {
       horizontalOffset: -6.5,
@@ -140,6 +215,7 @@ test('commits picture size, layout, and alternative text as one undoable update'
   expect(container?.dataset.officeImageLockAspectRatio).toBe('false');
   expect(container?.dataset.officeImageHorizontalOffset).toBe('-6.5');
   expect(container?.dataset.officeImageVerticalOffset).toBe('4');
+  expect(container?.dataset.officeImageWrapSide).toBe('largest');
   expect(container?.dataset.officeImageCropTop).toBe('12.5');
   expect(container?.dataset.officeImageCropLeft).toBe('10');
   expect(
@@ -361,6 +437,10 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   fireEvent.click(screen.getByRole('option', { name: '10 毫米' }));
   expect(documentImageLayoutOptions(editor).wrapDistance).toBe(10);
 
+  fireEvent.click(screen.getByRole('button', { name: '紧密环绕' }));
+  expect(documentImageLayoutOptions(editor).layout).toBe('tight');
+  fireEvent.click(screen.getByRole('button', { name: '穿越环绕' }));
+  expect(documentImageLayoutOptions(editor).layout).toBe('through');
   fireEvent.click(screen.getByRole('button', { name: '上下环绕' }));
   expect(documentImageLayoutOptions(editor).layout).toBe('topBottom');
   fireEvent.click(screen.getByRole('button', { name: '嵌入文字' }));
@@ -392,7 +472,9 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   fireEvent.change(screen.getByRole('textbox', { name: '图片高度（厘米）' }), {
     target: { value: '5' },
   });
-  fireEvent.click(screen.getByRole('radio', { name: '四周环绕' }));
+  fireEvent.click(screen.getByRole('radio', { name: '紧密环绕' }));
+  fireEvent.click(screen.getByRole('combobox', { name: '图片文字环绕侧' }));
+  fireEvent.click(screen.getByRole('option', { name: '较宽一侧' }));
   fireEvent.click(screen.getByRole('radio', { name: '右对齐' }));
   fireEvent.change(
     screen.getByRole('textbox', { name: '图片与文字距离（毫米）' }),
@@ -441,9 +523,10 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
     width: expect.closeTo(226.77, 1),
     height: expect.closeTo(188.98, 1),
     lockAspectRatio: false,
-    layout: 'square',
+    layout: 'tight',
     alignment: 'right',
     wrapDistance: 8,
+    wrapSide: 'largest',
     alternativeText: '季度趋势图',
     position: {
       horizontalOffset: -12.5,
@@ -504,12 +587,16 @@ test('disables stale picture commands when the image selection is gone', () => {
   const view = render(<DocumentPictureRibbon editor={editor} />);
 
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '紧密环绕' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '穿越环绕' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '图片属性' })).toBeDisabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeDisabled();
 
   selectFirstImage(editor);
   view.rerender(<DocumentPictureRibbon editor={editor} />);
   expect(screen.getByRole('button', { name: '四周环绕' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '紧密环绕' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: '穿越环绕' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '图片属性' })).toBeEnabled();
   expect(screen.getByRole('button', { name: '删除图片' })).toBeEnabled();
 
@@ -525,7 +612,8 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     `<img src="${pixelPng}" alt="Right chart" width="120" height="80"`,
     ' data-office-image-layout="square"',
     ' data-office-image-alignment="right"',
-    ' data-office-image-wrap-distance="5">',
+    ' data-office-image-wrap-distance="5"',
+    ' data-office-image-wrap-side="right">',
     `<img src="${pixelPng}" alt="Centered diagram" width="140" height="90"`,
     ' data-office-image-layout="topBottom"',
     ' data-office-image-alignment="center"',
@@ -540,6 +628,20 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-crop-right="5"',
     ' data-office-image-crop-bottom="2.25"',
     ' data-office-image-crop-left="10">',
+    `<img src="${pixelPng}" alt="Tight contour" width="110" height="75"`,
+    ' data-office-image-layout="tight"',
+    ' data-office-image-alignment="left"',
+    ' data-office-image-wrap-distance="4"',
+    ' data-office-image-wrap-side="largest"',
+    ' data-office-image-wrap-polygon="0,0;0,21600;10800,16200;21600,21600;21600,0;0,0"',
+    ' data-office-image-wrap-polygon-edited="true">',
+    `<img src="${pixelPng}" alt="Through contour" width="105" height="65"`,
+    ' data-office-image-layout="through"',
+    ' data-office-image-alignment="right"',
+    ' data-office-image-wrap-distance="6"',
+    ' data-office-image-wrap-side="left"',
+    ' data-office-image-wrap-polygon="0,0;0,21600;7200,10800;21600,21600;21600,0;0,0"',
+    ' data-office-image-wrap-polygon-edited="false">',
     `<img src="${pixelPng}" alt="Inline crop" width="90" height="60"`,
     ' data-office-image-crop-bottom="10"',
     ' data-office-image-crop-left="20">',
@@ -550,9 +652,21 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   const documentXml = await archive.file('word/document.xml')?.async('string');
 
   expect(documentXml).toBeDefined();
-  expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(3);
-  expect(documentXml).toContain('<wp:wrapSquare');
+  expect(documentXml?.match(/<wp:anchor\b/g)).toHaveLength(5);
+  expect(documentXml).toMatch(/<wp:wrapSquare\b(?=[^>]*wrapText="right")/);
   expect(documentXml).toContain('<wp:wrapTopAndBottom');
+  expect(documentXml).toMatch(
+    /<wp:wrapTight\b(?=[^>]*wrapText="largest")(?=[^>]*distL="144000")(?=[^>]*distR="144000")/,
+  );
+  expect(documentXml).toMatch(
+    /<wp:wrapThrough\b(?=[^>]*wrapText="left")(?=[^>]*distL="216000")(?=[^>]*distR="216000")/,
+  );
+  expect(documentXml).toContain(
+    '<wp:wrapPolygon edited="1"><wp:start x="0" y="0"/><wp:lineTo x="0" y="21600"/><wp:lineTo x="10800" y="16200"/>',
+  );
+  expect(documentXml).toContain(
+    '<wp:wrapPolygon edited="0"><wp:start x="0" y="0"/><wp:lineTo x="0" y="21600"/><wp:lineTo x="7200" y="10800"/>',
+  );
   expect(documentXml).toContain('<wp:align>right</wp:align>');
   expect(documentXml).toContain('<wp:align>center</wp:align>');
   expect(documentXml).toContain('distR="180000"');
@@ -570,6 +684,7 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     /<a:srcRect\b(?=[^>]*b="10000")(?=[^>]*l="20000")/,
   );
   expect(documentXml).not.toContain('__A3S_IMAGE_CROP_');
+  expect(documentXml).not.toContain('__A3S_IMAGE_WRAP_');
 
   const imported = await importOfficeFile(
     new File([blob], 'floating-images.docx', { type: blob.type }),
@@ -623,11 +738,32 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     imported.content.html,
     'text/html',
   );
+  const tightContour = importedHtml.querySelector<HTMLImageElement>(
+    'img[alt="Tight contour"]',
+  );
+  expect(tightContour?.dataset.officeImageLayout).toBe('tight');
+  expect(tightContour?.dataset.officeImageWrapSide).toBe('largest');
+  expect(tightContour?.dataset.officeImageWrapPolygon).toBe(
+    '0,0;0,21600;10800,16200;21600,21600;21600,0;0,0',
+  );
+  expect(tightContour?.dataset.officeImageWrapPolygonEdited).toBe('true');
+  expect(
+    tightContour?.style.getPropertyValue('--work-document-image-wrap-contour'),
+  ).toContain('50% 75%');
+  const throughContour = importedHtml.querySelector<HTMLImageElement>(
+    'img[alt="Through contour"]',
+  );
+  expect(throughContour?.dataset.officeImageLayout).toBe('through');
+  expect(throughContour?.dataset.officeImageWrapSide).toBe('left');
+  expect(throughContour?.dataset.officeImageWrapPolygon).toBe(
+    '0,0;0,21600;7200,10800;21600,21600;21600,0;0,0',
+  );
   const alignedImage = importedHtml.querySelector<HTMLImageElement>(
     'img[alt="Right chart"]',
   );
   expect(alignedImage?.dataset.officeImageHorizontalOffset).toBeUndefined();
   expect(alignedImage?.dataset.officeImageVerticalOffset).toBe('0');
+  expect(alignedImage?.dataset.officeImageWrapSide).toBe('right');
 
   const regenerated = await createArtifactBlob(imported);
   const regeneratedArchive = await JSZip.loadAsync(
@@ -637,12 +773,16 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     .file('word/document.xml')
     ?.async('string');
   expect(regeneratedXml).toContain('<wp:align>right</wp:align>');
+  expect(regeneratedXml).toMatch(/<wp:wrapSquare\b(?=[^>]*wrapText="right")/);
   expect(regeneratedXml).toContain(
     '<wp:positionH relativeFrom="page"><wp:posOffset>-450000</wp:posOffset>',
   );
   expect(regeneratedXml).toMatch(
     /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
   );
+  expect(regeneratedXml).toMatch(/<wp:wrapTight\b(?=[^>]*wrapText="largest")/);
+  expect(regeneratedXml).toMatch(/<wp:wrapThrough\b(?=[^>]*wrapText="left")/);
+  expect(regeneratedXml).toContain('<wp:lineTo x="10800" y="16200"/>');
 });
 
 function createImageEditor(content: string): Editor {

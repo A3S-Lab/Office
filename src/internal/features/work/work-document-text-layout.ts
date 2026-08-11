@@ -6,6 +6,10 @@ import type {
 } from '../../kernel/office-kernel-protocol';
 import type { WorkDocumentLayoutFont } from './work-document-fonts';
 import {
+  normalizeDocumentImageLayout,
+  wrapsBesideImage,
+} from './work-document-image-layout';
+import {
   documentBlockId,
   documentListChildId,
   elementForNode,
@@ -83,7 +87,7 @@ export function collectDocumentTextLayoutParagraphs(
     let requiresBrowserLineMeasurement = false;
     section.forEach((node, offset, index) => {
       if (paragraphs.length >= MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS) return;
-      if (isFloatingSquareDocumentImage(node)) {
+      if (isFloatingWrappedDocumentImage(node)) {
         requiresBrowserLineMeasurement = true;
         return;
       }
@@ -108,10 +112,10 @@ export function collectDocumentTextLayoutParagraphs(
   return { paragraphs };
 }
 
-function isFloatingSquareDocumentImage(node: ProseMirrorNode): boolean {
+function isFloatingWrappedDocumentImage(node: ProseMirrorNode): boolean {
   return (
     node.type.name === 'image' &&
-    node.attrs.layout === 'square' &&
+    wrapsBesideImage(normalizeDocumentImageLayout(node.attrs.layout)) &&
     (node.attrs.alignment === 'left' || node.attrs.alignment === 'right')
   );
 }

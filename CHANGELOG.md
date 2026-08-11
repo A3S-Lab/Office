@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added editable Word tight and through image wrapping, including wrap-side
+  controls, browser `shape-outside` contour presentation, and exact DrawingML
+  `wrapPolygon` import/export for supported floating pictures without leaking
+  internal export markers.
 - Added editable four-edge Word image cropping with percentage validation,
   matching edit/preview presentation, and exact DrawingML `a:srcRect`
   preservation for inline and floating pictures. Export patches the owning

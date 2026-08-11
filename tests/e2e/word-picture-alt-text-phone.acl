@@ -70,8 +70,16 @@ suite "office-word-picture-properties-phone" {
             value = "3"
         }
 
-        click "use-square-wrapping" {
-            target = css("[role='dialog'] input[name='picture-properties-layout'][value='square'] + span")
+        click "use-tight-wrapping" {
+            target = css("[role='dialog'] input[name='picture-properties-layout'][value='tight'] + span")
+        }
+
+        click "open-wrap-side" {
+            target = role("combobox", "图片文字环绕侧")
+        }
+
+        click "use-largest-wrap-side" {
+            target = role("option", "较宽一侧")
         }
 
         click "align-picture-right" {
@@ -93,7 +101,7 @@ suite "office-word-picture-properties-phone" {
         }
 
         expect "picture-properties-saved" {
-            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='square'][data-office-image-alignment='right'][data-office-image-wrap-distance='8'][data-office-image-lock-aspect-ratio='false'] img[alt='Blue project diagram'][width='189'][height='113']")
+            visible = css(".work-document-editable [data-resize-container][data-node='image'][data-office-image-layout='tight'][data-office-image-wrap-side='largest'][data-office-image-wrap-polygon-edited='false'][data-office-image-alignment='right'][data-office-image-wrap-distance='8'][data-office-image-lock-aspect-ratio='false'] img[alt='Blue project diagram'][width='189'][height='113']")
         }
 
         expect "picture-selection-retained" {
