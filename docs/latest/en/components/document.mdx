@@ -74,8 +74,12 @@ the warning but does not reinterpret or merge the authoritative host value.
 artifact. `createArtifactBlob` regenerates the editable core document, then
 copies safe source-only OPC parts byte-for-byte and reconnects their content
 types and relationships. Generated document, style, numbering, header, footer,
-and settings parts remain authoritative, so unsupported elements or attributes
-inside those known XML trees may still normalize.
+and settings semantics remain authoritative. In `word/settings.xml`, passive
+ignorable attributes and elements plus structurally valid, non-conflicting
+`mc:AlternateContent` blocks are merged from strict or transitional UTF-8 or
+UTF-16 sources. Relationship-bound and behavior-changing source settings are
+not restored. Unsupported inline markup in the other generated XML trees may
+still normalize.
 
 Persist the source Blob with the artifact and call `registerSourceBlob` after a
 browser reload. Export fails explicitly when an artifact declares a source but

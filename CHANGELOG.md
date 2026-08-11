@@ -11,6 +11,12 @@ All notable changes to A3S Office will be documented in this file.
   are deliberately omitted, and a missing registered source fails closed
   instead of silently producing a lossy export. Imported source metadata also
   carries a SHA-256 fingerprint so a different re-registered DOCX is rejected.
+- Preserved passive OOXML extensions inside regenerated `word/settings.xml`.
+  Ignorable extension attributes and elements plus structurally valid,
+  non-conflicting `mc:AlternateContent` blocks now survive strict or
+  transitional UTF-8/UTF-16 source packages. Generated Word settings remain
+  authoritative; malformed, relationship-bound, protection, template,
+  mail-merge, field-update, and duplicate-setting markup is not restored.
 - Defined authoritative controlled-update behavior for reviewed Word ranges.
   Comment and tracked-change mutations now produce typed React, Vue, and Web
   Component conflict events plus an accessible warning, while harmless range

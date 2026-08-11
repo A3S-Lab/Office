@@ -899,8 +899,12 @@ ActiveX, and custom-ribbon content are not propagated into the macro-free DOCX.
 If a persisted artifact has lost its registered source Blob, export fails
 closed. A persisted SHA-256 fingerprint also prevents a different DOCX from
 being re-registered under the same artifact ID. Unknown attributes, elements,
-and `mc:AlternateContent` branches inside regenerated known parts remain the
-next loss-preservation boundary.
+and `mc:AlternateContent` branches are now selectively merged inside
+`word/settings.xml`: only passive ignorable markup that is relationship-free,
+structurally valid, and non-conflicting with generated Word settings survives.
+Strict and transitional UTF-8/UTF-16 sources share this path. Unknown inline
+markup in regenerated document, style, numbering, header, and footer trees
+remains the next loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

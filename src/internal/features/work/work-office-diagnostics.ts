@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Generated core parts remain authoritative, so unsupported elements and attributes inside document, style, numbering, header, footer, and settings XML may still normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive ignorable extensions in settings XML are preserved when they are relationship-free and do not duplicate generated settings. Generated document, style, numbering, header, and footer parts remain authoritative, so unsupported inline markup there may still normalize.',
       'info',
     ),
   ];
@@ -147,7 +147,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.markup-compatibility',
             'Markup compatibility',
-            '`mc:AlternateContent` branches can normalize when the generated document XML replaces the source tree; source-only package-part preservation does not imply inline fallback preservation.',
+            '`mc:AlternateContent` branches inside regenerated document XML can normalize. Safe settings-level branches are preserved separately, but source-backed package preservation does not yet imply body-content fallback preservation.',
           ),
         );
       }

@@ -92,9 +92,12 @@ generated core parts or reusing conflicting relationship IDs. Export fails
 closed when the declared source Blob is unavailable or its SHA-256 fingerprint
 does not match the imported package. Invalidated digital signatures and active
 VBA, ActiveX, or custom-ribbon parts are deliberately removed and reported.
-Unknown attributes, elements, and
-`mc:AlternateContent` branches inside regenerated known XML parts remain an
-explicit next boundary rather than being covered by the package-level claim.
+The next slice preserves relationship-free ignorable attributes, elements, and
+structurally valid, non-conflicting `mc:AlternateContent` blocks inside
+`word/settings.xml`, including strict/transitional and UTF-8/UTF-16 sources.
+Generated settings semantics stay authoritative. Equivalent unknown markup in
+document, style, numbering, header, and footer trees remains an explicit next
+boundary rather than being covered by this claim.
 
 Exit evidence:
 

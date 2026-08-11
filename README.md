@@ -474,7 +474,12 @@ source metadata carries a SHA-256 fingerprint, so registering a different DOCX
 under the same artifact ID also fails. Generated core parts remain
 authoritative; compatibility diagnostics identify known inline OOXML
 normalization and the deliberate removal of invalid signatures, VBA, ActiveX,
-and custom-ribbon parts.
+and custom-ribbon parts. Within `word/settings.xml`, relationship-free
+ignorable attributes, elements, and structurally valid, non-conflicting
+`mc:AlternateContent` blocks survive strict or transitional UTF-8/UTF-16
+sources. Generated Word settings still win, and this preservation does not yet
+extend to unknown markup inside regenerated body, style, numbering, header, or
+footer trees.
 
 ## Native automation
 

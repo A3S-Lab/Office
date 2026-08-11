@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
 import {
   attribute,
   directChildren,
@@ -38,8 +39,28 @@ export async function preserveDocxSourcePackage(
   const generatedPaths = packagePaths(generated);
   const sourcePaths = packagePaths(source);
   const generatedByLower = pathLookup(generatedPaths);
+  const sourceByLower = pathLookup(sourcePaths);
   const ambiguousSourcePaths = ambiguousPaths(sourcePaths);
   validateSourcePackagePaths(sourcePaths, sourceTypes, ambiguousSourcePaths);
+  const generatedSettingsPath = generatedByLower.get('word/settings.xml');
+  const sourceSettingsPath = sourceByLower.get('word/settings.xml');
+  if (
+    generatedSettingsPath &&
+    sourceSettingsPath &&
+    isDocxSettingsContentType(
+      contentTypeForPath(generatedTypes, generatedSettingsPath),
+    ) &&
+    isDocxSettingsContentType(
+      contentTypeForPath(sourceTypes, sourceSettingsPath),
+    )
+  ) {
+    await preserveDocxSettingsExtensions(
+      generated,
+      source,
+      generatedSettingsPath,
+      sourceSettingsPath,
+    );
+  }
   const preservedPaths = new Set<string>();
 
   for (const path of sourcePaths) {
@@ -91,6 +112,7 @@ async function preserveRelationships(
     }
     const ownerPart = relationshipOwnerPart(sourcePath);
     if (ownerPart && !hasPath(finalPartPaths, ownerPart)) continue;
+    if (ownerPart.toLowerCase() === 'word/settings.xml') continue;
     const sourceEntry = source.file(sourcePath);
     if (!sourceEntry) continue;
     const sourceDocument = parseXml(
@@ -430,4 +452,11 @@ function isExcludedDocxContentType(type: string | undefined): boolean {
     'custom-ui',
     'ribbon',
   ].some((marker) => normalized.includes(marker));
+}
+
+function isDocxSettingsContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml'
+  );
 }
