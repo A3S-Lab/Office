@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Recorded the completed native exact-unit source-layout contracts: bounded,
+  content-addressed PPTX slide rasters and PDFium-backed PDF page inventory,
+  geometry, rendering, typed failures, and deterministic receipts now satisfy
+  the Office-side requirements tracked in #1 and #4.
 - Preserved imported Word numbering identities, abstract-numbering identities,
   and levels in the controlled document model. Separated list runs that belong
   to one native Word list now reuse one DOCX numbering instance on export
