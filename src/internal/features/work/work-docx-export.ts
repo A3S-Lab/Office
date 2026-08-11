@@ -522,6 +522,8 @@ function orderedListLevelFormat(
   level: number,
   docx: typeof import('docx'),
 ) {
+  const imported = importedNumberingFormat(list, docx);
+  if (imported && imported !== docx.LevelFormat.BULLET) return imported;
   const type = list.getAttribute('type');
   if (type === 'A') return docx.LevelFormat.UPPER_LETTER;
   if (type === 'a') return docx.LevelFormat.LOWER_LETTER;
@@ -547,6 +549,7 @@ function orderedListLevelOptions(
   return {
     ...defaultOrderedListLevelOptions(level, docx),
     format: orderedListLevelFormat(list, level, docx),
+    text: importedNumberingText(list) ?? `%${level + 1}.`,
     start: orderedListStart(list),
   };
 }
@@ -571,8 +574,8 @@ function bulletListLevelOptions(
 ) {
   return listLevelOptions(
     level,
-    docx.LevelFormat.BULLET,
-    bulletListMarker(list),
+    importedNumberingFormat(list, docx) ?? docx.LevelFormat.BULLET,
+    importedNumberingText(list) ?? bulletListMarker(list),
     1,
     docx,
   );
@@ -645,6 +648,23 @@ function listNumberingLevel(list: HTMLElement, fallback: number): number {
   return Number.isSafeInteger(imported) && imported >= 0 && imported <= 8
     ? imported
     : Math.min(8, Math.max(0, fallback));
+}
+
+function importedNumberingFormat(
+  list: HTMLElement,
+  docx: typeof import('docx'),
+): (typeof docx.LevelFormat)[keyof typeof docx.LevelFormat] | null {
+  const imported = list.dataset.officeNumberingFormat;
+  if (!imported) return null;
+  const supported = new Set<string>(Object.values(docx.LevelFormat));
+  return supported.has(imported)
+    ? (imported as (typeof docx.LevelFormat)[keyof typeof docx.LevelFormat])
+    : null;
+}
+
+function importedNumberingText(list: HTMLElement): string | null {
+  const imported = list.dataset.officeNumberingText;
+  return imported && imported.length <= 255 ? imported : null;
 }
 
 function directListItemContentRoot(item: HTMLElement): HTMLElement {

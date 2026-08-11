@@ -106,6 +106,46 @@ describe('document lists', () => {
     editor.destroy();
   });
 
+  test('continues an imported native identity and clears raw formatting on an explicit style change', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<ol start="3" type="A" data-office-numbering-id="42" ',
+        'data-office-abstract-numbering-id="7" data-office-numbering-level="2" ',
+        'data-office-numbering-format="upperLetter" ',
+        'data-office-numbering-text="Article %1.%2.%3"><li><p>First</p></li></ol>',
+        '<p>Interruption</p>',
+        '<ol><li><p>Second</p></li></ol>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(textPosition(editor, 'Second'));
+
+    expect(editor.commands.continueDocumentNumbering()).toBe(true);
+    expect(editor.getJSON().content?.[2]).toMatchObject({
+      type: 'orderedList',
+      attrs: {
+        start: 4,
+        type: 'A',
+        officeNumberingId: '42',
+        officeAbstractNumberingId: '7',
+        officeNumberingLevel: '2',
+        officeNumberingFormat: 'upperLetter',
+        officeNumberingText: 'Article %1.%2.%3',
+      },
+    });
+
+    expect(editor.commands.applyDocumentOrderedList('lower-roman')).toBe(true);
+    expect(editor.getJSON().content?.[2]).toMatchObject({
+      attrs: {
+        type: 'i',
+        officeNumberingId: '42',
+        officeNumberingFormat: null,
+        officeNumberingText: null,
+      },
+    });
+    editor.destroy();
+  });
+
   test('rejects invalid numbering values and unavailable continuation', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),
@@ -505,6 +545,78 @@ describe('document lists', () => {
     expect(numberingXml).toMatch(
       /<w:lvl w:ilvl="1"[^>]*>[\s\S]*?<w:numFmt w:val="bullet"\/>[\s\S]*?<w:lvlText w:val="■"\/>/,
     );
+  });
+
+  test('round-trips native multilevel formats and compound level text', async () => {
+    const source = parseXml(
+      [
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>',
+        '<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="73"/></w:numPr></w:pPr><w:r><w:t>Parent</w:t></w:r></w:p>',
+        '<w:p><w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="73"/></w:numPr></w:pPr><w:r><w:t>Child</w:t></w:r></w:p>',
+        '</w:body></w:document>',
+      ].join(''),
+      'document.xml',
+    );
+    const numbering = parseXml(
+      [
+        '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+        '<w:abstractNum w:abstractNumId="11">',
+        '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimalZero"/><w:lvlText w:val="Section %1"/></w:lvl>',
+        '<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="chineseCounting"/><w:lvlText w:val=" %1、%2) "/></w:lvl>',
+        '</w:abstractNum>',
+        '<w:num w:numId="73"><w:abstractNumId w:val="11"/></w:num>',
+        '</w:numbering>',
+      ].join(''),
+      'numbering.xml',
+    );
+    const markers = markDocxLists(source, numbering);
+    expect(markers.lists.map(({ format, text }) => ({ format, text }))).toEqual(
+      [
+        { format: 'decimalZero', text: 'Section %1' },
+        { format: 'chineseCounting', text: ' %1、%2) ' },
+      ],
+    );
+
+    const imported = new DOMParser().parseFromString(
+      [
+        `<ol><li><p>${markers.lists[0]?.marker}Parent</p>`,
+        `<ol><li><p>${markers.lists[1]?.marker}Child</p></li></ol>`,
+        '</li></ol>',
+      ].join(''),
+      'text/html',
+    );
+    applyImportedDocxListMarkers(imported, markers);
+    const importedLists = Array.from(imported.body.querySelectorAll('ol'));
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-format',
+      'decimalZero',
+    );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-text',
+      'Section %1',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-format',
+      'chineseCounting',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-text',
+      ' %1、%2) ',
+    );
+
+    const blob = await createDocxBlob({
+      type: 'document',
+      pageSize: 'a4',
+      html: imported.body.innerHTML,
+    });
+    const { default: JSZip } = await import('jszip');
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const exported =
+      (await archive.file('word/numbering.xml')?.async('text')) ?? '';
+    expect(exported).toContain('<w:numFmt w:val="decimalZero"/>');
+    expect(exported).toContain('<w:lvlText w:val="Section %1"/>');
+    expect(exported).toContain('<w:numFmt w:val="chineseCounting"/>');
+    expect(exported).toContain('<w:lvlText w:val=" %1、%2) "/>');
   });
 });
 

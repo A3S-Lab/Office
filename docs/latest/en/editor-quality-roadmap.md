@@ -323,8 +323,15 @@ Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
 as explicit numbering, abstract-numbering, and level metadata. Export reuses a
 single generated DOCX numbering instance across separated runs with the same
 native identity, retaining continuation semantics instead of assigning each
-run an unrelated list. Arbitrary level-text patterns and the remaining native
-multilevel formats still belong to this priority.
+run an unrelated list. This establishes the identity boundary required by the
+remaining multilevel fidelity work.
+
+Native `numFmt` values supported by the OOXML writer and compound `lvlText`
+patterns now survive that same boundary, including non-Latin numbering
+families and references to parent levels. Continue Numbering adopts the
+preceding native identity and definition; an explicit gallery style change
+clears stale imported format and text metadata before export. Remaining work
+includes native suffix, alignment, indentation, and restart-rule fidelity.
 
 Exit evidence:
 

@@ -117,7 +117,11 @@ function applyDocumentBulletList(
   if (!normalized) return false;
   const current = activeList(props.state, 'bulletList');
   if (current) {
-    return updateListAttributes(props, current, { bulletStyle: normalized });
+    return updateListAttributes(props, current, {
+      bulletStyle: normalized,
+      officeNumberingFormat: null,
+      officeNumberingText: null,
+    });
   }
   return props
     .chain()
@@ -133,7 +137,13 @@ function applyDocumentOrderedList(
   const type = orderedListType(style);
   if (type === undefined) return false;
   const current = activeList(props.state, 'orderedList');
-  if (current) return updateListAttributes(props, current, { type });
+  if (current) {
+    return updateListAttributes(props, current, {
+      type,
+      officeNumberingFormat: null,
+      officeNumberingText: null,
+    });
+  }
   return props
     .chain()
     .toggleOrderedList()
@@ -174,7 +184,18 @@ function continueDocumentNumbering(props: CommandProps): boolean {
   return updateListAttributes(props, current, {
     start,
     type: normalizedOrderedListType(previous.node.attrs.type),
+    ...listIdentityAttributes(previous.node),
   });
+}
+
+function listIdentityAttributes(node: ProseMirrorNode) {
+  return {
+    officeNumberingId: node.attrs.officeNumberingId ?? null,
+    officeAbstractNumberingId: node.attrs.officeAbstractNumberingId ?? null,
+    officeNumberingLevel: node.attrs.officeNumberingLevel ?? null,
+    officeNumberingFormat: node.attrs.officeNumberingFormat ?? null,
+    officeNumberingText: node.attrs.officeNumberingText ?? null,
+  };
 }
 
 function updateListAttributes(
@@ -290,6 +311,8 @@ function documentListIdentityAttributes() {
     officeNumberingId: identityAttribute('officeNumberingId'),
     officeAbstractNumberingId: identityAttribute('officeAbstractNumberingId'),
     officeNumberingLevel: identityAttribute('officeNumberingLevel'),
+    officeNumberingFormat: identityAttribute('officeNumberingFormat'),
+    officeNumberingText: identityAttribute('officeNumberingText'),
   };
 }
 
@@ -297,7 +320,9 @@ function identityAttribute(
   datasetKey:
     | 'officeNumberingId'
     | 'officeAbstractNumberingId'
-    | 'officeNumberingLevel',
+    | 'officeNumberingLevel'
+    | 'officeNumberingFormat'
+    | 'officeNumberingText',
 ) {
   const htmlName = `data-${datasetKey.replace(
     /[A-Z]/g,

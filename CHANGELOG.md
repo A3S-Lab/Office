@@ -8,6 +8,10 @@ All notable changes to A3S Office will be documented in this file.
   and levels in the controlled document model. Separated list runs that belong
   to one native Word list now reuse one DOCX numbering instance on export
   instead of silently restarting under unrelated generated identities.
+- Preserved native multilevel `numFmt` and compound `lvlText` patterns across
+  controlled edits and DOCX export, including non-Latin numbering families.
+  Continue Numbering now adopts the preceding native identity, while an
+  explicit style change clears stale imported formatting metadata.
 - Added a Spreadsheet command catalog and adopted the shared WPS-oriented
   quick-access, adaptive, and collapsible ribbon. Conditional Formatting now
   lives under Home and Styles, Data exposes executable ascending and descending

@@ -6,6 +6,8 @@ export interface ImportedDocxListMarker {
   numberingId: number;
   abstractNumberingId?: number;
   level: number;
+  format?: string;
+  text?: string;
   type?: ImportedDocxOrderedListType;
   bulletStyle?: ImportedDocxBulletListStyle;
 }
@@ -67,6 +69,15 @@ export function markDocxLists(
     const abstract =
       abstractId === null ? undefined : abstractNumbering.get(abstractId);
     const start = effectiveListStart(concrete, abstract, level);
+    const definition = effectiveListLevel(concrete, abstract, level);
+    const format = stringAttribute(
+      definition ? directChild(definition, 'numFmt') : null,
+      'val',
+    );
+    const text = rawStringAttribute(
+      definition ? directChild(definition, 'lvlText') : null,
+      'val',
+    );
     const type = effectiveOrderedListType(concrete, abstract, level);
     const bulletStyle = effectiveBulletListStyle(concrete, abstract, level);
     const marker = `__A3S_WORK_LIST_START_${lists.length + 1}__`;
@@ -77,6 +88,8 @@ export function markDocxLists(
       numberingId: numId,
       ...(abstractId === null ? {} : { abstractNumberingId: abstractId }),
       level,
+      ...(format ? { format } : {}),
+      ...(text ? { text } : {}),
       ...(type ? { type } : {}),
       ...(bulletStyle ? { bulletStyle } : {}),
     });
@@ -100,6 +113,12 @@ export function applyImportedDocxListMarkers(
       if (imported && list instanceof HTMLElement) {
         list.dataset.officeNumberingId = String(imported.numberingId);
         list.dataset.officeNumberingLevel = String(imported.level);
+        if (imported.format) {
+          list.dataset.officeNumberingFormat = imported.format;
+        }
+        if (imported.text) {
+          list.dataset.officeNumberingText = imported.text;
+        }
         if (imported.abstractNumberingId !== undefined) {
           list.dataset.officeAbstractNumberingId = String(
             imported.abstractNumberingId,
@@ -273,6 +292,17 @@ function stringAttribute(
     attribute(element, name) ??
     (name.includes(':') ? null : attribute(element, `w:${name}`));
   return value?.trim() || null;
+}
+
+function rawStringAttribute(
+  element: Element | null | undefined,
+  name: string,
+): string | null {
+  if (!element) return null;
+  return (
+    attribute(element, name) ??
+    (name.includes(':') ? null : attribute(element, `w:${name}`))
+  );
 }
 
 function textNodes(root: ParentNode): Text[] {
