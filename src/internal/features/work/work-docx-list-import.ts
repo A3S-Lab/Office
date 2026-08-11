@@ -8,6 +8,15 @@ export interface ImportedDocxListMarker {
   level: number;
   format?: string;
   text?: string;
+  suffix?: string;
+  alignment?: string;
+  indentLeft?: number;
+  indentRight?: number;
+  indentStart?: number;
+  indentEnd?: number;
+  indentHanging?: number;
+  indentFirstLine?: number;
+  restartAfterLevel?: number;
   type?: ImportedDocxOrderedListType;
   bulletStyle?: ImportedDocxBulletListStyle;
 }
@@ -78,6 +87,30 @@ export function markDocxLists(
       definition ? directChild(definition, 'lvlText') : null,
       'val',
     );
+    const suffix = stringAttribute(
+      definition ? directChild(definition, 'suff') : null,
+      'val',
+    );
+    const alignment = stringAttribute(
+      definition ? directChild(definition, 'lvlJc') : null,
+      'val',
+    );
+    const paragraphProperties = definition
+      ? directChild(definition, 'pPr')
+      : undefined;
+    const indent = paragraphProperties
+      ? directChild(paragraphProperties, 'ind')
+      : undefined;
+    const indentLeft = signedIntegerAttribute(indent, 'left');
+    const indentStart = signedIntegerAttribute(indent, 'start');
+    const indentRight = signedIntegerAttribute(indent, 'right');
+    const indentEnd = signedIntegerAttribute(indent, 'end');
+    const indentHanging = integerAttribute(indent, 'hanging');
+    const indentFirstLine = integerAttribute(indent, 'firstLine');
+    const restartAfterLevel = integerAttribute(
+      definition ? directChild(definition, 'lvlRestart') : null,
+      'val',
+    );
     const type = effectiveOrderedListType(concrete, abstract, level);
     const bulletStyle = effectiveBulletListStyle(concrete, abstract, level);
     const marker = `__A3S_WORK_LIST_START_${lists.length + 1}__`;
@@ -90,6 +123,15 @@ export function markDocxLists(
       level,
       ...(format ? { format } : {}),
       ...(text ? { text } : {}),
+      ...(suffix ? { suffix } : {}),
+      ...(alignment ? { alignment } : {}),
+      ...(indentLeft === null ? {} : { indentLeft }),
+      ...(indentRight === null ? {} : { indentRight }),
+      ...(indentStart === null ? {} : { indentStart }),
+      ...(indentEnd === null ? {} : { indentEnd }),
+      ...(indentHanging === null ? {} : { indentHanging }),
+      ...(indentFirstLine === null ? {} : { indentFirstLine }),
+      ...(restartAfterLevel === null ? {} : { restartAfterLevel }),
       ...(type ? { type } : {}),
       ...(bulletStyle ? { bulletStyle } : {}),
     });
@@ -119,6 +161,47 @@ export function applyImportedDocxListMarkers(
         if (imported.text) {
           list.dataset.officeNumberingText = imported.text;
         }
+        setOptionalDataset(list, 'officeNumberingSuffix', imported.suffix);
+        setOptionalDataset(
+          list,
+          'officeNumberingAlignment',
+          imported.alignment,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentLeft',
+          imported.indentLeft,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentRight',
+          imported.indentRight,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentStart',
+          imported.indentStart,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentEnd',
+          imported.indentEnd,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentHanging',
+          imported.indentHanging,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingIndentFirstLine',
+          imported.indentFirstLine,
+        );
+        setOptionalDataset(
+          list,
+          'officeNumberingRestartAfterLevel',
+          imported.restartAfterLevel,
+        );
         if (imported.abstractNumberingId !== undefined) {
           list.dataset.officeAbstractNumberingId = String(
             imported.abstractNumberingId,
@@ -281,6 +364,27 @@ function integerAttribute(
   if (source === null) return null;
   const value = Number(source);
   return Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+function signedIntegerAttribute(
+  element: Element | null | undefined,
+  name: string,
+): number | null {
+  if (!element) return null;
+  const source =
+    attribute(element, name) ??
+    (name.includes(':') ? null : attribute(element, `w:${name}`));
+  if (source === null) return null;
+  const value = Number(source);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
+function setOptionalDataset(
+  element: HTMLElement,
+  key: string,
+  value: string | number | undefined,
+): void {
+  if (value !== undefined) element.dataset[key] = String(value);
 }
 
 function stringAttribute(

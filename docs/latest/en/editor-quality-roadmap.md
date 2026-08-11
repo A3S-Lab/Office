@@ -330,8 +330,11 @@ Native `numFmt` values supported by the OOXML writer and compound `lvlText`
 patterns now survive that same boundary, including non-Latin numbering
 families and references to parent levels. Continue Numbering adopts the
 preceding native identity and definition; an explicit gallery style change
-clears stale imported format and text metadata before export. Remaining work
-includes native suffix, alignment, indentation, and restart-rule fidelity.
+clears stale imported format and text metadata before export. Native suffix,
+level alignment, physical or logical indentation, hanging or first-line
+offsets, and `lvlRestart` rules now follow the same round-trip path. Logical
+`start` and `end` indentation remain distinct for RTL numbering instead of
+being flattened to physical left and right values.
 
 Exit evidence:
 

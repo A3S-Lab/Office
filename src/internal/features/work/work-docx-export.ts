@@ -1,6 +1,7 @@
 import type {
   FileChild,
   ICommentOptions,
+  IIndentAttributesProperties,
   INumberingOptions,
   IRunOptions,
   ISectionOptions,
@@ -15,6 +16,7 @@ import {
 } from './work-document-notes';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import { patchDocxPageColor } from './work-docx-page-color';
+import { patchDocxNumberingRestartRules } from './work-docx-numbering';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   documentTableCellSizingDocxOptions,
@@ -70,6 +72,8 @@ interface DocxNoteContext {
     string,
     Array<INumberingOptions['config'][number]['levels'][number]>
   >;
+  numberingRestartRules: Array<Map<number, number>>;
+  numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
 }
 
 interface DocxTextRevision {
@@ -100,6 +104,8 @@ export async function createDocxBlob(
     nextNumberingReference: 1,
     numberingReferences: new Map(),
     numberingLevels: new Map(),
+    numberingRestartRules: [],
+    numberingRestartRulesByIdentity: new Map(),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -160,8 +166,12 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
-  const bibliographyPatched = await patchDocxBibliography(
+  const numberingPatched = await patchDocxNumberingRestartRules(
     await packed.arrayBuffer(),
+    noteContext.numberingRestartRules,
+  );
+  const bibliographyPatched = await patchDocxBibliography(
+    numberingPatched,
     content.bibliography,
   );
   const layoutPatched = await patchDocxDocumentLayout(
@@ -466,6 +476,7 @@ function registerOrderedListNumbering(
     if (levels) {
       levels[level] = orderedListLevelOptions(list, level, docx);
     }
+    updateNumberingRestartRule(noteContext, identity, list, level);
     return { reference: existingReference, level };
   }
   const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
@@ -476,9 +487,13 @@ function registerOrderedListNumbering(
       : defaultOrderedListLevelOptions(currentLevel, docx),
   );
   const configuration = { reference, levels };
+  const restartRules = new Map<number, number>();
+  setNumberingRestartRule(restartRules, list, level);
+  noteContext.numberingRestartRules.push(restartRules);
   if (identity) {
     noteContext.numberingReferences.set(identity, reference);
     noteContext.numberingLevels.set(identity, levels);
+    noteContext.numberingRestartRulesByIdentity.set(identity, restartRules);
   }
   noteContext.numbering.push(configuration);
   return { reference, level };
@@ -499,6 +514,7 @@ function registerBulletListNumbering(
     if (levels) {
       levels[level] = bulletListLevelOptions(list, level, docx);
     }
+    updateNumberingRestartRule(noteContext, identity, list, level);
     return { reference: existingReference, level };
   }
   const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
@@ -509,9 +525,13 @@ function registerBulletListNumbering(
       : defaultBulletListLevelOptions(currentLevel, docx),
   );
   const configuration = { reference, levels };
+  const restartRules = new Map<number, number>();
+  setNumberingRestartRule(restartRules, list, level);
+  noteContext.numberingRestartRules.push(restartRules);
   if (identity) {
     noteContext.numberingReferences.set(identity, reference);
     noteContext.numberingLevels.set(identity, levels);
+    noteContext.numberingRestartRulesByIdentity.set(identity, restartRules);
   }
   noteContext.numbering.push(configuration);
   return { reference, level };
@@ -546,12 +566,16 @@ function orderedListLevelOptions(
   level: number,
   docx: typeof import('docx'),
 ) {
-  return {
-    ...defaultOrderedListLevelOptions(level, docx),
-    format: orderedListLevelFormat(list, level, docx),
-    text: importedNumberingText(list) ?? `%${level + 1}.`,
-    start: orderedListStart(list),
-  };
+  return applyImportedListLevelLayout(
+    list,
+    {
+      ...defaultOrderedListLevelOptions(level, docx),
+      format: orderedListLevelFormat(list, level, docx),
+      text: importedNumberingText(list) ?? `%${level + 1}.`,
+      start: orderedListStart(list),
+    },
+    docx,
+  );
 }
 
 function defaultOrderedListLevelOptions(
@@ -572,11 +596,15 @@ function bulletListLevelOptions(
   level: number,
   docx: typeof import('docx'),
 ) {
-  return listLevelOptions(
-    level,
-    importedNumberingFormat(list, docx) ?? docx.LevelFormat.BULLET,
-    importedNumberingText(list) ?? bulletListMarker(list),
-    1,
+  return applyImportedListLevelLayout(
+    list,
+    listLevelOptions(
+      level,
+      importedNumberingFormat(list, docx) ?? docx.LevelFormat.BULLET,
+      importedNumberingText(list) ?? bulletListMarker(list),
+      1,
+      docx,
+    ),
     docx,
   );
 }
@@ -665,6 +693,109 @@ function importedNumberingFormat(
 function importedNumberingText(list: HTMLElement): string | null {
   const imported = list.dataset.officeNumberingText;
   return imported && imported.length <= 255 ? imported : null;
+}
+
+function applyImportedListLevelLayout<
+  T extends ReturnType<typeof listLevelOptions>,
+>(list: HTMLElement, options: T, docx: typeof import('docx')): T {
+  const suffix = list.dataset.officeNumberingSuffix;
+  const supportedSuffixes = new Set<string>(Object.values(docx.LevelSuffix));
+  const alignment = list.dataset.officeNumberingAlignment;
+  const supportedAlignments = new Set<string>(
+    Object.values(docx.AlignmentType),
+  );
+  const left = importedTwips(list.dataset.officeNumberingIndentLeft, true);
+  const right = importedTwips(list.dataset.officeNumberingIndentRight, true);
+  const start = importedTwips(list.dataset.officeNumberingIndentStart, true);
+  const end = importedTwips(list.dataset.officeNumberingIndentEnd, true);
+  const hanging = importedTwips(
+    list.dataset.officeNumberingIndentHanging,
+    false,
+  );
+  const firstLine = importedTwips(
+    list.dataset.officeNumberingIndentFirstLine,
+    false,
+  );
+  const importedIndentMode = hanging !== null || firstLine !== null;
+  const importedPositionMode =
+    left !== null || right !== null || start !== null || end !== null;
+  const sourceIndent: IIndentAttributesProperties =
+    options.style.paragraph.indent;
+  const baseIndent: Record<string, unknown> = { ...sourceIndent };
+  if (importedPositionMode) {
+    delete baseIndent.left;
+    delete baseIndent.right;
+    delete baseIndent.start;
+    delete baseIndent.end;
+  }
+  if (importedIndentMode) {
+    delete baseIndent.hanging;
+    delete baseIndent.firstLine;
+  }
+  return {
+    ...options,
+    ...(suffix && supportedSuffixes.has(suffix)
+      ? {
+          suffix:
+            suffix as (typeof docx.LevelSuffix)[keyof typeof docx.LevelSuffix],
+        }
+      : {}),
+    ...(alignment && supportedAlignments.has(alignment)
+      ? {
+          alignment:
+            alignment as (typeof docx.AlignmentType)[keyof typeof docx.AlignmentType],
+        }
+      : {}),
+    style: {
+      ...options.style,
+      paragraph: {
+        ...options.style.paragraph,
+        indent: {
+          ...baseIndent,
+          ...(left === null ? {} : { left }),
+          ...(right === null ? {} : { right }),
+          ...(start === null ? {} : { start }),
+          ...(end === null ? {} : { end }),
+          ...(hanging === null ? {} : { hanging }),
+          ...(firstLine === null ? {} : { firstLine }),
+        },
+      },
+    },
+  };
+}
+
+function importedTwips(
+  value: string | undefined,
+  signed: boolean,
+): number | null {
+  if (value === undefined || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed)) return null;
+  if (!signed && parsed < 0) return null;
+  return parsed;
+}
+
+function updateNumberingRestartRule(
+  context: DocxNoteContext,
+  identity: string,
+  list: HTMLElement,
+  level: number,
+): void {
+  const rules = context.numberingRestartRulesByIdentity.get(identity);
+  if (rules) setNumberingRestartRule(rules, list, level);
+}
+
+function setNumberingRestartRule(
+  rules: Map<number, number>,
+  list: HTMLElement,
+  level: number,
+): void {
+  const value = list.dataset.officeNumberingRestartAfterLevel;
+  if (value === undefined || value === '') return;
+  const parsed = Number(value);
+  if (Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 9) {
+    rules.set(level, parsed);
+  }
 }
 
 function directListItemContentRoot(item: HTMLElement): HTMLElement {

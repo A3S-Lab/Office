@@ -4,6 +4,7 @@ import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
 import { createDocxBlob } from '../src/internal/features/work/work-docx-export';
+import { patchDocxNumberingRestartRules } from '../src/internal/features/work/work-docx-numbering';
 import {
   DocumentPagination,
   measureDocumentLayoutBlocks,
@@ -113,7 +114,12 @@ describe('document lists', () => {
         '<ol start="3" type="A" data-office-numbering-id="42" ',
         'data-office-abstract-numbering-id="7" data-office-numbering-level="2" ',
         'data-office-numbering-format="upperLetter" ',
-        'data-office-numbering-text="Article %1.%2.%3"><li><p>First</p></li></ol>',
+        'data-office-numbering-text="Article %1.%2.%3" ',
+        'data-office-numbering-suffix="space" ',
+        'data-office-numbering-alignment="center" ',
+        'data-office-numbering-indent-start="1080" ',
+        'data-office-numbering-indent-hanging="240" ',
+        'data-office-numbering-restart-after-level="2"><li><p>First</p></li></ol>',
         '<p>Interruption</p>',
         '<ol><li><p>Second</p></li></ol>',
       ].join(''),
@@ -131,6 +137,11 @@ describe('document lists', () => {
         officeNumberingLevel: '2',
         officeNumberingFormat: 'upperLetter',
         officeNumberingText: 'Article %1.%2.%3',
+        officeNumberingSuffix: 'space',
+        officeNumberingAlignment: 'center',
+        officeNumberingIndentStart: '1080',
+        officeNumberingIndentHanging: '240',
+        officeNumberingRestartAfterLevel: '2',
       },
     });
 
@@ -561,8 +572,8 @@ describe('document lists', () => {
       [
         '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
         '<w:abstractNum w:abstractNumId="11">',
-        '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimalZero"/><w:lvlText w:val="Section %1"/></w:lvl>',
-        '<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="chineseCounting"/><w:lvlText w:val=" %1、%2) "/></w:lvl>',
+        '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimalZero"/><w:lvlText w:val="Section %1"/><w:lvlRestart w:val="0"/><w:suff w:val="space"/><w:lvlJc w:val="center"/><w:pPr><w:ind w:left="1080" w:hanging="240"/></w:pPr></w:lvl>',
+        '<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="chineseCounting"/><w:lvlText w:val=" %1、%2) "/><w:lvlRestart w:val="1"/><w:suff w:val="nothing"/><w:lvlJc w:val="right"/><w:pPr><w:ind w:start="1440" w:end="80" w:firstLine="120"/></w:pPr></w:lvl>',
         '</w:abstractNum>',
         '<w:num w:numId="73"><w:abstractNumId w:val="11"/></w:num>',
         '</w:numbering>',
@@ -595,6 +606,26 @@ describe('document lists', () => {
       'data-office-numbering-text',
       'Section %1',
     );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-suffix',
+      'space',
+    );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-alignment',
+      'center',
+    );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-indent-left',
+      '1080',
+    );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-indent-hanging',
+      '240',
+    );
+    expect(importedLists[0]).toHaveAttribute(
+      'data-office-numbering-restart-after-level',
+      '0',
+    );
     expect(importedLists[1]).toHaveAttribute(
       'data-office-numbering-format',
       'chineseCounting',
@@ -602,6 +633,30 @@ describe('document lists', () => {
     expect(importedLists[1]).toHaveAttribute(
       'data-office-numbering-text',
       ' %1、%2) ',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-suffix',
+      'nothing',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-alignment',
+      'right',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-indent-start',
+      '1440',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-indent-end',
+      '80',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-indent-first-line',
+      '120',
+    );
+    expect(importedLists[1]).toHaveAttribute(
+      'data-office-numbering-restart-after-level',
+      '1',
     );
 
     const blob = await createDocxBlob({
@@ -617,6 +672,43 @@ describe('document lists', () => {
     expect(exported).toContain('<w:lvlText w:val="Section %1"/>');
     expect(exported).toContain('<w:numFmt w:val="chineseCounting"/>');
     expect(exported).toContain('<w:lvlText w:val=" %1、%2) "/>');
+    expect(exported).toMatch(
+      /<w:lvl w:ilvl="0"[^>]*>[\s\S]*?<w:suff w:val="space"\/>[\s\S]*?<w:lvlJc w:val="center"\/>[\s\S]*?<w:lvlRestart w:val="0"\/>[\s\S]*?<w:ind w:left="1080" w:hanging="240"\/>/,
+    );
+    expect(exported).toMatch(
+      /<w:lvl w:ilvl="1"[^>]*>[\s\S]*?<w:suff w:val="nothing"\/>[\s\S]*?<w:lvlJc w:val="right"\/>[\s\S]*?<w:lvlRestart w:val="1"\/>[\s\S]*?<w:ind w:start="1440" w:end="80" w:firstLine="120"\/>/,
+    );
+  });
+
+  test('patches restart rules onto each generated numbering definition without changing the default', async () => {
+    const { default: JSZip } = await import('jszip');
+    const archive = new JSZip();
+    archive.file(
+      'word/numbering.xml',
+      [
+        '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+        '<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:pPr/></w:lvl></w:abstractNum>',
+        '<w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="1"><w:pPr/></w:lvl></w:abstractNum>',
+        '<w:abstractNum w:abstractNumId="3"><w:lvl w:ilvl="2"><w:pPr/></w:lvl></w:abstractNum>',
+        '</w:numbering>',
+      ].join(''),
+    );
+    const source = await archive.generateAsync({ type: 'arraybuffer' });
+    const patched = await patchDocxNumberingRestartRules(source, [
+      new Map([[1, 0]]),
+      new Map([[2, 1]]),
+    ]);
+    const result = await JSZip.loadAsync(patched);
+    const xml = (await result.file('word/numbering.xml')?.async('text')) ?? '';
+    expect(xml).toContain(
+      '<w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:pPr/></w:lvl></w:abstractNum>',
+    );
+    expect(xml).toContain(
+      '<w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="1"><w:lvlRestart w:val="0"/><w:pPr/></w:lvl></w:abstractNum>',
+    );
+    expect(xml).toContain(
+      '<w:abstractNum w:abstractNumId="3"><w:lvl w:ilvl="2"><w:lvlRestart w:val="1"/><w:pPr/></w:lvl></w:abstractNum>',
+    );
   });
 });
 

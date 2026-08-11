@@ -195,6 +195,18 @@ function listIdentityAttributes(node: ProseMirrorNode) {
     officeNumberingLevel: node.attrs.officeNumberingLevel ?? null,
     officeNumberingFormat: node.attrs.officeNumberingFormat ?? null,
     officeNumberingText: node.attrs.officeNumberingText ?? null,
+    officeNumberingSuffix: node.attrs.officeNumberingSuffix ?? null,
+    officeNumberingAlignment: node.attrs.officeNumberingAlignment ?? null,
+    officeNumberingIndentLeft: node.attrs.officeNumberingIndentLeft ?? null,
+    officeNumberingIndentRight: node.attrs.officeNumberingIndentRight ?? null,
+    officeNumberingIndentStart: node.attrs.officeNumberingIndentStart ?? null,
+    officeNumberingIndentEnd: node.attrs.officeNumberingIndentEnd ?? null,
+    officeNumberingIndentHanging:
+      node.attrs.officeNumberingIndentHanging ?? null,
+    officeNumberingIndentFirstLine:
+      node.attrs.officeNumberingIndentFirstLine ?? null,
+    officeNumberingRestartAfterLevel:
+      node.attrs.officeNumberingRestartAfterLevel ?? null,
   };
 }
 
@@ -313,6 +325,21 @@ function documentListIdentityAttributes() {
     officeNumberingLevel: identityAttribute('officeNumberingLevel'),
     officeNumberingFormat: identityAttribute('officeNumberingFormat'),
     officeNumberingText: identityAttribute('officeNumberingText'),
+    officeNumberingSuffix: identityAttribute('officeNumberingSuffix'),
+    officeNumberingAlignment: identityAttribute('officeNumberingAlignment'),
+    officeNumberingIndentLeft: identityAttribute('officeNumberingIndentLeft'),
+    officeNumberingIndentRight: identityAttribute('officeNumberingIndentRight'),
+    officeNumberingIndentStart: identityAttribute('officeNumberingIndentStart'),
+    officeNumberingIndentEnd: identityAttribute('officeNumberingIndentEnd'),
+    officeNumberingIndentHanging: identityAttribute(
+      'officeNumberingIndentHanging',
+    ),
+    officeNumberingIndentFirstLine: identityAttribute(
+      'officeNumberingIndentFirstLine',
+    ),
+    officeNumberingRestartAfterLevel: identityAttribute(
+      'officeNumberingRestartAfterLevel',
+    ),
   };
 }
 
@@ -322,7 +349,16 @@ function identityAttribute(
     | 'officeAbstractNumberingId'
     | 'officeNumberingLevel'
     | 'officeNumberingFormat'
-    | 'officeNumberingText',
+    | 'officeNumberingText'
+    | 'officeNumberingSuffix'
+    | 'officeNumberingAlignment'
+    | 'officeNumberingIndentLeft'
+    | 'officeNumberingIndentRight'
+    | 'officeNumberingIndentStart'
+    | 'officeNumberingIndentEnd'
+    | 'officeNumberingIndentHanging'
+    | 'officeNumberingIndentFirstLine'
+    | 'officeNumberingRestartAfterLevel',
 ) {
   const htmlName = `data-${datasetKey.replace(
     /[A-Z]/g,

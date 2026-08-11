@@ -12,6 +12,10 @@ All notable changes to A3S Office will be documented in this file.
   controlled edits and DOCX export, including non-Latin numbering families.
   Continue Numbering now adopts the preceding native identity, while an
   explicit style change clears stale imported formatting metadata.
+- Preserved native numbering suffix, level alignment, physical and logical
+  indentation, hanging or first-line offsets, and `lvlRestart` rules. RTL list
+  definitions keep `start`/`end` semantics instead of being flattened to
+  `left`/`right` during browser editing and DOCX export.
 - Added a Spreadsheet command catalog and adopted the shared WPS-oriented
   quick-access, adaptive, and collapsible ribbon. Conditional Formatting now
   lives under Home and Styles, Data exposes executable ascending and descending
