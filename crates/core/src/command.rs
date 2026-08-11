@@ -383,6 +383,7 @@ fn duration_millis(duration: Duration) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
     use crate::{BatchCommand, DocumentKind};
 
     #[cfg(unix)]

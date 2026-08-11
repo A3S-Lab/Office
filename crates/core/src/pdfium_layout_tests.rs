@@ -3,7 +3,7 @@ use crate::{
     NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
     NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextLayer,
-    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions, NativeOfficePdfTextRun,
     NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision,
     NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
@@ -124,6 +124,7 @@ fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
         page_geometry: inventory.pages[0].clone(),
         engine_version: "chromium/7881".to_string(),
         max_characters: 8,
+        max_runs: 4,
         max_text_bytes: 32,
         text_sha256: format!("{:x}", sha2::Sha256::digest(text.as_bytes())),
         text,
@@ -148,11 +149,30 @@ fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
                 Some(text_box(10_000, 40_000, 22_000, 52_000)),
             ),
         ],
+        runs: vec![NativeOfficePdfTextRun {
+            index: 0,
+            character_start: 0,
+            character_end: 1,
+            utf8_start: 0,
+            utf8_end: 1,
+            utf16_start: 0,
+            utf16_end: 1,
+            text: "A".to_string(),
+            bounds: text_box(10_000, 20_000, 18_000, 32_000),
+        }],
     };
 
     layer.validate(&inventory).unwrap();
     assert_eq!(layer.characters[2].utf8_range(), 2..6);
     assert_eq!(layer.characters[2].utf16_range(), 2..4);
+    assert_eq!(layer.runs[0].text, "A");
+
+    let mut tampered_run = layer.clone();
+    tampered_run.runs[0].utf8_end = 2;
+    assert_eq!(
+        tampered_run.validate(&inventory).unwrap_err().code,
+        "use.office.pdf_text_layer_invalid"
+    );
 
     let mut tampered = layer.clone();
     tampered.characters[2].utf16_end = 3;
@@ -262,6 +282,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 64,
+                max_runs: 16,
                 max_text_bytes: 1024,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -271,6 +292,8 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     assert_eq!(renderer.inventory_call_count(), 1);
     assert_eq!(first_text.text, "Hello PDF");
     assert_eq!(first_text.characters.len(), 9);
+    assert!(!first_text.runs.is_empty());
+    assert_eq!(first_text.runs[0].index, 0);
     assert!(first_text
         .characters
         .iter()
@@ -311,6 +334,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 1,
+                max_runs: 1,
                 max_text_bytes: 1024,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -599,6 +623,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
             blank_inventory.pages[0].unit.clone(),
             NativeOfficePdfTextLayerOptions {
                 max_characters: 8,
+                max_runs: 8,
                 max_text_bytes: 8,
                 timeout_ms: TEST_TIMEOUT_MS,
             },
@@ -607,6 +632,7 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .unwrap();
     assert!(blank_text.text.is_empty());
     assert!(blank_text.characters.is_empty());
+    assert!(blank_text.runs.is_empty());
     blank_text.validate(&blank_inventory).unwrap();
 }
 

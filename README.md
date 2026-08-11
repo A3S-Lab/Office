@@ -468,8 +468,10 @@ selected pages from one previously validated complete inventory without
 rescanning the full document; render still revalidates the immutable source and
 actual page profile before publication. The same retained inventory now
 authorizes bounded native PDF text-layer extraction with source-order Unicode,
-exact UTF-8/UTF-16 ranges, optional glyph boxes in PDF coordinates, and bounded
-document outlines with exact page targets. Text and outline calls revalidate
+exact UTF-8/UTF-16 ranges, optional glyph boxes, and PDFium-native same-line,
+same-style runs with exact PDF-coordinate bounds. Independent character and run
+limits keep the result bounded. Document outlines retain exact page targets.
+Text and outline calls revalidate
 the immutable source, reuse inventory authority, and return typed limit or
 unsupported failures without OCR or Browser access. Richer slides and formats
 without an authoritative provider remain typed unsupported instead of being

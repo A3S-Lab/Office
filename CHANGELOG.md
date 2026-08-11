@@ -4,6 +4,9 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added bounded PDFium-native text runs with stable indices, character and
+  UTF-8/UTF-16 ranges, exact PDF-space bounds, deterministic validation, and an
+  independent hard run limit to the native PDF text-layer receipt.
 - Recorded the completed native exact-unit source-layout contracts: bounded,
   content-addressed PPTX slide rasters and PDFium-backed PDF page inventory,
   geometry, rendering, typed failures, and deterministic receipts now satisfy

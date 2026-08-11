@@ -11,11 +11,15 @@ use crate::layout::layout_error;
 use crate::{NativeOfficeUnit, PackageRevision};
 
 /// Schema version for native PDF text-layer and outline receipts.
-pub const NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION: u32 = 1;
+pub const NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION: u32 = 2;
 /// Default maximum number of PDFium characters accepted from one page.
 pub const DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS: usize = 1_000_000;
 /// Hard maximum number of PDFium characters accepted from one page.
 pub const MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS: usize = 5_000_000;
+/// Default maximum number of PDFium text runs accepted from one page.
+pub const DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS: usize = 250_000;
+/// Hard maximum number of PDFium text runs accepted from one page.
+pub const MAX_NATIVE_OFFICE_PDF_TEXT_RUNS: usize = 1_000_000;
 /// Default maximum UTF-8 text bytes accepted from one page.
 pub const DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES: usize = 16 * 1024 * 1024;
 /// Hard maximum UTF-8 text bytes accepted from one page.
@@ -26,6 +30,7 @@ pub const MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES: usize = 64 * 1024 * 1024;
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativeOfficePdfTextLayerOptions {
     pub max_characters: usize,
+    pub max_runs: usize,
     pub max_text_bytes: usize,
     pub timeout_ms: u64,
 }
@@ -34,6 +39,7 @@ impl Default for NativeOfficePdfTextLayerOptions {
     fn default() -> Self {
         Self {
             max_characters: DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS,
+            max_runs: DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS,
             max_text_bytes: DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
             timeout_ms: 120_000,
         }
@@ -43,6 +49,7 @@ impl Default for NativeOfficePdfTextLayerOptions {
 impl NativeOfficePdfTextLayerOptions {
     pub(super) fn validate(&self) -> UseResult<()> {
         if (1..=MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS).contains(&self.max_characters)
+            && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_RUNS).contains(&self.max_runs)
             && (1..=MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES).contains(&self.max_text_bytes)
             && (1..=super::super::MAX_LAYOUT_TIMEOUT_MS).contains(&self.timeout_ms)
         {
@@ -52,6 +59,53 @@ impl NativeOfficePdfTextLayerOptions {
             "use.office.pdf_text_options_invalid",
             "PDF text character, byte, and timeout bounds are invalid.",
         ))
+    }
+}
+
+/// One PDFium-native, same-line and same-style text segment in source order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeOfficePdfTextRun {
+    pub index: u32,
+    pub character_start: u32,
+    pub character_end: u32,
+    pub utf8_start: u64,
+    pub utf8_end: u64,
+    pub utf16_start: u64,
+    pub utf16_end: u64,
+    pub text: String,
+    pub bounds: NativeOfficePdfPageBox,
+}
+
+impl NativeOfficePdfTextRun {
+    fn validate(
+        &self,
+        expected_index: usize,
+        characters: &[NativeOfficePdfTextCharacter],
+        text: &str,
+    ) -> UseResult<()> {
+        let index = u32::try_from(expected_index).map_err(|_| invalid_text_layer())?;
+        let start = usize::try_from(self.character_start).map_err(|_| invalid_text_layer())?;
+        let end = usize::try_from(self.character_end).map_err(|_| invalid_text_layer())?;
+        let first = characters.get(start).ok_or_else(invalid_text_layer)?;
+        let last = end
+            .checked_sub(1)
+            .and_then(|offset| characters.get(offset))
+            .ok_or_else(invalid_text_layer)?;
+        let utf8_start = usize::try_from(first.utf8_start).map_err(|_| invalid_text_layer())?;
+        let utf8_end = usize::try_from(last.utf8_end).map_err(|_| invalid_text_layer())?;
+        if self.index != index
+            || start >= end
+            || end > characters.len()
+            || self.utf8_start != first.utf8_start
+            || self.utf8_end != last.utf8_end
+            || self.utf16_start != first.utf16_start
+            || self.utf16_end != last.utf16_end
+            || text.get(utf8_start..utf8_end) != Some(self.text.as_str())
+        {
+            return Err(invalid_text_layer());
+        }
+        self.bounds.validate().map_err(|_| invalid_text_layer())
     }
 }
 
@@ -132,10 +186,12 @@ pub struct NativeOfficePdfPageTextLayer {
     pub page_geometry: NativeOfficePdfPageGeometry,
     pub engine_version: String,
     pub max_characters: usize,
+    pub max_runs: usize,
     pub max_text_bytes: usize,
     pub text_sha256: String,
     pub text: String,
     pub characters: Vec<NativeOfficePdfTextCharacter>,
+    pub runs: Vec<NativeOfficePdfTextRun>,
 }
 
 impl NativeOfficePdfPageTextLayer {
@@ -154,8 +210,10 @@ impl NativeOfficePdfPageTextLayer {
             || self.page_geometry != *page
             || self.engine_version != PDFIUM_ENGINE_VERSION
             || !(1..=MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS).contains(&self.max_characters)
+            || !(1..=MAX_NATIVE_OFFICE_PDF_TEXT_RUNS).contains(&self.max_runs)
             || !(1..=MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES).contains(&self.max_text_bytes)
             || self.characters.len() > self.max_characters
+            || self.runs.len() > self.max_runs
             || self.text.len() > self.max_text_bytes
             || self.text_sha256 != format!("{:x}", Sha256::digest(self.text.as_bytes()))
         {
@@ -174,6 +232,15 @@ impl NativeOfficePdfPageTextLayer {
             || utf16_offset != u64::try_from(self.text.encode_utf16().count()).unwrap_or(u64::MAX)
         {
             return Err(invalid_text_layer());
+        }
+        let mut previous_end = 0_usize;
+        for (index, run) in self.runs.iter().enumerate() {
+            let start = usize::try_from(run.character_start).map_err(|_| invalid_text_layer())?;
+            if start < previous_end {
+                return Err(invalid_text_layer());
+            }
+            run.validate(index, &self.characters, &self.text)?;
+            previous_end = usize::try_from(run.character_end).map_err(|_| invalid_text_layer())?;
         }
         Ok(())
     }
@@ -240,6 +307,53 @@ pub(super) fn extract_page_text(
         });
     }
 
+    let mut runs = Vec::new();
+    let mut previous_end = 0_usize;
+    for segment in page_text.segments().iter() {
+        let segment_chars = segment.chars().map_err(|_| text_unsupported())?;
+        let mut indices = segment_chars.iter().map(|character| character.index());
+        let Some(start) = indices.next() else {
+            continue;
+        };
+        let end = indices.try_fold(start + 1, |expected, actual| {
+            (actual == expected).then_some(expected + 1)
+        });
+        let Some(end) = end else {
+            return Err(text_unsupported());
+        };
+        if start < previous_end || end > characters.len() {
+            return Err(text_unsupported());
+        }
+        if runs.len() >= options.max_runs {
+            return Err(layout_error(
+                "use.office.pdf_text_run_limit",
+                format!(
+                    "PDF page contains more than {} text runs.",
+                    options.max_runs
+                ),
+            ));
+        }
+        let first = &characters[start];
+        let last = &characters[end - 1];
+        let utf8_start = usize::try_from(first.utf8_start).map_err(|_| text_unsupported())?;
+        let utf8_end = usize::try_from(last.utf8_end).map_err(|_| text_unsupported())?;
+        runs.push(NativeOfficePdfTextRun {
+            index: u32::try_from(runs.len()).map_err(|_| text_unsupported())?,
+            character_start: u32::try_from(start).map_err(|_| text_unsupported())?,
+            character_end: u32::try_from(end).map_err(|_| text_unsupported())?,
+            utf8_start: first.utf8_start,
+            utf8_end: last.utf8_end,
+            utf16_start: first.utf16_start,
+            utf16_end: last.utf16_end,
+            text: text
+                .get(utf8_start..utf8_end)
+                .ok_or_else(text_unsupported)?
+                .to_string(),
+            bounds: pdf_rect_to_page_box(segment.bounds()).ok_or_else(text_unsupported)?,
+        });
+        previous_end = end;
+    }
+
     let layer = NativeOfficePdfPageTextLayer {
         schema_version: NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
         source_revision,
@@ -247,10 +361,12 @@ pub(super) fn extract_page_text(
         page_geometry,
         engine_version: PDFIUM_ENGINE_VERSION.to_string(),
         max_characters: options.max_characters,
+        max_runs: options.max_runs,
         max_text_bytes: options.max_text_bytes,
         text_sha256: format!("{:x}", Sha256::digest(text.as_bytes())),
         text,
         characters,
+        runs,
     };
     Ok(layer)
 }

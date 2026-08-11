@@ -21,9 +21,10 @@ pub use outline::{
 pub use renderer::NativeOfficePdfiumLayoutRenderer;
 pub use text::{
     NativeOfficePdfPageTextLayer, NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
-    DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
+    NativeOfficePdfTextRun, DEFAULT_NATIVE_OFFICE_PDF_TEXT_CHARACTERS,
+    DEFAULT_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES, DEFAULT_NATIVE_OFFICE_PDF_TEXT_RUNS,
     MAX_NATIVE_OFFICE_PDF_TEXT_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_PAGE_BYTES,
-    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+    MAX_NATIVE_OFFICE_PDF_TEXT_RUNS, NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 
 /// Default maximum number of pages accepted by one PDF inventory.
