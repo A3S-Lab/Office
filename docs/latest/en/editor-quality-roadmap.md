@@ -420,6 +420,19 @@ cover cross-paragraph native ranges, internal-versus-external relationships,
 and bookmark fields; a deterministic phone workflow covers dialog focus,
 reference insertion, deletion, the missing-reference transition, and exact
 editor-focus recovery.
+Footnote and endnote references now share one live identity graph with their
+editable definitions. Each kind renumbers independently from reference order;
+copy creates a new identity with cloned note content, deleting either complete
+side removes its pair, and undo or redo restores the graph atomically. New
+footnotes stay with their reference section while new endnotes use the final
+section. Controlled HTML normalization and DOCX inspection detect repeated,
+missing, unreferenced, or nested identities, and the high-priority note parser
+preserves native references through export, import, and a second export. Unit
+coverage exercises reverse insertion, copy, deletion from either side,
+undo/redo, final-section endnotes, malformed controlled HTML, diagnostics, and
+native footnote/endnote round trips; a deterministic phone workflow covers
+live renumbering, paired deletion, restoration, accessibility, and browser
+diagnostics.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates
 every linked field, and renders dangling references as an explicit missing

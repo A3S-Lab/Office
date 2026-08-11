@@ -113,7 +113,10 @@ The images below are committed visual-regression baselines from the real
   retain stable native identities through edits, drive live editable REF
   fields, and keep internal links distinct from external hyperlink
   relationships; deleting a target exposes truthful missing-link and
-  missing-reference states that undo repairs.
+  missing-reference states that undo repairs. Footnote and endnote references
+  remain paired with one editable definition, renumber live in independent
+  reference-order sequences, receive new identities when copied, and are
+  deleted or restored together through one undoable transaction.
 - **Framework choice** — React components, Vue 3 adapters, Custom Elements,
   and a framework-neutral Core API over the same engine.
 - **Responsive computation** — Lazy editor chunks, cancellable Workers,

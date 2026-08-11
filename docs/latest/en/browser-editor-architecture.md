@@ -61,7 +61,16 @@ model:
    DOCX import/export maps the boundaries to native
    `w:bookmarkStart`/`w:bookmarkEnd` ranges, bookmark cross-references to `REF`
    fields, and internal links to `w:anchor` rather than relationship-backed
-   external hyperlinks. Page Layout
+   external hyperlinks. Footnote and endnote reference atoms share a
+   transaction-normalized graph with their editable definitions. References
+   retain identity through moves, copied references clone definition content
+   under a new identity, deletions remove the complete pair, and one appended
+   transaction keeps undo and redo atomic. Each note kind numbers independently
+   in reference order; new or reconstructed footnote definitions use the
+   reference section and newly inserted endnotes use the final section. The
+   structured HTML parser
+   gives note markers precedence over generic superscript so native DOCX notes
+   survive repeated import and export. Page Layout
    keeps direct margin, orientation, paper,
    and equal-column presets in the ribbon; custom margins and advanced columns
    open the corresponding controlled Page Setup tab instead of duplicating a

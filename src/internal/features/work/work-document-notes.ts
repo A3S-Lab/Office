@@ -17,7 +17,8 @@ const NOTE_DEFINITION_SELECTOR = 'aside[data-document-note]';
 
 export function normalizeDocumentNotesHtml(source: string): string {
   const document = new DOMParser().parseFromString(source, 'text/html');
-  const definitions = new Map<string, HTMLElement>();
+  const definitions = new Map<string, HTMLElement[]>();
+  const definitionTemplates = new Map<string, HTMLElement>();
   for (const element of Array.from(
     document.body.querySelectorAll<HTMLElement>(NOTE_DEFINITION_SELECTOR),
   )) {
@@ -28,66 +29,98 @@ export function normalizeDocumentNotesHtml(source: string): string {
       continue;
     }
     const key = documentNoteKey(kind, id);
-    if (definitions.has(key)) {
-      element.remove();
-      continue;
-    }
-    definitions.set(key, element);
+    const matches = definitions.get(key) ?? [];
+    matches.push(element);
+    definitions.set(key, matches);
+    if (!definitionTemplates.has(key)) definitionTemplates.set(key, element);
   }
 
   const counters: Record<WorkDocumentNoteKind, number> = {
     footnote: 0,
     endnote: 0,
   };
-  const numbers = new Map<string, number>();
-  const references = new Map<string, HTMLElement>();
-  for (const element of Array.from(
+  const allReferenceElements = Array.from(
     document.body.querySelectorAll<HTMLElement>(NOTE_REFERENCE_SELECTOR),
-  )) {
+  );
+  const referenceElements = allReferenceElements.filter(
+    (element) => !element.closest(NOTE_DEFINITION_SELECTOR),
+  );
+  const referenceSet = new Set(referenceElements);
+  for (const element of allReferenceElements) {
+    if (!referenceSet.has(element)) element.remove();
+  }
+  const reservedKeys = new Set(definitions.keys());
+  for (const element of referenceElements) {
     const kind = documentNoteKind(element.dataset.noteKind) ?? 'footnote';
-    const id =
-      element.dataset.noteId?.trim() ||
-      nextDocumentNoteId(kind, counters[kind] + 1, numbers);
-    const key = documentNoteKey(kind, id);
-    let number = numbers.get(key);
-    if (!number) {
-      counters[kind] += 1;
-      number = counters[kind];
-      numbers.set(key, number);
-      references.set(key, element);
+    const id = element.dataset.noteId?.trim();
+    if (id) reservedKeys.add(documentNoteKey(kind, id));
+  }
+
+  const assignedKeys = new Set<string>();
+  const usedDefinitions = new Set<HTMLElement>();
+  const assignments: Array<{
+    reference: HTMLElement;
+    definition: HTMLElement | null;
+    template: HTMLElement | null;
+    kind: WorkDocumentNoteKind;
+    id: string;
+    number: number;
+  }> = [];
+  for (const element of referenceElements) {
+    const kind = documentNoteKind(element.dataset.noteKind) ?? 'footnote';
+    const sourceId = element.dataset.noteId?.trim() ?? '';
+    const sourceKey = sourceId ? documentNoteKey(kind, sourceId) : '';
+    let id = sourceId;
+    let key = sourceKey;
+    if (!id || assignedKeys.has(key)) {
+      id = nextDocumentNoteId(kind, counters[kind] + 1, reservedKeys);
+      key = documentNoteKey(kind, id);
+      reservedKeys.add(key);
     }
+    assignedKeys.add(key);
+    counters[kind] += 1;
+    const number = counters[kind];
+    const definition =
+      (definitions.get(sourceKey) ?? []).find(
+        (candidate) => !usedDefinitions.has(candidate),
+      ) ?? null;
+    if (definition) usedDefinitions.add(definition);
     applyDocumentNoteAttributes(element, kind, id, number, true);
     element.textContent = String(number);
-  }
-
-  for (const [key, element] of definitions) {
-    const number = numbers.get(key);
-    if (!number) {
-      element.remove();
-      continue;
-    }
-    const { kind, id } = splitDocumentNoteKey(key);
-    applyDocumentNoteAttributes(element, kind, id, number, false);
-    ensureDocumentNoteBlocks(element);
-  }
-
-  for (const [key, number] of numbers) {
-    if (definitions.has(key)) continue;
-    const { kind, id } = splitDocumentNoteKey(key);
-    const note = createDocumentNoteElement(document, {
-      id,
+    assignments.push({
+      reference: element,
+      definition,
+      template: definitionTemplates.get(sourceKey) ?? null,
       kind,
+      id,
       number,
-      html: '<p></p>',
     });
-    const reference = references.get(key);
+  }
+
+  for (const matches of definitions.values()) {
+    for (const element of matches) {
+      if (!usedDefinitions.has(element)) element.remove();
+    }
+  }
+
+  for (const assignment of assignments) {
+    const { reference, template, kind, id, number } = assignment;
+    let definition = assignment.definition;
+    if (!definition) {
+      definition = template
+        ? (template.cloneNode(true) as HTMLElement)
+        : document.createElement('aside');
+    }
+    applyDocumentNoteAttributes(definition, kind, id, number, false);
+    ensureDocumentNoteBlocks(definition);
+    if (assignment.definition) continue;
     const target =
       kind === 'footnote'
         ? reference?.closest('section[data-document-section]')
         : document.body.querySelector(
             'section[data-document-section]:last-of-type',
           );
-    (target ?? document.body).append(note);
+    (target ?? document.body).append(definition);
   }
   return document.body.innerHTML;
 }
@@ -191,21 +224,10 @@ function applyDocumentNoteAttributes(
   element.setAttribute('data-note-number', String(number));
 }
 
-function splitDocumentNoteKey(key: string): {
-  kind: WorkDocumentNoteKind;
-  id: string;
-} {
-  const separator = key.indexOf(':');
-  return {
-    kind: key.slice(0, separator) as WorkDocumentNoteKind,
-    id: key.slice(separator + 1),
-  };
-}
-
 function nextDocumentNoteId(
   kind: WorkDocumentNoteKind,
   seed: number,
-  existing: Map<string, number>,
+  existing: ReadonlySet<string>,
 ): string {
   let suffix = seed;
   while (existing.has(documentNoteKey(kind, `document-${kind}-${suffix}`)))

@@ -86,6 +86,9 @@ numbering, keyboard deletion, and the live missing-reference transition;
 the phone bookmark workflow covering focused name entry, a complete paired
 bookmark range, live bookmark-REF insertion, current-target deletion, the
 missing-reference transition, and exact editor-focus recovery;
+the phone footnote workflow covering two-way reference/definition pairing,
+reference-order renumbering, paired deletion, atomic undo, accessibility, and
+browser diagnostics;
 the phone Spreadsheet
 worksheet-rename workflow plus viewport-safe, touch-sized Find controls,
 exact-result navigation, and grid-focus restoration, a safe-area-aware bottom

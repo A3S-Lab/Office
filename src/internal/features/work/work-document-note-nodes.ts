@@ -4,13 +4,15 @@ import {
   mergeAttributes,
   Node,
 } from '@tiptap/core';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { TextSelection } from '@tiptap/pm/state';
-import { activeDocumentSectionFromState } from './work-document-section-editor';
+import { createDocumentNoteIntegrityPlugin } from './work-document-note-integrity';
 import {
   documentNoteKey,
   documentNoteKind,
   type WorkDocumentNoteKind,
 } from './work-document-notes';
+import { activeDocumentSectionFromState } from './work-document-section-editor';
 import { createWorkId } from './work-templates';
 
 declare module '@tiptap/core' {
@@ -27,6 +29,10 @@ export const DocumentNoteReference = Node.create({
   group: 'inline',
   atom: true,
   selectable: true,
+
+  addProseMirrorPlugins() {
+    return [createDocumentNoteIntegrityPlugin(this.name, 'documentNote')];
+  },
 
   addCommands() {
     return {
@@ -47,6 +53,7 @@ export const DocumentNoteReference = Node.create({
     return [
       {
         tag: 'sup[data-document-note-reference]',
+        priority: 100,
         getAttrs: (node) => {
           if (!(node instanceof HTMLElement)) return false;
           return {
@@ -150,13 +157,20 @@ function insertDocumentNoteCommand(
   const number = nextNoteNumber(state, kind);
   const id = createWorkId(kind);
   const attributes = { id, kind, number };
+  const definitionSection =
+    kind === 'endnote' ? (lastDocumentSection(state.doc) ?? section) : section;
   tr.replaceSelectionWith(referenceType.create(attributes), false);
-  const updatedSection = tr.doc.nodeAt(section.position);
+  const definitionSectionPosition = tr.mapping.map(
+    definitionSection.position,
+    1,
+  );
+  const updatedSection = tr.doc.nodeAt(definitionSectionPosition);
   if (!updatedSection || updatedSection.type.name !== 'documentSection') {
     return false;
   }
 
-  const insertPosition = section.position + updatedSection.nodeSize - 1;
+  const insertPosition =
+    definitionSectionPosition + updatedSection.nodeSize - 1;
   tr.insert(
     insertPosition,
     noteType.create(attributes, paragraphType.create()),
@@ -164,6 +178,16 @@ function insertDocumentNoteCommand(
   tr.setSelection(TextSelection.near(tr.doc.resolve(insertPosition + 2)));
   tr.scrollIntoView();
   return true;
+}
+
+function lastDocumentSection(
+  document: ProseMirrorNode,
+): { position: number; node: ProseMirrorNode } | null {
+  let section: { position: number; node: ProseMirrorNode } | null = null;
+  document.forEach((node, position) => {
+    if (node.type.name === 'documentSection') section = { position, node };
+  });
+  return section;
 }
 
 function nextNoteNumber(
