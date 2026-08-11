@@ -7,6 +7,7 @@ import {
   Pencil,
   SendHorizontal,
   Sparkles,
+  TriangleAlert,
   X,
 } from 'lucide-react';
 import {
@@ -86,6 +87,13 @@ export function EditorWorkspace({
   const [assistantQuestion, setAssistantQuestion] =
     useState<PlaygroundAssistantQuestionDraft | null>(null);
   const extension = fileKindExtension(artifact.kind);
+  const controlledReviewFixture =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('e2e') ===
+      'word-review-conflict';
+  const controlledReviewFixtureReady =
+    artifact.content.type === 'document' &&
+    artifact.content.html.includes(CONTROLLED_REVIEW_COMMENT_ID);
 
   const handleAgentRequest = useCallback(
     (request: EditorAgentRequest) => {
@@ -220,6 +228,30 @@ export function EditorWorkspace({
               </div>
             </div>
             <div className="work-editor-header-actions">
+              {controlledReviewFixture &&
+                artifact.content.type === 'document' && (
+                  <button
+                    type="button"
+                    className="work-editor-ai-button"
+                    aria-label={
+                      controlledReviewFixtureReady
+                        ? '模拟外部审阅更新'
+                        : '加载审阅冲突夹具'
+                    }
+                    onClick={() => {
+                      const current = artifact.content;
+                      if (current.type !== 'document') return;
+                      onChange(nextControlledReviewFixtureContent(current));
+                    }}
+                  >
+                    <TriangleAlert size={15} />
+                    <span>
+                      {controlledReviewFixtureReady
+                        ? '模拟外部更新'
+                        : '加载审阅夹具'}
+                    </span>
+                  </button>
+                )}
               {artifact.kind !== 'pdf' && (
                 <fieldset className="playground-mode-switch">
                   <legend className="sr-only">编辑或预览</legend>
@@ -277,6 +309,12 @@ export function EditorWorkspace({
               getSelectionMenuItems={getDocumentSelectionMenuItems}
               onAgentRequest={handleAgentRequest}
               onChange={(content: DocumentContent) => onChange(content)}
+              onReviewConflict={(event) =>
+                onNotice(
+                  `检测到 ${event.conflicts.length} 个审阅冲突`,
+                  'neutral',
+                )
+              }
               preview={preview}
               saveStatus="本次会话已保存"
               theme="light"
@@ -352,6 +390,55 @@ export function EditorWorkspace({
       </div>
     </section>
   );
+}
+
+const CONTROLLED_REVIEW_COMMENT_ID = 'e2e-controlled-review-comment';
+const CONTROLLED_REVIEW_CHANGE_ID = 'e2e-controlled-review-change';
+const CONTROLLED_REVIEW_TEXT = '描述当前情况';
+
+function nextControlledReviewFixtureContent(
+  content: DocumentContent,
+): DocumentContent {
+  const comments = (content.comments ?? []).filter(
+    (comment) => comment.id !== CONTROLLED_REVIEW_COMMENT_ID,
+  );
+  const fixtureComment = {
+    id: CONTROLLED_REVIEW_COMMENT_ID,
+    author: 'External reviewer',
+    date: '2026-08-11T00:00:00.000Z',
+    text: 'Verify the controlled review boundary.',
+    resolved: false,
+  };
+  if (!content.html.includes(CONTROLLED_REVIEW_COMMENT_ID)) {
+    const reviewedText = [
+      `<span data-comment-id="${CONTROLLED_REVIEW_COMMENT_ID}" data-document-comment="true">${CONTROLLED_REVIEW_TEXT}</span>`,
+      '、核心问题和可衡量的成功标准。',
+      `<ins data-change-kind="insertion" data-change-id="${CONTROLLED_REVIEW_CHANGE_ID}" data-change-author="External reviewer" data-change-date="2026-08-11T00:00:00.000Z" data-document-change="true">待确认</ins>`,
+    ].join('');
+    const sourceText = `${CONTROLLED_REVIEW_TEXT}、核心问题和可衡量的成功标准。`;
+    const html = content.html.includes(sourceText)
+      ? content.html.replace(sourceText, reviewedText)
+      : `${content.html}<p>${reviewedText}</p>`;
+    return {
+      ...content,
+      html,
+      model: undefined,
+      comments: [...comments, fixtureComment],
+    };
+  }
+  const commentMarkup = `<span data-comment-id="${CONTROLLED_REVIEW_COMMENT_ID}" data-document-comment="true">${CONTROLLED_REVIEW_TEXT}</span>`;
+  const changeMarkup = `<ins data-change-kind="insertion" data-change-id="${CONTROLLED_REVIEW_CHANGE_ID}" data-change-author="External reviewer" data-change-date="2026-08-11T00:00:00.000Z" data-document-change="true">待确认</ins>`;
+  return {
+    ...content,
+    html: content.html
+      .replace(
+        commentMarkup,
+        `<span data-comment-id="${CONTROLLED_REVIEW_COMMENT_ID}" data-document-comment="true">外部改写内容</span>`,
+      )
+      .replace(changeMarkup, '待确认'),
+    model: undefined,
+    comments: [...comments, fixtureComment],
+  };
 }
 
 export function EditorExportButton({

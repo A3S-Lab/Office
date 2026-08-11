@@ -9,6 +9,11 @@
   background: var(--a3s-bg);
 }
 
+.work-document-review-conflict.ds-inline-notice {
+  margin: 8px 12px 0;
+  flex: 0 0 auto;
+}
+
 .work-document-font-tools,
 .work-document-paragraph-tools {
   display: grid;

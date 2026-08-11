@@ -536,6 +536,17 @@ preview text, and jump targets. The deterministic 120-page DOCX workflow proves
 that a final-page edit reuses 118 descriptors and derives only the two-page
 boundary suffix while page navigation, focus, console, and page errors remain
 stable.
+Controlled host replacements now have an explicit review-conflict contract.
+The host value remains authoritative and does not enter local undo history,
+while stable IDs and reviewed text distinguish harmless range movement from
+comment text changes, removed anchors, removed revisions, and revision-kind
+reuse. Intentional comment deletion removes both the thread and anchor without
+warning; document switches are isolated by `artifactId`. React, Vue, and Web
+Component hosts receive the same typed conflict event, an accessible in-editor
+warning exposes the condition to users, and orphaned comment records survive
+later local edits until the host removes or restores them. Deterministic unit
+and adapter regressions cover movement, mutation, removal, persistence,
+deduplication, restoration, and document switching.
 
 Exit evidence:
 

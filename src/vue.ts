@@ -12,6 +12,7 @@ import {
 } from './react';
 import type {
   DocumentContent,
+  DocumentReviewConflictEvent,
   EditorAgentRequest,
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
@@ -94,6 +95,7 @@ export const DocumentEditor = defineComponent({
   emits: {
     agentRequest: (_request: EditorAgentRequest) => true,
     change: (_content: DocumentContent) => true,
+    reviewConflict: (_event: DocumentReviewConflictEvent) => true,
     'update:content': (_content: DocumentContent) => true,
   },
   setup(props, { emit }) {
@@ -107,6 +109,7 @@ export const DocumentEditor = defineComponent({
         kernelWasmUrl: props.kernelWasmUrl,
         layoutFonts: props.layoutFonts,
         onAgentRequest: (request) => emit('agentRequest', request),
+        onReviewConflict: (event) => emit('reviewConflict', event),
         onChange: (content) => {
           emit('update:content', content);
           emit('change', content);

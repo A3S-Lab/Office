@@ -38,4 +38,6 @@ const content = ref<DocumentContent>({
 
 For event-only integration, pass `:content="content"` and handle
 `@change="content = $event"`. Host callbacks such as `agent-request` retain
-their typed payloads.
+their typed payloads. `DocumentEditor` also emits `review-conflict` when an
+authoritative controlled update changes a comment anchor or tracked revision;
+its payload is the same typed `DocumentReviewConflictEvent` exposed by React.

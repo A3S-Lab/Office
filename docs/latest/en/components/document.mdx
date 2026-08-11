@@ -24,6 +24,7 @@ and file semantics.
 | `kernelWasmUrl` | `string` | No | packaged kernel | Override the Office layout-kernel URL. |
 | `layoutFonts` | `readonly DocumentLayoutFont[]` | No | packaged fonts | Browser and shaping fonts shown in the font menu. |
 | `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends a typed editor request to the host AI flow. |
+| `onReviewConflict` | `(event: DocumentReviewConflictEvent) => void` | No | — | Reports reviewed ranges changed by an authoritative controlled update. |
 | `getSelectionMenuItems` | `GetDocumentSelectionMenuItems` | No | built-in menu | Completely replaces the selected-text context menu. |
 | `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
 
@@ -41,6 +42,31 @@ and file semantics.
 | `trackChanges` | `boolean` | Revision recording state. |
 | `comments` | `WorkDocumentComment[]` | Comment threads, replies, and resolved state. |
 | `bibliography` | `WorkDocumentBibliography` | Citation style and source records. |
+
+## Controlled review conflicts
+
+An incoming controlled `content` value remains authoritative and is applied
+without adding an undo entry or echoing it through `onChange`. When the update
+targets the same `artifactId`, the editor compares comment anchors and tracked
+changes before and after replacement. Position-only movement and newly added
+review items are safe. Removed ranges, changed reviewed text, or a reused
+revision ID with a different insertion/deletion kind emit
+`onReviewConflict` and show an accessible warning.
+
+Removing a comment thread and its anchor together is treated as an intentional
+host deletion. Removing only the thread while its body anchor remains reports a
+`record-removed` conflict. If a host update removes only the anchor, the thread
+record is retained through later local edits until the host removes the record
+or restores its original anchor. Changing `artifactId` establishes a new
+document boundary and clears prior conflicts; hosts that switch documents
+should therefore provide stable artifact IDs.
+
+Each `DocumentReviewConflictEvent` contains the current `artifactId` and the
+newly detected conflicts. A conflict identifies its review `kind`, `id`,
+`reason`, and `previousText`, with `nextText` or `nextKind` when available.
+The same review identity emits once while unresolved and keeps its original
+recovery baseline even if later host updates change it again. Dismissal hides
+the warning but does not reinterpret or merge the authoritative host value.
 
 ## DOCX text and grid fidelity
 

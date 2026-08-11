@@ -45,6 +45,10 @@ import {
   documentPaginationSurfaceHeight,
 } from '../work-document-pagination';
 import { documentParagraphIndent } from '../work-document-paragraph-formatting';
+import type {
+  WorkDocumentReviewConflict,
+  WorkDocumentReviewConflictEvent,
+} from '../work-document-review-conflicts';
 import {
   documentInitialSectionLayout,
   normalizeDocumentHtml,
@@ -106,6 +110,10 @@ import { useDocumentInsertCommands } from './use-document-insert-commands';
 import { useDocumentLayoutFonts } from './use-document-layout-fonts';
 import { useDocumentPageChrome } from './use-document-page-chrome';
 import { useDocumentPagination } from './use-document-pagination';
+import {
+  DocumentReviewConflictNotice,
+  useDocumentReviewConflicts,
+} from './use-document-review-conflicts';
 import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import {
   type WorkOfficeFileAction,
@@ -125,6 +133,7 @@ export interface DocumentEditorProps {
   getSelectionMenuItems?: WorkGetDocumentSelectionMenuItems;
   onChange: (content: WorkDocumentContent) => void;
   onAgentRequest?: (request: WorkEditorAgentRequest) => void | Promise<void>;
+  onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
 }
 
 const EMPTY_DOCUMENT_LAYOUT_FONTS: readonly WorkDocumentLayoutFont[] = [];
@@ -157,6 +166,7 @@ export function DocumentEditor({
   getSelectionMenuItems,
   onChange,
   onAgentRequest,
+  onReviewConflict,
 }: DocumentEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pageHeaderRef = useRef<HTMLElement>(null);
@@ -181,6 +191,7 @@ export function DocumentEditor({
   );
   const initialContentRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
+  const activeReviewConflictsRef = useRef<WorkDocumentReviewConflict[]>([]);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
   const [layoutPanelTab, setLayoutPanelTab] =
     useState<DocumentLayoutPanelTab>('page');
@@ -252,6 +263,11 @@ export function DocumentEditor({
     editorProps,
     onUpdate: ({ editor: current }) => {
       const anchors = collectDocumentCommentAnchors(current.state.doc);
+      const retainedCommentIds = new Set(
+        activeReviewConflictsRef.current
+          .filter((conflict) => conflict.kind === 'comment')
+          .map((conflict) => conflict.id),
+      );
       const synchronized = syncDocumentContentFromHtml(
         contentRef.current,
         current.getHTML(),
@@ -267,6 +283,7 @@ export function DocumentEditor({
         comments: retainAnchoredDocumentComments(
           contentRef.current.comments ?? [],
           anchors,
+          retainedCommentIds,
         ),
       };
       appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
@@ -274,6 +291,16 @@ export function DocumentEditor({
       onChange(next);
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
+  });
+  const reviewConflicts = useDocumentReviewConflicts({
+    activeConflictsRef: activeReviewConflictsRef,
+    appliedSourceKeyRef,
+    artifactId,
+    content,
+    editor,
+    editorInput,
+    normalizedContent,
+    onReviewConflict,
   });
   const documentComments = useDocumentComments({
     contentRef,
@@ -557,28 +584,6 @@ export function DocumentEditor({
       editor.off('mount', applySpellcheckState);
     };
   }, [editor, spellcheckEnabled]);
-
-  useEffect(() => {
-    if (!editor || appliedSourceKeyRef.current === editorInput.sourceKey)
-      return;
-    const currentContent = normalizeDocumentHtml({
-      ...content,
-      html: editor.getHTML(),
-    });
-    if (
-      typeof editorInput.source === 'string' &&
-      currentContent === normalizedContent
-    ) {
-      appliedSourceKeyRef.current = editorInput.sourceKey;
-      return;
-    }
-    appliedSourceKeyRef.current = editorInput.sourceKey;
-    editor
-      .chain()
-      .setMeta('addToHistory', false)
-      .setContent(editorInput.source, { emitUpdate: false })
-      .run();
-  }, [content, editor, editorInput, normalizedContent]);
 
   const section = editor ? activeDocumentSection(editor) : null;
   const layout = section?.layout ?? documentInitialSectionLayout(content);
@@ -918,6 +923,12 @@ export function DocumentEditor({
           onToggleChanges={() => void toggleTaskPane('changes')}
           onOpenWordCount={openDocumentStatistics}
           onOpenFindReplace={openFindReplace}
+        />
+      )}
+      {!preview && (
+        <DocumentReviewConflictNotice
+          conflicts={reviewConflicts.visibleConflicts}
+          onDismiss={reviewConflicts.dismiss}
         />
       )}
       <div

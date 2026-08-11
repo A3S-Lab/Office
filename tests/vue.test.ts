@@ -1,10 +1,11 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { waitFor } from '@testing-library/dom';
-import { createApp, h, nextTick } from 'vue';
+import { createApp, h, nextTick, ref } from 'vue';
 import {
   createArtifact,
   type DocumentContent,
+  type DocumentReviewConflictEvent,
   type MarkdownContent,
 } from '../src/core';
 import { DocumentEditor, MarkdownEditor } from '../src/vue';
@@ -31,6 +32,55 @@ test('mounts the Vue adapter and renders the React editor', async () => {
     expect(
       target.querySelector('[data-work-pdf-surface="live"]'),
     ).toHaveAttribute('data-work-pdf-artifact', artifact.id);
+  });
+
+  app.unmount();
+  target.remove();
+});
+
+test('emits controlled document review conflicts through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const controlled = ref<DocumentContent>({
+    type: 'document',
+    html: '<p><span data-comment-id="comment-1" data-document-comment="true">Alpha</span></p>',
+    pageSize: 'a4',
+    comments: [
+      {
+        id: 'comment-1',
+        author: 'Reviewer',
+        date: '',
+        text: 'Review Alpha.',
+        resolved: false,
+      },
+    ],
+  });
+  const events: DocumentReviewConflictEvent[] = [];
+  const app = createApp({
+    render: () =>
+      h(DocumentEditor, {
+        artifactId: 'document-1',
+        content: controlled.value,
+        onReviewConflict: (event: DocumentReviewConflictEvent) =>
+          events.push(event),
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.querySelector('[role="textbox"]')).not.toBeNull();
+  });
+  controlled.value = {
+    ...controlled.value,
+    html: '<p><span data-comment-id="comment-1" data-document-comment="true">Omega</span></p>',
+  };
+  await nextTick();
+
+  await waitFor(() => expect(events).toHaveLength(1));
+  expect(events[0]?.conflicts[0]).toMatchObject({
+    id: 'comment-1',
+    kind: 'comment',
+    reason: 'text-changed',
   });
 
   app.unmount();

@@ -3,6 +3,7 @@ import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type {
   DocumentContent,
+  DocumentReviewConflictEvent,
   EditorAgentRequest,
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
@@ -219,6 +220,8 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
       layoutFonts: this.layoutFonts,
       onAgentRequest: (request) => this.requestAgent(request),
       onChange: (content) => this.changeContent(content),
+      onReviewConflict: (event: DocumentReviewConflictEvent) =>
+        dispatchDetail(this, 'review-conflict', event),
       preview: this.preview,
       saveStatus: this.saveStatus,
       theme: this.theme,

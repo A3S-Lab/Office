@@ -6,6 +6,7 @@ import {
   canInsertDocumentComment,
   documentCommentDraftRange,
   removeDocumentCommentRecord,
+  retainAnchoredDocumentComments,
   toggleDocumentCommentResolved,
 } from '../src/internal/features/work/work-document-comments';
 import type { WorkDocumentComment } from '../src/internal/features/work/work-types';
@@ -55,6 +56,25 @@ test('leaves unrelated document comments unchanged', () => {
   ).toEqual(source);
   expect(toggleDocumentCommentResolved(source, 'missing')).toEqual(source);
   expect(removeDocumentCommentRecord(source, 'missing')).toEqual(source);
+});
+
+test('retains an explicitly conflicted comment whose anchor is temporarily missing', () => {
+  const source = [comment, { ...comment, id: 'comment-2' }];
+
+  const retained = retainAnchoredDocumentComments(
+    source,
+    [
+      {
+        id: 'comment-2',
+        from: 1,
+        to: 6,
+        anchorText: 'Alpha',
+      },
+    ],
+    new Set(['comment-1']),
+  );
+
+  expect(retained.map((item) => item.id)).toEqual(['comment-1', 'comment-2']);
 });
 
 test('keeps a comment draft anchored to its original text range', () => {

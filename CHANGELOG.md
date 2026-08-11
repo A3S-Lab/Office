@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Defined authoritative controlled-update behavior for reviewed Word ranges.
+  Comment and tracked-change mutations now produce typed React, Vue, and Web
+  Component conflict events plus an accessible warning, while harmless range
+  movement and document switches remain quiet and orphaned comment records are
+  retained for host recovery.
 - Added editable Word tight and through image wrapping, including wrap-side
   controls, browser `shape-outside` contour presentation, and exact DrawingML
   `wrapPolygon` import/export for supported floating pictures without leaking

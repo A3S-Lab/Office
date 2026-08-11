@@ -411,10 +411,11 @@ export function documentCommentViews(
 export function retainAnchoredDocumentComments(
   comments: readonly WorkDocumentComment[],
   anchors: readonly WorkDocumentCommentAnchor[],
+  retainedIds: ReadonlySet<string> = new Set(),
 ): WorkDocumentComment[] {
   const ids = new Set(anchors.map((anchor) => anchor.id));
   return comments
-    .filter((comment) => ids.has(comment.id))
+    .filter((comment) => ids.has(comment.id) || retainedIds.has(comment.id))
     .map(normalizeDocumentComment);
 }
 

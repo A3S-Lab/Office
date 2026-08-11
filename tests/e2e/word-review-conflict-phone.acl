@@ -1,0 +1,90 @@
+suite "office-word-review-conflict-phone" {
+    version = 1
+
+    scenario "surface-authoritative-controlled-review-conflicts" {
+        name = "Surface a controlled host update that changes reviewed Word ranges"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-review-conflict"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "描述当前情况、核心问题和可衡量的成功标准。"
+        }
+
+        click "load-reviewed-host-value" {
+            target = role("button", "加载审阅冲突夹具")
+        }
+
+        expect "comment-anchor-is-loaded" {
+            visible = css("[data-comment-id='e2e-controlled-review-comment'][data-document-comment='true']")
+        }
+
+        expect "tracked-range-is-loaded" {
+            visible = css("[data-change-id='e2e-controlled-review-change'][data-document-change='true']")
+        }
+
+        click "apply-conflicting-host-value" {
+            target = role("button", "模拟外部审阅更新")
+        }
+
+        expect "authoritative-value-is-applied" {
+            text = "外部改写内容"
+        }
+
+        expect "conflict-warning-is-accessible" {
+            visible = css(".work-document-review-conflict[role='alert']")
+        }
+
+        expect "both-review-conflicts-are-counted" {
+            text = "其中 2 个批注或修订范围发生变化。"
+        }
+
+        expect "host-receives-conflict-event" {
+            text = "检测到 2 个审阅冲突"
+        }
+
+        screenshot "controlled-review-conflict" {
+            path = "screenshots/word-review-conflict-phone.png"
+        }
+
+        accessibility "review-conflict-semantics" {
+            path = "evidence/review-conflict-semantics.json"
+            interactive = true
+        }
+
+        click "dismiss-conflict-warning" {
+            target = role("button", "关闭审阅冲突提示")
+        }
+
+        expect "editor-remains-usable" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true']")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

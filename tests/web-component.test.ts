@@ -1,5 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
+import { waitFor } from '@testing-library/dom';
+import type { DocumentContent, DocumentReviewConflictEvent } from '../src/core';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
@@ -72,3 +74,48 @@ test('registers every custom element idempotently', async () => {
 
   element.remove();
 });
+
+test('dispatches controlled document review conflicts from the custom element', async () => {
+  defineA3SOfficeElements();
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.document,
+  ) as A3SDocumentEditorElement;
+  element.artifactId = 'document-1';
+  element.content = reviewDocument('Alpha');
+  const events: DocumentReviewConflictEvent[] = [];
+  element.addEventListener('review-conflict', (event) => {
+    events.push((event as CustomEvent<DocumentReviewConflictEvent>).detail);
+  });
+  document.body.append(element);
+  await waitFor(() => {
+    expect(element.querySelector('[role="textbox"]')).not.toBeNull();
+  });
+
+  element.content = reviewDocument('Omega');
+
+  await waitFor(() => expect(events).toHaveLength(1));
+  expect(events[0]?.conflicts[0]).toMatchObject({
+    id: 'comment-1',
+    kind: 'comment',
+    reason: 'text-changed',
+  });
+
+  element.remove();
+});
+
+function reviewDocument(anchorText: string): DocumentContent {
+  return {
+    type: 'document',
+    html: `<p><span data-comment-id="comment-1" data-document-comment="true">${anchorText}</span></p>`,
+    pageSize: 'a4',
+    comments: [
+      {
+        id: 'comment-1',
+        author: 'Reviewer',
+        date: '',
+        text: 'Review Alpha.',
+        resolved: false,
+      },
+    ],
+  };
+}

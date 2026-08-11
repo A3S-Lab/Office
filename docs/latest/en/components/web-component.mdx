@@ -27,8 +27,16 @@ editor.content = {
 editor.addEventListener('change', (event) => {
   editor.content = event.detail;
 });
+
+editor.addEventListener('review-conflict', (event) => {
+  reportReviewConflict(event.detail);
+});
 ```
 
 Use attributes for primitive values such as `theme`, `preview`, and
 `save-status`. Use element properties for content, callbacks, file actions,
 extensions, and source loaders.
+
+For `a3s-document-editor`, `review-conflict` is a bubbling, composed custom
+event whose detail is a `DocumentReviewConflictEvent`. The external content is
+already applied when the event fires.

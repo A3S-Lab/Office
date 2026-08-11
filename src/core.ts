@@ -65,6 +65,12 @@ export type {
   WorkMarkdownSelectionMenuItem as MarkdownSelectionMenuItem,
   WorkMarkdownSelectionSnapshot as MarkdownSelectionSnapshot,
 } from './internal/features/work/work-markdown-selection-menu';
+export type {
+  WorkDocumentReviewConflict as DocumentReviewConflict,
+  WorkDocumentReviewConflictEvent as DocumentReviewConflictEvent,
+  WorkDocumentReviewConflictReason as DocumentReviewConflictReason,
+  WorkDocumentReviewKind as DocumentReviewKind,
+} from './internal/features/work/work-document-review-conflicts';
 export {
   workArtifactExtension as artifactExtension,
   workArtifactKindLabel as artifactKindLabel,
