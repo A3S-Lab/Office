@@ -47,6 +47,12 @@ export async function analyzeDocxCompatibility(
       'Page layout',
       'Per-section paper size, orientation, basic margins, one-to-six equal or custom-width columns, section breaks, and explicit page breaks are preserved; exact pagination and line wrapping may normalize.',
     ),
+    issue(
+      'docx.package-state',
+      'OOXML package state',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Generated core parts remain authoritative, so unsupported elements and attributes inside document, style, numbering, header, footer, and settings XML may still normalize.',
+      'info',
+    ),
   ];
   for (const message of messages) {
     issues.push(
@@ -61,9 +67,41 @@ export async function analyzeDocxCompatibility(
 
   try {
     const archive = await OoxmlPackage.load(await file.arrayBuffer());
+    const packagePaths = archive.paths('');
+    const normalizedPackagePaths = packagePaths.map((path) =>
+      path.toLowerCase(),
+    );
     const document = archive.has('word/document.xml')
       ? await archive.xml('word/document.xml')
       : null;
+    if (
+      normalizedPackagePaths.some((path) => path.startsWith('_xmlsignatures/'))
+    ) {
+      issues.push(
+        issue(
+          'docx.signatures.removed',
+          'Digital signatures',
+          'Package signatures become invalid after an edit and are deliberately omitted from the exported DOCX.',
+        ),
+      );
+    }
+    if (
+      normalizedPackagePaths.some(
+        (path) =>
+          path === 'word/vbaproject.bin' ||
+          path === 'word/vbadata.xml' ||
+          path.startsWith('word/activex/') ||
+          path.startsWith('customui/'),
+      )
+    ) {
+      issues.push(
+        issue(
+          'docx.active-content.removed',
+          'Active content',
+          'VBA, ActiveX, and custom-ribbon parts are never executed and are omitted from the macro-free DOCX export.',
+        ),
+      );
+    }
     if (archive.has('word/comments.xml')) {
       const comments = await archive.xml('word/comments.xml');
       const commentDefinitions = descendants(comments, 'comment');
@@ -99,11 +137,20 @@ export async function analyzeDocxCompatibility(
         issue(
           'docx.embedded',
           'Embedded objects',
-          'Embedded Office and OLE objects remain in the original file only.',
+          'Embedded Office and OLE payload parts plus safe relationships are retained in source-backed exports, but Work does not render or edit their object anchors; placement inside regenerated document XML may normalize.',
         ),
       );
     }
     if (document) {
+      if (descendants(document, 'AlternateContent').length) {
+        issues.push(
+          issue(
+            'docx.markup-compatibility',
+            'Markup compatibility',
+            '`mc:AlternateContent` branches can normalize when the generated document XML replaces the source tree; source-only package-part preservation does not imply inline fallback preservation.',
+          ),
+        );
+      }
       issues.push(...(await diagnoseDocxBookmarksAndLinks(archive, document)));
       issues.push(...(await diagnoseDocxCitations(archive, document)));
       const captionDiagnostics = diagnoseDocxCaptions(document);

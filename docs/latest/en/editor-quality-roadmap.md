@@ -85,6 +85,17 @@ New ribbon commands wait unless they are required by the current slice.
   documents produced by both Microsoft Word and WPS.
 - Report unsupported or normalized content explicitly before export.
 
+The first package-state slice now registers the imported DOCX source Blob and
+retains safe source-only OPC parts byte-for-byte across an edited export. It
+merges content-type declarations and relationship graphs without overwriting
+generated core parts or reusing conflicting relationship IDs. Export fails
+closed when the declared source Blob is unavailable or its SHA-256 fingerprint
+does not match the imported package. Invalidated digital signatures and active
+VBA, ActiveX, or custom-ribbon parts are deliberately removed and reported.
+Unknown attributes, elements, and
+`mc:AlternateContent` branches inside regenerated known XML parts remain an
+explicit next boundary rather than being covered by the package-level claim.
+
 Exit evidence:
 
 - Import-edit-export-reopen passes in Word and WPS for the declared fixture

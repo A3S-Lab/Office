@@ -881,15 +881,26 @@ controlled value. Document-level page color remains outside the ProseMirror
 tree, is updated through the same controlled value, and is preserved by DOCX
 import/export and the browser PDF render surface.
 
-This is a transitional persistence boundary, not loss-preserving OOXML yet.
-DOCX still converts through Mammoth, but DOCX, HTML, and text imports create the
-structured model immediately through the same extension schema used by the
-editor. DOCX export materializes synchronized HTML from the structured model
-before OOXML generation, so a stale HTML cache cannot override model changes.
-Preview retains the mounted structured editor tree, and live browser PDF export
-captures that same paginated surface; compatibility HTML remains an
-import/export boundary. Unsupported OOXML package parts are not yet represented
-by the model.
+This is a transitional persistence boundary, not fully loss-preserving OOXML
+yet. DOCX still converts through Mammoth, but DOCX, HTML, and text imports
+create the structured model immediately through the same extension schema used
+by the editor. DOCX export materializes synchronized HTML from the structured
+model before OOXML generation, so a stale HTML cache cannot override model
+changes. Preview retains the mounted structured editor tree, and live browser
+PDF export captures that same paginated surface; compatibility HTML remains an
+import/export boundary.
+
+The first package-state slice retains the original DOCX Blob by artifact ID.
+After the generated core package is complete, safe source-only OPC parts are
+copied byte-for-byte and their content-type declarations and relationships are
+reconnected with collision-free IDs. The generated core parts remain
+authoritative. Digital signatures, which are invalid after editing, plus VBA,
+ActiveX, and custom-ribbon content are not propagated into the macro-free DOCX.
+If a persisted artifact has lost its registered source Blob, export fails
+closed. A persisted SHA-256 fingerprint also prevents a different DOCX from
+being re-registered under the same artifact ID. Unknown attributes, elements,
+and `mc:AlternateContent` branches inside regenerated known parts remain the
+next loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

@@ -68,6 +68,23 @@ The same review identity emits once while unresolved and keeps its original
 recovery baseline even if later host updates change it again. Dismissal hides
 the warning but does not reinterpret or merge the authoritative host value.
 
+## Source-backed DOCX export
+
+`importOfficeFile` registers the original DOCX Blob against the imported
+artifact. `createArtifactBlob` regenerates the editable core document, then
+copies safe source-only OPC parts byte-for-byte and reconnects their content
+types and relationships. Generated document, style, numbering, header, footer,
+and settings parts remain authoritative, so unsupported elements or attributes
+inside those known XML trees may still normalize.
+
+Persist the source Blob with the artifact and call `registerSourceBlob` after a
+browser reload. Export fails explicitly when an artifact declares a source but
+that Blob is unavailable. Imported source metadata includes a SHA-256
+fingerprint, and export rejects a different Blob registered under the same
+artifact ID. Digital signatures are invalid after editing, and VBA, ActiveX,
+and custom-ribbon content is deliberately omitted from the macro-free DOCX
+output. Compatibility diagnostics report these boundaries before export.
+
 ## DOCX text and grid fidelity
 
 Imported section layouts retain an optional `WorkDocumentGrid` with its OOXML

@@ -68,6 +68,7 @@ import {
 } from './work-docx-image-wrap';
 import { patchDocxNumberingRestartRules } from './work-docx-numbering';
 import { patchDocxPageColor } from './work-docx-page-color';
+import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   documentTableCellSizingDocxOptions,
@@ -119,6 +120,7 @@ interface DocxTextRevision {
 
 export async function createDocxBlob(
   content: WorkDocumentContent,
+  sourcePackage?: ArrayBuffer,
 ): Promise<Blob> {
   const docx = await import('docx');
   const normalizedContent = {
@@ -255,7 +257,10 @@ export async function createDocxBlob(
     bookmarkPatched,
     normalizedContent.pageColor,
   );
-  return new Blob([patched], {
+  const preserved = sourcePackage
+    ? await preserveDocxSourcePackage(patched, sourcePackage)
+    : patched;
+  return new Blob([preserved], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
 }

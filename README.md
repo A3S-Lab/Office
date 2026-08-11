@@ -465,6 +465,16 @@ const blankDeck = createArtifact('blank-presentation');
 
 Use `downloadArtifact` to start a browser download or
 `createArtifactBlob` when your application owns upload and persistence.
+Imported DOCX artifacts are source-backed: safe source-only OPC parts,
+content-type registrations, and relationships survive a regenerated export.
+Persist the original Blob alongside the artifact and call `registerSourceBlob`
+after a browser reload. If that source is unavailable, DOCX export fails
+explicitly instead of silently dropping complex package state. The artifact's
+source metadata carries a SHA-256 fingerprint, so registering a different DOCX
+under the same artifact ID also fails. Generated core parts remain
+authoritative; compatibility diagnostics identify known inline OOXML
+normalization and the deliberate removal of invalid signatures, VBA, ActiveX,
+and custom-ribbon parts.
 
 ## Native automation
 

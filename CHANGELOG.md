@@ -4,6 +4,13 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added source-backed DOCX package preservation. Browser import now registers
+  the original package, and export retains safe source-only OPC parts,
+  content-type declarations, and relationships while generated core parts stay
+  authoritative. Invalidated signatures, VBA, ActiveX, and custom-ribbon parts
+  are deliberately omitted, and a missing registered source fails closed
+  instead of silently producing a lossy export. Imported source metadata also
+  carries a SHA-256 fingerprint so a different re-registered DOCX is rejected.
 - Defined authoritative controlled-update behavior for reviewed Word ranges.
   Comment and tracked-change mutations now produce typed React, Vue, and Web
   Component conflict events plus an accessible warning, while harmless range

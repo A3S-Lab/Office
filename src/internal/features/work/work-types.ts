@@ -669,6 +669,7 @@ export interface WorkSourceFile {
   contentType: string;
   size: number;
   updatedAt: number;
+  fingerprint?: string;
 }
 
 export interface WorkFolder {

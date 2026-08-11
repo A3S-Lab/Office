@@ -5,7 +5,15 @@ import {
   safeFileName,
 } from './work-file-download';
 import { createWorkArtifact } from './work-templates';
+import {
+  readVerifiedWorkSourceBytes,
+  rememberWorkSourceBlob,
+  workSourceFingerprint,
+} from './work-repository';
 import type { WorkArtifact, WorkDocumentContent } from './work-types';
+
+const DOCX_CONTENT_TYPE =
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 export async function importWorkDocumentFile(
   file: File,
@@ -82,6 +90,14 @@ export async function importWorkDocumentFile(
       file,
       result.messages,
     );
+    artifact.source = {
+      name: file.name,
+      contentType: file.type || DOCX_CONTENT_TYPE,
+      size: file.size,
+      updatedAt: file.lastModified || Date.now(),
+      fingerprint: await workSourceFingerprint(arrayBuffer),
+    };
+    rememberWorkSourceBlob(artifact.id, file);
     return artifact;
   }
 
@@ -116,7 +132,13 @@ export async function createWorkDocumentBlob(
     './work-document-model-codec'
   );
   const { createDocxBlob } = await import('./work-docx-export');
-  return createDocxBlob(materializeWorkDocumentContent(artifact.content));
+  const sourcePackage = artifact.source
+    ? await readVerifiedWorkSourceBytes(artifact)
+    : undefined;
+  return createDocxBlob(
+    materializeWorkDocumentContent(artifact.content),
+    sourcePackage,
+  );
 }
 
 function textToHtml(source: string): string {
