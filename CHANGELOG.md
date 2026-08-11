@@ -23,6 +23,12 @@ All notable changes to A3S Office will be documented in this file.
   numbering IDs. Generated Word semantics remain authoritative; source-only,
   duplicate, relationship-bound, malformed, and ambiguous one-to-many
   extension mappings are dropped instead of attaching to the wrong identity.
+- Preserved passive non-OOXML vendor extensions on uniquely matched picture
+  drawings in regenerated document, header, and footer parts. Drawing identity
+  uses the normalized anchor plus drawing-property ID across strict/transitional
+  UTF-8/UTF-16 sources. Header and footer image identities now survive editable
+  page-chrome HTML. Relationship-bound, source-only, duplicate, Microsoft/OOXML
+  semantic, and ambiguous drawing branches remain disconnected.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

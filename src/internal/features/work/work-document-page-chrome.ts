@@ -1,3 +1,4 @@
+import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -21,6 +22,12 @@ const EMPTY_CONTENT: WorkDocumentPageChromeContent = {
   footerHtml: '',
   showPageNumber: false,
 };
+const IMAGE_IDENTITY_ATTRIBUTES = [
+  'data-office-image-object-id',
+  'data-office-image-doc-properties-id',
+  'data-office-image-anchor-id',
+  'data-office-image-edit-id',
+] as const;
 
 const ALLOWED_TAGS = new Set([
   'a',
@@ -240,6 +247,7 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     const source = element.getAttribute('src')?.trim() ?? '';
     if (!/^(?:https?:|blob:|data:image\/)/i.test(source))
       element.removeAttribute('src');
+    normalizeImageIdentityAttributes(element);
   } else if (tag === 'ol') {
     const start = Number(element.getAttribute('start'));
     if (!Number.isSafeInteger(start) || start <= 0)
@@ -255,7 +263,16 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     tag === 'a'
       ? new Set(['dir', 'href', 'title', 'style'])
       : tag === 'img'
-        ? new Set(['dir', 'src', 'alt', 'title', 'width', 'height', 'style'])
+        ? new Set([
+            'dir',
+            'src',
+            'alt',
+            'title',
+            'width',
+            'height',
+            'style',
+            ...IMAGE_IDENTITY_ATTRIBUTES,
+          ])
         : tag === 'ol'
           ? new Set(['dir', 'start', 'style', 'type'])
           : new Set(['colspan', 'dir', 'rowspan', 'style']);
@@ -263,6 +280,26 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);
   }
+}
+
+function normalizeImageIdentityAttributes(element: HTMLElement): void {
+  const identity = normalizeDocumentImageIdentity({
+    objectId: element.getAttribute(IMAGE_IDENTITY_ATTRIBUTES[0]),
+    docPropertiesId: element.getAttribute(IMAGE_IDENTITY_ATTRIBUTES[1]),
+    anchorId: element.getAttribute(IMAGE_IDENTITY_ATTRIBUTES[2]),
+    editId: element.getAttribute(IMAGE_IDENTITY_ATTRIBUTES[3]),
+  });
+  if (!identity) {
+    for (const name of IMAGE_IDENTITY_ATTRIBUTES) element.removeAttribute(name);
+    return;
+  }
+  element.setAttribute(IMAGE_IDENTITY_ATTRIBUTES[0], identity.objectId);
+  element.setAttribute(
+    IMAGE_IDENTITY_ATTRIBUTES[1],
+    String(identity.docPropertiesId),
+  );
+  element.setAttribute(IMAGE_IDENTITY_ATTRIBUTES[2], identity.anchorId);
+  element.setAttribute(IMAGE_IDENTITY_ATTRIBUTES[3], identity.editId);
 }
 
 function escapeHtml(value: string): string {

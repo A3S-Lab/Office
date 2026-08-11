@@ -484,15 +484,21 @@ root and on uniquely matched identities. Styles match by type plus style ID;
 imported abstract-numbering, concrete-numbering, and level metadata follows
 regenerated IDs. Source-only or duplicate identities, malformed trees,
 relationship-bound content, and ambiguous one-to-many numbering mappings are
-dropped. Generated Word style and numbering semantics still win. Unknown
-markup inside regenerated body, header, and footer trees may still normalize.
-Source font-table metadata and source-only internal obfuscated font payloads
-are also retained, with relationship references rewritten after ID collisions.
-External fonts, wrong relationship or content types, duplicate identities, and
-paths that collide with generated payloads are not reconnected. Native DOCX
-consumers can use the retained embedded fonts; the browser editor, preview, and
-PDF renderer do not load document-embedded font binaries and may substitute
-fonts or wrap text differently.
+dropped. Generated Word style and numbering semantics still win. In regenerated
+document, header, and footer parts, relationship-free passive extensions from
+non-OOXML ignorable namespaces also follow uniquely matched picture drawings,
+using normalized anchor and drawing-property IDs. Header and footer imports retain
+those image identities in sanitized editable HTML. Source-only, duplicate,
+relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
+are dropped; generated image geometry and media remain authoritative. Unknown
+paragraph, run, table, and other inline markup may still normalize. Source
+font-table metadata and source-only internal obfuscated font payloads are also
+retained, with relationship references rewritten after ID collisions. External
+fonts, wrong relationship or content types, duplicate identities, and paths
+that collide with generated payloads are not reconnected. Native DOCX consumers
+can use the retained embedded fonts; the browser editor, preview, and PDF
+renderer do not load document-embedded font binaries and may substitute fonts
+or wrap text differently.
 
 ## Native automation
 

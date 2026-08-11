@@ -914,8 +914,15 @@ relationship-free extension trees at the roots and uniquely matched nodes of
 type plus style ID. Imported abstract-numbering, concrete-numbering, and level
 metadata follows regenerated IDs. Duplicate, source-only, malformed, and
 ambiguous one-to-many mappings fail closed, and generated Word semantics remain
-authoritative. Unknown inline markup in regenerated document, header, and
-footer trees remains the next loss-preservation boundary.
+authoritative. Relationship-free passive extensions from non-OOXML ignorable
+namespaces also follow uniquely matched picture drawings in regenerated
+document, header, and footer parts. The identity is the normalized anchor plus
+drawing-property ID; header and footer imports retain both through sanitized
+editable HTML. Strict/transitional UTF-8/UTF-16 sources share the same path.
+Source-only or duplicate drawings, relationship-bound content,
+Microsoft/OOXML semantic namespaces, and ambiguous identities fail closed,
+while generated geometry and media win. Unknown paragraph, run, table, note,
+comment, and other inline markup remains the next loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

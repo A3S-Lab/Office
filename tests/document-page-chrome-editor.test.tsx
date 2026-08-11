@@ -20,6 +20,23 @@ const pixelPng =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC' +
   'AAAAC0lEQVR42mP8/x8AAusB9Y9Z9WQAAAAASUVORK5CYII=';
 
+test('retains only normalized native image identities in page chrome', () => {
+  const valid = sanitizeDocumentPageChromeHtml(
+    `<p><img src="${pixelPng}" alt="Header" data-office-image-object-id="1a2b3c4d" data-office-image-doc-properties-id="42" data-office-image-anchor-id="1a2b3c4d" data-office-image-edit-id="0a0b0c0d" data-untrusted="drop" onerror="drop()"></p>`,
+  );
+  expect(valid).toContain('data-office-image-object-id="1A2B3C4D"');
+  expect(valid).toContain('data-office-image-doc-properties-id="42"');
+  expect(valid).toContain('data-office-image-anchor-id="1A2B3C4D"');
+  expect(valid).toContain('data-office-image-edit-id="0A0B0C0D"');
+  expect(valid).not.toContain('data-untrusted');
+  expect(valid).not.toContain('onerror');
+
+  const invalid = sanitizeDocumentPageChromeHtml(
+    `<p><img src="${pixelPng}" data-office-image-object-id="invalid" data-office-image-doc-properties-id="-1" data-office-image-anchor-id="invalid" data-office-image-edit-id="invalid"></p>`,
+  );
+  expect(invalid).not.toContain('data-office-image-');
+});
+
 test('executes WPS alignment and format-copy shortcuts in page chrome', () => {
   clearDocumentFormatClipboard();
   const editor = new Editor({

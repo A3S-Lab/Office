@@ -2,6 +2,7 @@ import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
 } from './work-document-page-chrome';
+import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   attribute,
   bytesToDataUrl,
@@ -13,6 +14,10 @@ import {
   type OoxmlPackage,
   type OoxmlRelationship,
 } from './work-ooxml-package';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from './work-docx-settings-xml';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -25,6 +30,13 @@ interface ImportedPageChromePart {
   html: string;
   showPageNumber: boolean;
 }
+
+const WORDPROCESSING_DRAWING_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+  'http://purl.oclc.org/ooxml/drawingml/wordprocessingDrawing',
+]);
+const WORDPROCESSING_DRAWING_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing';
 
 export async function importSectionPageChrome(
   section: Element,
@@ -298,9 +310,51 @@ async function drawingHtml(
     1,
     Math.round(Number(attribute(extent ?? drawing, 'cy')) / 9525),
   );
+  const identityAttributes = drawingIdentityAttributes(drawing);
   return `<img src="${source}" alt="Header or footer image"${width > 1 ? ` width="${width}"` : ''}${
     height > 1 ? ` height="${height}"` : ''
-  }>`;
+  }${identityAttributes}>`;
+}
+
+function drawingIdentityAttributes(drawing: Element): string {
+  const anchor = Array.from(drawing.querySelectorAll('*')).find(
+    (element) =>
+      (element.localName === 'anchor' || element.localName === 'inline') &&
+      WORDPROCESSING_DRAWING_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  const properties = anchor
+    ? directChildren(anchor, 'docPr').find((element) =>
+        WORDPROCESSING_DRAWING_NAMESPACES.has(element.namespaceURI ?? ''),
+      )
+    : undefined;
+  const identity = normalizeDocumentImageIdentity({
+    docPropertiesId: properties?.getAttribute('id'),
+    anchorId: anchor ? drawing2010Attribute(anchor, 'anchorId') : null,
+    editId: anchor ? drawing2010Attribute(anchor, 'editId') : null,
+  });
+  if (!identity) return '';
+  return [
+    ` data-office-image-object-id="${identity.objectId}"`,
+    ` data-office-image-doc-properties-id="${identity.docPropertiesId}"`,
+    ` data-office-image-anchor-id="${identity.anchorId}"`,
+    ` data-office-image-edit-id="${identity.editId}"`,
+  ].join('');
+}
+
+function drawing2010Attribute(
+  element: Element,
+  localName: string,
+): string | null {
+  for (const item of Array.from(element.attributes)) {
+    if (
+      xmlAttributeLocalName(item) === localName &&
+      xmlAttributeNamespace(element, item) ===
+        WORDPROCESSING_DRAWING_2010_NAMESPACE
+    ) {
+      return item.value;
+    }
+  }
+  return null;
 }
 
 async function tableHtml(

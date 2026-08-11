@@ -31,10 +31,17 @@ export type DocxExtensionDocumentRole = 'generated' | 'source';
 
 export interface DocxIgnorableExtensionOptions {
   semanticKey?: (element: Element, role: DocxExtensionDocumentRole) => string;
+  isAdditionalSemanticNamespace?: (namespace: string) => boolean;
+  allowExtensionNamespace?: (namespace: string) => boolean;
   allowSemanticElement?: (
     element: Element,
     generatedSemanticNames: ReadonlySet<string>,
   ) => boolean;
+}
+
+export interface DocxIgnorableExtensionPair {
+  generated: Element;
+  source: Element;
 }
 
 interface IgnorableNamespace {
@@ -58,6 +65,26 @@ export function mergeDocxIgnorableExtensions(
   sourceDocument: Document,
   options: DocxIgnorableExtensionOptions = {},
 ): void {
+  mergeDocxIgnorableExtensionsAtPairs(
+    generatedDocument,
+    sourceDocument,
+    [
+      {
+        generated: generatedDocument.documentElement,
+        source: sourceDocument.documentElement,
+      },
+    ],
+    options,
+  );
+}
+
+export function mergeDocxIgnorableExtensionsAtPairs(
+  generatedDocument: Document,
+  sourceDocument: Document,
+  pairs: readonly DocxIgnorableExtensionPair[],
+  options: DocxIgnorableExtensionOptions = {},
+): void {
+  if (!pairs.length) return;
   const sourceIgnorable = ignorableNamespaces(sourceDocument.documentElement);
   const context: ExtensionMergeContext = {
     generatedDocument,
@@ -71,12 +98,9 @@ export function mergeDocxIgnorableExtensions(
     nextExtensionPrefix: 1,
     options,
   };
-  mergeKnownElement(
-    generatedDocument.documentElement,
-    sourceDocument.documentElement,
-    context,
-    0,
-  );
+  for (const pair of pairs) {
+    mergeKnownElement(pair.generated, pair.source, context, 0);
+  }
   mergeIgnorableNamespaces(context);
   mergeCompatibilityQNameRules(context);
 }
@@ -151,6 +175,7 @@ function mergePassiveAttributes(
       isWordprocessingNamespace(namespace) ||
       RELATIONSHIP_NAMESPACES.has(namespace) ||
       !context.sourceIgnorableNamespaces.has(namespace) ||
+      !isAllowedExtensionNamespace(namespace, context) ||
       hasXmlAttribute(generated, namespace, localName)
     ) {
       continue;
@@ -182,7 +207,8 @@ function isExtensionCandidate(
     namespace !== XMLNS_NAMESPACE &&
     namespace !== XML_NAMESPACE &&
     !RELATIONSHIP_NAMESPACES.has(namespace) &&
-    context.sourceIgnorableNamespaces.has(namespace)
+    context.sourceIgnorableNamespaces.has(namespace) &&
+    isAllowedExtensionNamespace(namespace, context)
   );
 }
 
@@ -205,12 +231,16 @@ function isSafeExtensionSubtree(
       elementCount > MAX_EXTENSION_ELEMENTS ||
       current.depth > MAX_EXTENSION_DEPTH ||
       RELATIONSHIP_NAMESPACES.has(namespace ?? '') ||
-      hasUnsafeExtensionAttribute(current.element)
+      hasUnsafeExtensionAttribute(
+        current.element,
+        generatedSemanticNames,
+        context,
+      )
     ) {
       return false;
     }
     if (
-      isWordprocessingNamespace(namespace) &&
+      isSemanticNamespace(namespace, context) &&
       !context.options.allowSemanticElement?.(
         current.element,
         generatedSemanticNames,
@@ -223,7 +253,8 @@ function isSafeExtensionSubtree(
         alternateContentCount += 1;
         if (
           alternateContentCount > 1 ||
-          !isStructurallyValidAlternateContent(current.element)
+          !isStructurallyValidAlternateContent(current.element) ||
+          hasUnsafeAlternateContentRequirements(current.element, context)
         ) {
           return false;
         }
@@ -241,15 +272,56 @@ function isSafeExtensionSubtree(
   return true;
 }
 
-function hasUnsafeExtensionAttribute(element: Element): boolean {
+function hasUnsafeExtensionAttribute(
+  element: Element,
+  generatedSemanticNames: ReadonlySet<string>,
+  context: ExtensionMergeContext,
+): boolean {
   return Array.from(element.attributes).some((item) => {
     const namespace = xmlAttributeNamespace(element, item) ?? '';
-    return (
+    if (
+      !namespace ||
+      namespace === XMLNS_NAMESPACE ||
+      namespace === XML_NAMESPACE
+    ) {
+      return false;
+    }
+    if (
       RELATIONSHIP_NAMESPACES.has(namespace) ||
-      (namespace === MARKUP_COMPATIBILITY_NAMESPACE &&
-        xmlAttributeLocalName(item) === 'MustUnderstand')
-    );
+      namespace === MARKUP_COMPATIBILITY_NAMESPACE
+    ) {
+      return true;
+    }
+    if (isSemanticNamespace(namespace, context)) {
+      return !(
+        isSemanticNamespace(element.namespaceURI, context) &&
+        context.options.allowSemanticElement?.(element, generatedSemanticNames)
+      );
+    }
+    return !isAllowedExtensionNamespace(namespace, context);
   });
+}
+
+function hasUnsafeAlternateContentRequirements(
+  alternateContent: Element,
+  context: ExtensionMergeContext,
+): boolean {
+  for (const choice of directChildren(alternateContent, 'Choice')) {
+    for (const prefix of (attribute(choice, 'Requires') ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)) {
+      const namespace = xmlNamespaceUri(choice, prefix);
+      if (
+        namespace &&
+        (isSemanticNamespace(namespace, context) ||
+          !isAllowedExtensionNamespace(namespace, context))
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 function followingGeneratedAnchor(
@@ -447,6 +519,23 @@ function ensureRootNamespace(
 
 function isWordprocessingNamespace(namespace: string | null): boolean {
   return Boolean(namespace && DOCX_WORDPROCESSING_NAMESPACES.has(namespace));
+}
+
+function isSemanticNamespace(
+  namespace: string | null,
+  context: ExtensionMergeContext,
+): boolean {
+  return Boolean(
+    isWordprocessingNamespace(namespace) ||
+      (namespace && context.options.isAdditionalSemanticNamespace?.(namespace)),
+  );
+}
+
+function isAllowedExtensionNamespace(
+  namespace: string,
+  context: ExtensionMergeContext,
+): boolean {
+  return context.options.allowExtensionNamespace?.(namespace) ?? true;
 }
 
 function isNamespacePrefix(value: string): boolean {

@@ -107,9 +107,15 @@ uniquely matched nodes of `word/styles.xml` and `word/numbering.xml`. Style
 identity uses type plus style ID. Imported abstract-numbering,
 concrete-numbering, and level metadata follows regenerated IDs, while
 source-only, duplicate, malformed, and ambiguous one-to-many mappings fail
-closed. Generated Word semantics remain authoritative. Equivalent unknown
-markup in document, header, and footer trees remains an explicit next boundary
-rather than being covered by this claim.
+closed. The drawing-identity slice additionally retains relationship-free
+passive extensions from non-OOXML ignorable namespaces on uniquely matched
+pictures in document, header, and footer parts. Normalized anchor plus
+drawing-property IDs survive sanitized page-chrome HTML and strict/transitional
+UTF-8/UTF-16 sources. Microsoft/OOXML semantic namespaces, source-only or
+duplicate drawings, relationship-bound content, and ambiguous identities fail
+closed. Generated Word geometry and media remain authoritative. Equivalent
+unknown paragraph, run, table, note, comment, and other inline markup remains
+an explicit next boundary rather than being covered by this claim.
 
 Exit evidence:
 

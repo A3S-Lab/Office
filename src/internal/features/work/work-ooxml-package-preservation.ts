@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { preserveDocxDrawingExtensions } from './work-docx-drawing-extension-preservation';
 import { preserveDocxFontTable } from './work-docx-font-table-preservation';
 import {
   preserveDocxNumberingExtensions,
@@ -174,6 +175,12 @@ export async function preserveDocxSourcePackage(
       sourceNumberingPath,
     );
   }
+  await preserveDocxDrawingExtensions(
+    generated,
+    source,
+    docxDrawingPartPaths(generatedByLower, generatedTypes),
+    docxDrawingPartPaths(sourceByLower, sourceTypes),
+  );
   preserveContentTypes(generatedTypes, sourceTypes, preservedPaths, generated);
 
   return generated.generateAsync({
@@ -359,6 +366,37 @@ function isDocxNumberingContentType(type: string | undefined): boolean {
     type?.trim().toLowerCase() ===
     'application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml'
   );
+}
+
+function docxDrawingPartPaths(
+  pathsByLower: ReadonlyMap<string, string>,
+  contentTypes: OoxmlContentTypes,
+): string[] {
+  return Array.from(pathsByLower.entries()).flatMap(([lowerPath, path]) => {
+    const type = contentTypeForPath(contentTypes, path)?.trim().toLowerCase();
+    if (
+      lowerPath === 'word/document.xml' &&
+      type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml'
+    ) {
+      return [path];
+    }
+    if (
+      /^word\/header\d*\.xml$/.test(lowerPath) &&
+      type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml'
+    ) {
+      return [path];
+    }
+    if (
+      /^word\/footer\d*\.xml$/.test(lowerPath) &&
+      type ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml'
+    ) {
+      return [path];
+    }
+    return [];
+  });
 }
 
 function isObfuscatedFontContentType(type: string | undefined): boolean {

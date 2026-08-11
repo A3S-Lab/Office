@@ -83,8 +83,14 @@ uniquely matched nodes of `word/styles.xml` and `word/numbering.xml` are also
 retained. Styles match by type plus style ID. Imported abstract-numbering,
 concrete-numbering, and level metadata follows regenerated IDs; duplicate,
 source-only, malformed, or ambiguous one-to-many mappings are dropped.
-Generated Word style and numbering semantics still win. Unsupported inline
-markup in document, header, and footer XML may still normalize. Source
+Generated Word style and numbering semantics still win. Relationship-free
+passive extensions from non-OOXML ignorable namespaces also follow uniquely
+matched picture drawings in regenerated document, header, and footer parts.
+The match uses normalized anchor plus drawing-property IDs, which header and footer
+import now retains in sanitized editable HTML. Source-only, duplicate,
+relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
+are dropped; generated image geometry and media stay authoritative. Unsupported
+paragraph, run, table, and other inline markup may still normalize. Source
 font-table metadata and source-only internal obfuscated-font payloads survive
 with relationship IDs rewritten to the final package graph. External
 references, mismatched relationship or content types, duplicate identities,
