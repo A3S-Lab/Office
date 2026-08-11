@@ -101,9 +101,15 @@ obfuscated-font payloads, rewriting colliding relationship IDs and rejecting
 external, mistyped, duplicate, or payload-path-colliding references. Package
 XML decoding accepts strict or transitional UTF-8/UTF-16 input and emits UTF-8.
 The retained fonts remain native-DOCX state; browser edit, preview, and PDF
-surfaces continue to use registered fonts or substitution. Equivalent unknown
-markup in document, style, numbering, header, and footer trees remains an
-explicit next boundary rather than being covered by this claim.
+surfaces continue to use registered fonts or substitution. The stable-identity
+slice now retains passive, relationship-free extension trees at the roots and
+uniquely matched nodes of `word/styles.xml` and `word/numbering.xml`. Style
+identity uses type plus style ID. Imported abstract-numbering,
+concrete-numbering, and level metadata follows regenerated IDs, while
+source-only, duplicate, malformed, and ambiguous one-to-many mappings fail
+closed. Generated Word semantics remain authoritative. Equivalent unknown
+markup in document, header, and footer trees remains an explicit next boundary
+rather than being covered by this claim.
 
 Exit evidence:
 

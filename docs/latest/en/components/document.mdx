@@ -78,14 +78,20 @@ and settings semantics remain authoritative. In `word/settings.xml`, passive
 ignorable attributes and elements plus structurally valid, non-conflicting
 `mc:AlternateContent` blocks are merged from strict or transitional UTF-8 or
 UTF-16 sources. Relationship-bound and behavior-changing source settings are
-not restored. Unsupported inline markup in the other generated XML trees may
-still normalize. Source font-table metadata and source-only internal
-obfuscated-font payloads survive with relationship IDs rewritten to the final
-package graph. External references, mismatched relationship or content types,
-duplicate identities, and generated-path collisions are disconnected. Native
-DOCX applications can use the retained embedded fonts, but browser editing,
-preview, and PDF output continue to use registered A3S fonts or substitution
-and may wrap text differently.
+not restored. Passive, relationship-free extension trees at the roots and
+uniquely matched nodes of `word/styles.xml` and `word/numbering.xml` are also
+retained. Styles match by type plus style ID. Imported abstract-numbering,
+concrete-numbering, and level metadata follows regenerated IDs; duplicate,
+source-only, malformed, or ambiguous one-to-many mappings are dropped.
+Generated Word style and numbering semantics still win. Unsupported inline
+markup in document, header, and footer XML may still normalize. Source
+font-table metadata and source-only internal obfuscated-font payloads survive
+with relationship IDs rewritten to the final package graph. External
+references, mismatched relationship or content types, duplicate identities,
+and generated-path collisions are disconnected. Native DOCX applications can
+use the retained embedded fonts, but browser editing, preview, and PDF output
+continue to use registered A3S fonts or substitution and may wrap text
+differently.
 
 Persist the source Blob with the artifact and call `registerSourceBlob` after a
 browser reload. Export fails explicitly when an artifact declares a source but

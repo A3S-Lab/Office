@@ -1,8 +1,6 @@
 import type {
   FileChild,
   ICommentOptions,
-  IIndentAttributesProperties,
-  INumberingOptions,
   IRunOptions,
   ISectionOptions,
   ParagraphChild,
@@ -49,6 +47,10 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
+import {
+  type DocxListExportContext,
+  listToDocxParagraphs,
+} from './work-docx-list-export';
 import { docxDocumentFieldRun } from './work-docx-field-export';
 import {
   DocxImageCropPatchCollector,
@@ -87,22 +89,13 @@ import type {
   WorkDocumentSectionLayout,
 } from './work-types';
 
-interface DocxNoteContext {
+interface DocxNoteContext extends DocxListExportContext {
   ids: Map<string, number>;
   changeIds: Map<string, number>;
   nextChangeId: number;
   commentIds: Map<string, number>;
   commentRangeCounts: Map<string, number>;
   commentRangeSeen: Map<string, number>;
-  numbering: Array<INumberingOptions['config'][number]>;
-  nextNumberingReference: number;
-  numberingReferences: Map<string, string>;
-  numberingLevels: Map<
-    string,
-    Array<INumberingOptions['config'][number]['levels'][number]>
-  >;
-  numberingRestartRules: Array<Map<number, number>>;
-  numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   themePatches: DocxThemePatchCollector;
   bookmarkPatches: DocxBookmarkPatchCollector;
   imageCropPatches: DocxImageCropPatchCollector;
@@ -148,6 +141,7 @@ export async function createDocxBlob(
     numberingLevels: new Map(),
     numberingRestartRules: [],
     numberingRestartRulesByIdentity: new Map(),
+    numberingSourceIdentities: [],
     themePatches: new DocxThemePatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -258,7 +252,9 @@ export async function createDocxBlob(
     normalizedContent.pageColor,
   );
   const preserved = sourcePackage
-    ? await preserveDocxSourcePackage(patched, sourcePackage)
+    ? await preserveDocxSourcePackage(patched, sourcePackage, {
+        numberingIdentities: noteContext.numberingSourceIdentities,
+      })
     : patched;
   return new Blob([preserved], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -455,7 +451,9 @@ async function blockToFileChildren(
     ];
   }
   if (tag === 'ul' || tag === 'ol') {
-    return listToDocxParagraphs(element, docx, noteContext);
+    return listToDocxParagraphs(element, docx, noteContext, (block) =>
+      inlineRuns(block, docx, noteContext),
+    );
   }
   const runs = await inlineRuns(element, docx, noteContext);
   const heading =
@@ -478,431 +476,6 @@ async function blockToFileChildren(
       ...paragraphDirectionOptions(element),
     }),
   ];
-}
-
-async function listToDocxParagraphs(
-  list: HTMLElement,
-  docx: typeof import('docx'),
-  noteContext: DocxNoteContext,
-  depth = 0,
-): Promise<Array<InstanceType<typeof docx.Paragraph>>> {
-  const paragraphs: Array<InstanceType<typeof docx.Paragraph>> = [];
-  const level = listNumberingLevel(list, depth);
-  const ordered = list.tagName.toLowerCase() === 'ol';
-  const numbering = ordered
-    ? registerOrderedListNumbering(list, level, docx, noteContext)
-    : registerBulletListNumbering(list, level, docx, noteContext);
-  const items = Array.from(list.children).filter(
-    (child): child is HTMLElement =>
-      child instanceof HTMLElement && child.tagName.toLowerCase() === 'li',
-  );
-  for (const item of items) {
-    const directBlocks = Array.from(item.children).filter(
-      (child): child is HTMLElement =>
-        child instanceof HTMLElement &&
-        child.tagName.toLowerCase() !== 'ol' &&
-        child.tagName.toLowerCase() !== 'ul',
-    );
-    const contentBlocks = directBlocks.length
-      ? directBlocks
-      : [directListItemContentRoot(item)];
-    for (const [blockIndex, block] of contentBlocks.entries()) {
-      const tag = block.tagName.toLowerCase();
-      const heading =
-        tag === 'h1'
-          ? docx.HeadingLevel.HEADING_1
-          : tag === 'h2'
-            ? docx.HeadingLevel.HEADING_2
-            : tag === 'h3'
-              ? docx.HeadingLevel.HEADING_3
-              : undefined;
-      const runs = await inlineRuns(block, docx, noteContext);
-      paragraphs.push(
-        new docx.Paragraph({
-          children: runs.length ? runs : [new docx.TextRun('')],
-          heading,
-          ...(blockIndex === 0
-            ? { numbering }
-            : {
-                indent: paragraphIndent(block, tag) ?? {
-                  left: (level + 1) * 720,
-                },
-              }),
-          alignment: paragraphAlignment(block, docx),
-          spacing: paragraphSpacingOptions(block, Boolean(heading), docx),
-          ...(blockIndex === 0 ? { indent: paragraphIndent(block, tag) } : {}),
-          tabStops: paragraphTabStops(block, docx),
-          ...paragraphPaginationOptions(block),
-          ...paragraphDirectionOptions(block),
-        }),
-      );
-    }
-    for (const nested of Array.from(item.children).filter(
-      (child): child is HTMLElement =>
-        child instanceof HTMLElement &&
-        (child.tagName.toLowerCase() === 'ol' ||
-          child.tagName.toLowerCase() === 'ul'),
-    )) {
-      paragraphs.push(
-        ...(await listToDocxParagraphs(nested, docx, noteContext, depth + 1)),
-      );
-    }
-  }
-  return paragraphs;
-}
-
-function registerOrderedListNumbering(
-  list: HTMLElement,
-  level: number,
-  docx: typeof import('docx'),
-  noteContext: DocxNoteContext,
-): { reference: string; level: number } {
-  const identity = importedListIdentity(list);
-  const existingReference = identity
-    ? noteContext.numberingReferences.get(identity)
-    : undefined;
-  if (existingReference && identity) {
-    const levels = noteContext.numberingLevels.get(identity);
-    if (levels) {
-      levels[level] = orderedListLevelOptions(list, level, docx);
-    }
-    updateNumberingRestartRule(noteContext, identity, list, level);
-    return { reference: existingReference, level };
-  }
-  const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
-  noteContext.nextNumberingReference += 1;
-  const levels = Array.from({ length: 9 }, (_, currentLevel) =>
-    currentLevel === level
-      ? orderedListLevelOptions(list, currentLevel, docx)
-      : defaultOrderedListLevelOptions(currentLevel, docx),
-  );
-  const configuration = { reference, levels };
-  const restartRules = new Map<number, number>();
-  setNumberingRestartRule(restartRules, list, level);
-  noteContext.numberingRestartRules.push(restartRules);
-  if (identity) {
-    noteContext.numberingReferences.set(identity, reference);
-    noteContext.numberingLevels.set(identity, levels);
-    noteContext.numberingRestartRulesByIdentity.set(identity, restartRules);
-  }
-  noteContext.numbering.push(configuration);
-  return { reference, level };
-}
-
-function registerBulletListNumbering(
-  list: HTMLElement,
-  level: number,
-  docx: typeof import('docx'),
-  noteContext: DocxNoteContext,
-): { reference: string; level: number } {
-  const identity = importedListIdentity(list);
-  const existingReference = identity
-    ? noteContext.numberingReferences.get(identity)
-    : undefined;
-  if (existingReference && identity) {
-    const levels = noteContext.numberingLevels.get(identity);
-    if (levels) {
-      levels[level] = bulletListLevelOptions(list, level, docx);
-    }
-    updateNumberingRestartRule(noteContext, identity, list, level);
-    return { reference: existingReference, level };
-  }
-  const reference = `a3s-office-list-${noteContext.nextNumberingReference}`;
-  noteContext.nextNumberingReference += 1;
-  const levels = Array.from({ length: 9 }, (_, currentLevel) =>
-    currentLevel === level
-      ? bulletListLevelOptions(list, currentLevel, docx)
-      : defaultBulletListLevelOptions(currentLevel, docx),
-  );
-  const configuration = { reference, levels };
-  const restartRules = new Map<number, number>();
-  setNumberingRestartRule(restartRules, list, level);
-  noteContext.numberingRestartRules.push(restartRules);
-  if (identity) {
-    noteContext.numberingReferences.set(identity, reference);
-    noteContext.numberingLevels.set(identity, levels);
-    noteContext.numberingRestartRulesByIdentity.set(identity, restartRules);
-  }
-  noteContext.numbering.push(configuration);
-  return { reference, level };
-}
-
-function orderedListLevelFormat(
-  list: HTMLElement,
-  level: number,
-  docx: typeof import('docx'),
-) {
-  const imported = importedNumberingFormat(list, docx);
-  if (imported && imported !== docx.LevelFormat.BULLET) return imported;
-  const type = list.getAttribute('type');
-  if (type === 'A') return docx.LevelFormat.UPPER_LETTER;
-  if (type === 'a') return docx.LevelFormat.LOWER_LETTER;
-  if (type === 'I') return docx.LevelFormat.UPPER_ROMAN;
-  if (type === 'i') return docx.LevelFormat.LOWER_ROMAN;
-  return defaultOrderedListLevelFormat(level, docx);
-}
-
-function defaultOrderedListLevelFormat(
-  level: number,
-  docx: typeof import('docx'),
-) {
-  if (level % 3 === 1) return docx.LevelFormat.LOWER_LETTER;
-  if (level % 3 === 2) return docx.LevelFormat.LOWER_ROMAN;
-  return docx.LevelFormat.DECIMAL;
-}
-
-function orderedListLevelOptions(
-  list: HTMLElement,
-  level: number,
-  docx: typeof import('docx'),
-) {
-  return applyImportedListLevelLayout(
-    list,
-    {
-      ...defaultOrderedListLevelOptions(level, docx),
-      format: orderedListLevelFormat(list, level, docx),
-      text: importedNumberingText(list) ?? `%${level + 1}.`,
-      start: orderedListStart(list),
-    },
-    docx,
-  );
-}
-
-function defaultOrderedListLevelOptions(
-  level: number,
-  docx: typeof import('docx'),
-) {
-  return listLevelOptions(
-    level,
-    defaultOrderedListLevelFormat(level, docx),
-    `%${level + 1}.`,
-    1,
-    docx,
-  );
-}
-
-function bulletListLevelOptions(
-  list: HTMLElement,
-  level: number,
-  docx: typeof import('docx'),
-) {
-  return applyImportedListLevelLayout(
-    list,
-    listLevelOptions(
-      level,
-      importedNumberingFormat(list, docx) ?? docx.LevelFormat.BULLET,
-      importedNumberingText(list) ?? bulletListMarker(list),
-      1,
-      docx,
-    ),
-    docx,
-  );
-}
-
-function defaultBulletListLevelOptions(
-  level: number,
-  docx: typeof import('docx'),
-) {
-  return listLevelOptions(
-    level,
-    docx.LevelFormat.BULLET,
-    defaultBulletListMarker(level),
-    1,
-    docx,
-  );
-}
-
-function listLevelOptions(
-  level: number,
-  format: typeof import('docx')['LevelFormat'][keyof typeof import('docx')['LevelFormat']],
-  text: string,
-  start: number,
-  docx: typeof import('docx'),
-) {
-  return {
-    level,
-    format,
-    text,
-    start,
-    suffix: docx.LevelSuffix.TAB,
-    style: {
-      paragraph: {
-        indent: { left: (level + 1) * 720, hanging: 360 },
-      },
-    },
-  };
-}
-
-function orderedListStart(list: HTMLElement): number {
-  const value = Number(list.getAttribute('start'));
-  return Number.isSafeInteger(value) && value > 0
-    ? Math.min(value, 2_147_483_647)
-    : 1;
-}
-
-function bulletListMarker(list: HTMLElement): string {
-  const style =
-    list.dataset.officeBulletStyle || list.style.listStyleType || 'disc';
-  if (style === 'circle') return '○';
-  if (style === 'square') return '■';
-  return '●';
-}
-
-function defaultBulletListMarker(level: number): string {
-  if (level % 3 === 1) return '○';
-  if (level % 3 === 2) return '■';
-  return '●';
-}
-
-function importedListIdentity(list: HTMLElement): string | null {
-  const numberingId = list.dataset.officeNumberingId;
-  if (!numberingId) return null;
-  const abstractNumberingId = list.dataset.officeAbstractNumberingId ?? '';
-  return `${numberingId}:${abstractNumberingId}`;
-}
-
-function listNumberingLevel(list: HTMLElement, fallback: number): number {
-  const imported = Number(list.dataset.officeNumberingLevel);
-  return Number.isSafeInteger(imported) && imported >= 0 && imported <= 8
-    ? imported
-    : Math.min(8, Math.max(0, fallback));
-}
-
-function importedNumberingFormat(
-  list: HTMLElement,
-  docx: typeof import('docx'),
-): (typeof docx.LevelFormat)[keyof typeof docx.LevelFormat] | null {
-  const imported = list.dataset.officeNumberingFormat;
-  if (!imported) return null;
-  const supported = new Set<string>(Object.values(docx.LevelFormat));
-  return supported.has(imported)
-    ? (imported as (typeof docx.LevelFormat)[keyof typeof docx.LevelFormat])
-    : null;
-}
-
-function importedNumberingText(list: HTMLElement): string | null {
-  const imported = list.dataset.officeNumberingText;
-  return imported && imported.length <= 255 ? imported : null;
-}
-
-function applyImportedListLevelLayout<
-  T extends ReturnType<typeof listLevelOptions>,
->(list: HTMLElement, options: T, docx: typeof import('docx')): T {
-  const suffix = list.dataset.officeNumberingSuffix;
-  const supportedSuffixes = new Set<string>(Object.values(docx.LevelSuffix));
-  const alignment = list.dataset.officeNumberingAlignment;
-  const supportedAlignments = new Set<string>(
-    Object.values(docx.AlignmentType),
-  );
-  const left = importedTwips(list.dataset.officeNumberingIndentLeft, true);
-  const right = importedTwips(list.dataset.officeNumberingIndentRight, true);
-  const start = importedTwips(list.dataset.officeNumberingIndentStart, true);
-  const end = importedTwips(list.dataset.officeNumberingIndentEnd, true);
-  const hanging = importedTwips(
-    list.dataset.officeNumberingIndentHanging,
-    false,
-  );
-  const firstLine = importedTwips(
-    list.dataset.officeNumberingIndentFirstLine,
-    false,
-  );
-  const importedIndentMode = hanging !== null || firstLine !== null;
-  const importedPositionMode =
-    left !== null || right !== null || start !== null || end !== null;
-  const sourceIndent: IIndentAttributesProperties =
-    options.style.paragraph.indent;
-  const baseIndent: Record<string, unknown> = { ...sourceIndent };
-  if (importedPositionMode) {
-    delete baseIndent.left;
-    delete baseIndent.right;
-    delete baseIndent.start;
-    delete baseIndent.end;
-  }
-  if (importedIndentMode) {
-    delete baseIndent.hanging;
-    delete baseIndent.firstLine;
-  }
-  return {
-    ...options,
-    ...(suffix && supportedSuffixes.has(suffix)
-      ? {
-          suffix:
-            suffix as (typeof docx.LevelSuffix)[keyof typeof docx.LevelSuffix],
-        }
-      : {}),
-    ...(alignment && supportedAlignments.has(alignment)
-      ? {
-          alignment:
-            alignment as (typeof docx.AlignmentType)[keyof typeof docx.AlignmentType],
-        }
-      : {}),
-    style: {
-      ...options.style,
-      paragraph: {
-        ...options.style.paragraph,
-        indent: {
-          ...baseIndent,
-          ...(left === null ? {} : { left }),
-          ...(right === null ? {} : { right }),
-          ...(start === null ? {} : { start }),
-          ...(end === null ? {} : { end }),
-          ...(hanging === null ? {} : { hanging }),
-          ...(firstLine === null ? {} : { firstLine }),
-        },
-      },
-    },
-  };
-}
-
-function importedTwips(
-  value: string | undefined,
-  signed: boolean,
-): number | null {
-  if (value === undefined || value === '') return null;
-  const parsed = Number(value);
-  if (!Number.isSafeInteger(parsed)) return null;
-  if (!signed && parsed < 0) return null;
-  return parsed;
-}
-
-function updateNumberingRestartRule(
-  context: DocxNoteContext,
-  identity: string,
-  list: HTMLElement,
-  level: number,
-): void {
-  const rules = context.numberingRestartRulesByIdentity.get(identity);
-  if (rules) setNumberingRestartRule(rules, list, level);
-}
-
-function setNumberingRestartRule(
-  rules: Map<number, number>,
-  list: HTMLElement,
-  level: number,
-): void {
-  const value = list.dataset.officeNumberingRestartAfterLevel;
-  if (value === undefined || value === '') return;
-  const parsed = Number(value);
-  if (Number.isSafeInteger(parsed) && parsed >= 0 && parsed <= 9) {
-    rules.set(level, parsed);
-  }
-}
-
-function directListItemContentRoot(item: HTMLElement): HTMLElement {
-  const root = item.ownerDocument.createElement('span');
-  const direction = item.getAttribute('dir');
-  if (direction) root.setAttribute('dir', direction);
-  for (const child of item.childNodes) {
-    if (
-      child instanceof HTMLElement &&
-      (child.tagName.toLowerCase() === 'ol' ||
-        child.tagName.toLowerCase() === 'ul')
-    ) {
-      continue;
-    }
-    root.append(child.cloneNode(true));
-  }
-  return root;
 }
 
 function millimetersToTwips(value: number): number {
@@ -1341,7 +914,9 @@ async function noteParagraphs(
     const tag = element.tagName.toLowerCase();
     if (tag === 'ul' || tag === 'ol') {
       paragraphs.push(
-        ...(await listToDocxParagraphs(element, docx, noteContext)),
+        ...(await listToDocxParagraphs(element, docx, noteContext, (block) =>
+          inlineRuns(block, docx, noteContext),
+        )),
       );
       continue;
     }

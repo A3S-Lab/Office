@@ -17,6 +17,12 @@ All notable changes to A3S Office will be documented in this file.
   transitional UTF-8/UTF-16 source packages. Generated Word settings remain
   authoritative; malformed, relationship-bound, protection, template,
   mail-merge, field-update, and duplicate-setting markup is not restored.
+- Preserved passive ignorable extension trees on regenerated DOCX styles and
+  numbering definitions. Styles match by type and style ID, while imported
+  abstract-numbering, concrete-numbering, and level metadata follows rewritten
+  numbering IDs. Generated Word semantics remain authoritative; source-only,
+  duplicate, relationship-bound, malformed, and ambiguous one-to-many
+  extension mappings are dropped instead of attaching to the wrong identity.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

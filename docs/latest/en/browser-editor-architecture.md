@@ -908,9 +908,14 @@ payloads, then rewrites their references to collision-free relationship IDs.
 External fonts, mismatched relationship or content types, duplicate identities,
 and source payload paths that collide with generated parts are disconnected.
 This preserves embedded fonts for native DOCX consumers without loading those
-binaries into the browser editor, preview, or PDF renderer. Unknown inline
-markup in regenerated document, style, numbering, header, and footer trees
-remains the next loss-preservation boundary.
+binaries into the browser editor, preview, or PDF renderer. Passive,
+relationship-free extension trees at the roots and uniquely matched nodes of
+`word/styles.xml` and `word/numbering.xml` are also retained. Styles match by
+type plus style ID. Imported abstract-numbering, concrete-numbering, and level
+metadata follows regenerated IDs. Duplicate, source-only, malformed, and
+ambiguous one-to-many mappings fail closed, and generated Word semantics remain
+authoritative. Unknown inline markup in regenerated document, header, and
+footer trees remains the next loss-preservation boundary.
 
 Migration to browser-native OOXML is staged:
 

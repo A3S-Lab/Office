@@ -1,6 +1,11 @@
 import JSZip from 'jszip';
 import { preserveDocxFontTable } from './work-docx-font-table-preservation';
+import {
+  preserveDocxNumberingExtensions,
+  type DocxSourceNumberingIdentity,
+} from './work-docx-numbering-extension-preservation';
 import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
+import { preserveDocxStyleExtensions } from './work-docx-style-extension-preservation';
 import { attribute, directChildren, parseXml } from './work-ooxml-package';
 import {
   isExcludedDocxContentType,
@@ -23,6 +28,10 @@ interface OoxmlContentTypes {
   overrides: Map<string, string>;
 }
 
+export interface DocxSourcePackagePreservationOptions {
+  numberingIdentities?: readonly (DocxSourceNumberingIdentity | null)[];
+}
+
 /**
  * Copies safe source-only DOCX parts into a newly generated package.
  *
@@ -33,6 +42,7 @@ interface OoxmlContentTypes {
 export async function preserveDocxSourcePackage(
   generatedBuffer: ArrayBuffer,
   sourceBuffer: ArrayBuffer,
+  options: DocxSourcePackagePreservationOptions = {},
 ): Promise<ArrayBuffer> {
   const [generated, source] = await Promise.all([
     JSZip.loadAsync(generatedBuffer),
@@ -125,6 +135,43 @@ export async function preserveDocxSourcePackage(
       fontPartPaths,
       generatedFontTablePath,
       sourceFontTablePath,
+    );
+  }
+  const generatedStylesPath = generatedByLower.get('word/styles.xml');
+  const sourceStylesPath = sourceByLower.get('word/styles.xml');
+  if (
+    generatedStylesPath &&
+    sourceStylesPath &&
+    isDocxStylesContentType(
+      contentTypeForPath(generatedTypes, generatedStylesPath),
+    ) &&
+    isDocxStylesContentType(contentTypeForPath(sourceTypes, sourceStylesPath))
+  ) {
+    await preserveDocxStyleExtensions(
+      generated,
+      source,
+      generatedStylesPath,
+      sourceStylesPath,
+    );
+  }
+  const generatedNumberingPath = generatedByLower.get('word/numbering.xml');
+  const sourceNumberingPath = sourceByLower.get('word/numbering.xml');
+  if (
+    generatedNumberingPath &&
+    sourceNumberingPath &&
+    isDocxNumberingContentType(
+      contentTypeForPath(generatedTypes, generatedNumberingPath),
+    ) &&
+    isDocxNumberingContentType(
+      contentTypeForPath(sourceTypes, sourceNumberingPath),
+    )
+  ) {
+    await preserveDocxNumberingExtensions(
+      generated,
+      source,
+      options.numberingIdentities ?? [],
+      generatedNumberingPath,
+      sourceNumberingPath,
     );
   }
   preserveContentTypes(generatedTypes, sourceTypes, preservedPaths, generated);
@@ -297,6 +344,20 @@ function isDocxFontTableContentType(type: string | undefined): boolean {
   return (
     type?.trim().toLowerCase() ===
     'application/vnd.openxmlformats-officedocument.wordprocessingml.fonttable+xml'
+  );
+}
+
+function isDocxStylesContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml'
+  );
+}
+
+function isDocxNumberingContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml'
   );
 }
 

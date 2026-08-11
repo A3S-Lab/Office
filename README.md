@@ -478,14 +478,21 @@ and custom-ribbon parts. Within `word/settings.xml`, relationship-free
 ignorable attributes, elements, and structurally valid, non-conflicting
 `mc:AlternateContent` blocks survive strict or transitional UTF-8/UTF-16
 sources. Generated Word settings still win, and this preservation does not yet
-extend to unknown markup inside regenerated body, style, numbering, header, or
-footer trees. Source font-table metadata and source-only internal obfuscated
-font payloads are also retained, with relationship references rewritten after
-ID collisions. External fonts, wrong relationship or content types, duplicate
-identities, and paths that collide with generated payloads are not reconnected.
-Native DOCX consumers can use the retained embedded fonts; the browser editor,
-preview, and PDF renderer do not load document-embedded font binaries and may
-substitute fonts or wrap text differently.
+restore behavior-changing settings. Regenerated `word/styles.xml` and
+`word/numbering.xml` also retain relationship-free passive extensions at the
+root and on uniquely matched identities. Styles match by type plus style ID;
+imported abstract-numbering, concrete-numbering, and level metadata follows
+regenerated IDs. Source-only or duplicate identities, malformed trees,
+relationship-bound content, and ambiguous one-to-many numbering mappings are
+dropped. Generated Word style and numbering semantics still win. Unknown
+markup inside regenerated body, header, and footer trees may still normalize.
+Source font-table metadata and source-only internal obfuscated font payloads
+are also retained, with relationship references rewritten after ID collisions.
+External fonts, wrong relationship or content types, duplicate identities, and
+paths that collide with generated payloads are not reconnected. Native DOCX
+consumers can use the retained embedded fonts; the browser editor, preview, and
+PDF renderer do not load document-embedded font binaries and may substitute
+fonts or wrap text differently.
 
 ## Native automation
 
