@@ -1,8 +1,11 @@
 import {
+  applyDocumentImageCropToElement,
   normalizeDocumentImageAlignment,
   normalizeDocumentImageLayoutOptions,
+  normalizeDocumentImageCrop,
   normalizeDocumentImagePosition,
   type WorkDocumentImageLayout,
+  type WorkDocumentImageCrop,
   type WorkDocumentImageLayoutOptions,
   type WorkDocumentImagePosition,
 } from './work-document-image-layout';
@@ -13,6 +16,7 @@ export interface ImportedDocxImageLayoutMarker {
   endMarker: string;
   options: WorkDocumentImageLayoutOptions;
   position: WorkDocumentImagePosition | null;
+  crop: WorkDocumentImageCrop | null;
 }
 
 export interface ImportedDocxImageLayoutMarkers {
@@ -31,10 +35,20 @@ export function markDocxImageLayouts(
 ): ImportedDocxImageLayoutMarkers {
   const images: ImportedDocxImageLayoutMarker[] = [];
   const markedRuns = new Set<Element>();
-  for (const anchor of descendants(document, 'anchor')) {
+  const drawings = [
+    ...descendants(document, 'anchor'),
+    ...descendants(document, 'inline'),
+  ];
+  for (const anchor of drawings) {
     const run = closestAncestor(anchor, 'r');
     if (!run || markedRuns.has(run)) continue;
-    const layout = anchorLayout(anchor);
+    const crop = anchorCrop(anchor);
+    const layout =
+      anchor.localName === 'inline'
+        ? crop
+          ? 'inline'
+          : null
+        : anchorLayout(anchor);
     if (!layout) continue;
     markedRuns.add(run);
     const index = images.length + 1;
@@ -51,6 +65,7 @@ export function markDocxImageLayouts(
         wrapDistance: anchorWrapDistance(anchor, layout),
       }),
       position: anchorPosition(anchor),
+      crop,
     });
   }
   return { images };
@@ -90,7 +105,12 @@ export function applyImportedDocxImageLayoutMarkers(
       continue;
     }
     if (!state.applied && state.active && node instanceof HTMLImageElement) {
-      applyImageLayout(node, state.active.options, state.active.position);
+      applyImageLayout(
+        node,
+        state.active.options,
+        state.active.position,
+        state.active.crop,
+      );
       state.applied = true;
     }
   }
@@ -166,6 +186,25 @@ function anchorPosition(anchor: Element): WorkDocumentImagePosition | null {
   });
 }
 
+function anchorCrop(anchor: Element): WorkDocumentImageCrop | null {
+  const source = descendants(anchor, 'srcRect')[0];
+  if (!source) return null;
+  return normalizeDocumentImageCrop({
+    cropTop: cropPercentage(source, 't'),
+    cropRight: cropPercentage(source, 'r'),
+    cropBottom: cropPercentage(source, 'b'),
+    cropLeft: cropPercentage(source, 'l'),
+  });
+}
+
+function cropPercentage(source: Element, name: string): number {
+  const value = attribute(source, name)?.trim() ?? '';
+  if (!value) return 0;
+  const number = Number(value.endsWith('%') ? value.slice(0, -1) : value);
+  if (!Number.isFinite(number)) return 0;
+  return value.endsWith('%') ? number : number / 1_000;
+}
+
 function positionOffset(position: Element | null | undefined): number | null {
   const value = position ? directChild(position, 'posOffset') : undefined;
   if (!value?.textContent?.trim()) return null;
@@ -193,6 +232,7 @@ function applyImageLayout(
   image: HTMLImageElement,
   options: WorkDocumentImageLayoutOptions,
   position: WorkDocumentImagePosition | null,
+  crop: WorkDocumentImageCrop | null,
 ): void {
   image.dataset.officeImageLayout = options.layout;
   image.dataset.officeImageAlignment = options.alignment;
@@ -223,6 +263,7 @@ function applyImageLayout(
     image.dataset.officeImageHorizontalReference = position.horizontalReference;
     image.dataset.officeImageVerticalReference = position.verticalReference;
   }
+  applyDocumentImageCropToElement(image, crop);
 }
 
 function numericAttribute(

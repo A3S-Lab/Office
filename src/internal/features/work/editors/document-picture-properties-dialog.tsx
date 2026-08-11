@@ -197,6 +197,11 @@ function DocumentPicturePropertiesDialog({
           errors={errors}
           onDraftChange={setDraft}
         />
+        <PictureCropSection
+          draft={draft}
+          errors={errors}
+          onDraftChange={setDraft}
+        />
         <label
           className="work-document-picture-properties-alt-text"
           htmlFor={alternativeTextId}
@@ -437,6 +442,52 @@ function PictureAlignmentSection({
       </div>
       {errors.horizontalOffset && <p role="alert">{errors.horizontalOffset}</p>}
       {errors.verticalOffset && <p role="alert">{errors.verticalOffset}</p>}
+    </fieldset>
+  );
+}
+
+function PictureCropSection({
+  draft,
+  errors,
+  onDraftChange,
+}: {
+  draft: DocumentPicturePropertiesDraft;
+  errors: DocumentPicturePropertiesErrors;
+  onDraftChange: React.Dispatch<
+    React.SetStateAction<DocumentPicturePropertiesDraft>
+  >;
+}) {
+  const fields = [
+    { key: 'cropTop', label: '上方裁剪' },
+    { key: 'cropRight', label: '右侧裁剪' },
+    { key: 'cropBottom', label: '下方裁剪' },
+    { key: 'cropLeft', label: '左侧裁剪' },
+  ] as const;
+  return (
+    <fieldset className="work-document-picture-properties-section crop">
+      <legend>裁剪</legend>
+      <div className="work-document-picture-properties-crop-grid">
+        {fields.map((field) => (
+          <PictureNumberRow
+            key={field.key}
+            label={field.label}
+            ariaLabel={`图片${field.label}（百分比）`}
+            value={draft[field.key]}
+            unit="%"
+            min={0}
+            max={99.99}
+            step={1}
+            invalid={Boolean(errors.crop)}
+            onValueChange={(value) =>
+              onDraftChange((current) => ({
+                ...current,
+                [field.key]: value,
+              }))
+            }
+          />
+        ))}
+      </div>
+      {errors.crop && <p role="alert">{errors.crop}</p>}
     </fieldset>
   );
 }

@@ -19,6 +19,13 @@ export interface WorkDocumentImagePosition {
   verticalReference: WorkDocumentImageVerticalReference;
 }
 
+export interface WorkDocumentImageCrop {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export interface WorkDocumentImageLayoutOptions {
   layout: WorkDocumentImageLayout;
   alignment: WorkDocumentImageAlignment;
@@ -32,6 +39,7 @@ export interface WorkDocumentImageProperties
   lockAspectRatio: boolean;
   alternativeText: string;
   position?: WorkDocumentImagePosition | null;
+  crop?: WorkDocumentImageCrop | null;
 }
 
 export interface DocumentImageCommandOptions {
@@ -184,6 +192,10 @@ export const DocumentImage = Image.extend({
             ),
         }),
       },
+      cropTop: imageCropNumberAttribute('top'),
+      cropRight: imageCropNumberAttribute('right'),
+      cropBottom: imageCropNumberAttribute('bottom'),
+      cropLeft: imageCropNumberAttribute('left'),
     };
   },
 
@@ -273,6 +285,7 @@ export function documentImageProperties(
 ): WorkDocumentImageProperties {
   const attributes = editor.getAttributes('image') as Record<string, unknown>;
   const position = normalizeDocumentImagePosition(attributes);
+  const crop = normalizeDocumentImageCrop(attributes);
   return {
     ...normalizeDocumentImageLayoutOptions(attributes),
     width: normalizeDocumentImageDimension(attributes.width),
@@ -282,6 +295,7 @@ export function documentImageProperties(
     ),
     alternativeText: documentImageAlternativeText(editor),
     ...(position ? { position } : {}),
+    ...(crop ? { crop } : {}),
   };
 }
 
@@ -348,6 +362,17 @@ export function documentImagePositionFromElement(
     verticalReference: element.getAttribute(
       'data-office-image-vertical-reference',
     ),
+  });
+}
+
+export function documentImageCropFromElement(
+  element: Element,
+): WorkDocumentImageCrop | null {
+  return normalizeDocumentImageCrop({
+    cropTop: element.getAttribute('data-office-image-crop-top'),
+    cropRight: element.getAttribute('data-office-image-crop-right'),
+    cropBottom: element.getAttribute('data-office-image-crop-bottom'),
+    cropLeft: element.getAttribute('data-office-image-crop-left'),
   });
 }
 
@@ -454,6 +479,30 @@ export function normalizeDocumentImageVerticalReference(
     : DEFAULT_VERTICAL_REFERENCE;
 }
 
+export function normalizeDocumentImageCrop(
+  value: Partial<
+    Record<'cropBottom' | 'cropLeft' | 'cropRight' | 'cropTop', unknown>
+  >,
+): WorkDocumentImageCrop | null {
+  const crop = {
+    top: normalizeDocumentImageCropEdge(value.cropTop),
+    right: normalizeDocumentImageCropEdge(value.cropRight),
+    bottom: normalizeDocumentImageCropEdge(value.cropBottom),
+    left: normalizeDocumentImageCropEdge(value.cropLeft),
+  };
+  if (Object.values(crop).every((edge) => edge === 0)) return null;
+  if (crop.left + crop.right >= 100 || crop.top + crop.bottom >= 100) {
+    return null;
+  }
+  return crop;
+}
+
+export function normalizeDocumentImageCropEdge(value: unknown): number {
+  const number = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.round(Math.min(99.99, Math.max(0, number)) * 100) / 100;
+}
+
 function formatImageLayoutNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
@@ -499,6 +548,20 @@ function documentImageAttributesForChanges(
       position?.horizontalReference ?? DEFAULT_HORIZONTAL_REFERENCE;
     attributes.verticalReference =
       position?.verticalReference ?? DEFAULT_VERTICAL_REFERENCE;
+  }
+  if (Object.hasOwn(value, 'crop')) {
+    const crop = value.crop
+      ? normalizeDocumentImageCrop({
+          cropTop: value.crop.top,
+          cropRight: value.crop.right,
+          cropBottom: value.crop.bottom,
+          cropLeft: value.crop.left,
+        })
+      : null;
+    attributes.cropTop = crop?.top ?? 0;
+    attributes.cropRight = crop?.right ?? 0;
+    attributes.cropBottom = crop?.bottom ?? 0;
+    attributes.cropLeft = crop?.left ?? 0;
   }
   return attributes;
 }
@@ -554,6 +617,7 @@ function syncDocumentImageNodeView(
     attributes.lockAspectRatio,
   );
   const position = normalizeDocumentImagePosition(attributes);
+  const crop = normalizeDocumentImageCrop(attributes);
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -563,6 +627,7 @@ function syncDocumentImageNodeView(
     formatImageLayoutNumber(wrapDistance);
   element.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
   syncDocumentImagePosition(element, position);
+  applyDocumentImageCropToElement(element, crop);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -576,6 +641,7 @@ function syncDocumentImageNodeView(
     formatImageLayoutNumber(wrapDistance);
   container.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
   syncDocumentImagePosition(container, position);
+  applyDocumentImageCropToElement(container, crop);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -598,6 +664,30 @@ function imagePositionNumberAttribute(name: string) {
         ? '--work-document-image-horizontal-offset'
         : '--work-document-image-vertical-offset';
       return { [name]: formatted, style: `${variable}:${formatted}mm` };
+    },
+  };
+}
+
+function imageCropNumberAttribute(edge: keyof WorkDocumentImageCrop) {
+  const name = `data-office-image-crop-${edge}`;
+  const key = `crop${edge[0]?.toUpperCase()}${edge.slice(1)}`;
+  return {
+    default: 0,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageCropEdge(element.getAttribute(name)),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = normalizeDocumentImageCropEdge(attributes[key]);
+      const result: Record<string, string> = {};
+      if (value > 0) result[name] = formatImageLayoutNumber(value);
+      if (edge !== 'top') return result;
+      const crop = normalizeDocumentImageCrop({
+        cropTop: attributes.cropTop,
+        cropRight: attributes.cropRight,
+        cropBottom: attributes.cropBottom,
+        cropLeft: attributes.cropLeft,
+      });
+      if (crop) result.style = documentImageCropStyle(crop);
+      return result;
     },
   };
 }
@@ -641,6 +731,72 @@ function syncDocumentImagePosition(
   }
   element.dataset.officeImageHorizontalReference = position.horizontalReference;
   element.dataset.officeImageVerticalReference = position.verticalReference;
+}
+
+export function applyDocumentImageCropToElement(
+  element: HTMLElement,
+  crop: WorkDocumentImageCrop | null,
+): void {
+  for (const edge of ['top', 'right', 'bottom', 'left'] as const) {
+    const datasetKey = `officeImageCrop${edge[0].toUpperCase()}${edge.slice(1)}`;
+    const variable = `--work-document-image-crop-${edge}`;
+    if (!crop || crop[edge] === 0) {
+      delete element.dataset[datasetKey];
+      element.style.removeProperty(variable);
+      continue;
+    }
+    const formatted = formatImageLayoutNumber(crop[edge]);
+    element.dataset[datasetKey] = formatted;
+    element.style.setProperty(variable, `${formatted}%`);
+  }
+  if (!crop) {
+    element.style.removeProperty('--work-document-image-crop-scale-x');
+    element.style.removeProperty('--work-document-image-crop-scale-y');
+    element.style.removeProperty('--work-document-image-crop-translate-x');
+    element.style.removeProperty('--work-document-image-crop-translate-y');
+    return;
+  }
+  for (const [name, value] of documentImageCropStyleEntries(crop)) {
+    element.style.setProperty(name, value);
+  }
+}
+
+function documentImageCropStyle(crop: WorkDocumentImageCrop): string {
+  return documentImageCropStyleEntries(crop)
+    .map(([name, value]) => `${name}:${value}`)
+    .join(';');
+}
+
+function documentImageCropStyleEntries(
+  crop: WorkDocumentImageCrop,
+): Array<readonly [string, string]> {
+  const visibleWidth = 100 - crop.left - crop.right;
+  const visibleHeight = 100 - crop.top - crop.bottom;
+  return [
+    ...(['top', 'right', 'bottom', 'left'] as const).map(
+      (edge) =>
+        [
+          `--work-document-image-crop-${edge}`,
+          `${formatImageLayoutNumber(crop[edge])}%`,
+        ] as const,
+    ),
+    [
+      '--work-document-image-crop-scale-x',
+      formatImageLayoutNumber(100 / visibleWidth),
+    ],
+    [
+      '--work-document-image-crop-scale-y',
+      formatImageLayoutNumber(100 / visibleHeight),
+    ],
+    [
+      '--work-document-image-crop-translate-x',
+      `${formatImageLayoutNumber((-crop.left * 100) / visibleWidth)}%`,
+    ],
+    [
+      '--work-document-image-crop-translate-y',
+      `${formatImageLayoutNumber((-crop.top * 100) / visibleHeight)}%`,
+    ],
+  ];
 }
 
 function setOptionalImageAttribute(

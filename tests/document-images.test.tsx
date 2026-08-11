@@ -113,6 +113,7 @@ test('commits picture size, layout, and alternative text as one undoable update'
         horizontalReference: 'margin',
         verticalReference: 'page',
       },
+      crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
     }),
   ).toBe(true);
 
@@ -131,6 +132,7 @@ test('commits picture size, layout, and alternative text as one undoable update'
       horizontalReference: 'margin',
       verticalReference: 'page',
     },
+    crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
   });
   const container = editor.view.dom.querySelector<HTMLElement>(
     '[data-resize-container][data-node="image"]',
@@ -138,6 +140,14 @@ test('commits picture size, layout, and alternative text as one undoable update'
   expect(container?.dataset.officeImageLockAspectRatio).toBe('false');
   expect(container?.dataset.officeImageHorizontalOffset).toBe('-6.5');
   expect(container?.dataset.officeImageVerticalOffset).toBe('4');
+  expect(container?.dataset.officeImageCropTop).toBe('12.5');
+  expect(container?.dataset.officeImageCropLeft).toBe('10');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-crop-scale-x'),
+  ).toBe('1.18');
+  expect(
+    container?.style.getPropertyValue('--work-document-image-crop-translate-x'),
+  ).toBe('-11.76%');
   expect(
     container?.style.getPropertyValue(
       '--work-document-image-horizontal-offset',
@@ -148,6 +158,10 @@ test('commits picture size, layout, and alternative text as one undoable update'
   );
   expect(editor.getHTML()).toContain(
     '--work-document-image-vertical-offset: 4mm',
+  );
+  expect(editor.getHTML()).toContain('--work-document-image-crop-top: 12.5%');
+  expect(editor.getHTML()).toContain(
+    '--work-document-image-crop-scale-x: 1.18',
   );
   expect(container?.querySelector('img')?.style.width).toBe('240px');
   expect(container?.querySelector('img')?.style.height).toBe('150px');
@@ -213,6 +227,7 @@ test('preserves untouched imported dimensions in picture property changes', () =
     wrapDistance: '请输入 0 到 25 之间的毫米数。',
     horizontalOffset: null,
     verticalOffset: null,
+    crop: null,
   });
 });
 
@@ -253,6 +268,37 @@ test('validates and commits precise floating-image anchor positions', () => {
       ...positioned,
       horizontalOffset: '-600',
     }).horizontalOffset,
+  ).not.toBeNull();
+});
+
+test('validates and commits four-edge image crop geometry', () => {
+  const initial = createDocumentPicturePropertiesDraft({
+    properties: {
+      width: 120,
+      height: 80,
+      lockAspectRatio: true,
+      layout: 'inline',
+      alignment: 'center',
+      wrapDistance: 3,
+      alternativeText: 'Crop image',
+    },
+  });
+  const cropped = {
+    ...initial,
+    cropTop: '12.5',
+    cropRight: '5',
+    cropBottom: '2.25',
+    cropLeft: '10',
+  };
+  expect(documentPicturePropertiesErrors(cropped).crop).toBeNull();
+  expect(documentPicturePropertyChanges(initial, cropped)).toEqual({
+    crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
+  });
+  expect(
+    documentPicturePropertiesErrors({
+      ...cropped,
+      cropRight: '90',
+    }).crop,
   ).not.toBeNull();
 });
 
@@ -365,6 +411,16 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
   fireEvent.click(screen.getByRole('option', { name: '页面' }));
   fireEvent.click(screen.getByRole('combobox', { name: '垂直相对于' }));
   fireEvent.click(screen.getByRole('option', { name: '页边距' }));
+  for (const [name, value] of [
+    ['图片上方裁剪（百分比）', '12.5'],
+    ['图片右侧裁剪（百分比）', '5'],
+    ['图片下方裁剪（百分比）', '2.25'],
+    ['图片左侧裁剪（百分比）', '10'],
+  ] as const) {
+    fireEvent.change(screen.getByRole('textbox', { name }), {
+      target: { value },
+    });
+  }
   fireEvent.change(screen.getByRole('textbox', { name: '图片替代文字' }), {
     target: { value: '季度趋势图' },
   });
@@ -395,6 +451,7 @@ test('offers a contextual picture ribbon with one coherent properties workflow',
       horizontalReference: 'page',
       verticalReference: 'margin',
     },
+    crop: { top: 12.5, right: 5, bottom: 2.25, left: 10 },
   });
   expect(editor.getHTML()).toContain('alt="季度趋势图"');
 
@@ -478,7 +535,14 @@ test('round-trips supported floating image anchors through DOCX', async () => {
     ' data-office-image-horizontal-offset="-12.5"',
     ' data-office-image-vertical-offset="7.25"',
     ' data-office-image-horizontal-reference="page"',
-    ' data-office-image-vertical-reference="margin">',
+    ' data-office-image-vertical-reference="margin"',
+    ' data-office-image-crop-top="12.5"',
+    ' data-office-image-crop-right="5"',
+    ' data-office-image-crop-bottom="2.25"',
+    ' data-office-image-crop-left="10">',
+    `<img src="${pixelPng}" alt="Inline crop" width="90" height="60"`,
+    ' data-office-image-crop-bottom="10"',
+    ' data-office-image-crop-left="20">',
   ].join('');
 
   const blob = await createArtifactBlob(artifact);
@@ -499,6 +563,13 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(documentXml).toMatch(
     /<wp:positionV relativeFrom="margin"><wp:posOffset>261000<\/wp:posOffset>/,
   );
+  expect(documentXml).toMatch(
+    /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
+  );
+  expect(documentXml).toMatch(
+    /<a:srcRect\b(?=[^>]*b="10000")(?=[^>]*l="20000")/,
+  );
+  expect(documentXml).not.toContain('__A3S_IMAGE_CROP_');
 
   const imported = await importOfficeFile(
     new File([blob], 'floating-images.docx', { type: blob.type }),
@@ -534,6 +605,20 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(imported.content.html).toContain(
     'data-office-image-vertical-reference="margin"',
   );
+  expect(imported.content.html).toContain('data-office-image-crop-top="12.5"');
+  expect(imported.content.html).toContain('data-office-image-crop-right="5"');
+  expect(imported.content.html).toContain(
+    'data-office-image-crop-bottom="2.25"',
+  );
+  expect(imported.content.html).toContain('data-office-image-crop-left="10"');
+  expect(imported.content.html).toContain(
+    '--work-document-image-crop-scale-x: 1.18',
+  );
+  const inlineCrop = new DOMParser()
+    .parseFromString(imported.content.html, 'text/html')
+    .querySelector<HTMLImageElement>('img[alt="Inline crop"]');
+  expect(inlineCrop?.dataset.officeImageCropBottom).toBe('10');
+  expect(inlineCrop?.dataset.officeImageCropLeft).toBe('20');
   const importedHtml = new DOMParser().parseFromString(
     imported.content.html,
     'text/html',
@@ -554,6 +639,9 @@ test('round-trips supported floating image anchors through DOCX', async () => {
   expect(regeneratedXml).toContain('<wp:align>right</wp:align>');
   expect(regeneratedXml).toContain(
     '<wp:positionH relativeFrom="page"><wp:posOffset>-450000</wp:posOffset>',
+  );
+  expect(regeneratedXml).toMatch(
+    /<a:srcRect\b(?=[^>]*t="12500")(?=[^>]*r="5000")(?=[^>]*b="2250")(?=[^>]*l="10000")/,
   );
 });
 

@@ -595,6 +595,30 @@
     var(--work-document-image-vertical-offset, 0);
 }
 
+:is(.work-document-preview-page, .work-pdf-export-page.document)
+  img:is(
+    [data-office-image-crop-top],
+    [data-office-image-crop-right],
+    [data-office-image-crop-bottom],
+    [data-office-image-crop-left]
+  ) {
+  clip-path: inset(
+    var(--work-document-image-crop-top, 0)
+      var(--work-document-image-crop-right, 0)
+      var(--work-document-image-crop-bottom, 0)
+      var(--work-document-image-crop-left, 0)
+  );
+  transform: translate(
+      var(--work-document-image-crop-translate-x, 0),
+      var(--work-document-image-crop-translate-y, 0)
+    )
+    scale(
+      var(--work-document-image-crop-scale-x, 1),
+      var(--work-document-image-crop-scale-y, 1)
+    );
+  transform-origin: top left;
+}
+
 :is(.work-document-preview-page, .work-pdf-export-page.document)::after {
   display: block;
   clear: both;

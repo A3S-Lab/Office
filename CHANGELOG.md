@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added editable four-edge Word image cropping with percentage validation,
+  matching edit/preview presentation, and exact DrawingML `a:srcRect`
+  preservation for inline and floating pictures. Export patches the owning
+  picture deterministically without leaking internal markers into the DOCX.
 - Preserved and authored precise Word floating-image anchors with signed
   horizontal and vertical offsets relative to the column, paragraph, margin,
   or page. Picture Properties validates the complete placement atomically,

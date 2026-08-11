@@ -123,7 +123,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.images',
             'Images',
-            'Inline images and supported square or top-and-bottom floating images remain embedded with editable size, alternative text, alignment, wrap distance, and signed horizontal or vertical offsets relative to the column, paragraph, margin, or page. Aligned and precise DOCX anchors retain their distinct position semantics. Crop, contour wrapping, layering, and unsupported drawing types may be normalized.',
+            'Inline images and supported square or top-and-bottom floating images remain embedded with editable size, alternative text, alignment, wrap distance, signed horizontal or vertical offsets relative to the column, paragraph, margin, or page, and four-edge percentage cropping. Aligned and precise DOCX anchors retain their distinct position semantics, while inline and floating crop geometry round-trips as DrawingML source rectangles. Contour wrapping, layering, and unsupported drawing types may be normalized.',
           ),
         );
       }

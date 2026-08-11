@@ -1,12 +1,15 @@
 import type { IFloating, ParagraphChild } from 'docx';
 import {
+  documentImageCropFromElement,
   documentImageLayoutFromElement,
   documentImagePositionFromElement,
 } from './work-document-image-layout';
+import type { DocxImageCropPatchCollector } from './work-docx-image-crop';
 
 export async function imageToDocx(
   element: HTMLImageElement,
   docx: typeof import('docx'),
+  cropPatches?: DocxImageCropPatchCollector,
 ): Promise<ParagraphChild> {
   const source = element.getAttribute('src');
   const alt =
@@ -26,6 +29,9 @@ export async function imageToDocx(
         : await imageDimensions(blob);
     const maximumWidth = 520;
     const scale = Math.min(1, maximumWidth / Math.max(1, dimensions.width));
+    const cropMarker = cropPatches?.marker(
+      documentImageCropFromElement(element),
+    );
     return new docx.ImageRun({
       type,
       data: await blob.arrayBuffer(),
@@ -33,7 +39,11 @@ export async function imageToDocx(
         width: Math.max(24, Math.round(dimensions.width * scale)),
         height: Math.max(24, Math.round(dimensions.height * scale)),
       },
-      altText: { name: alt, description: alt, title: alt },
+      altText: {
+        name: `${alt}${cropMarker ?? ''}`,
+        description: alt,
+        title: alt,
+      },
       floating: documentImageFloatingOptions(element, docx),
     });
   } catch {

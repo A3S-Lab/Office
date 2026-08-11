@@ -28,6 +28,10 @@ export interface DocumentPicturePropertiesDraft {
   verticalOffset: string;
   horizontalReference: WorkDocumentImageHorizontalReference;
   verticalReference: WorkDocumentImageVerticalReference;
+  cropTop: string;
+  cropRight: string;
+  cropBottom: string;
+  cropLeft: string;
 }
 
 export interface DocumentPicturePropertiesErrors {
@@ -36,6 +40,7 @@ export interface DocumentPicturePropertiesErrors {
   wrapDistance: string | null;
   horizontalOffset: string | null;
   verticalOffset: string | null;
+  crop: string | null;
 }
 
 const FALLBACK_IMAGE_WIDTH_PIXELS = 320;
@@ -78,6 +83,10 @@ export function createDocumentPicturePropertiesDraft(
       source.properties.position?.horizontalReference ?? 'column',
     verticalReference:
       source.properties.position?.verticalReference ?? 'paragraph',
+    cropTop: formatNumber(source.properties.crop?.top ?? 0),
+    cropRight: formatNumber(source.properties.crop?.right ?? 0),
+    cropBottom: formatNumber(source.properties.crop?.bottom ?? 0),
+    cropLeft: formatNumber(source.properties.crop?.left ?? 0),
   };
 }
 
@@ -142,6 +151,7 @@ export function documentPicturePropertiesErrors(
       validSignedNumber(draft.verticalOffset, MAXIMUM_IMAGE_OFFSET_MILLIMETERS)
         ? null
         : '请输入 -558.7 到 558.7 之间的毫米数。',
+    crop: imageCropError(draft),
   };
 }
 
@@ -153,7 +163,8 @@ export function hasDocumentPicturePropertiesErrors(
       errors.height ||
       errors.wrapDistance ||
       errors.horizontalOffset ||
-      errors.verticalOffset,
+      errors.verticalOffset ||
+      errors.crop,
   );
 }
 
@@ -206,6 +217,20 @@ export function documentPicturePropertyChanges(
         }
       : null;
   }
+  if (
+    !sameDraftNumber(initial.cropTop, current.cropTop) ||
+    !sameDraftNumber(initial.cropRight, current.cropRight) ||
+    !sameDraftNumber(initial.cropBottom, current.cropBottom) ||
+    !sameDraftNumber(initial.cropLeft, current.cropLeft)
+  ) {
+    const crop = {
+      top: Number(current.cropTop),
+      right: Number(current.cropRight),
+      bottom: Number(current.cropBottom),
+      left: Number(current.cropLeft),
+    };
+    changes.crop = Object.values(crop).some((edge) => edge > 0) ? crop : null;
+  }
   return Object.keys(changes).length ? changes : null;
 }
 
@@ -242,6 +267,22 @@ function validSignedNumber(value: string, maximumMagnitude: number): boolean {
   if (!value.trim()) return false;
   const number = Number(value);
   return Number.isFinite(number) && Math.abs(number) <= maximumMagnitude;
+}
+
+function imageCropError(draft: DocumentPicturePropertiesDraft): string | null {
+  const edges = [
+    draft.cropTop,
+    draft.cropRight,
+    draft.cropBottom,
+    draft.cropLeft,
+  ].map(numericDraft);
+  if (edges.some((edge) => edge === null || edge > 99.99)) {
+    return '请输入 0 到 99.99 之间的裁剪百分比。';
+  }
+  const [top = 0, right = 0, bottom = 0, left = 0] = edges as number[];
+  return left + right < 100 && top + bottom < 100
+    ? null
+    : '相对两边的裁剪量之和必须小于 100%。';
 }
 
 function numericDraft(value: string): number | null {

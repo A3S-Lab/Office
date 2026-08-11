@@ -911,6 +911,39 @@
     var(--work-document-image-vertical-offset, 0);
 }
 
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-crop-top],
+    [data-office-image-crop-right],
+    [data-office-image-crop-bottom],
+    [data-office-image-crop-left]
+  )
+  [data-resize-wrapper] {
+  overflow: hidden;
+}
+
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-crop-top],
+    [data-office-image-crop-right],
+    [data-office-image-crop-bottom],
+    [data-office-image-crop-left]
+  )
+  img {
+  max-width: none;
+  transform: translate(
+      var(--work-document-image-crop-translate-x, 0),
+      var(--work-document-image-crop-translate-y, 0)
+    )
+    scale(
+      var(--work-document-image-crop-scale-x, 1),
+      var(--work-document-image-crop-scale-y, 1)
+    );
+  transform-origin: top left;
+}
+
 .work-document-page .tiptap .ProseMirror::after {
   display: block;
   clear: both;

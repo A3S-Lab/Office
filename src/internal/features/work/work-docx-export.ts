@@ -48,6 +48,10 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
+import {
+  DocxImageCropPatchCollector,
+  patchDocxImageCrops,
+} from './work-docx-image-crop';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   DocxThemePatchCollector,
@@ -80,6 +84,7 @@ interface DocxNoteContext {
   numberingRestartRules: Array<Map<number, number>>;
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   themePatches: DocxThemePatchCollector;
+  imageCropPatches: DocxImageCropPatchCollector;
 }
 
 interface DocxTextRevision {
@@ -113,6 +118,7 @@ export async function createDocxBlob(
     numberingRestartRules: [],
     numberingRestartRulesByIdentity: new Map(),
     themePatches: new DocxThemePatchCollector(JSON.stringify(content)),
+    imageCropPatches: new DocxImageCropPatchCollector(),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -189,7 +195,11 @@ export async function createDocxBlob(
     layoutPatched,
     noteContext.themePatches.patches,
   );
-  const patched = await patchDocxPageColor(themePatched, content.pageColor);
+  const imageCropPatched = await patchDocxImageCrops(
+    themePatched,
+    noteContext.imageCropPatches.patches,
+  );
+  const patched = await patchDocxPageColor(imageCropPatched, content.pageColor);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -371,7 +381,13 @@ async function blockToFileChildren(
   if (tag === 'img') {
     return [
       new docx.Paragraph({
-        children: [await imageToDocx(element as HTMLImageElement, docx)],
+        children: [
+          await imageToDocx(
+            element as HTMLImageElement,
+            docx,
+            noteContext.imageCropPatches,
+          ),
+        ],
       }),
     ];
   }
@@ -969,7 +985,13 @@ async function inlineRuns(
       return [new docx.TextRun({ ...style, break: 1 })];
     }
     if (tag === 'img')
-      return [await imageToDocx(node as HTMLImageElement, docx)];
+      return [
+        await imageToDocx(
+          node as HTMLImageElement,
+          docx,
+          noteContext.imageCropPatches,
+        ),
+      ];
     const children: ParagraphChild[] = [];
     for (const child of node.childNodes)
       children.push(...(await visit(child, style, change)));
