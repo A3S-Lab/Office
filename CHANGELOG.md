@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Preserved semantic Word theme color references for run text, run shading,
+  table-cell fills, and independent cell borders, including tint and shade.
+  Untouched formatting now writes the original theme attributes with a correct
+  RGB fallback, while explicit color edits discard stale theme semantics.
 - Added bounded PDFium-native text runs with stable indices, character and
   UTF-8/UTF-16 ranges, exact PDF-space bounds, deterministic validation, and an
   independent hard run limit to the native PDF text-layer receipt.

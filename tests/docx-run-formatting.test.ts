@@ -1,9 +1,13 @@
 import { describe, expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
+import JSZip from 'jszip';
+import { createArtifact, createArtifactBlob } from '../src/core';
 import {
   applyImportedDocxRunFormattingMarkers,
   markDocxRunFormatting,
 } from '../src/internal/features/work/work-docx-run-formatting-import';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -114,14 +118,15 @@ describe('DOCX run formatting', () => {
     expect(html.body.textContent).not.toContain('__A3S_');
   });
 
-  test('resolves theme fonts and colors used by Word defaults', () => {
+  test('preserves semantic run theme colors and drops them after an edit', async () => {
     const document = wordXml('<w:p><w:r><w:t>Theme text</w:t></w:r></w:p>');
     const styles = stylesXml(`
       <w:docDefaults>
         <w:rPrDefault>
           <w:rPr>
             <w:rFonts w:asciiTheme="minorHAnsi" w:hAnsiTheme="minorHAnsi"/>
-            <w:color w:themeColor="accent1"/>
+            <w:color w:val="4472C4" w:themeColor="accent1" w:themeTint="80"/>
+            <w:shd w:val="clear" w:fill="ED7D31" w:themeFill="accent2" w:themeFillShade="BF"/>
           </w:rPr>
         </w:rPrDefault>
       </w:docDefaults>
@@ -130,6 +135,7 @@ describe('DOCX run formatting', () => {
       <a:themeElements>
         <a:clrScheme name="Office">
           <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+          <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
         </a:clrScheme>
         <a:fontScheme name="Office">
           <a:majorFont><a:latin typeface="Aptos Display"/></a:majorFont>
@@ -142,8 +148,61 @@ describe('DOCX run formatting', () => {
 
     expect(markers.runs[0]?.formatting).toMatchObject({
       fontFamily: 'Aptos',
-      color: '#4472c4',
+      color: '#a2b9e2',
+      backgroundColor: '#b25e25',
+      themeColor: {
+        theme: 'accent1',
+        resolved: '#a2b9e2',
+        tint: '80',
+      },
+      themeFill: {
+        theme: 'accent2',
+        resolved: '#b25e25',
+        shade: 'BF',
+      },
     });
+    const marker = markers.runs[0];
+    if (!marker) throw new Error('Expected a run marker.');
+    const html = new DOMParser().parseFromString(
+      `<p>${marker.startMarker}Theme text${marker.endMarker}</p>`,
+      'text/html',
+    );
+    applyImportedDocxRunFormattingMarkers(html, markers);
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html.body.innerHTML,
+    });
+    html.body.innerHTML = editor.getHTML();
+    editor.destroy();
+    expect(html.querySelector('span')?.dataset.officeThemeColor).toContain(
+      'accent1',
+    );
+    expect(html.body.innerHTML).toContain('data-office-theme-fill');
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = html.body.innerHTML;
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).toMatch(
+      /<w:color\b[^>]*w:val="A2B9E2"[^>]*w:themeColor="accent1"[^>]*w:themeTint="80"/,
+    );
+    expect(xml).toMatch(
+      /<w:shd\b[^>]*w:fill="B25E25"[^>]*w:themeFill="accent2"[^>]*w:themeFillShade="BF"/,
+    );
+
+    const span = html.querySelector('span');
+    if (!span) throw new Error('Expected a themed span.');
+    span.style.color = '#123456';
+    artifact.content.html = html.body.innerHTML;
+    const edited = await createArtifactBlob(artifact);
+    const editedArchive = await JSZip.loadAsync(await edited.arrayBuffer());
+    const editedXml =
+      (await editedArchive.file('word/document.xml')?.async('text')) ?? '';
+    expect(editedXml).toContain('<w:color w:val="123456"/>');
+    expect(editedXml).not.toMatch(/<w:color\b[^>]*w:themeColor=/);
   });
 
   test('selects the Word font slot that matches each run script', () => {

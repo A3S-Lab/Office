@@ -26,6 +26,10 @@ import {
   type DocumentTableCellMarginOverrides,
   type DocumentTableCellMarginSide,
 } from './work-document-table-geometry';
+import {
+  type DocxThemeColorReference,
+  serializeDocxThemeReference,
+} from './work-docx-theme-reference';
 
 export type ImportedDocxTableCellVerticalAlign = 'top' | 'middle' | 'bottom';
 export type ImportedDocxTableCellBorderStyle =
@@ -38,6 +42,7 @@ export type ImportedDocxTableCellBorderStyle =
 export interface ImportedDocxTableCellMarker {
   marker: string;
   backgroundColor?: string;
+  themeFill?: DocxThemeColorReference;
   verticalAlign?: ImportedDocxTableCellVerticalAlign;
   borders?: ImportedDocxTableCellBorders;
   margins?: DocumentTableCellMarginOverrides;
@@ -51,6 +56,12 @@ interface ImportedDocxCellBorder {
   color: string;
   style: ImportedDocxTableCellBorderStyle;
   width: number;
+  theme?: DocxThemeColorReference;
+}
+
+interface ImportedDocxCellColor {
+  color: string;
+  theme?: DocxThemeColorReference;
 }
 
 type ImportedDocxTableCellBorders = Partial<
@@ -92,17 +103,18 @@ export function markDocxTableCells(
       ...(properties ? [{ cellProperties: properties }] : []),
     ];
     const borders = importedTableCellBorders(cell, layers, theme);
-    const backgroundColor = importedTableCellBackgroundColor(layers, theme);
+    const background = importedTableCellBackgroundColor(layers, theme);
     const verticalAlign = importedTableCellVerticalAlign(layers);
     const margins = importedTableCellMargins(layers);
-    if (!backgroundColor && !verticalAlign && !borders && !margins) continue;
+    if (!background && !verticalAlign && !borders && !margins) continue;
     const paragraph = firstTableCellParagraph(document, cell);
     if (!paragraph) continue;
     const marker = `__A3S_WORK_TABLE_CELL_${cells.length + 1}__`;
     insertCellMarker(document, paragraph, marker);
     cells.push({
       marker,
-      ...(backgroundColor ? { backgroundColor } : {}),
+      ...(background ? { backgroundColor: background.color } : {}),
+      ...(background?.theme ? { themeFill: background.theme } : {}),
       ...(verticalAlign ? { verticalAlign } : {}),
       ...(borders ? { borders } : {}),
       ...(margins ? { margins } : {}),
@@ -144,6 +156,8 @@ function applyCellFormat(
     cell.dataset.officeCellFill = format.backgroundColor;
     cell.style.backgroundColor = format.backgroundColor;
   }
+  const themeFill = serializeDocxThemeReference(format.themeFill ?? null);
+  if (themeFill) cell.dataset.officeCellThemeFill = themeFill;
   if (format.verticalAlign) {
     cell.dataset.officeCellVerticalAlign = format.verticalAlign;
     cell.style.verticalAlign = format.verticalAlign;
@@ -157,6 +171,9 @@ function applyCellFormat(
     for (const edge of TABLE_BORDER_EDGES) {
       const border = format.borders[edge];
       if (border) borders[edge] = { ...border };
+      const theme = serializeDocxThemeReference(border?.theme ?? null);
+      if (theme)
+        cell.dataset[`officeCellBorderTheme${capitalize(edge)}`] = theme;
     }
     const rendered = renderDocumentTableBorders(borders);
     for (const [name, value] of Object.entries(rendered)) {
@@ -358,14 +375,25 @@ function parseBorder(
     color,
     style,
     width: Math.max(0.5, Math.min(6, Math.round(width * 2) / 2)),
+    ...(themed
+      ? {
+          theme: themeReference(
+            edge,
+            'themeColor',
+            'themeTint',
+            'themeShade',
+            color,
+          ),
+        }
+      : {}),
   };
 }
 
 function importedTableCellBackgroundColor(
   layers: readonly DocxTableStyleLayer[],
   theme: DocxThemeResolver,
-): string | null {
-  let color: string | null = null;
+): ImportedDocxCellColor | null {
+  let color: ImportedDocxCellColor | null = null;
   for (const layer of layers) {
     const tableShading = layer.tableProperties
       ? directChild(layer.tableProperties, 'shd')
@@ -382,14 +410,53 @@ function importedTableCellBackgroundColor(
 function tableCellBackgroundColor(
   shading: Element,
   theme: DocxThemeResolver,
-): string | null {
+): ImportedDocxCellColor | null {
   const themed = docxThemeColor(
     theme,
     attribute(shading, 'themeFill'),
     attribute(shading, 'themeFillTint'),
     attribute(shading, 'themeFillShade'),
   );
-  return themed ? `#${themed}` : ooxmlColor(attribute(shading, 'fill'));
+  if (themed) {
+    const color = `#${themed}`;
+    return {
+      color,
+      theme: themeReference(
+        shading,
+        'themeFill',
+        'themeFillTint',
+        'themeFillShade',
+        color,
+      ),
+    };
+  }
+  const color = ooxmlColor(attribute(shading, 'fill'));
+  return color ? { color } : null;
+}
+
+function themeReference(
+  element: Element,
+  themeName: string,
+  tintName: string,
+  shadeName: string,
+  resolved: string,
+): DocxThemeColorReference {
+  const theme = attribute(element, themeName)?.trim() ?? '';
+  const tint = normalizedByteHex(attribute(element, tintName));
+  const shade = normalizedByteHex(attribute(element, shadeName));
+  return {
+    theme,
+    resolved,
+    ...(tint ? { tint } : {}),
+    ...(shade ? { shade } : {}),
+  };
+}
+
+function normalizedByteHex(value: string | null): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && /^[0-9A-F]{2}$/.test(normalized)
+    ? normalized
+    : undefined;
 }
 
 function importedTableCellVerticalAlign(
@@ -484,4 +551,8 @@ function textNodes(root: ParentNode): Text[] {
   if (!walker) return nodes;
   while (walker.nextNode()) nodes.push(walker.currentNode as Text);
   return nodes;
+}
+
+function capitalize(value: string): string {
+  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 }

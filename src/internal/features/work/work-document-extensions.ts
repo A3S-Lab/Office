@@ -1,6 +1,5 @@
 import type { Extensions } from '@tiptap/core';
 import Color from '@tiptap/extension-color';
-import Highlight from '@tiptap/extension-highlight';
 import { TableKit } from '@tiptap/extension-table';
 import TextAlign from '@tiptap/extension-text-align';
 import FontSize from '@tiptap/extension-text-style/font-size';
@@ -42,6 +41,7 @@ import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
 import {
   DocumentFontFamily,
+  DocumentHighlight,
   DocumentTextStyle,
 } from './work-document-word-line-metrics';
 import { DocumentTableCommands } from './work-document-table-commands';
@@ -142,7 +142,7 @@ export function createWorkDocumentExtensions(
     DocumentFontFamily,
     FontSize,
     Color,
-    Highlight.configure({ multicolor: true }),
+    DocumentHighlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     DocumentParagraphFormatting,
     DocumentParagraphTabStops,

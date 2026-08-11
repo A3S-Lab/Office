@@ -678,15 +678,16 @@ paragraph alignment, direction, indents, spacing and line rules, pagination
 rules, and tab stops enter the marker pipeline after paragraph styles and before
 direct paragraph, character-style, or run formatting. Direct table and cell
 properties remain higher-priority layers for cell presentation. Theme-derived
-conditional presentation is materialized as stable RGB for editing, preview,
-and regenerated DOCX output.
+presentation resolves to stable RGB for editing and preview, while untouched
+run colors, run shading, cell fills, and per-edge borders retain semantic theme
+references on regenerated DOCX output. Explicit color edits export direct RGB.
 The real styled-table fixture exercises a centered 62.5% table, table margins,
 a first-cell margin override, and matching edit/preview geometry through A3S
 Test.
 Command availability comes from the ProseMirror table state, so actions that
-cannot apply to the current selection remain disabled. Loss-preserving semantic
-theme references, less-common conditional paragraph properties outside the
-supported layout set, percentage-width column authoring, nested-table editing,
+cannot apply to the current selection remain disabled. Less-common conditional
+paragraph properties outside the supported layout set, percentage-width column
+authoring, nested-table editing,
 and complex merged-cell conditional flow remain explicit fidelity gaps.
 
 Paragraph tab stops are typed node attributes with normalized positions,

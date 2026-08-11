@@ -288,8 +288,10 @@ preview geometry with clean browser diagnostics. Table-level outer and inside
 DOCX borders resolve to cell edges on import without flattening mixed styles.
 Direct table and cell theme colors now resolve through the package theme,
 including `themeTint`, `themeShade`, `themeFillTint`, and `themeFillShade`.
-The resolved colors remain identical in edit and preview and export as stable
-RGB values, instead of falling back to stale OOXML color attributes.
+The resolved colors remain identical in edit and preview. Untouched run text,
+run shading, cell fills, and independent cell borders retain their semantic
+theme references, tint, and shade on export with the resolved RGB as a valid
+fallback; an explicit color edit exports direct RGB and clears stale semantics.
 DOCX table styles now resolve the default or referenced table style through a
 bounded, cycle-safe `basedOn` chain. `tblLook` flags or bitmasks, row and column
 band sizes, grid spans, and row grid offsets select whole-table, banded row or
@@ -313,9 +315,9 @@ Desktop insertion keeps an 8 × 10 keyboard matrix without duplicate cell
 semantics, while phone insertion uses focused row and column controls with
 44 px touch targets. A deterministic phone workflow now proves 3 × 3 insertion,
 row extension, compact-ribbon deletion, and editor-focus recovery.
-Loss-preserving semantic theme references, percentage-width column authoring,
-nested tables, and more complex merged-cell multi-page row cases remain part
-of this priority rather than being treated as complete.
+Percentage-width column authoring, nested tables, and more complex merged-cell
+multi-page row cases remain part of this priority rather than being treated as
+complete.
 
 Imported Word list identities now survive the DOCX-to-controlled-HTML boundary
 as explicit numbering, abstract-numbering, and level metadata. Export reuses a

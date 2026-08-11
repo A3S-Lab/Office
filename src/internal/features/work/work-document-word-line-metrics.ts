@@ -1,5 +1,10 @@
 import FontFamily from '@tiptap/extension-text-style/font-family';
 import { TextStyle } from '@tiptap/extension-text-style';
+import Highlight from '@tiptap/extension-highlight';
+import {
+  parseDocxThemeReference,
+  serializeDocxThemeReference,
+} from './work-docx-theme-reference';
 
 export const DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT = 1.15;
 
@@ -25,6 +30,7 @@ declare module '@tiptap/extension-text-style' {
   interface TextStyleAttributes {
     wordLineHeightFactor?: number | null;
     wordSnapToGrid?: boolean | null;
+    themeColor?: string | null;
   }
 }
 
@@ -82,7 +88,24 @@ export const DocumentTextStyle = TextStyle.extend({
             : { 'data-office-word-snap-to-grid': String(value) };
         },
       },
+      themeColor: themeReferenceAttribute('officeThemeColor'),
     };
+  },
+});
+
+export const DocumentHighlight = Highlight.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      themeFill: themeReferenceAttribute('officeThemeFill'),
+    };
+  },
+  parseHTML() {
+    return [
+      ...(this.parent?.() ?? []),
+      { tag: 'span[data-office-theme-fill]' },
+      { tag: 'span[style*="background-color"]' },
+    ];
   },
 });
 
@@ -129,4 +152,34 @@ function normalizedBoolean(value: unknown): boolean | null {
   if (value === true || value === 'true' || value === '1') return true;
   if (value === false || value === 'false' || value === '0') return false;
   return null;
+}
+
+function themeReferenceAttribute(datasetKey: string) {
+  return {
+    default: null,
+    parseHTML: (element: HTMLElement) =>
+      serializeDocxThemeReference(
+        parseDocxThemeReference(element.dataset[datasetKey]),
+      ) ?? null,
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const value = serializeDocxThemeReference(
+        parseDocxThemeReference(
+          typeof attributes[
+            datasetKey === 'officeThemeColor' ? 'themeColor' : 'themeFill'
+          ] === 'string'
+            ? String(
+                attributes[
+                  datasetKey === 'officeThemeColor' ? 'themeColor' : 'themeFill'
+                ],
+              )
+            : null,
+        ),
+      );
+      return value ? { [`data-${toKebabCase(datasetKey)}`]: value } : {};
+    },
+  };
+}
+
+function toKebabCase(value: string): string {
+  return value.replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`);
 }

@@ -49,6 +49,11 @@ import {
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
+import {
+  DocxThemePatchCollector,
+  parseDocxThemeReference,
+  patchDocxThemeReferences,
+} from './work-docx-theme-reference';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
 import { documentSections } from './work-document-section';
 import type {
@@ -74,6 +79,7 @@ interface DocxNoteContext {
   >;
   numberingRestartRules: Array<Map<number, number>>;
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
+  themePatches: DocxThemePatchCollector;
 }
 
 interface DocxTextRevision {
@@ -106,6 +112,7 @@ export async function createDocxBlob(
     numberingLevels: new Map(),
     numberingRestartRules: [],
     numberingRestartRulesByIdentity: new Map(),
+    themePatches: new DocxThemePatchCollector(content.html),
   };
   const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
   const sections: ISectionOptions[] = [];
@@ -178,7 +185,11 @@ export async function createDocxBlob(
     bibliographyPatched,
     sourceSections,
   );
-  const patched = await patchDocxPageColor(layoutPatched, content.pageColor);
+  const themePatched = await patchDocxThemeReferences(
+    layoutPatched,
+    noteContext.themePatches.patches,
+  );
+  const patched = await patchDocxPageColor(themePatched, content.pageColor);
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
@@ -923,6 +934,20 @@ async function inlineRuns(
       : null;
     const backgroundColor = cssColorToHex(node.style.backgroundColor);
     const direction = domDirection(node);
+    const resolvedColor = cssColorToHex(node.style.color) ?? inherited.color;
+    const themeColorMarker = noteContext.themePatches.marker(
+      'color',
+      parseDocxThemeReference(node.dataset.officeThemeColor),
+      resolvedColor ? `#${resolvedColor}` : null,
+    );
+    const resolvedShading = backgroundColor
+      ? { fill: backgroundColor }
+      : inherited.shading;
+    const themeFillMarker = noteContext.themePatches.marker(
+      'fill',
+      parseDocxThemeReference(node.dataset.officeThemeFill),
+      resolvedShading?.fill ? `#${resolvedShading.fill}` : null,
+    );
     const style: IRunOptions = {
       ...inherited,
       bold: inherited.bold || tag === 'strong' || tag === 'b',
@@ -931,10 +956,10 @@ async function inlineRuns(
       strike: inherited.strike || tag === 's' || tag === 'strike',
       subScript: inherited.subScript || tag === 'sub',
       superScript: inherited.superScript || tag === 'sup',
-      color: cssColorToHex(node.style.color) ?? inherited.color,
+      color: themeColorMarker ?? resolvedColor,
       font: cssFontFamily(node.style.fontFamily) ?? inherited.font,
       size: cssFontSize(node.style.fontSize) ?? inherited.size,
-      shading: backgroundColor ? { fill: backgroundColor } : inherited.shading,
+      shading: themeFillMarker ? { fill: themeFillMarker } : resolvedShading,
       snapToGrid:
         dataBoolean(node.dataset.officeWordSnapToGrid) ?? inherited.snapToGrid,
       rightToLeft:
@@ -1157,7 +1182,7 @@ async function tableToDocx(
           children: children.length ? children : [new docx.Paragraph('')],
           columnSpan: cell.colSpan > 1 ? cell.colSpan : undefined,
           rowSpan: cell.rowSpan > 1 ? cell.rowSpan : undefined,
-          ...documentTableCellDocxOptions(cell, docx),
+          ...documentTableCellDocxOptions(cell, docx, noteContext.themePatches),
           ...documentTableCellSizingDocxOptions(cell, docx),
         }),
       );

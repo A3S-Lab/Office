@@ -8,6 +8,10 @@ import {
   normalizeTableColor,
 } from './work-document-table-cell-formatting';
 import { documentTableCellMarginOverridesFromElement } from './work-document-table-geometry';
+import {
+  type DocxThemePatchCollector,
+  parseDocxThemeReference,
+} from './work-docx-theme-reference';
 
 type TableCellPresentationOptions = Partial<
   Pick<ITableCellOptions, 'borders' | 'margins' | 'shading' | 'verticalAlign'>
@@ -18,6 +22,7 @@ const TWIPS_PER_PIXEL = 1440 / 96;
 export function documentTableCellDocxOptions(
   cell: HTMLTableCellElement,
   docx: typeof import('docx'),
+  themePatches?: DocxThemePatchCollector,
 ): TableCellPresentationOptions {
   const backgroundColor = normalizeTableColor(
     cell.dataset.officeCellFill || cell.style.backgroundColor,
@@ -45,12 +50,17 @@ export function documentTableCellDocxOptions(
     ? documentTableBordersFromElement(cell, fallbackBorder)
     : null;
   const margins = documentTableCellMarginOverridesFromElement(cell);
+  const fillMarker = themePatches?.marker(
+    'fill',
+    parseDocxThemeReference(cell.dataset.officeCellThemeFill),
+    backgroundColor,
+  );
 
   return {
     ...(backgroundColor
       ? {
           shading: {
-            fill: docxColor(backgroundColor),
+            fill: fillMarker ?? docxColor(backgroundColor),
             type: docx.ShadingType.CLEAR,
           },
         }
@@ -68,10 +78,34 @@ export function documentTableCellDocxOptions(
     ...(borders
       ? {
           borders: {
-            top: documentTableCellDocxBorder(borders.top, docx),
-            right: documentTableCellDocxBorder(borders.right, docx),
-            bottom: documentTableCellDocxBorder(borders.bottom, docx),
-            left: documentTableCellDocxBorder(borders.left, docx),
+            top: documentTableCellDocxBorder(
+              borders.top,
+              'top',
+              cell,
+              docx,
+              themePatches,
+            ),
+            right: documentTableCellDocxBorder(
+              borders.right,
+              'right',
+              cell,
+              docx,
+              themePatches,
+            ),
+            bottom: documentTableCellDocxBorder(
+              borders.bottom,
+              'bottom',
+              cell,
+              docx,
+              themePatches,
+            ),
+            left: documentTableCellDocxBorder(
+              borders.left,
+              'left',
+              cell,
+              docx,
+              themePatches,
+            ),
           },
         }
       : {}),
@@ -94,17 +128,31 @@ function pixelsToTwips(pixels: number): number {
 
 function documentTableCellDocxBorder(
   border: DocumentTableBorder,
+  edge: 'top' | 'right' | 'bottom' | 'left',
+  cell: HTMLTableCellElement,
   docx: typeof import('docx'),
+  themePatches?: DocxThemePatchCollector,
 ) {
+  const marker = themePatches?.marker(
+    'border',
+    parseDocxThemeReference(
+      cell.dataset[`officeCellBorderTheme${capitalize(edge)}`],
+    ),
+    border.color,
+  );
   return {
     style: docxBorderStyle(border.style, docx),
     ...(border.style === 'none' || border.width === 0
       ? {}
       : {
-          color: docxColor(border.color),
+          color: marker ?? docxColor(border.color),
           size: Math.max(1, Math.round(border.width * 6)),
         }),
   };
+}
+
+function capitalize(value: string): string {
+  return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 }
 
 function hasDocumentTableBorderPresentation(

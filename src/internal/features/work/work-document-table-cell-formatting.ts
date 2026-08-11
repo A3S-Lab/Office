@@ -28,6 +28,10 @@ import {
   renderDocumentTableCellMarginOverrides,
   type DocumentTableCellMarginOverrides,
 } from './work-document-table-geometry';
+import {
+  parseDocxThemeReference,
+  serializeDocxThemeReference,
+} from './work-docx-theme-reference';
 
 export {
   documentTableBordersFromElement,
@@ -268,6 +272,25 @@ export function activeDocumentTableStyle(
 
 function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
   return {
+    themeFill: {
+      default: null,
+      parseHTML: (element: HTMLElement) =>
+        serializeDocxThemeReference(
+          parseDocxThemeReference(element.dataset.officeCellThemeFill),
+        ) ?? null,
+      renderHTML: (attributes: Record<string, unknown>) => {
+        const value = serializeDocxThemeReference(
+          parseDocxThemeReference(String(attributes.themeFill ?? '')),
+        );
+        return value ? { 'data-office-cell-theme-fill': value } : {};
+      },
+    },
+    borderThemes: {
+      default: null,
+      parseHTML: (element: HTMLElement) => serializedCellBorderThemes(element),
+      renderHTML: (attributes: Record<string, unknown>) =>
+        renderedCellBorderThemes(attributes.borderThemes),
+    },
     backgroundColor: {
       default: defaults.backgroundColor,
       parseHTML: (element: HTMLElement) =>
@@ -347,6 +370,36 @@ function documentTableCellAttributes(defaults: DocumentTableCellFormat) {
         renderDocumentTableCellMarginOverrides(attributes.margins),
     },
   };
+}
+
+function serializedCellBorderThemes(element: HTMLElement): string | null {
+  const themes: Record<string, unknown> = {};
+  for (const edge of ['Top', 'Right', 'Bottom', 'Left'] as const) {
+    const reference = parseDocxThemeReference(
+      element.dataset[`officeCellBorderTheme${edge}`],
+    );
+    if (reference) themes[edge.toLowerCase()] = reference;
+  }
+  return Object.keys(themes).length ? JSON.stringify(themes) : null;
+}
+
+function renderedCellBorderThemes(value: unknown): Record<string, string> {
+  if (typeof value !== 'string' || !value) return {};
+  try {
+    const themes = JSON.parse(value) as Record<string, unknown>;
+    const rendered: Record<string, string> = {};
+    for (const edge of ['top', 'right', 'bottom', 'left'] as const) {
+      const reference = serializeDocxThemeReference(
+        parseDocxThemeReference(JSON.stringify(themes[edge] ?? null)),
+      );
+      if (reference) {
+        rendered[`data-office-cell-border-theme-${edge}`] = reference;
+      }
+    }
+    return rendered;
+  } catch {
+    return {};
+  }
 }
 
 function setSelectedCellFormat(

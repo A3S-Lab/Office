@@ -1,4 +1,5 @@
 import { describe, expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
 import JSZip from 'jszip';
 import { createArtifact, createArtifactBlob } from '../src/core';
 import {
@@ -7,6 +8,7 @@ import {
 } from '../src/internal/features/work/work-docx-table-cell-import';
 import { prepareDocxImport } from '../src/internal/features/work/work-docx-import';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -70,7 +72,6 @@ describe('DOCX table cell borders', () => {
       'text/html',
     );
     applyImportedDocxTableCellMarkers(html, markers);
-
     const cells = Array.from(html.querySelectorAll<HTMLTableCellElement>('td'));
     expect(cells[0]?.dataset).toMatchObject({
       officeCellBorderTopStyle: 'double',
@@ -91,7 +92,7 @@ describe('DOCX table cell borders', () => {
     expect(html.body.textContent).not.toContain('__A3S_');
   });
 
-  test('resolves and exports theme table presentation as stable RGB', async () => {
+  test('preserves semantic theme table presentation until explicitly edited', async () => {
     const document = parseXml(`
       <w:document xmlns:w="${WORD_NAMESPACE}">
         <w:body>
@@ -139,11 +140,36 @@ describe('DOCX table cell borders', () => {
       {
         marker: '__A3S_WORK_TABLE_CELL_1__',
         backgroundColor: '#f8cbad',
+        themeFill: {
+          theme: 'accent2',
+          resolved: '#f8cbad',
+          tint: '99',
+        },
         borders: {
-          top: { color: '#a2b9e2', style: 'solid', width: 1.5 },
-          right: { color: '#335593', style: 'double', width: 2 },
-          bottom: { color: '#ed7d31', style: 'dashed', width: 1 },
-          left: { color: '#a5a5a5', style: 'dotted', width: 1 },
+          top: {
+            color: '#a2b9e2',
+            style: 'solid',
+            width: 1.5,
+            theme: { theme: 'accent1', resolved: '#a2b9e2', tint: '80' },
+          },
+          right: {
+            color: '#335593',
+            style: 'double',
+            width: 2,
+            theme: { theme: 'accent1', resolved: '#335593', shade: 'BF' },
+          },
+          bottom: {
+            color: '#ed7d31',
+            style: 'dashed',
+            width: 1,
+            theme: { theme: 'accent2', resolved: '#ed7d31' },
+          },
+          left: {
+            color: '#a5a5a5',
+            style: 'dotted',
+            width: 1,
+            theme: { theme: 'accent3', resolved: '#a5a5a5' },
+          },
         },
       },
     ]);
@@ -153,6 +179,16 @@ describe('DOCX table cell borders', () => {
       'text/html',
     );
     applyImportedDocxTableCellMarkers(html, markers);
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: html.body.innerHTML,
+    });
+    html.body.innerHTML = editor.getHTML();
+    editor.destroy();
+    expect(
+      html.querySelector<HTMLTableCellElement>('td')?.dataset
+        .officeCellThemeFill,
+    ).toContain('accent2');
     const artifact = createArtifact('blank-document');
     if (artifact.content.type !== 'document') {
       throw new Error('Expected a document artifact.');
@@ -163,11 +199,41 @@ describe('DOCX table cell borders', () => {
     const exportedXml =
       (await exported.file('word/document.xml')?.async('string')) ?? '';
 
-    expect(exportedXml).toMatch(/<w:shd\b[^>]*w:fill="F8CBAD"/);
-    expect(exportedXml).toMatch(/<w:top\b[^>]*w:color="A2B9E2"/);
-    expect(exportedXml).toMatch(/<w:right\b[^>]*w:color="335593"/);
-    expect(exportedXml).toMatch(/<w:bottom\b[^>]*w:color="ED7D31"/);
-    expect(exportedXml).toMatch(/<w:left\b[^>]*w:color="A5A5A5"/);
+    expect(exportedXml).toMatch(
+      /<w:shd\b[^>]*w:fill="F8CBAD"[^>]*w:themeFill="accent2"[^>]*w:themeFillTint="99"/,
+    );
+    expect(exportedXml).toMatch(
+      /<w:top\b[^>]*w:color="A2B9E2"[^>]*w:themeColor="accent1"[^>]*w:themeTint="80"/,
+    );
+    expect(exportedXml).toMatch(
+      /<w:right\b[^>]*w:color="335593"[^>]*w:themeColor="accent1"[^>]*w:themeShade="BF"/,
+    );
+    expect(exportedXml).toMatch(
+      /<w:bottom\b[^>]*w:color="ED7D31"[^>]*w:themeColor="accent2"/,
+    );
+    expect(exportedXml).toMatch(
+      /<w:left\b[^>]*w:color="A5A5A5"[^>]*w:themeColor="accent3"/,
+    );
+
+    const edited = html.querySelector<HTMLTableCellElement>('td');
+    if (!edited) throw new Error('Expected a table cell.');
+    edited.dataset.officeCellFill = '#112233';
+    edited.style.backgroundColor = '#112233';
+    edited.dataset.officeCellBorderTopColor = '#123456';
+    edited.style.borderTopColor = '#123456';
+    const editedArtifact = createArtifact('blank-document');
+    if (editedArtifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    editedArtifact.content.html = html.body.innerHTML;
+    const editedBlob = await createArtifactBlob(editedArtifact);
+    const editedArchive = await JSZip.loadAsync(await editedBlob.arrayBuffer());
+    const editedXml =
+      (await editedArchive.file('word/document.xml')?.async('string')) ?? '';
+    expect(editedXml).toMatch(/<w:shd\b[^>]*w:fill="112233"/);
+    expect(editedXml).not.toMatch(/<w:shd\b[^>]*w:themeFill=/);
+    expect(editedXml).toMatch(/<w:top\b[^>]*w:color="123456"/);
+    expect(editedXml).not.toMatch(/<w:top\b[^>]*w:themeColor=/);
   });
 
   test('loads the package theme before marking table presentation', async () => {

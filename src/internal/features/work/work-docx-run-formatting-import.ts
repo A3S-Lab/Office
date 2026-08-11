@@ -17,6 +17,10 @@ import {
 } from './work-docx-table-styles';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 import { documentWordLineHeightFactor } from './work-document-word-line-metrics';
+import {
+  type DocxThemeColorReference,
+  serializeDocxThemeReference,
+} from './work-docx-theme-reference';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
@@ -29,6 +33,8 @@ export interface ImportedDocxRunFormatting {
   fontSize?: number;
   color?: string;
   backgroundColor?: string;
+  themeColor?: DocxThemeColorReference;
+  themeFill?: DocxThemeColorReference;
 }
 
 export interface ImportedDocxRunFormattingMarker {
@@ -124,6 +130,8 @@ function resolvedRunFormatting(
   let complexFontSize: number | undefined;
   let color: string | undefined;
   let backgroundColor: string | undefined;
+  let themeColor: DocxThemeColorReference | undefined;
+  let themeFill: DocxThemeColorReference | undefined;
   let bold: boolean | undefined;
   let complexBold: boolean | undefined;
   let italic: boolean | undefined;
@@ -206,16 +214,31 @@ function resolvedRunFormatting(
         wordAttribute(colorElement, 'themeTint'),
         wordAttribute(colorElement, 'themeShade'),
       );
-      if (themed) color = `#${themed}`;
-      else if (value?.toLowerCase() === 'auto') color = 'inherit';
-      else if (value && /^[0-9a-f]{6}$/i.test(value))
+      if (themed) {
+        color = `#${themed}`;
+        themeColor = themeReference(
+          colorElement,
+          'themeColor',
+          'themeTint',
+          'themeShade',
+          color,
+        );
+      } else if (value?.toLowerCase() === 'auto') {
+        color = 'inherit';
+        themeColor = undefined;
+      } else if (value && /^[0-9a-f]{6}$/i.test(value)) {
         color = `#${value.toLowerCase()}`;
+        themeColor = undefined;
+      }
     }
 
     const highlight = directChild(properties, 'highlight');
     if (highlight) {
       const value = wordAttribute(highlight, 'val')?.trim().toLowerCase();
-      if (value) backgroundColor = wordHighlightColor(value);
+      if (value) {
+        backgroundColor = wordHighlightColor(value);
+        themeFill = undefined;
+      }
     } else {
       const shading = directChild(properties, 'shd');
       const fill = shading ? wordAttribute(shading, 'fill')?.trim() : undefined;
@@ -227,10 +250,22 @@ function resolvedRunFormatting(
             wordAttribute(shading, 'themeFillShade'),
           )
         : undefined;
-      if (themed) backgroundColor = `#${themed}`;
-      else if (fill?.toLowerCase() === 'auto') backgroundColor = 'transparent';
-      else if (fill && /^[0-9a-f]{6}$/i.test(fill))
+      if (themed) {
+        backgroundColor = `#${themed}`;
+        themeFill = themeReference(
+          shading!,
+          'themeFill',
+          'themeFillTint',
+          'themeFillShade',
+          backgroundColor,
+        );
+      } else if (fill?.toLowerCase() === 'auto') {
+        backgroundColor = 'transparent';
+        themeFill = undefined;
+      } else if (fill && /^[0-9a-f]{6}$/i.test(fill)) {
         backgroundColor = `#${fill.toLowerCase()}`;
+        themeFill = undefined;
+      }
     }
   }
 
@@ -284,6 +319,8 @@ function resolvedRunFormatting(
     ...(snapToGrid !== undefined ? { wordSnapToGrid: snapToGrid } : {}),
     ...(color ? { color } : {}),
     ...(backgroundColor ? { backgroundColor } : {}),
+    ...(themeColor ? { themeColor } : {}),
+    ...(themeFill ? { themeFill } : {}),
   };
 }
 
@@ -333,8 +370,12 @@ function formattingMarkup(
   if (formatting.fontSize !== undefined)
     span.style.fontSize = `${formatNumber(formatting.fontSize)}pt`;
   if (formatting.color) span.style.color = formatting.color;
+  const themeColor = serializeDocxThemeReference(formatting.themeColor ?? null);
+  if (themeColor) span.dataset.officeThemeColor = themeColor;
   if (formatting.backgroundColor)
     span.style.backgroundColor = formatting.backgroundColor;
+  const themeFill = serializeDocxThemeReference(formatting.themeFill ?? null);
+  if (themeFill) span.dataset.officeThemeFill = themeFill;
   const html = span.outerHTML;
   const tags = [
     ...(formatting.bold ? ['strong'] : []),
@@ -351,6 +392,32 @@ function formattingMarkup(
       .map((tag) => `</${tag}>`)
       .join('')}</span>`,
   };
+}
+
+function themeReference(
+  element: Element,
+  themeName: string,
+  tintName: string,
+  shadeName: string,
+  resolved: string,
+): DocxThemeColorReference | undefined {
+  const theme = wordAttribute(element, themeName)?.trim();
+  if (!theme) return undefined;
+  const tint = normalizedByteHex(wordAttribute(element, tintName));
+  const shade = normalizedByteHex(wordAttribute(element, shadeName));
+  return {
+    theme,
+    resolved,
+    ...(tint ? { tint } : {}),
+    ...(shade ? { shade } : {}),
+  };
+}
+
+function normalizedByteHex(value: string | null): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized && /^[0-9A-F]{2}$/.test(normalized)
+    ? normalized
+    : undefined;
 }
 
 function overriddenBoolean(
