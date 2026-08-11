@@ -5,19 +5,20 @@ import TextAlign from '@tiptap/extension-text-align';
 import FontSize from '@tiptap/extension-text-style/font-size';
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
+import { DocumentBookmarkBoundary } from './work-document-bookmarks';
 import {
   DocumentCaption,
   DocumentCrossReference,
 } from './work-document-caption-nodes';
 import {
-  DocumentSubscript,
-  DocumentSuperscript,
-} from './work-document-character-formatting';
-import {
   DocumentChange,
   type WorkDocumentChangeIdentity,
   type WorkDocumentChangeKind,
 } from './work-document-changes';
+import {
+  DocumentSubscript,
+  DocumentSuperscript,
+} from './work-document-character-formatting';
 import {
   DocumentBibliography,
   DocumentCitation,
@@ -40,21 +41,21 @@ import { DocumentSection } from './work-document-section-node';
 import { DocumentTab } from './work-document-tab-node';
 import { DocumentParagraphTabStops } from './work-document-tab-stops';
 import {
-  DocumentFontFamily,
-  DocumentHighlight,
-  DocumentTextStyle,
-} from './work-document-word-line-metrics';
-import { DocumentTableCommands } from './work-document-table-commands';
-import {
   DocumentTableCell,
   DocumentTableFormatting,
   DocumentTableHeader,
 } from './work-document-table-cell-formatting';
+import { DocumentTableCommands } from './work-document-table-commands';
 import { DocumentTableRow } from './work-document-table-row';
 import {
   DocumentTable,
   DocumentTableSizing,
 } from './work-document-table-sizing';
+import {
+  DocumentFontFamily,
+  DocumentHighlight,
+  DocumentTextStyle,
+} from './work-document-word-line-metrics';
 import type { WorkDocumentContent } from './work-types';
 
 export interface WorkDocumentExtensionOptions {
@@ -105,6 +106,7 @@ export function createWorkDocumentExtensions(
     DocumentOrderedList,
     DocumentListCommands,
     DocumentSection,
+    DocumentBookmarkBoundary,
     DocumentCaption,
     DocumentCrossReference,
     citationExtension,

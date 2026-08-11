@@ -337,6 +337,11 @@ export const documentCommandCatalog = {
       editor: ['Mod-k'],
     },
   },
+  bookmark: {
+    id: 'insert.bookmark',
+    label: '添加书签',
+    location: { area: 'ribbon', tab: 'insert', group: 'links' },
+  },
   spelling: {
     id: 'review.spelling',
     label: '拼写检查',

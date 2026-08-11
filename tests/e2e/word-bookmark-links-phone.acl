@@ -1,0 +1,99 @@
+suite "office-word-bookmark-links-phone" {
+    version = 1
+
+    scenario "create-and-delete-a-word-bookmark-on-phone" {
+        name = "Create and delete a native Word bookmark without losing editor focus on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=word-bookmark-links-phone"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "明确不在本期范围内的事项"
+        }
+
+        focus "focus-document" {
+            target = css(".work-document-editable .ProseMirror")
+        }
+
+        press "move-to-document-end" {
+            key = "Control+End"
+        }
+
+        click "open-insert-tab" {
+            target = role("tab", "插入")
+        }
+
+        click "open-bookmark-dialog" {
+            target = role("button", "添加书签")
+        }
+
+        expect "bookmark-name-is-focused" {
+            visible = css("input[aria-label='书签名称']:focus")
+        }
+
+        fill "enter-bookmark-name" {
+            target = label("书签名称")
+            value = "Architecture_target"
+        }
+
+        click "add-bookmark" {
+            target = role("button", "添加书签")
+        }
+
+        expect "bookmark-range-is-complete" {
+            visible = css(".work-document-editable .ProseMirror:has(span[data-bookmark-kind='start'][data-bookmark-name='Architecture_target']):has(span[data-bookmark-kind='end'][data-bookmark-name='Architecture_target'])")
+        }
+
+        expect "bookmark-is-current" {
+            visible = role("button", "删除书签")
+        }
+
+        screenshot "bookmark-created" {
+            path = "screenshots/word-bookmark-links-phone.png"
+        }
+
+        click "delete-current-bookmark" {
+            target = role("button", "删除书签")
+        }
+
+        expect "bookmark-is-removed" {
+            visible = css(".work-document-editable .ProseMirror:not(:has(span[data-document-bookmark-boundary]))")
+        }
+
+        expect "document-focus-is-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        accessibility "bookmark-dialog-and-command-semantics" {
+            path = "evidence/word-bookmark-links-phone.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

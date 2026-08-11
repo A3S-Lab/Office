@@ -1,5 +1,6 @@
 import type { Editor } from '@tiptap/core';
 import {
+  Bookmark as BookmarkIcon,
   BookOpen,
   Check,
   CheckCheck,
@@ -30,6 +31,12 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import {
+  activeDocumentBookmark,
+  DOCUMENT_BOOKMARK_DUPLICATE_MESSAGE,
+  documentBookmarkNameExists,
+  validateDocumentBookmarkName,
+} from '../work-document-bookmarks';
 import type { WorkDocumentCaptionKind } from '../work-document-captions';
 import {
   collectDocumentChanges,
@@ -204,6 +211,7 @@ export function DocumentToolbar({
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
   const tableSelected = editor.isActive('table');
+  const activeBookmark = activeDocumentBookmark(editor);
   const hasRefreshableFields = documentHasRefreshableFields(editor);
   const documentChanges = collectDocumentChanges(editor.state.doc);
   const previousChangeIndex = adjacentDocumentChangeIndex(
@@ -240,7 +248,7 @@ export function DocumentToolbar({
     }
     const href = await prompt({
       title: '添加链接',
-      description: '为当前选中的文字设置跳转地址。',
+      description: '输入网页、邮箱地址，或使用 #书签名称 跳转到文档内位置。',
       fieldLabel: '链接地址',
       initialValue: editor.getAttributes('link').href ?? 'https://',
       placeholder: 'https://',
@@ -255,6 +263,29 @@ export function DocumentToolbar({
     const normalized = normalizeDocumentHref(href);
     if (normalized) editor.chain().focus().setLink({ href: normalized }).run();
   }, [editor, prompt]);
+  const toggleBookmark = useCallback(async () => {
+    if (activeBookmark) {
+      editor.chain().focus().deleteDocumentBookmark(activeBookmark.id).run();
+      return;
+    }
+    const name = await prompt({
+      title: '添加书签',
+      description: '为当前光标位置或选中内容创建文档内链接目标。',
+      fieldLabel: '书签名称',
+      initialValue: '',
+      placeholder: '例如 Architecture_2',
+      confirmLabel: '添加书签',
+      required: '请输入书签名称。',
+      validate: (value) =>
+        validateDocumentBookmarkName(value) ??
+        (documentBookmarkNameExists(editor, value)
+          ? DOCUMENT_BOOKMARK_DUPLICATE_MESSAGE
+          : null),
+      restoreFocusTarget: () => editor.view.dom,
+    });
+    if (name === null || editor.isDestroyed) return;
+    editor.chain().focus().insertDocumentBookmark(name.trim()).run();
+  }, [activeBookmark, editor, prompt]);
   useEffect(() => {
     setActiveTab((current) => {
       if (pageChromeEditor) return 'pageChrome';
@@ -529,6 +560,14 @@ export function DocumentToolbar({
                   onClick={() => void toggleLink()}
                 >
                   <Link2 size={19} />
+                </ToolbarButton>
+                <ToolbarButton
+                  label={activeBookmark ? '删除书签' : '添加书签'}
+                  displayLabel
+                  active={Boolean(activeBookmark)}
+                  onClick={() => void toggleBookmark()}
+                >
+                  <BookmarkIcon size={19} />
                 </ToolbarButton>
               </RibbonGroup>
               <RibbonGroup label="页眉和页脚">

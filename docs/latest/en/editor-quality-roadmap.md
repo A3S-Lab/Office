@@ -399,6 +399,21 @@ unique `wp:docPr` identifiers, preserves `wp14:anchorId` plus untouched
 edit identifier when the image is changed or moved, and validates every
 emitted image relationship without using the relationship ID as object
 identity.
+Word body bookmarks now use paired inline boundaries rather than a flattened
+single marker, so a target can span paragraphs while remaining one atomic
+editable range. New names follow Word's 40-character letter-first convention;
+imported hidden names remain valid, malformed or duplicate identities are
+normalized deterministically, and copying a complete range assigns a new
+name, internal identity, and native numeric identifier while preserving the
+original. Internal links export through `w:anchor` without an external
+relationship, supported web and email destinations retain hyperlink
+relationships, and deleting a bookmark gives every dangling internal link an
+explicit state that undo repairs. DOCX inspection reports ambiguous boundary
+pairs, normalized names, column-scoped bookmarks, missing targets, unsupported
+destinations, and advanced hyperlink metadata separately. Unit round trips
+cover cross-paragraph native ranges and internal-versus-external relationships;
+a deterministic phone workflow covers dialog focus, insertion, deletion, and
+editor-focus recovery.
 Caption order and cross-reference validity now share one live transaction
 graph: deleting or reordering a caption renumbers surviving targets, updates
 every linked field, and renders dangling references as an explicit missing

@@ -7,6 +7,8 @@ import type {
   ISectionOptions,
   ParagraphChild,
 } from 'docx';
+import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
+import { normalizeDocumentHref } from './work-document-links';
 import {
   collectDocumentNotes,
   documentNoteKey,
@@ -14,15 +16,13 @@ import {
   type WorkDocumentNote,
   type WorkDocumentNoteKind,
 } from './work-document-notes';
+import { normalizeDocumentPageChrome } from './work-document-page-chrome';
+import { documentSections } from './work-document-section';
 import { patchDocxBibliography } from './work-docx-bibliography';
-import { patchDocxPageColor } from './work-docx-page-color';
-import { patchDocxNumberingRestartRules } from './work-docx-numbering';
-import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
-  documentTableCellSizingDocxOptions,
-  documentTableRowSizingDocxOptions,
-  documentTableSizingDocxOptions,
-} from './work-docx-table-sizing-export';
+  DocxBookmarkPatchCollector,
+  patchDocxBookmarks,
+} from './work-docx-bookmarks';
 import {
   docxCaptionParagraph,
   docxCrossReferenceRuns,
@@ -32,7 +32,7 @@ import {
   docxCitationRun,
 } from './work-docx-citation-export';
 import { docxSectionColumns } from './work-docx-column-export';
-import { docxDocumentFieldRun } from './work-docx-field-export';
+import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   cssColorToHex,
   cssFontFamily,
@@ -48,6 +48,7 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
+import { docxDocumentFieldRun } from './work-docx-field-export';
 import {
   DocxImageCropPatchCollector,
   patchDocxImageCrops,
@@ -64,14 +65,19 @@ import {
   DocxImageWrapPatchCollector,
   patchDocxImageWraps,
 } from './work-docx-image-wrap';
-import { patchDocxDocumentLayout } from './work-docx-document-layout';
+import { patchDocxNumberingRestartRules } from './work-docx-numbering';
+import { patchDocxPageColor } from './work-docx-page-color';
+import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
+import {
+  documentTableCellSizingDocxOptions,
+  documentTableRowSizingDocxOptions,
+  documentTableSizingDocxOptions,
+} from './work-docx-table-sizing-export';
 import {
   DocxThemePatchCollector,
   parseDocxThemeReference,
   patchDocxThemeReferences,
 } from './work-docx-theme-reference';
-import { normalizeDocumentPageChrome } from './work-document-page-chrome';
-import { documentSections } from './work-document-section';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -96,6 +102,7 @@ interface DocxNoteContext {
   numberingRestartRules: Array<Map<number, number>>;
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   themePatches: DocxThemePatchCollector;
+  bookmarkPatches: DocxBookmarkPatchCollector;
   imageCropPatches: DocxImageCropPatchCollector;
   imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
@@ -113,8 +120,12 @@ export async function createDocxBlob(
   content: WorkDocumentContent,
 ): Promise<Blob> {
   const docx = await import('docx');
-  const noteCollection = collectDocumentNotes(content.html);
-  const comments = anchoredDocumentComments(content);
+  const normalizedContent = {
+    ...content,
+    html: normalizeDocumentBookmarksHtml(content.html),
+  };
+  const noteCollection = collectDocumentNotes(normalizedContent.html);
+  const comments = anchoredDocumentComments(normalizedContent);
   const noteContext: DocxNoteContext = {
     ids: new Map(
       noteCollection.notes.map(
@@ -124,7 +135,7 @@ export async function createDocxBlob(
     changeIds: new Map(),
     nextChangeId: 1,
     commentIds: new Map(),
-    commentRangeCounts: documentCommentRangeCounts(content.html),
+    commentRangeCounts: documentCommentRangeCounts(normalizedContent.html),
     commentRangeSeen: new Map(),
     numbering: [],
     nextNumberingReference: 1,
@@ -132,7 +143,10 @@ export async function createDocxBlob(
     numberingLevels: new Map(),
     numberingRestartRules: [],
     numberingRestartRulesByIdentity: new Map(),
-    themePatches: new DocxThemePatchCollector(JSON.stringify(content)),
+    themePatches: new DocxThemePatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    bookmarkPatches: new DocxBookmarkPatchCollector(normalizedContent.html),
     imageCropPatches: new DocxImageCropPatchCollector(),
     imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
@@ -142,7 +156,7 @@ export async function createDocxBlob(
   const sections: ISectionOptions[] = [];
   let usesOddEvenPageChrome = false;
   const sourceSections = documentSections({
-    ...content,
+    ...normalizedContent,
     html: noteCollection.html,
   });
   for (const section of sourceSections) {
@@ -191,7 +205,8 @@ export async function createDocxBlob(
     evenAndOddHeaderAndFooters: usesOddEvenPageChrome,
     features: {
       trackRevisions: Boolean(
-        content.trackChanges || documentHasTrackedChanges(content.html),
+        normalizedContent.trackChanges ||
+          documentHasTrackedChanges(normalizedContent.html),
       ),
       updateFields: true,
     },
@@ -203,7 +218,7 @@ export async function createDocxBlob(
   );
   const bibliographyPatched = await patchDocxBibliography(
     numberingPatched,
-    content.bibliography,
+    normalizedContent.bibliography,
   );
   const layoutPatched = await patchDocxDocumentLayout(
     bibliographyPatched,
@@ -229,9 +244,13 @@ export async function createDocxBlob(
     imageLayerPatched,
     noteContext.imageIdentityPatches.patches,
   );
-  const patched = await patchDocxPageColor(
+  const bookmarkPatched = await patchDocxBookmarks(
     imageIdentityPatched,
-    content.pageColor,
+    noteContext.bookmarkPatches.patches,
+  );
+  const patched = await patchDocxPageColor(
+    bookmarkPatched,
+    normalizedContent.pageColor,
   );
   return new Blob([patched], {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -1031,18 +1050,27 @@ async function inlineRuns(
           noteContext.imageIdentityPatches,
         ),
       ];
+    if (tag === 'span' && node.dataset.documentBookmarkBoundary === 'true') {
+      const marker = noteContext.bookmarkPatches.register(node);
+      return marker ? [new docx.TextRun(marker)] : [];
+    }
     const children: ParagraphChild[] = [];
     for (const child of node.childNodes)
       children.push(...(await visit(child, style, change)));
-    const result =
-      tag === 'a' && node.getAttribute('href')
-        ? [
-            new docx.ExternalHyperlink({
-              link: node.getAttribute('href') ?? '',
-              children,
-            }),
-          ]
-        : children;
+    const href =
+      tag === 'a'
+        ? normalizeDocumentHref(node.getAttribute('href') ?? '')
+        : null;
+    const result = href
+      ? [
+          href.startsWith('#')
+            ? new docx.InternalHyperlink({
+                anchor: href.slice(1),
+                children,
+              })
+            : new docx.ExternalHyperlink({ link: href, children }),
+        ]
+      : children;
     if (!commentBoundary) return result;
     return [
       ...(commentBoundary.start

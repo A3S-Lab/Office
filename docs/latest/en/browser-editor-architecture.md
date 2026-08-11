@@ -52,7 +52,13 @@ model:
    copy-format shortcuts. Cross-surface paste retains compatible marks and
    paragraph attributes while falling back from unsupported heading nodes.
    Writer orders Insert commands as Pages, Table, Illustrations, Links, Header
-   and Footer, and Text. Page Layout keeps direct margin, orientation, paper,
+   and Footer, and Text. The Links group creates paired body-bookmark
+   boundaries around a selection or caret, keeps copy identity separate, and
+   represents internal destinations as `#name` marks with an explicit
+   missing-target class. DOCX import/export maps those boundaries to native
+   `w:bookmarkStart`/`w:bookmarkEnd` ranges and maps internal links to
+   `w:anchor` rather than relationship-backed external hyperlinks. Page Layout
+   keeps direct margin, orientation, paper,
    and equal-column presets in the ribbon; custom margins and advanced columns
    open the corresponding controlled Page Setup tab instead of duplicating a
    second settings model. References separates footnotes, captions, citations
@@ -142,7 +148,7 @@ localized labels and viewport heuristics never decide behavior.
 | Task pane | Find and replace, page setup, citation sources, and revision review | Mutually exclusive at the right edge of the document workspace. It shares width with the page above 900 px, overlays the page below 900 px, and becomes workspace-wide below 520 px. Escape and the visible close action follow the same guarded close path. |
 | Review rail | Anchored comments and comment drafts | Sits beside the paper and connects each thread to its text range. Below 620 px it becomes a bounded review drawer, removes connector lines, and lays cards in document order instead of using absolute placement. |
 | Anchored popover | Table size, paragraph spacing, paragraph pagination, colors, and select options | Portaled to the body but positioned from the invoking control. It flips vertically, clamps to a 16 px viewport margin, updates on nested scroll and resize, focuses its first field when it behaves like a small dialog, and returns focus to the trigger on Escape. A dirty numeric field consumes the first Escape to discard only its local draft; a clean field lets the next Escape close the surface without a blur commit. |
-| Modal dialog | Captions, cross-references, links, image descriptions, notices, and confirmations | Centered in the viewport with bounded height and an independently scrolling body. The body-level portal makes every non-dialog body child inert. Focus stays inside, destructive confirmations initially focus the safe action, and closing returns to the actual invoker unless the completed command deliberately restores the editor. |
+| Modal dialog | Bookmarks, captions, cross-references, links, image descriptions, notices, and confirmations | Centered in the viewport with bounded height and an independently scrolling body. The body-level portal makes every non-dialog body child inert. Focus stays inside, destructive confirmations initially focus the safe action, and closing returns to the actual invoker unless the completed command deliberately restores the editor. |
 
 Task panes preserve editing context instead of behaving like navigation.
 Closing a pane returns focus to the body editor. Switching away from a dirty

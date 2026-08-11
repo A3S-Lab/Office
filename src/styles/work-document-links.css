@@ -1,0 +1,23 @@
+.work-document-bookmark-boundary {
+  display: inline;
+  inline-size: 0;
+  block-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0;
+  line-height: 0;
+}
+
+:is(
+    .work-document-editable,
+    .work-document-preview-page,
+    .work-pdf-export-page.document
+  )
+  a.work-document-link-missing {
+  color: var(--a3s-red);
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: currentColor;
+  text-underline-offset: 0.16em;
+}

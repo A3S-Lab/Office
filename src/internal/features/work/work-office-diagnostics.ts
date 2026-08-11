@@ -1,4 +1,5 @@
 import type { WorkBook, WorkSheet } from 'xlsx';
+import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
@@ -103,6 +104,7 @@ export async function analyzeDocxCompatibility(
       );
     }
     if (document) {
+      issues.push(...(await diagnoseDocxBookmarksAndLinks(archive, document)));
       issues.push(...(await diagnoseDocxCitations(archive, document)));
       const captionDiagnostics = diagnoseDocxCaptions(document);
       issues.push(...captionDiagnostics.issues);

@@ -114,6 +114,25 @@ test('wires every Insert and Page Layout action to document state or its owner',
     expect(editor?.getHTML()).toContain('href="https://a3s.dev/office"'),
   );
 
+  editor.commands.setTextSelection(textRange(editor, 'Toolbar text'));
+  fireEvent.click(screen.getByRole('button', { name: '添加书签' }));
+  const bookmarkDialog = await screen.findByRole('dialog', {
+    name: '添加书签',
+  });
+  expect(
+    within(bookmarkDialog).getByRole('textbox', { name: '书签名称' }),
+  ).toHaveFocus();
+  fireEvent.change(
+    within(bookmarkDialog).getByRole('textbox', { name: '书签名称' }),
+    { target: { value: 'Toolbar_target' } },
+  );
+  fireEvent.click(
+    within(bookmarkDialog).getByRole('button', { name: '添加书签' }),
+  );
+  await waitFor(() =>
+    expect(nodeCount(editor as Editor, 'documentBookmarkBoundary')).toBe(2),
+  );
+
   const fieldSelect = screen.getByRole('combobox', {
     name: '插入页码或日期',
   });

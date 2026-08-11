@@ -1,128 +1,135 @@
 import JSZip from 'jszip';
+import { normalizeDocumentBookmarksHtml } from './work-document-bookmarks';
+import { normalizeDocumentCaptionsHtml } from './work-document-captions';
+import { normalizeDocumentCitationsHtml } from './work-document-citations';
+import { normalizeDocumentFieldsHtml } from './work-document-fields';
+import { normalizeDocumentNotesHtml } from './work-document-notes';
 import {
   documentContentLayoutProperties,
   documentInitialSectionLayout,
   documentSectionDomAttributes,
 } from './work-document-section';
 import { readDocxBibliography } from './work-docx-bibliography';
-import { normalizeDocumentCaptionsHtml } from './work-document-captions';
-import { normalizeDocumentCitationsHtml } from './work-document-citations';
-import { normalizeDocumentFieldsHtml } from './work-document-fields';
-import { normalizeDocumentNotesHtml } from './work-document-notes';
+import {
+  applyImportedDocxBookmarkMarkers,
+  hasImportedDocxBookmarkMarkers,
+  type ImportedDocxBookmarkMarkers,
+  markDocxBookmarks,
+} from './work-docx-bookmark-import';
 import {
   applyImportedDocxCaptionMarkers,
   hasImportedDocxCaptionMarkers,
-  markDocxCaptionFields,
   type ImportedDocxCaptionMarkers,
+  markDocxCaptionFields,
 } from './work-docx-caption-import';
 import {
   applyImportedDocxChangeMarkers,
   hasImportedDocxChangeMarkers,
-  markDocxTextChanges,
   type ImportedDocxChangeMarkers,
+  markDocxTextChanges,
 } from './work-docx-change-import';
 import {
   applyImportedDocxCitationMarkers,
   hasImportedDocxCitationMarkers,
-  markDocxCitationFields,
   type ImportedDocxCitationMarkers,
+  markDocxCitationFields,
 } from './work-docx-citation-import';
+import { importDocxColumns } from './work-docx-column-import';
 import {
   applyImportedDocxCommentMarkers,
   hasImportedDocxCommentMarkers,
-  markDocxComments,
   type ImportedDocxCommentMarkers,
+  markDocxComments,
 } from './work-docx-comment-import';
-import { importDocxColumns } from './work-docx-column-import';
-import { importDocxPageColor } from './work-docx-page-color';
 import {
   applyImportedDocxFieldMarkers,
   hasImportedDocxFieldMarkers,
-  markDocxBodyFields,
   type ImportedDocxFieldMarkers,
+  markDocxBodyFields,
 } from './work-docx-field-import';
+import {
+  applyImportedDocxImageLayoutMarkers,
+  hasImportedDocxImageLayoutMarkers,
+  type ImportedDocxImageLayoutMarkers,
+  markDocxImageLayouts,
+} from './work-docx-image-layout-import';
+import {
+  applyImportedDocxListMarkers,
+  hasImportedDocxListMarkers,
+  type ImportedDocxListMarkers,
+  markDocxLists,
+} from './work-docx-list-import';
 import {
   extractMammothDocumentNotes,
   placeMammothDocumentNotes,
 } from './work-docx-note-import';
 import {
-  applyImportedDocxListMarkers,
-  hasImportedDocxListMarkers,
-  markDocxLists,
-  type ImportedDocxListMarkers,
-} from './work-docx-list-import';
-import {
-  applyImportedDocxImageLayoutMarkers,
-  hasImportedDocxImageLayoutMarkers,
-  markDocxImageLayouts,
-  type ImportedDocxImageLayoutMarkers,
-} from './work-docx-image-layout-import';
-import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
 } from './work-docx-page-chrome-import';
-import {
-  applyImportedDocxParagraphDirectionMarkers,
-  hasImportedDocxParagraphDirectionMarkers,
-  markDocxParagraphDirections,
-  type ImportedDocxParagraphDirectionMarkers,
-} from './work-docx-paragraph-direction-import';
+import { importDocxPageColor } from './work-docx-page-color';
 import {
   applyImportedDocxParagraphAlignmentMarkers,
   hasImportedDocxParagraphAlignmentMarkers,
-  markDocxParagraphAlignments,
   type ImportedDocxParagraphAlignmentMarkers,
+  markDocxParagraphAlignments,
 } from './work-docx-paragraph-alignment-import';
+import {
+  applyImportedDocxParagraphDirectionMarkers,
+  hasImportedDocxParagraphDirectionMarkers,
+  type ImportedDocxParagraphDirectionMarkers,
+  markDocxParagraphDirections,
+} from './work-docx-paragraph-direction-import';
 import {
   applyImportedDocxParagraphIndentMarkers,
   hasImportedDocxParagraphIndentMarkers,
-  markDocxParagraphIndents,
   type ImportedDocxParagraphIndentMarkers,
+  markDocxParagraphIndents,
 } from './work-docx-paragraph-indent-import';
 import {
   applyImportedDocxParagraphPaginationMarkers,
   hasImportedDocxParagraphPaginationMarkers,
-  markDocxParagraphPagination,
   type ImportedDocxParagraphPaginationMarkers,
+  markDocxParagraphPagination,
 } from './work-docx-paragraph-pagination-import';
-import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
 import {
   applyImportedDocxParagraphSpacingMarkers,
   hasImportedDocxParagraphSpacingMarkers,
-  markDocxParagraphSpacing,
   type ImportedDocxParagraphSpacingMarkers,
+  markDocxParagraphSpacing,
 } from './work-docx-paragraph-spacing-import';
+import { createDocxParagraphStyleResolver } from './work-docx-paragraph-styles';
 import {
   applyImportedDocxRunFormattingMarkers,
   hasImportedDocxRunFormattingMarkers,
-  markDocxRunFormatting,
   type ImportedDocxRunFormattingMarkers,
+  markDocxRunFormatting,
 } from './work-docx-run-formatting-import';
 import {
   applyImportedDocxParagraphTabStopMarkers,
   hasImportedDocxParagraphTabStopMarkers,
-  markDocxParagraphTabStops,
   type ImportedDocxParagraphTabStopMarkers,
+  markDocxParagraphTabStops,
 } from './work-docx-tab-stop-import';
 import {
   applyImportedDocxTableCellMarkers,
   hasImportedDocxTableCellMarkers,
-  markDocxTableCells,
   type ImportedDocxTableCellMarkers,
+  markDocxTableCells,
 } from './work-docx-table-cell-import';
-import { createDocxTableStyleResolver } from './work-docx-table-styles';
 import {
   applyImportedDocxTableRowMarkers,
   hasImportedDocxTableRowMarkers,
-  markDocxTableRows,
   type ImportedDocxTableRowMarkers,
+  markDocxTableRows,
 } from './work-docx-table-row-import';
 import {
   applyImportedDocxTableSizingMarkers,
   hasImportedDocxTableSizingMarkers,
-  markDocxTableSizing,
   type ImportedDocxTableSizingMarkers,
+  markDocxTableSizing,
 } from './work-docx-table-sizing-import';
+import { createDocxTableStyleResolver } from './work-docx-table-styles';
 import {
   attribute,
   descendants,
@@ -146,6 +153,7 @@ export interface PreparedDocxImport {
   sections: Array<{ id: string; layout: WorkDocumentSectionLayout }>;
   pageColor?: string;
   captionMarkers: ImportedDocxCaptionMarkers;
+  bookmarkMarkers: ImportedDocxBookmarkMarkers;
   changeMarkers: ImportedDocxChangeMarkers;
   commentMarkers: ImportedDocxCommentMarkers;
   fieldMarkers: ImportedDocxFieldMarkers;
@@ -186,6 +194,7 @@ export async function prepareDocxImport(
       conversionBuffer: buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
       captionMarkers: { captions: [], references: [] },
+      bookmarkMarkers: { bookmarks: [] },
       changeMarkers: { changes: [] },
       commentMarkers: { comments: [], ranges: [] },
       fieldMarkers: { fields: [] },
@@ -215,6 +224,7 @@ export async function prepareDocxImport(
   const commentMarkers = await markDocxComments(document, archive);
   const changeMarkers = markDocxTextChanges(document);
   const captionMarkers = markDocxCaptionFields(document);
+  const bookmarkMarkers = markDocxBookmarks(document);
   const citationMarkers = markDocxCitationFields(document);
   const fieldMarkers = markDocxBodyFields(document);
   const listMarkers = markDocxLists(document, numbering);
@@ -284,6 +294,7 @@ export async function prepareDocxImport(
     return {
       conversionBuffer:
         hasImportedDocxCaptionMarkers(captionMarkers) ||
+        hasImportedDocxBookmarkMarkers(bookmarkMarkers) ||
         hasImportedDocxChangeMarkers(changeMarkers) ||
         hasImportedDocxCommentMarkers(commentMarkers) ||
         hasImportedDocxCitationMarkers(citationMarkers) ||
@@ -305,6 +316,7 @@ export async function prepareDocxImport(
       sections: [{ id: 'document-section-1', layout: fallback }],
       pageColor,
       captionMarkers,
+      bookmarkMarkers,
       changeMarkers,
       commentMarkers,
       fieldMarkers,
@@ -345,6 +357,7 @@ export async function prepareDocxImport(
     conversionBuffer:
       sections.length > 1 ||
       hasImportedDocxCaptionMarkers(captionMarkers) ||
+      hasImportedDocxBookmarkMarkers(bookmarkMarkers) ||
       hasImportedDocxChangeMarkers(changeMarkers) ||
       hasImportedDocxCommentMarkers(commentMarkers) ||
       hasImportedDocxCitationMarkers(citationMarkers) ||
@@ -366,6 +379,7 @@ export async function prepareDocxImport(
     sections,
     pageColor,
     captionMarkers,
+    bookmarkMarkers,
     changeMarkers,
     commentMarkers,
     fieldMarkers,
@@ -391,6 +405,7 @@ export function applyDocxSectionsToHtml(
   html: string,
   sections: PreparedDocxImport['sections'],
   captionMarkers: ImportedDocxCaptionMarkers = { captions: [], references: [] },
+  bookmarkMarkers: ImportedDocxBookmarkMarkers = { bookmarks: [] },
   changeMarkers: ImportedDocxChangeMarkers = { changes: [] },
   commentMarkers: ImportedDocxCommentMarkers = { comments: [], ranges: [] },
   fieldMarkers: ImportedDocxFieldMarkers = { fields: [] },
@@ -429,6 +444,7 @@ export function applyDocxSectionsToHtml(
 ): string {
   const document = new DOMParser().parseFromString(html, 'text/html');
   applyImportedDocxRunFormattingMarkers(document, runFormattingMarkers);
+  applyImportedDocxBookmarkMarkers(document, bookmarkMarkers);
   applyImportedDocxCaptionMarkers(document, captionMarkers);
   applyImportedDocxCitationMarkers(document, citationMarkers);
   applyImportedDocxFieldMarkers(document, fieldMarkers);
@@ -482,13 +498,15 @@ export function applyDocxSectionsToHtml(
     document.body.append(missing);
   }
   placeMammothDocumentNotes(document, notes);
-  return normalizeDocumentCitationsHtml(
-    normalizeDocumentFieldsHtml(
-      normalizeDocumentCaptionsHtml(
-        normalizeDocumentNotesHtml(document.body.innerHTML),
+  return normalizeDocumentBookmarksHtml(
+    normalizeDocumentCitationsHtml(
+      normalizeDocumentFieldsHtml(
+        normalizeDocumentCaptionsHtml(
+          normalizeDocumentNotesHtml(document.body.innerHTML),
+        ),
       ),
+      bibliography,
     ),
-    bibliography,
   );
 }
 

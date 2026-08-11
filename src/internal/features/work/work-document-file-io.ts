@@ -33,6 +33,7 @@ export async function importWorkDocumentFile(
           result.value,
           prepared.sections,
           prepared.captionMarkers,
+          prepared.bookmarkMarkers,
           prepared.changeMarkers,
           prepared.commentMarkers,
           prepared.fieldMarkers,
