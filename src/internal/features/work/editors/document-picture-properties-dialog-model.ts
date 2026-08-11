@@ -1,7 +1,9 @@
 import type {
   WorkDocumentImageAlignment,
+  WorkDocumentImageHorizontalReference,
   WorkDocumentImageLayout,
   WorkDocumentImageProperties,
+  WorkDocumentImageVerticalReference,
 } from '../work-document-image-layout';
 
 export const IMAGE_PIXELS_PER_CENTIMETER = 96 / 2.54;
@@ -21,12 +23,19 @@ export interface DocumentPicturePropertiesDraft {
   alignment: WorkDocumentImageAlignment;
   wrapDistance: string;
   alternativeText: string;
+  precisePosition: boolean;
+  horizontalOffset: string;
+  verticalOffset: string;
+  horizontalReference: WorkDocumentImageHorizontalReference;
+  verticalReference: WorkDocumentImageVerticalReference;
 }
 
 export interface DocumentPicturePropertiesErrors {
   width: string | null;
   height: string | null;
   wrapDistance: string | null;
+  horizontalOffset: string | null;
+  verticalOffset: string | null;
 }
 
 const FALLBACK_IMAGE_WIDTH_PIXELS = 320;
@@ -34,6 +43,7 @@ const FALLBACK_IMAGE_HEIGHT_PIXELS = 180;
 const MINIMUM_IMAGE_SIZE_CENTIMETERS = 0.01;
 const MAXIMUM_IMAGE_SIZE_CENTIMETERS = 55.87;
 const MAXIMUM_WRAP_DISTANCE_MILLIMETERS = 25;
+const MAXIMUM_IMAGE_OFFSET_MILLIMETERS = 558.7;
 
 export function createDocumentPicturePropertiesDraft(
   source: DocumentPicturePropertiesSource,
@@ -57,6 +67,17 @@ export function createDocumentPicturePropertiesDraft(
     alignment: source.properties.alignment,
     wrapDistance: formatNumber(source.properties.wrapDistance),
     alternativeText: source.properties.alternativeText,
+    precisePosition: Boolean(source.properties.position),
+    horizontalOffset: formatNumber(
+      source.properties.position?.horizontalOffset ?? 0,
+    ),
+    verticalOffset: formatNumber(
+      source.properties.position?.verticalOffset ?? 0,
+    ),
+    horizontalReference:
+      source.properties.position?.horizontalReference ?? 'column',
+    verticalReference:
+      source.properties.position?.verticalReference ?? 'paragraph',
   };
 }
 
@@ -108,13 +129,32 @@ export function documentPicturePropertiesErrors(
       validNumber(draft.wrapDistance, 0, MAXIMUM_WRAP_DISTANCE_MILLIMETERS)
         ? null
         : '请输入 0 到 25 之间的毫米数。',
+    horizontalOffset:
+      !draft.precisePosition ||
+      validSignedNumber(
+        draft.horizontalOffset,
+        MAXIMUM_IMAGE_OFFSET_MILLIMETERS,
+      )
+        ? null
+        : '请输入 -558.7 到 558.7 之间的毫米数。',
+    verticalOffset:
+      !draft.precisePosition ||
+      validSignedNumber(draft.verticalOffset, MAXIMUM_IMAGE_OFFSET_MILLIMETERS)
+        ? null
+        : '请输入 -558.7 到 558.7 之间的毫米数。',
   };
 }
 
 export function hasDocumentPicturePropertiesErrors(
   errors: DocumentPicturePropertiesErrors,
 ): boolean {
-  return Boolean(errors.width || errors.height || errors.wrapDistance);
+  return Boolean(
+    errors.width ||
+      errors.height ||
+      errors.wrapDistance ||
+      errors.horizontalOffset ||
+      errors.verticalOffset,
+  );
 }
 
 export function documentPicturePropertyChanges(
@@ -149,6 +189,23 @@ export function documentPicturePropertyChanges(
   if (initial.alternativeText.trim() !== alternativeText) {
     changes.alternativeText = alternativeText;
   }
+  if (
+    initial.precisePosition !== current.precisePosition ||
+    (current.precisePosition &&
+      (!sameDraftNumber(initial.horizontalOffset, current.horizontalOffset) ||
+        !sameDraftNumber(initial.verticalOffset, current.verticalOffset) ||
+        initial.horizontalReference !== current.horizontalReference ||
+        initial.verticalReference !== current.verticalReference))
+  ) {
+    changes.position = current.precisePosition
+      ? {
+          horizontalOffset: Number(current.horizontalOffset),
+          verticalOffset: Number(current.verticalOffset),
+          horizontalReference: current.horizontalReference,
+          verticalReference: current.verticalReference,
+        }
+      : null;
+  }
   return Object.keys(changes).length ? changes : null;
 }
 
@@ -179,6 +236,12 @@ function imageDimensionError(value: string): string | null {
 function validNumber(value: string, minimum: number, maximum: number): boolean {
   const number = numericDraft(value);
   return number !== null && number >= minimum && number <= maximum;
+}
+
+function validSignedNumber(value: string, maximumMagnitude: number): boolean {
+  if (!value.trim()) return false;
+  const number = Number(value);
+  return Number.isFinite(number) && Math.abs(number) <= maximumMagnitude;
 }
 
 function numericDraft(value: string): number | null {

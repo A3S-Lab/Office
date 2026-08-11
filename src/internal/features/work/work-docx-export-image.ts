@@ -1,5 +1,8 @@
 import type { IFloating, ParagraphChild } from 'docx';
-import { documentImageLayoutFromElement } from './work-document-image-layout';
+import {
+  documentImageLayoutFromElement,
+  documentImagePositionFromElement,
+} from './work-document-image-layout';
 
 export async function imageToDocx(
   element: HTMLImageElement,
@@ -43,6 +46,7 @@ function documentImageFloatingOptions(
   docx: typeof import('docx'),
 ): IFloating | undefined {
   const image = documentImageLayoutFromElement(element);
+  const position = documentImagePositionFromElement(element);
   if (image.layout === 'inline') return undefined;
   const distance = Math.round(image.wrapDistance * 36_000);
   const align =
@@ -53,12 +57,21 @@ function documentImageFloatingOptions(
         : docx.HorizontalPositionAlign.CENTER;
   return {
     horizontalPosition: {
-      relative: docx.HorizontalPositionRelativeFrom.COLUMN,
-      align,
+      relative: horizontalPositionReference(
+        position?.horizontalReference ?? 'column',
+        docx,
+      ),
+      ...(position?.horizontalOffset !== null &&
+      position?.horizontalOffset !== undefined
+        ? { offset: millimetersToEmus(position.horizontalOffset) }
+        : { align }),
     },
     verticalPosition: {
-      relative: docx.VerticalPositionRelativeFrom.PARAGRAPH,
-      offset: 0,
+      relative: verticalPositionReference(
+        position?.verticalReference ?? 'paragraph',
+        docx,
+      ),
+      offset: millimetersToEmus(position?.verticalOffset ?? 0),
     },
     allowOverlap: false,
     behindDocument: false,
@@ -80,6 +93,28 @@ function documentImageFloatingOptions(
         : {}),
     },
   };
+}
+
+function horizontalPositionReference(
+  value: 'column' | 'margin' | 'page',
+  docx: typeof import('docx'),
+) {
+  if (value === 'margin') return docx.HorizontalPositionRelativeFrom.MARGIN;
+  if (value === 'page') return docx.HorizontalPositionRelativeFrom.PAGE;
+  return docx.HorizontalPositionRelativeFrom.COLUMN;
+}
+
+function verticalPositionReference(
+  value: 'margin' | 'page' | 'paragraph',
+  docx: typeof import('docx'),
+) {
+  if (value === 'margin') return docx.VerticalPositionRelativeFrom.MARGIN;
+  if (value === 'page') return docx.VerticalPositionRelativeFrom.PAGE;
+  return docx.VerticalPositionRelativeFrom.PARAGRAPH;
+}
+
+function millimetersToEmus(value: number): number {
+  return Math.round(value * 36_000);
 }
 
 function docxImageType(

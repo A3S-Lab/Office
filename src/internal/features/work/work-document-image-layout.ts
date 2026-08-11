@@ -6,6 +6,18 @@ import { NodeSelection } from '@tiptap/pm/state';
 
 export type WorkDocumentImageLayout = 'inline' | 'square' | 'topBottom';
 export type WorkDocumentImageAlignment = 'left' | 'center' | 'right';
+export type WorkDocumentImageHorizontalReference = 'column' | 'margin' | 'page';
+export type WorkDocumentImageVerticalReference =
+  | 'paragraph'
+  | 'margin'
+  | 'page';
+
+export interface WorkDocumentImagePosition {
+  horizontalOffset: number | null;
+  verticalOffset: number | null;
+  horizontalReference: WorkDocumentImageHorizontalReference;
+  verticalReference: WorkDocumentImageVerticalReference;
+}
 
 export interface WorkDocumentImageLayoutOptions {
   layout: WorkDocumentImageLayout;
@@ -19,6 +31,7 @@ export interface WorkDocumentImageProperties
   height: number | null;
   lockAspectRatio: boolean;
   alternativeText: string;
+  position?: WorkDocumentImagePosition | null;
 }
 
 export interface DocumentImageCommandOptions {
@@ -49,6 +62,11 @@ const DEFAULT_IMAGE_ALIGNMENT: WorkDocumentImageAlignment = 'center';
 const DEFAULT_WRAP_DISTANCE_MILLIMETERS = 3;
 const MAX_WRAP_DISTANCE_MILLIMETERS = 25;
 const DEFAULT_LOCK_ASPECT_RATIO = true;
+const DEFAULT_HORIZONTAL_REFERENCE: WorkDocumentImageHorizontalReference =
+  'column';
+const DEFAULT_VERTICAL_REFERENCE: WorkDocumentImageVerticalReference =
+  'paragraph';
+const MAX_IMAGE_OFFSET_MILLIMETERS = 558.7;
 
 export const DocumentImage = Image.extend({
   addCommands() {
@@ -132,6 +150,38 @@ export const DocumentImage = Image.extend({
           'data-office-image-lock-aspect-ratio': String(
             normalizeDocumentImageLockAspectRatio(attributes.lockAspectRatio),
           ),
+        }),
+      },
+      horizontalOffset: imagePositionNumberAttribute(
+        'data-office-image-horizontal-offset',
+      ),
+      verticalOffset: imagePositionNumberAttribute(
+        'data-office-image-vertical-offset',
+      ),
+      horizontalReference: {
+        default: DEFAULT_HORIZONTAL_REFERENCE,
+        parseHTML: (element) =>
+          normalizeDocumentImageHorizontalReference(
+            element.getAttribute('data-office-image-horizontal-reference'),
+          ),
+        renderHTML: (attributes) => ({
+          'data-office-image-horizontal-reference':
+            normalizeDocumentImageHorizontalReference(
+              attributes.horizontalReference,
+            ),
+        }),
+      },
+      verticalReference: {
+        default: DEFAULT_VERTICAL_REFERENCE,
+        parseHTML: (element) =>
+          normalizeDocumentImageVerticalReference(
+            element.getAttribute('data-office-image-vertical-reference'),
+          ),
+        renderHTML: (attributes) => ({
+          'data-office-image-vertical-reference':
+            normalizeDocumentImageVerticalReference(
+              attributes.verticalReference,
+            ),
         }),
       },
     };
@@ -222,6 +272,7 @@ export function documentImageProperties(
   editor: Editor,
 ): WorkDocumentImageProperties {
   const attributes = editor.getAttributes('image') as Record<string, unknown>;
+  const position = normalizeDocumentImagePosition(attributes);
   return {
     ...normalizeDocumentImageLayoutOptions(attributes),
     width: normalizeDocumentImageDimension(attributes.width),
@@ -230,6 +281,7 @@ export function documentImageProperties(
       attributes.lockAspectRatio,
     ),
     alternativeText: documentImageAlternativeText(editor),
+    ...(position ? { position } : {}),
   };
 }
 
@@ -279,6 +331,23 @@ export function documentImageLayoutFromElement(
     layout: element.getAttribute('data-office-image-layout'),
     alignment: element.getAttribute('data-office-image-alignment'),
     wrapDistance: element.getAttribute('data-office-image-wrap-distance'),
+  });
+}
+
+export function documentImagePositionFromElement(
+  element: Element,
+): WorkDocumentImagePosition | null {
+  return normalizeDocumentImagePosition({
+    horizontalOffset: element.getAttribute(
+      'data-office-image-horizontal-offset',
+    ),
+    verticalOffset: element.getAttribute('data-office-image-vertical-offset'),
+    horizontalReference: element.getAttribute(
+      'data-office-image-horizontal-reference',
+    ),
+    verticalReference: element.getAttribute(
+      'data-office-image-vertical-reference',
+    ),
   });
 }
 
@@ -337,6 +406,54 @@ export function normalizeDocumentImageLockAspectRatio(value: unknown): boolean {
     : DEFAULT_LOCK_ASPECT_RATIO;
 }
 
+export function normalizeDocumentImagePosition(
+  value: Partial<Record<keyof WorkDocumentImagePosition, unknown>>,
+): WorkDocumentImagePosition | null {
+  const horizontalOffset = normalizeDocumentImageOffset(value.horizontalOffset);
+  const verticalOffset = normalizeDocumentImageOffset(value.verticalOffset);
+  if (horizontalOffset === null && verticalOffset === null) return null;
+  return {
+    horizontalOffset,
+    verticalOffset,
+    horizontalReference: normalizeDocumentImageHorizontalReference(
+      value.horizontalReference,
+    ),
+    verticalReference: normalizeDocumentImageVerticalReference(
+      value.verticalReference,
+    ),
+  };
+}
+
+export function normalizeDocumentImageOffset(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(number)) return null;
+  return (
+    Math.round(
+      Math.min(
+        MAX_IMAGE_OFFSET_MILLIMETERS,
+        Math.max(-MAX_IMAGE_OFFSET_MILLIMETERS, number),
+      ) * 100,
+    ) / 100
+  );
+}
+
+export function normalizeDocumentImageHorizontalReference(
+  value: unknown,
+): WorkDocumentImageHorizontalReference {
+  return value === 'margin' || value === 'page'
+    ? value
+    : DEFAULT_HORIZONTAL_REFERENCE;
+}
+
+export function normalizeDocumentImageVerticalReference(
+  value: unknown,
+): WorkDocumentImageVerticalReference {
+  return value === 'margin' || value === 'page'
+    ? value
+    : DEFAULT_VERTICAL_REFERENCE;
+}
+
 function formatImageLayoutNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
@@ -371,6 +488,17 @@ function documentImageAttributesForChanges(
     const alternativeText = value.alternativeText?.trim() ?? '';
     attributes.alt = alternativeText || null;
     attributes.title = alternativeText || null;
+  }
+  if (Object.hasOwn(value, 'position')) {
+    const position = value.position
+      ? normalizeDocumentImagePosition(value.position)
+      : null;
+    attributes.horizontalOffset = position?.horizontalOffset ?? null;
+    attributes.verticalOffset = position?.verticalOffset ?? null;
+    attributes.horizontalReference =
+      position?.horizontalReference ?? DEFAULT_HORIZONTAL_REFERENCE;
+    attributes.verticalReference =
+      position?.verticalReference ?? DEFAULT_VERTICAL_REFERENCE;
   }
   return attributes;
 }
@@ -425,6 +553,7 @@ function syncDocumentImageNodeView(
   const lockAspectRatio = normalizeDocumentImageLockAspectRatio(
     attributes.lockAspectRatio,
   );
+  const position = normalizeDocumentImagePosition(attributes);
   setOptionalImageAttribute(element, 'src', attributes.src);
   setOptionalImageAttribute(element, 'alt', attributes.alt);
   setOptionalImageAttribute(element, 'title', attributes.title);
@@ -433,6 +562,7 @@ function syncDocumentImageNodeView(
   element.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
   element.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
+  syncDocumentImagePosition(element, position);
   element.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
@@ -445,10 +575,72 @@ function syncDocumentImageNodeView(
   container.dataset.officeImageWrapDistance =
     formatImageLayoutNumber(wrapDistance);
   container.dataset.officeImageLockAspectRatio = String(lockAspectRatio);
+  syncDocumentImagePosition(container, position);
   container.style.setProperty(
     '--work-document-image-wrap-distance',
     `${formatImageLayoutNumber(wrapDistance)}mm`,
   );
+}
+
+function imagePositionNumberAttribute(name: string) {
+  return {
+    default: null,
+    parseHTML: (element: Element) =>
+      normalizeDocumentImageOffset(element.getAttribute(name)),
+    renderHTML: (attributes: Record<string, unknown>) => {
+      const key = name.includes('horizontal')
+        ? 'horizontalOffset'
+        : 'verticalOffset';
+      const offset = normalizeDocumentImageOffset(attributes[key]);
+      if (offset === null) return {};
+      const formatted = formatImageLayoutNumber(offset);
+      const variable = name.includes('horizontal')
+        ? '--work-document-image-horizontal-offset'
+        : '--work-document-image-vertical-offset';
+      return { [name]: formatted, style: `${variable}:${formatted}mm` };
+    },
+  };
+}
+
+function syncDocumentImagePosition(
+  element: HTMLElement,
+  position: WorkDocumentImagePosition | null,
+): void {
+  if (!position) {
+    delete element.dataset.officeImageHorizontalOffset;
+    delete element.dataset.officeImageVerticalOffset;
+    delete element.dataset.officeImageHorizontalReference;
+    delete element.dataset.officeImageVerticalReference;
+    element.style.removeProperty('--work-document-image-horizontal-offset');
+    element.style.removeProperty('--work-document-image-vertical-offset');
+    return;
+  }
+  if (position.horizontalOffset === null) {
+    delete element.dataset.officeImageHorizontalOffset;
+    element.style.removeProperty('--work-document-image-horizontal-offset');
+  } else {
+    element.dataset.officeImageHorizontalOffset = formatImageLayoutNumber(
+      position.horizontalOffset,
+    );
+    element.style.setProperty(
+      '--work-document-image-horizontal-offset',
+      `${formatImageLayoutNumber(position.horizontalOffset)}mm`,
+    );
+  }
+  if (position.verticalOffset === null) {
+    delete element.dataset.officeImageVerticalOffset;
+    element.style.removeProperty('--work-document-image-vertical-offset');
+  } else {
+    element.dataset.officeImageVerticalOffset = formatImageLayoutNumber(
+      position.verticalOffset,
+    );
+    element.style.setProperty(
+      '--work-document-image-vertical-offset',
+      `${formatImageLayoutNumber(position.verticalOffset)}mm`,
+    );
+  }
+  element.dataset.officeImageHorizontalReference = position.horizontalReference;
+  element.dataset.officeImageVerticalReference = position.verticalReference;
 }
 
 function setOptionalImageAttribute(

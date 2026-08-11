@@ -583,6 +583,18 @@
   margin-block: var(--work-document-image-wrap-distance, 3mm);
 }
 
+:is(.work-document-preview-page, .work-pdf-export-page.document)
+  img:is(
+    [data-office-image-layout="square"],
+    [data-office-image-layout="topBottom"]
+  ):is(
+    [data-office-image-horizontal-offset],
+    [data-office-image-vertical-offset]
+  ) {
+  translate: var(--work-document-image-horizontal-offset, 0)
+    var(--work-document-image-vertical-offset, 0);
+}
+
 :is(.work-document-preview-page, .work-pdf-export-page.document)::after {
   display: block;
   clear: both;

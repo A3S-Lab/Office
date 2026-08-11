@@ -377,7 +377,9 @@ verifies that a relative-path PNG reaches the Word canvas and opens its
 contextual picture toolbar without a false read error. The phone picture
 workflow now exercises one Picture Properties dialog for centimeter width and
 height, per-image aspect-ratio locking, square wrapping, alignment, text
-distance, and alternative text. The complete draft commits as one undo entry,
+distance, signed horizontal and vertical anchor offsets with column, paragraph,
+margin, or page reference frames, and alternative text. The complete draft
+commits as one undo entry,
 untouched imported dimensions keep their exact source values, the selected
 image remains active, and apply, cancel, and Escape restore the exact Picture
 Properties command so the next keyboard action cannot mutate document content.

@@ -898,6 +898,19 @@
   margin-block: var(--work-document-image-wrap-distance, 3mm);
 }
 
+.work-document-page
+  .tiptap
+  [data-resize-container][data-node="image"]:is(
+    [data-office-image-layout="square"],
+    [data-office-image-layout="topBottom"]
+  ):is(
+    [data-office-image-horizontal-offset],
+    [data-office-image-vertical-offset]
+  ) {
+  translate: var(--work-document-image-horizontal-offset, 0)
+    var(--work-document-image-vertical-offset, 0);
+}
+
 .work-document-page .tiptap .ProseMirror::after {
   display: block;
   clear: both;

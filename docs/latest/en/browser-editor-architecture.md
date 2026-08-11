@@ -472,7 +472,8 @@ Document image nodes carry typed layout, alignment, wrap-distance, alternative
 text, size, and per-image aspect-ratio-lock attributes. The contextual Picture
 ribbon keeps fast layout actions and opens one responsive Picture Properties
 dialog for centimeter width and height, aspect-ratio locking, wrapping,
-alignment, text distance, and alternative text. Applying the complete draft
+alignment, text distance, signed horizontal and vertical offsets, their column,
+paragraph, margin, or page reference frames, and alternative text. Applying the complete draft
 updates only changed attributes in one separated TipTap history entry; cancel
 and Escape preserve the node and return focus to the exact invoker. Dimensions
 that were only projected into rounded centimeter fields retain their exact
@@ -483,9 +484,10 @@ float remain on the DOM visual-line path because the available line width
 changes while the float is active. The paginator reserves and observes the
 image block height, then sends the measured text fragments to the same
 Worker/Rust-WASM page-layout protocol. Supported square and top-and-bottom
-metadata round-trips through DOCX `wp:anchor`. Arbitrary offsets, crop geometry,
-contour wrapping, z-order, and drawing-layer relationships are not represented
-yet.
+metadata round-trips through DOCX `wp:anchor`. Aligned anchors remain aligned,
+while precise offsets preserve `positionH` and `positionV` reference frames
+through edit, preview, and regenerated DOCX. Crop geometry, contour wrapping,
+z-order, and drawing-layer relationships are not represented yet.
 
 The page-layout panel mounts two bounded TipTap surfaces for the active
 header/footer variant. Pagination joins each kernel page placement to typed
@@ -611,7 +613,7 @@ Windows parity workflow exports the same fixture through WPS, captures both
 794 by 1123 CSS-pixel pages, and rejects page-size, landmark, or bounded pixel
 differences. Language-complete font substitution, variable font axes, the
 remaining character and table style properties, arbitrary floating-object
-offsets, cropping, contour wrapping and layering, row-internal table splitting
+cropping, contour wrapping and layering, row-internal table splitting
 inside a single long paragraph, footnote balancing, multi-column flow, and
 mixed-size sections require the
 later layout stages below.
@@ -881,12 +883,12 @@ bundle regression.
 - Extend the current horizontal and vertical page rulers with bidirectional and
   locale-complete tab behavior, plus complete style, numbering, and theme
   inheritance beyond the implemented paragraph slices.
-- Complete row-internal splitting for single indivisible paragraphs and
-  complex merged-cell flows, and add nested tables, full floating-object
-  geometry beyond the supported square/top-and-bottom image anchors, footnote
-  balancing, columns, and mixed page sections. Row-flow pagination, direct-cell
-  block splitting, repeating headers, and the initial image-wrapping slice are
-  already implemented.
+- Complete row-internal splitting for single indivisible paragraphs and full
+  floating-object geometry beyond the supported wrap and precise-anchor
+  subset, plus footnote balancing, columns, and mixed page sections. Row-flow
+  pagination, direct-cell and nested-row splitting, merged-cell continuations,
+  repeating headers, and the current image-wrapping slice are already
+  implemented.
 - Keep pagination results as mapped ProseMirror decorations so reflow never
   corrupts selection or undo history.
 

@@ -1,8 +1,10 @@
 import {
   normalizeDocumentImageAlignment,
   normalizeDocumentImageLayoutOptions,
+  normalizeDocumentImagePosition,
   type WorkDocumentImageLayout,
   type WorkDocumentImageLayoutOptions,
+  type WorkDocumentImagePosition,
 } from './work-document-image-layout';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
@@ -10,6 +12,7 @@ export interface ImportedDocxImageLayoutMarker {
   startMarker: string;
   endMarker: string;
   options: WorkDocumentImageLayoutOptions;
+  position: WorkDocumentImagePosition | null;
 }
 
 export interface ImportedDocxImageLayoutMarkers {
@@ -47,6 +50,7 @@ export function markDocxImageLayouts(
         alignment: anchorAlignment(anchor),
         wrapDistance: anchorWrapDistance(anchor, layout),
       }),
+      position: anchorPosition(anchor),
     });
   }
   return { images };
@@ -86,7 +90,7 @@ export function applyImportedDocxImageLayoutMarkers(
       continue;
     }
     if (!state.applied && state.active && node instanceof HTMLImageElement) {
-      applyImageLayout(node, state.active.options);
+      applyImageLayout(node, state.active.options, state.active.position);
       state.applied = true;
     }
   }
@@ -146,6 +150,29 @@ function anchorWrapDistance(
   return distance / EMUS_PER_MILLIMETER;
 }
 
+function anchorPosition(anchor: Element): WorkDocumentImagePosition | null {
+  const horizontal = directChild(anchor, 'positionH');
+  const vertical = directChild(anchor, 'positionV');
+  const horizontalOffset = positionOffset(horizontal);
+  const verticalOffset = positionOffset(vertical);
+  if (horizontalOffset === null && verticalOffset === null) return null;
+  return normalizeDocumentImagePosition({
+    horizontalOffset,
+    verticalOffset,
+    horizontalReference: horizontal
+      ? attribute(horizontal, 'relativeFrom')
+      : null,
+    verticalReference: vertical ? attribute(vertical, 'relativeFrom') : null,
+  });
+}
+
+function positionOffset(position: Element | null | undefined): number | null {
+  const value = position ? directChild(position, 'posOffset') : undefined;
+  if (!value?.textContent?.trim()) return null;
+  const emus = Number(value.textContent);
+  return Number.isFinite(emus) ? emus / EMUS_PER_MILLIMETER : null;
+}
+
 function insertMarkerRun(
   document: Document,
   run: Element,
@@ -165,6 +192,7 @@ function insertMarkerRun(
 function applyImageLayout(
   image: HTMLImageElement,
   options: WorkDocumentImageLayoutOptions,
+  position: WorkDocumentImagePosition | null,
 ): void {
   image.dataset.officeImageLayout = options.layout;
   image.dataset.officeImageAlignment = options.alignment;
@@ -173,6 +201,28 @@ function applyImageLayout(
     '--work-document-image-wrap-distance',
     `${formatNumber(options.wrapDistance)}mm`,
   );
+  if (position) {
+    if (position.horizontalOffset !== null) {
+      image.dataset.officeImageHorizontalOffset = formatNumber(
+        position.horizontalOffset,
+      );
+      image.style.setProperty(
+        '--work-document-image-horizontal-offset',
+        `${formatNumber(position.horizontalOffset)}mm`,
+      );
+    }
+    if (position.verticalOffset !== null) {
+      image.dataset.officeImageVerticalOffset = formatNumber(
+        position.verticalOffset,
+      );
+      image.style.setProperty(
+        '--work-document-image-vertical-offset',
+        `${formatNumber(position.verticalOffset)}mm`,
+      );
+    }
+    image.dataset.officeImageHorizontalReference = position.horizontalReference;
+    image.dataset.officeImageVerticalReference = position.verticalReference;
+  }
 }
 
 function numericAttribute(

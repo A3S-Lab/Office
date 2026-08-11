@@ -19,7 +19,9 @@ import { Button, Dialog } from '../../../design-system/primitives';
 import {
   documentImageProperties,
   type WorkDocumentImageAlignment,
+  type WorkDocumentImageHorizontalReference,
   type WorkDocumentImageLayout,
+  type WorkDocumentImageVerticalReference,
 } from '../work-document-image-layout';
 import {
   createDocumentPicturePropertiesDraft,
@@ -35,6 +37,7 @@ import {
 import {
   OfficeCheckbox,
   OfficeNumberField,
+  OfficeSelect,
   OfficeTextArea,
 } from './office-controls';
 import { WorkOfficeRibbonButton } from './work-office-chrome';
@@ -61,6 +64,24 @@ const alignmentOptions = [
   value: WorkDocumentImageAlignment;
   label: string;
   icon: typeof AlignLeft;
+}[];
+
+const horizontalReferenceOptions = [
+  { value: 'column', label: '栏' },
+  { value: 'margin', label: '页边距' },
+  { value: 'page', label: '页面' },
+] as const satisfies readonly {
+  value: WorkDocumentImageHorizontalReference;
+  label: string;
+}[];
+
+const verticalReferenceOptions = [
+  { value: 'paragraph', label: '段落' },
+  { value: 'margin', label: '页边距' },
+  { value: 'page', label: '页面' },
+] as const satisfies readonly {
+  value: WorkDocumentImageVerticalReference;
+  label: string;
 }[];
 
 export function DocumentPicturePropertiesControl({
@@ -171,7 +192,11 @@ function DocumentPicturePropertiesDialog({
           onDraftChange={setDraft}
         />
         <PictureLayoutSection draft={draft} onDraftChange={setDraft} />
-        <PictureAlignmentSection draft={draft} onDraftChange={setDraft} />
+        <PictureAlignmentSection
+          draft={draft}
+          errors={errors}
+          onDraftChange={setDraft}
+        />
         <label
           className="work-document-picture-properties-alt-text"
           htmlFor={alternativeTextId}
@@ -315,9 +340,11 @@ function PictureLayoutSection({
 
 function PictureAlignmentSection({
   draft,
+  errors,
   onDraftChange,
 }: {
   draft: DocumentPicturePropertiesDraft;
+  errors: DocumentPicturePropertiesErrors;
   onDraftChange: React.Dispatch<
     React.SetStateAction<DocumentPicturePropertiesDraft>
   >;
@@ -350,6 +377,66 @@ function PictureAlignmentSection({
           );
         })}
       </div>
+      <OfficeCheckbox
+        ariaLabel="使用精确图片位置"
+        checked={draft.precisePosition}
+        disabled={draft.layout === 'inline'}
+        onCheckedChange={(precisePosition) =>
+          onDraftChange((current) => ({ ...current, precisePosition }))
+        }
+      >
+        使用精确位置
+      </OfficeCheckbox>
+      <div className="work-document-picture-properties-position-grid">
+        <PictureNumberRow
+          label="水平偏移"
+          ariaLabel="图片水平偏移（毫米）"
+          value={draft.horizontalOffset}
+          unit="毫米"
+          min={-558.7}
+          max={558.7}
+          step={0.5}
+          disabled={draft.layout === 'inline' || !draft.precisePosition}
+          invalid={Boolean(errors.horizontalOffset)}
+          onValueChange={(horizontalOffset) =>
+            onDraftChange((current) => ({ ...current, horizontalOffset }))
+          }
+        />
+        <OfficeSelect<WorkDocumentImageHorizontalReference>
+          ariaLabel="水平相对于"
+          value={draft.horizontalReference}
+          options={horizontalReferenceOptions}
+          disabled={draft.layout === 'inline' || !draft.precisePosition}
+          onValueChange={(horizontalReference) =>
+            onDraftChange((current) => ({ ...current, horizontalReference }))
+          }
+        />
+        <PictureNumberRow
+          label="垂直偏移"
+          ariaLabel="图片垂直偏移（毫米）"
+          value={draft.verticalOffset}
+          unit="毫米"
+          min={-558.7}
+          max={558.7}
+          step={0.5}
+          disabled={draft.layout === 'inline' || !draft.precisePosition}
+          invalid={Boolean(errors.verticalOffset)}
+          onValueChange={(verticalOffset) =>
+            onDraftChange((current) => ({ ...current, verticalOffset }))
+          }
+        />
+        <OfficeSelect<WorkDocumentImageVerticalReference>
+          ariaLabel="垂直相对于"
+          value={draft.verticalReference}
+          options={verticalReferenceOptions}
+          disabled={draft.layout === 'inline' || !draft.precisePosition}
+          onValueChange={(verticalReference) =>
+            onDraftChange((current) => ({ ...current, verticalReference }))
+          }
+        />
+      </div>
+      {errors.horizontalOffset && <p role="alert">{errors.horizontalOffset}</p>}
+      {errors.verticalOffset && <p role="alert">{errors.verticalOffset}</p>}
     </fieldset>
   );
 }

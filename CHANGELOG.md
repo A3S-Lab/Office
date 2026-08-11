@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Preserved and authored precise Word floating-image anchors with signed
+  horizontal and vertical offsets relative to the column, paragraph, margin,
+  or page. Picture Properties validates the complete placement atomically,
+  edit/preview apply matching offsets, and DOCX `positionH`/`positionV`
+  round-trip without converting aligned anchors into offset anchors.
 - Continued row-spanning Word table cells across every covered physical row
   during pagination. Combined `rowspan`/`colspan` cells now receive contiguous
   selection ranges and in-cell page-break widgets, while DOCX `vMerge` and
