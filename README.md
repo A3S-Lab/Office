@@ -479,7 +479,13 @@ ignorable attributes, elements, and structurally valid, non-conflicting
 `mc:AlternateContent` blocks survive strict or transitional UTF-8/UTF-16
 sources. Generated Word settings still win, and this preservation does not yet
 extend to unknown markup inside regenerated body, style, numbering, header, or
-footer trees.
+footer trees. Source font-table metadata and source-only internal obfuscated
+font payloads are also retained, with relationship references rewritten after
+ID collisions. External fonts, wrong relationship or content types, duplicate
+identities, and paths that collide with generated payloads are not reconnected.
+Native DOCX consumers can use the retained embedded fonts; the browser editor,
+preview, and PDF renderer do not load document-embedded font binaries and may
+substitute fonts or wrap text differently.
 
 ## Native automation
 

@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { decodeXmlBytes } from './work-ooxml-xml';
 
 export interface OoxmlRelationship {
   id: string;
@@ -27,7 +28,7 @@ export class OoxmlPackage {
   async text(partPath: string): Promise<string> {
     const entry = this.zip.file(partPath);
     if (!entry) throw new Error(`Office package part is missing: ${partPath}`);
-    return entry.async('text');
+    return decodeXmlBytes(await entry.async('uint8array'), partPath);
   }
 
   async xml(partPath: string): Promise<Document> {

@@ -1,14 +1,13 @@
 import type JSZip from 'jszip';
 import { attribute, directChildren, parseXml } from './work-ooxml-package';
+import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 import {
   assertXmlRoot,
   cloneXmlElement,
   collectRetainedNamespaces,
   declareInheritedNamespaces,
-  decodeXmlBytes,
   hasXmlAttribute,
   isStructurallyValidAlternateContent,
-  serializeUtf8Xml,
   XMLNS_NAMESPACE,
   XML_NAMESPACE,
   xmlAttributeLocalName,

@@ -902,7 +902,13 @@ being re-registered under the same artifact ID. Unknown attributes, elements,
 and `mc:AlternateContent` branches are now selectively merged inside
 `word/settings.xml`: only passive ignorable markup that is relationship-free,
 structurally valid, and non-conflicting with generated Word settings survives.
-Strict and transitional UTF-8/UTF-16 sources share this path. Unknown inline
+Strict and transitional UTF-8/UTF-16 sources share this path. The package graph
+also retains source font-table metadata and source-only internal obfuscated-font
+payloads, then rewrites their references to collision-free relationship IDs.
+External fonts, mismatched relationship or content types, duplicate identities,
+and source payload paths that collide with generated parts are disconnected.
+This preserves embedded fonts for native DOCX consumers without loading those
+binaries into the browser editor, preview, or PDF renderer. Unknown inline
 markup in regenerated document, style, numbering, header, and footer trees
 remains the next loss-preservation boundary.
 

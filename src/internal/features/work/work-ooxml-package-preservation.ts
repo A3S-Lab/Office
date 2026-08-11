@@ -1,11 +1,17 @@
 import JSZip from 'jszip';
+import { preserveDocxFontTable } from './work-docx-font-table-preservation';
 import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
+import { attribute, directChildren, parseXml } from './work-ooxml-package';
 import {
-  attribute,
-  directChildren,
-  parseXml,
-  resolvePartTarget,
-} from './work-ooxml-package';
+  isExcludedDocxContentType,
+  isExcludedDocxPart,
+  isSafeOpcPartPath,
+} from './work-ooxml-package-security';
+import {
+  isRelationshipsPart,
+  preserveDocxRelationships,
+} from './work-ooxml-relationship-preservation';
+import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
 const CONTENT_TYPES_PATH = '[Content_Types].xml';
 const CONTENT_TYPES_NAMESPACE =
@@ -39,6 +45,7 @@ export async function preserveDocxSourcePackage(
   const generatedPaths = packagePaths(generated);
   const sourcePaths = packagePaths(source);
   const generatedByLower = pathLookup(generatedPaths);
+  const generatedPartPaths = new Set(generatedByLower.keys());
   const sourceByLower = pathLookup(sourcePaths);
   const ambiguousSourcePaths = ambiguousPaths(sourcePaths);
   validateSourcePackagePaths(sourcePaths, sourceTypes, ambiguousSourcePaths);
@@ -84,144 +91,48 @@ export async function preserveDocxSourcePackage(
   }
 
   const finalPartPaths = new Set(generatedByLower.keys());
-  await preserveRelationships(
+  const relationshipReferences = await preserveDocxRelationships(
     generated,
     source,
     sourcePaths,
     finalPartPaths,
+    generatedPartPaths,
     generatedByLower,
   );
+  const generatedFontTablePath = generatedByLower.get('word/fonttable.xml');
+  const sourceFontTablePath = sourceByLower.get('word/fonttable.xml');
+  if (
+    generatedFontTablePath &&
+    sourceFontTablePath &&
+    isDocxFontTableContentType(
+      contentTypeForPath(generatedTypes, generatedFontTablePath),
+    ) &&
+    isDocxFontTableContentType(
+      contentTypeForPath(sourceTypes, sourceFontTablePath),
+    )
+  ) {
+    const fontPartPaths = new Set(
+      Array.from(preservedPaths)
+        .filter((path) =>
+          isObfuscatedFontContentType(contentTypeForPath(sourceTypes, path)),
+        )
+        .map((path) => path.toLowerCase()),
+    );
+    await preserveDocxFontTable(
+      generated,
+      source,
+      relationshipReferences.get('word/fonttable.xml') ?? new Map(),
+      fontPartPaths,
+      generatedFontTablePath,
+      sourceFontTablePath,
+    );
+  }
   preserveContentTypes(generatedTypes, sourceTypes, preservedPaths, generated);
 
   return generated.generateAsync({
     type: 'arraybuffer',
     compression: 'DEFLATE',
   });
-}
-
-async function preserveRelationships(
-  generated: JSZip,
-  source: JSZip,
-  sourcePaths: readonly string[],
-  finalPartPaths: ReadonlySet<string>,
-  generatedByLower: Map<string, string>,
-): Promise<void> {
-  for (const sourcePath of sourcePaths.filter(isRelationshipsPart)) {
-    if (!isSafeOpcPartPath(sourcePath) || isExcludedDocxPart(sourcePath)) {
-      continue;
-    }
-    const ownerPart = relationshipOwnerPart(sourcePath);
-    if (ownerPart && !hasPath(finalPartPaths, ownerPart)) continue;
-    if (ownerPart.toLowerCase() === 'word/settings.xml') continue;
-    const sourceEntry = source.file(sourcePath);
-    if (!sourceEntry) continue;
-    const sourceDocument = parseXml(
-      await sourceEntry.async('text'),
-      `source DOCX ${sourcePath}`,
-    );
-    const generatedPath = generatedByLower.get(sourcePath.toLowerCase());
-    if (!generatedPath) {
-      removeUnsafeRelationships(sourceDocument, ownerPart, finalPartPaths);
-      generated.file(
-        sourcePath,
-        new XMLSerializer().serializeToString(sourceDocument),
-      );
-      generatedByLower.set(sourcePath.toLowerCase(), sourcePath);
-      continue;
-    }
-
-    const generatedEntry = generated.file(generatedPath);
-    if (!generatedEntry) continue;
-    const generatedDocument = parseXml(
-      await generatedEntry.async('text'),
-      `generated DOCX ${generatedPath}`,
-    );
-    mergeRelationships(
-      generatedDocument,
-      sourceDocument,
-      ownerPart,
-      finalPartPaths,
-    );
-    generated.file(
-      generatedPath,
-      new XMLSerializer().serializeToString(generatedDocument),
-    );
-  }
-}
-
-function removeUnsafeRelationships(
-  document: Document,
-  ownerPart: string,
-  finalPartPaths: ReadonlySet<string>,
-): void {
-  for (const relationship of directChildren(
-    document.documentElement,
-    'Relationship',
-  )) {
-    if (
-      !shouldPreserveRelationship(relationship, ownerPart, finalPartPaths, true)
-    ) {
-      relationship.remove();
-    }
-  }
-}
-
-function mergeRelationships(
-  generated: Document,
-  source: Document,
-  ownerPart: string,
-  finalPartPaths: ReadonlySet<string>,
-): void {
-  const root = generated.documentElement;
-  const generatedItems = directChildren(root, 'Relationship');
-  const usedIds = new Set(
-    generatedItems.map((item) => attribute(item, 'Id') ?? '').filter(Boolean),
-  );
-  const existing = new Set(generatedItems.map(relationshipSignature));
-  for (const sourceItem of directChildren(
-    source.documentElement,
-    'Relationship',
-  )) {
-    if (
-      !shouldPreserveRelationship(sourceItem, ownerPart, finalPartPaths, false)
-    ) {
-      continue;
-    }
-    const signature = relationshipSignature(sourceItem);
-    if (existing.has(signature)) continue;
-    const imported = generated.importNode(sourceItem, true) as Element;
-    const sourceId = attribute(imported, 'Id')?.trim() ?? '';
-    const id =
-      sourceId && !usedIds.has(sourceId)
-        ? sourceId
-        : nextRelationshipId(usedIds);
-    imported.setAttribute('Id', id);
-    usedIds.add(id);
-    existing.add(signature);
-    root.append(imported);
-  }
-}
-
-function shouldPreserveRelationship(
-  relationship: Element,
-  ownerPart: string,
-  finalPartPaths: ReadonlySet<string>,
-  allowExternal: boolean,
-): boolean {
-  const type = attribute(relationship, 'Type')?.trim() ?? '';
-  const target = attribute(relationship, 'Target')?.trim() ?? '';
-  if (!type || !target || isExcludedRelationshipType(type)) return false;
-  if (
-    (attribute(relationship, 'TargetMode') ?? '').toLowerCase() === 'external'
-  ) {
-    return allowExternal;
-  }
-  const resolved = resolvePartTarget(ownerPart, target);
-  return (
-    isSafeOpcPartPath(resolved) &&
-    !isExcludedDocxPart(resolved) &&
-    hasPath(finalPartPaths, resolved)
-  );
 }
 
 function preserveContentTypes(
@@ -255,10 +166,7 @@ function preserveContentTypes(
     }
     generated.overrides.set(path.toLowerCase(), sourceType);
   }
-  archive.file(
-    CONTENT_TYPES_PATH,
-    new XMLSerializer().serializeToString(generated.document),
-  );
+  archive.file(CONTENT_TYPES_PATH, serializeUtf8Xml(generated.document));
 }
 
 async function readContentTypes(
@@ -268,7 +176,10 @@ async function readContentTypes(
   const entry = archive.file(CONTENT_TYPES_PATH);
   if (!entry) throw new Error(`${label} content types part is missing.`);
   const document = parseXml(
-    await entry.async('text'),
+    decodeXmlBytes(
+      await entry.async('uint8array'),
+      `${label} ${CONTENT_TYPES_PATH}`,
+    ),
     `${label} ${CONTENT_TYPES_PATH}`,
   );
   return {
@@ -343,10 +254,6 @@ function ambiguousPaths(paths: readonly string[]): Set<string> {
   return ambiguous;
 }
 
-function hasPath(paths: ReadonlySet<string>, expected: string): boolean {
-  return paths.has(expected.toLowerCase());
-}
-
 function validateSourcePackagePaths(
   paths: readonly string[],
   types: OoxmlContentTypes,
@@ -375,88 +282,27 @@ function validateSourcePackagePaths(
   }
 }
 
-function isSafeOpcPartPath(path: string): boolean {
-  if (
-    !path ||
-    path.startsWith('/') ||
-    path.includes('\\') ||
-    /[\u0000-\u001f\u007f]/.test(path)
-  ) {
-    return false;
-  }
-  const segments = path.split('/');
-  return segments.every(
-    (segment) => Boolean(segment) && segment !== '.' && segment !== '..',
-  );
-}
-
-function isRelationshipsPart(path: string): boolean {
-  return (
-    /^_rels\/\.rels$/i.test(path) || /(^|\/)_rels\/[^/]+\.rels$/i.test(path)
-  );
-}
-
-function relationshipOwnerPart(path: string): string {
-  if (/^_rels\/\.rels$/i.test(path)) return '';
-  const match = /^(.*\/)?_rels\/([^/]+)\.rels$/i.exec(path);
-  if (!match) return '';
-  return `${match[1] ?? ''}${match[2]}`;
-}
-
 function normalizePartName(value: string): string {
   return value.replace(/^\/+/, '');
-}
-
-function relationshipSignature(relationship: Element): string {
-  return [
-    attribute(relationship, 'Type') ?? '',
-    attribute(relationship, 'Target') ?? '',
-    (attribute(relationship, 'TargetMode') ?? '').toLowerCase(),
-  ].join('\u0000');
-}
-
-function nextRelationshipId(used: ReadonlySet<string>): string {
-  let index = 1;
-  while (used.has(`rId${index}`)) index += 1;
-  return `rId${index}`;
-}
-
-function isExcludedDocxPart(path: string): boolean {
-  const normalized = path.toLowerCase();
-  return (
-    normalized.startsWith('_xmlsignatures/') ||
-    normalized.startsWith('customui/') ||
-    normalized.startsWith('word/activex/') ||
-    /(^|\/)vbaproject(?:signature)?\.bin(?:\.rels)?$/.test(normalized) ||
-    normalized === 'word/vbadata.xml'
-  );
-}
-
-function isExcludedRelationshipType(type: string): boolean {
-  const normalized = type.toLowerCase();
-  return [
-    'digital-signature',
-    'vbaproject',
-    'activex',
-    'ui/extensibility',
-  ].some((marker) => normalized.includes(marker));
-}
-
-function isExcludedDocxContentType(type: string | undefined): boolean {
-  const normalized = type?.toLowerCase() ?? '';
-  return [
-    'digital-signature',
-    'vbaproject',
-    'activex',
-    'customui',
-    'custom-ui',
-    'ribbon',
-  ].some((marker) => normalized.includes(marker));
 }
 
 function isDocxSettingsContentType(type: string | undefined): boolean {
   return (
     type?.trim().toLowerCase() ===
     'application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml'
+  );
+}
+
+function isDocxFontTableContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.fonttable+xml'
+  );
+}
+
+function isObfuscatedFontContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.obfuscatedfont'
   );
 }

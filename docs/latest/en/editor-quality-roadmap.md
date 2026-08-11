@@ -92,12 +92,18 @@ generated core parts or reusing conflicting relationship IDs. Export fails
 closed when the declared source Blob is unavailable or its SHA-256 fingerprint
 does not match the imported package. Invalidated digital signatures and active
 VBA, ActiveX, or custom-ribbon parts are deliberately removed and reported.
-The next slice preserves relationship-free ignorable attributes, elements, and
+The second slice preserves relationship-free ignorable attributes, elements, and
 structurally valid, non-conflicting `mc:AlternateContent` blocks inside
 `word/settings.xml`, including strict/transitional and UTF-8/UTF-16 sources.
-Generated settings semantics stay authoritative. Equivalent unknown markup in
-document, style, numbering, header, and footer trees remains an explicit next
-boundary rather than being covered by this claim.
+Generated settings semantics stay authoritative. The relationship-identity
+slice reconnects source font-table metadata only to source-only internal
+obfuscated-font payloads, rewriting colliding relationship IDs and rejecting
+external, mistyped, duplicate, or payload-path-colliding references. Package
+XML decoding accepts strict or transitional UTF-8/UTF-16 input and emits UTF-8.
+The retained fonts remain native-DOCX state; browser edit, preview, and PDF
+surfaces continue to use registered fonts or substitution. Equivalent unknown
+markup in document, style, numbering, header, and footer trees remains an
+explicit next boundary rather than being covered by this claim.
 
 Exit evidence:
 

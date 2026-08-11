@@ -17,6 +17,14 @@ All notable changes to A3S Office will be documented in this file.
   transitional UTF-8/UTF-16 source packages. Generated Word settings remain
   authoritative; malformed, relationship-bound, protection, template,
   mail-merge, field-update, and duplicate-setting markup is not restored.
+- Preserved source DOCX font-table metadata and eligible internal obfuscated
+  font payloads through relationship-ID collisions. Font references are
+  rewritten to their final package IDs, while external references, wrong
+  relationship or content types, duplicate identities, and payload-path
+  collisions fail closed. Strict and transitional UTF-8/UTF-16 package XML is
+  decoded consistently. Embedded fonts remain available to native DOCX
+  consumers; browser editing, preview, and PDF export still use registered A3S
+  fonts or substitution.
 - Defined authoritative controlled-update behavior for reviewed Word ranges.
   Comment and tracked-change mutations now produce typed React, Vue, and Web
   Component conflict events plus an accessible warning, while harmless range

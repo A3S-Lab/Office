@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive ignorable extensions in settings XML are preserved when they are relationship-free and do not duplicate generated settings. Generated document, style, numbering, header, and footer parts remain authoritative, so unsupported inline markup there may still normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive ignorable extensions in settings XML and eligible source font-table metadata are preserved against the final package graph. Generated document, style, numbering, header, and footer parts remain authoritative, so unsupported inline markup there may still normalize.',
       'info',
     ),
   ];
@@ -101,6 +101,27 @@ export async function analyzeDocxCompatibility(
           'VBA, ActiveX, and custom-ribbon parts are never executed and are omitted from the macro-free DOCX export.',
         ),
       );
+    }
+    if (archive.has('word/fontTable.xml')) {
+      const fontTable = await archive.xml('word/fontTable.xml');
+      const embeddedFontReferences = [
+        'embedRegular',
+        'embedBold',
+        'embedItalic',
+        'embedBoldItalic',
+      ].reduce(
+        (count, localName) => count + descendants(fontTable, localName).length,
+        0,
+      );
+      if (embeddedFontReferences) {
+        issues.push(
+          issue(
+            'docx.embedded-fonts',
+            'Embedded fonts',
+            `${embeddedFontReferences} embedded font reference(s) were found. Eligible internal obfuscated-font payloads, metadata, relationships, and remapped IDs survive source-backed DOCX export, but the browser editor, preview, and PDF renderer use registered A3S fonts or substitution and may wrap text differently.`,
+          ),
+        );
+      }
     }
     if (archive.has('word/comments.xml')) {
       const comments = await archive.xml('word/comments.xml');
