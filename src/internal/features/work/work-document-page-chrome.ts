@@ -72,6 +72,7 @@ const MATHML_ATTRIBUTES = new Set([
   'height',
   'lang',
   'linethickness',
+  'mathbackground',
   'mathcolor',
   'mathsize',
   'mathvariant',

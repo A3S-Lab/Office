@@ -1106,6 +1106,16 @@ function createWordRunProperties(
       ),
     );
   }
+  if (properties.highlight) {
+    result.append(
+      createWordValueElement(
+        document,
+        prefix,
+        'highlight',
+        properties.highlight,
+      ),
+    );
+  }
   if (properties.underline) {
     const underline = createWordValueElement(
       document,
@@ -1122,6 +1132,34 @@ function createWordRunProperties(
       );
     }
     result.append(underline);
+  }
+  if (properties.shading) {
+    const shading = createWordValueElement(
+      document,
+      prefix,
+      'shd',
+      properties.shading.pattern,
+    );
+    if (properties.shading.color) {
+      setWordColorAttributes(
+        shading,
+        prefix,
+        properties.shading.color,
+        'color',
+      );
+    }
+    if (properties.shading.fill) {
+      setWordColorAttributes(
+        shading,
+        prefix,
+        properties.shading.fill,
+        'fill',
+        'themeFill',
+        'themeFillTint',
+        'themeFillShade',
+      );
+    }
+    result.append(shading);
   }
   for (const [name, value] of [
     ['rtl', properties.rightToLeft],
@@ -1212,7 +1250,10 @@ function setWordColorAttributes(
   element: Element,
   prefix: string,
   color: WorkDocumentEquationWordColor,
-  valueAttribute: 'val' | 'color',
+  valueAttribute: 'val' | 'color' | 'fill',
+  themeAttribute = 'themeColor',
+  tintAttribute = 'themeTint',
+  shadeAttribute = 'themeShade',
 ): void {
   if (color.value) {
     setWordAttribute(
@@ -1223,11 +1264,11 @@ function setWordColorAttributes(
     );
   }
   if (color.theme) {
-    setWordAttribute(element, prefix, 'themeColor', color.theme);
+    setWordAttribute(element, prefix, themeAttribute, color.theme);
   }
-  if (color.tint) setWordAttribute(element, prefix, 'themeTint', color.tint);
+  if (color.tint) setWordAttribute(element, prefix, tintAttribute, color.tint);
   if (color.shade) {
-    setWordAttribute(element, prefix, 'themeShade', color.shade);
+    setWordAttribute(element, prefix, shadeAttribute, color.shade);
   }
 }
 

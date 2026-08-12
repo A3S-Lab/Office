@@ -17,7 +17,12 @@ All notable changes to A3S Office will be documented in this file.
   plus ordered `m:rPr -> w:rPr -> m:t/w:t` runs with bounded Word fonts and
   theme references, Latin/complex-script bold and italic flags, strike,
   proofing/grid flags, direct/theme colors, half-point sizes, colored underline
-  styles, RTL/complex-script flags, and language tags. Explicit on/off values
+  styles, every named highlight color, complete patterned run shading with
+  direct or theme foreground/background colors, RTL/complex-script flags, and
+  language tags. Highlight precedence over shading is retained. Named
+  highlights, explicit highlight removal, clear direct fills, solid direct
+  foregrounds, and nil shading project through MathML `mathbackground`; pattern
+  masks and theme-only colors remain native metadata. Explicit on/off values
   survive native regeneration, while unknown, reordered, duplicated, spoofed,
   or relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered

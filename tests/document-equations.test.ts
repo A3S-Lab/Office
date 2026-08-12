@@ -2189,6 +2189,324 @@ describe('document equations', () => {
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
 
+  test('preserves Word highlight and patterned shading inside OMML', async () => {
+    const equation: WorkDocumentEquation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'highlighted',
+          wordRunProperties: {
+            highlight: 'yellow',
+            shading: {
+              pattern: 'clear',
+              fill: { value: '#112233' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'clear-shading',
+          wordRunProperties: {
+            shading: {
+              pattern: 'clear',
+              fill: {
+                value: '#112233',
+                theme: 'accent4',
+                tint: '80',
+              },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'solid-shading',
+          wordRunProperties: {
+            shading: {
+              pattern: 'solid',
+              color: {
+                value: '#abcdef',
+                theme: 'text2',
+                shade: '40',
+              },
+              fill: { value: '#445566' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'patterned-shading',
+          wordRunProperties: {
+            shading: {
+              pattern: 'pct20',
+              color: { value: '#ff0000' },
+              fill: { theme: 'accent3', tint: '20' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'theme-only-shading',
+          wordRunProperties: {
+            shading: {
+              pattern: 'clear',
+              fill: { theme: 'accent2', tint: '99' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'unhighlighted',
+          wordRunProperties: {
+            highlight: 'none',
+            shading: {
+              pattern: 'clear',
+              fill: { value: '#112233' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'nil-shading',
+          wordRunProperties: {
+            shading: {
+              pattern: 'nil',
+              fill: { value: '#112233' },
+            },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { highlight: 'darkCyan' },
+          children: [{ type: 'run', text: 'operator-background' }],
+        },
+      ],
+    };
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    const invalidModels = [
+      { highlight: 'orange' },
+      { shading: {} },
+      { shading: { pattern: 'pct33' } },
+      { shading: { pattern: 'clear', extra: true } },
+      { shading: { pattern: 'clear', color: {} } },
+      { shading: { pattern: 'clear', fill: { value: '#12345' } } },
+      {
+        shading: {
+          pattern: 'clear',
+          fill: { theme: 'none', tint: '80' },
+        },
+      },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const highlightValues = [
+      'black',
+      'blue',
+      'cyan',
+      'green',
+      'magenta',
+      'red',
+      'yellow',
+      'white',
+      'darkBlue',
+      'darkCyan',
+      'darkGreen',
+      'darkMagenta',
+      'darkRed',
+      'darkYellow',
+      'darkGray',
+      'lightGray',
+      'none',
+    ];
+    expect(
+      highlightValues.map((value) =>
+        inspectEquationBody(wordRun(`<w:highlight w:val="${value}"/>`)),
+      ),
+    ).toEqual(highlightValues.map(() => 'supported'));
+    const shadingPatterns = [
+      'nil',
+      'clear',
+      'solid',
+      'horzStripe',
+      'vertStripe',
+      'reverseDiagStripe',
+      'diagStripe',
+      'horzCross',
+      'diagCross',
+      'thinHorzStripe',
+      'thinVertStripe',
+      'thinReverseDiagStripe',
+      'thinDiagStripe',
+      'thinHorzCross',
+      'thinDiagCross',
+      'pct5',
+      'pct10',
+      'pct12',
+      'pct15',
+      'pct20',
+      'pct25',
+      'pct30',
+      'pct35',
+      'pct37',
+      'pct40',
+      'pct45',
+      'pct50',
+      'pct55',
+      'pct60',
+      'pct62',
+      'pct65',
+      'pct70',
+      'pct75',
+      'pct80',
+      'pct85',
+      'pct87',
+      'pct90',
+      'pct95',
+    ];
+    expect(
+      shadingPatterns.map((value) =>
+        inspectEquationBody(wordRun(`<w:shd w:val="${value}"/>`)),
+      ),
+    ).toEqual(shadingPatterns.map(() => 'supported'));
+
+    const invalidMarkup = [
+      wordRun('<w:highlight/>'),
+      wordRun('<w:highlight w:val="orange"/>'),
+      wordRun('<w:highlight val="yellow"/>'),
+      wordRun('<w:highlight w:val="yellow" w:extra="semantic"/>'),
+      wordRun(
+        `<w:highlight xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="yellow" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:highlight w:val="yellow"><w:b/></w:highlight>'),
+      wordRun('<w:highlight w:val="yellow"/><w:highlight w:val="red"/>'),
+      wordRun('<w:shd/>'),
+      wordRun('<w:shd w:val="pct33"/>'),
+      wordRun('<w:shd w:val="clear" w:fill="12345"/>'),
+      wordRun('<w:shd w:val="clear" w:themeFill="none"/>'),
+      wordRun('<w:shd w:val="clear" w:themeFillTint="80"/>'),
+      wordRun('<w:shd w:val="clear" fill="112233"/>'),
+      wordRun('<w:shd w:val="clear" w:extra="semantic"/>'),
+      wordRun(
+        `<w:shd xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="clear" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:shd w:val="clear"><w:b/></w:shd>'),
+      wordRun('<w:shd w:val="clear"/><w:shd w:val="solid"/>'),
+      wordRun('<w:shd w:val="clear"/><w:highlight w:val="yellow"/>'),
+      wordRun('<w:shd w:val="clear"/><w:u w:val="single"/>'),
+      wordRun(`<v:highlight xmlns:v="${VENDOR_NAMESPACE}" w:val="yellow"/>`),
+      wordRun(`<v:shd xmlns:v="${VENDOR_NAMESPACE}" w:val="clear"/>`),
+      wordRun('<m:highlight m:val="yellow"/>'),
+      wordRun('<m:shd m:val="clear"/>'),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const strictInspection = inspectEquationRoot(
+      `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}"><m:r><w:rPr><w:highlight w:val="darkBlue"/><w:shd w:val="pct37" w:color="ABCDEF" w:themeColor="text2" w:themeShade="40" w:fill="112233" w:themeFill="accent4" w:themeFillTint="80"/></w:rPr><m:t>strict-background</m:t></m:r></m:oMath>`,
+    );
+    expect(strictInspection).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            wordRunProperties: {
+              highlight: 'darkBlue',
+              shading: {
+                pattern: 'pct37',
+                color: {
+                  value: '#abcdef',
+                  theme: 'text2',
+                  shade: '40',
+                },
+                fill: {
+                  value: '#112233',
+                  theme: 'accent4',
+                  tint: '80',
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const backgroundFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo'))
+        .find((element) => element.textContent === text)
+        ?.getAttribute('mathbackground');
+    expect(backgroundFor('highlighted')).toBe('#ffff00');
+    expect(backgroundFor('clear-shading')).toBe('#112233');
+    expect(backgroundFor('solid-shading')).toBe('#abcdef');
+    expect(backgroundFor('patterned-shading')).toBeNull();
+    expect(backgroundFor('theme-only-shading')).toBeNull();
+    expect(backgroundFor('unhighlighted')).toBe('transparent');
+    expect(backgroundFor('nil-shading')).toBe('transparent');
+    expect(backgroundFor('\u2211')).toBe('#008080');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      Array.from(sanitized.querySelectorAll('[mathbackground]')).map(
+        (element) => element.getAttribute('mathbackground'),
+      ),
+    ).toEqual([
+      '#ffff00',
+      '#112233',
+      '#abcdef',
+      'transparent',
+      'transparent',
+      '#008080',
+    ]);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunBackgrounds(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-backgrounds.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunBackgrounds(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -4797,6 +5115,111 @@ function documentEquationPosition(editor: Editor): number {
   });
   if (result < 0) throw new Error('Expected a document equation node.');
   return result;
+}
+
+async function expectNativeWordRunBackgrounds(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const propertiesFor = (text: string) => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return directChildren(properties as Element);
+  };
+  const expected = [
+    {
+      text: 'highlighted',
+      names: ['highlight', 'shd'],
+      attributes: [{ val: 'yellow' }, { val: 'clear', fill: '112233' }],
+    },
+    {
+      text: 'clear-shading',
+      names: ['shd'],
+      attributes: [
+        {
+          val: 'clear',
+          fill: '112233',
+          themeFill: 'accent4',
+          themeFillTint: '80',
+        },
+      ],
+    },
+    {
+      text: 'solid-shading',
+      names: ['shd'],
+      attributes: [
+        {
+          val: 'solid',
+          color: 'ABCDEF',
+          themeColor: 'text2',
+          themeShade: '40',
+          fill: '445566',
+        },
+      ],
+    },
+    {
+      text: 'patterned-shading',
+      names: ['shd'],
+      attributes: [
+        {
+          val: 'pct20',
+          color: 'FF0000',
+          themeFill: 'accent3',
+          themeFillTint: '20',
+        },
+      ],
+    },
+    {
+      text: 'theme-only-shading',
+      names: ['shd'],
+      attributes: [
+        {
+          val: 'clear',
+          themeFill: 'accent2',
+          themeFillTint: '99',
+        },
+      ],
+    },
+    {
+      text: 'unhighlighted',
+      names: ['highlight', 'shd'],
+      attributes: [{ val: 'none' }, { val: 'clear', fill: '112233' }],
+    },
+    {
+      text: 'nil-shading',
+      names: ['shd'],
+      attributes: [{ val: 'nil', fill: '112233' }],
+    },
+  ];
+  for (const entry of expected) {
+    const properties = propertiesFor(entry.text);
+    expect(
+      properties.map((property) => property.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(properties.map(wordAttributes), entry.text).toEqual(
+      entry.attributes,
+    );
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-background'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const highlight = directChildren(wordProperties as Element, 'highlight')[0];
+  expect(wordAttributes(highlight)).toEqual({ val: 'darkCyan' });
 }
 
 async function expectNativeControlProperties(blob: Blob): Promise<void> {

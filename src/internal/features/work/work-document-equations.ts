@@ -75,6 +75,63 @@ export type WorkDocumentEquationThemeColor =
   | 'text1'
   | 'background2'
   | 'text2';
+export type WorkDocumentEquationWordHighlight =
+  | 'black'
+  | 'blue'
+  | 'cyan'
+  | 'green'
+  | 'magenta'
+  | 'red'
+  | 'yellow'
+  | 'white'
+  | 'darkBlue'
+  | 'darkCyan'
+  | 'darkGreen'
+  | 'darkMagenta'
+  | 'darkRed'
+  | 'darkYellow'
+  | 'darkGray'
+  | 'lightGray'
+  | 'none';
+export type WorkDocumentEquationWordShadingPattern =
+  | 'nil'
+  | 'clear'
+  | 'solid'
+  | 'horzStripe'
+  | 'vertStripe'
+  | 'reverseDiagStripe'
+  | 'diagStripe'
+  | 'horzCross'
+  | 'diagCross'
+  | 'thinHorzStripe'
+  | 'thinVertStripe'
+  | 'thinReverseDiagStripe'
+  | 'thinDiagStripe'
+  | 'thinHorzCross'
+  | 'thinDiagCross'
+  | 'pct5'
+  | 'pct10'
+  | 'pct12'
+  | 'pct15'
+  | 'pct20'
+  | 'pct25'
+  | 'pct30'
+  | 'pct35'
+  | 'pct37'
+  | 'pct40'
+  | 'pct45'
+  | 'pct50'
+  | 'pct55'
+  | 'pct60'
+  | 'pct62'
+  | 'pct65'
+  | 'pct70'
+  | 'pct75'
+  | 'pct80'
+  | 'pct85'
+  | 'pct87'
+  | 'pct90'
+  | 'pct95';
 export type WorkDocumentEquationUnderlineStyle =
   | 'none'
   | 'words'
@@ -119,6 +176,12 @@ export interface WorkDocumentEquationWordUnderline {
   color?: WorkDocumentEquationWordColor;
 }
 
+export interface WorkDocumentEquationWordShading {
+  pattern: WorkDocumentEquationWordShadingPattern;
+  color?: WorkDocumentEquationWordColor;
+  fill?: WorkDocumentEquationWordColor;
+}
+
 export interface WorkDocumentEquationWordLanguages {
   latin?: string;
   eastAsia?: string;
@@ -138,7 +201,9 @@ export interface WorkDocumentEquationWordRunProperties {
   color?: WorkDocumentEquationWordColor;
   fontSize?: number;
   fontSizeComplexScript?: number;
+  highlight?: WorkDocumentEquationWordHighlight;
   underline?: WorkDocumentEquationWordUnderline;
+  shading?: WorkDocumentEquationWordShading;
   rightToLeft?: boolean;
   complexScript?: boolean;
   languages?: WorkDocumentEquationWordLanguages;
@@ -508,6 +573,85 @@ const THEME_COLORS = new Set<WorkDocumentEquationThemeColor>([
   'background2',
   'text2',
 ]);
+const WORD_HIGHLIGHT_COLORS = new Set<WorkDocumentEquationWordHighlight>([
+  'black',
+  'blue',
+  'cyan',
+  'green',
+  'magenta',
+  'red',
+  'yellow',
+  'white',
+  'darkBlue',
+  'darkCyan',
+  'darkGreen',
+  'darkMagenta',
+  'darkRed',
+  'darkYellow',
+  'darkGray',
+  'lightGray',
+  'none',
+]);
+const WORD_HIGHLIGHT_MATHML_COLORS: Readonly<
+  Record<Exclude<WorkDocumentEquationWordHighlight, 'none'>, string>
+> = {
+  black: '#000000',
+  blue: '#0000ff',
+  cyan: '#00ffff',
+  green: '#00ff00',
+  magenta: '#ff00ff',
+  red: '#ff0000',
+  yellow: '#ffff00',
+  white: '#ffffff',
+  darkBlue: '#000080',
+  darkCyan: '#008080',
+  darkGreen: '#008000',
+  darkMagenta: '#800080',
+  darkRed: '#800000',
+  darkYellow: '#808000',
+  darkGray: '#808080',
+  lightGray: '#c0c0c0',
+};
+const WORD_SHADING_PATTERNS = new Set<WorkDocumentEquationWordShadingPattern>([
+  'nil',
+  'clear',
+  'solid',
+  'horzStripe',
+  'vertStripe',
+  'reverseDiagStripe',
+  'diagStripe',
+  'horzCross',
+  'diagCross',
+  'thinHorzStripe',
+  'thinVertStripe',
+  'thinReverseDiagStripe',
+  'thinDiagStripe',
+  'thinHorzCross',
+  'thinDiagCross',
+  'pct5',
+  'pct10',
+  'pct12',
+  'pct15',
+  'pct20',
+  'pct25',
+  'pct30',
+  'pct35',
+  'pct37',
+  'pct40',
+  'pct45',
+  'pct50',
+  'pct55',
+  'pct60',
+  'pct62',
+  'pct65',
+  'pct70',
+  'pct75',
+  'pct80',
+  'pct85',
+  'pct87',
+  'pct90',
+  'pct95',
+]);
 const UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
   'words',
@@ -564,7 +708,9 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'color',
   'fontSize',
   'fontSizeComplexScript',
+  'highlight',
   'underline',
+  'shading',
   'rightToLeft',
   'complexScript',
   'languages',
@@ -582,6 +728,7 @@ const WORD_RUN_FONT_KEYS = new Set([
 ]);
 const WORD_COLOR_KEYS = new Set(['value', 'theme', 'tint', 'shade']);
 const WORD_UNDERLINE_KEYS = new Set(['style', 'color']);
+const WORD_SHADING_KEYS = new Set(['pattern', 'color', 'fill']);
 const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
@@ -2561,6 +2708,10 @@ function normalizeEquationWordRunProperties(
     source.underline === undefined
       ? undefined
       : normalizeEquationWordUnderline(source.underline);
+  const shading =
+    source.shading === undefined
+      ? undefined
+      : normalizeEquationWordShading(source.shading);
   const languages =
     source.languages === undefined
       ? undefined
@@ -2577,9 +2728,18 @@ function normalizeEquationWordRunProperties(
     fonts === null ||
     color === null ||
     underline === null ||
+    shading === null ||
     languages === null ||
     fontSize === null ||
     fontSizeComplexScript === null
+  ) {
+    return null;
+  }
+  if (
+    source.highlight !== undefined &&
+    !WORD_HIGHLIGHT_COLORS.has(
+      source.highlight as WorkDocumentEquationWordHighlight,
+    )
   ) {
     return null;
   }
@@ -2626,7 +2786,13 @@ function normalizeEquationWordRunProperties(
     ...(color ? { color } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
+    ...(source.highlight !== undefined
+      ? {
+          highlight: source.highlight as WorkDocumentEquationWordHighlight,
+        }
+      : {}),
     ...(underline ? { underline } : {}),
+    ...(shading ? { shading } : {}),
     ...(source.rightToLeft !== undefined
       ? { rightToLeft: source.rightToLeft as boolean }
       : {}),
@@ -2740,6 +2906,34 @@ function normalizeEquationWordUnderline(
     : {
         style: source.style as WorkDocumentEquationUnderlineStyle,
         ...(color ? { color } : {}),
+      };
+}
+
+function normalizeEquationWordShading(
+  source: unknown,
+): WorkDocumentEquationWordShading | null {
+  if (
+    !isRecordWithKeys(source, WORD_SHADING_KEYS) ||
+    !WORD_SHADING_PATTERNS.has(
+      source.pattern as WorkDocumentEquationWordShadingPattern,
+    )
+  ) {
+    return null;
+  }
+  const color =
+    source.color === undefined
+      ? undefined
+      : normalizeEquationWordColor(source.color);
+  const fill =
+    source.fill === undefined
+      ? undefined
+      : normalizeEquationWordColor(source.fill);
+  return color === null || fill === null
+    ? null
+    : {
+        pattern: source.pattern as WorkDocumentEquationWordShadingPattern,
+        ...(color ? { color } : {}),
+        ...(fill ? { fill } : {}),
       };
 }
 
@@ -2914,8 +3108,10 @@ function wordPropertiesMathMlAttributes(
     wordRunTextDecoration(properties),
   ].filter(Boolean);
   const color = properties.color?.value;
+  const background = wordRunMathMlBackground(properties);
   return {
     ...(color && color !== 'auto' ? { mathcolor: color } : {}),
+    ...(background ? { mathbackground: background } : {}),
     ...(size !== undefined ? { mathsize: `${size}pt` } : {}),
     ...(properties.rightToLeft !== undefined
       ? { dir: properties.rightToLeft ? 'rtl' : 'ltr' }
@@ -2923,6 +3119,28 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunMathMlBackground(
+  properties: WorkDocumentEquationWordRunProperties,
+): string | undefined {
+  if (properties.highlight) {
+    return properties.highlight === 'none'
+      ? 'transparent'
+      : WORD_HIGHLIGHT_MATHML_COLORS[properties.highlight];
+  }
+  const shading = properties.shading;
+  if (!shading) return undefined;
+  if (shading.pattern === 'nil') return 'transparent';
+  if (shading.pattern === 'clear') {
+    if (!shading.fill || shading.fill.value === 'auto') return 'transparent';
+    return shading.fill.value;
+  }
+  if (shading.pattern === 'solid') {
+    const color = shading.color?.value;
+    return color && color !== 'auto' ? color : undefined;
+  }
+  return undefined;
 }
 
 function wordPropertiesUseComplexScript(

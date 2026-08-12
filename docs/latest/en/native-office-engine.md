@@ -1252,10 +1252,16 @@ Math runs also preserve the native `m:rPr -> w:rPr -> m:t/w:t` order. The
 bounded Word run-property subset covers direct and theme font references,
 Latin and complex-script bold/italic flags, strike and double-strike,
 proofing/grid flags, direct and theme colors with tint/shade, half-point font
-sizes, colored underline styles, RTL/complex-script flags, and Latin, East
-Asian, and bidi language tags. Explicit on/off values remain distinct, export
-uses canonical `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe
-direct color, size, font, direction, language, emphasis, and decoration values.
+sizes, all named highlight colors, complete patterned run shading with direct
+or theme foreground/background colors, colored underline styles,
+RTL/complex-script flags, and Latin, East Asian, and bidi language tags.
+Explicit on/off values remain distinct, export uses canonical
+`m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
+background, size, font, direction, language, emphasis, and decoration values.
+`w:highlight` takes display precedence over `w:shd`; named highlights, explicit
+highlight removal, clear direct fills, solid direct foregrounds, and nil
+shading map to MathML `mathbackground`. Pattern masks and theme-only colors
+remain native metadata when no exact browser color is available.
 Unknown, duplicated, reordered, namespace-spoofed, or relationship-bound Word
 run properties fail closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their

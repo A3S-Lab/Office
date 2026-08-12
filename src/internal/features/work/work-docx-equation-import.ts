@@ -23,9 +23,12 @@ import {
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
   type WorkDocumentEquationWordRunFonts,
   type WorkDocumentEquationWordRunProperties,
+  type WorkDocumentEquationWordShading,
+  type WorkDocumentEquationWordShadingPattern,
   type WorkDocumentEquationWordUnderline,
 } from './work-document-equations';
 import {
@@ -128,7 +131,9 @@ const WORD_RUN_PROPERTY_ORDER = [
   'color',
   'sz',
   'szCs',
+  'highlight',
   'u',
+  'shd',
   'rtl',
   'cs',
   'lang',
@@ -181,6 +186,65 @@ const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'wave',
   'wavyHeavy',
   'wavyDouble',
+]);
+const WORD_HIGHLIGHT_COLORS = new Set<WorkDocumentEquationWordHighlight>([
+  'black',
+  'blue',
+  'cyan',
+  'green',
+  'magenta',
+  'red',
+  'yellow',
+  'white',
+  'darkBlue',
+  'darkCyan',
+  'darkGreen',
+  'darkMagenta',
+  'darkRed',
+  'darkYellow',
+  'darkGray',
+  'lightGray',
+  'none',
+]);
+const WORD_SHADING_PATTERNS = new Set<WorkDocumentEquationWordShadingPattern>([
+  'nil',
+  'clear',
+  'solid',
+  'horzStripe',
+  'vertStripe',
+  'reverseDiagStripe',
+  'diagStripe',
+  'horzCross',
+  'diagCross',
+  'thinHorzStripe',
+  'thinVertStripe',
+  'thinReverseDiagStripe',
+  'thinDiagStripe',
+  'thinHorzCross',
+  'thinDiagCross',
+  'pct5',
+  'pct10',
+  'pct12',
+  'pct15',
+  'pct20',
+  'pct25',
+  'pct30',
+  'pct35',
+  'pct37',
+  'pct40',
+  'pct45',
+  'pct50',
+  'pct55',
+  'pct60',
+  'pct62',
+  'pct65',
+  'pct70',
+  'pct75',
+  'pct80',
+  'pct85',
+  'pct87',
+  'pct90',
+  'pct95',
 ]);
 
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
@@ -736,14 +800,18 @@ function parseWordRunProperties(
   const color = parseWordRunColor(children.get('color'));
   const fontSize = parseWordHalfPointSize(children.get('sz'));
   const fontSizeComplexScript = parseWordHalfPointSize(children.get('szCs'));
+  const highlight = parseWordHighlight(children.get('highlight'));
   const underline = parseWordUnderline(children.get('u'));
+  const shading = parseWordShading(children.get('shd'));
   const languages = parseWordLanguages(children.get('lang'));
   if (
     fonts === null ||
     color === null ||
     fontSize === null ||
     fontSizeComplexScript === null ||
+    highlight === null ||
     underline === null ||
+    shading === null ||
     languages === null
   ) {
     return null;
@@ -791,7 +859,9 @@ function parseWordRunProperties(
     ...(color ? { color } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
+    ...(highlight ? { highlight } : {}),
     ...(underline ? { underline } : {}),
+    ...(shading ? { shading } : {}),
     ...(booleans.has('rightToLeft')
       ? { rightToLeft: booleans.get('rightToLeft') }
       : {}),
@@ -1011,6 +1081,18 @@ function parseWordHalfPointSize(
     : null;
 }
 
+function parseWordHighlight(
+  element: Element | undefined,
+): WorkDocumentEquationWordHighlight | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  const value = attributes?.get('val')?.trim();
+  return attributes?.size === 1 &&
+    WORD_HIGHLIGHT_COLORS.has(value as WorkDocumentEquationWordHighlight)
+    ? (value as WorkDocumentEquationWordHighlight)
+    : null;
+}
+
 function parseWordUnderline(
   element: Element | undefined,
 ): WorkDocumentEquationWordUnderline | null | undefined {
@@ -1033,6 +1115,51 @@ function parseWordUnderline(
     : {
         style: style as WorkDocumentEquationUnderlineStyle,
         ...(color ? { color } : {}),
+      };
+}
+
+function parseWordShading(
+  element: Element | undefined,
+): WorkDocumentEquationWordShading | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set([
+      'val',
+      'color',
+      'themeColor',
+      'themeTint',
+      'themeShade',
+      'fill',
+      'themeFill',
+      'themeFillTint',
+      'themeFillShade',
+    ]),
+  );
+  const pattern = attributes?.get('val')?.trim();
+  if (
+    !attributes ||
+    !WORD_SHADING_PATTERNS.has(
+      pattern as WorkDocumentEquationWordShadingPattern,
+    )
+  ) {
+    return null;
+  }
+  const color = wordColor(attributes, 'color', false);
+  const fill = wordColor(
+    attributes,
+    'fill',
+    false,
+    'themeFill',
+    'themeFillTint',
+    'themeFillShade',
+  );
+  return color === null || fill === null
+    ? null
+    : {
+        pattern: pattern as WorkDocumentEquationWordShadingPattern,
+        ...(color ? { color } : {}),
+        ...(fill ? { fill } : {}),
       };
 }
 
@@ -1121,13 +1248,16 @@ function wordElementAttributes(
 
 function wordColor(
   attributes: ReadonlyMap<string, string>,
-  valueAttribute: 'val' | 'color',
+  valueAttribute: 'val' | 'color' | 'fill',
   required: boolean,
+  themeAttribute = 'themeColor',
+  tintAttribute = 'themeTint',
+  shadeAttribute = 'themeShade',
 ): WorkDocumentEquationWordColor | null | undefined {
   const rawValue = attributes.get(valueAttribute)?.trim();
-  const rawTheme = attributes.get('themeColor')?.trim();
-  const rawTint = attributes.get('themeTint')?.trim();
-  const rawShade = attributes.get('themeShade')?.trim();
+  const rawTheme = attributes.get(themeAttribute)?.trim();
+  const rawTint = attributes.get(tintAttribute)?.trim();
+  const rawShade = attributes.get(shadeAttribute)?.trim();
   if (!rawValue && !rawTheme && !rawTint && !rawShade) {
     return required ? null : undefined;
   }
