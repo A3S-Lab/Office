@@ -29,13 +29,18 @@ All notable changes to A3S Office will be documented in this file.
   row-spacing rules, and `&` alignment/spacer markers, lower and upper limit
   objects, and custom delimiters in strict or transitional UTF-8/UTF-16
   packages. Fraction properties enforce `fPr -> num -> den` ordering and
-  canonicalize an absent or attribute-free `type` to the `bar` default. Depth,
+  canonicalize an absent or attribute-free `type` to the `bar` default.
+  N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and
+  `e` slots. An absent `chr` defaults to U+222B, an attribute-free `limLoc`
+  defaults to `undOvr`, disabled growth normalizes away, and hidden limits use
+  canonical empty script slots. Attribute-free operator characters, enabled
+  growth, and contradictory hidden nonempty limits fail closed. Depth,
   node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run properties,
-  invalid or contradictory fraction, radical, bar, group-character, phantom,
-  border-box, box, or equation-array properties, malformed lower/upper limit
-  structures,
+  invalid or contradictory fraction, radical, n-ary, bar, group-character,
+  phantom, border-box, box, or equation-array properties, malformed
+  lower/upper limit structures,
   matrix spacing and gap rules, ragged or over-limit matrices, over-limit
   equation arrays, malformed script-property, pre-script, or math-paragraph
   structures, malformed placement, namespace spoofing, nested math, and

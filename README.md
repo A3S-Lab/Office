@@ -552,6 +552,12 @@ Radicals enforce `radPr`, optional `deg`, and `e` ordering. An omitted or empty
 degree normalizes to a square root, while a visible nonempty degree remains an
 nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
 `degHide=1` with an empty degree slot for square roots.
+N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and `e`
+slots. An omitted `chr` defaults to U+222B, while an attribute-free `chr`
+remains an explicitly empty unsupported operator; an attribute-free `limLoc`
+defaults to `undOvr`. Disabled `grow` values normalize to the non-growing
+default, enabled growth fails closed, and native export always emits both limit
+slots with `subHide` or `supHide` for absent scripts.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded native grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`, while absent properties, absent `m:jc`,
@@ -564,8 +570,8 @@ Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
 characters, malformed math-run properties, invalid or contradictory fraction,
-radical, bar, group-character, phantom, border-box, box, or equation-array
-properties,
+radical, n-ary, bar, group-character, phantom, border-box, box, or
+equation-array properties,
 malformed script-property, pre-script, math-paragraph, or lower/upper limit
 structures,
 unsupported matrix spacing or gap rules, ragged or over-limit matrices,

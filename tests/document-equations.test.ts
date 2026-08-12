@@ -20,14 +20,14 @@ import {
   isSupportedDocxEquationPlacement,
 } from '../src/internal/features/work/work-docx-equation-import';
 import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from '../src/internal/features/work/work-docx-settings-xml';
+import {
   descendants,
   directChildren,
   parseXml,
 } from '../src/internal/features/work/work-ooxml-package';
-import {
-  xmlAttributeLocalName,
-  xmlAttributeNamespace,
-} from '../src/internal/features/work/work-docx-settings-xml';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -758,7 +758,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([33, 33, 1, 1]);
+    ).toEqual([34, 34, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -1008,7 +1008,7 @@ describe('document equations', () => {
       `<m:box><m:boxPr><m:brk/></m:boxPr><m:e>${run}</m:e></m:box>`,
       `<m:f><m:fPr><m:type m:val="noBar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/><m:ctrlPr/></m:radPr><m:e>${run}</m:e></m:rad>`,
-      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:sub/><m:sup/><m:e>${run}</m:e></m:nary>`,
       `<m:m><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:baseJc m:val="bot"/><m:plcHide m:val="true"/><m:mcs><m:mc><m:mcPr><m:count m:val="2"/><m:mcJc m:val="left"/></m:mcPr></m:mc><m:mc><m:mcPr><m:count/><m:mcJc/></m:mcPr></m:mc></m:mcs><m:ctrlPr/></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e><m:e/></m:mr></m:m>`,
       `<m:eqArr><m:e>${run}</m:e></m:eqArr>`,
@@ -1773,6 +1773,82 @@ describe('document equations', () => {
       unsupported.map(() => 'unsupported'),
     );
   });
+
+  test('normalizes n-ary defaults and strictly validates operator structure', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr/><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc/><m:grow m:val="0"/><m:subHide m:val="false"/><m:supHide m:val="off"/><m:ctrlPr/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="subSup"/><m:subHide/><m:supHide m:val="true"/></m:naryPr><m:sub/><m:sup/><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x220F;"/><m:grow m:val="off"/><m:subHide m:val="on"/><m:supHide m:val="0"/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:limLoc/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'nary'
+          ? [
+              expression.operator,
+              expression.limitLocation,
+              expression.subScript?.[0]?.type ?? null,
+              expression.superScript?.[0]?.type ?? null,
+            ]
+          : null;
+      }),
+    ).toEqual([
+      ['\u222b', 'subSup', 'run', 'run'],
+      ['\u222b', 'subSup', 'run', 'run'],
+      ['\u2211', 'underOver', 'run', 'run'],
+      ['\u2211', 'underOver', 'run', 'run'],
+      ['\u2211', 'subSup', null, null],
+      ['\u220f', 'underOver', null, 'run'],
+      ['\u222b', 'underOver', 'run', 'run'],
+    ]);
+
+    const unsupported = [
+      `<m:nary><m:sub>${run}</m:sub><m:naryPr/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sup>${run}</m:sup><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:e>${run}</m:e><m:sup>${run}</m:sup></m:nary>`,
+      `<m:nary><m:naryPr/><m:naryPr/><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:nary>`,
+      `<m:nary><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sup/><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e/></m:nary>`,
+      `<m:nary><m:naryPr><m:chr/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="+"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:limLoc/><m:chr m:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:supHide/><m:subHide/></m:naryPr><m:sub/><m:sup/><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:ctrlPr/><m:subHide/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:chr m:val="&#x220F;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:limLoc m:val="beside"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow m:val="true"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow m:val="maybe"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:subHide/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:supHide/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:subHide m:val="maybe"/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:chr m:val="&#x2211;" m:extra="semantic"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:naryPr><m:chr m:val="&#x2211;" r:id="rIdUnsafe"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><v:naryPr xmlns:v="${VENDOR_NAMESPACE}"><m:chr m:val="&#x2211;"/></v:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><v:chr xmlns:v="${VENDOR_NAMESPACE}" v:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr>meaningful<m:chr m:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary m:extra="semantic"><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
 });
 
 function equationArtifact() {
@@ -1888,6 +1964,12 @@ function complexEquation(
         children: [run('f(x)dx')],
         subScript: [run('0')],
         superScript: [run('1')],
+      },
+      {
+        type: 'nary',
+        operator: '∏',
+        limitLocation: 'underOver',
+        children: [run('a_i')],
       },
       {
         type: 'delimiter',
@@ -2085,22 +2167,32 @@ function borderBoxEquation(
                                           type: 'radical',
                                           children: [
                                             {
-                                              type: 'fraction',
-                                              fractionType: 'bar',
-                                              numerator: [
+                                              type: 'nary',
+                                              operator: '\u222b',
+                                              limitLocation: 'subSup',
+                                              children: [
                                                 {
-                                                  type: 'run',
-                                                  text,
-                                                  literal: true,
-                                                  script: 'doubleStruck',
-                                                  style: 'plain',
-                                                  manualBreak: {
-                                                    alignmentAt: 2,
-                                                  },
+                                                  type: 'fraction',
+                                                  fractionType: 'bar',
+                                                  numerator: [
+                                                    {
+                                                      type: 'run',
+                                                      text,
+                                                      literal: true,
+                                                      script: 'doubleStruck',
+                                                      style: 'plain',
+                                                      manualBreak: {
+                                                        alignmentAt: 2,
+                                                      },
+                                                    },
+                                                  ],
+                                                  denominator: [
+                                                    { type: 'run', text: '1' },
+                                                  ],
                                                 },
                                               ],
-                                              denominator: [
-                                                { type: 'run', text: '1' },
+                                              superScript: [
+                                                { type: 'run', text: 'n' },
                                               ],
                                             },
                                           ],
@@ -2190,21 +2282,31 @@ function boxEquation(
                                           type: 'radical',
                                           children: [
                                             {
-                                              type: 'fraction',
-                                              fractionType: 'linear',
-                                              numerator: [
+                                              type: 'nary',
+                                              operator: '\u2211',
+                                              limitLocation: 'underOver',
+                                              children: [
                                                 {
-                                                  type: 'run',
-                                                  text,
-                                                  normalText: true,
-                                                  script: 'sansSerif',
-                                                  style: 'boldItalic',
-                                                  manualBreak: {},
-                                                  alignment: true,
+                                                  type: 'fraction',
+                                                  fractionType: 'linear',
+                                                  numerator: [
+                                                    {
+                                                      type: 'run',
+                                                      text,
+                                                      normalText: true,
+                                                      script: 'sansSerif',
+                                                      style: 'boldItalic',
+                                                      manualBreak: {},
+                                                      alignment: true,
+                                                    },
+                                                  ],
+                                                  denominator: [
+                                                    { type: 'run', text: '1' },
+                                                  ],
                                                 },
                                               ],
-                                              denominator: [
-                                                { type: 'run', text: '1' },
+                                              subScript: [
+                                                { type: 'run', text: 'k' },
                                               ],
                                             },
                                           ],
@@ -2381,7 +2483,58 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       ),
   ).toEqual(['1', '1']);
   expect(descendants(document, 'func')).toHaveLength(2);
-  expect(descendants(document, 'nary')).toHaveLength(4);
+  const naries = descendants(document, 'nary');
+  expect(naries).toHaveLength(6);
+  for (const nary of naries) {
+    expect(directChildren(nary).map((child) => child.localName)).toEqual([
+      'naryPr',
+      'sub',
+      'sup',
+      'e',
+    ]);
+  }
+  expect(
+    naries.map((nary) =>
+      directChildren(directChildren(nary, 'naryPr')[0]).map(
+        (child) => child.localName,
+      ),
+    ),
+  ).toEqual([
+    ['chr', 'limLoc'],
+    ['chr', 'limLoc'],
+    ['chr', 'limLoc', 'subHide', 'supHide'],
+    ['chr', 'limLoc'],
+    ['chr', 'limLoc'],
+    ['chr', 'limLoc', 'subHide', 'supHide'],
+  ]);
+  expect(
+    naries.map((nary) => {
+      const properties = directChildren(nary, 'naryPr')[0];
+      return [
+        mathValueAttribute(directChildren(properties, 'chr')[0]),
+        mathValueAttribute(directChildren(properties, 'limLoc')[0]),
+        directChildren(nary, 'sub')[0]?.textContent ?? '',
+        directChildren(nary, 'sup')[0]?.textContent ?? '',
+      ];
+    }),
+  ).toEqual([
+    ['\u2211', 'undOvr', 'i=1', 'n'],
+    ['\u222b', 'subSup', '0', '1'],
+    ['\u220f', 'undOvr', '', ''],
+    ['\u2211', 'undOvr', 'i=1', 'n'],
+    ['\u222b', 'subSup', '0', '1'],
+    ['\u220f', 'undOvr', '', ''],
+  ]);
+  expect(
+    naries
+      .filter((_, index) => index % 3 === 2)
+      .flatMap((nary) => {
+        const properties = directChildren(nary, 'naryPr')[0];
+        return ['subHide', 'supHide'].map((name) =>
+          mathValueAttribute(directChildren(properties, name)[0]),
+        );
+      }),
+  ).toEqual(['1', '1', '1', '1']);
   expect(descendants(document, 'd')).toHaveLength(2);
   const preScripts = descendants(document, 'sPre');
   expect(preScripts).toHaveLength(6);
@@ -2718,6 +2871,33 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
         directChildren(directChildren(radicals[0], 'radPr')[0], 'degHide')[0],
       ),
     ).toBe('1');
+    const storyNaries = descendants(story.document, 'nary');
+    expect(storyNaries).toHaveLength(1);
+    const storyNary = storyNaries[0];
+    expect(directChildren(storyNary).map((child) => child.localName)).toEqual([
+      'naryPr',
+      'sub',
+      'sup',
+      'e',
+    ]);
+    const storyNaryProperties = directChildren(storyNary, 'naryPr')[0];
+    const borderStory = story.container === 'borderBox';
+    expect(
+      directChildren(storyNaryProperties).map((child) => child.localName),
+    ).toEqual(
+      borderStory ? ['chr', 'limLoc', 'subHide'] : ['chr', 'limLoc', 'supHide'],
+    );
+    expect(
+      ['chr', 'limLoc'].map((name) =>
+        mathValueAttribute(directChildren(storyNaryProperties, name)[0]),
+      ),
+    ).toEqual(borderStory ? ['\u222b', 'subSup'] : ['\u2211', 'undOvr']);
+    expect(directChildren(storyNary, 'sub')[0]?.textContent ?? '').toBe(
+      borderStory ? '' : 'k',
+    );
+    expect(directChildren(storyNary, 'sup')[0]?.textContent ?? '').toBe(
+      borderStory ? 'n' : '',
+    );
     const fractions = descendants(story.document, 'f');
     expect(fractions).toHaveLength(1);
     expect(

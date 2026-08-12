@@ -513,18 +513,12 @@ function createExpression(
     if (!expression.superScript) {
       properties.append(mathValueElement(document, prefix, 'supHide', '1'));
     }
-    nary.append(properties);
-    if (expression.subScript) {
-      nary.append(
-        expressionArgument(document, prefix, 'sub', expression.subScript),
-      );
-    }
-    if (expression.superScript) {
-      nary.append(
-        expressionArgument(document, prefix, 'sup', expression.superScript),
-      );
-    }
-    nary.append(expressionArgument(document, prefix, 'e', expression.children));
+    nary.append(
+      properties,
+      expressionArgument(document, prefix, 'sub', expression.subScript ?? []),
+      expressionArgument(document, prefix, 'sup', expression.superScript ?? []),
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
     return nary;
   }
   if (expression.type === 'equationArray') {

@@ -7,13 +7,13 @@ import {
   type WorkDocumentEquationFractionType,
   type WorkDocumentEquationJustification,
   type WorkDocumentEquationLimitLocation,
+  type WorkDocumentEquationManualBreak,
   type WorkDocumentEquationMatrixAlignment,
   type WorkDocumentEquationMatrixBaseAlignment,
-  type WorkDocumentEquationManualBreak,
   type WorkDocumentEquationNaryOperator,
+  type WorkDocumentEquationRowSpacingRule,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
-  type WorkDocumentEquationRowSpacingRule,
 } from './work-document-equations';
 import {
   closestDocxEquationLikeRoot,
@@ -98,6 +98,7 @@ const MAX_MATRIX_CELLS = 1_024;
 const MAX_EQUATION_ARRAY_ROWS = 64;
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
 const DEFAULT_GROUP_CHARACTER = '\u23df';
+const DEFAULT_NARY_OPERATOR = '\u222b';
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -1316,23 +1317,23 @@ function parseNary(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['naryPr', 'sub', 'sup', 'e']))) {
+  const childOrder = ['naryPr', 'sub', 'sup', 'e'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'naryPr', false);
-  const subScript = uniqueMathChild(element, 'sub', false);
-  const superScript = uniqueMathChild(element, 'sup', false);
+  const subScript = uniqueMathChild(element, 'sub');
+  const superScript = uniqueMathChild(element, 'sup');
   const body = uniqueMathChild(element, 'e');
   if (
     properties === null ||
-    subScript === null ||
-    superScript === null ||
+    !subScript ||
+    !superScript ||
     !body ||
-    (properties &&
-      !structuralChildren(
-        properties,
-        new Set(['chr', 'limLoc', 'subHide', 'supHide', 'ctrlPr']),
-      ))
+    (properties && !naryProperties(properties))
   ) {
     return null;
   }
@@ -1341,6 +1342,9 @@ function parseNary(
     : undefined;
   const locationElement = properties
     ? uniqueMathChild(properties, 'limLoc', false)
+    : undefined;
+  const growElement = properties
+    ? uniqueMathChild(properties, 'grow', false)
     : undefined;
   const subHiddenElement = properties
     ? uniqueMathChild(properties, 'subHide', false)
@@ -1354,6 +1358,7 @@ function parseNary(
   if (
     operatorElement === null ||
     locationElement === null ||
+    growElement === null ||
     subHiddenElement === null ||
     superHiddenElement === null ||
     controlProperties === null ||
@@ -1361,34 +1366,39 @@ function parseNary(
   ) {
     return null;
   }
-  const operatorValue = operatorElement ? mathValue(operatorElement) : null;
+  const operatorValue = operatorElement
+    ? mathValueOrDefault(operatorElement, '')
+    : DEFAULT_NARY_OPERATOR;
   if (!NARY_OPERATORS.has(operatorValue as WorkDocumentEquationNaryOperator)) {
     return null;
   }
   const operator = operatorValue as WorkDocumentEquationNaryOperator;
-  const locationValue = locationElement ? mathValue(locationElement) : null;
-  if (locationElement && locationValue === null) return null;
+  const locationValue = locationElement
+    ? mathValueOrDefault(locationElement, 'undOvr')
+    : null;
   const limitLocation = naryLimitLocation(operator, locationValue);
+  const grow = growElement ? mathOnOff(growElement) : false;
   const subHidden = subHiddenElement ? mathOnOff(subHiddenElement) : false;
   const superHidden = superHiddenElement
     ? mathOnOff(superHiddenElement)
     : false;
   const parsedBody = parseExpressionContainer(body, state);
-  const parsedSubScript = subScript
-    ? parseExpressionContainer(subScript, state, true)
-    : undefined;
-  const parsedSuperScript = superScript
-    ? parseExpressionContainer(superScript, state, true)
-    : undefined;
+  const parsedSubScript = parseExpressionContainer(subScript, state, true);
+  const parsedSuperScript = parseExpressionContainer(superScript, state, true);
   if (
     !limitLocation ||
+    grow !== false ||
     subHidden === null ||
     superHidden === null ||
     !parsedBody ||
     parsedSubScript === null ||
-    parsedSuperScript === null ||
-    subHidden === Boolean(parsedSubScript?.length) ||
-    superHidden === Boolean(parsedSuperScript?.length)
+    parsedSuperScript === null
+  ) {
+    return null;
+  }
+  if (
+    subHidden === Boolean(parsedSubScript.length) ||
+    superHidden === Boolean(parsedSuperScript.length)
   ) {
     return null;
   }
@@ -1400,6 +1410,21 @@ function parseNary(
     ...(parsedSubScript?.length ? { subScript: parsedSubScript } : {}),
     ...(parsedSuperScript?.length ? { superScript: parsedSuperScript } : {}),
   };
+}
+
+function naryProperties(properties: Element): boolean {
+  const propertyOrder = [
+    'chr',
+    'limLoc',
+    'grow',
+    'subHide',
+    'supHide',
+    'ctrlPr',
+  ];
+  return (
+    structuralChildren(properties, new Set(propertyOrder)) &&
+    orderedMathChildren(properties, propertyOrder)
+  );
 }
 
 function parseEquationArray(
