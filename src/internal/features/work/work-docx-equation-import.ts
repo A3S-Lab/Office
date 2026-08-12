@@ -112,6 +112,8 @@ interface ParsedMathControlRevision {
 const TRANSITIONAL_MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
+const STRICT_WORD_NAMESPACE =
+  'http://purl.oclc.org/ooxml/wordprocessingml/main';
 const DOCX_MATH_NAMESPACES = new Set([
   TRANSITIONAL_MATH_NAMESPACE,
   STRICT_MATH_NAMESPACE,
@@ -129,6 +131,10 @@ const WORD_RUN_PROPERTY_ORDER = [
   'noProof',
   'snapToGrid',
   'color',
+  'spacing',
+  'w',
+  'kern',
+  'position',
   'sz',
   'szCs',
   'highlight',
@@ -262,6 +268,21 @@ const MAX_EQUATION_ARRAY_ROWS = 64;
 const MAX_WORD_FONT_NAME_LENGTH = 127;
 const MAX_WORD_LANGUAGE_LENGTH = 85;
 const MAX_WORD_HALF_POINT_SIZE = 1_024;
+const MAX_WORD_CHARACTER_SPACING_TWIPS = 31_680;
+const MAX_WORD_CHARACTER_SCALE_PERCENT = 600;
+const MAX_WORD_KERNING_THRESHOLD_HALF_POINTS = 3_277;
+const MIN_WORD_POSITION_HALF_POINTS = -2_147_483_648;
+const MAX_WORD_POSITION_HALF_POINTS = 2_147_483_647;
+const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
+  Record<string, readonly [bigint, bigint]>
+> = {
+  mm: [720n, 127n],
+  cm: [7_200n, 127n],
+  in: [144n, 1n],
+  pt: [2n, 1n],
+  pc: [24n, 1n],
+  pi: [24n, 1n],
+};
 const MAX_WORD_MATH_CONTROL_REVISION_ID = 2_147_483_647;
 const MAX_WORD_MATH_CONTROL_REVISION_AUTHOR_LENGTH = 255;
 const MAX_WORD_MATH_CONTROL_REVISION_DATE_LENGTH = 64;
@@ -798,6 +819,18 @@ function parseWordRunProperties(
   }
   const fonts = parseWordRunFonts(children.get('rFonts'));
   const color = parseWordRunColor(children.get('color'));
+  const characterSpacingTwips = parseWordRequiredInteger(
+    children.get('spacing'),
+    -MAX_WORD_CHARACTER_SPACING_TWIPS,
+    MAX_WORD_CHARACTER_SPACING_TWIPS,
+  );
+  const characterScalePercent = parseWordCharacterScale(children.get('w'));
+  const kerningThresholdHalfPoints = parseWordRequiredInteger(
+    children.get('kern'),
+    0,
+    MAX_WORD_KERNING_THRESHOLD_HALF_POINTS,
+  );
+  const positionHalfPoints = parseWordPosition(children.get('position'));
   const fontSize = parseWordHalfPointSize(children.get('sz'));
   const fontSizeComplexScript = parseWordHalfPointSize(children.get('szCs'));
   const highlight = parseWordHighlight(children.get('highlight'));
@@ -807,6 +840,10 @@ function parseWordRunProperties(
   if (
     fonts === null ||
     color === null ||
+    characterSpacingTwips === null ||
+    characterScalePercent === null ||
+    kerningThresholdHalfPoints === null ||
+    positionHalfPoints === null ||
     fontSize === null ||
     fontSizeComplexScript === null ||
     highlight === null ||
@@ -857,6 +894,12 @@ function parseWordRunProperties(
       ? { snapToGrid: booleans.get('snapToGrid') }
       : {}),
     ...(color ? { color } : {}),
+    ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
+    ...(characterScalePercent !== undefined ? { characterScalePercent } : {}),
+    ...(kerningThresholdHalfPoints !== undefined
+      ? { kerningThresholdHalfPoints }
+      : {}),
+    ...(positionHalfPoints !== undefined ? { positionHalfPoints } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
     ...(highlight ? { highlight } : {}),
@@ -1066,6 +1109,57 @@ function parseWordRunColor(
   return attributes ? wordColor(attributes, 'val', true) : null;
 }
 
+function parseWordRequiredInteger(
+  element: Element | undefined,
+  minimum: number,
+  maximum: number,
+): number | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  return wordIntegerValue(
+    attributes.get('val')?.trim() ?? '',
+    minimum,
+    maximum,
+  );
+}
+
+function parseWordCharacterScale(
+  element: Element | undefined,
+): number | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  if (!attributes) return null;
+  if (!attributes.size) return 100;
+  return wordIntegerValue(
+    attributes.get('val')?.trim() ?? '',
+    1,
+    MAX_WORD_CHARACTER_SCALE_PERCENT,
+  );
+}
+
+function parseWordPosition(
+  element: Element | undefined,
+): number | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const source = attributes.get('val')?.trim() ?? '';
+  const integer = wordIntegerValue(
+    source,
+    MIN_WORD_POSITION_HALF_POINTS,
+    MAX_WORD_POSITION_HALF_POINTS,
+  );
+  if (integer !== null) return integer;
+  return element.namespaceURI === STRICT_WORD_NAMESPACE
+    ? strictUniversalHalfPoints(
+        source,
+        MIN_WORD_POSITION_HALF_POINTS,
+        MAX_WORD_POSITION_HALF_POINTS,
+      )
+    : null;
+}
+
 function parseWordHalfPointSize(
   element: Element | undefined,
 ): number | null | undefined {
@@ -1073,12 +1167,54 @@ function parseWordHalfPointSize(
   const attributes = wordLeafAttributes(element, new Set(['val']));
   if (!attributes || attributes.size !== 1) return null;
   const source = attributes.get('val')?.trim() ?? '';
-  if (!/^[1-9]\d*$/u.test(source)) return null;
-  const halfPoints = Number(source);
-  return Number.isSafeInteger(halfPoints) &&
-    halfPoints <= MAX_WORD_HALF_POINT_SIZE
-    ? halfPoints / 2
+  const integer = wordIntegerValue(source, 1, MAX_WORD_HALF_POINT_SIZE);
+  const halfPoints =
+    integer ??
+    (element.namespaceURI === STRICT_WORD_NAMESPACE
+      ? strictUniversalHalfPoints(source, 1, MAX_WORD_HALF_POINT_SIZE)
+      : null);
+  return halfPoints === null ? null : halfPoints / 2;
+}
+
+function wordIntegerValue(
+  source: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (source.length > 32) return null;
+  const pattern = minimum < 0 ? /^[+-]?\d+$/u : /^\+?\d+$/u;
+  if (!pattern.test(source)) return null;
+  const value = Number(source);
+  return Number.isSafeInteger(value) && value >= minimum && value <= maximum
+    ? Object.is(value, -0)
+      ? 0
+      : value
     : null;
+}
+
+function strictUniversalHalfPoints(
+  source: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  if (source.length > 64) return null;
+  const match = /^(-?)(\d+)(?:\.(\d+))?(mm|cm|in|pt|pc|pi)$/u.exec(source);
+  if (!match) return null;
+  const [, sign, whole = '', fraction = '', unit = ''] = match;
+  const conversion = WORD_UNIVERSAL_HALF_POINT_RATIOS[unit];
+  if (!conversion) return null;
+  const decimalDigits = `${whole}${fraction}`;
+  const decimalDenominator = 10n ** BigInt(fraction.length);
+  const numerator =
+    BigInt(decimalDigits) * conversion[0] * (sign === '-' ? -1n : 1n);
+  const denominator = decimalDenominator * conversion[1];
+  if (numerator % denominator !== 0n) return null;
+  const halfPoints = numerator / denominator;
+  if (halfPoints < BigInt(minimum) || halfPoints > BigInt(maximum)) {
+    return null;
+  }
+  const value = Number(halfPoints);
+  return Object.is(value, -0) ? 0 : value;
 }
 
 function parseWordHighlight(

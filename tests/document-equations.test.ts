@@ -2036,6 +2036,10 @@ describe('document equations', () => {
       '<w:noProof/>',
       '<w:snapToGrid w:val="0"/>',
       '<w:color w:val="1A2B3C" w:themeColor="accent2" w:themeTint="80" w:themeShade="40"/>',
+      '<w:spacing w:val="20"/>',
+      '<w:w w:val="90"/>',
+      '<w:kern w:val="22"/>',
+      '<w:position w:val="2"/>',
       '<w:sz w:val="25"/>',
       '<w:szCs w:val="28"/>',
       '<w:u w:val="wavyDouble" w:color="ABCDEF" w:themeColor="accent3" w:themeTint="20"/>',
@@ -2187,6 +2191,262 @@ describe('document equations', () => {
         wordRun('<w:rPr><w:vanish/></w:rPr>', '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
+  });
+
+  test('preserves Word character geometry inside OMML', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'expanded-raised',
+          wordRunProperties: {
+            characterSpacingTwips: 200,
+            characterScalePercent: 75,
+            kerningThresholdHalfPoints: 24,
+            positionHalfPoints: 6,
+            fontSize: 14,
+          },
+        },
+        {
+          type: 'run',
+          text: 'explicit-resets',
+          wordRunProperties: {
+            characterSpacingTwips: 0,
+            characterScalePercent: 100,
+            kerningThresholdHalfPoints: 0,
+            positionHalfPoints: 0,
+            fontSize: 12,
+          },
+        },
+        {
+          type: 'run',
+          text: 'kerning-below-threshold',
+          wordRunProperties: {
+            kerningThresholdHalfPoints: 25,
+            fontSize: 12,
+          },
+        },
+        {
+          type: 'run',
+          text: 'kerning-inherited-size',
+          wordRunProperties: { kerningThresholdHalfPoints: 24 },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            characterSpacingTwips: -40,
+            characterScalePercent: 125,
+            kerningThresholdHalfPoints: 30,
+            positionHalfPoints: -4,
+            fontSize: 15,
+          },
+          children: [{ type: 'run', text: 'operator-geometry' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    const validBoundaries = [
+      { characterSpacingTwips: -31_680 },
+      { characterSpacingTwips: 31_680 },
+      { characterScalePercent: 1 },
+      { characterScalePercent: 600 },
+      { kerningThresholdHalfPoints: 0 },
+      { kerningThresholdHalfPoints: 3_277 },
+      { positionHalfPoints: -2_147_483_648 },
+      { positionHalfPoints: 2_147_483_647 },
+    ];
+    for (const properties of validBoundaries) {
+      expect(
+        normalizeDocumentEquation(equationWithWordRunProperties(properties))
+          ?.children[0],
+      ).toMatchObject({ wordRunProperties: properties });
+    }
+    const invalidModels = [
+      { characterSpacingTwips: -31_681 },
+      { characterSpacingTwips: 31_681 },
+      { characterSpacingTwips: 0.5 },
+      { characterSpacingTwips: '200' },
+      { characterScalePercent: 0 },
+      { characterScalePercent: 601 },
+      { characterScalePercent: 75.5 },
+      { characterScalePercent: '75' },
+      { kerningThresholdHalfPoints: -1 },
+      { kerningThresholdHalfPoints: 3_278 },
+      { kerningThresholdHalfPoints: 0.5 },
+      { positionHalfPoints: -2_147_483_649 },
+      { positionHalfPoints: 2_147_483_648 },
+      { positionHalfPoints: 0.5 },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:spacing w:val="+00200"/><w:w w:val="+0075"/><w:kern w:val="+0024"/><w:position w:val="-0006"/><w:sz w:val="28"/>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        characterSpacingTwips: 200,
+        characterScalePercent: 75,
+        kerningThresholdHalfPoints: 24,
+        positionHalfPoints: -6,
+        fontSize: 14,
+      },
+    });
+    expect(inspectEquationModel(wordRun('<w:w/>'))?.children[0]).toMatchObject({
+      wordRunProperties: { characterScalePercent: 100 },
+    });
+    expect(
+      inspectEquationRoot(
+        `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}"><m:r><w:rPr><w:spacing w:val="-40"/><w:w w:val="125"/><w:kern w:val="24"/><w:position w:val="1.27cm"/><w:sz w:val="12pt"/></w:rPr><m:t>strict-geometry</m:t></m:r></m:oMath>`,
+      ),
+    ).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            wordRunProperties: {
+              characterSpacingTwips: -40,
+              characterScalePercent: 125,
+              kerningThresholdHalfPoints: 24,
+              positionHalfPoints: 72,
+              fontSize: 12,
+            },
+          },
+        ],
+      },
+    });
+    for (const [source, positionHalfPoints] of [
+      ['6.35mm', 36],
+      ['1.27cm', 72],
+      ['0.125in', 18],
+      ['9pt', 18],
+      ['0.75pc', 18],
+      ['0.75pi', 18],
+      ['-0.5pt', -1],
+      ['0pt', 0],
+    ] as const) {
+      expect(
+        inspectEquationModel(
+          wordRun(`<w:position w:val="${source}"/>`, STRICT_WORD_NAMESPACE),
+        )?.children[0],
+        source,
+      ).toMatchObject({ wordRunProperties: { positionHalfPoints } });
+    }
+
+    const unsupported = [
+      wordRun('<w:spacing/>'),
+      wordRun('<w:spacing w:val="-31681"/>'),
+      wordRun('<w:spacing w:val="31681"/>'),
+      wordRun('<w:spacing w:val="1.5"/>'),
+      wordRun('<w:spacing w:val="1pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:w w:val="0"/>'),
+      wordRun('<w:w w:val="601"/>'),
+      wordRun('<w:w w:val="75.5"/>'),
+      wordRun('<w:kern/>'),
+      wordRun('<w:kern w:val="-1"/>'),
+      wordRun('<w:kern w:val="3278"/>'),
+      wordRun('<w:kern w:val="1pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:position/>'),
+      wordRun('<w:position w:val="-2147483649"/>'),
+      wordRun('<w:position w:val="2147483648"/>'),
+      wordRun('<w:position w:val="1.5"/>'),
+      wordRun('<w:position w:val="1pt"/>'),
+      wordRun('<w:position w:val="0.1pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:position w:val="+1pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:position val="2"/>'),
+      wordRun('<w:position w:val="2" w:extra="semantic"/>'),
+      wordRun(
+        `<w:position xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="2" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:position w:val="2"><w:b/></w:position>'),
+      wordRun('<w:position w:val="2"/><w:position w:val="4"/>'),
+      wordRun('<w:kern w:val="24"/><w:w w:val="75"/>'),
+      wordRun('<w:sz w:val="24"/><w:position w:val="2"/>'),
+      wordRun(`<v:spacing xmlns:v="${VENDOR_NAMESPACE}" w:val="20"/>`),
+      wordRun('<m:position m:val="2"/>'),
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const styleFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo'))
+        .find((element) => element.textContent === text)
+        ?.getAttribute('style');
+    expect(styleFor('expanded-raised')).toContain('letter-spacing:10pt');
+    expect(styleFor('expanded-raised')).toContain('font-stretch:75%');
+    expect(styleFor('expanded-raised')).toContain('font-kerning:normal');
+    expect(styleFor('expanded-raised')).toContain('vertical-align:3pt');
+    expect(styleFor('explicit-resets')).toContain('letter-spacing:0pt');
+    expect(styleFor('explicit-resets')).toContain('font-stretch:100%');
+    expect(styleFor('explicit-resets')).toContain('font-kerning:normal');
+    expect(styleFor('explicit-resets')).toContain('vertical-align:0pt');
+    expect(styleFor('kerning-below-threshold')).toContain('font-kerning:none');
+    expect(styleFor('kerning-inherited-size')).toBeNull();
+    expect(styleFor('\u2211')).toContain('letter-spacing:-2pt');
+    expect(styleFor('\u2211')).toContain('font-stretch:125%');
+    expect(styleFor('\u2211')).toContain('font-kerning:normal');
+    expect(styleFor('\u2211')).toContain('vertical-align:-2pt');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext, mo'))
+        .find((element) => element.textContent === 'expanded-raised')
+        ?.getAttribute('style'),
+    ).toBe(styleFor('expanded-raised'));
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunGeometry(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-geometry.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunGeometry(await createArtifactBlob(imported));
   });
 
   test('preserves Word highlight and patterned shading inside OMML', async () => {
@@ -4013,6 +4273,10 @@ function richWordRunProperties() {
       tint: '80',
       shade: '40',
     },
+    characterSpacingTwips: 20,
+    characterScalePercent: 90,
+    kerningThresholdHalfPoints: 22,
+    positionHalfPoints: 2,
     fontSize: 12.5,
     fontSizeComplexScript: 14,
     underline: {
@@ -5117,6 +5381,80 @@ function documentEquationPosition(editor: Editor): number {
   return result;
 }
 
+async function expectNativeWordRunGeometry(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const propertiesFor = (text: string) => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return directChildren(properties as Element);
+  };
+  for (const entry of [
+    {
+      text: 'expanded-raised',
+      values: ['200', '75', '24', '6', '28'],
+    },
+    {
+      text: 'explicit-resets',
+      values: ['0', '100', '0', '0', '24'],
+    },
+  ]) {
+    const properties = propertiesFor(entry.text);
+    expect(
+      properties.map((property) => property.localName),
+      entry.text,
+    ).toEqual(['spacing', 'w', 'kern', 'position', 'sz']);
+    expect(
+      properties.map((property) => wordAttributes(property).val),
+      entry.text,
+    ).toEqual(entry.values);
+  }
+  const belowThreshold = propertiesFor('kerning-below-threshold');
+  expect(belowThreshold.map((property) => property.localName)).toEqual([
+    'kern',
+    'sz',
+  ]);
+  expect(
+    belowThreshold.map((property) => wordAttributes(property).val),
+  ).toEqual(['25', '24']);
+  const inheritedSize = propertiesFor('kerning-inherited-size');
+  expect(inheritedSize.map((property) => property.localName)).toEqual(['kern']);
+  expect(wordAttributes(inheritedSize[0]).val).toBe('24');
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-geometry'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const properties = directChildren(wordProperties as Element);
+  expect(properties.map((property) => property.localName)).toEqual([
+    'spacing',
+    'w',
+    'kern',
+    'position',
+    'sz',
+  ]);
+  expect(properties.map((property) => wordAttributes(property).val)).toEqual([
+    '-40',
+    '125',
+    '30',
+    '-4',
+    '30',
+  ]);
+}
+
 async function expectNativeWordRunBackgrounds(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -5257,6 +5595,10 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'noProof',
     'snapToGrid',
     'color',
+    'spacing',
+    'w',
+    'kern',
+    'position',
     'sz',
     'szCs',
     'u',
@@ -5318,6 +5660,10 @@ async function expectNativeArgumentControlProperties(
     'noProof',
     'snapToGrid',
     'color',
+    'spacing',
+    'w',
+    'kern',
+    'position',
     'sz',
     'szCs',
     'u',
@@ -5866,6 +6212,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'noProof',
     'snapToGrid',
     'color',
+    'spacing',
+    'w',
+    'kern',
+    'position',
     'sz',
     'szCs',
     'u',
@@ -5899,6 +6249,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       themeTint: '80',
       themeShade: '40',
     },
+    { val: '20' },
+    { val: '90' },
+    { val: '22' },
+    { val: '2' },
     { val: '25' },
     { val: '28' },
     {

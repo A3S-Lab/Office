@@ -16,15 +16,21 @@ All notable changes to A3S Office will be documented in this file.
   scripts, four styles, manual breaks, and alignment points,
   plus ordered `m:rPr -> w:rPr -> m:t/w:t` runs with bounded Word fonts and
   theme references, Latin/complex-script bold and italic flags, strike,
-  proofing/grid flags, direct/theme colors, half-point sizes, colored underline
-  styles, every named highlight color, complete patterned run shading with
-  direct or theme foreground/background colors, RTL/complex-script flags, and
-  language tags. Highlight precedence over shading is retained. Named
-  highlights, explicit highlight removal, clear direct fills, solid direct
-  foregrounds, and nil shading project through MathML `mathbackground`; pattern
-  masks and theme-only colors remain native metadata. Explicit on/off values
-  survive native regeneration, while unknown, reordered, duplicated, spoofed,
-  or relationship-bound Word run properties fail closed.
+  proofing/grid flags, direct/theme colors, signed character spacing through
+  31,680 twips, 1–600% horizontal scaling, half-point kerning thresholds and
+  signed baseline positions, half-point sizes, colored underline styles, every
+  named highlight color, complete patterned run shading with direct or theme
+  foreground/background colors, RTL/complex-script flags, and language tags.
+  Explicit zero/default geometry values reset inherited formatting instead of
+  canonicalizing away. Strict universal font-size and position measures enter
+  the model only when they convert exactly to the bounded half-point form.
+  Character spacing, width scaling, effective kerning, and baseline shifts use
+  safe CSS projections in MathML previews. Highlight precedence over shading is
+  retained. Named highlights, explicit highlight removal, clear direct fills,
+  solid direct foregrounds, and nil shading project through MathML
+  `mathbackground`; pattern masks and theme-only colors remain native metadata.
+  Explicit on/off values survive native regeneration, while unknown, reordered,
+  duplicated, spoofed, or relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control
   may contain a direct `w:rPr` or tracked `w:ins`, `w:del`, `w:moveFrom`, or

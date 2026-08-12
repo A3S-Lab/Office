@@ -1086,6 +1086,18 @@ function createWordRunProperties(
     setWordColorAttributes(color, prefix, properties.color, 'val');
     result.append(color);
   }
+  for (const [name, value] of [
+    ['spacing', properties.characterSpacingTwips],
+    ['w', properties.characterScalePercent],
+    ['kern', properties.kerningThresholdHalfPoints],
+    ['position', properties.positionHalfPoints],
+  ] as const) {
+    if (value !== undefined) {
+      result.append(
+        createWordValueElement(document, prefix, name, String(value)),
+      );
+    }
+  }
   if (properties.fontSize !== undefined) {
     result.append(
       createWordValueElement(

@@ -199,6 +199,10 @@ export interface WorkDocumentEquationWordRunProperties {
   noProof?: boolean;
   snapToGrid?: boolean;
   color?: WorkDocumentEquationWordColor;
+  characterSpacingTwips?: number;
+  characterScalePercent?: number;
+  kerningThresholdHalfPoints?: number;
+  positionHalfPoints?: number;
   fontSize?: number;
   fontSizeComplexScript?: number;
   highlight?: WorkDocumentEquationWordHighlight;
@@ -675,6 +679,11 @@ const UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
+const MAX_EQUATION_CHARACTER_SPACING_TWIPS = 31_680;
+const MAX_EQUATION_CHARACTER_SCALE_PERCENT = 600;
+const MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS = 3_277;
+const MIN_EQUATION_POSITION_HALF_POINTS = -2_147_483_648;
+const MAX_EQUATION_POSITION_HALF_POINTS = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_AUTHOR_LENGTH = 255;
 const MAX_EQUATION_CONTROL_REVISION_DATE_LENGTH = 64;
@@ -706,6 +715,10 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'noProof',
   'snapToGrid',
   'color',
+  'characterSpacingTwips',
+  'characterScalePercent',
+  'kerningThresholdHalfPoints',
+  'positionHalfPoints',
   'fontSize',
   'fontSizeComplexScript',
   'highlight',
@@ -2716,6 +2729,38 @@ function normalizeEquationWordRunProperties(
     source.languages === undefined
       ? undefined
       : normalizeEquationWordLanguages(source.languages);
+  const characterSpacingTwips =
+    source.characterSpacingTwips === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.characterSpacingTwips,
+          -MAX_EQUATION_CHARACTER_SPACING_TWIPS,
+          MAX_EQUATION_CHARACTER_SPACING_TWIPS,
+        );
+  const characterScalePercent =
+    source.characterScalePercent === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.characterScalePercent,
+          1,
+          MAX_EQUATION_CHARACTER_SCALE_PERCENT,
+        );
+  const kerningThresholdHalfPoints =
+    source.kerningThresholdHalfPoints === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.kerningThresholdHalfPoints,
+          0,
+          MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS,
+        );
+  const positionHalfPoints =
+    source.positionHalfPoints === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.positionHalfPoints,
+          MIN_EQUATION_POSITION_HALF_POINTS,
+          MAX_EQUATION_POSITION_HALF_POINTS,
+        );
   const fontSize =
     source.fontSize === undefined
       ? undefined
@@ -2730,6 +2775,10 @@ function normalizeEquationWordRunProperties(
     underline === null ||
     shading === null ||
     languages === null ||
+    characterSpacingTwips === null ||
+    characterScalePercent === null ||
+    kerningThresholdHalfPoints === null ||
+    positionHalfPoints === null ||
     fontSize === null ||
     fontSizeComplexScript === null
   ) {
@@ -2784,6 +2833,12 @@ function normalizeEquationWordRunProperties(
       ? { snapToGrid: source.snapToGrid as boolean }
       : {}),
     ...(color ? { color } : {}),
+    ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
+    ...(characterScalePercent !== undefined ? { characterScalePercent } : {}),
+    ...(kerningThresholdHalfPoints !== undefined
+      ? { kerningThresholdHalfPoints }
+      : {}),
+    ...(positionHalfPoints !== undefined ? { positionHalfPoints } : {}),
     ...(fontSize !== undefined ? { fontSize } : {}),
     ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
     ...(source.highlight !== undefined
@@ -2961,6 +3016,19 @@ function normalizeEquationFontSize(source: unknown): number | null {
     : null;
 }
 
+function normalizeEquationInteger(
+  source: unknown,
+  minimum: number,
+  maximum: number,
+): number | null {
+  return typeof source === 'number' &&
+    Number.isInteger(source) &&
+    source >= minimum &&
+    source <= maximum
+    ? source
+    : null;
+}
+
 function normalizedEquationWordString(
   source: unknown,
   maximumLength: number,
@@ -3106,6 +3174,16 @@ function wordPropertiesMathMlAttributes(
     bold === undefined ? '' : `font-weight:${bold ? 'bold' : 'normal'}`,
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunTextDecoration(properties),
+    properties.characterSpacingTwips === undefined
+      ? ''
+      : `letter-spacing:${properties.characterSpacingTwips / 20}pt`,
+    properties.characterScalePercent === undefined
+      ? ''
+      : `font-stretch:${properties.characterScalePercent}%`,
+    wordRunMathMlKerning(properties, size),
+    properties.positionHalfPoints === undefined
+      ? ''
+      : `vertical-align:${properties.positionHalfPoints / 2}pt`,
   ].filter(Boolean);
   const color = properties.color?.value;
   const background = wordRunMathMlBackground(properties);
@@ -3119,6 +3197,17 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunMathMlKerning(
+  properties: WorkDocumentEquationWordRunProperties,
+  fontSize: number | undefined,
+): string {
+  const threshold = properties.kerningThresholdHalfPoints;
+  if (threshold === undefined) return '';
+  if (threshold === 0) return 'font-kerning:normal';
+  if (fontSize === undefined) return '';
+  return `font-kerning:${fontSize * 2 >= threshold ? 'normal' : 'none'}`;
 }
 
 function wordRunMathMlBackground(

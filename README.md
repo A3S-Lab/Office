@@ -622,13 +622,19 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 Math runs also preserve the native `m:rPr -> w:rPr -> m:t/w:t` order. The
 bounded Word run-property subset covers direct and theme font references,
 Latin and complex-script bold/italic flags, strike and double-strike,
-proofing/grid flags, direct and theme colors with tint/shade, half-point font
-sizes, all named highlight colors, complete patterned run shading with direct
-or theme foreground/background colors, colored underline styles,
-RTL/complex-script flags, and Latin, East Asian, and bidi language tags.
+proofing/grid flags, direct and theme colors with tint/shade, signed character
+spacing through 31,680 twips, 1–600% horizontal scaling, half-point kerning
+thresholds and signed baseline positions, half-point font sizes, all named
+highlight colors, complete patterned run shading with direct or theme
+foreground/background colors, colored underline styles, RTL/complex-script
+flags, and Latin, East Asian, and bidi language tags. Explicit zero/default
+geometry values remain present so they can reset inherited formatting. Strict
+universal font-size and position measures are accepted only when they convert
+exactly to the bounded half-point model.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
-background, size, font, direction, language, emphasis, and decoration values.
+background, size, font, direction, language, emphasis, decoration, character
+spacing, width, effective kerning, and baseline-shift values.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
