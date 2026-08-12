@@ -350,6 +350,10 @@ export type WorkDocumentEquationWordEffectFill =
       shade?: WorkDocumentEquationWordGradientShade;
     };
 
+export interface WorkDocumentEquationWordTextFillEffect {
+  fill?: WorkDocumentEquationWordEffectFill;
+}
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -469,6 +473,7 @@ export interface WorkDocumentEquationWordRunProperties {
   shadowEffect?: WorkDocumentEquationWordShadowEffect;
   reflectionEffect?: WorkDocumentEquationWordReflectionEffect;
   textOutlineEffect?: WorkDocumentEquationWordTextOutlineEffect;
+  textFillEffect?: WorkDocumentEquationWordTextFillEffect;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1127,6 +1132,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'shadowEffect',
   'reflectionEffect',
   'textOutlineEffect',
+  'textFillEffect',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1195,6 +1201,7 @@ const WORD_TEXT_OUTLINE_EFFECT_KEYS = new Set([
   'dash',
   'join',
 ]);
+const WORD_TEXT_FILL_EFFECT_KEYS = new Set(['fill']);
 const WORD_EFFECT_NO_FILL_KEYS = new Set(['type']);
 const WORD_EFFECT_SOLID_FILL_KEYS = new Set(['type', 'color']);
 const WORD_EFFECT_GRADIENT_FILL_KEYS = new Set(['type', 'stops', 'shade']);
@@ -3298,6 +3305,10 @@ function normalizeEquationWordRunProperties(
     source.textOutlineEffect === undefined
       ? undefined
       : normalizeEquationWordTextOutlineEffect(source.textOutlineEffect);
+  const textFillEffect =
+    source.textFillEffect === undefined
+      ? undefined
+      : normalizeEquationWordTextFillEffect(source.textFillEffect);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3353,6 +3364,7 @@ function normalizeEquationWordRunProperties(
     shadowEffect === null ||
     reflectionEffect === null ||
     textOutlineEffect === null ||
+    textFillEffect === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3495,6 +3507,7 @@ function normalizeEquationWordRunProperties(
     ...(shadowEffect ? { shadowEffect } : {}),
     ...(reflectionEffect ? { reflectionEffect } : {}),
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
+    ...(textFillEffect ? { textFillEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -4132,6 +4145,17 @@ function normalizeEquationWordTextOutlineEffect(
   };
 }
 
+function normalizeEquationWordTextFillEffect(
+  source: unknown,
+): WorkDocumentEquationWordTextFillEffect | null {
+  if (!isRecordWithKeys(source, WORD_TEXT_FILL_EFFECT_KEYS)) return null;
+  const fill =
+    source.fill === undefined
+      ? undefined
+      : normalizeEquationWordEffectFill(source.fill);
+  return fill === null ? null : { ...(fill ? { fill } : {}) };
+}
+
 function normalizeEquationWordEffectFill(
   source: unknown,
 ): WorkDocumentEquationWordEffectFill | null {
@@ -4610,7 +4634,9 @@ function wordPropertiesMathMlAttributes(
     wordRunVerticalAlignmentStyles(properties.verticalAlignment),
     wordRunEmphasisMarkStyles(properties.emphasisMark),
   ].filter(Boolean);
-  const color = properties.color?.value;
+  const color =
+    wordRunTextFillMathMlColor(properties.textFillEffect) ??
+    properties.color?.value;
   const background = wordRunMathMlBackground(properties);
   return {
     ...(color && color !== 'auto' ? { mathcolor: color } : {}),
@@ -4622,6 +4648,22 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunTextFillMathMlColor(
+  effect: WorkDocumentEquationWordTextFillEffect | undefined,
+): string | undefined {
+  if (!effect) return undefined;
+  const fill = effect.fill;
+  if (!fill) return '#000000';
+  if (fill.type === 'gradient') {
+    return fill.stops ? undefined : '#000000';
+  }
+  if (fill.type !== 'solid') return undefined;
+  if (!fill.color) return '#000000';
+  return fill.color.type === 'rgb' && !fill.color.transforms?.length
+    ? fill.color.value
+    : undefined;
 }
 
 function wordRunVerticalAlignmentStyles(

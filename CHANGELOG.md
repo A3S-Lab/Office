@@ -32,10 +32,11 @@ All notable changes to A3S Office will be documented in this file.
   with optional signed 32-bit run IDs, two-lines-in-one flags, all five
   enclosing-bracket styles, horizontal-in-vertical rotation, and rotated-text
   compression, explicit paragraph-mark always-hidden/reset flags, and Office
-  2010 text glow, shadow, reflection, and text-outline effects. Glow retains an optional 0
-  through 2,147,483,647 EMU radius, one RGB or 17-slot theme color source, and
-  up to 64 ordered, repeatable tint, shade, alpha, hue-modulation, saturation, and
-  luminance transforms. The distinct Office 2010 shadow effect retains the same
+  2010 text glow, shadow, reflection, text-outline, and text-fill effects. Glow
+  retains an optional 0 through 2,147,483,647 EMU radius, one RGB or 17-slot
+  theme color source, and up to 64 ordered, repeatable tint, shade, alpha,
+  hue-modulation, saturation, and luminance transforms. The distinct Office 2010
+  shadow effect retains the same
   color model plus optional 0 through 2,147,483,647 EMU blur and offset
   coordinates, a direction from 0 inclusive to 360 degrees exclusive, signed
   horizontal and vertical scales, skew angles strictly between -90 and 90
@@ -55,6 +56,9 @@ All notable changes to A3S Office will be documented in this file.
   or path shading with optional signed 32-bit relative fill rectangles, all 11
   preset dashes, and round, bevel, or miter joins with optional exact
   nonnegative limits.
+  The Office 2010 text-fill effect reuses the same strict no/solid/gradient fill
+  grammar, bounded colors and transforms, 2 through 10-stop lists, linear/path
+  shades, signed relative rectangles, and exact units without outline geometry.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
@@ -79,10 +83,14 @@ All notable changes to A3S Office will be documented in this file.
   the schema's bevel default. Omitted fill, dash, and join choices retain their
   defaults, while explicit zero/default attributes and empty child choices
   remain present.
+  A missing `w14:textFill` continues to use `w:color`; a present empty wrapper,
+  empty solid fill, or gradient without a stop list retains the distinct black
+  schema default.
   All-caps and small-caps presentation, character spacing, width scaling,
-  effective kerning, baseline shifts, and baseline/superscript/subscript
-  alignment use safe CSS projections in MathML previews without changing
-  source Unicode text. Word emphasis marks project through CSS as filled dots,
+  effective kerning, baseline shifts, baseline/superscript/subscript alignment,
+  and exact transform-free Office 2010 RGB text fills or black fill defaults use
+  safe MathML/CSS projections without changing source Unicode text. Word
+  emphasis marks project through CSS as filled dots,
   a literal comma, or an open circle above the text, or a filled dot below it.
   Superscript and subscript also project the smaller rendered size required by
   Word. When `w:position` and `w:vertAlign` coexist, both remain in native
@@ -90,7 +98,8 @@ All notable changes to A3S Office will be documented in this file.
   position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
   `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
   `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
-  `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`. Simple
+  `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline` and then
+  `w14:textFill`. Simple
   explicitly sized solid, double, dotted, dashed, inset, and outset line
   borders project through CSS with direct or automatic color and point
   padding; explicit `nil`/`none` resets also project. Relief effects, legacy
@@ -113,6 +122,9 @@ All notable changes to A3S Office will be documented in this file.
   colors, ordered transforms, exact blur and offset coordinates, reflection
   opacity/position/fade geometry, signed scale/skew, rectangle alignment,
   gradient or compound strokes, preset dashes, caps, joins, or pen alignment.
+  Text `noFill`, theme or transformed text-fill colors, and nonempty gradients
+  remain native-only; previews keep readable fallback color instead of using
+  fragile transparent-text or background-clipped-gradient approximations.
   Highlight precedence over shading is
   retained. Named highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
@@ -125,7 +137,8 @@ All notable changes to A3S Office will be documented in this file.
   values, malformed or out-of-range East Asian layout IDs, flags, or bracket
   styles, malformed paragraph-mark visibility flags, malformed glow radii,
   shadow or reflection geometry, text-outline fill/gradient/dash/join
-  structure, color choices, or transform chains, and
+  structure, text-fill wrapper/fill/gradient structure, color choices, or
+  transform chains, and
   unknown, reordered,
   duplicated, spoofed, or
   relationship-bound Word run properties fail closed.

@@ -44,6 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_SCENE_3D = `<w14:scene3d xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2076,6 +2077,7 @@ describe('document equations', () => {
       '<w14:shadow w14:blurRad="25400" w14:dist="12700" w14:dir="5400000" w14:sx="90000" w14:sy="-100000" w14:kx="-60000" w14:ky="120000" w14:algn="tr"><w14:schemeClr w14:val="accent5"><w14:lumMod w14:val="75000"/></w14:schemeClr></w14:shadow>',
       '<w14:reflection w14:blurRad="12700" w14:stA="60000" w14:stPos="0" w14:endA="10000" w14:endPos="100000" w14:dist="6350" w14:dir="5400000" w14:fadeDir="16200000" w14:sx="100000" w14:sy="-50000" w14:kx="-60000" w14:ky="120000" w14:algn="b"/>',
       '<w14:textOutline w14:w="12700" w14:cap="sq" w14:cmpd="dbl" w14:algn="in"><w14:solidFill><w14:schemeClr w14:val="accent6"><w14:alpha w14:val="80000"/></w14:schemeClr></w14:solidFill><w14:prstDash w14:val="dashDot"/><w14:miter w14:lim="400000"/></w14:textOutline>',
+      '<w14:textFill><w14:solidFill><w14:srgbClr w14:val="2468AC"><w14:shade w14:val="25000"/></w14:srgbClr></w14:solidFill></w14:textFill>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2184,7 +2186,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2218,7 +2220,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4434,7 +4436,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_TEXT_FILL),
+      wordRun(WORD_2010_SCENE_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4865,7 +4867,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_TEXT_FILL),
+      wordRun(WORD_2010_SCENE_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5292,7 +5294,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_TEXT_FILL),
+      wordRun(WORD_2010_SCENE_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5659,7 +5661,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_TEXT_FILL),
+      wordRun(WORD_2010_SCENE_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6391,7 +6393,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_TEXT_FILL),
+      wordRun(WORD_2010_SCENE_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6455,6 +6457,474 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunTextOutlineEffects(
+      await createArtifactBlob(imported),
+    );
+  });
+
+  test('preserves bounded Office 2010 text fill effects and projects only exact solid colors', async () => {
+    const transforms = [
+      { type: 'tint', value: 0 },
+      { type: 'alpha', value: 50_000 },
+      { type: 'luminanceModulation', value: 75_000 },
+    ];
+    const fullEffect = {
+      fill: {
+        type: 'gradient',
+        stops: [
+          {
+            positionPercent: 0,
+            color: { type: 'rgb', value: '#a1b2c3', transforms },
+          },
+          {
+            positionPercent: 100,
+            color: { type: 'scheme', value: 'accent3' },
+          },
+        ],
+        shade: { type: 'linear', angleDegrees: 90, scaled: true },
+      },
+    };
+    const boundaryPositions = [0, 0.001, 10, 20, 30, 40, 50, 60, 99.999, 100];
+    const boundaryStops = boundaryPositions.map((positionPercent, index) => ({
+      positionPercent,
+      color: {
+        type: 'rgb',
+        value: `#${index.toString(16).padStart(6, '0')}`,
+      },
+    }));
+    const minimumPercentage = -2_147_483_648 / 1_000;
+    const maximumPercentage = 2_147_483_647 / 1_000;
+    const boundaryEffect = {
+      fill: {
+        type: 'gradient',
+        stops: boundaryStops,
+        shade: {
+          type: 'path',
+          path: 'rectangle',
+          fillToRectangle: {
+            leftPercent: minimumPercentage,
+            topPercent: maximumPercentage,
+            rightPercent: 0,
+            bottomPercent: 0.001,
+          },
+        },
+      },
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'full-text-fill-effect',
+          wordRunProperties: { textFillEffect: fullEffect },
+        },
+        {
+          type: 'run',
+          text: 'direct-solid-text-fill-effect',
+          wordRunProperties: {
+            color: { value: '#abcdef' },
+            textFillEffect: {
+              fill: {
+                type: 'solid',
+                color: { type: 'rgb', value: '#13579b' },
+              },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'empty-text-fill-effect',
+          wordRunProperties: { textFillEffect: {} },
+        },
+        {
+          type: 'run',
+          text: 'empty-solid-text-fill-effect',
+          wordRunProperties: {
+            textFillEffect: { fill: { type: 'solid' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'empty-gradient-text-fill-effect',
+          wordRunProperties: {
+            textFillEffect: { fill: { type: 'gradient' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'no-text-fill-effect',
+          wordRunProperties: {
+            color: { value: '#2468ac' },
+            textFillEffect: { fill: { type: 'none' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'ordered-text-fill-effect',
+          wordRunProperties: {
+            paragraphMarkAlwaysHidden: false,
+            reflectionEffect: {},
+            textOutlineEffect: {},
+            textFillEffect: { fill: { type: 'none' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'boundary-text-fill-effect',
+          wordRunProperties: { textFillEffect: boundaryEffect },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            textFillEffect: {
+              fill: {
+                type: 'solid',
+                color: { type: 'scheme', value: 'hyperlink' },
+              },
+            },
+          },
+          children: [{ type: 'run', text: 'operator-text-fill-effect' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithTextFillEffect = (textFillEffect: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { textFillEffect } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { textFillEffect: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      normalizeDocumentEquation(equationWithTextFillEffect(boundaryEffect))
+        ?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textFillEffect: boundaryEffect },
+    });
+    const validStop = {
+      positionPercent: 50,
+      color: { type: 'rgb', value: '#abcdef' },
+    };
+    const invalidEffects = [
+      null,
+      false,
+      [],
+      { extra: true },
+      { fill: null },
+      { fill: { type: 'none', color: validStop.color } },
+      { fill: { type: 'solid', extra: true } },
+      { fill: { type: 'solid', color: null } },
+      { fill: { type: 'gradient', extra: true } },
+      { fill: { type: 'gradient', stops: [] } },
+      { fill: { type: 'gradient', stops: [validStop] } },
+      {
+        fill: {
+          type: 'gradient',
+          stops: Array.from({ length: 11 }, () => validStop),
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: -0.001 }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: 100.001 }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: 0.0005 }],
+        },
+      },
+      { fill: { type: 'gradient', shade: null } },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', angleDegrees: 360 },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', scaled: 'true' },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'path', path: 'triangle' },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'path', fillToRectangle: { extra: true } },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: {
+            type: 'path',
+            fillToRectangle: { leftPercent: minimumPercentage - 0.001 },
+          },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: {
+            type: 'path',
+            fillToRectangle: { rightPercent: maximumPercentage + 0.001 },
+          },
+        },
+      },
+    ];
+    expect(
+      invalidEffects.map((effect) =>
+        normalizeDocumentEquation(equationWithTextFillEffect(effect)),
+      ),
+    ).toEqual(invalidEffects.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const fullMarkup =
+      '<w14:textFill><w14:gradFill><w14:gsLst>' +
+      '<w14:gs w14:pos="0"><w14:srgbClr w14:val="a1B2c3">' +
+      '<w14:tint w14:val="0"/><w14:alpha w14:val="50000"/>' +
+      '<w14:lumMod w14:val="75000"/></w14:srgbClr></w14:gs>' +
+      '<w14:gs w14:pos="100000"><w14:schemeClr w14:val="accent3"/></w14:gs>' +
+      '</w14:gsLst><w14:lin w14:ang="5400000" w14:scaled="true"/>' +
+      '</w14:gradFill></w14:textFill>';
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(fullMarkup, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { textFillEffect: fullEffect },
+      });
+    }
+    expect(
+      inspectEquationModel(wordRun(WORD_2010_TEXT_FILL))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textFillEffect: {} },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun('<w14:textFill><w14:solidFill/></w14:textFill>'),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        textFillEffect: { fill: { type: 'solid' } },
+      },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun('<w14:textOutline/><w14:textFill><w14:noFill/></w14:textFill>'),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        textOutlineEffect: {},
+        textFillEffect: { fill: { type: 'none' } },
+      },
+    });
+    const boundaryStopMarkup = boundaryPositions
+      .map(
+        (position, index) =>
+          `<w14:gs w14:pos="${position * 1_000}"><w14:srgbClr w14:val="${index
+            .toString(16)
+            .padStart(6, '0')}"/></w14:gs>`,
+      )
+      .join('');
+    const boundaryMarkup =
+      '<w14:textFill><w14:gradFill><w14:gsLst>' +
+      boundaryStopMarkup +
+      '</w14:gsLst><w14:path w14:path="rect"><w14:fillToRect ' +
+      'w14:l="-2147483648" w14:t="2147483647" w14:r="0" w14:b="1"/>' +
+      '</w14:path></w14:gradFill></w14:textFill>';
+    expect(inspectEquationModel(wordRun(boundaryMarkup))?.children[0]).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textFillEffect: boundaryEffect },
+    });
+
+    const gradientStop = (
+      position = '0',
+      color = '<w14:srgbClr w14:val="A1B2C3"/>',
+    ) => `<w14:gs w14:pos="${position}">${color}</w14:gs>`;
+    const twoStops = `${gradientStop()}${gradientStop('100000')}`;
+    const invalidMarkup = [
+      wordRun('<w14:textFill/><w14:textFill/>'),
+      wordRun('<w14:textFill/><w14:textOutline/>'),
+      wordRun('<w14:textFill/><w14:reflection/>'),
+      wordRun('<w14:textFill/><w:specVanish/>'),
+      wordRun('<w:textFill/>'),
+      wordRun(`<v:textFill xmlns:v="${VENDOR_NAMESPACE}"/>`),
+      wordRun(`<w14:textFill xmlns:w14="${VENDOR_NAMESPACE}"/>`),
+      wordRun('<w14:textFill w14:extra="semantic"/>'),
+      wordRun('<w14:textFill extra="semantic"/>'),
+      wordRun(
+        `<w14:textFill xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:textFill>meaningful</w14:textFill>'),
+      wordRun('<w14:textFill><w14:noFill/><w14:solidFill/></w14:textFill>'),
+      wordRun('<w14:textFill><w14:prstDash/></w14:textFill>'),
+      wordRun('<w14:textFill><w14:noFill w14:extra="1"/></w14:textFill>'),
+      wordRun('<w14:textFill><w14:noFill>text</w14:noFill></w14:textFill>'),
+      wordRun(
+        '<w14:textFill><w14:noFill><w14:alpha w14:val="1"/></w14:noFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:solidFill><w14:srgbClr w14:val="A1B2C3"/><w14:schemeClr w14:val="accent1"/></w14:solidFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:solidFill><w14:alpha w14:val="50000"/></w14:solidFill></w14:textFill>',
+      ),
+      wordRun(
+        `<w14:textFill><w14:gradFill><w14:lin/><w14:gsLst>${twoStops}</w14:gsLst></w14:gradFill></w14:textFill>`,
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:lin/><w14:path/></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        `<w14:textFill><w14:gradFill><w14:gsLst>${gradientStop()}</w14:gsLst></w14:gradFill></w14:textFill>`,
+      ),
+      wordRun(
+        `<w14:textFill><w14:gradFill><w14:gsLst>${Array.from({ length: 11 }, (_, index) => gradientStop(String(index * 10_000))).join('')}</w14:gsLst></w14:gradFill></w14:textFill>`,
+      ),
+      wordRun(
+        `<w14:textFill><w14:gradFill><w14:gsLst>${gradientStop('-1')}${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textFill>`,
+      ),
+      wordRun(
+        `<w14:textFill><w14:gradFill><w14:gsLst>${gradientStop('100001')}${gradientStop('0')}</w14:gsLst></w14:gradFill></w14:textFill>`,
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:lin w14:ang="21600000"/></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:lin w14:scaled="on"/></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:path w14:path="triangle"/></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:path><w14:fillToRect w14:l="-2147483649"/></w14:path></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><w14:gradFill><w14:path><w14:fillToRect w14:r="2147483648"/></w14:path></w14:gradFill></w14:textFill>',
+      ),
+      wordRun(
+        '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
+      ),
+      wordRun(WORD_2010_SCENE_3D),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const previewRun = (text: string): Element | undefined =>
+      Array.from(preview.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === text,
+      );
+    expect(
+      previewRun('direct-solid-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBe('#13579b');
+    expect(
+      previewRun('empty-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBe('#000000');
+    expect(
+      previewRun('empty-solid-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBe('#000000');
+    expect(
+      previewRun('empty-gradient-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBe('#000000');
+    expect(previewRun('no-text-fill-effect')?.getAttribute('mathcolor')).toBe(
+      '#2468ac',
+    );
+    expect(
+      previewRun('full-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBeNull();
+    expect(
+      previewRun('boundary-text-fill-effect')?.getAttribute('mathcolor'),
+    ).toBeNull();
+    expect(preview.outerHTML).not.toMatch(
+      /background-clip|linear-gradient|text-fill-color|color:\s*transparent/iu,
+    );
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunTextFillEffects(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-text-fill-effect.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunTextFillEffects(
       await createArtifactBlob(imported),
     );
   });
@@ -6547,7 +7017,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -6824,7 +7294,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_TEXT_FILL}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_SCENE_3D}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -8090,6 +8560,16 @@ function richWordRunProperties() {
       },
       dash: { preset: 'dashDot' as const },
       join: { type: 'miter' as const, limitPercent: 400 },
+    },
+    textFillEffect: {
+      fill: {
+        type: 'solid' as const,
+        color: {
+          type: 'rgb' as const,
+          value: '#2468ac',
+          transforms: [{ type: 'shade' as const, value: 25_000 }],
+        },
+      },
     },
   };
 }
@@ -10548,6 +11028,193 @@ async function expectNativeWordRunTextOutlineEffects(
   expect(directChildren(controlJoin)).toHaveLength(0);
 }
 
+async function expectNativeWordRunTextFillEffects(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const textFillFor = (text: string): Element => {
+    const fill = directChildren(wordPropertiesFor(text), 'textFill')[0];
+    expect(fill, text).toBeDefined();
+    expect(fill.namespaceURI, text).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(fill), text).toEqual({});
+    return fill;
+  };
+  const expectWord2010Children = (
+    element: Element,
+    names: readonly string[],
+  ): Element[] => {
+    const children = directChildren(element);
+    expect(children.map((child) => child.localName)).toEqual(names);
+    expect(
+      children.every((child) => child.namespaceURI === WORD_2010_NAMESPACE),
+    ).toBe(true);
+    return children;
+  };
+
+  const full = textFillFor('full-text-fill-effect');
+  const gradient = expectWord2010Children(full, ['gradFill'])[0];
+  expect(word2010Attributes(gradient)).toEqual({});
+  const [stopList, linear] = expectWord2010Children(gradient, ['gsLst', 'lin']);
+  expect(word2010Attributes(stopList)).toEqual({});
+  const stops = expectWord2010Children(stopList, ['gs', 'gs']);
+  expect(word2010Attributes(stops[0])).toEqual({ pos: '0' });
+  expect(word2010Attributes(stops[1])).toEqual({ pos: '100000' });
+  const firstColor = expectWord2010Children(stops[0], ['srgbClr'])[0];
+  expect(word2010Attributes(firstColor)).toEqual({ val: 'A1B2C3' });
+  const transforms = expectWord2010Children(firstColor, [
+    'tint',
+    'alpha',
+    'lumMod',
+  ]);
+  expect(transforms.map(word2010Attributes)).toEqual([
+    { val: '0' },
+    { val: '50000' },
+    { val: '75000' },
+  ]);
+  const secondColor = expectWord2010Children(stops[1], ['schemeClr'])[0];
+  expect(word2010Attributes(secondColor)).toEqual({ val: 'accent3' });
+  expect(directChildren(secondColor)).toHaveLength(0);
+  expect(word2010Attributes(linear)).toEqual({
+    ang: '5400000',
+    scaled: '1',
+  });
+  expect(directChildren(linear)).toHaveLength(0);
+
+  const directProperties = wordPropertiesFor('direct-solid-text-fill-effect');
+  expect(
+    directChildren(directProperties).map((child) => child.localName),
+  ).toEqual(['color', 'textFill']);
+  const direct = textFillFor('direct-solid-text-fill-effect');
+  const solid = expectWord2010Children(direct, ['solidFill'])[0];
+  const solidColor = expectWord2010Children(solid, ['srgbClr'])[0];
+  expect(word2010Attributes(solidColor)).toEqual({ val: '13579B' });
+  expect(directChildren(solidColor)).toHaveLength(0);
+
+  expect(directChildren(textFillFor('empty-text-fill-effect'))).toHaveLength(0);
+  const emptySolid = expectWord2010Children(
+    textFillFor('empty-solid-text-fill-effect'),
+    ['solidFill'],
+  )[0];
+  expect(word2010Attributes(emptySolid)).toEqual({});
+  expect(directChildren(emptySolid)).toHaveLength(0);
+  const emptyGradient = expectWord2010Children(
+    textFillFor('empty-gradient-text-fill-effect'),
+    ['gradFill'],
+  )[0];
+  expect(word2010Attributes(emptyGradient)).toEqual({});
+  expect(directChildren(emptyGradient)).toHaveLength(0);
+  const noFill = expectWord2010Children(textFillFor('no-text-fill-effect'), [
+    'noFill',
+  ])[0];
+  expect(word2010Attributes(noFill)).toEqual({});
+  expect(directChildren(noFill)).toHaveLength(0);
+
+  const boundary = textFillFor('boundary-text-fill-effect');
+  const boundaryGradient = expectWord2010Children(boundary, ['gradFill'])[0];
+  const [boundaryStopList, path] = expectWord2010Children(boundaryGradient, [
+    'gsLst',
+    'path',
+  ]);
+  const boundaryStops = directChildren(boundaryStopList);
+  expect(boundaryStops).toHaveLength(10);
+  expect(boundaryStops.map((stop) => word2010Attributes(stop).pos)).toEqual([
+    '0',
+    '1',
+    '10000',
+    '20000',
+    '30000',
+    '40000',
+    '50000',
+    '60000',
+    '99999',
+    '100000',
+  ]);
+  expect(
+    boundaryStops.map((stop) =>
+      word2010Attributes(expectWord2010Children(stop, ['srgbClr'])[0]),
+    ),
+  ).toEqual(
+    Array.from({ length: 10 }, (_, index) => ({
+      val: index.toString(16).padStart(6, '0').toUpperCase(),
+    })),
+  );
+  expect(word2010Attributes(path)).toEqual({ path: 'rect' });
+  const rectangle = expectWord2010Children(path, ['fillToRect'])[0];
+  expect(word2010Attributes(rectangle)).toEqual({
+    l: '-2147483648',
+    t: '2147483647',
+    r: '0',
+    b: '1',
+  });
+  expect(directChildren(rectangle)).toHaveLength(0);
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-text-fill-effect'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'specVanish',
+    'reflection',
+    'textOutline',
+    'textFill',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-text-fill-effect'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const controlTextFill = directChildren(
+    wordProperties as Element,
+    'textFill',
+  )[0];
+  expect(controlTextFill.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(controlTextFill)).toEqual({});
+  const controlSolid = expectWord2010Children(controlTextFill, [
+    'solidFill',
+  ])[0];
+  const controlColor = expectWord2010Children(controlSolid, ['schemeClr'])[0];
+  expect(word2010Attributes(controlColor)).toEqual({ val: 'hlink' });
+  expect(directChildren(controlColor)).toHaveLength(0);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -10612,6 +11279,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'shadow',
     'reflection',
     'textOutline',
+    'textFill',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -10696,6 +11364,7 @@ async function expectNativeArgumentControlProperties(
     'shadow',
     'reflection',
     'textOutline',
+    'textFill',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -11267,6 +11936,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'shadow',
     'reflection',
     'textOutline',
+    'textFill',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -11367,6 +12037,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       algn: 'b',
     },
     { w: '12700', cap: 'sq', cmpd: 'dbl', algn: 'in' },
+    {},
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -11431,6 +12102,20 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(outlineAlpha.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(outlineAlpha.localName).toBe('alpha');
     expect(word2010Attributes(outlineAlpha)).toEqual({ val: '80000' });
+    const textFill = directChildren(properties, 'textFill')[0];
+    expect(textFill.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(textFill)).toEqual({});
+    const fillSolid = directChildren(textFill)[0];
+    expect(fillSolid.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(fillSolid.localName).toBe('solidFill');
+    const fillColor = directChildren(fillSolid)[0];
+    expect(fillColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(fillColor.localName).toBe('srgbClr');
+    expect(word2010Attributes(fillColor)).toEqual({ val: '2468AC' });
+    const fillShade = directChildren(fillColor)[0];
+    expect(fillShade.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(fillShade.localName).toBe('shade');
+    expect(word2010Attributes(fillShade)).toEqual({ val: '25000' });
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

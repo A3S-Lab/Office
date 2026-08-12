@@ -1433,6 +1433,11 @@ function createWordRunProperties(
       createWord2010TextOutlineEffect(document, properties.textOutlineEffect),
     );
   }
+  if (properties.textFillEffect) {
+    result.append(
+      createWord2010TextFillEffect(document, properties.textFillEffect),
+    );
+  }
   return result;
 }
 
@@ -1745,6 +1750,18 @@ function createWord2010TextOutlineEffect(
       );
     }
     result.append(join);
+  }
+  return result;
+}
+
+function createWord2010TextFillEffect(
+  document: Document,
+  effect: NonNullable<WorkDocumentEquationWordRunProperties['textFillEffect']>,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'textFill');
+  if (effect.fill) {
+    result.append(createWord2010EffectFill(document, prefix, effect.fill));
   }
   return result;
 }

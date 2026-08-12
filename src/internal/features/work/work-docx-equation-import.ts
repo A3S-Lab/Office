@@ -56,6 +56,7 @@ import {
   type WorkDocumentEquationWordTextOutlineCap,
   type WorkDocumentEquationWordTextOutlineCompound,
   type WorkDocumentEquationWordTextOutlineEffect,
+  type WorkDocumentEquationWordTextFillEffect,
   type WorkDocumentEquationWordUnderline,
   type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
@@ -192,6 +193,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:shadow',
   'w14:reflection',
   'w14:textOutline',
+  'w14:textFill',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -1116,6 +1118,9 @@ function parseWordRunProperties(
   const textOutlineEffect = parseWordTextOutlineEffect(
     word2010Children.get('textOutline'),
   );
+  const textFillEffect = parseWordTextFillEffect(
+    word2010Children.get('textFill'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -1138,7 +1143,8 @@ function parseWordRunProperties(
     glow === null ||
     shadowEffect === null ||
     reflectionEffect === null ||
-    textOutlineEffect === null
+    textOutlineEffect === null ||
+    textFillEffect === null
   ) {
     return null;
   }
@@ -1237,6 +1243,7 @@ function parseWordRunProperties(
     ...(shadowEffect ? { shadowEffect } : {}),
     ...(reflectionEffect ? { reflectionEffect } : {}),
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
+    ...(textFillEffect ? { textFillEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2239,6 +2246,18 @@ function parseWordTextOutlineChildren(
     ...(dash ? { dash } : {}),
     ...(join ? { join } : {}),
   };
+}
+
+function parseWordTextFillEffect(
+  element: Element | undefined,
+): WorkDocumentEquationWordTextFillEffect | null | undefined {
+  if (!element) return undefined;
+  if (!word2010ElementAttributes(element, new Set())) return null;
+  const children = directChildren(element);
+  if (children.length > 1) return null;
+  if (!children[0]) return {};
+  const fill = parseWord2010EffectFill(children[0]);
+  return fill ? { fill } : null;
 }
 
 function parseWord2010EffectFill(

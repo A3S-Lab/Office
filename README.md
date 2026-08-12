@@ -638,10 +638,10 @@ RTL/complex-script flags, Latin, East Asian, and bidi language tags, and East
 Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
-flags and Office 2010 text glow, shadow, reflection, and text-outline effects. Glow preserves
-an optional 0 through 2,147,483,647 EMU radius, exactly one RGB or 17-slot theme
-color source, and up to 64 ordered, repeatable tint, shade, alpha, hue-modulation,
-saturation, and luminance transform entries.
+flags and Office 2010 text glow, shadow, reflection, text-outline, and text-fill
+effects. Glow preserves an optional 0 through 2,147,483,647 EMU radius, exactly
+one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
+shade, alpha, hue-modulation, saturation, and luminance transform entries.
 The distinct Office 2010 shadow effect preserves the same color model plus
 optional 0 through 2,147,483,647 EMU blur and offset coordinates, a direction
 from 0 inclusive to 360 degrees exclusive, signed horizontal and vertical
@@ -663,6 +663,10 @@ retain RGB or theme colors and ordered transforms. Gradient shading retains an
 optional exact linear angle and scale flag or a path shape with an optional
 signed 32-bit relative fill rectangle. All 11 preset dashes and round, bevel,
 or miter joins survive, including an optional exact nonnegative miter limit.
+The Office 2010 text-fill effect reuses the same strict fill grammar without
+outline geometry. It preserves explicit no-fill, empty or colored solid-fill,
+and empty or bounded gradient-fill choices, including the same colors,
+transforms, stop limits, shade geometry, and exact units.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -688,8 +692,12 @@ A present empty `w14:textOutline` also remains distinct from omission and keeps
 the schema's bevel default. Omitted fill, dash, and join choices retain their
 defaults, while explicit zero/default attributes and empty child choices remain
 present.
+A missing `w14:textFill` continues to use `w:color`. A present empty text fill,
+an empty solid fill, or a gradient without a stop list remains distinct and
+retains its schema-defined black default.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
+exact transform-free Office 2010 RGB text fills and black fill defaults,
 background, size, font, direction, language, emphasis, decoration, character
 spacing, width, effective kerning, baseline-shift,
 baseline/superscript/subscript alignment, Word emphasis marks, all-caps, and
@@ -701,7 +709,8 @@ native schema order and the later explicit alignment controls the CSS vertical
 position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
-`w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`. Simple
+`w14:reflection` follows `w14:shadow`, followed by `w14:textOutline` and then
+`w14:textFill`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -728,6 +737,10 @@ opacity/position/fade geometry, signed scaling and skew, rectangle alignment,
 gradient or compound strokes, preset dashes, caps, joins, or pen alignment, so
 previews retain readable equation text without inventing a visually misleading
 effect.
+Text `noFill`, theme or transformed text-fill colors, and nonempty gradients
+remain native-only when no exact MathML color exists. CSS transparent text or
+background-clipped gradient approximations would make previews fragile, so the
+underlying readable color remains the fallback.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
@@ -739,8 +752,8 @@ or out-of-range manual widths and grouping IDs, missing or unknown
 vertical-alignment or emphasis-mark values, malformed or out-of-range East
 Asian layout IDs, flags, or bracket styles, malformed paragraph-mark visibility
 flags, malformed glow radii, shadow or reflection geometry, text-outline
-fill/gradient/dash/join structure, color choices, or transform chains, and
-unknown, duplicated, reordered,
+fill/gradient/dash/join structure, text-fill wrapper/fill/gradient structure,
+color choices, or transform chains, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their semantic defaults, and
