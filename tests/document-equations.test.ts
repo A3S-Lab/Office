@@ -2051,6 +2051,8 @@ describe('document equations', () => {
       '<w:sz w:val="25"/>',
       '<w:szCs w:val="28"/>',
       '<w:u w:val="wavyDouble" w:color="ABCDEF" w:themeColor="accent3" w:themeTint="20"/>',
+      '<w:effect w:val="shimmer"/>',
+      '<w:bdr w:val="double" w:color="112233" w:themeColor="accent1" w:themeTint="66" w:themeShade="33" w:sz="24" w:space="2" w:shadow="1" w:frame="0"/>',
       '<w:rtl w:val="false"/>',
       '<w:cs w:val="0"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
@@ -2162,7 +2164,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:effect w:val="shimmer"/></w:rPr>'),
+      wordRun('<w:rPr><w:fitText w:val="720"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2197,7 +2199,7 @@ describe('document equations', () => {
     expect(
       inspectEquation(
         wordRun(
-          '<w:rPr><w:effect w:val="shimmer"/></w:rPr>',
+          '<w:rPr><w:fitText w:val="720"/></w:rPr>',
           '<w:t>fallback</w:t>',
         ),
       ),
@@ -2365,7 +2367,6 @@ describe('document equations', () => {
       wordRun('<w:emboss><w:b/></w:emboss>'),
       wordRun(`<v:caps xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:vanish m:val="1"/>'),
-      wordRun('<w:effect w:val="shimmer"/>'),
     ];
     expect(unsupported.map(inspectEquationBody)).toEqual(
       unsupported.map(() => 'unsupported'),
@@ -2434,6 +2435,326 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunEffects(await createArtifactBlob(imported));
+  });
+
+  test('preserves Word text animations and line borders inside OMML', async () => {
+    const textEffects = [
+      'blinkBackground',
+      'lights',
+      'antsBlack',
+      'antsRed',
+      'shimmer',
+      'sparkle',
+      'none',
+    ] as const;
+    const lineBorderStyles = [
+      'nil',
+      'none',
+      'single',
+      'thick',
+      'double',
+      'dotted',
+      'dashed',
+      'dotDash',
+      'dotDotDash',
+      'triple',
+      'thinThickSmallGap',
+      'thickThinSmallGap',
+      'thinThickThinSmallGap',
+      'thinThickMediumGap',
+      'thickThinMediumGap',
+      'thinThickThinMediumGap',
+      'thinThickLargeGap',
+      'thickThinLargeGap',
+      'thinThickThinLargeGap',
+      'wave',
+      'doubleWave',
+      'dashSmallGap',
+      'dashDotStroked',
+      'threeDEmboss',
+      'threeDEngrave',
+      'outset',
+      'inset',
+    ] as const;
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'animated-bordered',
+          wordRunProperties: {
+            textEffect: 'shimmer',
+            border: {
+              style: 'double',
+              color: {
+                value: '#1a2b3c',
+                theme: 'accent1',
+                tint: '66',
+                shade: '33',
+              },
+              sizeEighthPoints: 24,
+              spacingPoints: 2,
+              shadow: true,
+              frame: false,
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'explicit-border-removal',
+          wordRunProperties: {
+            textEffect: 'none',
+            border: { style: 'none', shadow: false, frame: false },
+          },
+        },
+        {
+          type: 'run',
+          text: 'native-wave-border',
+          wordRunProperties: {
+            textEffect: 'antsBlack',
+            border: {
+              style: 'wave',
+              color: { theme: 'accent2' },
+              sizeEighthPoints: 16,
+              spacingPoints: 3,
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'theme-only-border',
+          wordRunProperties: {
+            textEffect: 'lights',
+            border: {
+              style: 'single',
+              color: { theme: 'accent4' },
+              sizeEighthPoints: 8,
+            },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            textEffect: 'sparkle',
+            border: {
+              style: 'dotted',
+              color: { value: 'auto' },
+              sizeEighthPoints: 8,
+              spacingPoints: 0,
+            },
+          },
+          children: [{ type: 'run', text: 'operator-adornments' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const textEffect of textEffects) {
+      expect(
+        normalizeDocumentEquation(equationWithWordRunProperties({ textEffect }))
+          ?.children[0],
+      ).toMatchObject({ wordRunProperties: { textEffect } });
+    }
+    for (const style of lineBorderStyles) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithWordRunProperties({ border: { style } }),
+        )?.children[0],
+      ).toMatchObject({ wordRunProperties: { border: { style } } });
+    }
+    for (const border of [
+      { style: 'single', sizeEighthPoints: 2, spacingPoints: 0 },
+      { style: 'single', sizeEighthPoints: 96, spacingPoints: 31 },
+      {
+        style: 'double',
+        color: { theme: 'accent1', tint: '66', shade: '33' },
+        shadow: false,
+        frame: true,
+      },
+    ]) {
+      expect(
+        normalizeDocumentEquation(equationWithWordRunProperties({ border }))
+          ?.children[0],
+      ).toMatchObject({ wordRunProperties: { border } });
+    }
+    const invalidModels = [
+      { textEffect: 'pulse' },
+      { textEffect: null },
+      { border: null },
+      { border: { style: 'apples' } },
+      { border: { style: 'single', extra: true } },
+      { border: { style: 'single', sizeEighthPoints: 1 } },
+      { border: { style: 'single', sizeEighthPoints: 97 } },
+      { border: { style: 'single', sizeEighthPoints: 2.5 } },
+      { border: { style: 'single', spacingPoints: -1 } },
+      { border: { style: 'single', spacingPoints: 32 } },
+      { border: { style: 'single', spacingPoints: 0.5 } },
+      { border: { style: 'single', shadow: 'true' } },
+      { border: { style: 'single', frame: 1 } },
+      { border: { style: 'single', color: { value: '#xyzxyz' } } },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const adornmentProperties =
+      '<w:effect w:val="shimmer"/><w:bdr w:val="double" w:color="1A2B3C" w:themeColor="accent1" w:themeTint="66" w:themeShade="33" w:sz="24" w:space="2" w:shadow="on" w:frame="0"/>';
+    expect(
+      inspectEquationModel(wordRun(adornmentProperties))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        textEffect: 'shimmer',
+        border: {
+          style: 'double',
+          color: {
+            value: '#1a2b3c',
+            theme: 'accent1',
+            tint: '66',
+            shade: '33',
+          },
+          sizeEighthPoints: 24,
+          spacingPoints: 2,
+          shadow: true,
+          frame: false,
+        },
+      },
+    });
+    expect(
+      inspectEquationRoot(
+        `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}"><m:r><w:rPr>${adornmentProperties}</w:rPr><m:t>strict-adornments</m:t></m:r></m:oMath>`,
+      ),
+    ).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            wordRunProperties: {
+              textEffect: 'shimmer',
+              border: {
+                style: 'double',
+                sizeEighthPoints: 24,
+                spacingPoints: 2,
+                shadow: true,
+                frame: false,
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(
+      textEffects.map((value) =>
+        inspectEquationBody(wordRun(`<w:effect w:val="${value}"/>`)),
+      ),
+    ).toEqual(textEffects.map(() => 'supported'));
+    expect(
+      lineBorderStyles.map((value) =>
+        inspectEquationBody(wordRun(`<w:bdr w:val="${value}"/>`)),
+      ),
+    ).toEqual(lineBorderStyles.map(() => 'supported'));
+
+    const unsupported = [
+      wordRun('<w:effect/>'),
+      wordRun('<w:effect w:val="pulse"/>'),
+      wordRun('<w:bdr/>'),
+      wordRun('<w:bdr w:val="apples"/>'),
+      wordRun('<w:bdr w:val="single" w:sz="1"/>'),
+      wordRun('<w:bdr w:val="single" w:sz="97"/>'),
+      wordRun('<w:bdr w:val="single" w:sz="2.5"/>'),
+      wordRun('<w:bdr w:val="single" w:space="32"/>'),
+      wordRun('<w:bdr w:val="single" w:shadow="maybe"/>'),
+      wordRun('<w:bdr w:val="single" w:frame="2"/>'),
+      wordRun('<w:bdr w:val="single" w:color="XYZXYZ"/>'),
+      wordRun('<w:bdr w:val="single" w:themeColor="none" w:themeTint="80"/>'),
+      wordRun('<w:bdr w:val="single"/><w:effect w:val="none"/>'),
+      wordRun('<w:effect w:val="none"/><w:effect w:val="shimmer"/>'),
+      wordRun('<w:bdr w:val="single"/><w:bdr w:val="double"/>'),
+      wordRun('<w:effect val="shimmer"/>'),
+      wordRun('<w:bdr val="single"/>'),
+      wordRun('<w:bdr w:val="single" w:extra="semantic"/>'),
+      wordRun(
+        `<w:bdr xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="single" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:bdr w:val="single"><w:b/></w:bdr>'),
+      wordRun(`<v:effect xmlns:v="${VENDOR_NAMESPACE}" v:val="shimmer"/>`),
+      wordRun(`<v:bdr xmlns:v="${VENDOR_NAMESPACE}" v:val="single"/>`),
+      wordRun('<m:effect m:val="shimmer"/>'),
+      wordRun('<m:bdr m:val="single"/>'),
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const styleFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo'))
+        .find((element) => element.textContent === text)
+        ?.getAttribute('style');
+    expect(styleFor('animated-bordered')).toContain(
+      'border:3pt double #1a2b3c',
+    );
+    expect(styleFor('animated-bordered')).toContain('padding:2pt');
+    expect(styleFor('animated-bordered')).not.toMatch(/animation|box-shadow/iu);
+    expect(styleFor('explicit-border-removal')).toContain('border-style:none');
+    expect(styleFor('native-wave-border') ?? '').not.toMatch(
+      /border|padding/iu,
+    );
+    expect(styleFor('theme-only-border') ?? '').not.toMatch(/border|padding/iu);
+    expect(styleFor('\u2211')).toContain('border:1pt dotted currentColor');
+    expect(styleFor('\u2211')).toContain('padding:0pt');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext'))
+        .find((element) => element.textContent === 'animated-bordered')
+        ?.getAttribute('style'),
+    ).toContain('border:3pt double #1a2b3c');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunAdornments(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-adornments.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunAdornments(await createArtifactBlob(imported));
   });
 
   test('preserves Word character geometry inside OMML', async () => {
@@ -3098,7 +3419,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties('<w:rPr><w:effect w:val="shimmer"/></w:rPr>'),
+      invalidControlProperties('<w:rPr><w:fitText w:val="720"/></w:rPr>'),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -3370,7 +3691,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr><w:effect w:val="shimmer"/></w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr><w:fitText w:val="720"/></w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -4539,6 +4860,20 @@ function richWordRunProperties() {
         theme: 'accent3' as const,
         tint: '20',
       },
+    },
+    textEffect: 'shimmer' as const,
+    border: {
+      style: 'double' as const,
+      color: {
+        value: '#112233',
+        theme: 'accent1' as const,
+        tint: '66',
+        shade: '33',
+      },
+      sizeEighthPoints: 24,
+      spacingPoints: 2,
+      shadow: true,
+      frame: false,
     },
     rightToLeft: false,
     complexScript: false,
@@ -5790,6 +6125,95 @@ async function expectNativeWordRunEffects(blob: Blob): Promise<void> {
   ]);
 }
 
+async function expectNativeWordRunAdornments(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const propertiesFor = (text: string) => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return directChildren(properties as Element);
+  };
+  for (const entry of [
+    {
+      text: 'animated-bordered',
+      effect: 'shimmer',
+      border: {
+        val: 'double',
+        color: '1A2B3C',
+        themeColor: 'accent1',
+        themeTint: '66',
+        themeShade: '33',
+        sz: '24',
+        space: '2',
+        shadow: '1',
+        frame: '0',
+      },
+    },
+    {
+      text: 'explicit-border-removal',
+      effect: 'none',
+      border: { val: 'none', shadow: '0', frame: '0' },
+    },
+    {
+      text: 'native-wave-border',
+      effect: 'antsBlack',
+      border: {
+        val: 'wave',
+        themeColor: 'accent2',
+        sz: '16',
+        space: '3',
+      },
+    },
+    {
+      text: 'theme-only-border',
+      effect: 'lights',
+      border: {
+        val: 'single',
+        themeColor: 'accent4',
+        sz: '8',
+      },
+    },
+  ]) {
+    const properties = propertiesFor(entry.text);
+    expect(
+      properties.map((property) => property.localName),
+      entry.text,
+    ).toEqual(['effect', 'bdr']);
+    expect(wordAttributes(properties[0])).toEqual({ val: entry.effect });
+    expect(wordAttributes(properties[1])).toEqual(entry.border);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-adornments'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const properties = directChildren(wordProperties as Element);
+  expect(properties.map((property) => property.localName)).toEqual([
+    'effect',
+    'bdr',
+  ]);
+  expect(wordAttributes(properties[0])).toEqual({ val: 'sparkle' });
+  expect(wordAttributes(properties[1])).toEqual({
+    val: 'dotted',
+    color: 'auto',
+    sz: '8',
+    space: '0',
+  });
+}
+
 async function expectNativeWordRunBackgrounds(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -5945,6 +6369,8 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'sz',
     'szCs',
     'u',
+    'effect',
+    'bdr',
     'rtl',
     'cs',
     'lang',
@@ -6018,6 +6444,8 @@ async function expectNativeArgumentControlProperties(
     'sz',
     'szCs',
     'u',
+    'effect',
+    'bdr',
     'rtl',
     'cs',
     'lang',
@@ -6578,6 +7006,8 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'sz',
     'szCs',
     'u',
+    'effect',
+    'bdr',
     'rtl',
     'cs',
     'lang',
@@ -6627,6 +7057,18 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       color: 'ABCDEF',
       themeColor: 'accent3',
       themeTint: '20',
+    },
+    { val: 'shimmer' },
+    {
+      val: 'double',
+      color: '112233',
+      themeColor: 'accent1',
+      themeTint: '66',
+      themeShade: '33',
+      sz: '24',
+      space: '2',
+      shadow: '1',
+      frame: '0',
     },
     { val: '0' },
     { val: '0' },

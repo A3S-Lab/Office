@@ -25,10 +25,13 @@ import {
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
+  type WorkDocumentEquationWordLineBorderStyle,
+  type WorkDocumentEquationWordRunBorder,
   type WorkDocumentEquationWordRunFonts,
   type WorkDocumentEquationWordRunProperties,
   type WorkDocumentEquationWordShading,
   type WorkDocumentEquationWordShadingPattern,
+  type WorkDocumentEquationWordTextEffect,
   type WorkDocumentEquationWordUnderline,
 } from './work-document-equations';
 import {
@@ -147,6 +150,8 @@ const WORD_RUN_PROPERTY_ORDER = [
   'szCs',
   'highlight',
   'u',
+  'effect',
+  'bdr',
   'shd',
   'rtl',
   'cs',
@@ -201,6 +206,45 @@ const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'wavyHeavy',
   'wavyDouble',
 ]);
+const WORD_TEXT_EFFECTS = new Set<WorkDocumentEquationWordTextEffect>([
+  'blinkBackground',
+  'lights',
+  'antsBlack',
+  'antsRed',
+  'shimmer',
+  'sparkle',
+  'none',
+]);
+const WORD_LINE_BORDER_STYLES =
+  new Set<WorkDocumentEquationWordLineBorderStyle>([
+    'nil',
+    'none',
+    'single',
+    'thick',
+    'double',
+    'dotted',
+    'dashed',
+    'dotDash',
+    'dotDotDash',
+    'triple',
+    'thinThickSmallGap',
+    'thickThinSmallGap',
+    'thinThickThinSmallGap',
+    'thinThickMediumGap',
+    'thickThinMediumGap',
+    'thinThickThinMediumGap',
+    'thinThickLargeGap',
+    'thickThinLargeGap',
+    'thinThickThinLargeGap',
+    'wave',
+    'doubleWave',
+    'dashSmallGap',
+    'dashDotStroked',
+    'threeDEmboss',
+    'threeDEngrave',
+    'outset',
+    'inset',
+  ]);
 const WORD_HIGHLIGHT_COLORS = new Set<WorkDocumentEquationWordHighlight>([
   'black',
   'blue',
@@ -279,6 +323,9 @@ const MAX_WORD_HALF_POINT_SIZE = 1_024;
 const MAX_WORD_CHARACTER_SPACING_TWIPS = 31_680;
 const MAX_WORD_CHARACTER_SCALE_PERCENT = 600;
 const MAX_WORD_KERNING_THRESHOLD_HALF_POINTS = 3_277;
+const MIN_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
+const MAX_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
+const MAX_WORD_BORDER_SPACING_POINTS = 31;
 const MIN_WORD_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_WORD_POSITION_HALF_POINTS = 2_147_483_647;
 const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
@@ -843,6 +890,8 @@ function parseWordRunProperties(
   const fontSizeComplexScript = parseWordHalfPointSize(children.get('szCs'));
   const highlight = parseWordHighlight(children.get('highlight'));
   const underline = parseWordUnderline(children.get('u'));
+  const textEffect = parseWordTextEffect(children.get('effect'));
+  const border = parseWordRunBorder(children.get('bdr'));
   const shading = parseWordShading(children.get('shd'));
   const languages = parseWordLanguages(children.get('lang'));
   if (
@@ -856,6 +905,8 @@ function parseWordRunProperties(
     fontSizeComplexScript === null ||
     highlight === null ||
     underline === null ||
+    textEffect === null ||
+    border === null ||
     shading === null ||
     languages === null
   ) {
@@ -932,6 +983,8 @@ function parseWordRunProperties(
     ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
     ...(highlight ? { highlight } : {}),
     ...(underline ? { underline } : {}),
+    ...(textEffect ? { textEffect } : {}),
+    ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
     ...(booleans.has('rightToLeft')
       ? { rightToLeft: booleans.get('rightToLeft') }
@@ -1282,6 +1335,81 @@ function parseWordUnderline(
       };
 }
 
+function parseWordTextEffect(
+  element: Element | undefined,
+): WorkDocumentEquationWordTextEffect | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  const value = attributes?.get('val')?.trim();
+  return attributes?.size === 1 &&
+    WORD_TEXT_EFFECTS.has(value as WorkDocumentEquationWordTextEffect)
+    ? (value as WorkDocumentEquationWordTextEffect)
+    : null;
+}
+
+function parseWordRunBorder(
+  element: Element | undefined,
+): WorkDocumentEquationWordRunBorder | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set([
+      'val',
+      'color',
+      'themeColor',
+      'themeTint',
+      'themeShade',
+      'sz',
+      'space',
+      'shadow',
+      'frame',
+    ]),
+  );
+  const style = attributes?.get('val')?.trim();
+  if (
+    !attributes ||
+    !WORD_LINE_BORDER_STYLES.has(
+      style as WorkDocumentEquationWordLineBorderStyle,
+    )
+  ) {
+    return null;
+  }
+  const color = wordColor(attributes, 'color', false);
+  const rawSize = attributes.get('sz')?.trim();
+  const sizeEighthPoints =
+    rawSize === undefined
+      ? undefined
+      : wordIntegerValue(
+          rawSize,
+          MIN_WORD_LINE_BORDER_EIGHTH_POINTS,
+          MAX_WORD_LINE_BORDER_EIGHTH_POINTS,
+        );
+  const rawSpacing = attributes.get('space')?.trim();
+  const spacingPoints =
+    rawSpacing === undefined
+      ? undefined
+      : wordIntegerValue(rawSpacing, 0, MAX_WORD_BORDER_SPACING_POINTS);
+  const shadow = wordOnOffAttribute(attributes.get('shadow'));
+  const frame = wordOnOffAttribute(attributes.get('frame'));
+  if (
+    color === null ||
+    sizeEighthPoints === null ||
+    spacingPoints === null ||
+    shadow === null ||
+    frame === null
+  ) {
+    return null;
+  }
+  return {
+    style: style as WorkDocumentEquationWordLineBorderStyle,
+    ...(color ? { color } : {}),
+    ...(sizeEighthPoints !== undefined ? { sizeEighthPoints } : {}),
+    ...(spacingPoints !== undefined ? { spacingPoints } : {}),
+    ...(shadow !== undefined ? { shadow } : {}),
+    ...(frame !== undefined ? { frame } : {}),
+  };
+}
+
 function parseWordShading(
   element: Element | undefined,
 ): WorkDocumentEquationWordShading | null | undefined {
@@ -1352,7 +1480,14 @@ function wordOnOff(element: Element): boolean | null {
   const attributes = wordLeafAttributes(element, new Set(['val']));
   if (!attributes) return null;
   if (!attributes.size) return true;
-  const value = attributes.get('val')?.trim().toLowerCase();
+  return wordOnOffAttribute(attributes.get('val')) ?? null;
+}
+
+function wordOnOffAttribute(
+  source: string | undefined,
+): boolean | null | undefined {
+  if (source === undefined) return undefined;
+  const value = source.trim().toLowerCase();
   if (value === '1' || value === 'true' || value === 'on') return true;
   if (value === '0' || value === 'false' || value === 'off') return false;
   return null;

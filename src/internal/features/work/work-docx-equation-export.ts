@@ -1153,6 +1153,55 @@ function createWordRunProperties(
     }
     result.append(underline);
   }
+  if (properties.textEffect) {
+    result.append(
+      createWordValueElement(document, prefix, 'effect', properties.textEffect),
+    );
+  }
+  if (properties.border) {
+    const border = createWordValueElement(
+      document,
+      prefix,
+      'bdr',
+      properties.border.style,
+    );
+    if (properties.border.color) {
+      setWordColorAttributes(border, prefix, properties.border.color, 'color');
+    }
+    if (properties.border.sizeEighthPoints !== undefined) {
+      setWordAttribute(
+        border,
+        prefix,
+        'sz',
+        String(properties.border.sizeEighthPoints),
+      );
+    }
+    if (properties.border.spacingPoints !== undefined) {
+      setWordAttribute(
+        border,
+        prefix,
+        'space',
+        String(properties.border.spacingPoints),
+      );
+    }
+    if (properties.border.shadow !== undefined) {
+      setWordAttribute(
+        border,
+        prefix,
+        'shadow',
+        properties.border.shadow ? '1' : '0',
+      );
+    }
+    if (properties.border.frame !== undefined) {
+      setWordAttribute(
+        border,
+        prefix,
+        'frame',
+        properties.border.frame ? '1' : '0',
+      );
+    }
+    result.append(border);
+  }
   if (properties.shading) {
     const shading = createWordValueElement(
       document,

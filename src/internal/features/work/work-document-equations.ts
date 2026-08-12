@@ -151,6 +151,42 @@ export type WorkDocumentEquationUnderlineStyle =
   | 'wave'
   | 'wavyHeavy'
   | 'wavyDouble';
+export type WorkDocumentEquationWordTextEffect =
+  | 'blinkBackground'
+  | 'lights'
+  | 'antsBlack'
+  | 'antsRed'
+  | 'shimmer'
+  | 'sparkle'
+  | 'none';
+export type WorkDocumentEquationWordLineBorderStyle =
+  | 'nil'
+  | 'none'
+  | 'single'
+  | 'thick'
+  | 'double'
+  | 'dotted'
+  | 'dashed'
+  | 'dotDash'
+  | 'dotDotDash'
+  | 'triple'
+  | 'thinThickSmallGap'
+  | 'thickThinSmallGap'
+  | 'thinThickThinSmallGap'
+  | 'thinThickMediumGap'
+  | 'thickThinMediumGap'
+  | 'thinThickThinMediumGap'
+  | 'thinThickLargeGap'
+  | 'thickThinLargeGap'
+  | 'thinThickThinLargeGap'
+  | 'wave'
+  | 'doubleWave'
+  | 'dashSmallGap'
+  | 'dashDotStroked'
+  | 'threeDEmboss'
+  | 'threeDEngrave'
+  | 'outset'
+  | 'inset';
 
 export interface WorkDocumentEquationWordRunFonts {
   ascii?: string;
@@ -174,6 +210,15 @@ export interface WorkDocumentEquationWordColor {
 export interface WorkDocumentEquationWordUnderline {
   style: WorkDocumentEquationUnderlineStyle;
   color?: WorkDocumentEquationWordColor;
+}
+
+export interface WorkDocumentEquationWordRunBorder {
+  style: WorkDocumentEquationWordLineBorderStyle;
+  color?: WorkDocumentEquationWordColor;
+  sizeEighthPoints?: number;
+  spacingPoints?: number;
+  shadow?: boolean;
+  frame?: boolean;
 }
 
 export interface WorkDocumentEquationWordShading {
@@ -215,6 +260,8 @@ export interface WorkDocumentEquationWordRunProperties {
   fontSizeComplexScript?: number;
   highlight?: WorkDocumentEquationWordHighlight;
   underline?: WorkDocumentEquationWordUnderline;
+  textEffect?: WorkDocumentEquationWordTextEffect;
+  border?: WorkDocumentEquationWordRunBorder;
   shading?: WorkDocumentEquationWordShading;
   rightToLeft?: boolean;
   complexScript?: boolean;
@@ -684,12 +731,54 @@ const UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'wavyHeavy',
   'wavyDouble',
 ]);
+const WORD_TEXT_EFFECTS = new Set<WorkDocumentEquationWordTextEffect>([
+  'blinkBackground',
+  'lights',
+  'antsBlack',
+  'antsRed',
+  'shimmer',
+  'sparkle',
+  'none',
+]);
+const WORD_LINE_BORDER_STYLES =
+  new Set<WorkDocumentEquationWordLineBorderStyle>([
+    'nil',
+    'none',
+    'single',
+    'thick',
+    'double',
+    'dotted',
+    'dashed',
+    'dotDash',
+    'dotDotDash',
+    'triple',
+    'thinThickSmallGap',
+    'thickThinSmallGap',
+    'thinThickThinSmallGap',
+    'thinThickMediumGap',
+    'thickThinMediumGap',
+    'thinThickThinMediumGap',
+    'thinThickLargeGap',
+    'thickThinLargeGap',
+    'thinThickThinLargeGap',
+    'wave',
+    'doubleWave',
+    'dashSmallGap',
+    'dashDotStroked',
+    'threeDEmboss',
+    'threeDEngrave',
+    'outset',
+    'inset',
+  ]);
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
 const MAX_EQUATION_CHARACTER_SPACING_TWIPS = 31_680;
 const MAX_EQUATION_CHARACTER_SCALE_PERCENT = 600;
 const MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS = 3_277;
+const MIN_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
+const MAX_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
+const MAX_EQUATION_WORD_BORDER_SPACING_POINTS = 31;
 const MIN_EQUATION_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_EQUATION_POSITION_HALF_POINTS = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
@@ -739,6 +828,8 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'fontSizeComplexScript',
   'highlight',
   'underline',
+  'textEffect',
+  'border',
   'shading',
   'rightToLeft',
   'complexScript',
@@ -757,6 +848,14 @@ const WORD_RUN_FONT_KEYS = new Set([
 ]);
 const WORD_COLOR_KEYS = new Set(['value', 'theme', 'tint', 'shade']);
 const WORD_UNDERLINE_KEYS = new Set(['style', 'color']);
+const WORD_RUN_BORDER_KEYS = new Set([
+  'style',
+  'color',
+  'sizeEighthPoints',
+  'spacingPoints',
+  'shadow',
+  'frame',
+]);
 const WORD_SHADING_KEYS = new Set(['pattern', 'color', 'fill']);
 const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
@@ -2737,6 +2836,10 @@ function normalizeEquationWordRunProperties(
     source.underline === undefined
       ? undefined
       : normalizeEquationWordUnderline(source.underline);
+  const border =
+    source.border === undefined
+      ? undefined
+      : normalizeEquationWordRunBorder(source.border);
   const shading =
     source.shading === undefined
       ? undefined
@@ -2789,6 +2892,7 @@ function normalizeEquationWordRunProperties(
     fonts === null ||
     color === null ||
     underline === null ||
+    border === null ||
     shading === null ||
     languages === null ||
     characterSpacingTwips === null ||
@@ -2804,6 +2908,14 @@ function normalizeEquationWordRunProperties(
     source.highlight !== undefined &&
     !WORD_HIGHLIGHT_COLORS.has(
       source.highlight as WorkDocumentEquationWordHighlight,
+    )
+  ) {
+    return null;
+  }
+  if (
+    source.textEffect !== undefined &&
+    !WORD_TEXT_EFFECTS.has(
+      source.textEffect as WorkDocumentEquationWordTextEffect,
     )
   ) {
     return null;
@@ -2896,6 +3008,12 @@ function normalizeEquationWordRunProperties(
         }
       : {}),
     ...(underline ? { underline } : {}),
+    ...(source.textEffect !== undefined
+      ? {
+          textEffect: source.textEffect as WorkDocumentEquationWordTextEffect,
+        }
+      : {}),
+    ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
     ...(source.rightToLeft !== undefined
       ? { rightToLeft: source.rightToLeft as boolean }
@@ -3032,6 +3150,58 @@ function normalizeEquationWordUnderline(
         style: source.style as WorkDocumentEquationUnderlineStyle,
         ...(color ? { color } : {}),
       };
+}
+
+function normalizeEquationWordRunBorder(
+  source: unknown,
+): WorkDocumentEquationWordRunBorder | null {
+  if (
+    !isRecordWithKeys(source, WORD_RUN_BORDER_KEYS) ||
+    !WORD_LINE_BORDER_STYLES.has(
+      source.style as WorkDocumentEquationWordLineBorderStyle,
+    )
+  ) {
+    return null;
+  }
+  const color =
+    source.color === undefined
+      ? undefined
+      : normalizeEquationWordColor(source.color);
+  const sizeEighthPoints =
+    source.sizeEighthPoints === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.sizeEighthPoints,
+          MIN_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS,
+          MAX_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS,
+        );
+  const spacingPoints =
+    source.spacingPoints === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.spacingPoints,
+          0,
+          MAX_EQUATION_WORD_BORDER_SPACING_POINTS,
+        );
+  if (
+    color === null ||
+    sizeEighthPoints === null ||
+    spacingPoints === null ||
+    (source.shadow !== undefined && typeof source.shadow !== 'boolean') ||
+    (source.frame !== undefined && typeof source.frame !== 'boolean')
+  ) {
+    return null;
+  }
+  return {
+    style: source.style as WorkDocumentEquationWordLineBorderStyle,
+    ...(color ? { color } : {}),
+    ...(sizeEighthPoints !== undefined ? { sizeEighthPoints } : {}),
+    ...(spacingPoints !== undefined ? { spacingPoints } : {}),
+    ...(source.shadow !== undefined
+      ? { shadow: source.shadow as boolean }
+      : {}),
+    ...(source.frame !== undefined ? { frame: source.frame as boolean } : {}),
+  };
 }
 
 function normalizeEquationWordShading(
@@ -3245,6 +3415,7 @@ function wordPropertiesMathMlAttributes(
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunCaseStyles(properties),
     wordRunTextDecoration(properties),
+    wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
       ? ''
       : `letter-spacing:${properties.characterSpacingTwips / 20}pt`,
@@ -3361,6 +3532,41 @@ function wordRunTextDecoration(
   ]
     .filter(Boolean)
     .join(';');
+}
+
+function wordRunBorderStyles(
+  properties: WorkDocumentEquationWordRunProperties,
+): string {
+  const border = properties.border;
+  if (!border) return '';
+  if (border.style === 'nil' || border.style === 'none') {
+    return 'border-style:none';
+  }
+  const style = equationWordLineBorderCssStyle(border.style);
+  if (!style || border.sizeEighthPoints === undefined) return '';
+  const directColor = border.color?.value;
+  if (border.color && directColor === undefined) return '';
+  const color =
+    directColor && directColor !== 'auto' ? directColor : 'currentColor';
+  return [
+    `border:${border.sizeEighthPoints / 8}pt ${style} ${color}`,
+    border.spacingPoints === undefined
+      ? ''
+      : `padding:${border.spacingPoints}pt`,
+  ]
+    .filter(Boolean)
+    .join(';');
+}
+
+function equationWordLineBorderCssStyle(
+  style: WorkDocumentEquationWordLineBorderStyle,
+): 'solid' | 'double' | 'dotted' | 'dashed' | 'outset' | 'inset' | null {
+  if (style === 'single' || style === 'thick') return 'solid';
+  if (style === 'double') return 'double';
+  if (style === 'dotted') return 'dotted';
+  if (style === 'dashed' || style === 'dashSmallGap') return 'dashed';
+  if (style === 'outset' || style === 'inset') return style;
+  return null;
 }
 
 function equationUnderlineCssStyle(

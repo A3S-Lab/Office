@@ -20,23 +20,32 @@ All notable changes to A3S Office will be documented in this file.
   imprint, proofing/grid flags, hidden and web-hidden states, direct/theme
   colors, signed character spacing through
   31,680 twips, 1–600% horizontal scaling, half-point kerning thresholds and
-  signed baseline positions, half-point sizes, colored underline styles, every
-  named highlight color, complete patterned run shading with direct or theme
-  foreground/background colors, RTL/complex-script flags, and language tags.
+  signed baseline positions, half-point sizes, colored underline styles, all
+  seven legacy text-animation values, all 27 line-border styles with
+  direct/theme colors, 2–96 eighth-point widths, 0–31 point spacing, and
+  explicit shadow/frame flags, every named highlight color, complete patterned
+  run shading with direct or theme foreground/background colors,
+  RTL/complex-script flags, and language tags.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, and baseline shifts use safe CSS projections in MathML
-  previews without changing source Unicode text. Relief effects and hidden or
-  web-hidden states remain native metadata because Word view and rendering
-  settings govern them. Highlight precedence over shading is retained. Named
+  previews without changing source Unicode text. Simple explicitly sized
+  solid, double, dotted, dashed, inset, and outset line borders project through
+  CSS with direct or automatic color and point padding; explicit `nil`/`none`
+  resets also project. Relief effects, legacy text animations, complex
+  multi-line, wavy, or 3D line borders, border shadow/frame, theme-only border
+  colors, and hidden or web-hidden states remain native metadata because Word
+  view and rendering settings govern them. Highlight precedence over shading is retained. Named
   highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
   `mathbackground`; pattern masks and theme-only colors remain native metadata.
   Explicit on/off values survive native regeneration. Enabled mutually
-  exclusive casing, strike, or relief combinations, and unknown, reordered,
-  duplicated, spoofed, or relationship-bound Word run properties fail closed.
+  exclusive casing, strike, or relief combinations, invalid animation values,
+  art-border styles, out-of-range border width/spacing, malformed border
+  colors/flags, and unknown, reordered, duplicated, spoofed, or
+  relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control
   may contain a direct `w:rPr` or tracked `w:ins`, `w:del`, `w:moveFrom`, or
