@@ -1175,9 +1175,14 @@ property. Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map
 empty left script slots to MathML `none` children after `mprescripts`.
 Right-side `sSup`, `sSub`, and `sSubSup` objects enforce property-first argument
 order. `sSubSupPr` preserves `alnScr`, canonicalizes absent or disabled values
-to unaligned scripts, and retains the enabled state through native export;
-empty script/function `ctrlPr` placeholders are accepted, while unmodeled
-control formatting fails closed.
+to unaligned scripts, and retains the enabled state through native export.
+Supported fraction, script, limit, radical, function, n-ary, accent, bar,
+group-character, phantom, border-box, box, matrix, equation-array, and delimiter
+property containers preserve one optional ordered `m:ctrlPr -> w:rPr` control
+format through the bounded Word run-property model. Empty `ctrlPr` or `w:rPr`
+values canonicalize away, and safe visual values project only onto separable
+MathML control/operator nodes. Revision-wrapped control properties and nonempty
+argument-slot `ctrlPr` formatting fail closed until those semantics are modeled.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.
@@ -1199,6 +1204,16 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 `aln` grammar, canonicalize Roman/italic and disabled defaults, bound `alnAt` to
 1–255, and project supported script/style combinations through MathML
 `mathvariant` while retaining native break and alignment metadata.
+Math runs also preserve the native `m:rPr -> w:rPr -> m:t/w:t` order. The
+bounded Word run-property subset covers direct and theme font references,
+Latin and complex-script bold/italic flags, strike and double-strike,
+proofing/grid flags, direct and theme colors with tint/shade, half-point font
+sizes, colored underline styles, RTL/complex-script flags, and Latin, East
+Asian, and bidi language tags. Explicit on/off values remain distinct, export
+uses canonical `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe
+direct color, size, font, direction, language, emphasis, and decoration values.
+Unknown, duplicated, reordered, namespace-spoofed, or relationship-bound Word
+run properties fail closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is

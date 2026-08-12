@@ -20,6 +20,12 @@ All notable changes to A3S Office will be documented in this file.
   styles, RTL/complex-script flags, and language tags. Explicit on/off values
   survive native regeneration, while unknown, reordered, duplicated, spoofed,
   or relationship-bound Word run properties fail closed.
+  Supported object property containers also preserve one optional ordered
+  `m:ctrlPr -> w:rPr` control format through that bounded property model. Empty
+  control properties canonicalize away; revision-wrapped control properties,
+  nonempty argument-slot `ctrlPr` formatting, and unknown or relationship-bound
+  markup fail closed. Safe visual values project only onto separable MathML
+  control/operator nodes while all supported values remain in native metadata.
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
   sub-superscripts, left-side pre-sub/superscripts with empty script slots,
   radicals with optional degrees and canonical hidden empty degree slots,

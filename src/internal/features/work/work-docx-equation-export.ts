@@ -282,6 +282,12 @@ function createExpression(
     properties.append(
       mathValueElement(document, prefix, 'chr', expression.character),
     );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     accent.append(
       properties,
       expressionArgument(document, prefix, 'e', expression.children),
@@ -298,6 +304,12 @@ function createExpression(
         'pos',
         expression.position === 'top' ? 'top' : 'bot',
       ),
+    );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
     );
     bar.append(
       properties,
@@ -323,6 +335,12 @@ function createExpression(
         expression.verticalJustification === 'top' ? 'top' : 'bot',
       ),
     );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     groupCharacter.append(
       properties,
       expressionArgument(document, prefix, 'e', expression.children),
@@ -338,6 +356,12 @@ function createExpression(
       mathOnOffElement(document, prefix, 'zeroAsc', expression.zeroAscent),
       mathOnOffElement(document, prefix, 'zeroDesc', expression.zeroDescent),
       mathOnOffElement(document, prefix, 'transp', expression.transparent),
+    );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
     );
     phantom.append(
       properties,
@@ -373,6 +397,12 @@ function createExpression(
         expression.strikeTopLeftToBottomRight,
       ),
     );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     borderBox.append(
       properties,
       expressionArgument(document, prefix, 'e', expression.children),
@@ -401,6 +431,12 @@ function createExpression(
     properties.append(
       mathOnOffElement(document, prefix, 'aln', expression.alignment),
     );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     box.append(
       properties,
       expressionArgument(document, prefix, 'e', expression.children),
@@ -409,19 +445,27 @@ function createExpression(
   }
   if (expression.type === 'fraction') {
     const fraction = createMathElement(document, prefix, 'f');
-    if (expression.fractionType !== 'bar') {
+    if (expression.fractionType !== 'bar' || expression.controlProperties) {
       const properties = createMathElement(document, prefix, 'fPr');
-      properties.append(
-        mathValueElement(
-          document,
-          prefix,
-          'type',
-          expression.fractionType === 'noBar'
-            ? 'noBar'
-            : expression.fractionType === 'skewed'
-              ? 'skw'
-              : 'lin',
-        ),
+      if (expression.fractionType !== 'bar') {
+        properties.append(
+          mathValueElement(
+            document,
+            prefix,
+            'type',
+            expression.fractionType === 'noBar'
+              ? 'noBar'
+              : expression.fractionType === 'skewed'
+                ? 'skw'
+                : 'lin',
+          ),
+        );
+      }
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
       );
       fraction.append(properties);
     }
@@ -433,6 +477,16 @@ function createExpression(
   }
   if (expression.type === 'superscript') {
     const script = createMathElement(document, prefix, 'sSup');
+    if (expression.controlProperties) {
+      const properties = createMathElement(document, prefix, 'sSupPr');
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
+      );
+      script.append(properties);
+    }
     script.append(
       expressionArgument(document, prefix, 'e', expression.base),
       expressionArgument(document, prefix, 'sup', expression.superScript),
@@ -441,6 +495,16 @@ function createExpression(
   }
   if (expression.type === 'subscript') {
     const script = createMathElement(document, prefix, 'sSub');
+    if (expression.controlProperties) {
+      const properties = createMathElement(document, prefix, 'sSubPr');
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
+      );
+      script.append(properties);
+    }
     script.append(
       expressionArgument(document, prefix, 'e', expression.base),
       expressionArgument(document, prefix, 'sub', expression.subScript),
@@ -449,9 +513,17 @@ function createExpression(
   }
   if (expression.type === 'subSuperScript') {
     const script = createMathElement(document, prefix, 'sSubSup');
-    if (expression.alignScripts) {
+    if (expression.alignScripts || expression.controlProperties) {
       const properties = createMathElement(document, prefix, 'sSubSupPr');
-      properties.append(mathOnOffElement(document, prefix, 'alnScr', true));
+      if (expression.alignScripts) {
+        properties.append(mathOnOffElement(document, prefix, 'alnScr', true));
+      }
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
+      );
       script.append(properties);
     }
     script.append(
@@ -463,6 +535,16 @@ function createExpression(
   }
   if (expression.type === 'preSubSuperScript') {
     const script = createMathElement(document, prefix, 'sPre');
+    if (expression.controlProperties) {
+      const properties = createMathElement(document, prefix, 'sPrePr');
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
+      );
+      script.append(properties);
+    }
     script.append(
       expressionArgument(document, prefix, 'sub', expression.subScript),
       expressionArgument(document, prefix, 'sup', expression.superScript),
@@ -476,6 +558,20 @@ function createExpression(
       prefix,
       expression.type === 'lowerLimit' ? 'limLow' : 'limUpp',
     );
+    if (expression.controlProperties) {
+      const properties = createMathElement(
+        document,
+        prefix,
+        expression.type === 'lowerLimit' ? 'limLowPr' : 'limUppPr',
+      );
+      appendMathControlProperties(
+        document,
+        prefix,
+        properties,
+        expression.controlProperties,
+      );
+      limit.append(properties);
+    }
     limit.append(
       expressionArgument(document, prefix, 'e', expression.base),
       expressionArgument(document, prefix, 'lim', expression.limit),
@@ -488,6 +584,12 @@ function createExpression(
     if (!expression.degree) {
       properties.append(mathValueElement(document, prefix, 'degHide', '1'));
     }
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     radical.append(
       properties,
       expressionArgument(document, prefix, 'deg', expression.degree ?? []),
@@ -497,8 +599,15 @@ function createExpression(
   }
   if (expression.type === 'function') {
     const function_ = createMathElement(document, prefix, 'func');
+    const properties = createMathElement(document, prefix, 'funcPr');
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     function_.append(
-      createMathElement(document, prefix, 'funcPr'),
+      properties,
       expressionArgument(document, prefix, 'fName', expression.name),
       expressionArgument(document, prefix, 'e', expression.children),
     );
@@ -522,6 +631,12 @@ function createExpression(
     if (!expression.superScript) {
       properties.append(mathValueElement(document, prefix, 'supHide', '1'));
     }
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     nary.append(
       properties,
       expressionArgument(document, prefix, 'sub', expression.subScript ?? []),
@@ -562,6 +677,12 @@ function createExpression(
       ),
       mathValueElement(document, prefix, 'rSp', String(expression.rowSpacing)),
     );
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     equationArray.append(properties);
     for (const row of expression.rows) {
       equationArray.append(expressionArgument(document, prefix, 'e', row));
@@ -599,6 +720,12 @@ function createExpression(
       columns.append(column);
     }
     properties.append(columns);
+    appendMathControlProperties(
+      document,
+      prefix,
+      properties,
+      expression.controlProperties,
+    );
     matrix.append(properties);
     for (const row of expression.rows) {
       const matrixRow = createMathElement(document, prefix, 'mr');
@@ -615,6 +742,12 @@ function createExpression(
     mathValueElement(document, prefix, 'begChr', expression.opening),
     mathValueElement(document, prefix, 'sepChr', expression.separator),
     mathValueElement(document, prefix, 'endChr', expression.closing),
+  );
+  appendMathControlProperties(
+    document,
+    prefix,
+    properties,
+    expression.controlProperties,
   );
   delimiter.append(properties);
   for (const argument of expression.arguments) {
@@ -757,6 +890,18 @@ function createWordRunProperties(
     result.append(languages);
   }
   return result;
+}
+
+function appendMathControlProperties(
+  document: Document,
+  prefix: string,
+  parent: Element,
+  properties: WorkDocumentEquationWordRunProperties | undefined,
+): void {
+  if (!properties) return;
+  const controlProperties = createMathElement(document, prefix, 'ctrlPr');
+  controlProperties.append(createWordRunProperties(document, properties));
+  parent.append(controlProperties);
 }
 
 function setWordColorAttributes(

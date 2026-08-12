@@ -1765,6 +1765,174 @@ describe('document equations', () => {
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
 
+  test('preserves bounded Word control properties across OMML object containers', async () => {
+    const equation = controlPropertiesEquation();
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'fraction',
+            controlProperties: {},
+            fractionType: 'bar',
+            numerator: [],
+            denominator: [],
+          },
+        ],
+      }),
+    ).toEqual({
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'fraction',
+          fractionType: 'bar',
+          numerator: [],
+          denominator: [],
+        },
+      ],
+    });
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'fraction',
+            controlProperties: { extra: true },
+            fractionType: 'bar',
+            numerator: [],
+            denominator: [],
+          },
+        ],
+      }),
+    ).toBeNull();
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            controlProperties: richWordRunProperties(),
+          },
+        ],
+      }),
+    ).toBeNull();
+
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    for (const controlProperties of [
+      '<m:ctrlPr/>',
+      `<m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr>`,
+    ]) {
+      expect(
+        inspectEquationModel(
+          `<m:f><m:fPr>${controlProperties}</m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+        )?.children[0],
+      ).toEqual({
+        type: 'fraction',
+        fractionType: 'bar',
+        numerator: [{ type: 'run', text: 'x' }],
+        denominator: [{ type: 'run', text: 'x' }],
+      });
+    }
+
+    const invalidControlProperties = (children: string, attributes = '') =>
+      `<m:acc><m:accPr><m:chr m:val="&#x303;"/><m:ctrlPr xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}" xmlns:v="${VENDOR_NAMESPACE}" ${attributes}>${children}</m:ctrlPr></m:accPr><m:e>${run}</m:e></m:acc>`;
+    const unsupported = [
+      invalidControlProperties('<w:rPr/>', 'm:extra="semantic"'),
+      invalidControlProperties('meaningful<w:rPr/>'),
+      invalidControlProperties('<w:rPr/><w:rPr/>'),
+      invalidControlProperties('<w:ins><w:rPr/></w:ins>'),
+      invalidControlProperties('<w:del><w:rPr/></w:del>'),
+      invalidControlProperties('<w:moveFrom><w:rPr/></w:moveFrom>'),
+      invalidControlProperties('<w:moveTo><w:rPr/></w:moveTo>'),
+      invalidControlProperties('<v:rPr/>'),
+      invalidControlProperties('<m:rPr/>'),
+      invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
+      invalidControlProperties('<w:rPr><w:vanish/></w:rPr>'),
+      invalidControlProperties(
+        '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
+      ),
+      invalidControlProperties('<w:b/>'),
+      `<m:acc><m:accPr><m:ctrlPr/><m:chr m:val="&#x303;"/></m:accPr><m:e>${run}</m:e></m:acc>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const naryOperator = Array.from(preview.querySelectorAll('mo')).find(
+      (operator) => operator.textContent === '\u2211',
+    );
+    expect(naryOperator?.getAttribute('mathcolor')).toBe('#1a2b3c');
+    expect(naryOperator?.getAttribute('mathsize')).toBe('12.5pt');
+    expect(naryOperator?.getAttribute('dir')).toBe('ltr');
+    expect(naryOperator?.getAttribute('lang')).toBe('en-US');
+    expect(naryOperator?.getAttribute('style')).toContain(
+      'font-family:"Cambria Math"',
+    );
+    expect(preview.querySelectorAll('mtext[mathcolor]')).toHaveLength(0);
+    expect(
+      Array.from(preview.querySelectorAll('mo[fence="true"]')).every(
+        (operator) => operator.getAttribute('mathcolor') === '#1a2b3c',
+      ),
+    ).toBe(true);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeControlProperties(first);
+
+    const firstArchive = await JSZip.loadAsync(await first.arrayBuffer());
+    const firstDocument = await xmlEntry(firstArchive, 'word/document.xml');
+    const nativeEquation = descendants(firstDocument, 'oMath').find(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(nativeEquation).toBeDefined();
+    const standalone = nativeEquation?.cloneNode(true) as Element;
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    const strictSource = new XMLSerializer()
+      .serializeToString(standalone)
+      .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
+      .replaceAll(WORD_NAMESPACE, STRICT_WORD_NAMESPACE);
+    const strictInspection = inspectEquationRoot(strictSource);
+    expect(strictInspection).toMatchObject({
+      status: 'supported',
+      equation,
+    });
+
+    const imported = await importOfficeFile(
+      new File([first], 'control-properties.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeControlProperties(await createArtifactBlob(imported));
+  });
+
   test('preserves display-math paragraph justification and rejects malformed roots', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const paragraph = (properties = '', namespace = MATH_NAMESPACE) =>
@@ -1860,7 +2028,6 @@ describe('document equations', () => {
       `<m:sSup><m:e>${run}</m:e><m:sSupPr/><m:sup>${run}</m:sup></m:sSup>`,
       `<m:sSup><m:sSupPr/><m:sSupPr/><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
       `<m:sSup><m:sSupPr><m:ctrlPr/><m:ctrlPr/></m:sSupPr><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
-      `<m:sSup><m:sSupPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:sSupPr><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
       `<m:sSup><v:sSupPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
       `<m:sSub><m:sub>${run}</m:sub><m:e>${run}</m:e></m:sSub>`,
       `<m:sSubSup><m:e>${run}</m:e><m:sSubSupPr/><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
@@ -2081,7 +2248,6 @@ describe('document equations', () => {
       `<m:f xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:fPr><m:type m:val="bar" r:id="rIdUnsafe"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><v:fPr xmlns:v="${VENDOR_NAMESPACE}"><m:type m:val="bar"/></v:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><v:type xmlns:v="${VENDOR_NAMESPACE}" v:val="bar"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
-      `<m:f><m:fPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr>meaningful<m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:num>meaningful</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:num>${run}</m:num></m:f>`,
@@ -2137,7 +2303,6 @@ describe('document equations', () => {
       `<m:rad xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:radPr><m:degHide r:id="rIdUnsafe"/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:rad><v:radPr xmlns:v="${VENDOR_NAMESPACE}"><m:degHide/></v:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:radPr><v:degHide xmlns:v="${VENDOR_NAMESPACE}"/></m:radPr><m:e>${run}</m:e></m:rad>`,
-      `<m:rad><m:radPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:radPr>meaningful<m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:radPr><m:degHide/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:deg>meaningful</m:deg><m:e>${run}</m:e></m:rad>`,
@@ -2215,7 +2380,6 @@ describe('document equations', () => {
       `<m:nary xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:naryPr><m:chr m:val="&#x2211;" r:id="rIdUnsafe"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><v:naryPr xmlns:v="${VENDOR_NAMESPACE}"><m:chr m:val="&#x2211;"/></v:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><v:chr xmlns:v="${VENDOR_NAMESPACE}" v:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
-      `<m:nary><m:naryPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr>meaningful<m:chr m:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary m:extra="semantic"><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
     ];
@@ -2280,7 +2444,6 @@ describe('document equations', () => {
       `<m:d xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:dPr><m:sepChr r:id="rIdUnsafe"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><v:dPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><v:begChr xmlns:v="${VENDOR_NAMESPACE}"/></m:dPr><m:e>${run}</m:e></m:d>`,
-      `<m:d><m:dPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr>meaningful<m:begChr/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d m:extra="semantic"><m:e>${run}</m:e></m:d>`,
       '<m:d><m:e>meaningful</m:e></m:d>',
@@ -2363,6 +2526,159 @@ function richWordRunProperties() {
     rightToLeft: false,
     complexScript: false,
     languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
+  };
+}
+
+function controlPropertiesEquation(): WorkDocumentEquation {
+  const run = (text: string) => ({ type: 'run' as const, text });
+  const controlProperties = richWordRunProperties();
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'fraction',
+        controlProperties,
+        fractionType: 'bar',
+        numerator: [run('fraction-numerator')],
+        denominator: [run('fraction-denominator')],
+      },
+      {
+        type: 'superscript',
+        controlProperties,
+        base: [run('superscript-base')],
+        superScript: [run('superscript-value')],
+      },
+      {
+        type: 'subscript',
+        controlProperties,
+        base: [run('subscript-base')],
+        subScript: [run('subscript-value')],
+      },
+      {
+        type: 'subSuperScript',
+        controlProperties,
+        alignScripts: true,
+        base: [run('right-script-base')],
+        subScript: [run('right-subscript')],
+        superScript: [run('right-superscript')],
+      },
+      {
+        type: 'preSubSuperScript',
+        controlProperties,
+        base: [run('left-script-base')],
+        subScript: [run('left-subscript')],
+        superScript: [run('left-superscript')],
+      },
+      {
+        type: 'lowerLimit',
+        controlProperties,
+        base: [run('lower-limit-base')],
+        limit: [run('lower-limit')],
+      },
+      {
+        type: 'upperLimit',
+        controlProperties,
+        base: [run('upper-limit-base')],
+        limit: [run('upper-limit')],
+      },
+      {
+        type: 'radical',
+        controlProperties,
+        children: [run('radical')],
+      },
+      {
+        type: 'function',
+        controlProperties,
+        name: [run('function')],
+        children: [run('function-argument')],
+      },
+      {
+        type: 'nary',
+        controlProperties,
+        operator: '\u2211',
+        limitLocation: 'underOver',
+        children: [run('nary-body')],
+      },
+      {
+        type: 'accent',
+        controlProperties,
+        character: '\u0303',
+        children: [run('accent-body')],
+      },
+      {
+        type: 'bar',
+        controlProperties,
+        position: 'top',
+        children: [run('bar-body')],
+      },
+      {
+        type: 'groupCharacter',
+        controlProperties,
+        character: '\u23de',
+        position: 'top',
+        verticalJustification: 'bottom',
+        children: [run('group-character-body')],
+      },
+      {
+        type: 'phantom',
+        controlProperties,
+        show: false,
+        zeroWidth: true,
+        zeroAscent: false,
+        zeroDescent: true,
+        transparent: true,
+        children: [run('phantom-body')],
+      },
+      {
+        type: 'borderBox',
+        controlProperties,
+        hideTop: false,
+        hideBottom: true,
+        hideLeft: false,
+        hideRight: true,
+        strikeHorizontal: true,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: true,
+        strikeTopLeftToBottomRight: false,
+        children: [run('border-box-body')],
+      },
+      {
+        type: 'box',
+        controlProperties,
+        operatorEmulator: true,
+        noBreak: true,
+        differential: true,
+        alignment: true,
+        children: [run('box-body')],
+      },
+      {
+        type: 'matrix',
+        controlProperties,
+        baseAlignment: 'center',
+        placeholdersHidden: false,
+        columnAlignments: ['center'],
+        rows: [[[run('matrix-cell')]]],
+      },
+      {
+        type: 'equationArray',
+        controlProperties,
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[run('equation-array-row')]],
+      },
+      {
+        type: 'delimiter',
+        controlProperties,
+        opening: '[',
+        closing: ']',
+        separator: ';',
+        arguments: [[run('delimiter-left')], [run('delimiter-right')]],
+      },
+    ],
   };
 }
 
@@ -2887,6 +3203,72 @@ function documentEquationPosition(editor: Editor): number {
   });
   if (result < 0) throw new Error('Expected a document equation node.');
   return result;
+}
+
+async function expectNativeControlProperties(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const propertyContainerNames = [
+    'fPr',
+    'sSupPr',
+    'sSubPr',
+    'sSubSupPr',
+    'sPrePr',
+    'limLowPr',
+    'limUppPr',
+    'radPr',
+    'funcPr',
+    'naryPr',
+    'accPr',
+    'barPr',
+    'groupChrPr',
+    'phantPr',
+    'borderBoxPr',
+    'boxPr',
+    'mPr',
+    'eqArrPr',
+    'dPr',
+  ];
+  const expectedWordPropertyNames = [
+    'rFonts',
+    'b',
+    'bCs',
+    'i',
+    'iCs',
+    'strike',
+    'dstrike',
+    'noProof',
+    'snapToGrid',
+    'color',
+    'sz',
+    'szCs',
+    'u',
+    'rtl',
+    'cs',
+    'lang',
+  ];
+  for (const name of propertyContainerNames) {
+    const containers = descendants(document, name).filter(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(containers, name).toHaveLength(1);
+    const children = directChildren(containers[0]);
+    const controlProperties = children.at(-1);
+    expect(controlProperties?.localName, name).toBe('ctrlPr');
+    expect(controlProperties?.namespaceURI, name).toBe(MATH_NAMESPACE);
+    const wordProperties = directChildren(controlProperties as Element);
+    expect(
+      wordProperties.map(
+        (child) =>
+          `${child.namespaceURI === WORD_NAMESPACE ? 'w' : '?'}:${child.localName}`,
+      ),
+      name,
+    ).toEqual(['w:rPr']);
+    expect(
+      directChildren(wordProperties[0]).map((child) => child.localName),
+      name,
+    ).toEqual(expectedWordPropertyNames);
+  }
 }
 
 async function expectNativeEquations(blob: Blob): Promise<void> {

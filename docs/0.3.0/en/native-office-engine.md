@@ -1175,9 +1175,14 @@ property. Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map
 empty left script slots to MathML `none` children after `mprescripts`.
 Right-side `sSup`, `sSub`, and `sSubSup` objects enforce property-first argument
 order. `sSubSupPr` preserves `alnScr`, canonicalizes absent or disabled values
-to unaligned scripts, and retains the enabled state through native export;
-empty script/function `ctrlPr` placeholders are accepted, while unmodeled
-control formatting fails closed.
+to unaligned scripts, and retains the enabled state through native export.
+Supported fraction, script, limit, radical, function, n-ary, accent, bar,
+group-character, phantom, border-box, box, matrix, equation-array, and delimiter
+property containers preserve one optional ordered `m:ctrlPr -> w:rPr` control
+format through the bounded Word run-property model. Empty `ctrlPr` or `w:rPr`
+values canonicalize away, and safe visual values project only onto separable
+MathML control/operator nodes. Revision-wrapped control properties and nonempty
+argument-slot `ctrlPr` formatting fail closed until those semantics are modeled.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.

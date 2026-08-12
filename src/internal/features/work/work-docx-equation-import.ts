@@ -803,6 +803,31 @@ function parseWordRunProperties(
   return Object.keys(normalized).length ? normalized : undefined;
 }
 
+function parseMathControlProperties(
+  controlProperties: Element | undefined,
+): { controlProperties?: WorkDocumentEquationWordRunProperties } | null {
+  if (!controlProperties) return {};
+  if (
+    !DOCX_MATH_NAMESPACES.has(controlProperties.namespaceURI ?? '') ||
+    meaningfulAttributes(controlProperties).length ||
+    hasMeaningfulDirectText(controlProperties)
+  ) {
+    return null;
+  }
+  const children = directChildren(controlProperties);
+  if (children.length > 1) return null;
+  const wordProperties = children[0];
+  if (!wordProperties) return {};
+  if (
+    wordProperties.localName !== 'rPr' ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(wordProperties.namespaceURI ?? '')
+  ) {
+    return null;
+  }
+  const parsed = parseWordRunProperties(wordProperties);
+  return parsed === null ? null : parsed ? { controlProperties: parsed } : {};
+}
+
 function parseWordRunFonts(
   element: Element | undefined,
 ): WorkDocumentEquationWordRunFonts | null | undefined {
@@ -1116,10 +1141,13 @@ function parseAccent(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     characterElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties)) ||
+    parsedControlProperties === null ||
     (characterElement &&
       controlProperties &&
       properties &&
@@ -1132,7 +1160,12 @@ function parseAccent(
     : DEFAULT_ACCENT_CHARACTER;
   const parsedBody = parseMathArgument(body, state);
   return character && accentCharacter(character) && parsedBody
-    ? { type: 'accent', character, children: parsedBody }
+    ? {
+        type: 'accent',
+        ...parsedControlProperties,
+        character,
+        children: parsedBody,
+      }
     : null;
 }
 
@@ -1157,10 +1190,13 @@ function parseBar(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     positionElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties)) ||
+    parsedControlProperties === null ||
     (positionElement &&
       controlProperties &&
       properties &&
@@ -1176,7 +1212,12 @@ function parseBar(
   const position = topBottomFromOmml(sourcePosition);
   const parsedBody = parseMathArgument(body, state);
   return position && parsedBody
-    ? { type: 'bar', position, children: parsedBody }
+    ? {
+        type: 'bar',
+        ...parsedControlProperties,
+        position,
+        children: parsedBody,
+      }
     : null;
 }
 
@@ -1197,6 +1238,9 @@ function parseGroupCharacter(
   let character: string | null = DEFAULT_GROUP_CHARACTER;
   let sourcePosition: string | null = 'bot';
   let sourceVerticalJustification: string | null = 'top';
+  let parsedControlProperties: {
+    controlProperties?: WorkDocumentEquationWordRunProperties;
+  } | null = {};
   if (properties) {
     const propertyOrder = ['chr', 'pos', 'vertJc', 'ctrlPr'];
     if (
@@ -1213,12 +1257,15 @@ function parseGroupCharacter(
       false,
     );
     const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    parsedControlProperties =
+      controlProperties === null
+        ? null
+        : parseMathControlProperties(controlProperties);
     if (
       characterElement === null ||
       positionElement === null ||
       verticalJustificationElement === null ||
-      controlProperties === null ||
-      (controlProperties && !emptyMathProperty(controlProperties))
+      parsedControlProperties === null
     ) {
       return null;
     }
@@ -1243,6 +1290,7 @@ function parseGroupCharacter(
     parsedBody
     ? {
         type: 'groupCharacter',
+        ...parsedControlProperties,
         character,
         position,
         verticalJustification,
@@ -1270,6 +1318,9 @@ function parsePhantom(
   let zeroAscent: boolean | null = false;
   let zeroDescent: boolean | null = false;
   let transparent: boolean | null = false;
+  let parsedControlProperties: {
+    controlProperties?: WorkDocumentEquationWordRunProperties;
+  } | null = {};
   if (properties) {
     const propertyOrder = [
       'show',
@@ -1291,14 +1342,17 @@ function parsePhantom(
     const zeroDescentElement = uniqueMathChild(properties, 'zeroDesc', false);
     const transparentElement = uniqueMathChild(properties, 'transp', false);
     const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    parsedControlProperties =
+      controlProperties === null
+        ? null
+        : parseMathControlProperties(controlProperties);
     if (
       showElement === null ||
       zeroWidthElement === null ||
       zeroAscentElement === null ||
       zeroDescentElement === null ||
       transparentElement === null ||
-      controlProperties === null ||
-      (controlProperties && !emptyMathProperty(controlProperties))
+      parsedControlProperties === null
     ) {
       return null;
     }
@@ -1318,6 +1372,7 @@ function parsePhantom(
     parsedBody
     ? {
         type: 'phantom',
+        ...parsedControlProperties,
         show,
         zeroWidth,
         zeroAscent,
@@ -1375,6 +1430,10 @@ function parseBorderBox(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   const parsedBody = parseMathArgument(body, state);
   return hideTop !== null &&
     hideBottom !== null &&
@@ -1384,11 +1443,11 @@ function parseBorderBox(
     strikeVertical !== null &&
     strikeBottomLeftToTopRight !== null &&
     strikeTopLeftToBottomRight !== null &&
-    controlProperties !== null &&
-    (!controlProperties || emptyMathProperty(controlProperties)) &&
+    parsedControlProperties !== null &&
     parsedBody
     ? {
         type: 'borderBox',
+        ...parsedControlProperties,
         hideTop,
         hideBottom,
         hideLeft,
@@ -1440,6 +1499,10 @@ function parseBox(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   const parsedBody = parseMathArgument(body, state);
   return operatorEmulator !== null &&
     noBreak !== null &&
@@ -1447,11 +1510,11 @@ function parseBox(
     alignment !== null &&
     breakElement !== null &&
     manualBreak !== null &&
-    controlProperties !== null &&
-    (!controlProperties || emptyMathProperty(controlProperties)) &&
+    parsedControlProperties !== null &&
     parsedBody
     ? {
         type: 'box',
+        ...parsedControlProperties,
         operatorEmulator,
         noBreak,
         differential,
@@ -1490,11 +1553,11 @@ function parseFraction(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
-  if (
-    typeElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
-  ) {
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
+  if (typeElement === null || parsedControlProperties === null) {
     return null;
   }
   const sourceType = typeElement
@@ -1507,6 +1570,7 @@ function parseFraction(
   return fractionType && parsedNumerator && parsedDenominator
     ? {
         type: 'fraction',
+        ...parsedControlProperties,
         fractionType,
         numerator: parsedNumerator,
         denominator: parsedDenominator,
@@ -1540,11 +1604,18 @@ function parseSuperScript(
   const parsedSuperScript = superScript
     ? parseMathArgument(superScript, state)
     : null;
+  const parsedProperties =
+    properties === null ? null : parseControlOnlyMathProperties(properties);
   return properties !== null &&
-    controlOnlyMathProperties(properties) &&
+    parsedProperties &&
     parsedBase &&
     parsedSuperScript
-    ? { type: 'superscript', base: parsedBase, superScript: parsedSuperScript }
+    ? {
+        type: 'superscript',
+        ...parsedProperties,
+        base: parsedBase,
+        superScript: parsedSuperScript,
+      }
     : null;
 }
 
@@ -1566,11 +1637,18 @@ function parseSubScript(
   const parsedSubScript = subScript
     ? parseMathArgument(subScript, state)
     : null;
+  const parsedProperties =
+    properties === null ? null : parseControlOnlyMathProperties(properties);
   return properties !== null &&
-    controlOnlyMathProperties(properties) &&
+    parsedProperties &&
     parsedBase &&
     parsedSubScript
-    ? { type: 'subscript', base: parsedBase, subScript: parsedSubScript }
+    ? {
+        type: 'subscript',
+        ...parsedProperties,
+        base: parsedBase,
+        subScript: parsedSubScript,
+      }
     : null;
 }
 
@@ -1589,8 +1667,8 @@ function parseSubSuperScript(
   const base = uniqueMathChild(element, 'e');
   const subScript = uniqueMathChild(element, 'sub');
   const superScript = uniqueMathChild(element, 'sup');
-  const alignScripts =
-    properties === null ? null : parseSubSuperScriptAlignment(properties);
+  const parsedProperties =
+    properties === null ? null : parseSubSuperScriptProperties(properties);
   const parsedBase = base ? parseMathArgument(base, state) : null;
   const parsedSubScript = subScript
     ? parseMathArgument(subScript, state)
@@ -1598,13 +1676,10 @@ function parseSubSuperScript(
   const parsedSuperScript = superScript
     ? parseMathArgument(superScript, state)
     : null;
-  return alignScripts !== null &&
-    parsedBase &&
-    parsedSubScript &&
-    parsedSuperScript
+  return parsedProperties && parsedBase && parsedSubScript && parsedSuperScript
     ? {
         type: 'subSuperScript',
-        ...(alignScripts ? { alignScripts } : {}),
+        ...parsedProperties,
         base: parsedBase,
         subScript: parsedSubScript,
         superScript: parsedSuperScript,
@@ -1612,10 +1687,11 @@ function parseSubSuperScript(
     : null;
 }
 
-function parseSubSuperScriptAlignment(
-  properties: Element | undefined,
-): boolean | null {
-  if (!properties) return false;
+function parseSubSuperScriptProperties(properties: Element | undefined): {
+  alignScripts?: boolean;
+  controlProperties?: WorkDocumentEquationWordRunProperties;
+} | null {
+  if (!properties) return {};
   const propertyOrder = ['alnScr', 'ctrlPr'];
   if (
     !structuralChildren(properties, new Set(propertyOrder)) ||
@@ -1625,21 +1701,27 @@ function parseSubSuperScriptAlignment(
   }
   const alignScripts = mathOnOffProperty(properties, 'alnScr');
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
-  return alignScripts !== null &&
-    controlProperties !== null &&
-    (!controlProperties || emptyMathProperty(controlProperties))
-    ? alignScripts
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
+  return alignScripts !== null && parsedControlProperties
+    ? {
+        ...(alignScripts ? { alignScripts } : {}),
+        ...parsedControlProperties,
+      }
     : null;
 }
 
-function controlOnlyMathProperties(properties: Element | undefined): boolean {
-  if (!properties) return true;
-  if (!structuralChildren(properties, new Set(['ctrlPr']))) return false;
+function parseControlOnlyMathProperties(
+  properties: Element | undefined,
+): { controlProperties?: WorkDocumentEquationWordRunProperties } | null {
+  if (!properties) return {};
+  if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
-  return (
-    controlProperties !== null &&
-    (!controlProperties || emptyMathProperty(controlProperties))
-  );
+  return controlProperties === null
+    ? null
+    : parseMathControlProperties(controlProperties);
 }
 
 function parsePreSubSuperScript(
@@ -1658,22 +1740,15 @@ function parsePreSubSuperScript(
   const superScript = uniqueMathChild(element, 'sup');
   const base = uniqueMathChild(element, 'e');
   if (properties === null || !subScript || !superScript || !base) return null;
-  if (properties) {
-    if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
-    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
-    if (
-      controlProperties === null ||
-      (controlProperties && !emptyMathProperty(controlProperties))
-    ) {
-      return null;
-    }
-  }
+  const parsedProperties = parseControlOnlyMathProperties(properties);
+  if (!parsedProperties) return null;
   const parsedSubScript = parseMathArgument(subScript, state);
   const parsedSuperScript = parseMathArgument(superScript, state);
   const parsedBase = parseMathArgument(base, state);
   return parsedSubScript !== null && parsedSuperScript !== null && parsedBase
     ? {
         type: 'preSubSuperScript',
+        ...parsedProperties,
         base: parsedBase,
         subScript: parsedSubScript,
         superScript: parsedSuperScript,
@@ -1698,21 +1773,14 @@ function parseLimit(
   const base = uniqueMathChild(element, 'e');
   const limit = uniqueMathChild(element, 'lim');
   if (properties === null || !base || !limit) return null;
-  if (properties) {
-    if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
-    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
-    if (
-      controlProperties === null ||
-      (controlProperties && !emptyMathProperty(controlProperties))
-    ) {
-      return null;
-    }
-  }
+  const parsedProperties = parseControlOnlyMathProperties(properties);
+  if (!parsedProperties) return null;
   const parsedBase = parseMathArgument(base, state);
   const parsedLimit = parseMathArgument(limit, state);
   return parsedBase && parsedLimit
     ? {
         type: lower ? 'lowerLimit' : 'upperLimit',
+        ...parsedProperties,
         base: parsedBase,
         limit: parsedLimit,
       }
@@ -1750,11 +1818,14 @@ function parseRadical(
   const degreeHidden = degreeHiddenElement
     ? mathOnOff(degreeHiddenElement)
     : false;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     degreeHiddenElement === null ||
-    controlProperties === null ||
-    degreeHidden === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
+    parsedControlProperties === null ||
+    degreeHidden === null
   ) {
     return null;
   }
@@ -1769,6 +1840,7 @@ function parseRadical(
   }
   return {
     type: 'radical',
+    ...parsedControlProperties,
     children: parsedBody,
     ...(parsedDegree?.length ? { degree: parsedDegree } : {}),
   };
@@ -1798,11 +1870,15 @@ function parseFunction(
   const body = uniqueMathChild(element, 'e');
   const parsedName = name ? parseMathArgument(name, state) : null;
   const parsedBody = body ? parseMathArgument(body, state) : null;
-  return properties !== null &&
-    controlOnlyMathProperties(properties) &&
-    parsedName &&
-    parsedBody
-    ? { type: 'function', name: parsedName, children: parsedBody }
+  const parsedProperties =
+    properties === null ? null : parseControlOnlyMathProperties(properties);
+  return properties !== null && parsedProperties && parsedName && parsedBody
+    ? {
+        type: 'function',
+        ...parsedProperties,
+        name: parsedName,
+        children: parsedBody,
+      }
     : null;
 }
 
@@ -1848,14 +1924,17 @@ function parseNary(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     operatorElement === null ||
     locationElement === null ||
     growElement === null ||
     subHiddenElement === null ||
     superHiddenElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
+    parsedControlProperties === null
   ) {
     return null;
   }
@@ -1897,6 +1976,7 @@ function parseNary(
   }
   return {
     type: 'nary',
+    ...parsedControlProperties,
     operator,
     limitLocation,
     children: parsedBody,
@@ -1955,6 +2035,7 @@ function parseEquationArrayProperties(properties: Element | undefined): {
   objectDistribution: boolean;
   rowSpacingRule: WorkDocumentEquationRowSpacingRule;
   rowSpacing: number;
+  controlProperties?: WorkDocumentEquationWordRunProperties;
 } | null {
   if (!properties) {
     return {
@@ -1983,12 +2064,15 @@ function parseEquationArrayProperties(properties: Element | undefined): {
   const rowSpacingRuleElement = uniqueMathChild(properties, 'rSpRule', false);
   const rowSpacingElement = uniqueMathChild(properties, 'rSp', false);
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     baseElement === null ||
     rowSpacingRuleElement === null ||
     rowSpacingElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
+    parsedControlProperties === null
   ) {
     return null;
   }
@@ -2032,6 +2116,7 @@ function parseEquationArrayProperties(properties: Element | undefined): {
     rowSpacingRule &&
     rowSpacing !== null
     ? {
+        ...parsedControlProperties,
         baseAlignment,
         maximumDistribution,
         objectDistribution,
@@ -2099,6 +2184,7 @@ function parseMatrixProperties(
   baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
   placeholdersHidden: boolean;
   columnAlignments: WorkDocumentEquationMatrixAlignment[];
+  controlProperties?: WorkDocumentEquationWordRunProperties;
 } | null {
   if (!properties) {
     return {
@@ -2131,12 +2217,15 @@ function parseMatrixProperties(
   const placeholderElement = uniqueMathChild(properties, 'plcHide', false);
   const columnsElement = uniqueMathChild(properties, 'mcs', false);
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     baseElement === null ||
     placeholderElement === null ||
     columnsElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
+    parsedControlProperties === null
   ) {
     return null;
   }
@@ -2161,7 +2250,12 @@ function parseMatrixProperties(
         (): WorkDocumentEquationMatrixAlignment => 'center',
       );
   return baseAlignment && placeholdersHidden !== null && columnAlignments
-    ? { baseAlignment, placeholdersHidden, columnAlignments }
+    ? {
+        ...parsedControlProperties,
+        baseAlignment,
+        placeholdersHidden,
+        columnAlignments,
+      }
     : null;
 }
 
@@ -2246,11 +2340,14 @@ function parseDelimiter(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
+  const parsedControlProperties =
+    controlProperties === null
+      ? null
+      : parseMathControlProperties(controlProperties);
   if (
     growElement === null ||
     shapeElement === null ||
-    controlProperties === null ||
-    (controlProperties && !emptyMathProperty(controlProperties))
+    parsedControlProperties === null
   ) {
     return null;
   }
@@ -2279,6 +2376,7 @@ function parseDelimiter(
     )
     ? {
         type: 'delimiter',
+        ...parsedControlProperties,
         opening,
         closing,
         separator,
