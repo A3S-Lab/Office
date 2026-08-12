@@ -44,6 +44,12 @@ All notable changes to A3S Office will be documented in this file.
   defaults. Row and column gaps project to safe MathML table spacing, while
   minimum width remains native-only for layout because MathML exposes fixed
   column width.
+  N-ary `grow` and delimiter `grow`/`shp` properties now round-trip with their
+  distinct object defaults and attribute-free enabled values. Growing n-ary
+  operators project to MathML `stretchy`; fixed delimiters project with
+  `stretchy=false`, and content-matched growing delimiters use
+  `symmetric=false`. Native export retains schema order and canonicalizes
+  default non-growing n-aries and growing centered delimiters.
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
   sub-superscripts, left-side pre-sub/superscripts with empty script slots,
   radicals with optional degrees and canonical hidden empty degree slots,
@@ -63,15 +69,16 @@ All notable changes to A3S Office will be documented in this file.
   canonicalize an absent or attribute-free `type` to the `bar` default.
   N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and
   `e` slots. An absent `chr` defaults to U+222B, an attribute-free `limLoc`
-  defaults to `undOvr`, disabled growth normalizes away, and hidden limits use
-  canonical empty script slots. Attribute-free operator characters, enabled
-  growth, and contradictory hidden nonempty limits fail closed. Delimiters
+  defaults to `undOvr`, disabled growth normalizes away, enabled growth
+  round-trips, and hidden limits use canonical empty script slots.
+  Attribute-free operator characters and contradictory hidden nonempty limits
+  fail closed. Delimiters
   enforce optional `dPr` before 1–32 `e` arguments and the ordered
   `begChr -> sepChr -> endChr -> grow -> shp -> ctrlPr` property grammar.
   Omitted characters normalize to `(`, U+2502, and `)`, while attribute-free
   character properties remain explicitly empty. Empty argument slots and the
-  growing, centered defaults round-trip; non-growing or shape-matched
-  delimiters fail closed. Functions enforce optional `funcPr` before required
+  growing, centered defaults canonicalize away; non-growing and shape-matched
+  delimiters round-trip. Functions enforce optional `funcPr` before required
   `fName` and `e` slots and preserve empty name or argument slots. Every
   supported `CT_OMathArg` slot now preserves an empty argument and enforces
   `argPr -> expressions -> ctrlPr` ordering. Its optional trailing `ctrlPr`

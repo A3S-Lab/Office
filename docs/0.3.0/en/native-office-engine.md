@@ -1230,15 +1230,19 @@ closed.
 N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and `e`
 slots. An omitted `chr` defaults to U+222B, while an attribute-free `chr`
 remains an explicitly empty unsupported operator; an attribute-free `limLoc`
-defaults to `undOvr`. Disabled `grow` values normalize to the non-growing
-default, enabled growth fails closed, and native export always emits both limit
-slots with `subHide` or `supHide` for absent scripts.
+defaults to `undOvr`. Omitted or disabled `grow` values normalize to the
+non-growing default; an attribute-free or enabled `grow` round-trips and maps
+to MathML `stretchy=true`. Native export always emits both limit slots with
+`subHide` or `supHide` for absent scripts.
 Delimiters require optional `dPr` before 1–32 `e` arguments and preserve empty
 argument slots. Their properties follow
 `begChr -> sepChr -> endChr -> grow -> shp -> ctrlPr`; omitted characters
 normalize to `(`, U+2502, and `)`, while attribute-free character properties
-remain explicitly empty. Default growing and centered-shape semantics normalize
-away, while non-growing or shape-matched delimiters fail closed.
+remain explicitly empty. Omitted or enabled `grow` and omitted, attribute-free,
+or `centered` shapes canonicalize to the growing centered defaults. Non-growing
+and `match` shapes round-trip in schema order. MathML projects fixed delimiters
+with `stretchy=false` and content-matched growing delimiters with
+`symmetric=false`; Word ignores shape while delimiter growth is disabled.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`; absent properties, absent `m:jc`, and an

@@ -5,6 +5,7 @@ import {
   type WorkDocumentEquation,
   type WorkDocumentEquationArgumentProperties,
   type WorkDocumentEquationControlRevision,
+  type WorkDocumentEquationDelimiterShape,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationFractionType,
   type WorkDocumentEquationJustification,
@@ -2151,7 +2152,7 @@ function parseNary(
   const parsedSuperScript = parseMathArgument(superScript, state);
   if (
     !limitLocation ||
-    grow !== false ||
+    grow === null ||
     subHidden === null ||
     superHidden === null ||
     !parsedBody ||
@@ -2171,6 +2172,7 @@ function parseNary(
     ...parsedControlProperties,
     operator,
     limitLocation,
+    ...(grow ? { grow: true } : {}),
     children: parsedBody.children,
     ...(parsedBody.properties
       ? { childrenProperties: parsedBody.properties }
@@ -2614,9 +2616,11 @@ function parseDelimiter(
     return null;
   }
   const grow = growElement ? mathOnOff(growElement) : true;
-  const shape = shapeElement
+  const shapeValue = shapeElement
     ? mathValueOrDefault(shapeElement, 'centered')
     : 'centered';
+  const shape: WorkDocumentEquationDelimiterShape | null =
+    shapeValue === 'centered' || shapeValue === 'match' ? shapeValue : null;
   const opening = delimiterProperty(properties, 'begChr', '(');
   const closing = delimiterProperty(properties, 'endChr', ')');
   const separator = delimiterProperty(
@@ -2627,8 +2631,8 @@ function parseDelimiter(
   const parsedArguments = arguments_.map((argument) =>
     parseMathArgument(argument, state),
   );
-  return grow === true &&
-    shape === 'centered' &&
+  return grow !== null &&
+    shape &&
     opening !== null &&
     closing !== null &&
     separator !== null &&
@@ -2641,6 +2645,8 @@ function parseDelimiter(
         opening,
         closing,
         separator,
+        ...(grow ? {} : { grow: false }),
+        ...(shape === 'match' ? { shape } : {}),
         arguments: parsedArguments.map((argument) => argument.children),
         ...(parsedArguments.some((argument) => argument.properties)
           ? {

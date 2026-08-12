@@ -796,6 +796,9 @@ function createExpression(
         expression.limitLocation === 'underOver' ? 'undOvr' : 'subSup',
       ),
     );
+    if (expression.grow) {
+      properties.append(mathOnOffElement(document, prefix, 'grow', true));
+    }
     if (!expression.subScript) {
       properties.append(mathValueElement(document, prefix, 'subHide', '1'));
     }
@@ -985,6 +988,12 @@ function createExpression(
     mathValueElement(document, prefix, 'sepChr', expression.separator),
     mathValueElement(document, prefix, 'endChr', expression.closing),
   );
+  if (expression.grow === false) {
+    properties.append(mathOnOffElement(document, prefix, 'grow', false));
+  }
+  if (expression.shape === 'match') {
+    properties.append(mathValueElement(document, prefix, 'shp', 'match'));
+  }
   appendMathControlProperties(
     document,
     prefix,

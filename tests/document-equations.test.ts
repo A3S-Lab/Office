@@ -1837,6 +1837,193 @@ describe('document equations', () => {
     await expectNativeMatrixSpacing(await createArtifactBlob(imported));
   });
 
+  test('preserves OMML n-ary growth and delimiter sizing semantics', async () => {
+    const run = (text: string) => ({ type: 'run' as const, text });
+    const equation: WorkDocumentEquation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          grow: true,
+          subScript: [run('i=1')],
+          superScript: [run('n')],
+          children: [run('x')],
+        },
+        {
+          type: 'nary',
+          operator: '\u222b',
+          limitLocation: 'subSup',
+          children: [run('f(x)')],
+        },
+        {
+          type: 'delimiter',
+          opening: '(',
+          closing: ')',
+          separator: '|',
+          grow: false,
+          shape: 'match',
+          arguments: [[run('a')], [run('b')]],
+        },
+        {
+          type: 'delimiter',
+          opening: '{',
+          closing: '}',
+          separator: ';',
+          shape: 'match',
+          arguments: [[run('c')], [run('d')]],
+        },
+      ],
+    };
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const canonicalDefaults = normalizeDocumentEquation({
+      version: 1,
+      display: 'inline',
+      children: [
+        { ...equation.children[0], grow: false },
+        {
+          ...equation.children[3],
+          grow: true,
+          shape: 'centered',
+        },
+      ],
+    });
+    expect(canonicalDefaults?.children[0]).not.toHaveProperty('grow');
+    expect(canonicalDefaults?.children[1]).not.toHaveProperty('grow');
+    expect(canonicalDefaults?.children[1]).not.toHaveProperty('shape');
+    const invalidModels = [
+      {
+        ...equation,
+        children: [{ ...equation.children[0], grow: 'true' }],
+      },
+      {
+        ...equation,
+        children: [{ ...equation.children[2], grow: 0 }],
+      },
+      {
+        ...equation,
+        children: [{ ...equation.children[3], shape: 'round' }],
+      },
+    ] as unknown as WorkDocumentEquation[];
+    expect(invalidModels.map(normalizeDocumentEquation)).toEqual([
+      null,
+      null,
+      null,
+    ]);
+
+    const strictSource = `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}"><m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:grow/></m:naryPr><m:sub><m:r><m:t>i</m:t></m:r></m:sub><m:sup><m:r><m:t>n</m:t></m:r></m:sup><m:e><m:r><m:t>x</m:t></m:r></m:e></m:nary><m:d><m:dPr><m:begChr m:val="["/><m:sepChr m:val=";"/><m:endChr m:val="]"/><m:grow m:val="0"/><m:shp m:val="match"/></m:dPr><m:e><m:r><m:t>y</m:t></m:r></m:e></m:d></m:oMath>`;
+    expect(inspectEquationRoot(strictSource)).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          { type: 'nary', grow: true },
+          { type: 'delimiter', grow: false, shape: 'match' },
+        ],
+      },
+    });
+
+    const previewDocument = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(previewDocument, equation);
+    const operator = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '\u2211',
+    );
+    const integral = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '\u222b',
+    );
+    const fixedOpening = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '(',
+    );
+    const matchedOpening = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '{',
+    );
+    expect(operator?.getAttribute('stretchy')).toBe('true');
+    expect(integral?.getAttribute('stretchy')).toBe('false');
+    expect(fixedOpening?.getAttribute('stretchy')).toBe('false');
+    expect(fixedOpening?.hasAttribute('symmetric')).toBe(false);
+    expect(matchedOpening?.getAttribute('stretchy')).toBe('true');
+    expect(matchedOpening?.getAttribute('symmetric')).toBe('false');
+    expect(preview.getAttribute('aria-label')).toContain('nary(grow;');
+    expect(preview.getAttribute('aria-label')).toContain(
+      'delimiter(grow=false,shape=match;',
+    );
+
+    const expectNativeSizing = async (blob: Blob) => {
+      const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+      const document = await xmlEntry(archive, 'word/document.xml');
+      const naries = descendants(document, 'nary');
+      expect(naries).toHaveLength(2);
+      expect(
+        directChildren(directChildren(naries[0], 'naryPr')[0]).map(
+          (child) => child.localName,
+        ),
+      ).toEqual(['chr', 'limLoc', 'grow']);
+      expect(
+        directChildren(directChildren(naries[0], 'naryPr')[0]).map(
+          mathValueAttribute,
+        ),
+      ).toEqual(['\u2211', 'undOvr', '1']);
+      expect(
+        directChildren(directChildren(naries[1], 'naryPr')[0]).map(
+          (child) => child.localName,
+        ),
+      ).toEqual(['chr', 'limLoc', 'subHide', 'supHide']);
+
+      const delimiters = descendants(document, 'd');
+      expect(delimiters).toHaveLength(2);
+      expect(
+        directChildren(directChildren(delimiters[0], 'dPr')[0]).map(
+          (child) => child.localName,
+        ),
+      ).toEqual(['begChr', 'sepChr', 'endChr', 'grow', 'shp']);
+      expect(
+        directChildren(directChildren(delimiters[0], 'dPr')[0]).map(
+          mathValueAttribute,
+        ),
+      ).toEqual(['(', '|', ')', '0', 'match']);
+      expect(
+        directChildren(directChildren(delimiters[1], 'dPr')[0]).map(
+          (child) => child.localName,
+        ),
+      ).toEqual(['begChr', 'sepChr', 'endChr', 'shp']);
+      expect(
+        directChildren(directChildren(delimiters[1], 'dPr')[0]).map(
+          mathValueAttribute,
+        ),
+      ).toEqual(['{', ';', '}', 'match']);
+    };
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeSizing(first);
+    const imported = await importOfficeFile(
+      new File([first], 'operator-sizing.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeSizing(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word run properties inside math runs', () => {
     const wordProperties = [
       '<w:rFonts w:ascii=" Cambria Math " w:hAnsi="Cambria Math" w:eastAsia="等线" w:cs="Arial" w:asciiTheme="majorAscii" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="minorEastAsia" w:cstheme="majorBidi" w:hint="eastAsia"/>',
@@ -3301,6 +3488,8 @@ describe('document equations', () => {
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="subSup"/><m:subHide/><m:supHide m:val="true"/></m:naryPr><m:sub/><m:sup/><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x220F;"/><m:grow m:val="off"/><m:subHide m:val="on"/><m:supHide m:val="0"/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:limLoc/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow m:val="true"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -3312,19 +3501,22 @@ describe('document equations', () => {
           ? [
               expression.operator,
               expression.limitLocation,
+              expression.grow ?? false,
               expression.subScript?.[0]?.type ?? null,
               expression.superScript?.[0]?.type ?? null,
             ]
           : null;
       }),
     ).toEqual([
-      ['\u222b', 'subSup', 'run', 'run'],
-      ['\u222b', 'subSup', 'run', 'run'],
-      ['\u2211', 'underOver', 'run', 'run'],
-      ['\u2211', 'underOver', 'run', 'run'],
-      ['\u2211', 'subSup', null, null],
-      ['\u220f', 'underOver', null, 'run'],
-      ['\u222b', 'underOver', 'run', 'run'],
+      ['\u222b', 'subSup', false, 'run', 'run'],
+      ['\u222b', 'subSup', false, 'run', 'run'],
+      ['\u2211', 'underOver', false, 'run', 'run'],
+      ['\u2211', 'underOver', false, 'run', 'run'],
+      ['\u2211', 'subSup', false, null, null],
+      ['\u220f', 'underOver', false, null, 'run'],
+      ['\u222b', 'underOver', false, 'run', 'run'],
+      ['\u222b', 'subSup', true, 'run', 'run'],
+      ['\u222b', 'subSup', true, 'run', 'run'],
     ]);
 
     const unsupported = [
@@ -3347,9 +3539,13 @@ describe('document equations', () => {
       `<m:nary><m:naryPr><m:ctrlPr/><m:subHide/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:chr m:val="&#x220F;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:limLoc m:val="beside"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
-      `<m:nary><m:naryPr><m:grow/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
-      `<m:nary><m:naryPr><m:grow m:val="true"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:grow m:val="maybe"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow/><m:grow/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow/><m:limLoc/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow val="1"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><m:grow m:val="1" m:extra="semantic"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:naryPr><m:grow r:id="rIdUnsafe"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
+      `<m:nary><m:naryPr><v:grow xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:subHide/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:supHide/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:subHide m:val="maybe"/></m:naryPr><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
@@ -3373,6 +3569,8 @@ describe('document equations', () => {
       `<m:d><m:dPr><m:begChr/><m:sepChr/><m:endChr/><m:grow/><m:shp/><m:ctrlPr/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:begChr m:val="["/><m:sepChr m:val=";"/><m:endChr m:val="]"/><m:grow m:val="true"/><m:shp m:val="centered"/><m:ctrlPr/></m:dPr><m:e/><m:e>${run}</m:e><m:e/></m:d>`,
       `<m:d><m:dPr><m:begChr m:val=""/><m:sepChr m:val=""/><m:endChr m:val=""/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:grow m:val="0"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp m:val="match"/></m:dPr><m:e>${run}</m:e></m:d>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -3385,6 +3583,8 @@ describe('document equations', () => {
               expression.opening,
               expression.separator,
               expression.closing,
+              expression.grow ?? true,
+              expression.shape ?? 'centered',
               expression.arguments.map((argument) =>
                 argument
                   .map((child) => (child.type === 'run' ? child.text : '?'))
@@ -3394,11 +3594,13 @@ describe('document equations', () => {
           : null;
       }),
     ).toEqual([
-      ['(', '\u2502', ')', ['x']],
-      ['(', '\u2502', ')', ['x']],
-      ['', '', '', ['x']],
-      ['[', ';', ']', ['', 'x', '']],
-      ['', '', '', ['x']],
+      ['(', '\u2502', ')', true, 'centered', ['x']],
+      ['(', '\u2502', ')', true, 'centered', ['x']],
+      ['', '', '', true, 'centered', ['x']],
+      ['[', ';', ']', true, 'centered', ['', 'x', '']],
+      ['', '', '', true, 'centered', ['x']],
+      ['(', '\u2502', ')', false, 'centered', ['x']],
+      ['(', '\u2502', ')', true, 'match', ['x']],
     ]);
 
     const unsupported = [
@@ -3413,10 +3615,13 @@ describe('document equations', () => {
       `<m:d><m:dPr><m:ctrlPr/><m:ctrlPr/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:begChr m:val="xy"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:endChr m:val="&#x7f;"/></m:dPr><m:e>${run}</m:e></m:d>`,
-      `<m:d><m:dPr><m:grow m:val="0"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:grow m:val="maybe"/></m:dPr><m:e>${run}</m:e></m:d>`,
-      `<m:d><m:dPr><m:shp m:val="match"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:shp m:val="round"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp/><m:grow/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:grow val="0"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp m:val="match" m:extra="semantic"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:dPr><m:shp r:id="rIdUnsafe"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><v:shp xmlns:v="${VENDOR_NAMESPACE}" v:val="match"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><m:dPr><m:begChr m:val="[" m:extra="semantic"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:dPr><m:sepChr r:id="rIdUnsafe"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:d><v:dPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e></m:d>`,

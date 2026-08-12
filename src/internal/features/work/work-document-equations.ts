@@ -14,6 +14,7 @@ export type WorkDocumentEquationFractionType =
   | 'skewed'
   | 'linear';
 export type WorkDocumentEquationLimitLocation = 'underOver' | 'subSup';
+export type WorkDocumentEquationDelimiterShape = 'centered' | 'match';
 export type WorkDocumentEquationMatrixAlignment = 'left' | 'center' | 'right';
 export type WorkDocumentEquationMatrixBaseAlignment =
   | 'top'
@@ -287,6 +288,7 @@ export type WorkDocumentEquationExpression =
       controlRevision?: WorkDocumentEquationControlRevision;
       operator: WorkDocumentEquationNaryOperator;
       limitLocation: WorkDocumentEquationLimitLocation;
+      grow?: boolean;
       children: WorkDocumentEquationExpression[];
       childrenProperties?: WorkDocumentEquationArgumentProperties;
       subScript?: WorkDocumentEquationExpression[];
@@ -391,6 +393,8 @@ export type WorkDocumentEquationExpression =
       opening: string;
       closing: string;
       separator: string;
+      grow?: boolean;
+      shape?: WorkDocumentEquationDelimiterShape;
       arguments: WorkDocumentEquationExpression[][];
       argumentProperties?: Array<WorkDocumentEquationArgumentProperties | null>;
     };
@@ -582,6 +586,10 @@ const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
+]);
+const DELIMITER_SHAPES = new Set<WorkDocumentEquationDelimiterShape>([
+  'centered',
+  'match',
 ]);
 const EQUATION_JUSTIFICATIONS = new Set<WorkDocumentEquationJustification>([
   'left',
@@ -1341,6 +1349,7 @@ function normalizeExpression(
       )
         ? (source.limitLocation as WorkDocumentEquationLimitLocation)
         : null;
+      const grow = source.grow;
       const children = normalizeMathArgument(source.children, state);
       const subScript =
         source.subScript === undefined
@@ -1361,6 +1370,7 @@ function normalizeExpression(
       );
       return operator &&
         limitLocation &&
+        (grow === undefined || typeof grow === 'boolean') &&
         children &&
         subScript !== null &&
         superScript !== null &&
@@ -1372,6 +1382,7 @@ function normalizeExpression(
             ...normalizedControlProperties,
             operator,
             limitLocation,
+            ...(grow === true ? { grow: true } : {}),
             children,
             ...(childrenProperties ? { childrenProperties } : {}),
             ...(subScript?.length ? { subScript } : {}),
@@ -1670,10 +1681,21 @@ function normalizeExpression(
       const opening = mathCharacter(source.opening);
       const closing = mathCharacter(source.closing);
       const separator = mathCharacter(source.separator);
+      const grow = source.grow;
+      const shape =
+        source.shape === undefined
+          ? undefined
+          : DELIMITER_SHAPES.has(
+                source.shape as WorkDocumentEquationDelimiterShape,
+              )
+            ? (source.shape as WorkDocumentEquationDelimiterShape)
+            : null;
       if (
         opening === null ||
         closing === null ||
         separator === null ||
+        (grow !== undefined && typeof grow !== 'boolean') ||
+        shape === null ||
         !Array.isArray(source.arguments) ||
         source.arguments.length === 0 ||
         source.arguments.length > MAX_DELIMITER_ARGUMENTS
@@ -1697,6 +1719,8 @@ function normalizeExpression(
             opening,
             closing,
             separator,
+            ...(grow === false ? { grow: false } : {}),
+            ...(shape === 'match' ? { shape } : {}),
             arguments: arguments_,
             ...(argumentProperties ? { argumentProperties } : {}),
           }
@@ -1782,7 +1806,7 @@ function expressionText(
     )}(${expressionListText(expression.children, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'nary') {
-    return `${expression.operator}${
+    const text = `${expression.operator}${
       expression.subScript
         ? `_(${expressionListText(expression.subScript, hideAlignmentMarkers)})`
         : ''
@@ -1794,6 +1818,7 @@ function expressionText(
           )})`
         : ''
     } ${expressionListText(expression.children, hideAlignmentMarkers)}`;
+    return expression.grow ? `nary(grow;${text})` : text;
   }
   if (expression.type === 'accent') {
     const codePoint = expression.character.codePointAt(0);
@@ -1898,9 +1923,16 @@ function expressionText(
       .map((row) => expressionListText(row, true))
       .join(';')})`;
   }
-  return `${expression.opening}${expression.arguments
+  const text = `${expression.opening}${expression.arguments
     .map((argument) => expressionListText(argument, hideAlignmentMarkers))
     .join(expression.separator)}${expression.closing}`;
+  const properties = [
+    expression.grow === false ? 'grow=false' : '',
+    expression.shape === 'match' ? 'shape=match' : '',
+  ].filter(Boolean);
+  return properties.length
+    ? `delimiter(${properties.join(',')};${text})`
+    : text;
 }
 
 function equationMathMl(equation: WorkDocumentEquation): DOMOutputSpec {
@@ -2114,7 +2146,10 @@ function expressionMathMl(
   if (expression.type === 'nary') {
     const operator = domSpec(
       'mo',
-      controlMathMlAttributes(expression, expression.operator),
+      {
+        ...controlMathMlAttributes(expression, expression.operator),
+        stretchy: expression.grow ? 'true' : 'false',
+      },
       [expression.operator],
     );
     let decorated = operator;
@@ -2292,12 +2327,19 @@ function expressionMathMl(
     );
   }
   const children: Array<DOMOutputSpec | string> = [];
+  const sizingAttributes = {
+    stretchy: expression.grow === false ? 'false' : 'true',
+    ...(expression.grow === false
+      ? {}
+      : { symmetric: expression.shape === 'match' ? 'false' : 'true' }),
+  };
   if (expression.opening)
     children.push(
       domSpec(
         'mo',
         {
           fence: 'true',
+          ...sizingAttributes,
           ...controlMathMlAttributes(expression, expression.opening),
         },
         [expression.opening],
@@ -2310,6 +2352,7 @@ function expressionMathMl(
           'mo',
           {
             separator: 'true',
+            ...sizingAttributes,
             ...controlMathMlAttributes(expression, expression.separator),
           },
           [expression.separator],
@@ -2324,6 +2367,7 @@ function expressionMathMl(
         'mo',
         {
           fence: 'true',
+          ...sizingAttributes,
           ...controlMathMlAttributes(expression, expression.closing),
         },
         [expression.closing],
