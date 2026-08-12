@@ -2059,6 +2059,7 @@ describe('document equations', () => {
       '<w:cs w:val="0"/>',
       '<w:em w:val="circle"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
+      '<w:eastAsianLayout w:id="9" w:combine="1" w:combineBrackets="curly" w:vert="0" w:vertCompress="1"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2167,7 +2168,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>'),
+      wordRun('<w:rPr><w:specVanish/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2201,10 +2202,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(
-          '<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>',
-          '<w:t>fallback</w:t>',
-        ),
+        wordRun('<w:rPr><w:specVanish/></w:rPr>', '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4002,6 +4000,287 @@ describe('document equations', () => {
     await expectNativeWordRunEmphasisMarks(await createArtifactBlob(imported));
   });
 
+  test('preserves East Asian typography settings as native-only OMML metadata', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'layout-id-zero',
+          wordRunProperties: { eastAsianLayout: { id: 0 } },
+        },
+        {
+          type: 'run',
+          text: 'two-lines-round',
+          wordRunProperties: {
+            eastAsianLayout: {
+              combine: true,
+              combineBrackets: 'round',
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'explicit-combine-reset',
+          wordRunProperties: {
+            eastAsianLayout: {
+              combine: false,
+              combineBrackets: 'none',
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'horizontal-in-vertical',
+          wordRunProperties: {
+            eastAsianLayout: { vertical: true },
+          },
+        },
+        {
+          type: 'run',
+          text: 'explicit-vertical-reset',
+          wordRunProperties: {
+            eastAsianLayout: {
+              vertical: false,
+              verticalCompress: true,
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'full-east-asian-layout',
+          wordRunProperties: {
+            languages: { eastAsia: 'ja-JP' },
+            eastAsianLayout: {
+              id: -2_147_483_648,
+              combine: true,
+              combineBrackets: 'curly',
+              vertical: true,
+              verticalCompress: false,
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'layout-id-maximum',
+          wordRunProperties: {
+            eastAsianLayout: { id: 2_147_483_647 },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            eastAsianLayout: {
+              id: -7,
+              combine: false,
+              combineBrackets: 'angle',
+              vertical: true,
+              verticalCompress: false,
+            },
+          },
+          children: [{ type: 'run', text: 'operator-east-asian-layout' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation(
+        equationWithWordRunProperties({ eastAsianLayout: {} }),
+      ),
+    ).toEqual(simpleEquation('x'));
+    for (const combineBrackets of [
+      'none',
+      'round',
+      'square',
+      'angle',
+      'curly',
+    ] as const) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithWordRunProperties({
+            eastAsianLayout: { combineBrackets },
+          }),
+        )?.children[0],
+      ).toMatchObject({
+        wordRunProperties: { eastAsianLayout: { combineBrackets } },
+      });
+    }
+    const invalidModels = [
+      { eastAsianLayout: null },
+      { eastAsianLayout: [] },
+      { eastAsianLayout: { extra: true } },
+      { eastAsianLayout: { id: '1' } },
+      { eastAsianLayout: { id: 1.5 } },
+      { eastAsianLayout: { id: -2_147_483_649 } },
+      { eastAsianLayout: { id: 2_147_483_648 } },
+      { eastAsianLayout: { combine: 1 } },
+      { eastAsianLayout: { combineBrackets: '' } },
+      { eastAsianLayout: { combineBrackets: 'Round' } },
+      { eastAsianLayout: { combineBrackets: 'round ' } },
+      { eastAsianLayout: { vertical: 'true' } },
+      { eastAsianLayout: { verticalCompress: null } },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            '<w:eastAsianLayout w:vertCompress=" off " w:combineBrackets="curly" w:vert=" ON " w:id=" +42 " w:combine=" false "/>',
+            namespace,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          eastAsianLayout: {
+            id: 42,
+            combine: false,
+            combineBrackets: 'curly',
+            vertical: true,
+            verticalCompress: false,
+          },
+        },
+      });
+    }
+    for (const combineBrackets of [
+      'none',
+      'round',
+      'square',
+      'angle',
+      'curly',
+    ] as const) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w:eastAsianLayout w:combineBrackets="${combineBrackets}"/>`,
+          ),
+        )?.children[0],
+      ).toMatchObject({
+        wordRunProperties: { eastAsianLayout: { combineBrackets } },
+      });
+    }
+    expect(inspectEquationModel(wordRun('<w:eastAsianLayout/>'))).toEqual(
+      simpleEquation('x'),
+    );
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:lang w:eastAsia="ja-JP"/><w:eastAsianLayout w:id="-2147483648" w:combine="1" w:combineBrackets="square" w:vert="0" w:vertCompress="true"/>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        languages: { eastAsia: 'ja-JP' },
+        eastAsianLayout: {
+          id: -2_147_483_648,
+          combine: true,
+          combineBrackets: 'square',
+          vertical: false,
+          verticalCompress: true,
+        },
+      },
+    });
+
+    const invalidMarkup = [
+      wordRun('<w:eastAsianLayout w:id=""/>'),
+      wordRun('<w:eastAsianLayout w:id="1.5"/>'),
+      wordRun('<w:eastAsianLayout w:id="0x1"/>'),
+      wordRun('<w:eastAsianLayout w:id="-2147483649"/>'),
+      wordRun('<w:eastAsianLayout w:id="2147483648"/>'),
+      wordRun('<w:eastAsianLayout w:combine="maybe"/>'),
+      wordRun('<w:eastAsianLayout w:combineBrackets=""/>'),
+      wordRun('<w:eastAsianLayout w:combineBrackets="Round"/>'),
+      wordRun('<w:eastAsianLayout w:combineBrackets="double"/>'),
+      wordRun('<w:eastAsianLayout w:vert=""/>'),
+      wordRun('<w:eastAsianLayout w:vertCompress="2"/>'),
+      wordRun('<w:eastAsianLayout id="1"/>'),
+      wordRun('<w:eastAsianLayout w:id="1" w:extra="semantic"/>'),
+      wordRun(
+        `<w:eastAsianLayout xmlns:r="${RELATIONSHIP_NAMESPACE}" w:id="1" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:eastAsianLayout w:id="1"><w:b/></w:eastAsianLayout>'),
+      wordRun('<w:eastAsianLayout w:id="1">meaningful</w:eastAsianLayout>'),
+      wordRun('<w:eastAsianLayout w:id="1"/><w:eastAsianLayout w:id="2"/>'),
+      wordRun('<w:eastAsianLayout w:id="1"/><w:lang w:eastAsia="ja-JP"/>'),
+      wordRun('<w:specVanish/><w:eastAsianLayout w:id="1"/>'),
+      wordRun(`<v:eastAsianLayout xmlns:v="${VENDOR_NAMESPACE}" v:id="1"/>`),
+      wordRun('<m:eastAsianLayout m:id="1"/>'),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    expect(preview.outerHTML).not.toMatch(
+      /(?:text-combine-upright|writing-mode|text-orientation|transform\s*:)/u,
+    );
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunEastAsianLayouts(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-east-asian-layout.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunEastAsianLayouts(
+      await createArtifactBlob(imported),
+    );
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -4090,9 +4369,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(
-        '<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>',
-      ),
+      invalidControlProperties('<w:rPr><w:specVanish/></w:rPr>'),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -4363,9 +4640,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(
-        `${run}<m:ctrlPr><w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr></m:ctrlPr>`,
-      ),
+      argument(`${run}<m:ctrlPr><w:rPr><w:specVanish/></w:rPr></m:ctrlPr>`),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -5554,6 +5829,13 @@ function richWordRunProperties() {
     complexScript: false,
     emphasisMark: 'circle' as const,
     languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
+    eastAsianLayout: {
+      id: 9,
+      combine: true,
+      combineBrackets: 'curly' as const,
+      vertical: false,
+      verticalCompress: true,
+    },
   };
 }
 
@@ -7195,6 +7477,128 @@ async function expectNativeWordRunEmphasisMarks(blob: Blob): Promise<void> {
   expect(wordAttributes(emphasis)).toEqual({ val: 'underDot' });
 }
 
+async function expectNativeWordRunEastAsianLayouts(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  for (const entry of [
+    {
+      text: 'layout-id-zero',
+      names: ['eastAsianLayout'],
+      attributes: [{ id: '0' }],
+      qualifiedAttributes: ['w:id'],
+    },
+    {
+      text: 'two-lines-round',
+      names: ['eastAsianLayout'],
+      attributes: [{ combine: '1', combineBrackets: 'round' }],
+      qualifiedAttributes: ['w:combine', 'w:combineBrackets'],
+    },
+    {
+      text: 'explicit-combine-reset',
+      names: ['eastAsianLayout'],
+      attributes: [{ combine: '0', combineBrackets: 'none' }],
+      qualifiedAttributes: ['w:combine', 'w:combineBrackets'],
+    },
+    {
+      text: 'horizontal-in-vertical',
+      names: ['eastAsianLayout'],
+      attributes: [{ vert: '1' }],
+      qualifiedAttributes: ['w:vert'],
+    },
+    {
+      text: 'explicit-vertical-reset',
+      names: ['eastAsianLayout'],
+      attributes: [{ vert: '0', vertCompress: '1' }],
+      qualifiedAttributes: ['w:vert', 'w:vertCompress'],
+    },
+    {
+      text: 'full-east-asian-layout',
+      names: ['lang', 'eastAsianLayout'],
+      attributes: [
+        { eastAsia: 'ja-JP' },
+        {
+          id: '-2147483648',
+          combine: '1',
+          combineBrackets: 'curly',
+          vert: '1',
+          vertCompress: '0',
+        },
+      ],
+      qualifiedAttributes: [
+        'w:id',
+        'w:combine',
+        'w:combineBrackets',
+        'w:vert',
+        'w:vertCompress',
+      ],
+    },
+    {
+      text: 'layout-id-maximum',
+      names: ['eastAsianLayout'],
+      attributes: [{ id: '2147483647' }],
+      qualifiedAttributes: ['w:id'],
+    },
+  ]) {
+    const run = mathRuns.find(
+      (candidate) => candidate.textContent === entry.text,
+    );
+    expect(run, entry.text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, entry.text).toBeDefined();
+    const children = directChildren(properties as Element);
+    expect(
+      children.map((child) => child.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(children.map(wordAttributes), entry.text).toEqual(entry.attributes);
+    const layout = children.find(
+      (child) => child.localName === 'eastAsianLayout',
+    );
+    expect(
+      Array.from((layout as Element).attributes).map(
+        (attribute) => attribute.name,
+      ),
+      entry.text,
+    ).toEqual(entry.qualifiedAttributes);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-east-asian-layout'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const layout = directChildren(
+    wordProperties as Element,
+    'eastAsianLayout',
+  )[0];
+  expect(wordAttributes(layout)).toEqual({
+    id: '-7',
+    combine: '0',
+    combineBrackets: 'angle',
+    vert: '1',
+    vertCompress: '0',
+  });
+  expect(
+    Array.from(layout.attributes).map((attribute) => attribute.name),
+  ).toEqual([
+    'w:id',
+    'w:combine',
+    'w:combineBrackets',
+    'w:vert',
+    'w:vertCompress',
+  ]);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -7253,6 +7657,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'cs',
     'em',
     'lang',
+    'eastAsianLayout',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -7331,6 +7736,7 @@ async function expectNativeArgumentControlProperties(
     'cs',
     'em',
     'lang',
+    'eastAsianLayout',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -7896,6 +8302,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'cs',
     'em',
     'lang',
+    'eastAsianLayout',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -7961,6 +8368,13 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     { val: '0' },
     { val: 'circle' },
     { val: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
+    {
+      id: '9',
+      combine: '1',
+      combineBrackets: 'curly',
+      vert: '0',
+      vertCompress: '1',
+    },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(

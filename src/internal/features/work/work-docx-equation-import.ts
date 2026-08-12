@@ -23,6 +23,8 @@ import {
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordCombineBrackets,
+  type WorkDocumentEquationWordEastAsianLayout,
   type WorkDocumentEquationWordEmphasisMark,
   type WorkDocumentEquationWordFitText,
   type WorkDocumentEquationWordHighlight,
@@ -162,6 +164,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'cs',
   'em',
   'lang',
+  'eastAsianLayout',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -323,6 +326,13 @@ const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
   'circle',
   'underDot',
 ]);
+const WORD_COMBINE_BRACKETS = new Set<WorkDocumentEquationWordCombineBrackets>([
+  'none',
+  'round',
+  'square',
+  'angle',
+  'curly',
+]);
 
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const MAX_IMPORTED_EQUATIONS = 4_096;
@@ -348,6 +358,8 @@ const MAX_WORD_BORDER_SPACING_POINTS = 31;
 const MAX_WORD_FIT_TEXT_WIDTH_TWIPS = 31_680;
 const MIN_WORD_FIT_TEXT_ID = -2_147_483_648;
 const MAX_WORD_FIT_TEXT_ID = 2_147_483_647;
+const MIN_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
+const MAX_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
 const MIN_WORD_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_WORD_POSITION_HALF_POINTS = 2_147_483_647;
 const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
@@ -931,6 +943,9 @@ function parseWordRunProperties(
   );
   const emphasisMark = parseWordEmphasisMark(children.get('em'));
   const languages = parseWordLanguages(children.get('lang'));
+  const eastAsianLayout = parseWordEastAsianLayout(
+    children.get('eastAsianLayout'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -948,7 +963,8 @@ function parseWordRunProperties(
     fitText === null ||
     verticalAlignment === null ||
     emphasisMark === null ||
-    languages === null
+    languages === null ||
+    eastAsianLayout === null
   ) {
     return null;
   }
@@ -1036,6 +1052,7 @@ function parseWordRunProperties(
       : {}),
     ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
+    ...(eastAsianLayout ? { eastAsianLayout } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -1598,6 +1615,53 @@ function parseWordLanguages(
     ...(bidi ? { bidi } : {}),
   };
   return Object.keys(languages).length ? languages : undefined;
+}
+
+function parseWordEastAsianLayout(
+  element: Element | undefined,
+): WorkDocumentEquationWordEastAsianLayout | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set(['id', 'combine', 'combineBrackets', 'vert', 'vertCompress']),
+  );
+  if (!attributes) return null;
+  const id = attributes.has('id')
+    ? wordIntegerValue(
+        attributes.get('id')?.trim() ?? '',
+        MIN_WORD_EAST_ASIAN_LAYOUT_ID,
+        MAX_WORD_EAST_ASIAN_LAYOUT_ID,
+      )
+    : undefined;
+  const combine = wordOnOffAttribute(attributes.get('combine'));
+  const rawCombineBrackets = attributes.get('combineBrackets')?.trim();
+  const combineBrackets =
+    rawCombineBrackets === undefined
+      ? undefined
+      : WORD_COMBINE_BRACKETS.has(
+            rawCombineBrackets as WorkDocumentEquationWordCombineBrackets,
+          )
+        ? (rawCombineBrackets as WorkDocumentEquationWordCombineBrackets)
+        : null;
+  const vertical = wordOnOffAttribute(attributes.get('vert'));
+  const verticalCompress = wordOnOffAttribute(attributes.get('vertCompress'));
+  if (
+    id === null ||
+    combine === null ||
+    combineBrackets === null ||
+    vertical === null ||
+    verticalCompress === null
+  ) {
+    return null;
+  }
+  const layout: WorkDocumentEquationWordEastAsianLayout = {
+    ...(id !== undefined ? { id } : {}),
+    ...(combine !== undefined ? { combine } : {}),
+    ...(combineBrackets !== undefined ? { combineBrackets } : {}),
+    ...(vertical !== undefined ? { vertical } : {}),
+    ...(verticalCompress !== undefined ? { verticalCompress } : {}),
+  };
+  return Object.keys(layout).length ? layout : undefined;
 }
 
 function wordOnOff(element: Element): boolean | null {

@@ -250,6 +250,21 @@ export interface WorkDocumentEquationWordLanguages {
   bidi?: string;
 }
 
+export type WorkDocumentEquationWordCombineBrackets =
+  | 'none'
+  | 'round'
+  | 'square'
+  | 'angle'
+  | 'curly';
+
+export interface WorkDocumentEquationWordEastAsianLayout {
+  id?: number;
+  combine?: boolean;
+  combineBrackets?: WorkDocumentEquationWordCombineBrackets;
+  vertical?: boolean;
+  verticalCompress?: boolean;
+}
+
 export interface WorkDocumentEquationWordRunProperties {
   fonts?: WorkDocumentEquationWordRunFonts;
   bold?: boolean;
@@ -286,6 +301,7 @@ export interface WorkDocumentEquationWordRunProperties {
   complexScript?: boolean;
   emphasisMark?: WorkDocumentEquationWordEmphasisMark;
   languages?: WorkDocumentEquationWordLanguages;
+  eastAsianLayout?: WorkDocumentEquationWordEastAsianLayout;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -803,6 +819,13 @@ const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
   'circle',
   'underDot',
 ]);
+const WORD_COMBINE_BRACKETS = new Set<WorkDocumentEquationWordCombineBrackets>([
+  'none',
+  'round',
+  'square',
+  'angle',
+  'curly',
+]);
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
@@ -815,6 +838,8 @@ const MAX_EQUATION_WORD_BORDER_SPACING_POINTS = 31;
 const MAX_EQUATION_WORD_FIT_TEXT_WIDTH_TWIPS = 31_680;
 const MIN_EQUATION_WORD_FIT_TEXT_ID = -2_147_483_648;
 const MAX_EQUATION_WORD_FIT_TEXT_ID = 2_147_483_647;
+const MIN_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
+const MAX_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
 const MIN_EQUATION_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_EQUATION_POSITION_HALF_POINTS = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
@@ -873,6 +898,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'complexScript',
   'emphasisMark',
   'languages',
+  'eastAsianLayout',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -898,6 +924,13 @@ const WORD_RUN_BORDER_KEYS = new Set([
 const WORD_SHADING_KEYS = new Set(['pattern', 'color', 'fill']);
 const WORD_FIT_TEXT_KEYS = new Set(['widthTwips', 'id']);
 const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
+const WORD_EAST_ASIAN_LAYOUT_KEYS = new Set([
+  'id',
+  'combine',
+  'combineBrackets',
+  'vertical',
+  'verticalCompress',
+]);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
@@ -2908,6 +2941,10 @@ function normalizeEquationWordRunProperties(
     source.languages === undefined
       ? undefined
       : normalizeEquationWordLanguages(source.languages);
+  const eastAsianLayout =
+    source.eastAsianLayout === undefined
+      ? undefined
+      : normalizeEquationWordEastAsianLayout(source.eastAsianLayout);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -2958,6 +2995,7 @@ function normalizeEquationWordRunProperties(
     verticalAlignment === null ||
     emphasisMark === null ||
     languages === null ||
+    eastAsianLayout === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3088,6 +3126,7 @@ function normalizeEquationWordRunProperties(
       : {}),
     ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
+    ...(eastAsianLayout ? { eastAsianLayout } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -3334,6 +3373,53 @@ function normalizeEquationWordLanguages(
     if (!value) return null;
     normalized[key] = value;
   }
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationWordEastAsianLayout(
+  source: unknown,
+): WorkDocumentEquationWordEastAsianLayout | null | undefined {
+  if (!isRecordWithKeys(source, WORD_EAST_ASIAN_LAYOUT_KEYS)) return null;
+  const id =
+    source.id === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.id,
+          MIN_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID,
+          MAX_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID,
+        );
+  if (id === null) return null;
+  for (const key of ['combine', 'vertical', 'verticalCompress'] as const) {
+    if (source[key] !== undefined && typeof source[key] !== 'boolean') {
+      return null;
+    }
+  }
+  if (
+    source.combineBrackets !== undefined &&
+    !WORD_COMBINE_BRACKETS.has(
+      source.combineBrackets as WorkDocumentEquationWordCombineBrackets,
+    )
+  ) {
+    return null;
+  }
+  const normalized: WorkDocumentEquationWordEastAsianLayout = {
+    ...(id !== undefined ? { id: Object.is(id, -0) ? 0 : id } : {}),
+    ...(source.combine !== undefined
+      ? { combine: source.combine as boolean }
+      : {}),
+    ...(source.combineBrackets !== undefined
+      ? {
+          combineBrackets:
+            source.combineBrackets as WorkDocumentEquationWordCombineBrackets,
+        }
+      : {}),
+    ...(source.vertical !== undefined
+      ? { vertical: source.vertical as boolean }
+      : {}),
+    ...(source.verticalCompress !== undefined
+      ? { verticalCompress: source.verticalCompress as boolean }
+      : {}),
+  };
   return Object.keys(normalized).length ? normalized : undefined;
 }
 

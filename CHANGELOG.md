@@ -28,7 +28,10 @@ All notable changes to A3S Office will be documented in this file.
   widths from 0 through 31,680 twips with optional signed 32-bit grouping IDs,
   explicit baseline/superscript/subscript run alignment, all five Word
   emphasis-mark values (`none`, `dot`, `comma`, `circle`, and `underDot`),
-  RTL/complex-script flags, and language tags.
+  RTL/complex-script flags, language tags, and East Asian typography metadata
+  with optional signed 32-bit run IDs, two-lines-in-one flags, all five
+  enclosing-bracket styles, horizontal-in-vertical rotation, and rotated-text
+  compression.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
@@ -37,6 +40,9 @@ All notable changes to A3S Office will be documented in this file.
   zero. Explicit baseline alignment remains present so inherited superscript or
   subscript formatting can be reset, and explicit `none` emphasis remains
   present so inherited emphasis marks can be removed.
+  Empty `w:eastAsianLayout` elements canonicalize away, while omitted flags
+  stay distinct from explicit `false` resets and signed run IDs retain explicit
+  zero.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, baseline shifts, and baseline/superscript/subscript
   alignment use safe CSS projections in MathML previews without changing
@@ -45,7 +51,8 @@ All notable changes to A3S Office will be documented in this file.
   Superscript and subscript also project the smaller rendered size required by
   Word. When `w:position` and `w:vertAlign` coexist, both remain in native
   schema order and the later explicit alignment controls the CSS vertical
-  position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`. Simple
+  position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
+  `w:eastAsianLayout` remains after `w:lang`. Simple
   explicitly sized solid, double, dotted, dashed, inset, and outset line
   borders project through CSS with direct or automatic color and point
   padding; explicit `nil`/`none` resets also project. Relief effects, legacy
@@ -54,16 +61,21 @@ All notable changes to A3S Office will be documented in this file.
   colors, and hidden or web-hidden states remain native metadata because Word
   view and rendering settings govern them. Manual run widths also remain
   native-only because Word ignores `w:fitText` inside Office Math, so the
-  MathML preview deliberately does not emulate them. Highlight precedence over shading is retained. Named
-  highlights, explicit highlight removal, clear direct fills,
+  MathML preview deliberately does not emulate them. East Asian
+  two-lines-in-one, enclosing brackets, horizontal-in-vertical rotation, and
+  rotated-text compression also remain native-only because CSS writing modes,
+  text combination, and transforms cannot reproduce Word's inline line-box
+  semantics without layout drift. Highlight precedence over shading is
+  retained. Named highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
   `mathbackground`; pattern masks and theme-only colors remain native metadata.
   Explicit on/off values survive native regeneration. Enabled mutually
   exclusive casing, strike, or relief combinations, invalid animation values,
   art-border styles, out-of-range border width/spacing, malformed border
   colors/flags, missing, malformed, fractional, or out-of-range manual widths
-  and grouping IDs, missing or unknown vertical-alignment values, and unknown,
-  reordered, duplicated, spoofed, or
+  and grouping IDs, missing or unknown vertical-alignment or emphasis-mark
+  values, malformed or out-of-range East Asian layout IDs, flags, or bracket
+  styles, and unknown, reordered, duplicated, spoofed, or
   relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control

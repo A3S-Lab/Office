@@ -1278,6 +1278,33 @@ function createWordRunProperties(
     }
     result.append(languages);
   }
+  if (properties.eastAsianLayout) {
+    const layout = createWordElement(document, prefix, 'eastAsianLayout');
+    if (properties.eastAsianLayout.id !== undefined) {
+      setWordAttribute(
+        layout,
+        prefix,
+        'id',
+        String(properties.eastAsianLayout.id),
+      );
+    }
+    for (const [name, value] of [
+      ['combine', properties.eastAsianLayout.combine],
+      ['combineBrackets', properties.eastAsianLayout.combineBrackets],
+      ['vert', properties.eastAsianLayout.vertical],
+      ['vertCompress', properties.eastAsianLayout.verticalCompress],
+    ] as const) {
+      if (value !== undefined) {
+        setWordAttribute(
+          layout,
+          prefix,
+          name,
+          typeof value === 'boolean' ? (value ? '1' : '0') : value,
+        );
+      }
+    }
+    result.append(layout);
+  }
   return result;
 }
 

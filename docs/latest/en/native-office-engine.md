@@ -1263,7 +1263,10 @@ run shading with direct or theme foreground/background colors, manual run
 widths from 0 through 31,680 twips with optional signed 32-bit grouping IDs,
 explicit baseline/superscript/subscript run alignment, all five Word
 emphasis-mark values (`none`, `dot`, `comma`, `circle`, and `underDot`),
-RTL/complex-script flags, and Latin, East Asian, and bidi language tags.
+RTL/complex-script flags, Latin, East Asian, and bidi language tags, and East
+Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
+flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
+rotated-text compression.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1272,6 +1275,8 @@ whole twips; omitted
 grouping IDs remain distinct from explicit zero. Explicit baseline alignment
 remains present so inherited superscript or subscript formatting can be reset;
 explicit `none` emphasis likewise removes inherited emphasis marks.
+Empty `w:eastAsianLayout` elements canonicalize away, while omitted flags stay
+distinct from explicit `false` resets and signed run IDs retain explicit zero.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
@@ -1282,7 +1287,8 @@ as filled dots, a literal comma, or an open circle above the text, or a filled
 dot below it. Superscript and subscript also project the smaller rendered size
 required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
 native schema order and the later explicit alignment controls the CSS vertical
-position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`. Simple
+position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
+`w:eastAsianLayout` remains after `w:lang`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1292,6 +1298,11 @@ colors, hidden, and web-hidden values remain native-only because Word rendering
 and view settings govern them. Manual run widths also remain native-only
 because Word ignores `w:fitText` inside Office Math, so the MathML preview
 deliberately does not emulate them.
+East Asian two-lines-in-one, enclosing brackets, horizontal-in-vertical
+rotation, and rotated-text compression also remain native-only. CSS
+`text-combine-upright`, writing modes, and transforms do not preserve Word's
+two-sub-line distribution or its left-rotated inline line box, so approximating
+them would introduce layout drift.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
@@ -1300,7 +1311,8 @@ Enabled mutually exclusive all-caps/small-caps, strike/double-strike, or relief
 combinations, invalid animation values, art-border styles, out-of-range border
 width/spacing, malformed border colors/flags, missing, malformed, fractional,
 or out-of-range manual widths and grouping IDs, missing or unknown
-vertical-alignment or emphasis-mark values, and unknown, duplicated, reordered,
+vertical-alignment or emphasis-mark values, malformed or out-of-range East
+Asian layout IDs, flags, or bracket styles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
