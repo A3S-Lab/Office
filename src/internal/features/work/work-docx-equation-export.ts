@@ -350,6 +350,18 @@ function createExpression(
     );
     return script;
   }
+  if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {
+    const limit = createMathElement(
+      document,
+      prefix,
+      expression.type === 'lowerLimit' ? 'limLow' : 'limUpp',
+    );
+    limit.append(
+      expressionArgument(document, prefix, 'e', expression.base),
+      expressionArgument(document, prefix, 'lim', expression.limit),
+    );
+    return limit;
+  }
   if (expression.type === 'radical') {
     const radical = createMathElement(document, prefix, 'rad');
     const properties = createMathElement(document, prefix, 'radPr');

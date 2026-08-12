@@ -50,6 +50,16 @@ export type WorkDocumentEquationExpression =
       superScript: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'lowerLimit';
+      base: WorkDocumentEquationExpression[];
+      limit: WorkDocumentEquationExpression[];
+    }
+  | {
+      type: 'upperLimit';
+      base: WorkDocumentEquationExpression[];
+      limit: WorkDocumentEquationExpression[];
+    }
+  | {
       type: 'radical';
       children: WorkDocumentEquationExpression[];
       degree?: WorkDocumentEquationExpression[];
@@ -507,6 +517,11 @@ function normalizeExpression(
         ? { type: 'subSuperScript', base, subScript, superScript }
         : null;
     }
+    if (source.type === 'lowerLimit' || source.type === 'upperLimit') {
+      const base = normalizeExpressionList(source.base, state);
+      const limit = normalizeExpressionList(source.limit, state);
+      return base && limit ? { type: source.type, base, limit } : null;
+    }
     if (source.type === 'radical') {
       const children = normalizeExpressionList(source.children, state);
       const degree =
@@ -853,6 +868,12 @@ function expressionText(
       hideAlignmentMarkers,
     )})`;
   }
+  if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {
+    return `${expression.type === 'lowerLimit' ? 'lower-limit' : 'upper-limit'}(${expressionListText(
+      expression.base,
+      hideAlignmentMarkers,
+    )};${expressionListText(expression.limit, hideAlignmentMarkers)})`;
+  }
   if (expression.type === 'bar') {
     const body = expressionListText(expression.children, hideAlignmentMarkers);
     return expression.position === 'top'
@@ -1022,6 +1043,18 @@ function expressionMathMl(
       mathRow(expression.subScript, alignmentState),
       mathRow(expression.superScript, alignmentState),
     ]);
+  }
+  if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {
+    return domSpec(
+      expression.type === 'lowerLimit' ? 'munder' : 'mover',
+      expression.type === 'lowerLimit'
+        ? { accentunder: 'false' }
+        : { accent: 'false' },
+      [
+        mathRow(expression.base, alignmentState),
+        mathRow(expression.limit, alignmentState),
+      ],
+    );
   }
   if (expression.type === 'radical') {
     return expression.degree

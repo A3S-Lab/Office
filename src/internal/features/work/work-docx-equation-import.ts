@@ -127,7 +127,9 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'groupChr',
   'lim',
   'limLow',
+  'limLowPr',
   'limUpp',
+  'limUppPr',
   'm',
   'mc',
   'mcPr',
@@ -448,6 +450,9 @@ function parseExpression(
     if (element.localName === 'sSub') return parseSubScript(element, state);
     if (element.localName === 'sSubSup') {
       return parseSubSuperScript(element, state);
+    }
+    if (element.localName === 'limLow' || element.localName === 'limUpp') {
+      return parseLimit(element, state);
     }
     if (element.localName === 'rad') return parseRadical(element, state);
     if (element.localName === 'func') return parseFunction(element, state);
@@ -839,6 +844,44 @@ function parseSubSuperScript(
         base: parsedBase,
         subScript: parsedSubScript,
         superScript: parsedSuperScript,
+      }
+    : null;
+}
+
+function parseLimit(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  const lower = element.localName === 'limLow';
+  const propertyName = lower ? 'limLowPr' : 'limUppPr';
+  const allowed = [propertyName, 'e', 'lim'];
+  if (
+    !structuralChildren(element, new Set(allowed)) ||
+    !orderedMathChildren(element, allowed)
+  ) {
+    return null;
+  }
+  const properties = uniqueMathChild(element, propertyName, false);
+  const base = uniqueMathChild(element, 'e');
+  const limit = uniqueMathChild(element, 'lim');
+  if (properties === null || !base || !limit) return null;
+  if (properties) {
+    if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
+    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    if (
+      controlProperties === null ||
+      (controlProperties && !emptyMathProperty(controlProperties))
+    ) {
+      return null;
+    }
+  }
+  const parsedBase = parseExpressionContainer(base, state);
+  const parsedLimit = parseExpressionContainer(limit, state);
+  return parsedBase && parsedLimit
+    ? {
+        type: lower ? 'lowerLimit' : 'upperLimit',
+        base: parsedBase,
+        limit: parsedLimit,
       }
     : null;
 }

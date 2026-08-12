@@ -87,6 +87,14 @@ describe('document equations', () => {
       expect(equationArray?.querySelectorAll('mtd')).toHaveLength(3);
       expect(equationArray?.querySelectorAll('maligngroup')).toHaveLength(4);
       expect(equationArray?.querySelectorAll('malignmark')).toHaveLength(4);
+      const lowerLimit = Array.from(
+        element?.querySelectorAll('munder[accentunder="false"]') ?? [],
+      ).find((candidate) => candidate.textContent === 'limx→0');
+      expect(lowerLimit).toBeDefined();
+      const upperLimit = Array.from(
+        element?.querySelectorAll('mover[accent="false"]') ?? [],
+      ).find((candidate) => candidate.textContent === '=def');
+      expect(upperLimit).toBeDefined();
       const matrix = element?.querySelector('mtable[align="top"]');
       expect(matrix).not.toBeNull();
       expect(matrix?.querySelectorAll('mtr')).toHaveLength(2);
@@ -104,6 +112,12 @@ describe('document equations', () => {
       );
       expect(element?.getAttribute('aria-label')).toContain(
         'equation-array(bottom,max-distribution,spacing=multiple:3;x+y=1;2x+y=3;)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'lower-limit(lim;x→0)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'upper-limit(=;def)',
       );
       expect(element?.getAttribute('aria-label')).toContain('matrix');
 
@@ -125,6 +139,32 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'lowerLimit',
+              base: [],
+              limit: [{ type: 'run', text: 'x→0' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'upperLimit',
+              base: [{ type: 'run', text: '=' }],
+              limit: [],
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -357,7 +397,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([21, 21, 1, 1]);
+    ).toEqual([23, 23, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -603,6 +643,10 @@ describe('document equations', () => {
       `<m:eqArr><m:e>${run}</m:e></m:eqArr>`,
       `<m:eqArr><m:eqArrPr><m:baseJc m:val="bot"/><m:maxDist/><m:objDist m:val="0"/><m:rSpRule m:val="4"/><m:rSp m:val=" +0003 "/><m:ctrlPr/></m:eqArrPr><m:e><m:r><m:t>&amp;x+&amp;&amp;y</m:t></m:r></m:e><m:e/></m:eqArr>`,
       `<m:eqArr><m:eqArrPr><m:baseJc/><m:rSpRule/><m:rSp/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:limLow><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:limLowPr><m:ctrlPr/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limUpp><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
+      `<m:limUpp><m:limUppPr/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -641,6 +685,32 @@ describe('document equations', () => {
         type: 'bar',
         position: 'top',
         children: [{ type: 'run', text: 'x' }],
+      },
+    ]);
+    expect(
+      supported
+        .slice(19, 23)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'lowerLimit',
+        base: [{ type: 'run', text: 'x' }],
+        limit: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'lowerLimit',
+        base: [{ type: 'run', text: 'x' }],
+        limit: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'upperLimit',
+        base: [{ type: 'run', text: 'x' }],
+        limit: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'upperLimit',
+        base: [{ type: 'run', text: 'x' }],
+        limit: [{ type: 'run', text: 'x' }],
       },
     ]);
     expect(
@@ -814,6 +884,24 @@ describe('document equations', () => {
       `<m:eqArr><m:e><m:r><m:t>${'&amp;'.repeat(4_097)}</m:t></m:r></m:e></m:eqArr>`,
       `<m:eqArr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:eqArr>`,
       `<m:eqArr><m:eqArrPr/><m:eqArrPr/><m:e>${run}</m:e></m:eqArr>`,
+      `<m:limLow><m:limLowPr><m:grow/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:e>${run}</m:e><m:limLowPr/><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:lim>${run}</m:lim><m:e>${run}</m:e></m:limLow>`,
+      `<m:limLow><m:limLowPr/><m:limLowPr/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:limLowPr><m:ctrlPr/><m:ctrlPr/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><v:limLowPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:limLowPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:e>${run}</m:e></m:limLow>`,
+      `<m:limLow><m:e/><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:e>${run}</m:e><m:lim/></m:limLow>`,
+      `<m:limLow><m:e>${run}</m:e><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow><m:e>${run}</m:e><m:lim>${run}</m:lim><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limLow m:extra="semantic"><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
+      `<m:limUpp><m:limLowPr/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
+      `<m:limUpp><m:lim>${run}</m:lim><m:e>${run}</m:e></m:limUpp>`,
+      `<m:limUpp><v:limUppPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
+      `<m:limUpp xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e>${run}</m:e><m:lim r:id="rIdUnsafe">${run}</m:lim></m:limUpp>`,
       '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
@@ -970,6 +1058,16 @@ function complexEquation(
         rows: [[run('&x+&&y=1')], [run('2&x+&&y=3')], []],
       },
       {
+        type: 'lowerLimit',
+        base: [run('lim')],
+        limit: [run('x→0')],
+      },
+      {
+        type: 'upperLimit',
+        base: [run('=')],
+        limit: [run('def')],
+      },
+      {
         type: 'matrix',
         baseAlignment: 'top',
         placeholdersHidden: false,
@@ -1020,9 +1118,15 @@ function borderBoxEquation(
             rows: [
               [
                 {
-                  type: 'bar',
-                  position: barPosition,
-                  children: [{ type: 'run', text }],
+                  type: 'lowerLimit',
+                  base: [
+                    {
+                      type: 'bar',
+                      position: barPosition,
+                      children: [{ type: 'run', text }],
+                    },
+                  ],
+                  limit: [{ type: 'run', text: 'i' }],
                 },
               ],
             ],
@@ -1059,9 +1163,15 @@ function boxEquation(
             rows: [
               [
                 {
-                  type: 'bar',
-                  position: barPosition,
-                  children: [{ type: 'run', text }],
+                  type: 'upperLimit',
+                  base: [
+                    {
+                      type: 'bar',
+                      position: barPosition,
+                      children: [{ type: 'run', text }],
+                    },
+                  ],
+                  limit: [{ type: 'run', text: 'j' }],
                 },
               ],
             ],
@@ -1249,6 +1359,26 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(rows[0]?.textContent).toBe('&x+&&y=1');
     expect(rows[2]?.childElementCount).toBe(0);
   }
+  const lowerLimits = descendants(document, 'limLow');
+  expect(lowerLimits).toHaveLength(2);
+  for (const lowerLimit of lowerLimits) {
+    expect(directChildren(lowerLimit).map((child) => child.localName)).toEqual([
+      'e',
+      'lim',
+    ]);
+    expect(directChildren(lowerLimit, 'e')[0]?.textContent).toBe('lim');
+    expect(directChildren(lowerLimit, 'lim')[0]?.textContent).toBe('x→0');
+  }
+  const upperLimits = descendants(document, 'limUpp');
+  expect(upperLimits).toHaveLength(2);
+  for (const upperLimit of upperLimits) {
+    expect(directChildren(upperLimit).map((child) => child.localName)).toEqual([
+      'e',
+      'lim',
+    ]);
+    expect(directChildren(upperLimit, 'e')[0]?.textContent).toBe('=');
+    expect(directChildren(upperLimit, 'lim')[0]?.textContent).toBe('def');
+  }
   const inline = descendants(document, 'oMath')[0];
   const componentStatuses = directChildren(inline).map((component) => {
     const equation = document.createElementNS(MATH_NAMESPACE, 'm:oMath');
@@ -1264,21 +1394,25 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       document: await xmlEntry(archive, 'word/footnotes.xml'),
       position: 'top',
       container: 'borderBox',
+      limit: 'limLow',
     },
     {
       document: await xmlEntry(archive, 'word/endnotes.xml'),
       position: 'bot',
       container: 'box',
+      limit: 'limUpp',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
       position: 'top',
       container: 'borderBox',
+      limit: 'limLow',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
       position: 'bot',
       container: 'box',
+      limit: 'limUpp',
     },
   ];
   for (const story of stories) {
@@ -1287,6 +1421,12 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       MATH_NAMESPACE,
     );
     expect(descendants(story.document, story.container)).toHaveLength(1);
+    const limit = descendants(story.document, story.limit)[0];
+    expect(limit).toBeDefined();
+    expect(directChildren(limit).map((child) => child.localName)).toEqual([
+      'e',
+      'lim',
+    ]);
     const equationArray = descendants(story.document, 'eqArr')[0];
     expect(equationArray).toBeDefined();
     const equationArrayProperties = directChildren(equationArray, 'eqArrPr')[0];
