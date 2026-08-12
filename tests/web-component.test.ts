@@ -1,6 +1,7 @@
 import { expect, test } from '@rstest/core';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import { Extension } from '@tiptap/core';
+import type { ReactElement } from 'react';
 import {
   createOfficeCollaborationSession,
   createPdfCollaborationContent,
@@ -13,6 +14,7 @@ import {
   type OfficeCollaborationPresence,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
+import type { PdfEvidenceRegion } from '../src/react';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
@@ -107,7 +109,53 @@ test('registers every custom element idempotently', async () => {
   expect(pdfViewer.loadSource).toBe(loadPdfSource);
   expect(pdfViewer.onCollaborationChange).toBe(onCollaborationChange);
 
+  const evidenceOverlay = {
+    coordinateBasis: 1_000_000 as const,
+    loadPage: async () => null,
+    renderProfileSha256: 'b'.repeat(64),
+    sourceSha256: 'a'.repeat(64),
+  };
+  pdfViewer.evidenceOverlay = evidenceOverlay;
+  pdfViewer.selectedEvidenceRegionId = 'region-1';
+  pdfViewer.worker = false;
+  expect(pdfViewer.evidenceOverlay).toBe(evidenceOverlay);
+  expect(pdfViewer.selectedEvidenceRegionId).toBe('region-1');
+  expect(pdfViewer.getAttribute('worker')).toBe('false');
+  expect(pdfViewer.worker).toBe(false);
+
+  const parent = document.createElement('div');
+  parent.append(pdfViewer);
+  pdfViewer.loadSource = async () =>
+    new Blob(['%PDF-1.7'], { type: 'application/pdf' });
+  let selectedRegion: PdfEvidenceRegion | undefined;
+  let changedPage: number | undefined;
+  parent.addEventListener('evidence-select', (event) => {
+    selectedRegion = (event as CustomEvent<PdfEvidenceRegion>).detail;
+  });
+  parent.addEventListener('page-change', (event) => {
+    changedPage = (event as CustomEvent<number>).detail;
+  });
+  const viewerNode = (
+    pdfViewer as unknown as {
+      editorNode(): ReactElement<{
+        onEvidenceRegionSelect?: (region: PdfEvidenceRegion) => void;
+        onPageChange?: (pageNumber: number) => void;
+      }>;
+    }
+  ).editorNode();
+  const region: PdfEvidenceRegion = {
+    bounds: { bottom: 20, left: 10, right: 30, top: 5 },
+    id: 'region-1',
+    sourceRegionIds: ['source-region-1'],
+    targetIds: ['node-1'],
+  };
+  viewerNode.props.onEvidenceRegionSelect?.(region);
+  viewerNode.props.onPageChange?.(3);
+  expect(selectedRegion).toBe(region);
+  expect(changedPage).toBe(3);
+
   element.remove();
+  parent.remove();
 });
 
 test('bridges PDF collaboration snapshots to its callback and custom event', () => {

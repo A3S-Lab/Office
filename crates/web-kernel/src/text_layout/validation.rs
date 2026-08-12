@@ -212,8 +212,7 @@ pub(super) fn validate_text_tab_layout(paragraph: &TextLayoutParagraph) -> Resul
     }
     let mut previous_position = 0.0;
     for (index, stop) in layout.stops.iter().enumerate() {
-        if !stop.position.is_finite()
-            || !(0.0 < stop.position && stop.position <= MAX_LINE_WIDTH)
+        if !(stop.position.is_finite() && 0.0 < stop.position && stop.position <= MAX_LINE_WIDTH)
             || stop.position <= previous_position
         {
             return Err(KernelError::invalid(
@@ -244,7 +243,7 @@ pub(super) fn validate_identifier(
 }
 
 fn validate_positive_extent(name: &str, value: f64, maximum: f64) -> Result<(), KernelError> {
-    if !value.is_finite() || !(0.0 < value && value <= maximum) {
+    if !(value.is_finite() && 0.0 < value && value <= maximum) {
         return Err(KernelError::invalid(
             "office.kernel.text_extent_invalid",
             format!("{name} must be a finite positive number no greater than {maximum}."),

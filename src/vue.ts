@@ -27,6 +27,8 @@ import type { OfficeTheme } from './office-surface';
 import {
   type DocumentLayoutFont,
   type OfficeFileAction,
+  type PdfEvidenceOverlay,
+  type PdfEvidenceRegion,
   DocumentEditor as ReactDocumentEditor,
   MarkdownEditor as ReactMarkdownEditor,
   PdfViewer as ReactPdfViewer,
@@ -270,6 +272,7 @@ export const PdfViewer = defineComponent({
   name: 'A3SPdfViewer',
   props: {
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    evidenceOverlay: Object as PropType<PdfEvidenceOverlay>,
     presence: Object as PropType<OfficeCollaborationPresence>,
     fileName: String,
     loadSource: {
@@ -278,27 +281,40 @@ export const PdfViewer = defineComponent({
     },
     onSave: Function as PropType<(pdf: Blob) => Promise<boolean>>,
     saveLabel: String,
+    selectedEvidenceRegionId: String,
     sourceKey: String,
     theme: themeProp,
     wasmUrl: String,
+    worker: {
+      default: undefined,
+      type: Boolean as PropType<boolean | undefined>,
+    },
   },
   emits: {
     collaborationChange: (_content: PdfCollaborationContent) => true,
+    evidenceRegionSelect: (_region: PdfEvidenceRegion) => true,
+    pageChange: (_pageNumber: number) => true,
   },
   setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactPdfViewer, {
         collaboration: props.collaboration,
+        evidenceOverlay: props.evidenceOverlay,
         presence: props.presence,
         fileName: props.fileName,
         loadSource: props.loadSource,
         onCollaborationChange: (content) =>
           emit('collaborationChange', content),
+        onEvidenceRegionSelect: (region) =>
+          emit('evidenceRegionSelect', region),
+        onPageChange: (pageNumber) => emit('pageChange', pageNumber),
         onSave: props.onSave,
         saveLabel: props.saveLabel,
+        selectedEvidenceRegionId: props.selectedEvidenceRegionId,
         sourceKey: props.sourceKey,
         theme: props.theme,
         wasmUrl: props.wasmUrl,
+        worker: props.worker,
       }),
     );
   },

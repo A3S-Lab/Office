@@ -27,6 +27,19 @@ import {
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 
+test('exposes PDF evidence and page events through the Vue adapter', () => {
+  const definition = PdfViewer as unknown as {
+    emits: Record<string, (...arguments_: never[]) => boolean>;
+    props: Record<string, unknown>;
+  };
+
+  expect(definition.props).toHaveProperty('evidenceOverlay');
+  expect(definition.props).toHaveProperty('selectedEvidenceRegionId');
+  expect(definition.props).toHaveProperty('worker');
+  expect(definition.emits).toHaveProperty('evidenceRegionSelect');
+  expect(definition.emits).toHaveProperty('pageChange');
+});
+
 test('mounts the Vue adapter and renders the React editor', async () => {
   const target = document.createElement('div');
   document.body.append(target);

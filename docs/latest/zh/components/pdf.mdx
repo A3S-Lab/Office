@@ -21,6 +21,7 @@ PDF 与其他编辑器不同，不使用受控内容对象。宿主通过明确�
 | `saveLabel` | `string` | 否 | `'Save'` | 保存按钮文字。 |
 | `sourceKey` | `string` | 否 | — | 数据版本标识；变化后会释放并重新加载数据。 |
 | `wasmUrl` | `string` | 否 | 内置 `pdfium.wasm` | PDFium WebAssembly 地址。 |
+| `worker` | `boolean` | 否 | `true` | 在 Web Worker 中运行 PDFium；宿主 CSP 无法允许 Blob Worker 时可设为 `false`。 |
 | `theme` | `'light' \| 'dark' \| 'system'` | 否 | `'system'` | 配色模式。 |
 
 ```tsx

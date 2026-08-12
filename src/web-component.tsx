@@ -20,6 +20,8 @@ import {
   type DocumentLayoutFont,
   MarkdownEditor,
   type OfficeFileAction,
+  type PdfEvidenceOverlay,
+  type PdfEvidenceRegion,
   PdfViewer,
   PresentationEditor,
   SpreadsheetEditor,
@@ -395,6 +397,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
 
 export class A3SPdfViewerElement extends A3SOfficeElement {
   #collaboration: OfficeCollaborationSession | undefined;
+  #evidenceOverlay: PdfEvidenceOverlay | undefined;
   #loadSource: (() => Promise<Blob>) | undefined;
   #onCollaborationChange:
     | ((content: PdfCollaborationContent) => void)
@@ -402,7 +405,24 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
   #onSave: ((pdf: Blob) => Promise<boolean>) | undefined;
 
   static get observedAttributes() {
-    return ['file-name', 'save-label', 'source-key', 'theme', 'wasm-url'];
+    return [
+      'file-name',
+      'save-label',
+      'selected-evidence-region-id',
+      'source-key',
+      'theme',
+      'wasm-url',
+      'worker',
+    ];
+  }
+
+  get evidenceOverlay(): PdfEvidenceOverlay | undefined {
+    return this.#evidenceOverlay;
+  }
+
+  set evidenceOverlay(value: PdfEvidenceOverlay | undefined) {
+    this.#evidenceOverlay = value;
+    this.requestRender();
   }
 
   get collaboration(): OfficeCollaborationSession | undefined {
@@ -445,6 +465,16 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
     this.requestRender();
   }
 
+  get selectedEvidenceRegionId(): string | undefined {
+    return this.getAttribute('selected-evidence-region-id') ?? undefined;
+  }
+
+  set selectedEvidenceRegionId(value: string | undefined) {
+    if (value === undefined)
+      this.removeAttribute('selected-evidence-region-id');
+    else this.setAttribute('selected-evidence-region-id', value);
+  }
+
   get theme(): OfficeTheme {
     return themeFrom(this);
   }
@@ -453,11 +483,20 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
     this.setAttribute('theme', value);
   }
 
+  get worker(): boolean {
+    return this.getAttribute('worker') !== 'false';
+  }
+
+  set worker(value: boolean) {
+    this.setAttribute('worker', String(value));
+  }
+
   protected editorNode(): ReactNode {
     if (!this.loadSource)
       return missingContent('PDF source loader', this.theme);
     return createElement(PdfViewer, {
       collaboration: this.collaboration,
+      evidenceOverlay: this.evidenceOverlay,
       presence: this.presence,
       fileName: this.getAttribute('file-name') ?? undefined,
       loadSource: this.loadSource,
@@ -465,11 +504,17 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
         this.onCollaborationChange?.(content);
         dispatchDetail(this, 'collaboration-change', content);
       },
+      onEvidenceRegionSelect: (region: PdfEvidenceRegion) =>
+        dispatchDetail(this, 'evidence-select', region),
+      onPageChange: (pageNumber) =>
+        dispatchDetail(this, 'page-change', pageNumber),
       onSave: this.onSave,
       saveLabel: this.getAttribute('save-label') ?? undefined,
+      selectedEvidenceRegionId: this.selectedEvidenceRegionId,
       sourceKey: this.getAttribute('source-key') ?? undefined,
       theme: this.theme,
       wasmUrl: this.getAttribute('wasm-url') ?? undefined,
+      worker: this.worker,
     });
   }
 }

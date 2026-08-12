@@ -69,6 +69,11 @@ but become safe-area-aware bottom action sheets below 640 px. Their actions are
 at least 44 px tall, long menus scroll inside a bounded surface, Escape returns
 focus to the editing target, and deterministic Spreadsheet evidence captures
 the phone layout, accessibility tree, console, and page errors.
+Shared Office select menus now keep their compact desktop density while using
+44 px option rows and a taller viewport-bounded scroll region on phones. The
+deterministic Word font workflow traverses the complete grouped font list with
+End, applies the final option while returning focus to the document, and proves
+that Escape from a reopened picker restores the exact combobox trigger.
 
 ## Priority 1: Word-Compatible Document Editing
 

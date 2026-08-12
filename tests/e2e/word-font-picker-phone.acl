@@ -1,0 +1,90 @@
+suite "office-word-font-picker-phone" {
+    version = 1
+
+    scenario "choose-word-font-from-phone" {
+        name = "Choose and dismiss a Word font from a phone viewport"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 700
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("项目方案", true)
+        }
+
+        wait "document-loaded" {
+            text = "负责人：项目团队"
+        }
+
+        click "open-font-picker" {
+            target = role("combobox", "字体")
+        }
+
+        expect "font-picker-is-visible" {
+            visible = css(".work-office-select-menu[role='listbox'][aria-label='字体']")
+        }
+
+        screenshot "font-picker-phone" {
+            path = "screenshots/word-font-picker-phone.png"
+        }
+
+        accessibility "font-picker-semantics" {
+            path = "evidence/font-picker-semantics.json"
+            interactive = true
+        }
+
+        press "focus-last-font" {
+            key = "End"
+        }
+
+        expect "last-font-is-focused" {
+            visible = css(".work-office-select-menu [role='option'][aria-label='Monaco']:focus")
+        }
+
+        press "choose-last-font" {
+            key = "Enter"
+        }
+
+        expect "selected-font-is-visible" {
+            visible = css("button[role='combobox'][aria-label='字体']:has(span[style*='Monaco'])")
+        }
+
+        expect "editor-focus-is-restored" {
+            visible = css(".work-document-editable .ProseMirror:focus")
+        }
+
+        click "reopen-font-picker" {
+            target = role("combobox", "字体")
+        }
+
+        press "dismiss-font-picker" {
+            key = "Escape"
+        }
+
+        expect "font-trigger-focus-is-restored" {
+            visible = css("button[role='combobox'][aria-label='字体'][aria-expanded='false']:focus")
+        }
+
+        console "browser-console" {
+            path = "diagnostics/console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+}

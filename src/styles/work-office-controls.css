@@ -524,6 +524,23 @@
 }
 
 @media (max-width: 520px) {
+  .work-office-select-menu {
+    max-height: min(420px, calc(100dvh - 32px));
+    overscroll-behavior: contain;
+  }
+
+  .work-office-select-menu > button {
+    min-height: 44px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+  }
+
+  .work-office-select-group-label {
+    padding: 8px 10px 5px;
+    font-size: 9px;
+  }
+
   .work-office-color-menu {
     width: min(304px, calc(100vw - 16px));
     max-width: calc(100vw - 16px);

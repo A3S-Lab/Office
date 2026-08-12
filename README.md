@@ -101,6 +101,8 @@ The images below are committed visual-regression baselines from the real
   unexpected blocking modal or steal focus from the workspace.
   Shared color palettes expand to an eight-column touch layout on phones while
   preserving spatial arrow-key navigation.
+  Shared Office selects use 44 px phone option rows and bounded internal
+  scrolling while retaining keyboard selection and exact focus restoration.
 - **Editor-scoped zoom** — Status controls and Ctrl/Cmd + mouse-wheel gestures
   share each surface's bounded zoom model without changing the host browser's
   page scale.

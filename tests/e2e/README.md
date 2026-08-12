@@ -137,6 +137,9 @@ moving search focus, and restores the prior persistent sidebar on return.
 The collaboration roster workflow projects human and agent Awareness state in
 edit and preview chrome, keeps the phone popover in view, and restores the
 exact trigger after Escape.
+The phone Word font workflow captures the grouped picker, traverses the full
+list with End, applies the final font with document-focus recovery, and checks
+Escape-to-combobox restoration together with clean browser diagnostics.
 Each suite owns only its browser surface. Keep the preview process under the
 terminal that started it and stop that process separately when testing is
 complete.

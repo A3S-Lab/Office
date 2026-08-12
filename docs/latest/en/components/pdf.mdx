@@ -26,6 +26,7 @@ putting the source PDF in the shared document.
 | `saveLabel` | `string` | No | `'Save'` | Save command label. |
 | `sourceKey` | `string` | No | — | Source version key. A change releases and reloads the source. |
 | `wasmUrl` | `string` | No | packaged `pdfium.wasm` | PDFium WebAssembly URL. |
+| `worker` | `boolean` | No | `true` | Runs PDFium in a Web Worker. Set to `false` when a host CSP cannot permit Blob workers. |
 | `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
 
 ```tsx

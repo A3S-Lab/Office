@@ -68,6 +68,41 @@ test('Word formatting controls apply computed styles and preview their fonts', a
   expect(pageErrors).toEqual([]);
 });
 
+test('Phone Word font options remain touch-sized and keyboard reachable', async ({
+  page,
+}) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto('/');
+  await openDocumentFixture(page);
+  await waitForDocumentFixture(page);
+
+  const trigger = page.getByRole('combobox', { name: '字体' });
+  await trigger.click();
+  const fontMenu = page.getByRole('listbox', { name: '字体' });
+  await expect(fontMenu).toBeVisible();
+  await expectWithinViewport(fontMenu);
+
+  const optionHeights = await fontMenu
+    .getByRole('option')
+    .evaluateAll((options) =>
+      options.map((option) => option.getBoundingClientRect().height),
+    );
+  expect(Math.min(...optionHeights)).toBeGreaterThanOrEqual(44);
+  await expect(
+    fontMenu.getByRole('option', { name: '默认字体' }),
+  ).toBeFocused();
+
+  await page.keyboard.press('End');
+  await expect(fontMenu.getByRole('option', { name: 'Monaco' })).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await expect(fontMenu).toBeHidden();
+  await expect(trigger).toBeFocused();
+  expect(pageErrors).toEqual([]);
+});
+
 test('Word keeps browser-synthesized bold text on deterministic layout', async ({
   page,
 }) => {

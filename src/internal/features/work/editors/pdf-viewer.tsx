@@ -27,6 +27,11 @@ import { createPdfEditorExtensions } from './pdf-editor-extensions';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
+import {
+  PdfEvidenceOverlayLayer,
+  type PdfEvidenceOverlay,
+  type PdfEvidenceRegion,
+} from './pdf-evidence-overlay';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
 import { type PdfSaveState, PdfToolbar } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
@@ -54,24 +59,34 @@ export const a3sPdfUiSchema: UISchema = {
 
 export interface PdfViewerProps {
   collaboration?: WorkOfficeCollaborationSession;
+  evidenceOverlay?: PdfEvidenceOverlay;
   fileName?: string;
   loadSource: () => Promise<Blob>;
   onCollaborationChange?: (content: WorkPdfCollaborationContent) => void;
+  onEvidenceRegionSelect?: (region: PdfEvidenceRegion) => void;
+  onPageChange?: (pageNumber: number) => void;
   onSave?: (pdf: Blob) => Promise<boolean>;
   saveLabel?: string;
+  selectedEvidenceRegionId?: string;
   sourceKey?: string;
   wasmUrl?: string;
+  worker?: boolean;
 }
 
 export function PdfViewer({
   collaboration,
+  evidenceOverlay,
   fileName = 'document.pdf',
   loadSource,
   onCollaborationChange,
+  onEvidenceRegionSelect,
+  onPageChange,
   onSave,
   saveLabel = '保存',
+  selectedEvidenceRegionId,
   sourceKey,
   wasmUrl,
+  worker = true,
 }: PdfViewerProps) {
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -232,6 +247,12 @@ export function PdfViewer({
     collaboration.document.on('update', handleUpdate);
     return () => collaboration.document.off('update', handleUpdate);
   }, [collaboration, onCollaborationChange]);
+
+  useEffect(() => {
+    if (controller.state.currentPage > 0) {
+      onPageChange?.(controller.state.currentPage);
+    }
+  }, [controller.state.currentPage, onPageChange]);
 
   useEffect(() => {
     if (!sourceUrl || viewerReady || loadError) return;
@@ -424,6 +445,7 @@ export function PdfViewer({
             style={{ width: '100%', height: '100%' }}
             config={{
               src: sourceUrl,
+              worker,
               // EmbedPDF creates a Blob worker, so a root-relative URL has no
               // usable base inside WorkerGlobalScope. Keep this absolute.
               wasmUrl:
@@ -460,6 +482,16 @@ export function PdfViewer({
           {viewerReady && controller.state.currentPage > 0 && (
             <PdfCollaborationPresenceLayer
               pageIndex={controller.state.currentPage - 1}
+            />
+          )}
+          {evidenceOverlay && registry && viewerReady && (
+            <PdfEvidenceOverlayLayer
+              currentPage={controller.state.currentPage}
+              evidenceOverlay={evidenceOverlay}
+              onEvidenceRegionSelect={onEvidenceRegionSelect}
+              registry={registry}
+              selectedEvidenceRegionId={selectedEvidenceRegionId}
+              sourceKey={sourceKey}
             />
           )}
           {!viewerReady && (
