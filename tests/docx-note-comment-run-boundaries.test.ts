@@ -65,7 +65,7 @@ describe('DOCX note and comment run boundaries', () => {
     ).toHaveLength(1);
   });
 
-  test('does not reconnect relationship-bound or wrapped note runs', async () => {
+  test('does not reconnect a note run behind an unresolved hyperlink', async () => {
     const content = noteContent('<p>Linked</p>');
     const seed = await createDocxBlob(content);
     const source = await JSZip.loadAsync(await seed.arrayBuffer());

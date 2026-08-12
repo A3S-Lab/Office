@@ -60,6 +60,16 @@ All notable changes to A3S Office will be documented in this file.
   regenerated semantics remain authoritative, while edits, duplicate
   paragraphs or properties, wrapped or mixed semantic content, relationship
   references, and ambiguous mappings fail closed.
+- Preserved supported hyperlink wrappers and their stable runs inside
+  text-stable footnotes, endnotes, comments, and replies. Generated note links
+  remain authoritative, while unchanged plain-text comments recover safe
+  HTTP(S), `mailto`, or internal-anchor links, eligible tooltips, passive
+  wrapper metadata, and relationship-free formatting. External relationships
+  are validated against the owning part, deduplicated or assigned a
+  collision-free ID, and rewritten in final XML. Text edits, missing or
+  duplicate relationships, wrong types or target modes, relative or unsafe
+  targets, combined external-plus-anchor destinations, namespace spoofing,
+  unsupported wrappers, and ambiguous spans fail closed.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

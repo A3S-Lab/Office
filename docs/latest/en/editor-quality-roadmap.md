@@ -139,10 +139,17 @@ reaction/people sidecars fail closed. Text-stable direct paragraphs and runs
 inside uniquely matched notes, comments, and replies now retain eligible
 passive extensions on paragraph, run, and run-property scopes. Safe unmodeled
 note properties survive, while unchanged plain-text comments recover
-relationship-free source run segmentation and formatting. Generated supported
-formatting remains authoritative; edits, duplicate text or properties,
-wrappers, mixed math or drawing content, relationship references, tables, and
-content controls remain explicit fail-closed or normalization boundaries.
+relationship-free source run segmentation and formatting. Stable hyperlink
+wrappers retain safe tooltips, passive metadata, and eligible run formatting.
+Generated note destinations remain authoritative; unchanged comments and
+replies recover validated HTTP(S), `mailto`, or internal-anchor destinations,
+and external relationship IDs are deduplicated or rewritten after collisions.
+Generated supported formatting remains authoritative; edits, duplicate text or
+properties, missing or malformed relationships, wrong target types or modes,
+unsafe or relative targets, combined external-plus-anchor destinations,
+namespace spoofing, unsupported wrappers, mixed math or drawing content,
+tables, and content controls remain explicit fail-closed or normalization
+boundaries.
 
 Exit evidence:
 

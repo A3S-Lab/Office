@@ -515,10 +515,16 @@ fail closed. Within uniquely matched note, comment, and reply records,
 text-stable direct paragraphs and runs retain eligible passive extensions on
 `w:p`, `w:r`, and `w:rPr`. Safe unmodeled note properties also survive, while
 unchanged plain-text comments recover relationship-free source run boundaries
-and formatting. Generated supported formatting wins; text edits, duplicate
-paragraphs or run properties, hyperlinks and other wrappers, mixed math or
-drawing semantics, relationship references, tables, and content controls fail
-closed or normalize instead of being attached to the wrong text.
+and formatting. Stable `w:hyperlink` wrappers now retain safe tooltips and
+passive metadata. Generated note destinations remain authoritative; unchanged
+comments and replies recover validated HTTP(S), `mailto`, or internal-anchor
+destinations, with external relationship IDs deduplicated or rewritten after
+collisions. Generated supported formatting wins; text edits, duplicate
+paragraphs or run properties, missing or malformed relationships, wrong target
+types or modes, unsafe or relative targets, combined external-plus-anchor
+destinations, namespace spoofing, unsupported wrappers, mixed math or drawing
+semantics, tables, and content controls fail closed or normalize instead of
+being attached to the wrong text.
 Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate
