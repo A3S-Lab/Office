@@ -207,6 +207,44 @@ export interface WorkDocumentEquationWordColor {
   shade?: string;
 }
 
+export type WorkDocumentEquationWordEffectSchemeColor =
+  | Exclude<WorkDocumentEquationThemeColor, 'none'>
+  | 'placeholder';
+
+export type WorkDocumentEquationWordColorTransformType =
+  | 'tint'
+  | 'shade'
+  | 'alpha'
+  | 'hueMod'
+  | 'saturation'
+  | 'saturationOffset'
+  | 'saturationModulation'
+  | 'luminance'
+  | 'luminanceOffset'
+  | 'luminanceModulation';
+
+export interface WorkDocumentEquationWordColorTransform {
+  type: WorkDocumentEquationWordColorTransformType;
+  value: number;
+}
+
+export type WorkDocumentEquationWordEffectColor =
+  | {
+      type: 'rgb';
+      value: string;
+      transforms?: WorkDocumentEquationWordColorTransform[];
+    }
+  | {
+      type: 'scheme';
+      value: WorkDocumentEquationWordEffectSchemeColor;
+      transforms?: WorkDocumentEquationWordColorTransform[];
+    };
+
+export interface WorkDocumentEquationWordGlow {
+  radiusEmus?: number;
+  color: WorkDocumentEquationWordEffectColor;
+}
+
 export interface WorkDocumentEquationWordUnderline {
   style: WorkDocumentEquationUnderlineStyle;
   color?: WorkDocumentEquationWordColor;
@@ -303,6 +341,7 @@ export interface WorkDocumentEquationWordRunProperties {
   languages?: WorkDocumentEquationWordLanguages;
   eastAsianLayout?: WorkDocumentEquationWordEastAsianLayout;
   paragraphMarkAlwaysHidden?: boolean;
+  glow?: WorkDocumentEquationWordGlow;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -669,6 +708,45 @@ const THEME_COLORS = new Set<WorkDocumentEquationThemeColor>([
   'background2',
   'text2',
 ]);
+const WORD_EFFECT_SCHEME_COLORS =
+  new Set<WorkDocumentEquationWordEffectSchemeColor>([
+    'dark1',
+    'light1',
+    'dark2',
+    'light2',
+    'accent1',
+    'accent2',
+    'accent3',
+    'accent4',
+    'accent5',
+    'accent6',
+    'hyperlink',
+    'followedHyperlink',
+    'background1',
+    'text1',
+    'background2',
+    'text2',
+    'placeholder',
+  ]);
+const WORD_COLOR_TRANSFORM_TYPES =
+  new Set<WorkDocumentEquationWordColorTransformType>([
+    'tint',
+    'shade',
+    'alpha',
+    'hueMod',
+    'saturation',
+    'saturationOffset',
+    'saturationModulation',
+    'luminance',
+    'luminanceOffset',
+    'luminanceModulation',
+  ]);
+const WORD_FIXED_COLOR_TRANSFORM_TYPES =
+  new Set<WorkDocumentEquationWordColorTransformType>([
+    'tint',
+    'shade',
+    'alpha',
+  ]);
 const WORD_HIGHLIGHT_COLORS = new Set<WorkDocumentEquationWordHighlight>([
   'black',
   'blue',
@@ -841,6 +919,11 @@ const MIN_EQUATION_WORD_FIT_TEXT_ID = -2_147_483_648;
 const MAX_EQUATION_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
 const MAX_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
+const MAX_EQUATION_WORD_GLOW_RADIUS_EMUS = 2_147_483_647;
+const MAX_EQUATION_WORD_COLOR_TRANSFORMS = 64;
+const MIN_EQUATION_WORD_COLOR_PERCENTAGE = -2_147_483_648;
+const MAX_EQUATION_WORD_COLOR_PERCENTAGE = 2_147_483_647;
+const MAX_EQUATION_WORD_FIXED_COLOR_PERCENTAGE = 100_000;
 const MIN_EQUATION_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_EQUATION_POSITION_HALF_POINTS = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
@@ -901,6 +984,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'languages',
   'eastAsianLayout',
   'paragraphMarkAlwaysHidden',
+  'glow',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -933,6 +1017,9 @@ const WORD_EAST_ASIAN_LAYOUT_KEYS = new Set([
   'vertical',
   'verticalCompress',
 ]);
+const WORD_GLOW_KEYS = new Set(['radiusEmus', 'color']);
+const WORD_EFFECT_COLOR_KEYS = new Set(['type', 'value', 'transforms']);
+const WORD_COLOR_TRANSFORM_KEYS = new Set(['type', 'value']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
@@ -2947,6 +3034,10 @@ function normalizeEquationWordRunProperties(
     source.eastAsianLayout === undefined
       ? undefined
       : normalizeEquationWordEastAsianLayout(source.eastAsianLayout);
+  const glow =
+    source.glow === undefined
+      ? undefined
+      : normalizeEquationWordGlow(source.glow);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -2998,6 +3089,7 @@ function normalizeEquationWordRunProperties(
     emphasisMark === null ||
     languages === null ||
     eastAsianLayout === null ||
+    glow === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3136,6 +3228,7 @@ function normalizeEquationWordRunProperties(
             source.paragraphMarkAlwaysHidden as boolean,
         }
       : {}),
+    ...(glow ? { glow } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -3430,6 +3523,101 @@ function normalizeEquationWordEastAsianLayout(
       : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationWordGlow(
+  source: unknown,
+): WorkDocumentEquationWordGlow | null {
+  if (!isRecordWithKeys(source, WORD_GLOW_KEYS)) return null;
+  const radiusEmus =
+    source.radiusEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.radiusEmus,
+          0,
+          MAX_EQUATION_WORD_GLOW_RADIUS_EMUS,
+        );
+  const color = normalizeEquationWordEffectColor(source.color);
+  if (radiusEmus === null || color === null) return null;
+  return {
+    ...(radiusEmus !== undefined
+      ? { radiusEmus: Object.is(radiusEmus, -0) ? 0 : radiusEmus }
+      : {}),
+    color,
+  };
+}
+
+function normalizeEquationWordEffectColor(
+  source: unknown,
+): WorkDocumentEquationWordEffectColor | null {
+  if (
+    !isRecordWithKeys(source, WORD_EFFECT_COLOR_KEYS) ||
+    (source.type !== 'rgb' && source.type !== 'scheme')
+  ) {
+    return null;
+  }
+  const transforms = normalizeEquationWordColorTransforms(source.transforms);
+  if (transforms === null) return null;
+  if (source.type === 'rgb') {
+    if (
+      typeof source.value !== 'string' ||
+      !/^#[0-9a-f]{6}$/iu.test(source.value)
+    ) {
+      return null;
+    }
+    return {
+      type: 'rgb',
+      value: source.value.toLowerCase(),
+      ...(transforms?.length ? { transforms } : {}),
+    };
+  }
+  if (
+    !WORD_EFFECT_SCHEME_COLORS.has(
+      source.value as WorkDocumentEquationWordEffectSchemeColor,
+    )
+  ) {
+    return null;
+  }
+  return {
+    type: 'scheme',
+    value: source.value as WorkDocumentEquationWordEffectSchemeColor,
+    ...(transforms?.length ? { transforms } : {}),
+  };
+}
+
+function normalizeEquationWordColorTransforms(
+  source: unknown,
+): WorkDocumentEquationWordColorTransform[] | null | undefined {
+  if (source === undefined) return undefined;
+  if (
+    !Array.isArray(source) ||
+    source.length > MAX_EQUATION_WORD_COLOR_TRANSFORMS
+  ) {
+    return null;
+  }
+  const normalized: WorkDocumentEquationWordColorTransform[] = [];
+  for (const transform of source) {
+    if (!isRecordWithKeys(transform, WORD_COLOR_TRANSFORM_KEYS)) return null;
+    const type = transform.type as WorkDocumentEquationWordColorTransformType;
+    if (
+      !WORD_COLOR_TRANSFORM_TYPES.has(type) ||
+      !Number.isInteger(transform.value)
+    ) {
+      return null;
+    }
+    const minimum = WORD_FIXED_COLOR_TRANSFORM_TYPES.has(type)
+      ? 0
+      : type === 'hueMod'
+        ? 0
+        : MIN_EQUATION_WORD_COLOR_PERCENTAGE;
+    const maximum = WORD_FIXED_COLOR_TRANSFORM_TYPES.has(type)
+      ? MAX_EQUATION_WORD_FIXED_COLOR_PERCENTAGE
+      : MAX_EQUATION_WORD_COLOR_PERCENTAGE;
+    const value = transform.value as number;
+    if (value < minimum || value > maximum) return null;
+    normalized.push({ type, value: Object.is(value, -0) ? 0 : value });
+  }
+  return normalized.length ? normalized : undefined;
 }
 
 function normalizeEquationFontSize(source: unknown): number | null {

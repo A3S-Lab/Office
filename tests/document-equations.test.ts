@@ -19,9 +19,11 @@ import {
   inspectDocxEquation,
   isSupportedDocxEquationPlacement,
 } from '../src/internal/features/work/work-docx-equation-import';
+import { patchDocxEquations } from '../src/internal/features/work/work-docx-equation-export';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
+  xmlNamespaceUri,
 } from '../src/internal/features/work/work-docx-settings-xml';
 import {
   descendants,
@@ -38,11 +40,14 @@ const WORD_DATE_UTC_NAMESPACE =
 const WORD_2010_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2010/wordml';
 const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63500"><w14:srgbClr w14:val="FFFF00"/></w14:glow>`;
+const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:srgbClr w14:val="000000"/></w14:shadow>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
 const RELATIONSHIP_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const MARKUP_COMPATIBILITY_NAMESPACE =
+  'http://schemas.openxmlformats.org/markup-compatibility/2006';
 const XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/';
 const VENDOR_NAMESPACE = 'urn:a3s:test:spoofed-equation';
 
@@ -2064,9 +2069,10 @@ describe('document equations', () => {
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
       '<w:eastAsianLayout w:id="9" w:combine="1" w:combineBrackets="curly" w:vert="0" w:vertCompress="1"/>',
       '<w:specVanish w:val="0"/>',
+      '<w14:glow w14:rad="63500"><w14:schemeClr w14:val="accent4"><w14:alpha w14:val="50000"/></w14:schemeClr></w14:glow>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
-      `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
+      `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
     for (const [mathNamespace, wordNamespace] of [
       [MATH_NAMESPACE, WORD_NAMESPACE],
       [STRICT_MATH_NAMESPACE, STRICT_WORD_NAMESPACE],
@@ -2172,7 +2178,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2206,7 +2212,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4422,7 +4428,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_GLOW),
+      wordRun(WORD_2010_SHADOW),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4482,6 +4488,488 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunSpecVanish(await createArtifactBlob(imported));
+  });
+
+  test('preserves bounded Office 2010 text glow effects as native OMML metadata', async () => {
+    const transforms = [
+      { type: 'tint', value: 0 },
+      { type: 'shade', value: 100_000 },
+      { type: 'alpha', value: 50_000 },
+      { type: 'hueMod', value: 200_000 },
+      { type: 'saturation', value: -25_000 },
+      { type: 'saturationOffset', value: 25_000 },
+      { type: 'saturationModulation', value: 50_000 },
+      { type: 'luminance', value: 40_000 },
+      { type: 'luminanceOffset', value: -10_000 },
+      { type: 'luminanceModulation', value: 75_000 },
+      { type: 'alpha', value: 100_000 },
+    ];
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'rgb-glow',
+          wordRunProperties: {
+            glow: {
+              radiusEmus: 63_500,
+              color: { type: 'rgb', value: '#a1b2c3', transforms },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'scheme-glow',
+          wordRunProperties: {
+            glow: {
+              radiusEmus: 0,
+              color: { type: 'scheme', value: 'placeholder' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'default-radius-glow',
+          wordRunProperties: {
+            glow: { color: { type: 'scheme', value: 'accent2' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'ordered-glow',
+          wordRunProperties: {
+            shadow: false,
+            paragraphMarkAlwaysHidden: false,
+            glow: { color: { type: 'rgb', value: '#112233' } },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            glow: {
+              radiusEmus: 12_700,
+              color: { type: 'scheme', value: 'hyperlink' },
+            },
+          },
+          children: [{ type: 'run', text: 'operator-glow' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithGlow = (glow: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties: { glow } }],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation(
+        equationWithGlow({
+          color: { type: 'rgb', value: '#ABCDEF', transforms: [] },
+        }),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        glow: { color: { type: 'rgb', value: '#abcdef' } },
+      },
+    });
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { glow: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    const maximumTransforms = [
+      { type: 'hueMod', value: 2_147_483_647 },
+      { type: 'saturation', value: -2_147_483_648 },
+      ...Array.from({ length: 61 }, () => ({
+        type: 'alpha' as const,
+        value: 100_000,
+      })),
+      { type: 'luminanceModulation', value: 2_147_483_647 },
+    ];
+    expect(
+      normalizeDocumentEquation(
+        equationWithGlow({
+          radiusEmus: 2_147_483_647,
+          color: {
+            type: 'rgb',
+            value: '#abcdef',
+            transforms: maximumTransforms,
+          },
+        }),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        glow: {
+          radiusEmus: 2_147_483_647,
+          color: {
+            type: 'rgb',
+            value: '#abcdef',
+            transforms: maximumTransforms,
+          },
+        },
+      },
+    });
+    const validRgb = { color: { type: 'rgb', value: '#abcdef' } };
+    const invalidGlows = [
+      null,
+      false,
+      {},
+      { radiusEmus: 1 },
+      { ...validRgb, extra: true },
+      { ...validRgb, radiusEmus: -1 },
+      { ...validRgb, radiusEmus: 1.5 },
+      { ...validRgb, radiusEmus: 2_147_483_648 },
+      { color: null },
+      { color: {} },
+      { color: { type: 'rgb' } },
+      { color: { type: 'rgb', value: '#abc' } },
+      { color: { type: 'rgb', value: 'ABCDEF' } },
+      { color: { type: 'rgb', value: '#abcdef', extra: true } },
+      { color: { type: 'scheme', value: 'none' } },
+      { color: { type: 'scheme', value: 'bg1' } },
+      { color: { type: 'unknown', value: '#abcdef' } },
+      { color: { type: 'rgb', value: '#abcdef', transforms: null } },
+      {
+        color: {
+          type: 'rgb',
+          value: '#abcdef',
+          transforms: Array.from({ length: 65 }, () => ({
+            type: 'alpha',
+            value: 50_000,
+          })),
+        },
+      },
+      ...[
+        null,
+        {},
+        { type: 'unknown', value: 1 },
+        { type: 'tint', value: -1 },
+        { type: 'shade', value: 100_001 },
+        { type: 'alpha', value: 1.5 },
+        { type: 'alpha', value: '50000' },
+        { type: 'hueMod', value: -1 },
+        { type: 'hueMod', value: 2_147_483_648 },
+        { type: 'saturation', value: -2_147_483_649 },
+        { type: 'luminanceModulation', value: 2_147_483_648 },
+        { type: 'tint', value: 50_000, extra: true },
+      ].map((transform) => ({
+        color: {
+          type: 'rgb',
+          value: '#abcdef',
+          transforms: [transform],
+        },
+      })),
+    ];
+    expect(
+      invalidGlows.map((glow) =>
+        normalizeDocumentEquation(equationWithGlow(glow)),
+      ),
+    ).toEqual(invalidGlows.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const transformedRgb =
+      '<w14:glow w14:rad=" +63500 "><w14:srgbClr w14:val="a1B2c3">' +
+      '<w14:tint w14:val="0"/><w14:shade w14:val="100000"/>' +
+      '<w14:alpha w14:val="50000"/><w14:hueMod w14:val="200000"/>' +
+      '<w14:sat w14:val="-25000"/><w14:satOff w14:val="+25000"/>' +
+      '<w14:satMod w14:val="50000"/><w14:lum w14:val="40000"/>' +
+      '<w14:lumOff w14:val="-10000"/><w14:lumMod w14:val="75000"/>' +
+      '<w14:alpha w14:val="100000"/></w14:srgbClr></w14:glow>';
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(transformedRgb, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          glow: {
+            radiusEmus: 63_500,
+            color: { type: 'rgb', value: '#a1b2c3', transforms },
+          },
+        },
+      });
+    }
+    expect(inspectEquationModel(wordRun(WORD_2010_GLOW))?.children[0]).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        glow: {
+          radiusEmus: 63_500,
+          color: { type: 'rgb', value: '#ffff00' },
+        },
+      },
+    });
+    const maximumTransformMarkup =
+      '<w14:glow w14:rad="2147483647"><w14:srgbClr w14:val="ABCDEF">' +
+      '<w14:hueMod w14:val="2147483647"/><w14:sat w14:val="-2147483648"/>' +
+      Array.from({ length: 61 }, () => '<w14:alpha w14:val="100000"/>').join(
+        '',
+      ) +
+      '<w14:lumMod w14:val="2147483647"/></w14:srgbClr></w14:glow>';
+    expect(
+      inspectEquationModel(wordRun(maximumTransformMarkup))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        glow: {
+          radiusEmus: 2_147_483_647,
+          color: {
+            type: 'rgb',
+            value: '#abcdef',
+            transforms: maximumTransforms,
+          },
+        },
+      },
+    });
+    const schemeColors = [
+      ['bg1', 'background1'],
+      ['tx1', 'text1'],
+      ['bg2', 'background2'],
+      ['tx2', 'text2'],
+      ['accent1', 'accent1'],
+      ['accent2', 'accent2'],
+      ['accent3', 'accent3'],
+      ['accent4', 'accent4'],
+      ['accent5', 'accent5'],
+      ['accent6', 'accent6'],
+      ['hlink', 'hyperlink'],
+      ['folHlink', 'followedHyperlink'],
+      ['dk1', 'dark1'],
+      ['lt1', 'light1'],
+      ['dk2', 'dark2'],
+      ['lt2', 'light2'],
+      ['phClr', 'placeholder'],
+    ] as const;
+    for (const [source, value] of schemeColors) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w14:glow w14:rad="0"><w14:schemeClr w14:val="${source}"/></w14:glow>`,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          glow: { radiusEmus: 0, color: { type: 'scheme', value } },
+        },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:shadow w:val="0"/><w:specVanish w:val="0"/><w14:glow><w14:srgbClr w14:val="112233"/></w14:glow>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        shadow: false,
+        paragraphMarkAlwaysHidden: false,
+        glow: { color: { type: 'rgb', value: '#112233' } },
+      },
+    });
+
+    const validColor = '<w14:srgbClr w14:val="A1B2C3"/>';
+    const invalidMarkup = [
+      wordRun('<w14:glow/>'),
+      wordRun(
+        `<w14:glow>${validColor}<w14:schemeClr w14:val="accent1"/></w14:glow>`,
+      ),
+      wordRun(
+        `<w14:glow>${validColor}</w14:glow><w14:glow>${validColor}</w14:glow>`,
+      ),
+      wordRun(`<w14:glow>${validColor}</w14:glow><w:specVanish/>`),
+      wordRun(`<w14:glow>${validColor}</w14:glow><w:lang w:val="en-US"/>`),
+      wordRun(`<w:glow>${validColor}</w:glow>`),
+      wordRun(`<v:glow xmlns:v="${VENDOR_NAMESPACE}">${validColor}</v:glow>`),
+      wordRun(
+        `<w14:glow xmlns:w14="${VENDOR_NAMESPACE}"><w14:srgbClr w14:val="A1B2C3"/></w14:glow>`,
+      ),
+      wordRun(`<w14:glow rad="1">${validColor}</w14:glow>`),
+      wordRun(`<w14:glow w14:rad="-1">${validColor}</w14:glow>`),
+      wordRun(`<w14:glow w14:rad="1.5">${validColor}</w14:glow>`),
+      wordRun(`<w14:glow w14:rad="2147483648">${validColor}</w14:glow>`),
+      wordRun(`<w14:glow w14:extra="semantic">${validColor}</w14:glow>`),
+      wordRun(
+        `<w14:glow xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe">${validColor}</w14:glow>`,
+      ),
+      wordRun('<w14:glow><w14:srgbClr/></w14:glow>'),
+      wordRun('<w14:glow><w14:srgbClr val="A1B2C3"/></w14:glow>'),
+      wordRun('<w14:glow><w14:srgbClr w14:val="ABC"/></w14:glow>'),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3" w14:extra="semantic"/></w14:glow>',
+      ),
+      wordRun('<w14:glow><w14:schemeClr w14:val="none"/></w14:glow>'),
+      wordRun('<w14:glow><w14:schemeClr w14:val="ACCENT1"/></w14:glow>'),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3">meaningful</w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:alpha/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:alpha val="50000"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:tint w14:val="-1"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:shade w14:val="100001"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:hueMod w14:val="-1"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:lum w14:val="2147483648"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3">' +
+          Array.from({ length: 65 }, () => '<w14:alpha w14:val="50000"/>').join(
+            '',
+          ) +
+          '</w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:alpha w14:val="50000">meaningful</w14:alpha></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><w14:alpha w14:val="50000"><w14:tint w14:val="1"/></w14:alpha></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(
+        '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
+      ),
+      wordRun(WORD_2010_SHADOW),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'rgb-glow',
+      'scheme-glow',
+      'default-radius-glow',
+      'ordered-glow',
+      'operator-glow',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(preview.outerHTML).not.toMatch(/text-shadow/iu);
+
+    const collisionMarker = '__A3S_GLOW_NAMESPACE_COLLISION__';
+    const collisionArchive = new JSZip();
+    collisionArchive.file(
+      'word/document.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="${WORD_NAMESPACE}" xmlns:w14="urn:a3s:occupied-w14" xmlns:keep="urn:a3s:keep" xmlns:mc="${MARKUP_COMPATIBILITY_NAMESPACE}" mc:Ignorable="keep"><w:body><w:p><w:r><w:t>${collisionMarker}</w:t></w:r></w:p></w:body></w:document>`,
+    );
+    const collisionPatched = await patchDocxEquations(
+      await collisionArchive.generateAsync({ type: 'arraybuffer' }),
+      [
+        {
+          marker: collisionMarker,
+          equation: equationWithGlow({
+            radiusEmus: 1,
+            color: { type: 'rgb', value: '#010203' },
+          }),
+        },
+      ],
+    );
+    const collisionOutput = await xmlEntry(
+      await JSZip.loadAsync(collisionPatched),
+      'word/document.xml',
+    );
+    const collisionRoot = collisionOutput.documentElement;
+    expect(xmlNamespaceUri(collisionRoot, 'w14')).toBe('urn:a3s:occupied-w14');
+    const generatedWord2010Prefix = Array.from(collisionRoot.attributes)
+      .find(
+        (attribute) =>
+          attribute.value === WORD_2010_NAMESPACE &&
+          attribute.name.startsWith('xmlns:'),
+      )
+      ?.name.slice('xmlns:'.length);
+    expect(generatedWord2010Prefix).toBeDefined();
+    expect(generatedWord2010Prefix).not.toBe('w14');
+    const ignorableTokens = Array.from(collisionRoot.attributes)
+      .find(
+        (attribute) =>
+          xmlAttributeNamespace(collisionRoot, attribute) ===
+            MARKUP_COMPATIBILITY_NAMESPACE &&
+          xmlAttributeLocalName(attribute) === 'Ignorable',
+      )
+      ?.value.trim()
+      .split(/\s+/u);
+    expect(ignorableTokens).toEqual(['keep', generatedWord2010Prefix]);
+    expect(
+      inspectDocxEquation(descendants(collisionOutput, 'oMath')[0]),
+    ).toMatchObject({
+      status: 'supported',
+      equation: equationWithGlow({
+        radiusEmus: 1,
+        color: { type: 'rgb', value: '#010203' },
+      }),
+    });
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunGlows(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-glow.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunGlows(await createArtifactBlob(imported));
   });
 
   test('preserves bounded Word control properties across OMML object containers', async () => {
@@ -4572,7 +5060,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -4620,6 +5108,11 @@ describe('document equations', () => {
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    standalone.setAttributeNS(
+      XMLNS_NAMESPACE,
+      'xmlns:w14',
+      WORD_2010_NAMESPACE,
+    );
     const strictSource = new XMLSerializer()
       .serializeToString(standalone)
       .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
@@ -4843,7 +5336,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(`${run}<m:ctrlPr><w:rPr>${WORD_2010_GLOW}</w:rPr></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:rPr>${WORD_2010_SHADOW}</w:rPr></m:ctrlPr>`),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -4888,6 +5381,11 @@ describe('document equations', () => {
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    standalone.setAttributeNS(
+      XMLNS_NAMESPACE,
+      'xmlns:w14',
+      WORD_2010_NAMESPACE,
+    );
     const strictRoundTripSource = new XMLSerializer()
       .serializeToString(standalone)
       .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
@@ -5167,6 +5665,11 @@ describe('document equations', () => {
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
     standalone.setAttributeNS(
       XMLNS_NAMESPACE,
+      'xmlns:w14',
+      WORD_2010_NAMESPACE,
+    );
+    standalone.setAttributeNS(
+      XMLNS_NAMESPACE,
       'xmlns:w16du',
       WORD_DATE_UTC_NAMESPACE,
     );
@@ -5362,6 +5865,11 @@ describe('document equations', () => {
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
     standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    standalone.setAttributeNS(
+      XMLNS_NAMESPACE,
+      'xmlns:w14',
+      WORD_2010_NAMESPACE,
+    );
     const strictRoundTripSource = new XMLSerializer()
       .serializeToString(standalone)
       .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
@@ -6040,6 +6548,14 @@ function richWordRunProperties() {
       verticalCompress: true,
     },
     paragraphMarkAlwaysHidden: false,
+    glow: {
+      radiusEmus: 63_500,
+      color: {
+        type: 'scheme' as const,
+        value: 'accent4' as const,
+        transforms: [{ type: 'alpha' as const, value: 50_000 }],
+      },
+    },
   };
 }
 
@@ -7877,6 +8393,116 @@ async function expectNativeWordRunSpecVanish(blob: Blob): Promise<void> {
   ).toEqual(['w:val']);
 }
 
+async function expectNativeWordRunGlows(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+
+  const rgbGlow = directChildren(wordPropertiesFor('rgb-glow'), 'glow')[0];
+  expect(rgbGlow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(rgbGlow)).toEqual({ rad: '63500' });
+  const rgbColor = directChildren(rgbGlow)[0];
+  expect(rgbColor.localName).toBe('srgbClr');
+  expect(rgbColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(rgbColor)).toEqual({ val: 'A1B2C3' });
+  const rgbTransforms = directChildren(rgbColor);
+  expect(rgbTransforms.map((child) => child.localName)).toEqual([
+    'tint',
+    'shade',
+    'alpha',
+    'hueMod',
+    'sat',
+    'satOff',
+    'satMod',
+    'lum',
+    'lumOff',
+    'lumMod',
+    'alpha',
+  ]);
+  expect(rgbTransforms.map(word2010Attributes)).toEqual(
+    [
+      0, 100_000, 50_000, 200_000, -25_000, 25_000, 50_000, 40_000, -10_000,
+      75_000, 100_000,
+    ].map((value) => ({ val: String(value) })),
+  );
+
+  const schemeGlow = directChildren(
+    wordPropertiesFor('scheme-glow'),
+    'glow',
+  )[0];
+  expect(schemeGlow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(schemeGlow)).toEqual({ rad: '0' });
+  const schemeColor = directChildren(schemeGlow)[0];
+  expect(schemeColor.localName).toBe('schemeClr');
+  expect(schemeColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(schemeColor)).toEqual({ val: 'phClr' });
+
+  const defaultGlow = directChildren(
+    wordPropertiesFor('default-radius-glow'),
+    'glow',
+  )[0];
+  expect(word2010Attributes(defaultGlow)).toEqual({});
+  expect(word2010Attributes(directChildren(defaultGlow)[0])).toEqual({
+    val: 'accent2',
+  });
+
+  const orderedProperties = directChildren(wordPropertiesFor('ordered-glow'));
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'shadow',
+    'specVanish',
+    'glow',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-glow'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const glow = directChildren(wordProperties as Element, 'glow')[0];
+  expect(glow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(glow)).toEqual({ rad: '12700' });
+  expect(word2010Attributes(directChildren(glow)[0])).toEqual({
+    val: 'hlink',
+  });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -7937,6 +8563,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'lang',
     'eastAsianLayout',
     'specVanish',
+    'glow',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -8017,6 +8644,7 @@ async function expectNativeArgumentControlProperties(
     'lang',
     'eastAsianLayout',
     'specVanish',
+    'glow',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -8584,6 +9212,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'lang',
     'eastAsianLayout',
     'specVanish',
+    'glow',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -8657,6 +9286,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       vertCompress: '1',
     },
     { val: '0' },
+    { rad: '63500' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -8666,9 +9296,23 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(directChildren(properties).map((child) => child.localName)).toEqual(
       expectedWordPropertyNames,
     );
-    expect(directChildren(properties).map(wordAttributes)).toEqual(
-      expectedWordPropertyAttributes,
-    );
+    expect(
+      directChildren(properties).map((child) =>
+        child.namespaceURI === WORD_2010_NAMESPACE
+          ? word2010Attributes(child)
+          : wordAttributes(child),
+      ),
+    ).toEqual(expectedWordPropertyAttributes);
+    const glow = directChildren(properties, 'glow')[0];
+    expect(glow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    const color = directChildren(glow)[0];
+    expect(color.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(color.localName).toBe('schemeClr');
+    expect(word2010Attributes(color)).toEqual({ val: 'accent4' });
+    const alpha = directChildren(color)[0];
+    expect(alpha.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(alpha.localName).toBe('alpha');
+    expect(word2010Attributes(alpha)).toEqual({ val: '50000' });
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);
@@ -8875,6 +9519,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     const equation = document.createElementNS(MATH_NAMESPACE, 'm:oMath');
     equation.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
     equation.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    equation.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w14', WORD_2010_NAMESPACE);
     equation.append(component.cloneNode(true));
     return inspectDocxEquation(equation).status !== 'supported';
   });
@@ -9105,6 +9750,17 @@ function wordAttributes(element: Element): Record<string, string> {
       .filter(
         (attribute) =>
           xmlAttributeNamespace(element, attribute) === WORD_NAMESPACE,
+      )
+      .map((attribute) => [xmlAttributeLocalName(attribute), attribute.value]),
+  );
+}
+
+function word2010Attributes(element: Element): Record<string, string> {
+  return Object.fromEntries(
+    Array.from(element.attributes)
+      .filter(
+        (attribute) =>
+          xmlAttributeNamespace(element, attribute) === WORD_2010_NAMESPACE,
       )
       .map((attribute) => [xmlAttributeLocalName(attribute), attribute.value]),
   );

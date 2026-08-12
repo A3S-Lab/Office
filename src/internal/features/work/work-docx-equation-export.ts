@@ -11,11 +11,15 @@ import {
   type WorkDocumentEquationRunStyle,
   type WorkDocumentEquationSpacingRule,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordColorTransformType,
+  type WorkDocumentEquationWordEffectColor,
   type WorkDocumentEquationWordRunProperties,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
   XMLNS_NAMESPACE,
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
   xmlDeclaredPrefix,
   xmlNamespaceUri,
 } from './work-docx-settings-xml';
@@ -33,10 +37,47 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const WORD_DATE_UTC_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
+const MARKUP_COMPATIBILITY_NAMESPACE =
+  'http://schemas.openxmlformats.org/markup-compatibility/2006';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const EQUATION_PART_PATTERN =
   /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
 const MAX_EQUATION_PATCHES = 4_096;
+const WORD_2010_SCHEME_COLORS = new Map([
+  ['background1', 'bg1'],
+  ['text1', 'tx1'],
+  ['background2', 'bg2'],
+  ['text2', 'tx2'],
+  ['accent1', 'accent1'],
+  ['accent2', 'accent2'],
+  ['accent3', 'accent3'],
+  ['accent4', 'accent4'],
+  ['accent5', 'accent5'],
+  ['accent6', 'accent6'],
+  ['hyperlink', 'hlink'],
+  ['followedHyperlink', 'folHlink'],
+  ['dark1', 'dk1'],
+  ['light1', 'lt1'],
+  ['dark2', 'dk2'],
+  ['light2', 'lt2'],
+  ['placeholder', 'phClr'],
+] as const);
+const WORD_2010_COLOR_TRANSFORM_NAMES: Readonly<
+  Record<WorkDocumentEquationWordColorTransformType, string>
+> = {
+  tint: 'tint',
+  shade: 'shade',
+  alpha: 'alpha',
+  hueMod: 'hueMod',
+  saturation: 'sat',
+  saturationOffset: 'satOff',
+  saturationModulation: 'satMod',
+  luminance: 'lum',
+  luminanceOffset: 'lumOff',
+  luminanceModulation: 'lumMod',
+};
 
 export class DocxEquationPatchCollector {
   readonly patches: DocxEquationPatch[] = [];
@@ -1315,6 +1356,9 @@ function createWordRunProperties(
       ),
     );
   }
+  if (properties.glow) {
+    result.append(createWord2010Glow(document, properties.glow));
+  }
   return result;
 }
 
@@ -1403,6 +1447,49 @@ function setWordColorAttributes(
   if (color.shade) {
     setWordAttribute(element, prefix, shadeAttribute, color.shade);
   }
+}
+
+function createWord2010Glow(
+  document: Document,
+  glow: NonNullable<WorkDocumentEquationWordRunProperties['glow']>,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'glow');
+  if (glow.radiusEmus !== undefined) {
+    setWord2010Attribute(result, prefix, 'rad', String(glow.radiusEmus));
+  }
+  result.append(createWord2010EffectColor(document, prefix, glow.color));
+  return result;
+}
+
+function createWord2010EffectColor(
+  document: Document,
+  prefix: string,
+  color: WorkDocumentEquationWordEffectColor,
+): Element {
+  const result = createWord2010Element(
+    document,
+    prefix,
+    color.type === 'rgb' ? 'srgbClr' : 'schemeClr',
+  );
+  setWord2010Attribute(
+    result,
+    prefix,
+    'val',
+    color.type === 'rgb'
+      ? color.value.slice(1).toUpperCase()
+      : (WORD_2010_SCHEME_COLORS.get(color.value) ?? color.value),
+  );
+  for (const transform of color.transforms ?? []) {
+    const element = createWord2010Element(
+      document,
+      prefix,
+      WORD_2010_COLOR_TRANSFORM_NAMES[transform.type],
+    );
+    setWord2010Attribute(element, prefix, 'val', String(transform.value));
+    result.append(element);
+  }
+  return result;
 }
 
 function matrixColumnGroups(
@@ -1511,6 +1598,23 @@ function setWordAttribute(
   element.setAttributeNS(WORD_NAMESPACE, `${prefix}:${name}`, value);
 }
 
+function createWord2010Element(
+  document: Document,
+  prefix: string,
+  name: string,
+): Element {
+  return document.createElementNS(WORD_2010_NAMESPACE, `${prefix}:${name}`);
+}
+
+function setWord2010Attribute(
+  element: Element,
+  prefix: string,
+  name: string,
+  value: string,
+): void {
+  element.setAttributeNS(WORD_2010_NAMESPACE, `${prefix}:${name}`, value);
+}
+
 function ensureMathPrefix(root: Element): string {
   const existing = xmlDeclaredPrefix(root, MATH_NAMESPACE);
   if (existing) return existing;
@@ -1544,6 +1648,67 @@ function ensureWordPrefix(root: Element): string {
     index += 1;
   } while (xmlNamespaceUri(root, prefix));
   root.setAttributeNS(XMLNS_NAMESPACE, `xmlns:${prefix}`, WORD_NAMESPACE);
+  return prefix;
+}
+
+function ensureWord2010Prefix(root: Element): string {
+  const existing = xmlDeclaredPrefix(root, WORD_2010_NAMESPACE);
+  const prefix = existing ?? availableNamespacePrefix(root, 'w14', 'a3sw14');
+  if (!existing) {
+    root.setAttributeNS(
+      XMLNS_NAMESPACE,
+      `xmlns:${prefix}`,
+      WORD_2010_NAMESPACE,
+    );
+  }
+  ensureIgnorableNamespace(root, prefix, WORD_2010_NAMESPACE);
+  return prefix;
+}
+
+function ensureIgnorableNamespace(
+  root: Element,
+  prefix: string,
+  namespace: string,
+): void {
+  const attribute = Array.from(root.attributes).find(
+    (item) =>
+      xmlAttributeLocalName(item) === 'Ignorable' &&
+      xmlAttributeNamespace(root, item) === MARKUP_COMPATIBILITY_NAMESPACE,
+  );
+  const tokens = (attribute?.value ?? '').trim().split(/\s+/u).filter(Boolean);
+  if (!tokens.some((token) => xmlNamespaceUri(root, token) === namespace)) {
+    tokens.push(prefix);
+  }
+  const compatibilityPrefix =
+    xmlDeclaredPrefix(root, MARKUP_COMPATIBILITY_NAMESPACE) ??
+    availableNamespacePrefix(root, 'mc', 'a3smc');
+  if (!xmlDeclaredPrefix(root, MARKUP_COMPATIBILITY_NAMESPACE)) {
+    root.setAttributeNS(
+      XMLNS_NAMESPACE,
+      `xmlns:${compatibilityPrefix}`,
+      MARKUP_COMPATIBILITY_NAMESPACE,
+    );
+  }
+  attribute?.ownerElement?.removeAttributeNode(attribute);
+  root.setAttributeNS(
+    MARKUP_COMPATIBILITY_NAMESPACE,
+    `${compatibilityPrefix}:Ignorable`,
+    tokens.join(' '),
+  );
+}
+
+function availableNamespacePrefix(
+  root: Element,
+  preferred: string,
+  fallback: string,
+): string {
+  if (!xmlNamespaceUri(root, preferred)) return preferred;
+  let index = 1;
+  let prefix = '';
+  do {
+    prefix = `${fallback}${index}`;
+    index += 1;
+  } while (xmlNamespaceUri(root, prefix));
   return prefix;
 }
 

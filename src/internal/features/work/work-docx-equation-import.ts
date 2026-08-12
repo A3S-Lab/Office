@@ -23,10 +23,15 @@ import {
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordColorTransform,
+  type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordCombineBrackets,
   type WorkDocumentEquationWordEastAsianLayout,
   type WorkDocumentEquationWordEmphasisMark,
+  type WorkDocumentEquationWordEffectColor,
+  type WorkDocumentEquationWordEffectSchemeColor,
   type WorkDocumentEquationWordFitText,
+  type WorkDocumentEquationWordGlow,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
   type WorkDocumentEquationWordLineBorderStyle,
@@ -128,6 +133,8 @@ const DOCX_MATH_NAMESPACES = new Set([
 ]);
 const WORD_DATE_UTC_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
 const WORD_RUN_PROPERTY_ORDER = [
   'rFonts',
   'b',
@@ -166,6 +173,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'lang',
   'eastAsianLayout',
   'specVanish',
+  'w14:glow',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -196,6 +204,44 @@ const WORD_THEME_COLORS = new Set<WorkDocumentEquationThemeColor>([
   'background2',
   'text2',
 ]);
+const WORD_2010_SCHEME_COLORS = new Map<
+  string,
+  WorkDocumentEquationWordEffectSchemeColor
+>([
+  ['bg1', 'background1'],
+  ['tx1', 'text1'],
+  ['bg2', 'background2'],
+  ['tx2', 'text2'],
+  ['accent1', 'accent1'],
+  ['accent2', 'accent2'],
+  ['accent3', 'accent3'],
+  ['accent4', 'accent4'],
+  ['accent5', 'accent5'],
+  ['accent6', 'accent6'],
+  ['hlink', 'hyperlink'],
+  ['folHlink', 'followedHyperlink'],
+  ['dk1', 'dark1'],
+  ['lt1', 'light1'],
+  ['dk2', 'dark2'],
+  ['lt2', 'light2'],
+  ['phClr', 'placeholder'],
+]);
+const WORD_2010_COLOR_TRANSFORMS = new Map<
+  string,
+  WorkDocumentEquationWordColorTransformType
+>([
+  ['tint', 'tint'],
+  ['shade', 'shade'],
+  ['alpha', 'alpha'],
+  ['hueMod', 'hueMod'],
+  ['sat', 'saturation'],
+  ['satOff', 'saturationOffset'],
+  ['satMod', 'saturationModulation'],
+  ['lum', 'luminance'],
+  ['lumOff', 'luminanceOffset'],
+  ['lumMod', 'luminanceModulation'],
+]);
+const WORD_2010_FIXED_COLOR_TRANSFORMS = new Set(['tint', 'shade', 'alpha']);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
   'words',
@@ -361,6 +407,11 @@ const MIN_WORD_FIT_TEXT_ID = -2_147_483_648;
 const MAX_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
 const MAX_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
+const MAX_WORD_GLOW_RADIUS_EMUS = 2_147_483_647;
+const MAX_WORD_COLOR_TRANSFORMS = 64;
+const MIN_WORD_COLOR_PERCENTAGE = -2_147_483_648;
+const MAX_WORD_COLOR_PERCENTAGE = 2_147_483_647;
+const MAX_WORD_FIXED_COLOR_PERCENTAGE = 100_000;
 const MIN_WORD_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_WORD_POSITION_HALF_POINTS = 2_147_483_647;
 const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
@@ -887,6 +938,15 @@ function parseRun(
     : null;
 }
 
+function wordRunPropertyKey(element: Element): string | null {
+  if (DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '')) {
+    return element.localName;
+  }
+  return element.namespaceURI === WORD_2010_NAMESPACE
+    ? `w14:${element.localName}`
+    : null;
+}
+
 function parseWordRunProperties(
   properties: Element,
 ): WorkDocumentEquationWordRunProperties | null | undefined {
@@ -901,21 +961,28 @@ function parseWordRunProperties(
     WORD_RUN_PROPERTY_ORDER.map((name, index) => [name, index]),
   );
   const children = new Map<string, Element>();
+  const word2010Children = new Map<string, Element>();
+  const seen = new Set<string>();
   let previous = -1;
   for (const child of directChildren(properties)) {
-    const position = order.get(
-      child.localName as (typeof WORD_RUN_PROPERTY_ORDER)[number],
-    );
+    const key = wordRunPropertyKey(child);
+    const position = key
+      ? order.get(key as (typeof WORD_RUN_PROPERTY_ORDER)[number])
+      : undefined;
     if (
-      !DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '') ||
       position === undefined ||
       position < previous ||
-      children.has(child.localName)
+      !key ||
+      seen.has(key)
     ) {
       return null;
     }
     previous = position;
-    children.set(child.localName, child);
+    seen.add(key);
+    (child.namespaceURI === WORD_2010_NAMESPACE
+      ? word2010Children
+      : children
+    ).set(child.localName, child);
   }
   const fonts = parseWordRunFonts(children.get('rFonts'));
   const color = parseWordRunColor(children.get('color'));
@@ -947,6 +1014,7 @@ function parseWordRunProperties(
   const eastAsianLayout = parseWordEastAsianLayout(
     children.get('eastAsianLayout'),
   );
+  const glow = parseWordGlow(word2010Children.get('glow'));
   if (
     fonts === null ||
     color === null ||
@@ -965,7 +1033,8 @@ function parseWordRunProperties(
     verticalAlignment === null ||
     emphasisMark === null ||
     languages === null ||
-    eastAsianLayout === null
+    eastAsianLayout === null ||
+    glow === null
   ) {
     return null;
   }
@@ -1060,6 +1129,7 @@ function parseWordRunProperties(
           paragraphMarkAlwaysHidden: booleans.get('paragraphMarkAlwaysHidden'),
         }
       : {}),
+    ...(glow ? { glow } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -1671,6 +1741,95 @@ function parseWordEastAsianLayout(
   return Object.keys(layout).length ? layout : undefined;
 }
 
+function parseWordGlow(
+  element: Element | undefined,
+): WorkDocumentEquationWordGlow | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010ElementAttributes(element, new Set(['rad']));
+  if (!attributes) return null;
+  const radiusEmus = attributes.has('rad')
+    ? wordIntegerValue(
+        attributes.get('rad')?.trim() ?? '',
+        0,
+        MAX_WORD_GLOW_RADIUS_EMUS,
+      )
+    : undefined;
+  const children = directChildren(element);
+  const color =
+    children.length === 1 ? parseWord2010EffectColor(children[0]) : null;
+  return radiusEmus === null || color === null
+    ? null
+    : {
+        ...(radiusEmus !== undefined ? { radiusEmus } : {}),
+        color,
+      };
+}
+
+function parseWord2010EffectColor(
+  element: Element,
+): WorkDocumentEquationWordEffectColor | null {
+  if (
+    element.namespaceURI !== WORD_2010_NAMESPACE ||
+    (element.localName !== 'srgbClr' && element.localName !== 'schemeClr')
+  ) {
+    return null;
+  }
+  const attributes = word2010ElementAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const transforms = parseWord2010ColorTransforms(element);
+  if (transforms === null) return null;
+  const source = attributes.get('val')?.trim() ?? '';
+  if (element.localName === 'srgbClr') {
+    return /^[0-9a-f]{6}$/iu.test(source)
+      ? {
+          type: 'rgb',
+          value: `#${source.toLowerCase()}`,
+          ...(transforms.length ? { transforms } : {}),
+        }
+      : null;
+  }
+  const value = WORD_2010_SCHEME_COLORS.get(source);
+  return value
+    ? {
+        type: 'scheme',
+        value,
+        ...(transforms.length ? { transforms } : {}),
+      }
+    : null;
+}
+
+function parseWord2010ColorTransforms(
+  color: Element,
+): WorkDocumentEquationWordColorTransform[] | null {
+  const children = directChildren(color);
+  if (children.length > MAX_WORD_COLOR_TRANSFORMS) return null;
+  const transforms: WorkDocumentEquationWordColorTransform[] = [];
+  for (const child of children) {
+    const type =
+      child.namespaceURI === WORD_2010_NAMESPACE
+        ? WORD_2010_COLOR_TRANSFORMS.get(child.localName)
+        : undefined;
+    const attributes = word2010LeafAttributes(child, new Set(['val']));
+    if (!type || !attributes || attributes.size !== 1) return null;
+    const minimum = WORD_2010_FIXED_COLOR_TRANSFORMS.has(child.localName)
+      ? 0
+      : child.localName === 'hueMod'
+        ? 0
+        : MIN_WORD_COLOR_PERCENTAGE;
+    const maximum = WORD_2010_FIXED_COLOR_TRANSFORMS.has(child.localName)
+      ? MAX_WORD_FIXED_COLOR_PERCENTAGE
+      : MAX_WORD_COLOR_PERCENTAGE;
+    const value = wordIntegerValue(
+      attributes.get('val')?.trim() ?? '',
+      minimum,
+      maximum,
+    );
+    if (value === null) return null;
+    transforms.push({ type, value });
+  }
+  return transforms;
+}
+
 function wordOnOff(element: Element): boolean | null {
   const attributes = wordLeafAttributes(element, new Set(['val']));
   if (!attributes) return null;
@@ -1694,6 +1853,39 @@ function wordLeafAttributes(
 ): Map<string, string> | null {
   if (directChildren(element).length) return null;
   return wordElementAttributes(element, allowed);
+}
+
+function word2010LeafAttributes(
+  element: Element,
+  allowed: ReadonlySet<string>,
+): Map<string, string> | null {
+  if (directChildren(element).length) return null;
+  return word2010ElementAttributes(element, allowed);
+}
+
+function word2010ElementAttributes(
+  element: Element,
+  allowed: ReadonlySet<string>,
+): Map<string, string> | null {
+  if (
+    element.namespaceURI !== WORD_2010_NAMESPACE ||
+    hasMeaningfulDirectText(element)
+  ) {
+    return null;
+  }
+  const result = new Map<string, string>();
+  for (const attribute of meaningfulAttributes(element)) {
+    const name = xmlAttributeLocalName(attribute);
+    if (
+      xmlAttributeNamespace(element, attribute) !== WORD_2010_NAMESPACE ||
+      !allowed.has(name) ||
+      result.has(name)
+    ) {
+      return null;
+    }
+    result.set(name, attribute.value);
+  }
+  return result;
 }
 
 function wordMathControlRevisionAttributes(

@@ -31,7 +31,10 @@ All notable changes to A3S Office will be documented in this file.
   RTL/complex-script flags, language tags, and East Asian typography metadata
   with optional signed 32-bit run IDs, two-lines-in-one flags, all five
   enclosing-bracket styles, horizontal-in-vertical rotation, and rotated-text
-  compression, plus explicit paragraph-mark always-hidden/reset flags.
+  compression, explicit paragraph-mark always-hidden/reset flags, and Office
+  2010 text glow. Glow retains an optional 0 through 2,147,483,647 EMU radius,
+  one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
+  shade, alpha, hue-modulation, saturation, and luminance transforms.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
@@ -44,6 +47,8 @@ All notable changes to A3S Office will be documented in this file.
   stay distinct from explicit `false` resets and signed run IDs retain explicit
   zero. An empty `w:specVanish` canonicalizes to `true`; omission remains
   distinct from an explicit `false` inheritance reset.
+  Omitted `w14:glow/@w14:rad` keeps its zero schema default while explicit zero
+  remains present. Export declares `w14` and merges it into `mc:Ignorable`.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, baseline shifts, and baseline/superscript/subscript
   alignment use safe CSS projections in MathML previews without changing
@@ -53,8 +58,8 @@ All notable changes to A3S Office will be documented in this file.
   Word. When `w:position` and `w:vertAlign` coexist, both remain in native
   schema order and the later explicit alignment controls the CSS vertical
   position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
-  `w:eastAsianLayout` remains after `w:lang` and `w:specVanish` follows it.
-  Simple
+  `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it, and
+  `w14:glow` follows `w:specVanish`. Simple
   explicitly sized solid, double, dotted, dashed, inset, and outset line
   borders project through CSS with direct or automatic color and point
   padding; explicit `nil`/`none` resets also project. Relief effects, legacy
@@ -71,6 +76,8 @@ All notable changes to A3S Office will be documented in this file.
   never hides equation previews because its display semantics apply only to
   paragraph marks; Word additionally ignores it unless `w:vanish` is set.
   Schema-valid values remain preserved without inventing that dependency.
+  Office 2010 glow also remains native-only because CSS `text-shadow` cannot
+  preserve theme colors, ordered transforms, or Word's exact blur geometry.
   Highlight precedence over shading is
   retained. Named highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
@@ -81,8 +88,9 @@ All notable changes to A3S Office will be documented in this file.
   colors/flags, missing, malformed, fractional, or out-of-range manual widths
   and grouping IDs, missing or unknown vertical-alignment or emphasis-mark
   values, malformed or out-of-range East Asian layout IDs, flags, or bracket
-  styles, malformed paragraph-mark visibility flags, and unknown, reordered,
-  duplicated, spoofed, or
+  styles, malformed paragraph-mark visibility flags, malformed glow radii,
+  color choices, or transform chains, and unknown, reordered, duplicated,
+  spoofed, or
   relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control
