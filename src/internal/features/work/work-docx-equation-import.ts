@@ -970,7 +970,11 @@ function parseFraction(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['fPr', 'num', 'den']))) {
+  const childOrder = ['fPr', 'num', 'den'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'fPr', false);
@@ -980,7 +984,7 @@ function parseFraction(
     properties === null ||
     !numerator ||
     !denominator ||
-    (properties && !structuralChildren(properties, new Set(['type', 'ctrlPr'])))
+    (properties && !fractionProperties(properties))
   ) {
     return null;
   }
@@ -997,7 +1001,9 @@ function parseFraction(
   ) {
     return null;
   }
-  const sourceType = typeElement ? mathValue(typeElement) : 'bar';
+  const sourceType = typeElement
+    ? mathValueOrDefault(typeElement, 'bar')
+    : 'bar';
   if (sourceType === null) return null;
   const fractionType = fractionTypeFromOmml(sourceType);
   const parsedNumerator = parseExpressionContainer(numerator, state);
@@ -1010,6 +1016,14 @@ function parseFraction(
         denominator: parsedDenominator,
       }
     : null;
+}
+
+function fractionProperties(properties: Element): boolean {
+  const propertyOrder = ['type', 'ctrlPr'];
+  return (
+    structuralChildren(properties, new Set(propertyOrder)) &&
+    orderedMathChildren(properties, propertyOrder)
+  );
 }
 
 function parseSuperScript(
@@ -1980,7 +1994,7 @@ function accentCharacter(value: string): boolean {
 function fractionTypeFromOmml(
   value: string | null,
 ): WorkDocumentEquationFractionType | null {
-  if (value === 'bar' || value === null) return 'bar';
+  if (value === 'bar') return 'bar';
   if (value === 'noBar') return 'noBar';
   if (value === 'skw') return 'skewed';
   if (value === 'lin') return 'linear';

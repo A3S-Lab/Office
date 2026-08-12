@@ -1178,6 +1178,9 @@ order. `sSubSupPr` preserves `alnScr`, canonicalizes absent or disabled values
 to unaligned scripts, and retains the enabled state through native export;
 empty script/function `ctrlPr` placeholders are accepted, while unmodeled
 control formatting fails closed.
+Fractions enforce optional `fPr` before required `num` and `den` arguments.
+An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
+`skw`, and `lin` remain distinct through native export and MathML projection.
 Radicals enforce `radPr`, optional `deg`, and `e` ordering. An omitted or empty
 degree normalizes to a square root, while a visible nonempty degree remains an
 nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
@@ -1194,10 +1197,11 @@ Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is
 accepted. Invalid or non-combining accent characters, malformed math-run
-properties, invalid or contradictory radical, bar, group-character, phantom,
-border-box, box, or equation-array properties, malformed script-property,
-pre-script, math-paragraph, or lower/upper limit structures, unsupported matrix
-spacing or gap rules, ragged or over-limit matrices, over-limit equation arrays,
+properties, invalid or contradictory fraction, radical, bar, group-character,
+phantom, border-box, box, or equation-array properties, malformed
+script-property, pre-script, math-paragraph, or lower/upper limit structures,
+unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+over-limit equation arrays,
 malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
 text with compatibility diagnostics; the remaining OMML grammar is still part

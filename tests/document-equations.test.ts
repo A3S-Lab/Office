@@ -1671,6 +1671,52 @@ describe('document equations', () => {
     );
   });
 
+  test('normalizes fraction type defaults and strictly validates fraction structure', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:f><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr/><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="bar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="noBar"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="skw"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="lin"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'fraction' ? expression.fractionType : null;
+      }),
+    ).toEqual(['bar', 'bar', 'bar', 'bar', 'noBar', 'skewed', 'linear']);
+
+    const unsupported = [
+      `<m:f><m:num>${run}</m:num><m:fPr/><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:den>${run}</m:den><m:num>${run}</m:num></m:f>`,
+      `<m:f><m:fPr/><m:fPr/><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:ctrlPr/><m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type/><m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="diagonal"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:fPr><m:type m:val="bar" r:id="rIdUnsafe"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><v:fPr xmlns:v="${VENDOR_NAMESPACE}"><m:type m:val="bar"/></v:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><v:type xmlns:v="${VENDOR_NAMESPACE}" v:val="bar"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:fPr>meaningful<m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:num>meaningful</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:num/><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:num>${run}</m:num><m:den/></m:f>`,
+      `<m:f><m:num>${run}</m:num></m:f>`,
+      `<m:f><m:num>${run}</m:num><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
+      `<m:f><m:num>${run}</m:num><m:den>${run}</m:den><m:den>${run}</m:den></m:f>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
+
   test('normalizes radical degree defaults and strictly validates radical structure', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const supported = [
@@ -2039,12 +2085,23 @@ function borderBoxEquation(
                                           type: 'radical',
                                           children: [
                                             {
-                                              type: 'run',
-                                              text,
-                                              literal: true,
-                                              script: 'doubleStruck',
-                                              style: 'plain',
-                                              manualBreak: { alignmentAt: 2 },
+                                              type: 'fraction',
+                                              fractionType: 'bar',
+                                              numerator: [
+                                                {
+                                                  type: 'run',
+                                                  text,
+                                                  literal: true,
+                                                  script: 'doubleStruck',
+                                                  style: 'plain',
+                                                  manualBreak: {
+                                                    alignmentAt: 2,
+                                                  },
+                                                },
+                                              ],
+                                              denominator: [
+                                                { type: 'run', text: '1' },
+                                              ],
                                             },
                                           ],
                                         },
@@ -2133,13 +2190,22 @@ function boxEquation(
                                           type: 'radical',
                                           children: [
                                             {
-                                              type: 'run',
-                                              text,
-                                              normalText: true,
-                                              script: 'sansSerif',
-                                              style: 'boldItalic',
-                                              manualBreak: {},
-                                              alignment: true,
+                                              type: 'fraction',
+                                              fractionType: 'linear',
+                                              numerator: [
+                                                {
+                                                  type: 'run',
+                                                  text,
+                                                  normalText: true,
+                                                  script: 'sansSerif',
+                                                  style: 'boldItalic',
+                                                  manualBreak: {},
+                                                  alignment: true,
+                                                },
+                                              ],
+                                              denominator: [
+                                                { type: 'run', text: '1' },
+                                              ],
                                             },
                                           ],
                                         },
@@ -2241,7 +2307,30 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     mathValueAttribute(directChildren(mathParagraphProperties, 'jc')[0]),
   ).toBe('right');
   expect(descendants(document, 'oMath')).toHaveLength(2);
-  expect(descendants(document, 'f')).toHaveLength(8);
+  const fractions = descendants(document, 'f');
+  expect(fractions).toHaveLength(8);
+  expect(
+    fractions.map((fraction) =>
+      directChildren(fraction).map((child) => child.localName),
+    ),
+  ).toEqual([
+    ['num', 'den'],
+    ['fPr', 'num', 'den'],
+    ['fPr', 'num', 'den'],
+    ['fPr', 'num', 'den'],
+    ['num', 'den'],
+    ['fPr', 'num', 'den'],
+    ['fPr', 'num', 'den'],
+    ['fPr', 'num', 'den'],
+  ]);
+  expect(
+    fractions.map((fraction) => {
+      const properties = directChildren(fraction, 'fPr')[0];
+      return properties
+        ? mathValueAttribute(directChildren(properties, 'type')[0])
+        : null;
+    }),
+  ).toEqual([null, 'noBar', 'skw', 'lin', null, 'noBar', 'skw', 'lin']);
   expect(descendants(document, 'sSup')).toHaveLength(2);
   expect(descendants(document, 'sSub')).toHaveLength(2);
   const alignedScripts = descendants(document, 'sSubSup');
@@ -2544,6 +2633,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       groupCharacter: '\u23de',
       verticalJustification: 'bot',
       container: 'borderBox',
+      fractionType: null,
       limit: 'limLow',
       phantomValues: ['1', '0', '1', '0', '1'],
       preSubScript: 'p',
@@ -2559,6 +2649,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       groupCharacter: '\u23df',
       verticalJustification: 'top',
       container: 'box',
+      fractionType: 'lin',
       limit: 'limUpp',
       phantomValues: ['0', '1', '0', '1', '0'],
       preSubScript: '',
@@ -2574,6 +2665,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       groupCharacter: '\u23de',
       verticalJustification: 'bot',
       container: 'borderBox',
+      fractionType: null,
       limit: 'limLow',
       phantomValues: ['1', '0', '1', '0', '1'],
       preSubScript: 'p',
@@ -2589,6 +2681,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       groupCharacter: '\u23df',
       verticalJustification: 'top',
       container: 'box',
+      fractionType: 'lin',
       limit: 'limUpp',
       phantomValues: ['0', '1', '0', '1', '0'],
       preSubScript: '',
@@ -2625,6 +2718,20 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
         directChildren(directChildren(radicals[0], 'radPr')[0], 'degHide')[0],
       ),
     ).toBe('1');
+    const fractions = descendants(story.document, 'f');
+    expect(fractions).toHaveLength(1);
+    expect(
+      directChildren(fractions[0]).map((child) => child.localName),
+    ).toEqual(
+      story.fractionType === null ? ['num', 'den'] : ['fPr', 'num', 'den'],
+    );
+    expect(
+      story.fractionType === null
+        ? null
+        : mathValueAttribute(
+            directChildren(directChildren(fractions[0], 'fPr')[0], 'type')[0],
+          ),
+    ).toBe(story.fractionType);
     const limit = descendants(story.document, story.limit)[0];
     expect(limit).toBeDefined();
     expect(directChildren(limit).map((child) => child.localName)).toEqual([
