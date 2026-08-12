@@ -285,6 +285,90 @@ export interface WorkDocumentEquationWordReflectionEffect {
   alignment?: WorkDocumentEquationWordRectangleAlignment;
 }
 
+export type WorkDocumentEquationWordTextOutlineCap =
+  | 'round'
+  | 'square'
+  | 'flat';
+
+export type WorkDocumentEquationWordTextOutlineCompound =
+  | 'single'
+  | 'double'
+  | 'thickThin'
+  | 'thinThick'
+  | 'triple';
+
+export type WorkDocumentEquationWordTextOutlineAlignment = 'center' | 'inset';
+
+export type WorkDocumentEquationWordPresetLineDash =
+  | 'solid'
+  | 'dot'
+  | 'systemDot'
+  | 'dash'
+  | 'systemDash'
+  | 'longDash'
+  | 'dashDot'
+  | 'systemDashDot'
+  | 'longDashDot'
+  | 'longDashDotDot'
+  | 'systemDashDotDot';
+
+export type WorkDocumentEquationWordGradientPath =
+  | 'shape'
+  | 'circle'
+  | 'rectangle';
+
+export interface WorkDocumentEquationWordGradientStop {
+  positionPercent: number;
+  color: WorkDocumentEquationWordEffectColor;
+}
+
+export interface WorkDocumentEquationWordGradientFillRectangle {
+  leftPercent?: number;
+  topPercent?: number;
+  rightPercent?: number;
+  bottomPercent?: number;
+}
+
+export type WorkDocumentEquationWordGradientShade =
+  | {
+      type: 'linear';
+      angleDegrees?: number;
+      scaled?: boolean;
+    }
+  | {
+      type: 'path';
+      path?: WorkDocumentEquationWordGradientPath;
+      fillToRectangle?: WorkDocumentEquationWordGradientFillRectangle;
+    };
+
+export type WorkDocumentEquationWordEffectFill =
+  | { type: 'none' }
+  | { type: 'solid'; color?: WorkDocumentEquationWordEffectColor }
+  | {
+      type: 'gradient';
+      stops?: WorkDocumentEquationWordGradientStop[];
+      shade?: WorkDocumentEquationWordGradientShade;
+    };
+
+export interface WorkDocumentEquationWordLineDash {
+  preset?: WorkDocumentEquationWordPresetLineDash;
+}
+
+export type WorkDocumentEquationWordLineJoin =
+  | { type: 'round' }
+  | { type: 'bevel' }
+  | { type: 'miter'; limitPercent?: number };
+
+export interface WorkDocumentEquationWordTextOutlineEffect {
+  widthEmus?: number;
+  cap?: WorkDocumentEquationWordTextOutlineCap;
+  compound?: WorkDocumentEquationWordTextOutlineCompound;
+  alignment?: WorkDocumentEquationWordTextOutlineAlignment;
+  fill?: WorkDocumentEquationWordEffectFill;
+  dash?: WorkDocumentEquationWordLineDash;
+  join?: WorkDocumentEquationWordLineJoin;
+}
+
 export interface WorkDocumentEquationWordUnderline {
   style: WorkDocumentEquationUnderlineStyle;
   color?: WorkDocumentEquationWordColor;
@@ -384,6 +468,7 @@ export interface WorkDocumentEquationWordRunProperties {
   glow?: WorkDocumentEquationWordGlow;
   shadowEffect?: WorkDocumentEquationWordShadowEffect;
   reflectionEffect?: WorkDocumentEquationWordReflectionEffect;
+  textOutlineEffect?: WorkDocumentEquationWordTextOutlineEffect;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -969,6 +1054,9 @@ const MAX_EQUATION_WORD_EFFECT_SCALE_UNITS = 2_147_483_647;
 const MIN_EQUATION_WORD_EFFECT_SKEW_UNITS = -5_399_999;
 const MAX_EQUATION_WORD_EFFECT_SKEW_UNITS = 5_399_999;
 const MAX_EQUATION_WORD_FIXED_PERCENTAGE_UNITS = 100_000;
+const MAX_EQUATION_WORD_TEXT_OUTLINE_WIDTH_EMUS = 20_116_800;
+const MIN_EQUATION_WORD_GRADIENT_STOPS = 2;
+const MAX_EQUATION_WORD_GRADIENT_STOPS = 10;
 const EQUATION_WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_EQUATION_WORD_COLOR_TRANSFORMS = 64;
@@ -1038,6 +1126,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'glow',
   'shadowEffect',
   'reflectionEffect',
+  'textOutlineEffect',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1097,6 +1186,38 @@ const WORD_REFLECTION_EFFECT_KEYS = new Set([
   'verticalSkewDegrees',
   'alignment',
 ]);
+const WORD_TEXT_OUTLINE_EFFECT_KEYS = new Set([
+  'widthEmus',
+  'cap',
+  'compound',
+  'alignment',
+  'fill',
+  'dash',
+  'join',
+]);
+const WORD_EFFECT_NO_FILL_KEYS = new Set(['type']);
+const WORD_EFFECT_SOLID_FILL_KEYS = new Set(['type', 'color']);
+const WORD_EFFECT_GRADIENT_FILL_KEYS = new Set(['type', 'stops', 'shade']);
+const WORD_GRADIENT_STOP_KEYS = new Set(['positionPercent', 'color']);
+const WORD_LINEAR_GRADIENT_SHADE_KEYS = new Set([
+  'type',
+  'angleDegrees',
+  'scaled',
+]);
+const WORD_PATH_GRADIENT_SHADE_KEYS = new Set([
+  'type',
+  'path',
+  'fillToRectangle',
+]);
+const WORD_GRADIENT_FILL_RECTANGLE_KEYS = new Set([
+  'leftPercent',
+  'topPercent',
+  'rightPercent',
+  'bottomPercent',
+]);
+const WORD_LINE_DASH_KEYS = new Set(['preset']);
+const WORD_ROUND_OR_BEVEL_LINE_JOIN_KEYS = new Set(['type']);
+const WORD_MITER_LINE_JOIN_KEYS = new Set(['type', 'limitPercent']);
 const WORD_RECTANGLE_ALIGNMENTS =
   new Set<WorkDocumentEquationWordRectangleAlignment>([
     'none',
@@ -1110,6 +1231,41 @@ const WORD_RECTANGLE_ALIGNMENTS =
     'bottom',
     'bottomRight',
   ]);
+const WORD_TEXT_OUTLINE_CAPS = new Set<WorkDocumentEquationWordTextOutlineCap>([
+  'round',
+  'square',
+  'flat',
+]);
+const WORD_TEXT_OUTLINE_COMPOUNDS =
+  new Set<WorkDocumentEquationWordTextOutlineCompound>([
+    'single',
+    'double',
+    'thickThin',
+    'thinThick',
+    'triple',
+  ]);
+const WORD_TEXT_OUTLINE_ALIGNMENTS =
+  new Set<WorkDocumentEquationWordTextOutlineAlignment>(['center', 'inset']);
+const WORD_PRESET_LINE_DASHES = new Set<WorkDocumentEquationWordPresetLineDash>(
+  [
+    'solid',
+    'dot',
+    'systemDot',
+    'dash',
+    'systemDash',
+    'longDash',
+    'dashDot',
+    'systemDashDot',
+    'longDashDot',
+    'longDashDotDot',
+    'systemDashDotDot',
+  ],
+);
+const WORD_GRADIENT_PATHS = new Set<WorkDocumentEquationWordGradientPath>([
+  'shape',
+  'circle',
+  'rectangle',
+]);
 const WORD_EFFECT_COLOR_KEYS = new Set(['type', 'value', 'transforms']);
 const WORD_COLOR_TRANSFORM_KEYS = new Set(['type', 'value']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
@@ -3138,6 +3294,10 @@ function normalizeEquationWordRunProperties(
     source.reflectionEffect === undefined
       ? undefined
       : normalizeEquationWordReflectionEffect(source.reflectionEffect);
+  const textOutlineEffect =
+    source.textOutlineEffect === undefined
+      ? undefined
+      : normalizeEquationWordTextOutlineEffect(source.textOutlineEffect);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3192,6 +3352,7 @@ function normalizeEquationWordRunProperties(
     glow === null ||
     shadowEffect === null ||
     reflectionEffect === null ||
+    textOutlineEffect === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3333,6 +3494,7 @@ function normalizeEquationWordRunProperties(
     ...(glow ? { glow } : {}),
     ...(shadowEffect ? { shadowEffect } : {}),
     ...(reflectionEffect ? { reflectionEffect } : {}),
+    ...(textOutlineEffect ? { textOutlineEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -3896,6 +4058,285 @@ function normalizeEquationWordReflectionEffect(
     ...(verticalSkewDegrees !== undefined ? { verticalSkewDegrees } : {}),
     ...(alignment ? { alignment } : {}),
   };
+}
+
+function normalizeEquationWordTextOutlineEffect(
+  source: unknown,
+): WorkDocumentEquationWordTextOutlineEffect | null {
+  if (!isRecordWithKeys(source, WORD_TEXT_OUTLINE_EFFECT_KEYS)) return null;
+  const widthEmus =
+    source.widthEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.widthEmus,
+          0,
+          MAX_EQUATION_WORD_TEXT_OUTLINE_WIDTH_EMUS,
+        );
+  const cap =
+    source.cap === undefined
+      ? undefined
+      : WORD_TEXT_OUTLINE_CAPS.has(
+            source.cap as WorkDocumentEquationWordTextOutlineCap,
+          )
+        ? (source.cap as WorkDocumentEquationWordTextOutlineCap)
+        : null;
+  const compound =
+    source.compound === undefined
+      ? undefined
+      : WORD_TEXT_OUTLINE_COMPOUNDS.has(
+            source.compound as WorkDocumentEquationWordTextOutlineCompound,
+          )
+        ? (source.compound as WorkDocumentEquationWordTextOutlineCompound)
+        : null;
+  const alignment =
+    source.alignment === undefined
+      ? undefined
+      : WORD_TEXT_OUTLINE_ALIGNMENTS.has(
+            source.alignment as WorkDocumentEquationWordTextOutlineAlignment,
+          )
+        ? (source.alignment as WorkDocumentEquationWordTextOutlineAlignment)
+        : null;
+  const fill =
+    source.fill === undefined
+      ? undefined
+      : normalizeEquationWordEffectFill(source.fill);
+  const dash =
+    source.dash === undefined
+      ? undefined
+      : normalizeEquationWordLineDash(source.dash);
+  const join =
+    source.join === undefined
+      ? undefined
+      : normalizeEquationWordLineJoin(source.join);
+  if (
+    widthEmus === null ||
+    cap === null ||
+    compound === null ||
+    alignment === null ||
+    fill === null ||
+    dash === null ||
+    join === null
+  ) {
+    return null;
+  }
+  return {
+    ...(widthEmus !== undefined
+      ? { widthEmus: Object.is(widthEmus, -0) ? 0 : widthEmus }
+      : {}),
+    ...(cap ? { cap } : {}),
+    ...(compound ? { compound } : {}),
+    ...(alignment ? { alignment } : {}),
+    ...(fill ? { fill } : {}),
+    ...(dash ? { dash } : {}),
+    ...(join ? { join } : {}),
+  };
+}
+
+function normalizeEquationWordEffectFill(
+  source: unknown,
+): WorkDocumentEquationWordEffectFill | null {
+  if (!isRecord(source)) return null;
+  if (source.type === 'none') {
+    return isRecordWithKeys(source, WORD_EFFECT_NO_FILL_KEYS)
+      ? { type: 'none' }
+      : null;
+  }
+  if (source.type === 'solid') {
+    if (!isRecordWithKeys(source, WORD_EFFECT_SOLID_FILL_KEYS)) return null;
+    const color =
+      source.color === undefined
+        ? undefined
+        : normalizeEquationWordEffectColor(source.color);
+    return color === null
+      ? null
+      : { type: 'solid', ...(color ? { color } : {}) };
+  }
+  if (
+    source.type !== 'gradient' ||
+    !isRecordWithKeys(source, WORD_EFFECT_GRADIENT_FILL_KEYS)
+  ) {
+    return null;
+  }
+  const stops = normalizeEquationWordGradientStops(source.stops);
+  const shade =
+    source.shade === undefined
+      ? undefined
+      : normalizeEquationWordGradientShade(source.shade);
+  return stops === null || shade === null
+    ? null
+    : {
+        type: 'gradient',
+        ...(stops ? { stops } : {}),
+        ...(shade ? { shade } : {}),
+      };
+}
+
+function normalizeEquationWordGradientStops(
+  source: unknown,
+): WorkDocumentEquationWordGradientStop[] | null | undefined {
+  if (source === undefined) return undefined;
+  if (
+    !Array.isArray(source) ||
+    source.length < MIN_EQUATION_WORD_GRADIENT_STOPS ||
+    source.length > MAX_EQUATION_WORD_GRADIENT_STOPS
+  ) {
+    return null;
+  }
+  const stops: WorkDocumentEquationWordGradientStop[] = [];
+  for (const stop of source) {
+    if (!isRecordWithKeys(stop, WORD_GRADIENT_STOP_KEYS)) return null;
+    const positionPercent = normalizeEquationScaledInteger(
+      stop.positionPercent,
+      EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+      0,
+      MAX_EQUATION_WORD_FIXED_PERCENTAGE_UNITS,
+    );
+    const color = normalizeEquationWordEffectColor(stop.color);
+    if (positionPercent === null || color === null) return null;
+    stops.push({ positionPercent, color });
+  }
+  return stops;
+}
+
+function normalizeEquationWordGradientShade(
+  source: unknown,
+): WorkDocumentEquationWordGradientShade | null {
+  if (!isRecord(source)) return null;
+  if (source.type === 'linear') {
+    if (!isRecordWithKeys(source, WORD_LINEAR_GRADIENT_SHADE_KEYS)) return null;
+    const angleDegrees =
+      source.angleDegrees === undefined
+        ? undefined
+        : normalizeEquationScaledInteger(
+            source.angleDegrees,
+            EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+            0,
+            MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+          );
+    if (
+      angleDegrees === null ||
+      (source.scaled !== undefined && typeof source.scaled !== 'boolean')
+    ) {
+      return null;
+    }
+    return {
+      type: 'linear',
+      ...(angleDegrees !== undefined ? { angleDegrees } : {}),
+      ...(source.scaled !== undefined
+        ? { scaled: source.scaled as boolean }
+        : {}),
+    };
+  }
+  if (
+    source.type !== 'path' ||
+    !isRecordWithKeys(source, WORD_PATH_GRADIENT_SHADE_KEYS)
+  ) {
+    return null;
+  }
+  const path =
+    source.path === undefined
+      ? undefined
+      : WORD_GRADIENT_PATHS.has(
+            source.path as WorkDocumentEquationWordGradientPath,
+          )
+        ? (source.path as WorkDocumentEquationWordGradientPath)
+        : null;
+  const fillToRectangle =
+    source.fillToRectangle === undefined
+      ? undefined
+      : normalizeEquationWordGradientFillRectangle(source.fillToRectangle);
+  return path === null || fillToRectangle === null
+    ? null
+    : {
+        type: 'path',
+        ...(path ? { path } : {}),
+        ...(fillToRectangle ? { fillToRectangle } : {}),
+      };
+}
+
+function normalizeEquationWordGradientFillRectangle(
+  source: unknown,
+): WorkDocumentEquationWordGradientFillRectangle | null {
+  if (!isRecordWithKeys(source, WORD_GRADIENT_FILL_RECTANGLE_KEYS)) return null;
+  const percentage = (value: unknown): number | null =>
+    normalizeEquationScaledInteger(
+      value,
+      EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+      MIN_EQUATION_WORD_EFFECT_SCALE_UNITS,
+      MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
+    );
+  const leftPercent =
+    source.leftPercent === undefined
+      ? undefined
+      : percentage(source.leftPercent);
+  const topPercent =
+    source.topPercent === undefined ? undefined : percentage(source.topPercent);
+  const rightPercent =
+    source.rightPercent === undefined
+      ? undefined
+      : percentage(source.rightPercent);
+  const bottomPercent =
+    source.bottomPercent === undefined
+      ? undefined
+      : percentage(source.bottomPercent);
+  if (
+    leftPercent === null ||
+    topPercent === null ||
+    rightPercent === null ||
+    bottomPercent === null
+  ) {
+    return null;
+  }
+  return {
+    ...(leftPercent !== undefined ? { leftPercent } : {}),
+    ...(topPercent !== undefined ? { topPercent } : {}),
+    ...(rightPercent !== undefined ? { rightPercent } : {}),
+    ...(bottomPercent !== undefined ? { bottomPercent } : {}),
+  };
+}
+
+function normalizeEquationWordLineDash(
+  source: unknown,
+): WorkDocumentEquationWordLineDash | null {
+  if (!isRecordWithKeys(source, WORD_LINE_DASH_KEYS)) return null;
+  if (source.preset === undefined) return {};
+  return WORD_PRESET_LINE_DASHES.has(
+    source.preset as WorkDocumentEquationWordPresetLineDash,
+  )
+    ? { preset: source.preset as WorkDocumentEquationWordPresetLineDash }
+    : null;
+}
+
+function normalizeEquationWordLineJoin(
+  source: unknown,
+): WorkDocumentEquationWordLineJoin | null {
+  if (!isRecord(source)) return null;
+  if (source.type === 'round' || source.type === 'bevel') {
+    return isRecordWithKeys(source, WORD_ROUND_OR_BEVEL_LINE_JOIN_KEYS)
+      ? { type: source.type }
+      : null;
+  }
+  if (
+    source.type !== 'miter' ||
+    !isRecordWithKeys(source, WORD_MITER_LINE_JOIN_KEYS)
+  ) {
+    return null;
+  }
+  const limitPercent =
+    source.limitPercent === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.limitPercent,
+          EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+          0,
+          MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
+        );
+  return limitPercent === null
+    ? null
+    : {
+        type: 'miter',
+        ...(limitPercent !== undefined ? { limitPercent } : {}),
+      };
 }
 
 function normalizeEquationWordEffectColor(

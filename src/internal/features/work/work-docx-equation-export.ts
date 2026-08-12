@@ -13,8 +13,13 @@ import {
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordEffectColor,
+  type WorkDocumentEquationWordEffectFill,
+  type WorkDocumentEquationWordPresetLineDash,
   type WorkDocumentEquationWordRectangleAlignment,
   type WorkDocumentEquationWordRunProperties,
+  type WorkDocumentEquationWordTextOutlineAlignment,
+  type WorkDocumentEquationWordTextOutlineCap,
+  type WorkDocumentEquationWordTextOutlineCompound,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -92,6 +97,43 @@ const WORD_2010_RECTANGLE_ALIGNMENTS: Readonly<
   bottomLeft: 'bl',
   bottom: 'b',
   bottomRight: 'br',
+};
+const WORD_2010_TEXT_OUTLINE_CAPS: Readonly<
+  Record<WorkDocumentEquationWordTextOutlineCap, string>
+> = {
+  round: 'rnd',
+  square: 'sq',
+  flat: 'flat',
+};
+const WORD_2010_TEXT_OUTLINE_COMPOUNDS: Readonly<
+  Record<WorkDocumentEquationWordTextOutlineCompound, string>
+> = {
+  single: 'sng',
+  double: 'dbl',
+  thickThin: 'thickThin',
+  thinThick: 'thinThick',
+  triple: 'tri',
+};
+const WORD_2010_TEXT_OUTLINE_ALIGNMENTS: Readonly<
+  Record<WorkDocumentEquationWordTextOutlineAlignment, string>
+> = {
+  center: 'ctr',
+  inset: 'in',
+};
+const WORD_2010_PRESET_LINE_DASHES: Readonly<
+  Record<WorkDocumentEquationWordPresetLineDash, string>
+> = {
+  solid: 'solid',
+  dot: 'dot',
+  systemDot: 'sysDot',
+  dash: 'dash',
+  systemDash: 'sysDash',
+  longDash: 'lgDash',
+  dashDot: 'dashDot',
+  systemDashDot: 'sysDashDot',
+  longDashDot: 'lgDashDot',
+  longDashDotDot: 'lgDashDotDot',
+  systemDashDotDot: 'sysDashDotDot',
 };
 const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
@@ -1386,6 +1428,11 @@ function createWordRunProperties(
       createWord2010ReflectionEffect(document, properties.reflectionEffect),
     );
   }
+  if (properties.textOutlineEffect) {
+    result.append(
+      createWord2010TextOutlineEffect(document, properties.textOutlineEffect),
+    );
+  }
   return result;
 }
 
@@ -1630,6 +1677,158 @@ function createWord2010ReflectionEffect(
       'algn',
       WORD_2010_RECTANGLE_ALIGNMENTS[reflection.alignment],
     );
+  }
+  return result;
+}
+
+function createWord2010TextOutlineEffect(
+  document: Document,
+  outline: NonNullable<
+    WorkDocumentEquationWordRunProperties['textOutlineEffect']
+  >,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'textOutline');
+  if (outline.widthEmus !== undefined) {
+    setWord2010Attribute(result, prefix, 'w', String(outline.widthEmus));
+  }
+  if (outline.cap) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'cap',
+      WORD_2010_TEXT_OUTLINE_CAPS[outline.cap],
+    );
+  }
+  if (outline.compound) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'cmpd',
+      WORD_2010_TEXT_OUTLINE_COMPOUNDS[outline.compound],
+    );
+  }
+  if (outline.alignment) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'algn',
+      WORD_2010_TEXT_OUTLINE_ALIGNMENTS[outline.alignment],
+    );
+  }
+  if (outline.fill) {
+    result.append(createWord2010EffectFill(document, prefix, outline.fill));
+  }
+  if (outline.dash) {
+    const dash = createWord2010Element(document, prefix, 'prstDash');
+    if (outline.dash.preset) {
+      setWord2010Attribute(
+        dash,
+        prefix,
+        'val',
+        WORD_2010_PRESET_LINE_DASHES[outline.dash.preset],
+      );
+    }
+    result.append(dash);
+  }
+  if (outline.join) {
+    const join = createWord2010Element(document, prefix, outline.join.type);
+    if (
+      outline.join.type === 'miter' &&
+      outline.join.limitPercent !== undefined
+    ) {
+      setWord2010Attribute(
+        join,
+        prefix,
+        'lim',
+        String(outline.join.limitPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT),
+      );
+    }
+    result.append(join);
+  }
+  return result;
+}
+
+function createWord2010EffectFill(
+  document: Document,
+  prefix: string,
+  fill: WorkDocumentEquationWordEffectFill,
+): Element {
+  if (fill.type === 'none') {
+    return createWord2010Element(document, prefix, 'noFill');
+  }
+  if (fill.type === 'solid') {
+    const result = createWord2010Element(document, prefix, 'solidFill');
+    if (fill.color) {
+      result.append(createWord2010EffectColor(document, prefix, fill.color));
+    }
+    return result;
+  }
+  const result = createWord2010Element(document, prefix, 'gradFill');
+  if (fill.stops) {
+    const stopList = createWord2010Element(document, prefix, 'gsLst');
+    for (const stop of fill.stops) {
+      const element = createWord2010Element(document, prefix, 'gs');
+      setWord2010Attribute(
+        element,
+        prefix,
+        'pos',
+        String(stop.positionPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT),
+      );
+      element.append(createWord2010EffectColor(document, prefix, stop.color));
+      stopList.append(element);
+    }
+    result.append(stopList);
+  }
+  if (fill.shade?.type === 'linear') {
+    const linear = createWord2010Element(document, prefix, 'lin');
+    if (fill.shade.angleDegrees !== undefined) {
+      setWord2010Attribute(
+        linear,
+        prefix,
+        'ang',
+        String(fill.shade.angleDegrees * WORD_ANGLE_UNITS_PER_DEGREE),
+      );
+    }
+    if (fill.shade.scaled !== undefined) {
+      setWord2010Attribute(
+        linear,
+        prefix,
+        'scaled',
+        fill.shade.scaled ? '1' : '0',
+      );
+    }
+    result.append(linear);
+  } else if (fill.shade?.type === 'path') {
+    const path = createWord2010Element(document, prefix, 'path');
+    if (fill.shade.path) {
+      setWord2010Attribute(
+        path,
+        prefix,
+        'path',
+        fill.shade.path === 'rectangle' ? 'rect' : fill.shade.path,
+      );
+    }
+    if (fill.shade.fillToRectangle) {
+      const rectangle = createWord2010Element(document, prefix, 'fillToRect');
+      for (const [name, value] of [
+        ['l', fill.shade.fillToRectangle.leftPercent],
+        ['t', fill.shade.fillToRectangle.topPercent],
+        ['r', fill.shade.fillToRectangle.rightPercent],
+        ['b', fill.shade.fillToRectangle.bottomPercent],
+      ] as const) {
+        if (value !== undefined) {
+          setWord2010Attribute(
+            rectangle,
+            prefix,
+            name,
+            String(value * WORD_PERCENTAGE_UNITS_PER_PERCENT),
+          );
+        }
+      }
+      path.append(rectangle);
+    }
+    result.append(path);
   }
   return result;
 }

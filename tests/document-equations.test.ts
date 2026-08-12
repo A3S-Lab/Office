@@ -43,6 +43,7 @@ const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63
 const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:srgbClr w14:val="000000"/></w14:shadow>`;
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2074,6 +2075,7 @@ describe('document equations', () => {
       '<w14:glow w14:rad="63500"><w14:schemeClr w14:val="accent4"><w14:alpha w14:val="50000"/></w14:schemeClr></w14:glow>',
       '<w14:shadow w14:blurRad="25400" w14:dist="12700" w14:dir="5400000" w14:sx="90000" w14:sy="-100000" w14:kx="-60000" w14:ky="120000" w14:algn="tr"><w14:schemeClr w14:val="accent5"><w14:lumMod w14:val="75000"/></w14:schemeClr></w14:shadow>',
       '<w14:reflection w14:blurRad="12700" w14:stA="60000" w14:stPos="0" w14:endA="10000" w14:endPos="100000" w14:dist="6350" w14:dir="5400000" w14:fadeDir="16200000" w14:sx="100000" w14:sy="-50000" w14:kx="-60000" w14:ky="120000" w14:algn="b"/>',
+      '<w14:textOutline w14:w="12700" w14:cap="sq" w14:cmpd="dbl" w14:algn="in"><w14:solidFill><w14:schemeClr w14:val="accent6"><w14:alpha w14:val="80000"/></w14:schemeClr></w14:solidFill><w14:prstDash w14:val="dashDot"/><w14:miter w14:lim="400000"/></w14:textOutline>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2182,7 +2184,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2216,10 +2218,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(
-          `<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`,
-          '<w:t>fallback</w:t>',
-        ),
+        wordRun(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4435,7 +4434,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_TEXT_OUTLINE),
+      wordRun(WORD_2010_TEXT_FILL),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4866,7 +4865,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_TEXT_OUTLINE),
+      wordRun(WORD_2010_TEXT_FILL),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5293,7 +5292,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_TEXT_OUTLINE),
+      wordRun(WORD_2010_TEXT_FILL),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5660,7 +5659,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_TEXT_OUTLINE),
+      wordRun(WORD_2010_TEXT_FILL),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5723,6 +5722,739 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunReflectionEffects(
+      await createArtifactBlob(imported),
+    );
+  });
+
+  test('preserves bounded Office 2010 text outline effects as native OMML metadata', async () => {
+    const transforms = [
+      { type: 'tint', value: 0 },
+      { type: 'alpha', value: 50_000 },
+      { type: 'luminanceModulation', value: 75_000 },
+    ];
+    const fullEffect = {
+      widthEmus: 12_700,
+      cap: 'square',
+      compound: 'double',
+      alignment: 'inset',
+      fill: {
+        type: 'gradient',
+        stops: [
+          {
+            positionPercent: 0,
+            color: { type: 'rgb', value: '#a1b2c3', transforms },
+          },
+          {
+            positionPercent: 100,
+            color: { type: 'scheme', value: 'accent3' },
+          },
+        ],
+        shade: { type: 'linear', angleDegrees: 90, scaled: true },
+      },
+      dash: { preset: 'longDashDotDot' },
+      join: { type: 'miter', limitPercent: 250 },
+    };
+    const boundaryPositions = [0, 0.001, 10, 20, 30, 40, 50, 60, 99.999, 100];
+    const boundaryStops = boundaryPositions.map((positionPercent, index) => ({
+      positionPercent,
+      color: {
+        type: 'rgb',
+        value: `#${index.toString(16).padStart(6, '0')}`,
+      },
+    }));
+    const minimumPercentage = -2_147_483_648 / 1_000;
+    const maximumPercentage = 2_147_483_647 / 1_000;
+    const boundaryEffect = {
+      widthEmus: 20_116_800,
+      cap: 'round',
+      compound: 'triple',
+      alignment: 'inset',
+      fill: {
+        type: 'gradient',
+        stops: boundaryStops,
+        shade: {
+          type: 'path',
+          path: 'rectangle',
+          fillToRectangle: {
+            leftPercent: minimumPercentage,
+            topPercent: maximumPercentage,
+            rightPercent: 0,
+            bottomPercent: 0.001,
+          },
+        },
+      },
+      dash: {},
+      join: { type: 'miter', limitPercent: maximumPercentage },
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'full-text-outline-effect',
+          wordRunProperties: { textOutlineEffect: fullEffect },
+        },
+        {
+          type: 'run',
+          text: 'explicit-default-text-outline-effect',
+          wordRunProperties: {
+            textOutlineEffect: {
+              widthEmus: 0,
+              cap: 'flat',
+              compound: 'single',
+              alignment: 'center',
+              fill: { type: 'none' },
+              dash: { preset: 'solid' },
+              join: { type: 'bevel' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'empty-text-outline-effect',
+          wordRunProperties: { textOutlineEffect: {} },
+        },
+        {
+          type: 'run',
+          text: 'empty-components-text-outline-effect',
+          wordRunProperties: {
+            textOutlineEffect: {
+              fill: { type: 'solid' },
+              dash: {},
+              join: { type: 'miter' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'ordered-text-outline-effect',
+          wordRunProperties: {
+            shadow: false,
+            paragraphMarkAlwaysHidden: false,
+            glow: { color: { type: 'rgb', value: '#112233' } },
+            shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+            reflectionEffect: { startOpacityPercent: 25 },
+            textOutlineEffect: { fill: { type: 'none' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'boundary-text-outline-effect',
+          wordRunProperties: { textOutlineEffect: boundaryEffect },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            textOutlineEffect: {
+              widthEmus: 25_400,
+              fill: {
+                type: 'solid',
+                color: { type: 'scheme', value: 'hyperlink' },
+              },
+              join: { type: 'round' },
+            },
+          },
+          children: [{ type: 'run', text: 'operator-text-outline-effect' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithTextOutlineEffect = (textOutlineEffect: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { textOutlineEffect } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { textOutlineEffect: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      normalizeDocumentEquation(equationWithTextOutlineEffect(boundaryEffect))
+        ?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textOutlineEffect: boundaryEffect },
+    });
+    const validStop = {
+      positionPercent: 50,
+      color: { type: 'rgb', value: '#abcdef' },
+    };
+    const invalidEffects = [
+      null,
+      false,
+      { extra: true },
+      { widthEmus: -1 },
+      { widthEmus: 1.5 },
+      { widthEmus: 20_116_801 },
+      { cap: 'butt' },
+      { compound: 'quadruple' },
+      { alignment: 'outside' },
+      { fill: null },
+      { fill: { type: 'none', color: validStop.color } },
+      { fill: { type: 'solid', extra: true } },
+      { fill: { type: 'solid', color: null } },
+      { fill: { type: 'gradient', extra: true } },
+      { fill: { type: 'gradient', stops: [] } },
+      { fill: { type: 'gradient', stops: [validStop] } },
+      {
+        fill: {
+          type: 'gradient',
+          stops: Array.from({ length: 11 }, () => validStop),
+        },
+      },
+      { fill: { type: 'gradient', stops: 'two' } },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, extra: true }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: -0.001 }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: 100.001 }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { ...validStop, positionPercent: 0.0005 }],
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          stops: [validStop, { positionPercent: 100 }],
+        },
+      },
+      { fill: { type: 'gradient', shade: null } },
+      { fill: { type: 'gradient', shade: { type: 'radial' } } },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', extra: true },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', angleDegrees: -1 / 60_000 },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', angleDegrees: 360 },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', angleDegrees: 1 / 120_000 },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'linear', scaled: 'true' },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'path', path: 'triangle' },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'path', fillToRectangle: null },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: { type: 'path', fillToRectangle: { extra: true } },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: {
+            type: 'path',
+            fillToRectangle: { leftPercent: minimumPercentage - 0.001 },
+          },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: {
+            type: 'path',
+            fillToRectangle: { rightPercent: maximumPercentage + 0.001 },
+          },
+        },
+      },
+      {
+        fill: {
+          type: 'gradient',
+          shade: {
+            type: 'path',
+            fillToRectangle: { topPercent: 0.0005 },
+          },
+        },
+      },
+      { dash: null },
+      { dash: { extra: true } },
+      { dash: { preset: 'shortDash' } },
+      { join: null },
+      { join: { type: 'round', limitPercent: 1 } },
+      { join: { type: 'bevel', extra: true } },
+      { join: { type: 'miter', limitPercent: -0.001 } },
+      {
+        join: { type: 'miter', limitPercent: maximumPercentage + 0.001 },
+      },
+      { join: { type: 'miter', limitPercent: 0.0005 } },
+      { join: { type: 'sharp' } },
+    ];
+    expect(
+      invalidEffects.map((effect) =>
+        normalizeDocumentEquation(equationWithTextOutlineEffect(effect)),
+      ),
+    ).toEqual(invalidEffects.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const fullMarkup =
+      '<w14:textOutline w14:w=" +12700 " w14:cap="sq" ' +
+      'w14:cmpd="dbl" w14:algn="in"><w14:gradFill><w14:gsLst>' +
+      '<w14:gs w14:pos="0"><w14:srgbClr w14:val="a1B2c3">' +
+      '<w14:tint w14:val="0"/><w14:alpha w14:val="50000"/>' +
+      '<w14:lumMod w14:val="75000"/></w14:srgbClr></w14:gs>' +
+      '<w14:gs w14:pos="100000"><w14:schemeClr w14:val="accent3"/></w14:gs>' +
+      '</w14:gsLst><w14:lin w14:ang="5400000" w14:scaled="true"/>' +
+      '</w14:gradFill><w14:prstDash w14:val="lgDashDotDot"/>' +
+      '<w14:miter w14:lim="250000"/></w14:textOutline>';
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(fullMarkup, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { textOutlineEffect: fullEffect },
+      });
+    }
+    expect(
+      inspectEquationModel(wordRun(WORD_2010_TEXT_OUTLINE))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textOutlineEffect: {} },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w14:textOutline><w14:solidFill/><w14:prstDash/><w14:miter/></w14:textOutline>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        textOutlineEffect: {
+          fill: { type: 'solid' },
+          dash: {},
+          join: { type: 'miter' },
+        },
+      },
+    });
+    const boundaryStopMarkup = boundaryPositions
+      .map(
+        (position, index) =>
+          `<w14:gs w14:pos="${position * 1_000}"><w14:srgbClr w14:val="${index
+            .toString(16)
+            .padStart(6, '0')}"/></w14:gs>`,
+      )
+      .join('');
+    const boundaryMarkup =
+      '<w14:textOutline w14:w="20116800" w14:cap="rnd" ' +
+      'w14:cmpd="tri" w14:algn="in"><w14:gradFill><w14:gsLst>' +
+      boundaryStopMarkup +
+      '</w14:gsLst><w14:path w14:path="rect"><w14:fillToRect ' +
+      'w14:l="-2147483648" w14:t="2147483647" w14:r="0" w14:b="1"/>' +
+      '</w14:path></w14:gradFill><w14:prstDash/>' +
+      '<w14:miter w14:lim="2147483647"/></w14:textOutline>';
+    expect(inspectEquationModel(wordRun(boundaryMarkup))?.children[0]).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { textOutlineEffect: boundaryEffect },
+    });
+
+    const attributeEnums = [
+      ['cap', 'rnd', 'round'],
+      ['cap', 'sq', 'square'],
+      ['cap', 'flat', 'flat'],
+      ['cmpd', 'sng', 'single'],
+      ['cmpd', 'dbl', 'double'],
+      ['cmpd', 'thickThin', 'thickThin'],
+      ['cmpd', 'thinThick', 'thinThick'],
+      ['cmpd', 'tri', 'triple'],
+      ['algn', 'ctr', 'center'],
+      ['algn', 'in', 'inset'],
+    ] as const;
+    for (const [attribute, source, value] of attributeEnums) {
+      expect(
+        inspectEquationModel(
+          wordRun(`<w14:textOutline w14:${attribute}="${source}"/>`),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          textOutlineEffect: {
+            [attribute === 'algn'
+              ? 'alignment'
+              : attribute === 'cmpd'
+                ? 'compound'
+                : 'cap']: value,
+          },
+        },
+      });
+    }
+    const dashEnums = [
+      ['solid', 'solid'],
+      ['dot', 'dot'],
+      ['sysDot', 'systemDot'],
+      ['dash', 'dash'],
+      ['sysDash', 'systemDash'],
+      ['lgDash', 'longDash'],
+      ['dashDot', 'dashDot'],
+      ['sysDashDot', 'systemDashDot'],
+      ['lgDashDot', 'longDashDot'],
+      ['lgDashDotDot', 'longDashDotDot'],
+      ['sysDashDotDot', 'systemDashDotDot'],
+    ] as const;
+    for (const [source, preset] of dashEnums) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w14:textOutline><w14:prstDash w14:val="${source}"/></w14:textOutline>`,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { textOutlineEffect: { dash: { preset } } },
+      });
+    }
+    for (const [source, path] of [
+      ['shape', 'shape'],
+      ['circle', 'circle'],
+      ['rect', 'rectangle'],
+    ] as const) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w14:textOutline><w14:gradFill><w14:path w14:path="${source}"/></w14:gradFill></w14:textOutline>`,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          textOutlineEffect: {
+            fill: { type: 'gradient', shade: { type: 'path', path } },
+          },
+        },
+      });
+    }
+    for (const [source, scaled] of [
+      ['true', true],
+      ['1', true],
+      ['false', false],
+      ['0', false],
+    ] as const) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w14:textOutline><w14:gradFill><w14:lin w14:scaled="${source}"/></w14:gradFill></w14:textOutline>`,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          textOutlineEffect: {
+            fill: { type: 'gradient', shade: { type: 'linear', scaled } },
+          },
+        },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:shadow w:val="0"/><w:specVanish w:val="0"/>' +
+            '<w14:glow><w14:srgbClr w14:val="112233"/></w14:glow>' +
+            '<w14:shadow><w14:srgbClr w14:val="445566"/></w14:shadow>' +
+            '<w14:reflection w14:stA="25000"/>' +
+            '<w14:textOutline><w14:noFill/></w14:textOutline>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        shadow: false,
+        paragraphMarkAlwaysHidden: false,
+        glow: { color: { type: 'rgb', value: '#112233' } },
+        shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+        reflectionEffect: { startOpacityPercent: 25 },
+        textOutlineEffect: { fill: { type: 'none' } },
+      },
+    });
+
+    const gradientStop = (
+      position = '0',
+      color = '<w14:srgbClr w14:val="A1B2C3"/>',
+    ) => `<w14:gs w14:pos="${position}">${color}</w14:gs>`;
+    const twoStops = `${gradientStop()}${gradientStop('100000')}`;
+    const invalidMarkup = [
+      wordRun('<w14:textOutline/><w14:textOutline/>'),
+      wordRun('<w14:textOutline/><w14:reflection/>'),
+      wordRun(
+        '<w14:textOutline/><w14:shadow><w14:srgbClr w14:val="000000"/></w14:shadow>',
+      ),
+      wordRun('<w14:textOutline/><w:specVanish/>'),
+      wordRun('<w:textOutline/>'),
+      wordRun(`<v:textOutline xmlns:v="${VENDOR_NAMESPACE}"/>`),
+      wordRun(`<w14:textOutline xmlns:w14="${VENDOR_NAMESPACE}" w14:w="1"/>`),
+      wordRun('<w14:textOutline w="1"/>'),
+      wordRun('<w14:textOutline w14:w="-1"/>'),
+      wordRun('<w14:textOutline w14:w="1.5"/>'),
+      wordRun('<w14:textOutline w14:w="20116801"/>'),
+      wordRun('<w14:textOutline w14:cap="butt"/>'),
+      wordRun('<w14:textOutline w14:cap="RND"/>'),
+      wordRun('<w14:textOutline w14:cmpd="quad"/>'),
+      wordRun('<w14:textOutline w14:algn="out"/>'),
+      wordRun('<w14:textOutline w14:extra="semantic"/>'),
+      wordRun(
+        `<w14:textOutline xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:textOutline>meaningful</w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:noFill/><w14:solidFill/></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:prstDash/><w14:noFill/></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:round/><w14:prstDash/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:prstDash/><w14:prstDash/></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:round/><w14:bevel/></w14:textOutline>'),
+      wordRun('<w14:textOutline><w14:noFill w14:extra="1"/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:noFill>text</w14:noFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:noFill><w14:alpha w14:val="1"/></w14:noFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:solidFill w14:extra="1"/></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:solidFill><w14:srgbClr w14:val="A1B2C3"/><w14:schemeClr w14:val="accent1"/></w14:solidFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:solidFill><w14:alpha w14:val="50000"/></w14:solidFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill w14:extra="1"/></w14:textOutline>',
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:lin/><w14:gsLst>${twoStops}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin/><w14:path/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst w14:extra="1">${twoStops}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst>${gradientStop()}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst>${Array.from({ length: 11 }, (_, index) => gradientStop(String(index * 10_000))).join('')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst><w14:gs><w14:srgbClr w14:val="A1B2C3"/></w14:gs>${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst>${gradientStop('-1')}${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst>${gradientStop('100001')}${gradientStop('0')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst>${gradientStop('1.5')}${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst><w14:gs w14:pos="0"/>${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        `<w14:textOutline><w14:gradFill><w14:gsLst><w14:gs w14:pos="0"><w14:srgbClr w14:val="A1B2C3"/><w14:schemeClr w14:val="accent1"/></w14:gs>${gradientStop('100000')}</w14:gsLst></w14:gradFill></w14:textOutline>`,
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin w14:extra="1"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin w14:ang="-1"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin w14:ang="21600000"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin w14:ang="1.5"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin w14:scaled="on"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:lin><w14:fillToRect/></w14:lin></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path w14:path="triangle"/></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect/><w14:fillToRect/></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect l="1"/></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect w14:l="-2147483649"/></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect w14:r="2147483648"/></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect w14:t="1.5"/></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:gradFill><w14:path><w14:fillToRect><w14:noFill/></w14:fillToRect></w14:path></w14:gradFill></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:prstDash w14:val="shortDash"/></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:prstDash val="solid"/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:prstDash w14:extra="1"/></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><w14:prstDash><w14:noFill/></w14:prstDash></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:round w14:extra="1"/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:bevel><w14:noFill/></w14:bevel></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:miter w14:lim="-1"/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:miter w14:lim="2147483648"/></w14:textOutline>',
+      ),
+      wordRun('<w14:textOutline><w14:miter w14:lim="1.5"/></w14:textOutline>'),
+      wordRun(
+        '<w14:textOutline><w14:miter><w14:noFill/></w14:miter></w14:textOutline>',
+      ),
+      wordRun(
+        '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
+      ),
+      wordRun(WORD_2010_TEXT_FILL),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'full-text-outline-effect',
+      'explicit-default-text-outline-effect',
+      'empty-text-outline-effect',
+      'empty-components-text-outline-effect',
+      'ordered-text-outline-effect',
+      'boundary-text-outline-effect',
+      'operator-text-outline-effect',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(preview.querySelector('math')?.outerHTML).not.toMatch(
+      /text-stroke|paint-order|stroke/iu,
+    );
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunTextOutlineEffects(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-text-outline-effect.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunTextOutlineEffects(
       await createArtifactBlob(imported),
     );
   });
@@ -5815,7 +6547,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_TEXT_FILL}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -6092,7 +6824,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_TEXT_FILL}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -7342,6 +8074,22 @@ function richWordRunProperties() {
       horizontalSkewDegrees: -1,
       verticalSkewDegrees: 2,
       alignment: 'bottom' as const,
+    },
+    textOutlineEffect: {
+      widthEmus: 12_700,
+      cap: 'square' as const,
+      compound: 'double' as const,
+      alignment: 'inset' as const,
+      fill: {
+        type: 'solid' as const,
+        color: {
+          type: 'scheme' as const,
+          value: 'accent6' as const,
+          transforms: [{ type: 'alpha' as const, value: 80_000 }],
+        },
+      },
+      dash: { preset: 'dashDot' as const },
+      join: { type: 'miter' as const, limitPercent: 400 },
     },
   };
 }
@@ -9571,6 +10319,235 @@ async function expectNativeWordRunReflectionEffects(blob: Blob): Promise<void> {
   });
 }
 
+async function expectNativeWordRunTextOutlineEffects(
+  blob: Blob,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const outlineFor = (text: string): Element => {
+    const outline = directChildren(wordPropertiesFor(text), 'textOutline')[0];
+    expect(outline, text).toBeDefined();
+    expect(outline.namespaceURI, text).toBe(WORD_2010_NAMESPACE);
+    return outline;
+  };
+  const expectWord2010Children = (
+    element: Element,
+    names: readonly string[],
+  ): Element[] => {
+    const children = directChildren(element);
+    expect(children.map((child) => child.localName)).toEqual(names);
+    expect(
+      children.every((child) => child.namespaceURI === WORD_2010_NAMESPACE),
+    ).toBe(true);
+    return children;
+  };
+
+  const full = outlineFor('full-text-outline-effect');
+  expect(word2010Attributes(full)).toEqual({
+    w: '12700',
+    cap: 'sq',
+    cmpd: 'dbl',
+    algn: 'in',
+  });
+  const [gradient, dash, miter] = expectWord2010Children(full, [
+    'gradFill',
+    'prstDash',
+    'miter',
+  ]);
+  expect(word2010Attributes(gradient)).toEqual({});
+  const [stopList, linear] = expectWord2010Children(gradient, ['gsLst', 'lin']);
+  expect(word2010Attributes(stopList)).toEqual({});
+  const stops = expectWord2010Children(stopList, ['gs', 'gs']);
+  expect(word2010Attributes(stops[0])).toEqual({ pos: '0' });
+  expect(word2010Attributes(stops[1])).toEqual({ pos: '100000' });
+  const firstColor = expectWord2010Children(stops[0], ['srgbClr'])[0];
+  expect(word2010Attributes(firstColor)).toEqual({ val: 'A1B2C3' });
+  const transforms = expectWord2010Children(firstColor, [
+    'tint',
+    'alpha',
+    'lumMod',
+  ]);
+  expect(transforms.map(word2010Attributes)).toEqual([
+    { val: '0' },
+    { val: '50000' },
+    { val: '75000' },
+  ]);
+  const secondColor = expectWord2010Children(stops[1], ['schemeClr'])[0];
+  expect(word2010Attributes(secondColor)).toEqual({ val: 'accent3' });
+  expect(directChildren(secondColor)).toHaveLength(0);
+  expect(word2010Attributes(linear)).toEqual({
+    ang: '5400000',
+    scaled: '1',
+  });
+  expect(directChildren(linear)).toHaveLength(0);
+  expect(word2010Attributes(dash)).toEqual({ val: 'lgDashDotDot' });
+  expect(directChildren(dash)).toHaveLength(0);
+  expect(word2010Attributes(miter)).toEqual({ lim: '250000' });
+  expect(directChildren(miter)).toHaveLength(0);
+
+  const explicitDefaults = outlineFor('explicit-default-text-outline-effect');
+  expect(word2010Attributes(explicitDefaults)).toEqual({
+    w: '0',
+    cap: 'flat',
+    cmpd: 'sng',
+    algn: 'ctr',
+  });
+  const [noFill, solidDash, bevel] = expectWord2010Children(explicitDefaults, [
+    'noFill',
+    'prstDash',
+    'bevel',
+  ]);
+  expect(word2010Attributes(noFill)).toEqual({});
+  expect(directChildren(noFill)).toHaveLength(0);
+  expect(word2010Attributes(solidDash)).toEqual({ val: 'solid' });
+  expect(directChildren(solidDash)).toHaveLength(0);
+  expect(word2010Attributes(bevel)).toEqual({});
+  expect(directChildren(bevel)).toHaveLength(0);
+
+  const empty = outlineFor('empty-text-outline-effect');
+  expect(word2010Attributes(empty)).toEqual({});
+  expect(directChildren(empty)).toHaveLength(0);
+  const emptyComponents = outlineFor('empty-components-text-outline-effect');
+  expect(word2010Attributes(emptyComponents)).toEqual({});
+  for (const child of expectWord2010Children(emptyComponents, [
+    'solidFill',
+    'prstDash',
+    'miter',
+  ])) {
+    expect(word2010Attributes(child)).toEqual({});
+    expect(directChildren(child)).toHaveLength(0);
+  }
+
+  const boundary = outlineFor('boundary-text-outline-effect');
+  expect(word2010Attributes(boundary)).toEqual({
+    w: '20116800',
+    cap: 'rnd',
+    cmpd: 'tri',
+    algn: 'in',
+  });
+  const [boundaryGradient, emptyDash, maximumMiter] = expectWord2010Children(
+    boundary,
+    ['gradFill', 'prstDash', 'miter'],
+  );
+  const [boundaryStopList, path] = expectWord2010Children(boundaryGradient, [
+    'gsLst',
+    'path',
+  ]);
+  const boundaryStops = directChildren(boundaryStopList);
+  expect(boundaryStops).toHaveLength(10);
+  expect(boundaryStops.map((stop) => word2010Attributes(stop).pos)).toEqual([
+    '0',
+    '1',
+    '10000',
+    '20000',
+    '30000',
+    '40000',
+    '50000',
+    '60000',
+    '99999',
+    '100000',
+  ]);
+  expect(
+    boundaryStops.map((stop) =>
+      word2010Attributes(expectWord2010Children(stop, ['srgbClr'])[0]),
+    ),
+  ).toEqual(
+    Array.from({ length: 10 }, (_, index) => ({
+      val: index.toString(16).padStart(6, '0').toUpperCase(),
+    })),
+  );
+  expect(word2010Attributes(path)).toEqual({ path: 'rect' });
+  const fillToRectangle = expectWord2010Children(path, ['fillToRect'])[0];
+  expect(word2010Attributes(fillToRectangle)).toEqual({
+    l: '-2147483648',
+    t: '2147483647',
+    r: '0',
+    b: '1',
+  });
+  expect(directChildren(fillToRectangle)).toHaveLength(0);
+  expect(word2010Attributes(emptyDash)).toEqual({});
+  expect(directChildren(emptyDash)).toHaveLength(0);
+  expect(word2010Attributes(maximumMiter)).toEqual({ lim: '2147483647' });
+  expect(directChildren(maximumMiter)).toHaveLength(0);
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-text-outline-effect'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'shadow',
+    'specVanish',
+    'glow',
+    'shadow',
+    'reflection',
+    'textOutline',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+  const orderedOutline = orderedProperties.at(-1) as Element;
+  expect(word2010Attributes(orderedOutline)).toEqual({});
+  expectWord2010Children(orderedOutline, ['noFill']);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-text-outline-effect'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const controlOutline = directChildren(
+    wordProperties as Element,
+    'textOutline',
+  )[0];
+  expect(controlOutline.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(controlOutline)).toEqual({ w: '25400' });
+  const [controlFill, controlJoin] = expectWord2010Children(controlOutline, [
+    'solidFill',
+    'round',
+  ]);
+  const controlColor = expectWord2010Children(controlFill, ['schemeClr'])[0];
+  expect(word2010Attributes(controlColor)).toEqual({ val: 'hlink' });
+  expect(directChildren(controlColor)).toHaveLength(0);
+  expect(word2010Attributes(controlJoin)).toEqual({});
+  expect(directChildren(controlJoin)).toHaveLength(0);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -9634,6 +10611,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'glow',
     'shadow',
     'reflection',
+    'textOutline',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -9717,6 +10695,7 @@ async function expectNativeArgumentControlProperties(
     'glow',
     'shadow',
     'reflection',
+    'textOutline',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -10287,6 +11266,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'glow',
     'shadow',
     'reflection',
+    'textOutline',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -10386,6 +11366,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       ky: '120000',
       algn: 'b',
     },
+    { w: '12700', cap: 'sq', cmpd: 'dbl', algn: 'in' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -10427,6 +11408,29 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     const reflection = directChildren(properties, 'reflection')[0];
     expect(reflection.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(directChildren(reflection)).toHaveLength(0);
+    const textOutline = directChildren(properties, 'textOutline')[0];
+    expect(textOutline.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    const [solidFill, dash, miter] = directChildren(textOutline);
+    expect(
+      [solidFill, dash, miter].map((child) => [
+        child.namespaceURI,
+        child.localName,
+      ]),
+    ).toEqual([
+      [WORD_2010_NAMESPACE, 'solidFill'],
+      [WORD_2010_NAMESPACE, 'prstDash'],
+      [WORD_2010_NAMESPACE, 'miter'],
+    ]);
+    expect(word2010Attributes(dash)).toEqual({ val: 'dashDot' });
+    expect(word2010Attributes(miter)).toEqual({ lim: '400000' });
+    const outlineColor = directChildren(solidFill)[0];
+    expect(outlineColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(outlineColor.localName).toBe('schemeClr');
+    expect(word2010Attributes(outlineColor)).toEqual({ val: 'accent6' });
+    const outlineAlpha = directChildren(outlineColor)[0];
+    expect(outlineAlpha.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(outlineAlpha.localName).toBe('alpha');
+    expect(word2010Attributes(outlineAlpha)).toEqual({ val: '80000' });
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

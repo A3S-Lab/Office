@@ -32,7 +32,7 @@ All notable changes to A3S Office will be documented in this file.
   with optional signed 32-bit run IDs, two-lines-in-one flags, all five
   enclosing-bracket styles, horizontal-in-vertical rotation, and rotated-text
   compression, explicit paragraph-mark always-hidden/reset flags, and Office
-  2010 text glow, shadow, and reflection effects. Glow retains an optional 0
+  2010 text glow, shadow, reflection, and text-outline effects. Glow retains an optional 0
   through 2,147,483,647 EMU radius, one RGB or 17-slot theme color source, and
   up to 64 ordered, repeatable tint, shade, alpha, hue-modulation, saturation, and
   luminance transforms. The distinct Office 2010 shadow effect retains the same
@@ -48,6 +48,13 @@ All notable changes to A3S Office will be documented in this file.
   90 degrees, and the same ten rectangle alignments. Angles retain exact
   1/60,000-degree units, while opacity, positions, and scales retain exact
   1/1,000-percent units.
+  The structured Office 2010 text-outline effect retains an optional width from
+  0 through 20,116,800 EMUs, three line caps, five compound-line styles, two pen
+  alignments, distinct none/solid/gradient fills, optional lists of 2 through 10
+  gradient stops with RGB or theme colors and ordered transforms, exact linear
+  or path shading with optional signed 32-bit relative fill rectangles, all 11
+  preset dashes, and round, bevel, or miter joins with optional exact
+  nonnegative limits.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
@@ -68,6 +75,10 @@ All notable changes to A3S Office will be documented in this file.
   A present empty `w14:reflection` remains distinct from omission. Its omitted
   geometry keeps zero/`none` defaults while explicit zero and `none` remain
   present.
+  A present empty `w14:textOutline` remains distinct from omission and keeps
+  the schema's bevel default. Omitted fill, dash, and join choices retain their
+  defaults, while explicit zero/default attributes and empty child choices
+  remain present.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, baseline shifts, and baseline/superscript/subscript
   alignment use safe CSS projections in MathML previews without changing
@@ -79,7 +90,7 @@ All notable changes to A3S Office will be documented in this file.
   position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
   `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
   `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
-  `w14:reflection` follows `w14:shadow`. Simple
+  `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`. Simple
   explicitly sized solid, double, dotted, dashed, inset, and outset line
   borders project through CSS with direct or automatic color and point
   padding; explicit `nil`/`none` resets also project. Relief effects, legacy
@@ -96,11 +107,12 @@ All notable changes to A3S Office will be documented in this file.
   never hides equation previews because its display semantics apply only to
   paragraph marks; Word additionally ignores it unless `w:vanish` is set.
   Schema-valid values remain preserved without inventing that dependency.
-  Office 2010 glow, shadow, and reflection effects also remain native-only
-  because CSS `text-shadow`, reflection, opacity, and transform approximations
-  cannot preserve theme colors, ordered transforms, exact blur and offset
-  coordinates, reflection opacity/position/fade geometry, signed scale/skew,
-  or rectangle alignment.
+  Office 2010 glow, shadow, reflection, and text-outline effects also remain
+  native-only because CSS `text-shadow`, reflection, opacity, transform,
+  text-stroke, paint-order, and border approximations cannot preserve theme
+  colors, ordered transforms, exact blur and offset coordinates, reflection
+  opacity/position/fade geometry, signed scale/skew, rectangle alignment,
+  gradient or compound strokes, preset dashes, caps, joins, or pen alignment.
   Highlight precedence over shading is
   retained. Named highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
@@ -112,7 +124,8 @@ All notable changes to A3S Office will be documented in this file.
   and grouping IDs, missing or unknown vertical-alignment or emphasis-mark
   values, malformed or out-of-range East Asian layout IDs, flags, or bracket
   styles, malformed paragraph-mark visibility flags, malformed glow radii,
-  shadow or reflection geometry, color choices, or transform chains, and
+  shadow or reflection geometry, text-outline fill/gradient/dash/join
+  structure, color choices, or transform chains, and
   unknown, reordered,
   duplicated, spoofed, or
   relationship-bound Word run properties fail closed.

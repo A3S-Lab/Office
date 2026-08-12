@@ -29,12 +29,20 @@ import {
   type WorkDocumentEquationWordEastAsianLayout,
   type WorkDocumentEquationWordEmphasisMark,
   type WorkDocumentEquationWordEffectColor,
+  type WorkDocumentEquationWordEffectFill,
   type WorkDocumentEquationWordEffectSchemeColor,
   type WorkDocumentEquationWordFitText,
   type WorkDocumentEquationWordGlow,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
   type WorkDocumentEquationWordLineBorderStyle,
+  type WorkDocumentEquationWordGradientFillRectangle,
+  type WorkDocumentEquationWordGradientPath,
+  type WorkDocumentEquationWordGradientShade,
+  type WorkDocumentEquationWordGradientStop,
+  type WorkDocumentEquationWordLineDash,
+  type WorkDocumentEquationWordLineJoin,
+  type WorkDocumentEquationWordPresetLineDash,
   type WorkDocumentEquationWordRunBorder,
   type WorkDocumentEquationWordRunFonts,
   type WorkDocumentEquationWordRunProperties,
@@ -44,6 +52,10 @@ import {
   type WorkDocumentEquationWordShading,
   type WorkDocumentEquationWordShadingPattern,
   type WorkDocumentEquationWordTextEffect,
+  type WorkDocumentEquationWordTextOutlineAlignment,
+  type WorkDocumentEquationWordTextOutlineCap,
+  type WorkDocumentEquationWordTextOutlineCompound,
+  type WorkDocumentEquationWordTextOutlineEffect,
   type WorkDocumentEquationWordUnderline,
   type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
@@ -179,6 +191,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:glow',
   'w14:shadow',
   'w14:reflection',
+  'w14:textOutline',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -261,6 +274,55 @@ const WORD_2010_RECTANGLE_ALIGNMENTS = new Map<
   ['bl', 'bottomLeft'],
   ['b', 'bottom'],
   ['br', 'bottomRight'],
+]);
+const WORD_2010_TEXT_OUTLINE_CAPS = new Map<
+  string,
+  WorkDocumentEquationWordTextOutlineCap
+>([
+  ['rnd', 'round'],
+  ['sq', 'square'],
+  ['flat', 'flat'],
+]);
+const WORD_2010_TEXT_OUTLINE_COMPOUNDS = new Map<
+  string,
+  WorkDocumentEquationWordTextOutlineCompound
+>([
+  ['sng', 'single'],
+  ['dbl', 'double'],
+  ['thickThin', 'thickThin'],
+  ['thinThick', 'thinThick'],
+  ['tri', 'triple'],
+]);
+const WORD_2010_TEXT_OUTLINE_ALIGNMENTS = new Map<
+  string,
+  WorkDocumentEquationWordTextOutlineAlignment
+>([
+  ['ctr', 'center'],
+  ['in', 'inset'],
+]);
+const WORD_2010_PRESET_LINE_DASHES = new Map<
+  string,
+  WorkDocumentEquationWordPresetLineDash
+>([
+  ['solid', 'solid'],
+  ['dot', 'dot'],
+  ['sysDot', 'systemDot'],
+  ['dash', 'dash'],
+  ['sysDash', 'systemDash'],
+  ['lgDash', 'longDash'],
+  ['dashDot', 'dashDot'],
+  ['sysDashDot', 'systemDashDot'],
+  ['lgDashDot', 'longDashDot'],
+  ['lgDashDotDot', 'longDashDotDot'],
+  ['sysDashDotDot', 'systemDashDotDot'],
+]);
+const WORD_2010_GRADIENT_PATHS = new Map<
+  string,
+  WorkDocumentEquationWordGradientPath
+>([
+  ['shape', 'shape'],
+  ['circle', 'circle'],
+  ['rect', 'rectangle'],
 ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
@@ -435,6 +497,9 @@ const MAX_WORD_EFFECT_SCALE_UNITS = 2_147_483_647;
 const MIN_WORD_EFFECT_SKEW_UNITS = -5_399_999;
 const MAX_WORD_EFFECT_SKEW_UNITS = 5_399_999;
 const MAX_WORD_FIXED_PERCENTAGE_UNITS = 100_000;
+const MAX_WORD_TEXT_OUTLINE_WIDTH_EMUS = 20_116_800;
+const MIN_WORD_GRADIENT_STOPS = 2;
+const MAX_WORD_GRADIENT_STOPS = 10;
 const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_WORD_COLOR_TRANSFORMS = 64;
@@ -1048,6 +1113,9 @@ function parseWordRunProperties(
   const reflectionEffect = parseWordReflectionEffect(
     word2010Children.get('reflection'),
   );
+  const textOutlineEffect = parseWordTextOutlineEffect(
+    word2010Children.get('textOutline'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -1069,7 +1137,8 @@ function parseWordRunProperties(
     eastAsianLayout === null ||
     glow === null ||
     shadowEffect === null ||
-    reflectionEffect === null
+    reflectionEffect === null ||
+    textOutlineEffect === null
   ) {
     return null;
   }
@@ -1167,6 +1236,7 @@ function parseWordRunProperties(
     ...(glow ? { glow } : {}),
     ...(shadowEffect ? { shadowEffect } : {}),
     ...(reflectionEffect ? { reflectionEffect } : {}),
+    ...(textOutlineEffect ? { textOutlineEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2073,6 +2143,336 @@ function parseWordReflectionEffect(
       : {}),
     ...(alignment ? { alignment } : {}),
   };
+}
+
+function parseWordTextOutlineEffect(
+  element: Element | undefined,
+): WorkDocumentEquationWordTextOutlineEffect | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010ElementAttributes(
+    element,
+    new Set(['w', 'cap', 'cmpd', 'algn']),
+  );
+  if (!attributes) return null;
+  const widthEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'w',
+    0,
+    MAX_WORD_TEXT_OUTLINE_WIDTH_EMUS,
+  );
+  const cap = attributes.has('cap')
+    ? (WORD_2010_TEXT_OUTLINE_CAPS.get(attributes.get('cap')?.trim() ?? '') ??
+      null)
+    : undefined;
+  const compound = attributes.has('cmpd')
+    ? (WORD_2010_TEXT_OUTLINE_COMPOUNDS.get(
+        attributes.get('cmpd')?.trim() ?? '',
+      ) ?? null)
+    : undefined;
+  const alignment = attributes.has('algn')
+    ? (WORD_2010_TEXT_OUTLINE_ALIGNMENTS.get(
+        attributes.get('algn')?.trim() ?? '',
+      ) ?? null)
+    : undefined;
+  const parsedChildren = parseWordTextOutlineChildren(element);
+  if (
+    widthEmus === null ||
+    cap === null ||
+    compound === null ||
+    alignment === null ||
+    parsedChildren === null
+  ) {
+    return null;
+  }
+  return {
+    ...(widthEmus !== undefined ? { widthEmus } : {}),
+    ...(cap ? { cap } : {}),
+    ...(compound ? { compound } : {}),
+    ...(alignment ? { alignment } : {}),
+    ...parsedChildren,
+  };
+}
+
+function parseWordTextOutlineChildren(
+  element: Element,
+): Pick<
+  WorkDocumentEquationWordTextOutlineEffect,
+  'fill' | 'dash' | 'join'
+> | null {
+  const children = directChildren(element);
+  let fill: WorkDocumentEquationWordEffectFill | undefined;
+  let dash: WorkDocumentEquationWordLineDash | undefined;
+  let join: WorkDocumentEquationWordLineJoin | undefined;
+  let previous = -1;
+  for (const child of children) {
+    if (child.namespaceURI !== WORD_2010_NAMESPACE) return null;
+    const position = ['noFill', 'solidFill', 'gradFill'].includes(
+      child.localName,
+    )
+      ? 0
+      : child.localName === 'prstDash'
+        ? 1
+        : ['round', 'bevel', 'miter'].includes(child.localName)
+          ? 2
+          : -1;
+    if (position < previous || position < 0) return null;
+    previous = position;
+    if (position === 0) {
+      if (fill !== undefined) return null;
+      const parsed = parseWord2010EffectFill(child);
+      if (parsed === null) return null;
+      fill = parsed;
+    } else if (position === 1) {
+      if (dash !== undefined) return null;
+      const parsed = parseWord2010LineDash(child);
+      if (parsed === null) return null;
+      dash = parsed;
+    } else {
+      if (join !== undefined) return null;
+      const parsed = parseWord2010LineJoin(child);
+      if (parsed === null) return null;
+      join = parsed;
+    }
+  }
+  return {
+    ...(fill ? { fill } : {}),
+    ...(dash ? { dash } : {}),
+    ...(join ? { join } : {}),
+  };
+}
+
+function parseWord2010EffectFill(
+  element: Element,
+): WorkDocumentEquationWordEffectFill | null {
+  if (element.localName === 'noFill') {
+    return word2010LeafAttributes(element, new Set()) ? { type: 'none' } : null;
+  }
+  const attributes = word2010ElementAttributes(element, new Set());
+  if (!attributes) return null;
+  if (element.localName === 'solidFill') {
+    const children = directChildren(element);
+    if (children.length > 1) return null;
+    const color = children[0]
+      ? parseWord2010EffectColor(children[0])
+      : undefined;
+    return color === null
+      ? null
+      : { type: 'solid', ...(color ? { color } : {}) };
+  }
+  if (element.localName !== 'gradFill') return null;
+  const children = directChildren(element);
+  let stops: WorkDocumentEquationWordGradientStop[] | undefined;
+  let shade: WorkDocumentEquationWordGradientShade | undefined;
+  let previous = -1;
+  for (const child of children) {
+    const position =
+      child.namespaceURI === WORD_2010_NAMESPACE && child.localName === 'gsLst'
+        ? 0
+        : child.namespaceURI === WORD_2010_NAMESPACE &&
+            (child.localName === 'lin' || child.localName === 'path')
+          ? 1
+          : -1;
+    if (position < previous || position < 0) return null;
+    previous = position;
+    if (position === 0) {
+      if (stops !== undefined) return null;
+      const parsed = parseWord2010GradientStops(child);
+      if (parsed === null) return null;
+      stops = parsed;
+    } else {
+      if (shade !== undefined) return null;
+      const parsed = parseWord2010GradientShade(child);
+      if (parsed === null) return null;
+      shade = parsed;
+    }
+  }
+  return {
+    type: 'gradient',
+    ...(stops ? { stops } : {}),
+    ...(shade ? { shade } : {}),
+  };
+}
+
+function parseWord2010GradientStops(
+  element: Element,
+): WorkDocumentEquationWordGradientStop[] | null {
+  if (!word2010ElementAttributes(element, new Set())) return null;
+  const children = directChildren(element);
+  if (
+    children.length < MIN_WORD_GRADIENT_STOPS ||
+    children.length > MAX_WORD_GRADIENT_STOPS
+  ) {
+    return null;
+  }
+  const stops: WorkDocumentEquationWordGradientStop[] = [];
+  for (const child of children) {
+    if (
+      child.namespaceURI !== WORD_2010_NAMESPACE ||
+      child.localName !== 'gs'
+    ) {
+      return null;
+    }
+    const attributes = word2010ElementAttributes(child, new Set(['pos']));
+    const positionUnits =
+      attributes?.size === 1
+        ? wordIntegerValue(
+            attributes.get('pos')?.trim() ?? '',
+            0,
+            MAX_WORD_FIXED_PERCENTAGE_UNITS,
+          )
+        : null;
+    const colorChildren = directChildren(child);
+    const color =
+      colorChildren.length === 1
+        ? parseWord2010EffectColor(colorChildren[0])
+        : null;
+    if (positionUnits === null || color === null) return null;
+    stops.push({
+      positionPercent: positionUnits / WORD_PERCENTAGE_UNITS_PER_PERCENT,
+      color,
+    });
+  }
+  return stops;
+}
+
+function parseWord2010GradientShade(
+  element: Element,
+): WorkDocumentEquationWordGradientShade | null {
+  if (element.localName === 'lin') {
+    const attributes = word2010LeafAttributes(
+      element,
+      new Set(['ang', 'scaled']),
+    );
+    if (!attributes) return null;
+    const angleUnits = word2010OptionalIntegerAttribute(
+      attributes,
+      'ang',
+      0,
+      MAX_WORD_EFFECT_DIRECTION_UNITS,
+    );
+    const scaled = attributes.has('scaled')
+      ? word2010OnOffAttribute(attributes.get('scaled'))
+      : undefined;
+    return angleUnits === null || scaled === null
+      ? null
+      : {
+          type: 'linear',
+          ...(angleUnits !== undefined
+            ? { angleDegrees: angleUnits / WORD_ANGLE_UNITS_PER_DEGREE }
+            : {}),
+          ...(scaled !== undefined ? { scaled } : {}),
+        };
+  }
+  if (element.localName !== 'path') return null;
+  const attributes = word2010ElementAttributes(element, new Set(['path']));
+  if (!attributes) return null;
+  const path = attributes.has('path')
+    ? (WORD_2010_GRADIENT_PATHS.get(attributes.get('path')?.trim() ?? '') ??
+      null)
+    : undefined;
+  const children = directChildren(element);
+  if (children.length > 1) return null;
+  const fillToRectangle = children[0]
+    ? parseWord2010GradientFillRectangle(children[0])
+    : undefined;
+  return path === null || fillToRectangle === null
+    ? null
+    : {
+        type: 'path',
+        ...(path ? { path } : {}),
+        ...(fillToRectangle ? { fillToRectangle } : {}),
+      };
+}
+
+function parseWord2010GradientFillRectangle(
+  element: Element,
+): WorkDocumentEquationWordGradientFillRectangle | null {
+  if (
+    element.namespaceURI !== WORD_2010_NAMESPACE ||
+    element.localName !== 'fillToRect'
+  ) {
+    return null;
+  }
+  const attributes = word2010LeafAttributes(
+    element,
+    new Set(['l', 't', 'r', 'b']),
+  );
+  if (!attributes) return null;
+  const percentage = (name: string): number | null | undefined => {
+    const units = word2010OptionalIntegerAttribute(
+      attributes,
+      name,
+      MIN_WORD_EFFECT_SCALE_UNITS,
+      MAX_WORD_EFFECT_SCALE_UNITS,
+    );
+    return units === undefined || units === null
+      ? units
+      : units / WORD_PERCENTAGE_UNITS_PER_PERCENT;
+  };
+  const leftPercent = percentage('l');
+  const topPercent = percentage('t');
+  const rightPercent = percentage('r');
+  const bottomPercent = percentage('b');
+  if (
+    leftPercent === null ||
+    topPercent === null ||
+    rightPercent === null ||
+    bottomPercent === null
+  ) {
+    return null;
+  }
+  return {
+    ...(leftPercent !== undefined ? { leftPercent } : {}),
+    ...(topPercent !== undefined ? { topPercent } : {}),
+    ...(rightPercent !== undefined ? { rightPercent } : {}),
+    ...(bottomPercent !== undefined ? { bottomPercent } : {}),
+  };
+}
+
+function parseWord2010LineDash(
+  element: Element,
+): WorkDocumentEquationWordLineDash | null {
+  const attributes = word2010LeafAttributes(element, new Set(['val']));
+  if (!attributes) return null;
+  if (!attributes.size) return {};
+  const preset = WORD_2010_PRESET_LINE_DASHES.get(
+    attributes.get('val')?.trim() ?? '',
+  );
+  return preset ? { preset } : null;
+}
+
+function parseWord2010LineJoin(
+  element: Element,
+): WorkDocumentEquationWordLineJoin | null {
+  if (element.localName === 'round' || element.localName === 'bevel') {
+    return word2010LeafAttributes(element, new Set())
+      ? { type: element.localName }
+      : null;
+  }
+  if (element.localName !== 'miter') return null;
+  const attributes = word2010LeafAttributes(element, new Set(['lim']));
+  if (!attributes) return null;
+  const limitUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'lim',
+    0,
+    MAX_WORD_EFFECT_SCALE_UNITS,
+  );
+  return limitUnits === null
+    ? null
+    : {
+        type: 'miter',
+        ...(limitUnits !== undefined
+          ? { limitPercent: limitUnits / WORD_PERCENTAGE_UNITS_PER_PERCENT }
+          : {}),
+      };
+}
+
+function word2010OnOffAttribute(source: string | undefined): boolean | null {
+  const value = source?.trim();
+  if (value === '1' || value === 'true') return true;
+  if (value === '0' || value === 'false') return false;
+  return null;
 }
 
 function word2010OptionalIntegerAttribute(

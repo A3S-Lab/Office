@@ -1270,7 +1270,7 @@ RTL/complex-script flags, Latin, East Asian, and bidi language tags, and East
 Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
-flags and Office 2010 text glow, shadow, and reflection effects. Glow preserves
+flags and Office 2010 text glow, shadow, reflection, and text-outline effects. Glow preserves
 an optional 0 through 2,147,483,647 EMU radius, exactly one RGB or 17-slot theme
 color source, and up to 64 ordered, repeatable tint, shade, alpha, hue-modulation,
 saturation, and luminance transform entries.
@@ -1287,6 +1287,14 @@ signed horizontal and vertical scales, skew angles strictly between -90 and 90
 degrees, and the same ten rectangle alignments. Angles retain exact
 1/60,000-degree units, while opacity, positions, and scales retain exact
 1/1,000-percent units.
+The structured Office 2010 text-outline effect preserves an optional width from
+0 through 20,116,800 EMUs, all three line caps, five compound-line styles, and
+both pen alignments. Its fill choice remains distinct among none, solid, and
+gradient fills. Solid fills and optional lists of 2 through 10 gradient stops
+retain RGB or theme colors and ordered transforms. Gradient shading retains an
+optional exact linear angle and scale flag or a path shape with an optional
+signed 32-bit relative fill rectangle. All 11 preset dashes and round, bevel,
+or miter joins survive, including an optional exact nonnegative miter limit.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1308,6 +1316,10 @@ the legacy `w:shadow` on/off property.
 A present empty `w14:reflection` remains distinct from omission. Its omitted
 geometry retains zero/`none` schema defaults while explicit zero and `none`
 values remain present.
+A present empty `w14:textOutline` also remains distinct from omission and keeps
+the schema's bevel default. Omitted fill, dash, and join choices retain their
+defaults, while explicit zero/default attributes and empty child choices remain
+present.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
@@ -1321,7 +1333,7 @@ native schema order and the later explicit alignment controls the CSS vertical
 position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
-`w14:reflection` follows `w14:shadow`. Simple
+`w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1340,12 +1352,14 @@ them would introduce layout drift.
 The standard limits its display semantics to paragraph marks and allows it to
 be ignored on any other run; Word additionally ignores it unless `w:vanish` is
 set. Schema-valid values are still retained without inventing that dependency.
-Office 2010 glow, shadow, and reflection effects also remain native-only. CSS
-`text-shadow`, reflection, opacity, and transform approximations cannot
-preserve theme-bound colors, ordered color transforms, exact blur and offset
-coordinates, reflection opacity/position/fade geometry, signed scaling and
-skew, or rectangle alignment, so previews retain readable equation text
-without inventing a visually misleading effect.
+Office 2010 glow, shadow, reflection, and text-outline effects also remain
+native-only. CSS `text-shadow`, reflection, opacity, transform, text-stroke,
+paint-order, and border approximations cannot preserve theme-bound colors,
+ordered color transforms, exact blur and offset coordinates, reflection
+opacity/position/fade geometry, signed scaling and skew, rectangle alignment,
+gradient or compound strokes, preset dashes, caps, joins, or pen alignment, so
+previews retain readable equation text without inventing a visually misleading
+effect.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
@@ -1356,8 +1370,9 @@ width/spacing, malformed border colors/flags, missing, malformed, fractional,
 or out-of-range manual widths and grouping IDs, missing or unknown
 vertical-alignment or emphasis-mark values, malformed or out-of-range East
 Asian layout IDs, flags, or bracket styles, malformed paragraph-mark visibility
-flags, malformed glow radii, shadow or reflection geometry, color choices, or
-transform chains, and unknown, duplicated, reordered,
+flags, malformed glow radii, shadow or reflection geometry, text-outline
+fill/gradient/dash/join structure, color choices, or transform chains, and
+unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
