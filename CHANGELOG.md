@@ -11,8 +11,10 @@ All notable changes to A3S Office will be documented in this file.
   subset covers Unicode runs, bar/no-bar/skewed/linear fractions, super- and
   subscripts, radicals, functions, supported n-ary operators, combining
   accents, overbars and underbars, group characters with explicit character
-  position and baseline justification, border boxes with independently visible
-  edges and four strike directions, semantic boxes with operator-emulation,
+  position and baseline justification, phantoms with visible or hidden bases,
+  independently zeroed width, ascent, or descent, and transparent spacing,
+  border boxes with independently visible edges and four strike directions,
+  semantic boxes with operator-emulation,
   no-break, differential-spacing, manual-break, and alignment properties,
   bounded rectangular matrices with base and column alignment, equation arrays
   with 1–64 rows, vertical base alignment, maximum/object distribution,
@@ -21,9 +23,9 @@ All notable changes to A3S Office will be documented in this file.
   packages. Depth, node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, invalid or contradictory bar,
-  group-character, border-box, box, or equation-array properties, malformed
-  lower/upper limit structures, matrix spacing and gap rules, ragged or
-  over-limit matrices, over-limit equation arrays, phantoms, pre-scripts,
+  group-character, phantom, border-box, box, or equation-array properties,
+  malformed lower/upper limit structures, matrix spacing and gap rules, ragged
+  or over-limit matrices, over-limit equation arrays, pre-scripts,
   malformed placement, namespace spoofing, nested math, and relationship-bound
   properties fail closed to bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers

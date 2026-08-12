@@ -1153,8 +1153,10 @@ The browser Word surface now round-trips a bounded structured OMML subset in
 the main story, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs, fractions, scripts, radicals, functions, supported n-ary
 operators, combining accents, overbars and underbars, group characters with
-explicit character position and baseline justification, border boxes with
-independently visible edges and four strike directions, semantic boxes with
+explicit character position and baseline justification, phantoms with visible
+or hidden bases, independently zeroed width, ascent, or descent, and transparent
+spacing, border boxes with independently visible edges and four strike
+directions, semantic boxes with
 operator-emulation, no-break, differential-spacing, manual-break, and alignment
 properties, bounded rectangular matrices with base and per-column alignment,
 equation arrays with 1–64 rows, vertical base alignment, maximum/object
@@ -1163,16 +1165,19 @@ upper limit objects, and delimiters remain native OOXML and receive an
 accessible MathML preview. Bar placement preserves the distinct defaults for an
 omitted `barPr` and an omitted `pos`; group-character normalization preserves
 the absent or explicitly empty `chr`, bottom `pos`, and absent-versus-empty
-`vertJc` defaults. Border-box, box, and equation-array flags retain their
+`vertJc` defaults. Phantom normalization preserves the visible `show` default
+and disabled `zeroWid`, `zeroAsc`, `zeroDesc`, and `transp` defaults; MathML
+preview uses `mphantom` and `mpadded` while native export retains every spacing
+property. Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is
 accepted. Invalid or non-combining accent characters, invalid or contradictory
-bar, group-character, border-box, box, or equation-array properties, malformed
-lower/upper limit structures, unsupported matrix spacing or gap rules, ragged or
-over-limit matrices, over-limit equation arrays, malformed, misplaced,
+bar, group-character, phantom, border-box, box, or equation-array properties,
+malformed lower/upper limit structures, unsupported matrix spacing or gap rules,
+ragged or over-limit matrices, over-limit equation arrays, malformed, misplaced,
 over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
-text with compatibility diagnostics; phantoms, pre-scripts, and the remaining
+text with compatibility diagnostics; pre-scripts and the remaining
 OMML grammar are still part of the Rich Word gate.
 
 ### Gate 3 — Rich Word

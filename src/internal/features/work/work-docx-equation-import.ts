@@ -143,6 +143,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'oMath',
   'oMathPara',
   'phant',
+  'phantPr',
   'r',
   'rad',
   'sPre',
@@ -446,6 +447,7 @@ function parseExpression(
     if (element.localName === 'groupChr') {
       return parseGroupCharacter(element, state);
     }
+    if (element.localName === 'phant') return parsePhantom(element, state);
     if (element.localName === 'borderBox') {
       return parseBorderBox(element, state);
     }
@@ -663,6 +665,83 @@ function parseGroupCharacter(
         character,
         position,
         verticalJustification,
+        children: parsedBody,
+      }
+    : null;
+}
+
+function parsePhantom(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (
+    !structuralChildren(element, new Set(['phantPr', 'e'])) ||
+    !orderedMathChildren(element, ['phantPr', 'e'])
+  ) {
+    return null;
+  }
+  const properties = uniqueMathChild(element, 'phantPr', false);
+  const body = uniqueMathChild(element, 'e');
+  if (properties === null || !body) return null;
+
+  let show: boolean | null = true;
+  let zeroWidth: boolean | null = false;
+  let zeroAscent: boolean | null = false;
+  let zeroDescent: boolean | null = false;
+  let transparent: boolean | null = false;
+  if (properties) {
+    const propertyOrder = [
+      'show',
+      'zeroWid',
+      'zeroAsc',
+      'zeroDesc',
+      'transp',
+      'ctrlPr',
+    ];
+    if (
+      !structuralChildren(properties, new Set(propertyOrder)) ||
+      !orderedMathChildren(properties, propertyOrder)
+    ) {
+      return null;
+    }
+    const showElement = uniqueMathChild(properties, 'show', false);
+    const zeroWidthElement = uniqueMathChild(properties, 'zeroWid', false);
+    const zeroAscentElement = uniqueMathChild(properties, 'zeroAsc', false);
+    const zeroDescentElement = uniqueMathChild(properties, 'zeroDesc', false);
+    const transparentElement = uniqueMathChild(properties, 'transp', false);
+    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    if (
+      showElement === null ||
+      zeroWidthElement === null ||
+      zeroAscentElement === null ||
+      zeroDescentElement === null ||
+      transparentElement === null ||
+      controlProperties === null ||
+      (controlProperties && !emptyMathProperty(controlProperties))
+    ) {
+      return null;
+    }
+    show = showElement ? mathOnOff(showElement) : true;
+    zeroWidth = zeroWidthElement ? mathOnOff(zeroWidthElement) : false;
+    zeroAscent = zeroAscentElement ? mathOnOff(zeroAscentElement) : false;
+    zeroDescent = zeroDescentElement ? mathOnOff(zeroDescentElement) : false;
+    transparent = transparentElement ? mathOnOff(transparentElement) : false;
+  }
+
+  const parsedBody = parseExpressionContainer(body, state);
+  return show !== null &&
+    zeroWidth !== null &&
+    zeroAscent !== null &&
+    zeroDescent !== null &&
+    transparent !== null &&
+    parsedBody
+    ? {
+        type: 'phantom',
+        show,
+        zeroWidth,
+        zeroAscent,
+        zeroDescent,
+        transparent,
         children: parsedBody,
       }
     : null;

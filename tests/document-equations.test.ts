@@ -87,6 +87,17 @@ describe('document equations', () => {
         (candidate) => candidate.lastElementChild?.textContent === '\u23df',
       );
       expect(lowerGroupCharacter?.textContent).toBe('a-b\u23df');
+      const hiddenPhantom = element?.querySelector('mphantom');
+      expect(hiddenPhantom?.textContent).toBe('ghost');
+      const hiddenPhantomPadding = hiddenPhantom?.querySelector('mpadded');
+      expect(hiddenPhantomPadding).toHaveAttribute('width', '0in');
+      expect(hiddenPhantomPadding).not.toHaveAttribute('height');
+      expect(hiddenPhantomPadding).toHaveAttribute('depth', '0in');
+      const visiblePhantomPadding = element?.querySelector(
+        'mpadded[height="0in"]',
+      );
+      expect(visiblePhantomPadding?.textContent).toBe('visible');
+      expect(visiblePhantomPadding?.closest('mphantom')).toBeNull();
       const borderBox = element?.querySelector('menclose');
       expect(borderBox).toHaveAttribute(
         'notation',
@@ -121,6 +132,12 @@ describe('document equations', () => {
       );
       expect(element?.getAttribute('aria-label')).toContain(
         'group-character(U+23DF;position=bottom;baseline=top;a-b)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'phantom(hidden,zero-width,zero-descent,transparent;ghost)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'phantom(visible,zero-ascent;visible)',
       );
       expect(element?.getAttribute('aria-label')).toContain(
         'borderbox(top left horizontalstrike updiagonalstrike;boxed)',
@@ -212,6 +229,40 @@ describe('document equations', () => {
               character: '\u23df',
               position: 'bottom',
               verticalJustification: 'center',
+              children: [],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'phantom',
+              show: 'false',
+              zeroWidth: false,
+              zeroAscent: false,
+              zeroDescent: false,
+              transparent: false,
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'phantom',
+              show: true,
+              zeroWidth: false,
+              zeroAscent: false,
+              zeroDescent: false,
+              transparent: false,
               children: [],
             },
           ],
@@ -416,6 +467,10 @@ describe('document equations', () => {
       expect(editor.getHTML()).toContain('accentunder="false"');
       expect(editor.getHTML()).toContain('<menclose');
       expect(editor.getHTML()).toContain('<mpadded');
+      expect(editor.getHTML()).toContain('<mphantom');
+      expect(editor.getHTML()).toContain('width="0in"');
+      expect(editor.getHTML()).toContain('height="0in"');
+      expect(editor.getHTML()).toContain('depth="0in"');
       expect(editor.getHTML()).toContain('<mtable');
       expect(editor.getHTML()).toContain('rowspacing="1.5em"');
       expect(editor.getHTML()).toContain('<maligngroup');
@@ -423,7 +478,7 @@ describe('document equations', () => {
 
       const sanitized = new DOMParser().parseFromString(
         sanitizeDocumentPageChromeHtml(
-          `${equationHtml(simpleEquation('Safe'))}<span data-document-equation="true" data-equation-model="{">Broken</span><math xmlns="http://www.w3.org/1998/Math/MathML"><mtext>Loose</mtext></math>`,
+          `${equationHtml(complexEquation('inline'))}<span data-document-equation="true" data-equation-model="{">Broken</span><math xmlns="http://www.w3.org/1998/Math/MathML"><mtext>Loose</mtext></math>`,
         ),
         'text/html',
       );
@@ -431,6 +486,18 @@ describe('document equations', () => {
         sanitized.body.querySelectorAll('span[data-document-equation]'),
       ).toHaveLength(1);
       expect(sanitized.body.querySelectorAll('math')).toHaveLength(1);
+      expect(sanitized.body.querySelector('mphantom')).not.toBeNull();
+      expect(sanitized.body.querySelector('mphantom mpadded')).toHaveAttribute(
+        'width',
+        '0in',
+      );
+      expect(sanitized.body.querySelector('mphantom mpadded')).toHaveAttribute(
+        'depth',
+        '0in',
+      );
+      expect(
+        sanitized.body.querySelector('mpadded[height="0in"]'),
+      ).not.toBeNull();
       expect(sanitized.body.textContent).toContain('Broken');
       expect(sanitized.body.textContent).toContain('Loose');
     } finally {
@@ -460,7 +527,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([25, 25, 1, 1]);
+    ).toEqual([27, 27, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -714,6 +781,10 @@ describe('document equations', () => {
       `<m:groupChr><m:groupChrPr/><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr><m:groupChrPr><m:chr/><m:pos/><m:vertJc/><m:ctrlPr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr><m:groupChrPr><m:chr m:val="&#x23DE;"/><m:pos m:val="top"/><m:vertJc m:val="bot"/><m:ctrlPr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:phant><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr/><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:show/><m:zeroWid/><m:zeroAsc/><m:zeroDesc/><m:transp/><m:ctrlPr/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:show m:val="false"/><m:zeroWid m:val="0"/><m:zeroAsc m:val="on"/><m:zeroDesc m:val="off"/><m:transp m:val="true"/><m:ctrlPr/></m:phantPr><m:e>${run}</m:e></m:phant>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -811,6 +882,48 @@ describe('document equations', () => {
         character: '\u23de',
         position: 'top',
         verticalJustification: 'bottom',
+        children: [{ type: 'run', text: 'x' }],
+      },
+    ]);
+    expect(
+      supported
+        .slice(27, 31)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'phantom',
+        show: true,
+        zeroWidth: false,
+        zeroAscent: false,
+        zeroDescent: false,
+        transparent: false,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'phantom',
+        show: true,
+        zeroWidth: false,
+        zeroAscent: false,
+        zeroDescent: false,
+        transparent: false,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'phantom',
+        show: true,
+        zeroWidth: true,
+        zeroAscent: true,
+        zeroDescent: true,
+        transparent: true,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'phantom',
+        show: false,
+        zeroWidth: false,
+        zeroAscent: true,
+        zeroDescent: false,
+        transparent: true,
         children: [{ type: 'run', text: 'x' }],
       },
     ]);
@@ -1023,6 +1136,31 @@ describe('document equations', () => {
       `<m:groupChr><m:groupChrPr/></m:groupChr>`,
       `<m:groupChr m:extra="semantic"><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:groupChr>`,
+      `<m:phant><m:phantPr><m:grow/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:e>${run}</m:e><m:phantPr/></m:phant>`,
+      `<m:phant><m:phantPr><m:transp/><m:zeroDesc/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:ctrlPr/><m:transp/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr/><m:phantPr/><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:show/><m:show/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:zeroWid/><m:zeroWid/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:zeroAsc/><m:zeroAsc/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:zeroDesc/><m:zeroDesc/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:transp/><m:transp/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:ctrlPr/><m:ctrlPr/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:show m:val="maybe"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:zeroAsc m:val="2"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:transp m:val="maybe"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:transp m:val="1" m:extra="semantic"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><v:phantPr xmlns:v="${VENDOR_NAMESPACE}"><m:show/></v:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:zeroDesc xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr m:extra="semantic"/><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr><m:show>${run}</m:show></m:phantPr><m:e>${run}</m:e></m:phant>`,
+      `<m:phant><m:phantPr/><m:e/></m:phant>`,
+      `<m:phant><m:phantPr/></m:phant>`,
+      `<m:phant><m:e>${run}</m:e><m:e>${run}</m:e></m:phant>`,
+      `<m:phant m:extra="semantic"><m:e>${run}</m:e></m:phant>`,
+      `<m:phant xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:phant>`,
       '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
@@ -1163,6 +1301,24 @@ function complexEquation(
         children: [run('a-b')],
       },
       {
+        type: 'phantom',
+        show: false,
+        zeroWidth: true,
+        zeroAscent: false,
+        zeroDescent: true,
+        transparent: true,
+        children: [run('ghost')],
+      },
+      {
+        type: 'phantom',
+        show: true,
+        zeroWidth: false,
+        zeroAscent: true,
+        zeroDescent: false,
+        transparent: false,
+        children: [run('visible')],
+      },
+      {
         type: 'borderBox',
         hideTop: false,
         hideBottom: true,
@@ -1256,16 +1412,27 @@ function borderBoxEquation(
                   type: 'lowerLimit',
                   base: [
                     {
-                      type: 'groupCharacter',
-                      character: barPosition === 'top' ? '\u23de' : '\u23df',
-                      position: barPosition,
-                      verticalJustification:
-                        barPosition === 'top' ? 'bottom' : 'top',
+                      type: 'phantom',
+                      show: true,
+                      zeroWidth: false,
+                      zeroAscent: true,
+                      zeroDescent: false,
+                      transparent: true,
                       children: [
                         {
-                          type: 'bar',
+                          type: 'groupCharacter',
+                          character:
+                            barPosition === 'top' ? '\u23de' : '\u23df',
                           position: barPosition,
-                          children: [{ type: 'run', text }],
+                          verticalJustification:
+                            barPosition === 'top' ? 'bottom' : 'top',
+                          children: [
+                            {
+                              type: 'bar',
+                              position: barPosition,
+                              children: [{ type: 'run', text }],
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1310,16 +1477,27 @@ function boxEquation(
                   type: 'upperLimit',
                   base: [
                     {
-                      type: 'groupCharacter',
-                      character: barPosition === 'top' ? '\u23de' : '\u23df',
-                      position: barPosition,
-                      verticalJustification:
-                        barPosition === 'top' ? 'bottom' : 'top',
+                      type: 'phantom',
+                      show: false,
+                      zeroWidth: true,
+                      zeroAscent: false,
+                      zeroDescent: true,
+                      transparent: false,
                       children: [
                         {
-                          type: 'bar',
+                          type: 'groupCharacter',
+                          character:
+                            barPosition === 'top' ? '\u23de' : '\u23df',
                           position: barPosition,
-                          children: [{ type: 'run', text }],
+                          verticalJustification:
+                            barPosition === 'top' ? 'bottom' : 'top',
+                          children: [
+                            {
+                              type: 'bar',
+                              position: barPosition,
+                              children: [{ type: 'run', text }],
+                            },
+                          ],
                         },
                       ],
                     },
@@ -1440,6 +1618,31 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ['\u23df', 'bot', 'top'],
     ['\u23de', 'top', 'bot'],
     ['\u23df', 'bot', 'top'],
+  ]);
+  const phantoms = descendants(document, 'phant');
+  expect(phantoms).toHaveLength(4);
+  for (const phantom of phantoms) {
+    expect(directChildren(phantom).map((child) => child.localName)).toEqual([
+      'phantPr',
+      'e',
+    ]);
+    expect(
+      directChildren(directChildren(phantom, 'phantPr')[0]).map(
+        (child) => child.localName,
+      ),
+    ).toEqual(['show', 'zeroWid', 'zeroAsc', 'zeroDesc', 'transp']);
+  }
+  expect(
+    phantoms.map((phantom) =>
+      directChildren(directChildren(phantom, 'phantPr')[0]).map(
+        mathValueAttribute,
+      ),
+    ),
+  ).toEqual([
+    ['0', '1', '0', '1', '1'],
+    ['1', '0', '1', '0', '0'],
+    ['0', '1', '0', '1', '1'],
+    ['1', '0', '1', '0', '0'],
   ]);
   const borderBoxes = descendants(document, 'borderBox');
   expect(borderBoxes).toHaveLength(2);
@@ -1575,6 +1778,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       verticalJustification: 'bot',
       container: 'borderBox',
       limit: 'limLow',
+      phantomValues: ['1', '0', '1', '0', '1'],
     },
     {
       document: await xmlEntry(archive, 'word/endnotes.xml'),
@@ -1583,6 +1787,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       verticalJustification: 'top',
       container: 'box',
       limit: 'limUpp',
+      phantomValues: ['0', '1', '0', '1', '0'],
     },
     {
       document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
@@ -1591,6 +1796,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       verticalJustification: 'bot',
       container: 'borderBox',
       limit: 'limLow',
+      phantomValues: ['1', '0', '1', '0', '1'],
     },
     {
       document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
@@ -1599,6 +1805,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       verticalJustification: 'top',
       container: 'box',
       limit: 'limUpp',
+      phantomValues: ['0', '1', '0', '1', '0'],
     },
   ];
   for (const story of stories) {
@@ -1620,6 +1827,21 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       directChildren(equationArrayProperties).map(mathValueAttribute),
     ).toEqual(['center', '0', '0', '0', '0']);
     expect(directChildren(equationArray, 'e')).toHaveLength(1);
+    const storyPhantoms = descendants(story.document, 'phant');
+    expect(storyPhantoms).toHaveLength(1);
+    const phantom = storyPhantoms[0];
+    expect(phantom).toBeDefined();
+    expect(directChildren(phantom).map((child) => child.localName)).toEqual([
+      'phantPr',
+      'e',
+    ]);
+    const phantomProperties = directChildren(phantom, 'phantPr')[0];
+    expect(
+      directChildren(phantomProperties).map((child) => child.localName),
+    ).toEqual(['show', 'zeroWid', 'zeroAsc', 'zeroDesc', 'transp']);
+    expect(directChildren(phantomProperties).map(mathValueAttribute)).toEqual(
+      story.phantomValues,
+    );
     const groupCharacter = descendants(story.document, 'groupChr')[0];
     expect(groupCharacter).toBeDefined();
     expect(

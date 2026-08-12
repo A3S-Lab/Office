@@ -519,8 +519,10 @@ Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs, common fractions, scripts, radicals, functions, n-ary
 operators, combining accents, overbars and underbars, group characters with
-explicit grouping-character placement and baseline justification, border boxes
-with independently visible edges and four strike directions, semantic boxes with
+explicit grouping-character placement and baseline justification, phantoms with
+visible or hidden bases, independently zeroed width, ascent, or descent, and
+transparent spacing, border boxes with independently visible edges and four
+strike directions, semantic boxes with
 operator-emulation, no-break, differential-spacing, manual-break, and alignment
 properties, bounded rectangular matrices with explicit column alignment,
 equation arrays with 1–64 rows, vertical base alignment, maximum/object
@@ -530,13 +532,16 @@ render an accessible MathML preview. Bar placement preserves the distinct OMML
 defaults for an omitted `barPr` and an omitted `pos`. Group-character
 normalization separately preserves an absent `chr` as U+23DF, an explicitly
 empty `chr`, bottom `pos`, and the absent-versus-empty `vertJc` defaults.
+Phantom normalization preserves the visible `show` default and disabled
+`zeroWid`, `zeroAsc`, `zeroDesc`, and `transp` defaults; MathML preview uses
+`mphantom` and `mpadded` without discarding the native spacing properties.
 Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
-characters, invalid or contradictory bar, group-character, border-box, box, or
-equation-array properties, malformed lower/upper limit structures, unsupported
-matrix spacing or gap rules, ragged or over-limit matrices, over-limit equation
-arrays,
+characters, invalid or contradictory bar, group-character, phantom, border-box,
+box, or equation-array properties, malformed lower/upper limit structures,
+unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+over-limit equation arrays,
 malformed, misplaced, over-budget, namespace-spoofed, nested, or
 relationship-bound math is flattened to bounded text and reported instead of
 being trusted or silently attached to another equation.

@@ -95,6 +95,15 @@ export type WorkDocumentEquationExpression =
       children: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'phantom';
+      show: boolean;
+      zeroWidth: boolean;
+      zeroAscent: boolean;
+      zeroDescent: boolean;
+      transparent: boolean;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
       type: 'borderBox';
       hideTop: boolean;
       hideBottom: boolean;
@@ -622,6 +631,29 @@ function normalizeExpression(
           }
         : null;
     }
+    if (source.type === 'phantom') {
+      if (
+        typeof source.show !== 'boolean' ||
+        typeof source.zeroWidth !== 'boolean' ||
+        typeof source.zeroAscent !== 'boolean' ||
+        typeof source.zeroDescent !== 'boolean' ||
+        typeof source.transparent !== 'boolean'
+      ) {
+        return null;
+      }
+      const children = normalizeExpressionList(source.children, state);
+      return children
+        ? {
+            type: 'phantom',
+            show: source.show,
+            zeroWidth: source.zeroWidth,
+            zeroAscent: source.zeroAscent,
+            zeroDescent: source.zeroDescent,
+            transparent: source.transparent,
+            children,
+          }
+        : null;
+    }
     if (source.type === 'borderBox') {
       if (
         typeof source.hideTop !== 'boolean' ||
@@ -921,6 +953,19 @@ function expressionText(
       hideAlignmentMarkers,
     )})`;
   }
+  if (expression.type === 'phantom') {
+    const properties = [
+      expression.show ? 'visible' : 'hidden',
+      expression.zeroWidth ? 'zero-width' : '',
+      expression.zeroAscent ? 'zero-ascent' : '',
+      expression.zeroDescent ? 'zero-descent' : '',
+      expression.transparent ? 'transparent' : '',
+    ].filter(Boolean);
+    return `phantom(${properties.join(',')};${expressionListText(
+      expression.children,
+      hideAlignmentMarkers,
+    )})`;
+  }
   if (expression.type === 'borderBox') {
     return `borderbox(${borderBoxNotation(expression)};${expressionListText(
       expression.children,
@@ -1175,6 +1220,19 @@ function expressionMathMl(
         domSpec('mo', {}, [expression.character]),
       ],
     );
+  }
+  if (expression.type === 'phantom') {
+    const attributes = {
+      ...(expression.zeroWidth ? { width: '0in' } : {}),
+      ...(expression.zeroAscent ? { height: '0in' } : {}),
+      ...(expression.zeroDescent ? { depth: '0in' } : {}),
+    };
+    const body = mathRow(expression.children, alignmentState);
+    const padded = domSpec('mpadded', attributes, [body]);
+    if (expression.show) return padded;
+    return domSpec('mphantom', {}, [
+      Object.keys(attributes).length ? padded : body,
+    ]);
   }
   if (expression.type === 'borderBox') {
     return domSpec('menclose', { notation: borderBoxNotation(expression) }, [

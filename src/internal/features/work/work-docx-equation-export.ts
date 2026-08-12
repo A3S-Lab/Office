@@ -263,6 +263,22 @@ function createExpression(
     );
     return groupCharacter;
   }
+  if (expression.type === 'phantom') {
+    const phantom = createMathElement(document, prefix, 'phant');
+    const properties = createMathElement(document, prefix, 'phantPr');
+    properties.append(
+      mathOnOffElement(document, prefix, 'show', expression.show),
+      mathOnOffElement(document, prefix, 'zeroWid', expression.zeroWidth),
+      mathOnOffElement(document, prefix, 'zeroAsc', expression.zeroAscent),
+      mathOnOffElement(document, prefix, 'zeroDesc', expression.zeroDescent),
+      mathOnOffElement(document, prefix, 'transp', expression.transparent),
+    );
+    phantom.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return phantom;
+  }
   if (expression.type === 'borderBox') {
     const borderBox = createMathElement(document, prefix, 'borderBox');
     const properties = createMathElement(document, prefix, 'borderBoxPr');
