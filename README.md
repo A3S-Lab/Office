@@ -521,18 +521,20 @@ math, Unicode runs, common fractions, scripts, radicals, functions, n-ary
 operators, combining accents, overbars and underbars, border boxes with
 independently visible edges and four strike directions, semantic boxes with
 operator-emulation, no-break, differential-spacing, manual-break, and alignment
-properties, bounded rectangular matrices with explicit column alignment, and
+properties, bounded rectangular matrices with explicit column alignment,
+equation arrays with 1–64 rows, vertical base alignment, maximum/object
+distribution, row-spacing rules, and `&` alignment/spacer markers, and
 delimiters regenerate as `m:oMath` or `m:oMathPara` and render an accessible
 MathML preview. The distinct OMML defaults for an omitted `barPr` and an omitted
-`pos` are normalized to explicit top or bottom positions. Border-box and box
-flags retain their semantic defaults, and manual-break alignment indices are
-bounded to 1–255. Strict and transitional UTF-8/UTF-16 math is normalized for
-editing. Invalid or non-combining accent characters, invalid or contradictory
-bar, border-box, or box properties, unsupported matrix spacing or gap rules,
-ragged or over-limit matrices, malformed, misplaced, over-budget,
-namespace-spoofed, nested, or relationship-bound math is flattened to bounded
-text and reported instead of being trusted or silently attached to another
-equation.
+`pos` are normalized to explicit top or bottom positions. Border-box, box, and
+equation-array flags retain their semantic defaults, and manual-break alignment
+indices are bounded to 1–255. Strict and transitional UTF-8/UTF-16 math is
+normalized for editing. Invalid or non-combining accent characters, invalid or
+contradictory bar, border-box, box, or equation-array properties, unsupported
+matrix spacing or gap rules, ragged or over-limit matrices, over-limit equation
+arrays, malformed, misplaced, over-budget, namespace-spoofed, nested, or
+relationship-bound math is flattened to bounded text and reported instead of
+being trusted or silently attached to another equation.
 Relationship-free passive extensions on uniquely matched `w:footnote`,
 `w:endnote`, `w:comment`, and `w15:commentEx` roots are retained, and valid
 `commentsIds` durable IDs are rebound to each regenerated final comment

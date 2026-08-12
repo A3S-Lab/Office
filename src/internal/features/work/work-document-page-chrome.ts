@@ -69,12 +69,15 @@ const MATHML_ATTRIBUTES = new Set([
   'fence',
   'linethickness',
   'notation',
+  'rowspacing',
   'separator',
   'xmlns',
 ]);
 const MATHML_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
 const MATHML_TAGS = new Set([
   'math',
+  'maligngroup',
+  'malignmark',
   'menclose',
   'mfrac',
   'mo',
@@ -105,6 +108,8 @@ const ALLOWED_TAGS = new Set([
   'img',
   'li',
   'math',
+  'maligngroup',
+  'malignmark',
   'menclose',
   'mfrac',
   'mo',

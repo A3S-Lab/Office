@@ -81,9 +81,16 @@ describe('document equations', () => {
         'top left horizontalstrike updiagonalstrike',
       );
       expect(element?.querySelector('mpadded')).not.toBeNull();
-      expect(element?.querySelector('mtable')).not.toBeNull();
-      expect(element?.querySelectorAll('mtr')).toHaveLength(2);
-      expect(element?.querySelectorAll('mtd')).toHaveLength(8);
+      const equationArray = element?.querySelector('mtable[align="bottom"]');
+      expect(equationArray).toHaveAttribute('rowspacing', '1.5em');
+      expect(equationArray?.querySelectorAll('mtr')).toHaveLength(3);
+      expect(equationArray?.querySelectorAll('mtd')).toHaveLength(3);
+      expect(equationArray?.querySelectorAll('maligngroup')).toHaveLength(4);
+      expect(equationArray?.querySelectorAll('malignmark')).toHaveLength(4);
+      const matrix = element?.querySelector('mtable[align="top"]');
+      expect(matrix).not.toBeNull();
+      expect(matrix?.querySelectorAll('mtr')).toHaveLength(2);
+      expect(matrix?.querySelectorAll('mtd')).toHaveLength(8);
       expect(element).toHaveAttribute('role', 'math');
       expect(element?.getAttribute('aria-label')).toContain('sqrt');
       expect(element?.getAttribute('aria-label')).toContain('accent(U+0303');
@@ -94,6 +101,9 @@ describe('document equations', () => {
       );
       expect(element?.getAttribute('aria-label')).toContain(
         'box(operator,no-break,differential,break@3,alignment;dx)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'equation-array(bottom,max-distribution,spacing=multiple:3;x+y=1;2x+y=3;)',
       );
       expect(element?.getAttribute('aria-label')).toContain('matrix');
 
@@ -115,6 +125,57 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'equationArray',
+              baseAlignment: 'center',
+              maximumDistribution: false,
+              objectDistribution: false,
+              rowSpacingRule: 'single',
+              rowSpacing: 0,
+              rows: [[{ type: 'run', text: '&'.repeat(4_096) }]],
+            },
+          ],
+        }),
+      ).not.toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'equationArray',
+              baseAlignment: 'center',
+              maximumDistribution: false,
+              objectDistribution: false,
+              rowSpacingRule: 'exact',
+              rowSpacing: 65_536,
+              rows: [[]],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'equationArray',
+              baseAlignment: 'center',
+              maximumDistribution: false,
+              objectDistribution: false,
+              rowSpacingRule: 'single',
+              rowSpacing: 0,
+              rows: [[{ type: 'run', text: '&'.repeat(4_097) }]],
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -253,6 +314,9 @@ describe('document equations', () => {
       expect(editor.getHTML()).toContain('<menclose');
       expect(editor.getHTML()).toContain('<mpadded');
       expect(editor.getHTML()).toContain('<mtable');
+      expect(editor.getHTML()).toContain('rowspacing="1.5em"');
+      expect(editor.getHTML()).toContain('<maligngroup');
+      expect(editor.getHTML()).toContain('<malignmark');
 
       const sanitized = new DOMParser().parseFromString(
         sanitizeDocumentPageChromeHtml(
@@ -293,7 +357,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([20, 20, 1, 1]);
+    ).toEqual([21, 21, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -536,6 +600,9 @@ describe('document equations', () => {
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
       `<m:m><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:baseJc m:val="bot"/><m:plcHide m:val="true"/><m:mcs><m:mc><m:mcPr><m:count m:val="2"/><m:mcJc m:val="left"/></m:mcPr></m:mc><m:mc><m:mcPr><m:count/><m:mcJc/></m:mcPr></m:mc></m:mcs><m:ctrlPr/></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e><m:e/></m:mr></m:m>`,
+      `<m:eqArr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:baseJc m:val="bot"/><m:maxDist/><m:objDist m:val="0"/><m:rSpRule m:val="4"/><m:rSp m:val=" +0003 "/><m:ctrlPr/></m:eqArrPr><m:e><m:r><m:t>&amp;x+&amp;&amp;y</m:t></m:r></m:e><m:e/></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:baseJc/><m:rSpRule/><m:rSp/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -632,6 +699,49 @@ describe('document equations', () => {
         children: [{ type: 'run', text: 'x' }],
       },
     ]);
+    expect(
+      supported
+        .slice(16, 19)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'equationArray',
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[{ type: 'run', text: 'x' }]],
+      },
+      {
+        type: 'equationArray',
+        baseAlignment: 'bottom',
+        maximumDistribution: true,
+        objectDistribution: false,
+        rowSpacingRule: 'multiple',
+        rowSpacing: 3,
+        rows: [[{ type: 'run', text: '&x+&&y' }], []],
+      },
+      {
+        type: 'equationArray',
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[{ type: 'run', text: 'x' }]],
+      },
+    ]);
+    expect(
+      inspectEquationBody(
+        `<m:eqArr>${Array.from({ length: 64 }, () => `<m:e>${run}</m:e>`).join('')}</m:eqArr>`,
+      ),
+    ).toBe('supported');
+    expect(
+      inspectEquationBody(
+        `<m:eqArr><m:eqArrPr><m:rSpRule m:val="3"/><m:rSp m:val="65535"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      ),
+    ).toBe('supported');
 
     const unsupported = [
       `<m:acc><m:accPr><m:chr/></m:accPr><m:e>${run}</m:e></m:acc>`,
@@ -685,6 +795,25 @@ describe('document equations', () => {
       `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="0"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m>${Array.from({ length: 65 }, () => `<m:mr><m:e>${run}</m:e></m:mr>`).join('')}</m:m>`,
+      `<m:eqArr><m:eqArrPr><m:grow/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:objDist/><m:maxDist/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:maxDist/><m:maxDist/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:baseJc m:val="bottom"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSpRule m:val="5"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSpRule m:val="-1"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSpRule m:val="1.5"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSp m:val="-1"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSp m:val="65536"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSp m:val="3.5"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSp m:val="3" m:extra="semantic"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr><m:rSp xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="3" r:id="rIdUnsafe"/></m:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><v:eqArrPr xmlns:v="${VENDOR_NAMESPACE}"><m:rSp m:val="3"/></v:eqArrPr><m:e>${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:e>${run}</m:e><m:eqArrPr><m:rSp m:val="3"/></m:eqArrPr></m:eqArr>`,
+      '<m:eqArr/>',
+      `<m:eqArr>${Array.from({ length: 65 }, () => `<m:e>${run}</m:e>`).join('')}</m:eqArr>`,
+      `<m:eqArr><m:e><m:r><m:t>${'&amp;'.repeat(4_097)}</m:t></m:r></m:e></m:eqArr>`,
+      `<m:eqArr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:eqArr>`,
+      `<m:eqArr><m:eqArrPr/><m:eqArrPr/><m:e>${run}</m:e></m:eqArr>`,
       '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
@@ -832,6 +961,15 @@ function complexEquation(
         children: [run('dx')],
       },
       {
+        type: 'equationArray',
+        baseAlignment: 'bottom',
+        maximumDistribution: true,
+        objectDistribution: false,
+        rowSpacingRule: 'multiple',
+        rowSpacing: 3,
+        rows: [[run('&x+&&y=1')], [run('2&x+&&y=3')], []],
+      },
+      {
         type: 'matrix',
         baseAlignment: 'top',
         placeholdersHidden: false,
@@ -873,9 +1011,21 @@ function borderBoxEquation(
         strikeTopLeftToBottomRight: false,
         children: [
           {
-            type: 'bar',
-            position: barPosition,
-            children: [{ type: 'run', text }],
+            type: 'equationArray',
+            baseAlignment: 'center',
+            maximumDistribution: false,
+            objectDistribution: false,
+            rowSpacingRule: 'single',
+            rowSpacing: 0,
+            rows: [
+              [
+                {
+                  type: 'bar',
+                  position: barPosition,
+                  children: [{ type: 'run', text }],
+                },
+              ],
+            ],
           },
         ],
       },
@@ -900,9 +1050,21 @@ function boxEquation(
         manualBreak: {},
         children: [
           {
-            type: 'bar',
-            position: barPosition,
-            children: [{ type: 'run', text }],
+            type: 'equationArray',
+            baseAlignment: 'center',
+            maximumDistribution: false,
+            objectDistribution: false,
+            rowSpacingRule: 'single',
+            rowSpacing: 0,
+            rows: [
+              [
+                {
+                  type: 'bar',
+                  position: barPosition,
+                  children: [{ type: 'run', text }],
+                },
+              ],
+            ],
           },
         ],
       },
@@ -1064,6 +1226,29 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       ),
     ).toEqual(['left', 'center', 'right']);
   }
+  const equationArrays = descendants(document, 'eqArr');
+  expect(equationArrays).toHaveLength(2);
+  for (const equationArray of equationArrays) {
+    const properties = directChildren(equationArray, 'eqArrPr')[0];
+    expect(directChildren(properties).map((child) => child.localName)).toEqual([
+      'baseJc',
+      'maxDist',
+      'objDist',
+      'rSpRule',
+      'rSp',
+    ]);
+    expect(directChildren(properties).map(mathValueAttribute)).toEqual([
+      'bot',
+      '1',
+      '0',
+      '4',
+      '3',
+    ]);
+    const rows = directChildren(equationArray, 'e');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]?.textContent).toBe('&x+&&y=1');
+    expect(rows[2]?.childElementCount).toBe(0);
+  }
   const inline = descendants(document, 'oMath')[0];
   const componentStatuses = directChildren(inline).map((component) => {
     const equation = document.createElementNS(MATH_NAMESPACE, 'm:oMath');
@@ -1102,6 +1287,13 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       MATH_NAMESPACE,
     );
     expect(descendants(story.document, story.container)).toHaveLength(1);
+    const equationArray = descendants(story.document, 'eqArr')[0];
+    expect(equationArray).toBeDefined();
+    const equationArrayProperties = directChildren(equationArray, 'eqArrPr')[0];
+    expect(
+      directChildren(equationArrayProperties).map(mathValueAttribute),
+    ).toEqual(['center', '0', '0', '0', '0']);
+    expect(directChildren(equationArray, 'e')).toHaveLength(1);
     const bar = descendants(story.document, 'bar')[0];
     expect(bar).toBeDefined();
     expect(

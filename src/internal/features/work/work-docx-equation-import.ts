@@ -9,6 +9,7 @@ import {
   type WorkDocumentEquationMatrixAlignment,
   type WorkDocumentEquationMatrixBaseAlignment,
   type WorkDocumentEquationNaryOperator,
+  type WorkDocumentEquationRowSpacingRule,
 } from './work-document-equations';
 import {
   closestDocxEquationLikeRoot,
@@ -81,6 +82,7 @@ const MAX_DELIMITER_ARGUMENTS = 32;
 const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
+const MAX_EQUATION_ARRAY_ROWS = 64;
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
@@ -118,6 +120,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'den',
   'e',
   'eqArr',
+  'eqArrPr',
   'f',
   'fName',
   'func',
@@ -449,6 +452,9 @@ function parseExpression(
     if (element.localName === 'rad') return parseRadical(element, state);
     if (element.localName === 'func') return parseFunction(element, state);
     if (element.localName === 'nary') return parseNary(element, state);
+    if (element.localName === 'eqArr') {
+      return parseEquationArray(element, state);
+    }
     if (element.localName === 'm') return parseMatrix(element, state);
     if (element.localName === 'd') return parseDelimiter(element, state);
     return null;
@@ -1001,6 +1007,129 @@ function parseNary(
   };
 }
 
+function parseEquationArray(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['eqArrPr', 'e']))) return null;
+  const properties = uniqueMathChild(element, 'eqArrPr', false);
+  const rowElements = mathDirectChildren(element, 'e');
+  if (
+    properties === null ||
+    !rowElements.length ||
+    rowElements.length > MAX_EQUATION_ARRAY_ROWS ||
+    (properties && directChildren(element)[0] !== properties)
+  ) {
+    return null;
+  }
+  const parsedProperties = parseEquationArrayProperties(properties);
+  if (!parsedProperties) return null;
+  const rows = rowElements.map((row) =>
+    parseExpressionContainer(row, state, true),
+  );
+  return rows.every(
+    (row): row is WorkDocumentEquationExpression[] => row !== null,
+  )
+    ? {
+        type: 'equationArray',
+        ...parsedProperties,
+        rows,
+      }
+    : null;
+}
+
+function parseEquationArrayProperties(properties: Element | undefined): {
+  baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
+  maximumDistribution: boolean;
+  objectDistribution: boolean;
+  rowSpacingRule: WorkDocumentEquationRowSpacingRule;
+  rowSpacing: number;
+} | null {
+  if (!properties) {
+    return {
+      baseAlignment: 'center',
+      maximumDistribution: false,
+      objectDistribution: false,
+      rowSpacingRule: 'single',
+      rowSpacing: 0,
+    };
+  }
+  const propertyNames = [
+    'baseJc',
+    'maxDist',
+    'objDist',
+    'rSpRule',
+    'rSp',
+    'ctrlPr',
+  ] as const;
+  if (
+    !structuralChildren(properties, new Set(propertyNames)) ||
+    !orderedMathChildren(properties, propertyNames)
+  ) {
+    return null;
+  }
+  const baseElement = uniqueMathChild(properties, 'baseJc', false);
+  const rowSpacingRuleElement = uniqueMathChild(properties, 'rSpRule', false);
+  const rowSpacingElement = uniqueMathChild(properties, 'rSp', false);
+  const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  if (
+    baseElement === null ||
+    rowSpacingRuleElement === null ||
+    rowSpacingElement === null ||
+    controlProperties === null ||
+    (controlProperties && !emptyMathProperty(controlProperties))
+  ) {
+    return null;
+  }
+  const baseValue = baseElement
+    ? mathValueOrDefault(baseElement, 'center')
+    : 'center';
+  const baseAlignment =
+    baseValue === 'top'
+      ? 'top'
+      : baseValue === 'center'
+        ? 'center'
+        : baseValue === 'bot'
+          ? 'bottom'
+          : null;
+  const maximumDistribution = mathOnOffProperty(properties, 'maxDist');
+  const objectDistribution = mathOnOffProperty(properties, 'objDist');
+  const rowSpacingRuleValue = unsignedMathInteger(
+    rowSpacingRuleElement
+      ? mathValueOrDefault(rowSpacingRuleElement, '0')
+      : '0',
+    4,
+  );
+  const rowSpacingRules: WorkDocumentEquationRowSpacingRule[] = [
+    'single',
+    'oneAndHalf',
+    'double',
+    'exact',
+    'multiple',
+  ];
+  const rowSpacingRule =
+    rowSpacingRuleValue === null
+      ? null
+      : (rowSpacingRules[rowSpacingRuleValue] ?? null);
+  const rowSpacing = unsignedMathInteger(
+    rowSpacingElement ? mathValueOrDefault(rowSpacingElement, '0') : '0',
+    65_535,
+  );
+  return baseAlignment &&
+    maximumDistribution !== null &&
+    objectDistribution !== null &&
+    rowSpacingRule &&
+    rowSpacing !== null
+    ? {
+        baseAlignment,
+        maximumDistribution,
+        objectDistribution,
+        rowSpacingRule,
+        rowSpacing,
+      }
+    : null;
+}
+
 function parseMatrix(
   element: Element,
   state: EquationParseState,
@@ -1373,6 +1502,16 @@ function positiveMathInteger(value: string | null, maximum: number): number {
   if (!value || !/^[1-9]\d*$/u.test(value)) return 0;
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed <= maximum ? parsed : 0;
+}
+
+function unsignedMathInteger(
+  value: string | null,
+  maximum: number,
+): number | null {
+  const source = value?.trim() ?? '';
+  if (!/^\+?\d+$/u.test(source)) return null;
+  const parsed = Number(source);
+  return Number.isSafeInteger(parsed) && parsed <= maximum ? parsed : null;
 }
 
 function mathOnOff(element: Element): boolean | null {

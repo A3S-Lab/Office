@@ -408,6 +408,44 @@ function createExpression(
     nary.append(expressionArgument(document, prefix, 'e', expression.children));
     return nary;
   }
+  if (expression.type === 'equationArray') {
+    const equationArray = createMathElement(document, prefix, 'eqArr');
+    const properties = createMathElement(document, prefix, 'eqArrPr');
+    properties.append(
+      mathValueElement(
+        document,
+        prefix,
+        'baseJc',
+        expression.baseAlignment === 'bottom'
+          ? 'bot'
+          : expression.baseAlignment,
+      ),
+      mathOnOffElement(
+        document,
+        prefix,
+        'maxDist',
+        expression.maximumDistribution,
+      ),
+      mathOnOffElement(
+        document,
+        prefix,
+        'objDist',
+        expression.objectDistribution,
+      ),
+      mathValueElement(
+        document,
+        prefix,
+        'rSpRule',
+        equationArrayRowSpacingRule(expression.rowSpacingRule),
+      ),
+      mathValueElement(document, prefix, 'rSp', String(expression.rowSpacing)),
+    );
+    equationArray.append(properties);
+    for (const row of expression.rows) {
+      equationArray.append(expressionArgument(document, prefix, 'e', row));
+    }
+    return equationArray;
+  }
   if (expression.type === 'matrix') {
     const matrix = createMathElement(document, prefix, 'm');
     const properties = createMathElement(document, prefix, 'mPr');
@@ -461,6 +499,19 @@ function createExpression(
     delimiter.append(expressionArgument(document, prefix, 'e', argument));
   }
   return delimiter;
+}
+
+function equationArrayRowSpacingRule(
+  rule: Extract<
+    WorkDocumentEquationExpression,
+    { type: 'equationArray' }
+  >['rowSpacingRule'],
+): string {
+  if (rule === 'oneAndHalf') return '1';
+  if (rule === 'double') return '2';
+  if (rule === 'exact') return '3';
+  if (rule === 'multiple') return '4';
+  return '0';
 }
 
 function matrixColumnGroups(

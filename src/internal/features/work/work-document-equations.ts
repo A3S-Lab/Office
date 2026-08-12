@@ -14,6 +14,12 @@ export type WorkDocumentEquationMatrixBaseAlignment =
   | 'top'
   | 'center'
   | 'bottom';
+export type WorkDocumentEquationRowSpacingRule =
+  | 'single'
+  | 'oneAndHalf'
+  | 'double'
+  | 'exact'
+  | 'multiple';
 
 export interface WorkDocumentEquationManualBreak {
   alignmentAt?: number;
@@ -100,6 +106,15 @@ export type WorkDocumentEquationExpression =
       rows: WorkDocumentEquationExpression[][][];
     }
   | {
+      type: 'equationArray';
+      baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
+      maximumDistribution: boolean;
+      objectDistribution: boolean;
+      rowSpacingRule: WorkDocumentEquationRowSpacingRule;
+      rowSpacing: number;
+      rows: WorkDocumentEquationExpression[][];
+    }
+  | {
       type: 'delimiter';
       opening: string;
       closing: string;
@@ -130,6 +145,13 @@ interface EquationNormalizationState {
   depth: number;
   nodes: number;
   textLength: number;
+  equationArrayDepth: number;
+  equationArrayAlignmentMarkers: number;
+}
+
+interface EquationArrayAlignmentState {
+  markerIndex: number;
+  started: boolean;
 }
 
 const EQUATION_SELECTOR = 'span[data-document-equation]';
@@ -142,6 +164,8 @@ const MAX_DELIMITER_ARGUMENTS = 32;
 const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
+const MAX_EQUATION_ARRAY_ROWS = 64;
+const MAX_EQUATION_ARRAY_ALIGNMENT_MARKERS = 4_096;
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -173,6 +197,14 @@ const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
 const MATRIX_BASE_ALIGNMENTS = new Set<WorkDocumentEquationMatrixBaseAlignment>(
   ['top', 'center', 'bottom'],
 );
+const EQUATION_ARRAY_ROW_SPACING_RULES =
+  new Set<WorkDocumentEquationRowSpacingRule>([
+    'single',
+    'oneAndHalf',
+    'double',
+    'exact',
+    'multiple',
+  ]);
 const BAR_POSITIONS = new Set<WorkDocumentEquationBarPosition>([
   'top',
   'bottom',
@@ -284,6 +316,8 @@ export function normalizeDocumentEquation(
     depth: 0,
     nodes: 0,
     textLength: 0,
+    equationArrayDepth: 0,
+    equationArrayAlignmentMarkers: 0,
   };
   const children = normalizeExpressionList(source.children, state);
   if (!children) return null;
@@ -429,6 +463,16 @@ function normalizeExpression(
         return null;
       state.textLength += source.text.length;
       if (state.textLength > MAX_EQUATION_TEXT_LENGTH) return null;
+      if (state.equationArrayDepth > 0) {
+        state.equationArrayAlignmentMarkers +=
+          source.text.split('&').length - 1;
+        if (
+          state.equationArrayAlignmentMarkers >
+          MAX_EQUATION_ARRAY_ALIGNMENT_MARKERS
+        ) {
+          return null;
+        }
+      }
       return { type: 'run', text: source.text };
     }
     if (source.type === 'fraction') {
@@ -644,6 +688,53 @@ function normalizeExpression(
         rows,
       };
     }
+    if (source.type === 'equationArray') {
+      const baseAlignment = MATRIX_BASE_ALIGNMENTS.has(
+        source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment,
+      )
+        ? (source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment)
+        : null;
+      const rowSpacingRule = EQUATION_ARRAY_ROW_SPACING_RULES.has(
+        source.rowSpacingRule as WorkDocumentEquationRowSpacingRule,
+      )
+        ? (source.rowSpacingRule as WorkDocumentEquationRowSpacingRule)
+        : null;
+      if (
+        !baseAlignment ||
+        typeof source.maximumDistribution !== 'boolean' ||
+        typeof source.objectDistribution !== 'boolean' ||
+        !rowSpacingRule ||
+        typeof source.rowSpacing !== 'number' ||
+        !Number.isInteger(source.rowSpacing) ||
+        source.rowSpacing < 0 ||
+        source.rowSpacing > 65_535 ||
+        !Array.isArray(source.rows) ||
+        source.rows.length === 0 ||
+        source.rows.length > MAX_EQUATION_ARRAY_ROWS
+      ) {
+        return null;
+      }
+      const rows: WorkDocumentEquationExpression[][] = [];
+      state.equationArrayDepth += 1;
+      try {
+        for (const row of source.rows) {
+          const normalizedRow = normalizeExpressionList(row, state, true);
+          if (!normalizedRow) return null;
+          rows.push(normalizedRow);
+        }
+      } finally {
+        state.equationArrayDepth -= 1;
+      }
+      return {
+        type: 'equationArray',
+        baseAlignment,
+        maximumDistribution: source.maximumDistribution,
+        objectDistribution: source.objectDistribution,
+        rowSpacingRule,
+        rowSpacing: source.rowSpacing,
+        rows,
+      };
+    }
     if (source.type === 'delimiter') {
       const opening = mathCharacter(source.opening);
       const closing = mathCharacter(source.closing);
@@ -682,61 +773,88 @@ function normalizeExpression(
 
 function expressionListText(
   expressions: readonly WorkDocumentEquationExpression[],
+  hideAlignmentMarkers = false,
 ): string {
-  return expressions.map(expressionText).join('');
+  return expressions
+    .map((expression) => expressionText(expression, hideAlignmentMarkers))
+    .join('');
 }
 
-function expressionText(expression: WorkDocumentEquationExpression): string {
-  if (expression.type === 'run') return expression.text;
+function expressionText(
+  expression: WorkDocumentEquationExpression,
+  hideAlignmentMarkers = false,
+): string {
+  if (expression.type === 'run') {
+    return hideAlignmentMarkers
+      ? expression.text.replaceAll('&', '')
+      : expression.text;
+  }
   if (expression.type === 'fraction') {
-    return `(${expressionListText(expression.numerator)})/(${expressionListText(
-      expression.denominator,
-    )})`;
+    return `(${expressionListText(
+      expression.numerator,
+      hideAlignmentMarkers,
+    )})/(${expressionListText(expression.denominator, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'superscript') {
-    return `${expressionListText(expression.base)}^(${expressionListText(
-      expression.superScript,
-    )})`;
+    return `${expressionListText(
+      expression.base,
+      hideAlignmentMarkers,
+    )}^(${expressionListText(expression.superScript, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'subscript') {
-    return `${expressionListText(expression.base)}_(${expressionListText(
-      expression.subScript,
-    )})`;
+    return `${expressionListText(
+      expression.base,
+      hideAlignmentMarkers,
+    )}_(${expressionListText(expression.subScript, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'subSuperScript') {
-    return `${expressionListText(expression.base)}_(${expressionListText(
+    return `${expressionListText(
+      expression.base,
+      hideAlignmentMarkers,
+    )}_(${expressionListText(
       expression.subScript,
-    )})^(${expressionListText(expression.superScript)})`;
+      hideAlignmentMarkers,
+    )})^(${expressionListText(expression.superScript, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'radical') {
-    const body = expressionListText(expression.children);
+    const body = expressionListText(expression.children, hideAlignmentMarkers);
     return expression.degree
-      ? `root(${expressionListText(expression.degree)};${body})`
+      ? `root(${expressionListText(
+          expression.degree,
+          hideAlignmentMarkers,
+        )};${body})`
       : `sqrt(${body})`;
   }
   if (expression.type === 'function') {
-    return `${expressionListText(expression.name)}(${expressionListText(
-      expression.children,
-    )})`;
+    return `${expressionListText(
+      expression.name,
+      hideAlignmentMarkers,
+    )}(${expressionListText(expression.children, hideAlignmentMarkers)})`;
   }
   if (expression.type === 'nary') {
     return `${expression.operator}${
       expression.subScript
-        ? `_(${expressionListText(expression.subScript)})`
+        ? `_(${expressionListText(expression.subScript, hideAlignmentMarkers)})`
         : ''
     }${
       expression.superScript
-        ? `^(${expressionListText(expression.superScript)})`
+        ? `^(${expressionListText(
+            expression.superScript,
+            hideAlignmentMarkers,
+          )})`
         : ''
-    } ${expressionListText(expression.children)}`;
+    } ${expressionListText(expression.children, hideAlignmentMarkers)}`;
   }
   if (expression.type === 'accent') {
     const codePoint = expression.character.codePointAt(0);
     const label = codePoint?.toString(16).toUpperCase().padStart(4, '0');
-    return `accent(U+${label};${expressionListText(expression.children)})`;
+    return `accent(U+${label};${expressionListText(
+      expression.children,
+      hideAlignmentMarkers,
+    )})`;
   }
   if (expression.type === 'bar') {
-    const body = expressionListText(expression.children);
+    const body = expressionListText(expression.children, hideAlignmentMarkers);
     return expression.position === 'top'
       ? `overbar(${body})`
       : `underbar(${body})`;
@@ -744,6 +862,7 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
   if (expression.type === 'borderBox') {
     return `borderbox(${borderBoxNotation(expression)};${expressionListText(
       expression.children,
+      hideAlignmentMarkers,
     )})`;
   }
   if (expression.type === 'box') {
@@ -760,15 +879,31 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
     ].filter(Boolean);
     return `box(${properties.join(',') || 'default'};${expressionListText(
       expression.children,
+      hideAlignmentMarkers,
     )})`;
   }
   if (expression.type === 'matrix') {
     return `matrix(${expression.rows
-      .map((row) => row.map(expressionListText).join(','))
+      .map((row) =>
+        row
+          .map((cell) => expressionListText(cell, hideAlignmentMarkers))
+          .join(','),
+      )
+      .join(';')})`;
+  }
+  if (expression.type === 'equationArray') {
+    const properties = [
+      expression.baseAlignment,
+      expression.maximumDistribution ? 'max-distribution' : '',
+      expression.objectDistribution ? 'object-distribution' : '',
+      `spacing=${expression.rowSpacingRule}:${expression.rowSpacing}`,
+    ].filter(Boolean);
+    return `equation-array(${properties.join(',')};${expression.rows
+      .map((row) => expressionListText(row, true))
       .join(';')})`;
   }
   return `${expression.opening}${expression.arguments
-    .map(expressionListText)
+    .map((argument) => expressionListText(argument, hideAlignmentMarkers))
     .join(expression.separator)}${expression.closing}`;
 }
 
@@ -812,20 +947,49 @@ function createEquationDom(document: Document, spec: DOMOutputSpec): Element {
 
 function mathRow(
   expressions: readonly WorkDocumentEquationExpression[],
+  alignmentState?: EquationArrayAlignmentState,
 ): DOMOutputSpec {
-  return domSpec('mrow', {}, expressions.map(expressionMathMl));
+  return domSpec(
+    'mrow',
+    {},
+    expressions.map((expression) =>
+      expressionMathMl(expression, alignmentState),
+    ),
+  );
 }
 
 function expressionMathMl(
   expression: WorkDocumentEquationExpression,
+  alignmentState?: EquationArrayAlignmentState,
 ): DOMOutputSpec {
-  if (expression.type === 'run') return domSpec('mtext', {}, [expression.text]);
+  if (expression.type === 'run') {
+    if (!alignmentState) return domSpec('mtext', {}, [expression.text]);
+    const children: DOMOutputSpec[] = [];
+    if (!alignmentState.started) {
+      children.push(domSpec('maligngroup', {}, []));
+      alignmentState.started = true;
+    }
+    const parts = expression.text.split('&');
+    parts.forEach((part, index) => {
+      if (part) children.push(domSpec('mtext', {}, [part]));
+      if (index === parts.length - 1) return;
+      alignmentState.markerIndex += 1;
+      children.push(
+        domSpec(
+          alignmentState.markerIndex % 2 === 1 ? 'malignmark' : 'maligngroup',
+          {},
+          [],
+        ),
+      );
+    });
+    return domSpec('mrow', {}, children);
+  }
   if (expression.type === 'fraction') {
     if (expression.fractionType === 'linear') {
       return domSpec('mrow', {}, [
-        mathRow(expression.numerator),
+        mathRow(expression.numerator, alignmentState),
         domSpec('mo', {}, ['/']),
-        mathRow(expression.denominator),
+        mathRow(expression.denominator, alignmentState),
       ]);
     }
     return domSpec(
@@ -834,41 +998,44 @@ function expressionMathMl(
         ...(expression.fractionType === 'noBar' ? { linethickness: '0' } : {}),
         ...(expression.fractionType === 'skewed' ? { bevelled: 'true' } : {}),
       },
-      [mathRow(expression.numerator), mathRow(expression.denominator)],
+      [
+        mathRow(expression.numerator, alignmentState),
+        mathRow(expression.denominator, alignmentState),
+      ],
     );
   }
   if (expression.type === 'superscript') {
     return domSpec('msup', {}, [
-      mathRow(expression.base),
-      mathRow(expression.superScript),
+      mathRow(expression.base, alignmentState),
+      mathRow(expression.superScript, alignmentState),
     ]);
   }
   if (expression.type === 'subscript') {
     return domSpec('msub', {}, [
-      mathRow(expression.base),
-      mathRow(expression.subScript),
+      mathRow(expression.base, alignmentState),
+      mathRow(expression.subScript, alignmentState),
     ]);
   }
   if (expression.type === 'subSuperScript') {
     return domSpec('msubsup', {}, [
-      mathRow(expression.base),
-      mathRow(expression.subScript),
-      mathRow(expression.superScript),
+      mathRow(expression.base, alignmentState),
+      mathRow(expression.subScript, alignmentState),
+      mathRow(expression.superScript, alignmentState),
     ]);
   }
   if (expression.type === 'radical') {
     return expression.degree
       ? domSpec('mroot', {}, [
-          mathRow(expression.children),
-          mathRow(expression.degree),
+          mathRow(expression.children, alignmentState),
+          mathRow(expression.degree, alignmentState),
         ])
-      : domSpec('msqrt', {}, [mathRow(expression.children)]);
+      : domSpec('msqrt', {}, [mathRow(expression.children, alignmentState)]);
   }
   if (expression.type === 'function') {
     return domSpec('mrow', {}, [
-      mathRow(expression.name),
+      mathRow(expression.name, alignmentState),
       domSpec('mo', {}, ['\u2061']),
-      mathRow(expression.children),
+      mathRow(expression.children, alignmentState),
     ]);
   }
   if (expression.type === 'nary') {
@@ -880,28 +1047,31 @@ function expressionMathMl(
         {},
         [
           operator,
-          mathRow(expression.subScript),
-          mathRow(expression.superScript),
+          mathRow(expression.subScript, alignmentState),
+          mathRow(expression.superScript, alignmentState),
         ],
       );
     } else if (expression.subScript) {
       decorated = domSpec(
         expression.limitLocation === 'underOver' ? 'munder' : 'msub',
         {},
-        [operator, mathRow(expression.subScript)],
+        [operator, mathRow(expression.subScript, alignmentState)],
       );
     } else if (expression.superScript) {
       decorated = domSpec(
         expression.limitLocation === 'underOver' ? 'mover' : 'msup',
         {},
-        [operator, mathRow(expression.superScript)],
+        [operator, mathRow(expression.superScript, alignmentState)],
       );
     }
-    return domSpec('mrow', {}, [decorated, mathRow(expression.children)]);
+    return domSpec('mrow', {}, [
+      decorated,
+      mathRow(expression.children, alignmentState),
+    ]);
   }
   if (expression.type === 'accent') {
     return domSpec('mover', { accent: 'true' }, [
-      mathRow(expression.children),
+      mathRow(expression.children, alignmentState),
       domSpec('mo', {}, [
         MATHML_ACCENT_CHARACTERS.get(expression.character) ??
           expression.character,
@@ -914,16 +1084,21 @@ function expressionMathMl(
       expression.position === 'top'
         ? { accent: 'false' }
         : { accentunder: 'false' },
-      [mathRow(expression.children), domSpec('mo', {}, ['\u00af'])],
+      [
+        mathRow(expression.children, alignmentState),
+        domSpec('mo', {}, ['\u00af']),
+      ],
     );
   }
   if (expression.type === 'borderBox') {
     return domSpec('menclose', { notation: borderBoxNotation(expression) }, [
-      mathRow(expression.children),
+      mathRow(expression.children, alignmentState),
     ]);
   }
   if (expression.type === 'box') {
-    return domSpec('mpadded', {}, [mathRow(expression.children)]);
+    return domSpec('mpadded', {}, [
+      mathRow(expression.children, alignmentState),
+    ]);
   }
   if (expression.type === 'matrix') {
     return domSpec(
@@ -936,9 +1111,29 @@ function expressionMathMl(
         domSpec(
           'mtr',
           {},
-          row.map((cell) => domSpec('mtd', {}, [mathRow(cell)])),
+          row.map((cell) =>
+            domSpec('mtd', {}, [mathRow(cell, alignmentState)]),
+          ),
         ),
       ),
+    );
+  }
+  if (expression.type === 'equationArray') {
+    return domSpec(
+      'mtable',
+      {
+        align: expression.baseAlignment,
+        rowspacing: equationArrayRowSpacing(expression),
+      },
+      expression.rows.map((row) => {
+        const rowAlignmentState: EquationArrayAlignmentState = {
+          markerIndex: 0,
+          started: false,
+        };
+        return domSpec('mtr', {}, [
+          domSpec('mtd', {}, [mathRow(row, rowAlignmentState)]),
+        ]);
+      }),
     );
   }
   const children: Array<DOMOutputSpec | string> = [];
@@ -950,11 +1145,28 @@ function expressionMathMl(
         domSpec('mo', { separator: 'true' }, [expression.separator]),
       );
     }
-    children.push(mathRow(argument));
+    children.push(mathRow(argument, alignmentState));
   });
   if (expression.closing)
     children.push(domSpec('mo', { fence: 'true' }, [expression.closing]));
   return domSpec('mrow', {}, children);
+}
+
+function equationArrayRowSpacing(
+  expression: Extract<
+    WorkDocumentEquationExpression,
+    { type: 'equationArray' }
+  >,
+): string {
+  if (expression.rowSpacingRule === 'oneAndHalf') return '1.5em';
+  if (expression.rowSpacingRule === 'double') return '2em';
+  if (expression.rowSpacingRule === 'exact') {
+    return `${expression.rowSpacing}pt`;
+  }
+  if (expression.rowSpacingRule === 'multiple') {
+    return `${expression.rowSpacing / 2}em`;
+  }
+  return '1em';
 }
 
 function domSpec(
