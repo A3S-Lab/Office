@@ -517,8 +517,10 @@ while legacy VML, shapes, and SmartArt normalize.
 
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
-math, Unicode runs, common fractions, scripts, left-side pre-sub/superscripts
-with empty script slots, radicals, functions, n-ary operators, combining
+math, Unicode runs with literal/normal-text semantics, math script/style,
+manual-break, and alignment-point properties, common fractions, scripts,
+left-side pre-sub/superscripts with empty script slots, radicals, functions,
+n-ary operators, combining
 accents, overbars and underbars, group characters with
 explicit grouping-character placement and baseline justification, phantoms with
 visible or hidden bases, independently zeroed width, ascent, or descent, and
@@ -538,12 +540,17 @@ Phantom normalization preserves the visible `show` default and disabled
 `mphantom` and `mpadded` without discarding the native spacing properties.
 Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map empty left
 script slots to MathML `none` children after `mprescripts`.
+Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
+`aln` grammar, canonicalize Roman/italic and disabled defaults, bound `alnAt` to
+1–255, and project supported script/style combinations through MathML
+`mathvariant` while retaining native break and alignment metadata.
 Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
-characters, invalid or contradictory bar, group-character, phantom, border-box,
-box, or equation-array properties, malformed pre-script or lower/upper limit
-structures, unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+characters, malformed math-run properties, invalid or contradictory bar,
+group-character, phantom, border-box, box, or equation-array properties,
+malformed pre-script or lower/upper limit structures, unsupported matrix spacing
+or gap rules, ragged or over-limit matrices,
 over-limit equation arrays,
 malformed, misplaced, over-budget, namespace-spoofed, nested, or
 relationship-bound math is flattened to bounded text and reported instead of

@@ -20,13 +20,34 @@ export type WorkDocumentEquationRowSpacingRule =
   | 'double'
   | 'exact'
   | 'multiple';
+export type WorkDocumentEquationRunScript =
+  | 'roman'
+  | 'sansSerif'
+  | 'monospace'
+  | 'fraktur'
+  | 'doubleStruck'
+  | 'script';
+export type WorkDocumentEquationRunStyle =
+  | 'plain'
+  | 'italic'
+  | 'bold'
+  | 'boldItalic';
 
 export interface WorkDocumentEquationManualBreak {
   alignmentAt?: number;
 }
 
 export type WorkDocumentEquationExpression =
-  | { type: 'run'; text: string }
+  | {
+      type: 'run';
+      text: string;
+      literal?: boolean;
+      normalText?: boolean;
+      script?: WorkDocumentEquationRunScript;
+      style?: WorkDocumentEquationRunStyle;
+      manualBreak?: WorkDocumentEquationManualBreak;
+      alignment?: boolean;
+    }
   | {
       type: 'fraction';
       fractionType: WorkDocumentEquationFractionType;
@@ -216,6 +237,20 @@ const FRACTION_TYPES = new Set<WorkDocumentEquationFractionType>([
   'noBar',
   'skewed',
   'linear',
+]);
+const RUN_SCRIPTS = new Set<WorkDocumentEquationRunScript>([
+  'roman',
+  'sansSerif',
+  'monospace',
+  'fraktur',
+  'doubleStruck',
+  'script',
+]);
+const RUN_STYLES = new Set<WorkDocumentEquationRunStyle>([
+  'plain',
+  'italic',
+  'bold',
+  'boldItalic',
 ]);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
@@ -505,7 +540,47 @@ function normalizeExpression(
           return null;
         }
       }
-      return { type: 'run', text: source.text };
+      const literal = source.literal === undefined ? false : source.literal;
+      const normalText =
+        source.normalText === undefined ? false : source.normalText;
+      const alignment =
+        source.alignment === undefined ? false : source.alignment;
+      const script =
+        source.script === undefined
+          ? undefined
+          : RUN_SCRIPTS.has(source.script as WorkDocumentEquationRunScript)
+            ? (source.script as WorkDocumentEquationRunScript)
+            : null;
+      const style =
+        source.style === undefined
+          ? undefined
+          : RUN_STYLES.has(source.style as WorkDocumentEquationRunStyle)
+            ? (source.style as WorkDocumentEquationRunStyle)
+            : null;
+      const manualBreak =
+        source.manualBreak === undefined
+          ? undefined
+          : normalizeManualBreak(source.manualBreak);
+      if (
+        typeof literal !== 'boolean' ||
+        typeof normalText !== 'boolean' ||
+        typeof alignment !== 'boolean' ||
+        script === null ||
+        style === null ||
+        manualBreak === null
+      ) {
+        return null;
+      }
+      return {
+        type: 'run',
+        text: source.text,
+        ...(literal ? { literal } : {}),
+        ...(normalText ? { normalText } : {}),
+        ...(script && script !== 'roman' ? { script } : {}),
+        ...(style && style !== 'italic' ? { style } : {}),
+        ...(manualBreak ? { manualBreak } : {}),
+        ...(alignment ? { alignment } : {}),
+      };
     }
     if (source.type === 'fraction') {
       const fractionType = FRACTION_TYPES.has(
@@ -880,9 +955,22 @@ function expressionText(
   hideAlignmentMarkers = false,
 ): string {
   if (expression.type === 'run') {
-    return hideAlignmentMarkers
+    const text = hideAlignmentMarkers
       ? expression.text.replaceAll('&', '')
       : expression.text;
+    const properties = [
+      expression.literal ? 'literal' : '',
+      expression.normalText ? 'normal-text' : '',
+      expression.script ? `script=${expression.script}` : '',
+      expression.style ? `style=${expression.style}` : '',
+      expression.manualBreak
+        ? expression.manualBreak.alignmentAt
+          ? `break@${expression.manualBreak.alignmentAt}`
+          : 'break'
+        : '',
+      expression.alignment ? 'alignment' : '',
+    ].filter(Boolean);
+    return properties.length ? `run(${properties.join(',')};${text})` : text;
   }
   if (expression.type === 'fraction') {
     return `(${expressionListText(
@@ -1101,7 +1189,13 @@ function expressionMathMl(
   alignmentState?: EquationArrayAlignmentState,
 ): DOMOutputSpec {
   if (expression.type === 'run') {
-    if (!alignmentState) return domSpec('mtext', {}, [expression.text]);
+    const mathVariant = runMathVariant(expression);
+    const attributes: Record<string, string> = mathVariant
+      ? { mathvariant: mathVariant }
+      : {};
+    if (!alignmentState) {
+      return domSpec('mtext', attributes, [expression.text]);
+    }
     const children: DOMOutputSpec[] = [];
     if (!alignmentState.started) {
       children.push(domSpec('maligngroup', {}, []));
@@ -1109,7 +1203,7 @@ function expressionMathMl(
     }
     const parts = expression.text.split('&');
     parts.forEach((part, index) => {
-      if (part) children.push(domSpec('mtext', {}, [part]));
+      if (part) children.push(domSpec('mtext', attributes, [part]));
       if (index === parts.length - 1) return;
       alignmentState.markerIndex += 1;
       children.push(
@@ -1394,6 +1488,39 @@ function normalizeManualBreak(
     Number(source.alignmentAt) <= 255
     ? { alignmentAt: Number(source.alignmentAt) }
     : null;
+}
+
+function runMathVariant(
+  expression: Extract<WorkDocumentEquationExpression, { type: 'run' }>,
+): string | null {
+  if (!expression.script && !expression.style && !expression.normalText) {
+    return null;
+  }
+  const script = expression.script ?? 'roman';
+  const style =
+    expression.style ?? (expression.normalText ? 'plain' : 'italic');
+  if (script === 'doubleStruck') return 'double-struck';
+  if (script === 'monospace') return 'monospace';
+  if (script === 'fraktur') {
+    return style === 'bold' || style === 'boldItalic'
+      ? 'bold-fraktur'
+      : 'fraktur';
+  }
+  if (script === 'script') {
+    return style === 'bold' || style === 'boldItalic'
+      ? 'bold-script'
+      : 'script';
+  }
+  if (script === 'sansSerif') {
+    if (style === 'plain') return 'sans-serif';
+    if (style === 'bold') return 'bold-sans-serif';
+    if (style === 'boldItalic') return 'sans-serif-bold-italic';
+    return 'sans-serif-italic';
+  }
+  if (style === 'plain') return 'normal';
+  if (style === 'bold') return 'bold';
+  if (style === 'boldItalic') return 'bold-italic';
+  return 'italic';
 }
 
 function borderBoxNotation(

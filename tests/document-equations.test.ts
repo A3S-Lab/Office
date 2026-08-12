@@ -118,6 +118,17 @@ describe('document equations', () => {
       ]);
       expect(element?.querySelectorAll('mprescripts')).toHaveLength(3);
       expect(element?.querySelectorAll('mmultiscripts none')).toHaveLength(2);
+      expect(
+        element?.querySelector('mtext[mathvariant="bold-fraktur"]')
+          ?.textContent,
+      ).toBe('styledF');
+      expect(
+        element?.querySelector('mtext[mathvariant="normal"]')?.textContent,
+      ).toBe('normalRate');
+      expect(
+        element?.querySelector('mtext[mathvariant="double-struck"]')
+          ?.textContent,
+      ).toBe('doubleR');
       const borderBox = element?.querySelector('menclose');
       expect(borderBox).toHaveAttribute(
         'notation',
@@ -169,6 +180,15 @@ describe('document equations', () => {
         'pre-scripts(sub=1;sup=none;base=B)',
       );
       expect(element?.getAttribute('aria-label')).toContain(
+        'run(literal,script=fraktur,style=bold,break@3,alignment;styledF)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'run(normal-text,style=plain;normalRate)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'run(script=doubleStruck,style=boldItalic;doubleR)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
         'borderbox(top left horizontalstrike updiagonalstrike;boxed)',
       );
       expect(element?.getAttribute('aria-label')).toContain(
@@ -203,6 +223,39 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'run',
+              text: 'x',
+              literal: false,
+              normalText: false,
+              script: 'roman',
+              style: 'italic',
+              alignment: false,
+            },
+          ],
+        }),
+      ).toEqual(simpleEquation('x'));
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [{ type: 'run', text: 'x', script: 'blackboard' }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            { type: 'run', text: 'x', manualBreak: { alignmentAt: 256 } },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -531,6 +584,7 @@ describe('document equations', () => {
       expect(editor.getHTML()).toContain('<mmultiscripts');
       expect(editor.getHTML()).toContain('<mprescripts');
       expect(editor.getHTML()).toContain('<none');
+      expect(editor.getHTML()).toContain('mathvariant="bold-fraktur"');
       expect(editor.getHTML()).toContain('<mtable');
       expect(editor.getHTML()).toContain('rowspacing="1.5em"');
       expect(editor.getHTML()).toContain('<maligngroup');
@@ -563,6 +617,10 @@ describe('document equations', () => {
       expect(
         sanitized.body.querySelectorAll('mmultiscripts none'),
       ).toHaveLength(2);
+      expect(
+        sanitized.body.querySelector('mtext[mathvariant="bold-fraktur"]')
+          ?.textContent,
+      ).toBe('styledF');
       expect(sanitized.body.textContent).toContain('Broken');
       expect(sanitized.body.textContent).toContain('Loose');
     } finally {
@@ -592,7 +650,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([30, 30, 1, 1]);
+    ).toEqual([33, 33, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -854,6 +912,14 @@ describe('document equations', () => {
       `<m:sPre><m:sPrePr/><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sPrePr><m:ctrlPr/></m:sPrePr><m:sub>${run}</m:sub><m:sup/><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sub/><m:sup/><m:e>${run}</m:e></m:sPre>`,
+      '<m:r><m:rPr/><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:lit/><m:nor m:val="0"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt=" +003 "/><m:aln/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:lit m:val="false"/><m:nor m:val="on"/><m:scr/><m:sty/><m:brk/><m:aln m:val="off"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="double-struck"/><m:sty m:val="p"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="monospace"/><m:sty m:val="bi"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="sans-serif"/><m:sty m:val="i"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="script"/><m:sty m:val="bi"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="roman"/><m:sty m:val="p"/></m:rPr><m:t>x</m:t></m:r>',
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -1025,6 +1091,48 @@ describe('document equations', () => {
         subScript: [],
         superScript: [],
       },
+    ]);
+    expect(
+      supported
+        .slice(35, 43)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      { type: 'run', text: 'x' },
+      {
+        type: 'run',
+        text: 'x',
+        literal: true,
+        script: 'fraktur',
+        style: 'bold',
+        manualBreak: { alignmentAt: 3 },
+        alignment: true,
+      },
+      {
+        type: 'run',
+        text: 'x',
+        normalText: true,
+        manualBreak: {},
+      },
+      {
+        type: 'run',
+        text: 'x',
+        script: 'doubleStruck',
+        style: 'plain',
+      },
+      {
+        type: 'run',
+        text: 'x',
+        script: 'monospace',
+        style: 'boldItalic',
+      },
+      { type: 'run', text: 'x', script: 'sansSerif' },
+      {
+        type: 'run',
+        text: 'x',
+        script: 'script',
+        style: 'boldItalic',
+      },
+      { type: 'run', text: 'x', style: 'plain' },
     ]);
     expect(
       supported
@@ -1281,7 +1389,43 @@ describe('document equations', () => {
       `<m:sPre m:extra="semantic"><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre>meaningful<m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sub>${run}<m:argPr/></m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
-      '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:ctrlPr/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:sty m:val="b"/><m:scr m:val="fraktur"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:t>x</m:t><m:rPr/></m:r>',
+      '<m:r><m:rPr/><m:rPr/><m:t>x</m:t></m:r>',
+      '<m:r><m:t>x</m:t><m:t>y</m:t></m:r>',
+      '<m:r><m:rPr/></m:r>',
+      '<m:r><m:rPr/><m:t/></m:r>',
+      '<m:r m:extra="semantic"><m:t>x</m:t></m:r>',
+      '<m:r>meaningful<m:t>x</m:t></m:r>',
+      '<m:r><m:rPr m:extra="semantic"/><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr>meaningful</m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:lit/><m:lit/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:nor/><m:nor/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr/><m:scr/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:sty/><m:sty/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:brk/><m:brk/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:aln/><m:aln/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:lit m:val="maybe"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:nor m:val="2"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:aln m:val=""/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="blackboard"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:sty m:val="bold"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:scr m:val="fraktur" m:extra="semantic"/></m:rPr><m:t>x</m:t></m:r>',
+      `<m:r><m:rPr><m:sty xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="b" r:id="rIdUnsafe"/></m:rPr><m:t>x</m:t></m:r>`,
+      '<m:r><m:rPr><m:brk m:alnAt="0"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:brk m:alnAt="256"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:brk m:alnAt="3.5"/></m:rPr><m:t>x</m:t></m:r>',
+      '<m:r><m:rPr><m:brk m:alnAt="3" m:extra="semantic"/></m:rPr><m:t>x</m:t></m:r>',
+      `<m:r><m:rPr><m:brk xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:rPr><m:t>x</m:t></m:r>`,
+      `<m:r><m:rPr><m:brk>${run}</m:brk></m:rPr><m:t>x</m:t></m:r>`,
+      `<m:r><v:rPr xmlns:v="${VENDOR_NAMESPACE}"/><m:t>x</m:t></m:r>`,
+      `<m:r><m:rPr><v:scr xmlns:v="${VENDOR_NAMESPACE}" v:val="fraktur"/></m:rPr><m:t>x</m:t></m:r>`,
+      `<m:r><v:t xmlns:v="${VENDOR_NAMESPACE}">x</v:t></m:r>`,
+      `<m:r><w:rPr xmlns:w="${WORD_NAMESPACE}"/><m:t>x</m:t></m:r>`,
+      `<m:r><m:rPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/><m:t>x</m:t></m:r>`,
+      `<m:r><m:t xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe">x</m:t></m:r>`,
+      '<m:r><m:t xml:space="invalid">x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
       `<m:r><m:t>${'x'.repeat(65_537)}</m:t></m:r>`,
@@ -1333,6 +1477,27 @@ function complexEquation(
     display,
     children: [
       run('x='),
+      {
+        type: 'run',
+        text: 'styledF',
+        literal: true,
+        script: 'fraktur',
+        style: 'bold',
+        manualBreak: { alignmentAt: 3 },
+        alignment: true,
+      },
+      {
+        type: 'run',
+        text: 'normalRate',
+        normalText: true,
+        style: 'plain',
+      },
+      {
+        type: 'run',
+        text: 'doubleR',
+        script: 'doubleStruck',
+        style: 'boldItalic',
+      },
       {
         type: 'fraction',
         fractionType: 'bar',
@@ -1571,7 +1736,16 @@ function borderBoxEquation(
                                 {
                                   type: 'bar',
                                   position: barPosition,
-                                  children: [{ type: 'run', text }],
+                                  children: [
+                                    {
+                                      type: 'run',
+                                      text,
+                                      literal: true,
+                                      script: 'doubleStruck',
+                                      style: 'plain',
+                                      manualBreak: { alignmentAt: 2 },
+                                    },
+                                  ],
                                 },
                               ],
                             },
@@ -1643,7 +1817,17 @@ function boxEquation(
                                 {
                                   type: 'bar',
                                   position: barPosition,
-                                  children: [{ type: 'run', text }],
+                                  children: [
+                                    {
+                                      type: 'run',
+                                      text,
+                                      normalText: true,
+                                      script: 'sansSerif',
+                                      style: 'boldItalic',
+                                      manualBreak: {},
+                                      alignment: true,
+                                    },
+                                  ],
                                 },
                               ],
                             },
@@ -1749,6 +1933,31 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ['i', 'j', 'T'],
     ['', '2', 'A'],
     ['1', '', 'B'],
+  ]);
+  const styledRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE && mathRunProperties(run),
+  );
+  expect(
+    styledRuns.map((run) => [run.textContent, mathRunProperties(run)]),
+  ).toEqual([
+    [
+      'styledF',
+      {
+        children: ['lit', 'scr', 'sty', 'brk', 'aln'],
+        values: ['1', 'fraktur', 'b', '3', '1'],
+      },
+    ],
+    ['normalRate', { children: ['nor', 'sty'], values: ['1', 'p'] }],
+    ['doubleR', { children: ['scr', 'sty'], values: ['double-struck', 'bi'] }],
+    [
+      'styledF',
+      {
+        children: ['lit', 'scr', 'sty', 'brk', 'aln'],
+        values: ['1', 'fraktur', 'b', '3', '1'],
+      },
+    ],
+    ['normalRate', { children: ['nor', 'sty'], values: ['1', 'p'] }],
+    ['doubleR', { children: ['scr', 'sty'], values: ['double-struck', 'bi'] }],
   ]);
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);
@@ -1956,6 +2165,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       phantomValues: ['1', '0', '1', '0', '1'],
       preSubScript: 'p',
       preSuperScript: '',
+      runProperties: {
+        children: ['lit', 'scr', 'sty', 'brk'],
+        values: ['1', 'double-struck', 'p', '2'],
+      },
     },
     {
       document: await xmlEntry(archive, 'word/endnotes.xml'),
@@ -1967,6 +2180,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       phantomValues: ['0', '1', '0', '1', '0'],
       preSubScript: '',
       preSuperScript: 'q',
+      runProperties: {
+        children: ['nor', 'scr', 'sty', 'brk', 'aln'],
+        values: ['1', 'sans-serif', 'bi', '', '1'],
+      },
     },
     {
       document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
@@ -1978,6 +2195,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       phantomValues: ['1', '0', '1', '0', '1'],
       preSubScript: 'p',
       preSuperScript: '',
+      runProperties: {
+        children: ['lit', 'scr', 'sty', 'brk'],
+        values: ['1', 'double-struck', 'p', '2'],
+      },
     },
     {
       document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
@@ -1989,6 +2210,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       phantomValues: ['0', '1', '0', '1', '0'],
       preSubScript: '',
       preSuperScript: 'q',
+      runProperties: {
+        children: ['nor', 'scr', 'sty', 'brk', 'aln'],
+        values: ['1', 'sans-serif', 'bi', '', '1'],
+      },
     },
   ];
   for (const story of stories) {
@@ -2024,6 +2249,11 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(directChildren(preScript, 'sup')[0]?.textContent ?? '').toBe(
       story.preSuperScript,
     );
+    const styledStoryRuns = descendants(story.document, 'r').filter(
+      (run) => run.namespaceURI === MATH_NAMESPACE && mathRunProperties(run),
+    );
+    expect(styledStoryRuns).toHaveLength(1);
+    expect(mathRunProperties(styledStoryRuns[0])).toEqual(story.runProperties);
     const storyPhantoms = descendants(story.document, 'phant');
     expect(storyPhantoms).toHaveLength(1);
     const phantom = storyPhantoms[0];
@@ -2074,6 +2304,25 @@ function mathValueAttribute(element: Element | undefined): string | null {
         attribute.localName === 'val' || /(?:^|:)val$/u.test(attribute.name),
     )?.value ?? null
   );
+}
+
+function mathRunProperties(
+  run: Element | undefined,
+): { children: string[]; values: Array<string | null> } | null {
+  if (!run) return null;
+  const properties = directChildren(run, 'rPr').find(
+    (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+  );
+  if (!properties) return null;
+  const children = directChildren(properties);
+  return {
+    children: children.map((child) => child.localName),
+    values: children.map((child) =>
+      child.localName === 'brk'
+        ? (mathNamedAttribute(child, 'alnAt') ?? '')
+        : mathValueAttribute(child),
+    ),
+  };
 }
 
 function mathNamedAttribute(

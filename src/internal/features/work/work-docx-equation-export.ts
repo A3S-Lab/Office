@@ -4,6 +4,8 @@ import {
   normalizeDocumentEquation,
   type WorkDocumentEquation,
   type WorkDocumentEquationExpression,
+  type WorkDocumentEquationRunScript,
+  type WorkDocumentEquationRunStyle,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -202,6 +204,48 @@ function createExpression(
 ): Element {
   if (expression.type === 'run') {
     const run = createMathElement(document, prefix, 'r');
+    const properties = createMathElement(document, prefix, 'rPr');
+    if (expression.literal) {
+      properties.append(mathOnOffElement(document, prefix, 'lit', true));
+    }
+    if (expression.normalText) {
+      properties.append(mathOnOffElement(document, prefix, 'nor', true));
+    }
+    if (expression.script) {
+      properties.append(
+        mathValueElement(
+          document,
+          prefix,
+          'scr',
+          runScriptToOmml(expression.script),
+        ),
+      );
+    }
+    if (expression.style) {
+      properties.append(
+        mathValueElement(
+          document,
+          prefix,
+          'sty',
+          runStyleToOmml(expression.style),
+        ),
+      );
+    }
+    if (expression.manualBreak) {
+      const manualBreak = createMathElement(document, prefix, 'brk');
+      if (expression.manualBreak.alignmentAt !== undefined) {
+        manualBreak.setAttributeNS(
+          MATH_NAMESPACE,
+          `${prefix}:alnAt`,
+          String(expression.manualBreak.alignmentAt),
+        );
+      }
+      properties.append(manualBreak);
+    }
+    if (expression.alignment) {
+      properties.append(mathOnOffElement(document, prefix, 'aln', true));
+    }
+    if (properties.childNodes.length) run.append(properties);
     const text = createMathElement(document, prefix, 't');
     if (/^\s|\s$/u.test(expression.text)) {
       text.setAttributeNS(XML_NAMESPACE, 'xml:space', 'preserve');
@@ -573,6 +617,19 @@ function equationArrayRowSpacingRule(
   if (rule === 'exact') return '3';
   if (rule === 'multiple') return '4';
   return '0';
+}
+
+function runScriptToOmml(script: WorkDocumentEquationRunScript): string {
+  if (script === 'sansSerif') return 'sans-serif';
+  if (script === 'doubleStruck') return 'double-struck';
+  return script;
+}
+
+function runStyleToOmml(style: WorkDocumentEquationRunStyle): string {
+  if (style === 'plain') return 'p';
+  if (style === 'bold') return 'b';
+  if (style === 'boldItalic') return 'bi';
+  return 'i';
 }
 
 function matrixColumnGroups(

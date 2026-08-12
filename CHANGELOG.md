@@ -8,9 +8,11 @@ All notable changes to A3S Office will be documented in this file.
   display equations now round-trip as native `m:oMath` and `m:oMathPara`
   across the document body, headers, footers, footnotes, and endnotes, with an
   accessible MathML preview and atomic insert/update commands. The structured
-  subset covers Unicode runs, bar/no-bar/skewed/linear fractions, super- and
-  subscripts, left-side pre-sub/superscripts with empty script slots, radicals,
-  functions, supported n-ary operators, combining
+  subset covers Unicode runs with literal/normal-text semantics, six math
+  scripts, four styles, manual breaks, and alignment points,
+  bar/no-bar/skewed/linear fractions, super- and subscripts, left-side
+  pre-sub/superscripts with empty script slots, radicals, functions, supported
+  n-ary operators, combining
   accents, overbars and underbars, group characters with explicit character
   position and baseline justification, phantoms with visible or hidden bases,
   independently zeroed width, ascent, or descent, and transparent spacing,
@@ -23,13 +25,13 @@ All notable changes to A3S Office will be documented in this file.
   objects, and custom delimiters in strict or transitional UTF-8/UTF-16
   packages. Depth, node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
-  Invalid or non-combining accent characters, invalid or contradictory bar,
-  group-character, phantom, border-box, box, or equation-array properties,
-  malformed lower/upper limit structures, matrix spacing and gap rules, ragged
-  or over-limit matrices, over-limit equation arrays, malformed pre-script
-  structures, malformed placement, namespace spoofing, nested math, and
-  relationship-bound properties fail closed to bounded text with explicit
-  diagnostics.
+  Invalid or non-combining accent characters, malformed math-run properties,
+  invalid or contradictory bar, group-character, phantom, border-box, box, or
+  equation-array properties, malformed lower/upper limit structures, matrix
+  spacing and gap rules, ragged or over-limit matrices, over-limit equation
+  arrays, malformed pre-script structures, malformed placement, namespace
+  spoofing, nested math, and relationship-bound properties fail closed to
+  bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers
   the original package, and export retains safe source-only OPC parts,
   content-type declarations, and relationships while generated core parts stay

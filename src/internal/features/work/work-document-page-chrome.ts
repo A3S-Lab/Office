@@ -70,6 +70,7 @@ const MATHML_ATTRIBUTES = new Set([
   'fence',
   'height',
   'linethickness',
+  'mathvariant',
   'notation',
   'rowspacing',
   'separator',

@@ -8,7 +8,10 @@ import {
   type WorkDocumentEquationLimitLocation,
   type WorkDocumentEquationMatrixAlignment,
   type WorkDocumentEquationMatrixBaseAlignment,
+  type WorkDocumentEquationManualBreak,
   type WorkDocumentEquationNaryOperator,
+  type WorkDocumentEquationRunScript,
+  type WorkDocumentEquationRunStyle,
   type WorkDocumentEquationRowSpacingRule,
 } from './work-document-equations';
 import {
@@ -65,6 +68,15 @@ interface EquationParseState {
   textLength: number;
 }
 
+interface ParsedMathRunProperties {
+  literal?: boolean;
+  normalText?: boolean;
+  script?: WorkDocumentEquationRunScript;
+  style?: WorkDocumentEquationRunStyle;
+  manualBreak?: WorkDocumentEquationManualBreak;
+  alignment?: boolean;
+}
+
 const TRANSITIONAL_MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -110,12 +122,14 @@ const ARGUMENT_PROPERTY_NAMES = new Set(['argPr', 'ctrlPr']);
 const STRUCTURAL_MATH_NAMES = new Set([
   'acc',
   'accPr',
+  'aln',
   'bar',
   'barPr',
   'borderBox',
   'borderBoxPr',
   'box',
   'boxPr',
+  'brk',
   'd',
   'deg',
   'den',
@@ -132,6 +146,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'limLowPr',
   'limUpp',
   'limUppPr',
+  'lit',
   'm',
   'mc',
   'mcPr',
@@ -139,20 +154,25 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'mPr',
   'mr',
   'nary',
+  'nor',
   'num',
   'oMath',
   'oMathPara',
   'phant',
   'phantPr',
   'r',
+  'rPr',
   'rad',
+  'scr',
   'sPre',
   'sPrePr',
   'sSub',
   'sSubSup',
   'sSup',
+  'sty',
   'sub',
   'sup',
+  't',
 ]);
 const UNSAFE_PROPERTY_NAMES = new Set([
   'altChunk',
@@ -484,37 +504,73 @@ function parseRun(
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
   if (
-    meaningfulAttributes(element).length ||
-    hasMeaningfulDirectText(element)
+    !structuralChildren(element, new Set(['rPr', 't'])) ||
+    !orderedMathChildren(element, ['rPr', 't'])
   ) {
     return null;
   }
-  const textElements: Element[] = [];
-  let sawProperties = false;
-  for (const child of directChildren(element)) {
-    if (child.localName === 'rPr') {
-      if (sawProperties || textElements.length || !emptyMathProperty(child)) {
-        return null;
-      }
-      sawProperties = true;
-      continue;
-    }
-    if (
-      child.localName !== 't' ||
-      !DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? '') ||
-      directChildren(child).length ||
-      !safeMathTextAttributes(child)
-    ) {
-      return null;
-    }
-    textElements.push(child);
+  const properties = uniqueMathChild(element, 'rPr', false);
+  const textElement = uniqueMathChild(element, 't');
+  if (
+    properties === null ||
+    !textElement ||
+    directChildren(textElement).length ||
+    !safeMathTextAttributes(textElement)
+  ) {
+    return null;
   }
-  if (textElements.length !== 1) return null;
-  const text = textElements.map((child) => child.textContent ?? '').join('');
+  const parsedProperties = properties ? parseMathRunProperties(properties) : {};
+  if (!parsedProperties) return null;
+  const text = textElement.textContent ?? '';
   if (!text || text.length > MAX_MATH_TEXT_LENGTH) return null;
   state.textLength += text.length;
   return state.textLength <= MAX_MATH_TEXT_LENGTH
-    ? { type: 'run', text }
+    ? { type: 'run', text, ...parsedProperties }
+    : null;
+}
+
+function parseMathRunProperties(
+  properties: Element,
+): ParsedMathRunProperties | null {
+  const propertyOrder = ['lit', 'nor', 'scr', 'sty', 'brk', 'aln'];
+  if (
+    !structuralChildren(properties, new Set(propertyOrder)) ||
+    !orderedMathChildren(properties, propertyOrder)
+  ) {
+    return null;
+  }
+  const literal = mathOnOffProperty(properties, 'lit');
+  const normalText = mathOnOffProperty(properties, 'nor');
+  const scriptElement = uniqueMathChild(properties, 'scr', false);
+  const styleElement = uniqueMathChild(properties, 'sty', false);
+  const breakElement = uniqueMathChild(properties, 'brk', false);
+  const alignment = mathOnOffProperty(properties, 'aln');
+  if (
+    literal === null ||
+    normalText === null ||
+    scriptElement === null ||
+    styleElement === null ||
+    breakElement === null ||
+    alignment === null
+  ) {
+    return null;
+  }
+  const script = runScriptFromOmml(
+    scriptElement ? mathValueOrDefault(scriptElement, 'roman') : 'roman',
+  );
+  const style = runStyleFromOmml(
+    styleElement ? mathValueOrDefault(styleElement, 'i') : 'i',
+  );
+  const manualBreak = breakElement ? parseManualBreak(breakElement) : undefined;
+  return script && style && manualBreak !== null
+    ? {
+        ...(literal ? { literal } : {}),
+        ...(normalText ? { normalText } : {}),
+        ...(script !== 'roman' ? { script } : {}),
+        ...(style !== 'italic' ? { style } : {}),
+        ...(manualBreak ? { manualBreak } : {}),
+        ...(alignment ? { alignment } : {}),
+      }
     : null;
 }
 
@@ -1850,6 +1906,28 @@ function fractionTypeFromOmml(
 function topBottomFromOmml(value: string | null): 'top' | 'bottom' | null {
   if (value === 'top') return 'top';
   if (value === 'bot') return 'bottom';
+  return null;
+}
+
+function runScriptFromOmml(
+  value: string | null,
+): WorkDocumentEquationRunScript | null {
+  if (value === 'roman') return 'roman';
+  if (value === 'sans-serif') return 'sansSerif';
+  if (value === 'monospace') return 'monospace';
+  if (value === 'fraktur') return 'fraktur';
+  if (value === 'double-struck') return 'doubleStruck';
+  if (value === 'script') return 'script';
+  return null;
+}
+
+function runStyleFromOmml(
+  value: string | null,
+): WorkDocumentEquationRunStyle | null {
+  if (value === 'p') return 'plain';
+  if (value === 'i') return 'italic';
+  if (value === 'b') return 'bold';
+  if (value === 'bi') return 'boldItalic';
   return null;
 }
 
