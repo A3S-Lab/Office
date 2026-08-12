@@ -9,6 +9,7 @@ import {
   type WorkDocumentEquationJustification,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
+  type WorkDocumentEquationSpacingRule,
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordRunProperties,
 } from './work-document-equations';
@@ -862,7 +863,7 @@ function createExpression(
         document,
         prefix,
         'rSpRule',
-        equationArrayRowSpacingRule(expression.rowSpacingRule),
+        equationSpacingRule(expression.rowSpacingRule),
       ),
       mathValueElement(document, prefix, 'rSp', String(expression.rowSpacing)),
     );
@@ -906,6 +907,40 @@ function createExpression(
         expression.placeholdersHidden ? '1' : '0',
       ),
     );
+    if (expression.spacing) {
+      properties.append(
+        mathValueElement(
+          document,
+          prefix,
+          'rSpRule',
+          equationSpacingRule(expression.spacing.rowSpacingRule),
+        ),
+        mathValueElement(
+          document,
+          prefix,
+          'cGpRule',
+          equationSpacingRule(expression.spacing.columnGapRule),
+        ),
+        mathValueElement(
+          document,
+          prefix,
+          'rSp',
+          String(expression.spacing.rowSpacing),
+        ),
+        mathValueElement(
+          document,
+          prefix,
+          'cSp',
+          String(expression.spacing.minimumColumnWidthTwips),
+        ),
+        mathValueElement(
+          document,
+          prefix,
+          'cGp',
+          String(expression.spacing.columnGap),
+        ),
+      );
+    }
     const columns = createMathElement(document, prefix, 'mcs');
     for (const group of matrixColumnGroups(expression.columnAlignments)) {
       const column = createMathElement(document, prefix, 'mc');
@@ -972,12 +1007,7 @@ function createExpression(
   return delimiter;
 }
 
-function equationArrayRowSpacingRule(
-  rule: Extract<
-    WorkDocumentEquationExpression,
-    { type: 'equationArray' }
-  >['rowSpacingRule'],
-): string {
+function equationSpacingRule(rule: WorkDocumentEquationSpacingRule): string {
   if (rule === 'oneAndHalf') return '1';
   if (rule === 'double') return '2';
   if (rule === 'exact') return '3';

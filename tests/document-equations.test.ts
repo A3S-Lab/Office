@@ -178,6 +178,9 @@ describe('document equations', () => {
       expect(upperLimit).toBeDefined();
       const matrix = element?.querySelector('mtable[align="top"]');
       expect(matrix).not.toBeNull();
+      expect(matrix?.getAttribute('rowspacing')).toBe('12pt');
+      expect(matrix?.getAttribute('columnspacing')).toBe('1.5em');
+      expect(matrix?.hasAttribute('columnwidth')).toBe(false);
       expect(matrix?.querySelectorAll('mtr')).toHaveLength(2);
       expect(matrix?.querySelectorAll('mtd')).toHaveLength(8);
       expect(element).toHaveAttribute('role', 'math');
@@ -230,7 +233,9 @@ describe('document equations', () => {
       expect(element?.getAttribute('aria-label')).toContain(
         'upper-limit(=;def)',
       );
-      expect(element?.getAttribute('aria-label')).toContain('matrix');
+      expect(element?.getAttribute('aria-label')).toContain(
+        'matrix(row-spacing=exact:12,column-gap=multiple:3,minimum-column-width=120twip;',
+      );
       const rightAlignedBlock = createDocumentEquationElement(
         document,
         complexEquation('block'),
@@ -948,7 +953,7 @@ describe('document equations', () => {
     const matrix = document.createElementNS(MATH_NAMESPACE, 'm:m');
     const matrixProperties = document.createElementNS(MATH_NAMESPACE, 'm:mPr');
     const columnSpacing = document.createElementNS(MATH_NAMESPACE, 'm:cSp');
-    columnSpacing.setAttributeNS(MATH_NAMESPACE, 'm:val', '120');
+    columnSpacing.setAttributeNS(MATH_NAMESPACE, 'm:val', '31681');
     matrixProperties.append(columnSpacing);
     const row = document.createElementNS(MATH_NAMESPACE, 'm:mr');
     const argument = document.createElementNS(MATH_NAMESPACE, 'm:e');
@@ -1453,7 +1458,7 @@ describe('document equations', () => {
       `<m:rad><m:radPr><m:ctrlPr/><m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:subHide m:val="on"/></m:naryPr><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/></m:naryPr><m:e>${run}</m:e></m:nary>`,
-      `<m:m><m:mPr><m:cSp m:val="120"/></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m><m:mPr><m:cSp m:val="31681"/></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="0"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
@@ -1600,6 +1605,236 @@ describe('document equations', () => {
     expect(unsupported.map(inspectEquationBody)).toEqual(
       unsupported.map(() => 'unsupported'),
     );
+  });
+
+  test('preserves bounded OMML matrix spacing and projects safe gaps', async () => {
+    const equation: WorkDocumentEquation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'matrix',
+          baseAlignment: 'top',
+          placeholdersHidden: false,
+          columnAlignments: ['left', 'right'],
+          spacing: {
+            rowSpacingRule: 'exact',
+            rowSpacing: 12,
+            columnGapRule: 'multiple',
+            columnGap: 3,
+            minimumColumnWidthTwips: 120,
+          },
+          rows: [
+            [[{ type: 'run', text: 'a' }], [{ type: 'run', text: 'b' }]],
+            [[{ type: 'run', text: 'c' }], [{ type: 'run', text: 'd' }]],
+          ],
+        },
+      ],
+    };
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const matrixModel = (spacing: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'matrix',
+            baseAlignment: 'center',
+            placeholdersHidden: false,
+            columnAlignments: ['center'],
+            spacing,
+            rows: [[[{ type: 'run', text: 'x' }]]],
+          },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    const maximumSpacing = {
+      rowSpacingRule: 'multiple',
+      rowSpacing: 65_535,
+      columnGapRule: 'exact',
+      columnGap: 65_535,
+      minimumColumnWidthTwips: 31_680,
+    };
+    expect(normalizeDocumentEquation(matrixModel(maximumSpacing))).toEqual(
+      matrixModel(maximumSpacing),
+    );
+    const invalidSpacing = [
+      null,
+      {},
+      { ...maximumSpacing, extra: true },
+      { ...maximumSpacing, rowSpacingRule: 'atLeast' },
+      { ...maximumSpacing, columnGapRule: 'atLeast' },
+      { ...maximumSpacing, rowSpacing: -1 },
+      { ...maximumSpacing, rowSpacing: 65_536 },
+      { ...maximumSpacing, rowSpacing: 1.5 },
+      { ...maximumSpacing, rowSpacing: '12' },
+      { ...maximumSpacing, columnGap: -1 },
+      { ...maximumSpacing, columnGap: 65_536 },
+      { ...maximumSpacing, columnGap: Number.NaN },
+      { ...maximumSpacing, minimumColumnWidthTwips: -1 },
+      { ...maximumSpacing, minimumColumnWidthTwips: 31_681 },
+      { ...maximumSpacing, minimumColumnWidthTwips: 1.5 },
+    ];
+    expect(
+      invalidSpacing.map((spacing) =>
+        normalizeDocumentEquation(matrixModel(spacing)),
+      ),
+    ).toEqual(invalidSpacing.map(() => null));
+
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const matrixBody = (properties: string) =>
+      `<m:m><m:mPr xmlns:r="${RELATIONSHIP_NAMESPACE}" xmlns:v="${VENDOR_NAMESPACE}">${properties}</m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr></m:m>`;
+    const completeProperties =
+      '<m:rSpRule m:val="+0003"/><m:cGpRule m:val="4"/><m:rSp m:val="+00012"/><m:cSp m:val="120"/><m:cGp m:val="3"/>';
+    expect(
+      inspectEquationModel(matrixBody(completeProperties))?.children[0],
+    ).toEqual({
+      type: 'matrix',
+      baseAlignment: 'center',
+      placeholdersHidden: false,
+      columnAlignments: ['center', 'center'],
+      spacing: {
+        rowSpacingRule: 'exact',
+        rowSpacing: 12,
+        columnGapRule: 'multiple',
+        columnGap: 3,
+        minimumColumnWidthTwips: 120,
+      },
+      rows: [[[{ type: 'run', text: 'x' }], [{ type: 'run', text: 'x' }]]],
+    });
+    expect(
+      inspectEquationModel(matrixBody('<m:cSp/>'))?.children[0],
+    ).toMatchObject({
+      spacing: {
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        columnGapRule: 'single',
+        columnGap: 0,
+        minimumColumnWidthTwips: 0,
+      },
+    });
+    const spacingRules = [
+      'single',
+      'oneAndHalf',
+      'double',
+      'exact',
+      'multiple',
+    ] as const;
+    for (const [index, rowSpacingRule] of spacingRules.entries()) {
+      const columnGapRule = spacingRules[4 - index];
+      expect(
+        inspectEquationModel(
+          matrixBody(
+            `<m:rSpRule m:val="${index}"/><m:cGpRule m:val="${4 - index}"/>`,
+          ),
+        )?.children[0],
+      ).toMatchObject({
+        spacing: { rowSpacingRule, columnGapRule },
+      });
+    }
+
+    const malformedProperties = [
+      '<m:rSpRule m:val="5"/>',
+      '<m:cGpRule m:val="-1"/>',
+      '<m:rSp m:val="65536"/>',
+      '<m:rSp m:val="1.5"/>',
+      '<m:cSp m:val="31681"/>',
+      '<m:cGp m:val="65536"/>',
+      '<m:cGpRule m:val="4"/><m:rSpRule m:val="3"/>',
+      '<m:cSp m:val="120"/><m:rSp m:val="12"/>',
+      '<m:rSpRule/><m:rSpRule/>',
+      '<m:cGp/><m:cGp/>',
+      '<m:cSp val="120"/>',
+      '<m:cSp v:val="120"/>',
+      '<m:cSp m:val="120" m:extra="semantic"/>',
+      '<m:cSp m:val="120">meaningful</m:cSp>',
+      `<m:cSp r:id="rIdUnsafe"/>`,
+      '<v:cSp v:val="120"/>',
+    ];
+    expect(
+      malformedProperties.map(matrixBody).map(inspectEquationBody),
+    ).toEqual(malformedProperties.map(() => 'unsupported'));
+
+    const strictSource = `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}"><m:m><m:mPr><m:rSpRule m:val="2"/><m:cGpRule m:val="3"/><m:rSp m:val="65535"/><m:cSp m:val="31680"/><m:cGp m:val="400"/></m:mPr><m:mr><m:e><m:r><m:t>x</m:t></m:r></m:e></m:mr></m:m></m:oMath>`;
+    expect(inspectEquationRoot(strictSource)).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            spacing: {
+              rowSpacingRule: 'double',
+              rowSpacing: 65_535,
+              columnGapRule: 'exact',
+              columnGap: 400,
+              minimumColumnWidthTwips: 31_680,
+            },
+          },
+        ],
+      },
+    });
+
+    const previewDocument = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(previewDocument, equation);
+    const table = preview.querySelector('mtable');
+    expect(table?.getAttribute('rowspacing')).toBe('12pt');
+    expect(table?.getAttribute('columnspacing')).toBe('1.5em');
+    expect(table?.hasAttribute('columnwidth')).toBe(false);
+    expect(preview.getAttribute('aria-label')).toContain(
+      'minimum-column-width=120twip',
+    );
+
+    const expectNativeMatrixSpacing = async (blob: Blob) => {
+      const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+      const document = await xmlEntry(archive, 'word/document.xml');
+      const matrix = descendants(document, 'm').find(
+        (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+      );
+      expect(matrix).toBeDefined();
+      const properties = directChildren(matrix as Element, 'mPr')[0];
+      expect(
+        directChildren(properties).map((child) => child.localName),
+      ).toEqual([
+        'baseJc',
+        'plcHide',
+        'rSpRule',
+        'cGpRule',
+        'rSp',
+        'cSp',
+        'cGp',
+        'mcs',
+      ]);
+      expect(
+        directChildren(properties).slice(0, 7).map(mathValueAttribute),
+      ).toEqual(['top', '0', '3', '4', '12', '120', '3']);
+    };
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeMatrixSpacing(first);
+    const imported = await importOfficeFile(
+      new File([first], 'matrix-spacing.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeMatrixSpacing(await createArtifactBlob(imported));
   });
 
   test('preserves bounded Word run properties inside math runs', () => {
@@ -4050,6 +4285,13 @@ function complexEquation(
         baseAlignment: 'top',
         placeholdersHidden: false,
         columnAlignments: ['left', 'center', 'center', 'right'],
+        spacing: {
+          rowSpacingRule: 'exact',
+          rowSpacing: 12,
+          columnGapRule: 'multiple',
+          columnGap: 3,
+          minimumColumnWidthTwips: 120,
+        },
         rows: [
           [[run('a')], [run('b')], [run('c')], [run('d')]],
           [[run('e')], [run('f')], [run('g')], []],
@@ -5183,6 +5425,21 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(mathValueAttribute(directChildren(properties, 'plcHide')[0])).toBe(
       '0',
     );
+    expect(directChildren(properties).map((child) => child.localName)).toEqual([
+      'baseJc',
+      'plcHide',
+      'rSpRule',
+      'cGpRule',
+      'rSp',
+      'cSp',
+      'cGp',
+      'mcs',
+    ]);
+    expect(
+      ['rSpRule', 'cGpRule', 'rSp', 'cSp', 'cGp'].map((name) =>
+        mathValueAttribute(directChildren(properties, name)[0]),
+      ),
+    ).toEqual(['3', '4', '12', '120', '3']);
     const columns = descendants(properties, 'mc');
     expect(
       columns.map((column) =>

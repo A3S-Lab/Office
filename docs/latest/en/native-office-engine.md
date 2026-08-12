@@ -1162,6 +1162,7 @@ spacing, border boxes with independently visible edges and four strike
 directions, semantic boxes with
 operator-emulation, no-break, differential-spacing, manual-break, and alignment
 properties, bounded rectangular matrices with base and per-column alignment,
+row-spacing and column-gap rules, and minimum column widths,
 equation arrays with 1–64 rows, vertical base alignment, maximum/object
 distribution, row-spacing rules, and `&` alignment/spacer markers, lower and
 upper limit objects, and delimiters remain native OOXML and receive an
@@ -1195,6 +1196,16 @@ pairing remain native metadata because professional MathML does not represent
 those Word semantics. Fixed slots use named metadata, while matrix cells,
 equation-array rows, and delimiter arguments use strictly dimension-aligned
 metadata.
+Matrix properties follow the ordered
+`baseJc -> plcHide -> rSpRule -> cGpRule -> rSp -> cSp -> cGp -> mcs -> ctrlPr`
+grammar. Row and column rules accept single, 1.5, double, exact, and multiple
+spacing. `rSp` and `cGp` are bounded to 65,535, while the minimum column width
+`cSp` is bounded to 31,680 twips. If any spacing property is
+present, omitted or attribute-free peers take their Word defaults and native
+export emits a complete canonical spacing group. Row spacing and column gaps
+project to MathML `rowspacing` and `columnspacing`; `cSp` remains native-only
+for layout because MathML `columnwidth` is a fixed width rather than Word's
+minimum.
 Every supported `CT_OMathArg` slot may be empty and follows
 `argPr -> expressions -> ctrlPr`. Absent or empty argument/control properties
 and absent, empty, or zero `argSz` values normalize to the default. Bounded
@@ -1244,7 +1255,8 @@ accepted. Invalid or non-combining accent characters, malformed math-run
 properties, invalid or contradictory fraction, radical, n-ary, bar,
 group-character, phantom, border-box, box, or equation-array properties, malformed
 script-property, pre-script, math-paragraph, or lower/upper limit structures,
-unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+malformed, duplicated, reordered, or out-of-range matrix spacing/gap
+properties, ragged or over-limit matrices,
 over-limit equation arrays,
 malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded

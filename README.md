@@ -528,6 +528,7 @@ transparent spacing, border boxes with independently visible edges and four
 strike directions, semantic boxes with
 operator-emulation, no-break, differential-spacing, manual-break, and alignment
 properties, bounded rectangular matrices with explicit column alignment,
+row-spacing and column-gap rules, and minimum column widths,
 equation arrays with 1–64 rows, vertical base alignment, maximum/object
 distribution, row-spacing rules, and `&` alignment/spacer markers, lower and
 upper limit objects, and delimiters regenerate as `m:oMath` or `m:oMathPara` and
@@ -561,6 +562,16 @@ only onto separable MathML control/operator nodes; argument-slot formatting and
 all revision provenance remain native metadata because professional MathML has
 neither linear-build control characters nor Word review/move-range semantics.
 Document-level move-range pairing is not inferred from an isolated equation.
+Matrix properties follow the ordered
+`baseJc -> plcHide -> rSpRule -> cGpRule -> rSp -> cSp -> cGp -> mcs -> ctrlPr`
+grammar. Row and column rules accept single, 1.5, double, exact, and multiple
+spacing. `rSp` and `cGp` are bounded to 65,535, while the minimum column width
+`cSp` is bounded to 31,680 twips. If any spacing property is
+present, omitted or attribute-free peers take their Word defaults and native
+export emits a complete canonical spacing group. Row spacing and column gaps
+project to MathML `rowspacing` and `columnspacing`; `cSp` remains native-only
+for layout because MathML `columnwidth` is a fixed width rather than Word's
+minimum.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.
@@ -622,7 +633,8 @@ fraction, radical, n-ary, delimiter, bar, group-character, phantom, border-box,
 box, or equation-array properties,
 malformed script-property, pre-script, math-paragraph, or lower/upper limit
 structures,
-unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+malformed, duplicated, reordered, or out-of-range matrix spacing/gap
+properties, ragged or over-limit matrices,
 over-limit equation arrays,
 malformed, misplaced, over-budget, namespace-spoofed, nested, or
 relationship-bound math is flattened to bounded text and reported instead of

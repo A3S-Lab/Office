@@ -19,12 +19,22 @@ export type WorkDocumentEquationMatrixBaseAlignment =
   | 'top'
   | 'center'
   | 'bottom';
-export type WorkDocumentEquationRowSpacingRule =
+export type WorkDocumentEquationSpacingRule =
   | 'single'
   | 'oneAndHalf'
   | 'double'
   | 'exact'
   | 'multiple';
+export type WorkDocumentEquationRowSpacingRule =
+  WorkDocumentEquationSpacingRule;
+
+export interface WorkDocumentEquationMatrixSpacing {
+  rowSpacingRule: WorkDocumentEquationSpacingRule;
+  rowSpacing: number;
+  columnGapRule: WorkDocumentEquationSpacingRule;
+  columnGap: number;
+  minimumColumnWidthTwips: number;
+}
 export type WorkDocumentEquationRunScript =
   | 'roman'
   | 'sansSerif'
@@ -356,6 +366,7 @@ export type WorkDocumentEquationExpression =
       baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
       placeholdersHidden: boolean;
       columnAlignments: WorkDocumentEquationMatrixAlignment[];
+      spacing?: WorkDocumentEquationMatrixSpacing;
       rows: WorkDocumentEquationExpression[][][];
       cellProperties?: Array<
         Array<WorkDocumentEquationArgumentProperties | null>
@@ -427,6 +438,8 @@ const MAX_DELIMITER_ARGUMENTS = 32;
 const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
+const MAX_MATRIX_SPACING = 65_535;
+const MAX_MATRIX_MINIMUM_COLUMN_WIDTH = 31_680;
 const MAX_EQUATION_ARRAY_ROWS = 64;
 const MAX_EQUATION_ARRAY_ALIGNMENT_MARKERS = 4_096;
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
@@ -584,14 +597,20 @@ const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
 const MATRIX_BASE_ALIGNMENTS = new Set<WorkDocumentEquationMatrixBaseAlignment>(
   ['top', 'center', 'bottom'],
 );
-const EQUATION_ARRAY_ROW_SPACING_RULES =
-  new Set<WorkDocumentEquationRowSpacingRule>([
-    'single',
-    'oneAndHalf',
-    'double',
-    'exact',
-    'multiple',
-  ]);
+const EQUATION_SPACING_RULES = new Set<WorkDocumentEquationRowSpacingRule>([
+  'single',
+  'oneAndHalf',
+  'double',
+  'exact',
+  'multiple',
+]);
+const MATRIX_SPACING_KEYS = new Set([
+  'rowSpacingRule',
+  'rowSpacing',
+  'columnGapRule',
+  'columnGap',
+  'minimumColumnWidthTwips',
+]);
 const BAR_POSITIONS = new Set<WorkDocumentEquationBarPosition>([
   'top',
   'bottom',
@@ -956,6 +975,41 @@ function normalizeMatrixArgumentPropertySlots(
     properties.push(normalizedRow);
   }
   return present ? properties : undefined;
+}
+
+function normalizeMatrixSpacing(
+  source: unknown,
+): WorkDocumentEquationMatrixSpacing | null {
+  if (!isRecordWithKeys(source, MATRIX_SPACING_KEYS)) return null;
+  const rowSpacingRule = EQUATION_SPACING_RULES.has(
+    source.rowSpacingRule as WorkDocumentEquationSpacingRule,
+  )
+    ? (source.rowSpacingRule as WorkDocumentEquationSpacingRule)
+    : null;
+  const columnGapRule = EQUATION_SPACING_RULES.has(
+    source.columnGapRule as WorkDocumentEquationSpacingRule,
+  )
+    ? (source.columnGapRule as WorkDocumentEquationSpacingRule)
+    : null;
+  const rowSpacing = source.rowSpacing;
+  const columnGap = source.columnGap;
+  const minimumColumnWidthTwips = source.minimumColumnWidthTwips;
+  if (
+    !rowSpacingRule ||
+    !columnGapRule ||
+    !boundedInteger(rowSpacing, 0, MAX_MATRIX_SPACING) ||
+    !boundedInteger(columnGap, 0, MAX_MATRIX_SPACING) ||
+    !boundedInteger(minimumColumnWidthTwips, 0, MAX_MATRIX_MINIMUM_COLUMN_WIDTH)
+  ) {
+    return null;
+  }
+  return {
+    rowSpacingRule,
+    rowSpacing,
+    columnGapRule,
+    columnGap,
+    minimumColumnWidthTwips,
+  };
 }
 
 function normalizeExpression(
@@ -1492,9 +1546,14 @@ function normalizeExpression(
       )
         ? (source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment)
         : null;
+      const spacing =
+        source.spacing === undefined
+          ? undefined
+          : normalizeMatrixSpacing(source.spacing);
       if (
         !baseAlignment ||
         typeof source.placeholdersHidden !== 'boolean' ||
+        spacing === null ||
         !Array.isArray(source.rows) ||
         source.rows.length === 0 ||
         source.rows.length > MAX_MATRIX_ROWS ||
@@ -1548,6 +1607,7 @@ function normalizeExpression(
         baseAlignment,
         placeholdersHidden: source.placeholdersHidden,
         columnAlignments,
+        ...(spacing ? { spacing } : {}),
         rows,
         ...(cellProperties ? { cellProperties } : {}),
       };
@@ -1558,7 +1618,7 @@ function normalizeExpression(
       )
         ? (source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment)
         : null;
-      const rowSpacingRule = EQUATION_ARRAY_ROW_SPACING_RULES.has(
+      const rowSpacingRule = EQUATION_SPACING_RULES.has(
         source.rowSpacingRule as WorkDocumentEquationRowSpacingRule,
       )
         ? (source.rowSpacingRule as WorkDocumentEquationRowSpacingRule)
@@ -1816,7 +1876,10 @@ function expressionText(
     )})`;
   }
   if (expression.type === 'matrix') {
-    return `matrix(${expression.rows
+    const spacing = expression.spacing
+      ? `row-spacing=${expression.spacing.rowSpacingRule}:${expression.spacing.rowSpacing},column-gap=${expression.spacing.columnGapRule}:${expression.spacing.columnGap},minimum-column-width=${expression.spacing.minimumColumnWidthTwips}twip;`
+      : '';
+    return `matrix(${spacing}${expression.rows
       .map((row) =>
         row
           .map((cell) => expressionListText(cell, hideAlignmentMarkers))
@@ -2183,6 +2246,18 @@ function expressionMathMl(
       {
         align: expression.baseAlignment,
         columnalign: expression.columnAlignments.join(' '),
+        ...(expression.spacing
+          ? {
+              rowspacing: equationRowSpacing(
+                expression.spacing.rowSpacingRule,
+                expression.spacing.rowSpacing,
+              ),
+              columnspacing: matrixColumnGap(
+                expression.spacing.columnGapRule,
+                expression.spacing.columnGap,
+              ),
+            }
+          : {}),
       },
       expression.rows.map((row) =>
         domSpec(
@@ -2200,7 +2275,10 @@ function expressionMathMl(
       'mtable',
       {
         align: expression.baseAlignment,
-        rowspacing: equationArrayRowSpacing(expression),
+        rowspacing: equationRowSpacing(
+          expression.rowSpacingRule,
+          expression.rowSpacing,
+        ),
       },
       expression.rows.map((row) => {
         const rowAlignmentState: EquationArrayAlignmentState = {
@@ -2254,21 +2332,27 @@ function expressionMathMl(
   return domSpec('mrow', {}, children);
 }
 
-function equationArrayRowSpacing(
-  expression: Extract<
-    WorkDocumentEquationExpression,
-    { type: 'equationArray' }
-  >,
+function equationRowSpacing(
+  rule: WorkDocumentEquationSpacingRule,
+  value: number,
 ): string {
-  if (expression.rowSpacingRule === 'oneAndHalf') return '1.5em';
-  if (expression.rowSpacingRule === 'double') return '2em';
-  if (expression.rowSpacingRule === 'exact') {
-    return `${expression.rowSpacing}pt`;
+  if (rule === 'oneAndHalf') return '1.5em';
+  if (rule === 'double') return '2em';
+  if (rule === 'exact') {
+    return `${value}pt`;
   }
-  if (expression.rowSpacingRule === 'multiple') {
-    return `${expression.rowSpacing / 2}em`;
+  if (rule === 'multiple') {
+    return `${value / 2}em`;
   }
   return '1em';
+}
+
+function matrixColumnGap(
+  rule: WorkDocumentEquationSpacingRule,
+  value: number,
+): string {
+  if (rule === 'exact') return `${value / 20}pt`;
+  return equationRowSpacing(rule, value);
 }
 
 function domSpec(
@@ -2676,6 +2760,19 @@ function isRecordWithKeys(
 ): source is Record<string, unknown> {
   return (
     isRecord(source) && Object.keys(source).every((key) => allowed.has(key))
+  );
+}
+
+function boundedInteger(
+  source: unknown,
+  minimum: number,
+  maximum: number,
+): source is number {
+  return (
+    typeof source === 'number' &&
+    Number.isInteger(source) &&
+    source >= minimum &&
+    source <= maximum
   );
 }
 

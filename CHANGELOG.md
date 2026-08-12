@@ -37,6 +37,13 @@ All notable changes to A3S Office will be documented in this file.
   nested, spoofed, or relationship-bound control markup fails closed. Safe
   object-control values project only onto separable MathML control/operator
   nodes while all supported values remain in native metadata.
+  Matrix properties now preserve the ordered
+  `baseJc -> plcHide -> rSpRule -> cGpRule -> rSp -> cSp -> cGp -> mcs -> ctrlPr`
+  grammar. The five spacing rules, unsigned-short row/gap values, and minimum
+  column widths through 31,680 twips round-trip with attribute-free Word
+  defaults. Row and column gaps project to safe MathML table spacing, while
+  minimum width remains native-only for layout because MathML exposes fixed
+  column width.
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
   sub-superscripts, left-side pre-sub/superscripts with empty script slots,
   radicals with optional degrees and canonical hidden empty degree slots,
@@ -47,7 +54,8 @@ All notable changes to A3S Office will be documented in this file.
   border boxes with independently visible edges and four strike directions,
   semantic boxes with operator-emulation,
   no-break, differential-spacing, manual-break, and alignment properties,
-  bounded rectangular matrices with base and column alignment, equation arrays
+  bounded rectangular matrices with base and column alignment, ordered
+  row-spacing and column-gap rules, and minimum column widths, equation arrays
   with 1–64 rows, vertical base alignment, maximum/object distribution,
   row-spacing rules, and `&` alignment/spacer markers, lower and upper limit
   objects, and custom delimiters in strict or transitional UTF-8/UTF-16
@@ -81,7 +89,8 @@ All notable changes to A3S Office will be documented in this file.
   group-character, phantom, border-box, box, or equation-array properties,
   malformed
   lower/upper limit structures,
-  matrix spacing and gap rules, ragged or over-limit matrices, over-limit
+  malformed, duplicated, reordered, or out-of-range matrix spacing/gap
+  properties, ragged or over-limit matrices, over-limit
   equation arrays, malformed script-property, pre-script, or math-paragraph
   structures, malformed placement, namespace spoofing, nested math, and
   relationship-bound properties

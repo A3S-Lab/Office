@@ -12,10 +12,12 @@ import {
   type WorkDocumentEquationManualBreak,
   type WorkDocumentEquationMatrixAlignment,
   type WorkDocumentEquationMatrixBaseAlignment,
+  type WorkDocumentEquationMatrixSpacing,
   type WorkDocumentEquationNaryOperator,
   type WorkDocumentEquationRowSpacingRule,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
+  type WorkDocumentEquationSpacingRule,
   type WorkDocumentEquationThemeColor,
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
@@ -189,6 +191,8 @@ const MAX_DELIMITER_ARGUMENTS = 32;
 const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
+const MAX_MATRIX_SPACING = 65_535;
+const MAX_MATRIX_MINIMUM_COLUMN_WIDTH = 31_680;
 const MAX_EQUATION_ARRAY_ROWS = 64;
 const MAX_WORD_FONT_NAME_LENGTH = 127;
 const MAX_WORD_LANGUAGE_LENGTH = 85;
@@ -2292,23 +2296,7 @@ function parseEquationArrayProperties(properties: Element | undefined): {
           : null;
   const maximumDistribution = mathOnOffProperty(properties, 'maxDist');
   const objectDistribution = mathOnOffProperty(properties, 'objDist');
-  const rowSpacingRuleValue = unsignedMathInteger(
-    rowSpacingRuleElement
-      ? mathValueOrDefault(rowSpacingRuleElement, '0')
-      : '0',
-    4,
-  );
-  const rowSpacingRules: WorkDocumentEquationRowSpacingRule[] = [
-    'single',
-    'oneAndHalf',
-    'double',
-    'exact',
-    'multiple',
-  ];
-  const rowSpacingRule =
-    rowSpacingRuleValue === null
-      ? null
-      : (rowSpacingRules[rowSpacingRuleValue] ?? null);
+  const rowSpacingRule = mathSpacingRule(rowSpacingRuleElement);
   const rowSpacing = unsignedMathInteger(
     rowSpacingElement ? mathValueOrDefault(rowSpacingElement, '0') : '0',
     65_535,
@@ -2390,6 +2378,7 @@ function parseMatrixProperties(
   baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
   placeholdersHidden: boolean;
   columnAlignments: WorkDocumentEquationMatrixAlignment[];
+  spacing?: WorkDocumentEquationMatrixSpacing;
   controlProperties?: WorkDocumentEquationWordRunProperties;
   controlRevision?: WorkDocumentEquationControlRevision;
 } | null {
@@ -2403,7 +2392,17 @@ function parseMatrixProperties(
   if (
     !structuralChildren(
       properties,
-      new Set(['baseJc', 'plcHide', 'mcs', 'ctrlPr']),
+      new Set([
+        'baseJc',
+        'plcHide',
+        'rSpRule',
+        'cGpRule',
+        'rSp',
+        'cSp',
+        'cGp',
+        'mcs',
+        'ctrlPr',
+      ]),
     )
   ) {
     return null;
@@ -2411,8 +2410,13 @@ function parseMatrixProperties(
   const order = new Map([
     ['baseJc', 0],
     ['plcHide', 1],
-    ['mcs', 2],
-    ['ctrlPr', 3],
+    ['rSpRule', 2],
+    ['cGpRule', 3],
+    ['rSp', 4],
+    ['cSp', 5],
+    ['cGp', 6],
+    ['mcs', 7],
+    ['ctrlPr', 8],
   ]);
   let previous = -1;
   for (const child of directChildren(properties)) {
@@ -2422,6 +2426,11 @@ function parseMatrixProperties(
   }
   const baseElement = uniqueMathChild(properties, 'baseJc', false);
   const placeholderElement = uniqueMathChild(properties, 'plcHide', false);
+  const rowSpacingRuleElement = uniqueMathChild(properties, 'rSpRule', false);
+  const columnGapRuleElement = uniqueMathChild(properties, 'cGpRule', false);
+  const rowSpacingElement = uniqueMathChild(properties, 'rSp', false);
+  const minimumColumnWidthElement = uniqueMathChild(properties, 'cSp', false);
+  const columnGapElement = uniqueMathChild(properties, 'cGp', false);
   const columnsElement = uniqueMathChild(properties, 'mcs', false);
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
   const parsedControlProperties =
@@ -2431,6 +2440,11 @@ function parseMatrixProperties(
   if (
     baseElement === null ||
     placeholderElement === null ||
+    rowSpacingRuleElement === null ||
+    columnGapRuleElement === null ||
+    rowSpacingElement === null ||
+    minimumColumnWidthElement === null ||
+    columnGapElement === null ||
     columnsElement === null ||
     parsedControlProperties === null
   ) {
@@ -2450,18 +2464,59 @@ function parseMatrixProperties(
   const placeholdersHidden = placeholderElement
     ? mathOnOff(placeholderElement)
     : false;
+  const hasSpacing = Boolean(
+    rowSpacingRuleElement ||
+      columnGapRuleElement ||
+      rowSpacingElement ||
+      minimumColumnWidthElement ||
+      columnGapElement,
+  );
+  const rowSpacingRule = mathSpacingRule(rowSpacingRuleElement);
+  const columnGapRule = mathSpacingRule(columnGapRuleElement);
+  const rowSpacing = unsignedMathInteger(
+    rowSpacingElement ? mathValueOrDefault(rowSpacingElement, '0') : '0',
+    MAX_MATRIX_SPACING,
+  );
+  const minimumColumnWidthTwips = unsignedMathInteger(
+    minimumColumnWidthElement
+      ? mathValueOrDefault(minimumColumnWidthElement, '0')
+      : '0',
+    MAX_MATRIX_MINIMUM_COLUMN_WIDTH,
+  );
+  const columnGap = unsignedMathInteger(
+    columnGapElement ? mathValueOrDefault(columnGapElement, '0') : '0',
+    MAX_MATRIX_SPACING,
+  );
   const columnAlignments = columnsElement
     ? parseMatrixColumns(columnsElement, columnCount)
     : Array.from(
         { length: columnCount },
         (): WorkDocumentEquationMatrixAlignment => 'center',
       );
-  return baseAlignment && placeholdersHidden !== null && columnAlignments
+  return baseAlignment &&
+    placeholdersHidden !== null &&
+    rowSpacingRule &&
+    columnGapRule &&
+    rowSpacing !== null &&
+    minimumColumnWidthTwips !== null &&
+    columnGap !== null &&
+    columnAlignments
     ? {
         ...parsedControlProperties,
         baseAlignment,
         placeholdersHidden,
         columnAlignments,
+        ...(hasSpacing
+          ? {
+              spacing: {
+                rowSpacingRule,
+                rowSpacing,
+                columnGapRule,
+                columnGap,
+                minimumColumnWidthTwips,
+              },
+            }
+          : {}),
       }
     : null;
 }
@@ -2728,6 +2783,20 @@ function unsignedMathInteger(
   if (!/^\+?\d+$/u.test(source)) return null;
   const parsed = Number(source);
   return Number.isSafeInteger(parsed) && parsed <= maximum ? parsed : null;
+}
+
+function mathSpacingRule(
+  element: Element | undefined,
+): WorkDocumentEquationSpacingRule | null {
+  const value = unsignedMathInteger(
+    element ? mathValueOrDefault(element, '0') : '0',
+    4,
+  );
+  return value === null
+    ? null
+    : ((['single', 'oneAndHalf', 'double', 'exact', 'multiple'] as const)[
+        value
+      ] ?? null);
 }
 
 function mathOnOff(element: Element): boolean | null {
