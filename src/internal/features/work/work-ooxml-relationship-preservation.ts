@@ -8,6 +8,7 @@ import {
 import {
   isExcludedDocxPart,
   isExcludedRelationshipType,
+  isRegeneratedDocxNoteCommentPart,
   isSafeOpcPartPath,
 } from './work-ooxml-package-security';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
@@ -39,6 +40,7 @@ export async function preserveDocxRelationships(
     }
     const ownerPart = relationshipOwnerPart(sourcePath);
     if (ownerPart && !hasPath(finalPartPaths, ownerPart)) continue;
+    if (isRegeneratedDocxNoteCommentPart(ownerPart)) continue;
     if (ownerPart.toLowerCase() === 'word/settings.xml') continue;
     const sourceEntry = source.file(sourcePath);
     if (!sourceEntry) continue;

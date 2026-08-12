@@ -128,9 +128,15 @@ IDs. Row text or structural edits rotate the version, formatting-only edits and
 moves retain it, copies receive independent IDs, and nested DOM collections no
 longer leak into outer-table export. Missing, duplicate, cross-kind,
 relationship-bound, and Microsoft/OOXML semantic identities fail closed while
-generated table semantics remain authoritative. Unknown run, note, comment,
-and other inline markup remains an explicit next boundary rather than being
-covered by this claim.
+generated table semantics remain authoritative. Native positive footnote and
+endnote IDs now survive reorderings, while copies receive fresh IDs. Signed
+native comment and reply IDs retain thread parentage and resolved state.
+Relationship-free passive extensions follow uniquely matched `w:footnote`,
+`w:endnote`, `w:comment`, and `w15:commentEx` roots, and valid `commentsIds`
+durable IDs are rebound to regenerated final comment paragraphs. Duplicate,
+namespace-spoofed, deleted, relationship-bound, and unsupported modern
+reaction/people sidecars fail closed. Rich run-level note and comment markup
+remains an explicit next boundary rather than being covered by this claim.
 
 Exit evidence:
 

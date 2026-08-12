@@ -503,7 +503,16 @@ Row text or structural edits rotate the row version; formatting-only edits and
 moves retain it, copies receive independent IDs, and nested rows or cells are
 isolated from their outer table. Duplicate or cross-kind identities and unsafe
 extension branches fail closed, while generated table geometry and formatting
-win. Unknown run, note, comment, and other inline markup may still normalize.
+win. Imported footnotes and endnotes now retain their native positive `w:id`
+across reorderings, while copies receive independent IDs. Signed native comment
+and reply IDs, reply parentage, and resolved state also survive regeneration.
+Relationship-free passive extensions on uniquely matched `w:footnote`,
+`w:endnote`, `w:comment`, and `w15:commentEx` roots are retained, and valid
+`commentsIds` durable IDs are rebound to each regenerated final comment
+paragraph. Duplicate or namespace-spoofed identities, deleted semantic records,
+relationship-bound branches, and unsupported modern reaction/people sidecars
+fail closed. Rich run-level markup inside notes and comments may still
+normalize.
 Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate

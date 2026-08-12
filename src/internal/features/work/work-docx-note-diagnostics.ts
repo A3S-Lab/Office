@@ -51,7 +51,7 @@ export async function diagnoseDocxNotes(
   const issues: WorkCompatibilityIssue[] = [
     noteIssue(
       'docx.notes',
-      'Footnote and endnote references, editable note text, common inline formatting, preview placement, and native DOCX note parts are preserved.',
+      'Footnote and endnote references, stable native IDs, editable note text, common inline formatting, preview placement, native DOCX note parts, and eligible passive definition metadata are preserved.',
       'info',
     ),
   ];

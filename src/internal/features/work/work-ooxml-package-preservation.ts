@@ -1,10 +1,12 @@
 import JSZip from 'jszip';
+import { preserveDocxCommentDurableIds } from './work-docx-comment-durable-id-preservation';
 import { preserveDocxDrawingExtensions } from './work-docx-drawing-extension-preservation';
 import { preserveDocxFontTable } from './work-docx-font-table-preservation';
 import {
   preserveDocxNumberingExtensions,
   type DocxSourceNumberingIdentity,
 } from './work-docx-numbering-extension-preservation';
+import { preserveDocxNoteCommentExtensions } from './work-docx-note-comment-extension-preservation';
 import { preserveDocxParagraphExtensions } from './work-docx-paragraph-extension-preservation';
 import { preserveDocxSettingsExtensions } from './work-docx-settings-preservation';
 import { preserveDocxStyleExtensions } from './work-docx-style-extension-preservation';
@@ -13,6 +15,8 @@ import { attribute, directChildren, parseXml } from './work-ooxml-package';
 import {
   isExcludedDocxContentType,
   isExcludedDocxPart,
+  isRegeneratedDocxNoteCommentContentType,
+  isRegeneratedDocxNoteCommentPart,
   isSafeOpcPartPath,
 } from './work-ooxml-package-security';
 import {
@@ -82,6 +86,22 @@ export async function preserveDocxSourcePackage(
     );
   }
   const preservedPaths = new Set<string>();
+  const sourceCommentsIdsPath = sourceByLower.get('word/commentsids.xml');
+  if (
+    sourceCommentsIdsPath &&
+    !generatedByLower.has('word/commentsids.xml') &&
+    isDocxCommentsIdsContentType(
+      contentTypeForPath(sourceTypes, sourceCommentsIdsPath),
+    ) &&
+    (await preserveDocxCommentDurableIds(
+      generated,
+      source,
+      sourceCommentsIdsPath,
+    ))
+  ) {
+    preservedPaths.add(sourceCommentsIdsPath);
+    generatedByLower.set('word/commentsids.xml', sourceCommentsIdsPath);
+  }
 
   for (const path of sourcePaths) {
     const lowerPath = path.toLowerCase();
@@ -90,6 +110,8 @@ export async function preserveDocxSourcePackage(
       path === CONTENT_TYPES_PATH ||
       isRelationshipsPart(path) ||
       isExcludedDocxPart(path) ||
+      isRegeneratedDocxNoteCommentPart(path) ||
+      isRegeneratedDocxNoteCommentContentType(sourceType) ||
       isExcludedDocxContentType(sourceType) ||
       generatedByLower.has(lowerPath) ||
       !sourceType
@@ -191,6 +213,7 @@ export async function preserveDocxSourcePackage(
     paragraphPartPaths,
     sourceParagraphPartPaths,
   );
+  await preserveDocxNoteCommentExtensions(generated, source);
   await preserveDocxParagraphExtensions(
     generated,
     source,
@@ -387,6 +410,13 @@ function isDocxNumberingContentType(type: string | undefined): boolean {
   return (
     type?.trim().toLowerCase() ===
     'application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml'
+  );
+}
+
+function isDocxCommentsIdsContentType(type: string | undefined): boolean {
+  return (
+    type?.trim().toLowerCase() ===
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.commentsids+xml'
   );
 }
 

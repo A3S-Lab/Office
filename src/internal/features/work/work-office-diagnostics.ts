@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, and stable table, row, or cell scopes in document, header, or footer parts, plus eligible source font-table metadata, are preserved against the final package graph. Paragraph text edits and row content or structure edits rotate their native version IDs. Generated Word semantics remain authoritative; source-only, changed-version, malformed, duplicate or cross-kind, relationship-bound, or Microsoft/OOXML semantic extension branches and unsupported run, note, comment, or other inline markup may normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Native note and comment IDs survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-version, malformed, duplicate or cross-kind, relationship-bound, or Microsoft/OOXML semantic extension branches and unsupported rich inline markup may normalize.',
       'info',
     ),
   ];
@@ -131,7 +131,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.comments',
             'Comments',
-            `${commentDefinitions.length} comment or reply record(s), text anchors, authors, dates, thread relationships, and resolved state are preserved and editable.`,
+            `${commentDefinitions.length} comment or reply record(s), stable native IDs, text anchors, authors, dates, thread relationships, resolved state, and eligible durable IDs are preserved and editable.`,
             'info',
           ),
         );
@@ -146,6 +146,18 @@ export async function analyzeDocxCompatibility(
               'docx.comments.formatting',
               'Comment formatting',
               'Comment text is editable, but rich formatting, tables, images, and content controls inside comments are normalized to plain text.',
+            ),
+          );
+        }
+        if (
+          archive.has('word/commentsExtensible.xml') ||
+          archive.has('word/people.xml')
+        ) {
+          issues.push(
+            issue(
+              'docx.comments.modern-sidecars',
+              'Modern comment metadata',
+              'Durable comment IDs are safely rebound, but follow-up flags, reactions, and people metadata in modern comment sidecars are not editable and are omitted rather than reattached to a stale comment identity.',
             ),
           );
         }

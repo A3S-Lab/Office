@@ -24,6 +24,21 @@ export function isExcludedDocxPart(path: string): boolean {
   );
 }
 
+export function isRegeneratedDocxNoteCommentPart(path: string): boolean {
+  return /^word\/(?:footnotes|endnotes|comments|commentsExtended|commentsIds|commentsExtensible|people)\.xml$/i.test(
+    path,
+  );
+}
+
+export function isRegeneratedDocxNoteCommentContentType(
+  type: string | undefined,
+): boolean {
+  const normalized = type?.trim().toLowerCase() ?? '';
+  return /^application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.(?:footnotes|endnotes|comments|commentsextended|commentsids|commentsextensible|people)\+xml$/.test(
+    normalized,
+  );
+}
+
 export function isExcludedRelationshipType(type: string): boolean {
   const normalized = type.toLowerCase();
   return [

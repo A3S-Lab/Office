@@ -44,6 +44,14 @@ All notable changes to A3S Office will be documented in this file.
   are repaired, nested rows and cells no longer leak into outer-table export,
   and duplicate, cross-kind, relationship-bound, or semantic branches fail
   closed while generated table geometry and formatting remain authoritative.
+- Preserved stable native footnote, endnote, comment, and reply identities
+  across reorderings while assigning fresh IDs to copies and collisions.
+  Resolved comments now emit valid `commentsExtended.xml` even without replies;
+  passive extensions on uniquely matched note, comment, and `commentEx` roots
+  survive regeneration, and valid `commentsIds` durable IDs are rebound to the
+  final comment paragraph IDs. Deleted records, duplicate or namespace-spoofed
+  identities, relationship-bound branches, and unsupported modern
+  reaction/people sidecars fail closed instead of reviving stale metadata.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

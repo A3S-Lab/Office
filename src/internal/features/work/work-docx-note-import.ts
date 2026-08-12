@@ -3,6 +3,7 @@ import {
   type WorkDocumentNote,
   type WorkDocumentNoteKind,
 } from './work-document-notes';
+import { importedDocumentNoteId } from './work-docx-note-comment-identity';
 
 export function extractMammothDocumentNotes(
   document: Document,
@@ -26,7 +27,9 @@ export function extractMammothDocumentNotes(
     if (!note) {
       counters[kind] += 1;
       note = {
-        id: `document-${kind}-${counters[kind]}`,
+        id:
+          importedDocumentNoteId(kind, target) ??
+          `document-${kind}-${counters[kind]}`,
         kind,
         number: counters[kind],
         html: definitions.get(target) ?? '<p></p>',

@@ -1,6 +1,5 @@
 import type {
   FileChild,
-  ICommentOptions,
   IRunOptions,
   ISectionOptions,
   ParagraphChild,
@@ -31,6 +30,8 @@ import {
   docxCitationRun,
 } from './work-docx-citation-export';
 import { docxSectionColumns } from './work-docx-column-export';
+import { createDocxCommentRecords } from './work-docx-comment-export';
+import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
   cssColorToHex,
@@ -69,6 +70,10 @@ import {
   patchDocxImageWraps,
 } from './work-docx-image-wrap';
 import { patchDocxNumberingRestartRules } from './work-docx-numbering';
+import {
+  assignDocxCommentThreads,
+  assignDocxNoteIds,
+} from './work-docx-note-comment-identity';
 import { patchDocxPageColor } from './work-docx-page-color';
 import {
   DocxParagraphIdentityPatchCollector,
@@ -129,12 +134,9 @@ export async function createDocxBlob(
   };
   const noteCollection = collectDocumentNotes(normalizedContent.html);
   const comments = anchoredDocumentComments(normalizedContent);
+  const commentThreads = assignDocxCommentThreads(comments);
   const noteContext: DocxNoteContext = {
-    ids: new Map(
-      noteCollection.notes.map(
-        (note) => [documentNoteKey(note.kind, note.id), note.number] as const,
-      ),
-    ),
+    ids: assignDocxNoteIds(noteCollection.notes),
     changeIds: new Map(),
     nextChangeId: 1,
     commentIds: new Map(),
@@ -159,7 +161,11 @@ export async function createDocxBlob(
       JSON.stringify(normalizedContent),
     ),
   };
-  const commentRecords = createDocxCommentRecords(comments, docx, noteContext);
+  const commentRecords = createDocxCommentRecords(
+    commentThreads,
+    docx,
+    noteContext.commentIds,
+  );
   const sections: ISectionOptions[] = [];
   let usesOddEvenPageChrome = false;
   const sourceSections = documentSections({
@@ -219,8 +225,12 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
-  const numberingPatched = await patchDocxNumberingRestartRules(
+  const commentMetadataPatched = await patchDocxCommentMetadata(
     await packed.arrayBuffer(),
+    commentThreads,
+  );
+  const numberingPatched = await patchDocxNumberingRestartRules(
+    commentMetadataPatched,
     noteContext.numberingRestartRules,
   );
   const bibliographyPatched = await patchDocxBibliography(
@@ -771,40 +781,6 @@ function documentCommentRangeCounts(html: string): Map<string, number> {
   return counts;
 }
 
-function createDocxCommentRecords(
-  comments: WorkDocumentComment[],
-  docx: typeof import('docx'),
-  context: DocxNoteContext,
-): ICommentOptions[] {
-  const records: ICommentOptions[] = [];
-  let nextId = 0;
-  for (const comment of comments) {
-    const id = nextId;
-    nextId += 1;
-    context.commentIds.set(comment.id, id);
-    records.push({
-      id,
-      author: comment.author || 'A3S Work',
-      initials: commentInitials(comment.author),
-      date: commentDate(comment.date),
-      resolved: Boolean(comment.resolved),
-      children: [new docx.Paragraph({ text: comment.text || '（空批注）' })],
-    });
-    for (const reply of comment.replies ?? []) {
-      records.push({
-        id: nextId,
-        parentId: id,
-        author: reply.author || 'A3S Work',
-        initials: commentInitials(reply.author),
-        date: commentDate(reply.date),
-        children: [new docx.Paragraph({ text: reply.text || '（空回复）' })],
-      });
-      nextId += 1;
-    }
-  }
-  return records;
-}
-
 function nextDocxCommentBoundary(
   sourceId: string | undefined,
   context: DocxNoteContext,
@@ -816,21 +792,6 @@ function nextDocxCommentBoundary(
   const seen = (context.commentRangeSeen.get(key) ?? 0) + 1;
   context.commentRangeSeen.set(key, seen);
   return { id, start: seen === 1, end: seen === count };
-}
-
-function commentDate(value: string): Date {
-  const time = Date.parse(value);
-  return Number.isFinite(time) ? new Date(time) : new Date();
-}
-
-function commentInitials(author: string): string {
-  const parts = author.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return 'AW';
-  return parts
-    .slice(0, 2)
-    .map((part) => Array.from(part)[0] ?? '')
-    .join('')
-    .toUpperCase();
 }
 
 async function tableToDocx(
@@ -932,7 +893,9 @@ async function createNoteRecords(
   > = {};
   for (const note of notes) {
     if (note.kind !== kind) continue;
-    records[String(note.number)] = {
+    const id = noteContext.ids.get(documentNoteKey(note.kind, note.id));
+    if (id === undefined) continue;
+    records[String(id)] = {
       children: await noteParagraphs(note.html, docx, noteContext),
     };
   }
