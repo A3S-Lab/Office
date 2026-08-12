@@ -14,6 +14,8 @@ import {
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordEffectColor,
   type WorkDocumentEquationWordEffectFill,
+  type WorkDocumentEquationWordLightRigDirection,
+  type WorkDocumentEquationWordLightRigPreset,
   type WorkDocumentEquationWordPresetLineDash,
   type WorkDocumentEquationWordRectangleAlignment,
   type WorkDocumentEquationWordRunProperties,
@@ -134,6 +136,49 @@ const WORD_2010_PRESET_LINE_DASHES: Readonly<
   longDashDot: 'lgDashDot',
   longDashDotDot: 'lgDashDotDot',
   systemDashDotDot: 'sysDashDotDot',
+};
+const WORD_2010_SCENE_3D_LIGHT_RIG_PRESETS: Readonly<
+  Record<WorkDocumentEquationWordLightRigPreset, string>
+> = {
+  legacyFlat1: 'legacyFlat1',
+  legacyFlat2: 'legacyFlat2',
+  legacyFlat3: 'legacyFlat3',
+  legacyFlat4: 'legacyFlat4',
+  legacyNormal1: 'legacyNormal1',
+  legacyNormal2: 'legacyNormal2',
+  legacyNormal3: 'legacyNormal3',
+  legacyNormal4: 'legacyNormal4',
+  legacyHarsh1: 'legacyHarsh1',
+  legacyHarsh2: 'legacyHarsh2',
+  legacyHarsh3: 'legacyHarsh3',
+  legacyHarsh4: 'legacyHarsh4',
+  threePoint: 'threePt',
+  balanced: 'balanced',
+  soft: 'soft',
+  harsh: 'harsh',
+  flood: 'flood',
+  contrasting: 'contrasting',
+  morning: 'morning',
+  sunrise: 'sunrise',
+  sunset: 'sunset',
+  chilly: 'chilly',
+  freezing: 'freezing',
+  flat: 'flat',
+  twoPoint: 'twoPt',
+  glow: 'glow',
+  brightRoom: 'brightRoom',
+};
+const WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS: Readonly<
+  Record<WorkDocumentEquationWordLightRigDirection, string>
+> = {
+  topLeft: 'tl',
+  top: 't',
+  topRight: 'tr',
+  left: 'l',
+  right: 'r',
+  bottomLeft: 'bl',
+  bottom: 'b',
+  bottomRight: 'br',
 };
 const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
@@ -1438,6 +1483,9 @@ function createWordRunProperties(
       createWord2010TextFillEffect(document, properties.textFillEffect),
     );
   }
+  if (properties.scene3D) {
+    result.append(createWord2010Scene3D(document, properties.scene3D));
+  }
   return result;
 }
 
@@ -1763,6 +1811,49 @@ function createWord2010TextFillEffect(
   if (effect.fill) {
     result.append(createWord2010EffectFill(document, prefix, effect.fill));
   }
+  return result;
+}
+
+function createWord2010Scene3D(
+  document: Document,
+  scene: NonNullable<WorkDocumentEquationWordRunProperties['scene3D']>,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'scene3d');
+  const camera = createWord2010Element(document, prefix, 'camera');
+  setWord2010Attribute(camera, prefix, 'prst', scene.cameraPreset);
+  result.append(camera);
+
+  const lightRig = createWord2010Element(document, prefix, 'lightRig');
+  setWord2010Attribute(
+    lightRig,
+    prefix,
+    'rig',
+    WORD_2010_SCENE_3D_LIGHT_RIG_PRESETS[scene.lightRig.preset],
+  );
+  setWord2010Attribute(
+    lightRig,
+    prefix,
+    'dir',
+    WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS[scene.lightRig.direction],
+  );
+  if (scene.lightRig.rotation) {
+    const rotation = createWord2010Element(document, prefix, 'rot');
+    for (const [name, degrees] of [
+      ['lat', scene.lightRig.rotation.latitudeDegrees],
+      ['lon', scene.lightRig.rotation.longitudeDegrees],
+      ['rev', scene.lightRig.rotation.revolutionDegrees],
+    ] as const) {
+      setWord2010Attribute(
+        rotation,
+        prefix,
+        name,
+        String(degrees * WORD_ANGLE_UNITS_PER_DEGREE),
+      );
+    }
+    lightRig.append(rotation);
+  }
+  result.append(lightRig);
   return result;
 }
 

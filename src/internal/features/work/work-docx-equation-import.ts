@@ -27,36 +27,40 @@ import {
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordCombineBrackets,
   type WorkDocumentEquationWordEastAsianLayout,
-  type WorkDocumentEquationWordEmphasisMark,
   type WorkDocumentEquationWordEffectColor,
   type WorkDocumentEquationWordEffectFill,
   type WorkDocumentEquationWordEffectSchemeColor,
+  type WorkDocumentEquationWordEmphasisMark,
   type WorkDocumentEquationWordFitText,
   type WorkDocumentEquationWordGlow,
-  type WorkDocumentEquationWordHighlight,
-  type WorkDocumentEquationWordLanguages,
-  type WorkDocumentEquationWordLineBorderStyle,
   type WorkDocumentEquationWordGradientFillRectangle,
   type WorkDocumentEquationWordGradientPath,
   type WorkDocumentEquationWordGradientShade,
   type WorkDocumentEquationWordGradientStop,
+  type WorkDocumentEquationWordHighlight,
+  type WorkDocumentEquationWordLanguages,
+  type WorkDocumentEquationWordLightRigDirection,
+  type WorkDocumentEquationWordLightRigPreset,
+  type WorkDocumentEquationWordLineBorderStyle,
   type WorkDocumentEquationWordLineDash,
   type WorkDocumentEquationWordLineJoin,
+  type WorkDocumentEquationWordPresetCamera,
   type WorkDocumentEquationWordPresetLineDash,
+  type WorkDocumentEquationWordRectangleAlignment,
+  type WorkDocumentEquationWordReflectionEffect,
   type WorkDocumentEquationWordRunBorder,
   type WorkDocumentEquationWordRunFonts,
   type WorkDocumentEquationWordRunProperties,
-  type WorkDocumentEquationWordRectangleAlignment,
-  type WorkDocumentEquationWordReflectionEffect,
-  type WorkDocumentEquationWordShadowEffect,
+  type WorkDocumentEquationWordScene3D,
   type WorkDocumentEquationWordShading,
   type WorkDocumentEquationWordShadingPattern,
+  type WorkDocumentEquationWordShadowEffect,
   type WorkDocumentEquationWordTextEffect,
+  type WorkDocumentEquationWordTextFillEffect,
   type WorkDocumentEquationWordTextOutlineAlignment,
   type WorkDocumentEquationWordTextOutlineCap,
   type WorkDocumentEquationWordTextOutlineCompound,
   type WorkDocumentEquationWordTextOutlineEffect,
-  type WorkDocumentEquationWordTextFillEffect,
   type WorkDocumentEquationWordUnderline,
   type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
@@ -194,6 +198,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:reflection',
   'w14:textOutline',
   'w14:textFill',
+  'w14:scene3d',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -325,6 +330,116 @@ const WORD_2010_GRADIENT_PATHS = new Map<
   ['shape', 'shape'],
   ['circle', 'circle'],
   ['rect', 'rectangle'],
+]);
+const WORD_2010_SCENE_3D_CAMERA_PRESETS =
+  new Set<WorkDocumentEquationWordPresetCamera>([
+    'legacyObliqueTopLeft',
+    'legacyObliqueTop',
+    'legacyObliqueTopRight',
+    'legacyObliqueLeft',
+    'legacyObliqueFront',
+    'legacyObliqueRight',
+    'legacyObliqueBottomLeft',
+    'legacyObliqueBottom',
+    'legacyObliqueBottomRight',
+    'legacyPerspectiveTopLeft',
+    'legacyPerspectiveTop',
+    'legacyPerspectiveTopRight',
+    'legacyPerspectiveLeft',
+    'legacyPerspectiveFront',
+    'legacyPerspectiveRight',
+    'legacyPerspectiveBottomLeft',
+    'legacyPerspectiveBottom',
+    'legacyPerspectiveBottomRight',
+    'orthographicFront',
+    'isometricTopUp',
+    'isometricTopDown',
+    'isometricBottomUp',
+    'isometricBottomDown',
+    'isometricLeftUp',
+    'isometricLeftDown',
+    'isometricRightUp',
+    'isometricRightDown',
+    'isometricOffAxis1Left',
+    'isometricOffAxis1Right',
+    'isometricOffAxis1Top',
+    'isometricOffAxis2Left',
+    'isometricOffAxis2Right',
+    'isometricOffAxis2Top',
+    'isometricOffAxis3Left',
+    'isometricOffAxis3Right',
+    'isometricOffAxis3Bottom',
+    'isometricOffAxis4Left',
+    'isometricOffAxis4Right',
+    'isometricOffAxis4Bottom',
+    'obliqueTopLeft',
+    'obliqueTop',
+    'obliqueTopRight',
+    'obliqueLeft',
+    'obliqueRight',
+    'obliqueBottomLeft',
+    'obliqueBottom',
+    'obliqueBottomRight',
+    'perspectiveFront',
+    'perspectiveLeft',
+    'perspectiveRight',
+    'perspectiveAbove',
+    'perspectiveBelow',
+    'perspectiveAboveLeftFacing',
+    'perspectiveAboveRightFacing',
+    'perspectiveContrastingLeftFacing',
+    'perspectiveContrastingRightFacing',
+    'perspectiveHeroicLeftFacing',
+    'perspectiveHeroicRightFacing',
+    'perspectiveHeroicExtremeLeftFacing',
+    'perspectiveHeroicExtremeRightFacing',
+    'perspectiveRelaxed',
+    'perspectiveRelaxedModerately',
+  ]);
+const WORD_2010_SCENE_3D_LIGHT_RIG_PRESETS = new Map<
+  string,
+  WorkDocumentEquationWordLightRigPreset
+>([
+  ['legacyFlat1', 'legacyFlat1'],
+  ['legacyFlat2', 'legacyFlat2'],
+  ['legacyFlat3', 'legacyFlat3'],
+  ['legacyFlat4', 'legacyFlat4'],
+  ['legacyNormal1', 'legacyNormal1'],
+  ['legacyNormal2', 'legacyNormal2'],
+  ['legacyNormal3', 'legacyNormal3'],
+  ['legacyNormal4', 'legacyNormal4'],
+  ['legacyHarsh1', 'legacyHarsh1'],
+  ['legacyHarsh2', 'legacyHarsh2'],
+  ['legacyHarsh3', 'legacyHarsh3'],
+  ['legacyHarsh4', 'legacyHarsh4'],
+  ['threePt', 'threePoint'],
+  ['balanced', 'balanced'],
+  ['soft', 'soft'],
+  ['harsh', 'harsh'],
+  ['flood', 'flood'],
+  ['contrasting', 'contrasting'],
+  ['morning', 'morning'],
+  ['sunrise', 'sunrise'],
+  ['sunset', 'sunset'],
+  ['chilly', 'chilly'],
+  ['freezing', 'freezing'],
+  ['flat', 'flat'],
+  ['twoPt', 'twoPoint'],
+  ['glow', 'glow'],
+  ['brightRoom', 'brightRoom'],
+]);
+const WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS = new Map<
+  string,
+  WorkDocumentEquationWordLightRigDirection
+>([
+  ['tl', 'topLeft'],
+  ['t', 'top'],
+  ['tr', 'topRight'],
+  ['l', 'left'],
+  ['r', 'right'],
+  ['bl', 'bottomLeft'],
+  ['b', 'bottom'],
+  ['br', 'bottomRight'],
 ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
@@ -1121,6 +1236,7 @@ function parseWordRunProperties(
   const textFillEffect = parseWordTextFillEffect(
     word2010Children.get('textFill'),
   );
+  const scene3D = parseWordScene3D(word2010Children.get('scene3d'));
   if (
     fonts === null ||
     color === null ||
@@ -1144,7 +1260,8 @@ function parseWordRunProperties(
     shadowEffect === null ||
     reflectionEffect === null ||
     textOutlineEffect === null ||
-    textFillEffect === null
+    textFillEffect === null ||
+    scene3D === null
   ) {
     return null;
   }
@@ -1244,6 +1361,7 @@ function parseWordRunProperties(
     ...(reflectionEffect ? { reflectionEffect } : {}),
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
     ...(textFillEffect ? { textFillEffect } : {}),
+    ...(scene3D ? { scene3D } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2258,6 +2376,98 @@ function parseWordTextFillEffect(
   if (!children[0]) return {};
   const fill = parseWord2010EffectFill(children[0]);
   return fill ? { fill } : null;
+}
+
+function parseWordScene3D(
+  element: Element | undefined,
+): WorkDocumentEquationWordScene3D | null | undefined {
+  if (!element) return undefined;
+  if (!word2010ElementAttributes(element, new Set())) return null;
+  const children = directChildren(element);
+  const camera = children[0];
+  const lightRig = children[1];
+  if (
+    children.length !== 2 ||
+    !camera ||
+    camera.namespaceURI !== WORD_2010_NAMESPACE ||
+    camera.localName !== 'camera' ||
+    !lightRig ||
+    lightRig.namespaceURI !== WORD_2010_NAMESPACE ||
+    lightRig.localName !== 'lightRig'
+  ) {
+    return null;
+  }
+  const cameraAttributes = word2010LeafAttributes(camera, new Set(['prst']));
+  if (!cameraAttributes || cameraAttributes.size !== 1) return null;
+  const cameraSource = cameraAttributes.get('prst')?.trim() ?? '';
+  const cameraPreset = WORD_2010_SCENE_3D_CAMERA_PRESETS.has(
+    cameraSource as WorkDocumentEquationWordPresetCamera,
+  )
+    ? (cameraSource as WorkDocumentEquationWordPresetCamera)
+    : null;
+
+  const lightRigAttributes = word2010ElementAttributes(
+    lightRig,
+    new Set(['rig', 'dir']),
+  );
+  if (!lightRigAttributes || lightRigAttributes.size !== 2) return null;
+  const preset = WORD_2010_SCENE_3D_LIGHT_RIG_PRESETS.get(
+    lightRigAttributes.get('rig')?.trim() ?? '',
+  );
+  const direction = WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS.get(
+    lightRigAttributes.get('dir')?.trim() ?? '',
+  );
+  const rotationChildren = directChildren(lightRig);
+  if (rotationChildren.length > 1) return null;
+  const rotationElement = rotationChildren[0];
+  const rotation = rotationElement
+    ? parseWordScene3DRotation(rotationElement)
+    : undefined;
+  if (!cameraPreset || !preset || !direction || rotation === null) return null;
+  return {
+    cameraPreset,
+    lightRig: { preset, direction, ...(rotation ? { rotation } : {}) },
+  };
+}
+
+function parseWordScene3DRotation(
+  element: Element,
+): NonNullable<WorkDocumentEquationWordScene3D['lightRig']['rotation']> | null {
+  if (
+    element.namespaceURI !== WORD_2010_NAMESPACE ||
+    element.localName !== 'rot'
+  ) {
+    return null;
+  }
+  const attributes = word2010LeafAttributes(
+    element,
+    new Set(['lat', 'lon', 'rev']),
+  );
+  if (!attributes || attributes.size !== 3) return null;
+  const latitudeUnits = wordIntegerValue(
+    attributes.get('lat')?.trim() ?? '',
+    0,
+    MAX_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  const longitudeUnits = wordIntegerValue(
+    attributes.get('lon')?.trim() ?? '',
+    0,
+    MAX_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  const revolutionUnits = wordIntegerValue(
+    attributes.get('rev')?.trim() ?? '',
+    0,
+    MAX_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  return latitudeUnits !== null &&
+    longitudeUnits !== null &&
+    revolutionUnits !== null
+    ? {
+        latitudeDegrees: latitudeUnits / WORD_ANGLE_UNITS_PER_DEGREE,
+        longitudeDegrees: longitudeUnits / WORD_ANGLE_UNITS_PER_DEGREE,
+        revolutionDegrees: revolutionUnits / WORD_ANGLE_UNITS_PER_DEGREE,
+      }
+    : null;
 }
 
 function parseWord2010EffectFill(

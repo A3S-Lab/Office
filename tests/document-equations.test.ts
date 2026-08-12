@@ -15,11 +15,11 @@ import {
 } from '../src/internal/features/work/work-document-equations';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { sanitizeDocumentPageChromeHtml } from '../src/internal/features/work/work-document-page-chrome';
+import { patchDocxEquations } from '../src/internal/features/work/work-docx-equation-export';
 import {
   inspectDocxEquation,
   isSupportedDocxEquationPlacement,
 } from '../src/internal/features/work/work-docx-equation-import';
-import { patchDocxEquations } from '../src/internal/features/work/work-docx-equation-export';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
@@ -44,7 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_SCENE_3D = `<w14:scene3d xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_PROPS_3D = `<w14:props3d xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2078,6 +2078,7 @@ describe('document equations', () => {
       '<w14:reflection w14:blurRad="12700" w14:stA="60000" w14:stPos="0" w14:endA="10000" w14:endPos="100000" w14:dist="6350" w14:dir="5400000" w14:fadeDir="16200000" w14:sx="100000" w14:sy="-50000" w14:kx="-60000" w14:ky="120000" w14:algn="b"/>',
       '<w14:textOutline w14:w="12700" w14:cap="sq" w14:cmpd="dbl" w14:algn="in"><w14:solidFill><w14:schemeClr w14:val="accent6"><w14:alpha w14:val="80000"/></w14:schemeClr></w14:solidFill><w14:prstDash w14:val="dashDot"/><w14:miter w14:lim="400000"/></w14:textOutline>',
       '<w14:textFill><w14:solidFill><w14:srgbClr w14:val="2468AC"><w14:shade w14:val="25000"/></w14:srgbClr></w14:solidFill></w14:textFill>',
+      '<w14:scene3d><w14:camera w14:prst="perspectiveHeroicRightFacing"/><w14:lightRig w14:rig="twoPt" w14:dir="bl"><w14:rot w14:lat="0" w14:lon="10800000" w14:rev="21599999"/></w14:lightRig></w14:scene3d>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2186,7 +2187,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2220,7 +2221,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4436,7 +4437,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4867,7 +4868,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5294,7 +5295,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5661,7 +5662,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6393,7 +6394,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6847,7 +6848,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_SCENE_3D),
+      wordRun(WORD_2010_PROPS_3D),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6927,6 +6928,514 @@ describe('document equations', () => {
     await expectNativeWordRunTextFillEffects(
       await createArtifactBlob(imported),
     );
+  });
+
+  test('preserves the complete bounded Office 2010 3D scene grammar as native-only metadata', async () => {
+    const cameraPresets = [
+      'legacyObliqueTopLeft',
+      'legacyObliqueTop',
+      'legacyObliqueTopRight',
+      'legacyObliqueLeft',
+      'legacyObliqueFront',
+      'legacyObliqueRight',
+      'legacyObliqueBottomLeft',
+      'legacyObliqueBottom',
+      'legacyObliqueBottomRight',
+      'legacyPerspectiveTopLeft',
+      'legacyPerspectiveTop',
+      'legacyPerspectiveTopRight',
+      'legacyPerspectiveLeft',
+      'legacyPerspectiveFront',
+      'legacyPerspectiveRight',
+      'legacyPerspectiveBottomLeft',
+      'legacyPerspectiveBottom',
+      'legacyPerspectiveBottomRight',
+      'orthographicFront',
+      'isometricTopUp',
+      'isometricTopDown',
+      'isometricBottomUp',
+      'isometricBottomDown',
+      'isometricLeftUp',
+      'isometricLeftDown',
+      'isometricRightUp',
+      'isometricRightDown',
+      'isometricOffAxis1Left',
+      'isometricOffAxis1Right',
+      'isometricOffAxis1Top',
+      'isometricOffAxis2Left',
+      'isometricOffAxis2Right',
+      'isometricOffAxis2Top',
+      'isometricOffAxis3Left',
+      'isometricOffAxis3Right',
+      'isometricOffAxis3Bottom',
+      'isometricOffAxis4Left',
+      'isometricOffAxis4Right',
+      'isometricOffAxis4Bottom',
+      'obliqueTopLeft',
+      'obliqueTop',
+      'obliqueTopRight',
+      'obliqueLeft',
+      'obliqueRight',
+      'obliqueBottomLeft',
+      'obliqueBottom',
+      'obliqueBottomRight',
+      'perspectiveFront',
+      'perspectiveLeft',
+      'perspectiveRight',
+      'perspectiveAbove',
+      'perspectiveBelow',
+      'perspectiveAboveLeftFacing',
+      'perspectiveAboveRightFacing',
+      'perspectiveContrastingLeftFacing',
+      'perspectiveContrastingRightFacing',
+      'perspectiveHeroicLeftFacing',
+      'perspectiveHeroicRightFacing',
+      'perspectiveHeroicExtremeLeftFacing',
+      'perspectiveHeroicExtremeRightFacing',
+      'perspectiveRelaxed',
+      'perspectiveRelaxedModerately',
+    ] as const;
+    const lightRigPresets = [
+      ['legacyFlat1', 'legacyFlat1'],
+      ['legacyFlat2', 'legacyFlat2'],
+      ['legacyFlat3', 'legacyFlat3'],
+      ['legacyFlat4', 'legacyFlat4'],
+      ['legacyNormal1', 'legacyNormal1'],
+      ['legacyNormal2', 'legacyNormal2'],
+      ['legacyNormal3', 'legacyNormal3'],
+      ['legacyNormal4', 'legacyNormal4'],
+      ['legacyHarsh1', 'legacyHarsh1'],
+      ['legacyHarsh2', 'legacyHarsh2'],
+      ['legacyHarsh3', 'legacyHarsh3'],
+      ['legacyHarsh4', 'legacyHarsh4'],
+      ['threePt', 'threePoint'],
+      ['balanced', 'balanced'],
+      ['soft', 'soft'],
+      ['harsh', 'harsh'],
+      ['flood', 'flood'],
+      ['contrasting', 'contrasting'],
+      ['morning', 'morning'],
+      ['sunrise', 'sunrise'],
+      ['sunset', 'sunset'],
+      ['chilly', 'chilly'],
+      ['freezing', 'freezing'],
+      ['flat', 'flat'],
+      ['twoPt', 'twoPoint'],
+      ['glow', 'glow'],
+      ['brightRoom', 'brightRoom'],
+    ] as const;
+    const lightDirections = [
+      ['tl', 'topLeft'],
+      ['t', 'top'],
+      ['tr', 'topRight'],
+      ['l', 'left'],
+      ['r', 'right'],
+      ['bl', 'bottomLeft'],
+      ['b', 'bottom'],
+      ['br', 'bottomRight'],
+    ] as const;
+    const maximumAngleDegrees = 21_599_999 / 60_000;
+    const fullScene = {
+      cameraPreset: 'perspectiveHeroicExtremeRightFacing',
+      lightRig: {
+        preset: 'threePoint',
+        direction: 'bottomRight',
+        rotation: {
+          latitudeDegrees: 0,
+          longitudeDegrees: 180.5,
+          revolutionDegrees: maximumAngleDegrees,
+        },
+      },
+    };
+    const sceneWithoutRotation = {
+      cameraPreset: 'orthographicFront',
+      lightRig: { preset: 'balanced', direction: 'top' },
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'full-scene-3d',
+          wordRunProperties: { scene3D: fullScene },
+        },
+        {
+          type: 'run',
+          text: 'unrotated-scene-3d',
+          wordRunProperties: { scene3D: sceneWithoutRotation },
+        },
+        {
+          type: 'run',
+          text: 'ordered-scene-3d',
+          wordRunProperties: {
+            paragraphMarkAlwaysHidden: false,
+            reflectionEffect: {},
+            textOutlineEffect: {},
+            textFillEffect: {},
+            scene3D: sceneWithoutRotation,
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { scene3D: fullScene },
+          children: [{ type: 'run', text: 'control-scene-3d' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithScene = (scene3D: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties: { scene3D } }],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { scene3D: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    for (const cameraPreset of cameraPresets) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithScene({ ...sceneWithoutRotation, cameraPreset }),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          scene3D: { ...sceneWithoutRotation, cameraPreset },
+        },
+      });
+    }
+    for (const [, preset] of lightRigPresets) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithScene({
+            ...sceneWithoutRotation,
+            lightRig: { ...sceneWithoutRotation.lightRig, preset },
+          }),
+        ),
+      ).not.toBeNull();
+    }
+    for (const [, direction] of lightDirections) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithScene({
+            ...sceneWithoutRotation,
+            lightRig: { ...sceneWithoutRotation.lightRig, direction },
+          }),
+        ),
+      ).not.toBeNull();
+    }
+
+    const invalidScenes = [
+      null,
+      false,
+      [],
+      {},
+      { ...sceneWithoutRotation, extra: true },
+      { lightRig: sceneWithoutRotation.lightRig },
+      { ...sceneWithoutRotation, cameraPreset: 'unknown' },
+      { cameraPreset: sceneWithoutRotation.cameraPreset },
+      { ...sceneWithoutRotation, lightRig: null },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { ...sceneWithoutRotation.lightRig, extra: true },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { direction: sceneWithoutRotation.lightRig.direction },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { preset: sceneWithoutRotation.lightRig.preset },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { ...sceneWithoutRotation.lightRig, preset: 'threePt' },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { ...sceneWithoutRotation.lightRig, direction: 'tl' },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { ...sceneWithoutRotation.lightRig, rotation: null },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: { ...sceneWithoutRotation.lightRig, rotation: {} },
+      },
+      {
+        ...sceneWithoutRotation,
+        lightRig: {
+          ...sceneWithoutRotation.lightRig,
+          rotation: {
+            latitudeDegrees: 0,
+            longitudeDegrees: 0,
+            revolutionDegrees: 0,
+            extra: true,
+          },
+        },
+      },
+      ...[
+        ['latitudeDegrees', -1 / 60_000],
+        ['latitudeDegrees', 360],
+        ['longitudeDegrees', 0.000_001],
+        ['revolutionDegrees', Number.NaN],
+      ].map(([name, value]) => ({
+        ...sceneWithoutRotation,
+        lightRig: {
+          ...sceneWithoutRotation.lightRig,
+          rotation: {
+            latitudeDegrees: 0,
+            longitudeDegrees: 0,
+            revolutionDegrees: 0,
+            [name as string]: value,
+          },
+        },
+      })),
+      ...['latitudeDegrees', 'longitudeDegrees', 'revolutionDegrees'].map(
+        (name) => ({
+          ...sceneWithoutRotation,
+          lightRig: {
+            ...sceneWithoutRotation.lightRig,
+            rotation: {
+              latitudeDegrees: 0,
+              longitudeDegrees: 0,
+              revolutionDegrees: 0,
+              [name]: undefined,
+            },
+          },
+        }),
+      ),
+    ];
+    expect(
+      invalidScenes.map((scene) =>
+        normalizeDocumentEquation(equationWithScene(scene)),
+      ),
+    ).toEqual(invalidScenes.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const sceneMarkup = (
+      camera: string,
+      rig = 'balanced',
+      direction = 't',
+      rotation = '',
+    ) =>
+      `<w14:scene3d><w14:camera w14:prst="${camera}"/><w14:lightRig w14:rig="${rig}" w14:dir="${direction}">${rotation}</w14:lightRig></w14:scene3d>`;
+    const fullMarkup = sceneMarkup(
+      'perspectiveHeroicExtremeRightFacing',
+      'threePt',
+      'br',
+      '<w14:rot w14:lat="0" w14:lon="10830000" w14:rev="21599999"/>',
+    );
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(fullMarkup, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { scene3D: fullScene },
+      });
+    }
+    for (const cameraPreset of cameraPresets) {
+      expect(
+        inspectEquationModel(wordRun(sceneMarkup(cameraPreset)))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          scene3D: { ...sceneWithoutRotation, cameraPreset },
+        },
+      });
+    }
+    for (const [source, preset] of lightRigPresets) {
+      expect(
+        inspectEquationModel(wordRun(sceneMarkup('orthographicFront', source)))
+          ?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          scene3D: {
+            ...sceneWithoutRotation,
+            lightRig: { preset, direction: 'top' },
+          },
+        },
+      });
+    }
+    for (const [source, direction] of lightDirections) {
+      expect(
+        inspectEquationModel(
+          wordRun(sceneMarkup('orthographicFront', 'balanced', source)),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          scene3D: {
+            ...sceneWithoutRotation,
+            lightRig: { preset: 'balanced', direction },
+          },
+        },
+      });
+    }
+
+    const camera = '<w14:camera w14:prst="orthographicFront"/>';
+    const lightRig = '<w14:lightRig w14:rig="balanced" w14:dir="t"/>';
+    const invalidMarkup = [
+      wordRun(`${fullMarkup}${fullMarkup}`),
+      wordRun(`${fullMarkup}<w14:textFill/>`),
+      wordRun('<w14:scene3d/>'),
+      wordRun(`<w14:scene3d>${camera}</w14:scene3d>`),
+      wordRun(`<w14:scene3d>${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d>${lightRig}${camera}</w14:scene3d>`),
+      wordRun(`<w14:scene3d>${camera}${camera}${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d>${camera}${lightRig}${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d w14:extra="1">${camera}${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d extra="1">${camera}${lightRig}</w14:scene3d>`),
+      wordRun(
+        `<w14:scene3d xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe">${camera}${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(`<w14:scene3d>meaningful${camera}${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d>${camera}<w14:props3d/>${lightRig}</w14:scene3d>`),
+      wordRun(`<w14:scene3d><w14:camera/>${lightRig}</w14:scene3d>`),
+      wordRun(
+        `<w14:scene3d><w14:camera w14:prst="unknown"/>${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d><w14:camera prst="orthographicFront"/>${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d><w14:camera w14:prst="orthographicFront" w14:extra="1"/>${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d><w14:camera w14:prst="orthographicFront">text</w14:camera>${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d><w14:camera w14:prst="orthographicFront"><w14:rot w14:lat="0" w14:lon="0" w14:rev="0"/></w14:camera>${lightRig}</w14:scene3d>`,
+      ),
+      wordRun(`<w14:scene3d>${camera}<w14:lightRig/></w14:scene3d>`),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig w14:rig="unknown" w14:dir="t"/></w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig w14:rig="balanced" w14:dir="unknown"/></w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig rig="balanced" w14:dir="t"/></w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig w14:rig="balanced" dir="t"/></w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig w14:rig="balanced" w14:dir="t" w14:extra="1"/></w14:scene3d>`,
+      ),
+      wordRun(
+        `<w14:scene3d>${camera}<w14:lightRig w14:rig="balanced" w14:dir="t">text</w14:lightRig></w14:scene3d>`,
+      ),
+      ...[
+        '<w14:rot/>',
+        '<w14:rot w14:lat="0" w14:lon="0"/>',
+        '<w14:rot w14:lat="0" w14:rev="0"/>',
+        '<w14:rot w14:lon="0" w14:rev="0"/>',
+        '<w14:rot w14:lat="-1" w14:lon="0" w14:rev="0"/>',
+        '<w14:rot w14:lat="21600000" w14:lon="0" w14:rev="0"/>',
+        '<w14:rot w14:lat="0.5" w14:lon="0" w14:rev="0"/>',
+        '<w14:rot w14:lat="0" w14:lon="0" w14:rev="0" w14:extra="1"/>',
+        '<w14:rot lat="0" w14:lon="0" w14:rev="0"/>',
+        '<w14:rot w14:lat="0" w14:lon="0" w14:rev="0">text</w14:rot>',
+        '<w14:rot w14:lat="0" w14:lon="0" w14:rev="0"><w14:camera/></w14:rot>',
+        '<v:rot xmlns:v="urn:a3s:test" v:lat="0" v:lon="0" v:rev="0"/>',
+      ].map((rotation) =>
+        wordRun(sceneMarkup('orthographicFront', 'balanced', 't', rotation)),
+      ),
+      wordRun(
+        sceneMarkup(
+          'orthographicFront',
+          'balanced',
+          't',
+          '<w14:rot w14:lat="0" w14:lon="0" w14:rev="0"/><w14:rot w14:lat="0" w14:lon="0" w14:rev="0"/>',
+        ),
+      ),
+      wordRun('<w:scene3d/>'),
+      wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
+      wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
+      wordRun(WORD_2010_PROPS_3D),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'full-scene-3d',
+      'unrotated-scene-3d',
+      'ordered-scene-3d',
+      'control-scene-3d',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(
+      preview.querySelector(
+        '[style*="perspective"], [style*="transform"], [style*="filter"]',
+      ),
+    ).toBeNull();
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunScene3D(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-scene-3d.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunScene3D(await createArtifactBlob(imported));
   });
 
   test('preserves bounded Word control properties across OMML object containers', async () => {
@@ -7017,7 +7526,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_SCENE_3D}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -7294,7 +7803,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_SCENE_3D}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_PROPS_3D}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -8568,6 +9077,18 @@ function richWordRunProperties() {
           type: 'rgb' as const,
           value: '#2468ac',
           transforms: [{ type: 'shade' as const, value: 25_000 }],
+        },
+      },
+    },
+    scene3D: {
+      cameraPreset: 'perspectiveHeroicRightFacing' as const,
+      lightRig: {
+        preset: 'twoPoint' as const,
+        direction: 'bottomLeft' as const,
+        rotation: {
+          latitudeDegrees: 0,
+          longitudeDegrees: 180,
+          revolutionDegrees: 21_599_999 / 60_000,
         },
       },
     },
@@ -11215,6 +11736,147 @@ async function expectNativeWordRunTextFillEffects(blob: Blob): Promise<void> {
   expect(directChildren(controlColor)).toHaveLength(0);
 }
 
+async function expectNativeWordRunScene3D(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const sceneFor = (properties: Element, label: string): Element => {
+    const scene = directChildren(properties, 'scene3d')[0];
+    expect(scene, label).toBeDefined();
+    expect(scene.namespaceURI, label).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(scene), label).toEqual({});
+    return scene;
+  };
+  const expectSceneChildren = (
+    scene: Element,
+    cameraPreset: string,
+    lightPreset: string,
+    direction: string,
+  ): [Element, Element] => {
+    const children = directChildren(scene);
+    expect(children.map((child) => child.localName)).toEqual([
+      'camera',
+      'lightRig',
+    ]);
+    expect(
+      children.every((child) => child.namespaceURI === WORD_2010_NAMESPACE),
+    ).toBe(true);
+    const [camera, lightRig] = children as [Element, Element];
+    expect(word2010Attributes(camera)).toEqual({ prst: cameraPreset });
+    expect(directChildren(camera)).toHaveLength(0);
+    expect(word2010Attributes(lightRig)).toEqual({
+      rig: lightPreset,
+      dir: direction,
+    });
+    return [camera, lightRig];
+  };
+
+  const full = sceneFor(wordPropertiesFor('full-scene-3d'), 'full-scene-3d');
+  const [, fullLightRig] = expectSceneChildren(
+    full,
+    'perspectiveHeroicExtremeRightFacing',
+    'threePt',
+    'br',
+  );
+  const rotation = directChildren(fullLightRig);
+  expect(rotation.map((child) => child.localName)).toEqual(['rot']);
+  expect(rotation[0].namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(rotation[0])).toEqual({
+    lat: '0',
+    lon: '10830000',
+    rev: '21599999',
+  });
+  expect(directChildren(rotation[0])).toHaveLength(0);
+
+  const unrotated = sceneFor(
+    wordPropertiesFor('unrotated-scene-3d'),
+    'unrotated-scene-3d',
+  );
+  const [, unrotatedLightRig] = expectSceneChildren(
+    unrotated,
+    'orthographicFront',
+    'balanced',
+    't',
+  );
+  expect(directChildren(unrotatedLightRig)).toHaveLength(0);
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-scene-3d'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'specVanish',
+    'reflection',
+    'textOutline',
+    'textFill',
+    'scene3d',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+  expectSceneChildren(
+    orderedProperties.at(-1) as Element,
+    'orthographicFront',
+    'balanced',
+    't',
+  );
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-scene-3d'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const controlScene = sceneFor(wordProperties as Element, 'control-scene-3d');
+  const [, controlLightRig] = expectSceneChildren(
+    controlScene,
+    'perspectiveHeroicExtremeRightFacing',
+    'threePt',
+    'br',
+  );
+  expect(word2010Attributes(directChildren(controlLightRig, 'rot')[0])).toEqual(
+    {
+      lat: '0',
+      lon: '10830000',
+      rev: '21599999',
+    },
+  );
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -11280,6 +11942,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'reflection',
     'textOutline',
     'textFill',
+    'scene3d',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -11365,6 +12028,7 @@ async function expectNativeArgumentControlProperties(
     'reflection',
     'textOutline',
     'textFill',
+    'scene3d',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -11937,6 +12601,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'reflection',
     'textOutline',
     'textFill',
+    'scene3d',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -12038,6 +12703,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     },
     { w: '12700', cap: 'sq', cmpd: 'dbl', algn: 'in' },
     {},
+    {},
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -12116,6 +12782,35 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(fillShade.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(fillShade.localName).toBe('shade');
     expect(word2010Attributes(fillShade)).toEqual({ val: '25000' });
+    const scene = directChildren(properties, 'scene3d')[0];
+    expect(scene.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(scene)).toEqual({});
+    const [camera, lightRig] = directChildren(scene);
+    expect([camera.localName, lightRig.localName]).toEqual([
+      'camera',
+      'lightRig',
+    ]);
+    expect([camera.namespaceURI, lightRig.namespaceURI]).toEqual([
+      WORD_2010_NAMESPACE,
+      WORD_2010_NAMESPACE,
+    ]);
+    expect(word2010Attributes(camera)).toEqual({
+      prst: 'perspectiveHeroicRightFacing',
+    });
+    expect(directChildren(camera)).toHaveLength(0);
+    expect(word2010Attributes(lightRig)).toEqual({
+      rig: 'twoPt',
+      dir: 'bl',
+    });
+    const rotation = directChildren(lightRig)[0];
+    expect(rotation.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(rotation.localName).toBe('rot');
+    expect(word2010Attributes(rotation)).toEqual({
+      lat: '0',
+      lon: '10800000',
+      rev: '21599999',
+    });
+    expect(directChildren(rotation)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

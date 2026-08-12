@@ -1267,8 +1267,9 @@ RTL/complex-script flags, Latin, East Asian, and bidi language tags, and East
 Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
-flags and Office 2010 text glow, shadow, reflection, text-outline, and text-fill
-effects. Glow preserves an optional 0 through 2,147,483,647 EMU radius, exactly
+flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
+and 3D-scene effects. Glow preserves an optional 0 through 2,147,483,647 EMU
+radius, exactly
 one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
 shade, alpha, hue-modulation, saturation, and luminance transform entries.
 The distinct Office 2010 shadow effect preserves the same color model plus
@@ -1296,6 +1297,11 @@ The Office 2010 text-fill effect reuses the same strict fill grammar without
 outline geometry. It preserves explicit no-fill, empty or colored solid-fill,
 and empty or bounded gradient-fill choices, including the same colors,
 transforms, stop limits, shade geometry, and exact units.
+The Office 2010 3D scene preserves all 62 camera presets, all 27 light-rig
+presets, and all eight light directions. Its required camera then light-rig
+structure remains exact; only the light rig may contain an optional rotation,
+whose latitude, longitude, and revolution each retain exact 1/60,000-degree
+units from 0 inclusive to 360 degrees exclusive.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1338,8 +1344,8 @@ native schema order and the later explicit alignment controls the CSS vertical
 position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
-`w14:reflection` follows `w14:shadow`, followed by `w14:textOutline` and then
-`w14:textFill`. Simple
+`w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
+`w14:textFill`, and `w14:scene3d`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1358,9 +1364,10 @@ them would introduce layout drift.
 The standard limits its display semantics to paragraph marks and allows it to
 be ignored on any other run; Word additionally ignores it unless `w:vanish` is
 set. Schema-valid values are still retained without inventing that dependency.
-Office 2010 glow, shadow, reflection, and text-outline effects also remain
-native-only. CSS `text-shadow`, reflection, opacity, transform, text-stroke,
-paint-order, and border approximations cannot preserve theme-bound colors,
+Office 2010 glow, shadow, reflection, text-outline, and 3D-scene effects also
+remain native-only. CSS `text-shadow`, reflection, opacity, perspective,
+transform, text-stroke, paint-order, and border approximations cannot preserve
+theme-bound colors,
 ordered color transforms, exact blur and offset coordinates, reflection
 opacity/position/fade geometry, signed scaling and skew, rectangle alignment,
 gradient or compound strokes, preset dashes, caps, joins, or pen alignment, so
@@ -1382,7 +1389,8 @@ vertical-alignment or emphasis-mark values, malformed or out-of-range East
 Asian layout IDs, flags, or bracket styles, malformed paragraph-mark visibility
 flags, malformed glow radii, shadow or reflection geometry, text-outline
 fill/gradient/dash/join structure, text-fill wrapper/fill/gradient structure,
-color choices, or transform chains, and unknown, duplicated, reordered,
+color choices or transform chains, 3D-scene camera/light structure, preset
+values, directions, or rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their

@@ -354,6 +354,126 @@ export interface WorkDocumentEquationWordTextFillEffect {
   fill?: WorkDocumentEquationWordEffectFill;
 }
 
+export type WorkDocumentEquationWordPresetCamera =
+  | 'legacyObliqueTopLeft'
+  | 'legacyObliqueTop'
+  | 'legacyObliqueTopRight'
+  | 'legacyObliqueLeft'
+  | 'legacyObliqueFront'
+  | 'legacyObliqueRight'
+  | 'legacyObliqueBottomLeft'
+  | 'legacyObliqueBottom'
+  | 'legacyObliqueBottomRight'
+  | 'legacyPerspectiveTopLeft'
+  | 'legacyPerspectiveTop'
+  | 'legacyPerspectiveTopRight'
+  | 'legacyPerspectiveLeft'
+  | 'legacyPerspectiveFront'
+  | 'legacyPerspectiveRight'
+  | 'legacyPerspectiveBottomLeft'
+  | 'legacyPerspectiveBottom'
+  | 'legacyPerspectiveBottomRight'
+  | 'orthographicFront'
+  | 'isometricTopUp'
+  | 'isometricTopDown'
+  | 'isometricBottomUp'
+  | 'isometricBottomDown'
+  | 'isometricLeftUp'
+  | 'isometricLeftDown'
+  | 'isometricRightUp'
+  | 'isometricRightDown'
+  | 'isometricOffAxis1Left'
+  | 'isometricOffAxis1Right'
+  | 'isometricOffAxis1Top'
+  | 'isometricOffAxis2Left'
+  | 'isometricOffAxis2Right'
+  | 'isometricOffAxis2Top'
+  | 'isometricOffAxis3Left'
+  | 'isometricOffAxis3Right'
+  | 'isometricOffAxis3Bottom'
+  | 'isometricOffAxis4Left'
+  | 'isometricOffAxis4Right'
+  | 'isometricOffAxis4Bottom'
+  | 'obliqueTopLeft'
+  | 'obliqueTop'
+  | 'obliqueTopRight'
+  | 'obliqueLeft'
+  | 'obliqueRight'
+  | 'obliqueBottomLeft'
+  | 'obliqueBottom'
+  | 'obliqueBottomRight'
+  | 'perspectiveFront'
+  | 'perspectiveLeft'
+  | 'perspectiveRight'
+  | 'perspectiveAbove'
+  | 'perspectiveBelow'
+  | 'perspectiveAboveLeftFacing'
+  | 'perspectiveAboveRightFacing'
+  | 'perspectiveContrastingLeftFacing'
+  | 'perspectiveContrastingRightFacing'
+  | 'perspectiveHeroicLeftFacing'
+  | 'perspectiveHeroicRightFacing'
+  | 'perspectiveHeroicExtremeLeftFacing'
+  | 'perspectiveHeroicExtremeRightFacing'
+  | 'perspectiveRelaxed'
+  | 'perspectiveRelaxedModerately';
+
+export type WorkDocumentEquationWordLightRigPreset =
+  | 'legacyFlat1'
+  | 'legacyFlat2'
+  | 'legacyFlat3'
+  | 'legacyFlat4'
+  | 'legacyNormal1'
+  | 'legacyNormal2'
+  | 'legacyNormal3'
+  | 'legacyNormal4'
+  | 'legacyHarsh1'
+  | 'legacyHarsh2'
+  | 'legacyHarsh3'
+  | 'legacyHarsh4'
+  | 'threePoint'
+  | 'balanced'
+  | 'soft'
+  | 'harsh'
+  | 'flood'
+  | 'contrasting'
+  | 'morning'
+  | 'sunrise'
+  | 'sunset'
+  | 'chilly'
+  | 'freezing'
+  | 'flat'
+  | 'twoPoint'
+  | 'glow'
+  | 'brightRoom';
+
+export type WorkDocumentEquationWordLightRigDirection =
+  | 'topLeft'
+  | 'top'
+  | 'topRight'
+  | 'left'
+  | 'right'
+  | 'bottomLeft'
+  | 'bottom'
+  | 'bottomRight';
+
+export interface WorkDocumentEquationWordScene3DRotation {
+  latitudeDegrees: number;
+  longitudeDegrees: number;
+  revolutionDegrees: number;
+}
+
+export interface WorkDocumentEquationWordScene3DLightRig {
+  preset: WorkDocumentEquationWordLightRigPreset;
+  direction: WorkDocumentEquationWordLightRigDirection;
+  rotation?: WorkDocumentEquationWordScene3DRotation;
+}
+
+export interface WorkDocumentEquationWordScene3D {
+  cameraPreset: WorkDocumentEquationWordPresetCamera;
+  lightRig: WorkDocumentEquationWordScene3DLightRig;
+}
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -474,6 +594,7 @@ export interface WorkDocumentEquationWordRunProperties {
   reflectionEffect?: WorkDocumentEquationWordReflectionEffect;
   textOutlineEffect?: WorkDocumentEquationWordTextOutlineEffect;
   textFillEffect?: WorkDocumentEquationWordTextFillEffect;
+  scene3D?: WorkDocumentEquationWordScene3D;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1133,6 +1254,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'reflectionEffect',
   'textOutlineEffect',
   'textFillEffect',
+  'scene3D',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1202,6 +1324,123 @@ const WORD_TEXT_OUTLINE_EFFECT_KEYS = new Set([
   'join',
 ]);
 const WORD_TEXT_FILL_EFFECT_KEYS = new Set(['fill']);
+const WORD_SCENE_3D_KEYS = new Set(['cameraPreset', 'lightRig']);
+const WORD_SCENE_3D_LIGHT_RIG_KEYS = new Set([
+  'preset',
+  'direction',
+  'rotation',
+]);
+const WORD_SCENE_3D_ROTATION_KEYS = new Set([
+  'latitudeDegrees',
+  'longitudeDegrees',
+  'revolutionDegrees',
+]);
+const WORD_SCENE_3D_CAMERA_PRESETS =
+  new Set<WorkDocumentEquationWordPresetCamera>([
+    'legacyObliqueTopLeft',
+    'legacyObliqueTop',
+    'legacyObliqueTopRight',
+    'legacyObliqueLeft',
+    'legacyObliqueFront',
+    'legacyObliqueRight',
+    'legacyObliqueBottomLeft',
+    'legacyObliqueBottom',
+    'legacyObliqueBottomRight',
+    'legacyPerspectiveTopLeft',
+    'legacyPerspectiveTop',
+    'legacyPerspectiveTopRight',
+    'legacyPerspectiveLeft',
+    'legacyPerspectiveFront',
+    'legacyPerspectiveRight',
+    'legacyPerspectiveBottomLeft',
+    'legacyPerspectiveBottom',
+    'legacyPerspectiveBottomRight',
+    'orthographicFront',
+    'isometricTopUp',
+    'isometricTopDown',
+    'isometricBottomUp',
+    'isometricBottomDown',
+    'isometricLeftUp',
+    'isometricLeftDown',
+    'isometricRightUp',
+    'isometricRightDown',
+    'isometricOffAxis1Left',
+    'isometricOffAxis1Right',
+    'isometricOffAxis1Top',
+    'isometricOffAxis2Left',
+    'isometricOffAxis2Right',
+    'isometricOffAxis2Top',
+    'isometricOffAxis3Left',
+    'isometricOffAxis3Right',
+    'isometricOffAxis3Bottom',
+    'isometricOffAxis4Left',
+    'isometricOffAxis4Right',
+    'isometricOffAxis4Bottom',
+    'obliqueTopLeft',
+    'obliqueTop',
+    'obliqueTopRight',
+    'obliqueLeft',
+    'obliqueRight',
+    'obliqueBottomLeft',
+    'obliqueBottom',
+    'obliqueBottomRight',
+    'perspectiveFront',
+    'perspectiveLeft',
+    'perspectiveRight',
+    'perspectiveAbove',
+    'perspectiveBelow',
+    'perspectiveAboveLeftFacing',
+    'perspectiveAboveRightFacing',
+    'perspectiveContrastingLeftFacing',
+    'perspectiveContrastingRightFacing',
+    'perspectiveHeroicLeftFacing',
+    'perspectiveHeroicRightFacing',
+    'perspectiveHeroicExtremeLeftFacing',
+    'perspectiveHeroicExtremeRightFacing',
+    'perspectiveRelaxed',
+    'perspectiveRelaxedModerately',
+  ]);
+const WORD_SCENE_3D_LIGHT_RIG_PRESETS =
+  new Set<WorkDocumentEquationWordLightRigPreset>([
+    'legacyFlat1',
+    'legacyFlat2',
+    'legacyFlat3',
+    'legacyFlat4',
+    'legacyNormal1',
+    'legacyNormal2',
+    'legacyNormal3',
+    'legacyNormal4',
+    'legacyHarsh1',
+    'legacyHarsh2',
+    'legacyHarsh3',
+    'legacyHarsh4',
+    'threePoint',
+    'balanced',
+    'soft',
+    'harsh',
+    'flood',
+    'contrasting',
+    'morning',
+    'sunrise',
+    'sunset',
+    'chilly',
+    'freezing',
+    'flat',
+    'twoPoint',
+    'glow',
+    'brightRoom',
+  ]);
+const WORD_SCENE_3D_LIGHT_RIG_DIRECTIONS =
+  new Set<WorkDocumentEquationWordLightRigDirection>([
+    'topLeft',
+    'top',
+    'topRight',
+    'left',
+    'right',
+    'bottomLeft',
+    'bottom',
+    'bottomRight',
+  ]);
 const WORD_EFFECT_NO_FILL_KEYS = new Set(['type']);
 const WORD_EFFECT_SOLID_FILL_KEYS = new Set(['type', 'color']);
 const WORD_EFFECT_GRADIENT_FILL_KEYS = new Set(['type', 'stops', 'shade']);
@@ -3309,6 +3548,10 @@ function normalizeEquationWordRunProperties(
     source.textFillEffect === undefined
       ? undefined
       : normalizeEquationWordTextFillEffect(source.textFillEffect);
+  const scene3D =
+    source.scene3D === undefined
+      ? undefined
+      : normalizeEquationWordScene3D(source.scene3D);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3365,6 +3608,7 @@ function normalizeEquationWordRunProperties(
     reflectionEffect === null ||
     textOutlineEffect === null ||
     textFillEffect === null ||
+    scene3D === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3508,6 +3752,7 @@ function normalizeEquationWordRunProperties(
     ...(reflectionEffect ? { reflectionEffect } : {}),
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
     ...(textFillEffect ? { textFillEffect } : {}),
+    ...(scene3D ? { scene3D } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -4154,6 +4399,71 @@ function normalizeEquationWordTextFillEffect(
       ? undefined
       : normalizeEquationWordEffectFill(source.fill);
   return fill === null ? null : { ...(fill ? { fill } : {}) };
+}
+
+function normalizeEquationWordScene3D(
+  source: unknown,
+): WorkDocumentEquationWordScene3D | null {
+  if (!isRecordWithKeys(source, WORD_SCENE_3D_KEYS)) return null;
+  const cameraPreset = WORD_SCENE_3D_CAMERA_PRESETS.has(
+    source.cameraPreset as WorkDocumentEquationWordPresetCamera,
+  )
+    ? (source.cameraPreset as WorkDocumentEquationWordPresetCamera)
+    : null;
+  const lightRig = normalizeEquationWordScene3DLightRig(source.lightRig);
+  return cameraPreset && lightRig ? { cameraPreset, lightRig } : null;
+}
+
+function normalizeEquationWordScene3DLightRig(
+  source: unknown,
+): WorkDocumentEquationWordScene3DLightRig | null {
+  if (!isRecordWithKeys(source, WORD_SCENE_3D_LIGHT_RIG_KEYS)) return null;
+  const preset = WORD_SCENE_3D_LIGHT_RIG_PRESETS.has(
+    source.preset as WorkDocumentEquationWordLightRigPreset,
+  )
+    ? (source.preset as WorkDocumentEquationWordLightRigPreset)
+    : null;
+  const direction = WORD_SCENE_3D_LIGHT_RIG_DIRECTIONS.has(
+    source.direction as WorkDocumentEquationWordLightRigDirection,
+  )
+    ? (source.direction as WorkDocumentEquationWordLightRigDirection)
+    : null;
+  const rotation =
+    source.rotation === undefined
+      ? undefined
+      : normalizeEquationWordScene3DRotation(source.rotation);
+  return preset && direction && rotation !== null
+    ? { preset, direction, ...(rotation ? { rotation } : {}) }
+    : null;
+}
+
+function normalizeEquationWordScene3DRotation(
+  source: unknown,
+): WorkDocumentEquationWordScene3DRotation | null {
+  if (!isRecordWithKeys(source, WORD_SCENE_3D_ROTATION_KEYS)) return null;
+  const latitudeDegrees = normalizeEquationScaledInteger(
+    source.latitudeDegrees,
+    EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+    0,
+    MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  const longitudeDegrees = normalizeEquationScaledInteger(
+    source.longitudeDegrees,
+    EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+    0,
+    MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  const revolutionDegrees = normalizeEquationScaledInteger(
+    source.revolutionDegrees,
+    EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+    0,
+    MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+  );
+  return latitudeDegrees !== null &&
+    longitudeDegrees !== null &&
+    revolutionDegrees !== null
+    ? { latitudeDegrees, longitudeDegrees, revolutionDegrees }
+    : null;
 }
 
 function normalizeEquationWordEffectFill(
