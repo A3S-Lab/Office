@@ -5,6 +5,7 @@ import {
   type WorkDocumentEquation,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationFractionType,
+  type WorkDocumentEquationJustification,
   type WorkDocumentEquationLimitLocation,
   type WorkDocumentEquationMatrixAlignment,
   type WorkDocumentEquationMatrixBaseAlignment,
@@ -141,6 +142,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'func',
   'groupChr',
   'groupChrPr',
+  'jc',
   'lim',
   'limLow',
   'limLowPr',
@@ -158,6 +160,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'num',
   'oMath',
   'oMathPara',
+  'oMathParaPr',
   'phant',
   'phantPr',
   'r',
@@ -383,20 +386,22 @@ function parseEquationRoot(element: Element): WorkDocumentEquation | null {
   if (meaningfulAttributes(element).length) return null;
   const state: EquationParseState = { depth: 0, nodes: 0, textLength: 0 };
   if (element.localName === 'oMathPara') {
-    if (!structuralChildren(element, new Set(['oMathParaPr', 'oMath']))) {
-      return null;
-    }
-    const properties = mathDirectChildren(element, 'oMathParaPr');
-    const equations = mathDirectChildren(element, 'oMath');
     if (
-      properties.length > 1 ||
-      equations.length !== 1 ||
-      properties.some((property) => !emptyMathProperty(property))
+      !structuralChildren(element, new Set(['oMathParaPr', 'oMath'])) ||
+      !orderedMathChildren(element, ['oMathParaPr', 'oMath'])
     ) {
       return null;
     }
-    const children = parseExpressionContainer(equations[0], state);
-    return normalizedEquation('block', children);
+    const properties = uniqueMathChild(element, 'oMathParaPr', false);
+    const equation = uniqueMathChild(element, 'oMath');
+    if (properties === null || !equation) {
+      return null;
+    }
+    const justification = parseMathParagraphJustification(properties);
+    const children = parseExpressionContainer(equation, state);
+    return justification
+      ? normalizedEquation('block', children, justification)
+      : null;
   }
   const children = parseExpressionContainer(element, state);
   return normalizedEquation('inline', children);
@@ -405,10 +410,30 @@ function parseEquationRoot(element: Element): WorkDocumentEquation | null {
 function normalizedEquation(
   display: WorkDocumentEquation['display'],
   children: WorkDocumentEquationExpression[] | null,
+  justification?: WorkDocumentEquationJustification,
 ): WorkDocumentEquation | null {
   return children
-    ? normalizeDocumentEquation({ version: 1, display, children })
+    ? normalizeDocumentEquation({
+        version: 1,
+        display,
+        ...(justification ? { justification } : {}),
+        children,
+      })
     : null;
+}
+
+function parseMathParagraphJustification(
+  properties: Element | undefined,
+): WorkDocumentEquationJustification | null {
+  if (!properties) return 'centerGroup';
+  if (!structuralChildren(properties, new Set(['jc']))) return null;
+  const justification = uniqueMathChild(properties, 'jc', false);
+  if (justification === null) return null;
+  return mathJustificationFromOmml(
+    justification
+      ? mathValueOrDefault(justification, 'centerGroup')
+      : 'centerGroup',
+  );
 }
 
 function parseExpressionContainer(
@@ -1906,6 +1931,20 @@ function fractionTypeFromOmml(
 function topBottomFromOmml(value: string | null): 'top' | 'bottom' | null {
   if (value === 'top') return 'top';
   if (value === 'bot') return 'bottom';
+  return null;
+}
+
+function mathJustificationFromOmml(
+  value: string | null,
+): WorkDocumentEquationJustification | null {
+  if (
+    value === 'left' ||
+    value === 'right' ||
+    value === 'center' ||
+    value === 'centerGroup'
+  ) {
+    return value;
+  }
   return null;
 }
 

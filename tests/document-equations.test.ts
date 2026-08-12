@@ -204,6 +204,11 @@ describe('document equations', () => {
         'upper-limit(=;def)',
       );
       expect(element?.getAttribute('aria-label')).toContain('matrix');
+      const rightAlignedBlock = createDocumentEquationElement(
+        document,
+        complexEquation('block'),
+      );
+      expect(rightAlignedBlock).toHaveClass('block', 'justification-right');
 
       const equationPosition = documentEquationPosition(editor);
       editor.commands.setNodeSelection(equationPosition);
@@ -223,6 +228,47 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'block',
+          justification: 'centerGroup',
+          children: [{ type: 'run', text: 'x' }],
+        }),
+      ).toEqual({
+        version: 1,
+        display: 'block',
+        children: [{ type: 'run', text: 'x' }],
+      });
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'block',
+          justification: 'left',
+          children: [{ type: 'run', text: 'x' }],
+        }),
+      ).toEqual({
+        version: 1,
+        display: 'block',
+        justification: 'left',
+        children: [{ type: 'run', text: 'x' }],
+      });
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          justification: 'right',
+          children: [{ type: 'run', text: 'x' }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'block',
+          justification: 'justify',
+          children: [{ type: 'run', text: 'x' }],
         }),
       ).toBeNull();
       expect(
@@ -660,6 +706,7 @@ describe('document equations', () => {
     expect(documentEquationFromElement(bodyEquations[1])).toEqual(
       complexEquation('block'),
     );
+    expect(bodyEquations[1]).toHaveClass('block', 'justification-right');
     expect(documentEquationFromElement(bodyEquations[2])).toEqual(
       borderBoxEquation('F', 'top'),
     );
@@ -711,11 +758,20 @@ describe('document equations', () => {
     if (imported.content.type !== 'document') {
       throw new Error('Expected an imported document artifact.');
     }
-    expect(
-      new DOMParser()
-        .parseFromString(imported.content.html, 'text/html')
-        .body.querySelectorAll('[data-document-equation]'),
-    ).toHaveLength(4);
+    const importedBody = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquations = Array.from(
+      importedBody.body.querySelectorAll<HTMLElement>(
+        '[data-document-equation]',
+      ),
+    );
+    expect(importedEquations).toHaveLength(4);
+    expect(documentEquationFromElement(importedEquations[1])).toEqual(
+      complexEquation('block'),
+    );
+    expect(importedEquations[1]).toHaveClass('block', 'justification-right');
     expect(imported.content.html).toContain(STRICT_MATH_NAMESPACE);
 
     const output = await JSZip.loadAsync(
@@ -1435,6 +1491,74 @@ describe('document equations', () => {
       unsupported.map(() => 'unsupported'),
     );
   });
+
+  test('preserves display-math paragraph justification and rejects malformed roots', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const paragraph = (properties = '', namespace = MATH_NAMESPACE) =>
+      `<m:oMathPara xmlns:m="${namespace}">${properties}<m:oMath>${run}</m:oMath></m:oMathPara>`;
+    const supported = [
+      paragraph(),
+      paragraph('<m:oMathParaPr/>'),
+      paragraph('<m:oMathParaPr><m:jc/></m:oMathParaPr>'),
+      paragraph('<m:oMathParaPr><m:jc m:val="left"/></m:oMathParaPr>'),
+      paragraph('<m:oMathParaPr><m:jc m:val="right"/></m:oMathParaPr>'),
+      paragraph('<m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr>'),
+      paragraph('<m:oMathParaPr><m:jc m:val="centerGroup"/></m:oMathParaPr>'),
+      paragraph(
+        '<m:oMathParaPr><m:jc m:val="left"/></m:oMathParaPr>',
+        STRICT_MATH_NAMESPACE,
+      ),
+    ];
+    const inspections = supported.map(inspectEquationRoot);
+    expect(inspections.map(({ status }) => status)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(inspections.map(({ equation }) => equation?.justification)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      'left',
+      'right',
+      'center',
+      undefined,
+      'left',
+    ]);
+
+    const unsupported = [
+      paragraph('<m:oMathParaPr><m:dispDef/></m:oMathParaPr>'),
+      `<m:oMathPara xmlns:m="${MATH_NAMESPACE}"><m:oMath>${run}</m:oMath><m:oMathParaPr/></m:oMathPara>`,
+      paragraph('<m:oMathParaPr/><m:oMathParaPr/>'),
+      paragraph('<m:oMathParaPr><m:jc/><m:jc/></m:oMathParaPr>'),
+      `<m:oMathPara xmlns:m="${MATH_NAMESPACE}"><m:oMath>${run}</m:oMath><m:oMath>${run}</m:oMath></m:oMathPara>`,
+      `<m:oMathPara xmlns:m="${MATH_NAMESPACE}"><m:oMathParaPr/></m:oMathPara>`,
+      paragraph('<m:oMathParaPr><m:jc m:val="justify"/></m:oMathParaPr>'),
+      paragraph(
+        '<m:oMathParaPr><m:jc m:val="left" m:extra="semantic"/></m:oMathParaPr>',
+      ),
+      paragraph(
+        `<m:oMathParaPr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:jc m:val="left" r:id="rIdUnsafe"/></m:oMathParaPr>`,
+      ),
+      paragraph(
+        `<v:oMathParaPr xmlns:v="${VENDOR_NAMESPACE}"><m:jc m:val="left"/></v:oMathParaPr>`,
+      ),
+      paragraph(
+        `<m:oMathParaPr><v:jc xmlns:v="${VENDOR_NAMESPACE}" v:val="left"/></m:oMathParaPr>`,
+      ),
+      paragraph('<m:oMathParaPr>meaningful</m:oMathParaPr>'),
+      paragraph('<m:oMathParaPr m:extra="semantic"/>'),
+      paragraph('<m:oMathParaPr><m:jc>meaningful</m:jc></m:oMathParaPr>'),
+      `<m:oMathPara xmlns:m="${MATH_NAMESPACE}" m:extra="semantic"><m:oMath>${run}</m:oMath></m:oMathPara>`,
+      `<m:oMathPara xmlns:m="${MATH_NAMESPACE}">meaningful<m:oMath>${run}</m:oMath></m:oMathPara>`,
+    ];
+    expect(
+      unsupported.map(inspectEquationRoot).map(({ status }) => status),
+    ).toEqual(unsupported.map(() => 'unsupported'));
+    expect(
+      inspectEquationRoot(
+        `<v:oMathPara xmlns:v="${VENDOR_NAMESPACE}" xmlns:m="${MATH_NAMESPACE}"><m:oMath>${run}</m:oMath></v:oMathPara>`,
+      ).status,
+    ).toBe('spoofed');
+  });
 });
 
 function equationArtifact() {
@@ -1475,6 +1599,7 @@ function complexEquation(
   return {
     version: 1,
     display,
+    ...(display === 'block' ? { justification: 'right' as const } : {}),
     children: [
       run('x='),
       {
@@ -1870,6 +1995,10 @@ function inspectEquation(body: string) {
   return inspectDocxEquation(document.documentElement);
 }
 
+function inspectEquationRoot(root: string) {
+  return inspectDocxEquation(parseXml(root, 'equation.xml').documentElement);
+}
+
 function deepEquation(depth: number): unknown {
   let expression: unknown = { type: 'run', text: 'x' };
   for (let index = 0; index < depth; index += 1) {
@@ -1901,7 +2030,21 @@ function documentEquationPosition(editor: Editor): number {
 async function expectNativeEquations(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
-  expect(descendants(document, 'oMathPara')).toHaveLength(1);
+  const mathParagraphs = descendants(document, 'oMathPara');
+  expect(mathParagraphs).toHaveLength(1);
+  expect(
+    directChildren(mathParagraphs[0]).map((child) => child.localName),
+  ).toEqual(['oMathParaPr', 'oMath']);
+  const mathParagraphProperties = directChildren(
+    mathParagraphs[0],
+    'oMathParaPr',
+  )[0];
+  expect(
+    directChildren(mathParagraphProperties).map((child) => child.localName),
+  ).toEqual(['jc']);
+  expect(
+    mathValueAttribute(directChildren(mathParagraphProperties, 'jc')[0]),
+  ).toBe('right');
   expect(descendants(document, 'oMath')).toHaveLength(2);
   expect(descendants(document, 'f')).toHaveLength(8);
   expect(descendants(document, 'sSup')).toHaveLength(2);

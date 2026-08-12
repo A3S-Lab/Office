@@ -4,6 +4,7 @@ import {
   normalizeDocumentEquation,
   type WorkDocumentEquation,
   type WorkDocumentEquationExpression,
+  type WorkDocumentEquationJustification,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
 } from './work-document-equations';
@@ -91,6 +92,18 @@ export async function patchDocxEquations(
         paragraphHasOnlyEquationRun(target.paragraph, target.run)
       ) {
         const paragraph = createMathElement(document, prefix, 'oMathPara');
+        if (equation.justification) {
+          const properties = createMathElement(document, prefix, 'oMathParaPr');
+          properties.append(
+            mathValueElement(
+              document,
+              prefix,
+              'jc',
+              justificationToOmml(equation.justification),
+            ),
+          );
+          paragraph.append(properties);
+        }
         paragraph.append(math);
         target.paragraph.replaceWith(paragraph);
       } else {
@@ -617,6 +630,12 @@ function equationArrayRowSpacingRule(
   if (rule === 'exact') return '3';
   if (rule === 'multiple') return '4';
   return '0';
+}
+
+function justificationToOmml(
+  justification: WorkDocumentEquationJustification,
+): string {
+  return justification;
 }
 
 function runScriptToOmml(script: WorkDocumentEquationRunScript): string {

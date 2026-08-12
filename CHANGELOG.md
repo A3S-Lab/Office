@@ -8,6 +8,10 @@ All notable changes to A3S Office will be documented in this file.
   display equations now round-trip as native `m:oMath` and `m:oMathPara`
   across the document body, headers, footers, footnotes, and endnotes, with an
   accessible MathML preview and atomic insert/update commands. The structured
+  display subset preserves `left`, `right`, `center`, and `centerGroup`
+  paragraph justification, canonicalizes absent or empty justification to the
+  `centerGroup` default, and requires one optional `m:oMathParaPr` before one
+  `m:oMath` child. The structured
   subset covers Unicode runs with literal/normal-text semantics, six math
   scripts, four styles, manual breaks, and alignment points,
   bar/no-bar/skewed/linear fractions, super- and subscripts, left-side
@@ -29,9 +33,9 @@ All notable changes to A3S Office will be documented in this file.
   invalid or contradictory bar, group-character, phantom, border-box, box, or
   equation-array properties, malformed lower/upper limit structures, matrix
   spacing and gap rules, ragged or over-limit matrices, over-limit equation
-  arrays, malformed pre-script structures, malformed placement, namespace
-  spoofing, nested math, and relationship-bound properties fail closed to
-  bounded text with explicit diagnostics.
+  arrays, malformed pre-script or math-paragraph structures, malformed
+  placement, namespace spoofing, nested math, and relationship-bound properties
+  fail closed to bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers
   the original package, and export retains safe source-only OPC parts,
   content-type declarations, and relationships while generated core parts stay

@@ -2,6 +2,11 @@ import { type CommandProps, mergeAttributes, Node } from '@tiptap/core';
 import type { DOMOutputSpec } from '@tiptap/pm/model';
 
 export type WorkDocumentEquationDisplay = 'inline' | 'block';
+export type WorkDocumentEquationJustification =
+  | 'left'
+  | 'right'
+  | 'center'
+  | 'centerGroup';
 export type WorkDocumentEquationBarPosition = 'top' | 'bottom';
 export type WorkDocumentEquationFractionType =
   | 'bar'
@@ -191,6 +196,7 @@ export type WorkDocumentEquationNaryOperator =
 export interface WorkDocumentEquation {
   version: 1;
   display: WorkDocumentEquationDisplay;
+  justification?: WorkDocumentEquationJustification;
   children: WorkDocumentEquationExpression[];
 }
 
@@ -255,6 +261,12 @@ const RUN_STYLES = new Set<WorkDocumentEquationRunStyle>([
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
+]);
+const EQUATION_JUSTIFICATIONS = new Set<WorkDocumentEquationJustification>([
+  'left',
+  'right',
+  'center',
+  'centerGroup',
 ]);
 const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
   'left',
@@ -354,7 +366,7 @@ export const DocumentEquation = Node.create({
         'data-equation-display': equation.display,
         'data-equation-model': serializeDocumentEquation(equation),
         'aria-label': label,
-        class: `work-document-equation ${equation.display}`,
+        class: documentEquationClassName(equation),
         contenteditable: 'false',
         role: 'math',
       }),
@@ -379,6 +391,20 @@ export function normalizeDocumentEquation(
       ? source.display
       : null;
   if (!display) return null;
+  const justification =
+    source.justification === undefined
+      ? undefined
+      : EQUATION_JUSTIFICATIONS.has(
+            source.justification as WorkDocumentEquationJustification,
+          )
+        ? (source.justification as WorkDocumentEquationJustification)
+        : null;
+  if (
+    justification === null ||
+    (display === 'inline' && source.justification !== undefined)
+  ) {
+    return null;
+  }
   const state: EquationNormalizationState = {
     depth: 0,
     nodes: 0,
@@ -391,6 +417,9 @@ export function normalizeDocumentEquation(
   const equation = {
     version: 1,
     display,
+    ...(display === 'block' && justification && justification !== 'centerGroup'
+      ? { justification }
+      : {}),
     children,
   } satisfies WorkDocumentEquation;
   return JSON.stringify(equation).length <= MAX_EQUATION_MODEL_LENGTH
@@ -439,7 +468,7 @@ export function createDocumentEquationElement(
   element.dataset.documentEquation = 'true';
   element.dataset.equationDisplay = equation.display;
   element.dataset.equationModel = serializeDocumentEquation(equation);
-  element.className = `work-document-equation ${equation.display}`;
+  element.className = documentEquationClassName(equation);
   element.contentEditable = 'false';
   element.setAttribute('role', 'math');
   element.setAttribute('aria-label', label);
@@ -459,6 +488,14 @@ export function defaultDocumentEquation(): WorkDocumentEquation {
     display: 'inline',
     children: [{ type: 'run', text: 'x' }],
   };
+}
+
+function documentEquationClassName(equation: WorkDocumentEquation): string {
+  if (equation.display === 'inline') return 'work-document-equation inline';
+  const justification = equation.justification ?? 'centerGroup';
+  const className =
+    justification === 'centerGroup' ? 'center-group' : justification;
+  return `work-document-equation block justification-${className}`;
 }
 
 function insertDocumentEquationCommand(

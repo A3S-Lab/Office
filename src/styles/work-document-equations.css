@@ -15,6 +15,14 @@
   margin-block: 0.35em;
 }
 
+.work-document-equation.block.justification-left {
+  justify-content: flex-start;
+}
+
+.work-document-equation.block.justification-right {
+  justify-content: flex-end;
+}
+
 .work-document-equation math {
   max-width: 100%;
   overflow-x: auto;

@@ -540,6 +540,10 @@ Phantom normalization preserves the visible `show` default and disabled
 `mphantom` and `mpadded` without discarding the native spacing properties.
 Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map empty left
 script slots to MathML `none` children after `mprescripts`.
+Display equations preserve `left`, `right`, `center`, and `centerGroup`
+paragraph justification. The bounded native grammar accepts one optional
+`m:oMathParaPr` before one `m:oMath`, while absent properties, absent `m:jc`,
+and an attribute-free `m:jc` all canonicalize to the `centerGroup` default.
 Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 `aln` grammar, canonicalize Roman/italic and disabled defaults, bound `alnAt` to
 1–255, and project supported script/style combinations through MathML
@@ -549,8 +553,8 @@ manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
 characters, malformed math-run properties, invalid or contradictory bar,
 group-character, phantom, border-box, box, or equation-array properties,
-malformed pre-script or lower/upper limit structures, unsupported matrix spacing
-or gap rules, ragged or over-limit matrices,
+malformed pre-script, math-paragraph, or lower/upper limit structures,
+unsupported matrix spacing or gap rules, ragged or over-limit matrices,
 over-limit equation arrays,
 malformed, misplaced, over-budget, namespace-spoofed, nested, or
 relationship-bound math is flattened to bounded text and reported instead of
