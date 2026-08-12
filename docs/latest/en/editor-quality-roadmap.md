@@ -147,14 +147,18 @@ and external relationship IDs are deduplicated or rewritten after collisions.
 Text-stable static rich-text and plain-text content controls now recover
 eligible inline or contiguous block wrappers, aliases, tags, locking, signed
 IDs, Word 2013 appearance and color, end-character formatting, passive
-metadata, and stable runs. Collisions rewrite only the affected control IDs.
-Generated supported formatting remains authoritative; edits, duplicate text or
-properties, missing or malformed hyperlink relationships, wrong target types
-or modes, unsafe or relative targets, combined external-plus-anchor
-destinations, namespace spoofing, active bindings or placeholder state, form or
-nested controls, unsupported wrappers, and content mixed with hyperlinks,
-math, drawings, or tables remain explicit fail-closed or normalization
-boundaries.
+metadata, and stable runs. Footnote and endnote tables now remain native
+editable OOXML blocks instead of flattening each row into text. A rich-text
+block control can span stable paragraphs, tables, and nested tables when its
+row/cell shape, grid spans, merge state, nested block shape, and paragraph text
+match uniquely; generated geometry and supported formatting remain
+authoritative. Collisions rewrite only the affected control IDs. Text or table
+structure edits, duplicate text or properties, missing or malformed hyperlink
+relationships, wrong target types or modes, unsafe or relative targets,
+combined external-plus-anchor destinations, namespace spoofing, active bindings
+or placeholder state, form or nested controls, relationship-bound content,
+math, drawings, and unsupported wrappers remain explicit fail-closed or
+normalization boundaries.
 
 Exit evidence:
 

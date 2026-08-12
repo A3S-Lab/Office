@@ -3,6 +3,11 @@ import {
   type StaticContentControlDefinition,
 } from './work-docx-note-comment-content-control-properties';
 import {
+  paragraphContentBlock,
+  readStaticTableBlock,
+  type StaticContentBlockRecord,
+} from './work-docx-note-comment-content-control-table-model';
+import {
   hasOnlyPassiveContentControlAttributes as validPassiveContainer,
   hasUnsupportedContentControlSemanticChild as hasUnsupportedSemanticChild,
   isContentControlSemanticNamespace as isSemanticNamespace,
@@ -23,12 +28,16 @@ const MAX_RUN_SEGMENTS = 4_096;
 type DocumentRole = 'generated' | 'source';
 
 export interface ContentControlLimits {
+  generatedCells: number;
   generatedControls: number;
   generatedParagraphs: number;
   generatedRuns: number;
+  generatedTables: number;
+  sourceCells: number;
   sourceControls: number;
   sourceParagraphs: number;
   sourceRuns: number;
+  sourceTables: number;
 }
 
 export interface StaticContentRunRecord {
@@ -55,17 +64,24 @@ export interface StaticContentParagraphRecord {
 
 export interface BlockContentControlRecord
   extends StaticContentControlDefinition {
+  blocks: StaticContentBlockRecord[];
   paragraphs: StaticContentParagraphRecord[];
 }
 
+export type { StaticContentBlockRecord };
+
 export function createContentControlLimits(): ContentControlLimits {
   return {
+    generatedCells: 0,
     generatedControls: 0,
     generatedParagraphs: 0,
     generatedRuns: 0,
+    generatedTables: 0,
+    sourceCells: 0,
     sourceControls: 0,
     sourceParagraphs: 0,
     sourceRuns: 0,
+    sourceTables: 0,
   };
 }
 
@@ -88,28 +104,57 @@ export function readStaticBlockControl(
   );
   if (
     !wordChildren.length ||
-    wordChildren.some((child) => child.localName !== 'p') ||
+    wordChildren.some(
+      (child) => child.localName !== 'p' && child.localName !== 'tbl',
+    ) ||
     hasUnsupportedSemanticChild(definition.content)
   ) {
     return null;
   }
   incrementLimit(limits, 'sourceControls', 1, 'content-control');
-  const paragraphs: StaticContentParagraphRecord[] = [];
-  for (const paragraph of wordChildren) {
-    const record = readParagraph(paragraph, 'source', limits, false);
+  const blocks: StaticContentBlockRecord[] = [];
+  for (const element of wordChildren) {
+    const record = readBlock(element, 'source', limits);
     if (!record) return null;
-    paragraphs.push(record);
+    blocks.push(record);
   }
+  const paragraphs = blocks.flatMap((block) => block.paragraphs);
   if (
     !paragraphs.some((paragraph) => paragraph.text) ||
     (definition.type === 'text' &&
-      (paragraphs.length !== 1 ||
+      (blocks.some((block) => block.kind === 'table') ||
+        paragraphs.length !== 1 ||
         paragraphs[0].runs.length !== 1 ||
         (!definition.multiLine && paragraphs[0].text.includes('\n'))))
   ) {
     return null;
   }
-  return { ...definition, paragraphs };
+  return { ...definition, blocks, paragraphs };
+}
+
+export function readStaticScopeBlocks(
+  scope: Element,
+  role: 'generated' | 'source',
+  limits: ContentControlLimits,
+): StaticContentBlockRecord[] {
+  return Array.from(scope.children).flatMap((child) => {
+    if (
+      !isWordElement(child) ||
+      (child.localName !== 'p' && child.localName !== 'tbl')
+    ) {
+      return [];
+    }
+    const block = readBlock(child, role, limits);
+    return block ? [block] : [];
+  });
+}
+
+export function readStaticContentBlock(
+  element: Element,
+  role: 'generated' | 'source',
+  limits: ContentControlLimits,
+): StaticContentBlockRecord | null {
+  return readBlock(element, role, limits);
 }
 
 export function directWordParagraphs(scope: Element): Element[] {
@@ -254,6 +299,24 @@ function readParagraph(
     runs,
     text: runs.map((run) => run.text).join(''),
   };
+}
+
+function readBlock(
+  element: Element,
+  role: 'generated' | 'source',
+  limits: ContentControlLimits,
+): StaticContentBlockRecord | null {
+  if (element.localName === 'p') {
+    const paragraph = readParagraph(element, role, limits, false);
+    return paragraph ? paragraphContentBlock(paragraph) : null;
+  }
+  return readStaticTableBlock(
+    element,
+    role,
+    limits,
+    (paragraph, itemRole, itemLimits) =>
+      readParagraph(paragraph, itemRole, itemLimits, false),
+  );
 }
 
 function readRun(

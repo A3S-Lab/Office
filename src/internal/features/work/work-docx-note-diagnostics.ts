@@ -51,7 +51,7 @@ export async function diagnoseDocxNotes(
   const issues: WorkCompatibilityIssue[] = [
     noteIssue(
       'docx.notes',
-      'Footnote and endnote references, stable native IDs, editable note text, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, wrapper, and text-stable run metadata are preserved.',
+      'Footnote and endnote references, stable native IDs, editable note text and native tables, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, table, wrapper, and text-stable run metadata are preserved.',
       'info',
     ),
   ];
@@ -66,7 +66,6 @@ export async function diagnoseDocxNotes(
   if (
     noteDocuments.some(
       ({ document: notes }) =>
-        descendants(notes, 'tbl').length > 0 ||
         descendants(notes, 'drawing').length > 0 ||
         descendants(notes, 'pict').length > 0,
     )
@@ -74,7 +73,7 @@ export async function diagnoseDocxNotes(
     issues.push(
       noteIssue(
         'docx.notes.rich-content',
-        'Tables, drawings, and embedded media inside notes may be flattened or converted to inline content.',
+        'Drawings and embedded media inside notes may be flattened or converted to inline content. Native paragraph/table blocks remain editable within the declared static-content boundary.',
       ),
     );
   }
@@ -86,7 +85,7 @@ export async function diagnoseDocxNotes(
     issues.push(
       noteIssue(
         'docx.notes.content-controls',
-        'Text-stable static rich-text and plain-text controls retain eligible inline or contiguous block wrappers and metadata. Data-bound, placeholder, form, nested, relationship-bound, ambiguous, or mixed rich-content controls normalize instead of being reattached unsafely.',
+        'Text-stable static rich-text and plain-text controls retain eligible inline or contiguous block wrappers and metadata. Rich-text block controls may include uniquely matched stable tables and nested tables while generated geometry remains authoritative. Data-bound, placeholder, form, nested, relationship-bound, ambiguous, edited-structure, math, drawing, or mixed-hyperlink controls normalize instead of being reattached unsafely.',
       ),
     );
   }

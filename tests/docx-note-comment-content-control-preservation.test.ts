@@ -505,7 +505,7 @@ describe('DOCX note and comment content-control boundaries', () => {
     expect(descendants(note, 'sdt')).toHaveLength(0);
   });
 
-  test('rejects block controls containing tables or mixed semantic content', async () => {
+  test('rejects a source-only table that has no generated block match', async () => {
     const content = noteContent('<p>Block text</p><p>Outside</p>');
     const source = await seedArchive(content);
     const footnotes = await xmlEntry(source, 'word/footnotes.xml');

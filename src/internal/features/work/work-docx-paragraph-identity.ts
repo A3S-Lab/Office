@@ -33,7 +33,8 @@ const WORD_2010_NAMESPACE =
 const MARKUP_COMPATIBILITY_NAMESPACE =
   'http://schemas.openxmlformats.org/markup-compatibility/2006';
 const MAX_PARAGRAPH_IDENTITY_PATCHES = 65_536;
-const PARAGRAPH_PART_PATTERN = /^word\/(?:document|header\d*|footer\d*)\.xml$/i;
+const PARAGRAPH_PART_PATTERN =
+  /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
 
 export class DocxParagraphIdentityPatchCollector {
   readonly patches: DocxParagraphIdentityPatch[] = [];
@@ -265,7 +266,11 @@ function isParagraphPartRoot(root: Element, path: string): boolean {
     ? 'hdr'
     : /^word\/footer\d*\.xml$/i.test(path)
       ? 'ftr'
-      : 'document';
+      : /^word\/footnotes\.xml$/i.test(path)
+        ? 'footnotes'
+        : /^word\/endnotes\.xml$/i.test(path)
+          ? 'endnotes'
+          : 'document';
   return (
     root.localName === expected &&
     DOCX_WORDPROCESSING_NAMESPACES.has(root.namespaceURI ?? '')

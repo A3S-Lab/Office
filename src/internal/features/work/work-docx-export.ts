@@ -896,53 +896,23 @@ async function createNoteRecords(
     const id = noteContext.ids.get(documentNoteKey(note.kind, note.id));
     if (id === undefined) continue;
     records[String(id)] = {
-      children: await noteParagraphs(note.html, docx, noteContext),
+      children: await noteBlocks(note.html, docx, noteContext),
     };
   }
   return records;
 }
 
-async function noteParagraphs(
+async function noteBlocks(
   html: string,
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
 ): Promise<InstanceType<typeof docx.Paragraph>[]> {
-  const document = new DOMParser().parseFromString(html, 'text/html');
-  const paragraphs: InstanceType<typeof docx.Paragraph>[] = [];
-  for (const child of Array.from(document.body.children)) {
-    const element = child as HTMLElement;
-    const tag = element.tagName.toLowerCase();
-    if (tag === 'ul' || tag === 'ol') {
-      paragraphs.push(
-        ...(await listToDocxParagraphs(element, docx, noteContext, (block) =>
-          inlineRuns(block, docx, noteContext),
-        )),
-      );
-      continue;
-    }
-    if (tag === 'table') {
-      const table = element as HTMLTableElement;
-      for (const row of Array.from(table.rows).filter(
-        (candidate) => candidate.closest('table') === table,
-      )) {
-        paragraphs.push(
-          new docx.Paragraph({
-            text: Array.from(row.cells)
-              .filter((cell) => cell.closest('tr') === row)
-              .map((cell) => cell.textContent?.trim() ?? '')
-              .join(' · '),
-            ...paragraphDirectionOptions(row),
-          }),
-        );
-      }
-      continue;
-    }
-    paragraphs.push(
-      new docx.Paragraph({
-        children: await inlineRuns(element, docx, noteContext),
-        ...paragraphDirectionOptions(element),
-      }),
-    );
+  const blocks = await pageChromeBlocks(html, docx, noteContext);
+  if (!(blocks[0] instanceof docx.Paragraph)) {
+    blocks.unshift(new docx.Paragraph(''));
   }
-  return paragraphs.length ? paragraphs : [new docx.Paragraph('')];
+  // The upstream type narrows note children to Paragraph even though Word's
+  // block-content model and the serializer accept Table after the leading
+  // reference paragraph.
+  return blocks as InstanceType<typeof docx.Paragraph>[];
 }

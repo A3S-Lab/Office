@@ -77,6 +77,22 @@ describe('DOCX note diagnostics', () => {
       (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
     ).toEqual(['docx.notes', 'docx.notes.content-controls']);
   });
+
+  test('treats table-only note content as native and supported', async () => {
+    const { archive, document } = await diagnosticPackage(
+      '<w:p><w:r><w:footnoteReference w:id="2"/></w:r></w:p>',
+      [
+        '<w:footnote w:id="2"><w:sdt><w:sdtPr><w:richText/></w:sdtPr>',
+        '<w:sdtContent><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Cell</w:t></w:r></w:p></w:tc></w:tr></w:tbl>',
+        '</w:sdtContent></w:sdt></w:footnote>',
+      ].join(''),
+      '',
+    );
+
+    expect(
+      (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
+    ).toEqual(['docx.notes', 'docx.notes.content-controls']);
+  });
 });
 
 async function diagnosticPackage(

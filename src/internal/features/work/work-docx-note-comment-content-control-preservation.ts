@@ -10,12 +10,18 @@ import {
   directWordParagraphs,
   readStaticBlockControl,
   readStaticInlineParagraph,
+  readStaticScopeBlocks,
   staticRunSpanKey,
-  type BlockContentControlRecord,
   type InlineContentControlRecord,
   type StaticContentParagraphRecord,
   type StaticContentRunRecord,
 } from './work-docx-note-comment-content-control-model';
+import {
+  applyBlockUnit,
+  blockCandidates,
+  type BlockPlanUnit,
+  type ContentControlAppliedPairs,
+} from './work-docx-note-comment-content-control-block-preservation';
 import {
   createStaticContentControlShell,
   readStaticContentControlDefinition,
@@ -38,21 +44,7 @@ interface InlinePlanUnit {
   targets: Element[];
 }
 
-interface BlockPlanUnit {
-  controls: BlockContentControlRecord[];
-  generated: StaticContentParagraphRecord[];
-  kind: 'block';
-  source: BlockContentControlRecord;
-  targets: Element[];
-}
-
 type PlanUnit = BlockPlanUnit | InlinePlanUnit;
-
-interface AppliedPairs {
-  paragraphs: DocxIgnorableExtensionPair[];
-  runs: DocxIgnorableExtensionPair[];
-  structure: DocxIgnorableExtensionPair[];
-}
 
 export function preserveDocxNoteCommentContentControls(
   generatedDocument: Document,
@@ -65,7 +57,11 @@ export function preserveDocxNoteCommentContentControls(
   const planned = scopes.flatMap((scope) => planScope(scope, limits));
   const units = failClosedUnits(planned);
   const assignedIds = assignContentControlIds(generatedDocument, units);
-  const applied: AppliedPairs = { paragraphs: [], runs: [], structure: [] };
+  const applied: ContentControlAppliedPairs = {
+    content: [],
+    runs: [],
+    structure: [],
+  };
   for (const unit of units.filter((item) => item.kind === 'inline')) {
     applyInlineUnit(
       generatedDocument,
@@ -87,7 +83,7 @@ export function preserveDocxNoteCommentContentControls(
   mergeExtensions(
     generatedDocument,
     sourceDocument,
-    [...applied.structure, ...applied.paragraphs],
+    [...applied.structure, ...applied.content],
     0,
   );
   mergeExtensions(generatedDocument, sourceDocument, applied.runs, 4);
@@ -104,11 +100,13 @@ function planScope(
   scope: DocxIgnorableExtensionPair,
   limits: ReturnType<typeof createContentControlLimits>,
 ): PlanUnit[] {
-  const generatedParagraphs = directWordParagraphs(scope.generated).flatMap(
-    (paragraph) => {
-      const record = readStaticInlineParagraph(paragraph, 'generated', limits);
-      return record ? [record] : [];
-    },
+  const generatedBlocks = readStaticScopeBlocks(
+    scope.generated,
+    'generated',
+    limits,
+  );
+  const generatedParagraphs = generatedBlocks.flatMap((block) =>
+    block.kind === 'paragraph' ? block.paragraphs : [],
   );
   const units: PlanUnit[] = [];
   for (const paragraph of directWordParagraphs(scope.source)) {
@@ -132,8 +130,8 @@ function planScope(
     if (!source) continue;
     const matches = blockCandidates(
       scope.generated,
-      generatedParagraphs,
-      source.paragraphs.map((paragraph) => paragraph.text),
+      generatedBlocks,
+      source.blocks,
     );
     if (matches.length !== 1) continue;
     units.push({
@@ -141,37 +139,10 @@ function planScope(
       generated: matches[0],
       kind: 'block',
       source,
-      targets: matches[0].map((paragraph) => paragraph.element),
+      targets: matches[0].map((block) => block.element),
     });
   }
   return units;
-}
-
-function blockCandidates(
-  scope: Element,
-  generated: readonly StaticContentParagraphRecord[],
-  sourceText: readonly string[],
-): StaticContentParagraphRecord[][] {
-  const result: StaticContentParagraphRecord[][] = [];
-  for (
-    let index = 0;
-    index <= generated.length - sourceText.length;
-    index += 1
-  ) {
-    const candidate = generated.slice(index, index + sourceText.length);
-    if (
-      candidate.every(
-        (paragraph, offset) => paragraph.text === sourceText[offset],
-      ) &&
-      contiguousDirectChildren(
-        scope,
-        candidate.map((paragraph) => paragraph.element),
-      )
-    ) {
-      result.push(candidate);
-    }
-  }
-  return result;
 }
 
 function failClosedUnits(units: readonly PlanUnit[]): PlanUnit[] {
@@ -235,7 +206,7 @@ function applyInlineUnit(
   unit: InlinePlanUnit,
   assignedIds: ReadonlyMap<Element, string | null>,
   kind: NoteCommentKind,
-  applied: AppliedPairs,
+  applied: ContentControlAppliedPairs,
 ): void {
   const working = unit.generated.element.cloneNode(true) as Element;
   const boundaries = unit.source.runs.flatMap((run) => [run.start, run.end]);
@@ -293,82 +264,10 @@ function applyInlineUnit(
   if (!stableInlineControls(restored, unit.controls, assignedIds)) return;
   replaceChildren(unit.generated.element, Array.from(working.childNodes));
   applied.structure.push(...structure);
-  applied.paragraphs.push({
+  applied.content.push({
     generated: unit.generated.element,
     source: unit.source.element,
   });
-  applied.runs.push(...runPairs);
-}
-
-function applyBlockUnit(
-  document: Document,
-  unit: BlockPlanUnit,
-  assignedIds: ReadonlyMap<Element, string | null>,
-  kind: NoteCommentKind,
-  applied: AppliedPairs,
-): void {
-  const paragraphPairs: DocxIgnorableExtensionPair[] = [];
-  const runPairs: DocxIgnorableExtensionPair[] = [];
-  const clones: Element[] = [];
-  for (const [index, generatedParagraph] of unit.generated.entries()) {
-    const sourceParagraph = unit.source.paragraphs[index];
-    const clone = generatedParagraph.element.cloneNode(true) as Element;
-    const boundaries = sourceParagraph.runs.flatMap((run) => [
-      run.start,
-      run.end,
-    ]);
-    if (!alignStaticRunBoundaries(clone, boundaries)) return;
-    const generated = readStaticInlineParagraph(
-      clone,
-      'generated',
-      createContentControlLimits(),
-    );
-    if (!generated || generated.text !== sourceParagraph.text) return;
-    const pairs = uniqueRunPairs(generated.runs, sourceParagraph.runs);
-    if (!pairs || pairs.length !== sourceParagraph.runs.length) return;
-    for (const pair of pairs) {
-      preserveDocxNoteCommentRunProperties(
-        document,
-        pair.generated,
-        pair.source,
-        kind,
-      );
-    }
-    clones.push(clone);
-    paragraphPairs.push({ generated: clone, source: sourceParagraph.element });
-    runPairs.push(...pairs);
-  }
-  const shell = createStaticContentControlShell(
-    document,
-    unit.source,
-    assignedIds.get(unit.source.control) ?? null,
-    unit.targets[0],
-    kind,
-  );
-  if (!shell) return;
-  for (const paragraph of clones) shell.content.append(paragraph);
-  const restored = readStaticBlockControl(
-    shell.control,
-    createContentControlLimits(),
-  );
-  if (
-    !restored ||
-    restored.paragraphs.map((paragraph) => paragraph.text).join('\u0000') !==
-      unit.source.paragraphs
-        .map((paragraph) => paragraph.text)
-        .join('\u0000') ||
-    restored.id !== (assignedIds.get(unit.source.control) ?? null)
-  ) {
-    return;
-  }
-  const first = unit.targets[0];
-  const parent = first?.parentNode;
-  if (!parent || !contiguousDirectChildren(parent as Element, unit.targets))
-    return;
-  parent.insertBefore(shell.control, first);
-  for (const target of unit.targets) target.remove();
-  applied.structure.push(...shell.pairs);
-  applied.paragraphs.push(...paragraphPairs);
   applied.runs.push(...runPairs);
 }
 

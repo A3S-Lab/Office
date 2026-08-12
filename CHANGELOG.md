@@ -74,11 +74,14 @@ All notable changes to A3S Office will be documented in this file.
   footnotes, endnotes, comments, and replies. Eligible inline controls and
   contiguous block controls recover their wrappers, aliases, tags, locks,
   signed native IDs, Word 2013 appearance and color, end-character formatting,
-  passive extensions, and stable runs. ID collisions are rewritten without
-  disturbing unconflicted source IDs. Text edits, duplicate or ambiguous
-  mappings, active bindings or placeholder state, form controls, nested
-  controls, relationship-bound properties, and content mixed with hyperlinks,
-  tables, math, or drawings fail closed before any wrapper is emitted.
+  passive extensions, and stable runs. Footnote and endnote tables now export
+  as native editable OOXML blocks instead of flattened row text; structurally
+  stable and nested tables can participate in rich-text block controls while
+  generated geometry remains authoritative. ID collisions are rewritten
+  without disturbing unconflicted source IDs. Text or table-structure edits,
+  duplicate or ambiguous mappings, active bindings or placeholder state, form
+  or nested controls, relationship-bound content, hyperlinks, math, and
+  drawings fail closed before any wrapper is emitted.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong
