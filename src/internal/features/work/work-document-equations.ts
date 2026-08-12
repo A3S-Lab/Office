@@ -545,6 +545,13 @@ function normalizeExpressionList(
   return children;
 }
 
+function normalizeMathArgument(
+  source: unknown,
+  state: EquationNormalizationState,
+): WorkDocumentEquationExpression[] | null {
+  return normalizeExpressionList(source, state, true);
+}
+
 function normalizeExpression(
   source: unknown,
   state: EquationNormalizationState,
@@ -626,22 +633,22 @@ function normalizeExpression(
       )
         ? (source.fractionType as WorkDocumentEquationFractionType)
         : null;
-      const numerator = normalizeExpressionList(source.numerator, state);
-      const denominator = normalizeExpressionList(source.denominator, state);
+      const numerator = normalizeMathArgument(source.numerator, state);
+      const denominator = normalizeMathArgument(source.denominator, state);
       return fractionType && numerator && denominator
         ? { type: 'fraction', fractionType, numerator, denominator }
         : null;
     }
     if (source.type === 'superscript') {
-      const base = normalizeExpressionList(source.base, state);
-      const superScript = normalizeExpressionList(source.superScript, state);
+      const base = normalizeMathArgument(source.base, state);
+      const superScript = normalizeMathArgument(source.superScript, state);
       return base && superScript
         ? { type: 'superscript', base, superScript }
         : null;
     }
     if (source.type === 'subscript') {
-      const base = normalizeExpressionList(source.base, state);
-      const subScript = normalizeExpressionList(source.subScript, state);
+      const base = normalizeMathArgument(source.base, state);
+      const subScript = normalizeMathArgument(source.subScript, state);
       return base && subScript ? { type: 'subscript', base, subScript } : null;
     }
     if (source.type === 'subSuperScript') {
@@ -651,9 +658,9 @@ function normalizeExpression(
           : typeof source.alignScripts === 'boolean'
             ? source.alignScripts
             : null;
-      const base = normalizeExpressionList(source.base, state);
-      const subScript = normalizeExpressionList(source.subScript, state);
-      const superScript = normalizeExpressionList(source.superScript, state);
+      const base = normalizeMathArgument(source.base, state);
+      const subScript = normalizeMathArgument(source.subScript, state);
+      const superScript = normalizeMathArgument(source.superScript, state);
       return alignScripts !== null && base && subScript && superScript
         ? {
             type: 'subSuperScript',
@@ -665,39 +672,35 @@ function normalizeExpression(
         : null;
     }
     if (source.type === 'preSubSuperScript') {
-      const base = normalizeExpressionList(source.base, state);
-      const subScript = normalizeExpressionList(source.subScript, state, true);
-      const superScript = normalizeExpressionList(
-        source.superScript,
-        state,
-        true,
-      );
+      const base = normalizeMathArgument(source.base, state);
+      const subScript = normalizeMathArgument(source.subScript, state);
+      const superScript = normalizeMathArgument(source.superScript, state);
       return base && subScript && superScript
         ? { type: 'preSubSuperScript', base, subScript, superScript }
         : null;
     }
     if (source.type === 'lowerLimit' || source.type === 'upperLimit') {
-      const base = normalizeExpressionList(source.base, state);
-      const limit = normalizeExpressionList(source.limit, state);
+      const base = normalizeMathArgument(source.base, state);
+      const limit = normalizeMathArgument(source.limit, state);
       return base && limit ? { type: source.type, base, limit } : null;
     }
     if (source.type === 'radical') {
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       const degree =
         source.degree === undefined
           ? undefined
-          : normalizeExpressionList(source.degree, state);
+          : normalizeMathArgument(source.degree, state);
       return children && degree !== null
         ? {
             type: 'radical',
             children,
-            ...(degree ? { degree } : {}),
+            ...(degree?.length ? { degree } : {}),
           }
         : null;
     }
     if (source.type === 'function') {
-      const name = normalizeExpressionList(source.name, state, true);
-      const children = normalizeExpressionList(source.children, state, true);
+      const name = normalizeMathArgument(source.name, state);
+      const children = normalizeMathArgument(source.children, state);
       return name && children ? { type: 'function', name, children } : null;
     }
     if (source.type === 'nary') {
@@ -711,15 +714,15 @@ function normalizeExpression(
       )
         ? (source.limitLocation as WorkDocumentEquationLimitLocation)
         : null;
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       const subScript =
         source.subScript === undefined
           ? undefined
-          : normalizeExpressionList(source.subScript, state);
+          : normalizeMathArgument(source.subScript, state);
       const superScript =
         source.superScript === undefined
           ? undefined
-          : normalizeExpressionList(source.superScript, state);
+          : normalizeMathArgument(source.superScript, state);
       return operator &&
         limitLocation &&
         children &&
@@ -730,14 +733,14 @@ function normalizeExpression(
             operator,
             limitLocation,
             children,
-            ...(subScript ? { subScript } : {}),
-            ...(superScript ? { superScript } : {}),
+            ...(subScript?.length ? { subScript } : {}),
+            ...(superScript?.length ? { superScript } : {}),
           }
         : null;
     }
     if (source.type === 'accent') {
       const character = accentCharacter(source.character);
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return character && children
         ? { type: 'accent', character, children }
         : null;
@@ -748,7 +751,7 @@ function normalizeExpression(
       )
         ? (source.position as WorkDocumentEquationBarPosition)
         : null;
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return position && children ? { type: 'bar', position, children } : null;
     }
     if (source.type === 'groupCharacter') {
@@ -763,7 +766,7 @@ function normalizeExpression(
       )
         ? (source.verticalJustification as WorkDocumentEquationBarPosition)
         : null;
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return character !== null && position && verticalJustification && children
         ? {
             type: 'groupCharacter',
@@ -784,7 +787,7 @@ function normalizeExpression(
       ) {
         return null;
       }
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return children
         ? {
             type: 'phantom',
@@ -810,7 +813,7 @@ function normalizeExpression(
       ) {
         return null;
       }
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return children
         ? {
             type: 'borderBox',
@@ -831,7 +834,7 @@ function normalizeExpression(
         source.manualBreak === undefined
           ? undefined
           : normalizeManualBreak(source.manualBreak);
-      const children = normalizeExpressionList(source.children, state);
+      const children = normalizeMathArgument(source.children, state);
       return typeof source.operatorEmulator === 'boolean' &&
         typeof source.noBreak === 'boolean' &&
         typeof source.differential === 'boolean' &&
@@ -894,7 +897,7 @@ function normalizeExpression(
         if (!Array.isArray(row) || row.length !== columnCount) return null;
         const normalizedRow: WorkDocumentEquationExpression[][] = [];
         for (const cell of row) {
-          const normalizedCell = normalizeExpressionList(cell, state, true);
+          const normalizedCell = normalizeMathArgument(cell, state);
           if (!normalizedCell) return null;
           normalizedRow.push(normalizedCell);
         }
@@ -938,7 +941,7 @@ function normalizeExpression(
       state.equationArrayDepth += 1;
       try {
         for (const row of source.rows) {
-          const normalizedRow = normalizeExpressionList(row, state, true);
+          const normalizedRow = normalizeMathArgument(row, state);
           if (!normalizedRow) return null;
           rows.push(normalizedRow);
         }
@@ -970,7 +973,7 @@ function normalizeExpression(
         return null;
       }
       const arguments_ = source.arguments.map((argument) =>
-        normalizeExpressionList(argument, state, true),
+        normalizeMathArgument(argument, state),
       );
       return arguments_.every(
         (argument): argument is WorkDocumentEquationExpression[] =>

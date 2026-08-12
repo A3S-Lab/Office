@@ -462,7 +462,7 @@ function parseExpressionContainer(
   if (container.localName !== 'oMath') {
     const argumentProperties = children[expressionStart];
     if (argumentProperties?.localName === 'argPr') {
-      if (!emptyMathProperty(argumentProperties)) return null;
+      if (!defaultMathArgumentProperties(argumentProperties)) return null;
       expressionStart += 1;
     }
     const controlProperties = children[expressionEnd - 1];
@@ -480,6 +480,25 @@ function parseExpressionContainer(
     expressions.push(expression);
   }
   return expressions.length || optional ? expressions : null;
+}
+
+function parseMathArgument(
+  container: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression[] | null {
+  return parseExpressionContainer(container, state, true);
+}
+
+function defaultMathArgumentProperties(properties: Element): boolean {
+  if (!structuralChildren(properties, new Set(['argSz']))) return false;
+  const size = uniqueMathChild(properties, 'argSz', false);
+  if (size === null) return false;
+  const value = size ? mathValueOrDefault(size, '0') : '0';
+  if (value === null) return false;
+  const source = value.trim();
+  if (!/^[+-]?\d+$/u.test(source)) return false;
+  const parsed = Number(source);
+  return Number.isSafeInteger(parsed) && parsed === 0;
 }
 
 function parseExpression(
@@ -643,7 +662,7 @@ function parseAccent(
   const character = characterElement
     ? mathValue(characterElement)
     : DEFAULT_ACCENT_CHARACTER;
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return character && accentCharacter(character) && parsedBody
     ? { type: 'accent', character, children: parsedBody }
     : null;
@@ -687,7 +706,7 @@ function parseBar(
       ? 'bot'
       : 'top';
   const position = topBottomFromOmml(sourcePosition);
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return position && parsedBody
     ? { type: 'bar', position, children: parsedBody }
     : null;
@@ -748,7 +767,7 @@ function parseGroupCharacter(
 
   const position = topBottomFromOmml(sourcePosition);
   const verticalJustification = topBottomFromOmml(sourceVerticalJustification);
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return character !== null &&
     (character === '' || mathCharacter(character)) &&
     position &&
@@ -822,7 +841,7 @@ function parsePhantom(
     transparent = transparentElement ? mathOnOff(transparentElement) : false;
   }
 
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return show !== null &&
     zeroWidth !== null &&
     zeroAscent !== null &&
@@ -888,7 +907,7 @@ function parseBorderBox(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return hideTop !== null &&
     hideBottom !== null &&
     hideLeft !== null &&
@@ -953,7 +972,7 @@ function parseBox(
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
-  const parsedBody = parseExpressionContainer(body, state);
+  const parsedBody = parseMathArgument(body, state);
   return operatorEmulator !== null &&
     noBreak !== null &&
     differential !== null &&
@@ -1015,8 +1034,8 @@ function parseFraction(
     : 'bar';
   if (sourceType === null) return null;
   const fractionType = fractionTypeFromOmml(sourceType);
-  const parsedNumerator = parseExpressionContainer(numerator, state);
-  const parsedDenominator = parseExpressionContainer(denominator, state);
+  const parsedNumerator = parseMathArgument(numerator, state);
+  const parsedDenominator = parseMathArgument(denominator, state);
   return fractionType && parsedNumerator && parsedDenominator
     ? {
         type: 'fraction',
@@ -1049,9 +1068,9 @@ function parseSuperScript(
   const properties = uniqueMathChild(element, 'sSupPr', false);
   const base = uniqueMathChild(element, 'e');
   const superScript = uniqueMathChild(element, 'sup');
-  const parsedBase = base ? parseExpressionContainer(base, state) : null;
+  const parsedBase = base ? parseMathArgument(base, state) : null;
   const parsedSuperScript = superScript
-    ? parseExpressionContainer(superScript, state)
+    ? parseMathArgument(superScript, state)
     : null;
   return properties !== null &&
     controlOnlyMathProperties(properties) &&
@@ -1075,9 +1094,9 @@ function parseSubScript(
   const properties = uniqueMathChild(element, 'sSubPr', false);
   const base = uniqueMathChild(element, 'e');
   const subScript = uniqueMathChild(element, 'sub');
-  const parsedBase = base ? parseExpressionContainer(base, state) : null;
+  const parsedBase = base ? parseMathArgument(base, state) : null;
   const parsedSubScript = subScript
-    ? parseExpressionContainer(subScript, state)
+    ? parseMathArgument(subScript, state)
     : null;
   return properties !== null &&
     controlOnlyMathProperties(properties) &&
@@ -1104,12 +1123,12 @@ function parseSubSuperScript(
   const superScript = uniqueMathChild(element, 'sup');
   const alignScripts =
     properties === null ? null : parseSubSuperScriptAlignment(properties);
-  const parsedBase = base ? parseExpressionContainer(base, state) : null;
+  const parsedBase = base ? parseMathArgument(base, state) : null;
   const parsedSubScript = subScript
-    ? parseExpressionContainer(subScript, state)
+    ? parseMathArgument(subScript, state)
     : null;
   const parsedSuperScript = superScript
-    ? parseExpressionContainer(superScript, state)
+    ? parseMathArgument(superScript, state)
     : null;
   return alignScripts !== null &&
     parsedBase &&
@@ -1181,9 +1200,9 @@ function parsePreSubSuperScript(
       return null;
     }
   }
-  const parsedSubScript = parseExpressionContainer(subScript, state, true);
-  const parsedSuperScript = parseExpressionContainer(superScript, state, true);
-  const parsedBase = parseExpressionContainer(base, state);
+  const parsedSubScript = parseMathArgument(subScript, state);
+  const parsedSuperScript = parseMathArgument(superScript, state);
+  const parsedBase = parseMathArgument(base, state);
   return parsedSubScript !== null && parsedSuperScript !== null && parsedBase
     ? {
         type: 'preSubSuperScript',
@@ -1221,8 +1240,8 @@ function parseLimit(
       return null;
     }
   }
-  const parsedBase = parseExpressionContainer(base, state);
-  const parsedLimit = parseExpressionContainer(limit, state);
+  const parsedBase = parseMathArgument(base, state);
+  const parsedLimit = parseMathArgument(limit, state);
   return parsedBase && parsedLimit
     ? {
         type: lower ? 'lowerLimit' : 'upperLimit',
@@ -1271,10 +1290,8 @@ function parseRadical(
   ) {
     return null;
   }
-  const parsedBody = parseExpressionContainer(body, state);
-  const parsedDegree = degree
-    ? parseExpressionContainer(degree, state, true)
-    : undefined;
+  const parsedBody = parseMathArgument(body, state);
+  const parsedDegree = degree ? parseMathArgument(degree, state) : undefined;
   if (
     !parsedBody ||
     parsedDegree === null ||
@@ -1311,8 +1328,8 @@ function parseFunction(
   const properties = uniqueMathChild(element, 'funcPr', false);
   const name = uniqueMathChild(element, 'fName');
   const body = uniqueMathChild(element, 'e');
-  const parsedName = name ? parseExpressionContainer(name, state, true) : null;
-  const parsedBody = body ? parseExpressionContainer(body, state, true) : null;
+  const parsedName = name ? parseMathArgument(name, state) : null;
+  const parsedBody = body ? parseMathArgument(body, state) : null;
   return properties !== null &&
     controlOnlyMathProperties(properties) &&
     parsedName &&
@@ -1390,9 +1407,9 @@ function parseNary(
   const superHidden = superHiddenElement
     ? mathOnOff(superHiddenElement)
     : false;
-  const parsedBody = parseExpressionContainer(body, state);
-  const parsedSubScript = parseExpressionContainer(subScript, state, true);
-  const parsedSuperScript = parseExpressionContainer(superScript, state, true);
+  const parsedBody = parseMathArgument(body, state);
+  const parsedSubScript = parseMathArgument(subScript, state);
+  const parsedSuperScript = parseMathArgument(superScript, state);
   if (
     !limitLocation ||
     grow !== false ||
@@ -1452,9 +1469,7 @@ function parseEquationArray(
   }
   const parsedProperties = parseEquationArrayProperties(properties);
   if (!parsedProperties) return null;
-  const rows = rowElements.map((row) =>
-    parseExpressionContainer(row, state, true),
-  );
+  const rows = rowElements.map((row) => parseMathArgument(row, state));
   return rows.every(
     (row): row is WorkDocumentEquationExpression[] => row !== null,
   )
@@ -1588,7 +1603,7 @@ function parseMatrix(
     columnCount ||= cellElements.length;
     if (rowElements.length * columnCount > MAX_MATRIX_CELLS) return null;
     const parsedRow = cellElements.map((cell) =>
-      parseExpressionContainer(cell, state, true),
+      parseMathArgument(cell, state),
     );
     if (
       !parsedRow.every(
@@ -1783,7 +1798,7 @@ function parseDelimiter(
     DEFAULT_DELIMITER_SEPARATOR,
   );
   const parsedArguments = arguments_.map((argument) =>
-    parseExpressionContainer(argument, state, true),
+    parseMathArgument(argument, state),
   );
   return grow === true &&
     shape === 'centered' &&

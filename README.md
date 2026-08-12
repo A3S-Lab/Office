@@ -553,9 +553,11 @@ degree normalizes to a square root, while a visible nonempty degree remains an
 nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
 `degHide=1` with an empty degree slot for square roots.
 Functions enforce optional `funcPr` before required `fName` and `e` slots. Both
-required slots may be empty, and their argument properties follow
-`argPr -> expressions -> ctrlPr`; empty property placeholders normalize away,
-while duplicate, misplaced, or semantic argument properties fail closed.
+required slots may be empty. Every supported `CT_OMathArg` slot may likewise be
+empty and follows `argPr -> expressions -> ctrlPr`; absent or empty argument
+properties and absent, empty, or zero `argSz` values normalize to the default.
+Nonzero argument sizes and duplicate, misplaced, or semantic argument
+properties fail closed until their semantics are modeled.
 N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and `e`
 slots. An omitted `chr` defaults to U+222B, while an attribute-free `chr`
 remains an explicitly empty unsupported operator; an attribute-free `limLoc`

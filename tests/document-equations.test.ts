@@ -377,8 +377,12 @@ describe('document equations', () => {
               limit: [{ type: 'run', text: 'x→0' }],
             },
           ],
-        }),
-      ).toBeNull();
+        })?.children[0],
+      ).toEqual({
+        type: 'lowerLimit',
+        base: [],
+        limit: [{ type: 'run', text: 'x→0' }],
+      });
       expect(
         normalizeDocumentEquation({
           version: 1,
@@ -456,8 +460,16 @@ describe('document equations', () => {
               children: [],
             },
           ],
-        }),
-      ).toBeNull();
+        })?.children[0],
+      ).toEqual({
+        type: 'phantom',
+        show: true,
+        zeroWidth: false,
+        zeroAscent: false,
+        zeroDescent: false,
+        transparent: false,
+        children: [],
+      });
       expect(
         normalizeDocumentEquation({
           version: 1,
@@ -470,8 +482,13 @@ describe('document equations', () => {
               superScript: [{ type: 'run', text: 'j' }],
             },
           ],
-        }),
-      ).toBeNull();
+        })?.children[0],
+      ).toEqual({
+        type: 'preSubSuperScript',
+        base: [],
+        subScript: [{ type: 'run', text: 'i' }],
+        superScript: [{ type: 'run', text: 'j' }],
+      });
       expect(
         normalizeDocumentEquation({
           version: 1,
@@ -497,8 +514,12 @@ describe('document equations', () => {
               limit: [],
             },
           ],
-        }),
-      ).toBeNull();
+        })?.children[0],
+      ).toEqual({
+        type: 'upperLimit',
+        base: [{ type: 'run', text: '=' }],
+        limit: [],
+      });
       expect(
         normalizeDocumentEquation({
           version: 1,
@@ -758,7 +779,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([36, 36, 1, 1]);
+    ).toEqual([37, 37, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -1360,7 +1381,6 @@ describe('document equations', () => {
       `<m:acc><m:accPr><m:grow m:val="1"/></m:accPr><m:e>${run}</m:e></m:acc>`,
       `<m:acc><m:e>${run}</m:e><m:accPr><m:chr m:val="&#x302;"/></m:accPr></m:acc>`,
       `<m:acc><m:accPr><m:chr m:val="&#x302;"/><m:chr m:val="&#x303;"/></m:accPr><m:e>${run}</m:e></m:acc>`,
-      `<m:acc><m:accPr><m:chr m:val="&#x302;"/></m:accPr><m:e/></m:acc>`,
       `<m:bar><m:barPr><m:pos m:val="left"/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:pos m:val="bottom"/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:grow m:val="1"/></m:barPr><m:e>${run}</m:e></m:bar>`,
@@ -1370,7 +1390,6 @@ describe('document equations', () => {
       `<m:bar><m:barPr><m:pos m:val="top" m:extra="semantic"/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><v:barPr xmlns:v="${VENDOR_NAMESPACE}"><m:pos m:val="top"/></v:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:pos xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="top" r:id="rIdUnsafe"/></m:barPr><m:e>${run}</m:e></m:bar>`,
-      `<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e/></m:bar>`,
       `<m:bar><m:e>${run}</m:e><m:e>${run}</m:e></m:bar>`,
       `<m:borderBox><m:borderBoxPr><m:grow/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
       `<m:borderBox><m:borderBoxPr><m:strikeH/><m:hideTop/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
@@ -1379,7 +1398,6 @@ describe('document equations', () => {
       `<m:borderBox><v:borderBoxPr xmlns:v="${VENDOR_NAMESPACE}"><m:hideTop/></v:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
       `<m:borderBox><m:borderBoxPr><m:hideTop xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
       `<m:borderBox><m:e>${run}</m:e><m:borderBoxPr><m:hideTop/></m:borderBoxPr></m:borderBox>`,
-      `<m:borderBox><m:borderBoxPr/><m:e/></m:borderBox>`,
       `<m:borderBox><m:e>${run}</m:e><m:e>${run}</m:e></m:borderBox>`,
       `<m:box><m:boxPr><m:grow/></m:boxPr><m:e>${run}</m:e></m:box>`,
       `<m:box><m:boxPr><m:aln/><m:opEmu/></m:boxPr><m:e>${run}</m:e></m:box>`,
@@ -1391,7 +1409,6 @@ describe('document equations', () => {
       `<m:box><m:boxPr><m:brk xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:boxPr><m:e>${run}</m:e></m:box>`,
       `<m:box><m:boxPr><m:brk>${run}</m:brk></m:boxPr><m:e>${run}</m:e></m:box>`,
       `<m:box><m:e>${run}</m:e><m:boxPr><m:opEmu/></m:boxPr></m:box>`,
-      `<m:box><m:boxPr/><m:e/></m:box>`,
       `<m:box><m:e>${run}</m:e><m:e>${run}</m:e></m:box>`,
       `<m:f><m:fPr><m:m><m:mr><m:e>${run}</m:e></m:mr></m:m></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
@@ -1432,8 +1449,6 @@ describe('document equations', () => {
       `<m:limLow><m:limLowPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
       `<m:limLow><m:lim>${run}</m:lim></m:limLow>`,
       `<m:limLow><m:e>${run}</m:e></m:limLow>`,
-      `<m:limLow><m:e/><m:lim>${run}</m:lim></m:limLow>`,
-      `<m:limLow><m:e>${run}</m:e><m:lim/></m:limLow>`,
       `<m:limLow><m:e>${run}</m:e><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
       `<m:limLow><m:e>${run}</m:e><m:lim>${run}</m:lim><m:lim>${run}</m:lim></m:limLow>`,
       `<m:limLow m:extra="semantic"><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
@@ -1457,7 +1472,6 @@ describe('document equations', () => {
       `<m:groupChr><m:groupChrPr><m:pos xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="top" r:id="rIdUnsafe"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr><v:groupChrPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr><m:groupChrPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
-      `<m:groupChr><m:groupChrPr/><m:e/></m:groupChr>`,
       `<m:groupChr><m:groupChrPr/></m:groupChr>`,
       `<m:groupChr m:extra="semantic"><m:e>${run}</m:e></m:groupChr>`,
       `<m:groupChr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:groupChr>`,
@@ -1481,7 +1495,6 @@ describe('document equations', () => {
       `<m:phant><m:phantPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:phantPr><m:e>${run}</m:e></m:phant>`,
       `<m:phant><m:phantPr m:extra="semantic"/><m:e>${run}</m:e></m:phant>`,
       `<m:phant><m:phantPr><m:show>${run}</m:show></m:phantPr><m:e>${run}</m:e></m:phant>`,
-      `<m:phant><m:phantPr/><m:e/></m:phant>`,
       `<m:phant><m:phantPr/></m:phant>`,
       `<m:phant><m:e>${run}</m:e><m:e>${run}</m:e></m:phant>`,
       `<m:phant m:extra="semantic"><m:e>${run}</m:e></m:phant>`,
@@ -1498,7 +1511,6 @@ describe('document equations', () => {
       `<m:sPre><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sub>${run}</m:sub><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sPre>`,
-      `<m:sPre><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e/></m:sPre>`,
       `<m:sPre><v:sPrePr xmlns:v="${VENDOR_NAMESPACE}"/><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><v:sub xmlns:v="${VENDOR_NAMESPACE}">${run}</v:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
       `<m:sPre><m:sPrePr m:extra="semantic"/><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:sPre>`,
@@ -1737,6 +1749,107 @@ describe('document equations', () => {
     );
   });
 
+  test('preserves empty math arguments and canonicalizes default argument size', () => {
+    const emptyArguments = [
+      '<m:acc><m:e/></m:acc>',
+      '<m:bar><m:e/></m:bar>',
+      '<m:borderBox><m:e/></m:borderBox>',
+      '<m:box><m:e/></m:box>',
+      '<m:f><m:num/><m:den/></m:f>',
+      '<m:sSup><m:e/><m:sup/></m:sSup>',
+      '<m:sSub><m:e/><m:sub/></m:sSub>',
+      '<m:sSubSup><m:e/><m:sub/><m:sup/></m:sSubSup>',
+      '<m:sPre><m:sub/><m:sup/><m:e/></m:sPre>',
+      '<m:limLow><m:e/><m:lim/></m:limLow>',
+      '<m:limUpp><m:e/><m:lim/></m:limUpp>',
+      '<m:rad><m:deg/><m:e/></m:rad>',
+      '<m:func><m:fName/><m:e/></m:func>',
+      '<m:nary><m:naryPr><m:subHide/><m:supHide/></m:naryPr><m:sub/><m:sup/><m:e/></m:nary>',
+      '<m:groupChr><m:e/></m:groupChr>',
+      '<m:phant><m:e/></m:phant>',
+    ];
+    expect(emptyArguments.map(inspectEquationBody)).toEqual(
+      emptyArguments.map(() => 'supported'),
+    );
+    expect(
+      emptyArguments.map(
+        (source) => inspectEquationModel(source)?.children[0]?.type,
+      ),
+    ).toEqual([
+      'accent',
+      'bar',
+      'borderBox',
+      'box',
+      'fraction',
+      'superscript',
+      'subscript',
+      'subSuperScript',
+      'preSubSuperScript',
+      'lowerLimit',
+      'upperLimit',
+      'radical',
+      'function',
+      'nary',
+      'groupCharacter',
+      'phantom',
+    ]);
+
+    const defaultArgumentSizes = [
+      '<m:box><m:e><m:argPr/></m:e></m:box>',
+      '<m:box><m:e><m:argPr><m:argSz/></m:argPr></m:e></m:box>',
+      '<m:box><m:e><m:argPr><m:argSz m:val="0"/></m:argPr></m:e></m:box>',
+      '<m:box><m:e><m:argPr><m:argSz m:val="+0"/></m:argPr><m:ctrlPr/></m:e></m:box>',
+      '<m:box><m:e><m:argPr><m:argSz m:val="-0"/></m:argPr></m:e></m:box>',
+    ];
+    expect(defaultArgumentSizes.map(inspectEquationBody)).toEqual(
+      defaultArgumentSizes.map(() => 'supported'),
+    );
+    expect(
+      defaultArgumentSizes.map(
+        (source) => inspectEquationModel(source)?.children[0],
+      ),
+    ).toEqual(
+      defaultArgumentSizes.map(() => ({
+        type: 'box',
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        children: [],
+      })),
+    );
+
+    const emptyFraction: WorkDocumentEquation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'fraction',
+          fractionType: 'bar',
+          numerator: [],
+          denominator: [],
+        },
+      ],
+    };
+    expect(normalizeDocumentEquation(emptyFraction)).toEqual(emptyFraction);
+
+    const unsupported = ['-2', '-1', '1', '2', '3', '1.0', 'maybe'].map(
+      (value) =>
+        `<m:box><m:e><m:argPr><m:argSz m:val="${value}"/></m:argPr></m:e></m:box>`,
+    );
+    unsupported.push(
+      '<m:box><m:e><m:argPr><m:argSz/><m:argSz/></m:argPr></m:e></m:box>',
+      '<m:box><m:e><m:argPr><m:unknown/></m:argPr></m:e></m:box>',
+      '<m:box><m:e><m:argPr m:extra="semantic"/></m:e></m:box>',
+      '<m:box><m:e><m:argPr>meaningful</m:argPr></m:e></m:box>',
+      `<m:box><m:e><m:argPr><m:argSz xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="0" r:id="rIdUnsafe"/></m:argPr></m:e></m:box>`,
+      `<m:box><m:e><m:argPr><v:argSz xmlns:v="${VENDOR_NAMESPACE}" m:val="0"/></m:argPr></m:e></m:box>`,
+    );
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
+
   test('normalizes fraction type defaults and strictly validates fraction structure', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const supported = [
@@ -1772,8 +1885,6 @@ describe('document equations', () => {
       `<m:f><m:fPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr>meaningful<m:type/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:num>meaningful</m:num><m:den>${run}</m:den></m:f>`,
-      `<m:f><m:num/><m:den>${run}</m:den></m:f>`,
-      `<m:f><m:num>${run}</m:num><m:den/></m:f>`,
       `<m:f><m:num>${run}</m:num></m:f>`,
       `<m:f><m:num>${run}</m:num><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:num>${run}</m:num><m:den>${run}</m:den><m:den>${run}</m:den></m:f>`,
@@ -1832,7 +1943,6 @@ describe('document equations', () => {
       `<m:rad><m:radPr><m:degHide/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:deg>meaningful</m:deg><m:e>${run}</m:e></m:rad>`,
       `<m:rad><m:deg>${run}</m:deg></m:rad>`,
-      `<m:rad><m:e/></m:rad>`,
       `<m:rad><m:e>${run}</m:e><m:e>${run}</m:e></m:rad>`,
     ];
     expect(unsupported.map(inspectEquationBody)).toEqual(
@@ -1889,7 +1999,6 @@ describe('document equations', () => {
       `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:nary>`,
       `<m:nary><m:sub/><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:sub>${run}</m:sub><m:sup/><m:e>${run}</m:e></m:nary>`,
-      `<m:nary><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e/></m:nary>`,
       `<m:nary><m:naryPr><m:chr/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="+"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:limLoc/><m:chr m:val="&#x2211;"/></m:naryPr><m:sub>${run}</m:sub><m:sup>${run}</m:sup><m:e>${run}</m:e></m:nary>`,
@@ -2069,6 +2178,12 @@ function complexEquation(
         fractionType: 'linear',
         numerator: [run('u')],
         denominator: [run('v')],
+      },
+      {
+        type: 'fraction',
+        fractionType: 'bar',
+        numerator: [],
+        denominator: [],
       },
       { type: 'superscript', base: [run('x')], superScript: [run('2')] },
       { type: 'subscript', base: [run('x')], subScript: [run('i')] },
@@ -2551,7 +2666,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
   ).toBe('right');
   expect(descendants(document, 'oMath')).toHaveLength(2);
   const fractions = descendants(document, 'f');
-  expect(fractions).toHaveLength(8);
+  expect(fractions).toHaveLength(10);
   expect(
     fractions.map((fraction) =>
       directChildren(fraction).map((child) => child.localName),
@@ -2562,9 +2677,11 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ['fPr', 'num', 'den'],
     ['fPr', 'num', 'den'],
     ['num', 'den'],
+    ['num', 'den'],
     ['fPr', 'num', 'den'],
     ['fPr', 'num', 'den'],
     ['fPr', 'num', 'den'],
+    ['num', 'den'],
   ]);
   expect(
     fractions.map((fraction) => {
@@ -2573,7 +2690,35 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
         ? mathValueAttribute(directChildren(properties, 'type')[0])
         : null;
     }),
-  ).toEqual([null, 'noBar', 'skw', 'lin', null, 'noBar', 'skw', 'lin']);
+  ).toEqual([
+    null,
+    'noBar',
+    'skw',
+    'lin',
+    null,
+    null,
+    'noBar',
+    'skw',
+    'lin',
+    null,
+  ]);
+  expect(
+    fractions.map((fraction) => [
+      directChildren(fraction, 'num')[0]?.textContent ?? '',
+      directChildren(fraction, 'den')[0]?.textContent ?? '',
+    ]),
+  ).toEqual([
+    ['a+b', 'c'],
+    ['n', 'k'],
+    ['p', 'q'],
+    ['u', 'v'],
+    ['', ''],
+    ['a+b', 'c'],
+    ['n', 'k'],
+    ['p', 'q'],
+    ['u', 'v'],
+    ['', ''],
+  ]);
   expect(descendants(document, 'sSup')).toHaveLength(2);
   expect(descendants(document, 'sSub')).toHaveLength(2);
   const alignedScripts = descendants(document, 'sSubSup');

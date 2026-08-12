@@ -41,9 +41,12 @@ All notable changes to A3S Office will be documented in this file.
   character properties remain explicitly empty. Empty argument slots and the
   growing, centered defaults round-trip; non-growing or shape-matched
   delimiters fail closed. Functions enforce optional `funcPr` before required
-  `fName` and `e` slots, preserve empty name or argument slots, and accept only
-  empty `argPr` before expressions or empty `ctrlPr` after expressions. Depth,
-  node, text, model-size, matrix-dimension, cell-count,
+  `fName` and `e` slots and preserve empty name or argument slots. Every
+  supported `CT_OMathArg` slot now preserves an empty argument and enforces
+  `argPr -> expressions -> ctrlPr` ordering. Absent or empty argument
+  properties and absent, empty, or zero `argSz` values normalize to the
+  default; nonzero sizes and duplicate, misplaced, or semantic properties fail
+  closed. Depth, node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run or function
   structures, invalid or contradictory fraction, radical, n-ary, delimiter, bar,
