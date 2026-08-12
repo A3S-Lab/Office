@@ -121,7 +121,6 @@ const NARY_INTEGRALS = new Set<WorkDocumentEquationNaryOperator>([
   '∯',
   '∰',
 ]);
-const ARGUMENT_PROPERTY_NAMES = new Set(['argPr', 'ctrlPr']);
 const STRUCTURAL_MATH_NAMES = new Set([
   'acc',
   'accPr',
@@ -450,24 +449,32 @@ function parseExpressionContainer(
   ) {
     return null;
   }
-  const expressions: WorkDocumentEquationExpression[] = [];
-  const properties = new Set<string>();
-  for (const child of directChildren(container)) {
-    if (!DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? '')) return null;
-    if (
-      container.localName !== 'oMath' &&
-      ARGUMENT_PROPERTY_NAMES.has(child.localName)
-    ) {
-      if (
-        expressions.length ||
-        properties.has(child.localName) ||
-        !emptyMathProperty(child)
-      ) {
-        return null;
-      }
-      properties.add(child.localName);
-      continue;
+  const children = directChildren(container);
+  if (
+    children.some(
+      (child) => !DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? ''),
+    )
+  ) {
+    return null;
+  }
+  let expressionStart = 0;
+  let expressionEnd = children.length;
+  if (container.localName !== 'oMath') {
+    const argumentProperties = children[expressionStart];
+    if (argumentProperties?.localName === 'argPr') {
+      if (!emptyMathProperty(argumentProperties)) return null;
+      expressionStart += 1;
     }
+    const controlProperties = children[expressionEnd - 1];
+    if (controlProperties?.localName === 'ctrlPr') {
+      if (!emptyMathProperty(controlProperties)) return null;
+      expressionEnd -= 1;
+    }
+  }
+  const expressions: WorkDocumentEquationExpression[] = [];
+  for (const child of children.slice(expressionStart, expressionEnd)) {
+    if (child.localName === 'argPr' || child.localName === 'ctrlPr')
+      return null;
     const expression = parseExpression(child, state);
     if (!expression) return null;
     expressions.push(expression);
@@ -1304,8 +1311,8 @@ function parseFunction(
   const properties = uniqueMathChild(element, 'funcPr', false);
   const name = uniqueMathChild(element, 'fName');
   const body = uniqueMathChild(element, 'e');
-  const parsedName = name ? parseExpressionContainer(name, state) : null;
-  const parsedBody = body ? parseExpressionContainer(body, state) : null;
+  const parsedName = name ? parseExpressionContainer(name, state, true) : null;
+  const parsedBody = body ? parseExpressionContainer(body, state, true) : null;
   return properties !== null &&
     controlOnlyMathProperties(properties) &&
     parsedName &&

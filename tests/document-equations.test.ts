@@ -758,7 +758,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([35, 35, 1, 1]);
+    ).toEqual([36, 36, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -1632,7 +1632,6 @@ describe('document equations', () => {
       `<m:sSubSup><m:sSubSupPr><m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
       `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="0"/><m:ctrlPr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
       `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="on"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
-      `<m:func><m:funcPr><m:ctrlPr/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -1663,8 +1662,75 @@ describe('document equations', () => {
       `<m:sSubSup><m:sSubSupPr>meaningful<m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
       `<m:sSubSup><m:sSubSupPr/><m:e>${run}</m:e><m:sub>${run}</m:sub></m:sSubSup>`,
       `<m:sSubSup><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
+
+  test('preserves empty function slots and strictly validates function arguments', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:func><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      '<m:func><m:funcPr/><m:fName/><m:e/></m:func>',
+      `<m:func><m:funcPr><m:ctrlPr/></m:funcPr><m:fName><m:argPr/>${run}<m:ctrlPr/></m:fName><m:e><m:argPr/>${run}<m:ctrlPr/></m:e></m:func>`,
+      '<m:func><m:fName><m:argPr/><m:ctrlPr/></m:fName><m:e><m:argPr/><m:ctrlPr/></m:e></m:func>',
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'function'
+          ? [expression.name, expression.children]
+          : null;
+      }),
+    ).toEqual([
+      [[{ type: 'run', text: 'x' }], [{ type: 'run', text: 'x' }]],
+      [[], []],
+      [[{ type: 'run', text: 'x' }], [{ type: 'run', text: 'x' }]],
+      [[], []],
+    ]);
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'function', name: [], children: [] }],
+      }),
+    ).toEqual({
+      version: 1,
+      display: 'inline',
+      children: [{ type: 'function', name: [], children: [] }],
+    });
+    expect(
+      inspectEquationRoot(
+        `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}"><m:func><m:fName/><m:e/></m:func></m:oMath>`,
+      ).status,
+    ).toBe('supported');
+
+    const unsupported = [
+      `<m:func><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}</m:fName></m:func>`,
+      `<m:func><m:e>${run}</m:e><m:fName>${run}</m:fName></m:func>`,
       `<m:func><m:fName>${run}</m:fName><m:funcPr/><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:funcPr/><m:funcPr/><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}</m:fName><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}</m:fName><m:e>${run}</m:e><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:funcPr><m:ctrlPr/><m:ctrlPr/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:funcPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:funcPr><m:unknown/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName><m:ctrlPr/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}<m:argPr/></m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName><m:argPr/><m:argPr/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}<m:ctrlPr/><m:r><m:t>y</m:t></m:r></m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}<m:ctrlPr/><m:ctrlPr/></m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName><m:argPr><m:argSz m:val="1"/></m:argPr>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName>${run}<m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName><v:argPr xmlns:v="${VENDOR_NAMESPACE}"/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func m:extra="semantic"><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func>meaningful<m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><v:fName xmlns:v="${VENDOR_NAMESPACE}">${run}</v:fName><m:e>${run}</m:e></m:func>`,
     ];
     expect(unsupported.map(inspectEquationBody)).toEqual(
       unsupported.map(() => 'unsupported'),
@@ -2016,6 +2082,7 @@ function complexEquation(
       { type: 'radical', children: [run('y')] },
       { type: 'radical', children: [run('z')], degree: [run('3')] },
       { type: 'function', name: [run('sin')], children: [run('θ')] },
+      { type: 'function', name: [], children: [] },
       {
         type: 'nary',
         operator: '∑',
@@ -2556,7 +2623,24 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
         ),
       ),
   ).toEqual(['1', '1']);
-  expect(descendants(document, 'func')).toHaveLength(2);
+  const functions = descendants(document, 'func');
+  expect(functions).toHaveLength(4);
+  expect(
+    functions.map((function_) =>
+      directChildren(function_).map((child) => child.localName),
+    ),
+  ).toEqual(Array.from({ length: 4 }, () => ['funcPr', 'fName', 'e']));
+  expect(
+    functions.map((function_) => [
+      directChildren(function_, 'fName')[0]?.textContent ?? '',
+      directChildren(function_, 'e')[0]?.textContent ?? '',
+    ]),
+  ).toEqual([
+    ['sin', 'θ'],
+    ['', ''],
+    ['sin', 'θ'],
+    ['', ''],
+  ]);
   const naries = descendants(document, 'nary');
   expect(naries).toHaveLength(6);
   for (const nary of naries) {

@@ -696,8 +696,8 @@ function normalizeExpression(
         : null;
     }
     if (source.type === 'function') {
-      const name = normalizeExpressionList(source.name, state);
-      const children = normalizeExpressionList(source.children, state);
+      const name = normalizeExpressionList(source.name, state, true);
+      const children = normalizeExpressionList(source.children, state, true);
       return name && children ? { type: 'function', name, children } : null;
     }
     if (source.type === 'nary') {

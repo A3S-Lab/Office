@@ -543,8 +543,8 @@ script slots to MathML `none` children after `mprescripts`.
 Right-side `sSup`, `sSub`, and `sSubSup` objects enforce their property-first
 argument order. `sSubSupPr` preserves `alnScr`, canonicalizes its absent or
 disabled value to unaligned scripts, and retains the enabled state through
-native export; empty `ctrlPr` placeholders on scripts and functions are
-accepted, while unmodeled control formatting still fails closed.
+native export; empty `ctrlPr` placeholders in script and function property
+containers are accepted, while unmodeled control formatting still fails closed.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.
@@ -552,6 +552,10 @@ Radicals enforce `radPr`, optional `deg`, and `e` ordering. An omitted or empty
 degree normalizes to a square root, while a visible nonempty degree remains an
 nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
 `degHide=1` with an empty degree slot for square roots.
+Functions enforce optional `funcPr` before required `fName` and `e` slots. Both
+required slots may be empty, and their argument properties follow
+`argPr -> expressions -> ctrlPr`; empty property placeholders normalize away,
+while duplicate, misplaced, or semantic argument properties fail closed.
 N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and `e`
 slots. An omitted `chr` defaults to U+222B, while an attribute-free `chr`
 remains an explicitly empty unsupported operator; an attribute-free `limLoc`
@@ -575,9 +579,9 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
-characters, malformed math-run properties, invalid or contradictory fraction,
-radical, n-ary, delimiter, bar, group-character, phantom, border-box, box, or
-equation-array properties,
+characters, malformed math-run or function structures, invalid or contradictory
+fraction, radical, n-ary, delimiter, bar, group-character, phantom, border-box,
+box, or equation-array properties,
 malformed script-property, pre-script, math-paragraph, or lower/upper limit
 structures,
 unsupported matrix spacing or gap rules, ragged or over-limit matrices,

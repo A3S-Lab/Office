@@ -40,11 +40,13 @@ All notable changes to A3S Office will be documented in this file.
   Omitted characters normalize to `(`, U+2502, and `)`, while attribute-free
   character properties remain explicitly empty. Empty argument slots and the
   growing, centered defaults round-trip; non-growing or shape-matched
-  delimiters fail closed. Depth,
+  delimiters fail closed. Functions enforce optional `funcPr` before required
+  `fName` and `e` slots, preserve empty name or argument slots, and accept only
+  empty `argPr` before expressions or empty `ctrlPr` after expressions. Depth,
   node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
-  Invalid or non-combining accent characters, malformed math-run properties,
-  invalid or contradictory fraction, radical, n-ary, delimiter, bar,
+  Invalid or non-combining accent characters, malformed math-run or function
+  structures, invalid or contradictory fraction, radical, n-ary, delimiter, bar,
   group-character, phantom, border-box, box, or equation-array properties,
   malformed
   lower/upper limit structures,
