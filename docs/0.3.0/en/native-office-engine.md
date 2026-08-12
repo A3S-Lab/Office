@@ -1270,10 +1270,16 @@ RTL/complex-script flags, Latin, East Asian, and bidi language tags, and East
 Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
-flags and Office 2010 text glow. Glow preserves an optional 0 through
-2,147,483,647 EMU radius, exactly one RGB or 17-slot theme color source, and
-up to 64 ordered, repeatable tint, shade, alpha, hue-modulation, saturation,
-and luminance transform entries.
+flags and Office 2010 text glow and shadow effects. Glow preserves an optional
+0 through 2,147,483,647 EMU radius, exactly one RGB or 17-slot theme color
+source, and up to 64 ordered, repeatable tint, shade, alpha, hue-modulation,
+saturation, and luminance transform entries.
+The distinct Office 2010 shadow effect preserves the same color model plus
+optional 0 through 2,147,483,647 EMU blur and offset coordinates, a direction
+from 0 inclusive to 360 degrees exclusive, signed horizontal and vertical
+scales, skew angles strictly between -90 and 90 degrees, and all ten rectangle
+alignments. Angles retain exact 1/60,000-degree units and scales retain exact
+1/1,000-percent units.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1289,6 +1295,9 @@ from an explicit `false` inheritance reset.
 An omitted `w14:glow/@w14:rad` retains the schema default of zero while an
 explicit zero remains present. Glow export declares the Office 2010 namespace
 and adds its prefix to `mc:Ignorable` without replacing existing tokens.
+Omitted `w14:shadow` geometry retains its zero/`none` schema defaults while
+explicit zero and `none` values remain present; this effect stays distinct from
+the legacy `w:shadow` on/off property.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
@@ -1300,8 +1309,8 @@ dot below it. Superscript and subscript also project the smaller rendered size
 required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
 native schema order and the later explicit alignment controls the CSS vertical
 position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
-`w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it, and
-`w14:glow` follows `w:specVanish`. Simple
+`w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
+`w14:glow` follows `w:specVanish`, and `w14:shadow` follows `w14:glow`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1320,10 +1329,11 @@ them would introduce layout drift.
 The standard limits its display semantics to paragraph marks and allows it to
 be ignored on any other run; Word additionally ignores it unless `w:vanish` is
 set. Schema-valid values are still retained without inventing that dependency.
-Office 2010 glow also remains native-only. A CSS `text-shadow` approximation
-cannot preserve theme-bound colors, ordered color transforms, or Word's exact
-blur geometry, so previews retain readable equation text without inventing a
-visually misleading effect.
+Office 2010 glow and shadow effects also remain native-only. A CSS
+`text-shadow` approximation cannot preserve theme-bound colors, ordered color
+transforms, exact blur and offset coordinates, signed scaling and skew, or
+rectangle alignment, so previews retain readable equation text without
+inventing a visually misleading effect.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
@@ -1334,8 +1344,8 @@ width/spacing, malformed border colors/flags, missing, malformed, fractional,
 or out-of-range manual widths and grouping IDs, missing or unknown
 vertical-alignment or emphasis-mark values, malformed or out-of-range East
 Asian layout IDs, flags, or bracket styles, malformed paragraph-mark visibility
-flags, malformed glow radii, color choices, or transform chains, and unknown,
-duplicated, reordered,
+flags, malformed glow radii, shadow geometry, color choices, or transform
+chains, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their

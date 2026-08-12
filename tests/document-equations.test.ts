@@ -41,6 +41,7 @@ const WORD_2010_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2010/wordml';
 const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63500"><w14:srgbClr w14:val="FFFF00"/></w14:glow>`;
 const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:srgbClr w14:val="000000"/></w14:shadow>`;
+const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2070,6 +2071,7 @@ describe('document equations', () => {
       '<w:eastAsianLayout w:id="9" w:combine="1" w:combineBrackets="curly" w:vert="0" w:vertCompress="1"/>',
       '<w:specVanish w:val="0"/>',
       '<w14:glow w14:rad="63500"><w14:schemeClr w14:val="accent4"><w14:alpha w14:val="50000"/></w14:schemeClr></w14:glow>',
+      '<w14:shadow w14:blurRad="25400" w14:dist="12700" w14:dir="5400000" w14:sx="90000" w14:sy="-100000" w14:kx="-60000" w14:ky="120000" w14:algn="tr"><w14:schemeClr w14:val="accent5"><w14:lumMod w14:val="75000"/></w14:schemeClr></w14:shadow>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2178,7 +2180,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2212,7 +2214,10 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(
+          `<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`,
+          '<w:t>fallback</w:t>',
+        ),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4428,7 +4433,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_SHADOW),
+      wordRun(WORD_2010_REFLECTION),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4859,7 +4864,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_SHADOW),
+      wordRun(WORD_2010_REFLECTION),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4972,6 +4977,381 @@ describe('document equations', () => {
     await expectNativeWordRunGlows(await createArtifactBlob(imported));
   });
 
+  test('preserves bounded Office 2010 text shadow effects as native OMML metadata', async () => {
+    const transforms = [
+      { type: 'alpha', value: 50_000 },
+      { type: 'saturationOffset', value: -25_000 },
+      { type: 'alpha', value: 100_000 },
+    ];
+    const maximumDirection = 21_599_999 / 60_000;
+    const minimumScale = -2_147_483_648 / 1_000;
+    const maximumScale = 2_147_483_647 / 1_000;
+    const minimumSkew = -5_399_999 / 60_000;
+    const maximumSkew = 5_399_999 / 60_000;
+    const boundaryEffect = {
+      blurRadiusEmus: 2_147_483_647,
+      distanceEmus: 2_147_483_647,
+      directionDegrees: maximumDirection,
+      horizontalScalePercent: minimumScale,
+      verticalScalePercent: maximumScale,
+      horizontalSkewDegrees: minimumSkew,
+      verticalSkewDegrees: maximumSkew,
+      alignment: 'topLeft',
+      color: { type: 'rgb', value: '#abcdef' },
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'rgb-shadow-effect',
+          wordRunProperties: {
+            shadowEffect: {
+              blurRadiusEmus: 63_500,
+              distanceEmus: 12_700,
+              directionDegrees: 45,
+              horizontalScalePercent: 100,
+              verticalScalePercent: -50,
+              horizontalSkewDegrees: -1,
+              verticalSkewDegrees: 2,
+              alignment: 'bottomRight',
+              color: { type: 'rgb', value: '#a1b2c3', transforms },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'scheme-shadow-effect',
+          wordRunProperties: {
+            shadowEffect: {
+              blurRadiusEmus: 0,
+              distanceEmus: 0,
+              directionDegrees: 0,
+              horizontalScalePercent: 0,
+              verticalScalePercent: 0,
+              horizontalSkewDegrees: 0,
+              verticalSkewDegrees: 0,
+              alignment: 'none',
+              color: { type: 'scheme', value: 'placeholder' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'default-shadow-effect',
+          wordRunProperties: {
+            shadowEffect: {
+              color: { type: 'scheme', value: 'accent3' },
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'ordered-shadow-effect',
+          wordRunProperties: {
+            shadow: false,
+            paragraphMarkAlwaysHidden: false,
+            glow: { color: { type: 'rgb', value: '#112233' } },
+            shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+          },
+        },
+        {
+          type: 'run',
+          text: 'boundary-shadow-effect',
+          wordRunProperties: { shadowEffect: boundaryEffect },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            shadowEffect: {
+              blurRadiusEmus: 25_400,
+              alignment: 'center',
+              color: { type: 'scheme', value: 'hyperlink' },
+            },
+          },
+          children: [{ type: 'run', text: 'operator-shadow-effect' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithShadowEffect = (shadowEffect: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { shadowEffect } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { shadowEffect: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      normalizeDocumentEquation(equationWithShadowEffect(boundaryEffect))
+        ?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { shadowEffect: boundaryEffect },
+    });
+    const validEffect = { color: { type: 'rgb', value: '#abcdef' } };
+    const invalidEffects = [
+      null,
+      false,
+      {},
+      { blurRadiusEmus: 1 },
+      { ...validEffect, extra: true },
+      { ...validEffect, blurRadiusEmus: -1 },
+      { ...validEffect, blurRadiusEmus: 1.5 },
+      { ...validEffect, blurRadiusEmus: 2_147_483_648 },
+      { ...validEffect, distanceEmus: -1 },
+      { ...validEffect, distanceEmus: 1.5 },
+      { ...validEffect, distanceEmus: 2_147_483_648 },
+      { ...validEffect, directionDegrees: -1 / 60_000 },
+      { ...validEffect, directionDegrees: 360 },
+      { ...validEffect, directionDegrees: 1 / 120_000 },
+      { ...validEffect, horizontalScalePercent: minimumScale - 0.001 },
+      { ...validEffect, verticalScalePercent: maximumScale + 0.001 },
+      { ...validEffect, horizontalScalePercent: 0.0005 },
+      { ...validEffect, horizontalSkewDegrees: -90 },
+      { ...validEffect, verticalSkewDegrees: 90 },
+      { ...validEffect, horizontalSkewDegrees: 1 / 120_000 },
+      { ...validEffect, alignment: 'middle' },
+      { color: { type: 'scheme', value: 'none' } },
+      {
+        color: {
+          type: 'rgb',
+          value: '#abcdef',
+          transforms: Array.from({ length: 65 }, () => ({
+            type: 'alpha',
+            value: 50_000,
+          })),
+        },
+      },
+    ];
+    expect(
+      invalidEffects.map((effect) =>
+        normalizeDocumentEquation(equationWithShadowEffect(effect)),
+      ),
+    ).toEqual(invalidEffects.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const transformedRgb =
+      '<w14:shadow w14:blurRad=" +63500 " w14:dist="12700" ' +
+      'w14:dir="2700000" w14:sx="100000" w14:sy="-50000" ' +
+      'w14:kx="-60000" w14:ky="120000" w14:algn="br">' +
+      '<w14:srgbClr w14:val="a1B2c3"><w14:alpha w14:val="50000"/>' +
+      '<w14:satOff w14:val="-25000"/><w14:alpha w14:val="100000"/>' +
+      '</w14:srgbClr></w14:shadow>';
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(transformedRgb, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          shadowEffect: {
+            blurRadiusEmus: 63_500,
+            distanceEmus: 12_700,
+            directionDegrees: 45,
+            horizontalScalePercent: 100,
+            verticalScalePercent: -50,
+            horizontalSkewDegrees: -1,
+            verticalSkewDegrees: 2,
+            alignment: 'bottomRight',
+            color: { type: 'rgb', value: '#a1b2c3', transforms },
+          },
+        },
+      });
+    }
+    expect(
+      inspectEquationModel(wordRun(WORD_2010_SHADOW))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        shadowEffect: { color: { type: 'rgb', value: '#000000' } },
+      },
+    });
+    const boundaryMarkup =
+      '<w14:shadow w14:blurRad="2147483647" w14:dist="2147483647" ' +
+      'w14:dir="21599999" w14:sx="-2147483648" w14:sy="2147483647" ' +
+      'w14:kx="-5399999" w14:ky="5399999" w14:algn="tl">' +
+      '<w14:srgbClr w14:val="ABCDEF"/></w14:shadow>';
+    expect(inspectEquationModel(wordRun(boundaryMarkup))?.children[0]).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { shadowEffect: boundaryEffect },
+    });
+    const alignments = [
+      ['none', 'none'],
+      ['tl', 'topLeft'],
+      ['t', 'top'],
+      ['tr', 'topRight'],
+      ['l', 'left'],
+      ['ctr', 'center'],
+      ['r', 'right'],
+      ['bl', 'bottomLeft'],
+      ['b', 'bottom'],
+      ['br', 'bottomRight'],
+    ] as const;
+    for (const [source, alignment] of alignments) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w14:shadow w14:algn="${source}"><w14:schemeClr w14:val="accent1"/></w14:shadow>`,
+          ),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          shadowEffect: {
+            alignment,
+            color: { type: 'scheme', value: 'accent1' },
+          },
+        },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:shadow w:val="0"/><w:specVanish w:val="0"/>' +
+            '<w14:glow><w14:srgbClr w14:val="112233"/></w14:glow>' +
+            '<w14:shadow><w14:srgbClr w14:val="445566"/></w14:shadow>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        shadow: false,
+        paragraphMarkAlwaysHidden: false,
+        glow: { color: { type: 'rgb', value: '#112233' } },
+        shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+      },
+    });
+
+    const validColor = '<w14:srgbClr w14:val="A1B2C3"/>';
+    const invalidMarkup = [
+      wordRun('<w14:shadow/>'),
+      wordRun(
+        `<w14:shadow>${validColor}<w14:schemeClr w14:val="accent1"/></w14:shadow>`,
+      ),
+      wordRun(
+        `<w14:shadow>${validColor}</w14:shadow><w14:shadow>${validColor}</w14:shadow>`,
+      ),
+      wordRun(
+        `<w14:shadow>${validColor}</w14:shadow><w14:glow>${validColor}</w14:glow>`,
+      ),
+      wordRun(`<w14:shadow>${validColor}</w14:shadow><w:specVanish/>`),
+      wordRun(`<w:shadow>${validColor}</w:shadow>`),
+      wordRun(
+        `<v:shadow xmlns:v="${VENDOR_NAMESPACE}">${validColor}</v:shadow>`,
+      ),
+      wordRun(
+        `<w14:shadow xmlns:w14="${VENDOR_NAMESPACE}"><w14:srgbClr w14:val="A1B2C3"/></w14:shadow>`,
+      ),
+      wordRun(`<w14:shadow blurRad="1">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:blurRad="-1">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:blurRad="1.5">${validColor}</w14:shadow>`),
+      wordRun(
+        `<w14:shadow w14:blurRad="2147483648">${validColor}</w14:shadow>`,
+      ),
+      wordRun(`<w14:shadow w14:dist="-1">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:dist="2147483648">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:dir="-1">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:dir="21600000">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:sx="-2147483649">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:sy="2147483648">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:sx="1.5">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:kx="-5400000">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:ky="5400000">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:algn="middle">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:algn="CTR">${validColor}</w14:shadow>`),
+      wordRun(`<w14:shadow w14:extra="semantic">${validColor}</w14:shadow>`),
+      wordRun(
+        `<w14:shadow xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe">${validColor}</w14:shadow>`,
+      ),
+      wordRun(`<w14:shadow>${validColor}meaningful</w14:shadow>`),
+      wordRun(
+        '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
+      ),
+      wordRun(WORD_2010_REFLECTION),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'rgb-shadow-effect',
+      'scheme-shadow-effect',
+      'default-shadow-effect',
+      'ordered-shadow-effect',
+      'boundary-shadow-effect',
+      'operator-shadow-effect',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(preview.outerHTML).not.toMatch(/text-shadow/iu);
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunShadowEffects(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-shadow-effect.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunShadowEffects(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -5060,7 +5440,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_SHADOW}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -5336,7 +5716,9 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(`${run}<m:ctrlPr><w:rPr>${WORD_2010_SHADOW}</w:rPr></m:ctrlPr>`),
+      argument(
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_REFLECTION}</w:rPr></m:ctrlPr>`,
+      ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -6554,6 +6936,21 @@ function richWordRunProperties() {
         type: 'scheme' as const,
         value: 'accent4' as const,
         transforms: [{ type: 'alpha' as const, value: 50_000 }],
+      },
+    },
+    shadowEffect: {
+      blurRadiusEmus: 25_400,
+      distanceEmus: 12_700,
+      directionDegrees: 90,
+      horizontalScalePercent: 90,
+      verticalScalePercent: -100,
+      horizontalSkewDegrees: -1,
+      verticalSkewDegrees: 2,
+      alignment: 'topRight' as const,
+      color: {
+        type: 'scheme' as const,
+        value: 'accent5' as const,
+        transforms: [{ type: 'luminanceModulation' as const, value: 75_000 }],
       },
     },
   };
@@ -8503,6 +8900,156 @@ async function expectNativeWordRunGlows(blob: Blob): Promise<void> {
   });
 }
 
+async function expectNativeWordRunShadowEffects(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+
+  const rgbShadow = directChildren(
+    wordPropertiesFor('rgb-shadow-effect'),
+    'shadow',
+  )[0];
+  expect(rgbShadow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(rgbShadow)).toEqual({
+    blurRad: '63500',
+    dist: '12700',
+    dir: '2700000',
+    sx: '100000',
+    sy: '-50000',
+    kx: '-60000',
+    ky: '120000',
+    algn: 'br',
+  });
+  const rgbColor = directChildren(rgbShadow)[0];
+  expect(rgbColor.localName).toBe('srgbClr');
+  expect(rgbColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(rgbColor)).toEqual({ val: 'A1B2C3' });
+  const transforms = directChildren(rgbColor);
+  expect(transforms.map((child) => child.localName)).toEqual([
+    'alpha',
+    'satOff',
+    'alpha',
+  ]);
+  expect(transforms.map(word2010Attributes)).toEqual([
+    { val: '50000' },
+    { val: '-25000' },
+    { val: '100000' },
+  ]);
+
+  const schemeShadow = directChildren(
+    wordPropertiesFor('scheme-shadow-effect'),
+    'shadow',
+  )[0];
+  expect(schemeShadow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(schemeShadow)).toEqual({
+    blurRad: '0',
+    dist: '0',
+    dir: '0',
+    sx: '0',
+    sy: '0',
+    kx: '0',
+    ky: '0',
+    algn: 'none',
+  });
+  const schemeColor = directChildren(schemeShadow)[0];
+  expect(schemeColor.localName).toBe('schemeClr');
+  expect(schemeColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(schemeColor)).toEqual({ val: 'phClr' });
+
+  const defaultShadow = directChildren(
+    wordPropertiesFor('default-shadow-effect'),
+    'shadow',
+  )[0];
+  expect(word2010Attributes(defaultShadow)).toEqual({});
+  expect(word2010Attributes(directChildren(defaultShadow)[0])).toEqual({
+    val: 'accent3',
+  });
+
+  const boundaryShadow = directChildren(
+    wordPropertiesFor('boundary-shadow-effect'),
+    'shadow',
+  )[0];
+  expect(boundaryShadow.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(boundaryShadow)).toEqual({
+    blurRad: '2147483647',
+    dist: '2147483647',
+    dir: '21599999',
+    sx: '-2147483648',
+    sy: '2147483647',
+    kx: '-5399999',
+    ky: '5399999',
+    algn: 'tl',
+  });
+  expect(word2010Attributes(directChildren(boundaryShadow)[0])).toEqual({
+    val: 'ABCDEF',
+  });
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-shadow-effect'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'shadow',
+    'specVanish',
+    'glow',
+    'shadow',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-shadow-effect'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const shadow = directChildren(wordProperties as Element, 'shadow').find(
+    (candidate) => candidate.namespaceURI === WORD_2010_NAMESPACE,
+  );
+  expect(shadow).toBeDefined();
+  expect(word2010Attributes(shadow as Element)).toEqual({
+    blurRad: '25400',
+    algn: 'ctr',
+  });
+  expect(word2010Attributes(directChildren(shadow as Element)[0])).toEqual({
+    val: 'hlink',
+  });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -8564,6 +9111,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'eastAsianLayout',
     'specVanish',
     'glow',
+    'shadow',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -8645,6 +9193,7 @@ async function expectNativeArgumentControlProperties(
     'eastAsianLayout',
     'specVanish',
     'glow',
+    'shadow',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -9213,6 +9762,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'eastAsianLayout',
     'specVanish',
     'glow',
+    'shadow',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -9287,6 +9837,16 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     },
     { val: '0' },
     { rad: '63500' },
+    {
+      blurRad: '25400',
+      dist: '12700',
+      dir: '5400000',
+      sx: '90000',
+      sy: '-100000',
+      kx: '-60000',
+      ky: '120000',
+      algn: 'tr',
+    },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -9313,6 +9873,18 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(alpha.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(alpha.localName).toBe('alpha');
     expect(word2010Attributes(alpha)).toEqual({ val: '50000' });
+    const shadow = directChildren(properties, 'shadow').find(
+      (candidate) => candidate.namespaceURI === WORD_2010_NAMESPACE,
+    );
+    expect(shadow).toBeDefined();
+    const shadowColor = directChildren(shadow as Element)[0];
+    expect(shadowColor.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(shadowColor.localName).toBe('schemeClr');
+    expect(word2010Attributes(shadowColor)).toEqual({ val: 'accent5' });
+    const luminanceModulation = directChildren(shadowColor)[0];
+    expect(luminanceModulation.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(luminanceModulation.localName).toBe('lumMod');
+    expect(word2010Attributes(luminanceModulation)).toEqual({ val: '75000' });
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

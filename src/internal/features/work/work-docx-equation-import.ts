@@ -38,6 +38,8 @@ import {
   type WorkDocumentEquationWordRunBorder,
   type WorkDocumentEquationWordRunFonts,
   type WorkDocumentEquationWordRunProperties,
+  type WorkDocumentEquationWordShadowAlignment,
+  type WorkDocumentEquationWordShadowEffect,
   type WorkDocumentEquationWordShading,
   type WorkDocumentEquationWordShadingPattern,
   type WorkDocumentEquationWordTextEffect,
@@ -174,6 +176,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'eastAsianLayout',
   'specVanish',
   'w14:glow',
+  'w14:shadow',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -242,6 +245,21 @@ const WORD_2010_COLOR_TRANSFORMS = new Map<
   ['lumMod', 'luminanceModulation'],
 ]);
 const WORD_2010_FIXED_COLOR_TRANSFORMS = new Set(['tint', 'shade', 'alpha']);
+const WORD_2010_SHADOW_ALIGNMENTS = new Map<
+  string,
+  WorkDocumentEquationWordShadowAlignment
+>([
+  ['none', 'none'],
+  ['tl', 'topLeft'],
+  ['t', 'top'],
+  ['tr', 'topRight'],
+  ['l', 'left'],
+  ['ctr', 'center'],
+  ['r', 'right'],
+  ['bl', 'bottomLeft'],
+  ['b', 'bottom'],
+  ['br', 'bottomRight'],
+]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
   'words',
@@ -408,6 +426,14 @@ const MAX_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
 const MAX_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
 const MAX_WORD_GLOW_RADIUS_EMUS = 2_147_483_647;
+const MAX_WORD_SHADOW_COORDINATE_EMUS = 2_147_483_647;
+const MAX_WORD_SHADOW_DIRECTION_UNITS = 21_599_999;
+const MIN_WORD_SHADOW_SCALE_UNITS = -2_147_483_648;
+const MAX_WORD_SHADOW_SCALE_UNITS = 2_147_483_647;
+const MIN_WORD_SHADOW_SKEW_UNITS = -5_399_999;
+const MAX_WORD_SHADOW_SKEW_UNITS = 5_399_999;
+const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
+const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_WORD_COLOR_TRANSFORMS = 64;
 const MIN_WORD_COLOR_PERCENTAGE = -2_147_483_648;
 const MAX_WORD_COLOR_PERCENTAGE = 2_147_483_647;
@@ -1015,6 +1041,7 @@ function parseWordRunProperties(
     children.get('eastAsianLayout'),
   );
   const glow = parseWordGlow(word2010Children.get('glow'));
+  const shadowEffect = parseWordShadowEffect(word2010Children.get('shadow'));
   if (
     fonts === null ||
     color === null ||
@@ -1034,7 +1061,8 @@ function parseWordRunProperties(
     emphasisMark === null ||
     languages === null ||
     eastAsianLayout === null ||
-    glow === null
+    glow === null ||
+    shadowEffect === null
   ) {
     return null;
   }
@@ -1130,6 +1158,7 @@ function parseWordRunProperties(
         }
       : {}),
     ...(glow ? { glow } : {}),
+    ...(shadowEffect ? { shadowEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -1763,6 +1792,122 @@ function parseWordGlow(
         ...(radiusEmus !== undefined ? { radiusEmus } : {}),
         color,
       };
+}
+
+function parseWordShadowEffect(
+  element: Element | undefined,
+): WorkDocumentEquationWordShadowEffect | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010ElementAttributes(
+    element,
+    new Set(['blurRad', 'dist', 'dir', 'sx', 'sy', 'kx', 'ky', 'algn']),
+  );
+  if (!attributes) return null;
+  const blurRadiusEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'blurRad',
+    0,
+    MAX_WORD_SHADOW_COORDINATE_EMUS,
+  );
+  const distanceEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'dist',
+    0,
+    MAX_WORD_SHADOW_COORDINATE_EMUS,
+  );
+  const directionUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'dir',
+    0,
+    MAX_WORD_SHADOW_DIRECTION_UNITS,
+  );
+  const horizontalScaleUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'sx',
+    MIN_WORD_SHADOW_SCALE_UNITS,
+    MAX_WORD_SHADOW_SCALE_UNITS,
+  );
+  const verticalScaleUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'sy',
+    MIN_WORD_SHADOW_SCALE_UNITS,
+    MAX_WORD_SHADOW_SCALE_UNITS,
+  );
+  const horizontalSkewUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'kx',
+    MIN_WORD_SHADOW_SKEW_UNITS,
+    MAX_WORD_SHADOW_SKEW_UNITS,
+  );
+  const verticalSkewUnits = word2010OptionalIntegerAttribute(
+    attributes,
+    'ky',
+    MIN_WORD_SHADOW_SKEW_UNITS,
+    MAX_WORD_SHADOW_SKEW_UNITS,
+  );
+  const alignment = attributes.has('algn')
+    ? (WORD_2010_SHADOW_ALIGNMENTS.get(attributes.get('algn')?.trim() ?? '') ??
+      null)
+    : undefined;
+  const children = directChildren(element);
+  const color =
+    children.length === 1 ? parseWord2010EffectColor(children[0]) : null;
+  if (
+    blurRadiusEmus === null ||
+    distanceEmus === null ||
+    directionUnits === null ||
+    horizontalScaleUnits === null ||
+    verticalScaleUnits === null ||
+    horizontalSkewUnits === null ||
+    verticalSkewUnits === null ||
+    alignment === null ||
+    color === null
+  ) {
+    return null;
+  }
+  return {
+    ...(blurRadiusEmus !== undefined ? { blurRadiusEmus } : {}),
+    ...(distanceEmus !== undefined ? { distanceEmus } : {}),
+    ...(directionUnits !== undefined
+      ? { directionDegrees: directionUnits / WORD_ANGLE_UNITS_PER_DEGREE }
+      : {}),
+    ...(horizontalScaleUnits !== undefined
+      ? {
+          horizontalScalePercent:
+            horizontalScaleUnits / WORD_PERCENTAGE_UNITS_PER_PERCENT,
+        }
+      : {}),
+    ...(verticalScaleUnits !== undefined
+      ? {
+          verticalScalePercent:
+            verticalScaleUnits / WORD_PERCENTAGE_UNITS_PER_PERCENT,
+        }
+      : {}),
+    ...(horizontalSkewUnits !== undefined
+      ? {
+          horizontalSkewDegrees:
+            horizontalSkewUnits / WORD_ANGLE_UNITS_PER_DEGREE,
+        }
+      : {}),
+    ...(verticalSkewUnits !== undefined
+      ? {
+          verticalSkewDegrees: verticalSkewUnits / WORD_ANGLE_UNITS_PER_DEGREE,
+        }
+      : {}),
+    ...(alignment ? { alignment } : {}),
+    color,
+  };
+}
+
+function word2010OptionalIntegerAttribute(
+  attributes: ReadonlyMap<string, string>,
+  name: string,
+  minimum: number,
+  maximum: number,
+): number | null | undefined {
+  return attributes.has(name)
+    ? wordIntegerValue(attributes.get(name)?.trim() ?? '', minimum, maximum)
+    : undefined;
 }
 
 function parseWord2010EffectColor(

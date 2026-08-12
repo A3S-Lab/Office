@@ -14,6 +14,7 @@ import {
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordEffectColor,
   type WorkDocumentEquationWordRunProperties,
+  type WorkDocumentEquationWordShadowAlignment,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -78,6 +79,22 @@ const WORD_2010_COLOR_TRANSFORM_NAMES: Readonly<
   luminanceOffset: 'lumOff',
   luminanceModulation: 'lumMod',
 };
+const WORD_2010_SHADOW_ALIGNMENTS: Readonly<
+  Record<WorkDocumentEquationWordShadowAlignment, string>
+> = {
+  none: 'none',
+  topLeft: 'tl',
+  top: 't',
+  topRight: 'tr',
+  left: 'l',
+  center: 'ctr',
+  right: 'r',
+  bottomLeft: 'bl',
+  bottom: 'b',
+  bottomRight: 'br',
+};
+const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
+const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 
 export class DocxEquationPatchCollector {
   readonly patches: DocxEquationPatch[] = [];
@@ -1359,6 +1376,11 @@ function createWordRunProperties(
   if (properties.glow) {
     result.append(createWord2010Glow(document, properties.glow));
   }
+  if (properties.shadowEffect) {
+    result.append(
+      createWord2010ShadowEffect(document, properties.shadowEffect),
+    );
+  }
   return result;
 }
 
@@ -1459,6 +1481,63 @@ function createWord2010Glow(
     setWord2010Attribute(result, prefix, 'rad', String(glow.radiusEmus));
   }
   result.append(createWord2010EffectColor(document, prefix, glow.color));
+  return result;
+}
+
+function createWord2010ShadowEffect(
+  document: Document,
+  shadow: NonNullable<WorkDocumentEquationWordRunProperties['shadowEffect']>,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'shadow');
+  const attributes = [
+    ['blurRad', shadow.blurRadiusEmus],
+    ['dist', shadow.distanceEmus],
+    [
+      'dir',
+      shadow.directionDegrees === undefined
+        ? undefined
+        : shadow.directionDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+    [
+      'sx',
+      shadow.horizontalScalePercent === undefined
+        ? undefined
+        : shadow.horizontalScalePercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'sy',
+      shadow.verticalScalePercent === undefined
+        ? undefined
+        : shadow.verticalScalePercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'kx',
+      shadow.horizontalSkewDegrees === undefined
+        ? undefined
+        : shadow.horizontalSkewDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+    [
+      'ky',
+      shadow.verticalSkewDegrees === undefined
+        ? undefined
+        : shadow.verticalSkewDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+  ] as const;
+  for (const [name, value] of attributes) {
+    if (value !== undefined) {
+      setWord2010Attribute(result, prefix, name, String(value));
+    }
+  }
+  if (shadow.alignment) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'algn',
+      WORD_2010_SHADOW_ALIGNMENTS[shadow.alignment],
+    );
+  }
+  result.append(createWord2010EffectColor(document, prefix, shadow.color));
   return result;
 }
 
