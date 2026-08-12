@@ -62,8 +62,12 @@ describe('document equations', () => {
       expect(element?.querySelector('math')).not.toBeNull();
       expect(element?.querySelector('mfrac')).not.toBeNull();
       expect(element?.querySelector('munderover')).not.toBeNull();
+      expect(element?.querySelector('mtable')).not.toBeNull();
+      expect(element?.querySelectorAll('mtr')).toHaveLength(2);
+      expect(element?.querySelectorAll('mtd')).toHaveLength(8);
       expect(element).toHaveAttribute('role', 'math');
       expect(element?.getAttribute('aria-label')).toContain('sqrt');
+      expect(element?.getAttribute('aria-label')).toContain('matrix');
 
       const equationPosition = documentEquationPosition(editor);
       editor.commands.setNodeSelection(equationPosition);
@@ -83,6 +87,39 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'matrix',
+              baseAlignment: 'center',
+              placeholdersHidden: false,
+              columnAlignments: ['center', 'center'],
+              rows: [
+                [[{ type: 'run', text: 'a' }], [{ type: 'run', text: 'b' }]],
+                [[{ type: 'run', text: 'c' }]],
+              ],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'matrix',
+              baseAlignment: 'center',
+              placeholdersHidden: false,
+              columnAlignments: ['center'],
+              rows: Array.from({ length: 65 }, () => [[]]),
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -120,6 +157,7 @@ describe('document equations', () => {
       expect(equations).toBe(1);
       expect(editor.getHTML()).toContain('data-document-equation="true"');
       expect(editor.getHTML()).toContain('<math');
+      expect(editor.getHTML()).toContain('<mtable');
 
       const sanitized = new DOMParser().parseFromString(
         sanitizeDocumentPageChromeHtml(
@@ -160,9 +198,15 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([14, 14, 1, 1]);
+    ).toEqual([15, 15, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
+    );
+    expect(documentEquationFromElement(bodyEquations[0])).toEqual(
+      complexEquation('inline'),
+    );
+    expect(documentEquationFromElement(bodyEquations[1])).toEqual(
+      complexEquation('block'),
     );
     expect(
       bodyEquations.some(
@@ -268,11 +312,15 @@ describe('document equations', () => {
     equations[0].replaceWith(spoofed);
 
     const matrix = document.createElementNS(MATH_NAMESPACE, 'm:m');
+    const matrixProperties = document.createElementNS(MATH_NAMESPACE, 'm:mPr');
+    const columnSpacing = document.createElementNS(MATH_NAMESPACE, 'm:cSp');
+    columnSpacing.setAttributeNS(MATH_NAMESPACE, 'm:val', '120');
+    matrixProperties.append(columnSpacing);
     const row = document.createElementNS(MATH_NAMESPACE, 'm:mr');
     const argument = document.createElementNS(MATH_NAMESPACE, 'm:e');
     argument.append(...Array.from(equations[1].childNodes));
     row.append(argument);
-    matrix.append(row);
+    matrix.append(matrixProperties, row);
     equations[1].replaceChildren(matrix);
 
     const run = directChildren(equations[2], 'r')[0];
@@ -374,8 +422,12 @@ describe('document equations', () => {
       `<m:f><m:fPr><m:type m:val="noBar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/><m:ctrlPr/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
+      `<m:m><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m><m:mPr><m:baseJc m:val="bot"/><m:plcHide m:val="true"/><m:mcs><m:mc><m:mcPr><m:count m:val="2"/><m:mcJc m:val="left"/></m:mcPr></m:mc><m:mc><m:mcPr><m:count/><m:mcJc/></m:mcPr></m:mc></m:mcs><m:ctrlPr/></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e><m:e/></m:mr></m:m>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual([
+      'supported',
+      'supported',
       'supported',
       'supported',
       'supported',
@@ -389,6 +441,11 @@ describe('document equations', () => {
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:subHide m:val="on"/></m:naryPr><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/></m:naryPr><m:e>${run}</m:e></m:nary>`,
       `<m:d><m:dPr><m:grow m:val="1"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:m><m:mPr><m:cSp m:val="120"/></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="0"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
+      `<m:m>${Array.from({ length: 65 }, () => `<m:mr><m:e>${run}</m:e></m:mr>`).join('')}</m:m>`,
       '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
@@ -499,6 +556,16 @@ function complexEquation(
         separator: ';',
         arguments: [[run('a')], [run('b')]],
       },
+      {
+        type: 'matrix',
+        baseAlignment: 'top',
+        placeholdersHidden: false,
+        columnAlignments: ['left', 'center', 'center', 'right'],
+        rows: [
+          [[run('a')], [run('b')], [run('c')], [run('d')]],
+          [[run('e')], [run('f')], [run('g')], []],
+        ],
+      },
     ],
   };
 }
@@ -565,6 +632,32 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
   expect(descendants(document, 'func')).toHaveLength(2);
   expect(descendants(document, 'nary')).toHaveLength(4);
   expect(descendants(document, 'd')).toHaveLength(2);
+  const matrices = descendants(document, 'm');
+  expect(matrices).toHaveLength(2);
+  for (const matrix of matrices) {
+    const rows = directChildren(matrix, 'mr');
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => directChildren(row, 'e').length)).toEqual([4, 4]);
+    expect(directChildren(rows[1], 'e')[3]?.childElementCount).toBe(0);
+    const properties = directChildren(matrix, 'mPr')[0];
+    expect(mathValueAttribute(directChildren(properties, 'baseJc')[0])).toBe(
+      'top',
+    );
+    expect(mathValueAttribute(directChildren(properties, 'plcHide')[0])).toBe(
+      '0',
+    );
+    const columns = descendants(properties, 'mc');
+    expect(
+      columns.map((column) =>
+        mathValueAttribute(descendants(column, 'count')[0]),
+      ),
+    ).toEqual(['1', '2', '1']);
+    expect(
+      columns.map((column) =>
+        mathValueAttribute(descendants(column, 'mcJc')[0]),
+      ),
+    ).toEqual(['left', 'center', 'right']);
+  }
   const inline = descendants(document, 'oMath')[0];
   const componentStatuses = directChildren(inline).map((component) => {
     const equation = document.createElementNS(MATH_NAMESPACE, 'm:oMath');
@@ -585,6 +678,15 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(descendants(story, 'oMath')).toHaveLength(1);
     expect(descendants(story, 'oMath')[0]?.namespaceURI).toBe(MATH_NAMESPACE);
   }
+}
+
+function mathValueAttribute(element: Element | undefined): string | null {
+  return (
+    Array.from(element?.attributes ?? []).find(
+      (attribute) =>
+        attribute.localName === 'val' || /(?:^|:)val$/u.test(attribute.name),
+    )?.value ?? null
+  );
 }
 
 async function matchingXmlEntry(

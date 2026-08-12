@@ -317,6 +317,47 @@ function createExpression(
     nary.append(expressionArgument(document, prefix, 'e', expression.children));
     return nary;
   }
+  if (expression.type === 'matrix') {
+    const matrix = createMathElement(document, prefix, 'm');
+    const properties = createMathElement(document, prefix, 'mPr');
+    properties.append(
+      mathValueElement(
+        document,
+        prefix,
+        'baseJc',
+        expression.baseAlignment === 'bottom'
+          ? 'bot'
+          : expression.baseAlignment,
+      ),
+      mathValueElement(
+        document,
+        prefix,
+        'plcHide',
+        expression.placeholdersHidden ? '1' : '0',
+      ),
+    );
+    const columns = createMathElement(document, prefix, 'mcs');
+    for (const group of matrixColumnGroups(expression.columnAlignments)) {
+      const column = createMathElement(document, prefix, 'mc');
+      const columnProperties = createMathElement(document, prefix, 'mcPr');
+      columnProperties.append(
+        mathValueElement(document, prefix, 'count', String(group.count)),
+        mathValueElement(document, prefix, 'mcJc', group.alignment),
+      );
+      column.append(columnProperties);
+      columns.append(column);
+    }
+    properties.append(columns);
+    matrix.append(properties);
+    for (const row of expression.rows) {
+      const matrixRow = createMathElement(document, prefix, 'mr');
+      for (const cell of row) {
+        matrixRow.append(expressionArgument(document, prefix, 'e', cell));
+      }
+      matrix.append(matrixRow);
+    }
+    return matrix;
+  }
   const delimiter = createMathElement(document, prefix, 'd');
   const properties = createMathElement(document, prefix, 'dPr');
   properties.append(
@@ -329,6 +370,21 @@ function createExpression(
     delimiter.append(expressionArgument(document, prefix, 'e', argument));
   }
   return delimiter;
+}
+
+function matrixColumnGroups(
+  alignments: readonly ('left' | 'center' | 'right')[],
+): Array<{ alignment: 'left' | 'center' | 'right'; count: number }> {
+  const groups: Array<{
+    alignment: 'left' | 'center' | 'right';
+    count: number;
+  }> = [];
+  for (const alignment of alignments) {
+    const current = groups.at(-1);
+    if (current?.alignment === alignment) current.count += 1;
+    else groups.push({ alignment, count: 1 });
+  }
+  return groups;
 }
 
 function expressionArgument(

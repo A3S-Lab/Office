@@ -60,7 +60,9 @@ const EQUATION_ATTRIBUTES = [
   'role',
 ] as const;
 const MATHML_ATTRIBUTES = new Set([
+  'align',
   'bevelled',
+  'columnalign',
   'display',
   'fence',
   'linethickness',
@@ -79,7 +81,10 @@ const MATHML_TAGS = new Set([
   'msub',
   'msubsup',
   'msup',
+  'mtable',
+  'mtd',
   'mtext',
+  'mtr',
   'munder',
   'munderover',
 ]);
@@ -104,7 +109,10 @@ const ALLOWED_TAGS = new Set([
   'msub',
   'msubsup',
   'msup',
+  'mtable',
+  'mtd',
   'mtext',
+  'mtr',
   'munder',
   'munderover',
   'ol',

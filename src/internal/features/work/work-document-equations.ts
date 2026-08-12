@@ -8,6 +8,11 @@ export type WorkDocumentEquationFractionType =
   | 'skewed'
   | 'linear';
 export type WorkDocumentEquationLimitLocation = 'underOver' | 'subSup';
+export type WorkDocumentEquationMatrixAlignment = 'left' | 'center' | 'right';
+export type WorkDocumentEquationMatrixBaseAlignment =
+  | 'top'
+  | 'center'
+  | 'bottom';
 
 export type WorkDocumentEquationExpression =
   | { type: 'run'; text: string }
@@ -52,6 +57,13 @@ export type WorkDocumentEquationExpression =
       superScript?: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'matrix';
+      baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
+      placeholdersHidden: boolean;
+      columnAlignments: WorkDocumentEquationMatrixAlignment[];
+      rows: WorkDocumentEquationExpression[][][];
+    }
+  | {
       type: 'delimiter';
       opening: string;
       closing: string;
@@ -91,6 +103,9 @@ const MAX_EQUATION_NODES = 4_096;
 const MAX_EQUATION_TEXT_LENGTH = 65_536;
 const MAX_EQUATION_MODEL_LENGTH = 262_144;
 const MAX_DELIMITER_ARGUMENTS = 32;
+const MAX_MATRIX_ROWS = 64;
+const MAX_MATRIX_COLUMNS = 64;
+const MAX_MATRIX_CELLS = 1_024;
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -114,6 +129,14 @@ const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
 ]);
+const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
+  'left',
+  'center',
+  'right',
+]);
+const MATRIX_BASE_ALIGNMENTS = new Set<WorkDocumentEquationMatrixBaseAlignment>(
+  ['top', 'center', 'bottom'],
+);
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -437,6 +460,65 @@ function normalizeExpression(
           }
         : null;
     }
+    if (source.type === 'matrix') {
+      const baseAlignment = MATRIX_BASE_ALIGNMENTS.has(
+        source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment,
+      )
+        ? (source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment)
+        : null;
+      if (
+        !baseAlignment ||
+        typeof source.placeholdersHidden !== 'boolean' ||
+        !Array.isArray(source.rows) ||
+        source.rows.length === 0 ||
+        source.rows.length > MAX_MATRIX_ROWS ||
+        !Array.isArray(source.columnAlignments)
+      ) {
+        return null;
+      }
+      const columnCount = Array.isArray(source.rows[0])
+        ? source.rows[0].length
+        : 0;
+      if (
+        columnCount === 0 ||
+        columnCount > MAX_MATRIX_COLUMNS ||
+        source.rows.length * columnCount > MAX_MATRIX_CELLS ||
+        source.columnAlignments.length !== columnCount
+      ) {
+        return null;
+      }
+      const columnAlignments = source.columnAlignments.map((alignment) =>
+        MATRIX_ALIGNMENTS.has(alignment as WorkDocumentEquationMatrixAlignment)
+          ? (alignment as WorkDocumentEquationMatrixAlignment)
+          : null,
+      );
+      if (
+        !columnAlignments.every(
+          (alignment): alignment is WorkDocumentEquationMatrixAlignment =>
+            alignment !== null,
+        )
+      ) {
+        return null;
+      }
+      const rows: WorkDocumentEquationExpression[][][] = [];
+      for (const row of source.rows) {
+        if (!Array.isArray(row) || row.length !== columnCount) return null;
+        const normalizedRow: WorkDocumentEquationExpression[][] = [];
+        for (const cell of row) {
+          const normalizedCell = normalizeExpressionList(cell, state, true);
+          if (!normalizedCell) return null;
+          normalizedRow.push(normalizedCell);
+        }
+        rows.push(normalizedRow);
+      }
+      return {
+        type: 'matrix',
+        baseAlignment,
+        placeholdersHidden: source.placeholdersHidden,
+        columnAlignments,
+        rows,
+      };
+    }
     if (source.type === 'delimiter') {
       const opening = mathCharacter(source.opening);
       const closing = mathCharacter(source.closing);
@@ -522,6 +604,11 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
         ? `^(${expressionListText(expression.superScript)})`
         : ''
     } ${expressionListText(expression.children)}`;
+  }
+  if (expression.type === 'matrix') {
+    return `matrix(${expression.rows
+      .map((row) => row.map(expressionListText).join(','))
+      .join(';')})`;
   }
   return `${expression.opening}${expression.arguments
     .map(expressionListText)
@@ -654,6 +741,22 @@ function expressionMathMl(
       );
     }
     return domSpec('mrow', {}, [decorated, mathRow(expression.children)]);
+  }
+  if (expression.type === 'matrix') {
+    return domSpec(
+      'mtable',
+      {
+        align: expression.baseAlignment,
+        columnalign: expression.columnAlignments.join(' '),
+      },
+      expression.rows.map((row) =>
+        domSpec(
+          'mtr',
+          {},
+          row.map((cell) => domSpec('mtd', {}, [mathRow(cell)])),
+        ),
+      ),
+    );
   }
   const children: Array<DOMOutputSpec | string> = [];
   if (expression.opening)

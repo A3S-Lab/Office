@@ -6,6 +6,8 @@ import {
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationFractionType,
   type WorkDocumentEquationLimitLocation,
+  type WorkDocumentEquationMatrixAlignment,
+  type WorkDocumentEquationMatrixBaseAlignment,
   type WorkDocumentEquationNaryOperator,
 } from './work-document-equations';
 import {
@@ -76,6 +78,9 @@ const MAX_MATH_DEPTH = 32;
 const MAX_MATH_NODES = 4_096;
 const MAX_MATH_TEXT_LENGTH = 65_536;
 const MAX_DELIMITER_ARGUMENTS = 32;
+const MAX_MATRIX_ROWS = 64;
+const MAX_MATRIX_COLUMNS = 64;
+const MAX_MATRIX_CELLS = 1_024;
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -116,6 +121,10 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'limLow',
   'limUpp',
   'm',
+  'mc',
+  'mcPr',
+  'mcs',
+  'mPr',
   'mr',
   'nary',
   'num',
@@ -429,6 +438,7 @@ function parseExpression(
     if (element.localName === 'rad') return parseRadical(element, state);
     if (element.localName === 'func') return parseFunction(element, state);
     if (element.localName === 'nary') return parseNary(element, state);
+    if (element.localName === 'm') return parseMatrix(element, state);
     if (element.localName === 'd') return parseDelimiter(element, state);
     return null;
   } finally {
@@ -761,6 +771,181 @@ function parseNary(
   };
 }
 
+function parseMatrix(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['mPr', 'mr']))) return null;
+  const properties = uniqueMathChild(element, 'mPr', false);
+  const rowElements = mathDirectChildren(element, 'mr');
+  if (
+    properties === null ||
+    !rowElements.length ||
+    rowElements.length > MAX_MATRIX_ROWS ||
+    (properties && directChildren(element)[0] !== properties)
+  ) {
+    return null;
+  }
+  const rows: WorkDocumentEquationExpression[][][] = [];
+  let columnCount = 0;
+  for (const rowElement of rowElements) {
+    if (!structuralChildren(rowElement, new Set(['e']))) return null;
+    const cellElements = mathDirectChildren(rowElement, 'e');
+    if (
+      !cellElements.length ||
+      cellElements.length > MAX_MATRIX_COLUMNS ||
+      (columnCount > 0 && cellElements.length !== columnCount)
+    ) {
+      return null;
+    }
+    columnCount ||= cellElements.length;
+    if (rowElements.length * columnCount > MAX_MATRIX_CELLS) return null;
+    const parsedRow = cellElements.map((cell) =>
+      parseExpressionContainer(cell, state, true),
+    );
+    if (
+      !parsedRow.every(
+        (cell): cell is WorkDocumentEquationExpression[] => cell !== null,
+      )
+    ) {
+      return null;
+    }
+    rows.push(parsedRow);
+  }
+  const parsedProperties = parseMatrixProperties(properties, columnCount);
+  return parsedProperties
+    ? {
+        type: 'matrix',
+        ...parsedProperties,
+        rows,
+      }
+    : null;
+}
+
+function parseMatrixProperties(
+  properties: Element | undefined,
+  columnCount: number,
+): {
+  baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
+  placeholdersHidden: boolean;
+  columnAlignments: WorkDocumentEquationMatrixAlignment[];
+} | null {
+  if (!properties) {
+    return {
+      baseAlignment: 'center',
+      placeholdersHidden: false,
+      columnAlignments: Array.from({ length: columnCount }, () => 'center'),
+    };
+  }
+  if (
+    !structuralChildren(
+      properties,
+      new Set(['baseJc', 'plcHide', 'mcs', 'ctrlPr']),
+    )
+  ) {
+    return null;
+  }
+  const order = new Map([
+    ['baseJc', 0],
+    ['plcHide', 1],
+    ['mcs', 2],
+    ['ctrlPr', 3],
+  ]);
+  let previous = -1;
+  for (const child of directChildren(properties)) {
+    const position = order.get(child.localName);
+    if (position === undefined || position < previous) return null;
+    previous = position;
+  }
+  const baseElement = uniqueMathChild(properties, 'baseJc', false);
+  const placeholderElement = uniqueMathChild(properties, 'plcHide', false);
+  const columnsElement = uniqueMathChild(properties, 'mcs', false);
+  const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  if (
+    baseElement === null ||
+    placeholderElement === null ||
+    columnsElement === null ||
+    controlProperties === null ||
+    (controlProperties && !emptyMathProperty(controlProperties))
+  ) {
+    return null;
+  }
+  const baseValue = baseElement
+    ? mathValueOrDefault(baseElement, 'center')
+    : 'center';
+  const baseAlignment =
+    baseValue === 'top'
+      ? 'top'
+      : baseValue === 'center'
+        ? 'center'
+        : baseValue === 'bot'
+          ? 'bottom'
+          : null;
+  const placeholdersHidden = placeholderElement
+    ? mathOnOff(placeholderElement)
+    : false;
+  const columnAlignments = columnsElement
+    ? parseMatrixColumns(columnsElement, columnCount)
+    : Array.from(
+        { length: columnCount },
+        (): WorkDocumentEquationMatrixAlignment => 'center',
+      );
+  return baseAlignment && placeholdersHidden !== null && columnAlignments
+    ? { baseAlignment, placeholdersHidden, columnAlignments }
+    : null;
+}
+
+function parseMatrixColumns(
+  columns: Element,
+  columnCount: number,
+): WorkDocumentEquationMatrixAlignment[] | null {
+  if (!structuralChildren(columns, new Set(['mc']))) return null;
+  const columnGroups = mathDirectChildren(columns, 'mc');
+  if (!columnGroups.length || columnGroups.length > MAX_MATRIX_COLUMNS) {
+    return null;
+  }
+  const alignments: WorkDocumentEquationMatrixAlignment[] = [];
+  for (const columnGroup of columnGroups) {
+    if (!structuralChildren(columnGroup, new Set(['mcPr']))) return null;
+    const properties = uniqueMathChild(columnGroup, 'mcPr');
+    if (
+      !properties ||
+      !structuralChildren(properties, new Set(['count', 'mcJc']))
+    ) {
+      return null;
+    }
+    const propertyChildren = directChildren(properties);
+    if (
+      propertyChildren.length === 2 &&
+      (propertyChildren[0]?.localName !== 'count' ||
+        propertyChildren[1]?.localName !== 'mcJc')
+    ) {
+      return null;
+    }
+    const countElement = uniqueMathChild(properties, 'count', false);
+    const alignmentElement = uniqueMathChild(properties, 'mcJc', false);
+    if (countElement === null || alignmentElement === null) return null;
+    const countValue = countElement
+      ? mathValueOrDefault(countElement, '1')
+      : '1';
+    const count = positiveMathInteger(countValue, MAX_MATRIX_COLUMNS);
+    const alignmentValue = alignmentElement
+      ? mathValueOrDefault(alignmentElement, 'center')
+      : 'center';
+    const alignment =
+      alignmentValue === 'left' ||
+      alignmentValue === 'center' ||
+      alignmentValue === 'right'
+        ? alignmentValue
+        : null;
+    if (!count || !alignment || alignments.length + count > columnCount) {
+      return null;
+    }
+    alignments.push(...Array.from({ length: count }, () => alignment));
+  }
+  return alignments.length === columnCount ? alignments : null;
+}
+
 function parseDelimiter(
   element: Element,
   state: EquationParseState,
@@ -927,6 +1112,23 @@ function mathValue(element: Element): string | null {
     return null;
   }
   return attributes[0]?.value ?? null;
+}
+
+function mathValueOrDefault(element: Element, fallback: string): string | null {
+  if (
+    !DOCX_MATH_NAMESPACES.has(element.namespaceURI ?? '') ||
+    directChildren(element).length ||
+    hasMeaningfulDirectText(element)
+  ) {
+    return null;
+  }
+  return meaningfulAttributes(element).length ? mathValue(element) : fallback;
+}
+
+function positiveMathInteger(value: string | null, maximum: number): number {
+  if (!value || !/^[1-9]\d*$/u.test(value)) return 0;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed <= maximum ? parsed : 0;
 }
 
 function mathOnOff(element: Element): boolean | null {
