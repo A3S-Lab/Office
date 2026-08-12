@@ -474,6 +474,54 @@ export interface WorkDocumentEquationWordScene3D {
   lightRig: WorkDocumentEquationWordScene3DLightRig;
 }
 
+export type WorkDocumentEquationWordBevelPreset =
+  | 'relaxedInset'
+  | 'circle'
+  | 'slope'
+  | 'cross'
+  | 'angle'
+  | 'softRound'
+  | 'convex'
+  | 'coolSlant'
+  | 'divot'
+  | 'riblet'
+  | 'hardEdge'
+  | 'artDeco';
+
+export type WorkDocumentEquationWordPresetMaterial =
+  | 'legacyMatte'
+  | 'legacyPlastic'
+  | 'legacyMetal'
+  | 'legacyWireframe'
+  | 'matte'
+  | 'plastic'
+  | 'metal'
+  | 'warmMatte'
+  | 'translucentPowder'
+  | 'powder'
+  | 'darkEdge'
+  | 'softEdge'
+  | 'clear'
+  | 'flat'
+  | 'softMetal'
+  | 'none';
+
+export interface WorkDocumentEquationWordBevel {
+  widthEmus?: number;
+  heightEmus?: number;
+  preset?: WorkDocumentEquationWordBevelPreset;
+}
+
+export interface WorkDocumentEquationWordProperties3D {
+  extrusionHeightEmus?: number;
+  contourWidthEmus?: number;
+  materialPreset?: WorkDocumentEquationWordPresetMaterial;
+  topBevel?: WorkDocumentEquationWordBevel;
+  bottomBevel?: WorkDocumentEquationWordBevel;
+  extrusionColor?: WorkDocumentEquationWordEffectColor;
+  contourColor?: WorkDocumentEquationWordEffectColor;
+}
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -595,6 +643,7 @@ export interface WorkDocumentEquationWordRunProperties {
   textOutlineEffect?: WorkDocumentEquationWordTextOutlineEffect;
   textFillEffect?: WorkDocumentEquationWordTextFillEffect;
   scene3D?: WorkDocumentEquationWordScene3D;
+  properties3D?: WorkDocumentEquationWordProperties3D;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1255,6 +1304,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'textOutlineEffect',
   'textFillEffect',
   'scene3D',
+  'properties3D',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1335,6 +1385,54 @@ const WORD_SCENE_3D_ROTATION_KEYS = new Set([
   'longitudeDegrees',
   'revolutionDegrees',
 ]);
+const WORD_PROPERTIES_3D_KEYS = new Set([
+  'extrusionHeightEmus',
+  'contourWidthEmus',
+  'materialPreset',
+  'topBevel',
+  'bottomBevel',
+  'extrusionColor',
+  'contourColor',
+]);
+const WORD_PROPERTIES_3D_BEVEL_KEYS = new Set([
+  'widthEmus',
+  'heightEmus',
+  'preset',
+]);
+const WORD_PROPERTIES_3D_BEVEL_PRESETS =
+  new Set<WorkDocumentEquationWordBevelPreset>([
+    'relaxedInset',
+    'circle',
+    'slope',
+    'cross',
+    'angle',
+    'softRound',
+    'convex',
+    'coolSlant',
+    'divot',
+    'riblet',
+    'hardEdge',
+    'artDeco',
+  ]);
+const WORD_PROPERTIES_3D_MATERIAL_PRESETS =
+  new Set<WorkDocumentEquationWordPresetMaterial>([
+    'legacyMatte',
+    'legacyPlastic',
+    'legacyMetal',
+    'legacyWireframe',
+    'matte',
+    'plastic',
+    'metal',
+    'warmMatte',
+    'translucentPowder',
+    'powder',
+    'darkEdge',
+    'softEdge',
+    'clear',
+    'flat',
+    'softMetal',
+    'none',
+  ]);
 const WORD_SCENE_3D_CAMERA_PRESETS =
   new Set<WorkDocumentEquationWordPresetCamera>([
     'legacyObliqueTopLeft',
@@ -3552,6 +3650,10 @@ function normalizeEquationWordRunProperties(
     source.scene3D === undefined
       ? undefined
       : normalizeEquationWordScene3D(source.scene3D);
+  const properties3D =
+    source.properties3D === undefined
+      ? undefined
+      : normalizeEquationWordProperties3D(source.properties3D);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3609,6 +3711,7 @@ function normalizeEquationWordRunProperties(
     textOutlineEffect === null ||
     textFillEffect === null ||
     scene3D === null ||
+    properties3D === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3753,6 +3856,7 @@ function normalizeEquationWordRunProperties(
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
     ...(textFillEffect ? { textFillEffect } : {}),
     ...(scene3D ? { scene3D } : {}),
+    ...(properties3D ? { properties3D } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -4464,6 +4568,124 @@ function normalizeEquationWordScene3DRotation(
     revolutionDegrees !== null
     ? { latitudeDegrees, longitudeDegrees, revolutionDegrees }
     : null;
+}
+
+function normalizeEquationWordProperties3D(
+  source: unknown,
+): WorkDocumentEquationWordProperties3D | null {
+  if (!isRecordWithKeys(source, WORD_PROPERTIES_3D_KEYS)) return null;
+  const extrusionHeightEmus =
+    source.extrusionHeightEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.extrusionHeightEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const contourWidthEmus =
+    source.contourWidthEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.contourWidthEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const materialPreset =
+    source.materialPreset === undefined
+      ? undefined
+      : WORD_PROPERTIES_3D_MATERIAL_PRESETS.has(
+            source.materialPreset as WorkDocumentEquationWordPresetMaterial,
+          )
+        ? (source.materialPreset as WorkDocumentEquationWordPresetMaterial)
+        : null;
+  const topBevel =
+    source.topBevel === undefined
+      ? undefined
+      : normalizeEquationWordBevel(source.topBevel);
+  const bottomBevel =
+    source.bottomBevel === undefined
+      ? undefined
+      : normalizeEquationWordBevel(source.bottomBevel);
+  const extrusionColor =
+    source.extrusionColor === undefined
+      ? undefined
+      : normalizeEquationWordEffectColor(source.extrusionColor);
+  const contourColor =
+    source.contourColor === undefined
+      ? undefined
+      : normalizeEquationWordEffectColor(source.contourColor);
+  if (
+    extrusionHeightEmus === null ||
+    contourWidthEmus === null ||
+    materialPreset === null ||
+    topBevel === null ||
+    bottomBevel === null ||
+    extrusionColor === null ||
+    contourColor === null
+  ) {
+    return null;
+  }
+  return {
+    ...(extrusionHeightEmus !== undefined
+      ? {
+          extrusionHeightEmus: Object.is(extrusionHeightEmus, -0)
+            ? 0
+            : extrusionHeightEmus,
+        }
+      : {}),
+    ...(contourWidthEmus !== undefined
+      ? {
+          contourWidthEmus: Object.is(contourWidthEmus, -0)
+            ? 0
+            : contourWidthEmus,
+        }
+      : {}),
+    ...(materialPreset !== undefined ? { materialPreset } : {}),
+    ...(topBevel !== undefined ? { topBevel } : {}),
+    ...(bottomBevel !== undefined ? { bottomBevel } : {}),
+    ...(extrusionColor !== undefined ? { extrusionColor } : {}),
+    ...(contourColor !== undefined ? { contourColor } : {}),
+  };
+}
+
+function normalizeEquationWordBevel(
+  source: unknown,
+): WorkDocumentEquationWordBevel | null {
+  if (!isRecordWithKeys(source, WORD_PROPERTIES_3D_BEVEL_KEYS)) return null;
+  const widthEmus =
+    source.widthEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.widthEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const heightEmus =
+    source.heightEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.heightEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const preset =
+    source.preset === undefined
+      ? undefined
+      : WORD_PROPERTIES_3D_BEVEL_PRESETS.has(
+            source.preset as WorkDocumentEquationWordBevelPreset,
+          )
+        ? (source.preset as WorkDocumentEquationWordBevelPreset)
+        : null;
+  if (widthEmus === null || heightEmus === null || preset === null) return null;
+  return {
+    ...(widthEmus !== undefined
+      ? { widthEmus: Object.is(widthEmus, -0) ? 0 : widthEmus }
+      : {}),
+    ...(heightEmus !== undefined
+      ? { heightEmus: Object.is(heightEmus, -0) ? 0 : heightEmus }
+      : {}),
+    ...(preset !== undefined ? { preset } : {}),
+  };
 }
 
 function normalizeEquationWordEffectFill(

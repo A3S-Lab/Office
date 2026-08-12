@@ -44,7 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_PROPS_3D = `<w14:props3d xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_LIGATURES = `<w14:ligatures xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2079,6 +2079,7 @@ describe('document equations', () => {
       '<w14:textOutline w14:w="12700" w14:cap="sq" w14:cmpd="dbl" w14:algn="in"><w14:solidFill><w14:schemeClr w14:val="accent6"><w14:alpha w14:val="80000"/></w14:schemeClr></w14:solidFill><w14:prstDash w14:val="dashDot"/><w14:miter w14:lim="400000"/></w14:textOutline>',
       '<w14:textFill><w14:solidFill><w14:srgbClr w14:val="2468AC"><w14:shade w14:val="25000"/></w14:srgbClr></w14:solidFill></w14:textFill>',
       '<w14:scene3d><w14:camera w14:prst="perspectiveHeroicRightFacing"/><w14:lightRig w14:rig="twoPt" w14:dir="bl"><w14:rot w14:lat="0" w14:lon="10800000" w14:rev="21599999"/></w14:lightRig></w14:scene3d>',
+      '<w14:props3d w14:extrusionH="50800" w14:contourW="12700" w14:prstMaterial="softmetal"><w14:bevelT w14:w="25400" w14:h="12700" w14:prst="convex"/><w14:bevelB w14:w="6350" w14:h="3175" w14:prst="hardEdge"/><w14:extrusionClr><w14:schemeClr w14:val="accent1"><w14:alpha w14:val="60000"/></w14:schemeClr></w14:extrusionClr><w14:contourClr><w14:srgbClr w14:val="ABCDEF"><w14:shade w14:val="30000"/></w14:srgbClr></w14:contourClr></w14:props3d>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2187,7 +2188,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2221,7 +2222,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4437,7 +4438,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4868,7 +4869,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5295,7 +5296,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5662,7 +5663,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6394,7 +6395,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6848,7 +6849,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7375,7 +7376,7 @@ describe('document equations', () => {
       wordRun('<w:scene3d/>'),
       wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
       wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
-      wordRun(WORD_2010_PROPS_3D),
+      wordRun(WORD_2010_LIGATURES),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7436,6 +7437,396 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunScene3D(await createArtifactBlob(imported));
+  });
+
+  test('preserves the complete bounded Office 2010 3D text-property grammar as native-only metadata', async () => {
+    const bevelPresets = [
+      'relaxedInset',
+      'circle',
+      'slope',
+      'cross',
+      'angle',
+      'softRound',
+      'convex',
+      'coolSlant',
+      'divot',
+      'riblet',
+      'hardEdge',
+      'artDeco',
+    ] as const;
+    const materialPresets = [
+      ['legacyMatte', 'legacyMatte'],
+      ['legacyPlastic', 'legacyPlastic'],
+      ['legacyMetal', 'legacyMetal'],
+      ['legacyWireframe', 'legacyWireframe'],
+      ['matte', 'matte'],
+      ['plastic', 'plastic'],
+      ['metal', 'metal'],
+      ['warmMatte', 'warmMatte'],
+      ['translucentPowder', 'translucentPowder'],
+      ['powder', 'powder'],
+      ['dkEdge', 'darkEdge'],
+      ['softEdge', 'softEdge'],
+      ['clear', 'clear'],
+      ['flat', 'flat'],
+      ['softmetal', 'softMetal'],
+      ['none', 'none'],
+    ] as const;
+    const fullProperties = {
+      extrusionHeightEmus: 2_147_483_647,
+      contourWidthEmus: 0,
+      materialPreset: 'darkEdge',
+      topBevel: {
+        widthEmus: 0,
+        heightEmus: 2_147_483_647,
+        preset: 'artDeco',
+      },
+      bottomBevel: {
+        widthEmus: 12_700,
+        heightEmus: 25_400,
+        preset: 'softRound',
+      },
+      extrusionColor: {
+        type: 'rgb',
+        value: '#a1b2c3',
+        transforms: [
+          { type: 'tint', value: 0 },
+          { type: 'alpha', value: 50_000 },
+        ],
+      },
+      contourColor: {
+        type: 'scheme',
+        value: 'accent3',
+        transforms: [{ type: 'luminanceModulation', value: 75_000 }],
+      },
+    };
+    const emptyBevels = { topBevel: {}, bottomBevel: {} };
+    const scene3D = {
+      cameraPreset: 'orthographicFront',
+      lightRig: { preset: 'balanced', direction: 'top' },
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'full-properties-3d',
+          wordRunProperties: {
+            color: { value: '#2468ac' },
+            properties3D: fullProperties,
+          },
+        },
+        {
+          type: 'run',
+          text: 'default-properties-3d',
+          wordRunProperties: { properties3D: {} },
+        },
+        {
+          type: 'run',
+          text: 'empty-bevels-properties-3d',
+          wordRunProperties: { properties3D: emptyBevels },
+        },
+        {
+          type: 'run',
+          text: 'ordered-properties-3d',
+          wordRunProperties: {
+            paragraphMarkAlwaysHidden: false,
+            textFillEffect: {},
+            scene3D,
+            properties3D: {},
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { properties3D: fullProperties },
+          children: [{ type: 'run', text: 'control-properties-3d' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithProperties = (properties3D: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { properties3D } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { properties3D: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    expect(normalizeDocumentEquation(equationWithProperties({}))).toEqual(
+      equationWithProperties({}),
+    );
+    expect(
+      normalizeDocumentEquation(equationWithProperties(emptyBevels)),
+    ).toEqual(equationWithProperties(emptyBevels));
+    for (const preset of bevelPresets) {
+      const properties3D = { topBevel: { preset } };
+      expect(
+        normalizeDocumentEquation(equationWithProperties(properties3D)),
+      ).toEqual(equationWithProperties(properties3D));
+    }
+    for (const [, materialPreset] of materialPresets) {
+      const properties3D = { materialPreset };
+      expect(
+        normalizeDocumentEquation(equationWithProperties(properties3D)),
+      ).toEqual(equationWithProperties(properties3D));
+    }
+
+    const validColor = { type: 'rgb', value: '#abcdef' };
+    const invalidProperties = [
+      null,
+      false,
+      [],
+      { extra: true },
+      { extrusionHeightEmus: -1 },
+      { extrusionHeightEmus: 2_147_483_648 },
+      { extrusionHeightEmus: 0.5 },
+      { contourWidthEmus: -1 },
+      { contourWidthEmus: 2_147_483_648 },
+      { contourWidthEmus: Number.NaN },
+      { materialPreset: 'dkEdge' },
+      { materialPreset: 'softmetal' },
+      { materialPreset: 'unknown' },
+      { topBevel: null },
+      { topBevel: { extra: true } },
+      { topBevel: { widthEmus: -1 } },
+      { topBevel: { widthEmus: 2_147_483_648 } },
+      { topBevel: { heightEmus: 0.5 } },
+      { topBevel: { preset: 'unknown' } },
+      { bottomBevel: false },
+      { bottomBevel: { heightEmus: -1 } },
+      { extrusionColor: null },
+      { extrusionColor: {} },
+      { extrusionColor: { ...validColor, extra: true } },
+      { contourColor: { type: 'rgb', value: '#xyzxyz' } },
+      { contourColor: { type: 'scheme', value: 'unknown' } },
+    ];
+    expect(
+      invalidProperties.map((properties) =>
+        normalizeDocumentEquation(equationWithProperties(properties)),
+      ),
+    ).toEqual(invalidProperties.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const propertiesMarkup = (attributes = '', children = '') =>
+      `<w14:props3d${attributes ? ` ${attributes}` : ''}>${children}</w14:props3d>`;
+    const fullMarkup = propertiesMarkup(
+      'w14:extrusionH="2147483647" w14:contourW="0" w14:prstMaterial="dkEdge"',
+      '<w14:bevelT w14:w="0" w14:h="2147483647" w14:prst="artDeco"/>' +
+        '<w14:bevelB w14:w="12700" w14:h="25400" w14:prst="softRound"/>' +
+        '<w14:extrusionClr><w14:srgbClr w14:val="a1B2c3"><w14:tint w14:val="0"/><w14:alpha w14:val="50000"/></w14:srgbClr></w14:extrusionClr>' +
+        '<w14:contourClr><w14:schemeClr w14:val="accent3"><w14:lumMod w14:val="75000"/></w14:schemeClr></w14:contourClr>',
+    );
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(fullMarkup, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { properties3D: fullProperties },
+      });
+    }
+    expect(
+      inspectEquationModel(wordRun(propertiesMarkup()))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { properties3D: {} },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun(propertiesMarkup('', '<w14:bevelT/><w14:bevelB/>')),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { properties3D: emptyBevels },
+    });
+    for (const preset of bevelPresets) {
+      expect(
+        inspectEquationModel(
+          wordRun(propertiesMarkup('', `<w14:bevelT w14:prst="${preset}"/>`)),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { properties3D: { topBevel: { preset } } },
+      });
+    }
+    for (const [source, materialPreset] of materialPresets) {
+      expect(
+        inspectEquationModel(
+          wordRun(propertiesMarkup(`w14:prstMaterial="${source}"`)),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { properties3D: { materialPreset } },
+      });
+    }
+
+    const sceneMarkup =
+      '<w14:scene3d><w14:camera w14:prst="orthographicFront"/>' +
+      '<w14:lightRig w14:rig="balanced" w14:dir="t"/></w14:scene3d>';
+    const rgb = '<w14:srgbClr w14:val="A1B2C3"/>';
+    const invalidMarkup = [
+      wordRun(`${propertiesMarkup()}${propertiesMarkup()}`),
+      wordRun(`${propertiesMarkup()}<w14:textFill/>`),
+      wordRun(`${propertiesMarkup()}${sceneMarkup}`),
+      wordRun(`<w14:props3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
+      wordRun('<w:props3d/>'),
+      wordRun(`<v:props3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
+      wordRun(propertiesMarkup('extra="1"')),
+      wordRun(propertiesMarkup('w14:extra="1"')),
+      wordRun(
+        `<w14:props3d xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun(propertiesMarkup('', 'meaningful')),
+      wordRun(propertiesMarkup('w14:extrusionH="-1"')),
+      wordRun(propertiesMarkup('w14:extrusionH="2147483648"')),
+      wordRun(propertiesMarkup('w14:extrusionH="0.5"')),
+      wordRun(propertiesMarkup('w14:contourW="-1"')),
+      wordRun(propertiesMarkup('extrusionH="0"')),
+      wordRun(propertiesMarkup('w14:prstMaterial="unknown"')),
+      wordRun(propertiesMarkup('prstMaterial="warmMatte"')),
+      wordRun(propertiesMarkup('', '<w14:bevelB/><w14:bevelT/>')),
+      wordRun(propertiesMarkup('', '<w14:extrusionClr/><w14:bevelT/>')),
+      wordRun(propertiesMarkup('', '<w14:contourClr/><w14:extrusionClr/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT/><w14:bevelT/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelB/><w14:bevelB/>')),
+      wordRun(
+        propertiesMarkup(
+          '',
+          `<w14:extrusionClr>${rgb}</w14:extrusionClr><w14:extrusionClr>${rgb}</w14:extrusionClr>`,
+        ),
+      ),
+      wordRun(
+        propertiesMarkup(
+          '',
+          `<w14:contourClr>${rgb}</w14:contourClr><w14:contourClr>${rgb}</w14:contourClr>`,
+        ),
+      ),
+      wordRun(propertiesMarkup('', '<w14:bevelT w14:w="-1"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT w14:h="2147483648"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT w14:w="0.5"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT w14:prst="unknown"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT prst="circle"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT w14:extra="1"/>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT>text</w14:bevelT>')),
+      wordRun(propertiesMarkup('', '<w14:bevelT><w14:bevel/></w14:bevelT>')),
+      wordRun(propertiesMarkup('', '<w14:extrusionClr/>')),
+      wordRun(propertiesMarkup('', '<w14:extrusionClr w14:extra="1"/>')),
+      wordRun(
+        propertiesMarkup('', '<w14:extrusionClr>text</w14:extrusionClr>'),
+      ),
+      wordRun(
+        propertiesMarkup(
+          '',
+          `<w14:extrusionClr>${rgb}${rgb}</w14:extrusionClr>`,
+        ),
+      ),
+      wordRun(
+        propertiesMarkup(
+          '',
+          '<w14:extrusionClr><w14:schemeClr w14:val="unknown"/></w14:extrusionClr>',
+        ),
+      ),
+      wordRun(
+        propertiesMarkup(
+          '',
+          `<w14:extrusionClr><v:srgbClr xmlns:v="${VENDOR_NAMESPACE}" v:val="A1B2C3"/></w14:extrusionClr>`,
+        ),
+      ),
+      wordRun(propertiesMarkup('', '<w14:contourClr/>')),
+      wordRun(
+        propertiesMarkup(
+          '',
+          '<w14:contourClr><w14:srgbClr w14:val="XYZXYZ"/></w14:contourClr>',
+        ),
+      ),
+      wordRun(WORD_2010_LIGATURES),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'full-properties-3d',
+      'default-properties-3d',
+      'empty-bevels-properties-3d',
+      'ordered-properties-3d',
+      'control-properties-3d',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    const fullPreview = Array.from(preview.querySelectorAll('mtext, mo')).find(
+      (candidate) => candidate.textContent === 'full-properties-3d',
+    );
+    expect(fullPreview?.getAttribute('mathcolor')).toBe('#2468ac');
+    expect(
+      preview.querySelector(
+        '[style*="perspective"], [style*="transform"], [style*="filter"], [style*="text-shadow"], [style*="text-stroke"]',
+      ),
+    ).toBeNull();
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunProperties3D(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-properties-3d.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunProperties3D(await createArtifactBlob(imported));
   });
 
   test('preserves bounded Word control properties across OMML object containers', async () => {
@@ -7526,7 +7917,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_PROPS_3D}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -7803,7 +8194,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_PROPS_3D}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_LIGATURES}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -9090,6 +9481,31 @@ function richWordRunProperties() {
           longitudeDegrees: 180,
           revolutionDegrees: 21_599_999 / 60_000,
         },
+      },
+    },
+    properties3D: {
+      extrusionHeightEmus: 50_800,
+      contourWidthEmus: 12_700,
+      materialPreset: 'softMetal' as const,
+      topBevel: {
+        widthEmus: 25_400,
+        heightEmus: 12_700,
+        preset: 'convex' as const,
+      },
+      bottomBevel: {
+        widthEmus: 6_350,
+        heightEmus: 3_175,
+        preset: 'hardEdge' as const,
+      },
+      extrusionColor: {
+        type: 'scheme' as const,
+        value: 'accent1' as const,
+        transforms: [{ type: 'alpha' as const, value: 60_000 }],
+      },
+      contourColor: {
+        type: 'rgb' as const,
+        value: '#abcdef',
+        transforms: [{ type: 'shade' as const, value: 30_000 }],
       },
     },
   };
@@ -11877,6 +12293,158 @@ async function expectNativeWordRunScene3D(blob: Blob): Promise<void> {
   );
 }
 
+async function expectNativeWordRunProperties3D(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const properties3DFor = (properties: Element, label: string): Element => {
+    const result = directChildren(properties, 'props3d')[0];
+    expect(result, label).toBeDefined();
+    expect(result.namespaceURI, label).toBe(WORD_2010_NAMESPACE);
+    return result;
+  };
+  const expectFullProperties = (properties3D: Element): void => {
+    expect(word2010Attributes(properties3D)).toEqual({
+      extrusionH: '2147483647',
+      contourW: '0',
+      prstMaterial: 'dkEdge',
+    });
+    const children = directChildren(properties3D);
+    expect(children.map((child) => child.localName)).toEqual([
+      'bevelT',
+      'bevelB',
+      'extrusionClr',
+      'contourClr',
+    ]);
+    expect(
+      children.every((child) => child.namespaceURI === WORD_2010_NAMESPACE),
+    ).toBe(true);
+    const [topBevel, bottomBevel, extrusionColor, contourColor] = children;
+    expect(word2010Attributes(topBevel)).toEqual({
+      w: '0',
+      h: '2147483647',
+      prst: 'artDeco',
+    });
+    expect(directChildren(topBevel)).toHaveLength(0);
+    expect(word2010Attributes(bottomBevel)).toEqual({
+      w: '12700',
+      h: '25400',
+      prst: 'softRound',
+    });
+    expect(directChildren(bottomBevel)).toHaveLength(0);
+    expect(word2010Attributes(extrusionColor)).toEqual({});
+    const extrusionRgb = directChildren(extrusionColor);
+    expect(extrusionRgb.map((child) => child.localName)).toEqual(['srgbClr']);
+    expect(extrusionRgb[0].namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(extrusionRgb[0])).toEqual({ val: 'A1B2C3' });
+    const transforms = directChildren(extrusionRgb[0]);
+    expect(transforms.map((child) => child.localName)).toEqual([
+      'tint',
+      'alpha',
+    ]);
+    expect(transforms.map(word2010Attributes)).toEqual([
+      { val: '0' },
+      { val: '50000' },
+    ]);
+    expect(word2010Attributes(contourColor)).toEqual({});
+    const contourScheme = directChildren(contourColor);
+    expect(contourScheme.map((child) => child.localName)).toEqual([
+      'schemeClr',
+    ]);
+    expect(contourScheme[0].namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(contourScheme[0])).toEqual({ val: 'accent3' });
+    const luminance = directChildren(contourScheme[0]);
+    expect(luminance.map((child) => child.localName)).toEqual(['lumMod']);
+    expect(word2010Attributes(luminance[0])).toEqual({ val: '75000' });
+  };
+
+  const fullWordProperties = wordPropertiesFor('full-properties-3d');
+  expect(
+    directChildren(fullWordProperties).map((child) => child.localName),
+  ).toEqual(['color', 'props3d']);
+  expectFullProperties(
+    properties3DFor(fullWordProperties, 'full-properties-3d'),
+  );
+
+  const defaults = properties3DFor(
+    wordPropertiesFor('default-properties-3d'),
+    'default-properties-3d',
+  );
+  expect(word2010Attributes(defaults)).toEqual({});
+  expect(directChildren(defaults)).toHaveLength(0);
+
+  const emptyBevels = properties3DFor(
+    wordPropertiesFor('empty-bevels-properties-3d'),
+    'empty-bevels-properties-3d',
+  );
+  expect(word2010Attributes(emptyBevels)).toEqual({});
+  const bevels = directChildren(emptyBevels);
+  expect(bevels.map((child) => child.localName)).toEqual(['bevelT', 'bevelB']);
+  expect(bevels.map(word2010Attributes)).toEqual([{}, {}]);
+  expect(bevels.every((bevel) => directChildren(bevel).length === 0)).toBe(
+    true,
+  );
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-properties-3d'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'specVanish',
+    'textFill',
+    'scene3d',
+    'props3d',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+  expect(word2010Attributes(orderedProperties.at(-1) as Element)).toEqual({});
+  expect(directChildren(orderedProperties.at(-1) as Element)).toHaveLength(0);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-properties-3d'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  expectFullProperties(
+    properties3DFor(wordProperties as Element, 'control-properties-3d'),
+  );
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -11943,6 +12511,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'textOutline',
     'textFill',
     'scene3d',
+    'props3d',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -12029,6 +12598,7 @@ async function expectNativeArgumentControlProperties(
     'textOutline',
     'textFill',
     'scene3d',
+    'props3d',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -12602,6 +13172,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'textOutline',
     'textFill',
     'scene3d',
+    'props3d',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -12704,6 +13275,11 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     { w: '12700', cap: 'sq', cmpd: 'dbl', algn: 'in' },
     {},
     {},
+    {
+      extrusionH: '50800',
+      contourW: '12700',
+      prstMaterial: 'softmetal',
+    },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -12811,6 +13387,52 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       rev: '21599999',
     });
     expect(directChildren(rotation)).toHaveLength(0);
+    const properties3D = directChildren(properties, 'props3d')[0];
+    expect(properties3D.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(properties3D)).toEqual({
+      extrusionH: '50800',
+      contourW: '12700',
+      prstMaterial: 'softmetal',
+    });
+    const [topBevel, bottomBevel, extrusionColor, contourColor] =
+      directChildren(properties3D);
+    expect(
+      [topBevel, bottomBevel, extrusionColor, contourColor].map((child) => [
+        child.namespaceURI,
+        child.localName,
+      ]),
+    ).toEqual([
+      [WORD_2010_NAMESPACE, 'bevelT'],
+      [WORD_2010_NAMESPACE, 'bevelB'],
+      [WORD_2010_NAMESPACE, 'extrusionClr'],
+      [WORD_2010_NAMESPACE, 'contourClr'],
+    ]);
+    expect(word2010Attributes(topBevel)).toEqual({
+      w: '25400',
+      h: '12700',
+      prst: 'convex',
+    });
+    expect(word2010Attributes(bottomBevel)).toEqual({
+      w: '6350',
+      h: '3175',
+      prst: 'hardEdge',
+    });
+    const extrusionScheme = directChildren(extrusionColor)[0];
+    expect(extrusionScheme.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(extrusionScheme.localName).toBe('schemeClr');
+    expect(word2010Attributes(extrusionScheme)).toEqual({ val: 'accent1' });
+    const extrusionAlpha = directChildren(extrusionScheme)[0];
+    expect(extrusionAlpha.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(extrusionAlpha.localName).toBe('alpha');
+    expect(word2010Attributes(extrusionAlpha)).toEqual({ val: '60000' });
+    const contourRgb = directChildren(contourColor)[0];
+    expect(contourRgb.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(contourRgb.localName).toBe('srgbClr');
+    expect(word2010Attributes(contourRgb)).toEqual({ val: 'ABCDEF' });
+    const contourShade = directChildren(contourRgb)[0];
+    expect(contourShade.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(contourShade.localName).toBe('shade');
+    expect(word2010Attributes(contourShade)).toEqual({ val: '30000' });
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

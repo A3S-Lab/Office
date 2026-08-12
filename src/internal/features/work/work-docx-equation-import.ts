@@ -22,6 +22,8 @@ import {
   type WorkDocumentEquationThemeColor,
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
+  type WorkDocumentEquationWordBevel,
+  type WorkDocumentEquationWordBevelPreset,
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordColorTransform,
   type WorkDocumentEquationWordColorTransformType,
@@ -46,6 +48,8 @@ import {
   type WorkDocumentEquationWordLineJoin,
   type WorkDocumentEquationWordPresetCamera,
   type WorkDocumentEquationWordPresetLineDash,
+  type WorkDocumentEquationWordPresetMaterial,
+  type WorkDocumentEquationWordProperties3D,
   type WorkDocumentEquationWordRectangleAlignment,
   type WorkDocumentEquationWordReflectionEffect,
   type WorkDocumentEquationWordRunBorder,
@@ -199,6 +203,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:textOutline',
   'w14:textFill',
   'w14:scene3d',
+  'w14:props3d',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -440,6 +445,42 @@ const WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS = new Map<
   ['bl', 'bottomLeft'],
   ['b', 'bottom'],
   ['br', 'bottomRight'],
+]);
+const WORD_2010_PROPERTIES_3D_BEVEL_PRESETS =
+  new Set<WorkDocumentEquationWordBevelPreset>([
+    'relaxedInset',
+    'circle',
+    'slope',
+    'cross',
+    'angle',
+    'softRound',
+    'convex',
+    'coolSlant',
+    'divot',
+    'riblet',
+    'hardEdge',
+    'artDeco',
+  ]);
+const WORD_2010_PROPERTIES_3D_MATERIAL_PRESETS = new Map<
+  string,
+  WorkDocumentEquationWordPresetMaterial
+>([
+  ['legacyMatte', 'legacyMatte'],
+  ['legacyPlastic', 'legacyPlastic'],
+  ['legacyMetal', 'legacyMetal'],
+  ['legacyWireframe', 'legacyWireframe'],
+  ['matte', 'matte'],
+  ['plastic', 'plastic'],
+  ['metal', 'metal'],
+  ['warmMatte', 'warmMatte'],
+  ['translucentPowder', 'translucentPowder'],
+  ['powder', 'powder'],
+  ['dkEdge', 'darkEdge'],
+  ['softEdge', 'softEdge'],
+  ['clear', 'clear'],
+  ['flat', 'flat'],
+  ['softmetal', 'softMetal'],
+  ['none', 'none'],
 ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
@@ -1237,6 +1278,7 @@ function parseWordRunProperties(
     word2010Children.get('textFill'),
   );
   const scene3D = parseWordScene3D(word2010Children.get('scene3d'));
+  const properties3D = parseWordProperties3D(word2010Children.get('props3d'));
   if (
     fonts === null ||
     color === null ||
@@ -1261,7 +1303,8 @@ function parseWordRunProperties(
     reflectionEffect === null ||
     textOutlineEffect === null ||
     textFillEffect === null ||
-    scene3D === null
+    scene3D === null ||
+    properties3D === null
   ) {
     return null;
   }
@@ -1362,6 +1405,7 @@ function parseWordRunProperties(
     ...(textOutlineEffect ? { textOutlineEffect } : {}),
     ...(textFillEffect ? { textFillEffect } : {}),
     ...(scene3D ? { scene3D } : {}),
+    ...(properties3D ? { properties3D } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2467,6 +2511,141 @@ function parseWordScene3DRotation(
         longitudeDegrees: longitudeUnits / WORD_ANGLE_UNITS_PER_DEGREE,
         revolutionDegrees: revolutionUnits / WORD_ANGLE_UNITS_PER_DEGREE,
       }
+    : null;
+}
+
+function parseWordProperties3D(
+  element: Element | undefined,
+): WorkDocumentEquationWordProperties3D | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010ElementAttributes(
+    element,
+    new Set(['extrusionH', 'contourW', 'prstMaterial']),
+  );
+  if (!attributes) return null;
+  const extrusionHeightEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'extrusionH',
+    0,
+    MAX_WORD_EFFECT_COORDINATE_EMUS,
+  );
+  const contourWidthEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'contourW',
+    0,
+    MAX_WORD_EFFECT_COORDINATE_EMUS,
+  );
+  const materialSource = attributes.get('prstMaterial');
+  const materialPreset =
+    materialSource === undefined
+      ? undefined
+      : (WORD_2010_PROPERTIES_3D_MATERIAL_PRESETS.get(materialSource.trim()) ??
+        null);
+  if (
+    extrusionHeightEmus === null ||
+    contourWidthEmus === null ||
+    materialPreset === null
+  ) {
+    return null;
+  }
+
+  let topBevel: WorkDocumentEquationWordBevel | undefined;
+  let bottomBevel: WorkDocumentEquationWordBevel | undefined;
+  let extrusionColor: WorkDocumentEquationWordEffectColor | undefined;
+  let contourColor: WorkDocumentEquationWordEffectColor | undefined;
+  let previous = -1;
+  for (const child of directChildren(element)) {
+    if (child.namespaceURI !== WORD_2010_NAMESPACE) return null;
+    const position =
+      child.localName === 'bevelT'
+        ? 0
+        : child.localName === 'bevelB'
+          ? 1
+          : child.localName === 'extrusionClr'
+            ? 2
+            : child.localName === 'contourClr'
+              ? 3
+              : -1;
+    if (position < previous || position < 0) return null;
+    previous = position;
+    if (position === 0) {
+      if (topBevel !== undefined) return null;
+      const parsed = parseWordProperties3DBevel(child);
+      if (parsed === null) return null;
+      topBevel = parsed;
+    } else if (position === 1) {
+      if (bottomBevel !== undefined) return null;
+      const parsed = parseWordProperties3DBevel(child);
+      if (parsed === null) return null;
+      bottomBevel = parsed;
+    } else if (position === 2) {
+      if (extrusionColor !== undefined) return null;
+      const parsed = parseWordProperties3DColor(child);
+      if (parsed === null) return null;
+      extrusionColor = parsed;
+    } else {
+      if (contourColor !== undefined) return null;
+      const parsed = parseWordProperties3DColor(child);
+      if (parsed === null) return null;
+      contourColor = parsed;
+    }
+  }
+  return {
+    ...(extrusionHeightEmus !== undefined ? { extrusionHeightEmus } : {}),
+    ...(contourWidthEmus !== undefined ? { contourWidthEmus } : {}),
+    ...(materialPreset !== undefined ? { materialPreset } : {}),
+    ...(topBevel !== undefined ? { topBevel } : {}),
+    ...(bottomBevel !== undefined ? { bottomBevel } : {}),
+    ...(extrusionColor !== undefined ? { extrusionColor } : {}),
+    ...(contourColor !== undefined ? { contourColor } : {}),
+  };
+}
+
+function parseWordProperties3DBevel(
+  element: Element,
+): WorkDocumentEquationWordBevel | null {
+  const attributes = word2010LeafAttributes(
+    element,
+    new Set(['w', 'h', 'prst']),
+  );
+  if (!attributes) return null;
+  const widthEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'w',
+    0,
+    MAX_WORD_EFFECT_COORDINATE_EMUS,
+  );
+  const heightEmus = word2010OptionalIntegerAttribute(
+    attributes,
+    'h',
+    0,
+    MAX_WORD_EFFECT_COORDINATE_EMUS,
+  );
+  const presetSource = attributes.get('prst');
+  const preset =
+    presetSource === undefined
+      ? undefined
+      : WORD_2010_PROPERTIES_3D_BEVEL_PRESETS.has(
+            presetSource.trim() as WorkDocumentEquationWordBevelPreset,
+          )
+        ? (presetSource.trim() as WorkDocumentEquationWordBevelPreset)
+        : null;
+  return widthEmus === null || heightEmus === null || preset === null
+    ? null
+    : {
+        ...(widthEmus !== undefined ? { widthEmus } : {}),
+        ...(heightEmus !== undefined ? { heightEmus } : {}),
+        ...(preset !== undefined ? { preset } : {}),
+      };
+}
+
+function parseWordProperties3DColor(
+  element: Element,
+): WorkDocumentEquationWordEffectColor | null {
+  if (!word2010ElementAttributes(element, new Set())) return null;
+  const children = directChildren(element);
+  return children.length === 1 && children[0]
+    ? parseWord2010EffectColor(children[0])
     : null;
 }
 

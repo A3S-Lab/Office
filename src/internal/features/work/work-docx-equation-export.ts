@@ -10,6 +10,8 @@ import {
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
   type WorkDocumentEquationSpacingRule,
+  type WorkDocumentEquationWordBevel,
+  type WorkDocumentEquationWordBevelPreset,
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordEffectColor,
@@ -17,6 +19,7 @@ import {
   type WorkDocumentEquationWordLightRigDirection,
   type WorkDocumentEquationWordLightRigPreset,
   type WorkDocumentEquationWordPresetLineDash,
+  type WorkDocumentEquationWordPresetMaterial,
   type WorkDocumentEquationWordRectangleAlignment,
   type WorkDocumentEquationWordRunProperties,
   type WorkDocumentEquationWordTextOutlineAlignment,
@@ -179,6 +182,42 @@ const WORD_2010_SCENE_3D_LIGHT_RIG_DIRECTIONS: Readonly<
   bottomLeft: 'bl',
   bottom: 'b',
   bottomRight: 'br',
+};
+const WORD_2010_PROPERTIES_3D_BEVEL_PRESETS: Readonly<
+  Record<WorkDocumentEquationWordBevelPreset, string>
+> = {
+  relaxedInset: 'relaxedInset',
+  circle: 'circle',
+  slope: 'slope',
+  cross: 'cross',
+  angle: 'angle',
+  softRound: 'softRound',
+  convex: 'convex',
+  coolSlant: 'coolSlant',
+  divot: 'divot',
+  riblet: 'riblet',
+  hardEdge: 'hardEdge',
+  artDeco: 'artDeco',
+};
+const WORD_2010_PROPERTIES_3D_MATERIAL_PRESETS: Readonly<
+  Record<WorkDocumentEquationWordPresetMaterial, string>
+> = {
+  legacyMatte: 'legacyMatte',
+  legacyPlastic: 'legacyPlastic',
+  legacyMetal: 'legacyMetal',
+  legacyWireframe: 'legacyWireframe',
+  matte: 'matte',
+  plastic: 'plastic',
+  metal: 'metal',
+  warmMatte: 'warmMatte',
+  translucentPowder: 'translucentPowder',
+  powder: 'powder',
+  darkEdge: 'dkEdge',
+  softEdge: 'softEdge',
+  clear: 'clear',
+  flat: 'flat',
+  softMetal: 'softmetal',
+  none: 'none',
 };
 const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
@@ -1486,6 +1525,11 @@ function createWordRunProperties(
   if (properties.scene3D) {
     result.append(createWord2010Scene3D(document, properties.scene3D));
   }
+  if (properties.properties3D) {
+    result.append(
+      createWord2010Properties3D(document, properties.properties3D),
+    );
+  }
   return result;
 }
 
@@ -1854,6 +1898,99 @@ function createWord2010Scene3D(
     lightRig.append(rotation);
   }
   result.append(lightRig);
+  return result;
+}
+
+function createWord2010Properties3D(
+  document: Document,
+  properties: NonNullable<
+    WorkDocumentEquationWordRunProperties['properties3D']
+  >,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'props3d');
+  if (properties.extrusionHeightEmus !== undefined) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'extrusionH',
+      String(properties.extrusionHeightEmus),
+    );
+  }
+  if (properties.contourWidthEmus !== undefined) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'contourW',
+      String(properties.contourWidthEmus),
+    );
+  }
+  if (properties.materialPreset !== undefined) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'prstMaterial',
+      WORD_2010_PROPERTIES_3D_MATERIAL_PRESETS[properties.materialPreset],
+    );
+  }
+  if (properties.topBevel !== undefined) {
+    result.append(
+      createWord2010Properties3DBevel(
+        document,
+        prefix,
+        'bevelT',
+        properties.topBevel,
+      ),
+    );
+  }
+  if (properties.bottomBevel !== undefined) {
+    result.append(
+      createWord2010Properties3DBevel(
+        document,
+        prefix,
+        'bevelB',
+        properties.bottomBevel,
+      ),
+    );
+  }
+  if (properties.extrusionColor !== undefined) {
+    const color = createWord2010Element(document, prefix, 'extrusionClr');
+    color.append(
+      createWord2010EffectColor(document, prefix, properties.extrusionColor),
+    );
+    result.append(color);
+  }
+  if (properties.contourColor !== undefined) {
+    const color = createWord2010Element(document, prefix, 'contourClr');
+    color.append(
+      createWord2010EffectColor(document, prefix, properties.contourColor),
+    );
+    result.append(color);
+  }
+  return result;
+}
+
+function createWord2010Properties3DBevel(
+  document: Document,
+  prefix: string,
+  name: 'bevelT' | 'bevelB',
+  bevel: WorkDocumentEquationWordBevel,
+): Element {
+  const result = createWord2010Element(document, prefix, name);
+  if (bevel.widthEmus !== undefined) {
+    setWord2010Attribute(result, prefix, 'w', String(bevel.widthEmus));
+  }
+  if (bevel.heightEmus !== undefined) {
+    setWord2010Attribute(result, prefix, 'h', String(bevel.heightEmus));
+  }
+  if (bevel.preset !== undefined) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'prst',
+      WORD_2010_PROPERTIES_3D_BEVEL_PRESETS[bevel.preset],
+    );
+  }
   return result;
 }
 

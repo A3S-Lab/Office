@@ -1271,7 +1271,8 @@ Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
 flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
-and 3D-scene effects. Glow preserves an optional 0 through 2,147,483,647 EMU
+3D-scene, and 3D-property effects. Glow preserves an optional 0 through
+2,147,483,647 EMU
 radius, exactly
 one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
 shade, alpha, hue-modulation, saturation, and luminance transform entries.
@@ -1305,6 +1306,12 @@ presets, and all eight light directions. Its required camera then light-rig
 structure remains exact; only the light rig may contain an optional rotation,
 whose latitude, longitude, and revolution each retain exact 1/60,000-degree
 units from 0 inclusive to 360 degrees exclusive.
+The Office 2010 3D properties preserve optional extrusion height and contour
+width from 0 through 2,147,483,647 EMUs, all 16 material presets, optional top
+and bottom bevels with independently optional bounded width and height plus all
+12 bevel presets, and ordered extrusion and contour RGB/theme colors with the
+same bounded transform chains. The exact
+`bevelT -> bevelB -> extrusionClr -> contourClr` order remains intact.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1333,6 +1340,10 @@ present.
 A missing `w14:textFill` continues to use `w:color`. A present empty text fill,
 an empty solid fill, or a gradient without a stop list remains distinct and
 retains its schema-defined black default.
+A present empty `w14:props3d` remains distinct from omission and retains zero
+extrusion and contour geometry, warm-matte material, and black color defaults.
+Attribute-free bevels likewise remain present with zero width/height and circle
+defaults.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 exact transform-free Office 2010 RGB text fills and black fill defaults,
@@ -1348,7 +1359,7 @@ position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
 `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
-`w14:textFill`, and `w14:scene3d`. Simple
+`w14:textFill`, `w14:scene3d`, and `w14:props3d`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1367,8 +1378,8 @@ them would introduce layout drift.
 The standard limits its display semantics to paragraph marks and allows it to
 be ignored on any other run; Word additionally ignores it unless `w:vanish` is
 set. Schema-valid values are still retained without inventing that dependency.
-Office 2010 glow, shadow, reflection, text-outline, and 3D-scene effects also
-remain native-only. CSS `text-shadow`, reflection, opacity, perspective,
+Office 2010 glow, shadow, reflection, text-outline, 3D-scene, and 3D-property
+effects also remain native-only. CSS `text-shadow`, reflection, opacity, perspective,
 transform, text-stroke, paint-order, and border approximations cannot preserve
 theme-bound colors,
 ordered color transforms, exact blur and offset coordinates, reflection
@@ -1392,8 +1403,9 @@ vertical-alignment or emphasis-mark values, malformed or out-of-range East
 Asian layout IDs, flags, or bracket styles, malformed paragraph-mark visibility
 flags, malformed glow radii, shadow or reflection geometry, text-outline
 fill/gradient/dash/join structure, text-fill wrapper/fill/gradient structure,
-color choices or transform chains, 3D-scene camera/light structure, preset
-values, directions, or rotation angles, and unknown, duplicated, reordered,
+color choices or transform chains, 3D-scene camera/light structure,
+3D-property extrusion/contour/bevel/color structure, bounded coordinates,
+preset values, directions, or rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
