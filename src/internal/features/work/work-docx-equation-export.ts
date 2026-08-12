@@ -13,8 +13,8 @@ import {
   type WorkDocumentEquationWordColor,
   type WorkDocumentEquationWordColorTransformType,
   type WorkDocumentEquationWordEffectColor,
+  type WorkDocumentEquationWordRectangleAlignment,
   type WorkDocumentEquationWordRunProperties,
-  type WorkDocumentEquationWordShadowAlignment,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -79,8 +79,8 @@ const WORD_2010_COLOR_TRANSFORM_NAMES: Readonly<
   luminanceOffset: 'lumOff',
   luminanceModulation: 'lumMod',
 };
-const WORD_2010_SHADOW_ALIGNMENTS: Readonly<
-  Record<WorkDocumentEquationWordShadowAlignment, string>
+const WORD_2010_RECTANGLE_ALIGNMENTS: Readonly<
+  Record<WorkDocumentEquationWordRectangleAlignment, string>
 > = {
   none: 'none',
   topLeft: 'tl',
@@ -1381,6 +1381,11 @@ function createWordRunProperties(
       createWord2010ShadowEffect(document, properties.shadowEffect),
     );
   }
+  if (properties.reflectionEffect) {
+    result.append(
+      createWord2010ReflectionEffect(document, properties.reflectionEffect),
+    );
+  }
   return result;
 }
 
@@ -1534,10 +1539,98 @@ function createWord2010ShadowEffect(
       result,
       prefix,
       'algn',
-      WORD_2010_SHADOW_ALIGNMENTS[shadow.alignment],
+      WORD_2010_RECTANGLE_ALIGNMENTS[shadow.alignment],
     );
   }
   result.append(createWord2010EffectColor(document, prefix, shadow.color));
+  return result;
+}
+
+function createWord2010ReflectionEffect(
+  document: Document,
+  reflection: NonNullable<
+    WorkDocumentEquationWordRunProperties['reflectionEffect']
+  >,
+): Element {
+  const prefix = ensureWord2010Prefix(document.documentElement);
+  const result = createWord2010Element(document, prefix, 'reflection');
+  const attributes = [
+    ['blurRad', reflection.blurRadiusEmus],
+    [
+      'stA',
+      reflection.startOpacityPercent === undefined
+        ? undefined
+        : reflection.startOpacityPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'stPos',
+      reflection.startPositionPercent === undefined
+        ? undefined
+        : reflection.startPositionPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'endA',
+      reflection.endOpacityPercent === undefined
+        ? undefined
+        : reflection.endOpacityPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'endPos',
+      reflection.endPositionPercent === undefined
+        ? undefined
+        : reflection.endPositionPercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    ['dist', reflection.distanceEmus],
+    [
+      'dir',
+      reflection.directionDegrees === undefined
+        ? undefined
+        : reflection.directionDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+    [
+      'fadeDir',
+      reflection.fadeDirectionDegrees === undefined
+        ? undefined
+        : reflection.fadeDirectionDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+    [
+      'sx',
+      reflection.horizontalScalePercent === undefined
+        ? undefined
+        : reflection.horizontalScalePercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'sy',
+      reflection.verticalScalePercent === undefined
+        ? undefined
+        : reflection.verticalScalePercent * WORD_PERCENTAGE_UNITS_PER_PERCENT,
+    ],
+    [
+      'kx',
+      reflection.horizontalSkewDegrees === undefined
+        ? undefined
+        : reflection.horizontalSkewDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+    [
+      'ky',
+      reflection.verticalSkewDegrees === undefined
+        ? undefined
+        : reflection.verticalSkewDegrees * WORD_ANGLE_UNITS_PER_DEGREE,
+    ],
+  ] as const;
+  for (const [name, value] of attributes) {
+    if (value !== undefined) {
+      setWord2010Attribute(result, prefix, name, String(value));
+    }
+  }
+  if (reflection.alignment) {
+    setWord2010Attribute(
+      result,
+      prefix,
+      'algn',
+      WORD_2010_RECTANGLE_ALIGNMENTS[reflection.alignment],
+    );
+  }
   return result;
 }
 

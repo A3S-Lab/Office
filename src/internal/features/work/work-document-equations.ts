@@ -245,7 +245,7 @@ export interface WorkDocumentEquationWordGlow {
   color: WorkDocumentEquationWordEffectColor;
 }
 
-export type WorkDocumentEquationWordShadowAlignment =
+export type WorkDocumentEquationWordRectangleAlignment =
   | 'none'
   | 'topLeft'
   | 'top'
@@ -265,8 +265,24 @@ export interface WorkDocumentEquationWordShadowEffect {
   verticalScalePercent?: number;
   horizontalSkewDegrees?: number;
   verticalSkewDegrees?: number;
-  alignment?: WorkDocumentEquationWordShadowAlignment;
+  alignment?: WorkDocumentEquationWordRectangleAlignment;
   color: WorkDocumentEquationWordEffectColor;
+}
+
+export interface WorkDocumentEquationWordReflectionEffect {
+  blurRadiusEmus?: number;
+  startOpacityPercent?: number;
+  startPositionPercent?: number;
+  endOpacityPercent?: number;
+  endPositionPercent?: number;
+  distanceEmus?: number;
+  directionDegrees?: number;
+  fadeDirectionDegrees?: number;
+  horizontalScalePercent?: number;
+  verticalScalePercent?: number;
+  horizontalSkewDegrees?: number;
+  verticalSkewDegrees?: number;
+  alignment?: WorkDocumentEquationWordRectangleAlignment;
 }
 
 export interface WorkDocumentEquationWordUnderline {
@@ -367,6 +383,7 @@ export interface WorkDocumentEquationWordRunProperties {
   paragraphMarkAlwaysHidden?: boolean;
   glow?: WorkDocumentEquationWordGlow;
   shadowEffect?: WorkDocumentEquationWordShadowEffect;
+  reflectionEffect?: WorkDocumentEquationWordReflectionEffect;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -945,12 +962,13 @@ const MAX_EQUATION_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = -2_147_483_648;
 const MAX_EQUATION_WORD_EAST_ASIAN_LAYOUT_ID = 2_147_483_647;
 const MAX_EQUATION_WORD_GLOW_RADIUS_EMUS = 2_147_483_647;
-const MAX_EQUATION_WORD_SHADOW_COORDINATE_EMUS = 2_147_483_647;
-const MAX_EQUATION_WORD_SHADOW_DIRECTION_UNITS = 21_599_999;
-const MIN_EQUATION_WORD_SHADOW_SCALE_UNITS = -2_147_483_648;
-const MAX_EQUATION_WORD_SHADOW_SCALE_UNITS = 2_147_483_647;
-const MIN_EQUATION_WORD_SHADOW_SKEW_UNITS = -5_399_999;
-const MAX_EQUATION_WORD_SHADOW_SKEW_UNITS = 5_399_999;
+const MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS = 2_147_483_647;
+const MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS = 21_599_999;
+const MIN_EQUATION_WORD_EFFECT_SCALE_UNITS = -2_147_483_648;
+const MAX_EQUATION_WORD_EFFECT_SCALE_UNITS = 2_147_483_647;
+const MIN_EQUATION_WORD_EFFECT_SKEW_UNITS = -5_399_999;
+const MAX_EQUATION_WORD_EFFECT_SKEW_UNITS = 5_399_999;
+const MAX_EQUATION_WORD_FIXED_PERCENTAGE_UNITS = 100_000;
 const EQUATION_WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_EQUATION_WORD_COLOR_TRANSFORMS = 64;
@@ -1019,6 +1037,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'paragraphMarkAlwaysHidden',
   'glow',
   'shadowEffect',
+  'reflectionEffect',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1063,8 +1082,23 @@ const WORD_SHADOW_EFFECT_KEYS = new Set([
   'alignment',
   'color',
 ]);
-const WORD_SHADOW_ALIGNMENTS = new Set<WorkDocumentEquationWordShadowAlignment>(
-  [
+const WORD_REFLECTION_EFFECT_KEYS = new Set([
+  'blurRadiusEmus',
+  'startOpacityPercent',
+  'startPositionPercent',
+  'endOpacityPercent',
+  'endPositionPercent',
+  'distanceEmus',
+  'directionDegrees',
+  'fadeDirectionDegrees',
+  'horizontalScalePercent',
+  'verticalScalePercent',
+  'horizontalSkewDegrees',
+  'verticalSkewDegrees',
+  'alignment',
+]);
+const WORD_RECTANGLE_ALIGNMENTS =
+  new Set<WorkDocumentEquationWordRectangleAlignment>([
     'none',
     'topLeft',
     'top',
@@ -1075,8 +1109,7 @@ const WORD_SHADOW_ALIGNMENTS = new Set<WorkDocumentEquationWordShadowAlignment>(
     'bottomLeft',
     'bottom',
     'bottomRight',
-  ],
-);
+  ]);
 const WORD_EFFECT_COLOR_KEYS = new Set(['type', 'value', 'transforms']);
 const WORD_COLOR_TRANSFORM_KEYS = new Set(['type', 'value']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
@@ -3101,6 +3134,10 @@ function normalizeEquationWordRunProperties(
     source.shadowEffect === undefined
       ? undefined
       : normalizeEquationWordShadowEffect(source.shadowEffect);
+  const reflectionEffect =
+    source.reflectionEffect === undefined
+      ? undefined
+      : normalizeEquationWordReflectionEffect(source.reflectionEffect);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3154,6 +3191,7 @@ function normalizeEquationWordRunProperties(
     eastAsianLayout === null ||
     glow === null ||
     shadowEffect === null ||
+    reflectionEffect === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3294,6 +3332,7 @@ function normalizeEquationWordRunProperties(
       : {}),
     ...(glow ? { glow } : {}),
     ...(shadowEffect ? { shadowEffect } : {}),
+    ...(reflectionEffect ? { reflectionEffect } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -3622,7 +3661,7 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationInteger(
           source.blurRadiusEmus,
           0,
-          MAX_EQUATION_WORD_SHADOW_COORDINATE_EMUS,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
         );
   const distanceEmus =
     source.distanceEmus === undefined
@@ -3630,7 +3669,7 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationInteger(
           source.distanceEmus,
           0,
-          MAX_EQUATION_WORD_SHADOW_COORDINATE_EMUS,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
         );
   const directionDegrees =
     source.directionDegrees === undefined
@@ -3639,7 +3678,7 @@ function normalizeEquationWordShadowEffect(
           source.directionDegrees,
           EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
           0,
-          MAX_EQUATION_WORD_SHADOW_DIRECTION_UNITS,
+          MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
         );
   const horizontalScalePercent =
     source.horizontalScalePercent === undefined
@@ -3647,8 +3686,8 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationScaledInteger(
           source.horizontalScalePercent,
           EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
-          MIN_EQUATION_WORD_SHADOW_SCALE_UNITS,
-          MAX_EQUATION_WORD_SHADOW_SCALE_UNITS,
+          MIN_EQUATION_WORD_EFFECT_SCALE_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
         );
   const verticalScalePercent =
     source.verticalScalePercent === undefined
@@ -3656,8 +3695,8 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationScaledInteger(
           source.verticalScalePercent,
           EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
-          MIN_EQUATION_WORD_SHADOW_SCALE_UNITS,
-          MAX_EQUATION_WORD_SHADOW_SCALE_UNITS,
+          MIN_EQUATION_WORD_EFFECT_SCALE_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
         );
   const horizontalSkewDegrees =
     source.horizontalSkewDegrees === undefined
@@ -3665,8 +3704,8 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationScaledInteger(
           source.horizontalSkewDegrees,
           EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
-          MIN_EQUATION_WORD_SHADOW_SKEW_UNITS,
-          MAX_EQUATION_WORD_SHADOW_SKEW_UNITS,
+          MIN_EQUATION_WORD_EFFECT_SKEW_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SKEW_UNITS,
         );
   const verticalSkewDegrees =
     source.verticalSkewDegrees === undefined
@@ -3674,16 +3713,16 @@ function normalizeEquationWordShadowEffect(
       : normalizeEquationScaledInteger(
           source.verticalSkewDegrees,
           EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
-          MIN_EQUATION_WORD_SHADOW_SKEW_UNITS,
-          MAX_EQUATION_WORD_SHADOW_SKEW_UNITS,
+          MIN_EQUATION_WORD_EFFECT_SKEW_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SKEW_UNITS,
         );
   const alignment =
     source.alignment === undefined
       ? undefined
-      : WORD_SHADOW_ALIGNMENTS.has(
-            source.alignment as WorkDocumentEquationWordShadowAlignment,
+      : WORD_RECTANGLE_ALIGNMENTS.has(
+            source.alignment as WorkDocumentEquationWordRectangleAlignment,
           )
-        ? (source.alignment as WorkDocumentEquationWordShadowAlignment)
+        ? (source.alignment as WorkDocumentEquationWordRectangleAlignment)
         : null;
   const color = normalizeEquationWordEffectColor(source.color);
   if (
@@ -3713,6 +3752,149 @@ function normalizeEquationWordShadowEffect(
     ...(verticalSkewDegrees !== undefined ? { verticalSkewDegrees } : {}),
     ...(alignment ? { alignment } : {}),
     color,
+  };
+}
+
+function normalizeEquationWordReflectionEffect(
+  source: unknown,
+): WorkDocumentEquationWordReflectionEffect | null {
+  if (!isRecordWithKeys(source, WORD_REFLECTION_EFFECT_KEYS)) return null;
+  const blurRadiusEmus =
+    source.blurRadiusEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.blurRadiusEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const fixedPercentage = (value: unknown): number | null =>
+    normalizeEquationScaledInteger(
+      value,
+      EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+      0,
+      MAX_EQUATION_WORD_FIXED_PERCENTAGE_UNITS,
+    );
+  const startOpacityPercent =
+    source.startOpacityPercent === undefined
+      ? undefined
+      : fixedPercentage(source.startOpacityPercent);
+  const startPositionPercent =
+    source.startPositionPercent === undefined
+      ? undefined
+      : fixedPercentage(source.startPositionPercent);
+  const endOpacityPercent =
+    source.endOpacityPercent === undefined
+      ? undefined
+      : fixedPercentage(source.endOpacityPercent);
+  const endPositionPercent =
+    source.endPositionPercent === undefined
+      ? undefined
+      : fixedPercentage(source.endPositionPercent);
+  const distanceEmus =
+    source.distanceEmus === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.distanceEmus,
+          0,
+          MAX_EQUATION_WORD_EFFECT_COORDINATE_EMUS,
+        );
+  const directionDegrees =
+    source.directionDegrees === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.directionDegrees,
+          EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+          0,
+          MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+        );
+  const fadeDirectionDegrees =
+    source.fadeDirectionDegrees === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.fadeDirectionDegrees,
+          EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+          0,
+          MAX_EQUATION_WORD_EFFECT_DIRECTION_UNITS,
+        );
+  const horizontalScalePercent =
+    source.horizontalScalePercent === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.horizontalScalePercent,
+          EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+          MIN_EQUATION_WORD_EFFECT_SCALE_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
+        );
+  const verticalScalePercent =
+    source.verticalScalePercent === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.verticalScalePercent,
+          EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT,
+          MIN_EQUATION_WORD_EFFECT_SCALE_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SCALE_UNITS,
+        );
+  const horizontalSkewDegrees =
+    source.horizontalSkewDegrees === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.horizontalSkewDegrees,
+          EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+          MIN_EQUATION_WORD_EFFECT_SKEW_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SKEW_UNITS,
+        );
+  const verticalSkewDegrees =
+    source.verticalSkewDegrees === undefined
+      ? undefined
+      : normalizeEquationScaledInteger(
+          source.verticalSkewDegrees,
+          EQUATION_WORD_ANGLE_UNITS_PER_DEGREE,
+          MIN_EQUATION_WORD_EFFECT_SKEW_UNITS,
+          MAX_EQUATION_WORD_EFFECT_SKEW_UNITS,
+        );
+  const alignment =
+    source.alignment === undefined
+      ? undefined
+      : WORD_RECTANGLE_ALIGNMENTS.has(
+            source.alignment as WorkDocumentEquationWordRectangleAlignment,
+          )
+        ? (source.alignment as WorkDocumentEquationWordRectangleAlignment)
+        : null;
+  if (
+    blurRadiusEmus === null ||
+    startOpacityPercent === null ||
+    startPositionPercent === null ||
+    endOpacityPercent === null ||
+    endPositionPercent === null ||
+    distanceEmus === null ||
+    directionDegrees === null ||
+    fadeDirectionDegrees === null ||
+    horizontalScalePercent === null ||
+    verticalScalePercent === null ||
+    horizontalSkewDegrees === null ||
+    verticalSkewDegrees === null ||
+    alignment === null
+  ) {
+    return null;
+  }
+  return {
+    ...(blurRadiusEmus !== undefined
+      ? { blurRadiusEmus: Object.is(blurRadiusEmus, -0) ? 0 : blurRadiusEmus }
+      : {}),
+    ...(startOpacityPercent !== undefined ? { startOpacityPercent } : {}),
+    ...(startPositionPercent !== undefined ? { startPositionPercent } : {}),
+    ...(endOpacityPercent !== undefined ? { endOpacityPercent } : {}),
+    ...(endPositionPercent !== undefined ? { endPositionPercent } : {}),
+    ...(distanceEmus !== undefined
+      ? { distanceEmus: Object.is(distanceEmus, -0) ? 0 : distanceEmus }
+      : {}),
+    ...(directionDegrees !== undefined ? { directionDegrees } : {}),
+    ...(fadeDirectionDegrees !== undefined ? { fadeDirectionDegrees } : {}),
+    ...(horizontalScalePercent !== undefined ? { horizontalScalePercent } : {}),
+    ...(verticalScalePercent !== undefined ? { verticalScalePercent } : {}),
+    ...(horizontalSkewDegrees !== undefined ? { horizontalSkewDegrees } : {}),
+    ...(verticalSkewDegrees !== undefined ? { verticalSkewDegrees } : {}),
+    ...(alignment ? { alignment } : {}),
   };
 }
 

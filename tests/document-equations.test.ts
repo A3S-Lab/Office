@@ -42,6 +42,7 @@ const WORD_2010_NAMESPACE =
 const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63500"><w14:srgbClr w14:val="FFFF00"/></w14:glow>`;
 const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:srgbClr w14:val="000000"/></w14:shadow>`;
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2072,6 +2073,7 @@ describe('document equations', () => {
       '<w:specVanish w:val="0"/>',
       '<w14:glow w14:rad="63500"><w14:schemeClr w14:val="accent4"><w14:alpha w14:val="50000"/></w14:schemeClr></w14:glow>',
       '<w14:shadow w14:blurRad="25400" w14:dist="12700" w14:dir="5400000" w14:sx="90000" w14:sy="-100000" w14:kx="-60000" w14:ky="120000" w14:algn="tr"><w14:schemeClr w14:val="accent5"><w14:lumMod w14:val="75000"/></w14:schemeClr></w14:shadow>',
+      '<w14:reflection w14:blurRad="12700" w14:stA="60000" w14:stPos="0" w14:endA="10000" w14:endPos="100000" w14:dist="6350" w14:dir="5400000" w14:fadeDir="16200000" w14:sx="100000" w14:sy="-50000" w14:kx="-60000" w14:ky="120000" w14:algn="b"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2180,7 +2182,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2215,7 +2217,7 @@ describe('document equations', () => {
     expect(
       inspectEquation(
         wordRun(
-          `<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`,
+          `<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`,
           '<w:t>fallback</w:t>',
         ),
       ),
@@ -4433,7 +4435,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_REFLECTION),
+      wordRun(WORD_2010_TEXT_OUTLINE),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4864,7 +4866,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_REFLECTION),
+      wordRun(WORD_2010_TEXT_OUTLINE),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5291,7 +5293,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_REFLECTION),
+      wordRun(WORD_2010_TEXT_OUTLINE),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5350,6 +5352,379 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunShadowEffects(await createArtifactBlob(imported));
+  });
+
+  test('preserves bounded Office 2010 text reflection effects as native OMML metadata', async () => {
+    const maximumDirection = 21_599_999 / 60_000;
+    const minimumScale = -2_147_483_648 / 1_000;
+    const maximumScale = 2_147_483_647 / 1_000;
+    const minimumSkew = -5_399_999 / 60_000;
+    const maximumSkew = 5_399_999 / 60_000;
+    const boundaryEffect = {
+      blurRadiusEmus: 2_147_483_647,
+      startOpacityPercent: 0,
+      startPositionPercent: 100,
+      endOpacityPercent: 100,
+      endPositionPercent: 0,
+      distanceEmus: 2_147_483_647,
+      directionDegrees: maximumDirection,
+      fadeDirectionDegrees: maximumDirection,
+      horizontalScalePercent: minimumScale,
+      verticalScalePercent: maximumScale,
+      horizontalSkewDegrees: minimumSkew,
+      verticalSkewDegrees: maximumSkew,
+      alignment: 'topLeft',
+    };
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'full-reflection-effect',
+          wordRunProperties: {
+            reflectionEffect: {
+              blurRadiusEmus: 63_500,
+              startOpacityPercent: 50,
+              startPositionPercent: 0,
+              endOpacityPercent: 10,
+              endPositionPercent: 100,
+              distanceEmus: 12_700,
+              directionDegrees: 90,
+              fadeDirectionDegrees: 270,
+              horizontalScalePercent: 100,
+              verticalScalePercent: -50,
+              horizontalSkewDegrees: -1,
+              verticalSkewDegrees: 2,
+              alignment: 'bottom',
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'zero-reflection-effect',
+          wordRunProperties: {
+            reflectionEffect: {
+              blurRadiusEmus: 0,
+              startOpacityPercent: 0,
+              startPositionPercent: 0,
+              endOpacityPercent: 0,
+              endPositionPercent: 0,
+              distanceEmus: 0,
+              directionDegrees: 0,
+              fadeDirectionDegrees: 0,
+              horizontalScalePercent: 0,
+              verticalScalePercent: 0,
+              horizontalSkewDegrees: 0,
+              verticalSkewDegrees: 0,
+              alignment: 'none',
+            },
+          },
+        },
+        {
+          type: 'run',
+          text: 'default-reflection-effect',
+          wordRunProperties: { reflectionEffect: {} },
+        },
+        {
+          type: 'run',
+          text: 'ordered-reflection-effect',
+          wordRunProperties: {
+            shadow: false,
+            paragraphMarkAlwaysHidden: false,
+            glow: { color: { type: 'rgb', value: '#112233' } },
+            shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+            reflectionEffect: { startOpacityPercent: 25 },
+          },
+        },
+        {
+          type: 'run',
+          text: 'boundary-reflection-effect',
+          wordRunProperties: { reflectionEffect: boundaryEffect },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            reflectionEffect: {
+              blurRadiusEmus: 25_400,
+              endOpacityPercent: 75,
+              alignment: 'center',
+            },
+          },
+          children: [{ type: 'run', text: 'operator-reflection-effect' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithReflectionEffect = (reflectionEffect: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { reflectionEffect } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            wordRunProperties: { reflectionEffect: undefined },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      normalizeDocumentEquation(equationWithReflectionEffect(boundaryEffect))
+        ?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { reflectionEffect: boundaryEffect },
+    });
+    const invalidEffects = [
+      null,
+      false,
+      { extra: true },
+      { blurRadiusEmus: -1 },
+      { blurRadiusEmus: 1.5 },
+      { blurRadiusEmus: 2_147_483_648 },
+      { distanceEmus: -1 },
+      { distanceEmus: 1.5 },
+      { distanceEmus: 2_147_483_648 },
+      { startOpacityPercent: -0.001 },
+      { startOpacityPercent: 100.001 },
+      { startOpacityPercent: 0.0005 },
+      { startPositionPercent: Number.NaN },
+      { endOpacityPercent: Number.POSITIVE_INFINITY },
+      { endPositionPercent: '50' },
+      { directionDegrees: -1 / 60_000 },
+      { directionDegrees: 360 },
+      { directionDegrees: 1 / 120_000 },
+      { fadeDirectionDegrees: -1 / 60_000 },
+      { fadeDirectionDegrees: 360 },
+      { horizontalScalePercent: minimumScale - 0.001 },
+      { verticalScalePercent: maximumScale + 0.001 },
+      { horizontalScalePercent: 0.0005 },
+      { horizontalSkewDegrees: -90 },
+      { verticalSkewDegrees: 90 },
+      { horizontalSkewDegrees: 1 / 120_000 },
+      { alignment: 'middle' },
+    ];
+    expect(
+      invalidEffects.map((effect) =>
+        normalizeDocumentEquation(equationWithReflectionEffect(effect)),
+      ),
+    ).toEqual(invalidEffects.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const fullMarkup =
+      '<w14:reflection w14:blurRad=" +63500 " w14:stA="50000" ' +
+      'w14:stPos="0" w14:endA="10000" w14:endPos="100000" ' +
+      'w14:dist="12700" w14:dir="5400000" w14:fadeDir="16200000" ' +
+      'w14:sx="100000" w14:sy="-50000" w14:kx="-60000" ' +
+      'w14:ky="120000" w14:algn="b"/>';
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      expect(
+        inspectEquationModel(wordRun(fullMarkup, namespace))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: {
+          reflectionEffect: {
+            blurRadiusEmus: 63_500,
+            startOpacityPercent: 50,
+            startPositionPercent: 0,
+            endOpacityPercent: 10,
+            endPositionPercent: 100,
+            distanceEmus: 12_700,
+            directionDegrees: 90,
+            fadeDirectionDegrees: 270,
+            horizontalScalePercent: 100,
+            verticalScalePercent: -50,
+            horizontalSkewDegrees: -1,
+            verticalSkewDegrees: 2,
+            alignment: 'bottom',
+          },
+        },
+      });
+    }
+    expect(
+      inspectEquationModel(wordRun(WORD_2010_REFLECTION))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { reflectionEffect: {} },
+    });
+    const boundaryMarkup =
+      '<w14:reflection w14:blurRad="2147483647" w14:stA="0" ' +
+      'w14:stPos="100000" w14:endA="100000" w14:endPos="0" ' +
+      'w14:dist="2147483647" w14:dir="21599999" ' +
+      'w14:fadeDir="21599999" w14:sx="-2147483648" ' +
+      'w14:sy="2147483647" w14:kx="-5399999" w14:ky="5399999" ' +
+      'w14:algn="tl"/>';
+    expect(inspectEquationModel(wordRun(boundaryMarkup))?.children[0]).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { reflectionEffect: boundaryEffect },
+    });
+    const alignments = [
+      ['none', 'none'],
+      ['tl', 'topLeft'],
+      ['t', 'top'],
+      ['tr', 'topRight'],
+      ['l', 'left'],
+      ['ctr', 'center'],
+      ['r', 'right'],
+      ['bl', 'bottomLeft'],
+      ['b', 'bottom'],
+      ['br', 'bottomRight'],
+    ] as const;
+    for (const [source, alignment] of alignments) {
+      expect(
+        inspectEquationModel(wordRun(`<w14:reflection w14:algn="${source}"/>`))
+          ?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { reflectionEffect: { alignment } },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:shadow w:val="0"/><w:specVanish w:val="0"/>' +
+            '<w14:glow><w14:srgbClr w14:val="112233"/></w14:glow>' +
+            '<w14:shadow><w14:srgbClr w14:val="445566"/></w14:shadow>' +
+            '<w14:reflection w14:stA="25000"/>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        shadow: false,
+        paragraphMarkAlwaysHidden: false,
+        glow: { color: { type: 'rgb', value: '#112233' } },
+        shadowEffect: { color: { type: 'rgb', value: '#445566' } },
+        reflectionEffect: { startOpacityPercent: 25 },
+      },
+    });
+
+    const invalidMarkup = [
+      wordRun('<w14:reflection/><w14:reflection/>'),
+      wordRun(
+        `<w14:reflection/><w14:shadow><w14:srgbClr w14:val="000000"/></w14:shadow>`,
+      ),
+      wordRun(
+        '<w14:reflection/><w14:glow><w14:srgbClr w14:val="000000"/></w14:glow>',
+      ),
+      wordRun('<w14:reflection/><w:specVanish/>'),
+      wordRun('<w:reflection/>'),
+      wordRun(`<v:reflection xmlns:v="${VENDOR_NAMESPACE}"/>`),
+      wordRun(
+        `<w14:reflection xmlns:w14="${VENDOR_NAMESPACE}" w14:blurRad="1"/>`,
+      ),
+      wordRun('<w14:reflection blurRad="1"/>'),
+      wordRun('<w14:reflection w14:blurRad="-1"/>'),
+      wordRun('<w14:reflection w14:blurRad="1.5"/>'),
+      wordRun('<w14:reflection w14:blurRad="2147483648"/>'),
+      wordRun('<w14:reflection w14:stA="-1"/>'),
+      wordRun('<w14:reflection w14:stA="100001"/>'),
+      wordRun('<w14:reflection w14:stPos="1.5"/>'),
+      wordRun('<w14:reflection w14:endA="-1"/>'),
+      wordRun('<w14:reflection w14:endPos="100001"/>'),
+      wordRun('<w14:reflection w14:dist="-1"/>'),
+      wordRun('<w14:reflection w14:dist="2147483648"/>'),
+      wordRun('<w14:reflection w14:dir="-1"/>'),
+      wordRun('<w14:reflection w14:dir="21600000"/>'),
+      wordRun('<w14:reflection w14:fadeDir="-1"/>'),
+      wordRun('<w14:reflection w14:fadeDir="21600000"/>'),
+      wordRun('<w14:reflection w14:sx="-2147483649"/>'),
+      wordRun('<w14:reflection w14:sy="2147483648"/>'),
+      wordRun('<w14:reflection w14:sx="1.5"/>'),
+      wordRun('<w14:reflection w14:kx="-5400000"/>'),
+      wordRun('<w14:reflection w14:ky="5400000"/>'),
+      wordRun('<w14:reflection w14:algn="middle"/>'),
+      wordRun('<w14:reflection w14:algn="CTR"/>'),
+      wordRun('<w14:reflection w14:extra="semantic"/>'),
+      wordRun(
+        `<w14:reflection xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:reflection>meaningful</w14:reflection>'),
+      wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
+      wordRun(WORD_2010_TEXT_OUTLINE),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'full-reflection-effect',
+      'zero-reflection-effect',
+      'default-reflection-effect',
+      'ordered-reflection-effect',
+      'boundary-reflection-effect',
+      'operator-reflection-effect',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(preview.querySelector('math')?.outerHTML).not.toMatch(
+      /box-reflect|opacity|transform/iu,
+    );
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunReflectionEffects(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-reflection-effect.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunReflectionEffects(
+      await createArtifactBlob(imported),
+    );
   });
 
   test('preserves bounded Word control properties across OMML object containers', async () => {
@@ -5440,7 +5815,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_REFLECTION}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -5717,7 +6092,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_REFLECTION}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_TEXT_OUTLINE}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -6952,6 +7327,21 @@ function richWordRunProperties() {
         value: 'accent5' as const,
         transforms: [{ type: 'luminanceModulation' as const, value: 75_000 }],
       },
+    },
+    reflectionEffect: {
+      blurRadiusEmus: 12_700,
+      startOpacityPercent: 60,
+      startPositionPercent: 0,
+      endOpacityPercent: 10,
+      endPositionPercent: 100,
+      distanceEmus: 6_350,
+      directionDegrees: 90,
+      fadeDirectionDegrees: 270,
+      horizontalScalePercent: 100,
+      verticalScalePercent: -50,
+      horizontalSkewDegrees: -1,
+      verticalSkewDegrees: 2,
+      alignment: 'bottom' as const,
     },
   };
 }
@@ -9050,6 +9440,137 @@ async function expectNativeWordRunShadowEffects(blob: Blob): Promise<void> {
   });
 }
 
+async function expectNativeWordRunReflectionEffects(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const reflectionFor = (text: string): Element => {
+    const reflection = directChildren(wordPropertiesFor(text), 'reflection')[0];
+    expect(reflection, text).toBeDefined();
+    expect(reflection.namespaceURI, text).toBe(WORD_2010_NAMESPACE);
+    expect(directChildren(reflection), text).toHaveLength(0);
+    return reflection;
+  };
+
+  expect(word2010Attributes(reflectionFor('full-reflection-effect'))).toEqual({
+    blurRad: '63500',
+    stA: '50000',
+    stPos: '0',
+    endA: '10000',
+    endPos: '100000',
+    dist: '12700',
+    dir: '5400000',
+    fadeDir: '16200000',
+    sx: '100000',
+    sy: '-50000',
+    kx: '-60000',
+    ky: '120000',
+    algn: 'b',
+  });
+  expect(word2010Attributes(reflectionFor('zero-reflection-effect'))).toEqual({
+    blurRad: '0',
+    stA: '0',
+    stPos: '0',
+    endA: '0',
+    endPos: '0',
+    dist: '0',
+    dir: '0',
+    fadeDir: '0',
+    sx: '0',
+    sy: '0',
+    kx: '0',
+    ky: '0',
+    algn: 'none',
+  });
+  expect(
+    word2010Attributes(reflectionFor('default-reflection-effect')),
+  ).toEqual({});
+  expect(
+    word2010Attributes(reflectionFor('boundary-reflection-effect')),
+  ).toEqual({
+    blurRad: '2147483647',
+    stA: '0',
+    stPos: '100000',
+    endA: '100000',
+    endPos: '0',
+    dist: '2147483647',
+    dir: '21599999',
+    fadeDir: '21599999',
+    sx: '-2147483648',
+    sy: '2147483647',
+    kx: '-5399999',
+    ky: '5399999',
+    algn: 'tl',
+  });
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-reflection-effect'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'shadow',
+    'specVanish',
+    'glow',
+    'shadow',
+    'reflection',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+  expect(word2010Attributes(orderedProperties.at(-1) as Element)).toEqual({
+    stA: '25000',
+  });
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-reflection-effect'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const reflection = directChildren(wordProperties as Element, 'reflection')[0];
+  expect(reflection.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(directChildren(reflection)).toHaveLength(0);
+  expect(word2010Attributes(reflection)).toEqual({
+    blurRad: '25400',
+    endA: '75000',
+    algn: 'ctr',
+  });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -9112,6 +9633,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'specVanish',
     'glow',
     'shadow',
+    'reflection',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -9194,6 +9716,7 @@ async function expectNativeArgumentControlProperties(
     'specVanish',
     'glow',
     'shadow',
+    'reflection',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -9763,6 +10286,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'specVanish',
     'glow',
     'shadow',
+    'reflection',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -9847,6 +10371,21 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       ky: '120000',
       algn: 'tr',
     },
+    {
+      blurRad: '12700',
+      stA: '60000',
+      stPos: '0',
+      endA: '10000',
+      endPos: '100000',
+      dist: '6350',
+      dir: '5400000',
+      fadeDir: '16200000',
+      sx: '100000',
+      sy: '-50000',
+      kx: '-60000',
+      ky: '120000',
+      algn: 'b',
+    },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -9885,6 +10424,9 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(luminanceModulation.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(luminanceModulation.localName).toBe('lumMod');
     expect(word2010Attributes(luminanceModulation)).toEqual({ val: '75000' });
+    const reflection = directChildren(properties, 'reflection')[0];
+    expect(reflection.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(directChildren(reflection)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);
