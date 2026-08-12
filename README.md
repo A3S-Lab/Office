@@ -558,6 +558,12 @@ remains an explicitly empty unsupported operator; an attribute-free `limLoc`
 defaults to `undOvr`. Disabled `grow` values normalize to the non-growing
 default, enabled growth fails closed, and native export always emits both limit
 slots with `subHide` or `supHide` for absent scripts.
+Delimiters require optional `dPr` before 1–32 `e` arguments and preserve empty
+argument slots. Their properties follow
+`begChr -> sepChr -> endChr -> grow -> shp -> ctrlPr`; omitted characters
+normalize to `(`, U+2502, and `)`, while attribute-free character properties
+remain explicitly empty. Default growing and centered-shape semantics normalize
+away, while non-growing or shape-matched delimiters fail closed.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded native grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`, while absent properties, absent `m:jc`,
@@ -570,7 +576,7 @@ Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
 characters, malformed math-run properties, invalid or contradictory fraction,
-radical, n-ary, bar, group-character, phantom, border-box, box, or
+radical, n-ary, delimiter, bar, group-character, phantom, border-box, box, or
 equation-array properties,
 malformed script-property, pre-script, math-paragraph, or lower/upper limit
 structures,

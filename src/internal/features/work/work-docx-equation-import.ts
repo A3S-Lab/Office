@@ -97,6 +97,7 @@ const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
 const MAX_EQUATION_ARRAY_ROWS = 64;
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
+const DEFAULT_DELIMITER_SEPARATOR = '\u2502';
 const DEFAULT_GROUP_CHARACTER = '\u23df';
 const DEFAULT_NARY_OPERATOR = '\u222b';
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
@@ -1729,42 +1730,62 @@ function parseDelimiter(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['dPr', 'e']))) return null;
+  const childOrder = ['dPr', 'e'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
+    return null;
+  }
   const properties = uniqueMathChild(element, 'dPr', false);
   const arguments_ = mathDirectChildren(element, 'e');
   if (
     properties === null ||
     !arguments_.length ||
     arguments_.length > MAX_DELIMITER_ARGUMENTS ||
-    (properties &&
-      !structuralChildren(
-        properties,
-        new Set(['begChr', 'endChr', 'sepChr', 'ctrlPr']),
-      ))
+    (properties && !delimiterProperties(properties))
   ) {
     return null;
   }
+  const growElement = properties
+    ? uniqueMathChild(properties, 'grow', false)
+    : undefined;
+  const shapeElement = properties
+    ? uniqueMathChild(properties, 'shp', false)
+    : undefined;
   const controlProperties = properties
     ? uniqueMathChild(properties, 'ctrlPr', false)
     : undefined;
   if (
+    growElement === null ||
+    shapeElement === null ||
     controlProperties === null ||
     (controlProperties && !emptyMathProperty(controlProperties))
   ) {
     return null;
   }
+  const grow = growElement ? mathOnOff(growElement) : true;
+  const shape = shapeElement
+    ? mathValueOrDefault(shapeElement, 'centered')
+    : 'centered';
   const opening = delimiterProperty(properties, 'begChr', '(');
   const closing = delimiterProperty(properties, 'endChr', ')');
-  const separator = delimiterProperty(properties, 'sepChr', '|');
-  const parsedArguments = arguments_.map((argument) =>
-    parseExpressionContainer(argument, state),
+  const separator = delimiterProperty(
+    properties,
+    'sepChr',
+    DEFAULT_DELIMITER_SEPARATOR,
   );
-  return opening !== null &&
+  const parsedArguments = arguments_.map((argument) =>
+    parseExpressionContainer(argument, state, true),
+  );
+  return grow === true &&
+    shape === 'centered' &&
+    opening !== null &&
     closing !== null &&
     separator !== null &&
     parsedArguments.every(
       (argument): argument is WorkDocumentEquationExpression[] =>
-        Boolean(argument),
+        argument !== null,
     )
     ? {
         type: 'delimiter',
@@ -1774,6 +1795,14 @@ function parseDelimiter(
         arguments: parsedArguments,
       }
     : null;
+}
+
+function delimiterProperties(properties: Element): boolean {
+  const propertyOrder = ['begChr', 'sepChr', 'endChr', 'grow', 'shp', 'ctrlPr'];
+  return (
+    structuralChildren(properties, new Set(propertyOrder)) &&
+    orderedMathChildren(properties, propertyOrder)
+  );
 }
 
 function structuralChildren(
@@ -1994,7 +2023,7 @@ function delimiterProperty(
   if (!properties) return fallback;
   const element = uniqueMathChild(properties, name, false);
   if (element === null) return null;
-  const value = element ? mathValue(element) : fallback;
+  const value = element ? mathValueOrDefault(element, '') : fallback;
   return value !== null && mathCharacter(value)
     ? value
     : value === ''

@@ -34,12 +34,19 @@ All notable changes to A3S Office will be documented in this file.
   `e` slots. An absent `chr` defaults to U+222B, an attribute-free `limLoc`
   defaults to `undOvr`, disabled growth normalizes away, and hidden limits use
   canonical empty script slots. Attribute-free operator characters, enabled
-  growth, and contradictory hidden nonempty limits fail closed. Depth,
+  growth, and contradictory hidden nonempty limits fail closed. Delimiters
+  enforce optional `dPr` before 1–32 `e` arguments and the ordered
+  `begChr -> sepChr -> endChr -> grow -> shp -> ctrlPr` property grammar.
+  Omitted characters normalize to `(`, U+2502, and `)`, while attribute-free
+  character properties remain explicitly empty. Empty argument slots and the
+  growing, centered defaults round-trip; non-growing or shape-matched
+  delimiters fail closed. Depth,
   node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run properties,
-  invalid or contradictory fraction, radical, n-ary, bar, group-character,
-  phantom, border-box, box, or equation-array properties, malformed
+  invalid or contradictory fraction, radical, n-ary, delimiter, bar,
+  group-character, phantom, border-box, box, or equation-array properties,
+  malformed
   lower/upper limit structures,
   matrix spacing and gap rules, ragged or over-limit matrices, over-limit
   equation arrays, malformed script-property, pre-script, or math-paragraph

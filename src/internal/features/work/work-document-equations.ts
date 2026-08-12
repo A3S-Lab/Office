@@ -970,7 +970,7 @@ function normalizeExpression(
         return null;
       }
       const arguments_ = source.arguments.map((argument) =>
-        normalizeExpressionList(argument, state),
+        normalizeExpressionList(argument, state, true),
       );
       return arguments_.every(
         (argument): argument is WorkDocumentEquationExpression[] =>

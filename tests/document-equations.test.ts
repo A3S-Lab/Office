@@ -758,7 +758,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([34, 34, 1, 1]);
+    ).toEqual([35, 35, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -1038,6 +1038,7 @@ describe('document equations', () => {
       '<m:r><m:rPr><m:scr m:val="sans-serif"/><m:sty m:val="i"/></m:rPr><m:t>x</m:t></m:r>',
       '<m:r><m:rPr><m:scr m:val="script"/><m:sty m:val="bi"/></m:rPr><m:t>x</m:t></m:r>',
       '<m:r><m:rPr><m:scr m:val="roman"/><m:sty m:val="p"/></m:rPr><m:t>x</m:t></m:r>',
+      `<m:d><m:dPr><m:grow m:val="1"/><m:shp/><m:ctrlPr/></m:dPr><m:e>${run}</m:e></m:d>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -1398,7 +1399,6 @@ describe('document equations', () => {
       `<m:rad><m:radPr><m:ctrlPr/><m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:subHide m:val="on"/></m:naryPr><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/></m:naryPr><m:e>${run}</m:e></m:nary>`,
-      `<m:d><m:dPr><m:grow m:val="1"/></m:dPr><m:e>${run}</m:e></m:d>`,
       `<m:m><m:mPr><m:cSp m:val="120"/></m:mPr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e></m:mr></m:m>`,
@@ -1849,6 +1849,73 @@ describe('document equations', () => {
       unsupported.map(() => 'unsupported'),
     );
   });
+
+  test('normalizes delimiter defaults and strictly validates delimiter structure', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:d><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr/><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:begChr/><m:sepChr/><m:endChr/><m:grow/><m:shp/><m:ctrlPr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:begChr m:val="["/><m:sepChr m:val=";"/><m:endChr m:val="]"/><m:grow m:val="true"/><m:shp m:val="centered"/><m:ctrlPr/></m:dPr><m:e/><m:e>${run}</m:e><m:e/></m:d>`,
+      `<m:d><m:dPr><m:begChr m:val=""/><m:sepChr m:val=""/><m:endChr m:val=""/></m:dPr><m:e>${run}</m:e></m:d>`,
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'delimiter'
+          ? [
+              expression.opening,
+              expression.separator,
+              expression.closing,
+              expression.arguments.map((argument) =>
+                argument
+                  .map((child) => (child.type === 'run' ? child.text : '?'))
+                  .join(''),
+              ),
+            ]
+          : null;
+      }),
+    ).toEqual([
+      ['(', '\u2502', ')', ['x']],
+      ['(', '\u2502', ')', ['x']],
+      ['', '', '', ['x']],
+      ['[', ';', ']', ['', 'x', '']],
+      ['', '', '', ['x']],
+    ]);
+
+    const unsupported = [
+      `<m:d><m:e>${run}</m:e><m:dPr/></m:d>`,
+      `<m:d><m:dPr/><m:dPr/><m:e>${run}</m:e></m:d>`,
+      '<m:d><m:dPr/></m:d>',
+      `<m:d><m:dPr><m:endChr/><m:sepChr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:begChr/><m:begChr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:sepChr/><m:sepChr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:grow/><m:grow/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp/><m:shp/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:ctrlPr/><m:ctrlPr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:begChr m:val="xy"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:endChr m:val="&#x7f;"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:grow m:val="0"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:grow m:val="maybe"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp m:val="match"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:shp m:val="round"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:begChr m:val="[" m:extra="semantic"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:dPr><m:sepChr r:id="rIdUnsafe"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><v:dPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><v:begChr xmlns:v="${VENDOR_NAMESPACE}"/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d><m:dPr>meaningful<m:begChr/></m:dPr><m:e>${run}</m:e></m:d>`,
+      `<m:d m:extra="semantic"><m:e>${run}</m:e></m:d>`,
+      '<m:d><m:e>meaningful</m:e></m:d>',
+      `<m:d>${Array.from({ length: 33 }, () => `<m:e>${run}</m:e>`).join('')}</m:d>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
 });
 
 function equationArtifact() {
@@ -1977,6 +2044,13 @@ function complexEquation(
         closing: ']',
         separator: ';',
         arguments: [[run('a')], [run('b')]],
+      },
+      {
+        type: 'delimiter',
+        opening: '',
+        closing: '',
+        separator: '',
+        arguments: [[], [run('z')], []],
       },
       {
         type: 'accent',
@@ -2535,7 +2609,45 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
         );
       }),
   ).toEqual(['1', '1', '1', '1']);
-  expect(descendants(document, 'd')).toHaveLength(2);
+  const delimiters = descendants(document, 'd');
+  expect(delimiters).toHaveLength(4);
+  expect(
+    delimiters.map((delimiter) =>
+      directChildren(delimiter).map((child) => child.localName),
+    ),
+  ).toEqual([
+    ['dPr', 'e', 'e'],
+    ['dPr', 'e', 'e', 'e'],
+    ['dPr', 'e', 'e'],
+    ['dPr', 'e', 'e', 'e'],
+  ]);
+  expect(
+    delimiters.map((delimiter) => {
+      const properties = directChildren(delimiter, 'dPr')[0];
+      return directChildren(properties).map((child) => child.localName);
+    }),
+  ).toEqual(Array.from({ length: 4 }, () => ['begChr', 'sepChr', 'endChr']));
+  expect(
+    delimiters.map((delimiter) => {
+      const properties = directChildren(delimiter, 'dPr')[0];
+      return directChildren(properties).map(mathValueAttribute);
+    }),
+  ).toEqual([
+    ['[', ';', ']'],
+    ['', '', ''],
+    ['[', ';', ']'],
+    ['', '', ''],
+  ]);
+  expect(
+    delimiters.map((delimiter) =>
+      directChildren(delimiter, 'e').map((argument) => argument.textContent),
+    ),
+  ).toEqual([
+    ['a', 'b'],
+    ['', 'z', ''],
+    ['a', 'b'],
+    ['', 'z', ''],
+  ]);
   const preScripts = descendants(document, 'sPre');
   expect(preScripts).toHaveLength(6);
   for (const preScript of preScripts) {

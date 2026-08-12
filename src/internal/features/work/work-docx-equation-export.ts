@@ -604,8 +604,8 @@ function createExpression(
   const properties = createMathElement(document, prefix, 'dPr');
   properties.append(
     mathValueElement(document, prefix, 'begChr', expression.opening),
-    mathValueElement(document, prefix, 'endChr', expression.closing),
     mathValueElement(document, prefix, 'sepChr', expression.separator),
+    mathValueElement(document, prefix, 'endChr', expression.closing),
   );
   delimiter.append(properties);
   for (const argument of expression.arguments) {
