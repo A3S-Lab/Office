@@ -70,6 +70,15 @@ All notable changes to A3S Office will be documented in this file.
   duplicate relationships, wrong types or target modes, relative or unsafe
   targets, combined external-plus-anchor destinations, namespace spoofing,
   unsupported wrappers, and ambiguous spans fail closed.
+- Preserved text-stable static rich-text and plain-text content controls inside
+  footnotes, endnotes, comments, and replies. Eligible inline controls and
+  contiguous block controls recover their wrappers, aliases, tags, locks,
+  signed native IDs, Word 2013 appearance and color, end-character formatting,
+  passive extensions, and stable runs. ID collisions are rewritten without
+  disturbing unconflicted source IDs. Text edits, duplicate or ambiguous
+  mappings, active bindings or placeholder state, form controls, nested
+  controls, relationship-bound properties, and content mixed with hyperlinks,
+  tables, math, or drawings fail closed before any wrapper is emitted.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong

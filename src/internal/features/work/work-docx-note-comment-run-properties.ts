@@ -86,13 +86,7 @@ export function preserveDocxNoteCommentRunProperties(
   if (!sourceProperties) return;
   const allowed =
     kind === 'comment' ? COMMENT_RUN_PROPERTIES : NOTE_UNMODELED_RUN_PROPERTIES;
-  const sourceGroups = new Map<string, Element[]>();
-  for (const property of Array.from(sourceProperties.children)) {
-    if (!isWordElement(property) || !allowed.has(property.localName)) continue;
-    const matches = sourceGroups.get(property.localName) ?? [];
-    matches.push(property);
-    sourceGroups.set(property.localName, matches);
-  }
+  const sourceGroups = eligiblePropertyGroups(sourceProperties, allowed);
   if (!sourceGroups.size) return;
 
   let generatedProperties = wordDirectChildren(generatedRun, 'rPr')[0];
@@ -118,15 +112,56 @@ export function preserveDocxNoteCommentRunProperties(
   }
 }
 
+export function cloneDocxNoteCommentRunProperties(
+  document: Document,
+  sourceProperties: Element,
+  targetContext: Element,
+  kind: 'comment' | 'note',
+): Element | null {
+  const allowed =
+    kind === 'comment' ? COMMENT_RUN_PROPERTIES : NOTE_UNMODELED_RUN_PROPERTIES;
+  const properties = newRunProperties(document, targetContext);
+  for (const sourceMatches of eligiblePropertyGroups(
+    sourceProperties,
+    allowed,
+  ).values()) {
+    if (
+      sourceMatches.length !== 1 ||
+      hasRelationshipReference(sourceMatches[0])
+    ) {
+      continue;
+    }
+    const clone = cloneWordProperty(document, sourceMatches[0], targetContext);
+    if (clone) properties.append(clone);
+  }
+  return properties.children.length ? properties : null;
+}
+
+function eligiblePropertyGroups(
+  sourceProperties: Element,
+  allowed: ReadonlySet<string>,
+): Map<string, Element[]> {
+  const sourceGroups = new Map<string, Element[]>();
+  for (const property of Array.from(sourceProperties.children)) {
+    if (!isWordElement(property) || !allowed.has(property.localName)) continue;
+    const matches = sourceGroups.get(property.localName) ?? [];
+    matches.push(property);
+    sourceGroups.set(property.localName, matches);
+  }
+  return sourceGroups;
+}
+
 function createRunProperties(document: Document, run: Element): Element {
-  const namespace = run.namespaceURI ?? [...DOCX_WORDPROCESSING_NAMESPACES][0];
-  const prefix = xmlNamespacePrefix(run, namespace);
-  const properties = document.createElementNS(
-    namespace,
-    prefix ? `${prefix}:rPr` : 'rPr',
-  );
+  const properties = newRunProperties(document, run);
   run.insertBefore(properties, run.firstChild);
   return properties;
+}
+
+function newRunProperties(document: Document, context: Element): Element {
+  const namespace =
+    context.namespaceURI ?? [...DOCX_WORDPROCESSING_NAMESPACES][0];
+  const prefix = xmlNamespacePrefix(context, namespace);
+  return document.createElementNS(namespace, prefix ? `${prefix}:rPr` : 'rPr');
 }
 
 function cloneWordProperty(

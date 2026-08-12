@@ -519,12 +519,17 @@ and formatting. Stable `w:hyperlink` wrappers now retain safe tooltips and
 passive metadata. Generated note destinations remain authoritative; unchanged
 comments and replies recover validated HTTP(S), `mailto`, or internal-anchor
 destinations, with external relationship IDs deduplicated or rewritten after
-collisions. Generated supported formatting wins; text edits, duplicate
-paragraphs or run properties, missing or malformed relationships, wrong target
-types or modes, unsafe or relative targets, combined external-plus-anchor
-destinations, namespace spoofing, unsupported wrappers, mixed math or drawing
-semantics, tables, and content controls fail closed or normalize instead of
-being attached to the wrong text.
+collisions. Text-stable static rich-text and plain-text content controls also
+recover eligible inline or contiguous block wrappers, aliases, tags, locking,
+signed IDs, Word 2013 appearance and color, end-character formatting, passive
+metadata, and stable runs. Colliding control IDs are rewritten while
+unconflicted source IDs remain stable. Generated supported formatting wins;
+text edits, duplicate paragraphs or properties, missing or malformed hyperlink
+relationships, wrong target types or modes, unsafe or relative targets,
+combined external-plus-anchor destinations, namespace spoofing, active data
+bindings or placeholder state, form or nested controls, unsupported wrappers,
+and content mixed with hyperlinks, math, drawings, or tables fail closed or
+normalize instead of being attached to the wrong text.
 Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate

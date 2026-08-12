@@ -51,7 +51,7 @@ export async function diagnoseDocxNotes(
   const issues: WorkCompatibilityIssue[] = [
     noteIssue(
       'docx.notes',
-      'Footnote and endnote references, stable native IDs, editable note text, common inline formatting, safe web, mail, and internal hyperlinks, preview placement, native DOCX note parts, and eligible passive definition, paragraph, hyperlink, and text-stable run metadata are preserved.',
+      'Footnote and endnote references, stable native IDs, editable note text, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, wrapper, and text-stable run metadata are preserved.',
       'info',
     ),
   ];
@@ -75,6 +75,18 @@ export async function diagnoseDocxNotes(
       noteIssue(
         'docx.notes.rich-content',
         'Tables, drawings, and embedded media inside notes may be flattened or converted to inline content.',
+      ),
+    );
+  }
+  if (
+    noteDocuments.some(
+      ({ document: notes }) => descendants(notes, 'sdt').length > 0,
+    )
+  ) {
+    issues.push(
+      noteIssue(
+        'docx.notes.content-controls',
+        'Text-stable static rich-text and plain-text controls retain eligible inline or contiguous block wrappers and metadata. Data-bound, placeholder, form, nested, relationship-bound, ambiguous, or mixed rich-content controls normalize instead of being reattached unsafely.',
       ),
     );
   }

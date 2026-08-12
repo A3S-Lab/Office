@@ -1,5 +1,6 @@
 import type JSZip from 'jszip';
 import { normalizeDocxCommentId } from './work-docx-note-comment-identity';
+import { preserveDocxNoteCommentContentControls } from './work-docx-note-comment-content-control-preservation';
 import { preserveDocxNoteCommentHyperlinks } from './work-docx-note-comment-hyperlink-preservation';
 import { preserveDocxNoteCommentRunContent } from './work-docx-note-comment-run-preservation';
 import {
@@ -99,6 +100,12 @@ async function preserveWordItemExtensions(
     config.path,
   );
   preserveDocxNoteCommentRunContent(
+    generated.document,
+    source.document,
+    pairs,
+    config.note ? 'note' : 'comment',
+  );
+  preserveDocxNoteCommentContentControls(
     generated.document,
     source.document,
     pairs,

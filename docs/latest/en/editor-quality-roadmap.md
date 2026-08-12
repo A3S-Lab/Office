@@ -144,11 +144,16 @@ wrappers retain safe tooltips, passive metadata, and eligible run formatting.
 Generated note destinations remain authoritative; unchanged comments and
 replies recover validated HTTP(S), `mailto`, or internal-anchor destinations,
 and external relationship IDs are deduplicated or rewritten after collisions.
+Text-stable static rich-text and plain-text content controls now recover
+eligible inline or contiguous block wrappers, aliases, tags, locking, signed
+IDs, Word 2013 appearance and color, end-character formatting, passive
+metadata, and stable runs. Collisions rewrite only the affected control IDs.
 Generated supported formatting remains authoritative; edits, duplicate text or
-properties, missing or malformed relationships, wrong target types or modes,
-unsafe or relative targets, combined external-plus-anchor destinations,
-namespace spoofing, unsupported wrappers, mixed math or drawing content,
-tables, and content controls remain explicit fail-closed or normalization
+properties, missing or malformed hyperlink relationships, wrong target types
+or modes, unsafe or relative targets, combined external-plus-anchor
+destinations, namespace spoofing, active bindings or placeholder state, form or
+nested controls, unsupported wrappers, and content mixed with hyperlinks,
+math, drawings, or tables remain explicit fail-closed or normalization
 boundaries.
 
 Exit evidence:

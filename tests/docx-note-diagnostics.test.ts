@@ -60,6 +60,23 @@ describe('DOCX note diagnostics', () => {
       (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
     ).toEqual(['docx.notes', 'docx.notes.structure']);
   });
+
+  test('reports the static versus active content-control boundary', async () => {
+    const { archive, document } = await diagnosticPackage(
+      '<w:p><w:r><w:footnoteReference w:id="2"/></w:r></w:p>',
+      [
+        '<w:footnote w:id="2">',
+        '<w:p><w:sdt><w:sdtPr><w:tag w:val="field"/></w:sdtPr>',
+        '<w:sdtContent><w:r><w:t>Controlled</w:t></w:r></w:sdtContent>',
+        '</w:sdt></w:p></w:footnote>',
+      ].join(''),
+      '',
+    );
+
+    expect(
+      (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
+    ).toEqual(['docx.notes', 'docx.notes.content-controls']);
+  });
 });
 
 async function diagnosticPackage(

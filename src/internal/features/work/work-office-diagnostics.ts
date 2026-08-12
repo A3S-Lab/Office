@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Text-stable direct and supported-hyperlink-wrapped note and comment runs retain eligible paragraph, wrapper, run, and run-property metadata; safe web, mail, and internal note/comment links are rebound to collision-free final relationship IDs. Native note and comment IDs survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-text, malformed, duplicate or cross-kind, unsupported wrappers, mixed-semantic, unsafe relationship-bound, or unsupported rich content may normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Text-stable direct, supported-hyperlink-wrapped, and eligible static-content-control note and comment runs retain paragraph, wrapper, run, and run-property metadata; safe web, mail, and internal note/comment links are rebound to collision-free final relationship IDs, while content-control ID collisions are rewritten. Native note and comment IDs survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-text, malformed, duplicate or cross-kind, active, unsupported wrappers, mixed-semantic, unsafe relationship-bound, or unsupported rich content may normalize.',
       'info',
     ),
   ];
@@ -131,7 +131,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.comments',
             'Comments',
-            `${commentDefinitions.length} comment or reply record(s), stable native IDs, text anchors, authors, dates, thread relationships, resolved state, eligible durable IDs, unchanged direct-run formatting, and safely rebound web, mail, or internal hyperlinks are preserved. Comment text remains editable.`,
+            `${commentDefinitions.length} comment or reply record(s), stable native IDs, text anchors, authors, dates, thread relationships, resolved state, eligible durable IDs, unchanged direct-run formatting, safely rebound web, mail, or internal hyperlinks, and eligible static text content controls are preserved. Comment text remains editable.`,
             'info',
           ),
         );
@@ -146,7 +146,7 @@ export async function analyzeDocxCompatibility(
             issue(
               'docx.comments.formatting',
               'Comment formatting',
-              'Relationship-free formatting on uniquely matched unchanged direct text runs is retained. Supported HTTP(S), mailto, and internal hyperlink wrappers keep stable run formatting, safe tooltips, and collision-free relationship IDs. Editing comment text or using tables, images, content controls, unsupported wrappers, mixed semantic content, missing or malformed relationships, or relationship-bound runs outside the supported hyperlink boundary normalizes the affected content to safe plain text.',
+              'Relationship-free formatting on uniquely matched unchanged direct text runs and eligible reconstructed control runs is retained. Supported HTTP(S), mailto, and internal hyperlink wrappers keep stable formatting, safe tooltips, and collision-free relationship IDs. Eligible static rich-text or plain-text controls retain inline or contiguous block wrappers, aliases, tags, locks, rewritten collision IDs, appearance, color, end formatting, and passive metadata. Editing comment text or using active bindings, placeholder state, form or nested controls, tables, images, math, mixed hyperlinks, unsupported wrappers, malformed relationships, or relationship-bound properties normalizes the affected content to safe plain text.',
             ),
           );
         }
