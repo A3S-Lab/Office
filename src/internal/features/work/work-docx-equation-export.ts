@@ -1305,6 +1305,16 @@ function createWordRunProperties(
     }
     result.append(layout);
   }
+  if (properties.paragraphMarkAlwaysHidden !== undefined) {
+    result.append(
+      createWordOnOffElement(
+        document,
+        prefix,
+        'specVanish',
+        properties.paragraphMarkAlwaysHidden,
+      ),
+    );
+  }
   return result;
 }
 

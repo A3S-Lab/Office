@@ -35,6 +35,9 @@ const STRICT_WORD_NAMESPACE =
   'http://purl.oclc.org/ooxml/wordprocessingml/main';
 const WORD_DATE_UTC_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
+const WORD_2010_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2010/wordml';
+const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63500"><w14:srgbClr w14:val="FFFF00"/></w14:glow>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2060,6 +2063,7 @@ describe('document equations', () => {
       '<w:em w:val="circle"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
       '<w:eastAsianLayout w:id="9" w:combine="1" w:combineBrackets="curly" w:vert="0" w:vertCompress="1"/>',
+      '<w:specVanish w:val="0"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2168,7 +2172,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:specVanish/></w:rPr>'),
+      wordRun(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2202,7 +2206,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun('<w:rPr><w:specVanish/></w:rPr>', '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4281,6 +4285,205 @@ describe('document equations', () => {
     );
   });
 
+  test('preserves paragraph-mark visibility flags as inert OMML metadata', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'always-hidden-paragraph-mark',
+          wordRunProperties: { paragraphMarkAlwaysHidden: true },
+        },
+        {
+          type: 'run',
+          text: 'explicit-paragraph-mark-reset',
+          wordRunProperties: { paragraphMarkAlwaysHidden: false },
+        },
+        {
+          type: 'run',
+          text: 'spec-vanish-with-hidden-run',
+          wordRunProperties: {
+            hidden: true,
+            paragraphMarkAlwaysHidden: true,
+          },
+        },
+        {
+          type: 'run',
+          text: 'ordered-spec-vanish',
+          wordRunProperties: {
+            languages: { eastAsia: 'zh-CN' },
+            eastAsianLayout: {
+              id: 5,
+              combine: false,
+              vertical: true,
+            },
+            paragraphMarkAlwaysHidden: false,
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { paragraphMarkAlwaysHidden: true },
+          children: [{ type: 'run', text: 'operator-spec-vanish' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const paragraphMarkAlwaysHidden of [true, false]) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithWordRunProperties({ paragraphMarkAlwaysHidden }),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { paragraphMarkAlwaysHidden },
+      });
+    }
+    expect(
+      normalizeDocumentEquation(
+        equationWithWordRunProperties({
+          paragraphMarkAlwaysHidden: undefined,
+        }),
+      ),
+    ).toEqual(simpleEquation('x'));
+    const invalidModels = [
+      { paragraphMarkAlwaysHidden: null },
+      { paragraphMarkAlwaysHidden: 0 },
+      { paragraphMarkAlwaysHidden: 1 },
+      { paragraphMarkAlwaysHidden: 'false' },
+      { paragraphMarkAlwaysHidden: {} },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      for (const [markup, paragraphMarkAlwaysHidden] of [
+        ['<w:specVanish/>', true],
+        ['<w:specVanish w:val="1"/>', true],
+        ['<w:specVanish w:val=" true "/>', true],
+        ['<w:specVanish w:val="ON"/>', true],
+        ['<w:specVanish w:val="0"/>', false],
+        ['<w:specVanish w:val=" false "/>', false],
+        ['<w:specVanish w:val="OFF"/>', false],
+      ] as const) {
+        expect(
+          inspectEquationModel(wordRun(markup, namespace))?.children[0],
+        ).toEqual({
+          type: 'run',
+          text: 'x',
+          wordRunProperties: { paragraphMarkAlwaysHidden },
+        });
+      }
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:lang w:eastAsia="zh-CN"/><w:eastAsianLayout w:id="5" w:combine="0" w:vert="1"/><w:specVanish w:val="0"/>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        languages: { eastAsia: 'zh-CN' },
+        eastAsianLayout: { id: 5, combine: false, vertical: true },
+        paragraphMarkAlwaysHidden: false,
+      },
+    });
+
+    const invalidMarkup = [
+      wordRun('<w:specVanish w:val=""/>'),
+      wordRun('<w:specVanish w:val="maybe"/>'),
+      wordRun('<w:specVanish w:val="2"/>'),
+      wordRun('<w:specVanish val="1"/>'),
+      wordRun('<w:specVanish w:val="1" w:extra="semantic"/>'),
+      wordRun(
+        `<w:specVanish xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="1" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:specVanish><w:b/></w:specVanish>'),
+      wordRun('<w:specVanish>meaningful</w:specVanish>'),
+      wordRun('<w:specVanish/><w:specVanish w:val="0"/>'),
+      wordRun('<w:specVanish/><w:eastAsianLayout w:id="1"/>'),
+      wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
+      wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
+      wordRun('<m:specVanish m:val="1"/>'),
+      wordRun(WORD_2010_GLOW),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of [
+      'always-hidden-paragraph-mark',
+      'explicit-paragraph-mark-reset',
+      'spec-vanish-with-hidden-run',
+      'ordered-spec-vanish',
+      'operator-spec-vanish',
+    ]) {
+      expect(preview.textContent).toContain(text);
+    }
+    expect(preview.outerHTML).not.toMatch(
+      /(?:display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(?:\D|$))/u,
+    );
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunSpecVanish(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-spec-vanish.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunSpecVanish(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -4369,7 +4572,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties('<w:rPr><w:specVanish/></w:rPr>'),
+      invalidControlProperties(`<w:rPr>${WORD_2010_GLOW}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -4640,7 +4843,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(`${run}<m:ctrlPr><w:rPr><w:specVanish/></w:rPr></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:rPr>${WORD_2010_GLOW}</w:rPr></m:ctrlPr>`),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -5836,6 +6039,7 @@ function richWordRunProperties() {
       vertical: false,
       verticalCompress: true,
     },
+    paragraphMarkAlwaysHidden: false,
   };
 }
 
@@ -7599,6 +7803,80 @@ async function expectNativeWordRunEastAsianLayouts(blob: Blob): Promise<void> {
   ]);
 }
 
+async function expectNativeWordRunSpecVanish(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  for (const entry of [
+    {
+      text: 'always-hidden-paragraph-mark',
+      names: ['specVanish'],
+      attributes: [{ val: '1' }],
+    },
+    {
+      text: 'explicit-paragraph-mark-reset',
+      names: ['specVanish'],
+      attributes: [{ val: '0' }],
+    },
+    {
+      text: 'spec-vanish-with-hidden-run',
+      names: ['vanish', 'specVanish'],
+      attributes: [{ val: '1' }, { val: '1' }],
+    },
+    {
+      text: 'ordered-spec-vanish',
+      names: ['lang', 'eastAsianLayout', 'specVanish'],
+      attributes: [
+        { eastAsia: 'zh-CN' },
+        { id: '5', combine: '0', vert: '1' },
+        { val: '0' },
+      ],
+    },
+  ]) {
+    const run = mathRuns.find(
+      (candidate) => candidate.textContent === entry.text,
+    );
+    expect(run, entry.text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, entry.text).toBeDefined();
+    const children = directChildren(properties as Element);
+    expect(
+      children.map((child) => child.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(children.map(wordAttributes), entry.text).toEqual(entry.attributes);
+    const specVanish = children.find(
+      (child) => child.localName === 'specVanish',
+    );
+    expect(
+      Array.from((specVanish as Element).attributes).map(
+        (attribute) => attribute.name,
+      ),
+      entry.text,
+    ).toEqual(['w:val']);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-spec-vanish'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const specVanish = directChildren(wordProperties as Element, 'specVanish')[0];
+  expect(wordAttributes(specVanish)).toEqual({ val: '1' });
+  expect(
+    Array.from(specVanish.attributes).map((attribute) => attribute.name),
+  ).toEqual(['w:val']);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -7658,6 +7936,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'em',
     'lang',
     'eastAsianLayout',
+    'specVanish',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -7737,6 +8016,7 @@ async function expectNativeArgumentControlProperties(
     'em',
     'lang',
     'eastAsianLayout',
+    'specVanish',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -8303,6 +8583,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'em',
     'lang',
     'eastAsianLayout',
+    'specVanish',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -8375,6 +8656,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       vert: '0',
       vertCompress: '1',
     },
+    { val: '0' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(

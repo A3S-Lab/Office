@@ -165,6 +165,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'em',
   'lang',
   'eastAsianLayout',
+  'specVanish',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -991,6 +992,7 @@ function parseWordRunProperties(
     ['webHidden', 'webHidden'],
     ['rtl', 'rightToLeft'],
     ['cs', 'complexScript'],
+    ['specVanish', 'paragraphMarkAlwaysHidden'],
   ] as const) {
     const element = children.get(name);
     if (!element) continue;
@@ -1053,6 +1055,11 @@ function parseWordRunProperties(
     ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
     ...(eastAsianLayout ? { eastAsianLayout } : {}),
+    ...(booleans.has('paragraphMarkAlwaysHidden')
+      ? {
+          paragraphMarkAlwaysHidden: booleans.get('paragraphMarkAlwaysHidden'),
+        }
+      : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }

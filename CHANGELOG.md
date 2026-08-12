@@ -31,7 +31,7 @@ All notable changes to A3S Office will be documented in this file.
   RTL/complex-script flags, language tags, and East Asian typography metadata
   with optional signed 32-bit run IDs, two-lines-in-one flags, all five
   enclosing-bracket styles, horizontal-in-vertical rotation, and rotated-text
-  compression.
+  compression, plus explicit paragraph-mark always-hidden/reset flags.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
@@ -42,7 +42,8 @@ All notable changes to A3S Office will be documented in this file.
   present so inherited emphasis marks can be removed.
   Empty `w:eastAsianLayout` elements canonicalize away, while omitted flags
   stay distinct from explicit `false` resets and signed run IDs retain explicit
-  zero.
+  zero. An empty `w:specVanish` canonicalizes to `true`; omission remains
+  distinct from an explicit `false` inheritance reset.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, baseline shifts, and baseline/superscript/subscript
   alignment use safe CSS projections in MathML previews without changing
@@ -52,7 +53,8 @@ All notable changes to A3S Office will be documented in this file.
   Word. When `w:position` and `w:vertAlign` coexist, both remain in native
   schema order and the later explicit alignment controls the CSS vertical
   position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
-  `w:eastAsianLayout` remains after `w:lang`. Simple
+  `w:eastAsianLayout` remains after `w:lang` and `w:specVanish` follows it.
+  Simple
   explicitly sized solid, double, dotted, dashed, inset, and outset line
   borders project through CSS with direct or automatic color and point
   padding; explicit `nil`/`none` resets also project. Relief effects, legacy
@@ -65,7 +67,11 @@ All notable changes to A3S Office will be documented in this file.
   two-lines-in-one, enclosing brackets, horizontal-in-vertical rotation, and
   rotated-text compression also remain native-only because CSS writing modes,
   text combination, and transforms cannot reproduce Word's inline line-box
-  semantics without layout drift. Highlight precedence over shading is
+  semantics without layout drift. `w:specVanish` also stays native-only and
+  never hides equation previews because its display semantics apply only to
+  paragraph marks; Word additionally ignores it unless `w:vanish` is set.
+  Schema-valid values remain preserved without inventing that dependency.
+  Highlight precedence over shading is
   retained. Named highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
   `mathbackground`; pattern masks and theme-only colors remain native metadata.
@@ -75,7 +81,8 @@ All notable changes to A3S Office will be documented in this file.
   colors/flags, missing, malformed, fractional, or out-of-range manual widths
   and grouping IDs, missing or unknown vertical-alignment or emphasis-mark
   values, malformed or out-of-range East Asian layout IDs, flags, or bracket
-  styles, and unknown, reordered, duplicated, spoofed, or
+  styles, malformed paragraph-mark visibility flags, and unknown, reordered,
+  duplicated, spoofed, or
   relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control

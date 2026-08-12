@@ -302,6 +302,7 @@ export interface WorkDocumentEquationWordRunProperties {
   emphasisMark?: WorkDocumentEquationWordEmphasisMark;
   languages?: WorkDocumentEquationWordLanguages;
   eastAsianLayout?: WorkDocumentEquationWordEastAsianLayout;
+  paragraphMarkAlwaysHidden?: boolean;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -899,6 +900,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'emphasisMark',
   'languages',
   'eastAsianLayout',
+  'paragraphMarkAlwaysHidden',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -3040,6 +3042,7 @@ function normalizeEquationWordRunProperties(
     'webHidden',
     'rightToLeft',
     'complexScript',
+    'paragraphMarkAlwaysHidden',
   ] as const) {
     if (source[key] !== undefined && typeof source[key] !== 'boolean') {
       return null;
@@ -3127,6 +3130,12 @@ function normalizeEquationWordRunProperties(
     ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
     ...(eastAsianLayout ? { eastAsianLayout } : {}),
+    ...(source.paragraphMarkAlwaysHidden !== undefined
+      ? {
+          paragraphMarkAlwaysHidden:
+            source.paragraphMarkAlwaysHidden as boolean,
+        }
+      : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
