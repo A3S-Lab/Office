@@ -2031,10 +2031,18 @@ describe('document equations', () => {
       '<w:bCs w:val="0"/>',
       '<w:i w:val="false"/>',
       '<w:iCs/>',
+      '<w:caps w:val="0"/>',
+      '<w:smallCaps/>',
       '<w:strike w:val="off"/>',
       '<w:dstrike w:val="true"/>',
+      '<w:outline/>',
+      '<w:shadow/>',
+      '<w:emboss w:val="0"/>',
+      '<w:imprint w:val="false"/>',
       '<w:noProof/>',
       '<w:snapToGrid w:val="0"/>',
+      '<w:vanish w:val="0"/>',
+      '<w:webHidden/>',
       '<w:color w:val="1A2B3C" w:themeColor="accent2" w:themeTint="80" w:themeShade="40"/>',
       '<w:spacing w:val="20"/>',
       '<w:w w:val="90"/>',
@@ -2154,7 +2162,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:vanish/></w:rPr>'),
+      wordRun('<w:rPr><w:effect w:val="shimmer"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2188,9 +2196,244 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun('<w:rPr><w:vanish/></w:rPr>', '<w:t>fallback</w:t>'),
+        wordRun(
+          '<w:rPr><w:effect w:val="shimmer"/></w:rPr>',
+          '<w:t>fallback</w:t>',
+        ),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
+  });
+
+  test('preserves Word casing, relief, and visibility inside OMML', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'all-caps-outline',
+          wordRunProperties: {
+            allCaps: true,
+            outline: true,
+            shadow: true,
+            hidden: false,
+            webHidden: false,
+          },
+        },
+        {
+          type: 'run',
+          text: 'small-caps-hidden',
+          wordRunProperties: {
+            allCaps: false,
+            smallCaps: true,
+            outline: false,
+            shadow: false,
+            emboss: true,
+            imprint: false,
+            hidden: true,
+            webHidden: true,
+          },
+        },
+        {
+          type: 'run',
+          text: 'explicit-effect-resets',
+          wordRunProperties: {
+            allCaps: false,
+            smallCaps: false,
+            outline: false,
+            shadow: false,
+            emboss: false,
+            imprint: false,
+            hidden: false,
+            webHidden: false,
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { smallCaps: true, shadow: true },
+          children: [{ type: 'run', text: 'operator-effects' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const properties of [
+      { allCaps: false, smallCaps: true },
+      { outline: true, shadow: true, emboss: false, imprint: false },
+      { hidden: false, webHidden: true },
+    ]) {
+      expect(
+        normalizeDocumentEquation(equationWithWordRunProperties(properties))
+          ?.children[0],
+      ).toMatchObject({ wordRunProperties: properties });
+    }
+    const invalidModels = [
+      { allCaps: 'true' },
+      { smallCaps: 1 },
+      { outline: null },
+      { shadow: 'false' },
+      { emboss: 0 },
+      { imprint: 'off' },
+      { hidden: 'true' },
+      { webHidden: 1 },
+      { allCaps: true, smallCaps: true },
+      { strike: true, doubleStrike: true },
+      { outline: true, emboss: true },
+      { outline: true, imprint: true },
+      { shadow: true, emboss: true },
+      { shadow: true, imprint: true },
+      { emboss: true, imprint: true },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    const effectProperties =
+      '<w:caps w:val="0"/><w:smallCaps/><w:outline w:val="false"/><w:shadow/><w:emboss w:val="0"/><w:imprint w:val="off"/><w:vanish/><w:webHidden w:val="0"/>';
+    expect(
+      inspectEquationModel(wordRun(effectProperties))?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        allCaps: false,
+        smallCaps: true,
+        outline: false,
+        shadow: true,
+        emboss: false,
+        imprint: false,
+        hidden: true,
+        webHidden: false,
+      },
+    });
+    expect(
+      inspectEquationRoot(
+        `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}"><m:r><w:rPr>${effectProperties}</w:rPr><m:t>strict-effects</m:t></m:r></m:oMath>`,
+      ),
+    ).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            wordRunProperties: {
+              allCaps: false,
+              smallCaps: true,
+              outline: false,
+              shadow: true,
+              emboss: false,
+              imprint: false,
+              hidden: true,
+              webHidden: false,
+            },
+          },
+        ],
+      },
+    });
+
+    const unsupported = [
+      wordRun('<w:caps w:val="maybe"/>'),
+      wordRun('<w:outline w:val="2"/>'),
+      wordRun('<w:vanish w:val="hidden"/>'),
+      wordRun('<w:caps/><w:smallCaps/>'),
+      wordRun('<w:strike/><w:dstrike/>'),
+      wordRun('<w:outline/><w:emboss/>'),
+      wordRun('<w:outline/><w:imprint/>'),
+      wordRun('<w:shadow/><w:emboss/>'),
+      wordRun('<w:shadow/><w:imprint/>'),
+      wordRun('<w:emboss/><w:imprint/>'),
+      wordRun('<w:smallCaps/><w:caps w:val="0"/>'),
+      wordRun('<w:emboss w:val="0"/><w:shadow/>'),
+      wordRun('<w:webHidden/><w:vanish w:val="0"/>'),
+      wordRun('<w:caps/><w:caps w:val="0"/>'),
+      wordRun('<w:caps val="1"/>'),
+      wordRun('<w:outline w:val="1" w:extra="semantic"/>'),
+      wordRun(
+        `<w:shadow xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:emboss><w:b/></w:emboss>'),
+      wordRun(`<v:caps xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
+      wordRun('<m:vanish m:val="1"/>'),
+      wordRun('<w:effect w:val="shimmer"/>'),
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const styleFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo'))
+        .find((element) => element.textContent === text)
+        ?.getAttribute('style');
+    expect(styleFor('all-caps-outline')).toContain('text-transform:uppercase');
+    expect(styleFor('all-caps-outline')).not.toMatch(
+      /text-shadow|text-stroke|visibility|display/iu,
+    );
+    expect(styleFor('small-caps-hidden')).toContain('text-transform:none');
+    expect(styleFor('small-caps-hidden')).toContain(
+      'font-variant-caps:small-caps',
+    );
+    expect(styleFor('small-caps-hidden')).not.toMatch(/visibility|display/iu);
+    expect(styleFor('explicit-effect-resets')).toContain('text-transform:none');
+    expect(styleFor('explicit-effect-resets')).toContain(
+      'font-variant-caps:normal',
+    );
+    expect(styleFor('\u2211')).toContain('font-variant-caps:small-caps');
+    expect(preview.textContent).toContain('small-caps-hidden');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext'))
+        .find((element) => element.textContent === 'all-caps-outline')
+        ?.getAttribute('style'),
+    ).toContain('text-transform:uppercase');
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext'))
+        .find((element) => element.textContent === 'small-caps-hidden')
+        ?.getAttribute('style'),
+    ).toContain('font-variant-caps:small-caps');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunEffects(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-effects.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunEffects(await createArtifactBlob(imported));
   });
 
   test('preserves Word character geometry inside OMML', async () => {
@@ -2855,7 +3098,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties('<w:rPr><w:vanish/></w:rPr>'),
+      invalidControlProperties('<w:rPr><w:effect w:val="shimmer"/></w:rPr>'),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -3126,7 +3369,9 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(`${run}<m:ctrlPr><w:rPr><w:vanish/></w:rPr></m:ctrlPr>`),
+      argument(
+        `${run}<m:ctrlPr><w:rPr><w:effect w:val="shimmer"/></w:rPr></m:ctrlPr>`,
+      ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -4263,10 +4508,18 @@ function richWordRunProperties() {
     boldComplexScript: false,
     italic: false,
     italicComplexScript: true,
+    allCaps: false,
+    smallCaps: true,
     strike: false,
     doubleStrike: true,
+    outline: true,
+    shadow: true,
+    emboss: false,
+    imprint: false,
     noProof: true,
     snapToGrid: false,
+    hidden: false,
+    webHidden: true,
     color: {
       value: '#1a2b3c',
       theme: 'accent2' as const,
@@ -5455,6 +5708,88 @@ async function expectNativeWordRunGeometry(blob: Blob): Promise<void> {
   ]);
 }
 
+async function expectNativeWordRunEffects(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const propertiesFor = (text: string) => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return directChildren(properties as Element);
+  };
+  for (const entry of [
+    {
+      text: 'all-caps-outline',
+      names: ['caps', 'outline', 'shadow', 'vanish', 'webHidden'],
+      values: ['1', '1', '1', '0', '0'],
+    },
+    {
+      text: 'small-caps-hidden',
+      names: [
+        'caps',
+        'smallCaps',
+        'outline',
+        'shadow',
+        'emboss',
+        'imprint',
+        'vanish',
+        'webHidden',
+      ],
+      values: ['0', '1', '0', '0', '1', '0', '1', '1'],
+    },
+    {
+      text: 'explicit-effect-resets',
+      names: [
+        'caps',
+        'smallCaps',
+        'outline',
+        'shadow',
+        'emboss',
+        'imprint',
+        'vanish',
+        'webHidden',
+      ],
+      values: ['0', '0', '0', '0', '0', '0', '0', '0'],
+    },
+  ]) {
+    const properties = propertiesFor(entry.text);
+    expect(
+      properties.map((property) => property.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(
+      properties.map((property) => wordAttributes(property).val),
+      entry.text,
+    ).toEqual(entry.values);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-effects'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const properties = directChildren(wordProperties as Element);
+  expect(properties.map((property) => property.localName)).toEqual([
+    'smallCaps',
+    'shadow',
+  ]);
+  expect(properties.map((property) => wordAttributes(property).val)).toEqual([
+    '1',
+    '1',
+  ]);
+}
+
 async function expectNativeWordRunBackgrounds(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -5590,10 +5925,18 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'bCs',
     'i',
     'iCs',
+    'caps',
+    'smallCaps',
     'strike',
     'dstrike',
+    'outline',
+    'shadow',
+    'emboss',
+    'imprint',
     'noProof',
     'snapToGrid',
+    'vanish',
+    'webHidden',
     'color',
     'spacing',
     'w',
@@ -5655,10 +5998,18 @@ async function expectNativeArgumentControlProperties(
     'bCs',
     'i',
     'iCs',
+    'caps',
+    'smallCaps',
     'strike',
     'dstrike',
+    'outline',
+    'shadow',
+    'emboss',
+    'imprint',
     'noProof',
     'snapToGrid',
+    'vanish',
+    'webHidden',
     'color',
     'spacing',
     'w',
@@ -6207,10 +6558,18 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'bCs',
     'i',
     'iCs',
+    'caps',
+    'smallCaps',
     'strike',
     'dstrike',
+    'outline',
+    'shadow',
+    'emboss',
+    'imprint',
     'noProof',
     'snapToGrid',
+    'vanish',
+    'webHidden',
     'color',
     'spacing',
     'w',
@@ -6241,8 +6600,16 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     { val: '1' },
     { val: '0' },
     { val: '1' },
+    { val: '0' },
+    { val: '1' },
+    { val: '1' },
     { val: '1' },
     { val: '0' },
+    { val: '0' },
+    { val: '1' },
+    { val: '0' },
+    { val: '0' },
+    { val: '1' },
     {
       val: '1A2B3C',
       themeColor: 'accent2',

@@ -15,8 +15,10 @@ All notable changes to A3S Office will be documented in this file.
   subset covers Unicode runs with literal/normal-text semantics, six math
   scripts, four styles, manual breaks, and alignment points,
   plus ordered `m:rPr -> w:rPr -> m:t/w:t` runs with bounded Word fonts and
-  theme references, Latin/complex-script bold and italic flags, strike,
-  proofing/grid flags, direct/theme colors, signed character spacing through
+  theme references, Latin/complex-script bold and italic flags, all-caps and
+  small-caps presentation, single and double strike, outline, shadow, emboss,
+  imprint, proofing/grid flags, hidden and web-hidden states, direct/theme
+  colors, signed character spacing through
   31,680 twips, 1–600% horizontal scaling, half-point kerning thresholds and
   signed baseline positions, half-point sizes, colored underline styles, every
   named highlight color, complete patterned run shading with direct or theme
@@ -24,12 +26,16 @@ All notable changes to A3S Office will be documented in this file.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
-  Character spacing, width scaling, effective kerning, and baseline shifts use
-  safe CSS projections in MathML previews. Highlight precedence over shading is
-  retained. Named highlights, explicit highlight removal, clear direct fills,
+  All-caps and small-caps presentation, character spacing, width scaling,
+  effective kerning, and baseline shifts use safe CSS projections in MathML
+  previews without changing source Unicode text. Relief effects and hidden or
+  web-hidden states remain native metadata because Word view and rendering
+  settings govern them. Highlight precedence over shading is retained. Named
+  highlights, explicit highlight removal, clear direct fills,
   solid direct foregrounds, and nil shading project through MathML
   `mathbackground`; pattern masks and theme-only colors remain native metadata.
-  Explicit on/off values survive native regeneration, while unknown, reordered,
+  Explicit on/off values survive native regeneration. Enabled mutually
+  exclusive casing, strike, or relief combinations, and unknown, reordered,
   duplicated, spoofed, or relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
   `m:ctrlPr` control format through that bounded property model. The control

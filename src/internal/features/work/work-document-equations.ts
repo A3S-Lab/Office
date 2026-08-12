@@ -194,10 +194,18 @@ export interface WorkDocumentEquationWordRunProperties {
   boldComplexScript?: boolean;
   italic?: boolean;
   italicComplexScript?: boolean;
+  allCaps?: boolean;
+  smallCaps?: boolean;
   strike?: boolean;
   doubleStrike?: boolean;
+  outline?: boolean;
+  shadow?: boolean;
+  emboss?: boolean;
+  imprint?: boolean;
   noProof?: boolean;
   snapToGrid?: boolean;
+  hidden?: boolean;
+  webHidden?: boolean;
   color?: WorkDocumentEquationWordColor;
   characterSpacingTwips?: number;
   characterScalePercent?: number;
@@ -710,10 +718,18 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'boldComplexScript',
   'italic',
   'italicComplexScript',
+  'allCaps',
+  'smallCaps',
   'strike',
   'doubleStrike',
+  'outline',
+  'shadow',
+  'emboss',
+  'imprint',
   'noProof',
   'snapToGrid',
+  'hidden',
+  'webHidden',
   'color',
   'characterSpacingTwips',
   'characterScalePercent',
@@ -2797,10 +2813,18 @@ function normalizeEquationWordRunProperties(
     'boldComplexScript',
     'italic',
     'italicComplexScript',
+    'allCaps',
+    'smallCaps',
     'strike',
     'doubleStrike',
+    'outline',
+    'shadow',
+    'emboss',
+    'imprint',
     'noProof',
     'snapToGrid',
+    'hidden',
+    'webHidden',
     'rightToLeft',
     'complexScript',
   ] as const) {
@@ -2808,6 +2832,7 @@ function normalizeEquationWordRunProperties(
       return null;
     }
   }
+  if (equationWordRunEffectsConflict(source)) return null;
   const normalized: WorkDocumentEquationWordRunProperties = {
     ...(fonts ? { fonts } : {}),
     ...(source.bold !== undefined ? { bold: source.bold as boolean } : {}),
@@ -2820,17 +2845,41 @@ function normalizeEquationWordRunProperties(
     ...(source.italicComplexScript !== undefined
       ? { italicComplexScript: source.italicComplexScript as boolean }
       : {}),
+    ...(source.allCaps !== undefined
+      ? { allCaps: source.allCaps as boolean }
+      : {}),
+    ...(source.smallCaps !== undefined
+      ? { smallCaps: source.smallCaps as boolean }
+      : {}),
     ...(source.strike !== undefined
       ? { strike: source.strike as boolean }
       : {}),
     ...(source.doubleStrike !== undefined
       ? { doubleStrike: source.doubleStrike as boolean }
       : {}),
+    ...(source.outline !== undefined
+      ? { outline: source.outline as boolean }
+      : {}),
+    ...(source.shadow !== undefined
+      ? { shadow: source.shadow as boolean }
+      : {}),
+    ...(source.emboss !== undefined
+      ? { emboss: source.emboss as boolean }
+      : {}),
+    ...(source.imprint !== undefined
+      ? { imprint: source.imprint as boolean }
+      : {}),
     ...(source.noProof !== undefined
       ? { noProof: source.noProof as boolean }
       : {}),
     ...(source.snapToGrid !== undefined
       ? { snapToGrid: source.snapToGrid as boolean }
+      : {}),
+    ...(source.hidden !== undefined
+      ? { hidden: source.hidden as boolean }
+      : {}),
+    ...(source.webHidden !== undefined
+      ? { webHidden: source.webHidden as boolean }
       : {}),
     ...(color ? { color } : {}),
     ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),
@@ -2857,6 +2906,27 @@ function normalizeEquationWordRunProperties(
     ...(languages ? { languages } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function equationWordRunEffectsConflict(
+  source: Record<string, unknown>,
+): boolean {
+  if (source.allCaps === true && source.smallCaps === true) return true;
+  if (source.strike === true && source.doubleStrike === true) return true;
+  if (
+    source.emboss === true &&
+    (source.outline === true ||
+      source.shadow === true ||
+      source.imprint === true)
+  ) {
+    return true;
+  }
+  return (
+    source.imprint === true &&
+    (source.outline === true ||
+      source.shadow === true ||
+      source.emboss === true)
+  );
 }
 
 function normalizeEquationWordRunFonts(
@@ -3173,6 +3243,7 @@ function wordPropertiesMathMlAttributes(
     font ? `font-family:${cssString(font)}` : '',
     bold === undefined ? '' : `font-weight:${bold ? 'bold' : 'normal'}`,
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
+    wordRunCaseStyles(properties),
     wordRunTextDecoration(properties),
     properties.characterSpacingTwips === undefined
       ? ''
@@ -3197,6 +3268,21 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunCaseStyles(
+  properties: WorkDocumentEquationWordRunProperties,
+): string {
+  return [
+    properties.allCaps === undefined
+      ? ''
+      : `text-transform:${properties.allCaps ? 'uppercase' : 'none'}`,
+    properties.smallCaps === undefined
+      ? ''
+      : `font-variant-caps:${properties.smallCaps ? 'small-caps' : 'normal'}`,
+  ]
+    .filter(Boolean)
+    .join(';');
 }
 
 function wordRunMathMlKerning(

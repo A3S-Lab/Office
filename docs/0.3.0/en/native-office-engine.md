@@ -1253,8 +1253,10 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 `mathvariant` while retaining native break and alignment metadata.
 Math runs also preserve the native `m:rPr -> w:rPr -> m:t/w:t` order. The
 bounded Word run-property subset covers direct and theme font references,
-Latin and complex-script bold/italic flags, strike and double-strike,
-proofing/grid flags, direct and theme colors with tint/shade, signed character
+Latin and complex-script bold/italic flags, all-caps and small-caps
+presentation, strike and double-strike, outline, shadow, emboss, imprint,
+proofing/grid flags, hidden and web-hidden states, direct and theme colors with
+tint/shade, signed character
 spacing through 31,680 twips, 1–600% horizontal scaling, half-point kerning
 thresholds and signed baseline positions, half-point font sizes, all named
 highlight colors, complete patterned run shading with direct or theme
@@ -1266,13 +1268,18 @@ exactly to the bounded half-point model.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
-spacing, width, effective kerning, and baseline-shift values.
+spacing, width, effective kerning, baseline-shift, all-caps, and small-caps
+values without changing source Unicode text. Outline, shadow, emboss, imprint,
+hidden, and web-hidden values remain native-only because Word rendering and
+view settings govern them.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
 remain native metadata when no exact browser color is available.
-Unknown, duplicated, reordered, namespace-spoofed, or relationship-bound Word
-run properties fail closed instead of being silently discarded.
+Enabled mutually exclusive all-caps/small-caps, strike/double-strike, or relief
+combinations, and unknown, duplicated, reordered, namespace-spoofed, or
+relationship-bound Word run properties fail closed instead of being silently
+discarded.
 Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is

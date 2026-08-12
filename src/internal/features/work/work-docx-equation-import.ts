@@ -126,10 +126,18 @@ const WORD_RUN_PROPERTY_ORDER = [
   'bCs',
   'i',
   'iCs',
+  'caps',
+  'smallCaps',
   'strike',
   'dstrike',
+  'outline',
+  'shadow',
+  'emboss',
+  'imprint',
   'noProof',
   'snapToGrid',
+  'vanish',
+  'webHidden',
   'color',
   'spacing',
   'w',
@@ -862,10 +870,18 @@ function parseWordRunProperties(
     ['bCs', 'boldComplexScript'],
     ['i', 'italic'],
     ['iCs', 'italicComplexScript'],
+    ['caps', 'allCaps'],
+    ['smallCaps', 'smallCaps'],
     ['strike', 'strike'],
     ['dstrike', 'doubleStrike'],
+    ['outline', 'outline'],
+    ['shadow', 'shadow'],
+    ['emboss', 'emboss'],
+    ['imprint', 'imprint'],
     ['noProof', 'noProof'],
     ['snapToGrid', 'snapToGrid'],
+    ['vanish', 'hidden'],
+    ['webHidden', 'webHidden'],
     ['rtl', 'rightToLeft'],
     ['cs', 'complexScript'],
   ] as const) {
@@ -885,13 +901,25 @@ function parseWordRunProperties(
     ...(booleans.has('italicComplexScript')
       ? { italicComplexScript: booleans.get('italicComplexScript') }
       : {}),
+    ...(booleans.has('allCaps') ? { allCaps: booleans.get('allCaps') } : {}),
+    ...(booleans.has('smallCaps')
+      ? { smallCaps: booleans.get('smallCaps') }
+      : {}),
     ...(booleans.has('strike') ? { strike: booleans.get('strike') } : {}),
     ...(booleans.has('doubleStrike')
       ? { doubleStrike: booleans.get('doubleStrike') }
       : {}),
+    ...(booleans.has('outline') ? { outline: booleans.get('outline') } : {}),
+    ...(booleans.has('shadow') ? { shadow: booleans.get('shadow') } : {}),
+    ...(booleans.has('emboss') ? { emboss: booleans.get('emboss') } : {}),
+    ...(booleans.has('imprint') ? { imprint: booleans.get('imprint') } : {}),
     ...(booleans.has('noProof') ? { noProof: booleans.get('noProof') } : {}),
     ...(booleans.has('snapToGrid')
       ? { snapToGrid: booleans.get('snapToGrid') }
+      : {}),
+    ...(booleans.has('hidden') ? { hidden: booleans.get('hidden') } : {}),
+    ...(booleans.has('webHidden')
+      ? { webHidden: booleans.get('webHidden') }
       : {}),
     ...(color ? { color } : {}),
     ...(characterSpacingTwips !== undefined ? { characterSpacingTwips } : {}),

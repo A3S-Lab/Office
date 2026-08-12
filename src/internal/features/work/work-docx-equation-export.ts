@@ -1072,10 +1072,18 @@ function createWordRunProperties(
     ['bCs', properties.boldComplexScript],
     ['i', properties.italic],
     ['iCs', properties.italicComplexScript],
+    ['caps', properties.allCaps],
+    ['smallCaps', properties.smallCaps],
     ['strike', properties.strike],
     ['dstrike', properties.doubleStrike],
+    ['outline', properties.outline],
+    ['shadow', properties.shadow],
+    ['emboss', properties.emboss],
+    ['imprint', properties.imprint],
     ['noProof', properties.noProof],
     ['snapToGrid', properties.snapToGrid],
+    ['vanish', properties.hidden],
+    ['webHidden', properties.webHidden],
   ] as const) {
     if (value !== undefined) {
       result.append(createWordOnOffElement(document, prefix, name, value));
