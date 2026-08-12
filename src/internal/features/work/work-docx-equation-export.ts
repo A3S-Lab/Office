@@ -239,6 +239,30 @@ function createExpression(
     );
     return bar;
   }
+  if (expression.type === 'groupCharacter') {
+    const groupCharacter = createMathElement(document, prefix, 'groupChr');
+    const properties = createMathElement(document, prefix, 'groupChrPr');
+    properties.append(
+      mathValueElement(document, prefix, 'chr', expression.character),
+      mathValueElement(
+        document,
+        prefix,
+        'pos',
+        expression.position === 'top' ? 'top' : 'bot',
+      ),
+      mathValueElement(
+        document,
+        prefix,
+        'vertJc',
+        expression.verticalJustification === 'top' ? 'top' : 'bot',
+      ),
+    );
+    groupCharacter.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return groupCharacter;
+  }
   if (expression.type === 'borderBox') {
     const borderBox = createMathElement(document, prefix, 'borderBox');
     const properties = createMathElement(document, prefix, 'borderBoxPr');

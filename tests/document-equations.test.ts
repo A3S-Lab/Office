@@ -75,6 +75,18 @@ describe('document equations', () => {
       const underbar = element?.querySelector('munder[accentunder="false"]');
       expect(underbar).not.toBeNull();
       expect(underbar?.querySelector('mo')?.textContent).toBe('\u00af');
+      const upperGroupCharacter = Array.from(
+        element?.querySelectorAll('mover[accent="false"]') ?? [],
+      ).find(
+        (candidate) => candidate.lastElementChild?.textContent === '\u23de',
+      );
+      expect(upperGroupCharacter?.textContent).toBe('x+y\u23de');
+      const lowerGroupCharacter = Array.from(
+        element?.querySelectorAll('munder[accentunder="false"]') ?? [],
+      ).find(
+        (candidate) => candidate.lastElementChild?.textContent === '\u23df',
+      );
+      expect(lowerGroupCharacter?.textContent).toBe('a-b\u23df');
       const borderBox = element?.querySelector('menclose');
       expect(borderBox).toHaveAttribute(
         'notation',
@@ -104,6 +116,12 @@ describe('document equations', () => {
       expect(element?.getAttribute('aria-label')).toContain('accent(U+0303');
       expect(element?.getAttribute('aria-label')).toContain('overbar(x+y)');
       expect(element?.getAttribute('aria-label')).toContain('underbar(a-b)');
+      expect(element?.getAttribute('aria-label')).toContain(
+        'group-character(U+23DE;position=top;baseline=bottom;x+y)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'group-character(U+23DF;position=bottom;baseline=top;a-b)',
+      );
       expect(element?.getAttribute('aria-label')).toContain(
         'borderbox(top left horizontalstrike updiagonalstrike;boxed)',
       );
@@ -150,6 +168,51 @@ describe('document equations', () => {
               type: 'lowerLimit',
               base: [],
               limit: [{ type: 'run', text: 'x→0' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'groupCharacter',
+              character: 'xy',
+              position: 'top',
+              verticalJustification: 'bottom',
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'groupCharacter',
+              character: '\u23de',
+              position: 'middle',
+              verticalJustification: 'bottom',
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'groupCharacter',
+              character: '\u23df',
+              position: 'bottom',
+              verticalJustification: 'center',
+              children: [],
             },
           ],
         }),
@@ -397,7 +460,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([23, 23, 1, 1]);
+    ).toEqual([25, 25, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -647,6 +710,10 @@ describe('document equations', () => {
       `<m:limLow><m:limLowPr><m:ctrlPr/></m:limLowPr><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limLow>`,
       `<m:limUpp><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
       `<m:limUpp><m:limUppPr/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
+      `<m:groupChr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr/><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:chr/><m:pos/><m:vertJc/><m:ctrlPr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:chr m:val="&#x23DE;"/><m:pos m:val="top"/><m:vertJc m:val="bot"/><m:ctrlPr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
     ];
     expect(supported.map(inspectEquationBody)).toEqual(
       supported.map(() => 'supported'),
@@ -711,6 +778,40 @@ describe('document equations', () => {
         type: 'upperLimit',
         base: [{ type: 'run', text: 'x' }],
         limit: [{ type: 'run', text: 'x' }],
+      },
+    ]);
+    expect(
+      supported
+        .slice(23, 27)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'groupCharacter',
+        character: '\u23df',
+        position: 'bottom',
+        verticalJustification: 'top',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'groupCharacter',
+        character: '\u23df',
+        position: 'bottom',
+        verticalJustification: 'top',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'groupCharacter',
+        character: '',
+        position: 'bottom',
+        verticalJustification: 'bottom',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'groupCharacter',
+        character: '\u23de',
+        position: 'top',
+        verticalJustification: 'bottom',
+        children: [{ type: 'run', text: 'x' }],
       },
     ]);
     expect(
@@ -902,6 +1003,26 @@ describe('document equations', () => {
       `<m:limUpp><m:lim>${run}</m:lim><m:e>${run}</m:e></m:limUpp>`,
       `<m:limUpp><v:limUppPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e><m:lim>${run}</m:lim></m:limUpp>`,
       `<m:limUpp xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e>${run}</m:e><m:lim r:id="rIdUnsafe">${run}</m:lim></m:limUpp>`,
+      `<m:groupChr><m:groupChrPr><m:grow/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:e>${run}</m:e><m:groupChrPr/></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:pos/><m:chr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:ctrlPr/><m:vertJc/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr/><m:groupChrPr/><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:chr/><m:chr/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:pos/><m:pos/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:vertJc/><m:vertJc/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:e>${run}</m:e><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:chr m:val="xy"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:pos m:val="bottom"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:vertJc m:val="center"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:chr m:val="&#x23DE;" m:extra="semantic"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:pos xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="top" r:id="rIdUnsafe"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><v:groupChrPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:groupChrPr><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr/><m:e/></m:groupChr>`,
+      `<m:groupChr><m:groupChrPr/></m:groupChr>`,
+      `<m:groupChr m:extra="semantic"><m:e>${run}</m:e></m:groupChr>`,
+      `<m:groupChr xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e r:id="rIdUnsafe">${run}</m:e></m:groupChr>`,
       '<m:r><m:rPr><m:sty m:val="b"/></m:rPr><m:t>x</m:t></m:r>',
       `<m:rPr/>${run}`,
       deepOmml(34),
@@ -1028,6 +1149,20 @@ function complexEquation(
         children: [run('a-b')],
       },
       {
+        type: 'groupCharacter',
+        character: '\u23de',
+        position: 'top',
+        verticalJustification: 'bottom',
+        children: [run('x+y')],
+      },
+      {
+        type: 'groupCharacter',
+        character: '\u23df',
+        position: 'bottom',
+        verticalJustification: 'top',
+        children: [run('a-b')],
+      },
+      {
         type: 'borderBox',
         hideTop: false,
         hideBottom: true,
@@ -1121,9 +1256,18 @@ function borderBoxEquation(
                   type: 'lowerLimit',
                   base: [
                     {
-                      type: 'bar',
+                      type: 'groupCharacter',
+                      character: barPosition === 'top' ? '\u23de' : '\u23df',
                       position: barPosition,
-                      children: [{ type: 'run', text }],
+                      verticalJustification:
+                        barPosition === 'top' ? 'bottom' : 'top',
+                      children: [
+                        {
+                          type: 'bar',
+                          position: barPosition,
+                          children: [{ type: 'run', text }],
+                        },
+                      ],
                     },
                   ],
                   limit: [{ type: 'run', text: 'i' }],
@@ -1166,9 +1310,18 @@ function boxEquation(
                   type: 'upperLimit',
                   base: [
                     {
-                      type: 'bar',
+                      type: 'groupCharacter',
+                      character: barPosition === 'top' ? '\u23de' : '\u23df',
                       position: barPosition,
-                      children: [{ type: 'run', text }],
+                      verticalJustification:
+                        barPosition === 'top' ? 'bottom' : 'top',
+                      children: [
+                        {
+                          type: 'bar',
+                          position: barPosition,
+                          children: [{ type: 'run', text }],
+                        },
+                      ],
                     },
                   ],
                   limit: [{ type: 'run', text: 'j' }],
@@ -1263,6 +1416,31 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ),
   ).toEqual(['top', 'bot', 'top', 'bot']);
   expect(bars.every((bar) => directChildren(bar, 'e').length === 1)).toBe(true);
+  const groupCharacters = descendants(document, 'groupChr');
+  expect(groupCharacters).toHaveLength(4);
+  for (const groupCharacter of groupCharacters) {
+    expect(
+      directChildren(groupCharacter).map((child) => child.localName),
+    ).toEqual(['groupChrPr', 'e']);
+    expect(
+      directChildren(directChildren(groupCharacter, 'groupChrPr')[0]).map(
+        (child) => child.localName,
+      ),
+    ).toEqual(['chr', 'pos', 'vertJc']);
+  }
+  expect(
+    groupCharacters.map((groupCharacter) => {
+      const properties = directChildren(groupCharacter, 'groupChrPr')[0];
+      return ['chr', 'pos', 'vertJc'].map((name) =>
+        mathValueAttribute(directChildren(properties, name)[0]),
+      );
+    }),
+  ).toEqual([
+    ['\u23de', 'top', 'bot'],
+    ['\u23df', 'bot', 'top'],
+    ['\u23de', 'top', 'bot'],
+    ['\u23df', 'bot', 'top'],
+  ]);
   const borderBoxes = descendants(document, 'borderBox');
   expect(borderBoxes).toHaveLength(2);
   for (const borderBox of borderBoxes) {
@@ -1393,24 +1571,32 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     {
       document: await xmlEntry(archive, 'word/footnotes.xml'),
       position: 'top',
+      groupCharacter: '\u23de',
+      verticalJustification: 'bot',
       container: 'borderBox',
       limit: 'limLow',
     },
     {
       document: await xmlEntry(archive, 'word/endnotes.xml'),
       position: 'bot',
+      groupCharacter: '\u23df',
+      verticalJustification: 'top',
       container: 'box',
       limit: 'limUpp',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
       position: 'top',
+      groupCharacter: '\u23de',
+      verticalJustification: 'bot',
       container: 'borderBox',
       limit: 'limLow',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
       position: 'bot',
+      groupCharacter: '\u23df',
+      verticalJustification: 'top',
       container: 'box',
       limit: 'limUpp',
     },
@@ -1434,6 +1620,24 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       directChildren(equationArrayProperties).map(mathValueAttribute),
     ).toEqual(['center', '0', '0', '0', '0']);
     expect(directChildren(equationArray, 'e')).toHaveLength(1);
+    const groupCharacter = descendants(story.document, 'groupChr')[0];
+    expect(groupCharacter).toBeDefined();
+    expect(
+      directChildren(groupCharacter).map((child) => child.localName),
+    ).toEqual(['groupChrPr', 'e']);
+    const groupCharacterProperties = directChildren(
+      groupCharacter,
+      'groupChrPr',
+    )[0];
+    expect(
+      ['chr', 'pos', 'vertJc'].map((name) =>
+        mathValueAttribute(directChildren(groupCharacterProperties, name)[0]),
+      ),
+    ).toEqual([
+      story.groupCharacter,
+      story.position,
+      story.verticalJustification,
+    ]);
     const bar = descendants(story.document, 'bar')[0];
     expect(bar).toBeDefined();
     expect(

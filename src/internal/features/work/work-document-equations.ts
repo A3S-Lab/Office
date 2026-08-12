@@ -88,6 +88,13 @@ export type WorkDocumentEquationExpression =
       children: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'groupCharacter';
+      character: string;
+      position: WorkDocumentEquationBarPosition;
+      verticalJustification: WorkDocumentEquationBarPosition;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
       type: 'borderBox';
       hideTop: boolean;
       hideBottom: boolean;
@@ -592,6 +599,29 @@ function normalizeExpression(
       const children = normalizeExpressionList(source.children, state);
       return position && children ? { type: 'bar', position, children } : null;
     }
+    if (source.type === 'groupCharacter') {
+      const character = mathCharacter(source.character);
+      const position = BAR_POSITIONS.has(
+        source.position as WorkDocumentEquationBarPosition,
+      )
+        ? (source.position as WorkDocumentEquationBarPosition)
+        : null;
+      const verticalJustification = BAR_POSITIONS.has(
+        source.verticalJustification as WorkDocumentEquationBarPosition,
+      )
+        ? (source.verticalJustification as WorkDocumentEquationBarPosition)
+        : null;
+      const children = normalizeExpressionList(source.children, state);
+      return character !== null && position && verticalJustification && children
+        ? {
+            type: 'groupCharacter',
+            character,
+            position,
+            verticalJustification,
+            children,
+          }
+        : null;
+    }
     if (source.type === 'borderBox') {
       if (
         typeof source.hideTop !== 'boolean' ||
@@ -880,6 +910,17 @@ function expressionText(
       ? `overbar(${body})`
       : `underbar(${body})`;
   }
+  if (expression.type === 'groupCharacter') {
+    const codePoint = expression.character.codePointAt(0);
+    const character =
+      codePoint === undefined
+        ? 'none'
+        : `U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}`;
+    return `group-character(${character};position=${expression.position};baseline=${expression.verticalJustification};${expressionListText(
+      expression.children,
+      hideAlignmentMarkers,
+    )})`;
+  }
   if (expression.type === 'borderBox') {
     return `borderbox(${borderBoxNotation(expression)};${expressionListText(
       expression.children,
@@ -1120,6 +1161,18 @@ function expressionMathMl(
       [
         mathRow(expression.children, alignmentState),
         domSpec('mo', {}, ['\u00af']),
+      ],
+    );
+  }
+  if (expression.type === 'groupCharacter') {
+    return domSpec(
+      expression.position === 'top' ? 'mover' : 'munder',
+      expression.position === 'top'
+        ? { accent: 'false' }
+        : { accentunder: 'false' },
+      [
+        mathRow(expression.children, alignmentState),
+        domSpec('mo', {}, [expression.character]),
       ],
     );
   }

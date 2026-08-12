@@ -84,6 +84,7 @@ const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
 const MAX_EQUATION_ARRAY_ROWS = 64;
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
+const DEFAULT_GROUP_CHARACTER = '\u23df';
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -125,6 +126,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'fName',
   'func',
   'groupChr',
+  'groupChrPr',
   'lim',
   'limLow',
   'limLowPr',
@@ -441,6 +443,9 @@ function parseExpression(
     if (element.localName === 'r') return parseRun(element, state);
     if (element.localName === 'acc') return parseAccent(element, state);
     if (element.localName === 'bar') return parseBar(element, state);
+    if (element.localName === 'groupChr') {
+      return parseGroupCharacter(element, state);
+    }
     if (element.localName === 'borderBox') {
       return parseBorderBox(element, state);
     }
@@ -585,10 +590,81 @@ function parseBar(
     : properties
       ? 'bot'
       : 'top';
-  const position = barPositionFromOmml(sourcePosition);
+  const position = topBottomFromOmml(sourcePosition);
   const parsedBody = parseExpressionContainer(body, state);
   return position && parsedBody
     ? { type: 'bar', position, children: parsedBody }
+    : null;
+}
+
+function parseGroupCharacter(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (
+    !structuralChildren(element, new Set(['groupChrPr', 'e'])) ||
+    !orderedMathChildren(element, ['groupChrPr', 'e'])
+  ) {
+    return null;
+  }
+  const properties = uniqueMathChild(element, 'groupChrPr', false);
+  const body = uniqueMathChild(element, 'e');
+  if (properties === null || !body) return null;
+
+  let character: string | null = DEFAULT_GROUP_CHARACTER;
+  let sourcePosition: string | null = 'bot';
+  let sourceVerticalJustification: string | null = 'top';
+  if (properties) {
+    const propertyOrder = ['chr', 'pos', 'vertJc', 'ctrlPr'];
+    if (
+      !structuralChildren(properties, new Set(propertyOrder)) ||
+      !orderedMathChildren(properties, propertyOrder)
+    ) {
+      return null;
+    }
+    const characterElement = uniqueMathChild(properties, 'chr', false);
+    const positionElement = uniqueMathChild(properties, 'pos', false);
+    const verticalJustificationElement = uniqueMathChild(
+      properties,
+      'vertJc',
+      false,
+    );
+    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    if (
+      characterElement === null ||
+      positionElement === null ||
+      verticalJustificationElement === null ||
+      controlProperties === null ||
+      (controlProperties && !emptyMathProperty(controlProperties))
+    ) {
+      return null;
+    }
+    character = characterElement
+      ? mathValueOrDefault(characterElement, '')
+      : DEFAULT_GROUP_CHARACTER;
+    sourcePosition = positionElement
+      ? mathValueOrDefault(positionElement, 'bot')
+      : 'bot';
+    sourceVerticalJustification = verticalJustificationElement
+      ? mathValueOrDefault(verticalJustificationElement, 'bot')
+      : 'top';
+  }
+
+  const position = topBottomFromOmml(sourcePosition);
+  const verticalJustification = topBottomFromOmml(sourceVerticalJustification);
+  const parsedBody = parseExpressionContainer(body, state);
+  return character !== null &&
+    (character === '' || mathCharacter(character)) &&
+    position &&
+    verticalJustification &&
+    parsedBody
+    ? {
+        type: 'groupCharacter',
+        character,
+        position,
+        verticalJustification,
+        children: parsedBody,
+      }
     : null;
 }
 
@@ -1649,7 +1725,7 @@ function fractionTypeFromOmml(
   return null;
 }
 
-function barPositionFromOmml(value: string | null): 'top' | 'bottom' | null {
+function topBottomFromOmml(value: string | null): 'top' | 'bottom' | null {
   if (value === 'top') return 'top';
   if (value === 'bot') return 'bottom';
   return null;
