@@ -1242,6 +1242,16 @@ function createWordRunProperties(
     }
     result.append(fitText);
   }
+  if (properties.verticalAlignment) {
+    result.append(
+      createWordValueElement(
+        document,
+        prefix,
+        'vertAlign',
+        properties.verticalAlignment,
+      ),
+    );
+  }
   for (const [name, value] of [
     ['rtl', properties.rightToLeft],
     ['cs', properties.complexScript],

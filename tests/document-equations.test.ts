@@ -2054,6 +2054,7 @@ describe('document equations', () => {
       '<w:effect w:val="shimmer"/>',
       '<w:bdr w:val="double" w:color="112233" w:themeColor="accent1" w:themeTint="66" w:themeShade="33" w:sz="24" w:space="2" w:shadow="1" w:frame="0"/>',
       '<w:fitText w:val="720" w:id="50"/>',
+      '<w:vertAlign w:val="baseline"/>',
       '<w:rtl w:val="false"/>',
       '<w:cs w:val="0"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
@@ -2165,7 +2166,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>'),
+      wordRun('<w:rPr><w:em w:val="dot"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2199,10 +2200,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(
-          '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>',
-          '<w:t>fallback</w:t>',
-        ),
+        wordRun('<w:rPr><w:em w:val="dot"/></w:rPr>', '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -3556,6 +3554,219 @@ describe('document equations', () => {
     await expectNativeWordRunFitText(await createArtifactBlob(imported));
   });
 
+  test('preserves explicit Word baseline, superscript, and subscript alignment inside OMML', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'baseline-aligned',
+          wordRunProperties: { verticalAlignment: 'baseline' },
+        },
+        {
+          type: 'run',
+          text: 'superscript-aligned',
+          wordRunProperties: {
+            fontSize: 12,
+            verticalAlignment: 'superscript',
+          },
+        },
+        {
+          type: 'run',
+          text: 'subscript-aligned',
+          wordRunProperties: { verticalAlignment: 'subscript' },
+        },
+        {
+          type: 'run',
+          text: 'positioned-superscript',
+          wordRunProperties: {
+            positionHalfPoints: 4,
+            verticalAlignment: 'superscript',
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { verticalAlignment: 'subscript' },
+          children: [{ type: 'run', text: 'operator-vertical-alignment' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const verticalAlignment of [
+      'baseline',
+      'superscript',
+      'subscript',
+    ] as const) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithWordRunProperties({ verticalAlignment }),
+        )?.children[0],
+      ).toMatchObject({ wordRunProperties: { verticalAlignment } });
+    }
+    const invalidModels = [
+      { verticalAlignment: null },
+      { verticalAlignment: '' },
+      { verticalAlignment: 'super' },
+      { verticalAlignment: 'Superscript' },
+      { verticalAlignment: 1 },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    for (const [source, verticalAlignment] of [
+      ['baseline', 'baseline'],
+      [' superscript ', 'superscript'],
+      ['subscript', 'subscript'],
+    ] as const) {
+      expect(
+        inspectEquationModel(wordRun(`<w:vertAlign w:val="${source}"/>`))
+          ?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { verticalAlignment },
+      });
+      expect(
+        inspectEquationModel(
+          wordRun(`<w:vertAlign w:val="${source}"/>`, STRICT_WORD_NAMESPACE),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { verticalAlignment },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun('<w:position w:val="4"/><w:vertAlign w:val="superscript"/>'),
+      )?.children[0],
+    ).toMatchObject({
+      wordRunProperties: {
+        positionHalfPoints: 4,
+        verticalAlignment: 'superscript',
+      },
+    });
+
+    const invalidMarkup = [
+      wordRun('<w:vertAlign/>'),
+      wordRun('<w:vertAlign w:val=""/>'),
+      wordRun('<w:vertAlign w:val="super"/>'),
+      wordRun('<w:vertAlign w:val="Superscript"/>'),
+      wordRun('<w:vertAlign w:val="1"/>'),
+      wordRun('<w:vertAlign val="superscript"/>'),
+      wordRun('<w:vertAlign w:val="superscript" w:extra="semantic"/>'),
+      wordRun(
+        `<w:vertAlign xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="superscript" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:vertAlign w:val="superscript"><w:b/></w:vertAlign>'),
+      wordRun(
+        '<w:vertAlign w:val="superscript"/><w:vertAlign w:val="subscript"/>',
+      ),
+      wordRun('<w:vertAlign w:val="superscript"/><w:fitText w:val="720"/>'),
+      wordRun('<w:rtl/><w:vertAlign w:val="superscript"/>'),
+      wordRun(
+        `<v:vertAlign xmlns:v="${VENDOR_NAMESPACE}" v:val="superscript"/>`,
+      ),
+      wordRun('<m:vertAlign m:val="superscript"/>'),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const previewFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === text,
+      );
+    const baseline = previewFor('baseline-aligned');
+    expect(baseline?.getAttribute('style')).toContain(
+      'vertical-align:baseline',
+    );
+    expect(baseline?.getAttribute('style')).not.toContain('font-size:smaller');
+    const superscript = previewFor('superscript-aligned');
+    expect(superscript?.getAttribute('mathsize')).toBe('12pt');
+    expect(superscript?.getAttribute('style')).toContain(
+      'vertical-align:super',
+    );
+    expect(superscript?.getAttribute('style')).toContain('font-size:smaller');
+    const subscript = previewFor('subscript-aligned');
+    expect(subscript?.getAttribute('style')).toContain('vertical-align:sub');
+    expect(subscript?.getAttribute('style')).toContain('font-size:smaller');
+    const positioned = previewFor('positioned-superscript');
+    expect(positioned?.getAttribute('style')).toContain('vertical-align:2pt');
+    expect(positioned?.getAttribute('style')).toContain('vertical-align:super');
+    expect(positioned?.getAttribute('style')).toContain('font-size:smaller');
+    expect(previewFor('\u2211')?.getAttribute('style')).toContain(
+      'vertical-align:sub',
+    );
+
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext, mo'))
+        .find((candidate) => candidate.textContent === 'superscript-aligned')
+        ?.getAttribute('style'),
+    ).toContain('font-size:smaller');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunVerticalAlignments(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-vertical-alignment.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunVerticalAlignments(
+      await createArtifactBlob(imported),
+    );
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -3644,9 +3855,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(
-        '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>',
-      ),
+      invalidControlProperties('<w:rPr><w:em w:val="dot"/></w:rPr>'),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -3917,9 +4126,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(
-        `${run}<m:ctrlPr><w:rPr><w:vertAlign w:val="superscript"/></w:rPr></m:ctrlPr>`,
-      ),
+      argument(`${run}<m:ctrlPr><w:rPr><w:em w:val="dot"/></w:rPr></m:ctrlPr>`),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -5103,6 +5310,7 @@ function richWordRunProperties() {
       frame: false,
     },
     fitText: { widthTwips: 720, id: 50 },
+    verticalAlignment: 'baseline' as const,
     rightToLeft: false,
     complexScript: false,
     languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
@@ -6594,6 +6802,77 @@ async function expectNativeWordRunFitText(blob: Blob): Promise<void> {
   expect(wordAttributes(fitText)).toEqual({ val: '1440', id: '-7' });
 }
 
+async function expectNativeWordRunVerticalAlignments(
+  blob: Blob,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  for (const entry of [
+    {
+      text: 'baseline-aligned',
+      names: ['vertAlign'],
+      attributes: [{ val: 'baseline' }],
+    },
+    {
+      text: 'superscript-aligned',
+      names: ['sz', 'vertAlign'],
+      attributes: [{ val: '24' }, { val: 'superscript' }],
+    },
+    {
+      text: 'subscript-aligned',
+      names: ['vertAlign'],
+      attributes: [{ val: 'subscript' }],
+    },
+    {
+      text: 'positioned-superscript',
+      names: ['position', 'vertAlign'],
+      attributes: [{ val: '4' }, { val: 'superscript' }],
+    },
+  ]) {
+    const run = mathRuns.find(
+      (candidate) => candidate.textContent === entry.text,
+    );
+    expect(run, entry.text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, entry.text).toBeDefined();
+    const children = directChildren(properties as Element);
+    expect(
+      children.map((child) => child.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(children.map(wordAttributes), entry.text).toEqual(entry.attributes);
+    expect(
+      children.every(
+        (child) =>
+          child.attributes.length === 1 &&
+          child.attributes[0]?.name === 'w:val',
+      ),
+      entry.text,
+    ).toBe(true);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-vertical-alignment'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const verticalAlignment = directChildren(
+    wordProperties as Element,
+    'vertAlign',
+  )[0];
+  expect(wordAttributes(verticalAlignment)).toEqual({ val: 'subscript' });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -6647,6 +6926,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'effect',
     'bdr',
     'fitText',
+    'vertAlign',
     'rtl',
     'cs',
     'lang',
@@ -6723,6 +7003,7 @@ async function expectNativeArgumentControlProperties(
     'effect',
     'bdr',
     'fitText',
+    'vertAlign',
     'rtl',
     'cs',
     'lang',
@@ -7286,6 +7567,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'effect',
     'bdr',
     'fitText',
+    'vertAlign',
     'rtl',
     'cs',
     'lang',
@@ -7349,6 +7631,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       frame: '0',
     },
     { val: '720', id: '50' },
+    { val: 'baseline' },
     { val: '0' },
     { val: '0' },
     { val: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },

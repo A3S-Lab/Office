@@ -232,6 +232,11 @@ export interface WorkDocumentEquationWordFitText {
   id?: number;
 }
 
+export type WorkDocumentEquationWordVerticalAlignment =
+  | 'baseline'
+  | 'superscript'
+  | 'subscript';
+
 export interface WorkDocumentEquationWordLanguages {
   latin?: string;
   eastAsia?: string;
@@ -269,6 +274,7 @@ export interface WorkDocumentEquationWordRunProperties {
   border?: WorkDocumentEquationWordRunBorder;
   shading?: WorkDocumentEquationWordShading;
   fitText?: WorkDocumentEquationWordFitText;
+  verticalAlignment?: WorkDocumentEquationWordVerticalAlignment;
   rightToLeft?: boolean;
   complexScript?: boolean;
   languages?: WorkDocumentEquationWordLanguages;
@@ -776,6 +782,12 @@ const WORD_LINE_BORDER_STYLES =
     'outset',
     'inset',
   ]);
+const WORD_VERTICAL_ALIGNMENTS =
+  new Set<WorkDocumentEquationWordVerticalAlignment>([
+    'baseline',
+    'superscript',
+    'subscript',
+  ]);
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
@@ -841,6 +853,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'border',
   'shading',
   'fitText',
+  'verticalAlignment',
   'rightToLeft',
   'complexScript',
   'languages',
@@ -2859,6 +2872,14 @@ function normalizeEquationWordRunProperties(
     source.fitText === undefined
       ? undefined
       : normalizeEquationWordFitText(source.fitText);
+  const verticalAlignment =
+    source.verticalAlignment === undefined
+      ? undefined
+      : WORD_VERTICAL_ALIGNMENTS.has(
+            source.verticalAlignment as WorkDocumentEquationWordVerticalAlignment,
+          )
+        ? (source.verticalAlignment as WorkDocumentEquationWordVerticalAlignment)
+        : null;
   const languages =
     source.languages === undefined
       ? undefined
@@ -2910,6 +2931,7 @@ function normalizeEquationWordRunProperties(
     border === null ||
     shading === null ||
     fitText === null ||
+    verticalAlignment === null ||
     languages === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
@@ -3032,6 +3054,7 @@ function normalizeEquationWordRunProperties(
     ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
     ...(fitText ? { fitText } : {}),
+    ...(verticalAlignment ? { verticalAlignment } : {}),
     ...(source.rightToLeft !== undefined
       ? { rightToLeft: source.rightToLeft as boolean }
       : {}),
@@ -3468,6 +3491,7 @@ function wordPropertiesMathMlAttributes(
     properties.positionHalfPoints === undefined
       ? ''
       : `vertical-align:${properties.positionHalfPoints / 2}pt`,
+    wordRunVerticalAlignmentStyles(properties.verticalAlignment),
   ].filter(Boolean);
   const color = properties.color?.value;
   const background = wordRunMathMlBackground(properties);
@@ -3481,6 +3505,14 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunVerticalAlignmentStyles(
+  alignment: WorkDocumentEquationWordVerticalAlignment | undefined,
+): string {
+  if (!alignment) return '';
+  if (alignment === 'baseline') return 'vertical-align:baseline';
+  return `vertical-align:${alignment === 'superscript' ? 'super' : 'sub'};font-size:smaller`;
 }
 
 function wordRunCaseStyles(

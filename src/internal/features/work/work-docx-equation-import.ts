@@ -34,6 +34,7 @@ import {
   type WorkDocumentEquationWordShadingPattern,
   type WorkDocumentEquationWordTextEffect,
   type WorkDocumentEquationWordUnderline,
+  type WorkDocumentEquationWordVerticalAlignment,
 } from './work-document-equations';
 import {
   closestDocxEquationLikeRoot,
@@ -155,6 +156,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'bdr',
   'shd',
   'fitText',
+  'vertAlign',
   'rtl',
   'cs',
   'lang',
@@ -306,6 +308,12 @@ const WORD_SHADING_PATTERNS = new Set<WorkDocumentEquationWordShadingPattern>([
   'pct90',
   'pct95',
 ]);
+const WORD_VERTICAL_ALIGNMENTS =
+  new Set<WorkDocumentEquationWordVerticalAlignment>([
+    'baseline',
+    'superscript',
+    'subscript',
+  ]);
 
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const MAX_IMPORTED_EQUATIONS = 4_096;
@@ -909,6 +917,9 @@ function parseWordRunProperties(
   const border = parseWordRunBorder(children.get('bdr'));
   const shading = parseWordShading(children.get('shd'));
   const fitText = parseWordFitText(children.get('fitText'));
+  const verticalAlignment = parseWordVerticalAlignment(
+    children.get('vertAlign'),
+  );
   const languages = parseWordLanguages(children.get('lang'));
   if (
     fonts === null ||
@@ -925,6 +936,7 @@ function parseWordRunProperties(
     border === null ||
     shading === null ||
     fitText === null ||
+    verticalAlignment === null ||
     languages === null
   ) {
     return null;
@@ -1004,6 +1016,7 @@ function parseWordRunProperties(
     ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
     ...(fitText ? { fitText } : {}),
+    ...(verticalAlignment ? { verticalAlignment } : {}),
     ...(booleans.has('rightToLeft')
       ? { rightToLeft: booleans.get('rightToLeft') }
       : {}),
@@ -1526,6 +1539,20 @@ function parseWordFitText(
         widthTwips,
         ...(id !== undefined ? { id } : {}),
       };
+}
+
+function parseWordVerticalAlignment(
+  element: Element | undefined,
+): WorkDocumentEquationWordVerticalAlignment | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  const value = attributes?.get('val')?.trim();
+  return attributes?.size === 1 &&
+    WORD_VERTICAL_ALIGNMENTS.has(
+      value as WorkDocumentEquationWordVerticalAlignment,
+    )
+    ? (value as WorkDocumentEquationWordVerticalAlignment)
+    : null;
 }
 
 function parseWordLanguages(
