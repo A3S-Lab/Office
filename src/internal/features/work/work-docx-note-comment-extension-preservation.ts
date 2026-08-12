@@ -1,5 +1,6 @@
 import type JSZip from 'jszip';
 import { normalizeDocxCommentId } from './work-docx-note-comment-identity';
+import { preserveDocxNoteCommentRunContent } from './work-docx-note-comment-run-preservation';
 import {
   DOCX_WORDPROCESSING_NAMESPACES,
   mergeDocxIgnorableExtensionsAtPairs,
@@ -87,6 +88,12 @@ async function preserveWordItemExtensions(
     itemIdentity(item, config.note),
   );
   if (!pairs.length) return;
+  preserveDocxNoteCommentRunContent(
+    generated.document,
+    source.document,
+    pairs,
+    config.note ? 'note' : 'comment',
+  );
   mergePairs(generated.document, source.document, pairs);
   generatedArchive.file(config.path, serializeUtf8Xml(generated.document));
 }

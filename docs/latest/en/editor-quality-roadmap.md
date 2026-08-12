@@ -135,8 +135,14 @@ Relationship-free passive extensions follow uniquely matched `w:footnote`,
 `w:endnote`, `w:comment`, and `w15:commentEx` roots, and valid `commentsIds`
 durable IDs are rebound to regenerated final comment paragraphs. Duplicate,
 namespace-spoofed, deleted, relationship-bound, and unsupported modern
-reaction/people sidecars fail closed. Rich run-level note and comment markup
-remains an explicit next boundary rather than being covered by this claim.
+reaction/people sidecars fail closed. Text-stable direct paragraphs and runs
+inside uniquely matched notes, comments, and replies now retain eligible
+passive extensions on paragraph, run, and run-property scopes. Safe unmodeled
+note properties survive, while unchanged plain-text comments recover
+relationship-free source run segmentation and formatting. Generated supported
+formatting remains authoritative; edits, duplicate text or properties,
+wrappers, mixed math or drawing content, relationship references, tables, and
+content controls remain explicit fail-closed or normalization boundaries.
 
 Exit evidence:
 

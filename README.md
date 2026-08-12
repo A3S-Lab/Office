@@ -511,8 +511,14 @@ Relationship-free passive extensions on uniquely matched `w:footnote`,
 `commentsIds` durable IDs are rebound to each regenerated final comment
 paragraph. Duplicate or namespace-spoofed identities, deleted semantic records,
 relationship-bound branches, and unsupported modern reaction/people sidecars
-fail closed. Rich run-level markup inside notes and comments may still
-normalize.
+fail closed. Within uniquely matched note, comment, and reply records,
+text-stable direct paragraphs and runs retain eligible passive extensions on
+`w:p`, `w:r`, and `w:rPr`. Safe unmodeled note properties also survive, while
+unchanged plain-text comments recover relationship-free source run boundaries
+and formatting. Generated supported formatting wins; text edits, duplicate
+paragraphs or run properties, hyperlinks and other wrappers, mixed math or
+drawing semantics, relationship references, tables, and content controls fail
+closed or normalize instead of being attached to the wrong text.
 Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate

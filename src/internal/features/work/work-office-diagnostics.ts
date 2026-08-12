@@ -50,7 +50,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Native note and comment IDs survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-version, malformed, duplicate or cross-kind, relationship-bound, or Microsoft/OOXML semantic extension branches and unsupported rich inline markup may normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Text-stable direct note and comment runs retain eligible paragraph, run, and run-property metadata; native note and comment IDs survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-text, malformed, duplicate or cross-kind, wrapped, mixed-semantic, relationship-bound, or unsupported rich content may normalize.',
       'info',
     ),
   ];
@@ -131,7 +131,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.comments',
             'Comments',
-            `${commentDefinitions.length} comment or reply record(s), stable native IDs, text anchors, authors, dates, thread relationships, resolved state, and eligible durable IDs are preserved and editable.`,
+            `${commentDefinitions.length} comment or reply record(s), stable native IDs, text anchors, authors, dates, thread relationships, resolved state, eligible durable IDs, and unchanged relationship-free direct-run formatting are preserved. Comment text remains editable.`,
             'info',
           ),
         );
@@ -145,7 +145,7 @@ export async function analyzeDocxCompatibility(
             issue(
               'docx.comments.formatting',
               'Comment formatting',
-              'Comment text is editable, but rich formatting, tables, images, and content controls inside comments are normalized to plain text.',
+              'Relationship-free formatting on uniquely matched unchanged direct text runs is retained. Editing comment text or using tables, images, content controls, wrappers, mixed semantic content, or relationship-bound runs normalizes the affected content to safe plain text.',
             ),
           );
         }

@@ -52,6 +52,14 @@ All notable changes to A3S Office will be documented in this file.
   final comment paragraph IDs. Deleted records, duplicate or namespace-spoofed
   identities, relationship-bound branches, and unsupported modern
   reaction/people sidecars fail closed instead of reviving stale metadata.
+- Preserved text-stable direct runs inside uniquely matched footnotes,
+  endnotes, comments, and replies. Passive extensions on paragraph, run, and
+  run-property scopes now follow exact text and structural ancestry; safe
+  unmodeled note properties survive, and unchanged plain-text comments regain
+  relationship-free source run segmentation and formatting. Supported
+  regenerated semantics remain authoritative, while edits, duplicate
+  paragraphs or properties, wrapped or mixed semantic content, relationship
+  references, and ambiguous mappings fail closed.
 - Preserved source DOCX font-table metadata and eligible internal obfuscated
   font payloads through relationship-ID collisions. Font references are
   rewritten to their final package IDs, while external references, wrong
