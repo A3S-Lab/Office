@@ -108,6 +108,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'acc',
   'accPr',
   'bar',
+  'barPr',
   'borderBox',
   'box',
   'd',
@@ -432,6 +433,7 @@ function parseExpression(
   try {
     if (element.localName === 'r') return parseRun(element, state);
     if (element.localName === 'acc') return parseAccent(element, state);
+    if (element.localName === 'bar') return parseBar(element, state);
     if (element.localName === 'f') return parseFraction(element, state);
     if (element.localName === 'sSup') return parseSuperScript(element, state);
     if (element.localName === 'sSub') return parseSubScript(element, state);
@@ -526,6 +528,50 @@ function parseAccent(
   const parsedBody = parseExpressionContainer(body, state);
   return character && accentCharacter(character) && parsedBody
     ? { type: 'accent', character, children: parsedBody }
+    : null;
+}
+
+function parseBar(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['barPr', 'e']))) return null;
+  const properties = uniqueMathChild(element, 'barPr', false);
+  const body = uniqueMathChild(element, 'e');
+  if (
+    properties === null ||
+    !body ||
+    (properties && directChildren(element)[0] !== properties) ||
+    (properties && !structuralChildren(properties, new Set(['pos', 'ctrlPr'])))
+  ) {
+    return null;
+  }
+  const positionElement = properties
+    ? uniqueMathChild(properties, 'pos', false)
+    : undefined;
+  const controlProperties = properties
+    ? uniqueMathChild(properties, 'ctrlPr', false)
+    : undefined;
+  if (
+    positionElement === null ||
+    controlProperties === null ||
+    (controlProperties && !emptyMathProperty(controlProperties)) ||
+    (positionElement &&
+      controlProperties &&
+      properties &&
+      directChildren(properties)[0] !== positionElement)
+  ) {
+    return null;
+  }
+  const sourcePosition = positionElement
+    ? mathValueOrDefault(positionElement, 'bot')
+    : properties
+      ? 'bot'
+      : 'top';
+  const position = barPositionFromOmml(sourcePosition);
+  const parsedBody = parseExpressionContainer(body, state);
+  return position && parsedBody
+    ? { type: 'bar', position, children: parsedBody }
     : null;
 }
 
@@ -1225,6 +1271,12 @@ function fractionTypeFromOmml(
   if (value === 'noBar') return 'noBar';
   if (value === 'skw') return 'skewed';
   if (value === 'lin') return 'linear';
+  return null;
+}
+
+function barPositionFromOmml(value: string | null): 'top' | 'bottom' | null {
+  if (value === 'top') return 'top';
+  if (value === 'bot') return 'bottom';
   return null;
 }
 

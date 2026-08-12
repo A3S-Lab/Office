@@ -222,6 +222,23 @@ function createExpression(
     );
     return accent;
   }
+  if (expression.type === 'bar') {
+    const bar = createMathElement(document, prefix, 'bar');
+    const properties = createMathElement(document, prefix, 'barPr');
+    properties.append(
+      mathValueElement(
+        document,
+        prefix,
+        'pos',
+        expression.position === 'top' ? 'top' : 'bot',
+      ),
+    );
+    bar.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return bar;
+  }
   if (expression.type === 'fraction') {
     const fraction = createMathElement(document, prefix, 'f');
     if (expression.fractionType !== 'bar') {

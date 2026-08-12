@@ -61,6 +61,7 @@ const EQUATION_ATTRIBUTES = [
 ] as const;
 const MATHML_ATTRIBUTES = new Set([
   'accent',
+  'accentunder',
   'align',
   'bevelled',
   'columnalign',

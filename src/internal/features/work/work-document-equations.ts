@@ -2,6 +2,7 @@ import { type CommandProps, mergeAttributes, Node } from '@tiptap/core';
 import type { DOMOutputSpec } from '@tiptap/pm/model';
 
 export type WorkDocumentEquationDisplay = 'inline' | 'block';
+export type WorkDocumentEquationBarPosition = 'top' | 'bottom';
 export type WorkDocumentEquationFractionType =
   | 'bar'
   | 'noBar'
@@ -59,6 +60,11 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'accent';
       character: string;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
+      type: 'bar';
+      position: WorkDocumentEquationBarPosition;
       children: WorkDocumentEquationExpression[];
     }
   | {
@@ -142,6 +148,10 @@ const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
 const MATRIX_BASE_ALIGNMENTS = new Set<WorkDocumentEquationMatrixBaseAlignment>(
   ['top', 'center', 'bottom'],
 );
+const BAR_POSITIONS = new Set<WorkDocumentEquationBarPosition>([
+  'top',
+  'bottom',
+]);
 const MATHML_ACCENT_CHARACTERS = new Map([
   ['\u0300', '`'],
   ['\u0301', '\u00b4'],
@@ -489,6 +499,15 @@ function normalizeExpression(
         ? { type: 'accent', character, children }
         : null;
     }
+    if (source.type === 'bar') {
+      const position = BAR_POSITIONS.has(
+        source.position as WorkDocumentEquationBarPosition,
+      )
+        ? (source.position as WorkDocumentEquationBarPosition)
+        : null;
+      const children = normalizeExpressionList(source.children, state);
+      return position && children ? { type: 'bar', position, children } : null;
+    }
     if (source.type === 'matrix') {
       const baseAlignment = MATRIX_BASE_ALIGNMENTS.has(
         source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment,
@@ -639,6 +658,12 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
     const label = codePoint?.toString(16).toUpperCase().padStart(4, '0');
     return `accent(U+${label};${expressionListText(expression.children)})`;
   }
+  if (expression.type === 'bar') {
+    const body = expressionListText(expression.children);
+    return expression.position === 'top'
+      ? `overbar(${body})`
+      : `underbar(${body})`;
+  }
   if (expression.type === 'matrix') {
     return `matrix(${expression.rows
       .map((row) => row.map(expressionListText).join(','))
@@ -784,6 +809,15 @@ function expressionMathMl(
           expression.character,
       ]),
     ]);
+  }
+  if (expression.type === 'bar') {
+    return domSpec(
+      expression.position === 'top' ? 'mover' : 'munder',
+      expression.position === 'top'
+        ? { accent: 'false' }
+        : { accentunder: 'false' },
+      [mathRow(expression.children), domSpec('mo', {}, ['\u00af'])],
+    );
   }
   if (expression.type === 'matrix') {
     return domSpec(

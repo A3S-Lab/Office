@@ -1152,14 +1152,17 @@ dialog is required.
 The browser Word surface now round-trips a bounded structured OMML subset in
 the main story, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs, fractions, scripts, radicals, functions, supported n-ary
-operators, combining accents, bounded rectangular matrices with base and
-per-column alignment, and delimiters remain native OOXML and receive an
-accessible MathML preview. Strict/transitional UTF-8/UTF-16 input is accepted.
-Invalid or non-combining accent characters, unsupported matrix spacing or gap
-rules, ragged or over-limit matrices, malformed, misplaced, over-budget,
-namespace-spoofed, nested, or relationship-bound math fails closed to bounded
-text with compatibility diagnostics; equation arrays, limits, and the
-remaining OMML grammar are still part of the Rich Word gate.
+operators, combining accents, overbars and underbars, bounded rectangular
+matrices with base and per-column alignment, and delimiters remain native OOXML
+and receive an accessible MathML preview. The distinct defaults for an omitted
+`barPr` and an omitted `pos` are normalized to explicit top or bottom
+positions. Strict/transitional UTF-8/UTF-16 input is accepted. Invalid or
+non-combining accent characters, invalid or contradictory bar properties,
+unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+malformed, misplaced, over-budget, namespace-spoofed, nested, or
+relationship-bound math fails closed to bounded text with compatibility
+diagnostics; equation arrays, limits, and the remaining OMML grammar are still
+part of the Rich Word gate.
 
 ### Gate 3 — Rich Word
 

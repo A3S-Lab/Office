@@ -65,12 +65,20 @@ describe('document equations', () => {
       const accent = element?.querySelector('mover[accent="true"]');
       expect(accent).not.toBeNull();
       expect(accent?.querySelector('mo')?.textContent).toBe('\u02dc');
+      const overbar = element?.querySelector('mover[accent="false"]');
+      expect(overbar).not.toBeNull();
+      expect(overbar?.querySelector('mo')?.textContent).toBe('\u00af');
+      const underbar = element?.querySelector('munder[accentunder="false"]');
+      expect(underbar).not.toBeNull();
+      expect(underbar?.querySelector('mo')?.textContent).toBe('\u00af');
       expect(element?.querySelector('mtable')).not.toBeNull();
       expect(element?.querySelectorAll('mtr')).toHaveLength(2);
       expect(element?.querySelectorAll('mtd')).toHaveLength(8);
       expect(element).toHaveAttribute('role', 'math');
       expect(element?.getAttribute('aria-label')).toContain('sqrt');
       expect(element?.getAttribute('aria-label')).toContain('accent(U+0303');
+      expect(element?.getAttribute('aria-label')).toContain('overbar(x+y)');
+      expect(element?.getAttribute('aria-label')).toContain('underbar(a-b)');
       expect(element?.getAttribute('aria-label')).toContain('matrix');
 
       const equationPosition = documentEquationPosition(editor);
@@ -91,6 +99,19 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'bar',
+              position: 'middle',
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -175,6 +196,7 @@ describe('document equations', () => {
       expect(editor.getHTML()).toContain('data-document-equation="true"');
       expect(editor.getHTML()).toContain('<math');
       expect(editor.getHTML()).toContain('accent="true"');
+      expect(editor.getHTML()).toContain('accentunder="false"');
       expect(editor.getHTML()).toContain('<mtable');
 
       const sanitized = new DOMParser().parseFromString(
@@ -216,7 +238,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([16, 16, 1, 1]);
+    ).toEqual([18, 18, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -226,6 +248,16 @@ describe('document equations', () => {
     expect(documentEquationFromElement(bodyEquations[1])).toEqual(
       complexEquation('block'),
     );
+    expect(documentEquationFromElement(bodyEquations[2])?.children[0]).toEqual({
+      type: 'bar',
+      position: 'top',
+      children: [{ type: 'run', text: 'F' }],
+    });
+    expect(documentEquationFromElement(bodyEquations[3])?.children[0]).toEqual({
+      type: 'bar',
+      position: 'bottom',
+      children: [{ type: 'run', text: 'N' }],
+    });
     expect(
       bodyEquations.some(
         (element) => documentEquationFromElement(element)?.display === 'block',
@@ -439,21 +471,19 @@ describe('document equations', () => {
     const supported = [
       `<m:acc><m:e>${run}</m:e></m:acc>`,
       `<m:acc><m:accPr><m:chr m:val="&#x20D7;"/><m:ctrlPr/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:bar><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr/><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos/><m:ctrlPr/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos m:val="top"/><m:ctrlPr/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:f><m:fPr><m:type m:val="noBar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/><m:ctrlPr/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
       `<m:m><m:mr><m:e>${run}</m:e></m:mr></m:m>`,
       `<m:m><m:mPr><m:baseJc m:val="bot"/><m:plcHide m:val="true"/><m:mcs><m:mc><m:mcPr><m:count m:val="2"/><m:mcJc m:val="left"/></m:mcPr></m:mc><m:mc><m:mcPr><m:count/><m:mcJc/></m:mcPr></m:mc></m:mcs><m:ctrlPr/></m:mPr><m:mr><m:e>${run}</m:e><m:e>${run}</m:e><m:e/></m:mr></m:m>`,
     ];
-    expect(supported.map(inspectEquationBody)).toEqual([
-      'supported',
-      'supported',
-      'supported',
-      'supported',
-      'supported',
-      'supported',
-      'supported',
-    ]);
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
     expect(inspectEquationModel(supported[0])?.children[0]).toEqual({
       type: 'accent',
       character: '\u0302',
@@ -464,6 +494,32 @@ describe('document equations', () => {
       character: '\u20d7',
       children: [{ type: 'run', text: 'x' }],
     });
+    expect(
+      supported
+        .slice(2, 6)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'bar',
+        position: 'top',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'bar',
+        position: 'bottom',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'bar',
+        position: 'bottom',
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'bar',
+        position: 'top',
+        children: [{ type: 'run', text: 'x' }],
+      },
+    ]);
 
     const unsupported = [
       `<m:acc><m:accPr><m:chr/></m:accPr><m:e>${run}</m:e></m:acc>`,
@@ -473,6 +529,17 @@ describe('document equations', () => {
       `<m:acc><m:e>${run}</m:e><m:accPr><m:chr m:val="&#x302;"/></m:accPr></m:acc>`,
       `<m:acc><m:accPr><m:chr m:val="&#x302;"/><m:chr m:val="&#x303;"/></m:accPr><m:e>${run}</m:e></m:acc>`,
       `<m:acc><m:accPr><m:chr m:val="&#x302;"/></m:accPr><m:e/></m:acc>`,
+      `<m:bar><m:barPr><m:pos m:val="left"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos m:val="bottom"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:grow m:val="1"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:e>${run}</m:e><m:barPr><m:pos m:val="top"/></m:barPr></m:bar>`,
+      `<m:bar><m:barPr><m:ctrlPr/><m:pos m:val="top"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos m:val="top"/><m:pos m:val="bot"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos m:val="top" m:extra="semantic"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><v:barPr xmlns:v="${VENDOR_NAMESPACE}"><m:pos m:val="top"/></v:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="top" r:id="rIdUnsafe"/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e/></m:bar>`,
+      `<m:bar><m:e>${run}</m:e><m:e>${run}</m:e></m:bar>`,
       `<m:f><m:fPr><m:m><m:mr><m:e>${run}</m:e></m:mr></m:m></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
@@ -511,15 +578,15 @@ function equationArtifact() {
     '<sup data-document-note-reference="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1">1</sup>',
     '<sup data-document-note-reference="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1">1</sup>',
     '</p>',
-    `<aside data-document-note="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1"><p>Foot ${equationHtml(simpleEquation('F'))}</p></aside>`,
-    `<aside data-document-note="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1"><p>End ${equationHtml(simpleEquation('N'))}</p></aside>`,
+    `<aside data-document-note="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1"><p>Foot ${equationHtml(barEquation('F', 'top'))}</p></aside>`,
+    `<aside data-document-note="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1"><p>End ${equationHtml(barEquation('N', 'bottom'))}</p></aside>`,
   ].join('');
   artifact.content.pageChrome = {
     differentFirstPage: false,
     differentOddEvenPages: false,
     default: {
-      headerHtml: `<p>Header ${equationHtml(simpleEquation('H'))}</p>`,
-      footerHtml: `<p>Footer ${equationHtml(simpleEquation('R'))}</p>`,
+      headerHtml: `<p>Header ${equationHtml(barEquation('H', 'top'))}</p>`,
+      footerHtml: `<p>Footer ${equationHtml(barEquation('R', 'bottom'))}</p>`,
       showPageNumber: false,
     },
     first: { headerHtml: '', footerHtml: '', showPageNumber: false },
@@ -601,6 +668,16 @@ function complexEquation(
         children: [run('x+y')],
       },
       {
+        type: 'bar',
+        position: 'top',
+        children: [run('x+y')],
+      },
+      {
+        type: 'bar',
+        position: 'bottom',
+        children: [run('a-b')],
+      },
+      {
         type: 'matrix',
         baseAlignment: 'top',
         placeholdersHidden: false,
@@ -619,6 +696,23 @@ function simpleEquation(text: string): WorkDocumentEquation {
     version: 1,
     display: 'inline',
     children: [{ type: 'run', text }],
+  };
+}
+
+function barEquation(
+  text: string,
+  position: 'top' | 'bottom',
+): WorkDocumentEquation {
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'bar',
+        position,
+        children: [{ type: 'run', text }],
+      },
+    ],
   };
 }
 
@@ -693,6 +787,16 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     );
     expect(directChildren(accent, 'e')).toHaveLength(1);
   }
+  const bars = descendants(document, 'bar');
+  expect(bars).toHaveLength(4);
+  expect(
+    bars.map((bar) =>
+      mathValueAttribute(
+        directChildren(directChildren(bar, 'barPr')[0], 'pos')[0],
+      ),
+    ),
+  ).toEqual(['top', 'bot', 'top', 'bot']);
+  expect(bars.every((bar) => directChildren(bar, 'e').length === 1)).toBe(true);
   const matrices = descendants(document, 'm');
   expect(matrices).toHaveLength(2);
   for (const matrix of matrices) {
@@ -730,14 +834,35 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
   ).toBe(true);
 
   const stories = [
-    await xmlEntry(archive, 'word/footnotes.xml'),
-    await xmlEntry(archive, 'word/endnotes.xml'),
-    await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
-    await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
+    {
+      document: await xmlEntry(archive, 'word/footnotes.xml'),
+      position: 'top',
+    },
+    {
+      document: await xmlEntry(archive, 'word/endnotes.xml'),
+      position: 'bot',
+    },
+    {
+      document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
+      position: 'top',
+    },
+    {
+      document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
+      position: 'bot',
+    },
   ];
   for (const story of stories) {
-    expect(descendants(story, 'oMath')).toHaveLength(1);
-    expect(descendants(story, 'oMath')[0]?.namespaceURI).toBe(MATH_NAMESPACE);
+    expect(descendants(story.document, 'oMath')).toHaveLength(1);
+    expect(descendants(story.document, 'oMath')[0]?.namespaceURI).toBe(
+      MATH_NAMESPACE,
+    );
+    const bar = descendants(story.document, 'bar')[0];
+    expect(bar).toBeDefined();
+    expect(
+      mathValueAttribute(
+        directChildren(directChildren(bar, 'barPr')[0], 'pos')[0],
+      ),
+    ).toBe(story.position);
   }
 }
 
