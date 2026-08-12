@@ -630,11 +630,14 @@ thresholds and signed baseline positions, half-point font sizes, colored
 underline styles, all seven legacy text-animation values, all 27 line-border
 styles with direct/theme colors, 2–96 eighth-point widths, 0–31 point spacing,
 and explicit shadow/frame flags, all named highlight colors, complete patterned
-run shading with direct or theme foreground/background colors,
+run shading with direct or theme foreground/background colors, manual run
+widths from 0 through 31,680 twips with optional signed 32-bit grouping IDs,
 RTL/complex-script flags, and Latin, East Asian, and bidi language tags. Explicit zero/default
 geometry values remain present so they can reset inherited formatting. Strict
 universal font-size and position measures are accepted only when they convert
-exactly to the bounded half-point model.
+exactly to the bounded half-point model. Strict universal manual widths are
+accepted only when they convert exactly to bounded whole twips; omitted
+grouping IDs remain distinct from explicit zero.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
@@ -645,14 +648,17 @@ direct or automatic color and point padding; explicit `nil`/`none` resets also
 project. Outline, shadow, emboss, imprint, legacy text animations, complex
 multi-line, wavy, or 3D line borders, border shadow/frame, theme-only border
 colors, hidden, and web-hidden values remain native-only because Word rendering
-and view settings govern them.
+and view settings govern them. Manual run widths also remain native-only
+because Word ignores `w:fitText` inside Office Math, so the MathML preview
+deliberately does not emulate them.
 `w:highlight` takes display precedence over `w:shd`; named highlights, explicit
 highlight removal, clear direct fills, solid direct foregrounds, and nil
 shading map to MathML `mathbackground`. Pattern masks and theme-only colors
 remain native metadata when no exact browser color is available.
 Enabled mutually exclusive all-caps/small-caps, strike/double-strike, or relief
 combinations, invalid animation values, art-border styles, out-of-range border
-width/spacing, malformed border colors/flags, and unknown, duplicated,
+width/spacing, malformed border colors/flags, missing, malformed, fractional,
+or out-of-range manual widths and grouping IDs, and unknown, duplicated,
 reordered, namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their semantic defaults, and

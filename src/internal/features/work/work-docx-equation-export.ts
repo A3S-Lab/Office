@@ -1230,6 +1230,18 @@ function createWordRunProperties(
     }
     result.append(shading);
   }
+  if (properties.fitText) {
+    const fitText = createWordValueElement(
+      document,
+      prefix,
+      'fitText',
+      String(properties.fitText.widthTwips),
+    );
+    if (properties.fitText.id !== undefined) {
+      setWordAttribute(fitText, prefix, 'id', String(properties.fitText.id));
+    }
+    result.append(fitText);
+  }
   for (const [name, value] of [
     ['rtl', properties.rightToLeft],
     ['cs', properties.complexScript],

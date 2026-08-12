@@ -2053,6 +2053,7 @@ describe('document equations', () => {
       '<w:u w:val="wavyDouble" w:color="ABCDEF" w:themeColor="accent3" w:themeTint="20"/>',
       '<w:effect w:val="shimmer"/>',
       '<w:bdr w:val="double" w:color="112233" w:themeColor="accent1" w:themeTint="66" w:themeShade="33" w:sz="24" w:space="2" w:shadow="1" w:frame="0"/>',
+      '<w:fitText w:val="720" w:id="50"/>',
       '<w:rtl w:val="false"/>',
       '<w:cs w:val="0"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
@@ -2164,7 +2165,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:fitText w:val="720"/></w:rPr>'),
+      wordRun('<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2199,7 +2200,7 @@ describe('document equations', () => {
     expect(
       inspectEquation(
         wordRun(
-          '<w:rPr><w:fitText w:val="720"/></w:rPr>',
+          '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>',
           '<w:t>fallback</w:t>',
         ),
       ),
@@ -3331,6 +3332,230 @@ describe('document equations', () => {
     await expectNativeWordRunBackgrounds(await createArtifactBlob(imported));
   });
 
+  test('preserves bounded manual run widths as native-only OMML metadata', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'fit-width',
+          wordRunProperties: {
+            fitText: { widthTwips: 720, id: 50 },
+          },
+        },
+        {
+          type: 'run',
+          text: 'fit-zero',
+          wordRunProperties: {
+            fitText: { widthTwips: 0, id: 0 },
+          },
+        },
+        {
+          type: 'run',
+          text: 'fit-without-id',
+          wordRunProperties: {
+            fitText: { widthTwips: 31_680 },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            fitText: { widthTwips: 1_440, id: -7 },
+          },
+          children: [{ type: 'run', text: 'operator-fit-width' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const fitText of [
+      { widthTwips: 0 },
+      { widthTwips: 31_680 },
+      { widthTwips: 720, id: -2_147_483_648 },
+      { widthTwips: 720, id: 2_147_483_647 },
+    ]) {
+      expect(
+        normalizeDocumentEquation(equationWithWordRunProperties({ fitText }))
+          ?.children[0],
+      ).toMatchObject({ wordRunProperties: { fitText } });
+    }
+    const invalidModels = [
+      { fitText: null },
+      { fitText: {} },
+      { fitText: { widthTwips: 720, extra: true } },
+      { fitText: { widthTwips: -1 } },
+      { fitText: { widthTwips: 31_681 } },
+      { fitText: { widthTwips: 0.5 } },
+      { fitText: { widthTwips: '720' } },
+      { fitText: { widthTwips: 720, id: -2_147_483_649 } },
+      { fitText: { widthTwips: 720, id: 2_147_483_648 } },
+      { fitText: { widthTwips: 720, id: 0.5 } },
+      { fitText: { widthTwips: 720, id: '50' } },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    expect(
+      inspectEquationModel(wordRun('<w:fitText w:val="720" w:id="50"/>'))
+        ?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: { fitText: { widthTwips: 720, id: 50 } },
+    });
+    expect(
+      inspectEquationModel(wordRun('<w:fitText w:val="0" w:id="0"/>'))
+        ?.children[0],
+    ).toMatchObject({
+      wordRunProperties: { fitText: { widthTwips: 0, id: 0 } },
+    });
+    expect(
+      inspectEquationModel(wordRun('<w:fitText w:val="31680"/>'))?.children[0],
+    ).toMatchObject({
+      wordRunProperties: { fitText: { widthTwips: 31_680 } },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun('<w:fitText w:val="720" w:id="-2147483648"/>'),
+      )?.children[0],
+    ).toMatchObject({
+      wordRunProperties: {
+        fitText: { widthTwips: 720, id: -2_147_483_648 },
+      },
+    });
+    expect(
+      inspectEquationModel(
+        wordRun('<w:fitText w:val="720" w:id="2147483647"/>'),
+      )?.children[0],
+    ).toMatchObject({
+      wordRunProperties: {
+        fitText: { widthTwips: 720, id: 2_147_483_647 },
+      },
+    });
+
+    const strictWidths = [
+      ['0pt', 0],
+      ['0.05pt', 1],
+      ['0.5in', 720],
+      ['12.7mm', 720],
+      ['1.27cm', 720],
+      ['3pc', 720],
+      ['3pi', 720],
+      ['22in', 31_680],
+    ] as const;
+    for (const [source, widthTwips] of strictWidths) {
+      expect(
+        inspectEquationModel(
+          wordRun(
+            `<w:fitText w:val="${source}" w:id="+50"/>`,
+            STRICT_WORD_NAMESPACE,
+          ),
+        )?.children[0],
+        source,
+      ).toMatchObject({
+        wordRunProperties: { fitText: { widthTwips, id: 50 } },
+      });
+    }
+
+    const invalidMarkup = [
+      wordRun('<w:fitText/>'),
+      wordRun('<w:fitText w:id="50"/>'),
+      wordRun('<w:fitText w:val="-1"/>'),
+      wordRun('<w:fitText w:val="31681"/>'),
+      wordRun('<w:fitText w:val="720.5"/>'),
+      wordRun('<w:fitText w:val="720" w:id="-2147483649"/>'),
+      wordRun('<w:fitText w:val="720" w:id="2147483648"/>'),
+      wordRun('<w:fitText w:val="720" w:id="1.5"/>'),
+      wordRun('<w:fitText w:val="720" w:id=""/>'),
+      wordRun('<w:fitText val="720"/>'),
+      wordRun('<w:fitText w:val="720" id="50"/>'),
+      wordRun('<w:fitText w:val="720" w:extra="semantic"/>'),
+      wordRun(
+        `<w:fitText xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="720" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:fitText w:val="720"><w:b/></w:fitText>'),
+      wordRun('<w:fitText w:val="720"/><w:fitText w:val="1440"/>'),
+      wordRun('<w:fitText w:val="720"/><w:shd w:val="clear"/>'),
+      wordRun('<w:rtl/><w:fitText w:val="720"/>'),
+      wordRun(`<v:fitText xmlns:v="${VENDOR_NAMESPACE}" v:val="720"/>`),
+      wordRun('<m:fitText m:val="720"/>'),
+      wordRun('<w:fitText w:val="0.5in"/>'),
+      wordRun('<w:fitText w:val="0.01pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:fitText w:val="22.01in"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:fitText w:val="-1pt"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:fitText w:val="+0.5in"/>', STRICT_WORD_NAMESPACE),
+      wordRun('<w:fitText w:val="1e2pt"/>', STRICT_WORD_NAMESPACE),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const text of ['fit-width', 'fit-zero', 'fit-without-id', '\u2211']) {
+      const element = Array.from(preview.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === text,
+      );
+      expect(element, text).toBeDefined();
+      expect(element?.getAttribute('style'), text).toBeNull();
+      expect(element?.getAttribute('width'), text).toBeNull();
+    }
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunFitText(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-fit-text.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunFitText(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -3419,7 +3644,9 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties('<w:rPr><w:fitText w:val="720"/></w:rPr>'),
+      invalidControlProperties(
+        '<w:rPr><w:vertAlign w:val="superscript"/></w:rPr>',
+      ),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -3691,7 +3918,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr><w:fitText w:val="720"/></w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr><w:vertAlign w:val="superscript"/></w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -4875,6 +5102,7 @@ function richWordRunProperties() {
       shadow: true,
       frame: false,
     },
+    fitText: { widthTwips: 720, id: 50 },
     rightToLeft: false,
     complexScript: false,
     languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
@@ -6319,6 +6547,53 @@ async function expectNativeWordRunBackgrounds(blob: Blob): Promise<void> {
   expect(wordAttributes(highlight)).toEqual({ val: 'darkCyan' });
 }
 
+async function expectNativeWordRunFitText(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const fitTextFor = (text: string) => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    const children = directChildren(properties as Element);
+    expect(
+      children.map((child) => child.localName),
+      text,
+    ).toEqual(['fitText']);
+    return children[0] as Element;
+  };
+  for (const entry of [
+    { text: 'fit-width', attributes: { val: '720', id: '50' } },
+    { text: 'fit-zero', attributes: { val: '0', id: '0' } },
+    { text: 'fit-without-id', attributes: { val: '31680' } },
+  ]) {
+    const fitText = fitTextFor(entry.text);
+    expect(wordAttributes(fitText), entry.text).toEqual(entry.attributes);
+    expect(
+      Array.from(fitText.attributes).map((attribute) => attribute.localName),
+      entry.text,
+    ).toEqual(Object.keys(entry.attributes).map((name) => `w:${name}`));
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-fit-width'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const fitText = directChildren(wordProperties as Element, 'fitText')[0];
+  expect(wordAttributes(fitText)).toEqual({ val: '1440', id: '-7' });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -6371,6 +6646,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'u',
     'effect',
     'bdr',
+    'fitText',
     'rtl',
     'cs',
     'lang',
@@ -6446,6 +6722,7 @@ async function expectNativeArgumentControlProperties(
     'u',
     'effect',
     'bdr',
+    'fitText',
     'rtl',
     'cs',
     'lang',
@@ -7008,6 +7285,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'u',
     'effect',
     'bdr',
+    'fitText',
     'rtl',
     'cs',
     'lang',
@@ -7070,6 +7348,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       shadow: '1',
       frame: '0',
     },
+    { val: '720', id: '50' },
     { val: '0' },
     { val: '0' },
     { val: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },

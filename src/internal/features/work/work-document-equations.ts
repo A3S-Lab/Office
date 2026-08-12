@@ -227,6 +227,11 @@ export interface WorkDocumentEquationWordShading {
   fill?: WorkDocumentEquationWordColor;
 }
 
+export interface WorkDocumentEquationWordFitText {
+  widthTwips: number;
+  id?: number;
+}
+
 export interface WorkDocumentEquationWordLanguages {
   latin?: string;
   eastAsia?: string;
@@ -263,6 +268,7 @@ export interface WorkDocumentEquationWordRunProperties {
   textEffect?: WorkDocumentEquationWordTextEffect;
   border?: WorkDocumentEquationWordRunBorder;
   shading?: WorkDocumentEquationWordShading;
+  fitText?: WorkDocumentEquationWordFitText;
   rightToLeft?: boolean;
   complexScript?: boolean;
   languages?: WorkDocumentEquationWordLanguages;
@@ -779,6 +785,9 @@ const MAX_EQUATION_KERNING_THRESHOLD_HALF_POINTS = 3_277;
 const MIN_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
 const MAX_EQUATION_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
 const MAX_EQUATION_WORD_BORDER_SPACING_POINTS = 31;
+const MAX_EQUATION_WORD_FIT_TEXT_WIDTH_TWIPS = 31_680;
+const MIN_EQUATION_WORD_FIT_TEXT_ID = -2_147_483_648;
+const MAX_EQUATION_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_EQUATION_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_EQUATION_POSITION_HALF_POINTS = 2_147_483_647;
 const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
@@ -831,6 +840,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'textEffect',
   'border',
   'shading',
+  'fitText',
   'rightToLeft',
   'complexScript',
   'languages',
@@ -857,6 +867,7 @@ const WORD_RUN_BORDER_KEYS = new Set([
   'frame',
 ]);
 const WORD_SHADING_KEYS = new Set(['pattern', 'color', 'fill']);
+const WORD_FIT_TEXT_KEYS = new Set(['widthTwips', 'id']);
 const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
@@ -2844,6 +2855,10 @@ function normalizeEquationWordRunProperties(
     source.shading === undefined
       ? undefined
       : normalizeEquationWordShading(source.shading);
+  const fitText =
+    source.fitText === undefined
+      ? undefined
+      : normalizeEquationWordFitText(source.fitText);
   const languages =
     source.languages === undefined
       ? undefined
@@ -2894,6 +2909,7 @@ function normalizeEquationWordRunProperties(
     underline === null ||
     border === null ||
     shading === null ||
+    fitText === null ||
     languages === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
@@ -3015,6 +3031,7 @@ function normalizeEquationWordRunProperties(
       : {}),
     ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
+    ...(fitText ? { fitText } : {}),
     ...(source.rightToLeft !== undefined
       ? { rightToLeft: source.rightToLeft as boolean }
       : {}),
@@ -3229,6 +3246,31 @@ function normalizeEquationWordShading(
         pattern: source.pattern as WorkDocumentEquationWordShadingPattern,
         ...(color ? { color } : {}),
         ...(fill ? { fill } : {}),
+      };
+}
+
+function normalizeEquationWordFitText(
+  source: unknown,
+): WorkDocumentEquationWordFitText | null {
+  if (!isRecordWithKeys(source, WORD_FIT_TEXT_KEYS)) return null;
+  const widthTwips = normalizeEquationInteger(
+    source.widthTwips,
+    0,
+    MAX_EQUATION_WORD_FIT_TEXT_WIDTH_TWIPS,
+  );
+  const id =
+    source.id === undefined
+      ? undefined
+      : normalizeEquationInteger(
+          source.id,
+          MIN_EQUATION_WORD_FIT_TEXT_ID,
+          MAX_EQUATION_WORD_FIT_TEXT_ID,
+        );
+  return widthTwips === null || id === null
+    ? null
+    : {
+        widthTwips,
+        ...(id !== undefined ? { id } : {}),
       };
 }
 

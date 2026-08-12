@@ -23,6 +23,7 @@ import {
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordFitText,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
   type WorkDocumentEquationWordLineBorderStyle,
@@ -153,6 +154,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'effect',
   'bdr',
   'shd',
+  'fitText',
   'rtl',
   'cs',
   'lang',
@@ -326,6 +328,9 @@ const MAX_WORD_KERNING_THRESHOLD_HALF_POINTS = 3_277;
 const MIN_WORD_LINE_BORDER_EIGHTH_POINTS = 2;
 const MAX_WORD_LINE_BORDER_EIGHTH_POINTS = 96;
 const MAX_WORD_BORDER_SPACING_POINTS = 31;
+const MAX_WORD_FIT_TEXT_WIDTH_TWIPS = 31_680;
+const MIN_WORD_FIT_TEXT_ID = -2_147_483_648;
+const MAX_WORD_FIT_TEXT_ID = 2_147_483_647;
 const MIN_WORD_POSITION_HALF_POINTS = -2_147_483_648;
 const MAX_WORD_POSITION_HALF_POINTS = 2_147_483_647;
 const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
@@ -337,6 +342,16 @@ const WORD_UNIVERSAL_HALF_POINT_RATIOS: Readonly<
   pt: [2n, 1n],
   pc: [24n, 1n],
   pi: [24n, 1n],
+};
+const WORD_UNIVERSAL_TWIP_RATIOS: Readonly<
+  Record<string, readonly [bigint, bigint]>
+> = {
+  mm: [7_200n, 127n],
+  cm: [72_000n, 127n],
+  in: [1_440n, 1n],
+  pt: [20n, 1n],
+  pc: [240n, 1n],
+  pi: [240n, 1n],
 };
 const MAX_WORD_MATH_CONTROL_REVISION_ID = 2_147_483_647;
 const MAX_WORD_MATH_CONTROL_REVISION_AUTHOR_LENGTH = 255;
@@ -893,6 +908,7 @@ function parseWordRunProperties(
   const textEffect = parseWordTextEffect(children.get('effect'));
   const border = parseWordRunBorder(children.get('bdr'));
   const shading = parseWordShading(children.get('shd'));
+  const fitText = parseWordFitText(children.get('fitText'));
   const languages = parseWordLanguages(children.get('lang'));
   if (
     fonts === null ||
@@ -908,6 +924,7 @@ function parseWordRunProperties(
     textEffect === null ||
     border === null ||
     shading === null ||
+    fitText === null ||
     languages === null
   ) {
     return null;
@@ -986,6 +1003,7 @@ function parseWordRunProperties(
     ...(textEffect ? { textEffect } : {}),
     ...(border ? { border } : {}),
     ...(shading ? { shading } : {}),
+    ...(fitText ? { fitText } : {}),
     ...(booleans.has('rightToLeft')
       ? { rightToLeft: booleans.get('rightToLeft') }
       : {}),
@@ -1278,11 +1296,38 @@ function strictUniversalHalfPoints(
   minimum: number,
   maximum: number,
 ): number | null {
+  return strictUniversalMeasure(
+    source,
+    WORD_UNIVERSAL_HALF_POINT_RATIOS,
+    minimum,
+    maximum,
+  );
+}
+
+function strictUniversalTwips(
+  source: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  return strictUniversalMeasure(
+    source,
+    WORD_UNIVERSAL_TWIP_RATIOS,
+    minimum,
+    maximum,
+  );
+}
+
+function strictUniversalMeasure(
+  source: string,
+  conversions: Readonly<Record<string, readonly [bigint, bigint]>>,
+  minimum: number,
+  maximum: number,
+): number | null {
   if (source.length > 64) return null;
   const match = /^(-?)(\d+)(?:\.(\d+))?(mm|cm|in|pt|pc|pi)$/u.exec(source);
   if (!match) return null;
   const [, sign, whole = '', fraction = '', unit = ''] = match;
-  const conversion = WORD_UNIVERSAL_HALF_POINT_RATIOS[unit];
+  const conversion = conversions[unit];
   if (!conversion) return null;
   const decimalDigits = `${whole}${fraction}`;
   const decimalDenominator = 10n ** BigInt(fraction.length);
@@ -1290,11 +1335,11 @@ function strictUniversalHalfPoints(
     BigInt(decimalDigits) * conversion[0] * (sign === '-' ? -1n : 1n);
   const denominator = decimalDenominator * conversion[1];
   if (numerator % denominator !== 0n) return null;
-  const halfPoints = numerator / denominator;
-  if (halfPoints < BigInt(minimum) || halfPoints > BigInt(maximum)) {
+  const units = numerator / denominator;
+  if (units < BigInt(minimum) || units > BigInt(maximum)) {
     return null;
   }
-  const value = Number(halfPoints);
+  const value = Number(units);
   return Object.is(value, -0) ? 0 : value;
 }
 
@@ -1452,6 +1497,34 @@ function parseWordShading(
         pattern: pattern as WorkDocumentEquationWordShadingPattern,
         ...(color ? { color } : {}),
         ...(fill ? { fill } : {}),
+      };
+}
+
+function parseWordFitText(
+  element: Element | undefined,
+): WorkDocumentEquationWordFitText | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val', 'id']));
+  if (!attributes?.has('val')) return null;
+  const source = attributes.get('val')?.trim() ?? '';
+  const integer = wordIntegerValue(source, 0, MAX_WORD_FIT_TEXT_WIDTH_TWIPS);
+  const widthTwips =
+    integer ??
+    (element.namespaceURI === STRICT_WORD_NAMESPACE
+      ? strictUniversalTwips(source, 0, MAX_WORD_FIT_TEXT_WIDTH_TWIPS)
+      : null);
+  const id = attributes.has('id')
+    ? wordIntegerValue(
+        attributes.get('id')?.trim() ?? '',
+        MIN_WORD_FIT_TEXT_ID,
+        MAX_WORD_FIT_TEXT_ID,
+      )
+    : undefined;
+  return widthTwips === null || id === null
+    ? null
+    : {
+        widthTwips,
+        ...(id !== undefined ? { id } : {}),
       };
 }
 
