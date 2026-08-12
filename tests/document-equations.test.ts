@@ -24,6 +24,10 @@ import {
   directChildren,
   parseXml,
 } from '../src/internal/features/work/work-ooxml-package';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from '../src/internal/features/work/work-docx-settings-xml';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
@@ -71,6 +75,12 @@ describe('document equations', () => {
       const underbar = element?.querySelector('munder[accentunder="false"]');
       expect(underbar).not.toBeNull();
       expect(underbar?.querySelector('mo')?.textContent).toBe('\u00af');
+      const borderBox = element?.querySelector('menclose');
+      expect(borderBox).toHaveAttribute(
+        'notation',
+        'top left horizontalstrike updiagonalstrike',
+      );
+      expect(element?.querySelector('mpadded')).not.toBeNull();
       expect(element?.querySelector('mtable')).not.toBeNull();
       expect(element?.querySelectorAll('mtr')).toHaveLength(2);
       expect(element?.querySelectorAll('mtd')).toHaveLength(8);
@@ -79,6 +89,12 @@ describe('document equations', () => {
       expect(element?.getAttribute('aria-label')).toContain('accent(U+0303');
       expect(element?.getAttribute('aria-label')).toContain('overbar(x+y)');
       expect(element?.getAttribute('aria-label')).toContain('underbar(a-b)');
+      expect(element?.getAttribute('aria-label')).toContain(
+        'borderbox(top left horizontalstrike updiagonalstrike;boxed)',
+      );
+      expect(element?.getAttribute('aria-label')).toContain(
+        'box(operator,no-break,differential,break@3,alignment;dx)',
+      );
       expect(element?.getAttribute('aria-label')).toContain('matrix');
 
       const equationPosition = documentEquationPosition(editor);
@@ -99,6 +115,43 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'borderBox',
+              hideTop: 'false',
+              hideBottom: false,
+              hideLeft: false,
+              hideRight: false,
+              strikeHorizontal: false,
+              strikeVertical: false,
+              strikeBottomLeftToTopRight: false,
+              strikeTopLeftToBottomRight: false,
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'box',
+              operatorEmulator: true,
+              noBreak: true,
+              differential: false,
+              alignment: true,
+              manualBreak: { alignmentAt: 0 },
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -197,6 +250,8 @@ describe('document equations', () => {
       expect(editor.getHTML()).toContain('<math');
       expect(editor.getHTML()).toContain('accent="true"');
       expect(editor.getHTML()).toContain('accentunder="false"');
+      expect(editor.getHTML()).toContain('<menclose');
+      expect(editor.getHTML()).toContain('<mpadded');
       expect(editor.getHTML()).toContain('<mtable');
 
       const sanitized = new DOMParser().parseFromString(
@@ -238,7 +293,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([18, 18, 1, 1]);
+    ).toEqual([20, 20, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -248,16 +303,12 @@ describe('document equations', () => {
     expect(documentEquationFromElement(bodyEquations[1])).toEqual(
       complexEquation('block'),
     );
-    expect(documentEquationFromElement(bodyEquations[2])?.children[0]).toEqual({
-      type: 'bar',
-      position: 'top',
-      children: [{ type: 'run', text: 'F' }],
-    });
-    expect(documentEquationFromElement(bodyEquations[3])?.children[0]).toEqual({
-      type: 'bar',
-      position: 'bottom',
-      children: [{ type: 'run', text: 'N' }],
-    });
+    expect(documentEquationFromElement(bodyEquations[2])).toEqual(
+      borderBoxEquation('F', 'top'),
+    );
+    expect(documentEquationFromElement(bodyEquations[3])).toEqual(
+      boxEquation('N', 'bottom'),
+    );
     expect(
       bodyEquations.some(
         (element) => documentEquationFromElement(element)?.display === 'block',
@@ -475,6 +526,11 @@ describe('document equations', () => {
       `<m:bar><m:barPr/><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:pos/><m:ctrlPr/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:pos m:val="top"/><m:ctrlPr/></m:barPr><m:e>${run}</m:e></m:bar>`,
+      `<m:borderBox><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr><m:hideTop/><m:hideBot m:val="0"/><m:hideLeft m:val="false"/><m:hideRight m:val="true"/><m:strikeH/><m:strikeV m:val="off"/><m:strikeBLTR m:val="on"/><m:strikeTLBR m:val="0"/><m:ctrlPr/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:box><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:opEmu/><m:noBreak m:val="0"/><m:diff/><m:brk m:alnAt=" +003 "/><m:aln/><m:ctrlPr/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk/></m:boxPr><m:e>${run}</m:e></m:box>`,
       `<m:f><m:fPr><m:type m:val="noBar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/><m:ctrlPr/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
@@ -520,6 +576,62 @@ describe('document equations', () => {
         children: [{ type: 'run', text: 'x' }],
       },
     ]);
+    expect(
+      supported
+        .slice(6, 11)
+        .map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      {
+        type: 'borderBox',
+        hideTop: false,
+        hideBottom: false,
+        hideLeft: false,
+        hideRight: false,
+        strikeHorizontal: false,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: false,
+        strikeTopLeftToBottomRight: false,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'borderBox',
+        hideTop: true,
+        hideBottom: false,
+        hideLeft: false,
+        hideRight: true,
+        strikeHorizontal: true,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: true,
+        strikeTopLeftToBottomRight: false,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'box',
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'box',
+        operatorEmulator: true,
+        noBreak: false,
+        differential: true,
+        alignment: true,
+        manualBreak: { alignmentAt: 3 },
+        children: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'box',
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        manualBreak: {},
+        children: [{ type: 'run', text: 'x' }],
+      },
+    ]);
 
     const unsupported = [
       `<m:acc><m:accPr><m:chr/></m:accPr><m:e>${run}</m:e></m:acc>`,
@@ -540,6 +652,27 @@ describe('document equations', () => {
       `<m:bar><m:barPr><m:pos xmlns:r="${RELATIONSHIP_NAMESPACE}" m:val="top" r:id="rIdUnsafe"/></m:barPr><m:e>${run}</m:e></m:bar>`,
       `<m:bar><m:barPr><m:pos m:val="top"/></m:barPr><m:e/></m:bar>`,
       `<m:bar><m:e>${run}</m:e><m:e>${run}</m:e></m:bar>`,
+      `<m:borderBox><m:borderBoxPr><m:grow/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr><m:strikeH/><m:hideTop/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr><m:hideTop/><m:hideTop/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr><m:hideTop m:val="maybe"/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><v:borderBoxPr xmlns:v="${VENDOR_NAMESPACE}"><m:hideTop/></v:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr><m:hideTop xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:borderBoxPr><m:e>${run}</m:e></m:borderBox>`,
+      `<m:borderBox><m:e>${run}</m:e><m:borderBoxPr><m:hideTop/></m:borderBoxPr></m:borderBox>`,
+      `<m:borderBox><m:borderBoxPr/><m:e/></m:borderBox>`,
+      `<m:borderBox><m:e>${run}</m:e><m:e>${run}</m:e></m:borderBox>`,
+      `<m:box><m:boxPr><m:grow/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:aln/><m:opEmu/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:opEmu/><m:opEmu/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk m:alnAt="0"/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk m:alnAt="256"/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk m:alnAt="3.5"/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk m:alnAt="3" m:extra="semantic"/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:boxPr><m:brk>${run}</m:brk></m:boxPr><m:e>${run}</m:e></m:box>`,
+      `<m:box><m:e>${run}</m:e><m:boxPr><m:opEmu/></m:boxPr></m:box>`,
+      `<m:box><m:boxPr/><m:e/></m:box>`,
+      `<m:box><m:e>${run}</m:e><m:e>${run}</m:e></m:box>`,
       `<m:f><m:fPr><m:m><m:mr><m:e>${run}</m:e></m:mr></m:m></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
@@ -578,15 +711,15 @@ function equationArtifact() {
     '<sup data-document-note-reference="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1">1</sup>',
     '<sup data-document-note-reference="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1">1</sup>',
     '</p>',
-    `<aside data-document-note="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1"><p>Foot ${equationHtml(barEquation('F', 'top'))}</p></aside>`,
-    `<aside data-document-note="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1"><p>End ${equationHtml(barEquation('N', 'bottom'))}</p></aside>`,
+    `<aside data-document-note="true" data-note-kind="footnote" data-note-id="foot-equation" data-note-number="1"><p>Foot ${equationHtml(borderBoxEquation('F', 'top'))}</p></aside>`,
+    `<aside data-document-note="true" data-note-kind="endnote" data-note-id="end-equation" data-note-number="1"><p>End ${equationHtml(boxEquation('N', 'bottom'))}</p></aside>`,
   ].join('');
   artifact.content.pageChrome = {
     differentFirstPage: false,
     differentOddEvenPages: false,
     default: {
-      headerHtml: `<p>Header ${equationHtml(barEquation('H', 'top'))}</p>`,
-      footerHtml: `<p>Footer ${equationHtml(barEquation('R', 'bottom'))}</p>`,
+      headerHtml: `<p>Header ${equationHtml(borderBoxEquation('H', 'top'))}</p>`,
+      footerHtml: `<p>Footer ${equationHtml(boxEquation('R', 'bottom'))}</p>`,
       showPageNumber: false,
     },
     first: { headerHtml: '', footerHtml: '', showPageNumber: false },
@@ -678,6 +811,27 @@ function complexEquation(
         children: [run('a-b')],
       },
       {
+        type: 'borderBox',
+        hideTop: false,
+        hideBottom: true,
+        hideLeft: false,
+        hideRight: true,
+        strikeHorizontal: true,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: true,
+        strikeTopLeftToBottomRight: false,
+        children: [run('boxed')],
+      },
+      {
+        type: 'box',
+        operatorEmulator: true,
+        noBreak: true,
+        differential: true,
+        alignment: true,
+        manualBreak: { alignmentAt: 3 },
+        children: [run('dx')],
+      },
+      {
         type: 'matrix',
         baseAlignment: 'top',
         placeholdersHidden: false,
@@ -699,18 +853,58 @@ function simpleEquation(text: string): WorkDocumentEquation {
   };
 }
 
-function barEquation(
+function borderBoxEquation(
   text: string,
-  position: 'top' | 'bottom',
+  barPosition: 'top' | 'bottom',
 ): WorkDocumentEquation {
   return {
     version: 1,
     display: 'inline',
     children: [
       {
-        type: 'bar',
-        position,
-        children: [{ type: 'run', text }],
+        type: 'borderBox',
+        hideTop: false,
+        hideBottom: false,
+        hideLeft: false,
+        hideRight: false,
+        strikeHorizontal: false,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: false,
+        strikeTopLeftToBottomRight: false,
+        children: [
+          {
+            type: 'bar',
+            position: barPosition,
+            children: [{ type: 'run', text }],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function boxEquation(
+  text: string,
+  barPosition: 'top' | 'bottom',
+): WorkDocumentEquation {
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'box',
+        operatorEmulator: true,
+        noBreak: true,
+        differential: false,
+        alignment: true,
+        manualBreak: {},
+        children: [
+          {
+            type: 'bar',
+            position: barPosition,
+            children: [{ type: 'run', text }],
+          },
+        ],
       },
     ],
   };
@@ -797,6 +991,53 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ),
   ).toEqual(['top', 'bot', 'top', 'bot']);
   expect(bars.every((bar) => directChildren(bar, 'e').length === 1)).toBe(true);
+  const borderBoxes = descendants(document, 'borderBox');
+  expect(borderBoxes).toHaveLength(2);
+  for (const borderBox of borderBoxes) {
+    const properties = directChildren(borderBox, 'borderBoxPr')[0];
+    expect(directChildren(properties).map((child) => child.localName)).toEqual([
+      'hideTop',
+      'hideBot',
+      'hideLeft',
+      'hideRight',
+      'strikeH',
+      'strikeV',
+      'strikeBLTR',
+      'strikeTLBR',
+    ]);
+    expect(directChildren(properties).map(mathValueAttribute)).toEqual([
+      '0',
+      '1',
+      '0',
+      '1',
+      '1',
+      '0',
+      '1',
+      '0',
+    ]);
+    expect(directChildren(borderBox, 'e')).toHaveLength(1);
+  }
+  const boxes = descendants(document, 'box');
+  expect(boxes).toHaveLength(2);
+  for (const box of boxes) {
+    const properties = directChildren(box, 'boxPr')[0];
+    expect(directChildren(properties).map((child) => child.localName)).toEqual([
+      'opEmu',
+      'noBreak',
+      'diff',
+      'brk',
+      'aln',
+    ]);
+    expect(
+      ['opEmu', 'noBreak', 'diff', 'aln'].map((name) =>
+        mathValueAttribute(directChildren(properties, name)[0]),
+      ),
+    ).toEqual(['1', '1', '1', '1']);
+    expect(
+      mathNamedAttribute(directChildren(properties, 'brk')[0], 'alnAt'),
+    ).toBe('3');
+    expect(directChildren(box, 'e')).toHaveLength(1);
+  }
   const matrices = descendants(document, 'm');
   expect(matrices).toHaveLength(2);
   for (const matrix of matrices) {
@@ -837,18 +1078,22 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     {
       document: await xmlEntry(archive, 'word/footnotes.xml'),
       position: 'top',
+      container: 'borderBox',
     },
     {
       document: await xmlEntry(archive, 'word/endnotes.xml'),
       position: 'bot',
+      container: 'box',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/header\d*\.xml$/i),
       position: 'top',
+      container: 'borderBox',
     },
     {
       document: await matchingXmlEntry(archive, /^word\/footer\d*\.xml$/i),
       position: 'bot',
+      container: 'box',
     },
   ];
   for (const story of stories) {
@@ -856,6 +1101,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(descendants(story.document, 'oMath')[0]?.namespaceURI).toBe(
       MATH_NAMESPACE,
     );
+    expect(descendants(story.document, story.container)).toHaveLength(1);
     const bar = descendants(story.document, 'bar')[0];
     expect(bar).toBeDefined();
     expect(
@@ -871,6 +1117,19 @@ function mathValueAttribute(element: Element | undefined): string | null {
     Array.from(element?.attributes ?? []).find(
       (attribute) =>
         attribute.localName === 'val' || /(?:^|:)val$/u.test(attribute.name),
+    )?.value ?? null
+  );
+}
+
+function mathNamedAttribute(
+  element: Element | undefined,
+  name: string,
+): string | null {
+  return (
+    Array.from(element?.attributes ?? []).find(
+      (attribute) =>
+        xmlAttributeNamespace(element as Element, attribute) ===
+          MATH_NAMESPACE && xmlAttributeLocalName(attribute) === name,
     )?.value ?? null
   );
 }

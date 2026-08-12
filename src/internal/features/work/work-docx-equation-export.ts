@@ -239,6 +239,68 @@ function createExpression(
     );
     return bar;
   }
+  if (expression.type === 'borderBox') {
+    const borderBox = createMathElement(document, prefix, 'borderBox');
+    const properties = createMathElement(document, prefix, 'borderBoxPr');
+    properties.append(
+      mathOnOffElement(document, prefix, 'hideTop', expression.hideTop),
+      mathOnOffElement(document, prefix, 'hideBot', expression.hideBottom),
+      mathOnOffElement(document, prefix, 'hideLeft', expression.hideLeft),
+      mathOnOffElement(document, prefix, 'hideRight', expression.hideRight),
+      mathOnOffElement(
+        document,
+        prefix,
+        'strikeH',
+        expression.strikeHorizontal,
+      ),
+      mathOnOffElement(document, prefix, 'strikeV', expression.strikeVertical),
+      mathOnOffElement(
+        document,
+        prefix,
+        'strikeBLTR',
+        expression.strikeBottomLeftToTopRight,
+      ),
+      mathOnOffElement(
+        document,
+        prefix,
+        'strikeTLBR',
+        expression.strikeTopLeftToBottomRight,
+      ),
+    );
+    borderBox.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return borderBox;
+  }
+  if (expression.type === 'box') {
+    const box = createMathElement(document, prefix, 'box');
+    const properties = createMathElement(document, prefix, 'boxPr');
+    properties.append(
+      mathOnOffElement(document, prefix, 'opEmu', expression.operatorEmulator),
+      mathOnOffElement(document, prefix, 'noBreak', expression.noBreak),
+      mathOnOffElement(document, prefix, 'diff', expression.differential),
+    );
+    if (expression.manualBreak) {
+      const manualBreak = createMathElement(document, prefix, 'brk');
+      if (expression.manualBreak.alignmentAt !== undefined) {
+        manualBreak.setAttributeNS(
+          MATH_NAMESPACE,
+          `${prefix}:alnAt`,
+          String(expression.manualBreak.alignmentAt),
+        );
+      }
+      properties.append(manualBreak);
+    }
+    properties.append(
+      mathOnOffElement(document, prefix, 'aln', expression.alignment),
+    );
+    box.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return box;
+  }
   if (expression.type === 'fraction') {
     const fraction = createMathElement(document, prefix, 'f');
     if (expression.fractionType !== 'bar') {
@@ -436,6 +498,15 @@ function mathValueElement(
   const element = createMathElement(document, prefix, name);
   element.setAttributeNS(MATH_NAMESPACE, `${prefix}:val`, value);
   return element;
+}
+
+function mathOnOffElement(
+  document: Document,
+  prefix: string,
+  name: string,
+  value: boolean,
+): Element {
+  return mathValueElement(document, prefix, name, value ? '1' : '0');
 }
 
 function createMathElement(

@@ -15,6 +15,10 @@ export type WorkDocumentEquationMatrixBaseAlignment =
   | 'center'
   | 'bottom';
 
+export interface WorkDocumentEquationManualBreak {
+  alignmentAt?: number;
+}
+
 export type WorkDocumentEquationExpression =
   | { type: 'run'; text: string }
   | {
@@ -65,6 +69,27 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'bar';
       position: WorkDocumentEquationBarPosition;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
+      type: 'borderBox';
+      hideTop: boolean;
+      hideBottom: boolean;
+      hideLeft: boolean;
+      hideRight: boolean;
+      strikeHorizontal: boolean;
+      strikeVertical: boolean;
+      strikeBottomLeftToTopRight: boolean;
+      strikeTopLeftToBottomRight: boolean;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
+      type: 'box';
+      operatorEmulator: boolean;
+      noBreak: boolean;
+      differential: boolean;
+      alignment: boolean;
+      manualBreak?: WorkDocumentEquationManualBreak;
       children: WorkDocumentEquationExpression[];
     }
   | {
@@ -508,6 +533,58 @@ function normalizeExpression(
       const children = normalizeExpressionList(source.children, state);
       return position && children ? { type: 'bar', position, children } : null;
     }
+    if (source.type === 'borderBox') {
+      if (
+        typeof source.hideTop !== 'boolean' ||
+        typeof source.hideBottom !== 'boolean' ||
+        typeof source.hideLeft !== 'boolean' ||
+        typeof source.hideRight !== 'boolean' ||
+        typeof source.strikeHorizontal !== 'boolean' ||
+        typeof source.strikeVertical !== 'boolean' ||
+        typeof source.strikeBottomLeftToTopRight !== 'boolean' ||
+        typeof source.strikeTopLeftToBottomRight !== 'boolean'
+      ) {
+        return null;
+      }
+      const children = normalizeExpressionList(source.children, state);
+      return children
+        ? {
+            type: 'borderBox',
+            hideTop: source.hideTop,
+            hideBottom: source.hideBottom,
+            hideLeft: source.hideLeft,
+            hideRight: source.hideRight,
+            strikeHorizontal: source.strikeHorizontal,
+            strikeVertical: source.strikeVertical,
+            strikeBottomLeftToTopRight: source.strikeBottomLeftToTopRight,
+            strikeTopLeftToBottomRight: source.strikeTopLeftToBottomRight,
+            children,
+          }
+        : null;
+    }
+    if (source.type === 'box') {
+      const manualBreak =
+        source.manualBreak === undefined
+          ? undefined
+          : normalizeManualBreak(source.manualBreak);
+      const children = normalizeExpressionList(source.children, state);
+      return typeof source.operatorEmulator === 'boolean' &&
+        typeof source.noBreak === 'boolean' &&
+        typeof source.differential === 'boolean' &&
+        typeof source.alignment === 'boolean' &&
+        manualBreak !== null &&
+        children
+        ? {
+            type: 'box',
+            operatorEmulator: source.operatorEmulator,
+            noBreak: source.noBreak,
+            differential: source.differential,
+            alignment: source.alignment,
+            ...(manualBreak ? { manualBreak } : {}),
+            children,
+          }
+        : null;
+    }
     if (source.type === 'matrix') {
       const baseAlignment = MATRIX_BASE_ALIGNMENTS.has(
         source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment,
@@ -664,6 +741,27 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
       ? `overbar(${body})`
       : `underbar(${body})`;
   }
+  if (expression.type === 'borderBox') {
+    return `borderbox(${borderBoxNotation(expression)};${expressionListText(
+      expression.children,
+    )})`;
+  }
+  if (expression.type === 'box') {
+    const properties = [
+      expression.operatorEmulator ? 'operator' : '',
+      expression.noBreak ? 'no-break' : '',
+      expression.differential ? 'differential' : '',
+      expression.manualBreak
+        ? expression.manualBreak.alignmentAt
+          ? `break@${expression.manualBreak.alignmentAt}`
+          : 'break'
+        : '',
+      expression.alignment ? 'alignment' : '',
+    ].filter(Boolean);
+    return `box(${properties.join(',') || 'default'};${expressionListText(
+      expression.children,
+    )})`;
+  }
   if (expression.type === 'matrix') {
     return `matrix(${expression.rows
       .map((row) => row.map(expressionListText).join(','))
@@ -819,6 +917,14 @@ function expressionMathMl(
       [mathRow(expression.children), domSpec('mo', {}, ['\u00af'])],
     );
   }
+  if (expression.type === 'borderBox') {
+    return domSpec('menclose', { notation: borderBoxNotation(expression) }, [
+      mathRow(expression.children),
+    ]);
+  }
+  if (expression.type === 'box') {
+    return domSpec('mpadded', {}, [mathRow(expression.children)]);
+  }
   if (expression.type === 'matrix') {
     return domSpec(
       'mtable',
@@ -877,6 +983,39 @@ function accentCharacter(source: unknown): string | null {
       (codePoint >= 0x20d0 && codePoint <= 0x20ef))
     ? source
     : null;
+}
+
+function normalizeManualBreak(
+  source: unknown,
+): WorkDocumentEquationManualBreak | null {
+  if (!isRecord(source)) return null;
+  if (source.alignmentAt === undefined) return {};
+  return Number.isInteger(source.alignmentAt) &&
+    Number(source.alignmentAt) >= 1 &&
+    Number(source.alignmentAt) <= 255
+    ? { alignmentAt: Number(source.alignmentAt) }
+    : null;
+}
+
+function borderBoxNotation(
+  expression: Extract<WorkDocumentEquationExpression, { type: 'borderBox' }>,
+): string {
+  const edges = [
+    expression.hideTop ? '' : 'top',
+    expression.hideBottom ? '' : 'bottom',
+    expression.hideLeft ? '' : 'left',
+    expression.hideRight ? '' : 'right',
+  ].filter(Boolean);
+  const notations = edges.length === 4 ? ['box'] : edges;
+  if (expression.strikeHorizontal) notations.push('horizontalstrike');
+  if (expression.strikeVertical) notations.push('verticalstrike');
+  if (expression.strikeBottomLeftToTopRight) {
+    notations.push('updiagonalstrike');
+  }
+  if (expression.strikeTopLeftToBottomRight) {
+    notations.push('downdiagonalstrike');
+  }
+  return notations.join(' ') || 'none';
 }
 
 function validXmlText(source: string): boolean {

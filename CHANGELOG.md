@@ -10,15 +10,18 @@ All notable changes to A3S Office will be documented in this file.
   accessible MathML preview and atomic insert/update commands. The structured
   subset covers Unicode runs, bar/no-bar/skewed/linear fractions, super- and
   subscripts, radicals, functions, supported n-ary operators, combining
-  accents, overbars and underbars, bounded rectangular matrices with base and
-  column alignment, and custom delimiters in strict or transitional
-  UTF-8/UTF-16 packages. Depth, node, text, model-size, matrix-dimension,
-  cell-count, and equation-count budgets are enforced. Invalid or
-  non-combining accent characters, invalid or contradictory bar properties,
-  matrix spacing and gap rules, ragged matrices, boxes, equation arrays,
-  limits, phantoms, pre-scripts, malformed placement, namespace spoofing,
-  nested math, and relationship-bound properties fail closed to bounded text
-  with explicit diagnostics.
+  accents, overbars and underbars, border boxes with independently visible
+  edges and four strike directions, semantic boxes with operator-emulation,
+  no-break, differential-spacing, manual-break, and alignment properties,
+  bounded rectangular matrices with base and column alignment, and custom
+  delimiters in strict or transitional UTF-8/UTF-16 packages. Depth, node, text,
+  model-size, matrix-dimension, cell-count, and equation-count budgets are
+  enforced. Invalid or non-combining accent characters, invalid or
+  contradictory bar, border-box, or box properties, matrix spacing and gap
+  rules, ragged matrices, equation arrays, limits, group characters, phantoms,
+  pre-scripts, malformed placement, namespace spoofing, nested math, and
+  relationship-bound properties fail closed to bounded text with explicit
+  diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers
   the original package, and export retains safe source-only OPC parts,
   content-type declarations, and relationships while generated core parts stay

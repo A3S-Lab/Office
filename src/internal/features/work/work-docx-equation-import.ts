@@ -110,7 +110,9 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'bar',
   'barPr',
   'borderBox',
+  'borderBoxPr',
   'box',
+  'boxPr',
   'd',
   'deg',
   'den',
@@ -434,6 +436,10 @@ function parseExpression(
     if (element.localName === 'r') return parseRun(element, state);
     if (element.localName === 'acc') return parseAccent(element, state);
     if (element.localName === 'bar') return parseBar(element, state);
+    if (element.localName === 'borderBox') {
+      return parseBorderBox(element, state);
+    }
+    if (element.localName === 'box') return parseBox(element, state);
     if (element.localName === 'f') return parseFraction(element, state);
     if (element.localName === 'sSup') return parseSuperScript(element, state);
     if (element.localName === 'sSub') return parseSubScript(element, state);
@@ -572,6 +578,140 @@ function parseBar(
   const parsedBody = parseExpressionContainer(body, state);
   return position && parsedBody
     ? { type: 'bar', position, children: parsedBody }
+    : null;
+}
+
+function parseBorderBox(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['borderBoxPr', 'e']))) {
+    return null;
+  }
+  const properties = uniqueMathChild(element, 'borderBoxPr', false);
+  const body = uniqueMathChild(element, 'e');
+  const propertyNames = [
+    'hideTop',
+    'hideBot',
+    'hideLeft',
+    'hideRight',
+    'strikeH',
+    'strikeV',
+    'strikeBLTR',
+    'strikeTLBR',
+    'ctrlPr',
+  ] as const;
+  if (
+    properties === null ||
+    !body ||
+    (properties && directChildren(element)[0] !== properties) ||
+    (properties &&
+      (!structuralChildren(properties, new Set(propertyNames)) ||
+        !orderedMathChildren(properties, propertyNames)))
+  ) {
+    return null;
+  }
+  const hideTop = mathOnOffProperty(properties, 'hideTop');
+  const hideBottom = mathOnOffProperty(properties, 'hideBot');
+  const hideLeft = mathOnOffProperty(properties, 'hideLeft');
+  const hideRight = mathOnOffProperty(properties, 'hideRight');
+  const strikeHorizontal = mathOnOffProperty(properties, 'strikeH');
+  const strikeVertical = mathOnOffProperty(properties, 'strikeV');
+  const strikeBottomLeftToTopRight = mathOnOffProperty(
+    properties,
+    'strikeBLTR',
+  );
+  const strikeTopLeftToBottomRight = mathOnOffProperty(
+    properties,
+    'strikeTLBR',
+  );
+  const controlProperties = properties
+    ? uniqueMathChild(properties, 'ctrlPr', false)
+    : undefined;
+  const parsedBody = parseExpressionContainer(body, state);
+  return hideTop !== null &&
+    hideBottom !== null &&
+    hideLeft !== null &&
+    hideRight !== null &&
+    strikeHorizontal !== null &&
+    strikeVertical !== null &&
+    strikeBottomLeftToTopRight !== null &&
+    strikeTopLeftToBottomRight !== null &&
+    controlProperties !== null &&
+    (!controlProperties || emptyMathProperty(controlProperties)) &&
+    parsedBody
+    ? {
+        type: 'borderBox',
+        hideTop,
+        hideBottom,
+        hideLeft,
+        hideRight,
+        strikeHorizontal,
+        strikeVertical,
+        strikeBottomLeftToTopRight,
+        strikeTopLeftToBottomRight,
+        children: parsedBody,
+      }
+    : null;
+}
+
+function parseBox(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['boxPr', 'e']))) return null;
+  const properties = uniqueMathChild(element, 'boxPr', false);
+  const body = uniqueMathChild(element, 'e');
+  const propertyNames = [
+    'opEmu',
+    'noBreak',
+    'diff',
+    'brk',
+    'aln',
+    'ctrlPr',
+  ] as const;
+  if (
+    properties === null ||
+    !body ||
+    (properties && directChildren(element)[0] !== properties) ||
+    (properties &&
+      (!structuralChildren(properties, new Set(propertyNames)) ||
+        !orderedMathChildren(properties, propertyNames)))
+  ) {
+    return null;
+  }
+  const operatorEmulator = mathOnOffProperty(properties, 'opEmu');
+  const noBreak = mathOnOffProperty(properties, 'noBreak');
+  const differential = mathOnOffProperty(properties, 'diff');
+  const alignment = mathOnOffProperty(properties, 'aln');
+  const breakElement = properties
+    ? uniqueMathChild(properties, 'brk', false)
+    : undefined;
+  const manualBreak = breakElement
+    ? parseManualBreak(breakElement)
+    : breakElement;
+  const controlProperties = properties
+    ? uniqueMathChild(properties, 'ctrlPr', false)
+    : undefined;
+  const parsedBody = parseExpressionContainer(body, state);
+  return operatorEmulator !== null &&
+    noBreak !== null &&
+    differential !== null &&
+    alignment !== null &&
+    breakElement !== null &&
+    manualBreak !== null &&
+    controlProperties !== null &&
+    (!controlProperties || emptyMathProperty(controlProperties)) &&
+    parsedBody
+    ? {
+        type: 'box',
+        operatorEmulator,
+        noBreak,
+        differential,
+        alignment,
+        ...(manualBreak ? { manualBreak } : {}),
+        children: parsedBody,
+      }
     : null;
 }
 
@@ -1102,6 +1242,20 @@ function structuralChildren(
   );
 }
 
+function orderedMathChildren(
+  element: Element,
+  names: readonly string[],
+): boolean {
+  const order = new Map(names.map((name, index) => [name, index]));
+  let previous = -1;
+  for (const child of directChildren(element)) {
+    const position = order.get(child.localName);
+    if (position === undefined || position < previous) return false;
+    previous = position;
+  }
+  return true;
+}
+
 function mathDirectChildren(element: Element, name: string): Element[] {
   return directChildren(element, name).filter((child) =>
     DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? ''),
@@ -1232,6 +1386,45 @@ function mathOnOff(element: Element): boolean | null {
   if (value === '1' || value === 'on' || value === 'true') return true;
   if (value === '0' || value === 'off' || value === 'false') return false;
   return null;
+}
+
+function mathOnOffProperty(
+  properties: Element | undefined,
+  name: string,
+): boolean | null {
+  if (!properties) return false;
+  const element = uniqueMathChild(properties, name, false);
+  if (element === null) return null;
+  return element ? mathOnOff(element) : false;
+}
+
+function parseManualBreak(element: Element): { alignmentAt?: number } | null {
+  if (
+    !DOCX_MATH_NAMESPACES.has(element.namespaceURI ?? '') ||
+    directChildren(element).length ||
+    hasMeaningfulDirectText(element)
+  ) {
+    return null;
+  }
+  const attributes = meaningfulAttributes(element);
+  if (!attributes.length) return {};
+  if (
+    attributes.length !== 1 ||
+    xmlAttributeLocalName(attributes[0]) !== 'alnAt' ||
+    !DOCX_MATH_NAMESPACES.has(
+      xmlAttributeNamespace(element, attributes[0]) ?? '',
+    )
+  ) {
+    return null;
+  }
+  const source = attributes[0]?.value.trim() ?? '';
+  if (!/^\+?\d+$/u.test(source)) return null;
+  const alignmentAt = Number(source);
+  return Number.isSafeInteger(alignmentAt) &&
+    alignmentAt >= 1 &&
+    alignmentAt <= 255
+    ? { alignmentAt }
+    : null;
 }
 
 function delimiterProperty(
