@@ -85,12 +85,16 @@ concrete-numbering, and level metadata follows regenerated IDs; duplicate,
 source-only, malformed, or ambiguous one-to-many mappings are dropped.
 Generated Word style and numbering semantics still win. Relationship-free
 passive extensions from non-OOXML ignorable namespaces also follow uniquely
-matched picture drawings in regenerated document, header, and footer parts.
-The match uses normalized anchor plus drawing-property IDs, which header and footer
-import now retains in sanitized editable HTML. Source-only, duplicate,
+matched picture drawings in regenerated document, header, footer, footnote, and
+endnote parts. The match uses normalized anchor plus drawing-property IDs,
+which body, page-chrome, and note import retains in sanitized editable HTML.
+Native note pictures also retain layout, wrapping, crop, and layer metadata;
+export repairs missing note-part image relationships and validates every media
+target. Source-only, changed, duplicate, namespace-spoofed,
 relationship-bound, Microsoft/OOXML semantic, and ambiguous drawing branches
-are dropped; generated image geometry and media stay authoritative. Passive
-extensions also follow uniquely matched, unchanged paragraphs and their
+are dropped; generated image geometry and media stay authoritative. Legacy
+VML, shapes, SmartArt, and drawing-bearing content-control wrappers normalize.
+Passive extensions also follow uniquely matched, unchanged paragraphs and their
 paragraph properties by native `w14:paraId` plus `w14:textId`. Both IDs survive
 sanitized body and page-chrome HTML. Text edits rotate `textId`, formatting-only
 edits and moves retain it, and copies or splits receive new paragraph IDs.
@@ -103,8 +107,8 @@ conservative identities from directly owned row and paragraph IDs. Row content
 or structure changes rotate the version, copies receive independent IDs, and
 nested rows or cells remain isolated from outer-table export. Ambiguous,
 cross-kind, unsafe, or semantic branches are dropped while generated table
-geometry wins. Unsupported run, note, comment, and other inline markup may
-still normalize. Source font-table metadata and source-only internal
+geometry wins. Unsupported math, note/comment wrappers, and other inline markup
+may still normalize. Source font-table metadata and source-only internal
 obfuscated-font payloads survive with relationship IDs rewritten to the final
 package graph. External references, mismatched relationship or content types,
 duplicate identities, and generated-path collisions are disconnected. Native

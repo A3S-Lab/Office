@@ -485,12 +485,13 @@ imported abstract-numbering, concrete-numbering, and level metadata follows
 regenerated IDs. Source-only or duplicate identities, malformed trees,
 relationship-bound content, and ambiguous one-to-many numbering mappings are
 dropped. Generated Word style and numbering semantics still win. In regenerated
-document, header, and footer parts, relationship-free passive extensions from
-non-OOXML ignorable namespaces also follow uniquely matched picture drawings,
-using normalized anchor and drawing-property IDs. Header and footer imports
-retain those image identities in sanitized editable HTML. Passive extensions
-also follow uniquely matched, unchanged paragraphs and their paragraph
-properties by native `w14:paraId` plus `w14:textId`. Body and page-chrome HTML
+document, header, footer, footnote, and endnote parts, relationship-free passive
+extensions from non-OOXML ignorable namespaces also follow uniquely matched
+picture drawings, using normalized anchor and drawing-property IDs. Body,
+header, footer, footnote, and endnote imports retain those image identities in
+sanitized editable HTML. Passive extensions also follow uniquely matched,
+unchanged paragraphs and their paragraph properties by native `w14:paraId`
+plus `w14:textId`. Body and page-chrome HTML
 retain these identities; text edits rotate `textId`, formatting-only edits and
 moves keep it, and copies or splits receive new paragraph IDs. Source-only,
 duplicate, changed-text, relationship-bound, Microsoft/OOXML semantic, and
@@ -506,7 +507,14 @@ extension branches fail closed, while generated table geometry and formatting
 win. Imported footnotes and endnotes now retain their native positive `w:id`
 across reorderings, while copies receive independent IDs. Signed native comment
 and reply IDs, reply parentage, and resolved state also survive regeneration.
-Relationship-free passive extensions on uniquely matched `w:footnote`,
+Native DrawingML pictures inside footnotes and endnotes retain their identity,
+layout, wrapping, crop, and layer metadata through public import and artifact
+export. Export repairs missing image relationships in generated note parts,
+allocates collision-free relationship IDs, and validates each media payload.
+Changed, duplicate, namespace-spoofed, relationship-bound, or semantic drawing
+branches stay disconnected; generated geometry and media remain authoritative,
+while legacy VML, shapes, and SmartArt normalize. Relationship-free passive
+extensions on uniquely matched `w:footnote`,
 `w:endnote`, `w:comment`, and `w15:commentEx` roots are retained, and valid
 `commentsIds` durable IDs are rebound to each regenerated final comment
 paragraph. Duplicate or namespace-spoofed identities, deleted semantic records,
@@ -532,9 +540,9 @@ table-structure edits, duplicate paragraphs or properties, missing or malformed
 hyperlink relationships, wrong target types or modes, unsafe or relative
 targets, combined external-plus-anchor destinations, namespace spoofing,
 active data bindings or placeholder state, form or nested controls,
-relationship-bound content, math, drawings, and unsupported wrappers fail
-closed or normalize instead of being attached to the wrong content.
-Source font-table metadata and source-only internal obfuscated
+relationship-bound content, math, drawing-bearing control wrappers, and other
+unsupported wrappers fail closed or normalize instead of being attached to the
+wrong content. Source font-table metadata and source-only internal obfuscated
 font payloads are also retained, with relationship references rewritten after
 ID collisions. External fonts, wrong relationship or content types, duplicate
 identities, and paths that collide with generated payloads are not reconnected.

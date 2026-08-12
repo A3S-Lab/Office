@@ -93,6 +93,73 @@ describe('DOCX note diagnostics', () => {
       (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
     ).toEqual(['docx.notes', 'docx.notes.content-controls']);
   });
+
+  test('treats native DrawingML note pictures as supported', async () => {
+    const { archive, document } = await diagnosticPackage(
+      '<w:p><w:r><w:footnoteReference w:id="2"/></w:r></w:p>',
+      [
+        '<w:footnote w:id="2"><w:p><w:r><w:drawing',
+        ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"',
+        ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"',
+        ' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"',
+        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+        '<wp:inline><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+        '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+        '</a:graphicData></a:graphic></wp:inline>',
+        '</w:drawing></w:r></w:p></w:footnote>',
+      ].join(''),
+      '',
+    );
+
+    expect(
+      (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
+    ).toEqual(['docx.notes']);
+  });
+
+  test('reports legacy VML and non-picture note drawings', async () => {
+    const { archive, document } = await diagnosticPackage(
+      '<w:p><w:r><w:footnoteReference w:id="2"/></w:r></w:p>',
+      [
+        '<w:footnote w:id="2"><w:p><w:r><w:pict/></w:r>',
+        '<w:r><w:drawing',
+        ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"',
+        ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">',
+        '<wp:inline><a:graphic><a:graphicData uri="urn:a3s:test:shape"/></a:graphic></wp:inline>',
+        '</w:drawing></w:r></w:p></w:footnote>',
+      ].join(''),
+      '',
+    );
+
+    expect(
+      (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
+    ).toEqual(['docx.notes', 'docx.notes.rich-content']);
+  });
+
+  test('reports equations and namespace-spoofed note pictures', async () => {
+    for (const richContent of [
+      '<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:r><m:t>x</m:t></m:r></m:oMath>',
+      [
+        '<vendor:drawing xmlns:vendor="urn:a3s:test:spoofed-drawing"',
+        ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"',
+        ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"',
+        ' xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"',
+        ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">',
+        '<wp:inline><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">',
+        '<pic:pic><pic:blipFill><a:blip r:embed="rId1"/></pic:blipFill></pic:pic>',
+        '</a:graphicData></a:graphic></wp:inline></vendor:drawing>',
+      ].join(''),
+    ]) {
+      const { archive, document } = await diagnosticPackage(
+        '<w:p><w:r><w:footnoteReference w:id="2"/></w:r></w:p>',
+        `<w:footnote w:id="2"><w:p><w:r>${richContent}</w:r></w:p></w:footnote>`,
+        '',
+      );
+
+      expect(
+        (await diagnoseDocxNotes(archive, document)).map(({ code }) => code),
+      ).toEqual(['docx.notes', 'docx.notes.rich-content']);
+    }
+  });
 });
 
 async function diagnosticPackage(

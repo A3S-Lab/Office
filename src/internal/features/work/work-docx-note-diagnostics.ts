@@ -4,6 +4,10 @@ import {
   directChildren,
   type OoxmlPackage,
 } from './work-ooxml-package';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from './work-docx-settings-xml';
 import type { WorkCompatibilityIssue } from './work-types';
 
 interface DocxNotePart {
@@ -11,6 +15,27 @@ interface DocxNotePart {
   reference: 'footnoteReference' | 'endnoteReference';
   document: Document;
 }
+
+const WORDPROCESSINGML_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+  'http://purl.oclc.org/ooxml/wordprocessingml/main',
+]);
+const WORDPROCESSING_DRAWING_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+  'http://purl.oclc.org/ooxml/drawingml/wordprocessingDrawing',
+]);
+const DRAWINGML_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/main',
+  'http://purl.oclc.org/ooxml/drawingml/main',
+]);
+const PICTURE_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/drawingml/2006/picture',
+  'http://purl.oclc.org/ooxml/drawingml/picture',
+]);
+const RELATIONSHIP_NAMESPACES = new Set([
+  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  'http://purl.oclc.org/ooxml/officeDocument/relationships',
+]);
 
 export async function diagnoseDocxNotes(
   archive: OoxmlPackage,
@@ -51,7 +76,7 @@ export async function diagnoseDocxNotes(
   const issues: WorkCompatibilityIssue[] = [
     noteIssue(
       'docx.notes',
-      'Footnote and endnote references, stable native IDs, editable note text and native tables, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, table, wrapper, and text-stable run metadata are preserved.',
+      'Footnote and endnote references, stable native IDs, editable note text, native tables and DrawingML pictures, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, table, drawing, wrapper, and text-stable run metadata are preserved.',
       'info',
     ),
   ];
@@ -66,14 +91,18 @@ export async function diagnoseDocxNotes(
   if (
     noteDocuments.some(
       ({ document: notes }) =>
-        descendants(notes, 'drawing').length > 0 ||
-        descendants(notes, 'pict').length > 0,
+        descendants(notes, 'pict').length > 0 ||
+        descendants(notes, 'oMath').length > 0 ||
+        descendants(notes, 'oMathPara').length > 0 ||
+        descendants(notes, 'drawing').some(
+          (drawing) => !isSupportedNotePicture(drawing),
+        ),
     )
   ) {
     issues.push(
       noteIssue(
         'docx.notes.rich-content',
-        'Drawings and embedded media inside notes may be flattened or converted to inline content. Native paragraph/table blocks remain editable within the declared static-content boundary.',
+        'Legacy VML pictures, shapes, SmartArt, equations, and non-picture drawings inside notes may be flattened or converted to inline content. Native paragraphs, tables, and validated DrawingML pictures remain editable within the declared static-content boundary.',
       ),
     );
   }
@@ -85,7 +114,7 @@ export async function diagnoseDocxNotes(
     issues.push(
       noteIssue(
         'docx.notes.content-controls',
-        'Text-stable static rich-text and plain-text controls retain eligible inline or contiguous block wrappers and metadata. Rich-text block controls may include uniquely matched stable tables and nested tables while generated geometry remains authoritative. Data-bound, placeholder, form, nested, relationship-bound, ambiguous, edited-structure, math, drawing, or mixed-hyperlink controls normalize instead of being reattached unsafely.',
+        'Text-stable static rich-text and plain-text controls retain eligible inline or contiguous block wrappers and metadata. Rich-text block controls may include uniquely matched stable tables and nested tables while generated geometry remains authoritative. Data-bound, placeholder, form, nested, relationship-bound, ambiguous, edited-structure, math, drawing-bearing, or mixed-hyperlink control wrappers normalize instead of being reattached unsafely.',
       ),
     );
   }
@@ -110,6 +139,44 @@ export async function diagnoseDocxNotes(
     );
   }
   return issues;
+}
+
+function isSupportedNotePicture(drawing: Element): boolean {
+  if (!WORDPROCESSINGML_NAMESPACES.has(drawing.namespaceURI ?? '')) {
+    return false;
+  }
+  const containers = directChildren(drawing).filter(
+    (element) =>
+      (element.localName === 'anchor' || element.localName === 'inline') &&
+      WORDPROCESSING_DRAWING_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  if (containers.length !== 1) return false;
+  const container = containers[0];
+  const graphicData = descendants(container, 'graphicData').filter((element) =>
+    DRAWINGML_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  const pictures = descendants(container, 'pic').filter((element) =>
+    PICTURE_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  const blips = descendants(container, 'blip').filter((element) =>
+    DRAWINGML_NAMESPACES.has(element.namespaceURI ?? ''),
+  );
+  return (
+    graphicData.length === 1 &&
+    PICTURE_NAMESPACES.has(graphicData[0].getAttribute('uri') ?? '') &&
+    pictures.length === 1 &&
+    blips.length === 1 &&
+    hasRelationshipAttribute(blips[0], 'embed')
+  );
+}
+
+function hasRelationshipAttribute(element: Element, name: string): boolean {
+  return Array.from(element.attributes).some(
+    (item) =>
+      xmlAttributeLocalName(item) === name &&
+      RELATIONSHIP_NAMESPACES.has(xmlAttributeNamespace(element, item) ?? '') &&
+      Boolean(item.value.trim()),
+  );
 }
 
 function hasInvalidNoteStructure(

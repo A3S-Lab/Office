@@ -73,18 +73,84 @@ export async function preserveDocxDrawingExtensions(
       batch.generated.document,
       batch.source.document,
       batch.pairs,
-      {
-        semanticKey: drawingSemanticKey,
-        isAdditionalSemanticNamespace: isKnownOoxmlDrawingNamespace,
-        allowExtensionNamespace: (namespace) =>
-          !isKnownOoxmlDrawingNamespace(namespace),
-      },
+      drawingExtensionOptions(),
     );
     changedParts.add(batch.generated);
   }
   for (const part of changedParts) {
     generated.file(part.path, serializeUtf8Xml(part.document));
   }
+}
+
+export function preserveDocxDrawingExtensionsAtScopes(
+  generatedDocument: Document,
+  sourceDocument: Document,
+  scopes: readonly DocxIgnorableExtensionPair[],
+): void {
+  const pairs: DocxIgnorableExtensionPair[] = [];
+  let generatedCount = 0;
+  let sourceCount = 0;
+  for (const scope of scopes) {
+    const generated = indexScopedDrawings(scope.generated);
+    generatedCount += countDrawingRecords(generated);
+    if (generatedCount > MAX_DRAWING_IDENTITIES) {
+      throw new Error('Generated DOCX exceeds the drawing-identity limit.');
+    }
+    const source = indexScopedDrawings(scope.source);
+    sourceCount += countDrawingRecords(source);
+    if (sourceCount > MAX_DRAWING_IDENTITIES) {
+      throw new Error(
+        'Registered source DOCX exceeds the drawing-identity limit.',
+      );
+    }
+    for (const [identity, sourceElements] of source) {
+      const generatedElements = generated.get(identity) ?? [];
+      if (sourceElements.length === 1 && generatedElements.length === 1) {
+        pairs.push({
+          generated: generatedElements[0],
+          source: sourceElements[0],
+        });
+      }
+    }
+  }
+  if (!pairs.length) return;
+  mergeDocxIgnorableExtensionsAtPairs(
+    generatedDocument,
+    sourceDocument,
+    pairs,
+    drawingExtensionOptions(),
+  );
+}
+
+function drawingExtensionOptions() {
+  return {
+    semanticKey: drawingSemanticKey,
+    isAdditionalSemanticNamespace: isKnownOoxmlDrawingNamespace,
+    allowExtensionNamespace: (namespace: string) =>
+      !isKnownOoxmlDrawingNamespace(namespace),
+  };
+}
+
+function indexScopedDrawings(scope: Element): Map<string, Element[]> {
+  const result = new Map<string, Element[]>();
+  for (const element of Array.from(scope.querySelectorAll('*')).filter(
+    isWordprocessingDrawing,
+  )) {
+    const identity = drawingIdentity(element);
+    if (!identity) continue;
+    const matches = result.get(identity) ?? [];
+    matches.push(element);
+    result.set(identity, matches);
+  }
+  return result;
+}
+
+function countDrawingRecords(
+  index: ReadonlyMap<string, readonly Element[]>,
+): number {
+  let count = 0;
+  for (const records of index.values()) count += records.length;
+  return count;
 }
 
 async function loadDrawingParts(

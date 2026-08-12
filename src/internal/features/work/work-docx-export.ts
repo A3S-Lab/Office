@@ -74,6 +74,7 @@ import {
   assignDocxCommentThreads,
   assignDocxNoteIds,
 } from './work-docx-note-comment-identity';
+import { patchDocxNoteImageRelationships } from './work-docx-note-image-relationships';
 import { patchDocxPageColor } from './work-docx-page-color';
 import {
   DocxParagraphIdentityPatchCollector,
@@ -225,8 +226,11 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
-  const commentMetadataPatched = await patchDocxCommentMetadata(
+  const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
     await packed.arrayBuffer(),
+  );
+  const commentMetadataPatched = await patchDocxCommentMetadata(
+    noteImageRelationshipsPatched,
     commentThreads,
   );
   const numberingPatched = await patchDocxNumberingRestartRules(

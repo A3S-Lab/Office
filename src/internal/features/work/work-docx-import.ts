@@ -50,6 +50,7 @@ import {
 } from './work-docx-field-import';
 import {
   applyImportedDocxImageLayoutMarkers,
+  createImportedDocxImageLayoutMarkerState,
   hasImportedDocxImageLayoutMarkers,
   type ImportedDocxImageLayoutMarkers,
   markDocxImageLayouts,
@@ -64,6 +65,7 @@ import {
   extractMammothDocumentNotes,
   placeMammothDocumentNotes,
 } from './work-docx-note-import';
+import { markDocxNoteImageLayouts } from './work-docx-note-image-import';
 import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
@@ -238,7 +240,16 @@ export async function prepareDocxImport(
   const citationMarkers = markDocxCitationFields(document);
   const fieldMarkers = markDocxBodyFields(document);
   const listMarkers = markDocxLists(document, numbering);
-  const imageLayoutMarkers = markDocxImageLayouts(document);
+  const imageLayoutMarkerState = createImportedDocxImageLayoutMarkerState();
+  const imageLayoutMarkers = markDocxImageLayouts(
+    document,
+    imageLayoutMarkerState,
+  );
+  const noteImageMarkers = await markDocxNoteImageLayouts(
+    archive,
+    imageLayoutMarkerState,
+  );
+  imageLayoutMarkers.images.push(...noteImageMarkers.markers.images);
   const paragraphStylesDocument = archive.has('word/styles.xml')
     ? await archive.xml('word/styles.xml')
     : null;
@@ -322,7 +333,7 @@ export async function prepareDocxImport(
         hasImportedDocxTableCellMarkers(tableCellMarkers) ||
         hasImportedDocxTableRowMarkers(tableRowMarkers) ||
         hasImportedDocxTableSizingMarkers(tableSizingMarkers)
-          ? await writeDocumentXml(buffer, document)
+          ? await writeDocumentXml(buffer, document, noteImageMarkers.parts)
           : buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
       pageColor,
@@ -387,7 +398,7 @@ export async function prepareDocxImport(
       hasImportedDocxTableCellMarkers(tableCellMarkers) ||
       hasImportedDocxTableRowMarkers(tableRowMarkers) ||
       hasImportedDocxTableSizingMarkers(tableSizingMarkers)
-        ? await writeDocumentXml(buffer, document)
+        ? await writeDocumentXml(buffer, document, noteImageMarkers.parts)
         : buffer,
     sections,
     pageColor,
@@ -637,12 +648,16 @@ function addSectionMarkers(
 async function writeDocumentXml(
   buffer: ArrayBuffer,
   document: Document,
+  additionalParts: readonly { document: Document; path: string }[] = [],
 ): Promise<ArrayBuffer> {
   const zip = await JSZip.loadAsync(buffer);
   zip.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
   );
+  for (const part of additionalParts) {
+    zip.file(part.path, new XMLSerializer().serializeToString(part.document));
+  }
   return zip.generateAsync({ type: 'arraybuffer' });
 }
 

@@ -52,6 +52,16 @@ All notable changes to A3S Office will be documented in this file.
   final comment paragraph IDs. Deleted records, duplicate or namespace-spoofed
   identities, relationship-bound branches, and unsupported modern
   reaction/people sidecars fail closed instead of reviving stale metadata.
+- Added native editable DrawingML pictures inside footnotes and endnotes.
+  Public import and artifact export retain picture identity, layout, wrapping,
+  crop, and layer metadata across the body and both note parts. Export repairs
+  missing note-part image relationships from the OOXML writer, assigns
+  collision-free relationship IDs, and validates every embedded media target.
+  Passive non-OOXML extensions follow only uniquely matched note drawings
+  across strict/transitional UTF-8/UTF-16 sources. Changed, duplicate,
+  namespace-spoofed, relationship-bound, or semantic branches fail closed;
+  generated geometry and media remain authoritative, while legacy VML,
+  shapes, SmartArt, and drawing-bearing content-control wrappers normalize.
 - Preserved text-stable direct runs inside uniquely matched footnotes,
   endnotes, comments, and replies. Passive extensions on paragraph, run, and
   run-property scopes now follow exact text and structural ancestry; safe

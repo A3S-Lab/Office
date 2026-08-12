@@ -3,6 +3,7 @@ import {
   createDocumentImageIdentityRegistry,
   uniqueDocumentImageIdentity,
   type WorkDocumentImageIdentity,
+  type WorkDocumentImageIdentityRegistry,
 } from './work-document-image-identity';
 import {
   applyDocumentImageLayerToElement,
@@ -48,18 +49,31 @@ export interface ImportedDocxImageLayoutMarkers {
   images: ImportedDocxImageLayoutMarker[];
 }
 
+export interface ImportedDocxImageLayoutMarkerState {
+  identityRegistry: WorkDocumentImageIdentityRegistry;
+  nextMarker: number;
+}
+
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const EMUS_PER_MILLIMETER = 36_000;
 const IMAGE_LAYOUT_MARKER_PATTERN =
   /__A3S_WORK_IMAGE_LAYOUT_\d+_(?:START|END)__/g;
+const MAX_IMPORTED_IMAGE_LAYOUTS = 4_096;
+
+export function createImportedDocxImageLayoutMarkerState(): ImportedDocxImageLayoutMarkerState {
+  return {
+    identityRegistry: createDocumentImageIdentityRegistry(),
+    nextMarker: 1,
+  };
+}
 
 export function markDocxImageLayouts(
   document: Document,
+  state = createImportedDocxImageLayoutMarkerState(),
 ): ImportedDocxImageLayoutMarkers {
   const images: ImportedDocxImageLayoutMarker[] = [];
-  const identityRegistry = createDocumentImageIdentityRegistry();
   const markedRuns = new Set<Element>();
   const drawings = [
     ...descendants(document, 'anchor'),
@@ -72,8 +86,12 @@ export function markDocxImageLayouts(
     const layout =
       anchor.localName === 'inline' ? 'inline' : anchorLayout(anchor);
     if (!layout) continue;
+    if (state.nextMarker > MAX_IMPORTED_IMAGE_LAYOUTS) {
+      throw new Error('Imported DOCX exceeds the image-layout limit.');
+    }
     markedRuns.add(run);
-    const index = images.length + 1;
+    const index = state.nextMarker;
+    state.nextMarker += 1;
     const startMarker = `__A3S_WORK_IMAGE_LAYOUT_${index}_START__`;
     const endMarker = `__A3S_WORK_IMAGE_LAYOUT_${index}_END__`;
     insertMarkerRun(document, run, startMarker, 'before');
@@ -95,7 +113,7 @@ export function markDocxImageLayouts(
       layer: anchor.localName === 'anchor' ? anchorLayer(anchor) : null,
       identity: uniqueDocumentImageIdentity(
         drawingIdentitySource(anchor),
-        identityRegistry,
+        state.identityRegistry,
       ),
     });
   }

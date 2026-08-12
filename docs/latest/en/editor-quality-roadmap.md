@@ -109,13 +109,18 @@ concrete-numbering, and level metadata follows regenerated IDs, while
 source-only, duplicate, malformed, and ambiguous one-to-many mappings fail
 closed. The drawing-identity slice additionally retains relationship-free
 passive extensions from non-OOXML ignorable namespaces on uniquely matched
-pictures in document, header, and footer parts. Normalized anchor plus
-drawing-property IDs survive sanitized page-chrome HTML and strict/transitional
-UTF-8/UTF-16 sources. Microsoft/OOXML semantic namespaces, source-only or
-duplicate drawings, relationship-bound content, and ambiguous identities fail
-closed. Generated Word geometry and media remain authoritative. Equivalent
-passive extensions now follow uniquely matched, unchanged paragraphs and their
-paragraph properties using native `w14:paraId` plus `w14:textId`. The identity
+pictures in document, header, footer, footnote, and endnote parts. Normalized
+anchor plus drawing-property IDs survive sanitized body, page-chrome, and note
+HTML plus strict/transitional UTF-8/UTF-16 sources. Native note pictures retain
+layout, wrapping, crop, and layer metadata through public import/export. Export
+repairs missing note-part image relationships, allocates collision-free IDs,
+and validates embedded media targets. Microsoft/OOXML semantic namespaces,
+source-only, changed, duplicate, namespace-spoofed, relationship-bound, and
+ambiguous drawings fail closed. Generated Word geometry and media remain
+authoritative; legacy VML, shapes, SmartArt, and drawing-bearing control
+wrappers normalize. Equivalent passive extensions now follow uniquely matched,
+unchanged paragraphs and their paragraph properties using native `w14:paraId`
+plus `w14:textId`. The identity
 survives sanitized body and page-chrome HTML. Text edits rotate the version ID,
 formatting-only edits and moves retain it, and copies or splits receive new
 paragraph IDs. Changed text versions, duplicate identities, relationship-bound
@@ -157,8 +162,8 @@ structure edits, duplicate text or properties, missing or malformed hyperlink
 relationships, wrong target types or modes, unsafe or relative targets,
 combined external-plus-anchor destinations, namespace spoofing, active bindings
 or placeholder state, form or nested controls, relationship-bound content,
-math, drawings, and unsupported wrappers remain explicit fail-closed or
-normalization boundaries.
+math, drawing-bearing control wrappers, and unsupported wrappers remain
+explicit fail-closed or normalization boundaries.
 
 Exit evidence:
 

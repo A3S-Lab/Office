@@ -1,4 +1,5 @@
 import type JSZip from 'jszip';
+import { preserveDocxDrawingExtensionsAtScopes } from './work-docx-drawing-extension-preservation';
 import { normalizeDocxCommentId } from './work-docx-note-comment-identity';
 import { preserveDocxNoteCommentContentControls } from './work-docx-note-comment-content-control-preservation';
 import { preserveDocxNoteCommentHyperlinks } from './work-docx-note-comment-hyperlink-preservation';
@@ -111,6 +112,13 @@ async function preserveWordItemExtensions(
     pairs,
     config.note ? 'note' : 'comment',
   );
+  if (config.note) {
+    preserveDocxDrawingExtensionsAtScopes(
+      generated.document,
+      source.document,
+      pairs,
+    );
+  }
   mergePairs(generated.document, source.document, pairs);
   generatedArchive.file(config.path, serializeUtf8Xml(generated.document));
 }
