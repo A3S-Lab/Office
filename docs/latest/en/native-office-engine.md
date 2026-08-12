@@ -1261,26 +1261,32 @@ styles with direct/theme colors, 2–96 eighth-point widths, 0–31 point spacin
 and explicit shadow/frame flags, all named highlight colors, complete patterned
 run shading with direct or theme foreground/background colors, manual run
 widths from 0 through 31,680 twips with optional signed 32-bit grouping IDs,
-explicit baseline/superscript/subscript run alignment, RTL/complex-script
-flags, and Latin, East Asian, and bidi language tags. Explicit zero/default
-geometry values remain present so they can reset inherited formatting. Strict
-universal font-size and position measures are accepted only when they convert
-exactly to the bounded half-point model. Strict universal manual widths are
-accepted only when they convert exactly to bounded whole twips; omitted
+explicit baseline/superscript/subscript run alignment, all five Word
+emphasis-mark values (`none`, `dot`, `comma`, `circle`, and `underDot`),
+RTL/complex-script flags, and Latin, East Asian, and bidi language tags.
+Explicit zero/default geometry values remain present so they can reset
+inherited formatting. Strict universal font-size and position measures are
+accepted only when they convert exactly to the bounded half-point model. Strict
+universal manual widths are accepted only when they convert exactly to bounded
+whole twips; omitted
 grouping IDs remain distinct from explicit zero. Explicit baseline alignment
-remains present so inherited superscript or subscript formatting can be reset.
+remains present so inherited superscript or subscript formatting can be reset;
+explicit `none` emphasis likewise removes inherited emphasis marks.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 background, size, font, direction, language, emphasis, decoration, character
 spacing, width, effective kerning, baseline-shift,
-baseline/superscript/subscript alignment, all-caps, and small-caps values
-without changing source Unicode text. Superscript and subscript also project
-the smaller rendered size required by Word. When `w:position` and `w:vertAlign`
-coexist, both remain in native schema order and the later explicit alignment
-controls the CSS vertical position. Simple explicitly sized solid,
-double, dotted, dashed, inset, and outset line borders project through CSS with
-direct or automatic color and point padding; explicit `nil`/`none` resets also
-project. Outline, shadow, emboss, imprint, legacy text animations, complex
+baseline/superscript/subscript alignment, Word emphasis marks, all-caps, and
+small-caps values without changing source Unicode text. Emphasis marks project
+as filled dots, a literal comma, or an open circle above the text, or a filled
+dot below it. Superscript and subscript also project the smaller rendered size
+required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
+native schema order and the later explicit alignment controls the CSS vertical
+position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`. Simple
+explicitly sized solid, double, dotted, dashed, inset, and outset line borders
+project through CSS with direct or automatic color and point padding; explicit
+`nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
+animations, complex
 multi-line, wavy, or 3D line borders, border shadow/frame, theme-only border
 colors, hidden, and web-hidden values remain native-only because Word rendering
 and view settings govern them. Manual run widths also remain native-only
@@ -1294,7 +1300,7 @@ Enabled mutually exclusive all-caps/small-caps, strike/double-strike, or relief
 combinations, invalid animation values, art-border styles, out-of-range border
 width/spacing, malformed border colors/flags, missing, malformed, fractional,
 or out-of-range manual widths and grouping IDs, missing or unknown
-vertical-alignment values, and unknown, duplicated, reordered,
+vertical-alignment or emphasis-mark values, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their

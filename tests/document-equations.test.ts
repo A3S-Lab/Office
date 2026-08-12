@@ -2057,6 +2057,7 @@ describe('document equations', () => {
       '<w:vertAlign w:val="baseline"/>',
       '<w:rtl w:val="false"/>',
       '<w:cs w:val="0"/>',
+      '<w:em w:val="circle"/>',
       '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
@@ -2166,7 +2167,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun('<w:rPr><w:em w:val="dot"/></w:rPr>'),
+      wordRun('<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2200,7 +2201,10 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun('<w:rPr><w:em w:val="dot"/></w:rPr>', '<w:t>fallback</w:t>'),
+        wordRun(
+          '<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>',
+          '<w:t>fallback</w:t>',
+        ),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -3767,6 +3771,237 @@ describe('document equations', () => {
     );
   });
 
+  test('preserves Word emphasis marks inside OMML', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'no-emphasis',
+          wordRunProperties: { emphasisMark: 'none' },
+        },
+        {
+          type: 'run',
+          text: 'dot-emphasis',
+          wordRunProperties: { emphasisMark: 'dot' },
+        },
+        {
+          type: 'run',
+          text: 'comma-emphasis',
+          wordRunProperties: { emphasisMark: 'comma' },
+        },
+        {
+          type: 'run',
+          text: 'circle-emphasis',
+          wordRunProperties: { emphasisMark: 'circle' },
+        },
+        {
+          type: 'run',
+          text: 'under-dot-emphasis',
+          wordRunProperties: { emphasisMark: 'underDot' },
+        },
+        {
+          type: 'run',
+          text: 'ordered-emphasis',
+          wordRunProperties: {
+            verticalAlignment: 'baseline',
+            rightToLeft: false,
+            complexScript: true,
+            emphasisMark: 'dot',
+            languages: { latin: 'en-US' },
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { emphasisMark: 'underDot' },
+          children: [{ type: 'run', text: 'operator-emphasis-mark' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [{ type: 'run', text: 'x', wordRunProperties }],
+      }) as unknown as WorkDocumentEquation;
+    for (const emphasisMark of [
+      'none',
+      'dot',
+      'comma',
+      'circle',
+      'underDot',
+    ] as const) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithWordRunProperties({ emphasisMark }),
+        )?.children[0],
+      ).toMatchObject({ wordRunProperties: { emphasisMark } });
+    }
+    const invalidModels = [
+      { emphasisMark: null },
+      { emphasisMark: '' },
+      { emphasisMark: 'under-dot' },
+      { emphasisMark: 'underDot ' },
+      { emphasisMark: 'Dot' },
+      { emphasisMark: 1 },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    for (const [source, emphasisMark] of [
+      ['none', 'none'],
+      [' dot ', 'dot'],
+      ['comma', 'comma'],
+      ['circle', 'circle'],
+      [' underDot ', 'underDot'],
+    ] as const) {
+      expect(
+        inspectEquationModel(wordRun(`<w:em w:val="${source}"/>`))?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { emphasisMark },
+      });
+      expect(
+        inspectEquationModel(
+          wordRun(`<w:em w:val="${source}"/>`, STRICT_WORD_NAMESPACE),
+        )?.children[0],
+      ).toEqual({
+        type: 'run',
+        text: 'x',
+        wordRunProperties: { emphasisMark },
+      });
+    }
+    expect(
+      inspectEquationModel(
+        wordRun(
+          '<w:vertAlign w:val="baseline"/><w:rtl w:val="0"/><w:cs/><w:em w:val="dot"/><w:lang w:val="en-US"/>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: {
+        verticalAlignment: 'baseline',
+        rightToLeft: false,
+        complexScript: true,
+        emphasisMark: 'dot',
+        languages: { latin: 'en-US' },
+      },
+    });
+
+    const invalidMarkup = [
+      wordRun('<w:em/>'),
+      wordRun('<w:em w:val=""/>'),
+      wordRun('<w:em w:val="under-dot"/>'),
+      wordRun('<w:em w:val="Dot"/>'),
+      wordRun('<w:em w:val="1"/>'),
+      wordRun('<w:em val="dot"/>'),
+      wordRun('<w:em w:val="dot" w:extra="semantic"/>'),
+      wordRun(
+        `<w:em xmlns:r="${RELATIONSHIP_NAMESPACE}" w:val="dot" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w:em w:val="dot"><w:b/></w:em>'),
+      wordRun('<w:em w:val="dot"/><w:em w:val="comma"/>'),
+      wordRun('<w:em w:val="dot"/><w:cs/>'),
+      wordRun('<w:lang w:val="en-US"/><w:em w:val="dot"/>'),
+      wordRun('<w:em w:val="dot"/><w:vertAlign w:val="baseline"/>'),
+      wordRun(`<v:em xmlns:v="${VENDOR_NAMESPACE}" v:val="dot"/>`),
+      wordRun('<m:em m:val="dot"/>'),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const styleFor = (text: string) =>
+      Array.from(preview.querySelectorAll('mtext, mo'))
+        .find((candidate) => candidate.textContent === text)
+        ?.getAttribute('style') ?? '';
+    expect(styleFor('no-emphasis')).toContain('text-emphasis-style:none');
+    expect(styleFor('no-emphasis')).not.toContain('text-emphasis-position');
+    expect(styleFor('dot-emphasis')).toContain(
+      'text-emphasis-style:filled dot',
+    );
+    expect(styleFor('dot-emphasis')).toContain(
+      'text-emphasis-position:over right',
+    );
+    expect(styleFor('comma-emphasis')).toContain('text-emphasis-style:","');
+    expect(styleFor('comma-emphasis')).toContain(
+      'text-emphasis-position:over right',
+    );
+    expect(styleFor('circle-emphasis')).toContain(
+      'text-emphasis-style:open circle',
+    );
+    expect(styleFor('circle-emphasis')).toContain(
+      'text-emphasis-position:over right',
+    );
+    expect(styleFor('under-dot-emphasis')).toContain(
+      'text-emphasis-style:filled dot',
+    );
+    expect(styleFor('under-dot-emphasis')).toContain(
+      'text-emphasis-position:under right',
+    );
+    expect(styleFor('\u2211')).toContain('text-emphasis-position:under right');
+
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(
+      Array.from(sanitized.querySelectorAll('mtext, mo'))
+        .find((candidate) => candidate.textContent === 'comma-emphasis')
+        ?.getAttribute('style'),
+    ).toContain('text-emphasis-style:","');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunEmphasisMarks(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-emphasis-marks.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunEmphasisMarks(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded Word control properties across OMML object containers', async () => {
     const equation = controlPropertiesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -3855,7 +4090,9 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties('<w:rPr><w:em w:val="dot"/></w:rPr>'),
+      invalidControlProperties(
+        '<w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr>',
+      ),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -4126,7 +4363,9 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
-      argument(`${run}<m:ctrlPr><w:rPr><w:em w:val="dot"/></w:rPr></m:ctrlPr>`),
+      argument(
+        `${run}<m:ctrlPr><w:rPr><w:eastAsianLayout w:vert="1"/></w:rPr></m:ctrlPr>`,
+      ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
       ),
@@ -5313,6 +5552,7 @@ function richWordRunProperties() {
     verticalAlignment: 'baseline' as const,
     rightToLeft: false,
     complexScript: false,
+    emphasisMark: 'circle' as const,
     languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
   };
 }
@@ -6873,6 +7113,88 @@ async function expectNativeWordRunVerticalAlignments(
   expect(wordAttributes(verticalAlignment)).toEqual({ val: 'subscript' });
 }
 
+async function expectNativeWordRunEmphasisMarks(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  for (const entry of [
+    {
+      text: 'no-emphasis',
+      names: ['em'],
+      attributes: [{ val: 'none' }],
+    },
+    {
+      text: 'dot-emphasis',
+      names: ['em'],
+      attributes: [{ val: 'dot' }],
+    },
+    {
+      text: 'comma-emphasis',
+      names: ['em'],
+      attributes: [{ val: 'comma' }],
+    },
+    {
+      text: 'circle-emphasis',
+      names: ['em'],
+      attributes: [{ val: 'circle' }],
+    },
+    {
+      text: 'under-dot-emphasis',
+      names: ['em'],
+      attributes: [{ val: 'underDot' }],
+    },
+    {
+      text: 'ordered-emphasis',
+      names: ['vertAlign', 'rtl', 'cs', 'em', 'lang'],
+      attributes: [
+        { val: 'baseline' },
+        { val: '0' },
+        { val: '1' },
+        { val: 'dot' },
+        { val: 'en-US' },
+      ],
+    },
+  ]) {
+    const run = mathRuns.find(
+      (candidate) => candidate.textContent === entry.text,
+    );
+    expect(run, entry.text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, entry.text).toBeDefined();
+    const children = directChildren(properties as Element);
+    expect(
+      children.map((child) => child.localName),
+      entry.text,
+    ).toEqual(entry.names);
+    expect(children.map(wordAttributes), entry.text).toEqual(entry.attributes);
+    expect(
+      children.every(
+        (child) =>
+          child.attributes.length === 1 &&
+          child.attributes[0]?.name === 'w:val',
+      ),
+      entry.text,
+    ).toBe(true);
+  }
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('operator-emphasis-mark'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const emphasis = directChildren(wordProperties as Element, 'em')[0];
+  expect(wordAttributes(emphasis)).toEqual({ val: 'underDot' });
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -6929,6 +7251,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'vertAlign',
     'rtl',
     'cs',
+    'em',
     'lang',
   ];
   for (const name of propertyContainerNames) {
@@ -7006,6 +7329,7 @@ async function expectNativeArgumentControlProperties(
     'vertAlign',
     'rtl',
     'cs',
+    'em',
     'lang',
   ];
   for (const controlProperty of controlProperties) {
@@ -7570,6 +7894,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'vertAlign',
     'rtl',
     'cs',
+    'em',
     'lang',
   ];
   const expectedWordPropertyAttributes = [
@@ -7634,6 +7959,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     { val: 'baseline' },
     { val: '0' },
     { val: '0' },
+    { val: 'circle' },
     { val: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
   ];
   for (const run of styledWordRuns) {

@@ -23,6 +23,7 @@ import {
   type WorkDocumentEquationThemeFont,
   type WorkDocumentEquationUnderlineStyle,
   type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordEmphasisMark,
   type WorkDocumentEquationWordFitText,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
@@ -159,6 +160,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'vertAlign',
   'rtl',
   'cs',
+  'em',
   'lang',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
@@ -314,6 +316,13 @@ const WORD_VERTICAL_ALIGNMENTS =
     'superscript',
     'subscript',
   ]);
+const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
+  'none',
+  'dot',
+  'comma',
+  'circle',
+  'underDot',
+]);
 
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const MAX_IMPORTED_EQUATIONS = 4_096;
@@ -920,6 +929,7 @@ function parseWordRunProperties(
   const verticalAlignment = parseWordVerticalAlignment(
     children.get('vertAlign'),
   );
+  const emphasisMark = parseWordEmphasisMark(children.get('em'));
   const languages = parseWordLanguages(children.get('lang'));
   if (
     fonts === null ||
@@ -937,6 +947,7 @@ function parseWordRunProperties(
     shading === null ||
     fitText === null ||
     verticalAlignment === null ||
+    emphasisMark === null ||
     languages === null
   ) {
     return null;
@@ -1023,6 +1034,7 @@ function parseWordRunProperties(
     ...(booleans.has('complexScript')
       ? { complexScript: booleans.get('complexScript') }
       : {}),
+    ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
@@ -1552,6 +1564,18 @@ function parseWordVerticalAlignment(
       value as WorkDocumentEquationWordVerticalAlignment,
     )
     ? (value as WorkDocumentEquationWordVerticalAlignment)
+    : null;
+}
+
+function parseWordEmphasisMark(
+  element: Element | undefined,
+): WorkDocumentEquationWordEmphasisMark | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  const value = attributes?.get('val')?.trim();
+  return attributes?.size === 1 &&
+    WORD_EMPHASIS_MARKS.has(value as WorkDocumentEquationWordEmphasisMark)
+    ? (value as WorkDocumentEquationWordEmphasisMark)
     : null;
 }
 

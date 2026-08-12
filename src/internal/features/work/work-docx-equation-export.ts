@@ -1260,6 +1260,11 @@ function createWordRunProperties(
       result.append(createWordOnOffElement(document, prefix, name, value));
     }
   }
+  if (properties.emphasisMark) {
+    result.append(
+      createWordValueElement(document, prefix, 'em', properties.emphasisMark),
+    );
+  }
   if (properties.languages) {
     const languages = createWordElement(document, prefix, 'lang');
     for (const [name, value] of [

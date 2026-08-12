@@ -237,6 +237,13 @@ export type WorkDocumentEquationWordVerticalAlignment =
   | 'superscript'
   | 'subscript';
 
+export type WorkDocumentEquationWordEmphasisMark =
+  | 'none'
+  | 'dot'
+  | 'comma'
+  | 'circle'
+  | 'underDot';
+
 export interface WorkDocumentEquationWordLanguages {
   latin?: string;
   eastAsia?: string;
@@ -277,6 +284,7 @@ export interface WorkDocumentEquationWordRunProperties {
   verticalAlignment?: WorkDocumentEquationWordVerticalAlignment;
   rightToLeft?: boolean;
   complexScript?: boolean;
+  emphasisMark?: WorkDocumentEquationWordEmphasisMark;
   languages?: WorkDocumentEquationWordLanguages;
 }
 
@@ -788,6 +796,13 @@ const WORD_VERTICAL_ALIGNMENTS =
     'superscript',
     'subscript',
   ]);
+const WORD_EMPHASIS_MARKS = new Set<WorkDocumentEquationWordEmphasisMark>([
+  'none',
+  'dot',
+  'comma',
+  'circle',
+  'underDot',
+]);
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
@@ -856,6 +871,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'verticalAlignment',
   'rightToLeft',
   'complexScript',
+  'emphasisMark',
   'languages',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
@@ -2880,6 +2896,14 @@ function normalizeEquationWordRunProperties(
           )
         ? (source.verticalAlignment as WorkDocumentEquationWordVerticalAlignment)
         : null;
+  const emphasisMark =
+    source.emphasisMark === undefined
+      ? undefined
+      : WORD_EMPHASIS_MARKS.has(
+            source.emphasisMark as WorkDocumentEquationWordEmphasisMark,
+          )
+        ? (source.emphasisMark as WorkDocumentEquationWordEmphasisMark)
+        : null;
   const languages =
     source.languages === undefined
       ? undefined
@@ -2932,6 +2956,7 @@ function normalizeEquationWordRunProperties(
     shading === null ||
     fitText === null ||
     verticalAlignment === null ||
+    emphasisMark === null ||
     languages === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
@@ -3061,6 +3086,7 @@ function normalizeEquationWordRunProperties(
     ...(source.complexScript !== undefined
       ? { complexScript: source.complexScript as boolean }
       : {}),
+    ...(emphasisMark ? { emphasisMark } : {}),
     ...(languages ? { languages } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
@@ -3492,6 +3518,7 @@ function wordPropertiesMathMlAttributes(
       ? ''
       : `vertical-align:${properties.positionHalfPoints / 2}pt`,
     wordRunVerticalAlignmentStyles(properties.verticalAlignment),
+    wordRunEmphasisMarkStyles(properties.emphasisMark),
   ].filter(Boolean);
   const color = properties.color?.value;
   const background = wordRunMathMlBackground(properties);
@@ -3513,6 +3540,21 @@ function wordRunVerticalAlignmentStyles(
   if (!alignment) return '';
   if (alignment === 'baseline') return 'vertical-align:baseline';
   return `vertical-align:${alignment === 'superscript' ? 'super' : 'sub'};font-size:smaller`;
+}
+
+function wordRunEmphasisMarkStyles(
+  emphasisMark: WorkDocumentEquationWordEmphasisMark | undefined,
+): string {
+  if (!emphasisMark) return '';
+  if (emphasisMark === 'none') return 'text-emphasis-style:none';
+  const style =
+    emphasisMark === 'comma'
+      ? cssString(',')
+      : emphasisMark === 'circle'
+        ? 'open circle'
+        : 'filled dot';
+  const position = emphasisMark === 'underDot' ? 'under right' : 'over right';
+  return `text-emphasis-style:${style};text-emphasis-position:${position}`;
 }
 
 function wordRunCaseStyles(

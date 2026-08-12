@@ -26,25 +26,30 @@ All notable changes to A3S Office will be documented in this file.
   explicit shadow/frame flags, every named highlight color, complete patterned
   run shading with direct or theme foreground/background colors, manual run
   widths from 0 through 31,680 twips with optional signed 32-bit grouping IDs,
-  explicit baseline/superscript/subscript run alignment, RTL/complex-script
-  flags, and language tags.
+  explicit baseline/superscript/subscript run alignment, all five Word
+  emphasis-mark values (`none`, `dot`, `comma`, `circle`, and `underDot`),
+  RTL/complex-script flags, and language tags.
   Explicit zero/default geometry values reset inherited formatting instead of
   canonicalizing away. Strict universal font-size and position measures enter
   the model only when they convert exactly to the bounded half-point form.
   Strict universal manual widths are accepted only when they convert exactly
   to bounded whole twips; omitted grouping IDs remain distinct from explicit
   zero. Explicit baseline alignment remains present so inherited superscript or
-  subscript formatting can be reset.
+  subscript formatting can be reset, and explicit `none` emphasis remains
+  present so inherited emphasis marks can be removed.
   All-caps and small-caps presentation, character spacing, width scaling,
   effective kerning, baseline shifts, and baseline/superscript/subscript
   alignment use safe CSS projections in MathML previews without changing
-  source Unicode text. Superscript and subscript also project the smaller
-  rendered size required by Word. When `w:position` and `w:vertAlign` coexist,
-  both remain in native schema order and the later explicit alignment controls
-  the CSS vertical position. Simple explicitly sized
-  solid, double, dotted, dashed, inset, and outset line borders project through
-  CSS with direct or automatic color and point padding; explicit `nil`/`none`
-  resets also project. Relief effects, legacy text animations, complex
+  source Unicode text. Word emphasis marks project through CSS as filled dots,
+  a literal comma, or an open circle above the text, or a filled dot below it.
+  Superscript and subscript also project the smaller rendered size required by
+  Word. When `w:position` and `w:vertAlign` coexist, both remain in native
+  schema order and the later explicit alignment controls the CSS vertical
+  position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`. Simple
+  explicitly sized solid, double, dotted, dashed, inset, and outset line
+  borders project through CSS with direct or automatic color and point
+  padding; explicit `nil`/`none` resets also project. Relief effects, legacy
+  text animations, complex
   multi-line, wavy, or 3D line borders, border shadow/frame, theme-only border
   colors, and hidden or web-hidden states remain native metadata because Word
   view and rendering settings govern them. Manual run widths also remain
