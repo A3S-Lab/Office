@@ -60,6 +60,7 @@ const EQUATION_ATTRIBUTES = [
   'role',
 ] as const;
 const MATHML_ATTRIBUTES = new Set([
+  'accent',
   'align',
   'bevelled',
   'columnalign',

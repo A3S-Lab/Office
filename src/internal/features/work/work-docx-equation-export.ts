@@ -210,6 +210,18 @@ function createExpression(
     run.append(text);
     return run;
   }
+  if (expression.type === 'accent') {
+    const accent = createMathElement(document, prefix, 'acc');
+    const properties = createMathElement(document, prefix, 'accPr');
+    properties.append(
+      mathValueElement(document, prefix, 'chr', expression.character),
+    );
+    accent.append(
+      properties,
+      expressionArgument(document, prefix, 'e', expression.children),
+    );
+    return accent;
+  }
   if (expression.type === 'fraction') {
     const fraction = createMathElement(document, prefix, 'f');
     if (expression.fractionType !== 'bar') {

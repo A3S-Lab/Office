@@ -57,6 +57,11 @@ export type WorkDocumentEquationExpression =
       superScript?: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'accent';
+      character: string;
+      children: WorkDocumentEquationExpression[];
+    }
+  | {
       type: 'matrix';
       baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
       placeholdersHidden: boolean;
@@ -137,6 +142,23 @@ const MATRIX_ALIGNMENTS = new Set<WorkDocumentEquationMatrixAlignment>([
 const MATRIX_BASE_ALIGNMENTS = new Set<WorkDocumentEquationMatrixBaseAlignment>(
   ['top', 'center', 'bottom'],
 );
+const MATHML_ACCENT_CHARACTERS = new Map([
+  ['\u0300', '`'],
+  ['\u0301', '\u00b4'],
+  ['\u0302', '\u02c6'],
+  ['\u0303', '\u02dc'],
+  ['\u0304', '\u00af'],
+  ['\u0305', '\u203e'],
+  ['\u0306', '\u02d8'],
+  ['\u0307', '\u02d9'],
+  ['\u0308', '\u00a8'],
+  ['\u030a', '\u02da'],
+  ['\u030b', '\u02dd'],
+  ['\u030c', '\u02c7'],
+  ['\u20d6', '\u2190'],
+  ['\u20d7', '\u2192'],
+  ['\u20e1', '\u2194'],
+]);
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -460,6 +482,13 @@ function normalizeExpression(
           }
         : null;
     }
+    if (source.type === 'accent') {
+      const character = accentCharacter(source.character);
+      const children = normalizeExpressionList(source.children, state);
+      return character && children
+        ? { type: 'accent', character, children }
+        : null;
+    }
     if (source.type === 'matrix') {
       const baseAlignment = MATRIX_BASE_ALIGNMENTS.has(
         source.baseAlignment as WorkDocumentEquationMatrixBaseAlignment,
@@ -605,6 +634,11 @@ function expressionText(expression: WorkDocumentEquationExpression): string {
         : ''
     } ${expressionListText(expression.children)}`;
   }
+  if (expression.type === 'accent') {
+    const codePoint = expression.character.codePointAt(0);
+    const label = codePoint?.toString(16).toUpperCase().padStart(4, '0');
+    return `accent(U+${label};${expressionListText(expression.children)})`;
+  }
   if (expression.type === 'matrix') {
     return `matrix(${expression.rows
       .map((row) => row.map(expressionListText).join(','))
@@ -742,6 +776,15 @@ function expressionMathMl(
     }
     return domSpec('mrow', {}, [decorated, mathRow(expression.children)]);
   }
+  if (expression.type === 'accent') {
+    return domSpec('mover', { accent: 'true' }, [
+      mathRow(expression.children),
+      domSpec('mo', {}, [
+        MATHML_ACCENT_CHARACTERS.get(expression.character) ??
+          expression.character,
+      ]),
+    ]);
+  }
   if (expression.type === 'matrix') {
     return domSpec(
       'mtable',
@@ -788,6 +831,18 @@ function mathCharacter(source: unknown): string | null {
   const characters = Array.from(source);
   if (characters.length !== 1 || /[\p{Cc}\p{Cs}]/u.test(source)) return null;
   return source;
+}
+
+function accentCharacter(source: unknown): string | null {
+  if (typeof source !== 'string' || Array.from(source).length !== 1) {
+    return null;
+  }
+  const codePoint = source.codePointAt(0);
+  return codePoint !== undefined &&
+    ((codePoint >= 0x0300 && codePoint <= 0x036f) ||
+      (codePoint >= 0x20d0 && codePoint <= 0x20ef))
+    ? source
+    : null;
 }
 
 function validXmlText(source: string): boolean {

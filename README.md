@@ -518,11 +518,12 @@ while legacy VML, shapes, and SmartArt normalize.
 Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs, common fractions, scripts, radicals, functions, n-ary
-operators, bounded rectangular matrices with explicit column alignment, and
-delimiters regenerate as `m:oMath` or `m:oMathPara` and render an accessible
-MathML preview. Strict and transitional UTF-8/UTF-16 math is normalized for
-editing. Unsupported matrix spacing or gap rules, ragged or over-limit
-matrices, malformed, misplaced, over-budget, namespace-spoofed, nested, or
+operators, combining accents, bounded rectangular matrices with explicit
+column alignment, and delimiters regenerate as `m:oMath` or `m:oMathPara` and
+render an accessible MathML preview. Strict and transitional UTF-8/UTF-16 math
+is normalized for editing. Invalid or non-combining accent characters,
+unsupported matrix spacing or gap rules, ragged or over-limit matrices,
+malformed, misplaced, over-budget, namespace-spoofed, nested, or
 relationship-bound math is flattened to bounded text and reported instead of
 being trusted or silently attached to another equation.
 Relationship-free passive extensions on uniquely matched `w:footnote`,

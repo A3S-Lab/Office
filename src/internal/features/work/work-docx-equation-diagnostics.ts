@@ -52,7 +52,7 @@ export async function diagnoseDocxEquations(
     issues.push(
       equationIssue(
         'docx.equations',
-        `${supported} native OMML equation(s) use the editable structured subset. Inline and display equations, Unicode math runs, fractions, scripts, radicals, functions, supported n-ary operators, bounded rectangular matrices, custom delimiters, and their accessible MathML previews round-trip through body text, headers, footers, footnotes, and endnotes.`,
+        `${supported} native OMML equation(s) use the editable structured subset. Inline and display equations, Unicode math runs, fractions, scripts, radicals, functions, supported n-ary operators, combining accents, bounded rectangular matrices, custom delimiters, and their accessible MathML previews round-trip through body text, headers, footers, footnotes, and endnotes.`,
         'info',
       ),
     );
@@ -61,7 +61,7 @@ export async function diagnoseDocxEquations(
     issues.push(
       equationIssue(
         'docx.equations.unsupported',
-        `${unsupported + spoofed} equation-like object(s) use unsupported, malformed, misplaced, namespace-spoofed, relationship-bound, or ambiguous markup. They are flattened to bounded text instead of being treated as trusted structured OMML. Matrix spacing and gap rules, ragged or over-limit matrices, accents, bar operators, boxes, group characters, equation arrays, limits, phantoms, pre-scripts, and nested Office Math remain outside the structured subset.`,
+        `${unsupported + spoofed} equation-like object(s) use unsupported, malformed, misplaced, namespace-spoofed, relationship-bound, or ambiguous markup. They are flattened to bounded text instead of being treated as trusted structured OMML. Invalid or non-combining accent characters, matrix spacing and gap rules, ragged or over-limit matrices, bar operators, boxes, group characters, equation arrays, limits, phantoms, pre-scripts, and nested Office Math remain outside the structured subset.`,
       ),
     );
   }

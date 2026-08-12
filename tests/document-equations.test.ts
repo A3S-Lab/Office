@@ -62,11 +62,15 @@ describe('document equations', () => {
       expect(element?.querySelector('math')).not.toBeNull();
       expect(element?.querySelector('mfrac')).not.toBeNull();
       expect(element?.querySelector('munderover')).not.toBeNull();
+      const accent = element?.querySelector('mover[accent="true"]');
+      expect(accent).not.toBeNull();
+      expect(accent?.querySelector('mo')?.textContent).toBe('\u02dc');
       expect(element?.querySelector('mtable')).not.toBeNull();
       expect(element?.querySelectorAll('mtr')).toHaveLength(2);
       expect(element?.querySelectorAll('mtd')).toHaveLength(8);
       expect(element).toHaveAttribute('role', 'math');
       expect(element?.getAttribute('aria-label')).toContain('sqrt');
+      expect(element?.getAttribute('aria-label')).toContain('accent(U+0303');
       expect(element?.getAttribute('aria-label')).toContain('matrix');
 
       const equationPosition = documentEquationPosition(editor);
@@ -87,6 +91,19 @@ describe('document equations', () => {
           version: 1,
           display: 'inline',
           children: [{ type: 'run', text: 'x'.repeat(65_537) }],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'accent',
+              character: '^',
+              children: [{ type: 'run', text: 'x' }],
+            },
+          ],
         }),
       ).toBeNull();
       expect(
@@ -157,6 +174,7 @@ describe('document equations', () => {
       expect(equations).toBe(1);
       expect(editor.getHTML()).toContain('data-document-equation="true"');
       expect(editor.getHTML()).toContain('<math');
+      expect(editor.getHTML()).toContain('accent="true"');
       expect(editor.getHTML()).toContain('<mtable');
 
       const sanitized = new DOMParser().parseFromString(
@@ -198,7 +216,7 @@ describe('document equations', () => {
       bodyEquations.map(
         (element) => documentEquationFromElement(element)?.children.length,
       ),
-    ).toEqual([15, 15, 1, 1]);
+    ).toEqual([16, 16, 1, 1]);
     expect(bodyEquations.map(documentEquationFromElement).every(Boolean)).toBe(
       true,
     );
@@ -419,6 +437,8 @@ describe('document equations', () => {
   test('rejects unmodeled and contradictory OMML properties', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const supported = [
+      `<m:acc><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:accPr><m:chr m:val="&#x20D7;"/><m:ctrlPr/></m:accPr><m:e>${run}</m:e></m:acc>`,
       `<m:f><m:fPr><m:type m:val="noBar"/><m:ctrlPr/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/><m:ctrlPr/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:limLoc m:val="undOvr"/><m:subHide m:val="1"/><m:supHide m:val="true"/><m:ctrlPr/></m:naryPr><m:e>${run}</m:e></m:nary>`,
@@ -431,9 +451,28 @@ describe('document equations', () => {
       'supported',
       'supported',
       'supported',
+      'supported',
+      'supported',
     ]);
+    expect(inspectEquationModel(supported[0])?.children[0]).toEqual({
+      type: 'accent',
+      character: '\u0302',
+      children: [{ type: 'run', text: 'x' }],
+    });
+    expect(inspectEquationModel(supported[1])?.children[0]).toEqual({
+      type: 'accent',
+      character: '\u20d7',
+      children: [{ type: 'run', text: 'x' }],
+    });
 
     const unsupported = [
+      `<m:acc><m:accPr><m:chr/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:accPr><m:chr m:val="^"/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:accPr><m:chr m:val="&#x302;&#x303;"/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:accPr><m:grow m:val="1"/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:e>${run}</m:e><m:accPr><m:chr m:val="&#x302;"/></m:accPr></m:acc>`,
+      `<m:acc><m:accPr><m:chr m:val="&#x302;"/><m:chr m:val="&#x303;"/></m:accPr><m:e>${run}</m:e></m:acc>`,
+      `<m:acc><m:accPr><m:chr m:val="&#x302;"/></m:accPr><m:e/></m:acc>`,
       `<m:f><m:fPr><m:m><m:mr><m:e>${run}</m:e></m:mr></m:m></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
@@ -557,6 +596,11 @@ function complexEquation(
         arguments: [[run('a')], [run('b')]],
       },
       {
+        type: 'accent',
+        character: '\u0303',
+        children: [run('x+y')],
+      },
+      {
         type: 'matrix',
         baseAlignment: 'top',
         placeholdersHidden: false,
@@ -584,11 +628,19 @@ function equationHtml(equation: WorkDocumentEquation): string {
 }
 
 function inspectEquationBody(body: string): string {
+  return inspectEquation(body).status;
+}
+
+function inspectEquationModel(body: string): WorkDocumentEquation | null {
+  return inspectEquation(body).equation;
+}
+
+function inspectEquation(body: string) {
   const document = parseXml(
     `<m:oMath xmlns:m="${MATH_NAMESPACE}">${body}</m:oMath>`,
     'equation.xml',
   );
-  return inspectDocxEquation(document.documentElement).status;
+  return inspectDocxEquation(document.documentElement);
 }
 
 function deepEquation(depth: number): unknown {
@@ -632,6 +684,15 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
   expect(descendants(document, 'func')).toHaveLength(2);
   expect(descendants(document, 'nary')).toHaveLength(4);
   expect(descendants(document, 'd')).toHaveLength(2);
+  const accents = descendants(document, 'acc');
+  expect(accents).toHaveLength(2);
+  for (const accent of accents) {
+    const properties = directChildren(accent, 'accPr')[0];
+    expect(mathValueAttribute(directChildren(properties, 'chr')[0])).toBe(
+      '\u0303',
+    );
+    expect(directChildren(accent, 'e')).toHaveLength(1);
+  }
   const matrices = descendants(document, 'm');
   expect(matrices).toHaveLength(2);
   for (const matrix of matrices) {

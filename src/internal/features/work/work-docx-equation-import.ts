@@ -81,6 +81,7 @@ const MAX_DELIMITER_ARGUMENTS = 32;
 const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
+const DEFAULT_ACCENT_CHARACTER = '\u0302';
 const NARY_OPERATORS = new Set<WorkDocumentEquationNaryOperator>([
   '∑',
   '∏',
@@ -105,6 +106,7 @@ const NARY_INTEGRALS = new Set<WorkDocumentEquationNaryOperator>([
 const ARGUMENT_PROPERTY_NAMES = new Set(['argPr', 'ctrlPr']);
 const STRUCTURAL_MATH_NAMES = new Set([
   'acc',
+  'accPr',
   'bar',
   'borderBox',
   'box',
@@ -429,6 +431,7 @@ function parseExpression(
   state.nodes += 1;
   try {
     if (element.localName === 'r') return parseRun(element, state);
+    if (element.localName === 'acc') return parseAccent(element, state);
     if (element.localName === 'f') return parseFraction(element, state);
     if (element.localName === 'sSup') return parseSuperScript(element, state);
     if (element.localName === 'sSub') return parseSubScript(element, state);
@@ -482,6 +485,47 @@ function parseRun(
   state.textLength += text.length;
   return state.textLength <= MAX_MATH_TEXT_LENGTH
     ? { type: 'run', text }
+    : null;
+}
+
+function parseAccent(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  if (!structuralChildren(element, new Set(['accPr', 'e']))) return null;
+  const properties = uniqueMathChild(element, 'accPr', false);
+  const body = uniqueMathChild(element, 'e');
+  if (
+    properties === null ||
+    !body ||
+    (properties && directChildren(element)[0] !== properties) ||
+    (properties && !structuralChildren(properties, new Set(['chr', 'ctrlPr'])))
+  ) {
+    return null;
+  }
+  const characterElement = properties
+    ? uniqueMathChild(properties, 'chr', false)
+    : undefined;
+  const controlProperties = properties
+    ? uniqueMathChild(properties, 'ctrlPr', false)
+    : undefined;
+  if (
+    characterElement === null ||
+    controlProperties === null ||
+    (controlProperties && !emptyMathProperty(controlProperties)) ||
+    (characterElement &&
+      controlProperties &&
+      properties &&
+      directChildren(properties)[0] !== characterElement)
+  ) {
+    return null;
+  }
+  const character = characterElement
+    ? mathValue(characterElement)
+    : DEFAULT_ACCENT_CHARACTER;
+  const parsedBody = parseExpressionContainer(body, state);
+  return character && accentCharacter(character) && parsedBody
+    ? { type: 'accent', character, children: parsedBody }
     : null;
 }
 
@@ -1162,6 +1206,16 @@ function delimiterProperty(
 
 function mathCharacter(value: string): boolean {
   return Array.from(value).length === 1 && !/[\p{Cc}\p{Cs}]/u.test(value);
+}
+
+function accentCharacter(value: string): boolean {
+  if (Array.from(value).length !== 1) return false;
+  const codePoint = value.codePointAt(0);
+  return (
+    codePoint !== undefined &&
+    ((codePoint >= 0x0300 && codePoint <= 0x036f) ||
+      (codePoint >= 0x20d0 && codePoint <= 0x20ef))
+  );
 }
 
 function fractionTypeFromOmml(
