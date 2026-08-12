@@ -390,6 +390,15 @@ function createExpression(
     );
     return script;
   }
+  if (expression.type === 'preSubSuperScript') {
+    const script = createMathElement(document, prefix, 'sPre');
+    script.append(
+      expressionArgument(document, prefix, 'sub', expression.subScript),
+      expressionArgument(document, prefix, 'sup', expression.superScript),
+      expressionArgument(document, prefix, 'e', expression.base),
+    );
+    return script;
+  }
   if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {
     const limit = createMathElement(
       document,

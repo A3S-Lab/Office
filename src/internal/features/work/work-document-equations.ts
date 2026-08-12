@@ -50,6 +50,12 @@ export type WorkDocumentEquationExpression =
       superScript: WorkDocumentEquationExpression[];
     }
   | {
+      type: 'preSubSuperScript';
+      base: WorkDocumentEquationExpression[];
+      subScript: WorkDocumentEquationExpression[];
+      superScript: WorkDocumentEquationExpression[];
+    }
+  | {
       type: 'lowerLimit';
       base: WorkDocumentEquationExpression[];
       limit: WorkDocumentEquationExpression[];
@@ -533,6 +539,18 @@ function normalizeExpression(
         ? { type: 'subSuperScript', base, subScript, superScript }
         : null;
     }
+    if (source.type === 'preSubSuperScript') {
+      const base = normalizeExpressionList(source.base, state);
+      const subScript = normalizeExpressionList(source.subScript, state, true);
+      const superScript = normalizeExpressionList(
+        source.superScript,
+        state,
+        true,
+      );
+      return base && subScript && superScript
+        ? { type: 'preSubSuperScript', base, subScript, superScript }
+        : null;
+    }
     if (source.type === 'lowerLimit' || source.type === 'upperLimit') {
       const base = normalizeExpressionList(source.base, state);
       const limit = normalizeExpressionList(source.limit, state);
@@ -930,6 +948,19 @@ function expressionText(
       hideAlignmentMarkers,
     )})`;
   }
+  if (expression.type === 'preSubSuperScript') {
+    const subScript = expressionListText(
+      expression.subScript,
+      hideAlignmentMarkers,
+    );
+    const superScript = expressionListText(
+      expression.superScript,
+      hideAlignmentMarkers,
+    );
+    return `pre-scripts(sub=${subScript || 'none'};sup=${
+      superScript || 'none'
+    };base=${expressionListText(expression.base, hideAlignmentMarkers)})`;
+  }
   if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {
     return `${expression.type === 'lowerLimit' ? 'lower-limit' : 'upper-limit'}(${expressionListText(
       expression.base,
@@ -1128,6 +1159,18 @@ function expressionMathMl(
       mathRow(expression.base, alignmentState),
       mathRow(expression.subScript, alignmentState),
       mathRow(expression.superScript, alignmentState),
+    ]);
+  }
+  if (expression.type === 'preSubSuperScript') {
+    return domSpec('mmultiscripts', {}, [
+      mathRow(expression.base, alignmentState),
+      domSpec('mprescripts', {}, []),
+      expression.subScript.length
+        ? mathRow(expression.subScript, alignmentState)
+        : domSpec('none', {}, []),
+      expression.superScript.length
+        ? mathRow(expression.superScript, alignmentState)
+        : domSpec('none', {}, []),
     ]);
   }
   if (expression.type === 'lowerLimit' || expression.type === 'upperLimit') {

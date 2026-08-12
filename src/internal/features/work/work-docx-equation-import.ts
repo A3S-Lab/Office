@@ -147,6 +147,7 @@ const STRUCTURAL_MATH_NAMES = new Set([
   'r',
   'rad',
   'sPre',
+  'sPrePr',
   'sSub',
   'sSubSup',
   'sSup',
@@ -457,6 +458,9 @@ function parseExpression(
     if (element.localName === 'sSub') return parseSubScript(element, state);
     if (element.localName === 'sSubSup') {
       return parseSubSuperScript(element, state);
+    }
+    if (element.localName === 'sPre') {
+      return parsePreSubSuperScript(element, state);
     }
     if (element.localName === 'limLow' || element.localName === 'limUpp') {
       return parseLimit(element, state);
@@ -996,6 +1000,45 @@ function parseSubSuperScript(
     parsedSuperScript
     ? {
         type: 'subSuperScript',
+        base: parsedBase,
+        subScript: parsedSubScript,
+        superScript: parsedSuperScript,
+      }
+    : null;
+}
+
+function parsePreSubSuperScript(
+  element: Element,
+  state: EquationParseState,
+): WorkDocumentEquationExpression | null {
+  const childOrder = ['sPrePr', 'sub', 'sup', 'e'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
+    return null;
+  }
+  const properties = uniqueMathChild(element, 'sPrePr', false);
+  const subScript = uniqueMathChild(element, 'sub');
+  const superScript = uniqueMathChild(element, 'sup');
+  const base = uniqueMathChild(element, 'e');
+  if (properties === null || !subScript || !superScript || !base) return null;
+  if (properties) {
+    if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
+    const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+    if (
+      controlProperties === null ||
+      (controlProperties && !emptyMathProperty(controlProperties))
+    ) {
+      return null;
+    }
+  }
+  const parsedSubScript = parseExpressionContainer(subScript, state, true);
+  const parsedSuperScript = parseExpressionContainer(superScript, state, true);
+  const parsedBase = parseExpressionContainer(base, state);
+  return parsedSubScript !== null && parsedSuperScript !== null && parsedBase
+    ? {
+        type: 'preSubSuperScript',
         base: parsedBase,
         subScript: parsedSubScript,
         superScript: parsedSuperScript,

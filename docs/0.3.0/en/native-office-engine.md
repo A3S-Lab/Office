@@ -1151,8 +1151,9 @@ dialog is required.
 
 The browser Word surface now round-trips a bounded structured OMML subset in
 the main story, headers, footers, footnotes, and endnotes. Inline and display
-math, Unicode runs, fractions, scripts, radicals, functions, supported n-ary
-operators, combining accents, overbars and underbars, group characters with
+math, Unicode runs, fractions, scripts, left-side pre-sub/superscripts with
+empty script slots, radicals, functions, supported n-ary operators, combining
+accents, overbars and underbars, group characters with
 explicit character position and baseline justification, phantoms with visible
 or hidden bases, independently zeroed width, ascent, or descent, and transparent
 spacing, border boxes with independently visible edges and four strike
@@ -1168,17 +1169,19 @@ the absent or explicitly empty `chr`, bottom `pos`, and absent-versus-empty
 `vertJc` defaults. Phantom normalization preserves the visible `show` default
 and disabled `zeroWid`, `zeroAsc`, `zeroDesc`, and `transp` defaults; MathML
 preview uses `mphantom` and `mpadded` while native export retains every spacing
-property. Border-box, box, and equation-array flags retain their
+property. Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map
+empty left script slots to MathML `none` children after `mprescripts`.
+Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is
 accepted. Invalid or non-combining accent characters, invalid or contradictory
 bar, group-character, phantom, border-box, box, or equation-array properties,
-malformed lower/upper limit structures, unsupported matrix spacing or gap rules,
-ragged or over-limit matrices, over-limit equation arrays, malformed, misplaced,
-over-budget,
+malformed pre-script or lower/upper limit structures, unsupported matrix spacing
+or gap rules, ragged or over-limit matrices, over-limit equation arrays,
+malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
-text with compatibility diagnostics; pre-scripts and the remaining
-OMML grammar are still part of the Rich Word gate.
+text with compatibility diagnostics; the remaining OMML grammar is still part
+of the Rich Word gate.
 
 ### Gate 3 — Rich Word
 
