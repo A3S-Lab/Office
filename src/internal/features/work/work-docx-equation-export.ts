@@ -1137,6 +1137,13 @@ function expressionArgument(
   properties?: WorkDocumentEquationArgumentProperties,
 ): Element {
   const argument = createMathElement(document, prefix, name);
+  if (properties?.size !== undefined) {
+    const argumentProperties = createMathElement(document, prefix, 'argPr');
+    argumentProperties.append(
+      mathValueElement(document, prefix, 'argSz', String(properties.size)),
+    );
+    argument.append(argumentProperties);
+  }
   appendExpressions(document, prefix, argument, children);
   appendMathControlProperties(
     document,

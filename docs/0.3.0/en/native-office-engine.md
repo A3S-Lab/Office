@@ -1200,9 +1200,14 @@ empty and follows `argPr -> expressions -> ctrlPr`. Its optional trailing
 `ctrlPr` retains one bounded direct `w:rPr`; fixed slots use named metadata,
 while matrix cells, equation-array rows, and delimiter arguments use strictly
 dimension-aligned metadata. Absent or empty argument/control properties and
-absent, empty, or zero `argSz` values normalize to the default. Nonzero argument
-sizes and duplicate, misplaced, revision-wrapped, or semantic argument
-properties fail closed until their semantics are modeled.
+absent, empty, or zero `argSz` values normalize to the default. Bounded
+`argSz` values from -2 through 2 round-trip as relative argument sizes. The
+Word-effective `box/e`, `groupChr/e`, `limLow/lim`, `limUpp/lim`, `nary/sub`,
+`nary/sup`, `rad/deg`, `sPre/sub`, `sPre/sup`, `sSub/sub`, `sSubSup/sub`,
+`sSubSup/sup`, and `sSup/sup` pairs project to inverse-sign relative MathML
+`scriptlevel`; valid sizes in other argument slots remain native metadata.
+Out-of-range or malformed sizes and duplicate, misplaced, revision-wrapped, or
+semantic argument properties fail closed.
 N-ary operators enforce optional `naryPr` before required `sub`, `sup`, and `e`
 slots. An omitted `chr` defaults to U+222B, while an attribute-free `chr`
 remains an explicitly empty unsupported operator; an attribute-free `limLoc`

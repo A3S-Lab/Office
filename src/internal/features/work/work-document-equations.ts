@@ -138,6 +138,7 @@ export interface WorkDocumentEquationManualBreak {
 }
 
 export interface WorkDocumentEquationArgumentProperties {
+  size?: -2 | -1 | 1 | 2;
   controlProperties?: WorkDocumentEquationWordRunProperties;
 }
 
@@ -795,16 +796,33 @@ function normalizeMathArgumentProperties(
   if (source === undefined) return undefined;
   if (
     !isRecord(source) ||
-    Object.keys(source).some((key) => key !== 'controlProperties')
+    Object.keys(source).some(
+      (key) => key !== 'size' && key !== 'controlProperties',
+    )
   ) {
     return null;
   }
+  if (
+    source.size !== undefined &&
+    (typeof source.size !== 'number' ||
+      !Number.isInteger(source.size) ||
+      source.size < -2 ||
+      source.size > 2)
+  ) {
+    return null;
+  }
+  const size = source.size === 0 ? undefined : (source.size as -2 | -1 | 1 | 2);
   const controlProperties =
     source.controlProperties === undefined
       ? undefined
       : normalizeEquationWordRunProperties(source.controlProperties);
   if (controlProperties === null) return null;
-  return controlProperties ? { controlProperties } : undefined;
+  return size !== undefined || controlProperties
+    ? {
+        ...(size !== undefined ? { size } : {}),
+        ...(controlProperties ? { controlProperties } : {}),
+      }
+    : undefined;
 }
 
 function normalizeMathArgumentPropertySlots(
@@ -1786,6 +1804,20 @@ function mathRow(
   );
 }
 
+function wordSizedMathArgument(
+  expressions: readonly WorkDocumentEquationExpression[],
+  properties: WorkDocumentEquationArgumentProperties | undefined,
+  alignmentState?: EquationArrayAlignmentState,
+): DOMOutputSpec {
+  const row = mathRow(expressions, alignmentState);
+  if (!expressions.length || properties?.size === undefined) return row;
+  const relativeScriptLevel =
+    properties.size < 0
+      ? `+${Math.abs(properties.size)}`
+      : `-${properties.size}`;
+  return domSpec('mstyle', { scriptlevel: relativeScriptLevel }, [row]);
+}
+
 function expressionMathMl(
   expression: WorkDocumentEquationExpression,
   alignmentState?: EquationArrayAlignmentState,
@@ -1842,20 +1874,36 @@ function expressionMathMl(
   if (expression.type === 'superscript') {
     return domSpec('msup', {}, [
       mathRow(expression.base, alignmentState),
-      mathRow(expression.superScript, alignmentState),
+      wordSizedMathArgument(
+        expression.superScript,
+        expression.superScriptProperties,
+        alignmentState,
+      ),
     ]);
   }
   if (expression.type === 'subscript') {
     return domSpec('msub', {}, [
       mathRow(expression.base, alignmentState),
-      mathRow(expression.subScript, alignmentState),
+      wordSizedMathArgument(
+        expression.subScript,
+        expression.subScriptProperties,
+        alignmentState,
+      ),
     ]);
   }
   if (expression.type === 'subSuperScript') {
     return domSpec('msubsup', {}, [
       mathRow(expression.base, alignmentState),
-      mathRow(expression.subScript, alignmentState),
-      mathRow(expression.superScript, alignmentState),
+      wordSizedMathArgument(
+        expression.subScript,
+        expression.subScriptProperties,
+        alignmentState,
+      ),
+      wordSizedMathArgument(
+        expression.superScript,
+        expression.superScriptProperties,
+        alignmentState,
+      ),
     ]);
   }
   if (expression.type === 'preSubSuperScript') {
@@ -1863,10 +1911,18 @@ function expressionMathMl(
       mathRow(expression.base, alignmentState),
       domSpec('mprescripts', {}, []),
       expression.subScript.length
-        ? mathRow(expression.subScript, alignmentState)
+        ? wordSizedMathArgument(
+            expression.subScript,
+            expression.subScriptProperties,
+            alignmentState,
+          )
         : domSpec('none', {}, []),
       expression.superScript.length
-        ? mathRow(expression.superScript, alignmentState)
+        ? wordSizedMathArgument(
+            expression.superScript,
+            expression.superScriptProperties,
+            alignmentState,
+          )
         : domSpec('none', {}, []),
     ]);
   }
@@ -1878,7 +1934,11 @@ function expressionMathMl(
         : { accent: 'false' },
       [
         mathRow(expression.base, alignmentState),
-        mathRow(expression.limit, alignmentState),
+        wordSizedMathArgument(
+          expression.limit,
+          expression.limitProperties,
+          alignmentState,
+        ),
       ],
     );
   }
@@ -1886,7 +1946,11 @@ function expressionMathMl(
     return expression.degree
       ? domSpec('mroot', {}, [
           mathRow(expression.children, alignmentState),
-          mathRow(expression.degree, alignmentState),
+          wordSizedMathArgument(
+            expression.degree,
+            expression.degreeProperties,
+            alignmentState,
+          ),
         ])
       : domSpec('msqrt', {}, [mathRow(expression.children, alignmentState)]);
   }
@@ -1910,21 +1974,43 @@ function expressionMathMl(
         {},
         [
           operator,
-          mathRow(expression.subScript, alignmentState),
-          mathRow(expression.superScript, alignmentState),
+          wordSizedMathArgument(
+            expression.subScript,
+            expression.subScriptProperties,
+            alignmentState,
+          ),
+          wordSizedMathArgument(
+            expression.superScript,
+            expression.superScriptProperties,
+            alignmentState,
+          ),
         ],
       );
     } else if (expression.subScript) {
       decorated = domSpec(
         expression.limitLocation === 'underOver' ? 'munder' : 'msub',
         {},
-        [operator, mathRow(expression.subScript, alignmentState)],
+        [
+          operator,
+          wordSizedMathArgument(
+            expression.subScript,
+            expression.subScriptProperties,
+            alignmentState,
+          ),
+        ],
       );
     } else if (expression.superScript) {
       decorated = domSpec(
         expression.limitLocation === 'underOver' ? 'mover' : 'msup',
         {},
-        [operator, mathRow(expression.superScript, alignmentState)],
+        [
+          operator,
+          wordSizedMathArgument(
+            expression.superScript,
+            expression.superScriptProperties,
+            alignmentState,
+          ),
+        ],
       );
     }
     return domSpec('mrow', {}, [
@@ -1964,7 +2050,11 @@ function expressionMathMl(
         ? { accent: 'false' }
         : { accentunder: 'false' },
       [
-        mathRow(expression.children, alignmentState),
+        wordSizedMathArgument(
+          expression.children,
+          expression.childrenProperties,
+          alignmentState,
+        ),
         domSpec(
           'mo',
           controlMathMlAttributes(expression, expression.character),
@@ -1993,7 +2083,11 @@ function expressionMathMl(
   }
   if (expression.type === 'box') {
     return domSpec('mpadded', {}, [
-      mathRow(expression.children, alignmentState),
+      wordSizedMathArgument(
+        expression.children,
+        expression.childrenProperties,
+        alignmentState,
+      ),
     ]);
   }
   if (expression.type === 'matrix') {

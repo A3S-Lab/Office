@@ -1191,9 +1191,14 @@ dimension-aligned metadata. Revision-wrapped control properties still fail
 closed until revision semantics are modeled.
 Every supported `CT_OMathArg` slot may be empty and follows
 `argPr -> expressions -> ctrlPr`. Absent or empty argument/control properties
-and absent, empty, or zero `argSz` values normalize to the default. Nonzero
-argument sizes and duplicate, misplaced, revision-wrapped, or semantic argument
-properties fail closed until their semantics are modeled.
+and absent, empty, or zero `argSz` values normalize to the default. Bounded
+`argSz` values from -2 through 2 round-trip as relative argument sizes. The
+Word-effective `box/e`, `groupChr/e`, `limLow/lim`, `limUpp/lim`, `nary/sub`,
+`nary/sup`, `rad/deg`, `sPre/sub`, `sPre/sup`, `sSub/sub`, `sSubSup/sub`,
+`sSubSup/sup`, and `sSup/sup` pairs project to inverse-sign relative MathML
+`scriptlevel`; valid sizes in other argument slots remain native metadata.
+Out-of-range or malformed sizes and duplicate, misplaced, revision-wrapped, or
+semantic argument properties fail closed.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.

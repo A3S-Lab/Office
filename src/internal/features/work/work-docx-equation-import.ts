@@ -503,16 +503,21 @@ function parseMathArgument(
   }
   let expressionStart = 0;
   let expressionEnd = children.length;
+  let parsedProperties: WorkDocumentEquationArgumentProperties = {};
   const argumentProperties = children[expressionStart];
   if (argumentProperties?.localName === 'argPr') {
-    if (!defaultMathArgumentProperties(argumentProperties)) return null;
+    const parsedArgumentProperties =
+      parseMathArgumentProperties(argumentProperties);
+    if (parsedArgumentProperties === null) return null;
+    parsedProperties = parsedArgumentProperties;
     expressionStart += 1;
   }
   const controlProperties = children[expressionEnd - 1];
-  let parsedProperties: WorkDocumentEquationArgumentProperties | null = {};
   if (controlProperties?.localName === 'ctrlPr') {
-    parsedProperties = parseMathControlProperties(controlProperties);
-    if (parsedProperties === null) return null;
+    const parsedControlProperties =
+      parseMathControlProperties(controlProperties);
+    if (parsedControlProperties === null) return null;
+    parsedProperties = { ...parsedProperties, ...parsedControlProperties };
     expressionEnd -= 1;
   }
   const expressions: WorkDocumentEquationExpression[] = [];
@@ -526,22 +531,25 @@ function parseMathArgument(
   }
   return {
     children: expressions,
-    ...(parsedProperties.controlProperties
+    ...(Object.keys(parsedProperties).length
       ? { properties: parsedProperties }
       : {}),
   };
 }
 
-function defaultMathArgumentProperties(properties: Element): boolean {
-  if (!structuralChildren(properties, new Set(['argSz']))) return false;
+function parseMathArgumentProperties(
+  properties: Element,
+): WorkDocumentEquationArgumentProperties | null {
+  if (!structuralChildren(properties, new Set(['argSz']))) return null;
   const size = uniqueMathChild(properties, 'argSz', false);
-  if (size === null) return false;
+  if (size === null) return null;
   const value = size ? mathValueOrDefault(size, '0') : '0';
-  if (value === null) return false;
+  if (value === null) return null;
   const source = value.trim();
-  if (!/^[+-]?\d+$/u.test(source)) return false;
+  if (!/^[+-]?\d+$/u.test(source)) return null;
   const parsed = Number(source);
-  return Number.isSafeInteger(parsed) && parsed === 0;
+  if (!Number.isSafeInteger(parsed) || parsed < -2 || parsed > 2) return null;
+  return parsed === 0 ? {} : { size: parsed as -2 | -1 | 1 | 2 };
 }
 
 function parseExpression(

@@ -63,7 +63,10 @@ All notable changes to A3S Office will be documented in this file.
   `argPr -> expressions -> ctrlPr` ordering. Its optional trailing `ctrlPr`
   retains one bounded direct `w:rPr`. Absent or empty argument/control
   properties and absent, empty, or zero `argSz` values normalize to the
-  default; nonzero sizes and duplicate, misplaced, revision-wrapped, or semantic
+  default. Relative sizes from -2 through 2 round-trip in every argument slot.
+  The 13 Word-effective parent/child pairs project through inverse-sign relative
+  MathML `scriptlevel`; valid sizes elsewhere remain native-only. Out-of-range
+  or malformed sizes and duplicate, misplaced, revision-wrapped, or semantic
   properties fail closed. Depth, node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run or function

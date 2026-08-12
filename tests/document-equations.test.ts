@@ -2204,6 +2204,198 @@ describe('document equations', () => {
     );
   });
 
+  test('preserves bounded relative argument sizes and projects only Word-effective slots', async () => {
+    const equation = argumentSizesEquation();
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'box',
+            operatorEmulator: false,
+            noBreak: false,
+            differential: false,
+            alignment: false,
+            children: [],
+            childrenProperties: {
+              size: 0,
+              controlProperties: { bold: true },
+            },
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual({
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'box',
+          operatorEmulator: false,
+          noBreak: false,
+          differential: false,
+          alignment: false,
+          children: [],
+          childrenProperties: { controlProperties: { bold: true } },
+        },
+      ],
+    });
+    for (const size of [-3, 3, -1.5, Number.NaN, '1', null]) {
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'box',
+              operatorEmulator: false,
+              noBreak: false,
+              differential: false,
+              alignment: false,
+              children: [],
+              childrenProperties: { size },
+            },
+          ],
+        } as unknown as WorkDocumentEquation),
+      ).toBeNull();
+    }
+
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const sizedBox = (value: string) =>
+      `<m:box><m:e><m:argPr><m:argSz m:val="${value}"/></m:argPr>${run}</m:e></m:box>`;
+    expect(
+      ['-2', '-1', '1', '+2'].map(sizedBox).map(inspectEquationBody),
+    ).toEqual(['supported', 'supported', 'supported', 'supported']);
+    expect(
+      ['-2', '-1', '1', '+2'].map(sizedBox).map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'box'
+          ? expression.childrenProperties?.size
+          : undefined;
+      }),
+    ).toEqual([-2, -1, 1, 2]);
+
+    const malformed = [
+      sizedBox('-3'),
+      sizedBox('3'),
+      sizedBox('1.0'),
+      sizedBox('maybe'),
+      sizedBox('9007199254740992'),
+      `<m:box><m:e><m:argPr><m:argSz/><m:argSz/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr m:extra="semantic"><m:argSz m:val="1"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr>meaningful<m:argSz m:val="1"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr><m:argSz m:val="1" m:extra="semantic"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:e><m:argPr><m:argSz m:val="1" r:id="rIdUnsafe"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr><m:argSz val="1"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr><v:argSz xmlns:v="${VENDOR_NAMESPACE}" m:val="1"/></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e><m:argPr><m:argSz m:val="1"><m:r/></m:argSz></m:argPr>${run}</m:e></m:box>`,
+      `<m:box><m:e>${run}<m:argPr><m:argSz m:val="1"/></m:argPr></m:e></m:box>`,
+    ];
+    expect(malformed.map(inspectEquationBody)).toEqual(
+      malformed.map(() => 'unsupported'),
+    );
+
+    const strictSource = `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}"><m:box><m:e><m:argPr><m:argSz m:val="-2"/></m:argPr>${run}</m:e></m:box></m:oMath>`;
+    expect(inspectEquationRoot(strictSource)).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [{ childrenProperties: { size: -2 } }],
+      },
+    });
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    expect(
+      Array.from(preview.querySelectorAll('mstyle[scriptlevel]')).map(
+        (style) => [style.textContent, style.getAttribute('scriptlevel')],
+      ),
+    ).toEqual([
+      ['box-sized', '+2'],
+      ['group-sized', '+1'],
+      ['lower-limit-sized', '-1'],
+      ['upper-limit-sized', '-2'],
+      ['nary-sub-sized', '+2'],
+      ['nary-sup-sized', '+1'],
+      ['radical-degree-sized', '-1'],
+      ['pre-sub-sized', '-2'],
+      ['pre-sup-sized', '+2'],
+      ['subscript-sized', '+1'],
+      ['sub-super-sub-sized', '-1'],
+      ['sub-super-sup-sized', '-2'],
+      ['superscript-sized', '+2'],
+    ]);
+    for (const text of [
+      'fraction-noop-sized',
+      'function-noop-sized',
+      'matrix-noop-sized',
+      'array-noop-sized',
+      'delimiter-noop-sized',
+    ]) {
+      const candidate = Array.from(preview.querySelectorAll('mtext')).find(
+        (element) => element.textContent === text,
+      );
+      expect(candidate, text).toBeDefined();
+      expect(candidate?.closest('mstyle'), text).toBeNull();
+    }
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(equationHtml(equation)),
+      'text/html',
+    );
+    expect(sanitized.body.querySelectorAll('mstyle[scriptlevel]')).toHaveLength(
+      13,
+    );
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeArgumentSizes(first);
+
+    const firstArchive = await JSZip.loadAsync(await first.arrayBuffer());
+    const firstDocument = await xmlEntry(firstArchive, 'word/document.xml');
+    const nativeEquation = descendants(firstDocument, 'oMath').find(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(nativeEquation).toBeDefined();
+    const standalone = nativeEquation?.cloneNode(true) as Element;
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    const strictRoundTripSource = new XMLSerializer()
+      .serializeToString(standalone)
+      .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
+      .replaceAll(WORD_NAMESPACE, STRICT_WORD_NAMESPACE);
+    expect(inspectEquationRoot(strictRoundTripSource)).toMatchObject({
+      status: 'supported',
+      equation,
+    });
+
+    const imported = await importOfficeFile(
+      new File([first], 'argument-sizes.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeArgumentSizes(await createArtifactBlob(imported));
+  });
+
   test('preserves display-math paragraph justification and rejects malformed roots', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const paragraph = (properties = '', namespace = MATH_NAMESPACE) =>
@@ -2374,7 +2566,7 @@ describe('document equations', () => {
       `<m:func><m:fName><m:argPr/><m:argPr/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName>${run}<m:ctrlPr/><m:r><m:t>y</m:t></m:r></m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName>${run}<m:ctrlPr/><m:ctrlPr/></m:fName><m:e>${run}</m:e></m:func>`,
-      `<m:func><m:fName><m:argPr><m:argSz m:val="1"/></m:argPr>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:fName><m:argPr><m:argSz m:val="3"/></m:argPr>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName><v:argPr xmlns:v="${VENDOR_NAMESPACE}"/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func m:extra="semantic"><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func>meaningful<m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
@@ -2469,7 +2661,7 @@ describe('document equations', () => {
     };
     expect(normalizeDocumentEquation(emptyFraction)).toEqual(emptyFraction);
 
-    const unsupported = ['-2', '-1', '1', '2', '3', '1.0', 'maybe'].map(
+    const unsupported = ['-3', '3', '1.0', 'maybe'].map(
       (value) =>
         `<m:box><m:e><m:argPr><m:argSz m:val="${value}"/></m:argPr></m:e></m:box>`,
     );
@@ -3125,6 +3317,132 @@ function argumentControlPropertiesEquation(): WorkDocumentEquation {
   };
 }
 
+function argumentSizesEquation(): WorkDocumentEquation {
+  const run = (text: string) => ({ type: 'run' as const, text });
+  const sized = (size: -2 | -1 | 1 | 2) => ({ size });
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'box',
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        children: [run('box-sized')],
+        childrenProperties: sized(-2),
+      },
+      {
+        type: 'groupCharacter',
+        character: '\u23de',
+        position: 'top',
+        verticalJustification: 'bottom',
+        children: [run('group-sized')],
+        childrenProperties: sized(-1),
+      },
+      {
+        type: 'lowerLimit',
+        base: [run('lower-base')],
+        limit: [run('lower-limit-sized')],
+        limitProperties: sized(1),
+      },
+      {
+        type: 'upperLimit',
+        base: [run('upper-base')],
+        limit: [run('upper-limit-sized')],
+        limitProperties: sized(2),
+      },
+      {
+        type: 'nary',
+        operator: '\u2211',
+        limitLocation: 'underOver',
+        children: [run('nary-body')],
+        subScript: [run('nary-sub-sized')],
+        subScriptProperties: sized(-2),
+        superScript: [run('nary-sup-sized')],
+        superScriptProperties: sized(-1),
+      },
+      {
+        type: 'radical',
+        children: [run('radical-body')],
+        degree: [run('radical-degree-sized')],
+        degreeProperties: sized(1),
+      },
+      {
+        type: 'preSubSuperScript',
+        base: [run('pre-base')],
+        subScript: [run('pre-sub-sized')],
+        subScriptProperties: sized(2),
+        superScript: [run('pre-sup-sized')],
+        superScriptProperties: sized(-2),
+      },
+      {
+        type: 'subscript',
+        base: [run('subscript-base')],
+        subScript: [run('subscript-sized')],
+        subScriptProperties: sized(-1),
+      },
+      {
+        type: 'subSuperScript',
+        base: [run('sub-super-base')],
+        subScript: [run('sub-super-sub-sized')],
+        subScriptProperties: sized(1),
+        superScript: [run('sub-super-sup-sized')],
+        superScriptProperties: sized(2),
+      },
+      {
+        type: 'superscript',
+        base: [run('superscript-base')],
+        superScript: [run('superscript-sized')],
+        superScriptProperties: sized(-2),
+      },
+      {
+        type: 'fraction',
+        fractionType: 'bar',
+        numerator: [run('fraction-noop-sized')],
+        numeratorProperties: {
+          size: 1,
+          controlProperties: { bold: true },
+        },
+        denominator: [run('fraction-denominator')],
+      },
+      {
+        type: 'function',
+        name: [run('function-noop-sized')],
+        nameProperties: sized(-1),
+        children: [run('function-body')],
+      },
+      {
+        type: 'matrix',
+        baseAlignment: 'center',
+        placeholdersHidden: false,
+        columnAlignments: ['center'],
+        rows: [[[run('matrix-noop-sized')]]],
+        cellProperties: [[sized(2)]],
+      },
+      {
+        type: 'equationArray',
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[run('array-noop-sized')]],
+        rowProperties: [sized(1)],
+      },
+      {
+        type: 'delimiter',
+        opening: '[',
+        closing: ']',
+        separator: ';',
+        arguments: [[run('delimiter-noop-sized')]],
+        argumentProperties: [sized(-2)],
+      },
+    ],
+  };
+}
+
 function complexEquation(
   display: WorkDocumentEquation['display'],
 ): WorkDocumentEquation {
@@ -3767,6 +4085,54 @@ async function expectNativeArgumentControlProperties(
       directChildren(wordProperties[0]).map((child) => child.localName),
     ).toEqual(expectedWordPropertyNames);
   }
+}
+
+async function expectNativeArgumentSizes(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const sizes = descendants(document, 'argSz').filter(
+    (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+  );
+  expect(
+    sizes.map((size) => [
+      size.parentElement?.parentElement?.textContent,
+      mathValueAttribute(size),
+    ]),
+  ).toEqual([
+    ['box-sized', '-2'],
+    ['group-sized', '-1'],
+    ['lower-limit-sized', '1'],
+    ['upper-limit-sized', '2'],
+    ['nary-sub-sized', '-2'],
+    ['nary-sup-sized', '-1'],
+    ['radical-degree-sized', '1'],
+    ['pre-sub-sized', '2'],
+    ['pre-sup-sized', '-2'],
+    ['subscript-sized', '-1'],
+    ['sub-super-sub-sized', '1'],
+    ['sub-super-sup-sized', '2'],
+    ['superscript-sized', '-2'],
+    ['fraction-noop-sized', '1'],
+    ['function-noop-sized', '-1'],
+    ['matrix-noop-sized', '2'],
+    ['array-noop-sized', '1'],
+    ['delimiter-noop-sized', '-2'],
+  ]);
+  for (const size of sizes) {
+    const argumentProperties = size.parentElement;
+    const argument = argumentProperties?.parentElement;
+    expect(argumentProperties?.localName).toBe('argPr');
+    expect(argumentProperties?.namespaceURI).toBe(MATH_NAMESPACE);
+    expect(directChildren(argumentProperties as Element)).toEqual([size]);
+    expect(directChildren(argument as Element)[0]).toBe(argumentProperties);
+  }
+  const combinedArgument = sizes.find(
+    (size) =>
+      size.parentElement?.parentElement?.textContent === 'fraction-noop-sized',
+  )?.parentElement?.parentElement;
+  expect(
+    directChildren(combinedArgument as Element).map((child) => child.localName),
+  ).toEqual(['argPr', 'r', 'ctrlPr']);
 }
 
 async function expectNativeEquations(blob: Blob): Promise<void> {
