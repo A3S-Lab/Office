@@ -1213,7 +1213,11 @@ function parseRadical(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['radPr', 'deg', 'e']))) {
+  const childOrder = ['radPr', 'deg', 'e'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'radPr', false);
@@ -1223,8 +1227,7 @@ function parseRadical(
     properties === null ||
     degree === null ||
     !body ||
-    (properties &&
-      !structuralChildren(properties, new Set(['degHide', 'ctrlPr'])))
+    (properties && !radicalProperties(properties))
   ) {
     return null;
   }
@@ -1252,7 +1255,7 @@ function parseRadical(
   if (
     !parsedBody ||
     parsedDegree === null ||
-    degreeHidden === Boolean(parsedDegree?.length)
+    (degreeHidden && Boolean(parsedDegree?.length))
   ) {
     return null;
   }
@@ -1261,6 +1264,14 @@ function parseRadical(
     children: parsedBody,
     ...(parsedDegree?.length ? { degree: parsedDegree } : {}),
   };
+}
+
+function radicalProperties(properties: Element): boolean {
+  const propertyOrder = ['degHide', 'ctrlPr'];
+  return (
+    structuralChildren(properties, new Set(propertyOrder)) &&
+    orderedMathChildren(properties, propertyOrder)
+  );
 }
 
 function parseFunction(

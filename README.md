@@ -519,9 +519,9 @@ Supported native OMML equations now survive as bounded structured objects in
 the document body, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs with literal/normal-text semantics, math script/style,
 manual-break, and alignment-point properties, common fractions, scripts,
-left-side pre-sub/superscripts with empty script slots, radicals, functions,
-n-ary operators, combining
-accents, overbars and underbars, group characters with
+left-side pre-sub/superscripts with empty script slots, radicals with optional
+degrees, functions, n-ary operators, combining accents, overbars and underbars,
+group characters with
 explicit grouping-character placement and baseline justification, phantoms with
 visible or hidden bases, independently zeroed width, ascent, or descent, and
 transparent spacing, border boxes with independently visible edges and four
@@ -545,6 +545,10 @@ argument order. `sSubSupPr` preserves `alnScr`, canonicalizes its absent or
 disabled value to unaligned scripts, and retains the enabled state through
 native export; empty `ctrlPr` placeholders on scripts and functions are
 accepted, while unmodeled control formatting still fails closed.
+Radicals enforce `radPr`, optional `deg`, and `e` ordering. An omitted or empty
+degree normalizes to a square root, while a visible nonempty degree remains an
+nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
+`degHide=1` with an empty degree slot for square roots.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded native grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`, while absent properties, absent `m:jc`,
@@ -556,8 +560,8 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent
-characters, malformed math-run properties, invalid or contradictory bar,
-group-character, phantom, border-box, box, or equation-array properties,
+characters, malformed math-run properties, invalid or contradictory radical,
+bar, group-character, phantom, border-box, box, or equation-array properties,
 malformed script-property, pre-script, math-paragraph, or lower/upper limit
 structures,
 unsupported matrix spacing or gap rules, ragged or over-limit matrices,

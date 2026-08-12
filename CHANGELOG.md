@@ -16,9 +16,9 @@ All notable changes to A3S Office will be documented in this file.
   scripts, four styles, manual breaks, and alignment points,
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
   sub-superscripts, left-side pre-sub/superscripts with empty script slots,
-  radicals, functions, supported
-  n-ary operators, combining
-  accents, overbars and underbars, group characters with explicit character
+  radicals with optional degrees and canonical hidden empty degree slots,
+  functions, supported n-ary operators, combining accents, overbars and
+  underbars, group characters with explicit character
   position and baseline justification, phantoms with visible or hidden bases,
   independently zeroed width, ascent, or descent, and transparent spacing,
   border boxes with independently visible edges and four strike directions,
@@ -31,12 +31,12 @@ All notable changes to A3S Office will be documented in this file.
   packages. Depth, node, text, model-size, matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run properties,
-  invalid or contradictory bar, group-character, phantom, border-box, box, or
-  equation-array properties, malformed lower/upper limit structures, matrix
-  spacing and gap rules, ragged or over-limit matrices, over-limit equation
-  arrays, malformed script-property, pre-script, or math-paragraph structures,
-  malformed
-  placement, namespace spoofing, nested math, and relationship-bound properties
+  invalid or contradictory radical, bar, group-character, phantom, border-box,
+  box, or equation-array properties, malformed lower/upper limit structures,
+  matrix spacing and gap rules, ragged or over-limit matrices, over-limit
+  equation arrays, malformed script-property, pre-script, or math-paragraph
+  structures, malformed placement, namespace spoofing, nested math, and
+  relationship-bound properties
   fail closed to bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers
   the original package, and export retains safe source-only OPC parts,

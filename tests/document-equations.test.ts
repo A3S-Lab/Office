@@ -1395,7 +1395,7 @@ describe('document equations', () => {
       `<m:f><m:fPr><m:m><m:mr><m:e>${run}</m:e></m:mr></m:m></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:f><m:fPr><m:type m:val="bar" m:extra="semantic"/></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`,
       `<m:rad><m:radPr><m:degHide m:val="1"/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
-      `<m:rad><m:radPr/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:ctrlPr/><m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/><m:subHide m:val="on"/></m:naryPr><m:sub>${run}</m:sub><m:e>${run}</m:e></m:nary>`,
       `<m:nary><m:naryPr><m:chr m:val="&#x2211;"/></m:naryPr><m:e>${run}</m:e></m:nary>`,
       `<m:d><m:dPr><m:grow m:val="1"/></m:dPr><m:e>${run}</m:e></m:d>`,
@@ -1665,6 +1665,63 @@ describe('document equations', () => {
       `<m:sSubSup><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
       `<m:func><m:fName>${run}</m:fName><m:funcPr/><m:e>${run}</m:e></m:func>`,
       `<m:func><m:funcPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
+
+  test('normalizes radical degree defaults and strictly validates radical structure', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:rad><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide/></m:radPr><m:deg/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide m:val="0"/><m:ctrlPr/></m:radPr><m:deg/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide m:val="false"/><m:ctrlPr/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.map((source) => inspectEquationModel(source)?.children[0]),
+    ).toEqual([
+      { type: 'radical', children: [{ type: 'run', text: 'x' }] },
+      { type: 'radical', children: [{ type: 'run', text: 'x' }] },
+      { type: 'radical', children: [{ type: 'run', text: 'x' }] },
+      { type: 'radical', children: [{ type: 'run', text: 'x' }] },
+      {
+        type: 'radical',
+        children: [{ type: 'run', text: 'x' }],
+        degree: [{ type: 'run', text: 'x' }],
+      },
+      {
+        type: 'radical',
+        children: [{ type: 'run', text: 'x' }],
+        degree: [{ type: 'run', text: 'x' }],
+      },
+    ]);
+
+    const unsupported = [
+      `<m:rad><m:e>${run}</m:e><m:deg>${run}</m:deg></m:rad>`,
+      `<m:rad><m:deg>${run}</m:deg><m:radPr/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr/><m:radPr/><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:deg>${run}</m:deg><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:ctrlPr/><m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide/><m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide m:val="maybe"/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide m:val="1" m:extra="semantic"/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:radPr><m:degHide r:id="rIdUnsafe"/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><v:radPr xmlns:v="${VENDOR_NAMESPACE}"><m:degHide/></v:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><v:degHide xmlns:v="${VENDOR_NAMESPACE}"/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr>meaningful<m:degHide/></m:radPr><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:radPr><m:degHide/></m:radPr><m:deg>${run}</m:deg><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:deg>meaningful</m:deg><m:e>${run}</m:e></m:rad>`,
+      `<m:rad><m:deg>${run}</m:deg></m:rad>`,
+      `<m:rad><m:e/></m:rad>`,
+      `<m:rad><m:e>${run}</m:e><m:e>${run}</m:e></m:rad>`,
     ];
     expect(unsupported.map(inspectEquationBody)).toEqual(
       unsupported.map(() => 'unsupported'),
@@ -1979,12 +2036,17 @@ function borderBoxEquation(
                                       alignScripts: true,
                                       base: [
                                         {
-                                          type: 'run',
-                                          text,
-                                          literal: true,
-                                          script: 'doubleStruck',
-                                          style: 'plain',
-                                          manualBreak: { alignmentAt: 2 },
+                                          type: 'radical',
+                                          children: [
+                                            {
+                                              type: 'run',
+                                              text,
+                                              literal: true,
+                                              script: 'doubleStruck',
+                                              style: 'plain',
+                                              manualBreak: { alignmentAt: 2 },
+                                            },
+                                          ],
                                         },
                                       ],
                                       subScript: [{ type: 'run', text: '1' }],
@@ -2068,13 +2130,18 @@ function boxEquation(
                                       alignScripts: true,
                                       base: [
                                         {
-                                          type: 'run',
-                                          text,
-                                          normalText: true,
-                                          script: 'sansSerif',
-                                          style: 'boldItalic',
-                                          manualBreak: {},
-                                          alignment: true,
+                                          type: 'radical',
+                                          children: [
+                                            {
+                                              type: 'run',
+                                              text,
+                                              normalText: true,
+                                              script: 'sansSerif',
+                                              style: 'boldItalic',
+                                              manualBreak: {},
+                                              alignment: true,
+                                            },
+                                          ],
                                         },
                                       ],
                                       subScript: [{ type: 'run', text: '1' }],
@@ -2194,7 +2261,36 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       '1',
     );
   }
-  expect(descendants(document, 'rad')).toHaveLength(4);
+  const radicals = descendants(document, 'rad');
+  expect(radicals).toHaveLength(4);
+  for (const radical of radicals) {
+    expect(directChildren(radical).map((child) => child.localName)).toEqual([
+      'radPr',
+      'deg',
+      'e',
+    ]);
+  }
+  expect(
+    radicals.map((radical) =>
+      directChildren(directChildren(radical, 'radPr')[0]).map(
+        (child) => child.localName,
+      ),
+    ),
+  ).toEqual([['degHide'], [], ['degHide'], []]);
+  expect(
+    radicals.map(
+      (radical) => directChildren(radical, 'deg')[0]?.textContent ?? '',
+    ),
+  ).toEqual(['', '3', '', '3']);
+  expect(
+    radicals
+      .filter((_, index) => index % 2 === 0)
+      .map((radical) =>
+        mathValueAttribute(
+          directChildren(directChildren(radical, 'radPr')[0], 'degHide')[0],
+        ),
+      ),
+  ).toEqual(['1', '1']);
   expect(descendants(document, 'func')).toHaveLength(2);
   expect(descendants(document, 'nary')).toHaveLength(4);
   expect(descendants(document, 'd')).toHaveLength(2);
@@ -2517,6 +2613,17 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ).toEqual(['sSubSupPr', 'e', 'sub', 'sup']);
     expect(
       mathValueAttribute(directChildren(scriptProperties, 'alnScr')[0]),
+    ).toBe('1');
+    const radicals = descendants(story.document, 'rad');
+    expect(radicals).toHaveLength(1);
+    expect(directChildren(radicals[0]).map((child) => child.localName)).toEqual(
+      ['radPr', 'deg', 'e'],
+    );
+    expect(directChildren(radicals[0], 'deg')[0]?.childElementCount).toBe(0);
+    expect(
+      mathValueAttribute(
+        directChildren(directChildren(radicals[0], 'radPr')[0], 'degHide')[0],
+      ),
     ).toBe('1');
     const limit = descendants(story.document, story.limit)[0];
     expect(limit).toBeDefined();

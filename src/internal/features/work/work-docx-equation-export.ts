@@ -479,13 +479,9 @@ function createExpression(
     if (!expression.degree) {
       properties.append(mathValueElement(document, prefix, 'degHide', '1'));
     }
-    radical.append(properties);
-    if (expression.degree) {
-      radical.append(
-        expressionArgument(document, prefix, 'deg', expression.degree),
-      );
-    }
     radical.append(
+      properties,
+      expressionArgument(document, prefix, 'deg', expression.degree ?? []),
       expressionArgument(document, prefix, 'e', expression.children),
     );
     return radical;

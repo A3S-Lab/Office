@@ -1153,9 +1153,9 @@ The browser Word surface now round-trips a bounded structured OMML subset in
 the main story, headers, footers, footnotes, and endnotes. Inline and display
 math, Unicode runs with literal/normal-text semantics, math script/style,
 manual-break, and alignment-point properties, fractions, scripts, left-side
-pre-sub/superscripts with empty script slots, radicals, functions, supported
-n-ary operators, combining
-accents, overbars and underbars, group characters with
+pre-sub/superscripts with empty script slots, radicals with optional degrees,
+functions, supported n-ary operators, combining accents, overbars and underbars,
+group characters with
 explicit character position and baseline justification, phantoms with visible
 or hidden bases, independently zeroed width, ascent, or descent, and transparent
 spacing, border boxes with independently visible edges and four strike
@@ -1178,6 +1178,10 @@ order. `sSubSupPr` preserves `alnScr`, canonicalizes absent or disabled values
 to unaligned scripts, and retains the enabled state through native export;
 empty script/function `ctrlPr` placeholders are accepted, while unmodeled
 control formatting fails closed.
+Radicals enforce `radPr`, optional `deg`, and `e` ordering. An omitted or empty
+degree normalizes to a square root, while a visible nonempty degree remains an
+nth root. Native export emits the canonical `radPr -> deg -> e` shape and uses
+`degHide=1` with an empty degree slot for square roots.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`; absent properties, absent `m:jc`, and an
@@ -1190,10 +1194,10 @@ Border-box, box, and equation-array flags retain their
 semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is
 accepted. Invalid or non-combining accent characters, malformed math-run
-properties, invalid or contradictory bar, group-character, phantom, border-box,
-box, or equation-array properties, malformed script-property, pre-script,
-math-paragraph, or lower/upper limit structures, unsupported matrix spacing or
-gap rules, ragged or over-limit matrices, over-limit equation arrays,
+properties, invalid or contradictory radical, bar, group-character, phantom,
+border-box, box, or equation-array properties, malformed script-property,
+pre-script, math-paragraph, or lower/upper limit structures, unsupported matrix
+spacing or gap rules, ragged or over-limit matrices, over-limit equation arrays,
 malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
 text with compatibility diagnostics; the remaining OMML grammar is still part
