@@ -1173,6 +1173,11 @@ and disabled `zeroWid`, `zeroAsc`, `zeroDesc`, and `transp` defaults; MathML
 preview uses `mphantom` and `mpadded` while native export retains every spacing
 property. Pre-scripts preserve required `sub`, `sup`, and `e` ordering and map
 empty left script slots to MathML `none` children after `mprescripts`.
+Right-side `sSup`, `sSub`, and `sSubSup` objects enforce property-first argument
+order. `sSubSupPr` preserves `alnScr`, canonicalizes absent or disabled values
+to unaligned scripts, and retains the enabled state through native export;
+empty script/function `ctrlPr` placeholders are accepted, while unmodeled
+control formatting fails closed.
 Display equations preserve `left`, `right`, `center`, and `centerGroup`
 paragraph justification. The bounded grammar accepts one optional
 `m:oMathParaPr` before one `m:oMath`; absent properties, absent `m:jc`, and an
@@ -1186,9 +1191,9 @@ semantic defaults, while manual-break alignment indices are bounded to 1–255.
 Strict/transitional UTF-8/UTF-16 input is
 accepted. Invalid or non-combining accent characters, malformed math-run
 properties, invalid or contradictory bar, group-character, phantom, border-box,
-box, or equation-array properties, malformed pre-script, math-paragraph, or
-lower/upper limit structures, unsupported matrix spacing or gap rules, ragged or
-over-limit matrices, over-limit equation arrays,
+box, or equation-array properties, malformed script-property, pre-script,
+math-paragraph, or lower/upper limit structures, unsupported matrix spacing or
+gap rules, ragged or over-limit matrices, over-limit equation arrays,
 malformed, misplaced, over-budget,
 namespace-spoofed, nested, or relationship-bound math fails closed to bounded
 text with compatibility diagnostics; the remaining OMML grammar is still part

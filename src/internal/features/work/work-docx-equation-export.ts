@@ -440,6 +440,11 @@ function createExpression(
   }
   if (expression.type === 'subSuperScript') {
     const script = createMathElement(document, prefix, 'sSubSup');
+    if (expression.alignScripts) {
+      const properties = createMathElement(document, prefix, 'sSubSupPr');
+      properties.append(mathOnOffElement(document, prefix, 'alnScr', true));
+      script.append(properties);
+    }
     script.append(
       expressionArgument(document, prefix, 'e', expression.base),
       expressionArgument(document, prefix, 'sub', expression.subScript),

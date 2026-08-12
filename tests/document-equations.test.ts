@@ -277,6 +277,68 @@ describe('document equations', () => {
           display: 'inline',
           children: [
             {
+              type: 'subSuperScript',
+              alignScripts: false,
+              base: [{ type: 'run', text: 'x' }],
+              subScript: [{ type: 'run', text: 'i' }],
+              superScript: [{ type: 'run', text: 'n' }],
+            },
+          ],
+        }),
+      ).toEqual({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'subSuperScript',
+            base: [{ type: 'run', text: 'x' }],
+            subScript: [{ type: 'run', text: 'i' }],
+            superScript: [{ type: 'run', text: 'n' }],
+          },
+        ],
+      });
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'subSuperScript',
+              alignScripts: true,
+              base: [{ type: 'run', text: 'x' }],
+              subScript: [{ type: 'run', text: 'i' }],
+              superScript: [{ type: 'run', text: 'n' }],
+            },
+          ],
+        })?.children[0],
+      ).toEqual({
+        type: 'subSuperScript',
+        alignScripts: true,
+        base: [{ type: 'run', text: 'x' }],
+        subScript: [{ type: 'run', text: 'i' }],
+        superScript: [{ type: 'run', text: 'n' }],
+      });
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'subSuperScript',
+              alignScripts: 'yes',
+              base: [{ type: 'run', text: 'x' }],
+              subScript: [{ type: 'run', text: 'i' }],
+              superScript: [{ type: 'run', text: 'n' }],
+            },
+          ],
+        }),
+      ).toBeNull();
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
               type: 'run',
               text: 'x',
               literal: false,
@@ -1559,6 +1621,55 @@ describe('document equations', () => {
       ).status,
     ).toBe('spoofed');
   });
+
+  test('preserves aligned right scripts and strictly validates script properties', () => {
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const supported = [
+      `<m:sSup><m:sSupPr><m:ctrlPr/></m:sSupPr><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSub><m:sSubPr><m:ctrlPr/></m:sSubPr><m:e>${run}</m:e><m:sub>${run}</m:sub></m:sSub>`,
+      `<m:sSubSup><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr/><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="0"/><m:ctrlPr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="on"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:func><m:funcPr><m:ctrlPr/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+    ];
+    expect(supported.map(inspectEquationBody)).toEqual(
+      supported.map(() => 'supported'),
+    );
+    expect(
+      supported.slice(2, 7).map((source) => {
+        const expression = inspectEquationModel(source)?.children[0];
+        return expression?.type === 'subSuperScript'
+          ? expression.alignScripts
+          : false;
+      }),
+    ).toEqual([undefined, undefined, true, undefined, true]);
+
+    const unsupported = [
+      `<m:sSup><m:e>${run}</m:e><m:sSupPr/><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSup><m:sSupPr/><m:sSupPr/><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSup><m:sSupPr><m:ctrlPr/><m:ctrlPr/></m:sSupPr><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSup><m:sSupPr><m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:sSupPr><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSup><v:sSupPr xmlns:v="${VENDOR_NAMESPACE}"/><m:e>${run}</m:e><m:sup>${run}</m:sup></m:sSup>`,
+      `<m:sSub><m:sub>${run}</m:sub><m:e>${run}</m:e></m:sSub>`,
+      `<m:sSubSup><m:e>${run}</m:e><m:sSubSupPr/><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:ctrlPr/><m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr/><m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="maybe"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><m:alnScr m:val="1" m:extra="semantic"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup xmlns:r="${RELATIONSHIP_NAMESPACE}"><m:sSubSupPr><m:alnScr r:id="rIdUnsafe"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr><v:alnScr xmlns:v="${VENDOR_NAMESPACE}"/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr>meaningful<m:alnScr/></m:sSubSupPr><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:sSubSup><m:sSubSupPr/><m:e>${run}</m:e><m:sub>${run}</m:sub></m:sSubSup>`,
+      `<m:sSubSup><m:e>${run}</m:e><m:sub>${run}</m:sub><m:sub>${run}</m:sub><m:sup>${run}</m:sup></m:sSubSup>`,
+      `<m:func><m:fName>${run}</m:fName><m:funcPr/><m:e>${run}</m:e></m:func>`,
+      `<m:func><m:funcPr><m:ctrlPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/></m:funcPr><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+  });
 });
 
 function equationArtifact() {
@@ -1651,6 +1762,7 @@ function complexEquation(
       { type: 'subscript', base: [run('x')], subScript: [run('i')] },
       {
         type: 'subSuperScript',
+        alignScripts: true,
         base: [run('x')],
         subScript: [run('i')],
         superScript: [run('n')],
@@ -1863,12 +1975,20 @@ function borderBoxEquation(
                                   position: barPosition,
                                   children: [
                                     {
-                                      type: 'run',
-                                      text,
-                                      literal: true,
-                                      script: 'doubleStruck',
-                                      style: 'plain',
-                                      manualBreak: { alignmentAt: 2 },
+                                      type: 'subSuperScript',
+                                      alignScripts: true,
+                                      base: [
+                                        {
+                                          type: 'run',
+                                          text,
+                                          literal: true,
+                                          script: 'doubleStruck',
+                                          style: 'plain',
+                                          manualBreak: { alignmentAt: 2 },
+                                        },
+                                      ],
+                                      subScript: [{ type: 'run', text: '1' }],
+                                      superScript: [{ type: 'run', text: '2' }],
                                     },
                                   ],
                                 },
@@ -1944,13 +2064,21 @@ function boxEquation(
                                   position: barPosition,
                                   children: [
                                     {
-                                      type: 'run',
-                                      text,
-                                      normalText: true,
-                                      script: 'sansSerif',
-                                      style: 'boldItalic',
-                                      manualBreak: {},
-                                      alignment: true,
+                                      type: 'subSuperScript',
+                                      alignScripts: true,
+                                      base: [
+                                        {
+                                          type: 'run',
+                                          text,
+                                          normalText: true,
+                                          script: 'sansSerif',
+                                          style: 'boldItalic',
+                                          manualBreak: {},
+                                          alignment: true,
+                                        },
+                                      ],
+                                      subScript: [{ type: 'run', text: '1' }],
+                                      superScript: [{ type: 'run', text: '2' }],
                                     },
                                   ],
                                 },
@@ -2049,7 +2177,23 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
   expect(descendants(document, 'f')).toHaveLength(8);
   expect(descendants(document, 'sSup')).toHaveLength(2);
   expect(descendants(document, 'sSub')).toHaveLength(2);
-  expect(descendants(document, 'sSubSup')).toHaveLength(2);
+  const alignedScripts = descendants(document, 'sSubSup');
+  expect(alignedScripts).toHaveLength(2);
+  for (const script of alignedScripts) {
+    expect(directChildren(script).map((child) => child.localName)).toEqual([
+      'sSubSupPr',
+      'e',
+      'sub',
+      'sup',
+    ]);
+    const properties = directChildren(script, 'sSubSupPr')[0];
+    expect(directChildren(properties).map((child) => child.localName)).toEqual([
+      'alnScr',
+    ]);
+    expect(mathValueAttribute(directChildren(properties, 'alnScr')[0])).toBe(
+      '1',
+    );
+  }
   expect(descendants(document, 'rad')).toHaveLength(4);
   expect(descendants(document, 'func')).toHaveLength(2);
   expect(descendants(document, 'nary')).toHaveLength(4);
@@ -2365,6 +2509,15 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       MATH_NAMESPACE,
     );
     expect(descendants(story.document, story.container)).toHaveLength(1);
+    const alignedScripts = descendants(story.document, 'sSubSup');
+    expect(alignedScripts).toHaveLength(1);
+    const scriptProperties = directChildren(alignedScripts[0], 'sSubSupPr')[0];
+    expect(
+      directChildren(alignedScripts[0]).map((child) => child.localName),
+    ).toEqual(['sSubSupPr', 'e', 'sub', 'sup']);
+    expect(
+      mathValueAttribute(directChildren(scriptProperties, 'alnScr')[0]),
+    ).toBe('1');
     const limit = descendants(story.document, story.limit)[0];
     expect(limit).toBeDefined();
     expect(directChildren(limit).map((child) => child.localName)).toEqual([

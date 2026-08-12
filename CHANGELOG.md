@@ -14,8 +14,9 @@ All notable changes to A3S Office will be documented in this file.
   `m:oMath` child. The structured
   subset covers Unicode runs with literal/normal-text semantics, six math
   scripts, four styles, manual breaks, and alignment points,
-  bar/no-bar/skewed/linear fractions, super- and subscripts, left-side
-  pre-sub/superscripts with empty script slots, radicals, functions, supported
+  bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
+  sub-superscripts, left-side pre-sub/superscripts with empty script slots,
+  radicals, functions, supported
   n-ary operators, combining
   accents, overbars and underbars, group characters with explicit character
   position and baseline justification, phantoms with visible or hidden bases,
@@ -33,7 +34,8 @@ All notable changes to A3S Office will be documented in this file.
   invalid or contradictory bar, group-character, phantom, border-box, box, or
   equation-array properties, malformed lower/upper limit structures, matrix
   spacing and gap rules, ragged or over-limit matrices, over-limit equation
-  arrays, malformed pre-script or math-paragraph structures, malformed
+  arrays, malformed script-property, pre-script, or math-paragraph structures,
+  malformed
   placement, namespace spoofing, nested math, and relationship-bound properties
   fail closed to bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers

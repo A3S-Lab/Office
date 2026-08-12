@@ -1016,7 +1016,11 @@ function parseSuperScript(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['sSupPr', 'e', 'sup']))) {
+  const childOrder = ['sSupPr', 'e', 'sup'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'sSupPr', false);
@@ -1027,7 +1031,7 @@ function parseSuperScript(
     ? parseExpressionContainer(superScript, state)
     : null;
   return properties !== null &&
-    (!properties || emptyMathProperty(properties)) &&
+    controlOnlyMathProperties(properties) &&
     parsedBase &&
     parsedSuperScript
     ? { type: 'superscript', base: parsedBase, superScript: parsedSuperScript }
@@ -1038,7 +1042,11 @@ function parseSubScript(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['sSubPr', 'e', 'sub']))) {
+  const childOrder = ['sSubPr', 'e', 'sub'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'sSubPr', false);
@@ -1049,7 +1057,7 @@ function parseSubScript(
     ? parseExpressionContainer(subScript, state)
     : null;
   return properties !== null &&
-    (!properties || emptyMathProperty(properties)) &&
+    controlOnlyMathProperties(properties) &&
     parsedBase &&
     parsedSubScript
     ? { type: 'subscript', base: parsedBase, subScript: parsedSubScript }
@@ -1060,13 +1068,19 @@ function parseSubSuperScript(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['sSubSupPr', 'e', 'sub', 'sup']))) {
+  const childOrder = ['sSubSupPr', 'e', 'sub', 'sup'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'sSubSupPr', false);
   const base = uniqueMathChild(element, 'e');
   const subScript = uniqueMathChild(element, 'sub');
   const superScript = uniqueMathChild(element, 'sup');
+  const alignScripts =
+    properties === null ? null : parseSubSuperScriptAlignment(properties);
   const parsedBase = base ? parseExpressionContainer(base, state) : null;
   const parsedSubScript = subScript
     ? parseExpressionContainer(subScript, state)
@@ -1074,18 +1088,48 @@ function parseSubSuperScript(
   const parsedSuperScript = superScript
     ? parseExpressionContainer(superScript, state)
     : null;
-  return properties !== null &&
-    (!properties || emptyMathProperty(properties)) &&
+  return alignScripts !== null &&
     parsedBase &&
     parsedSubScript &&
     parsedSuperScript
     ? {
         type: 'subSuperScript',
+        ...(alignScripts ? { alignScripts } : {}),
         base: parsedBase,
         subScript: parsedSubScript,
         superScript: parsedSuperScript,
       }
     : null;
+}
+
+function parseSubSuperScriptAlignment(
+  properties: Element | undefined,
+): boolean | null {
+  if (!properties) return false;
+  const propertyOrder = ['alnScr', 'ctrlPr'];
+  if (
+    !structuralChildren(properties, new Set(propertyOrder)) ||
+    !orderedMathChildren(properties, propertyOrder)
+  ) {
+    return null;
+  }
+  const alignScripts = mathOnOffProperty(properties, 'alnScr');
+  const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  return alignScripts !== null &&
+    controlProperties !== null &&
+    (!controlProperties || emptyMathProperty(controlProperties))
+    ? alignScripts
+    : null;
+}
+
+function controlOnlyMathProperties(properties: Element | undefined): boolean {
+  if (!properties) return true;
+  if (!structuralChildren(properties, new Set(['ctrlPr']))) return false;
+  const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
+  return (
+    controlProperties !== null &&
+    (!controlProperties || emptyMathProperty(controlProperties))
+  );
 }
 
 function parsePreSubSuperScript(
@@ -1223,7 +1267,11 @@ function parseFunction(
   element: Element,
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
-  if (!structuralChildren(element, new Set(['funcPr', 'fName', 'e']))) {
+  const childOrder = ['funcPr', 'fName', 'e'];
+  if (
+    !structuralChildren(element, new Set(childOrder)) ||
+    !orderedMathChildren(element, childOrder)
+  ) {
     return null;
   }
   const properties = uniqueMathChild(element, 'funcPr', false);
@@ -1232,7 +1280,7 @@ function parseFunction(
   const parsedName = name ? parseExpressionContainer(name, state) : null;
   const parsedBody = body ? parseExpressionContainer(body, state) : null;
   return properties !== null &&
-    (!properties || emptyMathProperty(properties)) &&
+    controlOnlyMathProperties(properties) &&
     parsedName &&
     parsedBody
     ? { type: 'function', name: parsedName, children: parsedBody }

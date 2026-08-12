@@ -71,6 +71,7 @@ export type WorkDocumentEquationExpression =
     }
   | {
       type: 'subSuperScript';
+      alignScripts?: boolean;
       base: WorkDocumentEquationExpression[];
       subScript: WorkDocumentEquationExpression[];
       superScript: WorkDocumentEquationExpression[];
@@ -644,11 +645,23 @@ function normalizeExpression(
       return base && subScript ? { type: 'subscript', base, subScript } : null;
     }
     if (source.type === 'subSuperScript') {
+      const alignScripts =
+        source.alignScripts === undefined
+          ? false
+          : typeof source.alignScripts === 'boolean'
+            ? source.alignScripts
+            : null;
       const base = normalizeExpressionList(source.base, state);
       const subScript = normalizeExpressionList(source.subScript, state);
       const superScript = normalizeExpressionList(source.superScript, state);
-      return base && subScript && superScript
-        ? { type: 'subSuperScript', base, subScript, superScript }
+      return alignScripts !== null && base && subScript && superScript
+        ? {
+            type: 'subSuperScript',
+            ...(alignScripts ? { alignScripts } : {}),
+            base,
+            subScript,
+            superScript,
+          }
         : null;
     }
     if (source.type === 'preSubSuperScript') {
