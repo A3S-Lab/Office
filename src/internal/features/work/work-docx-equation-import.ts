@@ -14,6 +14,14 @@ import {
   type WorkDocumentEquationRowSpacingRule,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
+  type WorkDocumentEquationThemeColor,
+  type WorkDocumentEquationThemeFont,
+  type WorkDocumentEquationUnderlineStyle,
+  type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordLanguages,
+  type WorkDocumentEquationWordRunFonts,
+  type WorkDocumentEquationWordRunProperties,
+  type WorkDocumentEquationWordUnderline,
 } from './work-document-equations';
 import {
   closestDocxEquationLikeRoot,
@@ -85,6 +93,73 @@ const DOCX_MATH_NAMESPACES = new Set([
   TRANSITIONAL_MATH_NAMESPACE,
   STRICT_MATH_NAMESPACE,
 ]);
+const WORD_RUN_PROPERTY_ORDER = [
+  'rFonts',
+  'b',
+  'bCs',
+  'i',
+  'iCs',
+  'strike',
+  'dstrike',
+  'noProof',
+  'snapToGrid',
+  'color',
+  'sz',
+  'szCs',
+  'u',
+  'rtl',
+  'cs',
+  'lang',
+] as const;
+const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
+  'majorEastAsia',
+  'majorBidi',
+  'majorAscii',
+  'majorHAnsi',
+  'minorEastAsia',
+  'minorBidi',
+  'minorAscii',
+  'minorHAnsi',
+]);
+const WORD_THEME_COLORS = new Set<WorkDocumentEquationThemeColor>([
+  'dark1',
+  'light1',
+  'dark2',
+  'light2',
+  'accent1',
+  'accent2',
+  'accent3',
+  'accent4',
+  'accent5',
+  'accent6',
+  'hyperlink',
+  'followedHyperlink',
+  'none',
+  'background1',
+  'text1',
+  'background2',
+  'text2',
+]);
+const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
+  'none',
+  'words',
+  'single',
+  'double',
+  'thick',
+  'dotted',
+  'dottedHeavy',
+  'dash',
+  'dashedHeavy',
+  'dashLong',
+  'dashLongHeavy',
+  'dotDash',
+  'dashDotHeavy',
+  'dotDotDash',
+  'dashDotDotHeavy',
+  'wave',
+  'wavyHeavy',
+  'wavyDouble',
+]);
 
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const MAX_IMPORTED_EQUATIONS = 4_096;
@@ -96,6 +171,9 @@ const MAX_MATRIX_ROWS = 64;
 const MAX_MATRIX_COLUMNS = 64;
 const MAX_MATRIX_CELLS = 1_024;
 const MAX_EQUATION_ARRAY_ROWS = 64;
+const MAX_WORD_FONT_NAME_LENGTH = 127;
+const MAX_WORD_LANGUAGE_LENGTH = 85;
+const MAX_WORD_HALF_POINT_SIZE = 1_024;
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
 const DEFAULT_DELIMITER_SEPARATOR = '\u2502';
 const DEFAULT_GROUP_CHARACTER = '\u23df';
@@ -301,8 +379,10 @@ export function inspectDocxEquation(element: Element): DocxEquationInspection {
 }
 
 export function docxEquationPlainText(element: Element): string {
-  const texts = descendants(element, 't').filter((candidate) =>
-    DOCX_MATH_NAMESPACES.has(candidate.namespaceURI ?? ''),
+  const texts = descendants(element, 't').filter(
+    (candidate) =>
+      DOCX_MATH_NAMESPACES.has(candidate.namespaceURI ?? '') ||
+      DOCX_WORDPROCESSING_NAMESPACES.has(candidate.namespaceURI ?? ''),
   );
   const text: string[] = [];
   let length = 0;
@@ -557,29 +637,417 @@ function parseRun(
   state: EquationParseState,
 ): WorkDocumentEquationExpression | null {
   if (
-    !structuralChildren(element, new Set(['rPr', 't'])) ||
-    !orderedMathChildren(element, ['rPr', 't'])
+    meaningfulAttributes(element).length ||
+    hasMeaningfulDirectText(element)
   ) {
     return null;
   }
-  const properties = uniqueMathChild(element, 'rPr', false);
-  const textElement = uniqueMathChild(element, 't');
+  const children = directChildren(element);
+  let mathProperties: Element | undefined;
+  let wordProperties: Element | undefined;
+  let textElement: Element | undefined;
+  let previous = -1;
+  for (const child of children) {
+    const position =
+      child.localName === 'rPr' &&
+      DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? '')
+        ? 0
+        : child.localName === 'rPr' &&
+            DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')
+          ? 1
+          : child.localName === 't' &&
+              (DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? '') ||
+                DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? ''))
+            ? 2
+            : -1;
+    if (position < previous || position < 0) return null;
+    previous = position;
+    if (position === 0) {
+      if (mathProperties) return null;
+      mathProperties = child;
+    } else if (position === 1) {
+      if (wordProperties) return null;
+      wordProperties = child;
+    } else {
+      if (textElement) return null;
+      textElement = child;
+    }
+  }
   if (
-    properties === null ||
     !textElement ||
     directChildren(textElement).length ||
     !safeMathTextAttributes(textElement)
   ) {
     return null;
   }
-  const parsedProperties = properties ? parseMathRunProperties(properties) : {};
-  if (!parsedProperties) return null;
+  const parsedProperties = mathProperties
+    ? parseMathRunProperties(mathProperties)
+    : {};
+  const parsedWordProperties = wordProperties
+    ? parseWordRunProperties(wordProperties)
+    : undefined;
+  if (!parsedProperties || parsedWordProperties === null) return null;
   const text = textElement.textContent ?? '';
   if (!text || text.length > MAX_MATH_TEXT_LENGTH) return null;
   state.textLength += text.length;
   return state.textLength <= MAX_MATH_TEXT_LENGTH
-    ? { type: 'run', text, ...parsedProperties }
+    ? {
+        type: 'run',
+        text,
+        ...parsedProperties,
+        ...(parsedWordProperties
+          ? { wordRunProperties: parsedWordProperties }
+          : {}),
+      }
     : null;
+}
+
+function parseWordRunProperties(
+  properties: Element,
+): WorkDocumentEquationWordRunProperties | null | undefined {
+  if (
+    !DOCX_WORDPROCESSING_NAMESPACES.has(properties.namespaceURI ?? '') ||
+    meaningfulAttributes(properties).length ||
+    hasMeaningfulDirectText(properties)
+  ) {
+    return null;
+  }
+  const order = new Map(
+    WORD_RUN_PROPERTY_ORDER.map((name, index) => [name, index]),
+  );
+  const children = new Map<string, Element>();
+  let previous = -1;
+  for (const child of directChildren(properties)) {
+    const position = order.get(
+      child.localName as (typeof WORD_RUN_PROPERTY_ORDER)[number],
+    );
+    if (
+      !DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '') ||
+      position === undefined ||
+      position < previous ||
+      children.has(child.localName)
+    ) {
+      return null;
+    }
+    previous = position;
+    children.set(child.localName, child);
+  }
+  const fonts = parseWordRunFonts(children.get('rFonts'));
+  const color = parseWordRunColor(children.get('color'));
+  const fontSize = parseWordHalfPointSize(children.get('sz'));
+  const fontSizeComplexScript = parseWordHalfPointSize(children.get('szCs'));
+  const underline = parseWordUnderline(children.get('u'));
+  const languages = parseWordLanguages(children.get('lang'));
+  if (
+    fonts === null ||
+    color === null ||
+    fontSize === null ||
+    fontSizeComplexScript === null ||
+    underline === null ||
+    languages === null
+  ) {
+    return null;
+  }
+  const booleans = new Map<
+    keyof WorkDocumentEquationWordRunProperties,
+    boolean
+  >();
+  for (const [name, key] of [
+    ['b', 'bold'],
+    ['bCs', 'boldComplexScript'],
+    ['i', 'italic'],
+    ['iCs', 'italicComplexScript'],
+    ['strike', 'strike'],
+    ['dstrike', 'doubleStrike'],
+    ['noProof', 'noProof'],
+    ['snapToGrid', 'snapToGrid'],
+    ['rtl', 'rightToLeft'],
+    ['cs', 'complexScript'],
+  ] as const) {
+    const element = children.get(name);
+    if (!element) continue;
+    const value = wordOnOff(element);
+    if (value === null) return null;
+    booleans.set(key, value);
+  }
+  const normalized: WorkDocumentEquationWordRunProperties = {
+    ...(fonts ? { fonts } : {}),
+    ...(booleans.has('bold') ? { bold: booleans.get('bold') } : {}),
+    ...(booleans.has('boldComplexScript')
+      ? { boldComplexScript: booleans.get('boldComplexScript') }
+      : {}),
+    ...(booleans.has('italic') ? { italic: booleans.get('italic') } : {}),
+    ...(booleans.has('italicComplexScript')
+      ? { italicComplexScript: booleans.get('italicComplexScript') }
+      : {}),
+    ...(booleans.has('strike') ? { strike: booleans.get('strike') } : {}),
+    ...(booleans.has('doubleStrike')
+      ? { doubleStrike: booleans.get('doubleStrike') }
+      : {}),
+    ...(booleans.has('noProof') ? { noProof: booleans.get('noProof') } : {}),
+    ...(booleans.has('snapToGrid')
+      ? { snapToGrid: booleans.get('snapToGrid') }
+      : {}),
+    ...(color ? { color } : {}),
+    ...(fontSize !== undefined ? { fontSize } : {}),
+    ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
+    ...(underline ? { underline } : {}),
+    ...(booleans.has('rightToLeft')
+      ? { rightToLeft: booleans.get('rightToLeft') }
+      : {}),
+    ...(booleans.has('complexScript')
+      ? { complexScript: booleans.get('complexScript') }
+      : {}),
+    ...(languages ? { languages } : {}),
+  };
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function parseWordRunFonts(
+  element: Element | undefined,
+): WorkDocumentEquationWordRunFonts | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set([
+      'ascii',
+      'hAnsi',
+      'eastAsia',
+      'cs',
+      'asciiTheme',
+      'hAnsiTheme',
+      'eastAsiaTheme',
+      'cstheme',
+      'hint',
+    ]),
+  );
+  if (!attributes) return null;
+  const ascii = wordFontName(attributes.get('ascii'));
+  const highAnsi = wordFontName(attributes.get('hAnsi'));
+  const eastAsia = wordFontName(attributes.get('eastAsia'));
+  const complexScript = wordFontName(attributes.get('cs'));
+  const asciiTheme = wordThemeFont(attributes.get('asciiTheme'));
+  const highAnsiTheme = wordThemeFont(attributes.get('hAnsiTheme'));
+  const eastAsiaTheme = wordThemeFont(attributes.get('eastAsiaTheme'));
+  const complexScriptTheme = wordThemeFont(attributes.get('cstheme'));
+  const hint = attributes.get('hint');
+  if (
+    ascii === null ||
+    highAnsi === null ||
+    eastAsia === null ||
+    complexScript === null ||
+    asciiTheme === null ||
+    highAnsiTheme === null ||
+    eastAsiaTheme === null ||
+    complexScriptTheme === null ||
+    (hint !== undefined && !['default', 'eastAsia', 'cs'].includes(hint))
+  ) {
+    return null;
+  }
+  const fonts: WorkDocumentEquationWordRunFonts = {
+    ...(ascii ? { ascii } : {}),
+    ...(highAnsi ? { highAnsi } : {}),
+    ...(eastAsia ? { eastAsia } : {}),
+    ...(complexScript ? { complexScript } : {}),
+    ...(asciiTheme ? { asciiTheme } : {}),
+    ...(highAnsiTheme ? { highAnsiTheme } : {}),
+    ...(eastAsiaTheme ? { eastAsiaTheme } : {}),
+    ...(complexScriptTheme ? { complexScriptTheme } : {}),
+    ...(hint ? { hint: hint as WorkDocumentEquationWordRunFonts['hint'] } : {}),
+  };
+  return Object.keys(fonts).length ? fonts : undefined;
+}
+
+function parseWordRunColor(
+  element: Element | undefined,
+): WorkDocumentEquationWordColor | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set(['val', 'themeColor', 'themeTint', 'themeShade']),
+  );
+  return attributes ? wordColor(attributes, 'val', true) : null;
+}
+
+function parseWordHalfPointSize(
+  element: Element | undefined,
+): number | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const source = attributes.get('val')?.trim() ?? '';
+  if (!/^[1-9]\d*$/u.test(source)) return null;
+  const halfPoints = Number(source);
+  return Number.isSafeInteger(halfPoints) &&
+    halfPoints <= MAX_WORD_HALF_POINT_SIZE
+    ? halfPoints / 2
+    : null;
+}
+
+function parseWordUnderline(
+  element: Element | undefined,
+): WorkDocumentEquationWordUnderline | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set(['val', 'color', 'themeColor', 'themeTint', 'themeShade']),
+  );
+  const style = attributes?.get('val');
+  if (
+    !attributes ||
+    !style ||
+    !WORD_UNDERLINE_STYLES.has(style as WorkDocumentEquationUnderlineStyle)
+  ) {
+    return null;
+  }
+  const color = wordColor(attributes, 'color', false);
+  return color === null
+    ? null
+    : {
+        style: style as WorkDocumentEquationUnderlineStyle,
+        ...(color ? { color } : {}),
+      };
+}
+
+function parseWordLanguages(
+  element: Element | undefined,
+): WorkDocumentEquationWordLanguages | null | undefined {
+  if (!element) return undefined;
+  const attributes = wordLeafAttributes(
+    element,
+    new Set(['val', 'eastAsia', 'bidi']),
+  );
+  if (!attributes) return null;
+  const latin = wordLanguage(attributes.get('val'));
+  const eastAsia = wordLanguage(attributes.get('eastAsia'));
+  const bidi = wordLanguage(attributes.get('bidi'));
+  if (latin === null || eastAsia === null || bidi === null) return null;
+  const languages: WorkDocumentEquationWordLanguages = {
+    ...(latin ? { latin } : {}),
+    ...(eastAsia ? { eastAsia } : {}),
+    ...(bidi ? { bidi } : {}),
+  };
+  return Object.keys(languages).length ? languages : undefined;
+}
+
+function wordOnOff(element: Element): boolean | null {
+  const attributes = wordLeafAttributes(element, new Set(['val']));
+  if (!attributes) return null;
+  if (!attributes.size) return true;
+  const value = attributes.get('val')?.trim().toLowerCase();
+  if (value === '1' || value === 'true' || value === 'on') return true;
+  if (value === '0' || value === 'false' || value === 'off') return false;
+  return null;
+}
+
+function wordLeafAttributes(
+  element: Element,
+  allowed: ReadonlySet<string>,
+): Map<string, string> | null {
+  if (
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
+    directChildren(element).length ||
+    hasMeaningfulDirectText(element)
+  ) {
+    return null;
+  }
+  const result = new Map<string, string>();
+  for (const attribute of meaningfulAttributes(element)) {
+    const name = xmlAttributeLocalName(attribute);
+    if (
+      !DOCX_WORDPROCESSING_NAMESPACES.has(
+        xmlAttributeNamespace(element, attribute) ?? '',
+      ) ||
+      !allowed.has(name) ||
+      result.has(name)
+    ) {
+      return null;
+    }
+    result.set(name, attribute.value);
+  }
+  return result;
+}
+
+function wordColor(
+  attributes: ReadonlyMap<string, string>,
+  valueAttribute: 'val' | 'color',
+  required: boolean,
+): WorkDocumentEquationWordColor | null | undefined {
+  const rawValue = attributes.get(valueAttribute)?.trim();
+  const rawTheme = attributes.get('themeColor')?.trim();
+  const rawTint = attributes.get('themeTint')?.trim();
+  const rawShade = attributes.get('themeShade')?.trim();
+  if (!rawValue && !rawTheme && !rawTint && !rawShade) {
+    return required ? null : undefined;
+  }
+  const value =
+    rawValue === undefined
+      ? undefined
+      : rawValue === 'auto'
+        ? 'auto'
+        : /^[0-9a-f]{6}$/iu.test(rawValue)
+          ? (`#${rawValue.toLowerCase()}` as const)
+          : null;
+  const theme =
+    rawTheme === undefined
+      ? undefined
+      : WORD_THEME_COLORS.has(rawTheme as WorkDocumentEquationThemeColor)
+        ? (rawTheme as WorkDocumentEquationThemeColor)
+        : null;
+  const tint = wordByteHex(rawTint);
+  const shade = wordByteHex(rawShade);
+  if (
+    value === null ||
+    theme === null ||
+    tint === null ||
+    shade === null ||
+    (!value && (!theme || theme === 'none')) ||
+    ((!theme || theme === 'none') && (tint || shade))
+  ) {
+    return null;
+  }
+  return {
+    ...(value ? { value } : {}),
+    ...(theme ? { theme } : {}),
+    ...(tint ? { tint } : {}),
+    ...(shade ? { shade } : {}),
+  };
+}
+
+function wordFontName(source: string | undefined): string | null | undefined {
+  if (source === undefined) return undefined;
+  const value = source.trim();
+  return value &&
+    value.length <= MAX_WORD_FONT_NAME_LENGTH &&
+    !/[\p{Cc}\p{Cs}]/u.test(value)
+    ? value
+    : null;
+}
+
+function wordThemeFont(
+  source: string | undefined,
+): WorkDocumentEquationThemeFont | null | undefined {
+  if (source === undefined) return undefined;
+  const value = source.trim();
+  return WORD_THEME_FONTS.has(value as WorkDocumentEquationThemeFont)
+    ? (value as WorkDocumentEquationThemeFont)
+    : null;
+}
+
+function wordLanguage(source: string | undefined): string | null | undefined {
+  if (source === undefined) return undefined;
+  const value = source.trim();
+  return value &&
+    value.length <= MAX_WORD_LANGUAGE_LENGTH &&
+    /^(?:x-none|[a-z0-9]{1,8}(?:-[a-z0-9]{1,8})*)$/iu.test(value)
+    ? value
+    : null;
+}
+
+function wordByteHex(source: string | undefined): string | null | undefined {
+  if (source === undefined) return undefined;
+  const value = source.trim();
+  return /^[0-9a-f]{2}$/iu.test(value) ? value.toUpperCase() : null;
 }
 
 function parseMathRunProperties(

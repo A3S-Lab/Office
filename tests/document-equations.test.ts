@@ -122,6 +122,31 @@ describe('document equations', () => {
         element?.querySelector('mtext[mathvariant="bold-fraktur"]')
           ?.textContent,
       ).toBe('styledF');
+      const wordStyledRun = element?.querySelector(
+        'mtext[mathvariant="bold-fraktur"]',
+      );
+      expect(wordStyledRun).toHaveAttribute('mathcolor', '#1a2b3c');
+      expect(wordStyledRun).toHaveAttribute('mathsize', '12.5pt');
+      expect(wordStyledRun).toHaveAttribute('dir', 'ltr');
+      expect(wordStyledRun).toHaveAttribute('lang', 'en-US');
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'font-family: "Cambria Math"',
+      );
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'font-weight: bold',
+      );
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'font-style: normal',
+      );
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'text-decoration-line: underline line-through',
+      );
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'text-decoration-style: double',
+      );
+      expect(wordStyledRun?.getAttribute('style')).toContain(
+        'text-decoration-color: #abcdef',
+      );
       expect(
         element?.querySelector('mtext[mathvariant="normal"]')?.textContent,
       ).toBe('normalRate');
@@ -867,6 +892,16 @@ describe('document equations', () => {
         (equation) => equation.namespaceURI === MATH_NAMESPACE,
       ),
     ).toBe(true);
+    expect(
+      descendants(document, 'rPr').some(
+        (properties) => properties.namespaceURI === WORD_NAMESPACE,
+      ),
+    ).toBe(true);
+    expect(
+      descendants(document, 'rPr').some(
+        (properties) => properties.namespaceURI === STRICT_WORD_NAMESPACE,
+      ),
+    ).toBe(false);
   });
 
   test('fails closed for unsupported, relationship-bound, and spoofed equation markup', async () => {
@@ -1552,7 +1587,6 @@ describe('document equations', () => {
       `<m:r><v:rPr xmlns:v="${VENDOR_NAMESPACE}"/><m:t>x</m:t></m:r>`,
       `<m:r><m:rPr><v:scr xmlns:v="${VENDOR_NAMESPACE}" v:val="fraktur"/></m:rPr><m:t>x</m:t></m:r>`,
       `<m:r><v:t xmlns:v="${VENDOR_NAMESPACE}">x</v:t></m:r>`,
-      `<m:r><w:rPr xmlns:w="${WORD_NAMESPACE}"/><m:t>x</m:t></m:r>`,
       `<m:r><m:rPr xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe"/><m:t>x</m:t></m:r>`,
       `<m:r><m:t xmlns:r="${RELATIONSHIP_NAMESPACE}" r:id="rIdUnsafe">x</m:t></m:r>`,
       '<m:r><m:t xml:space="invalid">x</m:t></m:r>',
@@ -1564,6 +1598,171 @@ describe('document equations', () => {
     expect(unsupported.map(inspectEquationBody)).toEqual(
       unsupported.map(() => 'unsupported'),
     );
+  });
+
+  test('preserves bounded Word run properties inside math runs', () => {
+    const wordProperties = [
+      '<w:rFonts w:ascii=" Cambria Math " w:hAnsi="Cambria Math" w:eastAsia="等线" w:cs="Arial" w:asciiTheme="majorAscii" w:hAnsiTheme="majorHAnsi" w:eastAsiaTheme="minorEastAsia" w:cstheme="majorBidi" w:hint="eastAsia"/>',
+      '<w:b w:val="on"/>',
+      '<w:bCs w:val="0"/>',
+      '<w:i w:val="false"/>',
+      '<w:iCs/>',
+      '<w:strike w:val="off"/>',
+      '<w:dstrike w:val="true"/>',
+      '<w:noProof/>',
+      '<w:snapToGrid w:val="0"/>',
+      '<w:color w:val="1A2B3C" w:themeColor="accent2" w:themeTint="80" w:themeShade="40"/>',
+      '<w:sz w:val="25"/>',
+      '<w:szCs w:val="28"/>',
+      '<w:u w:val="wavyDouble" w:color="ABCDEF" w:themeColor="accent3" w:themeTint="20"/>',
+      '<w:rtl w:val="false"/>',
+      '<w:cs w:val="0"/>',
+      '<w:lang w:val="en-US" w:eastAsia="zh-CN" w:bidi="ar-SA"/>',
+    ].join('');
+    const richRun = (mathNamespace: string, wordNamespace: string) =>
+      `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
+    for (const [mathNamespace, wordNamespace] of [
+      [MATH_NAMESPACE, WORD_NAMESPACE],
+      [STRICT_MATH_NAMESPACE, STRICT_WORD_NAMESPACE],
+    ]) {
+      const inspection = inspectEquationRoot(
+        richRun(mathNamespace, wordNamespace),
+      );
+      expect(inspection.status).toBe('supported');
+      expect(inspection.text).toBe('styledF');
+      expect(inspection.equation?.children[0]).toEqual({
+        type: 'run',
+        text: 'styledF',
+        literal: true,
+        script: 'fraktur',
+        style: 'bold',
+        manualBreak: { alignmentAt: 3 },
+        alignment: true,
+        wordRunProperties: richWordRunProperties(),
+      });
+    }
+
+    expect(
+      inspectEquationModel(
+        `<m:r xmlns:w="${WORD_NAMESPACE}"><w:rPr/><w:t>x</w:t></m:r>`,
+      ),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      inspectEquation(
+        `<m:r xmlns:w="${WORD_NAMESPACE}"><m:t xml:space="preserve"> x </m:t></m:r>`,
+      ).text,
+    ).toBe(' x ');
+
+    const equationWithWordRunProperties = (wordRunProperties: unknown) => ({
+      version: 1,
+      display: 'inline',
+      children: [{ type: 'run', text: 'x', wordRunProperties }],
+    });
+    expect(
+      normalizeDocumentEquation(
+        equationWithWordRunProperties({ fonts: {}, languages: {} }),
+      ),
+    ).toEqual(simpleEquation('x'));
+    expect(
+      normalizeDocumentEquation(
+        equationWithWordRunProperties({
+          ...richWordRunProperties(),
+          fonts: {
+            ...richWordRunProperties().fonts,
+            ascii: ' Cambria Math ',
+          },
+          color: {
+            ...richWordRunProperties().color,
+            value: '#1A2B3C',
+          },
+          underline: {
+            ...richWordRunProperties().underline,
+            color: {
+              ...richWordRunProperties().underline.color,
+              value: '#ABCDEF',
+            },
+          },
+        }),
+      )?.children[0],
+    ).toEqual({
+      type: 'run',
+      text: 'x',
+      wordRunProperties: richWordRunProperties(),
+    });
+    const invalidModels = [
+      { extra: true },
+      { fonts: { extra: 'Cambria Math' } },
+      { fonts: { ascii: '' } },
+      { fonts: { ascii: 'x'.repeat(128) } },
+      { fonts: { ascii: 'Cambria\nMath' } },
+      { fonts: { asciiTheme: 'majorLatin' } },
+      { fonts: { hint: 'latin' } },
+      { bold: 'true' },
+      { color: {} },
+      { color: { value: '#12345' } },
+      { color: { theme: 'none' } },
+      { color: { theme: 'none', tint: '80' } },
+      { color: { theme: 'accent1', tint: '0' } },
+      { fontSize: 0 },
+      { fontSize: 1.25 },
+      { fontSize: 513 },
+      { underline: { style: 'triple' } },
+      { underline: { style: 'single', color: {} } },
+      { languages: { latin: 'en_US' } },
+      { languages: { latin: 'a'.repeat(86) } },
+      { languages: { extra: 'en-US' } },
+    ];
+    expect(
+      invalidModels.map((properties) =>
+        normalizeDocumentEquation(equationWithWordRunProperties(properties)),
+      ),
+    ).toEqual(invalidModels.map(() => null));
+
+    const wordRun = (properties: string, text = '<m:t>x</m:t>') =>
+      `<m:r xmlns:w="${WORD_NAMESPACE}">${properties}${text}</m:r>`;
+    const unsupported = [
+      wordRun('<m:t>x</m:t><w:rPr/>', ''),
+      wordRun('<w:rPr/><m:rPr/>'),
+      wordRun('<w:rPr/><w:rPr/>'),
+      wordRun('<w:rPr w:val="semantic"/>'),
+      wordRun('<w:rPr>meaningful</w:rPr>'),
+      wordRun('<w:rPr><w:vanish/></w:rPr>'),
+      wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
+      wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
+      wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
+      wordRun('<w:rPr><w:b><w:i/></w:b></w:rPr>'),
+      wordRun(
+        `<w:rPr xmlns:r="${RELATIONSHIP_NAMESPACE}"><w:b r:id="rIdUnsafe"/></w:rPr>`,
+      ),
+      wordRun('<w:rPr><w:rFonts ascii="Cambria Math"/></w:rPr>'),
+      wordRun('<w:rPr><w:rFonts w:ascii=""/></w:rPr>'),
+      wordRun(`<w:rPr><w:rFonts w:ascii="${'x'.repeat(128)}"/></w:rPr>`),
+      wordRun('<w:rPr><w:rFonts w:asciiTheme="majorLatin"/></w:rPr>'),
+      wordRun('<w:rPr><w:color/></w:rPr>'),
+      wordRun('<w:rPr><w:color w:val="12345"/></w:rPr>'),
+      wordRun('<w:rPr><w:color w:themeColor="none"/></w:rPr>'),
+      wordRun('<w:rPr><w:color w:themeTint="80"/></w:rPr>'),
+      wordRun('<w:rPr><w:color w:themeColor="none" w:themeTint="80"/></w:rPr>'),
+      wordRun('<w:rPr><w:sz w:val="0"/></w:rPr>'),
+      wordRun('<w:rPr><w:sz w:val="1025"/></w:rPr>'),
+      wordRun('<w:rPr><w:sz w:val="25.5"/></w:rPr>'),
+      wordRun('<w:rPr><w:u/></w:rPr>'),
+      wordRun('<w:rPr><w:u w:val="triple"/></w:rPr>'),
+      wordRun('<w:rPr><w:u w:val="single" w:color="12345"/></w:rPr>'),
+      wordRun('<w:rPr><w:lang w:val="en_US"/></w:rPr>'),
+      wordRun(`<w:rPr><w:lang w:val="${'a'.repeat(86)}"/></w:rPr>`),
+      wordRun(`<v:rPr xmlns:v="${VENDOR_NAMESPACE}"><w:b/></v:rPr>`),
+      wordRun('<w:rPr/>', `<w:t w:extra="semantic">x</w:t>`),
+      wordRun('<w:rPr/>', '<w:t>x</w:t><m:t>y</m:t>'),
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+    expect(
+      inspectEquation(
+        wordRun('<w:rPr><w:vanish/></w:rPr>', '<w:t>fallback</w:t>'),
+      ),
+    ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
 
   test('preserves display-math paragraph justification and rejects malformed roots', () => {
@@ -2124,6 +2323,49 @@ function equationArtifact() {
   return artifact;
 }
 
+function richWordRunProperties() {
+  return {
+    fonts: {
+      ascii: 'Cambria Math',
+      highAnsi: 'Cambria Math',
+      eastAsia: '等线',
+      complexScript: 'Arial',
+      asciiTheme: 'majorAscii' as const,
+      highAnsiTheme: 'majorHAnsi' as const,
+      eastAsiaTheme: 'minorEastAsia' as const,
+      complexScriptTheme: 'majorBidi' as const,
+      hint: 'eastAsia' as const,
+    },
+    bold: true,
+    boldComplexScript: false,
+    italic: false,
+    italicComplexScript: true,
+    strike: false,
+    doubleStrike: true,
+    noProof: true,
+    snapToGrid: false,
+    color: {
+      value: '#1a2b3c',
+      theme: 'accent2' as const,
+      tint: '80',
+      shade: '40',
+    },
+    fontSize: 12.5,
+    fontSizeComplexScript: 14,
+    underline: {
+      style: 'wavyDouble' as const,
+      color: {
+        value: '#abcdef',
+        theme: 'accent3' as const,
+        tint: '20',
+      },
+    },
+    rightToLeft: false,
+    complexScript: false,
+    languages: { latin: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
+  };
+}
+
 function complexEquation(
   display: WorkDocumentEquation['display'],
 ): WorkDocumentEquation {
@@ -2142,6 +2384,7 @@ function complexEquation(
         style: 'bold',
         manualBreak: { alignmentAt: 3 },
         alignment: true,
+        wordRunProperties: richWordRunProperties(),
       },
       {
         type: 'run',
@@ -2925,6 +3168,89 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     ['normalRate', { children: ['nor', 'sty'], values: ['1', 'p'] }],
     ['doubleR', { children: ['scr', 'sty'], values: ['double-struck', 'bi'] }],
   ]);
+  const styledWordRuns = styledRuns.filter(
+    (run) => run.textContent === 'styledF',
+  );
+  expect(styledWordRuns).toHaveLength(2);
+  expect(
+    styledWordRuns.map((run) =>
+      directChildren(run).map(
+        (child) =>
+          `${child.namespaceURI === MATH_NAMESPACE ? 'm' : child.namespaceURI === WORD_NAMESPACE ? 'w' : '?'}:${child.localName}`,
+      ),
+    ),
+  ).toEqual([
+    ['m:rPr', 'w:rPr', 'm:t'],
+    ['m:rPr', 'w:rPr', 'm:t'],
+  ]);
+  const expectedWordPropertyNames = [
+    'rFonts',
+    'b',
+    'bCs',
+    'i',
+    'iCs',
+    'strike',
+    'dstrike',
+    'noProof',
+    'snapToGrid',
+    'color',
+    'sz',
+    'szCs',
+    'u',
+    'rtl',
+    'cs',
+    'lang',
+  ];
+  const expectedWordPropertyAttributes = [
+    {
+      ascii: 'Cambria Math',
+      hAnsi: 'Cambria Math',
+      eastAsia: '等线',
+      cs: 'Arial',
+      asciiTheme: 'majorAscii',
+      hAnsiTheme: 'majorHAnsi',
+      eastAsiaTheme: 'minorEastAsia',
+      cstheme: 'majorBidi',
+      hint: 'eastAsia',
+    },
+    { val: '1' },
+    { val: '0' },
+    { val: '0' },
+    { val: '1' },
+    { val: '0' },
+    { val: '1' },
+    { val: '1' },
+    { val: '0' },
+    {
+      val: '1A2B3C',
+      themeColor: 'accent2',
+      themeTint: '80',
+      themeShade: '40',
+    },
+    { val: '25' },
+    { val: '28' },
+    {
+      val: 'wavyDouble',
+      color: 'ABCDEF',
+      themeColor: 'accent3',
+      themeTint: '20',
+    },
+    { val: '0' },
+    { val: '0' },
+    { val: 'en-US', eastAsia: 'zh-CN', bidi: 'ar-SA' },
+  ];
+  for (const run of styledWordRuns) {
+    const properties = directChildren(run, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties).toBeDefined();
+    expect(directChildren(properties).map((child) => child.localName)).toEqual(
+      expectedWordPropertyNames,
+    );
+    expect(directChildren(properties).map(wordAttributes)).toEqual(
+      expectedWordPropertyAttributes,
+    );
+  }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);
   for (const accent of accents) {
@@ -3111,14 +3437,16 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(directChildren(upperLimit, 'lim')[0]?.textContent).toBe('def');
   }
   const inline = descendants(document, 'oMath')[0];
-  const componentStatuses = directChildren(inline).map((component) => {
+  const unsupportedComponents = directChildren(inline).filter((component) => {
     const equation = document.createElementNS(MATH_NAMESPACE, 'm:oMath');
+    equation.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
+    equation.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
     equation.append(component.cloneNode(true));
-    return `${component.localName}:${inspectDocxEquation(equation).status}`;
+    return inspectDocxEquation(equation).status !== 'supported';
   });
-  expect(
-    componentStatuses.every((status) => status.endsWith(':supported')),
-  ).toBe(true);
+  expect(unsupportedComponents.map((component) => component.outerHTML)).toEqual(
+    [],
+  );
 
   const stories = [
     {
@@ -3334,6 +3662,17 @@ function mathValueAttribute(element: Element | undefined): string | null {
       (attribute) =>
         attribute.localName === 'val' || /(?:^|:)val$/u.test(attribute.name),
     )?.value ?? null
+  );
+}
+
+function wordAttributes(element: Element): Record<string, string> {
+  return Object.fromEntries(
+    Array.from(element.attributes)
+      .filter(
+        (attribute) =>
+          xmlAttributeNamespace(element, attribute) === WORD_NAMESPACE,
+      )
+      .map((attribute) => [xmlAttributeLocalName(attribute), attribute.value]),
   );
 }
 

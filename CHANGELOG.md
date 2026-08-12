@@ -14,6 +14,12 @@ All notable changes to A3S Office will be documented in this file.
   `m:oMath` child. The structured
   subset covers Unicode runs with literal/normal-text semantics, six math
   scripts, four styles, manual breaks, and alignment points,
+  plus ordered `m:rPr -> w:rPr -> m:t/w:t` runs with bounded Word fonts and
+  theme references, Latin/complex-script bold and italic flags, strike,
+  proofing/grid flags, direct/theme colors, half-point sizes, colored underline
+  styles, RTL/complex-script flags, and language tags. Explicit on/off values
+  survive native regeneration, while unknown, reordered, duplicated, spoofed,
+  or relationship-bound Word run properties fail closed.
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
   sub-superscripts, left-side pre-sub/superscripts with empty script slots,
   radicals with optional degrees and canonical hidden empty degree slots,

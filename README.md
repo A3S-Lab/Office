@@ -578,6 +578,16 @@ Math-run properties preserve the ordered `lit`, `nor`, `scr`, `sty`, `brk`, and
 `aln` grammar, canonicalize Roman/italic and disabled defaults, bound `alnAt` to
 1–255, and project supported script/style combinations through MathML
 `mathvariant` while retaining native break and alignment metadata.
+Math runs also preserve the native `m:rPr -> w:rPr -> m:t/w:t` order. The
+bounded Word run-property subset covers direct and theme font references,
+Latin and complex-script bold/italic flags, strike and double-strike,
+proofing/grid flags, direct and theme colors with tint/shade, half-point font
+sizes, colored underline styles, RTL/complex-script flags, and Latin, East
+Asian, and bidi language tags. Explicit on/off values remain distinct, export
+uses canonical `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe
+direct color, size, font, direction, language, emphasis, and decoration values.
+Unknown, duplicated, reordered, namespace-spoofed, or relationship-bound Word
+run properties fail closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their semantic defaults, and
 manual-break alignment indices are bounded to 1–255. Strict and transitional
 UTF-8/UTF-16 math is normalized for editing. Invalid or non-combining accent

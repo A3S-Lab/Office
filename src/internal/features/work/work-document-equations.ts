@@ -37,6 +37,101 @@ export type WorkDocumentEquationRunStyle =
   | 'italic'
   | 'bold'
   | 'boldItalic';
+export type WorkDocumentEquationThemeFont =
+  | 'majorEastAsia'
+  | 'majorBidi'
+  | 'majorAscii'
+  | 'majorHAnsi'
+  | 'minorEastAsia'
+  | 'minorBidi'
+  | 'minorAscii'
+  | 'minorHAnsi';
+export type WorkDocumentEquationThemeColor =
+  | 'dark1'
+  | 'light1'
+  | 'dark2'
+  | 'light2'
+  | 'accent1'
+  | 'accent2'
+  | 'accent3'
+  | 'accent4'
+  | 'accent5'
+  | 'accent6'
+  | 'hyperlink'
+  | 'followedHyperlink'
+  | 'none'
+  | 'background1'
+  | 'text1'
+  | 'background2'
+  | 'text2';
+export type WorkDocumentEquationUnderlineStyle =
+  | 'none'
+  | 'words'
+  | 'single'
+  | 'double'
+  | 'thick'
+  | 'dotted'
+  | 'dottedHeavy'
+  | 'dash'
+  | 'dashedHeavy'
+  | 'dashLong'
+  | 'dashLongHeavy'
+  | 'dotDash'
+  | 'dashDotHeavy'
+  | 'dotDotDash'
+  | 'dashDotDotHeavy'
+  | 'wave'
+  | 'wavyHeavy'
+  | 'wavyDouble';
+
+export interface WorkDocumentEquationWordRunFonts {
+  ascii?: string;
+  highAnsi?: string;
+  eastAsia?: string;
+  complexScript?: string;
+  asciiTheme?: WorkDocumentEquationThemeFont;
+  highAnsiTheme?: WorkDocumentEquationThemeFont;
+  eastAsiaTheme?: WorkDocumentEquationThemeFont;
+  complexScriptTheme?: WorkDocumentEquationThemeFont;
+  hint?: 'default' | 'eastAsia' | 'cs';
+}
+
+export interface WorkDocumentEquationWordColor {
+  value?: 'auto' | string;
+  theme?: WorkDocumentEquationThemeColor;
+  tint?: string;
+  shade?: string;
+}
+
+export interface WorkDocumentEquationWordUnderline {
+  style: WorkDocumentEquationUnderlineStyle;
+  color?: WorkDocumentEquationWordColor;
+}
+
+export interface WorkDocumentEquationWordLanguages {
+  latin?: string;
+  eastAsia?: string;
+  bidi?: string;
+}
+
+export interface WorkDocumentEquationWordRunProperties {
+  fonts?: WorkDocumentEquationWordRunFonts;
+  bold?: boolean;
+  boldComplexScript?: boolean;
+  italic?: boolean;
+  italicComplexScript?: boolean;
+  strike?: boolean;
+  doubleStrike?: boolean;
+  noProof?: boolean;
+  snapToGrid?: boolean;
+  color?: WorkDocumentEquationWordColor;
+  fontSize?: number;
+  fontSizeComplexScript?: number;
+  underline?: WorkDocumentEquationWordUnderline;
+  rightToLeft?: boolean;
+  complexScript?: boolean;
+  languages?: WorkDocumentEquationWordLanguages;
+}
 
 export interface WorkDocumentEquationManualBreak {
   alignmentAt?: number;
@@ -52,6 +147,7 @@ export type WorkDocumentEquationExpression =
       style?: WorkDocumentEquationRunStyle;
       manualBreak?: WorkDocumentEquationManualBreak;
       alignment?: boolean;
+      wordRunProperties?: WorkDocumentEquationWordRunProperties;
     }
   | {
       type: 'fraction';
@@ -259,6 +355,90 @@ const RUN_STYLES = new Set<WorkDocumentEquationRunStyle>([
   'bold',
   'boldItalic',
 ]);
+const THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
+  'majorEastAsia',
+  'majorBidi',
+  'majorAscii',
+  'majorHAnsi',
+  'minorEastAsia',
+  'minorBidi',
+  'minorAscii',
+  'minorHAnsi',
+]);
+const THEME_COLORS = new Set<WorkDocumentEquationThemeColor>([
+  'dark1',
+  'light1',
+  'dark2',
+  'light2',
+  'accent1',
+  'accent2',
+  'accent3',
+  'accent4',
+  'accent5',
+  'accent6',
+  'hyperlink',
+  'followedHyperlink',
+  'none',
+  'background1',
+  'text1',
+  'background2',
+  'text2',
+]);
+const UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
+  'none',
+  'words',
+  'single',
+  'double',
+  'thick',
+  'dotted',
+  'dottedHeavy',
+  'dash',
+  'dashedHeavy',
+  'dashLong',
+  'dashLongHeavy',
+  'dotDash',
+  'dashDotHeavy',
+  'dotDotDash',
+  'dashDotDotHeavy',
+  'wave',
+  'wavyHeavy',
+  'wavyDouble',
+]);
+const MAX_EQUATION_WORD_FONT_LENGTH = 127;
+const MAX_EQUATION_LANGUAGE_LENGTH = 85;
+const MAX_EQUATION_FONT_SIZE = 512;
+const WORD_RUN_PROPERTY_KEYS = new Set([
+  'fonts',
+  'bold',
+  'boldComplexScript',
+  'italic',
+  'italicComplexScript',
+  'strike',
+  'doubleStrike',
+  'noProof',
+  'snapToGrid',
+  'color',
+  'fontSize',
+  'fontSizeComplexScript',
+  'underline',
+  'rightToLeft',
+  'complexScript',
+  'languages',
+]);
+const WORD_RUN_FONT_KEYS = new Set([
+  'ascii',
+  'highAnsi',
+  'eastAsia',
+  'complexScript',
+  'asciiTheme',
+  'highAnsiTheme',
+  'eastAsiaTheme',
+  'complexScriptTheme',
+  'hint',
+]);
+const WORD_COLOR_KEYS = new Set(['value', 'theme', 'tint', 'shade']);
+const WORD_UNDERLINE_KEYS = new Set(['style', 'color']);
+const WORD_LANGUAGE_KEYS = new Set(['latin', 'eastAsia', 'bidi']);
 const LIMIT_LOCATIONS = new Set<WorkDocumentEquationLimitLocation>([
   'underOver',
   'subSup',
@@ -606,13 +786,18 @@ function normalizeExpression(
         source.manualBreak === undefined
           ? undefined
           : normalizeManualBreak(source.manualBreak);
+      const wordRunProperties =
+        source.wordRunProperties === undefined
+          ? undefined
+          : normalizeEquationWordRunProperties(source.wordRunProperties);
       if (
         typeof literal !== 'boolean' ||
         typeof normalText !== 'boolean' ||
         typeof alignment !== 'boolean' ||
         script === null ||
         style === null ||
-        manualBreak === null
+        manualBreak === null ||
+        wordRunProperties === null
       ) {
         return null;
       }
@@ -625,6 +810,7 @@ function normalizeExpression(
         ...(style && style !== 'italic' ? { style } : {}),
         ...(manualBreak ? { manualBreak } : {}),
         ...(alignment ? { alignment } : {}),
+        ...(wordRunProperties ? { wordRunProperties } : {}),
       };
     }
     if (source.type === 'fraction') {
@@ -1243,9 +1429,10 @@ function expressionMathMl(
 ): DOMOutputSpec {
   if (expression.type === 'run') {
     const mathVariant = runMathVariant(expression);
-    const attributes: Record<string, string> = mathVariant
-      ? { mathvariant: mathVariant }
-      : {};
+    const attributes: Record<string, string> = {
+      ...(mathVariant ? { mathvariant: mathVariant } : {}),
+      ...wordRunMathMlAttributes(expression),
+    };
     if (!alignmentState) {
       return domSpec('mtext', attributes, [expression.text]);
     }
@@ -1531,6 +1718,268 @@ function accentCharacter(source: unknown): string | null {
     : null;
 }
 
+function normalizeEquationWordRunProperties(
+  source: unknown,
+): WorkDocumentEquationWordRunProperties | null | undefined {
+  if (!isRecordWithKeys(source, WORD_RUN_PROPERTY_KEYS)) return null;
+  const fonts =
+    source.fonts === undefined
+      ? undefined
+      : normalizeEquationWordRunFonts(source.fonts);
+  const color =
+    source.color === undefined
+      ? undefined
+      : normalizeEquationWordColor(source.color);
+  const underline =
+    source.underline === undefined
+      ? undefined
+      : normalizeEquationWordUnderline(source.underline);
+  const languages =
+    source.languages === undefined
+      ? undefined
+      : normalizeEquationWordLanguages(source.languages);
+  const fontSize =
+    source.fontSize === undefined
+      ? undefined
+      : normalizeEquationFontSize(source.fontSize);
+  const fontSizeComplexScript =
+    source.fontSizeComplexScript === undefined
+      ? undefined
+      : normalizeEquationFontSize(source.fontSizeComplexScript);
+  if (
+    fonts === null ||
+    color === null ||
+    underline === null ||
+    languages === null ||
+    fontSize === null ||
+    fontSizeComplexScript === null
+  ) {
+    return null;
+  }
+  for (const key of [
+    'bold',
+    'boldComplexScript',
+    'italic',
+    'italicComplexScript',
+    'strike',
+    'doubleStrike',
+    'noProof',
+    'snapToGrid',
+    'rightToLeft',
+    'complexScript',
+  ] as const) {
+    if (source[key] !== undefined && typeof source[key] !== 'boolean') {
+      return null;
+    }
+  }
+  const normalized: WorkDocumentEquationWordRunProperties = {
+    ...(fonts ? { fonts } : {}),
+    ...(source.bold !== undefined ? { bold: source.bold as boolean } : {}),
+    ...(source.boldComplexScript !== undefined
+      ? { boldComplexScript: source.boldComplexScript as boolean }
+      : {}),
+    ...(source.italic !== undefined
+      ? { italic: source.italic as boolean }
+      : {}),
+    ...(source.italicComplexScript !== undefined
+      ? { italicComplexScript: source.italicComplexScript as boolean }
+      : {}),
+    ...(source.strike !== undefined
+      ? { strike: source.strike as boolean }
+      : {}),
+    ...(source.doubleStrike !== undefined
+      ? { doubleStrike: source.doubleStrike as boolean }
+      : {}),
+    ...(source.noProof !== undefined
+      ? { noProof: source.noProof as boolean }
+      : {}),
+    ...(source.snapToGrid !== undefined
+      ? { snapToGrid: source.snapToGrid as boolean }
+      : {}),
+    ...(color ? { color } : {}),
+    ...(fontSize !== undefined ? { fontSize } : {}),
+    ...(fontSizeComplexScript !== undefined ? { fontSizeComplexScript } : {}),
+    ...(underline ? { underline } : {}),
+    ...(source.rightToLeft !== undefined
+      ? { rightToLeft: source.rightToLeft as boolean }
+      : {}),
+    ...(source.complexScript !== undefined
+      ? { complexScript: source.complexScript as boolean }
+      : {}),
+    ...(languages ? { languages } : {}),
+  };
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationWordRunFonts(
+  source: unknown,
+): WorkDocumentEquationWordRunFonts | null | undefined {
+  if (!isRecordWithKeys(source, WORD_RUN_FONT_KEYS)) return null;
+  const normalized: WorkDocumentEquationWordRunFonts = {};
+  for (const key of [
+    'ascii',
+    'highAnsi',
+    'eastAsia',
+    'complexScript',
+  ] as const) {
+    if (source[key] === undefined) continue;
+    const value = normalizedEquationWordString(
+      source[key],
+      MAX_EQUATION_WORD_FONT_LENGTH,
+    );
+    if (!value) return null;
+    normalized[key] = value;
+  }
+  for (const key of [
+    'asciiTheme',
+    'highAnsiTheme',
+    'eastAsiaTheme',
+    'complexScriptTheme',
+  ] as const) {
+    if (source[key] === undefined) continue;
+    if (!THEME_FONTS.has(source[key] as WorkDocumentEquationThemeFont)) {
+      return null;
+    }
+    normalized[key] = source[key] as WorkDocumentEquationThemeFont;
+  }
+  if (source.hint !== undefined) {
+    if (
+      typeof source.hint !== 'string' ||
+      !['default', 'eastAsia', 'cs'].includes(source.hint)
+    ) {
+      return null;
+    }
+    normalized.hint = source.hint as WorkDocumentEquationWordRunFonts['hint'];
+  }
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationWordColor(
+  source: unknown,
+): WorkDocumentEquationWordColor | null {
+  if (!isRecordWithKeys(source, WORD_COLOR_KEYS)) return null;
+  let value: WorkDocumentEquationWordColor['value'];
+  if (source.value !== undefined) {
+    if (source.value === 'auto') value = 'auto';
+    else if (
+      typeof source.value === 'string' &&
+      /^#[0-9a-f]{6}$/iu.test(source.value)
+    ) {
+      value = source.value.toLowerCase();
+    } else return null;
+  }
+  const theme =
+    source.theme === undefined
+      ? undefined
+      : THEME_COLORS.has(source.theme as WorkDocumentEquationThemeColor)
+        ? (source.theme as WorkDocumentEquationThemeColor)
+        : null;
+  const tint =
+    source.tint === undefined ? undefined : normalizedByteHex(source.tint);
+  const shade =
+    source.shade === undefined ? undefined : normalizedByteHex(source.shade);
+  if (
+    theme === null ||
+    tint === null ||
+    shade === null ||
+    (!value && (!theme || theme === 'none')) ||
+    ((!theme || theme === 'none') && (tint || shade))
+  ) {
+    return null;
+  }
+  return {
+    ...(value ? { value } : {}),
+    ...(theme ? { theme } : {}),
+    ...(tint ? { tint } : {}),
+    ...(shade ? { shade } : {}),
+  };
+}
+
+function normalizeEquationWordUnderline(
+  source: unknown,
+): WorkDocumentEquationWordUnderline | null {
+  if (
+    !isRecordWithKeys(source, WORD_UNDERLINE_KEYS) ||
+    !UNDERLINE_STYLES.has(source.style as WorkDocumentEquationUnderlineStyle)
+  ) {
+    return null;
+  }
+  const color =
+    source.color === undefined
+      ? undefined
+      : normalizeEquationWordColor(source.color);
+  return color === null
+    ? null
+    : {
+        style: source.style as WorkDocumentEquationUnderlineStyle,
+        ...(color ? { color } : {}),
+      };
+}
+
+function normalizeEquationWordLanguages(
+  source: unknown,
+): WorkDocumentEquationWordLanguages | null | undefined {
+  if (!isRecordWithKeys(source, WORD_LANGUAGE_KEYS)) return null;
+  const normalized: WorkDocumentEquationWordLanguages = {};
+  for (const key of ['latin', 'eastAsia', 'bidi'] as const) {
+    if (source[key] === undefined) continue;
+    const value = normalizedEquationLanguage(source[key]);
+    if (!value) return null;
+    normalized[key] = value;
+  }
+  return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationFontSize(source: unknown): number | null {
+  return typeof source === 'number' &&
+    Number.isFinite(source) &&
+    source > 0 &&
+    source <= MAX_EQUATION_FONT_SIZE &&
+    Number.isInteger(source * 2)
+    ? source
+    : null;
+}
+
+function normalizedEquationWordString(
+  source: unknown,
+  maximumLength: number,
+): string | null {
+  if (typeof source !== 'string') return null;
+  const normalized = source.trim();
+  return normalized &&
+    normalized.length <= maximumLength &&
+    !/[\p{Cc}\p{Cs}]/u.test(normalized) &&
+    validXmlText(normalized)
+    ? normalized
+    : null;
+}
+
+function normalizedEquationLanguage(source: unknown): string | null {
+  const normalized = normalizedEquationWordString(
+    source,
+    MAX_EQUATION_LANGUAGE_LENGTH,
+  );
+  return normalized &&
+    /^(?:x-none|[a-z0-9]{1,8}(?:-[a-z0-9]{1,8})*)$/iu.test(normalized)
+    ? normalized
+    : null;
+}
+
+function normalizedByteHex(source: unknown): string | null {
+  return typeof source === 'string' && /^[0-9a-f]{2}$/iu.test(source.trim())
+    ? source.trim().toUpperCase()
+    : null;
+}
+
+function isRecordWithKeys(
+  source: unknown,
+  allowed: ReadonlySet<string>,
+): source is Record<string, unknown> {
+  return (
+    isRecord(source) && Object.keys(source).every((key) => allowed.has(key))
+  );
+}
+
 function normalizeManualBreak(
   source: unknown,
 ): WorkDocumentEquationManualBreak | null {
@@ -1574,6 +2023,110 @@ function runMathVariant(
   if (style === 'bold') return 'bold';
   if (style === 'boldItalic') return 'bold-italic';
   return 'italic';
+}
+
+function wordRunMathMlAttributes(
+  expression: Extract<WorkDocumentEquationExpression, { type: 'run' }>,
+): Record<string, string> {
+  const properties = expression.wordRunProperties;
+  if (!properties) return {};
+  const complexScript = equationRunUsesComplexScript(expression);
+  const eastAsia = !complexScript && equationRunUsesEastAsianScript(expression);
+  const font = complexScript
+    ? properties.fonts?.complexScript
+    : eastAsia
+      ? properties.fonts?.eastAsia
+      : (properties.fonts?.ascii ?? properties.fonts?.highAnsi);
+  const size = complexScript
+    ? (properties.fontSizeComplexScript ?? properties.fontSize)
+    : properties.fontSize;
+  const language = complexScript
+    ? properties.languages?.bidi
+    : eastAsia
+      ? properties.languages?.eastAsia
+      : properties.languages?.latin;
+  const bold = complexScript
+    ? (properties.boldComplexScript ?? properties.bold)
+    : properties.bold;
+  const italic = complexScript
+    ? (properties.italicComplexScript ?? properties.italic)
+    : properties.italic;
+  const styles = [
+    font ? `font-family:${cssString(font)}` : '',
+    bold === undefined ? '' : `font-weight:${bold ? 'bold' : 'normal'}`,
+    italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
+    wordRunTextDecoration(properties),
+  ].filter(Boolean);
+  const color = properties.color?.value;
+  return {
+    ...(color && color !== 'auto' ? { mathcolor: color } : {}),
+    ...(size !== undefined ? { mathsize: `${size}pt` } : {}),
+    ...(properties.rightToLeft !== undefined
+      ? { dir: properties.rightToLeft ? 'rtl' : 'ltr' }
+      : {}),
+    ...(language ? { lang: language } : {}),
+    ...(styles.length ? { style: styles.join(';') } : {}),
+  };
+}
+
+function equationRunUsesComplexScript(
+  expression: Extract<WorkDocumentEquationExpression, { type: 'run' }>,
+): boolean {
+  return (
+    expression.wordRunProperties?.complexScript === true ||
+    expression.wordRunProperties?.rightToLeft === true ||
+    /[\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Syriac}\p{Script=Thaana}\p{Script=Nko}]/u.test(
+      expression.text,
+    )
+  );
+}
+
+function equationRunUsesEastAsianScript(
+  expression: Extract<WorkDocumentEquationExpression, { type: 'run' }>,
+): boolean {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Bopomofo}]/u.test(
+    expression.text,
+  );
+}
+
+function wordRunTextDecoration(
+  properties: WorkDocumentEquationWordRunProperties,
+): string {
+  const underline = properties.underline;
+  const lines = [
+    underline && underline.style !== 'none' ? 'underline' : '',
+    properties.strike || properties.doubleStrike ? 'line-through' : '',
+  ].filter(Boolean);
+  if (!lines.length) return '';
+  const underlineStyle = underline
+    ? equationUnderlineCssStyle(underline.style)
+    : 'solid';
+  const style =
+    properties.doubleStrike || underlineStyle === 'double'
+      ? 'double'
+      : underlineStyle;
+  const color = underline?.color?.value;
+  return [
+    `text-decoration-line:${lines.join(' ')}`,
+    `text-decoration-style:${style}`,
+    color && color !== 'auto' ? `text-decoration-color:${color}` : '',
+  ]
+    .filter(Boolean)
+    .join(';');
+}
+
+function equationUnderlineCssStyle(
+  style: WorkDocumentEquationUnderlineStyle,
+): 'solid' | 'double' | 'dotted' | 'dashed' | 'wavy' {
+  if (style === 'double' || style === 'wavyDouble') return 'double';
+  if (style === 'dotted' || style === 'dottedHeavy') return 'dotted';
+  if (/dash/iu.test(style)) return 'dashed';
+  if (/wav/iu.test(style)) return 'wavy';
+  return 'solid';
+}
+
+function cssString(source: string): string {
+  return `"${source.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
 }
 
 function borderBoxNotation(

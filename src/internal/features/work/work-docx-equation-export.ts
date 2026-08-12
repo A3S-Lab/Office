@@ -7,6 +7,8 @@ import {
   type WorkDocumentEquationJustification,
   type WorkDocumentEquationRunScript,
   type WorkDocumentEquationRunStyle,
+  type WorkDocumentEquationWordColor,
+  type WorkDocumentEquationWordRunProperties,
 } from './work-document-equations';
 import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 import {
@@ -24,6 +26,8 @@ interface DocxEquationPatch {
 
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
+const WORD_NAMESPACE =
+  'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const EQUATION_PART_PATTERN =
   /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
@@ -259,6 +263,11 @@ function createExpression(
       properties.append(mathOnOffElement(document, prefix, 'aln', true));
     }
     if (properties.childNodes.length) run.append(properties);
+    if (expression.wordRunProperties) {
+      run.append(
+        createWordRunProperties(document, expression.wordRunProperties),
+      );
+    }
     const text = createMathElement(document, prefix, 't');
     if (/^\s|\s$/u.test(expression.text)) {
       text.setAttributeNS(XML_NAMESPACE, 'xml:space', 'preserve');
@@ -646,6 +655,133 @@ function runStyleToOmml(style: WorkDocumentEquationRunStyle): string {
   return 'i';
 }
 
+function createWordRunProperties(
+  document: Document,
+  properties: WorkDocumentEquationWordRunProperties,
+): Element {
+  const prefix = ensureWordPrefix(document.documentElement);
+  const result = createWordElement(document, prefix, 'rPr');
+  if (properties.fonts) {
+    const fonts = createWordElement(document, prefix, 'rFonts');
+    const values = [
+      ['ascii', properties.fonts.ascii],
+      ['hAnsi', properties.fonts.highAnsi],
+      ['eastAsia', properties.fonts.eastAsia],
+      ['cs', properties.fonts.complexScript],
+      ['asciiTheme', properties.fonts.asciiTheme],
+      ['hAnsiTheme', properties.fonts.highAnsiTheme],
+      ['eastAsiaTheme', properties.fonts.eastAsiaTheme],
+      ['cstheme', properties.fonts.complexScriptTheme],
+      ['hint', properties.fonts.hint],
+    ] as const;
+    for (const [name, value] of values) {
+      if (value !== undefined) setWordAttribute(fonts, prefix, name, value);
+    }
+    result.append(fonts);
+  }
+  for (const [name, value] of [
+    ['b', properties.bold],
+    ['bCs', properties.boldComplexScript],
+    ['i', properties.italic],
+    ['iCs', properties.italicComplexScript],
+    ['strike', properties.strike],
+    ['dstrike', properties.doubleStrike],
+    ['noProof', properties.noProof],
+    ['snapToGrid', properties.snapToGrid],
+  ] as const) {
+    if (value !== undefined) {
+      result.append(createWordOnOffElement(document, prefix, name, value));
+    }
+  }
+  if (properties.color) {
+    const color = createWordElement(document, prefix, 'color');
+    setWordColorAttributes(color, prefix, properties.color, 'val');
+    result.append(color);
+  }
+  if (properties.fontSize !== undefined) {
+    result.append(
+      createWordValueElement(
+        document,
+        prefix,
+        'sz',
+        String(properties.fontSize * 2),
+      ),
+    );
+  }
+  if (properties.fontSizeComplexScript !== undefined) {
+    result.append(
+      createWordValueElement(
+        document,
+        prefix,
+        'szCs',
+        String(properties.fontSizeComplexScript * 2),
+      ),
+    );
+  }
+  if (properties.underline) {
+    const underline = createWordValueElement(
+      document,
+      prefix,
+      'u',
+      properties.underline.style,
+    );
+    if (properties.underline.color) {
+      setWordColorAttributes(
+        underline,
+        prefix,
+        properties.underline.color,
+        'color',
+      );
+    }
+    result.append(underline);
+  }
+  for (const [name, value] of [
+    ['rtl', properties.rightToLeft],
+    ['cs', properties.complexScript],
+  ] as const) {
+    if (value !== undefined) {
+      result.append(createWordOnOffElement(document, prefix, name, value));
+    }
+  }
+  if (properties.languages) {
+    const languages = createWordElement(document, prefix, 'lang');
+    for (const [name, value] of [
+      ['val', properties.languages.latin],
+      ['eastAsia', properties.languages.eastAsia],
+      ['bidi', properties.languages.bidi],
+    ] as const) {
+      if (value !== undefined) {
+        setWordAttribute(languages, prefix, name, value);
+      }
+    }
+    result.append(languages);
+  }
+  return result;
+}
+
+function setWordColorAttributes(
+  element: Element,
+  prefix: string,
+  color: WorkDocumentEquationWordColor,
+  valueAttribute: 'val' | 'color',
+): void {
+  if (color.value) {
+    setWordAttribute(
+      element,
+      prefix,
+      valueAttribute,
+      color.value === 'auto' ? 'auto' : color.value.slice(1).toUpperCase(),
+    );
+  }
+  if (color.theme) {
+    setWordAttribute(element, prefix, 'themeColor', color.theme);
+  }
+  if (color.tint) setWordAttribute(element, prefix, 'themeTint', color.tint);
+  if (color.shade) {
+    setWordAttribute(element, prefix, 'themeShade', color.shade);
+  }
+}
+
 function matrixColumnGroups(
   alignments: readonly ('left' | 'center' | 'right')[],
 ): Array<{ alignment: 'left' | 'center' | 'right'; count: number }> {
@@ -700,6 +836,43 @@ function createMathElement(
   return document.createElementNS(MATH_NAMESPACE, `${prefix}:${name}`);
 }
 
+function createWordValueElement(
+  document: Document,
+  prefix: string,
+  name: string,
+  value: string,
+): Element {
+  const element = createWordElement(document, prefix, name);
+  setWordAttribute(element, prefix, 'val', value);
+  return element;
+}
+
+function createWordOnOffElement(
+  document: Document,
+  prefix: string,
+  name: string,
+  value: boolean,
+): Element {
+  return createWordValueElement(document, prefix, name, value ? '1' : '0');
+}
+
+function createWordElement(
+  document: Document,
+  prefix: string,
+  name: string,
+): Element {
+  return document.createElementNS(WORD_NAMESPACE, `${prefix}:${name}`);
+}
+
+function setWordAttribute(
+  element: Element,
+  prefix: string,
+  name: string,
+  value: string,
+): void {
+  element.setAttributeNS(WORD_NAMESPACE, `${prefix}:${name}`, value);
+}
+
 function ensureMathPrefix(root: Element): string {
   const existing = xmlDeclaredPrefix(root, MATH_NAMESPACE);
   if (existing) return existing;
@@ -715,6 +888,24 @@ function ensureMathPrefix(root: Element): string {
     index += 1;
   } while (xmlNamespaceUri(root, prefix));
   root.setAttributeNS(XMLNS_NAMESPACE, `xmlns:${prefix}`, MATH_NAMESPACE);
+  return prefix;
+}
+
+function ensureWordPrefix(root: Element): string {
+  const existing = xmlDeclaredPrefix(root, WORD_NAMESPACE);
+  if (existing) return existing;
+  const preferred = xmlNamespaceUri(root, 'w');
+  if (!preferred || preferred === WORD_NAMESPACE) {
+    root.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    return 'w';
+  }
+  let index = 1;
+  let prefix = '';
+  do {
+    prefix = `a3sw${index}`;
+    index += 1;
+  } while (xmlNamespaceUri(root, prefix));
+  root.setAttributeNS(XMLNS_NAMESPACE, `xmlns:${prefix}`, WORD_NAMESPACE);
   return prefix;
 }
 
