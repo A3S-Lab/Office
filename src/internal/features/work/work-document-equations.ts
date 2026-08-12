@@ -137,9 +137,39 @@ export interface WorkDocumentEquationManualBreak {
   alignmentAt?: number;
 }
 
+interface WorkDocumentEquationControlRevisionIdentity {
+  id: number;
+  author: string;
+  date?: string;
+  dateUtc?: string;
+}
+
+type WorkDocumentEquationControlDeletionRevision =
+  WorkDocumentEquationControlRevisionIdentity & {
+    kind: 'deletion';
+    child?: never;
+  };
+
+type WorkDocumentEquationControlInsertionRevision =
+  WorkDocumentEquationControlRevisionIdentity & {
+    kind: 'insertion';
+    child?: WorkDocumentEquationControlDeletionRevision;
+  };
+
+export type WorkDocumentEquationControlRevision =
+  | WorkDocumentEquationControlDeletionRevision
+  | WorkDocumentEquationControlInsertionRevision
+  | (WorkDocumentEquationControlRevisionIdentity & {
+      kind: 'moveFrom' | 'moveTo';
+      child?:
+        | WorkDocumentEquationControlInsertionRevision
+        | WorkDocumentEquationControlDeletionRevision;
+    });
+
 export interface WorkDocumentEquationArgumentProperties {
   size?: -2 | -1 | 1 | 2;
   controlProperties?: WorkDocumentEquationWordRunProperties;
+  controlRevision?: WorkDocumentEquationControlRevision;
 }
 
 export type WorkDocumentEquationExpression =
@@ -157,6 +187,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'fraction';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       fractionType: WorkDocumentEquationFractionType;
       numerator: WorkDocumentEquationExpression[];
       numeratorProperties?: WorkDocumentEquationArgumentProperties;
@@ -166,6 +197,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'superscript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
       superScript: WorkDocumentEquationExpression[];
@@ -174,6 +206,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'subscript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
       subScript: WorkDocumentEquationExpression[];
@@ -182,6 +215,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'subSuperScript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       alignScripts?: boolean;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
@@ -193,6 +227,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'preSubSuperScript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
       subScript: WorkDocumentEquationExpression[];
@@ -203,6 +238,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'lowerLimit';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
       limit: WorkDocumentEquationExpression[];
@@ -211,6 +247,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'upperLimit';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       base: WorkDocumentEquationExpression[];
       baseProperties?: WorkDocumentEquationArgumentProperties;
       limit: WorkDocumentEquationExpression[];
@@ -219,6 +256,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'radical';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       children: WorkDocumentEquationExpression[];
       childrenProperties?: WorkDocumentEquationArgumentProperties;
       degree?: WorkDocumentEquationExpression[];
@@ -227,6 +265,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'function';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       name: WorkDocumentEquationExpression[];
       nameProperties?: WorkDocumentEquationArgumentProperties;
       children: WorkDocumentEquationExpression[];
@@ -235,6 +274,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'nary';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       operator: WorkDocumentEquationNaryOperator;
       limitLocation: WorkDocumentEquationLimitLocation;
       children: WorkDocumentEquationExpression[];
@@ -247,6 +287,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'accent';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       character: string;
       children: WorkDocumentEquationExpression[];
       childrenProperties?: WorkDocumentEquationArgumentProperties;
@@ -254,6 +295,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'bar';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       position: WorkDocumentEquationBarPosition;
       children: WorkDocumentEquationExpression[];
       childrenProperties?: WorkDocumentEquationArgumentProperties;
@@ -261,6 +303,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'groupCharacter';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       character: string;
       position: WorkDocumentEquationBarPosition;
       verticalJustification: WorkDocumentEquationBarPosition;
@@ -270,6 +313,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'phantom';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       show: boolean;
       zeroWidth: boolean;
       zeroAscent: boolean;
@@ -281,6 +325,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'borderBox';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       hideTop: boolean;
       hideBottom: boolean;
       hideLeft: boolean;
@@ -295,6 +340,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'box';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       operatorEmulator: boolean;
       noBreak: boolean;
       differential: boolean;
@@ -306,6 +352,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'matrix';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
       placeholdersHidden: boolean;
       columnAlignments: WorkDocumentEquationMatrixAlignment[];
@@ -317,6 +364,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'equationArray';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       baseAlignment: WorkDocumentEquationMatrixBaseAlignment;
       maximumDistribution: boolean;
       objectDistribution: boolean;
@@ -328,6 +376,7 @@ export type WorkDocumentEquationExpression =
   | {
       type: 'delimiter';
       controlProperties?: WorkDocumentEquationWordRunProperties;
+      controlRevision?: WorkDocumentEquationControlRevision;
       opening: string;
       closing: string;
       separator: string;
@@ -465,6 +514,26 @@ const UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
 const MAX_EQUATION_WORD_FONT_LENGTH = 127;
 const MAX_EQUATION_LANGUAGE_LENGTH = 85;
 const MAX_EQUATION_FONT_SIZE = 512;
+const MAX_EQUATION_CONTROL_REVISION_ID = 2_147_483_647;
+const MAX_EQUATION_CONTROL_REVISION_AUTHOR_LENGTH = 255;
+const MAX_EQUATION_CONTROL_REVISION_DATE_LENGTH = 64;
+const CONTROL_REVISION_KEYS = new Set([
+  'kind',
+  'id',
+  'author',
+  'date',
+  'dateUtc',
+  'child',
+]);
+const CONTROL_REVISION_KINDS = new Set<
+  WorkDocumentEquationControlRevision['kind']
+>(['insertion', 'deletion', 'moveFrom', 'moveTo']);
+const CONTROL_REVISION_INSERTION_CHILD_KINDS = new Set<
+  WorkDocumentEquationControlRevision['kind']
+>(['deletion']);
+const CONTROL_REVISION_MOVE_CHILD_KINDS = new Set<
+  WorkDocumentEquationControlRevision['kind']
+>(['insertion', 'deletion']);
 const WORD_RUN_PROPERTY_KEYS = new Set([
   'fonts',
   'bold',
@@ -797,7 +866,10 @@ function normalizeMathArgumentProperties(
   if (
     !isRecord(source) ||
     Object.keys(source).some(
-      (key) => key !== 'size' && key !== 'controlProperties',
+      (key) =>
+        key !== 'size' &&
+        key !== 'controlProperties' &&
+        key !== 'controlRevision',
     )
   ) {
     return null;
@@ -816,11 +888,16 @@ function normalizeMathArgumentProperties(
     source.controlProperties === undefined
       ? undefined
       : normalizeEquationWordRunProperties(source.controlProperties);
-  if (controlProperties === null) return null;
-  return size !== undefined || controlProperties
+  const controlRevision =
+    source.controlRevision === undefined
+      ? undefined
+      : normalizeEquationControlRevision(source.controlRevision);
+  if (controlProperties === null || controlRevision === null) return null;
+  return size !== undefined || controlProperties || controlRevision
     ? {
         ...(size !== undefined ? { size } : {}),
         ...(controlProperties ? { controlProperties } : {}),
+        ...(controlRevision ? { controlRevision } : {}),
       }
     : undefined;
 }
@@ -896,7 +973,12 @@ function normalizeExpression(
   state.depth += 1;
   try {
     if (source.type === 'run') {
-      if (source.controlProperties !== undefined) return null;
+      if (
+        source.controlProperties !== undefined ||
+        source.controlRevision !== undefined
+      ) {
+        return null;
+      }
       if (
         typeof source.text !== 'string' ||
         source.text.length === 0 ||
@@ -967,10 +1049,15 @@ function normalizeExpression(
       source.controlProperties === undefined
         ? undefined
         : normalizeEquationWordRunProperties(source.controlProperties);
-    if (controlProperties === null) return null;
-    const normalizedControlProperties = controlProperties
-      ? { controlProperties }
-      : {};
+    const controlRevision =
+      source.controlRevision === undefined
+        ? undefined
+        : normalizeEquationControlRevision(source.controlRevision);
+    if (controlProperties === null || controlRevision === null) return null;
+    const normalizedControlProperties = {
+      ...(controlProperties ? { controlProperties } : {}),
+      ...(controlRevision ? { controlRevision } : {}),
+    };
     if (source.type === 'fraction') {
       const fractionType = FRACTION_TYPES.has(
         source.fractionType as WorkDocumentEquationFractionType,
@@ -2210,6 +2297,124 @@ function accentCharacter(source: unknown): string | null {
       (codePoint >= 0x20d0 && codePoint <= 0x20ef))
     ? source
     : null;
+}
+
+function normalizeEquationControlRevision(
+  source: unknown,
+  allowedKinds: ReadonlySet<
+    WorkDocumentEquationControlRevision['kind']
+  > = CONTROL_REVISION_KINDS,
+): WorkDocumentEquationControlRevision | null {
+  if (
+    !isRecordWithKeys(source, CONTROL_REVISION_KEYS) ||
+    !allowedKinds.has(
+      source.kind as WorkDocumentEquationControlRevision['kind'],
+    ) ||
+    typeof source.id !== 'number' ||
+    !Number.isInteger(source.id) ||
+    source.id < 0 ||
+    source.id > MAX_EQUATION_CONTROL_REVISION_ID
+  ) {
+    return null;
+  }
+  const author = normalizedEquationWordString(
+    source.author,
+    MAX_EQUATION_CONTROL_REVISION_AUTHOR_LENGTH,
+  );
+  const date =
+    source.date === undefined
+      ? undefined
+      : normalizedEquationControlRevisionDate(source.date);
+  const dateUtc =
+    source.dateUtc === undefined
+      ? undefined
+      : normalizedEquationControlRevisionUtcDate(source.dateUtc);
+  if (!author || date === null || dateUtc === null) return null;
+
+  const kind = source.kind as WorkDocumentEquationControlRevision['kind'];
+  if (kind === 'deletion') {
+    return source.child === undefined
+      ? {
+          kind,
+          id: source.id,
+          author,
+          ...(date ? { date } : {}),
+          ...(dateUtc ? { dateUtc } : {}),
+        }
+      : null;
+  }
+  const child =
+    source.child === undefined
+      ? undefined
+      : normalizeEquationControlRevision(
+          source.child,
+          kind === 'insertion'
+            ? CONTROL_REVISION_INSERTION_CHILD_KINDS
+            : CONTROL_REVISION_MOVE_CHILD_KINDS,
+        );
+  if (child === null) return null;
+  return {
+    kind,
+    id: source.id,
+    author,
+    ...(date ? { date } : {}),
+    ...(dateUtc ? { dateUtc } : {}),
+    ...(child ? { child } : {}),
+  } as WorkDocumentEquationControlRevision;
+}
+
+function normalizedEquationControlRevisionDate(source: unknown): string | null {
+  const value = normalizedEquationWordString(
+    source,
+    MAX_EQUATION_CONTROL_REVISION_DATE_LENGTH,
+  );
+  const match = value?.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))?$/u,
+  );
+  if (!value || !match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const offsetHour = match[8] === undefined ? 0 : Number(match[8]);
+  const offsetMinute = match[9] === undefined ? 0 : Number(match[9]);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ];
+  return year >= 1 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= (daysInMonth[month - 1] ?? 0) &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 59 &&
+    offsetHour <= 14 &&
+    offsetMinute <= 59 &&
+    (offsetHour !== 14 || offsetMinute === 0)
+    ? value
+    : null;
+}
+
+function normalizedEquationControlRevisionUtcDate(
+  source: unknown,
+): string | null {
+  const date = normalizedEquationControlRevisionDate(source);
+  return date?.endsWith('Z') ? date : null;
 }
 
 function normalizeEquationWordRunProperties(

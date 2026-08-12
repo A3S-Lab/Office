@@ -21,14 +21,20 @@ All notable changes to A3S Office will be documented in this file.
   survive native regeneration, while unknown, reordered, duplicated, spoofed,
   or relationship-bound Word run properties fail closed.
   Supported object property containers also preserve one optional ordered
-  `m:ctrlPr -> w:rPr` control format through that bounded property model. Empty
-  control properties canonicalize away. Every supported `deg`, `den`, `e`,
+  `m:ctrlPr` control format through that bounded property model. The control
+  may contain a direct `w:rPr` or tracked `w:ins`, `w:del`, `w:moveFrom`, or
+  `w:moveTo` provenance with bounded IDs/authors, optional validated core dates
+  and Microsoft 365 `w16du:dateUtc` values with a UTC `Z` suffix,
+  Word-legal `moveFrom/moveTo -> ins/del` and `ins -> del` nesting, and an
+  optional deepest `w:rPr`. Empty direct control properties canonicalize away;
+  empty revisions remain native provenance. Every supported `deg`, `den`, `e`,
   `fName`, `lim`, `num`, `sub`, and `sup` argument slot now retains the same
-  direct control format after its expressions. Fixed slots use named metadata;
-  matrix cells, equation-array rows, and delimiter arguments use strictly
-  dimension-aligned metadata. Argument formatting remains native-only because
-  it describes linear-build controls absent from professional MathML. Revision-
-  wrapped, unknown, or relationship-bound control markup fails closed. Safe
+  direct or revision-wrapped control format after its expressions. Fixed slots
+  use named metadata; matrix cells, equation-array rows, and delimiter arguments
+  use strictly dimension-aligned metadata. Argument formatting, revision
+  provenance, and document-level move-range pairing remain native-only because
+  they are absent from professional MathML. Unknown, malformed, illegally
+  nested, spoofed, or relationship-bound control markup fails closed. Safe
   object-control values project only onto separable MathML control/operator
   nodes while all supported values remain in native metadata.
   bar/no-bar/skewed/linear fractions, super- and subscripts, aligned right-side
@@ -61,13 +67,14 @@ All notable changes to A3S Office will be documented in this file.
   `fName` and `e` slots and preserve empty name or argument slots. Every
   supported `CT_OMathArg` slot now preserves an empty argument and enforces
   `argPr -> expressions -> ctrlPr` ordering. Its optional trailing `ctrlPr`
-  retains one bounded direct `w:rPr`. Absent or empty argument/control
+  retains one bounded direct or revision-wrapped Word control. Absent or empty argument/control
   properties and absent, empty, or zero `argSz` values normalize to the
   default. Relative sizes from -2 through 2 round-trip in every argument slot.
   The 13 Word-effective parent/child pairs project through inverse-sign relative
   MathML `scriptlevel`; valid sizes elsewhere remain native-only. Out-of-range
-  or malformed sizes and duplicate, misplaced, revision-wrapped, or semantic
-  properties fail closed. Depth, node, text, model-size, matrix-dimension, cell-count,
+  or malformed sizes, duplicate or misplaced properties, malformed control
+  revisions, and semantic properties fail closed. Depth, node, text, model-size,
+  matrix-dimension, cell-count,
   equation-array row/alignment-marker, and equation-count budgets are enforced.
   Invalid or non-combining accent characters, malformed math-run or function
   structures, invalid or contradictory fraction, radical, n-ary, delimiter, bar,

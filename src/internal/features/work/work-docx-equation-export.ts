@@ -4,6 +4,7 @@ import {
   normalizeDocumentEquation,
   type WorkDocumentEquation,
   type WorkDocumentEquationArgumentProperties,
+  type WorkDocumentEquationControlRevision,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationJustification,
   type WorkDocumentEquationRunScript,
@@ -29,6 +30,8 @@ const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const WORD_DATE_UTC_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const EQUATION_PART_PATTERN =
   /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
@@ -288,6 +291,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     accent.append(
       properties,
@@ -317,6 +321,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     bar.append(
       properties,
@@ -353,6 +358,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     groupCharacter.append(
       properties,
@@ -381,6 +387,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     phantom.append(
       properties,
@@ -427,6 +434,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     borderBox.append(
       properties,
@@ -467,6 +475,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     box.append(
       properties,
@@ -482,7 +491,11 @@ function createExpression(
   }
   if (expression.type === 'fraction') {
     const fraction = createMathElement(document, prefix, 'f');
-    if (expression.fractionType !== 'bar' || expression.controlProperties) {
+    if (
+      expression.fractionType !== 'bar' ||
+      expression.controlProperties ||
+      expression.controlRevision
+    ) {
       const properties = createMathElement(document, prefix, 'fPr');
       if (expression.fractionType !== 'bar') {
         properties.append(
@@ -503,6 +516,7 @@ function createExpression(
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       fraction.append(properties);
     }
@@ -526,13 +540,14 @@ function createExpression(
   }
   if (expression.type === 'superscript') {
     const script = createMathElement(document, prefix, 'sSup');
-    if (expression.controlProperties) {
+    if (expression.controlProperties || expression.controlRevision) {
       const properties = createMathElement(document, prefix, 'sSupPr');
       appendMathControlProperties(
         document,
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       script.append(properties);
     }
@@ -556,13 +571,14 @@ function createExpression(
   }
   if (expression.type === 'subscript') {
     const script = createMathElement(document, prefix, 'sSub');
-    if (expression.controlProperties) {
+    if (expression.controlProperties || expression.controlRevision) {
       const properties = createMathElement(document, prefix, 'sSubPr');
       appendMathControlProperties(
         document,
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       script.append(properties);
     }
@@ -586,7 +602,11 @@ function createExpression(
   }
   if (expression.type === 'subSuperScript') {
     const script = createMathElement(document, prefix, 'sSubSup');
-    if (expression.alignScripts || expression.controlProperties) {
+    if (
+      expression.alignScripts ||
+      expression.controlProperties ||
+      expression.controlRevision
+    ) {
       const properties = createMathElement(document, prefix, 'sSubSupPr');
       if (expression.alignScripts) {
         properties.append(mathOnOffElement(document, prefix, 'alnScr', true));
@@ -596,6 +616,7 @@ function createExpression(
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       script.append(properties);
     }
@@ -626,13 +647,14 @@ function createExpression(
   }
   if (expression.type === 'preSubSuperScript') {
     const script = createMathElement(document, prefix, 'sPre');
-    if (expression.controlProperties) {
+    if (expression.controlProperties || expression.controlRevision) {
       const properties = createMathElement(document, prefix, 'sPrePr');
       appendMathControlProperties(
         document,
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       script.append(properties);
     }
@@ -667,7 +689,7 @@ function createExpression(
       prefix,
       expression.type === 'lowerLimit' ? 'limLow' : 'limUpp',
     );
-    if (expression.controlProperties) {
+    if (expression.controlProperties || expression.controlRevision) {
       const properties = createMathElement(
         document,
         prefix,
@@ -678,6 +700,7 @@ function createExpression(
         prefix,
         properties,
         expression.controlProperties,
+        expression.controlRevision,
       );
       limit.append(properties);
     }
@@ -710,6 +733,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     radical.append(
       properties,
@@ -738,6 +762,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     function_.append(
       properties,
@@ -781,6 +806,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     nary.append(
       properties,
@@ -845,6 +871,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     equationArray.append(properties);
     for (const [rowIndex, row] of expression.rows.entries()) {
@@ -896,6 +923,7 @@ function createExpression(
       prefix,
       properties,
       expression.controlProperties,
+      expression.controlRevision,
     );
     matrix.append(properties);
     for (const [rowIndex, row] of expression.rows.entries()) {
@@ -927,6 +955,7 @@ function createExpression(
     prefix,
     properties,
     expression.controlProperties,
+    expression.controlRevision,
   );
   delimiter.append(properties);
   for (const [argumentIndex, argument] of expression.arguments.entries()) {
@@ -1084,11 +1113,60 @@ function appendMathControlProperties(
   prefix: string,
   parent: Element,
   properties: WorkDocumentEquationWordRunProperties | undefined,
+  revision: WorkDocumentEquationControlRevision | undefined,
 ): void {
-  if (!properties) return;
+  if (!properties && !revision) return;
   const controlProperties = createMathElement(document, prefix, 'ctrlPr');
-  controlProperties.append(createWordRunProperties(document, properties));
+  if (revision) {
+    const wordPrefix = ensureWordPrefix(document.documentElement);
+    controlProperties.append(
+      createWordMathControlRevision(document, wordPrefix, revision, properties),
+    );
+  } else if (properties) {
+    controlProperties.append(createWordRunProperties(document, properties));
+  }
   parent.append(controlProperties);
+}
+
+function createWordMathControlRevision(
+  document: Document,
+  prefix: string,
+  revision: WorkDocumentEquationControlRevision,
+  properties: WorkDocumentEquationWordRunProperties | undefined,
+): Element {
+  const name =
+    revision.kind === 'insertion'
+      ? 'ins'
+      : revision.kind === 'deletion'
+        ? 'del'
+        : revision.kind;
+  const result = createWordElement(document, prefix, name);
+  setWordAttribute(result, prefix, 'id', String(revision.id));
+  setWordAttribute(result, prefix, 'author', revision.author);
+  if (revision.date) {
+    setWordAttribute(result, prefix, 'date', revision.date);
+  }
+  if (revision.dateUtc) {
+    const dateUtcPrefix = ensureWordDateUtcPrefix(document.documentElement);
+    result.setAttributeNS(
+      WORD_DATE_UTC_NAMESPACE,
+      `${dateUtcPrefix}:dateUtc`,
+      revision.dateUtc,
+    );
+  }
+  if (revision.child) {
+    result.append(
+      createWordMathControlRevision(
+        document,
+        prefix,
+        revision.child,
+        properties,
+      ),
+    );
+  } else if (properties) {
+    result.append(createWordRunProperties(document, properties));
+  }
+  return result;
 }
 
 function setWordColorAttributes(
@@ -1150,6 +1228,7 @@ function expressionArgument(
     prefix,
     argument,
     properties?.controlProperties,
+    properties?.controlRevision,
   );
   return argument;
 }
@@ -1252,6 +1331,32 @@ function ensureWordPrefix(root: Element): string {
     index += 1;
   } while (xmlNamespaceUri(root, prefix));
   root.setAttributeNS(XMLNS_NAMESPACE, `xmlns:${prefix}`, WORD_NAMESPACE);
+  return prefix;
+}
+
+function ensureWordDateUtcPrefix(root: Element): string {
+  const existing = xmlDeclaredPrefix(root, WORD_DATE_UTC_NAMESPACE);
+  if (existing) return existing;
+  const preferred = xmlNamespaceUri(root, 'w16du');
+  if (!preferred || preferred === WORD_DATE_UTC_NAMESPACE) {
+    root.setAttributeNS(
+      XMLNS_NAMESPACE,
+      'xmlns:w16du',
+      WORD_DATE_UTC_NAMESPACE,
+    );
+    return 'w16du';
+  }
+  let index = 1;
+  let prefix = '';
+  do {
+    prefix = `a3sw16du${index}`;
+    index += 1;
+  } while (xmlNamespaceUri(root, prefix));
+  root.setAttributeNS(
+    XMLNS_NAMESPACE,
+    `xmlns:${prefix}`,
+    WORD_DATE_UTC_NAMESPACE,
+  );
   return prefix;
 }
 

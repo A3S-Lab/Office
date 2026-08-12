@@ -33,6 +33,8 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const STRICT_WORD_NAMESPACE =
   'http://purl.oclc.org/ooxml/wordprocessingml/main';
+const WORD_DATE_UTC_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2204,6 +2206,284 @@ describe('document equations', () => {
     );
   });
 
+  test('preserves bounded Word math control revisions across object and argument slots', async () => {
+    const equation = controlRevisionEquation();
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'fraction',
+            controlRevision: {
+              kind: 'insertion',
+              id: 7,
+              author: '  Alice & Bob  ',
+              date: '  2026-01-02T03:04:05+08:00  ',
+              dateUtc: '  2026-01-01T19:04:05Z  ',
+            },
+            fractionType: 'bar',
+            numerator: [],
+            denominator: [],
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toEqual({
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'fraction',
+          controlRevision: {
+            kind: 'insertion',
+            id: 7,
+            author: 'Alice & Bob',
+            date: '2026-01-02T03:04:05+08:00',
+            dateUtc: '2026-01-01T19:04:05Z',
+          },
+          fractionType: 'bar',
+          numerator: [],
+          denominator: [],
+        },
+      ],
+    });
+
+    const validRevision = {
+      kind: 'insertion',
+      id: 1,
+      author: 'Reviewer',
+    };
+    const invalidRevisions = [
+      {},
+      { ...validRevision, extra: true },
+      { ...validRevision, kind: 'replacement' },
+      { ...validRevision, id: -1 },
+      { ...validRevision, id: 2_147_483_648 },
+      { ...validRevision, id: 1.5 },
+      { ...validRevision, id: '1' },
+      { ...validRevision, author: '' },
+      { ...validRevision, author: 'x'.repeat(256) },
+      { ...validRevision, author: 'unsafe\u0000author' },
+      { ...validRevision, date: '' },
+      { ...validRevision, date: 'not-a-date' },
+      { ...validRevision, date: '2026-02-30T03:04:05Z' },
+      { ...validRevision, dateUtc: '' },
+      { ...validRevision, dateUtc: 'not-a-date' },
+      { ...validRevision, dateUtc: '2026-01-02T03:04:05+08:00' },
+      { ...validRevision, child: null },
+      { ...validRevision, child: validRevision },
+      {
+        kind: 'deletion',
+        id: 2,
+        author: 'Reviewer',
+        child: { ...validRevision, kind: 'deletion' },
+      },
+      {
+        kind: 'moveFrom',
+        id: 2,
+        author: 'Reviewer',
+        child: { ...validRevision, kind: 'moveTo' },
+      },
+      {
+        kind: 'moveTo',
+        id: 2,
+        author: 'Reviewer',
+        child: { ...validRevision, kind: 'moveFrom' },
+      },
+    ];
+    for (const controlRevision of invalidRevisions) {
+      expect(
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [
+            {
+              type: 'fraction',
+              controlRevision,
+              fractionType: 'bar',
+              numerator: [],
+              denominator: [],
+            },
+          ],
+        } as unknown as WorkDocumentEquation),
+      ).toBeNull();
+    }
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'x',
+            controlRevision: validRevision,
+          },
+        ],
+      } as unknown as WorkDocumentEquation),
+    ).toBeNull();
+
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const revisedObject = (content: string) =>
+      `<m:f><m:fPr><m:ctrlPr xmlns:w="${WORD_NAMESPACE}" xmlns:w16du="${WORD_DATE_UTC_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}" xmlns:v="${VENDOR_NAMESPACE}">${content}</m:ctrlPr></m:fPr><m:num>${run}</m:num><m:den>${run}</m:den></m:f>`;
+    expect(
+      inspectEquationModel(
+        revisedObject(
+          '<w:ins w:id="+0007" w:author=" Alice &amp; Bob " w:date="2026-01-02T03:04:05+08:00" w16du:dateUtc="2026-01-01T19:04:05Z"><w:del w:id="2147483647" w:author="Final reviewer"><w:rPr><w:b/></w:rPr></w:del></w:ins>',
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'fraction',
+      controlRevision: {
+        kind: 'insertion',
+        id: 7,
+        author: 'Alice & Bob',
+        date: '2026-01-02T03:04:05+08:00',
+        dateUtc: '2026-01-01T19:04:05Z',
+        child: {
+          kind: 'deletion',
+          id: 2_147_483_647,
+          author: 'Final reviewer',
+        },
+      },
+      controlProperties: { bold: true },
+      fractionType: 'bar',
+      numerator: [{ type: 'run', text: 'x' }],
+      denominator: [{ type: 'run', text: 'x' }],
+    });
+
+    const malformed = [
+      '<w:ins w:id="1"><w:rPr/></w:ins>',
+      '<w:ins w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins id="1" w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins r:id="1" w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" w:extra="semantic"><w:rPr/></w:ins>',
+      '<w:ins w:id="-1" w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins w:id="2147483648" w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins w:id="1.5" w:author="Reviewer"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author=""><w:rPr/></w:ins>',
+      `<w:ins w:id="1" w:author="${'x'.repeat(256)}"><w:rPr/></w:ins>`,
+      '<w:ins w:id="1" w:author="Reviewer" w:date="not-a-date"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" v:dateUtc="2026-01-02T03:04:05Z"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" dateUtc="2026-01-02T03:04:05Z"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" w:dateUtc="2026-01-02T03:04:05Z"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" w16du:dateUtc="2026-01-02T03:04:05+08:00"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer" w16du:extra="semantic"><w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer">meaningful<w:rPr/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer"><w:rPr/><w:del w:id="2" w:author="Reviewer"/></w:ins>',
+      '<w:ins w:id="1" w:author="Reviewer"><w:ins w:id="2" w:author="Reviewer"/></w:ins>',
+      '<w:del w:id="1" w:author="Reviewer"><w:ins w:id="2" w:author="Reviewer"/></w:del>',
+      '<w:moveFrom w:id="1" w:author="Reviewer"><w:moveTo w:id="2" w:author="Reviewer"/></w:moveFrom>',
+      '<w:moveTo w:id="1" w:author="Reviewer"><w:moveFrom w:id="2" w:author="Reviewer"/></w:moveTo>',
+      '<v:ins v:id="1" v:author="Reviewer"><w:rPr/></v:ins>',
+    ];
+    expect(malformed.map(revisedObject).map(inspectEquationBody)).toEqual(
+      malformed.map(() => 'unsupported'),
+    );
+
+    const strictSource = `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}" xmlns:w16du="${WORD_DATE_UTC_NAMESPACE}"><m:box><m:boxPr><m:ctrlPr><w:moveTo w:id="9" w:author="Strict reviewer" w16du:dateUtc="2026-03-04T05:06:07Z"><w:del w:id="10" w:author="Strict reviewer"><w:rPr><w:i/></w:rPr></w:del></w:moveTo></m:ctrlPr></m:boxPr><m:e>${run}</m:e></m:box></m:oMath>`;
+    expect(inspectEquationRoot(strictSource)).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            controlRevision: {
+              kind: 'moveTo',
+              id: 9,
+              author: 'Strict reviewer',
+              dateUtc: '2026-03-04T05:06:07Z',
+              child: {
+                kind: 'deletion',
+                id: 10,
+                author: 'Strict reviewer',
+              },
+            },
+            controlProperties: { italic: true },
+          },
+        ],
+      },
+    });
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const slash = Array.from(preview.querySelectorAll('mo')).find(
+      (operator) => operator.textContent === '/',
+    );
+    expect(slash?.getAttribute('mathcolor')).toBe('#1a2b3c');
+    expect(preview.querySelectorAll('ins, del, movefrom, moveto')).toHaveLength(
+      0,
+    );
+    expect(preview.querySelectorAll('[data-document-change]')).toHaveLength(0);
+
+    const everyObjectRevision = everyObjectControlRevisionEquation();
+    expect(normalizeDocumentEquation(everyObjectRevision)).toEqual(
+      everyObjectRevision,
+    );
+    const everyObjectArtifact = createArtifact('blank-document');
+    if (everyObjectArtifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    everyObjectArtifact.content.html = `<p>${equationHtml(everyObjectRevision)}</p>`;
+    await expectNativeControlRevisionOnEveryObject(
+      await createArtifactBlob(everyObjectArtifact),
+    );
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeControlRevisions(first);
+
+    const firstArchive = await JSZip.loadAsync(await first.arrayBuffer());
+    const firstDocument = await xmlEntry(firstArchive, 'word/document.xml');
+    const nativeEquation = descendants(firstDocument, 'oMath').find(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(nativeEquation).toBeDefined();
+    const standalone = nativeEquation?.cloneNode(true) as Element;
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    standalone.setAttributeNS(
+      XMLNS_NAMESPACE,
+      'xmlns:w16du',
+      WORD_DATE_UTC_NAMESPACE,
+    );
+    const strictRoundTripSource = new XMLSerializer()
+      .serializeToString(standalone)
+      .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
+      .replaceAll(WORD_NAMESPACE, STRICT_WORD_NAMESPACE);
+    expect(inspectEquationRoot(strictRoundTripSource)).toMatchObject({
+      status: 'supported',
+      equation,
+    });
+
+    const imported = await importOfficeFile(
+      new File([first], 'control-revisions.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeControlRevisions(await createArtifactBlob(imported));
+  });
+
   test('preserves bounded relative argument sizes and projects only Word-effective slots', async () => {
     const equation = argumentSizesEquation();
     expect(normalizeDocumentEquation(equation)).toEqual(equation);
@@ -3317,6 +3597,112 @@ function argumentControlPropertiesEquation(): WorkDocumentEquation {
   };
 }
 
+function controlRevisionEquation(): WorkDocumentEquation {
+  const run = (text: string) => ({ type: 'run' as const, text });
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'fraction',
+        controlRevision: {
+          kind: 'insertion',
+          id: 0,
+          author: 'Alice & Bob',
+          date: '2026-01-02T03:04:05Z',
+          dateUtc: '2026-01-02T03:04:05.123Z',
+          child: {
+            kind: 'deletion',
+            id: 2_147_483_647,
+            author: 'Final reviewer',
+          },
+        },
+        controlProperties: {
+          bold: true,
+          color: { value: '#1a2b3c' },
+        },
+        fractionType: 'linear',
+        numerator: [run('revision-numerator')],
+        denominator: [run('revision-denominator')],
+      },
+      {
+        type: 'box',
+        controlRevision: {
+          kind: 'deletion',
+          id: 1,
+          author: 'Deletion reviewer',
+        },
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        children: [run('revision-argument')],
+        childrenProperties: {
+          controlRevision: {
+            kind: 'moveFrom',
+            id: 2,
+            author: 'Move source reviewer',
+            date: '2026-02-03T04:05:06.789+08:00',
+            dateUtc: '2026-02-02T20:05:06.789Z',
+            child: {
+              kind: 'insertion',
+              id: 3,
+              author: 'Nested insertion reviewer',
+              child: {
+                kind: 'deletion',
+                id: 4,
+                author: 'Nested deletion reviewer',
+              },
+            },
+          },
+          controlProperties: { italic: true, fontSize: 12.5 },
+        },
+      },
+      {
+        type: 'delimiter',
+        controlRevision: {
+          kind: 'moveTo',
+          id: 5,
+          author: 'Move destination reviewer',
+          child: {
+            kind: 'deletion',
+            id: 6,
+            author: 'Destination deletion reviewer',
+          },
+        },
+        controlProperties: {
+          underline: { style: 'single' },
+        },
+        opening: '[',
+        closing: ']',
+        separator: ';',
+        arguments: [[run('revision-delimiter')]],
+      },
+    ],
+  } as unknown as WorkDocumentEquation;
+}
+
+function everyObjectControlRevisionEquation(): WorkDocumentEquation {
+  const source = controlPropertiesEquation();
+  return {
+    ...source,
+    children: source.children.map((expression, index) => {
+      if (expression.type === 'run') {
+        throw new Error('Expected an object equation expression.');
+      }
+      const { controlProperties: _controlProperties, ...rest } = expression;
+      return {
+        ...rest,
+        controlRevision: {
+          kind: 'deletion',
+          id: index,
+          author: `Object reviewer ${index}`,
+        },
+      } as typeof expression;
+    }),
+  };
+}
+
 function argumentSizesEquation(): WorkDocumentEquation {
   const run = (text: string) => ({ type: 'run' as const, text });
   const sized = (size: -2 | -1 | 1 | 2) => ({ size });
@@ -4084,6 +4470,176 @@ async function expectNativeArgumentControlProperties(
     expect(
       directChildren(wordProperties[0]).map((child) => child.localName),
     ).toEqual(expectedWordPropertyNames);
+  }
+}
+
+async function expectNativeControlRevisions(blob: Blob): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const revisionNames = new Set(['ins', 'del', 'moveFrom', 'moveTo']);
+  const controlProperties = descendants(document, 'ctrlPr').filter(
+    (candidate) =>
+      candidate.namespaceURI === MATH_NAMESPACE &&
+      revisionNames.has(directChildren(candidate)[0]?.localName ?? ''),
+  );
+  expect(controlProperties).toHaveLength(4);
+  expect(
+    controlProperties.map((controlProperty) => {
+      const revisions: Array<{
+        kind: string;
+        id: string | undefined;
+        author: string | undefined;
+        date: string | undefined;
+        dateUtc: string | undefined;
+      }> = [];
+      let current = directChildren(controlProperty)[0];
+      while (current && revisionNames.has(current.localName)) {
+        expect(current.namespaceURI).toBe(WORD_NAMESPACE);
+        const attributes = wordAttributes(current);
+        revisions.push({
+          kind: current.localName,
+          id: attributes.id,
+          author: attributes.author,
+          date: attributes.date,
+          dateUtc: wordDateUtcAttribute(current),
+        });
+        const children = directChildren(current);
+        expect(children.length).toBeLessThanOrEqual(1);
+        current = children[0];
+      }
+      if (current) expect(current.namespaceURI).toBe(WORD_NAMESPACE);
+      return {
+        revisions,
+        leaf:
+          current?.localName === 'rPr'
+            ? directChildren(current).map((child) => child.localName)
+            : null,
+      };
+    }),
+  ).toEqual([
+    {
+      revisions: [
+        {
+          kind: 'ins',
+          id: '0',
+          author: 'Alice & Bob',
+          date: '2026-01-02T03:04:05Z',
+          dateUtc: '2026-01-02T03:04:05.123Z',
+        },
+        {
+          kind: 'del',
+          id: '2147483647',
+          author: 'Final reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+      ],
+      leaf: ['b', 'color'],
+    },
+    {
+      revisions: [
+        {
+          kind: 'del',
+          id: '1',
+          author: 'Deletion reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+      ],
+      leaf: null,
+    },
+    {
+      revisions: [
+        {
+          kind: 'moveFrom',
+          id: '2',
+          author: 'Move source reviewer',
+          date: '2026-02-03T04:05:06.789+08:00',
+          dateUtc: '2026-02-02T20:05:06.789Z',
+        },
+        {
+          kind: 'ins',
+          id: '3',
+          author: 'Nested insertion reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+        {
+          kind: 'del',
+          id: '4',
+          author: 'Nested deletion reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+      ],
+      leaf: ['i', 'sz'],
+    },
+    {
+      revisions: [
+        {
+          kind: 'moveTo',
+          id: '5',
+          author: 'Move destination reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+        {
+          kind: 'del',
+          id: '6',
+          author: 'Destination deletion reviewer',
+          date: undefined,
+          dateUtc: undefined,
+        },
+      ],
+      leaf: ['u'],
+    },
+  ]);
+}
+
+async function expectNativeControlRevisionOnEveryObject(
+  blob: Blob,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const propertyContainerNames = [
+    'fPr',
+    'sSupPr',
+    'sSubPr',
+    'sSubSupPr',
+    'sPrePr',
+    'limLowPr',
+    'limUppPr',
+    'radPr',
+    'funcPr',
+    'naryPr',
+    'accPr',
+    'barPr',
+    'groupChrPr',
+    'phantPr',
+    'borderBoxPr',
+    'boxPr',
+    'mPr',
+    'eqArrPr',
+    'dPr',
+  ];
+  for (const [index, name] of propertyContainerNames.entries()) {
+    const containers = descendants(document, name).filter(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(containers, name).toHaveLength(1);
+    const controlProperties = directChildren(containers[0]).at(-1);
+    expect(controlProperties?.localName, name).toBe('ctrlPr');
+    expect(controlProperties?.namespaceURI, name).toBe(MATH_NAMESPACE);
+    const revision = directChildren(controlProperties as Element);
+    expect(
+      revision.map((child) => `${child.namespaceURI}:${child.localName}`),
+      name,
+    ).toEqual([`${WORD_NAMESPACE}:del`]);
+    expect(wordAttributes(revision[0]), name).toEqual({
+      id: String(index),
+      author: `Object reviewer ${index}`,
+    });
+    expect(directChildren(revision[0]), name).toHaveLength(0);
   }
 }
 
@@ -4920,6 +5476,14 @@ function wordAttributes(element: Element): Record<string, string> {
       )
       .map((attribute) => [xmlAttributeLocalName(attribute), attribute.value]),
   );
+}
+
+function wordDateUtcAttribute(element: Element): string | undefined {
+  return Array.from(element.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(element, attribute) === WORD_DATE_UTC_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'dateUtc',
+  )?.value;
 }
 
 function mathRunProperties(

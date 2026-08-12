@@ -4,6 +4,7 @@ import {
   normalizeDocumentEquation,
   type WorkDocumentEquation,
   type WorkDocumentEquationArgumentProperties,
+  type WorkDocumentEquationControlRevision,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationFractionType,
   type WorkDocumentEquationJustification,
@@ -92,6 +93,16 @@ interface ParsedMathArgument {
   properties?: WorkDocumentEquationArgumentProperties;
 }
 
+interface ParsedMathControlProperties {
+  controlProperties?: WorkDocumentEquationWordRunProperties;
+  controlRevision?: WorkDocumentEquationControlRevision;
+}
+
+interface ParsedMathControlRevision {
+  revision: WorkDocumentEquationControlRevision;
+  controlProperties?: WorkDocumentEquationWordRunProperties;
+}
+
 const TRANSITIONAL_MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -99,6 +110,8 @@ const DOCX_MATH_NAMESPACES = new Set([
   TRANSITIONAL_MATH_NAMESPACE,
   STRICT_MATH_NAMESPACE,
 ]);
+const WORD_DATE_UTC_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
 const WORD_RUN_PROPERTY_ORDER = [
   'rFonts',
   'b',
@@ -180,6 +193,17 @@ const MAX_EQUATION_ARRAY_ROWS = 64;
 const MAX_WORD_FONT_NAME_LENGTH = 127;
 const MAX_WORD_LANGUAGE_LENGTH = 85;
 const MAX_WORD_HALF_POINT_SIZE = 1_024;
+const MAX_WORD_MATH_CONTROL_REVISION_ID = 2_147_483_647;
+const MAX_WORD_MATH_CONTROL_REVISION_AUTHOR_LENGTH = 255;
+const MAX_WORD_MATH_CONTROL_REVISION_DATE_LENGTH = 64;
+const WORD_MATH_CONTROL_REVISION_NAMES = new Set([
+  'ins',
+  'del',
+  'moveFrom',
+  'moveTo',
+]);
+const WORD_MATH_INSERTION_CHILD_NAMES = new Set(['del']);
+const WORD_MATH_MOVE_CHILD_NAMES = new Set(['ins', 'del']);
 const DEFAULT_ACCENT_CHARACTER = '\u0302';
 const DEFAULT_DELIMITER_SEPARATOR = '\u2502';
 const DEFAULT_GROUP_CHARACTER = '\u23df';
@@ -776,7 +800,7 @@ function parseWordRunProperties(
 
 function parseMathControlProperties(
   controlProperties: Element | undefined,
-): { controlProperties?: WorkDocumentEquationWordRunProperties } | null {
+): ParsedMathControlProperties | null {
   if (!controlProperties) return {};
   if (
     !DOCX_MATH_NAMESPACES.has(controlProperties.namespaceURI ?? '') ||
@@ -787,16 +811,118 @@ function parseMathControlProperties(
   }
   const children = directChildren(controlProperties);
   if (children.length > 1) return null;
-  const wordProperties = children[0];
-  if (!wordProperties) return {};
+  const child = children[0];
+  if (!child) return {};
+  if (child.localName === 'rPr') {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
+      return null;
+    }
+    const parsed = parseWordRunProperties(child);
+    return parsed === null ? null : parsed ? { controlProperties: parsed } : {};
+  }
+  const parsed = parseMathControlRevision(
+    child,
+    WORD_MATH_CONTROL_REVISION_NAMES,
+  );
+  return parsed
+    ? {
+        controlRevision: parsed.revision,
+        ...(parsed.controlProperties
+          ? { controlProperties: parsed.controlProperties }
+          : {}),
+      }
+    : null;
+}
+
+function parseMathControlRevision(
+  element: Element,
+  allowedNames: ReadonlySet<string>,
+): ParsedMathControlRevision | null {
   if (
-    wordProperties.localName !== 'rPr' ||
-    !DOCX_WORDPROCESSING_NAMESPACES.has(wordProperties.namespaceURI ?? '')
+    !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
+    !allowedNames.has(element.localName) ||
+    hasMeaningfulDirectText(element)
   ) {
     return null;
   }
-  const parsed = parseWordRunProperties(wordProperties);
-  return parsed === null ? null : parsed ? { controlProperties: parsed } : {};
+  const attributes = wordMathControlRevisionAttributes(element);
+  if (
+    !attributes?.has('id') ||
+    !attributes.has('author') ||
+    attributes.size > 4
+  ) {
+    return null;
+  }
+  const sourceId = attributes.get('id')?.trim() ?? '';
+  const author = attributes.get('author')?.trim() ?? '';
+  const date = attributes.get('date')?.trim();
+  const dateUtc = attributes.get('dateUtc')?.trim();
+  if (
+    !/^\+?\d+$/u.test(sourceId) ||
+    !author ||
+    author.length > MAX_WORD_MATH_CONTROL_REVISION_AUTHOR_LENGTH ||
+    /[\p{Cc}\p{Cs}]/u.test(author) ||
+    (date !== undefined &&
+      (!date || date.length > MAX_WORD_MATH_CONTROL_REVISION_DATE_LENGTH)) ||
+    (dateUtc !== undefined &&
+      (!dateUtc || dateUtc.length > MAX_WORD_MATH_CONTROL_REVISION_DATE_LENGTH))
+  ) {
+    return null;
+  }
+  const id = Number(sourceId);
+  if (
+    !Number.isSafeInteger(id) ||
+    id < 0 ||
+    id > MAX_WORD_MATH_CONTROL_REVISION_ID
+  ) {
+    return null;
+  }
+
+  const children = directChildren(element);
+  if (children.length > 1) return null;
+  const child = children[0];
+  let nested: ParsedMathControlRevision | undefined;
+  let controlProperties: WorkDocumentEquationWordRunProperties | undefined;
+  if (child?.localName === 'rPr') {
+    if (!DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')) {
+      return null;
+    }
+    const parsed = parseWordRunProperties(child);
+    if (parsed === null) return null;
+    controlProperties = parsed;
+  } else if (child) {
+    const childNames =
+      element.localName === 'ins'
+        ? WORD_MATH_INSERTION_CHILD_NAMES
+        : element.localName === 'moveFrom' || element.localName === 'moveTo'
+          ? WORD_MATH_MOVE_CHILD_NAMES
+          : undefined;
+    if (!childNames) return null;
+    nested = parseMathControlRevision(child, childNames) ?? undefined;
+    if (!nested) return null;
+    controlProperties = nested.controlProperties;
+  }
+
+  const kind =
+    element.localName === 'ins'
+      ? 'insertion'
+      : element.localName === 'del'
+        ? 'deletion'
+        : element.localName === 'moveFrom'
+          ? 'moveFrom'
+          : 'moveTo';
+  const revision = {
+    kind,
+    id,
+    author,
+    ...(date ? { date } : {}),
+    ...(dateUtc ? { dateUtc } : {}),
+    ...(nested ? { child: nested.revision } : {}),
+  } as WorkDocumentEquationControlRevision;
+  return {
+    revision,
+    ...(controlProperties ? { controlProperties } : {}),
+  };
 }
 
 function parseWordRunFonts(
@@ -940,9 +1066,33 @@ function wordLeafAttributes(
   element: Element,
   allowed: ReadonlySet<string>,
 ): Map<string, string> | null {
+  if (directChildren(element).length) return null;
+  return wordElementAttributes(element, allowed);
+}
+
+function wordMathControlRevisionAttributes(
+  element: Element,
+): Map<string, string> | null {
+  const result = new Map<string, string>();
+  for (const attribute of meaningfulAttributes(element)) {
+    const name = xmlAttributeLocalName(attribute);
+    const namespace = xmlAttributeNamespace(element, attribute);
+    const supported =
+      (DOCX_WORDPROCESSING_NAMESPACES.has(namespace ?? '') &&
+        ['id', 'author', 'date'].includes(name)) ||
+      (namespace === WORD_DATE_UTC_NAMESPACE && name === 'dateUtc');
+    if (!supported || result.has(name)) return null;
+    result.set(name, attribute.value);
+  }
+  return result;
+}
+
+function wordElementAttributes(
+  element: Element,
+  allowed: ReadonlySet<string>,
+): Map<string, string> | null {
   if (
     !DOCX_WORDPROCESSING_NAMESPACES.has(element.namespaceURI ?? '') ||
-    directChildren(element).length ||
     hasMeaningfulDirectText(element)
   ) {
     return null;
@@ -1215,9 +1365,7 @@ function parseGroupCharacter(
   let character: string | null = DEFAULT_GROUP_CHARACTER;
   let sourcePosition: string | null = 'bot';
   let sourceVerticalJustification: string | null = 'top';
-  let parsedControlProperties: {
-    controlProperties?: WorkDocumentEquationWordRunProperties;
-  } | null = {};
+  let parsedControlProperties: ParsedMathControlProperties | null = {};
   if (properties) {
     const propertyOrder = ['chr', 'pos', 'vertJc', 'ctrlPr'];
     if (
@@ -1298,9 +1446,7 @@ function parsePhantom(
   let zeroAscent: boolean | null = false;
   let zeroDescent: boolean | null = false;
   let transparent: boolean | null = false;
-  let parsedControlProperties: {
-    controlProperties?: WorkDocumentEquationWordRunProperties;
-  } | null = {};
+  let parsedControlProperties: ParsedMathControlProperties | null = {};
   if (properties) {
     const propertyOrder = [
       'show',
@@ -1703,10 +1849,9 @@ function parseSubSuperScript(
     : null;
 }
 
-function parseSubSuperScriptProperties(properties: Element | undefined): {
-  alignScripts?: boolean;
-  controlProperties?: WorkDocumentEquationWordRunProperties;
-} | null {
+function parseSubSuperScriptProperties(
+  properties: Element | undefined,
+): (ParsedMathControlProperties & { alignScripts?: boolean }) | null {
   if (!properties) return {};
   const propertyOrder = ['alnScr', 'ctrlPr'];
   if (
@@ -1731,7 +1876,7 @@ function parseSubSuperScriptProperties(properties: Element | undefined): {
 
 function parseControlOnlyMathProperties(
   properties: Element | undefined,
-): { controlProperties?: WorkDocumentEquationWordRunProperties } | null {
+): ParsedMathControlProperties | null {
   if (!properties) return {};
   if (!structuralChildren(properties, new Set(['ctrlPr']))) return null;
   const controlProperties = uniqueMathChild(properties, 'ctrlPr', false);
@@ -2093,6 +2238,7 @@ function parseEquationArrayProperties(properties: Element | undefined): {
   rowSpacingRule: WorkDocumentEquationRowSpacingRule;
   rowSpacing: number;
   controlProperties?: WorkDocumentEquationWordRunProperties;
+  controlRevision?: WorkDocumentEquationControlRevision;
 } | null {
   if (!properties) {
     return {
@@ -2245,6 +2391,7 @@ function parseMatrixProperties(
   placeholdersHidden: boolean;
   columnAlignments: WorkDocumentEquationMatrixAlignment[];
   controlProperties?: WorkDocumentEquationWordRunProperties;
+  controlRevision?: WorkDocumentEquationControlRevision;
 } | null {
   if (!properties) {
     return {
