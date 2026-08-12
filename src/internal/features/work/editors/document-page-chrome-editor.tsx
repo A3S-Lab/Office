@@ -27,22 +27,23 @@ import {
   DocumentSubscript,
   DocumentSuperscript,
 } from '../work-document-character-formatting';
-import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
+import { DocumentEquation } from '../work-document-equations';
 import { DocumentImage } from '../work-document-image-layout';
-import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
-import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
+import { DOCUMENT_LINK_VALIDATION_MESSAGE } from '../work-document-links';
+import { sanitizeDocumentPageChromeHtml } from '../work-document-page-chrome';
 import {
   DocumentPageChromeCommands,
   normalizeDocumentPageChromeHref,
 } from '../work-document-page-chrome-commands';
-import { sanitizeDocumentPageChromeHtml } from '../work-document-page-chrome';
+import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
+import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
+import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
 import {
   OfficeColorPicker,
   OfficeFileInput,
   useOfficeDialog,
 } from './office-controls';
 import { readOfficeFileAsDataUrl } from './office-file-data';
-import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
 
 export type DocumentPageChromeAlignment =
   | 'center'
@@ -388,6 +389,7 @@ export function createDocumentPageChromeEditorExtensions(
       },
     }),
     DocumentImage.configure({ allowBase64: true, inline: true }),
+    DocumentEquation,
     TextStyle,
     Color,
     Underline,

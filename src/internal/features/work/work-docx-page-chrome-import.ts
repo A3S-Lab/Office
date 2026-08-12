@@ -1,14 +1,20 @@
+import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
 } from './work-document-page-chrome';
-import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
 import {
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
   normalizeDocumentTableRowIdentity,
 } from './work-document-table-row-identity';
+import { docxEquationHtml } from './work-docx-equation-import';
+import { isDocxEquationLikeRoot } from './work-docx-equation-story';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from './work-docx-settings-xml';
 import {
   attribute,
   bytesToDataUrl,
@@ -20,10 +26,6 @@ import {
   type OoxmlPackage,
   type OoxmlRelationship,
 } from './work-ooxml-package';
-import {
-  xmlAttributeLocalName,
-  xmlAttributeNamespace,
-} from './work-docx-settings-xml';
 import type {
   WorkDocumentPageChrome,
   WorkDocumentPageChromeContent,
@@ -160,6 +162,8 @@ async function pageChromePartHtml(
       blocks.push(await paragraphHtml(child, archive, relationships));
     if (child.localName === 'tbl')
       blocks.push(await tableHtml(child, archive, relationships));
+    if (isDocxEquationLikeRoot(child))
+      blocks.push(`<p>${docxEquationHtml(child)}</p>`);
   }
   return blocks.join('');
 }
@@ -192,6 +196,10 @@ async function paragraphHtml(
   let html = '';
   for (const child of directChildren(paragraph)) {
     if (child.localName === 'pPr') continue;
+    if (isDocxEquationLikeRoot(child)) {
+      html += docxEquationHtml(child);
+      continue;
+    }
     if (child.localName === 'hyperlink') {
       const content = await containerRunsHtml(
         child,
@@ -242,8 +250,13 @@ async function containerRunsHtml(
   if (container.localName === 'r')
     return runHtml(container, field, archive, relationships);
   let html = '';
-  for (const run of descendants(container, 'r'))
-    html += await runHtml(run, field, archive, relationships);
+  for (const child of directChildren(container)) {
+    if (isDocxEquationLikeRoot(child)) {
+      html += docxEquationHtml(child);
+      continue;
+    }
+    html += await containerRunsHtml(child, field, archive, relationships);
+  }
   return html;
 }
 
@@ -265,6 +278,10 @@ async function runHtml(
       continue;
     }
     if (!fieldContentVisible(field)) continue;
+    if (isDocxEquationLikeRoot(child)) {
+      content += docxEquationHtml(child);
+      continue;
+    }
     if (child.localName === 't') content += escapeHtml(child.textContent ?? '');
     if (child.localName === 'tab') content += '&#9;';
     if (child.localName === 'br' || child.localName === 'cr') content += '<br>';

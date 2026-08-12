@@ -2,6 +2,7 @@ import type { WorkBook, WorkSheet } from 'xlsx';
 import { diagnoseDocxBookmarksAndLinks } from './work-docx-bookmark-diagnostics';
 import { diagnoseDocxCaptions } from './work-docx-caption-diagnostics';
 import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
+import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
 import {
@@ -50,7 +51,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.package-state',
       'OOXML package state',
-      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Text-stable direct, supported-hyperlink-wrapped, and eligible static-content-control note and comment runs retain paragraph, table, wrapper, run, and run-property metadata; native note tables and DrawingML pictures remain editable, note image relationships and media targets are repaired and validated, uniquely matched table-bearing rich-text controls are reconstructed, safe web, mail, and internal note/comment links are rebound to collision-free final relationship IDs, and content-control ID collisions are rewritten. Native note, comment, and note-picture identities survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-text or table structure, malformed, duplicate or cross-kind, active, unsupported wrappers, mixed-semantic, unsafe relationship-bound, legacy VML, non-picture drawings, or unsupported rich content may normalize.',
+      'Source-backed export retains safe source-only parts byte-for-byte and reconnects their content types and relationships. Passive relationship-free extensions in settings XML, uniquely matched style or numbering identities, stable picture drawings, unchanged native-identity paragraphs, stable table, row, or cell scopes, and uniquely matched footnote, endnote, comment, or comment-thread records are preserved against the final package graph. Text-stable direct, supported-hyperlink-wrapped, and eligible static-content-control note and comment runs retain paragraph, table, wrapper, run, and run-property metadata; native note tables and DrawingML pictures remain editable, note image relationships and media targets are repaired and validated, bounded structured OMML equations remain atomically updateable in supported Word stories, uniquely matched table-bearing rich-text controls are reconstructed, safe web, mail, and internal note/comment links are rebound to collision-free final relationship IDs, and content-control ID collisions are rewritten. Native note, comment, and note-picture identities survive reorderings, comment durable IDs are rebound to regenerated paragraph IDs, and eligible source font-table metadata is retained. Generated Word semantics remain authoritative; source-only, changed-text or table structure, malformed, duplicate or cross-kind, active, unsupported wrappers, mixed-semantic, unsafe relationship-bound, legacy VML, non-picture drawings, or unsupported rich content may normalize.',
       'info',
     ),
   ];
@@ -165,6 +166,7 @@ export async function analyzeDocxCompatibility(
       }
     }
     issues.push(...(await diagnoseDocxNotes(archive, document)));
+    issues.push(...(await diagnoseDocxEquations(archive, document)));
     issues.push(...(await diagnoseDocxPageChrome(archive)));
     if (archive.paths('word/embeddings/').length) {
       issues.push(

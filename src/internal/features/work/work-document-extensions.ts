@@ -24,6 +24,7 @@ import {
   DocumentCitation,
 } from './work-document-citation-nodes';
 import { DocumentComment } from './work-document-comments';
+import { DocumentEquation } from './work-document-equations';
 import { DocumentField } from './work-document-field-node';
 import { DocumentImage } from './work-document-image-layout';
 import {
@@ -114,6 +115,7 @@ export function createWorkDocumentExtensions(
     citationExtension,
     DocumentBibliography,
     DocumentField,
+    DocumentEquation,
     commentExtension,
     DocumentNoteReference,
     DocumentNote,

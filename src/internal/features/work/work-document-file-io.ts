@@ -4,12 +4,12 @@ import {
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
-import { createWorkArtifact } from './work-templates';
 import {
   readVerifiedWorkSourceBytes,
   rememberWorkSourceBlob,
   workSourceFingerprint,
 } from './work-repository';
+import { createWorkArtifact } from './work-templates';
 import type { WorkArtifact, WorkDocumentContent } from './work-types';
 
 const DOCX_CONTENT_TYPE =
@@ -45,6 +45,7 @@ export async function importWorkDocumentFile(
           prepared.changeMarkers,
           prepared.commentMarkers,
           prepared.fieldMarkers,
+          prepared.equationMarkers,
           prepared.citationMarkers,
           prepared.listMarkers,
           prepared.imageLayoutMarkers,

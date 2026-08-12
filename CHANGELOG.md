@@ -4,6 +4,17 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added bounded structured OMML equations for Word documents. Inline and
+  display equations now round-trip as native `m:oMath` and `m:oMathPara`
+  across the document body, headers, footers, footnotes, and endnotes, with an
+  accessible MathML preview and atomic insert/update commands. The structured
+  subset covers Unicode runs, bar/no-bar/skewed/linear fractions, super- and
+  subscripts, radicals, functions, supported n-ary operators, and custom
+  delimiters in strict or transitional UTF-8/UTF-16 packages. Depth, node,
+  text, model-size, and equation-count budgets are enforced. Matrices,
+  accents, bar operators, boxes, equation arrays, limits, phantoms, pre-scripts,
+  malformed placement, namespace spoofing, nested math, and relationship-bound
+  properties fail closed to bounded text with explicit diagnostics.
 - Added source-backed DOCX package preservation. Browser import now registers
   the original package, and export retains safe source-only OPC parts,
   content-type declarations, and relationships while generated core parts stay

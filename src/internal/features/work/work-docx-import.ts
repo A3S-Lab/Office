@@ -43,6 +43,11 @@ import {
   markDocxComments,
 } from './work-docx-comment-import';
 import {
+  applyImportedDocxEquationMarkers,
+  type ImportedDocxEquationMarkers,
+  markDocxPackageEquations,
+} from './work-docx-equation-import';
+import {
   applyImportedDocxFieldMarkers,
   hasImportedDocxFieldMarkers,
   type ImportedDocxFieldMarkers,
@@ -61,11 +66,11 @@ import {
   type ImportedDocxListMarkers,
   markDocxLists,
 } from './work-docx-list-import';
+import { markDocxNoteImageLayouts } from './work-docx-note-image-import';
 import {
   extractMammothDocumentNotes,
   placeMammothDocumentNotes,
 } from './work-docx-note-import';
-import { markDocxNoteImageLayouts } from './work-docx-note-image-import';
 import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
@@ -84,17 +89,17 @@ import {
   markDocxParagraphDirections,
 } from './work-docx-paragraph-direction-import';
 import {
-  applyImportedDocxParagraphIndentMarkers,
-  hasImportedDocxParagraphIndentMarkers,
-  type ImportedDocxParagraphIndentMarkers,
-  markDocxParagraphIndents,
-} from './work-docx-paragraph-indent-import';
-import {
   applyImportedDocxParagraphIdentityMarkers,
   hasImportedDocxParagraphIdentityMarkers,
   type ImportedDocxParagraphIdentityMarkers,
   markDocxParagraphIdentities,
 } from './work-docx-paragraph-identity-import';
+import {
+  applyImportedDocxParagraphIndentMarkers,
+  hasImportedDocxParagraphIndentMarkers,
+  type ImportedDocxParagraphIndentMarkers,
+  markDocxParagraphIndents,
+} from './work-docx-paragraph-indent-import';
 import {
   applyImportedDocxParagraphPaginationMarkers,
   hasImportedDocxParagraphPaginationMarkers,
@@ -166,6 +171,7 @@ export interface PreparedDocxImport {
   changeMarkers: ImportedDocxChangeMarkers;
   commentMarkers: ImportedDocxCommentMarkers;
   fieldMarkers: ImportedDocxFieldMarkers;
+  equationMarkers: ImportedDocxEquationMarkers;
   citationMarkers: ImportedDocxCitationMarkers;
   listMarkers: ImportedDocxListMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
@@ -208,6 +214,7 @@ export async function prepareDocxImport(
       changeMarkers: { changes: [] },
       commentMarkers: { comments: [], ranges: [] },
       fieldMarkers: { fields: [] },
+      equationMarkers: { equations: [] },
       citationMarkers: { citations: [], bibliographies: [] },
       listMarkers: { lists: [] },
       imageLayoutMarkers: { images: [] },
@@ -250,6 +257,11 @@ export async function prepareDocxImport(
     imageLayoutMarkerState,
   );
   imageLayoutMarkers.images.push(...noteImageMarkers.markers.images);
+  const equationMarkers = await markDocxPackageEquations(
+    archive,
+    document,
+    noteImageMarkers.parts,
+  );
   const paragraphStylesDocument = archive.has('word/styles.xml')
     ? await archive.xml('word/styles.xml')
     : null;
@@ -320,6 +332,7 @@ export async function prepareDocxImport(
         hasImportedDocxCommentMarkers(commentMarkers) ||
         hasImportedDocxCitationMarkers(citationMarkers) ||
         hasImportedDocxFieldMarkers(fieldMarkers) ||
+        equationMarkers.changed ||
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
@@ -333,7 +346,7 @@ export async function prepareDocxImport(
         hasImportedDocxTableCellMarkers(tableCellMarkers) ||
         hasImportedDocxTableRowMarkers(tableRowMarkers) ||
         hasImportedDocxTableSizingMarkers(tableSizingMarkers)
-          ? await writeDocumentXml(buffer, document, noteImageMarkers.parts)
+          ? await writeDocumentXml(buffer, document, equationMarkers.parts)
           : buffer,
       sections: [{ id: 'document-section-1', layout: fallback }],
       pageColor,
@@ -342,6 +355,7 @@ export async function prepareDocxImport(
       changeMarkers,
       commentMarkers,
       fieldMarkers,
+      equationMarkers: equationMarkers.markers,
       citationMarkers,
       listMarkers,
       imageLayoutMarkers,
@@ -385,6 +399,7 @@ export async function prepareDocxImport(
       hasImportedDocxCommentMarkers(commentMarkers) ||
       hasImportedDocxCitationMarkers(citationMarkers) ||
       hasImportedDocxFieldMarkers(fieldMarkers) ||
+      equationMarkers.changed ||
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
@@ -398,7 +413,7 @@ export async function prepareDocxImport(
       hasImportedDocxTableCellMarkers(tableCellMarkers) ||
       hasImportedDocxTableRowMarkers(tableRowMarkers) ||
       hasImportedDocxTableSizingMarkers(tableSizingMarkers)
-        ? await writeDocumentXml(buffer, document, noteImageMarkers.parts)
+        ? await writeDocumentXml(buffer, document, equationMarkers.parts)
         : buffer,
     sections,
     pageColor,
@@ -407,6 +422,7 @@ export async function prepareDocxImport(
     changeMarkers,
     commentMarkers,
     fieldMarkers,
+    equationMarkers: equationMarkers.markers,
     citationMarkers,
     listMarkers,
     imageLayoutMarkers,
@@ -437,6 +453,7 @@ export function applyDocxSectionsToHtml(
   changeMarkers: ImportedDocxChangeMarkers = { changes: [] },
   commentMarkers: ImportedDocxCommentMarkers = { comments: [], ranges: [] },
   fieldMarkers: ImportedDocxFieldMarkers = { fields: [] },
+  equationMarkers: ImportedDocxEquationMarkers = { equations: [] },
   citationMarkers: ImportedDocxCitationMarkers = {
     citations: [],
     bibliographies: [],
@@ -479,6 +496,7 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxCaptionMarkers(document, captionMarkers);
   applyImportedDocxCitationMarkers(document, citationMarkers);
   applyImportedDocxFieldMarkers(document, fieldMarkers);
+  applyImportedDocxEquationMarkers(document, equationMarkers);
   applyImportedDocxListMarkers(document, listMarkers);
   applyImportedDocxImageLayoutMarkers(document, imageLayoutMarkers);
   applyImportedDocxParagraphDirectionMarkers(
@@ -651,14 +669,47 @@ async function writeDocumentXml(
   additionalParts: readonly { document: Document; path: string }[] = [],
 ): Promise<ArrayBuffer> {
   const zip = await JSZip.loadAsync(buffer);
-  zip.file(
-    'word/document.xml',
-    new XMLSerializer().serializeToString(document),
-  );
+  zip.file('word/document.xml', serializeDocxConversionXml(document));
   for (const part of additionalParts) {
-    zip.file(part.path, new XMLSerializer().serializeToString(part.document));
+    zip.file(part.path, serializeDocxConversionXml(part.document));
   }
   return zip.generateAsync({ type: 'arraybuffer' });
+}
+
+function serializeDocxConversionXml(document: Document): string {
+  const dialects = new Map<string, string>([
+    [
+      'http://purl.oclc.org/ooxml/wordprocessingml/main',
+      'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+    ],
+    [
+      'http://purl.oclc.org/ooxml/officeDocument/math',
+      'http://schemas.openxmlformats.org/officeDocument/2006/math',
+    ],
+    [
+      'http://purl.oclc.org/ooxml/officeDocument/relationships',
+      'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+    ],
+    [
+      'http://purl.oclc.org/ooxml/drawingml/wordprocessingDrawing',
+      'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+    ],
+    [
+      'http://purl.oclc.org/ooxml/drawingml/main',
+      'http://schemas.openxmlformats.org/drawingml/2006/main',
+    ],
+    [
+      'http://purl.oclc.org/ooxml/drawingml/picture',
+      'http://schemas.openxmlformats.org/drawingml/2006/picture',
+    ],
+  ] as const);
+  return new XMLSerializer()
+    .serializeToString(document)
+    .replace(
+      /(\sxmlns(?::[A-Za-z_][A-Za-z0-9_.-]*)?\s*=\s*)(["'])([^"']+)\2/g,
+      (_declaration, assignment: string, quote: string, namespace: string) =>
+        `${assignment}${quote}${dialects.get(namespace) ?? namespace}${quote}`,
+    );
 }
 
 function effectiveSectionProperties(document: Document): Element[] {

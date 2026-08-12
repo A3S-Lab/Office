@@ -1,3 +1,7 @@
+import {
+  inspectDocxEquation,
+  isSupportedDocxEquationPlacement,
+} from './work-docx-equation-import';
 import { docxFieldInstructions } from './work-docx-field-instructions';
 import { descendants, type OoxmlPackage } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
@@ -39,7 +43,7 @@ export async function diagnoseDocxPageChrome(
   const issues: WorkCompatibilityIssue[] = [
     pageChromeIssue(
       'docx.headers',
-      'Rich default, first-page, and even-page headers and footers, common formatting, tables, links, inline raster images, and PAGE numbering are preserved, editable, and used by preview, PDF, and native DOCX output.',
+      'Rich default, first-page, and even-page headers and footers, common formatting, tables, links, inline raster images, supported structured OMML equations, and PAGE numbering are preserved, editable, and used by preview, PDF, and native DOCX output.',
       'info',
     ),
   ];
@@ -67,6 +71,24 @@ export async function diagnoseDocxPageChrome(
       pageChromeIssue(
         'docx.headers.page-field-position',
         "PAGE fields placed in a header are preserved through Work's centered footer page-number slot.",
+      ),
+    );
+  }
+  if (
+    documents.some(({ document }) =>
+      Array.from(document.querySelectorAll('*')).some(
+        (element) =>
+          (element.localName === 'oMath' ||
+            element.localName === 'oMathPara') &&
+          (inspectDocxEquation(element).status !== 'supported' ||
+            !isSupportedDocxEquationPlacement(element)),
+      ),
+    )
+  ) {
+    issues.push(
+      pageChromeIssue(
+        'docx.headers.equations',
+        'Unsupported, malformed, misplaced, or namespace-spoofed header/footer equations are flattened to bounded text instead of entering the editable OMML model.',
       ),
     );
   }

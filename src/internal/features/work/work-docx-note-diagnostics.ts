@@ -1,13 +1,17 @@
 import {
+  inspectDocxEquation,
+  isSupportedDocxEquationPlacement,
+} from './work-docx-equation-import';
+import {
+  xmlAttributeLocalName,
+  xmlAttributeNamespace,
+} from './work-docx-settings-xml';
+import {
   attribute,
   descendants,
   directChildren,
   type OoxmlPackage,
 } from './work-ooxml-package';
-import {
-  xmlAttributeLocalName,
-  xmlAttributeNamespace,
-} from './work-docx-settings-xml';
 import type { WorkCompatibilityIssue } from './work-types';
 
 interface DocxNotePart {
@@ -76,7 +80,7 @@ export async function diagnoseDocxNotes(
   const issues: WorkCompatibilityIssue[] = [
     noteIssue(
       'docx.notes',
-      'Footnote and endnote references, stable native IDs, editable note text, native tables and DrawingML pictures, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, table, drawing, wrapper, and text-stable run metadata are preserved.',
+      'Footnote and endnote references, stable native IDs, editable note text, native tables, DrawingML pictures, supported structured OMML equations, common inline formatting, safe web, mail, and internal hyperlinks, eligible static text content controls, preview placement, native DOCX note parts, and eligible passive definition, paragraph, table, drawing, wrapper, and text-stable run metadata are preserved.',
       'info',
     ),
   ];
@@ -92,8 +96,7 @@ export async function diagnoseDocxNotes(
     noteDocuments.some(
       ({ document: notes }) =>
         descendants(notes, 'pict').length > 0 ||
-        descendants(notes, 'oMath').length > 0 ||
-        descendants(notes, 'oMathPara').length > 0 ||
+        noteHasUnsupportedEquation(notes) ||
         descendants(notes, 'drawing').some(
           (drawing) => !isSupportedNotePicture(drawing),
         ),
@@ -102,7 +105,7 @@ export async function diagnoseDocxNotes(
     issues.push(
       noteIssue(
         'docx.notes.rich-content',
-        'Legacy VML pictures, shapes, SmartArt, equations, and non-picture drawings inside notes may be flattened or converted to inline content. Native paragraphs, tables, and validated DrawingML pictures remain editable within the declared static-content boundary.',
+        'Legacy VML pictures, shapes, SmartArt, unsupported or malformed equations, and non-picture drawings inside notes may be flattened or converted to bounded inline content. Native paragraphs, tables, validated DrawingML pictures, and supported structured OMML equations remain editable within the declared static-content boundary.',
       ),
     );
   }
@@ -139,6 +142,15 @@ export async function diagnoseDocxNotes(
     );
   }
   return issues;
+}
+
+function noteHasUnsupportedEquation(document: Document): boolean {
+  return Array.from(document.querySelectorAll('*')).some(
+    (element) =>
+      (element.localName === 'oMath' || element.localName === 'oMathPara') &&
+      (inspectDocxEquation(element).status !== 'supported' ||
+        !isSupportedDocxEquationPlacement(element)),
+  );
 }
 
 function isSupportedNotePicture(drawing: Element): boolean {

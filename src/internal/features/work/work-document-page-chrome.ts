@@ -1,3 +1,7 @@
+import {
+  createDocumentEquationElement,
+  documentEquationFromElement,
+} from './work-document-equations';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
@@ -46,6 +50,39 @@ const TABLE_ROW_IDENTITY_ATTRIBUTES = [
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
 ] as const;
+const EQUATION_ATTRIBUTES = [
+  'aria-label',
+  'class',
+  'contenteditable',
+  'data-document-equation',
+  'data-equation-display',
+  'data-equation-model',
+  'role',
+] as const;
+const MATHML_ATTRIBUTES = new Set([
+  'bevelled',
+  'display',
+  'fence',
+  'linethickness',
+  'separator',
+  'xmlns',
+]);
+const MATHML_NAMESPACE = 'http://www.w3.org/1998/Math/MathML';
+const MATHML_TAGS = new Set([
+  'math',
+  'mfrac',
+  'mo',
+  'mover',
+  'mroot',
+  'mrow',
+  'msqrt',
+  'msub',
+  'msubsup',
+  'msup',
+  'mtext',
+  'munder',
+  'munderover',
+]);
 
 const ALLOWED_TAGS = new Set([
   'a',
@@ -57,6 +94,19 @@ const ALLOWED_TAGS = new Set([
   'i',
   'img',
   'li',
+  'math',
+  'mfrac',
+  'mo',
+  'mover',
+  'mroot',
+  'mrow',
+  'msqrt',
+  'msub',
+  'msubsup',
+  'msup',
+  'mtext',
+  'munder',
+  'munderover',
   'ol',
   'p',
   's',
@@ -196,12 +246,31 @@ export function sanitizeDocumentPageChromeHtml(
     font.replaceWith(span);
   }
   for (const element of Array.from(
+    document.body.querySelectorAll<HTMLElement>('span[data-document-equation]'),
+  )) {
+    const equation = documentEquationFromElement(element);
+    if (!equation) {
+      element.replaceWith(
+        document.createTextNode(element.textContent?.trim() || '[Equation]'),
+      );
+      continue;
+    }
+    element.replaceWith(createDocumentEquationElement(document, equation));
+  }
+  for (const element of Array.from(
     document.body.querySelectorAll<HTMLElement>('*'),
   )) {
     const tag = element.tagName.toLowerCase();
     if (!ALLOWED_TAGS.has(tag)) {
       element.replaceWith(...Array.from(element.childNodes));
       continue;
+    }
+    if (MATHML_TAGS.has(tag)) {
+      const equation = element.closest('span[data-document-equation="true"]');
+      if (element.namespaceURI !== MATHML_NAMESPACE || !equation) {
+        element.replaceWith(...Array.from(element.childNodes));
+        continue;
+      }
     }
     sanitizeAttributes(element, tag);
   }
@@ -239,7 +308,16 @@ function normalizePageChromeContent(
   };
 }
 
-function sanitizeAttributes(element: HTMLElement, tag: string) {
+function sanitizeAttributes(element: Element, tag: string) {
+  if (MATHML_TAGS.has(tag)) {
+    for (const attribute of Array.from(element.attributes)) {
+      if (!MATHML_ATTRIBUTES.has(attribute.name.toLowerCase())) {
+        element.removeAttributeNode(attribute);
+      }
+    }
+    return;
+  }
+  if (!(element instanceof HTMLElement)) return;
   for (const attribute of Array.from(element.attributes)) {
     if (attribute.name.toLowerCase().startsWith('on'))
       element.removeAttribute(attribute.name);
@@ -280,26 +358,28 @@ function sanitizeAttributes(element: HTMLElement, tag: string) {
     element.setAttribute('dir', direction);
   else element.removeAttribute('dir');
   const allowed =
-    tag === 'a'
-      ? new Set(['dir', 'href', 'title', 'style'])
-      : tag === 'img'
-        ? new Set([
-            'dir',
-            'src',
-            'alt',
-            'title',
-            'width',
-            'height',
-            'style',
-            ...IMAGE_IDENTITY_ATTRIBUTES,
-          ])
-        : tag === 'ol'
-          ? new Set(['dir', 'start', 'style', 'type'])
-          : tag === 'p'
-            ? new Set(['dir', 'style', ...PARAGRAPH_IDENTITY_ATTRIBUTES])
-            : tag === 'tr'
-              ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
-              : new Set(['colspan', 'dir', 'rowspan', 'style']);
+    tag === 'span' && element.dataset.documentEquation === 'true'
+      ? new Set(EQUATION_ATTRIBUTES)
+      : tag === 'a'
+        ? new Set(['dir', 'href', 'title', 'style'])
+        : tag === 'img'
+          ? new Set([
+              'dir',
+              'src',
+              'alt',
+              'title',
+              'width',
+              'height',
+              'style',
+              ...IMAGE_IDENTITY_ATTRIBUTES,
+            ])
+          : tag === 'ol'
+            ? new Set(['dir', 'start', 'style', 'type'])
+            : tag === 'p'
+              ? new Set(['dir', 'style', ...PARAGRAPH_IDENTITY_ATTRIBUTES])
+              : tag === 'tr'
+                ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
+                : new Set(['colspan', 'dir', 'rowspan', 'style']);
   for (const attribute of Array.from(element.attributes)) {
     if (!allowed.has(attribute.name.toLowerCase()))
       element.removeAttribute(attribute.name);

@@ -1,0 +1,31 @@
+.work-document-equation {
+  display: inline-flex;
+  max-width: 100%;
+  margin-inline: 0.08em;
+  padding-inline: 0.08em;
+  vertical-align: -0.12em;
+  border-radius: 0.2em;
+  line-height: 1.2;
+}
+
+.work-document-equation.block {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin-block: 0.35em;
+}
+
+.work-document-equation math {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-family: "Cambria Math", "STIX Two Math", math, serif;
+  font-size: 1.08em;
+}
+
+.work-document-editor:not(.preview)
+  .work-document-equation.ProseMirror-selectednode {
+  outline: 2px solid
+    color-mix(in srgb, var(--ds-primary, #2563eb) 68%, transparent);
+  outline-offset: 2px;
+}

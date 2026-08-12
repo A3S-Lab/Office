@@ -1149,6 +1149,16 @@ Creation and structural mutation remain under the interoperability gate until
 Microsoft Office and optional CI LibreOffice checks confirm that no repair
 dialog is required.
 
+The browser Word surface now round-trips a bounded structured OMML subset in
+the main story, headers, footers, footnotes, and endnotes. Inline and display
+math, Unicode runs, fractions, scripts, radicals, functions, supported n-ary
+operators, and delimiters remain native OOXML and receive an accessible MathML
+preview. Strict/transitional UTF-8/UTF-16 input is accepted. Unsupported,
+malformed, misplaced, over-budget, namespace-spoofed, nested, or
+relationship-bound math fails closed to bounded text with compatibility
+diagnostics; matrices, accents, equation arrays, limits, and the remaining
+OMML grammar are still part of the Rich Word gate.
+
 ### Gate 3 — Rich Word
 
 - Complete the Word scope above, including revisions, fields, forms, charts,

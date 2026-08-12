@@ -34,6 +34,10 @@ import { createDocxCommentRecords } from './work-docx-comment-export';
 import { patchDocxCommentMetadata } from './work-docx-comment-metadata';
 import { patchDocxDocumentLayout } from './work-docx-document-layout';
 import {
+  DocxEquationPatchCollector,
+  patchDocxEquations,
+} from './work-docx-equation-export';
+import {
   cssColorToHex,
   cssFontFamily,
   cssFontSize,
@@ -48,10 +52,6 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import { imageToDocx } from './work-docx-export-image';
-import {
-  type DocxListExportContext,
-  listToDocxParagraphs,
-} from './work-docx-list-export';
 import { docxDocumentFieldRun } from './work-docx-field-export';
 import {
   DocxImageCropPatchCollector,
@@ -69,18 +69,21 @@ import {
   DocxImageWrapPatchCollector,
   patchDocxImageWraps,
 } from './work-docx-image-wrap';
-import { patchDocxNumberingRestartRules } from './work-docx-numbering';
+import {
+  type DocxListExportContext,
+  listToDocxParagraphs,
+} from './work-docx-list-export';
 import {
   assignDocxCommentThreads,
   assignDocxNoteIds,
 } from './work-docx-note-comment-identity';
 import { patchDocxNoteImageRelationships } from './work-docx-note-image-relationships';
+import { patchDocxNumberingRestartRules } from './work-docx-numbering';
 import { patchDocxPageColor } from './work-docx-page-color';
 import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
-import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   documentTableCellSizingDocxOptions,
@@ -92,6 +95,7 @@ import {
   parseDocxThemeReference,
   patchDocxThemeReferences,
 } from './work-docx-theme-reference';
+import { preserveDocxSourcePackage } from './work-ooxml-package-preservation';
 import type {
   WorkDocumentComment,
   WorkDocumentContent,
@@ -113,6 +117,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
+  equationPatches: DocxEquationPatchCollector;
 }
 
 interface DocxTextRevision {
@@ -159,6 +164,9 @@ export async function createDocxBlob(
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
     paragraphIdentityPatches: new DocxParagraphIdentityPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
+    equationPatches: new DocxEquationPatchCollector(
       JSON.stringify(normalizedContent),
     ),
   };
@@ -273,8 +281,12 @@ export async function createDocxBlob(
     bookmarkPatched,
     noteContext.paragraphIdentityPatches.patches,
   );
-  const patched = await patchDocxPageColor(
+  const equationPatched = await patchDocxEquations(
     paragraphIdentityPatched,
+    noteContext.equationPatches.patches,
+  );
+  const patched = await patchDocxPageColor(
+    equationPatched,
     normalizedContent.pageColor,
   );
   const preserved = sourcePackage
@@ -597,6 +609,10 @@ async function inlineRuns(
       return [docxCitationRun(node, docx)];
     if (node.hasAttribute('data-document-field'))
       return [docxDocumentFieldRun(node, docx)];
+    if (node.hasAttribute('data-document-equation')) {
+      const equation = noteContext.equationPatches.marker(node);
+      return [new docx.TextRun(equation ?? node.textContent ?? '')];
+    }
     if (node.hasAttribute('data-document-cross-reference'))
       return docxCrossReferenceRuns(node, docx);
     if (node.hasAttribute('data-document-note-reference')) {
