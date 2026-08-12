@@ -3,6 +3,7 @@ import {
   documentEquationFromElement,
   normalizeDocumentEquation,
   type WorkDocumentEquation,
+  type WorkDocumentEquationArgumentProperties,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationJustification,
   type WorkDocumentEquationRunScript,
@@ -290,7 +291,13 @@ function createExpression(
     );
     accent.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return accent;
   }
@@ -313,7 +320,13 @@ function createExpression(
     );
     bar.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return bar;
   }
@@ -343,7 +356,13 @@ function createExpression(
     );
     groupCharacter.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return groupCharacter;
   }
@@ -365,7 +384,13 @@ function createExpression(
     );
     phantom.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return phantom;
   }
@@ -405,7 +430,13 @@ function createExpression(
     );
     borderBox.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return borderBox;
   }
@@ -439,7 +470,13 @@ function createExpression(
     );
     box.append(
       properties,
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return box;
   }
@@ -470,8 +507,20 @@ function createExpression(
       fraction.append(properties);
     }
     fraction.append(
-      expressionArgument(document, prefix, 'num', expression.numerator),
-      expressionArgument(document, prefix, 'den', expression.denominator),
+      expressionArgument(
+        document,
+        prefix,
+        'num',
+        expression.numerator,
+        expression.numeratorProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'den',
+        expression.denominator,
+        expression.denominatorProperties,
+      ),
     );
     return fraction;
   }
@@ -488,8 +537,20 @@ function createExpression(
       script.append(properties);
     }
     script.append(
-      expressionArgument(document, prefix, 'e', expression.base),
-      expressionArgument(document, prefix, 'sup', expression.superScript),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.base,
+        expression.baseProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sup',
+        expression.superScript,
+        expression.superScriptProperties,
+      ),
     );
     return script;
   }
@@ -506,8 +567,20 @@ function createExpression(
       script.append(properties);
     }
     script.append(
-      expressionArgument(document, prefix, 'e', expression.base),
-      expressionArgument(document, prefix, 'sub', expression.subScript),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.base,
+        expression.baseProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sub',
+        expression.subScript,
+        expression.subScriptProperties,
+      ),
     );
     return script;
   }
@@ -527,9 +600,27 @@ function createExpression(
       script.append(properties);
     }
     script.append(
-      expressionArgument(document, prefix, 'e', expression.base),
-      expressionArgument(document, prefix, 'sub', expression.subScript),
-      expressionArgument(document, prefix, 'sup', expression.superScript),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.base,
+        expression.baseProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sub',
+        expression.subScript,
+        expression.subScriptProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sup',
+        expression.superScript,
+        expression.superScriptProperties,
+      ),
     );
     return script;
   }
@@ -546,9 +637,27 @@ function createExpression(
       script.append(properties);
     }
     script.append(
-      expressionArgument(document, prefix, 'sub', expression.subScript),
-      expressionArgument(document, prefix, 'sup', expression.superScript),
-      expressionArgument(document, prefix, 'e', expression.base),
+      expressionArgument(
+        document,
+        prefix,
+        'sub',
+        expression.subScript,
+        expression.subScriptProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sup',
+        expression.superScript,
+        expression.superScriptProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.base,
+        expression.baseProperties,
+      ),
     );
     return script;
   }
@@ -573,8 +682,20 @@ function createExpression(
       limit.append(properties);
     }
     limit.append(
-      expressionArgument(document, prefix, 'e', expression.base),
-      expressionArgument(document, prefix, 'lim', expression.limit),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.base,
+        expression.baseProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'lim',
+        expression.limit,
+        expression.limitProperties,
+      ),
     );
     return limit;
   }
@@ -592,8 +713,20 @@ function createExpression(
     );
     radical.append(
       properties,
-      expressionArgument(document, prefix, 'deg', expression.degree ?? []),
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'deg',
+        expression.degree ?? [],
+        expression.degreeProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return radical;
   }
@@ -608,8 +741,20 @@ function createExpression(
     );
     function_.append(
       properties,
-      expressionArgument(document, prefix, 'fName', expression.name),
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'fName',
+        expression.name,
+        expression.nameProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return function_;
   }
@@ -639,9 +784,27 @@ function createExpression(
     );
     nary.append(
       properties,
-      expressionArgument(document, prefix, 'sub', expression.subScript ?? []),
-      expressionArgument(document, prefix, 'sup', expression.superScript ?? []),
-      expressionArgument(document, prefix, 'e', expression.children),
+      expressionArgument(
+        document,
+        prefix,
+        'sub',
+        expression.subScript ?? [],
+        expression.subScriptProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'sup',
+        expression.superScript ?? [],
+        expression.superScriptProperties,
+      ),
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        expression.children,
+        expression.childrenProperties,
+      ),
     );
     return nary;
   }
@@ -684,8 +847,16 @@ function createExpression(
       expression.controlProperties,
     );
     equationArray.append(properties);
-    for (const row of expression.rows) {
-      equationArray.append(expressionArgument(document, prefix, 'e', row));
+    for (const [rowIndex, row] of expression.rows.entries()) {
+      equationArray.append(
+        expressionArgument(
+          document,
+          prefix,
+          'e',
+          row,
+          expression.rowProperties?.[rowIndex] ?? undefined,
+        ),
+      );
     }
     return equationArray;
   }
@@ -727,10 +898,18 @@ function createExpression(
       expression.controlProperties,
     );
     matrix.append(properties);
-    for (const row of expression.rows) {
+    for (const [rowIndex, row] of expression.rows.entries()) {
       const matrixRow = createMathElement(document, prefix, 'mr');
-      for (const cell of row) {
-        matrixRow.append(expressionArgument(document, prefix, 'e', cell));
+      for (const [cellIndex, cell] of row.entries()) {
+        matrixRow.append(
+          expressionArgument(
+            document,
+            prefix,
+            'e',
+            cell,
+            expression.cellProperties?.[rowIndex]?.[cellIndex] ?? undefined,
+          ),
+        );
       }
       matrix.append(matrixRow);
     }
@@ -750,8 +929,16 @@ function createExpression(
     expression.controlProperties,
   );
   delimiter.append(properties);
-  for (const argument of expression.arguments) {
-    delimiter.append(expressionArgument(document, prefix, 'e', argument));
+  for (const [argumentIndex, argument] of expression.arguments.entries()) {
+    delimiter.append(
+      expressionArgument(
+        document,
+        prefix,
+        'e',
+        argument,
+        expression.argumentProperties?.[argumentIndex] ?? undefined,
+      ),
+    );
   }
   return delimiter;
 }
@@ -947,9 +1134,16 @@ function expressionArgument(
   prefix: string,
   name: string,
   children: readonly WorkDocumentEquationExpression[],
+  properties?: WorkDocumentEquationArgumentProperties,
 ): Element {
   const argument = createMathElement(document, prefix, name);
   appendExpressions(document, prefix, argument, children);
+  appendMathControlProperties(
+    document,
+    prefix,
+    argument,
+    properties?.controlProperties,
+  );
   return argument;
 }
 

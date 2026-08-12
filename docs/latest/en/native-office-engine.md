@@ -1179,10 +1179,21 @@ to unaligned scripts, and retains the enabled state through native export.
 Supported fraction, script, limit, radical, function, n-ary, accent, bar,
 group-character, phantom, border-box, box, matrix, equation-array, and delimiter
 property containers preserve one optional ordered `m:ctrlPr -> w:rPr` control
-format through the bounded Word run-property model. Empty `ctrlPr` or `w:rPr`
-values canonicalize away, and safe visual values project only onto separable
-MathML control/operator nodes. Revision-wrapped control properties and nonempty
-argument-slot `ctrlPr` formatting fail closed until those semantics are modeled.
+format through the bounded Word run-property model. Every supported `deg`,
+`den`, `e`, `fName`, `lim`, `num`, `sub`, and `sup` argument slot preserves the
+same direct control format after its expressions. Empty `ctrlPr` or `w:rPr`
+values canonicalize away. Safe object control values project only onto
+separable MathML control/operator nodes; argument-slot formatting remains
+native metadata because it describes linear-build control characters that are
+not visible in professional MathML. Fixed slots use named metadata, while
+matrix cells, equation-array rows, and delimiter arguments use strictly
+dimension-aligned metadata. Revision-wrapped control properties still fail
+closed until revision semantics are modeled.
+Every supported `CT_OMathArg` slot may be empty and follows
+`argPr -> expressions -> ctrlPr`. Absent or empty argument/control properties
+and absent, empty, or zero `argSz` values normalize to the default. Nonzero
+argument sizes and duplicate, misplaced, revision-wrapped, or semantic argument
+properties fail closed until their semantics are modeled.
 Fractions enforce optional `fPr` before required `num` and `den` arguments.
 An absent `type` or an attribute-free `type` canonicalizes to `bar`; `noBar`,
 `skw`, and `lin` remain distinct through native export and MathML projection.

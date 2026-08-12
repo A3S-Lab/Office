@@ -137,6 +137,10 @@ export interface WorkDocumentEquationManualBreak {
   alignmentAt?: number;
 }
 
+export interface WorkDocumentEquationArgumentProperties {
+  controlProperties?: WorkDocumentEquationWordRunProperties;
+}
+
 export type WorkDocumentEquationExpression =
   | {
       type: 'run';
@@ -154,58 +158,78 @@ export type WorkDocumentEquationExpression =
       controlProperties?: WorkDocumentEquationWordRunProperties;
       fractionType: WorkDocumentEquationFractionType;
       numerator: WorkDocumentEquationExpression[];
+      numeratorProperties?: WorkDocumentEquationArgumentProperties;
       denominator: WorkDocumentEquationExpression[];
+      denominatorProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'superscript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       superScript: WorkDocumentEquationExpression[];
+      superScriptProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'subscript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       subScript: WorkDocumentEquationExpression[];
+      subScriptProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'subSuperScript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       alignScripts?: boolean;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       subScript: WorkDocumentEquationExpression[];
+      subScriptProperties?: WorkDocumentEquationArgumentProperties;
       superScript: WorkDocumentEquationExpression[];
+      superScriptProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'preSubSuperScript';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       subScript: WorkDocumentEquationExpression[];
+      subScriptProperties?: WorkDocumentEquationArgumentProperties;
       superScript: WorkDocumentEquationExpression[];
+      superScriptProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'lowerLimit';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       limit: WorkDocumentEquationExpression[];
+      limitProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'upperLimit';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       base: WorkDocumentEquationExpression[];
+      baseProperties?: WorkDocumentEquationArgumentProperties;
       limit: WorkDocumentEquationExpression[];
+      limitProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'radical';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
       degree?: WorkDocumentEquationExpression[];
+      degreeProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'function';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       name: WorkDocumentEquationExpression[];
+      nameProperties?: WorkDocumentEquationArgumentProperties;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'nary';
@@ -213,20 +237,25 @@ export type WorkDocumentEquationExpression =
       operator: WorkDocumentEquationNaryOperator;
       limitLocation: WorkDocumentEquationLimitLocation;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
       subScript?: WorkDocumentEquationExpression[];
+      subScriptProperties?: WorkDocumentEquationArgumentProperties;
       superScript?: WorkDocumentEquationExpression[];
+      superScriptProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'accent';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       character: string;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'bar';
       controlProperties?: WorkDocumentEquationWordRunProperties;
       position: WorkDocumentEquationBarPosition;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'groupCharacter';
@@ -235,6 +264,7 @@ export type WorkDocumentEquationExpression =
       position: WorkDocumentEquationBarPosition;
       verticalJustification: WorkDocumentEquationBarPosition;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'phantom';
@@ -245,6 +275,7 @@ export type WorkDocumentEquationExpression =
       zeroDescent: boolean;
       transparent: boolean;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'borderBox';
@@ -258,6 +289,7 @@ export type WorkDocumentEquationExpression =
       strikeBottomLeftToTopRight: boolean;
       strikeTopLeftToBottomRight: boolean;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'box';
@@ -268,6 +300,7 @@ export type WorkDocumentEquationExpression =
       alignment: boolean;
       manualBreak?: WorkDocumentEquationManualBreak;
       children: WorkDocumentEquationExpression[];
+      childrenProperties?: WorkDocumentEquationArgumentProperties;
     }
   | {
       type: 'matrix';
@@ -276,6 +309,9 @@ export type WorkDocumentEquationExpression =
       placeholdersHidden: boolean;
       columnAlignments: WorkDocumentEquationMatrixAlignment[];
       rows: WorkDocumentEquationExpression[][][];
+      cellProperties?: Array<
+        Array<WorkDocumentEquationArgumentProperties | null>
+      >;
     }
   | {
       type: 'equationArray';
@@ -286,6 +322,7 @@ export type WorkDocumentEquationExpression =
       rowSpacingRule: WorkDocumentEquationRowSpacingRule;
       rowSpacing: number;
       rows: WorkDocumentEquationExpression[][];
+      rowProperties?: Array<WorkDocumentEquationArgumentProperties | null>;
     }
   | {
       type: 'delimiter';
@@ -294,6 +331,7 @@ export type WorkDocumentEquationExpression =
       closing: string;
       separator: string;
       arguments: WorkDocumentEquationExpression[][];
+      argumentProperties?: Array<WorkDocumentEquationArgumentProperties | null>;
     };
 
 export type WorkDocumentEquationNaryOperator =
@@ -751,6 +789,80 @@ function normalizeMathArgument(
   return normalizeExpressionList(source, state, true);
 }
 
+function normalizeMathArgumentProperties(
+  source: unknown,
+): WorkDocumentEquationArgumentProperties | null | undefined {
+  if (source === undefined) return undefined;
+  if (
+    !isRecord(source) ||
+    Object.keys(source).some((key) => key !== 'controlProperties')
+  ) {
+    return null;
+  }
+  const controlProperties =
+    source.controlProperties === undefined
+      ? undefined
+      : normalizeEquationWordRunProperties(source.controlProperties);
+  if (controlProperties === null) return null;
+  return controlProperties ? { controlProperties } : undefined;
+}
+
+function normalizeMathArgumentPropertySlots(
+  source: unknown,
+  length: number,
+): Array<WorkDocumentEquationArgumentProperties | null> | null | undefined {
+  if (source === undefined) return undefined;
+  if (!Array.isArray(source) || source.length !== length) return null;
+  const properties: Array<WorkDocumentEquationArgumentProperties | null> = [];
+  let present = false;
+  for (const candidate of source) {
+    if (candidate === null) {
+      properties.push(null);
+      continue;
+    }
+    const normalized = normalizeMathArgumentProperties(candidate);
+    if (normalized === null) return null;
+    properties.push(normalized ?? null);
+    present ||= Boolean(normalized);
+  }
+  return present ? properties : undefined;
+}
+
+function normalizeMatrixArgumentPropertySlots(
+  source: unknown,
+  rows: readonly (readonly unknown[])[],
+):
+  | Array<Array<WorkDocumentEquationArgumentProperties | null>>
+  | null
+  | undefined {
+  if (source === undefined) return undefined;
+  if (!Array.isArray(source) || source.length !== rows.length) return null;
+  const properties: Array<
+    Array<WorkDocumentEquationArgumentProperties | null>
+  > = [];
+  let present = false;
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = source[rowIndex];
+    if (!Array.isArray(row) || row.length !== rows[rowIndex]?.length) {
+      return null;
+    }
+    const normalizedRow: Array<WorkDocumentEquationArgumentProperties | null> =
+      [];
+    for (const candidate of row) {
+      if (candidate === null) {
+        normalizedRow.push(null);
+        continue;
+      }
+      const normalized = normalizeMathArgumentProperties(candidate);
+      if (normalized === null) return null;
+      normalizedRow.push(normalized ?? null);
+      present ||= Boolean(normalized);
+    }
+    properties.push(normalizedRow);
+  }
+  return present ? properties : undefined;
+}
+
 function normalizeExpression(
   source: unknown,
   state: EquationNormalizationState,
@@ -849,37 +961,71 @@ function normalizeExpression(
         : null;
       const numerator = normalizeMathArgument(source.numerator, state);
       const denominator = normalizeMathArgument(source.denominator, state);
-      return fractionType && numerator && denominator
+      const numeratorProperties = normalizeMathArgumentProperties(
+        source.numeratorProperties,
+      );
+      const denominatorProperties = normalizeMathArgumentProperties(
+        source.denominatorProperties,
+      );
+      return fractionType &&
+        numerator &&
+        denominator &&
+        numeratorProperties !== null &&
+        denominatorProperties !== null
         ? {
             type: 'fraction',
             ...normalizedControlProperties,
             fractionType,
             numerator,
+            ...(numeratorProperties ? { numeratorProperties } : {}),
             denominator,
+            ...(denominatorProperties ? { denominatorProperties } : {}),
           }
         : null;
     }
     if (source.type === 'superscript') {
       const base = normalizeMathArgument(source.base, state);
       const superScript = normalizeMathArgument(source.superScript, state);
-      return base && superScript
+      const baseProperties = normalizeMathArgumentProperties(
+        source.baseProperties,
+      );
+      const superScriptProperties = normalizeMathArgumentProperties(
+        source.superScriptProperties,
+      );
+      return base &&
+        superScript &&
+        baseProperties !== null &&
+        superScriptProperties !== null
         ? {
             type: 'superscript',
             ...normalizedControlProperties,
             base,
+            ...(baseProperties ? { baseProperties } : {}),
             superScript,
+            ...(superScriptProperties ? { superScriptProperties } : {}),
           }
         : null;
     }
     if (source.type === 'subscript') {
       const base = normalizeMathArgument(source.base, state);
       const subScript = normalizeMathArgument(source.subScript, state);
-      return base && subScript
+      const baseProperties = normalizeMathArgumentProperties(
+        source.baseProperties,
+      );
+      const subScriptProperties = normalizeMathArgumentProperties(
+        source.subScriptProperties,
+      );
+      return base &&
+        subScript &&
+        baseProperties !== null &&
+        subScriptProperties !== null
         ? {
             type: 'subscript',
             ...normalizedControlProperties,
             base,
+            ...(baseProperties ? { baseProperties } : {}),
             subScript,
+            ...(subScriptProperties ? { subScriptProperties } : {}),
           }
         : null;
     }
@@ -893,14 +1039,32 @@ function normalizeExpression(
       const base = normalizeMathArgument(source.base, state);
       const subScript = normalizeMathArgument(source.subScript, state);
       const superScript = normalizeMathArgument(source.superScript, state);
-      return alignScripts !== null && base && subScript && superScript
+      const baseProperties = normalizeMathArgumentProperties(
+        source.baseProperties,
+      );
+      const subScriptProperties = normalizeMathArgumentProperties(
+        source.subScriptProperties,
+      );
+      const superScriptProperties = normalizeMathArgumentProperties(
+        source.superScriptProperties,
+      );
+      return alignScripts !== null &&
+        base &&
+        subScript &&
+        superScript &&
+        baseProperties !== null &&
+        subScriptProperties !== null &&
+        superScriptProperties !== null
         ? {
             type: 'subSuperScript',
             ...normalizedControlProperties,
             ...(alignScripts ? { alignScripts } : {}),
             base,
+            ...(baseProperties ? { baseProperties } : {}),
             subScript,
+            ...(subScriptProperties ? { subScriptProperties } : {}),
             superScript,
+            ...(superScriptProperties ? { superScriptProperties } : {}),
           }
         : null;
     }
@@ -908,25 +1072,53 @@ function normalizeExpression(
       const base = normalizeMathArgument(source.base, state);
       const subScript = normalizeMathArgument(source.subScript, state);
       const superScript = normalizeMathArgument(source.superScript, state);
-      return base && subScript && superScript
+      const baseProperties = normalizeMathArgumentProperties(
+        source.baseProperties,
+      );
+      const subScriptProperties = normalizeMathArgumentProperties(
+        source.subScriptProperties,
+      );
+      const superScriptProperties = normalizeMathArgumentProperties(
+        source.superScriptProperties,
+      );
+      return base &&
+        subScript &&
+        superScript &&
+        baseProperties !== null &&
+        subScriptProperties !== null &&
+        superScriptProperties !== null
         ? {
             type: 'preSubSuperScript',
             ...normalizedControlProperties,
             base,
+            ...(baseProperties ? { baseProperties } : {}),
             subScript,
+            ...(subScriptProperties ? { subScriptProperties } : {}),
             superScript,
+            ...(superScriptProperties ? { superScriptProperties } : {}),
           }
         : null;
     }
     if (source.type === 'lowerLimit' || source.type === 'upperLimit') {
       const base = normalizeMathArgument(source.base, state);
       const limit = normalizeMathArgument(source.limit, state);
-      return base && limit
+      const baseProperties = normalizeMathArgumentProperties(
+        source.baseProperties,
+      );
+      const limitProperties = normalizeMathArgumentProperties(
+        source.limitProperties,
+      );
+      return base &&
+        limit &&
+        baseProperties !== null &&
+        limitProperties !== null
         ? {
             type: source.type,
             ...normalizedControlProperties,
             base,
+            ...(baseProperties ? { baseProperties } : {}),
             limit,
+            ...(limitProperties ? { limitProperties } : {}),
           }
         : null;
     }
@@ -936,24 +1128,46 @@ function normalizeExpression(
         source.degree === undefined
           ? undefined
           : normalizeMathArgument(source.degree, state);
-      return children && degree !== null
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      const degreeProperties = normalizeMathArgumentProperties(
+        source.degreeProperties,
+      );
+      return children &&
+        degree !== null &&
+        childrenProperties !== null &&
+        degreeProperties !== null
         ? {
             type: 'radical',
             ...normalizedControlProperties,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
             ...(degree?.length ? { degree } : {}),
+            ...(degreeProperties ? { degreeProperties } : {}),
           }
         : null;
     }
     if (source.type === 'function') {
       const name = normalizeMathArgument(source.name, state);
       const children = normalizeMathArgument(source.children, state);
-      return name && children
+      const nameProperties = normalizeMathArgumentProperties(
+        source.nameProperties,
+      );
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return name &&
+        children &&
+        nameProperties !== null &&
+        childrenProperties !== null
         ? {
             type: 'function',
             ...normalizedControlProperties,
             name,
+            ...(nameProperties ? { nameProperties } : {}),
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -977,31 +1191,50 @@ function normalizeExpression(
         source.superScript === undefined
           ? undefined
           : normalizeMathArgument(source.superScript, state);
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      const subScriptProperties = normalizeMathArgumentProperties(
+        source.subScriptProperties,
+      );
+      const superScriptProperties = normalizeMathArgumentProperties(
+        source.superScriptProperties,
+      );
       return operator &&
         limitLocation &&
         children &&
         subScript !== null &&
-        superScript !== null
+        superScript !== null &&
+        childrenProperties !== null &&
+        subScriptProperties !== null &&
+        superScriptProperties !== null
         ? {
             type: 'nary',
             ...normalizedControlProperties,
             operator,
             limitLocation,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
             ...(subScript?.length ? { subScript } : {}),
+            ...(subScriptProperties ? { subScriptProperties } : {}),
             ...(superScript?.length ? { superScript } : {}),
+            ...(superScriptProperties ? { superScriptProperties } : {}),
           }
         : null;
     }
     if (source.type === 'accent') {
       const character = accentCharacter(source.character);
       const children = normalizeMathArgument(source.children, state);
-      return character && children
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return character && children && childrenProperties !== null
         ? {
             type: 'accent',
             ...normalizedControlProperties,
             character,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1012,12 +1245,16 @@ function normalizeExpression(
         ? (source.position as WorkDocumentEquationBarPosition)
         : null;
       const children = normalizeMathArgument(source.children, state);
-      return position && children
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return position && children && childrenProperties !== null
         ? {
             type: 'bar',
             ...normalizedControlProperties,
             position,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1034,7 +1271,14 @@ function normalizeExpression(
         ? (source.verticalJustification as WorkDocumentEquationBarPosition)
         : null;
       const children = normalizeMathArgument(source.children, state);
-      return character !== null && position && verticalJustification && children
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return character !== null &&
+        position &&
+        verticalJustification &&
+        children &&
+        childrenProperties !== null
         ? {
             type: 'groupCharacter',
             ...normalizedControlProperties,
@@ -1042,6 +1286,7 @@ function normalizeExpression(
             position,
             verticalJustification,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1056,7 +1301,10 @@ function normalizeExpression(
         return null;
       }
       const children = normalizeMathArgument(source.children, state);
-      return children
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return children && childrenProperties !== null
         ? {
             type: 'phantom',
             ...normalizedControlProperties,
@@ -1066,6 +1314,7 @@ function normalizeExpression(
             zeroDescent: source.zeroDescent,
             transparent: source.transparent,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1083,7 +1332,10 @@ function normalizeExpression(
         return null;
       }
       const children = normalizeMathArgument(source.children, state);
-      return children
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
+      return children && childrenProperties !== null
         ? {
             type: 'borderBox',
             ...normalizedControlProperties,
@@ -1096,6 +1348,7 @@ function normalizeExpression(
             strikeBottomLeftToTopRight: source.strikeBottomLeftToTopRight,
             strikeTopLeftToBottomRight: source.strikeTopLeftToBottomRight,
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1105,12 +1358,16 @@ function normalizeExpression(
           ? undefined
           : normalizeManualBreak(source.manualBreak);
       const children = normalizeMathArgument(source.children, state);
+      const childrenProperties = normalizeMathArgumentProperties(
+        source.childrenProperties,
+      );
       return typeof source.operatorEmulator === 'boolean' &&
         typeof source.noBreak === 'boolean' &&
         typeof source.differential === 'boolean' &&
         typeof source.alignment === 'boolean' &&
         manualBreak !== null &&
-        children
+        children &&
+        childrenProperties !== null
         ? {
             type: 'box',
             ...normalizedControlProperties,
@@ -1120,6 +1377,7 @@ function normalizeExpression(
             alignment: source.alignment,
             ...(manualBreak ? { manualBreak } : {}),
             children,
+            ...(childrenProperties ? { childrenProperties } : {}),
           }
         : null;
     }
@@ -1174,6 +1432,11 @@ function normalizeExpression(
         }
         rows.push(normalizedRow);
       }
+      const cellProperties = normalizeMatrixArgumentPropertySlots(
+        source.cellProperties,
+        source.rows,
+      );
+      if (cellProperties === null) return null;
       return {
         type: 'matrix',
         ...normalizedControlProperties,
@@ -1181,6 +1444,7 @@ function normalizeExpression(
         placeholdersHidden: source.placeholdersHidden,
         columnAlignments,
         rows,
+        ...(cellProperties ? { cellProperties } : {}),
       };
     }
     if (source.type === 'equationArray') {
@@ -1220,6 +1484,11 @@ function normalizeExpression(
       } finally {
         state.equationArrayDepth -= 1;
       }
+      const rowProperties = normalizeMathArgumentPropertySlots(
+        source.rowProperties,
+        rows.length,
+      );
+      if (rowProperties === null) return null;
       return {
         type: 'equationArray',
         ...normalizedControlProperties,
@@ -1229,6 +1498,7 @@ function normalizeExpression(
         rowSpacingRule,
         rowSpacing: source.rowSpacing,
         rows,
+        ...(rowProperties ? { rowProperties } : {}),
       };
     }
     if (source.type === 'delimiter') {
@@ -1248,10 +1518,14 @@ function normalizeExpression(
       const arguments_ = source.arguments.map((argument) =>
         normalizeMathArgument(argument, state),
       );
+      const argumentProperties = normalizeMathArgumentPropertySlots(
+        source.argumentProperties,
+        source.arguments.length,
+      );
       return arguments_.every(
         (argument): argument is WorkDocumentEquationExpression[] =>
           Boolean(argument),
-      )
+      ) && argumentProperties !== null
         ? {
             type: 'delimiter',
             ...normalizedControlProperties,
@@ -1259,6 +1533,7 @@ function normalizeExpression(
             closing,
             separator,
             arguments: arguments_,
+            ...(argumentProperties ? { argumentProperties } : {}),
           }
         : null;
     }

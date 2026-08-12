@@ -1933,6 +1933,277 @@ describe('document equations', () => {
     await expectNativeControlProperties(await createArtifactBlob(imported));
   });
 
+  test('preserves bounded Word control properties on every OMML argument slot', async () => {
+    const equation = argumentControlPropertiesEquation();
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    expect(
+      normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'box',
+            operatorEmulator: false,
+            noBreak: false,
+            differential: false,
+            alignment: false,
+            children: [],
+            childrenProperties: { controlProperties: {} },
+          },
+        ],
+      }),
+    ).toEqual({
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'box',
+          operatorEmulator: false,
+          noBreak: false,
+          differential: false,
+          alignment: false,
+          children: [],
+        },
+      ],
+    });
+
+    const emptyDynamicPropertyModels = [
+      [
+        {
+          type: 'matrix',
+          baseAlignment: 'center',
+          placeholdersHidden: false,
+          columnAlignments: ['center'],
+          rows: [[[]]],
+          cellProperties: [[null]],
+        },
+        'cellProperties',
+      ],
+      [
+        {
+          type: 'equationArray',
+          baseAlignment: 'center',
+          maximumDistribution: false,
+          objectDistribution: false,
+          rowSpacingRule: 'single',
+          rowSpacing: 0,
+          rows: [[]],
+          rowProperties: [null],
+        },
+        'rowProperties',
+      ],
+      [
+        {
+          type: 'delimiter',
+          opening: '(',
+          closing: ')',
+          separator: '|',
+          arguments: [[]],
+          argumentProperties: [null],
+        },
+        'argumentProperties',
+      ],
+    ] as const;
+    for (const [expression, propertyName] of emptyDynamicPropertyModels) {
+      const normalized = normalizeDocumentEquation({
+        version: 1,
+        display: 'inline',
+        children: [expression],
+      } as WorkDocumentEquation);
+      expect(normalized).not.toBeNull();
+      expect(normalized?.children[0]).not.toHaveProperty(propertyName);
+    }
+
+    const invalidArgumentModels = [
+      {
+        type: 'box',
+        operatorEmulator: false,
+        noBreak: false,
+        differential: false,
+        alignment: false,
+        children: [],
+        childrenProperties: { extra: true },
+      },
+      {
+        type: 'matrix',
+        baseAlignment: 'center',
+        placeholdersHidden: false,
+        columnAlignments: ['center', 'center'],
+        rows: [[[], []]],
+        cellProperties: [[{ controlProperties: { bold: true } }]],
+      },
+      {
+        type: 'equationArray',
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[], []],
+        rowProperties: [{ controlProperties: { bold: true } }],
+      },
+      {
+        type: 'delimiter',
+        opening: '(',
+        closing: ')',
+        separator: '|',
+        arguments: [[], []],
+        argumentProperties: [{ controlProperties: { bold: true } }],
+      },
+    ];
+    expect(
+      invalidArgumentModels.map((expression) =>
+        normalizeDocumentEquation({
+          version: 1,
+          display: 'inline',
+          children: [expression],
+        } as WorkDocumentEquation),
+      ),
+    ).toEqual(invalidArgumentModels.map(() => null));
+
+    const run = '<m:r><m:t>x</m:t></m:r>';
+    const argument = (content: string) =>
+      `<m:box><m:e xmlns:w="${WORD_NAMESPACE}" xmlns:r="${RELATIONSHIP_NAMESPACE}" xmlns:v="${VENDOR_NAMESPACE}">${content}</m:e></m:box>`;
+    const richControlProperties =
+      '<m:ctrlPr><w:rPr><w:b/><w:color w:val="1A2B3C"/><w:sz w:val="25"/></w:rPr></m:ctrlPr>';
+    expect(
+      inspectEquationModel(
+        argument(
+          `<m:argPr><m:argSz m:val="0"/></m:argPr>${run}${richControlProperties}`,
+        ),
+      )?.children[0],
+    ).toEqual({
+      type: 'box',
+      operatorEmulator: false,
+      noBreak: false,
+      differential: false,
+      alignment: false,
+      children: [{ type: 'run', text: 'x' }],
+      childrenProperties: {
+        controlProperties: {
+          bold: true,
+          color: { value: '#1a2b3c' },
+          fontSize: 12.5,
+        },
+      },
+    });
+    for (const controlProperties of [
+      '<m:ctrlPr/>',
+      '<m:ctrlPr><w:rPr/></m:ctrlPr>',
+    ]) {
+      expect(
+        inspectEquationModel(argument(`${run}${controlProperties}`)),
+      ).toEqual({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'box',
+            operatorEmulator: false,
+            noBreak: false,
+            differential: false,
+            alignment: false,
+            children: [{ type: 'run', text: 'x' }],
+          },
+        ],
+      });
+    }
+
+    const unsupported = [
+      argument(`${richControlProperties}${run}`),
+      argument(`${run}${richControlProperties}<m:ctrlPr/>`),
+      argument(`${run}<m:ctrlPr m:extra="semantic"/>`),
+      argument(`${run}<m:ctrlPr>meaningful</m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:rPr/><w:rPr/></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:ins><w:rPr/></w:ins></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:del><w:rPr/></w:del></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:moveFrom><w:rPr/></w:moveFrom></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:moveTo><w:rPr/></w:moveTo></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><v:rPr/></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><m:rPr/></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
+      argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:rPr><w:vanish/></w:rPr></m:ctrlPr>`),
+      argument(
+        `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
+      ),
+      argument(`${run}<m:ctrlPr><w:rPr><w:b/><w:b/></w:rPr></m:ctrlPr>`),
+      argument(`${run}<m:ctrlPr><w:b/></m:ctrlPr>`),
+    ];
+    expect(unsupported.map(inspectEquationBody)).toEqual(
+      unsupported.map(() => 'unsupported'),
+    );
+
+    const strictSource = `<m:oMath xmlns:m="${STRICT_MATH_NAMESPACE}" xmlns:w="${STRICT_WORD_NAMESPACE}"><m:box><m:e><m:r><m:t>x</m:t></m:r><m:ctrlPr><w:rPr><w:b/></w:rPr></m:ctrlPr></m:e></m:box></m:oMath>`;
+    expect(inspectEquationRoot(strictSource)).toMatchObject({
+      status: 'supported',
+      equation: {
+        children: [
+          {
+            childrenProperties: { controlProperties: { bold: true } },
+          },
+        ],
+      },
+    });
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    expect(preview.querySelectorAll('[mathcolor], [mathsize]')).toHaveLength(0);
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${equationHtml(equation)}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeArgumentControlProperties(first);
+
+    const firstArchive = await JSZip.loadAsync(await first.arrayBuffer());
+    const firstDocument = await xmlEntry(firstArchive, 'word/document.xml');
+    const nativeEquation = descendants(firstDocument, 'oMath').find(
+      (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+    );
+    expect(nativeEquation).toBeDefined();
+    const standalone = nativeEquation?.cloneNode(true) as Element;
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:m', MATH_NAMESPACE);
+    standalone.setAttributeNS(XMLNS_NAMESPACE, 'xmlns:w', WORD_NAMESPACE);
+    const strictRoundTripSource = new XMLSerializer()
+      .serializeToString(standalone)
+      .replaceAll(MATH_NAMESPACE, STRICT_MATH_NAMESPACE)
+      .replaceAll(WORD_NAMESPACE, STRICT_WORD_NAMESPACE);
+    expect(inspectEquationRoot(strictRoundTripSource)).toMatchObject({
+      status: 'supported',
+      equation,
+    });
+
+    const imported = await importOfficeFile(
+      new File([first], 'argument-control-properties.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    const importedEquation = importedDocument.body.querySelector<HTMLElement>(
+      '[data-document-equation]',
+    );
+    expect(
+      documentEquationFromElement(importedEquation as HTMLElement),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeArgumentControlProperties(
+      await createArtifactBlob(imported),
+    );
+  });
+
   test('preserves display-math paragraph justification and rejects malformed roots', () => {
     const run = '<m:r><m:t>x</m:t></m:r>';
     const paragraph = (properties = '', namespace = MATH_NAMESPACE) =>
@@ -2104,7 +2375,6 @@ describe('document equations', () => {
       `<m:func><m:fName>${run}<m:ctrlPr/><m:r><m:t>y</m:t></m:r></m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName>${run}<m:ctrlPr/><m:ctrlPr/></m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName><m:argPr><m:argSz m:val="1"/></m:argPr>${run}</m:fName><m:e>${run}</m:e></m:func>`,
-      `<m:func><m:fName>${run}<m:ctrlPr><w:rPr xmlns:w="${WORD_NAMESPACE}"/></m:ctrlPr></m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func><m:fName><v:argPr xmlns:v="${VENDOR_NAMESPACE}"/>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func m:extra="semantic"><m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
       `<m:func>meaningful<m:fName>${run}</m:fName><m:e>${run}</m:e></m:func>`,
@@ -2677,6 +2947,179 @@ function controlPropertiesEquation(): WorkDocumentEquation {
         closing: ']',
         separator: ';',
         arguments: [[run('delimiter-left')], [run('delimiter-right')]],
+      },
+    ],
+  };
+}
+
+function argumentControlPropertiesEquation(): WorkDocumentEquation {
+  const run = (text: string) => ({ type: 'run' as const, text });
+  const argumentProperties = {
+    controlProperties: richWordRunProperties(),
+  };
+  return {
+    version: 1,
+    display: 'inline',
+    children: [
+      {
+        type: 'fraction',
+        fractionType: 'bar',
+        numerator: [run('fraction-numerator')],
+        numeratorProperties: argumentProperties,
+        denominator: [run('fraction-denominator')],
+        denominatorProperties: argumentProperties,
+      },
+      {
+        type: 'superscript',
+        base: [run('superscript-base')],
+        baseProperties: argumentProperties,
+        superScript: [run('superscript-value')],
+        superScriptProperties: argumentProperties,
+      },
+      {
+        type: 'subscript',
+        base: [run('subscript-base')],
+        baseProperties: argumentProperties,
+        subScript: [run('subscript-value')],
+        subScriptProperties: argumentProperties,
+      },
+      {
+        type: 'subSuperScript',
+        base: [run('right-script-base')],
+        baseProperties: argumentProperties,
+        subScript: [run('right-subscript')],
+        subScriptProperties: argumentProperties,
+        superScript: [run('right-superscript')],
+        superScriptProperties: argumentProperties,
+      },
+      {
+        type: 'preSubSuperScript',
+        base: [run('left-script-base')],
+        baseProperties: argumentProperties,
+        subScript: [run('left-subscript')],
+        subScriptProperties: argumentProperties,
+        superScript: [run('left-superscript')],
+        superScriptProperties: argumentProperties,
+      },
+      {
+        type: 'lowerLimit',
+        base: [run('lower-limit-base')],
+        baseProperties: argumentProperties,
+        limit: [run('lower-limit')],
+        limitProperties: argumentProperties,
+      },
+      {
+        type: 'upperLimit',
+        base: [run('upper-limit-base')],
+        baseProperties: argumentProperties,
+        limit: [run('upper-limit')],
+        limitProperties: argumentProperties,
+      },
+      {
+        type: 'radical',
+        children: [run('radical')],
+        childrenProperties: argumentProperties,
+        degreeProperties: argumentProperties,
+      },
+      {
+        type: 'function',
+        name: [],
+        nameProperties: argumentProperties,
+        children: [run('function-argument')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'nary',
+        operator: '\u2211',
+        limitLocation: 'underOver',
+        children: [run('nary-body')],
+        childrenProperties: argumentProperties,
+        subScriptProperties: argumentProperties,
+        superScriptProperties: argumentProperties,
+      },
+      {
+        type: 'accent',
+        character: '\u0303',
+        children: [run('accent-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'bar',
+        position: 'top',
+        children: [run('bar-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'groupCharacter',
+        character: '\u23de',
+        position: 'top',
+        verticalJustification: 'bottom',
+        children: [run('group-character-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'phantom',
+        show: false,
+        zeroWidth: true,
+        zeroAscent: false,
+        zeroDescent: true,
+        transparent: true,
+        children: [run('phantom-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'borderBox',
+        hideTop: false,
+        hideBottom: true,
+        hideLeft: false,
+        hideRight: true,
+        strikeHorizontal: true,
+        strikeVertical: false,
+        strikeBottomLeftToTopRight: true,
+        strikeTopLeftToBottomRight: false,
+        children: [run('border-box-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'box',
+        operatorEmulator: true,
+        noBreak: true,
+        differential: true,
+        alignment: true,
+        children: [run('box-body')],
+        childrenProperties: argumentProperties,
+      },
+      {
+        type: 'matrix',
+        baseAlignment: 'center',
+        placeholdersHidden: false,
+        columnAlignments: ['left', 'right'],
+        rows: [
+          [[run('matrix-00')], [run('matrix-01')]],
+          [[run('matrix-10')], [run('matrix-11')]],
+        ],
+        cellProperties: [
+          [argumentProperties, null],
+          [null, argumentProperties],
+        ],
+      },
+      {
+        type: 'equationArray',
+        baseAlignment: 'center',
+        maximumDistribution: false,
+        objectDistribution: false,
+        rowSpacingRule: 'single',
+        rowSpacing: 0,
+        rows: [[run('equation-array-0')], [run('equation-array-1')]],
+        rowProperties: [null, argumentProperties],
+      },
+      {
+        type: 'delimiter',
+        opening: '[',
+        closing: ']',
+        separator: ';',
+        arguments: [[run('delimiter-left')], [run('delimiter-right')]],
+        argumentProperties: [null, argumentProperties],
       },
     ],
   };
@@ -3267,6 +3710,61 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     expect(
       directChildren(wordProperties[0]).map((child) => child.localName),
       name,
+    ).toEqual(expectedWordPropertyNames);
+  }
+}
+
+async function expectNativeArgumentControlProperties(
+  blob: Blob,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const argumentNames = new Set([
+    'deg',
+    'den',
+    'e',
+    'fName',
+    'lim',
+    'num',
+    'sub',
+    'sup',
+  ]);
+  const controlProperties = descendants(document, 'ctrlPr').filter(
+    (candidate) => candidate.namespaceURI === MATH_NAMESPACE,
+  );
+  expect(controlProperties).toHaveLength(33);
+  const expectedWordPropertyNames = [
+    'rFonts',
+    'b',
+    'bCs',
+    'i',
+    'iCs',
+    'strike',
+    'dstrike',
+    'noProof',
+    'snapToGrid',
+    'color',
+    'sz',
+    'szCs',
+    'u',
+    'rtl',
+    'cs',
+    'lang',
+  ];
+  for (const controlProperty of controlProperties) {
+    const argument = controlProperty.parentElement;
+    expect(argumentNames.has(argument?.localName ?? '')).toBe(true);
+    expect(argument?.namespaceURI).toBe(MATH_NAMESPACE);
+    expect(directChildren(argument as Element).at(-1)).toBe(controlProperty);
+    const wordProperties = directChildren(controlProperty);
+    expect(
+      wordProperties.map(
+        (child) =>
+          `${child.namespaceURI === WORD_NAMESPACE ? 'w' : '?'}:${child.localName}`,
+      ),
+    ).toEqual(['w:rPr']);
+    expect(
+      directChildren(wordProperties[0]).map((child) => child.localName),
     ).toEqual(expectedWordPropertyNames);
   }
 }

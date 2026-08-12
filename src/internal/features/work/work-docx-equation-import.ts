@@ -3,6 +3,7 @@ import {
   documentEquationText,
   normalizeDocumentEquation,
   type WorkDocumentEquation,
+  type WorkDocumentEquationArgumentProperties,
   type WorkDocumentEquationExpression,
   type WorkDocumentEquationFractionType,
   type WorkDocumentEquationJustification,
@@ -84,6 +85,11 @@ interface ParsedMathRunProperties {
   style?: WorkDocumentEquationRunStyle;
   manualBreak?: WorkDocumentEquationManualBreak;
   alignment?: boolean;
+}
+
+interface ParsedMathArgument {
+  children: WorkDocumentEquationExpression[];
+  properties?: WorkDocumentEquationArgumentProperties;
 }
 
 const TRANSITIONAL_MATH_NAMESPACE =
@@ -199,77 +205,6 @@ const NARY_INTEGRALS = new Set<WorkDocumentEquationNaryOperator>([
   '∯',
   '∰',
 ]);
-const STRUCTURAL_MATH_NAMES = new Set([
-  'acc',
-  'accPr',
-  'aln',
-  'bar',
-  'barPr',
-  'borderBox',
-  'borderBoxPr',
-  'box',
-  'boxPr',
-  'brk',
-  'd',
-  'deg',
-  'den',
-  'e',
-  'eqArr',
-  'eqArrPr',
-  'f',
-  'fName',
-  'func',
-  'groupChr',
-  'groupChrPr',
-  'jc',
-  'lim',
-  'limLow',
-  'limLowPr',
-  'limUpp',
-  'limUppPr',
-  'lit',
-  'm',
-  'mc',
-  'mcPr',
-  'mcs',
-  'mPr',
-  'mr',
-  'nary',
-  'nor',
-  'num',
-  'oMath',
-  'oMathPara',
-  'oMathParaPr',
-  'phant',
-  'phantPr',
-  'r',
-  'rPr',
-  'rad',
-  'scr',
-  'sPre',
-  'sPrePr',
-  'sSub',
-  'sSubSup',
-  'sSup',
-  'sty',
-  'sub',
-  'sup',
-  't',
-]);
-const UNSAFE_PROPERTY_NAMES = new Set([
-  'altChunk',
-  'drawing',
-  'fldChar',
-  'instrText',
-  'object',
-  'oleObject',
-  'pict',
-]);
-const RELATIONSHIP_NAMESPACES = new Set([
-  'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
-  'http://purl.oclc.org/ooxml/officeDocument/relationships',
-]);
-
 export async function markDocxPackageEquations(
   archive: OoxmlPackage,
   document: Document,
@@ -520,8 +455,37 @@ function parseMathParagraphJustification(
 function parseExpressionContainer(
   container: Element,
   state: EquationParseState,
-  optional = false,
 ): WorkDocumentEquationExpression[] | null {
+  if (
+    !DOCX_MATH_NAMESPACES.has(container.namespaceURI ?? '') ||
+    meaningfulAttributes(container).length ||
+    hasMeaningfulDirectText(container)
+  ) {
+    return null;
+  }
+  const children = directChildren(container);
+  if (
+    children.some(
+      (child) => !DOCX_MATH_NAMESPACES.has(child.namespaceURI ?? ''),
+    )
+  ) {
+    return null;
+  }
+  const expressions: WorkDocumentEquationExpression[] = [];
+  for (const child of children) {
+    if (child.localName === 'argPr' || child.localName === 'ctrlPr')
+      return null;
+    const expression = parseExpression(child, state);
+    if (!expression) return null;
+    expressions.push(expression);
+  }
+  return expressions.length ? expressions : null;
+}
+
+function parseMathArgument(
+  container: Element,
+  state: EquationParseState,
+): ParsedMathArgument | null {
   if (
     !DOCX_MATH_NAMESPACES.has(container.namespaceURI ?? '') ||
     meaningfulAttributes(container).length ||
@@ -539,34 +503,33 @@ function parseExpressionContainer(
   }
   let expressionStart = 0;
   let expressionEnd = children.length;
-  if (container.localName !== 'oMath') {
-    const argumentProperties = children[expressionStart];
-    if (argumentProperties?.localName === 'argPr') {
-      if (!defaultMathArgumentProperties(argumentProperties)) return null;
-      expressionStart += 1;
-    }
-    const controlProperties = children[expressionEnd - 1];
-    if (controlProperties?.localName === 'ctrlPr') {
-      if (!emptyMathProperty(controlProperties)) return null;
-      expressionEnd -= 1;
-    }
+  const argumentProperties = children[expressionStart];
+  if (argumentProperties?.localName === 'argPr') {
+    if (!defaultMathArgumentProperties(argumentProperties)) return null;
+    expressionStart += 1;
+  }
+  const controlProperties = children[expressionEnd - 1];
+  let parsedProperties: WorkDocumentEquationArgumentProperties | null = {};
+  if (controlProperties?.localName === 'ctrlPr') {
+    parsedProperties = parseMathControlProperties(controlProperties);
+    if (parsedProperties === null) return null;
+    expressionEnd -= 1;
   }
   const expressions: WorkDocumentEquationExpression[] = [];
   for (const child of children.slice(expressionStart, expressionEnd)) {
-    if (child.localName === 'argPr' || child.localName === 'ctrlPr')
+    if (child.localName === 'argPr' || child.localName === 'ctrlPr') {
       return null;
+    }
     const expression = parseExpression(child, state);
     if (!expression) return null;
     expressions.push(expression);
   }
-  return expressions.length || optional ? expressions : null;
-}
-
-function parseMathArgument(
-  container: Element,
-  state: EquationParseState,
-): WorkDocumentEquationExpression[] | null {
-  return parseExpressionContainer(container, state, true);
+  return {
+    children: expressions,
+    ...(parsedProperties.controlProperties
+      ? { properties: parsedProperties }
+      : {}),
+  };
 }
 
 function defaultMathArgumentProperties(properties: Element): boolean {
@@ -1164,7 +1127,10 @@ function parseAccent(
         type: 'accent',
         ...parsedControlProperties,
         character,
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1216,7 +1182,10 @@ function parseBar(
         type: 'bar',
         ...parsedControlProperties,
         position,
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1294,7 +1263,10 @@ function parseGroupCharacter(
         character,
         position,
         verticalJustification,
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1378,7 +1350,10 @@ function parsePhantom(
         zeroAscent,
         zeroDescent,
         transparent,
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1456,7 +1431,10 @@ function parseBorderBox(
         strikeVertical,
         strikeBottomLeftToTopRight,
         strikeTopLeftToBottomRight,
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1520,7 +1498,10 @@ function parseBox(
         differential,
         alignment,
         ...(manualBreak ? { manualBreak } : {}),
-        children: parsedBody,
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1572,8 +1553,14 @@ function parseFraction(
         type: 'fraction',
         ...parsedControlProperties,
         fractionType,
-        numerator: parsedNumerator,
-        denominator: parsedDenominator,
+        numerator: parsedNumerator.children,
+        ...(parsedNumerator.properties
+          ? { numeratorProperties: parsedNumerator.properties }
+          : {}),
+        denominator: parsedDenominator.children,
+        ...(parsedDenominator.properties
+          ? { denominatorProperties: parsedDenominator.properties }
+          : {}),
       }
     : null;
 }
@@ -1613,8 +1600,14 @@ function parseSuperScript(
     ? {
         type: 'superscript',
         ...parsedProperties,
-        base: parsedBase,
-        superScript: parsedSuperScript,
+        base: parsedBase.children,
+        ...(parsedBase.properties
+          ? { baseProperties: parsedBase.properties }
+          : {}),
+        superScript: parsedSuperScript.children,
+        ...(parsedSuperScript.properties
+          ? { superScriptProperties: parsedSuperScript.properties }
+          : {}),
       }
     : null;
 }
@@ -1646,8 +1639,14 @@ function parseSubScript(
     ? {
         type: 'subscript',
         ...parsedProperties,
-        base: parsedBase,
-        subScript: parsedSubScript,
+        base: parsedBase.children,
+        ...(parsedBase.properties
+          ? { baseProperties: parsedBase.properties }
+          : {}),
+        subScript: parsedSubScript.children,
+        ...(parsedSubScript.properties
+          ? { subScriptProperties: parsedSubScript.properties }
+          : {}),
       }
     : null;
 }
@@ -1680,9 +1679,18 @@ function parseSubSuperScript(
     ? {
         type: 'subSuperScript',
         ...parsedProperties,
-        base: parsedBase,
-        subScript: parsedSubScript,
-        superScript: parsedSuperScript,
+        base: parsedBase.children,
+        ...(parsedBase.properties
+          ? { baseProperties: parsedBase.properties }
+          : {}),
+        subScript: parsedSubScript.children,
+        ...(parsedSubScript.properties
+          ? { subScriptProperties: parsedSubScript.properties }
+          : {}),
+        superScript: parsedSuperScript.children,
+        ...(parsedSuperScript.properties
+          ? { superScriptProperties: parsedSuperScript.properties }
+          : {}),
       }
     : null;
 }
@@ -1749,9 +1757,18 @@ function parsePreSubSuperScript(
     ? {
         type: 'preSubSuperScript',
         ...parsedProperties,
-        base: parsedBase,
-        subScript: parsedSubScript,
-        superScript: parsedSuperScript,
+        base: parsedBase.children,
+        ...(parsedBase.properties
+          ? { baseProperties: parsedBase.properties }
+          : {}),
+        subScript: parsedSubScript.children,
+        ...(parsedSubScript.properties
+          ? { subScriptProperties: parsedSubScript.properties }
+          : {}),
+        superScript: parsedSuperScript.children,
+        ...(parsedSuperScript.properties
+          ? { superScriptProperties: parsedSuperScript.properties }
+          : {}),
       }
     : null;
 }
@@ -1781,8 +1798,14 @@ function parseLimit(
     ? {
         type: lower ? 'lowerLimit' : 'upperLimit',
         ...parsedProperties,
-        base: parsedBase,
-        limit: parsedLimit,
+        base: parsedBase.children,
+        ...(parsedBase.properties
+          ? { baseProperties: parsedBase.properties }
+          : {}),
+        limit: parsedLimit.children,
+        ...(parsedLimit.properties
+          ? { limitProperties: parsedLimit.properties }
+          : {}),
       }
     : null;
 }
@@ -1834,15 +1857,21 @@ function parseRadical(
   if (
     !parsedBody ||
     parsedDegree === null ||
-    (degreeHidden && Boolean(parsedDegree?.length))
+    (degreeHidden && Boolean(parsedDegree?.children.length))
   ) {
     return null;
   }
   return {
     type: 'radical',
     ...parsedControlProperties,
-    children: parsedBody,
-    ...(parsedDegree?.length ? { degree: parsedDegree } : {}),
+    children: parsedBody.children,
+    ...(parsedBody.properties
+      ? { childrenProperties: parsedBody.properties }
+      : {}),
+    ...(parsedDegree?.children.length ? { degree: parsedDegree.children } : {}),
+    ...(parsedDegree?.properties
+      ? { degreeProperties: parsedDegree.properties }
+      : {}),
   };
 }
 
@@ -1876,8 +1905,14 @@ function parseFunction(
     ? {
         type: 'function',
         ...parsedProperties,
-        name: parsedName,
-        children: parsedBody,
+        name: parsedName.children,
+        ...(parsedName.properties
+          ? { nameProperties: parsedName.properties }
+          : {}),
+        children: parsedBody.children,
+        ...(parsedBody.properties
+          ? { childrenProperties: parsedBody.properties }
+          : {}),
       }
     : null;
 }
@@ -1969,8 +2004,8 @@ function parseNary(
     return null;
   }
   if (
-    subHidden === Boolean(parsedSubScript.length) ||
-    superHidden === Boolean(parsedSuperScript.length)
+    subHidden === Boolean(parsedSubScript.children.length) ||
+    superHidden === Boolean(parsedSuperScript.children.length)
   ) {
     return null;
   }
@@ -1979,9 +2014,22 @@ function parseNary(
     ...parsedControlProperties,
     operator,
     limitLocation,
-    children: parsedBody,
-    ...(parsedSubScript?.length ? { subScript: parsedSubScript } : {}),
-    ...(parsedSuperScript?.length ? { superScript: parsedSuperScript } : {}),
+    children: parsedBody.children,
+    ...(parsedBody.properties
+      ? { childrenProperties: parsedBody.properties }
+      : {}),
+    ...(parsedSubScript.children.length
+      ? { subScript: parsedSubScript.children }
+      : {}),
+    ...(parsedSubScript.properties
+      ? { subScriptProperties: parsedSubScript.properties }
+      : {}),
+    ...(parsedSuperScript.children.length
+      ? { superScript: parsedSuperScript.children }
+      : {}),
+    ...(parsedSuperScript.properties
+      ? { superScriptProperties: parsedSuperScript.properties }
+      : {}),
   };
 }
 
@@ -2017,16 +2065,17 @@ function parseEquationArray(
   }
   const parsedProperties = parseEquationArrayProperties(properties);
   if (!parsedProperties) return null;
-  const rows = rowElements.map((row) => parseMathArgument(row, state));
-  return rows.every(
-    (row): row is WorkDocumentEquationExpression[] => row !== null,
-  )
-    ? {
-        type: 'equationArray',
-        ...parsedProperties,
-        rows,
-      }
-    : null;
+  const parsedRows = rowElements.map((row) => parseMathArgument(row, state));
+  if (!parsedRows.every((row): row is ParsedMathArgument => row !== null)) {
+    return null;
+  }
+  const rowProperties = parsedRows.map((row) => row.properties ?? null);
+  return {
+    type: 'equationArray',
+    ...parsedProperties,
+    rows: parsedRows.map((row) => row.children),
+    ...(rowProperties.some(Boolean) ? { rowProperties } : {}),
+  };
 }
 
 function parseEquationArrayProperties(properties: Element | undefined): {
@@ -2142,6 +2191,9 @@ function parseMatrix(
     return null;
   }
   const rows: WorkDocumentEquationExpression[][][] = [];
+  const cellProperties: Array<
+    Array<WorkDocumentEquationArgumentProperties | null>
+  > = [];
   let columnCount = 0;
   for (const rowElement of rowElements) {
     if (!structuralChildren(rowElement, new Set(['e']))) return null;
@@ -2158,14 +2210,11 @@ function parseMatrix(
     const parsedRow = cellElements.map((cell) =>
       parseMathArgument(cell, state),
     );
-    if (
-      !parsedRow.every(
-        (cell): cell is WorkDocumentEquationExpression[] => cell !== null,
-      )
-    ) {
+    if (!parsedRow.every((cell): cell is ParsedMathArgument => cell !== null)) {
       return null;
     }
-    rows.push(parsedRow);
+    rows.push(parsedRow.map((cell) => cell.children));
+    cellProperties.push(parsedRow.map((cell) => cell.properties ?? null));
   }
   const parsedProperties = parseMatrixProperties(properties, columnCount);
   return parsedProperties
@@ -2173,6 +2222,9 @@ function parseMatrix(
         type: 'matrix',
         ...parsedProperties,
         rows,
+        ...(cellProperties.some((row) => row.some(Boolean))
+          ? { cellProperties }
+          : {}),
       }
     : null;
 }
@@ -2371,8 +2423,7 @@ function parseDelimiter(
     closing !== null &&
     separator !== null &&
     parsedArguments.every(
-      (argument): argument is WorkDocumentEquationExpression[] =>
-        argument !== null,
+      (argument): argument is ParsedMathArgument => argument !== null,
     )
     ? {
         type: 'delimiter',
@@ -2380,7 +2431,14 @@ function parseDelimiter(
         opening,
         closing,
         separator,
-        arguments: parsedArguments,
+        arguments: parsedArguments.map((argument) => argument.children),
+        ...(parsedArguments.some((argument) => argument.properties)
+          ? {
+              argumentProperties: parsedArguments.map(
+                (argument) => argument.properties ?? null,
+              ),
+            }
+          : {}),
       }
     : null;
 }
@@ -2442,28 +2500,6 @@ function uniqueMathChild(
   return matches[0];
 }
 
-function safePassiveProperty(element: Element): boolean {
-  if (!DOCX_MATH_NAMESPACES.has(element.namespaceURI ?? '')) return false;
-  return [element, ...Array.from(element.querySelectorAll('*'))].every(
-    (candidate) =>
-      !UNSAFE_PROPERTY_NAMES.has(candidate.localName) &&
-      (candidate === element ||
-        !STRUCTURAL_MATH_NAMES.has(candidate.localName)) &&
-      (DOCX_MATH_NAMESPACES.has(candidate.namespaceURI ?? '') ||
-        DOCX_WORDPROCESSING_NAMESPACES.has(candidate.namespaceURI ?? '')) &&
-      !hasUnsafeAttributes(candidate),
-  );
-}
-
-function emptyMathProperty(element: Element): boolean {
-  return (
-    meaningfulAttributes(element).length === 0 &&
-    directChildren(element).length === 0 &&
-    !hasMeaningfulDirectText(element) &&
-    safePassiveProperty(element)
-  );
-}
-
 function meaningfulAttributes(element: Element): Attr[] {
   return Array.from(element.attributes).filter(
     (attribute) =>
@@ -2489,18 +2525,6 @@ function safeMathTextAttributes(element: Element): boolean {
       xmlAttributeLocalName(attribute) === 'space' &&
       (attribute.value === 'default' || attribute.value === 'preserve'),
   );
-}
-
-function hasUnsafeAttributes(element: Element): boolean {
-  return Array.from(element.attributes).some((attribute) => {
-    const localName = xmlAttributeLocalName(attribute);
-    const namespace = xmlAttributeNamespace(element, attribute);
-    return (
-      RELATIONSHIP_NAMESPACES.has(namespace ?? '') ||
-      (/^(?:embed|href|id|link)$/i.test(localName) &&
-        Boolean(attribute.value.trim()))
-    );
-  });
 }
 
 function mathValue(element: Element): string | null {
