@@ -253,8 +253,8 @@ into the PDF; searchable text and vector output remain future fidelity work.
 - `@a3s-lab/office/web-component` — Custom Elements for framework-agnostic UI
   composition.
 - `@a3s-lab/office/core` — Typed models, templates, import, export, and browser
-  file workflows, plus transport-neutral Yjs bindings for Markdown and
-  Document collaboration.
+  file workflows, plus transport-neutral Yjs bindings for Markdown, Document,
+  and Presentation collaboration.
 - `@a3s-lab/office/styles.css` — Shared editor and interaction-system styles.
 
 Copyable React, Vue, and Web Component examples live in the

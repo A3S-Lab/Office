@@ -45,7 +45,7 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `document.comments` / `document.comment-order` | `Y.Map` / `Y.Array` | ID-keyed durable comment/reply records and deterministic presentation order. |
 | `document.bibliography*` | Typed maps/arrays | Bibliography settings and ID-keyed citation sources. |
 | `spreadsheet.*` | Typed maps/arrays | Planned sheet order, sparse cells, styles, objects, and review state. |
-| `presentation.*` | Typed maps/arrays | Planned slide order, scene objects, text, notes, and comments. |
+| `presentation.*` | Typed maps/arrays | Slide/master/layout order, ID-keyed scene objects, notes, transitions, and comments. |
 | `pdf.*` | Typed maps/arrays | Planned source identity, annotations, forms, and reviewed page operations. |
 
 Schema additions must be backward readable within protocol v1. A breaking root
@@ -109,13 +109,32 @@ round trip preserves supported and untouched unsupported OOXML.
 
 ### Phase 3: Presentation
 
-- Use a stable slide-order array and one map per scene object; never replace the
-  whole deck for a text or geometry edit.
-- Use collaborative XML fragments for rich text and typed scalar fields for
-  transforms, styles, links, notes, comments, and transitions.
-- Define deterministic conflict rules for delete-vs-edit, z-order, grouping,
-  theme changes, and object identity.
-- Keep derived thumbnails and layout measurements local.
+Status: browser collaboration foundation implemented; rich-text CRDT and PPTX
+round-trip concurrency coverage are pending.
+
+- Stable slide/master/layout order arrays and ID-keyed record maps avoid a
+  serialized whole-deck root. Scene elements and slide comments are ID-keyed
+  child records.
+- Snapshot writes are translated into `previous -> next` record patches, so an
+  unrelated stale snapshot does not remove remotely added slides or objects.
+- Typed validation rejects duplicate identities and invalid references before
+  bootstrap; concurrent independent bootstrap remains fail-closed.
+- Per-binding undo/redo tracks only local transactions. React, Vue, and Web
+  Component surfaces project remote snapshots and keep non-edit modes
+  read-only.
+- Tests cover bootstrap, identity validation, separate-record convergence,
+  stale snapshots, concurrent comments, local-only undo, permissions, mounted
+  projection, and framework adapters.
+
+Remaining:
+
+- Bind editable scene text to collaborative XML fragments instead of scalar
+  text/run replacement.
+- Add creation claims and explicit conflict handling for concurrent same-ID
+  object creation, delete-vs-edit, z-order, grouping, and theme changes.
+- Keep derived thumbnails and layout measurements local and prove this in UI
+  tests.
+- Add offline/reordered-update property tests plus merged PPTX export/reopen.
 
 Exit criterion: concurrent object transforms, rich-text edits, slide reorder,
 comments, and delete-vs-edit cases converge and survive PPTX round trips.

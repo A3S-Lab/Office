@@ -1,5 +1,11 @@
 import * as Y from 'yjs';
 import { WorkOfficeCollaborationError } from './office-collaboration';
+import {
+  canonicalWorkOfficeCollaborationJson,
+  cloneWorkOfficeCollaborationJson,
+  isWorkOfficeCollaborationRecord,
+  workOfficeCollaborationJsonEqual,
+} from './office-collaboration-json';
 
 export function validatedOrder(
   order: Y.Array<string>,
@@ -164,73 +170,15 @@ export function cloneJsonValue(
   value: unknown,
   seen = new WeakSet<object>(),
 ): unknown {
-  if (
-    value === null ||
-    typeof value === 'string' ||
-    typeof value === 'boolean'
-  ) {
-    return value;
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (Array.isArray(value)) {
-    if (seen.has(value)) invalidInputSidecars('acyclic JSON sidecar values');
-    seen.add(value);
-    const clone = value.map((item) => cloneJsonValue(item, seen));
-    seen.delete(value);
-    return clone;
-  }
-  if (isRecord(value)) {
-    if (!isPlainJsonRecord(value)) {
-      invalidInputSidecars('plain JSON sidecar objects');
-    }
-    if (seen.has(value)) invalidInputSidecars('acyclic JSON sidecar values');
-    seen.add(value);
-    const clone: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value)) {
-      if (isUnsafeJsonKey(key)) {
-        invalidInputSidecars('sidecar objects without prototype keys');
-      }
-      if (item !== undefined) {
-        Object.defineProperty(clone, key, {
-          configurable: true,
-          enumerable: true,
-          value: cloneJsonValue(item, seen),
-          writable: true,
-        });
-      }
-    }
-    seen.delete(value);
-    return clone;
-  }
-  invalidInputSidecars('JSON-compatible sidecar values');
+  return cloneWorkOfficeCollaborationJson(value, seen);
 }
 
 export function jsonEqual(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) return true;
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return (
-      left.length === right.length &&
-      left.every((value, index) => jsonEqual(value, right[index]))
-    );
-  }
-  if (isRecord(left) && isRecord(right)) {
-    if (!isPlainJsonRecord(left) || !isPlainJsonRecord(right)) return false;
-    const leftKeys = Object.keys(left).filter((key) => left[key] !== undefined);
-    const rightKeys = Object.keys(right).filter(
-      (key) => right[key] !== undefined,
-    );
-    return (
-      leftKeys.length === rightKeys.length &&
-      leftKeys.every(
-        (key) => Object.hasOwn(right, key) && jsonEqual(left[key], right[key]),
-      )
-    );
-  }
-  return false;
+  return workOfficeCollaborationJsonEqual(left, right);
 }
 
 export function canonicalJson(value: unknown): string {
-  return JSON.stringify(canonicalJsonValue(cloneJsonValue(value)));
+  return canonicalWorkOfficeCollaborationJson(value);
 }
 
 export function assertNoAddedCollision<T extends { id: string }>(
@@ -275,29 +223,5 @@ export function invalidSharedSidecars(label: string): never {
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isPlainJsonRecord(value: Record<string, unknown>): boolean {
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function canonicalJsonValue(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalJsonValue);
-  if (!isRecord(value)) return value;
-  const result: Record<string, unknown> = {};
-  for (const key of Object.keys(value).sort()) {
-    Object.defineProperty(result, key, {
-      configurable: true,
-      enumerable: true,
-      value: canonicalJsonValue(value[key]),
-      writable: true,
-    });
-  }
-  return result;
-}
-
-function isUnsafeJsonKey(key: string): boolean {
-  return key === '__proto__' || key === 'constructor' || key === 'prototype';
+  return isWorkOfficeCollaborationRecord(value);
 }

@@ -213,6 +213,7 @@ export const SpreadsheetEditor = defineComponent({
 export const PresentationEditor = defineComponent({
   name: 'A3SPresentationEditor',
   props: {
+    collaboration: Object as PropType<OfficeCollaborationSession>,
     content: {
       required: true,
       type: Object as PropType<PresentationContent>,
@@ -235,6 +236,7 @@ export const PresentationEditor = defineComponent({
   setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactPresentationEditor, {
+        collaboration: props.collaboration,
         content: props.content,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,

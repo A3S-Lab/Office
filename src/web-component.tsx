@@ -323,12 +323,23 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
 }
 
 export class A3SPresentationEditorElement extends A3SContentEditorElement<PresentationContent> {
+  #collaboration: OfficeCollaborationSession | undefined;
+
   static get observedAttributes() {
     return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
   }
 
   get kernelWasmUrl(): string | undefined {
     return this.getAttribute('kernel-wasm-url') ?? undefined;
+  }
+
+  get collaboration(): OfficeCollaborationSession | undefined {
+    return this.#collaboration;
+  }
+
+  set collaboration(value: OfficeCollaborationSession | undefined) {
+    this.#collaboration = value;
+    this.requestRender();
   }
 
   set kernelWasmUrl(value: string | undefined) {
@@ -339,6 +350,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('presentation', this.theme);
     return createElement(PresentationEditor, {
+      collaboration: this.collaboration,
       content: this.content,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,

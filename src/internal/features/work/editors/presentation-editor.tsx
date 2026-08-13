@@ -1,5 +1,11 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import {
+  createWorkOfficePresentationCollaborationBinding,
+  readWorkOfficePresentationCollaboration,
+  type WorkOfficePresentationCollaborationBinding,
+} from '../../../collaboration/office-presentation-collaboration';
 import {
   type WorkspaceContextMenuEvent,
   WorkspaceContextMenu,
@@ -21,7 +27,11 @@ import {
   canUngroupPresentationElements,
   presentationSelectionUnits,
 } from '../work-presentation-groups';
-import type { WorkSlide, WorkSlideElement } from '../work-types';
+import type {
+  WorkPresentationContent,
+  WorkSlide,
+  WorkSlideElement,
+} from '../work-types';
 import { OfficeFileInput } from './office-controls';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
@@ -85,6 +95,103 @@ type PresentationTaskPane = 'comments' | 'design' | null;
 type PresentationTextFormattingAttribute = 'bold' | 'italic' | 'underline';
 
 export function PresentationEditor(props: PresentationEditorProps) {
+  if (props.collaboration) {
+    return (
+      <CollaborativePresentationEditor
+        {...props}
+        collaboration={props.collaboration}
+      />
+    );
+  }
+  return <PresentationEditorSurface {...props} />;
+}
+
+function CollaborativePresentationEditor(
+  props: PresentationEditorProps & {
+    collaboration: WorkOfficeCollaborationSession;
+  },
+) {
+  const { collaboration } = props;
+  const collaborationRef = useRef(collaboration);
+  if (collaborationRef.current !== collaboration) {
+    throw new Error(
+      'PresentationEditor collaboration sessions cannot be replaced while mounted. Remount the editor for another shared presentation.',
+    );
+  }
+  const [sharedContent, setSharedContent] = useState(() =>
+    readWorkOfficePresentationCollaboration(collaboration),
+  );
+  const contentRef = useRef(sharedContent);
+  const bindingRef = useRef<
+    WorkOfficePresentationCollaborationBinding | undefined
+  >(undefined);
+  const [, refreshHistory] = useState(0);
+  const onChangeRef = useRef(props.onChange);
+  onChangeRef.current = props.onChange;
+  contentRef.current = sharedContent;
+
+  useEffect(() => {
+    const binding =
+      createWorkOfficePresentationCollaborationBinding(collaboration);
+    bindingRef.current = binding;
+    const unsubscribeContent = binding.subscribe(({ content }) => {
+      contentRef.current = content;
+      setSharedContent(content);
+      onChangeRef.current(content);
+    });
+    const unsubscribeError = binding.subscribeError((error) => {
+      queueMicrotask(() => {
+        throw error;
+      });
+    });
+    const unsubscribeHistory = binding.subscribeHistory(() =>
+      refreshHistory((value) => value + 1),
+    );
+    const current = binding.content();
+    contentRef.current = current;
+    setSharedContent(current);
+    return () => {
+      unsubscribeContent();
+      unsubscribeError();
+      unsubscribeHistory();
+      if (bindingRef.current === binding) bindingRef.current = undefined;
+      binding.destroy();
+    };
+  }, [collaboration]);
+
+  const commit = useCallback((next: WorkPresentationContent) => {
+    const previous = contentRef.current;
+    if (bindingRef.current?.replace(previous, next)) {
+      contentRef.current = next;
+    }
+  }, []);
+  const history = {
+    canRedo: bindingRef.current?.canRedo() ?? false,
+    canUndo: bindingRef.current?.canUndo() ?? false,
+    redo: () => bindingRef.current?.redo() ?? false,
+    undo: () => bindingRef.current?.undo() ?? false,
+  };
+  return (
+    <PresentationEditorSurface
+      {...props}
+      content={sharedContent}
+      collaborationHistory={history}
+      onChange={commit}
+      preview={props.preview || collaboration.mode !== 'edit'}
+    />
+  );
+}
+
+interface PresentationEditorSurfaceProps extends PresentationEditorProps {
+  collaborationHistory?: {
+    canRedo: boolean;
+    canUndo: boolean;
+    redo: () => boolean;
+    undo: () => boolean;
+  };
+}
+
+function PresentationEditorSurface(props: PresentationEditorSurfaceProps) {
   const { content, fileActions, preview } = props;
   if (preview) {
     return (
@@ -107,6 +214,7 @@ export function PresentationEditor(props: PresentationEditorProps) {
 
 function PresentationEditingSurface({
   initialSlide,
+  collaborationHistory,
   content,
   preview,
   saveStatus = '已自动保存',
@@ -115,7 +223,7 @@ function PresentationEditingSurface({
   onChange,
   onAgentRequest,
   onStartSlideshow,
-}: PresentationEditorProps & { initialSlide: WorkSlide }) {
+}: PresentationEditorSurfaceProps & { initialSlide: WorkSlide }) {
   const contentRef = useRef(content);
   const presentationCommandsRef = useRef<PresentationEditorCommands | null>(
     null,
@@ -337,7 +445,7 @@ function PresentationEditingSurface({
     }
   }, [content.slides, selectedSlideId, selection.clear]);
 
-  const history = usePresentationHistory({
+  const controlledHistory = usePresentationHistory({
     content,
     onChange,
     selectedSlideId,
@@ -346,6 +454,7 @@ function PresentationEditingSurface({
       selection.clear();
     },
   });
+  const history = collaborationHistory ?? controlledHistory;
   const presentationSlides = usePresentationSlideCommands({
     content,
     onChange,

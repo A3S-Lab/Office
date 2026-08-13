@@ -9,10 +9,12 @@ import {
   type DocumentReviewConflictEvent,
   initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
+  initializeOfficePresentationCollaboration,
   type MarkdownContent,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
-import { DocumentEditor, MarkdownEditor } from '../src/vue';
+import { DocumentEditor, MarkdownEditor, PresentationEditor } from '../src/vue';
+import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 
 test('mounts the Vue adapter and renders the React editor', async () => {
   const target = document.createElement('div');
@@ -185,6 +187,32 @@ test('passes a synchronized Markdown session through the Vue adapter', async () 
       '# Vue collaboration edit',
     ),
   );
+  app.unmount();
+  target.remove();
+});
+
+test('passes a synchronized Presentation session through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const content = presentationCollaborationFixture();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'vue-shared-presentation',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, content);
+  const app = createApp({
+    render: () =>
+      h(PresentationEditor, {
+        collaboration: session,
+        content,
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.textContent).toContain('Shared presentation');
+  });
+
   app.unmount();
   target.remove();
 });

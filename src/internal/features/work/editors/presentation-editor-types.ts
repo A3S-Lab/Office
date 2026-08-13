@@ -1,3 +1,4 @@
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import type { WorkEditorAgentRequest } from '../work-agent-request';
 import type { WorkPresentationContent } from '../work-types';
 import type { WorkOfficeFileAction } from './work-office-chrome';
@@ -5,6 +6,7 @@ import type { WorkOfficeFileAction } from './work-office-chrome';
 export type PresentationDesignMode = 'slide' | 'layout' | 'master';
 
 export interface PresentationEditorProps {
+  collaboration?: WorkOfficeCollaborationSession;
   content: WorkPresentationContent;
   preview: boolean;
   saveStatus?: string;

@@ -7,15 +7,18 @@ import {
   type DocumentReviewConflictEvent,
   initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
+  initializeOfficePresentationCollaboration,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
   A3SMarkdownEditorElement,
+  type A3SPresentationEditorElement,
   type A3SSpreadsheetEditorElement,
   defineA3SOfficeElements,
 } from '../src/web-component';
+import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 
 test('registers every custom element idempotently', async () => {
   defineA3SOfficeElements();
@@ -171,6 +174,29 @@ test('passes a synchronized Markdown session through the custom element property
       '# Element collaboration edit',
     ),
   );
+  element.remove();
+});
+
+test('passes a synchronized Presentation session through the custom element property', async () => {
+  defineA3SOfficeElements();
+  const content = presentationCollaborationFixture();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'element-shared-presentation',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, content);
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.presentation,
+  ) as A3SPresentationEditorElement;
+  element.collaboration = session;
+  element.content = content;
+  document.body.append(element);
+
+  await waitFor(() => {
+    expect(element.textContent).toContain('Shared presentation');
+  });
+  expect(element.collaboration).toBe(session);
+
   element.remove();
 });
 

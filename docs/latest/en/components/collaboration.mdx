@@ -9,8 +9,8 @@ A3S Office exposes a transport-neutral Yjs collaboration boundary. The host
 owns rooms, authentication, authorization, network providers, persistence, and
 the `Y.Doc`; the editor owns the format-specific binding and interaction.
 
-Markdown and Document have browser collaboration bindings. Spreadsheet,
-Presentation, PDF, and native Yrs clients are tracked in the
+Markdown, Document, and Presentation have browser collaboration bindings.
+Spreadsheet, PDF, and native Yrs clients are tracked in the
 [collaboration roadmap](https://github.com/A3S-Lab/Office/blob/main/COLLABORATION_ROADMAP.md).
 
 ## Open a Markdown session
@@ -133,6 +133,55 @@ after synchronization. Unsupported OOXML package parts remain the host's
 import/export responsibility and must not be projected into Yjs as a full ZIP
 replacement.
 
+## Open a Presentation session
+
+Presentation stores slide/master/layout order separately from ID-keyed records.
+Each slide and design record owns ID-keyed scene objects; comments also merge by
+stable ID. Scalar geometry, styles, notes, transitions, charts, and other
+JSON-compatible object fields update independently instead of replacing one
+serialized deck:
+
+```tsx title="SharedPresentation.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficePresentationCollaboration,
+  type PresentationContent,
+} from '@a3s-lab/office/core';
+import { PresentationEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'presentation',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePresentationCollaboration(session, initialContent);
+}
+
+export function SharedPresentation({
+  initialContent,
+}: {
+  initialContent: PresentationContent;
+}) {
+  return (
+    <PresentationEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The binding applies `previous -> next` differences to shared records. A stale
+host snapshot therefore cannot delete a slide or object that arrived remotely
+unless the local operation explicitly removed that stable ID. Local undo/redo
+tracks only the mounted binding's origin.
+
 ## Contract
 
 | Concern | Behavior |
@@ -141,7 +190,7 @@ replacement.
 | Initial sync | The host finishes provider sync and initialization before mounting. The editor does not guess whether an empty document is new or still downloading. |
 | Session identity | A mounted editor accepts one session object. Remount it when the artifact or `Y.Doc` changes. |
 | Undo/redo | Tracks only transactions created by this local binding; remote edits remain intact. |
-| Modes | `edit` can change Markdown or Document. `view`, `comment`, and `suggest` remain read-only until each format's durable authorization/review model is complete. |
+| Modes | `edit` can change Markdown, Document, or Presentation. `view`, `comment`, and `suggest` remain read-only until each format's durable authorization/review model is complete. |
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
@@ -168,6 +217,12 @@ Vue exposes the same session as the `collaboration` prop:
   :content="documentContent"
   @change="handleDocumentSnapshot"
 />
+
+<PresentationEditor
+  :collaboration="presentationSession"
+  :content="presentationContent"
+  @change="handlePresentationSnapshot"
+/>
 ```
 
 Custom elements accept complex values through JavaScript properties:
@@ -180,6 +235,10 @@ editor.content = content;
 const documentEditor = document.querySelector('a3s-document-editor');
 documentEditor.collaboration = documentSession;
 documentEditor.content = documentContent;
+
+const presentationEditor = document.querySelector('a3s-presentation-editor');
+presentationEditor.collaboration = presentationSession;
+presentationEditor.content = presentationContent;
 ```
 
 Do not serialize the session or a `Y.Doc` into an HTML attribute.
