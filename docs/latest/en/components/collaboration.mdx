@@ -9,9 +9,10 @@ A3S Office exposes a transport-neutral Yjs collaboration boundary. The host
 owns rooms, authentication, authorization, network providers, persistence, and
 the `Y.Doc`; the editor owns the format-specific binding and interaction.
 
-Markdown, Document, Presentation, and Spreadsheet have browser collaboration
-bindings. PDF and native Yrs clients are tracked in the
+Markdown, Document, Presentation, and Spreadsheet have browser editor
+bindings. PDF has a browser Core binding; viewer projection is tracked in the
 [collaboration roadmap](https://github.com/A3S-Lab/Office/blob/main/COLLABORATION_ROADMAP.md).
+Native Yrs clients remain a later phase.
 
 ## Open a Markdown session
 
@@ -231,6 +232,50 @@ and remain stable when a remote workbook update is projected into the editor.
 Canonical edits and undo/redo use the collaboration binding; one client cannot
 undo another client's transaction.
 
+## Open a PDF Core session
+
+PDF collaboration never places the source PDF bytes in Yjs. The bootstrap
+owner supplies an immutable lowercase SHA-256 digest, exact byte length, and
+page count, then initializes typed overlay and audit records:
+
+```ts title="shared-pdf.ts"
+import {
+  createOfficeCollaborationSession,
+  createPdfCollaborationContent,
+  initializeOfficePdfCollaboration,
+} from '@a3s-lab/office/core';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'reviewer-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'pdf',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePdfCollaboration(
+    session,
+    createPdfCollaborationContent({
+      sha256: sourceSha256,
+      byteLength: sourceBytes.byteLength,
+      pageCount,
+    }),
+  );
+}
+```
+
+Annotations and form values are locally undoable. Annotation deletion is a
+durable tombstone. Signature placements, redaction proposals, reviewed page
+operations, and final decisions are append-only audit records and are never
+put on the undo stack. Signature records refer to a host-owned asset ID and
+hash rather than synchronizing private appearance bytes. Rendered bitmaps,
+search indexes, current page, zoom, and selection remain local.
+
+The current public PDF API is Core-only. Mounting a `PdfViewer` with this
+session is intentionally deferred until annotation/form projection and
+save/reopen tests are complete.
+
 ## Contract
 
 | Concern | Behavior |
@@ -239,7 +284,7 @@ undo another client's transaction.
 | Initial sync | The host finishes provider sync and initialization before mounting. The editor does not guess whether an empty document is new or still downloading. |
 | Session identity | A mounted editor accepts one session object. Remount it when the artifact or `Y.Doc` changes. |
 | Undo/redo | Tracks only transactions created by this local binding; remote edits remain intact. |
-| Modes | `edit` can change Markdown, Document, Presentation, or Spreadsheet. `view`, `comment`, and `suggest` remain read-only until each format's durable authorization/review model is complete. |
+| Modes | `edit` can change Markdown, Document, Presentation, Spreadsheet, or PDF Core content. `view`, `comment`, and `suggest` remain read-only until each format's durable authorization/review model is complete. |
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |

@@ -46,6 +46,32 @@ export {
   replaceWorkOfficePresentationCollaboration as replaceOfficePresentationCollaboration,
 } from './internal/collaboration/office-presentation-collaboration';
 export type {
+  WorkOfficePdfCollaborationBinding as OfficePdfCollaborationBinding,
+  WorkOfficePdfCollaborationBindingOptions as OfficePdfCollaborationBindingOptions,
+  WorkOfficePdfCollaborationChange as OfficePdfCollaborationChange,
+  WorkPdfCollaborationAnnotation as PdfCollaborationAnnotation,
+  WorkPdfCollaborationContent as PdfCollaborationContent,
+  WorkPdfCollaborationDeletePagesOperation as PdfCollaborationDeletePagesOperation,
+  WorkPdfCollaborationFormValue as PdfCollaborationFormValue,
+  WorkPdfCollaborationPageOperation as PdfCollaborationPageOperation,
+  WorkPdfCollaborationRedactionProposal as PdfCollaborationRedactionProposal,
+  WorkPdfCollaborationRect as PdfCollaborationRect,
+  WorkPdfCollaborationReorderPagesOperation as PdfCollaborationReorderPagesOperation,
+  WorkPdfCollaborationReviewDecision as PdfCollaborationReviewDecision,
+  WorkPdfCollaborationRotatePagesOperation as PdfCollaborationRotatePagesOperation,
+  WorkPdfCollaborationSignatureAppearance as PdfCollaborationSignatureAppearance,
+  WorkPdfCollaborationSignaturePlacement as PdfCollaborationSignaturePlacement,
+  WorkPdfCollaborationSource as PdfCollaborationSource,
+} from './internal/collaboration/office-pdf-collaboration';
+export {
+  assertWorkOfficePdfCollaborationSource as assertPdfCollaborationSource,
+  createWorkOfficePdfCollaborationBinding as createOfficePdfCollaborationBinding,
+  initializeWorkOfficePdfCollaboration as initializeOfficePdfCollaboration,
+  readWorkOfficePdfCollaboration as readOfficePdfCollaboration,
+  replaceWorkOfficePdfCollaboration as replaceOfficePdfCollaboration,
+} from './internal/collaboration/office-pdf-collaboration';
+export { createWorkPdfCollaborationContent as createPdfCollaborationContent } from './internal/collaboration/office-pdf-collaboration-types';
+export type {
   WorkOfficeSpreadsheetCollaborationBinding as OfficeSpreadsheetCollaborationBinding,
   WorkOfficeSpreadsheetCollaborationBindingOptions as OfficeSpreadsheetCollaborationBindingOptions,
   WorkOfficeSpreadsheetCollaborationChange as OfficeSpreadsheetCollaborationChange,

@@ -46,7 +46,7 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `document.bibliography*` | Typed maps/arrays | Bibliography settings and ID-keyed citation sources. |
 | `spreadsheet.*` | Typed maps/arrays | Sheet order, field-addressed sparse cells, formulas, styles, objects, names, and print state. |
 | `presentation.*` | Typed maps/arrays | Slide/master/layout order, ID-keyed scene objects, notes, transitions, and comments. |
-| `pdf.*` | Typed maps/arrays | Planned source identity, annotations, forms, and reviewed page operations. |
+| `pdf.*` | Typed maps/arrays | Immutable source identity, annotations, forms, signatures, redaction proposals, reviewed page operations, and final decisions. |
 
 Schema additions must be backward readable within protocol v1. A breaking root
 or meaning change requires a new protocol version and an explicit migration.
@@ -184,12 +184,39 @@ untouched unsupported package state.
 
 ### Phase 5: PDF
 
-- Bind a shared artifact to an immutable source fingerprint; reject updates for
-  another byte source even when page counts happen to match.
-- Collaborate on annotations, form values, signatures, redaction proposals,
-  approvals, and reviewed page operations as typed records.
-- Require explicit review for destructive redaction or page mutations.
-- Keep rendered bitmaps, search indexes, and viewport state local.
+Status: browser Core collaboration model implemented; PDF viewer/framework
+projection and save/reopen coverage are pending.
+
+- Shared artifacts are bound to a lowercase SHA-256 fingerprint, exact byte
+  length, and page count. Source bytes never enter Yjs, and a binding rejects
+  another source even when its page count matches.
+- Annotations, form values, signature placements, redaction proposals, page
+  operations, and final review decisions use typed, ID-keyed, recursively
+  field-addressed roots instead of one PDF or JSON blob.
+- Annotation deletion uses an irreversible durable tombstone. Signature
+  placements reference host-owned appearance assets; private/signature bytes
+  are not synchronized as canonical content.
+- Signature, redaction, page-operation, and decision records are append-only
+  audit data. Redaction and destructive page operations require an explicit,
+  attributable final review decision before a host applies them to bytes.
+- Creation claims deduplicate identical offline retries and fail closed on
+  concurrent same-ID reuse. Snapshot writes preflight stale conflicts before
+  changing any shared root, and local undo is limited to annotations and form
+  values.
+- Core tests cover source mismatch, validation, bootstrap races, field-level
+  convergence, delete-vs-edit, offline creation collisions, append-only review
+  records, stale-write atomicity, local-only undo, and permissions.
+
+Remaining:
+
+- Project annotation and form events between the shared model and the PDFium
+  viewer in React, Vue, and Web Components without persisting viewport, search,
+  selection, render caches, or page bitmaps.
+- Resolve signature appearance assets through an explicit authenticated host
+  port and keep asset hashes aligned with the audit record.
+- Apply approved redaction/page operations in a non-retryable host workflow,
+  then save and reopen a merged PDF fixture to verify durable results.
+- Add offline/reordered-update property tests and native Yrs convergence.
 
 Exit criterion: annotations and forms converge and reopen from a saved PDF;
 destructive actions remain attributable, reviewable, and non-retryable.
