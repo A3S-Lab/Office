@@ -35,6 +35,7 @@ import {
   DocumentPageChromeCommands,
   normalizeDocumentPageChromeHref,
 } from '../work-document-page-chrome-commands';
+import { DocumentParagraphFormatting } from '../work-document-paragraph-formatting';
 import { DocumentParagraphIdentity } from '../work-document-paragraph-identity';
 import { DocumentTableRowIdentity } from '../work-document-table-row-identity';
 import { DocumentPageChromeWpsShortcuts } from './document-page-chrome-wps-shortcuts';
@@ -396,6 +397,7 @@ export function createDocumentPageChromeEditorExtensions(
     DocumentSubscript,
     DocumentSuperscript,
     DocumentPageChromeCommands,
+    DocumentParagraphFormatting,
     TextAlign.configure({ types: ['paragraph'] }),
     DocumentParagraphIdentity.configure({ types: ['paragraph'] }),
     DocumentTableRowIdentity,

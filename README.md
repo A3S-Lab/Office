@@ -496,7 +496,16 @@ retain these identities; text edits rotate `textId`, formatting-only edits and
 moves keep it, and copies or splits receive new paragraph IDs. Source-only,
 duplicate, changed-text, relationship-bound, Microsoft/OOXML semantic, and
 ambiguous branches are dropped; generated paragraph and drawing semantics stay
-authoritative. Stable table hierarchies use native row `w14:paraId` plus
+authoritative. Office 2013 `w15:collapsed` paragraph metadata also round-trips
+through body and page-chrome HTML as `data-office-default-collapsed`. Import
+accepts only an empty leaf or the exact core Word `w:val` lexicals `true`,
+`on`, `1`, `false`, `off`, and `0`; an omitted value means true, while a
+malformed or duplicated direct value fails closed instead of inheriting stale
+state. Export canonicalizes explicit states to `1` or `0`, declares the Word
+2012 namespace, and adds its prefix to `mc:Ignorable`. This metadata remains
+native-only: browser content stays expanded and editable, without conflating
+Word's initial collapsed-heading view with navigation-pane state or hidden
+text. Stable table hierarchies use native row `w14:paraId` plus
 `w14:textId`, ordered directly owned row IDs for tables, and directly owned
 paragraph IDs for cells. Passive extensions on `w:tbl`/`w:tblPr`,
 `w:tr`/`w:trPr`, and `w:tc`/`w:tcPr` survive body or page-chrome regeneration.

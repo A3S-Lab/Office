@@ -138,6 +138,16 @@ metrics are internal compatibility data: export continues to use the original
 OOXML paragraph multiple, so a browser-only calibration cannot rewrite the
 document's line-spacing semantics.
 
+Office 2013 `w15:collapsed` paragraph metadata round-trips through body and
+page-chrome HTML as `data-office-default-collapsed`. Import accepts only an
+empty leaf or the exact core Word `w:val` lexicals `true`, `on`, `1`, `false`,
+`off`, and `0`; an omitted value means true, while a malformed or duplicated
+direct value fails closed instead of inheriting stale state. Export emits
+canonical `1` or `0`, declares the Word 2012 namespace, and adds its prefix to
+`mc:Ignorable`. The browser deliberately keeps the content expanded and
+editable because this native property controls Word's initial document view,
+not content visibility or the editor's navigation-pane state.
+
 ## Built-in navigation
 
 The View ribbon opens a persistent heading outline on wide layouts and a

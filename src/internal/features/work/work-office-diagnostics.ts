@@ -5,6 +5,7 @@ import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
+import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import {
   attribute,
   contentTypeForPart,
@@ -178,6 +179,24 @@ export async function analyzeDocxCompatibility(
       );
     }
     if (document) {
+      const defaultCollapsedStates = descendants(document, 'pPr')
+        .map(parseDocxParagraphDefaultCollapsed)
+        .filter((state) => state.status !== 'absent');
+      if (defaultCollapsedStates.length) {
+        const invalid = defaultCollapsedStates.filter(
+          (state) => state.status === 'invalid',
+        ).length;
+        issues.push(
+          issue(
+            'docx.headings.default-collapsed',
+            'Default-collapsed headings',
+            invalid
+              ? `Office 2013 default-collapsed heading state is preserved for exact core Word on/off values, but ${invalid} malformed or duplicated paragraph property value(s) are ignored instead of inheriting a stale state.`
+              : "Office 2013 default-collapsed heading state is preserved as native paragraph metadata. Browser content remains expanded and editable because the property controls Word's initial document view rather than content visibility.",
+            invalid ? 'warning' : 'info',
+          ),
+        );
+      }
       if (descendants(document, 'AlternateContent').length) {
         issues.push(
           issue(

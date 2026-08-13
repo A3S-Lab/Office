@@ -11,6 +11,7 @@ import {
 } from './work-document-table-row-identity';
 import { docxEquationHtml } from './work-docx-equation-import';
 import { isDocxEquationLikeRoot } from './work-docx-equation-story';
+import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
@@ -173,8 +174,9 @@ async function paragraphHtml(
   archive: OoxmlPackage,
   relationships: Relationships,
 ): Promise<string> {
+  const properties = directChild(paragraph, 'pPr');
   const alignmentValue = attribute(
-    firstDescendant(directChild(paragraph, 'pPr'), 'jc') ?? paragraph,
+    firstDescendant(properties, 'jc') ?? paragraph,
     'val',
   );
   const alignment =
@@ -228,7 +230,14 @@ async function paragraphHtml(
     html += await containerRunsHtml(child, field, archive, relationships);
   }
   const identityAttributes = paragraphIdentityAttributes(paragraph);
-  return `<p${alignment ? ` style="text-align: ${alignment}"` : ''}${identityAttributes}>${html}</p>`;
+  const defaultCollapsed = properties
+    ? parseDocxParagraphDefaultCollapsed(properties)
+    : { status: 'absent' as const };
+  const defaultCollapsedAttribute =
+    defaultCollapsed.status === 'valid'
+      ? ` data-office-default-collapsed="${defaultCollapsed.value}"`
+      : '';
+  return `<p${alignment ? ` style="text-align: ${alignment}"` : ''}${identityAttributes}${defaultCollapsedAttribute}>${html}</p>`;
 }
 
 function paragraphIdentityAttributes(paragraph: Element): string {

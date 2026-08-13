@@ -218,6 +218,11 @@ export const DocumentParagraphFormatting = Extension.create({
             'officeContextualSpacing',
             'data-office-contextual-spacing',
           ),
+          defaultCollapsed: directBooleanAttribute(
+            'defaultCollapsed',
+            'officeDefaultCollapsed',
+            'data-office-default-collapsed',
+          ),
           outlineLevel: outlineLevelAttribute(),
         },
       },
@@ -865,19 +870,22 @@ function directBooleanAttribute(
     | 'keepWithNext'
     | 'pageBreakBefore'
     | 'widowControl'
-    | 'contextualSpacing',
+    | 'contextualSpacing'
+    | 'defaultCollapsed',
   datasetKey:
     | 'officeKeepLines'
     | 'officeKeepWithNext'
     | 'officePageBreakBefore'
     | 'officeWidowControl'
-    | 'officeContextualSpacing',
+    | 'officeContextualSpacing'
+    | 'officeDefaultCollapsed',
   htmlName:
     | 'data-office-keep-lines'
     | 'data-office-keep-with-next'
     | 'data-office-page-break-before'
     | 'data-office-widow-control'
-    | 'data-office-contextual-spacing',
+    | 'data-office-contextual-spacing'
+    | 'data-office-default-collapsed',
 ) {
   return {
     default: null,

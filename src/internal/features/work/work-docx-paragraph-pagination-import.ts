@@ -9,6 +9,7 @@ import {
   docxTableParagraphPropertySources,
   resolveDocxTableStyleResolver,
 } from './work-docx-table-styles';
+import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import { attribute, descendants, directChild } from './work-ooxml-package';
 
 export interface ImportedDocxParagraphPaginationMarker {
@@ -19,6 +20,7 @@ export interface ImportedDocxParagraphPaginationMarker {
 export type ImportedDocxParagraphPagination =
   Partial<DocumentParagraphPagination> & {
     contextualSpacing?: boolean;
+    defaultCollapsed?: boolean;
     outlineLevel?: number;
   };
 
@@ -98,6 +100,7 @@ function paragraphPagination(
     const widowControl = directChild(properties, 'widowControl');
     const contextualSpacing = directChild(properties, 'contextualSpacing');
     const outlineLevel = directChild(properties, 'outlineLvl');
+    const defaultCollapsed = parseDocxParagraphDefaultCollapsed(properties);
     if (keepLines) pagination.keepLines = onOffValue(keepLines);
     if (keepWithNext) pagination.keepWithNext = onOffValue(keepWithNext);
     if (pageBreakBefore)
@@ -107,6 +110,11 @@ function paragraphPagination(
       pagination.contextualSpacing = onOffValue(contextualSpacing);
     const outline = integerValue(outlineLevel);
     if (outline !== null && outline <= 9) pagination.outlineLevel = outline;
+    if (defaultCollapsed.status === 'valid') {
+      pagination.defaultCollapsed = defaultCollapsed.value;
+    } else if (defaultCollapsed.status === 'invalid') {
+      delete pagination.defaultCollapsed;
+    }
   }
   return pagination;
 }
@@ -170,6 +178,11 @@ function applyParagraphPagination(
     element,
     'data-office-contextual-spacing',
     pagination.contextualSpacing,
+  );
+  setBooleanAttribute(
+    element,
+    'data-office-default-collapsed',
+    pagination.defaultCollapsed,
   );
   if (pagination.outlineLevel !== undefined) {
     element.dataset.officeOutlineLevel = String(pagination.outlineLevel);

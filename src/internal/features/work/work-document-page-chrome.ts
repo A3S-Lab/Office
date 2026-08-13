@@ -46,6 +46,7 @@ const PARAGRAPH_IDENTITY_ATTRIBUTES = [
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
 ] as const;
+const PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE = 'data-office-default-collapsed';
 const TABLE_ROW_IDENTITY_ATTRIBUTES = [
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
@@ -393,7 +394,10 @@ function sanitizeAttributes(element: Element, tag: string) {
     if (type && !['1', 'A', 'a', 'I', 'i'].includes(type))
       element.removeAttribute('type');
   }
-  if (tag === 'p') normalizeParagraphIdentityAttributes(element);
+  if (tag === 'p') {
+    normalizeParagraphIdentityAttributes(element);
+    normalizeParagraphDefaultCollapsedAttribute(element);
+  }
   if (tag === 'tr') normalizeTableRowIdentityAttributes(element);
   if (direction === 'ltr' || direction === 'rtl')
     element.setAttribute('dir', direction);
@@ -417,7 +421,12 @@ function sanitizeAttributes(element: Element, tag: string) {
           : tag === 'ol'
             ? new Set(['dir', 'start', 'style', 'type'])
             : tag === 'p'
-              ? new Set(['dir', 'style', ...PARAGRAPH_IDENTITY_ATTRIBUTES])
+              ? new Set([
+                  'dir',
+                  'style',
+                  PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE,
+                  ...PARAGRAPH_IDENTITY_ATTRIBUTES,
+                ])
               : tag === 'tr'
                 ? new Set(['dir', 'style', ...TABLE_ROW_IDENTITY_ATTRIBUTES])
                 : new Set(['colspan', 'dir', 'rowspan', 'style']);
@@ -455,6 +464,19 @@ function normalizeParagraphIdentityAttributes(element: HTMLElement): void {
   }
   element.setAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[0], identity.paragraphId);
   element.setAttribute(PARAGRAPH_IDENTITY_ATTRIBUTES[1], identity.textId);
+}
+
+function normalizeParagraphDefaultCollapsedAttribute(
+  element: HTMLElement,
+): void {
+  const value = element.getAttribute(PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE);
+  if (value === 'true' || value === '1') {
+    element.setAttribute(PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE, 'true');
+  } else if (value === 'false' || value === '0') {
+    element.setAttribute(PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE, 'false');
+  } else {
+    element.removeAttribute(PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE);
+  }
 }
 
 function normalizeImageIdentityAttributes(element: HTMLElement): void {

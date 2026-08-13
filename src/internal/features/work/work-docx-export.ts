@@ -81,6 +81,10 @@ import { patchDocxNoteImageRelationships } from './work-docx-note-image-relation
 import { patchDocxNumberingRestartRules } from './work-docx-numbering';
 import { patchDocxPageColor } from './work-docx-page-color';
 import {
+  DocxParagraphDefaultCollapsedPatchCollector,
+  patchDocxParagraphDefaultCollapsed,
+} from './work-docx-paragraph-default-collapsed';
+import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
@@ -116,6 +120,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
+  paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
 }
@@ -163,6 +168,8 @@ export async function createDocxBlob(
     imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
+    paragraphDefaultCollapsedPatches:
+      new DocxParagraphDefaultCollapsedPatchCollector(),
     paragraphIdentityPatches: new DocxParagraphIdentityPatchCollector(
       JSON.stringify(normalizedContent),
     ),
@@ -277,8 +284,13 @@ export async function createDocxBlob(
     imageIdentityPatched,
     noteContext.bookmarkPatches.patches,
   );
+  const paragraphDefaultCollapsedPatched =
+    await patchDocxParagraphDefaultCollapsed(
+      bookmarkPatched,
+      noteContext.paragraphDefaultCollapsedPatches.patches,
+    );
   const paragraphIdentityPatched = await patchDocxParagraphIdentities(
-    bookmarkPatched,
+    paragraphDefaultCollapsedPatched,
     noteContext.paragraphIdentityPatches.patches,
   );
   const equationPatched = await patchDocxEquations(
@@ -494,14 +506,7 @@ async function blockToFileChildren(
     );
   }
   const runs = await paragraphRuns(element, docx, noteContext);
-  const heading =
-    tag === 'h1'
-      ? docx.HeadingLevel.HEADING_1
-      : tag === 'h2'
-        ? docx.HeadingLevel.HEADING_2
-        : tag === 'h3'
-          ? docx.HeadingLevel.HEADING_3
-          : undefined;
+  const heading = paragraphHeadingLevel(tag, docx);
   return [
     new docx.Paragraph({
       children: runs.length ? runs : [new docx.TextRun('')],
@@ -514,6 +519,16 @@ async function blockToFileChildren(
       ...paragraphDirectionOptions(element),
     }),
   ];
+}
+
+function paragraphHeadingLevel(tag: string, docx: typeof import('docx')) {
+  if (tag === 'h1') return docx.HeadingLevel.HEADING_1;
+  if (tag === 'h2') return docx.HeadingLevel.HEADING_2;
+  if (tag === 'h3') return docx.HeadingLevel.HEADING_3;
+  if (tag === 'h4') return docx.HeadingLevel.HEADING_4;
+  if (tag === 'h5') return docx.HeadingLevel.HEADING_5;
+  if (tag === 'h6') return docx.HeadingLevel.HEADING_6;
+  return undefined;
 }
 
 function millimetersToTwips(value: number): number {
@@ -559,8 +574,13 @@ async function paragraphRuns(
   docx: typeof import('docx'),
   noteContext: DocxNoteContext,
 ): Promise<ParagraphChild[]> {
+  const identityMarker = noteContext.paragraphIdentityPatches.marker(element);
+  noteContext.paragraphDefaultCollapsedPatches.register(
+    identityMarker,
+    element,
+  );
   return [
-    new docx.TextRun(noteContext.paragraphIdentityPatches.marker(element)),
+    new docx.TextRun(identityMarker),
     ...(await inlineRuns(element, docx, noteContext)),
   ];
 }
