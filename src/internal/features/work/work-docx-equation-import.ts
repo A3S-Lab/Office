@@ -210,6 +210,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:ligatures',
   'w14:numForm',
   'w14:numSpacing',
+  'w14:stylisticSets',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -696,6 +697,9 @@ const MAX_WORD_GRADIENT_STOPS = 10;
 const WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_WORD_COLOR_TRANSFORMS = 64;
+const MAX_WORD_STYLISTIC_SET_ENTRIES = 4_096;
+const MIN_WORD_STYLISTIC_SET_ID = 1;
+const MAX_WORD_STYLISTIC_SET_ID = 20;
 const MIN_WORD_COLOR_PERCENTAGE = -2_147_483_648;
 const MAX_WORD_COLOR_PERCENTAGE = 2_147_483_647;
 const MAX_WORD_FIXED_COLOR_PERCENTAGE = 100_000;
@@ -1319,6 +1323,9 @@ function parseWordRunProperties(
   const numberSpacing = parseWordNumberSpacing(
     word2010Children.get('numSpacing'),
   );
+  const stylisticSets = parseWordStylisticSets(
+    word2010Children.get('stylisticSets'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -1347,7 +1354,8 @@ function parseWordRunProperties(
     properties3D === null ||
     ligatures === null ||
     numberForm === null ||
-    numberSpacing === null
+    numberSpacing === null ||
+    stylisticSets === null
   ) {
     return null;
   }
@@ -1452,6 +1460,7 @@ function parseWordRunProperties(
     ...(ligatures !== undefined ? { ligatures } : {}),
     ...(numberForm !== undefined ? { numberForm } : {}),
     ...(numberSpacing !== undefined ? { numberSpacing } : {}),
+    ...(stylisticSets !== undefined ? { stylisticSets } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2731,6 +2740,53 @@ function parseWordNumberSpacing(
   )
     ? (value as WorkDocumentEquationWordNumberSpacing)
     : null;
+}
+
+function parseWordStylisticSets(
+  element: Element | undefined,
+): number[] | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010ElementAttributes(element, new Set());
+  if (!attributes || attributes.size) return null;
+  const children = directChildren(element);
+  if (children.length > MAX_WORD_STYLISTIC_SET_ENTRIES) return null;
+  const stylisticSets: number[] = [];
+  const seen = new Set<number>();
+  for (const child of children) {
+    if (
+      child.localName !== 'styleSet' ||
+      child.namespaceURI !== WORD_2010_NAMESPACE
+    ) {
+      return null;
+    }
+    const childAttributes = word2010LeafAttributes(
+      child,
+      new Set(['id', 'val']),
+    );
+    if (!childAttributes?.has('id')) return null;
+    const id = wordIntegerValue(
+      childAttributes.get('id')?.trim() ?? '',
+      MIN_WORD_STYLISTIC_SET_ID,
+      MAX_WORD_STYLISTIC_SET_ID,
+    );
+    const enabled = childAttributes.has('val')
+      ? word2010StrictOnOffAttribute(childAttributes.get('val'))
+      : true;
+    if (id === null || enabled === null) return null;
+    if (enabled && !seen.has(id)) {
+      seen.add(id);
+      stylisticSets.push(id);
+    }
+  }
+  return stylisticSets;
+}
+
+function word2010StrictOnOffAttribute(
+  source: string | undefined,
+): boolean | null {
+  if (source === '1' || source === 'true') return true;
+  if (source === '0' || source === 'false') return false;
+  return null;
 }
 
 function parseWord2010EffectFill(

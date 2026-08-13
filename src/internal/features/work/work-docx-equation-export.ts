@@ -1553,6 +1553,20 @@ function createWordRunProperties(
     );
     result.append(numberSpacing);
   }
+  if (properties.stylisticSets !== undefined) {
+    const prefix = ensureWord2010Prefix(document.documentElement);
+    const stylisticSets = createWord2010Element(
+      document,
+      prefix,
+      'stylisticSets',
+    );
+    for (const id of properties.stylisticSets) {
+      const styleSet = createWord2010Element(document, prefix, 'styleSet');
+      setWord2010Attribute(styleSet, prefix, 'id', String(id));
+      stylisticSets.append(styleSet);
+    }
+    result.append(stylisticSets);
+  }
   return result;
 }
 

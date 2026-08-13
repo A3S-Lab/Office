@@ -675,6 +675,7 @@ export interface WorkDocumentEquationWordRunProperties {
   ligatures?: WorkDocumentEquationWordLigatures;
   numberForm?: WorkDocumentEquationWordNumberForm;
   numberSpacing?: WorkDocumentEquationWordNumberSpacing;
+  stylisticSets?: number[];
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1266,6 +1267,9 @@ const MAX_EQUATION_WORD_GRADIENT_STOPS = 10;
 const EQUATION_WORD_ANGLE_UNITS_PER_DEGREE = 60_000;
 const EQUATION_WORD_PERCENTAGE_UNITS_PER_PERCENT = 1_000;
 const MAX_EQUATION_WORD_COLOR_TRANSFORMS = 64;
+const MAX_EQUATION_WORD_STYLISTIC_SET_ENTRIES = 4_096;
+const MIN_EQUATION_WORD_STYLISTIC_SET_ID = 1;
+const MAX_EQUATION_WORD_STYLISTIC_SET_ID = 20;
 const MIN_EQUATION_WORD_COLOR_PERCENTAGE = -2_147_483_648;
 const MAX_EQUATION_WORD_COLOR_PERCENTAGE = 2_147_483_647;
 const MAX_EQUATION_WORD_FIXED_COLOR_PERCENTAGE = 100_000;
@@ -1339,6 +1343,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'ligatures',
   'numberForm',
   'numberSpacing',
+  'stylisticSets',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -3776,6 +3781,10 @@ function normalizeEquationWordRunProperties(
           )
         ? (source.numberSpacing as WorkDocumentEquationWordNumberSpacing)
         : null;
+  const stylisticSets =
+    source.stylisticSets === undefined
+      ? undefined
+      : normalizeEquationWordStylisticSets(source.stylisticSets);
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3837,6 +3846,7 @@ function normalizeEquationWordRunProperties(
     ligatures === null ||
     numberForm === null ||
     numberSpacing === null ||
+    stylisticSets === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3985,8 +3995,35 @@ function normalizeEquationWordRunProperties(
     ...(ligatures !== undefined ? { ligatures } : {}),
     ...(numberForm !== undefined ? { numberForm } : {}),
     ...(numberSpacing !== undefined ? { numberSpacing } : {}),
+    ...(stylisticSets !== undefined ? { stylisticSets } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
+}
+
+function normalizeEquationWordStylisticSets(source: unknown): number[] | null {
+  if (
+    !Array.isArray(source) ||
+    source.length > MAX_EQUATION_WORD_STYLISTIC_SET_ENTRIES
+  ) {
+    return null;
+  }
+  const normalized: number[] = [];
+  const seen = new Set<number>();
+  for (const id of source) {
+    if (
+      typeof id !== 'number' ||
+      !Number.isInteger(id) ||
+      id < MIN_EQUATION_WORD_STYLISTIC_SET_ID ||
+      id > MAX_EQUATION_WORD_STYLISTIC_SET_ID
+    ) {
+      return null;
+    }
+    if (!seen.has(id)) {
+      seen.add(id);
+      normalized.push(id);
+    }
+  }
+  return normalized;
 }
 
 function equationWordRunEffectsConflict(
@@ -5281,6 +5318,7 @@ function wordPropertiesMathMlAttributes(
     wordRunCaseStyles(properties),
     wordRunLigatureStyles(properties.ligatures),
     wordRunNumberStyles(properties.numberForm, properties.numberSpacing),
+    wordRunStylisticSetStyles(properties.stylisticSets),
     wordRunTextDecoration(properties),
     wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
@@ -5349,6 +5387,16 @@ function wordRunNumberStyles(
         : '',
   ].filter(Boolean);
   return `font-variant-numeric:${values.length ? values.join(' ') : 'normal'}`;
+}
+
+function wordRunStylisticSetStyles(
+  stylisticSets: number[] | undefined,
+): string {
+  if (stylisticSets === undefined) return '';
+  if (!stylisticSets.length) return 'font-feature-settings:normal';
+  return `font-feature-settings:${stylisticSets
+    .map((id) => `"ss${String(id).padStart(2, '0')}" 1`)
+    .join(', ')}`;
 }
 
 function wordRunTextFillMathMlColor(

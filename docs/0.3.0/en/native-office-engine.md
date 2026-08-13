@@ -1272,7 +1272,8 @@ flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
 flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
 3D-scene, and 3D-property effects plus all 16 ligature combinations, all three
-numeral forms, and all three numeral-spacing modes. Glow preserves an optional
+numeral forms, all three numeral-spacing modes, and bounded lists of all 20
+OpenType stylistic sets. Glow preserves an optional
 0 through
 2,147,483,647 EMU
 radius, exactly
@@ -1323,6 +1324,10 @@ explicit default reset with omission.
 The Office 2010 numeral-spacing leaf also requires one exact value and retains
 the font default, proportional numerals, or tabular numerals without conflating
 an explicit default reset with omission.
+The Office 2010 stylistic-set container accepts up to 4,096 raw entries and
+canonicalizes enabled IDs from 1 through 20 into a unique list in first-enabled
+order. An omitted `w14:val`, `true`, or `1` enables an entry; `false` or `0`
+does not enable it.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1361,6 +1366,9 @@ formatting.
 An omitted `w14:numForm` uses the font's default numeral form. A present leaf
 must carry `w14:val`, and explicit `default` remains present as an inheritance
 reset.
+An omitted `w14:stylisticSets` enables no stylistic sets. A present empty
+container remains explicit so it can reset inherited sets; export emits one
+canonical attribute-free `w14:styleSet` child for each enabled ID.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 exact transform-free Office 2010 RGB text fills and black fill defaults,
@@ -1379,13 +1387,16 @@ compose into exactly one CSS `font-variant-numeric` declaration: forms map to
 `normal`, `lining-nums`, or `oldstyle-nums`, while spacing maps to `normal`,
 `proportional-nums`, or `tabular-nums`. A default paired with a non-default
 category emits only the non-default token; two explicit defaults emit `normal`.
+Stylistic-set IDs map exactly to a single CSS `font-feature-settings`
+declaration using `"ss01" 1` through `"ss20" 1`. An explicit empty list emits
+`normal`, while omission emits no declaration.
 `w:em` remains after `w:rtl`/`w:cs` and before
 `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
 `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
 `w14:textFill`, `w14:scene3d`, `w14:props3d`, `w14:ligatures`, `w14:numForm`,
-and `w14:numSpacing`. Simple
+`w14:numSpacing`, and `w14:stylisticSets`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1434,7 +1445,8 @@ color choices or transform chains, 3D-scene camera/light structure,
 missing or malformed ligature values, non-leaf ligature content, preset values,
 missing or malformed numeral-form values, non-leaf numeral-form content,
 missing or malformed numeral-spacing values, non-leaf numeral-spacing content,
-directions, or rotation angles, and unknown, duplicated, reordered,
+malformed or over-limit stylistic-set containers, entries, IDs, or on/off
+values, directions, or rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
