@@ -40,7 +40,13 @@ export const WorkMarkdown = Extension.create({
   },
 });
 
-export function createWorkMarkdownExtensions(): Extensions {
+export interface WorkMarkdownExtensionOptions {
+  collaborative?: boolean;
+}
+
+export function createWorkMarkdownExtensions(
+  options: WorkMarkdownExtensionOptions = {},
+): Extensions {
   return [
     StarterKit.configure({
       link: {
@@ -49,6 +55,7 @@ export function createWorkMarkdownExtensions(): Extensions {
         openOnClick: false,
       },
       underline: false,
+      ...(options.collaborative ? { undoRedo: false } : {}),
     }),
     TaskList,
     TaskItem.configure({

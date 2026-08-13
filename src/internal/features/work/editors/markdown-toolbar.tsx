@@ -97,6 +97,7 @@ const markdownToolbarShortcuts = {
 export function MarkdownToolbar({
   editor,
   fileActions,
+  collaborative,
   sourceEditing,
   canSourceRedo,
   canSourceUndo,
@@ -111,6 +112,7 @@ export function MarkdownToolbar({
 }: {
   editor: Editor;
   fileActions?: readonly WorkOfficeFileAction[];
+  collaborative: boolean;
   sourceEditing: boolean;
   canSourceRedo: boolean;
   canSourceUndo: boolean;
@@ -163,12 +165,13 @@ export function MarkdownToolbar({
   const linkActive = sourceEditing
     ? Boolean(sourceLink)
     : editor.isActive('link');
-  const canUndo = sourceEditing
+  const usesSharedHistory = sourceEditing || collaborative;
+  const canUndo = usesSharedHistory
     ? canSourceUndo
     : canRunVisualEditorCommand(editor, () =>
         editor.can().chain().focus().undo().run(),
       );
-  const canRedo = sourceEditing
+  const canRedo = usesSharedHistory
     ? canSourceRedo
     : canRunVisualEditorCommand(editor, () =>
         editor.can().chain().focus().redo().run(),
@@ -350,7 +353,7 @@ export function MarkdownToolbar({
                   shortcut={markdownToolbarShortcuts.undo}
                   disabled={!canUndo}
                   onClick={() => {
-                    if (sourceEditing) onSourceUndo();
+                    if (usesSharedHistory) onSourceUndo();
                     else editor.chain().focus().undo().run();
                   }}
                 >
@@ -361,7 +364,7 @@ export function MarkdownToolbar({
                   shortcut={markdownToolbarShortcuts.redo}
                   disabled={!canRedo}
                   onClick={() => {
-                    if (sourceEditing) onSourceRedo();
+                    if (usesSharedHistory) onSourceRedo();
                     else editor.chain().focus().redo().run();
                   }}
                 >

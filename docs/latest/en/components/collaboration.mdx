@@ -1,0 +1,123 @@
+---
+title: Real-time collaboration
+description: Attach a synchronized Yjs document to A3S Office editors.
+---
+
+# Real-time collaboration
+
+A3S Office exposes a transport-neutral Yjs collaboration boundary. The host
+owns rooms, authentication, authorization, network providers, persistence, and
+the `Y.Doc`; the editor owns the format-specific binding and interaction.
+
+Markdown is the first supported editor. Document, Spreadsheet, Presentation,
+PDF, and native Yrs clients are tracked in the
+[collaboration roadmap](https://github.com/A3S-Lab/Office/blob/main/COLLABORATION_ROADMAP.md).
+
+## Open a Markdown session
+
+Initialize only after the provider has completed its initial synchronization.
+For a new room, exactly one server or elected bootstrap owner seeds the
+artifact. Other clients wait until initialized metadata arrives before mounting
+the editor.
+
+```tsx title="SharedMarkdown.tsx"
+import * as Y from 'yjs';
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeMarkdownCollaboration,
+  type MarkdownContent,
+  type OfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { MarkdownEditor } from '@a3s-lab/office/react';
+
+interface OpenMarkdownOptions {
+  artifactId: string;
+  document: Y.Doc;
+  initialContent: MarkdownContent;
+  bootstrapOwner: boolean;
+}
+
+interface SharedMarkdownProps {
+  session: OfficeCollaborationSession;
+  initialContent: MarkdownContent;
+}
+
+// Call this in the host's provider/session layer after initial sync completes.
+export function openMarkdownSession({
+  artifactId,
+  document,
+  initialContent,
+  bootstrapOwner,
+}: OpenMarkdownOptions) {
+  const session = createOfficeCollaborationSession({
+    actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+    artifactId,
+    document,
+    kind: 'markdown',
+    mode: 'edit',
+  });
+  if (bootstrapOwner) {
+    initializeOfficeMarkdownCollaboration(session, initialContent);
+  }
+  return session;
+}
+
+export function SharedMarkdown({
+  session,
+  initialContent,
+}: SharedMarkdownProps) {
+  return (
+    <MarkdownEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportLocalSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The example assumes the component renders only after the session has
+initialized metadata. `initializeOfficeMarkdownCollaboration` is idempotent
+after a synchronized initialization, but intentionally reports concurrent
+independent seeds as an error.
+
+## Contract
+
+| Concern | Behavior |
+| --- | --- |
+| Authority | While `collaboration` is present, the shared document is canonical. The required `content` prop is a host snapshot and does not overwrite it. |
+| Initial sync | The host finishes provider sync and initialization before mounting. The editor does not guess whether an empty document is new or still downloading. |
+| Session identity | A mounted editor accepts one session object. Remount it when the artifact or `Y.Doc` changes. |
+| Undo/redo | Tracks only transactions created by this local binding; remote edits remain intact. |
+| Modes | `edit` can change Markdown. `view`, `comment`, and `suggest` are read-only until Markdown review models exist. |
+| Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
+| Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
+| Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
+| Awareness | The session accepts a structural awareness object, but participant UI and collaborative cursors are not implemented yet. |
+
+`onChange` receives complete snapshots for local and remote shared changes. Use
+Yjs updates for durable collaboration persistence; do not turn every snapshot
+back into a full-document write.
+
+## Vue and Web Components
+
+Vue exposes the same session as the `collaboration` prop:
+
+```vue
+<MarkdownEditor
+  :collaboration="session"
+  :content="content"
+  @change="handleSnapshot"
+/>
+```
+
+Custom elements accept complex values through JavaScript properties:
+
+```ts
+const editor = document.querySelector('a3s-markdown-editor');
+editor.collaboration = session;
+editor.content = content;
+```
+
+Do not serialize the session or a `Y.Doc` into an HTML attribute.

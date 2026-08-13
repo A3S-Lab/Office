@@ -8,6 +8,7 @@ import type {
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
+  OfficeCollaborationSession,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -230,11 +231,21 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
 }
 
 export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownContent> {
+  #collaboration: OfficeCollaborationSession | undefined;
   #extensions: Extensions | undefined;
   #getSelectionMenuItems: GetMarkdownSelectionMenuItems | undefined;
 
   static get observedAttributes() {
     return ['preview', 'save-status', 'theme'];
+  }
+
+  get collaboration(): OfficeCollaborationSession | undefined {
+    return this.#collaboration;
+  }
+
+  set collaboration(value: OfficeCollaborationSession | undefined) {
+    this.#collaboration = value;
+    this.requestRender();
   }
 
   get extensions(): Extensions | undefined {
@@ -258,6 +269,7 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('Markdown', this.theme);
     return createElement(MarkdownEditor, {
+      collaboration: this.collaboration,
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,

@@ -10,6 +10,12 @@ import {
   useState,
 } from 'react';
 import {
+  createWorkOfficeMarkdownCollaborationBinding,
+  readWorkOfficeMarkdownCollaboration,
+  type WorkOfficeMarkdownCollaborationBinding,
+} from '../../../collaboration/office-markdown-collaboration';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import {
   type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
   workspaceTextControlSelectionBounds,
@@ -60,6 +66,8 @@ import {
 export { markdownTaskCheckboxLabel };
 
 export interface MarkdownEditorProps {
+  /** The host must initialize and synchronize this session before mounting. */
+  collaboration?: WorkOfficeCollaborationSession;
   content: WorkMarkdownContent;
   extensions?: Extensions;
   preview: boolean;
@@ -73,6 +81,7 @@ const MARKDOWN_PREVIEW_SYNC_DELAY = 160;
 const EMPTY_MARKDOWN_EXTENSIONS: Extensions = [];
 
 export function MarkdownEditor({
+  collaboration,
   content,
   extensions: additionalExtensions = EMPTY_MARKDOWN_EXTENSIONS,
   preview,
@@ -81,17 +90,32 @@ export function MarkdownEditor({
   getSelectionMenuItems,
   onChange,
 }: MarkdownEditorProps) {
-  const contentRef = useRef(content);
+  const collaborationRef = useRef(collaboration);
+  if (collaborationRef.current !== collaboration) {
+    throw new Error(
+      'MarkdownEditor collaboration sessions cannot be replaced while mounted. Remount the editor for another shared document.',
+    );
+  }
+  const collaborationBindingRef = useRef<
+    WorkOfficeMarkdownCollaborationBinding | undefined
+  >(undefined);
+  const collaborative = collaboration !== undefined;
+  const collaborationEditable = !collaboration || collaboration.mode === 'edit';
+  const readOnly = preview || !collaborationEditable;
+  const initialContent = collaboration
+    ? readWorkOfficeMarkdownCollaboration(collaboration)
+    : content;
+  const contentRef = useRef(initialContent);
   const onChangeRef = useRef(onChange);
   const receivedContentRef = useRef(content);
-  const appliedMarkdownRef = useRef(content.markdown);
+  const appliedMarkdownRef = useRef(initialContent.markdown);
   const emittedMarkdownRef = useRef<string | null>(null);
-  const sourceMarkdownRef = useRef(content.markdown);
-  const initialMarkdownRef = useRef(content.markdown);
+  const sourceMarkdownRef = useRef(initialContent.markdown);
+  const initialMarkdownRef = useRef(initialContent.markdown);
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sourceTextareaRef = useRef<HTMLTextAreaElement>(null);
   const markdownRootRef = useRef<HTMLElement>(null);
-  const [sourceMarkdown, setSourceMarkdown] = useState(content.markdown);
+  const [sourceMarkdown, setSourceMarkdown] = useState(initialContent.markdown);
   const [selectionMenu, setSelectionMenu] =
     useState<MarkdownSelectionMenuState | null>(null);
   const [sourceSelectionRequest, setSourceSelectionRequest] = useState<
@@ -111,9 +135,12 @@ export function MarkdownEditor({
     reset: resetSourceHistory,
     undo: undoSourceHistory,
     updateSelection: updateSourceHistorySelection,
-  } = useMarkdownSourceHistory(content.markdown);
-  contentRef.current = content;
+  } = useMarkdownSourceHistory(initialContent.markdown);
+  if (!collaborative) contentRef.current = content;
   onChangeRef.current = onChange;
+
+  const [, refreshCollaborationHistory] = useState(0);
+  const [collaborationReady, setCollaborationReady] = useState(!collaborative);
 
   const cancelPreviewSync = useCallback(() => {
     if (previewTimerRef.current === null) return;
@@ -125,10 +152,10 @@ export function MarkdownEditor({
     () =>
       mergeOfficeTiptapExtensions(
         'MarkdownEditor',
-        createWorkMarkdownExtensions(),
+        createWorkMarkdownExtensions({ collaborative }),
         additionalExtensions,
       ),
-    [additionalExtensions],
+    [additionalExtensions, collaborative],
   );
   const editorProps = useMemo(
     () => ({
@@ -138,20 +165,46 @@ export function MarkdownEditor({
         role: 'textbox',
         spellcheck: 'true',
       },
+      handleKeyDown: (_view: unknown, event: KeyboardEvent) => {
+        if (
+          !collaborative ||
+          readOnly ||
+          event.altKey ||
+          !(event.metaKey || event.ctrlKey)
+        ) {
+          return false;
+        }
+        const key = event.key.toLocaleLowerCase();
+        if (key === 'z') {
+          if (event.shiftKey) collaborationBindingRef.current?.redo();
+          else collaborationBindingRef.current?.undo();
+          return true;
+        }
+        if (key === 'y' && !event.shiftKey) {
+          collaborationBindingRef.current?.redo();
+          return true;
+        }
+        return false;
+      },
     }),
-    [],
+    [collaborative, readOnly],
   );
   const editor = useEditor(
     {
       extensions,
       content: initialMarkdownRef.current,
       contentType: 'markdown',
-      editable: !preview && viewMode === 'visual',
+      editable: !readOnly && viewMode === 'visual',
       editorProps,
       onUpdate: ({ editor: current }) => {
         const markdown = current.getMarkdown();
         if (markdown === appliedMarkdownRef.current) return;
         cancelPreviewSync();
+        if (collaborative) {
+          appliedMarkdownRef.current = markdown;
+          collaborationBindingRef.current?.replace(markdown);
+          return;
+        }
         const next = { ...contentRef.current, markdown };
         appliedMarkdownRef.current = markdown;
         emittedMarkdownRef.current = markdown;
@@ -207,11 +260,56 @@ export function MarkdownEditor({
     [applyMarkdownToEditor, cancelPreviewSync, editor],
   );
 
+  useEffect(() => {
+    if (!collaboration) return;
+    const binding = createWorkOfficeMarkdownCollaborationBinding(collaboration);
+    collaborationBindingRef.current = binding;
+    setCollaborationReady(true);
+    return () => {
+      if (collaborationBindingRef.current === binding) {
+        collaborationBindingRef.current = undefined;
+      }
+      binding.destroy();
+    };
+  }, [collaboration]);
+
+  useEffect(() => {
+    if (!collaboration) return;
+    const binding = collaborationBindingRef.current;
+    if (!binding) return;
+    const unsubscribeContent = binding.subscribe(({ content: next }) => {
+      contentRef.current = next;
+      sourceMarkdownRef.current = next.markdown;
+      setSourceMarkdown(next.markdown);
+      if (preview || viewMode !== 'source') {
+        queueMarkdownPreview(next.markdown, viewMode === 'visual');
+      }
+      onChangeRef.current(next);
+    });
+    const unsubscribeHistory = binding.subscribeHistory(() =>
+      refreshCollaborationHistory((value) => value + 1),
+    );
+    const current = binding.content();
+    if (current.markdown !== sourceMarkdownRef.current) {
+      contentRef.current = current;
+      sourceMarkdownRef.current = current.markdown;
+      setSourceMarkdown(current.markdown);
+      if (preview || viewMode !== 'source') {
+        queueMarkdownPreview(current.markdown, viewMode === 'visual');
+      }
+      onChangeRef.current(current);
+    }
+    return () => {
+      unsubscribeContent();
+      unsubscribeHistory();
+    };
+  }, [collaboration, preview, queueMarkdownPreview, viewMode]);
+
   useEffect(() => cancelPreviewSync, [cancelPreviewSync]);
 
   useEffect(() => {
     if (!editor) return;
-    const visualEditorReadOnly = preview || viewMode !== 'visual';
+    const visualEditorReadOnly = readOnly || viewMode !== 'visual';
     let checkboxFrame: number | null = null;
     const applyTaskCheckboxState = () => {
       for (const checkbox of editor.view.dom.querySelectorAll<HTMLInputElement>(
@@ -271,9 +369,10 @@ export function MarkdownEditor({
       editor.off('update', applyTaskCheckboxState);
       editor.off('transaction', scheduleTaskCheckboxState);
     };
-  }, [editor, preview, viewMode]);
+  }, [editor, readOnly, viewMode]);
 
   useEffect(() => {
+    if (collaborative) return;
     if (!editor || receivedContentRef.current === content) return;
     receivedContentRef.current = content;
     const markdown = content.markdown;
@@ -290,13 +389,14 @@ export function MarkdownEditor({
       markdown,
       textareaSelection(sourceTextareaRef.current, markdown.length),
     );
-    if (preview || viewMode !== 'source') {
+    if (readOnly || viewMode !== 'source') {
       queueMarkdownPreview(markdown, true);
     }
   }, [
     content,
+    collaborative,
     editor,
-    preview,
+    readOnly,
     queueMarkdownPreview,
     resetSourceHistory,
     viewMode,
@@ -305,6 +405,10 @@ export function MarkdownEditor({
   const updateSource = useCallback(
     (markdown: string) => {
       if (markdown === sourceMarkdownRef.current) return;
+      if (collaborative) {
+        collaborationBindingRef.current?.replace(markdown);
+        return;
+      }
       sourceMarkdownRef.current = markdown;
       setSourceMarkdown(markdown);
       const next = { ...contentRef.current, markdown };
@@ -315,7 +419,7 @@ export function MarkdownEditor({
         queueMarkdownPreview(markdown);
       }
     },
-    [queueMarkdownPreview, viewMode],
+    [collaborative, queueMarkdownPreview, viewMode],
   );
 
   const getSourceSelection =
@@ -345,12 +449,12 @@ export function MarkdownEditor({
 
   const applySourceEdit = useCallback(
     (edit: MarkdownSourceEdit): boolean => {
-      recordSourceHistory(edit);
+      if (!collaborative) recordSourceHistory(edit);
       updateSource(edit.markdown);
       requestSourceSelection(edit.selection);
       return true;
     },
-    [recordSourceHistory, requestSourceSelection, updateSource],
+    [collaborative, recordSourceHistory, requestSourceSelection, updateSource],
   );
 
   const changeSource = useCallback(
@@ -360,10 +464,12 @@ export function MarkdownEditor({
       inputType?: string,
     ) => {
       const edit = { markdown, selection };
-      if (!recordSourceHistory(edit, { typing: true, inputType })) return;
+      if (!collaborative) {
+        if (!recordSourceHistory(edit, { typing: true, inputType })) return;
+      }
       updateSource(markdown);
     },
-    [recordSourceHistory, updateSource],
+    [collaborative, recordSourceHistory, updateSource],
   );
 
   const applySourceHistory = useCallback(
@@ -376,14 +482,14 @@ export function MarkdownEditor({
     [requestSourceSelection, updateSource],
   );
 
-  const undoSource = useCallback(
-    () => applySourceHistory(undoSourceHistory()),
-    [applySourceHistory, undoSourceHistory],
-  );
-  const redoSource = useCallback(
-    () => applySourceHistory(redoSourceHistory()),
-    [applySourceHistory, redoSourceHistory],
-  );
+  const undoSource = useCallback(() => {
+    if (collaborative) return collaborationBindingRef.current?.undo() ?? false;
+    return applySourceHistory(undoSourceHistory());
+  }, [applySourceHistory, collaborative, undoSourceHistory]);
+  const redoSource = useCallback(() => {
+    if (collaborative) return collaborationBindingRef.current?.redo() ?? false;
+    return applySourceHistory(redoSourceHistory());
+  }, [applySourceHistory, collaborative, redoSourceHistory]);
 
   const runSourceCommand = useCallback(
     (command: MarkdownSourceCommand): boolean => {
@@ -423,10 +529,10 @@ export function MarkdownEditor({
 
   const handleSourceSelectionChange = useCallback(
     (selection: MarkdownSourceSelection) => {
-      updateSourceHistorySelection(selection);
+      if (!collaborative) updateSourceHistorySelection(selection);
       setSelectionVersion((value) => value + 1);
     },
-    [updateSourceHistorySelection],
+    [collaborative, updateSourceHistorySelection],
   );
   const handleVisualIntent = useCallback(() => {
     applyMarkdownToEditor(sourceMarkdownRef.current);
@@ -519,6 +625,12 @@ export function MarkdownEditor({
   );
 
   const deferredMarkdown = useDeferredValue(sourceMarkdown);
+  const canUndoMarkdown = collaborative
+    ? (collaborationBindingRef.current?.canUndo() ?? false)
+    : canUndoSource;
+  const canRedoMarkdown = collaborative
+    ? (collaborationBindingRef.current?.canRedo() ?? false)
+    : canRedoSource;
   const metrics = useMemo(
     () => markdownMetrics(deferredMarkdown),
     [deferredMarkdown],
@@ -539,11 +651,11 @@ export function MarkdownEditor({
       ),
   });
 
-  if (!editor) {
+  if (!editor || !collaborationReady) {
     return <WorkEditorLoadingState title="正在准备 Markdown 编辑器" />;
   }
 
-  if (preview) {
+  if (readOnly) {
     return (
       <section
         ref={markdownRootRef}
@@ -586,9 +698,10 @@ export function MarkdownEditor({
       <MarkdownToolbar
         editor={editor}
         fileActions={fileActions}
+        collaborative={collaborative}
         sourceEditing={viewMode !== 'visual'}
-        canSourceRedo={canRedoSource}
-        canSourceUndo={canUndoSource}
+        canSourceRedo={canRedoMarkdown}
+        canSourceUndo={canUndoMarkdown}
         viewMode={viewMode}
         getSourceFocusTarget={() => sourceTextareaRef.current}
         getSourceSelection={getSourceSelection}

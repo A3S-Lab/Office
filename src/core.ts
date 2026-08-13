@@ -90,3 +90,34 @@ export type {
   WorkTemplate as OfficeTemplate,
 } from './internal/features/work/work-types';
 export * from './internal/features/work/work-types';
+export {
+  createWorkOfficeCollaborationSession as createOfficeCollaborationSession,
+  readWorkOfficeCollaborationMetadata as readOfficeCollaborationMetadata,
+  WORK_OFFICE_COLLABORATION_NAMESPACE as OFFICE_COLLABORATION_NAMESPACE,
+  WORK_OFFICE_COLLABORATION_PROTOCOL as OFFICE_COLLABORATION_PROTOCOL,
+  WORK_OFFICE_COLLABORATION_VERSION as OFFICE_COLLABORATION_VERSION,
+  WorkOfficeCollaborationError as OfficeCollaborationError,
+} from './internal/collaboration/office-collaboration';
+export type {
+  WorkOfficeCollaborationActor as OfficeCollaborationActor,
+  WorkOfficeCollaborationActorKind as OfficeCollaborationActorKind,
+  WorkOfficeCollaborationAwareness as OfficeCollaborationAwareness,
+  WorkOfficeCollaborationErrorCode as OfficeCollaborationErrorCode,
+  WorkOfficeCollaborationMetadata as OfficeCollaborationMetadata,
+  WorkOfficeCollaborationMode as OfficeCollaborationMode,
+  WorkOfficeCollaborationOrigin as OfficeCollaborationOrigin,
+  WorkOfficeCollaborationOriginKind as OfficeCollaborationOriginKind,
+  WorkOfficeCollaborationSession as OfficeCollaborationSession,
+  WorkOfficeCollaborationSessionOptions as OfficeCollaborationSessionOptions,
+} from './internal/collaboration/office-collaboration';
+export {
+  createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
+  initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,
+  readWorkOfficeMarkdownCollaboration as readOfficeMarkdownCollaboration,
+  replaceWorkOfficeMarkdownCollaboration as replaceOfficeMarkdownCollaboration,
+} from './internal/collaboration/office-markdown-collaboration';
+export type {
+  WorkOfficeMarkdownCollaborationBinding as OfficeMarkdownCollaborationBinding,
+  WorkOfficeMarkdownCollaborationBindingOptions as OfficeMarkdownCollaborationBindingOptions,
+  WorkOfficeMarkdownCollaborationChange as OfficeMarkdownCollaborationChange,
+} from './internal/collaboration/office-markdown-collaboration';

@@ -17,6 +17,7 @@ import type {
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
+  OfficeCollaborationSession,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -125,6 +126,7 @@ export const DocumentEditor = defineComponent({
 export const MarkdownEditor = defineComponent({
   name: 'A3SMarkdownEditor',
   props: {
+    collaboration: Object as PropType<OfficeCollaborationSession>,
     content: {
       required: true,
       type: Object as PropType<MarkdownContent>,
@@ -149,6 +151,7 @@ export const MarkdownEditor = defineComponent({
   setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactMarkdownEditor, {
+        collaboration: props.collaboration,
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,

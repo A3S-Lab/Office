@@ -1,12 +1,15 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { waitFor } from '@testing-library/dom';
+import { fireEvent, waitFor } from '@testing-library/dom';
 import { createApp, h, nextTick, ref } from 'vue';
 import {
+  createOfficeCollaborationSession,
   createArtifact,
   type DocumentContent,
   type DocumentReviewConflictEvent,
+  initializeOfficeMarkdownCollaboration,
   type MarkdownContent,
+  readOfficeMarkdownCollaboration,
 } from '../src/core';
 import { DocumentEditor, MarkdownEditor } from '../src/vue';
 
@@ -114,6 +117,44 @@ test('mounts the Vue Markdown adapter', async () => {
     expect(target.querySelector('[aria-label="Markdown 预览"]')).not.toBeNull();
   });
 
+  app.unmount();
+  target.remove();
+});
+
+test('passes a synchronized Markdown session through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const session = createOfficeCollaborationSession({
+    artifactId: 'vue-shared-markdown',
+    kind: 'markdown',
+  });
+  initializeOfficeMarkdownCollaboration(session, {
+    type: 'markdown',
+    markdown: '# Shared through Vue',
+  });
+  const app = createApp({
+    render: () =>
+      h(MarkdownEditor, {
+        collaboration: session,
+        content: { type: 'markdown', markdown: '# Stale host value' },
+      }),
+  });
+
+  app.mount(target);
+  const source = await waitFor(() => {
+    const element = target.querySelector<HTMLTextAreaElement>('textarea');
+    expect(element).not.toBeNull();
+    if (!element) throw new Error('Expected the Markdown source editor.');
+    return element;
+  });
+  expect(source.value).toBe('# Shared through Vue');
+  fireEvent.change(source, { target: { value: '# Vue collaboration edit' } });
+
+  await waitFor(() =>
+    expect(readOfficeMarkdownCollaboration(session).markdown).toBe(
+      '# Vue collaboration edit',
+    ),
+  );
   app.unmount();
   target.remove();
 });

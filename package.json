@@ -51,6 +51,7 @@
   "files": [
     "dist",
     "docs/latest/en/browser-editor-architecture.md",
+    "COLLABORATION_ROADMAP.md",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"
@@ -118,6 +119,8 @@
     "@fortune-sheet/formula-parser": "0.2.13",
     "@fortune-sheet/react": "^1.0.4",
     "@tiptap/core": "3.28.0",
+    "@tiptap/extension-collaboration": "3.28.0",
+    "@tiptap/extension-collaboration-caret": "3.28.0",
     "@tiptap/extension-color": "3.28.0",
     "@tiptap/extension-highlight": "3.28.0",
     "@tiptap/extension-image": "3.28.0",
@@ -133,6 +136,7 @@
     "@tiptap/pm": "3.28.0",
     "@tiptap/react": "3.28.0",
     "@tiptap/starter-kit": "3.28.0",
+    "@tiptap/y-tiptap": "3.0.8",
     "docx": "^9.7.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
@@ -140,7 +144,8 @@
     "lucide-react": "^0.544.0",
     "mammoth": "^1.12.0",
     "pptxgenjs": "^4.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "yjs": "13.6.32"
   },
   "peerDependencies": {
     "react": ">=18.2.0 <20",

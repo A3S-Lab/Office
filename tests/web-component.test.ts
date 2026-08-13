@@ -1,7 +1,13 @@
 import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
-import { waitFor } from '@testing-library/dom';
-import type { DocumentContent, DocumentReviewConflictEvent } from '../src/core';
+import { fireEvent, waitFor } from '@testing-library/dom';
+import {
+  createOfficeCollaborationSession,
+  type DocumentContent,
+  type DocumentReviewConflictEvent,
+  initializeOfficeMarkdownCollaboration,
+  readOfficeMarkdownCollaboration,
+} from '../src/core';
 import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
@@ -100,6 +106,43 @@ test('dispatches controlled document review conflicts from the custom element', 
     reason: 'text-changed',
   });
 
+  element.remove();
+});
+
+test('passes a synchronized Markdown session through the custom element property', async () => {
+  defineA3SOfficeElements();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'element-shared-markdown',
+    kind: 'markdown',
+  });
+  initializeOfficeMarkdownCollaboration(session, {
+    type: 'markdown',
+    markdown: '# Shared through an element',
+  });
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.markdown,
+  ) as A3SMarkdownEditorElement;
+  element.collaboration = session;
+  element.content = { type: 'markdown', markdown: '# Stale host value' };
+  document.body.append(element);
+
+  const source = await waitFor(() => {
+    const textarea = element.querySelector<HTMLTextAreaElement>('textarea');
+    expect(textarea).not.toBeNull();
+    if (!textarea) throw new Error('Expected the Markdown source editor.');
+    return textarea;
+  });
+  expect(element.collaboration).toBe(session);
+  expect(source.value).toBe('# Shared through an element');
+  fireEvent.change(source, {
+    target: { value: '# Element collaboration edit' },
+  });
+
+  await waitFor(() =>
+    expect(readOfficeMarkdownCollaboration(session).markdown).toBe(
+      '# Element collaboration edit',
+    ),
+  );
   element.remove();
 });
 

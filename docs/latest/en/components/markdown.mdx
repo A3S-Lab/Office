@@ -24,6 +24,7 @@ the switch does not change the selected editing mode or the controlled content.
 | --- | --- | --- | --- | --- |
 | `content` | `MarkdownContent` | Yes | — | Controlled Markdown value. |
 | `onChange` | `(content: MarkdownContent) => void` | Yes | — | Emits the complete next value. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Markdown document as the canonical value. |
 | `preview` | `boolean` | No | `false` | Read-only rendering. |
 | `saveStatus` | `string` | No | — | Host-owned save status. |
 | `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
@@ -43,6 +44,11 @@ interface MarkdownContent {
 The controlled source history coalesces typing, keeps explicit commands as
 separate records, restores source selection on undo and redo, and rebases when
 the host replaces the value.
+
+When `collaboration` is present, the synchronized Yjs document becomes
+canonical and undo/redo tracks only local collaborative transactions. See
+[Real-time collaboration](./collaboration.mdx) for initialization, ownership,
+permission, and framework-binding rules.
 
 ## Responsive split behavior
 

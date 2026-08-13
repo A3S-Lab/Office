@@ -9,6 +9,11 @@
   "web-component",
   {
     "type": "section-header",
+    "label": "Real-time"
+  },
+  "collaboration",
+  {
+    "type": "section-header",
     "label": "Editor API"
   },
   "document",

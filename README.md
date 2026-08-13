@@ -26,6 +26,7 @@
   <a href="#native-automation">Automation</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="ROADMAP.md">WPS gap roadmap</a> ·
+  <a href="COLLABORATION_ROADMAP.md">Collaboration roadmap</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
