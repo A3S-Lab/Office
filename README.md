@@ -427,9 +427,12 @@ authorizes bounded native PDF text-layer extraction with source-order Unicode,
 exact UTF-8/UTF-16 ranges, optional glyph boxes in PDF coordinates, and bounded
 document outlines with exact page targets. Text and outline calls revalidate
 the immutable source, reuse inventory authority, and return typed limit or
-unsupported failures without OCR or Browser access. Richer slides and formats
-without an authoritative provider remain typed unsupported instead of being
-relabeled semantic previews.
+unsupported failures without OCR or Browser access. The text API also accepts
+an ordered batch of at most 512 unique inventoried pages. Its default 64-page
+window reads and opens the immutable PDF once, isolates page failures in exact
+input slots, and enforces per-page plus aggregate character, UTF-8 byte, and
+deadline bounds. Richer slides and formats without an authoritative provider
+remain typed unsupported instead of being relabeled semantic previews.
 Native DOCX and PPTX table reads also normalize merged cells into one-based
 logical row and column coordinates, row and column spans, and stable anchor
 references for covered physical cells.

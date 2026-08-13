@@ -4,6 +4,10 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added bounded ordered PDF text-layer batches that capture and open one
+  immutable PDF once per batch, preserve isolated page outcomes, and enforce
+  per-page plus aggregate character, UTF-8 byte, cardinality, and deadline
+  limits.
 - Reworked the default Markdown split view into a flat writing-and-reading
   workspace with a bounded text measure, clearer typography for headings,
   quotations, code, tables, and task lists, and no nested preview card chrome.

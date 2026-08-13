@@ -2,10 +2,11 @@ use crate::{
     NativeOfficeLayoutEnvironment, NativeOfficeLayoutRenderer, NativeOfficeLayoutSourceKind,
     NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
-    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextLayer,
-    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
-    NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision,
-    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+    NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextBatch,
+    NativeOfficePdfPageTextLayer, NativeOfficePdfTextBatchOptions, NativeOfficePdfTextBatchSlot,
+    NativeOfficePdfTextBatchSlotOutcome, NativeOfficePdfTextCharacter,
+    NativeOfficePdfTextLayerOptions, NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit,
+    NativeOfficeUnitLocator, PackageRevision, NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 use sha2::Digest as _;
 
@@ -192,6 +193,97 @@ fn pdf_text_layer_preserves_unicode_offsets_geometry_and_source_identity() {
 }
 
 #[test]
+fn pdf_text_batch_contract_preserves_order_bounds_and_isolated_failures() {
+    let inventory = inventory(vec![
+        page(1, 0, 612_000, 792_000),
+        page(2, 0, 612_000, 792_000),
+    ]);
+    let units = inventory
+        .pages
+        .iter()
+        .map(|page| page.unit.clone())
+        .collect::<Vec<_>>();
+    let options = NativeOfficePdfTextBatchOptions {
+        max_pages: 2,
+        max_characters_per_page: 8,
+        max_text_bytes_per_page: 32,
+        max_total_characters: 8,
+        max_total_text_bytes: 32,
+        timeout_ms: TEST_TIMEOUT_MS,
+    };
+    let layer = NativeOfficePdfPageTextLayer {
+        schema_version: NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+        source_revision: inventory.source_revision.clone(),
+        unit: units[0].clone(),
+        page_geometry: inventory.pages[0].clone(),
+        engine_version: "chromium/7881".to_string(),
+        max_characters: options.max_characters_per_page,
+        max_text_bytes: options.max_text_bytes_per_page,
+        text_sha256: format!("{:x}", sha2::Sha256::digest(b"A")),
+        text: "A".to_string(),
+        characters: vec![text_character(
+            0,
+            "A",
+            0,
+            1,
+            0,
+            1,
+            Some(text_box(10_000, 20_000, 18_000, 32_000)),
+        )],
+    };
+    let batch = NativeOfficePdfPageTextBatch {
+        source_revision: inventory.source_revision.clone(),
+        options,
+        slots: vec![
+            NativeOfficePdfTextBatchSlot {
+                unit: units[0].clone(),
+                outcome: NativeOfficePdfTextBatchSlotOutcome::Completed {
+                    layer: Box::new(layer),
+                },
+            },
+            NativeOfficePdfTextBatchSlot {
+                unit: units[1].clone(),
+                outcome: NativeOfficePdfTextBatchSlotOutcome::Failed {
+                    error: a3s_use_core::UseError::new(
+                        "use.office.pdf_text_unsupported",
+                        "The second page is unsupported.",
+                    ),
+                },
+            },
+        ],
+    };
+
+    batch.validate_for(&inventory, &units, options).unwrap();
+
+    let mut reordered = batch.clone();
+    reordered.slots.swap(0, 1);
+    assert_eq!(
+        reordered
+            .validate_for(&inventory, &units, options)
+            .unwrap_err()
+            .code,
+        "use.office.pdf_text_batch_output_invalid"
+    );
+    assert_eq!(
+        NativeOfficePdfTextBatchOptions {
+            max_pages: 0,
+            ..options
+        }
+        .validate()
+        .unwrap_err()
+        .code,
+        "use.office.pdf_text_batch_options_invalid"
+    );
+    assert_eq!(
+        batch
+            .validate_for(&inventory, &[units[0].clone(), units[0].clone()], options)
+            .unwrap_err()
+            .code,
+        "use.office.pdf_text_batch_invalid"
+    );
+}
+
+#[test]
 fn pdf_outline_preserves_hierarchy_and_exact_page_targets() {
     let inventory = inventory(vec![
         page(1, 0, 612_000, 792_000),
@@ -299,6 +391,66 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .filter_map(|character| character.bounds)
         .all(|bounds| bounds.right_millipoints > bounds.left_millipoints));
     first_text.validate(&inventory).unwrap();
+
+    let batch_options = NativeOfficePdfTextBatchOptions {
+        max_pages: 2,
+        max_characters_per_page: 64,
+        max_text_bytes_per_page: 1024,
+        max_total_characters: 128,
+        max_total_text_bytes: 2048,
+        timeout_ms: TEST_TIMEOUT_MS,
+    };
+    let batch_units = inventory
+        .pages
+        .iter()
+        .map(|page| page.unit.clone())
+        .collect::<Vec<_>>();
+    let text_batch = renderer
+        .extract_page_text_batch(&source, &inventory, batch_units.clone(), batch_options)
+        .await
+        .unwrap();
+    text_batch
+        .validate_for(&inventory, &batch_units, batch_options)
+        .unwrap();
+    assert_eq!(text_batch.slots.len(), 2);
+    let texts = text_batch
+        .slots
+        .iter()
+        .map(|slot| match &slot.outcome {
+            NativeOfficePdfTextBatchSlotOutcome::Completed { layer } => layer.text.as_str(),
+            NativeOfficePdfTextBatchSlotOutcome::Failed { error } => panic!("{error}"),
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(texts, ["Hello PDF", "Rotated PDF"]);
+    assert_eq!(
+        match &text_batch.slots[0].outcome {
+            NativeOfficePdfTextBatchSlotOutcome::Completed { layer } => layer.as_ref(),
+            NativeOfficePdfTextBatchSlotOutcome::Failed { error } => panic!("{error}"),
+        },
+        &first_text
+    );
+
+    let aggregate_limited = renderer
+        .extract_page_text_batch(
+            &source,
+            &inventory,
+            batch_units.clone(),
+            NativeOfficePdfTextBatchOptions {
+                max_total_characters: first_text.characters.len(),
+                ..batch_options
+            },
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        aggregate_limited.slots[0].outcome,
+        NativeOfficePdfTextBatchSlotOutcome::Completed { .. }
+    ));
+    assert!(matches!(
+        &aggregate_limited.slots[1].outcome,
+        NativeOfficePdfTextBatchSlotOutcome::Failed { error }
+            if error.code == "use.office.pdf_text_batch_character_limit"
+    ));
 
     let outline = renderer
         .extract_outline(

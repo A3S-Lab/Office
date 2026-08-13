@@ -12,8 +12,9 @@ use sha2::{Digest, Sha256};
 use super::{
     invalid_page_geometry, millipoints_to_micrometers, millipoints_to_pixels,
     NativeOfficePdfOutline, NativeOfficePdfOutlineOptions, NativeOfficePdfPageBox,
-    NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageTextLayer,
-    NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageTextBatch,
+    NativeOfficePdfPageTextLayer, NativeOfficePdfTextBatchOptions, NativeOfficePdfTextBatchSlot,
+    NativeOfficePdfTextBatchSlotOutcome, NativeOfficePdfTextLayerOptions,
 };
 use crate::layout::layout_error;
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator};
@@ -157,32 +158,84 @@ impl PdfiumEngine {
             .load_pdf_from_byte_vec(bytes, None)
             .map_err(map_load_error)?;
         let total_pages = page_count(document.pages().len())?;
-        if total_pages != inventory.total_pages {
-            return Err(layout_error(
-                "use.office.pdf_inventory_source_mismatch",
-                "The PDF page inventory no longer matches the immutable source.",
-            ));
+        validate_inventory_page_count(total_pages, inventory)?;
+        extract_document_page_text(&document, inventory, unit, options)
+    }
+
+    pub(super) fn extract_page_text_batch(
+        &self,
+        bytes: Vec<u8>,
+        inventory: &NativeOfficePdfPageInventory,
+        units: &[NativeOfficeUnit],
+        options: NativeOfficePdfTextBatchOptions,
+    ) -> UseResult<NativeOfficePdfPageTextBatch> {
+        super::batch::validate_batch_request(inventory, units, options)?;
+        let _guard = self
+            .operation_lock
+            .lock()
+            .map_err(|_| pdfium_unavailable())?;
+        let document = self
+            .pdfium
+            .load_pdf_from_byte_vec(bytes, None)
+            .map_err(map_load_error)?;
+        let total_pages = page_count(document.pages().len())?;
+        validate_inventory_page_count(total_pages, inventory)?;
+
+        let page_options = options.page_options();
+        let mut slots = Vec::with_capacity(units.len());
+        let mut total_characters = 0_usize;
+        let mut total_text_bytes = 0_usize;
+        let mut aggregate_failure: Option<a3s_use_core::UseError> = None;
+        for unit in units {
+            let outcome = if let Some(error) = &aggregate_failure {
+                NativeOfficePdfTextBatchSlotOutcome::Failed {
+                    error: error.clone(),
+                }
+            } else {
+                match extract_document_page_text(&document, inventory, unit, page_options) {
+                    Ok(layer) => {
+                        let characters = total_characters.checked_add(layer.characters.len());
+                        let text_bytes = total_text_bytes.checked_add(layer.text.len());
+                        match (characters, text_bytes) {
+                            (Some(characters), _) if characters > options.max_total_characters => {
+                                let error = super::batch::total_character_limit();
+                                aggregate_failure = Some(error.clone());
+                                NativeOfficePdfTextBatchSlotOutcome::Failed { error }
+                            }
+                            (_, Some(text_bytes)) if text_bytes > options.max_total_text_bytes => {
+                                let error = super::batch::total_text_byte_limit();
+                                aggregate_failure = Some(error.clone());
+                                NativeOfficePdfTextBatchSlotOutcome::Failed { error }
+                            }
+                            (Some(characters), Some(text_bytes)) => {
+                                total_characters = characters;
+                                total_text_bytes = text_bytes;
+                                NativeOfficePdfTextBatchSlotOutcome::Completed {
+                                    layer: Box::new(layer),
+                                }
+                            }
+                            _ => {
+                                let error = super::batch::total_character_limit();
+                                aggregate_failure = Some(error.clone());
+                                NativeOfficePdfTextBatchSlotOutcome::Failed { error }
+                            }
+                        }
+                    }
+                    Err(error) => NativeOfficePdfTextBatchSlotOutcome::Failed { error },
+                }
+            };
+            slots.push(NativeOfficePdfTextBatchSlot {
+                unit: unit.clone(),
+                outcome,
+            });
         }
-        let expected = inventory.validated_page(unit)?;
-        let offset =
-            usize::try_from(unit.ordinal.saturating_sub(1)).map_err(|_| pdf_page_not_found())?;
-        let index = i32::try_from(offset).map_err(|_| pdf_page_not_found())?;
-        let page = document.pages().get(index).map_err(map_page_error)?;
-        let observed = observe_page(&page, offset, inventory.dpi_milli)?;
-        if observed != *expected {
-            return Err(layout_error(
-                "use.office.pdf_page_identity_mismatch",
-                "The selected PDF text page no longer matches its inventoried geometry.",
-            ));
-        }
-        let layer = super::text::extract_page_text(
-            &page,
-            inventory.source_revision.clone(),
-            observed,
+        let batch = NativeOfficePdfPageTextBatch {
+            source_revision: inventory.source_revision.clone(),
             options,
-        )?;
-        layer.validate(inventory)?;
-        Ok(layer)
+            slots,
+        };
+        batch.validate_for(inventory, units, options)?;
+        Ok(batch)
     }
 
     pub(super) fn extract_outline(
@@ -209,6 +262,48 @@ impl PdfiumEngine {
             ));
         }
         super::outline::extract_outline(&document, inventory, options)
+    }
+}
+
+fn extract_document_page_text(
+    document: &pdfium_render::prelude::PdfDocument<'_>,
+    inventory: &NativeOfficePdfPageInventory,
+    unit: &NativeOfficeUnit,
+    options: NativeOfficePdfTextLayerOptions,
+) -> UseResult<NativeOfficePdfPageTextLayer> {
+    let expected = inventory.validated_page(unit)?;
+    let offset =
+        usize::try_from(unit.ordinal.saturating_sub(1)).map_err(|_| pdf_page_not_found())?;
+    let index = i32::try_from(offset).map_err(|_| pdf_page_not_found())?;
+    let page = document.pages().get(index).map_err(map_page_error)?;
+    let observed = observe_page(&page, offset, inventory.dpi_milli)?;
+    if observed != *expected {
+        return Err(layout_error(
+            "use.office.pdf_page_identity_mismatch",
+            "The selected PDF text page no longer matches its inventoried geometry.",
+        ));
+    }
+    let layer = super::text::extract_page_text(
+        &page,
+        inventory.source_revision.clone(),
+        observed,
+        options,
+    )?;
+    layer.validate(inventory)?;
+    Ok(layer)
+}
+
+fn validate_inventory_page_count(
+    total_pages: usize,
+    inventory: &NativeOfficePdfPageInventory,
+) -> UseResult<()> {
+    if total_pages == inventory.total_pages {
+        Ok(())
+    } else {
+        Err(layout_error(
+            "use.office.pdf_inventory_source_mismatch",
+            "The PDF page inventory no longer matches the immutable source.",
+        ))
     }
 }
 

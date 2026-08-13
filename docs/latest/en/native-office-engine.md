@@ -1050,12 +1050,17 @@ bounded blocking workers and publishes a revalidated PNG only after the source,
 profile, deadline, output limit, and no-clobber checks pass. A validated
 complete inventory can now serve constant-scope per-page inspections without
 another document scan; the actual render still verifies the source bytes and
-observed page profile. Typed failures separate corrupt/password-required,
-zero-page, page-limit, missing-page, unsupported, timeout, output-limit, and
-source-mutation cases. Fixture tests use a CI-supplied, checksum-pinned PDFium
-binary and cover two isolated pages, cached selection without re-inventory, a
-non-default crop box, rotation, deterministic repeated pixels, and failed
-publication paths.
+observed page profile. Native text extraction additionally accepts one ordered,
+unique batch of at most 512 inventoried pages. The default 64-page window
+captures the immutable source and opens one PDFium document for the entire
+batch, preserves one isolated outcome per requested page, and enforces both
+per-page and aggregate character and UTF-8 byte limits under one deadline.
+Typed failures separate corrupt/password-required, zero-page, page-limit,
+missing-page, unsupported, timeout, output-limit, and source-mutation cases.
+Fixture tests use a CI-supplied, checksum-pinned PDFium binary and cover two
+isolated pages, scalar/batch text equivalence, aggregate failure isolation,
+cached selection without re-inventory, a non-default crop box, rotation,
+deterministic repeated pixels, and failed publication paths.
 
 Basic Presentation table structure is deliberately bounded. Table dimensions
 must be positive, no mutation may exceed 5,000 rows, 5,000 columns, or 100,000

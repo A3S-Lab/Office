@@ -1,3 +1,4 @@
+mod batch;
 mod engine;
 mod outline;
 mod renderer;
@@ -9,6 +10,13 @@ use serde::{Deserialize, Serialize};
 use super::{layout_error, validate_revision, validate_unit, NativeOfficeLayoutSourceKind};
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision};
 
+pub use batch::{
+    NativeOfficePdfPageTextBatch, NativeOfficePdfTextBatchOptions, NativeOfficePdfTextBatchSlot,
+    NativeOfficePdfTextBatchSlotOutcome, DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_CHARACTERS,
+    DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_PAGES, DEFAULT_NATIVE_OFFICE_PDF_TEXT_BATCH_TEXT_BYTES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_CHARACTERS, MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_PAGES,
+    MAX_NATIVE_OFFICE_PDF_TEXT_BATCH_TEXT_BYTES,
+};
 pub use outline::{
     NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_DEPTH, DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES,

@@ -14,8 +14,8 @@ use super::engine::{PdfiumEngine, PDFIUM_ENGINE_VERSION};
 use super::{
     pdf_page_identity_mismatch, NativeOfficePdfOutline, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory, NativeOfficePdfPageInventoryOptions,
-    NativeOfficePdfPageTextLayer, NativeOfficePdfTextLayerOptions,
-    MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+    NativeOfficePdfPageTextBatch, NativeOfficePdfPageTextLayer, NativeOfficePdfTextBatchOptions,
+    NativeOfficePdfTextLayerOptions, MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
 };
 use crate::layout::pptx_image::io::{
     ensure_output_available, hash_regular_file, publish_output, stage_output,
@@ -186,6 +186,52 @@ impl NativeOfficePdfiumLayoutRenderer {
         };
         layer.validate(inventory)?;
         Ok(layer)
+    }
+
+    /// Extracts one bounded ordered page batch after one immutable source read
+    /// and one PDFium document open. Per-page extraction failures remain
+    /// isolated in their exact input slots.
+    pub async fn extract_page_text_batch(
+        &self,
+        source_path: impl AsRef<Path>,
+        inventory: &NativeOfficePdfPageInventory,
+        units: Vec<NativeOfficeUnit>,
+        options: NativeOfficePdfTextBatchOptions,
+    ) -> UseResult<NativeOfficePdfPageTextBatch> {
+        self.descriptor().validate()?;
+        super::batch::validate_batch_request(inventory, &units, options)?;
+        validate_pdf_revision(
+            &inventory.source_revision,
+            MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+        )?;
+        let source_path = absolute(source_path.as_ref())?;
+        let requested_units = units.clone();
+        let timeout_ms = options.timeout_ms;
+        let engine = Arc::clone(&self.engine);
+        let inventory_for_task = inventory.clone();
+        let revision_for_task = inventory.source_revision.clone();
+        let source_for_task = source_path.clone();
+        let task = async move {
+            let bytes = read_source_bytes(
+                &source_for_task,
+                &revision_for_task,
+                MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
+            )
+            .await?;
+            let batch = tokio::task::spawn_blocking(move || {
+                engine.extract_page_text_batch(bytes, &inventory_for_task, &units, options)
+            })
+            .await
+            .map_err(|_| pdfium_task_failed())??;
+            verify_source_revision(&source_for_task, &revision_for_task).await?;
+            Ok::<_, a3s_use_core::UseError>(batch)
+        };
+        let batch = match tokio::time::timeout(Duration::from_millis(timeout_ms), task).await {
+            Ok(result) => result?,
+            Err(_) => return Err(layout_timeout(timeout_ms)),
+        };
+        batch.validate_for(inventory, &requested_units, options)?;
+        Ok(batch)
     }
 
     /// Extracts one complete, bounded native document outline against a
