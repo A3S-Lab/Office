@@ -4,7 +4,15 @@ import {
   mergeDocxIgnorableExtensions,
 } from './work-docx-ignorable-extension-preservation';
 import { assertXmlRoot } from './work-docx-settings-xml';
-import { parseXml } from './work-ooxml-package';
+import {
+  DOCX_COLOR_SCHEME_MAPPING_ATTRIBUTES,
+  parseDocxColorSchemeMappingElement,
+} from './work-docx-theme';
+import {
+  directChildren,
+  parseXml,
+  xmlNamespacePrefix,
+} from './work-ooxml-package';
 import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
 
 const SETTINGS_PATH = 'word/settings.xml';
@@ -22,7 +30,8 @@ const SOURCE_SETTING_DENYLIST = new Set([
  *
  * WordprocessingML settings and relationship-bound markup remain generated-only.
  * The source contribution is limited to ignorable extension attributes/elements
- * and structurally valid, non-conflicting mc:AlternateContent blocks.
+ * and structurally valid, non-conflicting mc:AlternateContent blocks, plus a
+ * strictly validated color-scheme mapping required by preserved theme colors.
  */
 export async function preserveDocxSettingsExtensions(
   generated: JSZip,
@@ -64,5 +73,68 @@ export async function preserveDocxSettingsExtensions(
       !SOURCE_SETTING_DENYLIST.has(element.localName) &&
       !generatedSemanticNames.has(element.localName),
   });
+  preserveColorSchemeMapping(generatedDocument, sourceDocument);
   generated.file(generatedPath, serializeUtf8Xml(generatedDocument));
+}
+
+function preserveColorSchemeMapping(
+  generated: Document,
+  source: Document,
+): void {
+  const sourceCandidates = directChildren(
+    source.documentElement,
+    'clrSchemeMapping',
+  ).filter(
+    (element) => element.namespaceURI === source.documentElement.namespaceURI,
+  );
+  if (sourceCandidates.length !== 1) return;
+  const mapping = parseDocxColorSchemeMappingElement(sourceCandidates[0]);
+  if (!mapping) return;
+
+  const generatedCandidates = directChildren(
+    generated.documentElement,
+    'clrSchemeMapping',
+  ).filter(
+    (element) =>
+      element.namespaceURI === generated.documentElement.namespaceURI,
+  );
+  if (generatedCandidates.length > 1) return;
+
+  const namespace = generated.documentElement.namespaceURI;
+  if (!namespace || !DOCX_WORDPROCESSING_NAMESPACES.has(namespace)) return;
+  const prefix =
+    xmlNamespacePrefix(generated.documentElement, namespace) ?? 'w';
+  const preserved = generated.createElementNS(
+    namespace,
+    `${prefix}:clrSchemeMapping`,
+  );
+  for (const [
+    semantic,
+    attributeName,
+  ] of DOCX_COLOR_SCHEME_MAPPING_ATTRIBUTES) {
+    const value = mapping.get(semantic);
+    if (value)
+      preserved.setAttributeNS(namespace, `${prefix}:${attributeName}`, value);
+  }
+
+  const existing = generatedCandidates[0];
+  if (existing) {
+    existing.replaceWith(preserved);
+    return;
+  }
+  const sourceChildren = directChildren(source.documentElement);
+  const sourceIndex = sourceChildren.indexOf(sourceCandidates[0]);
+  const generatedChildren = directChildren(generated.documentElement);
+  const anchor = sourceChildren
+    .slice(sourceIndex + 1)
+    .reduce<Element | null>((match, sourceChild) => {
+      if (match) return match;
+      const candidates = generatedChildren.filter(
+        (generatedChild) =>
+          generatedChild.localName === sourceChild.localName &&
+          DOCX_WORDPROCESSING_NAMESPACES.has(generatedChild.namespaceURI ?? ''),
+      );
+      return candidates.length === 1 ? candidates[0] : null;
+    }, null);
+  generated.documentElement.insertBefore(preserved, anchor);
 }

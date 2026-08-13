@@ -1,33 +1,33 @@
-import { Editor } from '@tiptap/core';
-import FontSize from '@tiptap/extension-text-style/font-size';
-import TextAlign from '@tiptap/extension-text-align';
-import StarterKit from '@tiptap/starter-kit';
 import { describe, expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
+import TextAlign from '@tiptap/extension-text-align';
+import FontSize from '@tiptap/extension-text-style/font-size';
+import StarterKit from '@tiptap/starter-kit';
 import {
   createArtifact,
   createArtifactBlob,
   importOfficeFile,
 } from '../src/core';
-import { DocumentSection } from '../src/internal/features/work/work-document-section-node';
 import { toggleDocumentSuperscript } from '../src/internal/features/work/work-document-character-formatting';
+import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import {
   changeDocumentIndent,
-  clearDocumentParagraphPagination,
   clearDocumentFormatting,
+  clearDocumentParagraphPagination,
+  DocumentParagraphFormatting,
   documentIndentLevel,
+  documentParagraphDirection,
   documentParagraphIndent,
   documentParagraphPagination,
-  documentParagraphDirection,
   documentParagraphSpacing,
-  DocumentParagraphFormatting,
   setDocumentIndentLevel,
   setDocumentLineHeight,
+  setDocumentParagraphDirection,
   setDocumentParagraphIndent,
   setDocumentParagraphPagination,
-  setDocumentParagraphDirection,
   setDocumentParagraphSpacing,
 } from '../src/internal/features/work/work-document-paragraph-formatting';
-import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import { DocumentSection } from '../src/internal/features/work/work-document-section-node';
 import {
   DocumentFontFamily,
   DocumentTextStyle,
@@ -435,7 +435,8 @@ describe('document formatting', () => {
       [
         '<section data-document-section="true" data-section-id="section-alpha">',
         '<h2 style="text-align: right; line-height: 2; margin-left: 48px;"',
-        ' data-office-indent-level="2">',
+        ' data-office-indent-level="2"',
+        ` data-office-paragraph-shading='{"pattern":"clear","fill":{"value":"#ddeeff"}}'>`,
         '<span style="font-family: Arial; font-size: 18pt;">A3S Office</span>',
         '</h2>',
         '</section>',
@@ -449,6 +450,7 @@ describe('document formatting', () => {
       '<section data-document-section="true" data-section-id="section-alpha"',
     );
     expect(editor.getHTML()).toContain('<p>A3S Office</p>');
+    expect(editor.getHTML()).not.toContain('data-office-paragraph-shading');
 
     editor.destroy();
   });

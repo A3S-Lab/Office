@@ -1,4 +1,9 @@
 import { type CommandProps, Extension, type Editor } from '@tiptap/core';
+import {
+  documentParagraphShadingDomAttributes,
+  parseDocumentParagraphShading,
+  parseDocumentParagraphShadingElement,
+} from './work-document-paragraph-shading';
 import { DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT } from './work-document-word-line-metrics';
 
 export const DOCUMENT_INDENT_STEP_PX = 24;
@@ -223,6 +228,15 @@ export const DocumentParagraphFormatting = Extension.create({
             'officeDefaultCollapsed',
             'data-office-default-collapsed',
           ),
+          paragraphShading: {
+            default: null,
+            parseHTML: (element: HTMLElement) =>
+              parseDocumentParagraphShadingElement(element),
+            renderHTML: (attributes: Record<string, unknown>) =>
+              documentParagraphShadingDomAttributes(
+                parseDocumentParagraphShading(attributes.paragraphShading),
+              ),
+          },
           outlineLevel: outlineLevelAttribute(),
         },
       },
@@ -613,6 +627,7 @@ function clearDocumentFormattingCommand({
       widowControl: null,
       contextualSpacing: null,
       outlineLevel: null,
+      paragraphShading: null,
       tabStops: null,
     })
     .updateAttributes('listItem', {

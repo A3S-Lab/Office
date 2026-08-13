@@ -4,6 +4,7 @@ import {
   normalizeDocumentPageChrome,
 } from './work-document-page-chrome';
 import { normalizeDocumentParagraphIdentity } from './work-document-paragraph-identity';
+import { documentParagraphShadingDomAttributes } from './work-document-paragraph-shading';
 import {
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
@@ -12,6 +13,8 @@ import {
 import { docxEquationHtml } from './work-docx-equation-import';
 import { isDocxEquationLikeRoot } from './work-docx-equation-story';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
+import { parseDirectDocxParagraphShading } from './work-docx-paragraph-shading-import';
+import { createDocxThemeResolver } from './work-docx-theme';
 import {
   xmlAttributeLocalName,
   xmlAttributeNamespace,
@@ -156,13 +159,21 @@ async function pageChromePartHtml(
   partPath: string,
 ): Promise<string> {
   const relationships = await archive.relationships(partPath);
+  const themePath = archive
+    .paths('word/theme/')
+    .find((path) => /\/theme\d*\.xml$/i.test(path));
+  const themeDocument = themePath ? await archive.xml(themePath) : null;
+  const settingsDocument = archive.has('word/settings.xml')
+    ? await archive.xml('word/settings.xml')
+    : null;
+  const theme = createDocxThemeResolver(themeDocument, settingsDocument);
   const root = document.documentElement;
   const blocks: string[] = [];
   for (const child of directChildren(root)) {
     if (child.localName === 'p')
-      blocks.push(await paragraphHtml(child, archive, relationships));
+      blocks.push(await paragraphHtml(child, archive, relationships, theme));
     if (child.localName === 'tbl')
-      blocks.push(await tableHtml(child, archive, relationships));
+      blocks.push(await tableHtml(child, archive, relationships, theme));
     if (isDocxEquationLikeRoot(child))
       blocks.push(`<p>${docxEquationHtml(child)}</p>`);
   }
@@ -173,6 +184,7 @@ async function paragraphHtml(
   paragraph: Element,
   archive: OoxmlPackage,
   relationships: Relationships,
+  theme?: ReturnType<typeof createDocxThemeResolver>,
 ): Promise<string> {
   const properties = directChild(paragraph, 'pPr');
   const alignmentValue = attribute(
@@ -237,7 +249,18 @@ async function paragraphHtml(
     defaultCollapsed.status === 'valid'
       ? ` data-office-default-collapsed="${defaultCollapsed.value}"`
       : '';
-  return `<p${alignment ? ` style="text-align: ${alignment}"` : ''}${identityAttributes}${defaultCollapsedAttribute}>${html}</p>`;
+  const parsedShading = properties
+    ? parseDirectDocxParagraphShading(properties, theme)
+    : undefined;
+  const shading =
+    parsedShading === null ? { pattern: 'nil' as const } : parsedShading;
+  const shadingAttributes = documentParagraphShadingDomAttributes(shading);
+  const styles = [
+    alignment ? `text-align: ${alignment}` : '',
+    shadingAttributes.style ?? '',
+  ].filter(Boolean);
+  const shadingAttribute = shadingAttributes['data-office-paragraph-shading'];
+  return `<p${styles.length ? ` style="${escapeHtml(styles.join('; '))}"` : ''}${identityAttributes}${defaultCollapsedAttribute}${shadingAttribute ? ` data-office-paragraph-shading="${escapeHtml(shadingAttribute)}"` : ''}>${html}</p>`;
 }
 
 function paragraphIdentityAttributes(paragraph: Element): string {
@@ -418,6 +441,7 @@ async function tableHtml(
   table: Element,
   archive: OoxmlPackage,
   relationships: Relationships,
+  theme?: ReturnType<typeof createDocxThemeResolver>,
 ): Promise<string> {
   const rows: string[] = [];
   for (const row of directChildren(table, 'tr')) {
@@ -425,7 +449,7 @@ async function tableHtml(
     for (const cell of directChildren(row, 'tc')) {
       const paragraphs = await Promise.all(
         directChildren(cell, 'p').map((item) =>
-          paragraphHtml(item, archive, relationships),
+          paragraphHtml(item, archive, relationships, theme),
         ),
       );
       cells.push(`<td>${paragraphs.join('')}</td>`);

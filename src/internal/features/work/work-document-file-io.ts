@@ -55,6 +55,7 @@ export async function importWorkDocumentFile(
           prepared.paragraphDirectionMarkers,
           prepared.paragraphIndentMarkers,
           prepared.paragraphSpacingMarkers,
+          prepared.paragraphShadingMarkers,
           prepared.paragraphPaginationMarkers,
           prepared.bibliography,
           prepared.tabStopMarkers,

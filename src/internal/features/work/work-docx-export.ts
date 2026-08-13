@@ -88,6 +88,7 @@ import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
+import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
   documentTableCellSizingDocxOptions,
@@ -517,6 +518,7 @@ async function blockToFileChildren(
       tabStops: paragraphTabStops(element, docx),
       ...paragraphPaginationOptions(element),
       ...paragraphDirectionOptions(element),
+      ...documentParagraphShadingDocxOptions(element, noteContext.themePatches),
     }),
   ];
 }

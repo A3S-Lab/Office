@@ -107,6 +107,12 @@ import {
   markDocxParagraphPagination,
 } from './work-docx-paragraph-pagination-import';
 import {
+  applyImportedDocxParagraphShadingMarkers,
+  hasImportedDocxParagraphShadingMarkers,
+  type ImportedDocxParagraphShadingMarkers,
+  markDocxParagraphShading,
+} from './work-docx-paragraph-shading-import';
+import {
   applyImportedDocxParagraphSpacingMarkers,
   hasImportedDocxParagraphSpacingMarkers,
   type ImportedDocxParagraphSpacingMarkers,
@@ -144,6 +150,7 @@ import {
   markDocxTableSizing,
 } from './work-docx-table-sizing-import';
 import { createDocxTableStyleResolver } from './work-docx-table-styles';
+import { createDocxThemeResolver } from './work-docx-theme';
 import {
   attribute,
   descendants,
@@ -180,6 +187,7 @@ export interface PreparedDocxImport {
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
   paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers;
+  paragraphShadingMarkers: ImportedDocxParagraphShadingMarkers;
   paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers;
   runFormattingMarkers: ImportedDocxRunFormattingMarkers;
   tabStopMarkers: ImportedDocxParagraphTabStopMarkers;
@@ -223,6 +231,11 @@ export async function prepareDocxImport(
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
       paragraphPaginationMarkers: { paragraphs: [] },
+      paragraphShadingMarkers: {
+        paragraphs: [],
+        invalidCount: 0,
+        spoofedCount: 0,
+      },
       paragraphSpacingMarkers: { paragraphs: [] },
       runFormattingMarkers: { runs: [] },
       tabStopMarkers: { paragraphs: [], inlineTabs: [] },
@@ -298,10 +311,20 @@ export async function prepareDocxImport(
     .paths('word/theme/')
     .find((path) => /\/theme\d*\.xml$/i.test(path));
   const themeDocument = themePath ? await archive.xml(themePath) : null;
+  const settings = archive.has('word/settings.xml')
+    ? await archive.xml('word/settings.xml')
+    : null;
+  const theme = createDocxThemeResolver(themeDocument, settings);
+  const paragraphShadingMarkers = markDocxParagraphShading(
+    document,
+    paragraphStyles,
+    theme,
+    tableStyles,
+  );
   const runFormattingMarkers = markDocxRunFormatting(
     document,
     paragraphStyles,
-    themeDocument,
+    theme,
     tableStyles,
   );
   const tabStopMarkers = markDocxParagraphTabStops(
@@ -309,16 +332,9 @@ export async function prepareDocxImport(
     paragraphStyles,
     tableStyles,
   );
-  const tableCellMarkers = markDocxTableCells(
-    document,
-    themeDocument,
-    tableStyles,
-  );
+  const tableCellMarkers = markDocxTableCells(document, theme, tableStyles);
   const tableRowMarkers = markDocxTableRows(document);
   const tableSizingMarkers = markDocxTableSizing(document, tableStyles);
-  const settings = archive.has('word/settings.xml')
-    ? await archive.xml('word/settings.xml')
-    : null;
   const trackChanges =
     Boolean(settings && firstDescendant(settings, 'trackRevisions')) ||
     changeMarkers.changes.length > 0;
@@ -340,6 +356,7 @@ export async function prepareDocxImport(
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
         hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+        hasImportedDocxParagraphShadingMarkers(paragraphShadingMarkers) ||
         hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
         hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
         hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
@@ -364,6 +381,7 @@ export async function prepareDocxImport(
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
       paragraphPaginationMarkers,
+      paragraphShadingMarkers,
       paragraphSpacingMarkers,
       runFormattingMarkers,
       tabStopMarkers,
@@ -407,6 +425,7 @@ export async function prepareDocxImport(
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
       hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+      hasImportedDocxParagraphShadingMarkers(paragraphShadingMarkers) ||
       hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
       hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
       hasImportedDocxParagraphTabStopMarkers(tabStopMarkers) ||
@@ -431,6 +450,7 @@ export async function prepareDocxImport(
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
     paragraphPaginationMarkers,
+    paragraphShadingMarkers,
     paragraphSpacingMarkers,
     runFormattingMarkers,
     tabStopMarkers,
@@ -478,6 +498,11 @@ export function applyDocxSectionsToHtml(
   paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers = {
     paragraphs: [],
   },
+  paragraphShadingMarkers: ImportedDocxParagraphShadingMarkers = {
+    paragraphs: [],
+    invalidCount: 0,
+    spoofedCount: 0,
+  },
   paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers = {
     paragraphs: [],
   },
@@ -505,6 +530,7 @@ export function applyDocxSectionsToHtml(
   );
   applyImportedDocxParagraphIndentMarkers(document, paragraphIndentMarkers);
   applyImportedDocxParagraphSpacingMarkers(document, paragraphSpacingMarkers);
+  applyImportedDocxParagraphShadingMarkers(document, paragraphShadingMarkers);
   applyImportedDocxParagraphPaginationMarkers(
     document,
     paragraphPaginationMarkers,

@@ -9,6 +9,10 @@ import {
   normalizeDocumentParagraphIdentity,
 } from './work-document-paragraph-identity';
 import {
+  documentParagraphShadingDomAttributes,
+  parseDocumentParagraphShadingElement,
+} from './work-document-paragraph-shading';
+import {
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
   normalizeDocumentTableRowIdentity,
@@ -47,6 +51,7 @@ const PARAGRAPH_IDENTITY_ATTRIBUTES = [
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
 ] as const;
 const PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE = 'data-office-default-collapsed';
+const PARAGRAPH_SHADING_ATTRIBUTE = 'data-office-paragraph-shading';
 const TABLE_ROW_IDENTITY_ATTRIBUTES = [
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
   DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE,
@@ -370,11 +375,17 @@ function sanitizeAttributes(element: Element, tag: string) {
     ? element.style.textAlign
     : '';
   const color = element.style.color;
+  const paragraphShading =
+    tag === 'p' ? parseDocumentParagraphShadingElement(element) : null;
+  const shadingAttributes =
+    documentParagraphShadingDomAttributes(paragraphShading);
   const direction = element.getAttribute('dir')?.trim().toLowerCase();
   element.removeAttribute('style');
+  element.removeAttribute(PARAGRAPH_SHADING_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
+    shadingAttributes.style ?? '',
   ].filter(Boolean);
   if (styles.length) element.setAttribute('style', styles.join('; '));
 
@@ -395,6 +406,8 @@ function sanitizeAttributes(element: Element, tag: string) {
       element.removeAttribute('type');
   }
   if (tag === 'p') {
+    const shading = shadingAttributes[PARAGRAPH_SHADING_ATTRIBUTE];
+    if (shading) element.setAttribute(PARAGRAPH_SHADING_ATTRIBUTE, shading);
     normalizeParagraphIdentityAttributes(element);
     normalizeParagraphDefaultCollapsedAttribute(element);
   }
@@ -425,6 +438,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                   'dir',
                   'style',
                   PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE,
+                  PARAGRAPH_SHADING_ATTRIBUTE,
                   ...PARAGRAPH_IDENTITY_ATTRIBUTES,
                 ])
               : tag === 'tr'

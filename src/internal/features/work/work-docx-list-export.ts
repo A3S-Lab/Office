@@ -12,6 +12,8 @@ import {
   paragraphTabStops,
 } from './work-docx-export-formatting';
 import type { DocxSourceNumberingIdentity } from './work-docx-numbering-extension-preservation';
+import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
+import type { DocxThemePatchCollector } from './work-docx-theme-reference';
 
 export interface DocxListExportContext {
   numbering: Array<INumberingOptions['config'][number]>;
@@ -24,6 +26,7 @@ export interface DocxListExportContext {
   numberingRestartRules: Array<Map<number, number>>;
   numberingRestartRulesByIdentity: Map<string, Map<number, number>>;
   numberingSourceIdentities: Array<DocxSourceNumberingIdentity | null>;
+  themePatches?: DocxThemePatchCollector;
 }
 
 type InlineRuns = (element: HTMLElement) => Promise<ParagraphChild[]>;
@@ -83,6 +86,7 @@ export async function listToDocxParagraphs(
           tabStops: paragraphTabStops(block, docx),
           ...paragraphPaginationOptions(block),
           ...paragraphDirectionOptions(block),
+          ...documentParagraphShadingDocxOptions(block, context.themePatches),
         }),
       );
     }

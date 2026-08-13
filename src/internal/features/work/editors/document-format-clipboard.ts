@@ -153,6 +153,7 @@ const documentFormatBlockAttributeNames = [
   'contextualSpacing',
   'outlineLevel',
   'paragraphDirection',
+  'paragraphShading',
   'tabStops',
 ] as const;
 

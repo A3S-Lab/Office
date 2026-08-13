@@ -11,7 +11,7 @@ export interface DocxThemeColorReference {
   shade?: string;
 }
 
-type DocxThemePatchKind = 'color' | 'fill' | 'border';
+type DocxThemePatchKind = 'color' | 'fill' | 'border' | 'shadingColor';
 
 interface DocxThemePatch {
   kind: DocxThemePatchKind;
@@ -98,41 +98,39 @@ export async function patchDocxThemeReferences(
     const document = parseXml(await entry.async('text'), entry.name);
     let changed = false;
     for (const element of Array.from(document.getElementsByTagName('*'))) {
-      const kind = themePatchKind(element.localName);
-      if (!kind) continue;
-      const directAttribute =
-        kind === 'fill' ? 'fill' : kind === 'color' ? 'val' : 'color';
-      const marker = wordAttribute(element, directAttribute)?.toUpperCase();
-      const patch = marker ? byMarker.get(marker) : undefined;
-      if (!patch || patch.kind !== kind) continue;
-      setWordAttribute(
-        document,
-        element,
-        directAttribute,
-        patch.reference.resolved.slice(1).toUpperCase(),
-      );
-      const themeAttribute = kind === 'fill' ? 'themeFill' : 'themeColor';
-      const tintAttribute = kind === 'fill' ? 'themeFillTint' : 'themeTint';
-      const shadeAttribute = kind === 'fill' ? 'themeFillShade' : 'themeShade';
-      setWordAttribute(
-        document,
-        element,
-        themeAttribute,
-        patch.reference.theme,
-      );
-      setOptionalWordAttribute(
-        document,
-        element,
-        tintAttribute,
-        patch.reference.tint,
-      );
-      setOptionalWordAttribute(
-        document,
-        element,
-        shadeAttribute,
-        patch.reference.shade,
-      );
-      changed = true;
+      for (const target of themePatchTargets(element.localName)) {
+        const marker = wordAttribute(
+          element,
+          target.directAttribute,
+        )?.toUpperCase();
+        const patch = marker ? byMarker.get(marker) : undefined;
+        if (!patch || patch.kind !== target.kind) continue;
+        setWordAttribute(
+          document,
+          element,
+          target.directAttribute,
+          patch.reference.resolved.slice(1).toUpperCase(),
+        );
+        setWordAttribute(
+          document,
+          element,
+          target.themeAttribute,
+          patch.reference.theme,
+        );
+        setOptionalWordAttribute(
+          document,
+          element,
+          target.tintAttribute,
+          patch.reference.tint,
+        );
+        setOptionalWordAttribute(
+          document,
+          element,
+          target.shadeAttribute,
+          patch.reference.shade,
+        );
+        changed = true;
+      }
     }
     if (changed)
       archive.file(entry.name, new XMLSerializer().serializeToString(document));
@@ -140,12 +138,53 @@ export async function patchDocxThemeReferences(
   return archive.generateAsync({ type: 'arraybuffer' });
 }
 
-function themePatchKind(localName: string): DocxThemePatchKind | null {
-  if (localName === 'color') return 'color';
-  if (localName === 'shd') return 'fill';
+function themePatchTargets(localName: string): Array<{
+  kind: DocxThemePatchKind;
+  directAttribute: string;
+  themeAttribute: string;
+  tintAttribute: string;
+  shadeAttribute: string;
+}> {
+  if (localName === 'color') {
+    return [
+      {
+        kind: 'color',
+        directAttribute: 'val',
+        themeAttribute: 'themeColor',
+        tintAttribute: 'themeTint',
+        shadeAttribute: 'themeShade',
+      },
+    ];
+  }
+  if (localName === 'shd') {
+    return [
+      {
+        kind: 'fill',
+        directAttribute: 'fill',
+        themeAttribute: 'themeFill',
+        tintAttribute: 'themeFillTint',
+        shadeAttribute: 'themeFillShade',
+      },
+      {
+        kind: 'shadingColor',
+        directAttribute: 'color',
+        themeAttribute: 'themeColor',
+        tintAttribute: 'themeTint',
+        shadeAttribute: 'themeShade',
+      },
+    ];
+  }
   return ['top', 'right', 'bottom', 'left', 'start', 'end'].includes(localName)
-    ? 'border'
-    : null;
+    ? [
+        {
+          kind: 'border',
+          directAttribute: 'color',
+          themeAttribute: 'themeColor',
+          tintAttribute: 'themeTint',
+          shadeAttribute: 'themeShade',
+        },
+      ]
+    : [];
 }
 
 function normalizeColor(value: string | null): string | null {

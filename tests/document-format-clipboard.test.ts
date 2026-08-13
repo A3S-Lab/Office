@@ -1,5 +1,5 @@
-import { Editor } from '@tiptap/core';
 import { afterEach, expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
 import {
   clearDocumentFormatClipboard,
   copyDocumentFormatting,
@@ -30,6 +30,11 @@ test('copies character and paragraph formatting without replacing semantic marks
   expect(editor.isActive('heading', { level: 2 })).toBe(true);
   expect(editor.getAttributes('heading')).toMatchObject({
     lineHeight: '1.5',
+    paragraphShading: {
+      pattern: 'pct20',
+      color: { value: '#112233' },
+      fill: { value: '#ddeeff' },
+    },
     textAlign: 'center',
   });
   expect(editor.isActive('bold')).toBe(true);
@@ -111,6 +116,11 @@ test('applies compatible body formatting when the target omits heading nodes', (
   expect(pageChromeEditor.isActive('bold')).toBe(true);
   expect(pageChromeEditor.isActive('italic')).toBe(false);
   expect(pageChromeEditor.getAttributes('paragraph').textAlign).toBe('center');
+  expect(pageChromeEditor.getAttributes('paragraph').paragraphShading).toEqual({
+    pattern: 'pct20',
+    color: { value: '#112233' },
+    fill: { value: '#ddeeff' },
+  });
 
   pageChromeEditor.destroy();
 });
@@ -145,7 +155,7 @@ function createEditor(): Editor {
   return new Editor({
     extensions: createWorkDocumentExtensions(),
     content: [
-      '<h2 style="text-align: center; line-height: 1.5">',
+      `<h2 data-office-paragraph-shading='{"pattern":"pct20","color":{"value":"#112233"},"fill":{"value":"#ddeeff"}}' style="text-align: center; line-height: 1.5; background-color: #ddeeff">`,
       '<strong><span style="color: #0070c0; font-family: Arial, sans-serif; font-size: 14pt">Source</span></strong>',
       '</h2>',
       '<p><a href="https://a3s.dev"><em>Target</em></a></p>',

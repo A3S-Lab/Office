@@ -311,8 +311,18 @@ interaction model.
   underline, strikethrough, fonts, and text colors are materialized before
   direct table, cell, paragraph, and run formatting. Conditional paragraph
   alignment, direction, indents, spacing and line rules, pagination rules, and
-  tab stops use the same precedence chain. Theme tint and shade values resolve
-  for table borders and cell fills across edit, preview, and RGB-stable export.
+  tab stops use the same precedence chain. Paragraph shading follows document
+  defaults, based-on paragraph styles, conditional table styles, and direct
+  formatting in that order. The complete Word `w:shd` pattern set, independent
+  foreground/background colors, `auto`, `nil` resets, and independently tinted
+  or shaded theme references remain structured through body and page-chrome
+  HTML; browser previews use bounded CSS masks while DOCX export restores the
+  native pattern and both theme channels. Preview follows Word's tint-over-shade
+  precedence when both transforms occur on one theme channel while retaining
+  both attributes for export. Malformed, duplicated,
+  namespace-spoofed, relationship-bound, or unresolved theme values fail closed
+  instead of inheriting stale shading. Theme tint and shade values resolve for
+  table borders and cell fills across edit, preview, and RGB-stable export.
   Splittable table rows that exceed a full physical page
   continue at paragraph boundaries with repeated heading rows on every page,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked
