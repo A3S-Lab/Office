@@ -323,6 +323,16 @@ interaction model.
   namespace-spoofed, relationship-bound, or unresolved theme values fail closed
   instead of inheriting stale shading. Theme tint and shade values resolve for
   table borders and cell fills across edit, preview, and RGB-stable export.
+  Paragraph borders use the same precedence chain and retain the complete
+  `w:pBdr` model: schema-ordered `top`, `left`, `bottom`, `right`, `between`,
+  and facing-page `bar` edges; all 197 line and art styles; direct, automatic,
+  and theme colors; eighth-point or point widths; spacing; shadow; and frame.
+  Physical edges remain editable CSS, while art, between-paragraph, and
+  facing-page behavior uses a bounded browser approximation; DOCX export
+  restores the exact native edge set and attributes. Direct CSS edits replace
+  only the edited edge's theme binding, strict and transitional namespaces are
+  accepted, and malformed order, duplicates, spoofed namespaces, unsafe
+  attributes, invalid measures, and unresolved themes fail closed.
   Splittable table rows that exceed a full physical page
   continue at paragraph boundaries with repeated heading rows on every page,
   viewport-safe comment drafting and focus-preserving citation drafts, tracked

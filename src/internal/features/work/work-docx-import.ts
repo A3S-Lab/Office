@@ -107,6 +107,12 @@ import {
   markDocxParagraphPagination,
 } from './work-docx-paragraph-pagination-import';
 import {
+  applyImportedDocxParagraphBorderMarkers,
+  hasImportedDocxParagraphBorderMarkers,
+  type ImportedDocxParagraphBorderMarkers,
+  markDocxParagraphBorders,
+} from './work-docx-paragraph-borders-import';
+import {
   applyImportedDocxParagraphShadingMarkers,
   hasImportedDocxParagraphShadingMarkers,
   type ImportedDocxParagraphShadingMarkers,
@@ -187,6 +193,7 @@ export interface PreparedDocxImport {
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
   paragraphPaginationMarkers: ImportedDocxParagraphPaginationMarkers;
+  paragraphBorderMarkers: ImportedDocxParagraphBorderMarkers;
   paragraphShadingMarkers: ImportedDocxParagraphShadingMarkers;
   paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers;
   runFormattingMarkers: ImportedDocxRunFormattingMarkers;
@@ -231,6 +238,11 @@ export async function prepareDocxImport(
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
       paragraphPaginationMarkers: { paragraphs: [] },
+      paragraphBorderMarkers: {
+        paragraphs: [],
+        invalidCount: 0,
+        spoofedCount: 0,
+      },
       paragraphShadingMarkers: {
         paragraphs: [],
         invalidCount: 0,
@@ -315,6 +327,12 @@ export async function prepareDocxImport(
     ? await archive.xml('word/settings.xml')
     : null;
   const theme = createDocxThemeResolver(themeDocument, settings);
+  const paragraphBorderMarkers = markDocxParagraphBorders(
+    document,
+    paragraphStyles,
+    theme,
+    tableStyles,
+  );
   const paragraphShadingMarkers = markDocxParagraphShading(
     document,
     paragraphStyles,
@@ -356,6 +374,7 @@ export async function prepareDocxImport(
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
         hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+        hasImportedDocxParagraphBorderMarkers(paragraphBorderMarkers) ||
         hasImportedDocxParagraphShadingMarkers(paragraphShadingMarkers) ||
         hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
         hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
@@ -381,6 +400,7 @@ export async function prepareDocxImport(
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
       paragraphPaginationMarkers,
+      paragraphBorderMarkers,
       paragraphShadingMarkers,
       paragraphSpacingMarkers,
       runFormattingMarkers,
@@ -425,6 +445,7 @@ export async function prepareDocxImport(
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
       hasImportedDocxParagraphSpacingMarkers(paragraphSpacingMarkers) ||
+      hasImportedDocxParagraphBorderMarkers(paragraphBorderMarkers) ||
       hasImportedDocxParagraphShadingMarkers(paragraphShadingMarkers) ||
       hasImportedDocxParagraphPaginationMarkers(paragraphPaginationMarkers) ||
       hasImportedDocxRunFormattingMarkers(runFormattingMarkers) ||
@@ -450,6 +471,7 @@ export async function prepareDocxImport(
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
     paragraphPaginationMarkers,
+    paragraphBorderMarkers,
     paragraphShadingMarkers,
     paragraphSpacingMarkers,
     runFormattingMarkers,
@@ -498,6 +520,11 @@ export function applyDocxSectionsToHtml(
   paragraphSpacingMarkers: ImportedDocxParagraphSpacingMarkers = {
     paragraphs: [],
   },
+  paragraphBorderMarkers: ImportedDocxParagraphBorderMarkers = {
+    paragraphs: [],
+    invalidCount: 0,
+    spoofedCount: 0,
+  },
   paragraphShadingMarkers: ImportedDocxParagraphShadingMarkers = {
     paragraphs: [],
     invalidCount: 0,
@@ -530,6 +557,7 @@ export function applyDocxSectionsToHtml(
   );
   applyImportedDocxParagraphIndentMarkers(document, paragraphIndentMarkers);
   applyImportedDocxParagraphSpacingMarkers(document, paragraphSpacingMarkers);
+  applyImportedDocxParagraphBorderMarkers(document, paragraphBorderMarkers);
   applyImportedDocxParagraphShadingMarkers(document, paragraphShadingMarkers);
   applyImportedDocxParagraphPaginationMarkers(
     document,

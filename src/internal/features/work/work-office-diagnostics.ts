@@ -5,6 +5,7 @@ import { diagnoseDocxCitations } from './work-docx-citation-diagnostics';
 import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
+import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
 import {
@@ -180,6 +181,7 @@ export async function analyzeDocxCompatibility(
       );
     }
     if (document) {
+      issues.push(...(await diagnoseDocxParagraphBorders(archive, document)));
       issues.push(...(await diagnoseDocxParagraphShading(archive, document)));
       const defaultCollapsedStates = descendants(document, 'pPr')
         .map(parseDocxParagraphDefaultCollapsed)

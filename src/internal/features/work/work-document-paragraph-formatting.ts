@@ -1,5 +1,10 @@
 import { type CommandProps, Extension, type Editor } from '@tiptap/core';
 import {
+  documentParagraphBordersDomAttributes,
+  parseDocumentParagraphBorders,
+  parseDocumentParagraphBordersElement,
+} from './work-document-paragraph-borders';
+import {
   documentParagraphShadingDomAttributes,
   parseDocumentParagraphShading,
   parseDocumentParagraphShadingElement,
@@ -228,6 +233,15 @@ export const DocumentParagraphFormatting = Extension.create({
             'officeDefaultCollapsed',
             'data-office-default-collapsed',
           ),
+          paragraphBorders: {
+            default: null,
+            parseHTML: (element: HTMLElement) =>
+              parseDocumentParagraphBordersElement(element),
+            renderHTML: (attributes: Record<string, unknown>) =>
+              documentParagraphBordersDomAttributes(
+                parseDocumentParagraphBorders(attributes.paragraphBorders),
+              ),
+          },
           paragraphShading: {
             default: null,
             parseHTML: (element: HTMLElement) =>
@@ -627,6 +641,7 @@ function clearDocumentFormattingCommand({
       widowControl: null,
       contextualSpacing: null,
       outlineLevel: null,
+      paragraphBorders: null,
       paragraphShading: null,
       tabStops: null,
     })

@@ -230,6 +230,15 @@ describe('document formatting', () => {
       right: 24,
       firstLine: 12,
     });
+    editor.commands.updateAttributes('paragraph', {
+      paragraphBorders: {
+        bottom: {
+          style: 'single',
+          color: { value: '#112233' },
+          size: 8,
+        },
+      },
+    });
     clearDocumentFormatting(editor);
 
     expect(editor.getHTML()).toBe('<p>A3S Office</p>');

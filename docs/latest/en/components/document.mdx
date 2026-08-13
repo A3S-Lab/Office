@@ -163,6 +163,22 @@ unresolved theme values fail closed rather than exposing inherited stale
 formatting. Direct page-chrome shading uses the same editor model and export
 path.
 
+Paragraph borders round-trip as structured `data-office-paragraph-borders`
+metadata plus a bounded CSS preview. Import applies document defaults,
+based-on paragraph styles, conditional table styles, and direct formatting in
+that order. The model retains schema-ordered `top`, `left`, `bottom`, `right`,
+`between`, and facing-page `bar` edges; all 197 Word line and art border styles;
+direct, automatic, or theme colors with tint and shade; native widths and
+spacing; shadow; and frame flags. Physical edges are directly editable in the
+browser. Art borders, between-paragraph grouping, and facing-page placement use
+an explicit preview approximation while export restores exact native `w:pBdr`
+children and attributes. A direct CSS change removes the theme reference only
+from the edited physical edge. Strict and transitional WordprocessingML are
+accepted; malformed ordering, duplicate containers or edges, namespace
+spoofing, relationship-bound attributes, invalid measures, and unresolved
+themes fail closed. Page-chrome paragraphs share the same edit and export
+model.
+
 ## Built-in navigation
 
 The View ribbon opens a persistent heading outline on wide layouts and a

@@ -88,6 +88,11 @@ import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
+import {
+  DocxParagraphBorderPatchCollector,
+  documentParagraphBordersDocxOptions,
+  patchDocxParagraphBorders,
+} from './work-docx-paragraph-borders-export';
 import { documentParagraphShadingDocxOptions } from './work-docx-paragraph-shading-export';
 import { documentTableCellDocxOptions } from './work-docx-table-cell-export';
 import {
@@ -121,6 +126,7 @@ interface DocxNoteContext extends DocxListExportContext {
   imageIdentityPatches: DocxImageIdentityPatchCollector;
   imageLayerPatches: DocxImageLayerPatchCollector;
   imageWrapPatches: DocxImageWrapPatchCollector;
+  paragraphBorderPatches: DocxParagraphBorderPatchCollector;
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
@@ -169,6 +175,9 @@ export async function createDocxBlob(
     imageIdentityPatches: new DocxImageIdentityPatchCollector(),
     imageLayerPatches: new DocxImageLayerPatchCollector(),
     imageWrapPatches: new DocxImageWrapPatchCollector(),
+    paragraphBorderPatches: new DocxParagraphBorderPatchCollector(
+      JSON.stringify(normalizedContent),
+    ),
     paragraphDefaultCollapsedPatches:
       new DocxParagraphDefaultCollapsedPatchCollector(),
     paragraphIdentityPatches: new DocxParagraphIdentityPatchCollector(
@@ -261,8 +270,12 @@ export async function createDocxBlob(
     bibliographyPatched,
     sourceSections,
   );
-  const themePatched = await patchDocxThemeReferences(
+  const paragraphBordersPatched = await patchDocxParagraphBorders(
     layoutPatched,
+    noteContext.paragraphBorderPatches.patches,
+  );
+  const themePatched = await patchDocxThemeReferences(
+    paragraphBordersPatched,
     noteContext.themePatches.patches,
   );
   const imageCropPatched = await patchDocxImageCrops(
@@ -518,6 +531,10 @@ async function blockToFileChildren(
       tabStops: paragraphTabStops(element, docx),
       ...paragraphPaginationOptions(element),
       ...paragraphDirectionOptions(element),
+      ...documentParagraphBordersDocxOptions(
+        element,
+        noteContext.paragraphBorderPatches,
+      ),
       ...documentParagraphShadingDocxOptions(element, noteContext.themePatches),
     }),
   ];

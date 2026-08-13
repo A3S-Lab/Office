@@ -4,6 +4,11 @@ import {
 } from './work-document-equations';
 import { normalizeDocumentImageIdentity } from './work-document-image-identity';
 import {
+  DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE,
+  documentParagraphBordersDomAttributes,
+  parseDocumentParagraphBordersElement,
+} from './work-document-paragraph-borders';
+import {
   DOCUMENT_PARAGRAPH_ID_ATTRIBUTE,
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
   normalizeDocumentParagraphIdentity,
@@ -51,6 +56,7 @@ const PARAGRAPH_IDENTITY_ATTRIBUTES = [
   DOCUMENT_PARAGRAPH_TEXT_ID_ATTRIBUTE,
 ] as const;
 const PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE = 'data-office-default-collapsed';
+const PARAGRAPH_BORDERS_ATTRIBUTE = DOCUMENT_PARAGRAPH_BORDERS_ATTRIBUTE;
 const PARAGRAPH_SHADING_ATTRIBUTE = 'data-office-paragraph-shading';
 const TABLE_ROW_IDENTITY_ATTRIBUTES = [
   DOCUMENT_TABLE_ROW_ID_ATTRIBUTE,
@@ -379,12 +385,18 @@ function sanitizeAttributes(element: Element, tag: string) {
     tag === 'p' ? parseDocumentParagraphShadingElement(element) : null;
   const shadingAttributes =
     documentParagraphShadingDomAttributes(paragraphShading);
+  const paragraphBorders =
+    tag === 'p' ? parseDocumentParagraphBordersElement(element) : null;
+  const borderAttributes =
+    documentParagraphBordersDomAttributes(paragraphBorders);
   const direction = element.getAttribute('dir')?.trim().toLowerCase();
   element.removeAttribute('style');
+  element.removeAttribute(PARAGRAPH_BORDERS_ATTRIBUTE);
   element.removeAttribute(PARAGRAPH_SHADING_ATTRIBUTE);
   const styles = [
     textAlign ? `text-align: ${textAlign}` : '',
     color ? `color: ${color}` : '',
+    borderAttributes.style ?? '',
     shadingAttributes.style ?? '',
   ].filter(Boolean);
   if (styles.length) element.setAttribute('style', styles.join('; '));
@@ -406,6 +418,8 @@ function sanitizeAttributes(element: Element, tag: string) {
       element.removeAttribute('type');
   }
   if (tag === 'p') {
+    const borders = borderAttributes[PARAGRAPH_BORDERS_ATTRIBUTE];
+    if (borders) element.setAttribute(PARAGRAPH_BORDERS_ATTRIBUTE, borders);
     const shading = shadingAttributes[PARAGRAPH_SHADING_ATTRIBUTE];
     if (shading) element.setAttribute(PARAGRAPH_SHADING_ATTRIBUTE, shading);
     normalizeParagraphIdentityAttributes(element);
@@ -438,6 +452,7 @@ function sanitizeAttributes(element: Element, tag: string) {
                   'dir',
                   'style',
                   PARAGRAPH_DEFAULT_COLLAPSED_ATTRIBUTE,
+                  PARAGRAPH_BORDERS_ATTRIBUTE,
                   PARAGRAPH_SHADING_ATTRIBUTE,
                   ...PARAGRAPH_IDENTITY_ATTRIBUTES,
                 ])
