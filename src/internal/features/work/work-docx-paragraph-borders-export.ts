@@ -131,18 +131,26 @@ function replaceParagraphBorders(
       WORD_NAMESPACE,
       `${prefix}:${edge}`,
     );
-    setWordAttribute(document, element, 'val', border.style);
-    setBorderColor(document, element, border);
-    if (border.size !== undefined)
-      setWordAttribute(document, element, 'sz', String(border.size));
-    if (border.space !== undefined)
-      setWordAttribute(document, element, 'space', String(border.space));
-    if (border.shadow !== undefined)
-      setWordAttribute(document, element, 'shadow', border.shadow ? '1' : '0');
-    if (border.frame !== undefined)
-      setWordAttribute(document, element, 'frame', border.frame ? '1' : '0');
+    setDocxBorderAttributes(document, element, border);
     container.append(element);
   }
+}
+
+export function setDocxBorderAttributes(
+  document: Document,
+  element: Element,
+  border: DocumentParagraphBorder,
+): void {
+  setWordAttribute(document, element, 'val', border.style);
+  setBorderColor(document, element, border);
+  if (border.size !== undefined)
+    setWordAttribute(document, element, 'sz', String(border.size));
+  if (border.space !== undefined)
+    setWordAttribute(document, element, 'space', String(border.space));
+  if (border.shadow !== undefined)
+    setWordAttribute(document, element, 'shadow', border.shadow ? '1' : '0');
+  if (border.frame !== undefined)
+    setWordAttribute(document, element, 'frame', border.frame ? '1' : '0');
 }
 
 function setBorderColor(

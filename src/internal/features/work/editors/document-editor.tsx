@@ -621,6 +621,7 @@ export function DocumentEditor({
       layout.columns.separator,
       layoutOpen,
       JSON.stringify(pageChrome),
+      JSON.stringify(layout.pageBorders),
     ].join(':'),
     page: kernelPage,
     selectionVersion,
@@ -1071,6 +1072,7 @@ export function DocumentEditor({
                       pageCount={pagination.pageCount}
                       pageGap={kernelPage.pageGap}
                       pageHeight={kernelPage.height}
+                      pages={pagination.pages}
                     />
                   )}
                   {viewMode === 'page' &&

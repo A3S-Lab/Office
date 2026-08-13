@@ -403,7 +403,7 @@ export function documentParagraphBordersDomAttributes(
   for (const edge of ['top', 'left', 'bottom', 'right'] as const) {
     const border = borders[edge];
     if (!border) continue;
-    const presentation = borderPresentation(border);
+    const presentation = documentBorderPresentation(border);
     styles.push(
       `border-${edge}: ${formatPixels(presentation.width)}px ${presentation.style} ${presentation.color}`,
     );
@@ -415,13 +415,15 @@ export function documentParagraphBordersDomAttributes(
       shadows.push(`2px 2px 0 ${presentation.color}`);
     }
   }
-  const between = borders.between ? borderPresentation(borders.between) : null;
+  const between = borders.between
+    ? documentBorderPresentation(borders.between)
+    : null;
   if (between && between.width > 0) {
     shadows.push(
       `inset 0 -${formatPixels(between.width)}px 0 ${between.color}`,
     );
   }
-  const bar = borders.bar ? borderPresentation(borders.bar) : null;
+  const bar = borders.bar ? documentBorderPresentation(borders.bar) : null;
   if (bar && bar.width > 0) {
     shadows.push(`inset ${formatPixels(bar.width)}px 0 0 ${bar.color}`);
   }
@@ -524,15 +526,15 @@ function validBorderSize(
     : size >= 2 && size <= 96;
 }
 
-interface BorderPresentation {
+export interface DocumentBorderPresentation {
   color: `#${string}` | 'transparent';
   style: 'none' | 'solid' | 'dashed' | 'dotted' | 'double' | 'inset' | 'outset';
   width: number;
 }
 
-function borderPresentation(
+export function documentBorderPresentation(
   border: DocumentParagraphBorder,
-): BorderPresentation {
+): DocumentBorderPresentation {
   if (border.style === 'nil' || border.style === 'none' || !border.size) {
     return { color: 'transparent', style: 'none', width: 0 };
   }
@@ -554,7 +556,7 @@ function borderPresentation(
 
 function borderStyleToCssStyle(
   style: DocumentParagraphBorderStyle,
-): BorderPresentation['style'] {
+): DocumentBorderPresentation['style'] {
   if (style === 'nil' || style === 'none') return 'none';
   if (style === 'dotted') return 'dotted';
   if (DASHED_BORDER_STYLES.has(style)) return 'dashed';
@@ -608,7 +610,7 @@ function sameBorderPresentation(
   border: DocumentParagraphBorder,
   css: { color: `#${string}`; style: string; width: number },
 ): boolean {
-  const expected = borderPresentation(border);
+  const expected = documentBorderPresentation(border);
   if (expected.style === 'none') {
     return css.style === 'none' && css.width === 0;
   }

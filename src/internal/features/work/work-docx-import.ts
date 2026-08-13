@@ -75,6 +75,7 @@ import {
   documentUsesOddEvenPageChrome,
   importSectionPageChrome,
 } from './work-docx-page-chrome-import';
+import { parseDocxPageBorders } from './work-docx-page-borders-import';
 import { importDocxPageColor } from './work-docx-page-color';
 import {
   applyImportedDocxParagraphAlignmentMarkers,
@@ -156,7 +157,10 @@ import {
   markDocxTableSizing,
 } from './work-docx-table-sizing-import';
 import { createDocxTableStyleResolver } from './work-docx-table-styles';
-import { createDocxThemeResolver } from './work-docx-theme';
+import {
+  createDocxThemeResolver,
+  type DocxThemeResolver,
+} from './work-docx-theme';
 import {
   attribute,
   descendants,
@@ -423,6 +427,7 @@ export async function prepareDocxImport(
       relationships,
       previous,
       oddEvenPageChrome,
+      theme,
     );
     sections.push({ id: `document-section-${index + 1}`, layout });
     previous = layout;
@@ -632,6 +637,7 @@ async function parseSectionLayout(
   relationships: Awaited<ReturnType<OoxmlPackage['relationships']>>,
   previous: WorkDocumentSectionLayout,
   oddEvenPageChrome: boolean,
+  theme: DocxThemeResolver,
 ): Promise<WorkDocumentSectionLayout> {
   const pageSize = firstDescendant(section, 'pgSz');
   const width = numberAttribute(pageSize, 'w');
@@ -652,6 +658,7 @@ async function parseSectionLayout(
   const marginsElement = firstDescendant(section, 'pgMar');
   const columnsElement = firstDescendant(section, 'cols');
   const documentGridElement = directChild(section, 'docGrid');
+  const pageBorders = parseDocxPageBorders(section, theme);
   const pageChrome = await importSectionPageChrome(
     section,
     archive,
@@ -677,6 +684,7 @@ async function parseSectionLayout(
       : previous.documentGrid
         ? { documentGrid: { ...previous.documentGrid } }
         : {}),
+    ...(pageBorders ? { pageBorders } : {}),
     breakAfter: parseSectionBreak(firstDescendant(section, 'type')),
     ...pageChrome,
     pageNumberStart: pageNumberStart > 0 ? pageNumberStart : undefined,

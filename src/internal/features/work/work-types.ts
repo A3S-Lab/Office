@@ -1,4 +1,5 @@
 import type { Sheet } from '@fortune-sheet/core';
+import type { WorkDocumentPageBorders } from './work-document-page-borders';
 import type { WorkSpreadsheetChartLayout } from './work-spreadsheet-chart-layout';
 import type {
   WorkSpreadsheetChart,
@@ -92,6 +93,7 @@ export interface WorkDocumentSectionLayout {
   pageNumberStart?: number;
   pageChrome?: WorkDocumentPageChrome;
   documentGrid?: WorkDocumentGrid;
+  pageBorders?: WorkDocumentPageBorders;
 }
 
 export type WorkDocumentAttributeValue =
@@ -137,6 +139,7 @@ export interface WorkDocumentContent {
   showPageNumbers?: boolean;
   pageNumberStart?: number;
   pageChrome?: WorkDocumentPageChrome;
+  pageBorders?: WorkDocumentPageBorders;
   trackChanges?: boolean;
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;

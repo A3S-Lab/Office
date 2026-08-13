@@ -18,6 +18,7 @@ import type {
 } from '../work-document-notes';
 import { layoutDocumentTabs } from '../work-document-tab-node';
 import type { WorkDocumentContent } from '../work-types';
+import { WorkDocumentPageBorder } from './work-document-page-border';
 
 export function WorkDocumentPdfPages({
   content,
@@ -101,6 +102,7 @@ function DocumentPdfPage({
         } as CSSProperties
       }
     >
+      <WorkDocumentPageBorder layout={layout} sectionPage={page.sectionPage} />
       {pageChrome.headerHtml && (
         <header>
           <div

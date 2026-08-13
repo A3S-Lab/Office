@@ -13,6 +13,11 @@ import { clampDocumentMargin, documentMargins } from './work-document-layout';
 import { documentModelForHtml } from './work-document-model';
 import { normalizeDocumentNotesHtml } from './work-document-notes';
 import {
+  normalizeDocumentPageBorders,
+  parseDocumentPageBorders,
+  serializeDocumentPageBorders,
+} from './work-document-page-borders';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
   parseDocumentPageChrome,
@@ -50,6 +55,7 @@ export interface DocumentSectionNodeAttributes {
   showPageNumbers: boolean;
   pageNumberStart: number | null;
   pageChrome: string;
+  pageBorders: string;
   documentGridType: WorkDocumentGridType | '';
   documentGridLinePitch: number | null;
 }
@@ -61,6 +67,7 @@ export function documentInitialSectionLayout(
 ): WorkDocumentSectionLayout {
   const pageChrome = normalizeDocumentPageChrome(content.pageChrome, content);
   const legacy = documentPageChromeLegacyFields(pageChrome);
+  const pageBorders = normalizeDocumentPageBorders(content.pageBorders);
   return {
     pageSize: content.pageSize,
     orientation: content.orientation ?? 'portrait',
@@ -72,6 +79,7 @@ export function documentInitialSectionLayout(
     showPageNumbers: legacy.showPageNumbers,
     pageNumberStart: validPageNumber(content.pageNumberStart),
     pageChrome,
+    ...(pageBorders ? { pageBorders } : {}),
   };
 }
 
@@ -171,6 +179,7 @@ export function documentSectionNodeAttributes(
     showPageNumbers: Boolean(legacy.showPageNumbers),
     pageNumberStart: validPageNumber(layout.pageNumberStart) ?? null,
     pageChrome: serializeDocumentPageChrome(pageChrome),
+    pageBorders: serializeDocumentPageBorders(layout.pageBorders) ?? '',
     documentGridType: layout.documentGrid?.type ?? '',
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
@@ -201,6 +210,7 @@ export function documentSectionLayoutFromNodeAttributes(
   );
   const legacy = documentPageChromeLegacyFields(pageChrome);
   const documentGrid = documentGridFromNodeAttributes(attributes, base);
+  const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   return {
     pageSize:
       attributes.pageSize === 'letter'
@@ -244,6 +254,7 @@ export function documentSectionLayoutFromNodeAttributes(
     pageNumberStart: validPageNumber(attributes.pageNumberStart ?? undefined),
     pageChrome,
     ...(documentGrid ? { documentGrid } : {}),
+    ...(pageBorders ? { pageBorders } : {}),
   };
 }
 
@@ -274,6 +285,7 @@ export function documentSectionDomAttributes(
         ? ''
         : String(attributes.pageNumberStart),
     'data-section-page-chrome': attributes.pageChrome,
+    'data-section-page-borders': attributes.pageBorders,
     'data-section-document-grid-type': attributes.documentGridType,
     'data-section-document-grid-line-pitch':
       attributes.documentGridLinePitch === null
@@ -308,6 +320,7 @@ export function documentSectionLayoutFromElement(
       pageNumberStart:
         numberValue(element.dataset.sectionPageNumberStart) ?? null,
       pageChrome: element.dataset.sectionPageChrome ?? '',
+      pageBorders: element.dataset.sectionPageBorders ?? '',
       documentGridType: element.dataset
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
@@ -341,6 +354,7 @@ export function syncDocumentContentFromHtml(
     showPageNumbers: first.showPageNumbers,
     pageNumberStart: first.pageNumberStart,
     pageChrome: first.pageChrome,
+    pageBorders: first.pageBorders,
   };
 }
 
@@ -357,6 +371,7 @@ export function documentContentLayoutProperties(
     showPageNumbers: layout.showPageNumbers,
     pageNumberStart: layout.pageNumberStart,
     pageChrome: layout.pageChrome,
+    pageBorders: layout.pageBorders,
   };
 }
 

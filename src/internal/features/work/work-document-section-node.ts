@@ -61,6 +61,7 @@ export const DocumentSection = Node.create({
       showPageNumbers: hiddenAttribute(false),
       pageNumberStart: hiddenAttribute(null),
       pageChrome: hiddenAttribute(''),
+      pageBorders: hiddenAttribute(''),
       documentGridType: hiddenAttribute(''),
       documentGridLinePitch: hiddenAttribute(null),
     };
@@ -142,6 +143,7 @@ export const DocumentSection = Node.create({
               'sectionPageNumberStart',
             ),
             pageChrome: node.dataset.sectionPageChrome ?? '',
+            pageBorders: node.dataset.sectionPageBorders ?? '',
             documentGridType: (node.dataset.sectionDocumentGridType ??
               '') as DocumentSectionNodeAttributes['documentGridType'],
             documentGridLinePitch: nullableNumberAttribute(

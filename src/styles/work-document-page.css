@@ -51,6 +51,47 @@
   user-select: none;
 }
 
+.work-document-page-border-stack {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-document-page-border-stack.front {
+  z-index: 6;
+}
+
+.work-document-page-border-surface {
+  position: absolute;
+  right: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.work-document-page-border {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-pdf-export-page.document > .work-document-page-border.back {
+  z-index: 0;
+}
+
+.work-pdf-export-page.document > .work-document-page-border.front {
+  z-index: 6;
+}
+
+.work-pdf-export-page.document
+  > :is(.work-document-print-body, .work-document-page-notes) {
+  position: relative;
+  z-index: 1;
+}
+
 .work-document-page-sheet {
   position: absolute;
   right: 0;

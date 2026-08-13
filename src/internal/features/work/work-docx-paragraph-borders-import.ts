@@ -270,7 +270,7 @@ function parseBorderContainer(
     }
     previousIndex = index;
     seen.add(edge);
-    const border = parseBorderElement(child, theme);
+    const border = parseDocxBorderElement(child, theme);
     if (!border) {
       invalidCount += 1;
       borders[edge] = { style: 'nil' };
@@ -281,7 +281,7 @@ function parseBorderContainer(
   return { borders, invalidCount, spoofedCount, valid: true };
 }
 
-function parseBorderElement(
+export function parseDocxBorderElement(
   element: Element,
   theme: DocxThemeResolver,
 ): DocumentParagraphBorder | null {
