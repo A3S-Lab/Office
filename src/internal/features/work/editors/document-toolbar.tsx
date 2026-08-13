@@ -95,6 +95,12 @@ export type DocumentViewMode = 'page' | 'web';
 
 interface DocumentToolbarProps {
   editor: Editor;
+  history?: {
+    canRedo: boolean;
+    canUndo: boolean;
+    redo: () => boolean;
+    undo: () => boolean;
+  };
   layoutOpen: boolean;
   layout: WorkDocumentSectionLayout;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
@@ -153,6 +159,7 @@ interface DocumentToolbarProps {
 
 export function DocumentToolbar({
   editor,
+  history,
   layoutOpen,
   layout,
   layoutFonts = [],
@@ -339,6 +346,11 @@ export function DocumentToolbar({
         insideEditor || !isDocumentNativeTextUndoTarget(event.target);
       if (documentHistoryTarget && key === 'z') {
         event.preventDefault();
+        if (history) {
+          if (event.shiftKey) history.redo();
+          else history.undo();
+          return;
+        }
         const command = event.shiftKey
           ? editor.chain().focus().redo()
           : editor.chain().focus().undo();
@@ -347,6 +359,10 @@ export function DocumentToolbar({
       }
       if (documentHistoryTarget && key === 'y' && !event.shiftKey) {
         event.preventDefault();
+        if (history) {
+          history.redo();
+          return;
+        }
         editor.chain().focus().redo().run();
         return;
       }
@@ -401,6 +417,7 @@ export function DocumentToolbar({
     canInsertComment,
     editor,
     hasRefreshableFields,
+    history,
     onInsertComment,
     onOpenFindReplace,
     onOpenWordCount,
@@ -489,8 +506,14 @@ export function DocumentToolbar({
             icon: <Undo2 size={15} />,
             shortcut: undoCommand.shortcut?.label,
             ariaKeyShortcuts: undoCommand.shortcut?.aria,
-            disabled: editor.isDestroyed || !editor.can().chain().undo().run(),
+            disabled:
+              editor.isDestroyed ||
+              (history ? !history.canUndo : !editor.can().chain().undo().run()),
             onSelect: () => {
+              if (history) {
+                history.undo();
+                return;
+              }
               editor.chain().focus().undo().run();
             },
           },
@@ -500,8 +523,14 @@ export function DocumentToolbar({
             icon: <Redo2 size={15} />,
             shortcut: redoCommand.shortcut?.label,
             ariaKeyShortcuts: redoCommand.shortcut?.aria,
-            disabled: editor.isDestroyed || !editor.can().chain().redo().run(),
+            disabled:
+              editor.isDestroyed ||
+              (history ? !history.canRedo : !editor.can().chain().redo().run()),
             onSelect: () => {
+              if (history) {
+                history.redo();
+                return;
+              }
               editor.chain().focus().redo().run();
             },
           },

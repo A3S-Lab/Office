@@ -40,8 +40,10 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `metadata` | `Y.Map` | Protocol version, artifact identity, kind, and initialized state. |
 | `bootstrap.initializers` | `Y.Array` | Detects more than one independent initial seed. |
 | `markdown.source` | `Y.Text` | Canonical Markdown source. |
-| `document.content` | `Y.XmlFragment` | Planned ProseMirror document content. |
-| `document.review` | Typed maps/arrays | Planned comments, suggestions, and revision decisions. |
+| `document.content` | `Y.XmlFragment` | ProseMirror document, including section layout, comment anchors, and tracked-change marks. |
+| `document.options` | `Y.Map` | Document-level editable options such as page color and tracking mode. |
+| `document.comments` / `document.comment-order` | `Y.Map` / `Y.Array` | ID-keyed durable comment/reply records and deterministic presentation order. |
+| `document.bibliography*` | Typed maps/arrays | Bibliography settings and ID-keyed citation sources. |
 | `spreadsheet.*` | Typed maps/arrays | Planned sheet order, sparse cells, styles, objects, and review state. |
 | `presentation.*` | Typed maps/arrays | Planned slide order, scene objects, text, notes, and comments. |
 | `pdf.*` | Typed maps/arrays | Planned source identity, annotations, forms, and reviewed page operations. |
@@ -74,17 +76,32 @@ Remaining before this phase is production complete:
 
 ### Phase 2: Document
 
-- Bind TipTap to `document.content` through
-  `@tiptap/extension-collaboration`; disable StarterKit undo/redo and route all
-  history through the collaboration binding.
-- Keep page layout, OOXML relationships, unsupported package parts, and export
-  fidelity outside the ProseMirror fragment, but synchronize typed roots for
-  user-editable format state.
-- Store comments, tracked changes, replies, resolutions, and accept/reject
-  decisions as durable typed records with stable IDs and anchors.
+Status: browser collaboration foundation implemented; native parity and the
+remaining review/presence matrix are pending.
+
+- TipTap is bound to `document.content` through
+  `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
+  collaboration binding owns local history.
+- Section/page OOXML state, comment anchors, and tracked-change marks converge
+  in the ProseMirror fragment. Document-level page color, tracking mode,
+  comment threads/replies, and bibliography sources use conflict-local typed
+  roots instead of a serialized document blob.
+- React, Vue, and Web Component adapters accept the same initialized session.
+- Append-only record claims deduplicate identical offline retries and fail
+  closed when disconnected clients assign different records to one stable ID.
+- Browser tests cover initialization, bootstrap races, sidecar convergence,
+  stable-ID retries/collisions, stale-snapshot delete conflicts, local-only
+  undo, permission guards, real TipTap peer edits, remote projection,
+  StrictMode, and framework parity.
+
+Remaining:
+
 - Add awareness-backed cursors and selections without persisting presence.
+- Add suggestion-only authorization and durable accept/reject decision audit
+  records; `comment` and `suggest` remain read-only until those models exist.
 - Prove concurrent text, table, list, section, comment, and revision workflows,
   plus DOCX import/export after merged edits.
+- Add cross-language Yjs/Yrs fixtures and native client convergence.
 
 Exit criterion: two browsers and one native client converge on document
 content and review state; local undo never removes a remote change; a DOCX

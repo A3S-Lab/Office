@@ -10,6 +10,12 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import {
+  createWorkOfficeDocumentCollaborationBinding,
+  readWorkOfficeDocumentCollaboration,
+  type WorkOfficeDocumentCollaborationBinding,
+} from '../../../collaboration/office-document-collaboration';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -39,8 +45,8 @@ import {
   documentPageColor,
   normalizeDocumentPageColor,
 } from '../work-document-page-color';
-import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import { documentPageSurfaceGeometry } from '../work-document-page-frames';
+import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import { resolveDocumentPageSize } from '../work-document-page-size';
 import {
   DocumentPagination,
@@ -125,6 +131,7 @@ import {
 
 export interface DocumentEditorProps {
   artifactId?: string;
+  collaboration?: WorkOfficeCollaborationSession;
   content: WorkDocumentContent;
   extensions?: Extensions;
   preview: boolean;
@@ -156,11 +163,115 @@ function createTrackedDocumentChange(_kind: WorkDocumentChangeKind) {
   };
 }
 
-export function DocumentEditor({
+interface DocumentCollaborationBridge {
+  getContent(): WorkDocumentContent | null;
+  isTracking(): boolean;
+  onContentChange(content: WorkDocumentContent): void;
+  onTrackingChange(enabled: boolean): void;
+}
+
+interface DocumentEditorSurfaceProps extends DocumentEditorProps {
+  collaborationBinding?: WorkOfficeDocumentCollaborationBinding;
+  collaborationBridge?: { current: DocumentCollaborationBridge };
+  collaborationInitialContent?: WorkDocumentContent;
+}
+
+export function DocumentEditor(props: DocumentEditorProps) {
+  if (!props.collaboration) return <DocumentEditorSurface {...props} />;
+  return (
+    <CollaborativeDocumentEditor
+      {...props}
+      collaboration={props.collaboration}
+    />
+  );
+}
+
+function CollaborativeDocumentEditor(
+  props: DocumentEditorProps & {
+    collaboration: WorkOfficeCollaborationSession;
+  },
+) {
+  const { collaboration, extensions = EMPTY_DOCUMENT_EXTENSIONS } = props;
+  const collaborationRef = useRef(collaboration);
+  const extensionsRef = useRef(extensions);
+  if (collaborationRef.current !== collaboration) {
+    throw new Error(
+      'DocumentEditor collaboration sessions cannot be replaced while mounted. Remount the editor for another shared document.',
+    );
+  }
+  if (extensionsRef.current !== extensions) {
+    throw new Error(
+      'DocumentEditor extensions cannot be replaced while a collaboration session is mounted. Remount the editor to change its schema.',
+    );
+  }
+  const initial = useRef<WorkDocumentContent | null>(null);
+  if (!initial.current) {
+    initial.current = readWorkOfficeDocumentCollaboration(collaboration);
+  }
+  const bridge = useRef<DocumentCollaborationBridge>({
+    getContent: () => initial.current,
+    isTracking: () => Boolean(initial.current?.trackChanges),
+    onContentChange: () => undefined,
+    onTrackingChange: () => undefined,
+  });
+  const [binding, setBinding] =
+    useState<WorkOfficeDocumentCollaborationBinding>();
+  const bindingRef = useRef<WorkOfficeDocumentCollaborationBinding | undefined>(
+    undefined,
+  );
+  const disposeTokenRef = useRef<object | undefined>(undefined);
+
+  useEffect(() => {
+    disposeTokenRef.current = undefined;
+    const current =
+      bindingRef.current ??
+      createWorkOfficeDocumentCollaborationBinding(collaboration, {
+        additionalExtensions: extensionsRef.current,
+        workExtensions: {
+          getContent: () => bridge.current.getContent(),
+          isTracking: () => bridge.current.isTracking(),
+          createChange: createTrackedDocumentChange,
+          onContentChange: (content: WorkDocumentContent) =>
+            bridge.current.onContentChange(content),
+          onTrackingChange: (enabled: boolean) =>
+            bridge.current.onTrackingChange(enabled),
+        },
+      });
+    bindingRef.current = current;
+    setBinding(current);
+    return () => {
+      const token = {};
+      disposeTokenRef.current = token;
+      queueMicrotask(() => {
+        if (disposeTokenRef.current !== token) return;
+        if (bindingRef.current === current) bindingRef.current = undefined;
+        current.destroy();
+      });
+    };
+  }, [collaboration]);
+
+  if (!binding) {
+    return <WorkEditorLoadingState title="正在准备协作文档" />;
+  }
+  return (
+    <DocumentEditorSurface
+      {...props}
+      collaborationBinding={binding}
+      collaborationBridge={bridge}
+      collaborationInitialContent={initial.current}
+    />
+  );
+}
+
+function DocumentEditorSurface({
   artifactId,
+  collaboration,
+  collaborationBinding,
+  collaborationBridge,
+  collaborationInitialContent,
   content,
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
-  preview,
+  preview: requestedPreview,
   saveStatus = '已自动保存',
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
@@ -169,7 +280,12 @@ export function DocumentEditor({
   onChange,
   onAgentRequest,
   onReviewConflict,
-}: DocumentEditorProps) {
+}: DocumentEditorSurfaceProps) {
+  const collaborationEditable = !collaboration || collaboration.mode === 'edit';
+  const preview = requestedPreview || !collaborationEditable;
+  const readOnly = preview;
+  const initialContentRef = useRef(collaborationInitialContent ?? content);
+  const effectiveContent = collaboration ? initialContentRef.current : content;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const pageHeaderRef = useRef<HTMLElement>(null);
   const pageFooterRef = useRef<HTMLElement>(null);
@@ -180,18 +296,19 @@ export function DocumentEditor({
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
-  const contentRef = useRef(content);
+  const contentRef = useRef(effectiveContent);
   const onChangeRef = useRef(onChange);
-  const trackChangesRef = useRef(Boolean(content.trackChanges));
+  const trackChangesRef = useRef(Boolean(effectiveContent.trackChanges));
+  const collaborationBindingRef = useRef(collaborationBinding);
   const normalizedContent = useMemo(
-    () => normalizeDocumentHtml(content),
-    [content],
+    () => normalizeDocumentHtml(effectiveContent),
+    [effectiveContent],
   );
   const editorInput = useMemo(
-    () => resolveWorkDocumentEditorInput(content, normalizedContent),
-    [content, normalizedContent],
+    () => resolveWorkDocumentEditorInput(effectiveContent, normalizedContent),
+    [effectiveContent, normalizedContent],
   );
-  const initialContentRef = useRef(editorInput.source);
+  const initialEditorSourceRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const activeReviewConflictsRef = useRef<WorkDocumentReviewConflict[]>([]);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
@@ -217,35 +334,53 @@ export function DocumentEditor({
   const [selectionVersion, setSelectionVersion] = useState(0);
   const [statisticsOpen, setStatisticsOpen] = useState(false);
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
-  contentRef.current = content;
+  if (!collaboration) contentRef.current = content;
   onChangeRef.current = onChange;
-  trackChangesRef.current = Boolean(content.trackChanges);
+  trackChangesRef.current = Boolean(contentRef.current.trackChanges);
+  const commitContentChange = useCallback((next: WorkDocumentContent) => {
+    const previous = contentRef.current;
+    const binding = collaborationBindingRef.current;
+    binding?.updateSidecars(previous, next);
+    contentRef.current = next;
+    if (!binding) onChangeRef.current(next);
+  }, []);
+  collaborationBindingRef.current = collaborationBinding;
+  if (collaborationBridge) {
+    collaborationBridge.current = {
+      getContent: () => contentRef.current,
+      isTracking: () => trackChangesRef.current,
+      onContentChange: (next) => commitContentChange(next),
+      onTrackingChange: (trackChanges) => {
+        trackChangesRef.current = trackChanges;
+        commitContentChange({ ...contentRef.current, trackChanges });
+      },
+    };
+  }
   const editorExtensions = useMemo(
     () =>
       mergeOfficeTiptapExtensions(
         'DocumentEditor',
         [
-          ...createWorkDocumentExtensions({
-            getContent: () => contentRef.current,
-            isTracking: () => trackChangesRef.current,
-            createChange: createTrackedDocumentChange,
-            onContentChange: (next) => {
-              contentRef.current = next;
-              onChangeRef.current(next);
-            },
-            onTrackingChange: (trackChanges) => {
-              trackChangesRef.current = trackChanges;
-              const next = { ...contentRef.current, trackChanges };
-              contentRef.current = next;
-              onChangeRef.current(next);
-            },
-          }),
+          ...(collaborationBinding?.extensions ??
+            createWorkDocumentExtensions({
+              getContent: () => contentRef.current,
+              isTracking: () => trackChangesRef.current,
+              createChange: createTrackedDocumentChange,
+              onContentChange: (next) => {
+                commitContentChange(next);
+              },
+              onTrackingChange: (trackChanges) => {
+                trackChangesRef.current = trackChanges;
+                const next = { ...contentRef.current, trackChanges };
+                commitContentChange(next);
+              },
+            })),
           Placeholder.configure({ placeholder: '在这里开始输入…' }),
           DocumentPagination,
         ],
-        extensions,
+        collaboration ? EMPTY_DOCUMENT_EXTENSIONS : extensions,
       ),
-    [extensions],
+    [collaboration, collaborationBinding, commitContentChange, extensions],
   );
   const editorProps = useMemo(
     () => ({
@@ -260,8 +395,8 @@ export function DocumentEditor({
   );
   const editor = useEditor({
     extensions: editorExtensions,
-    content: initialContentRef.current,
-    editable: !preview,
+    content: collaboration ? undefined : initialEditorSourceRef.current,
+    editable: !readOnly,
     editorProps,
     onUpdate: ({ editor: current }) => {
       const anchors = collectDocumentCommentAnchors(current.state.doc);
@@ -289,8 +424,10 @@ export function DocumentEditor({
         ),
       };
       appliedSourceKeyRef.current = `model:${model.revision}:${model.htmlFingerprint}`;
-      contentRef.current = next;
-      onChange(next);
+      if (!collaborationBinding) {
+        contentRef.current = next;
+        onChangeRef.current(next);
+      }
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
   });
@@ -298,17 +435,59 @@ export function DocumentEditor({
     activeConflictsRef: activeReviewConflictsRef,
     appliedSourceKeyRef,
     artifactId,
-    content,
+    content: collaboration ? contentRef.current : content,
     editor,
     editorInput,
     normalizedContent,
     onReviewConflict,
+    reconcileControlledUpdates: !collaboration,
   });
   const documentComments = useDocumentComments({
     contentRef,
     editor,
     onBeforeDraft: () => setTaskPane(null),
   });
+  const [collaborationVersion, setCollaborationVersion] = useState(0);
+  const handledCollaborationVersionRef = useRef(0);
+  const pendingCollaborationContentRef = useRef<
+    WorkDocumentContent | undefined
+  >(undefined);
+  useEffect(() => {
+    if (!collaborationBinding) return;
+    const unsubscribeChange = collaborationBinding.subscribe((change) => {
+      pendingCollaborationContentRef.current = change.content;
+      contentRef.current = change.content;
+      trackChangesRef.current = Boolean(change.content.trackChanges);
+      setCollaborationVersion((value) => value + 1);
+    });
+    const unsubscribeError = collaborationBinding.subscribeError((error) => {
+      queueMicrotask(() => {
+        throw error;
+      });
+    });
+    const unsubscribeHistory = collaborationBinding.subscribeHistory(() => {
+      setCollaborationVersion((value) => value + 1);
+    });
+    return () => {
+      unsubscribeChange();
+      unsubscribeError();
+      unsubscribeHistory();
+    };
+  }, [collaborationBinding]);
+  useEffect(() => {
+    if (
+      collaborationVersion === handledCollaborationVersionRef.current ||
+      !pendingCollaborationContentRef.current
+    ) {
+      return;
+    }
+    handledCollaborationVersionRef.current = collaborationVersion;
+    const next = pendingCollaborationContentRef.current;
+    pendingCollaborationContentRef.current = undefined;
+    contentRef.current = next;
+    trackChangesRef.current = Boolean(next.trackChanges);
+    onChangeRef.current(next);
+  }, [collaborationVersion]);
   const rememberTaskPaneInvoker = useCallback(() => {
     const active = document.activeElement;
     if (active instanceof HTMLElement && active.isConnected) {
@@ -557,7 +736,7 @@ export function DocumentEditor({
     if (!editor) return;
     const applyEditableState = () => {
       if (editor.isDestroyed) return;
-      editor.setEditable(!preview);
+      editor.setEditable(!readOnly);
       const editorDom = editor.view.dom;
       editorDom.setAttribute('role', preview ? 'document' : 'textbox');
       if (preview) {
@@ -571,7 +750,7 @@ export function DocumentEditor({
     return () => {
       editor.off('mount', applyEditableState);
     };
-  }, [editor, preview]);
+  }, [editor, preview, readOnly]);
 
   useEffect(() => {
     if (!editor) return;
@@ -588,7 +767,9 @@ export function DocumentEditor({
   }, [editor, spellcheckEnabled]);
 
   const section = editor ? activeDocumentSection(editor) : null;
-  const layout = section?.layout ?? documentInitialSectionLayout(content);
+  const currentContent = contentRef.current;
+  const layout =
+    section?.layout ?? documentInitialSectionLayout(currentContent);
   const resolvedPageSize = resolveDocumentPageSize(layout);
   const resolvedMargins = resolveDocumentPageMargins(layout, 1);
   const margins = resolvedMargins.body;
@@ -760,8 +941,7 @@ export function DocumentEditor({
     if (!pageColor) return;
     if (pageColor !== contentRef.current.pageColor) {
       const next = { ...contentRef.current, pageColor };
-      contentRef.current = next;
-      onChangeRef.current(next);
+      commitContentChange(next);
     }
     restoreDocumentBodyFocus();
   };
@@ -871,12 +1051,22 @@ export function DocumentEditor({
       ) : (
         <DocumentToolbar
           editor={editor}
+          history={
+            collaborationBinding
+              ? {
+                  canRedo: collaborationBinding.canRedo(),
+                  canUndo: collaborationBinding.canUndo(),
+                  redo: () => collaborationBinding.redo(),
+                  undo: () => collaborationBinding.undo(),
+                }
+              : undefined
+          }
           fileActions={fileActions}
           layout={layout}
           layoutFonts={layoutFonts}
           layoutOpen={layoutOpen}
           navigationOpen={navigationOpen}
-          pageColor={documentPageColor(content.pageColor)}
+          pageColor={documentPageColor(currentContent.pageColor)}
           showPageNumbers={visibleChrome.showPageNumber}
           showRulers={showRulers}
           spellcheckEnabled={spellcheckEnabled}
@@ -908,7 +1098,7 @@ export function DocumentEditor({
           onInsertCaption={documentInsert.insertCaption}
           onInsertCrossReference={documentInsert.insertCrossReference}
           citationsOpen={citationsOpen}
-          citationSourceCount={content.bibliography?.sources.length ?? 0}
+          citationSourceCount={currentContent.bibliography?.sources.length ?? 0}
           onToggleCitations={() => void toggleTaskPane('citations')}
           onInsertField={documentInsert.insertField}
           onRefreshFields={refreshDocumentFields}
@@ -917,7 +1107,7 @@ export function DocumentEditor({
           commentsOpen={documentComments.open}
           commentCount={documentComments.comments.length}
           onToggleComments={() => void toggleCommentsPanel()}
-          trackChanges={Boolean(content.trackChanges)}
+          trackChanges={Boolean(currentContent.trackChanges)}
           changesOpen={changesOpen}
           changeCount={changes.length}
           findReplaceMode={findReplaceMode}
@@ -976,7 +1166,7 @@ export function DocumentEditor({
               ? pagination.pages
               : [firstPageDescriptor]
             ).map((page) => ({
-              backgroundColor: documentPageColor(content.pageColor),
+              backgroundColor: documentPageColor(currentContent.pageColor),
               orientation: page.layout.orientation,
               pageNumber: page.pageNumber,
               physicalPage: page.physicalPage,
@@ -1097,7 +1287,9 @@ export function DocumentEditor({
                       padding: paginationGeometry
                         ? `${firstPageDescriptor.page.marginTop}px 0 ${lastPageDescriptor.page.marginBottom}px`
                         : `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
-                      backgroundColor: documentPageColor(content.pageColor),
+                      backgroundColor: documentPageColor(
+                        currentContent.pageColor,
+                      ),
                       width:
                         viewMode === 'page'
                           ? (paginationGeometry?.width ?? kernelPage.width)
@@ -1107,7 +1299,7 @@ export function DocumentEditor({
                           ? (paginationGeometry?.height ?? kernelPage.height)
                           : undefined,
                       '--work-document-page-color': documentPageColor(
-                        content.pageColor,
+                        currentContent.pageColor,
                       ),
                       '--work-document-page-margin-left': `${marginPixels.left}px`,
                       '--work-document-page-margin-right': `${marginPixels.right}px`,
@@ -1134,7 +1326,7 @@ export function DocumentEditor({
                 >
                   {viewMode === 'page' && pagination.pageCount && (
                     <DocumentPageStack
-                      pageColor={documentPageColor(content.pageColor)}
+                      pageColor={documentPageColor(currentContent.pageColor)}
                       pageCount={pagination.pageCount}
                       pageGap={kernelPage.pageGap}
                       pageHeight={kernelPage.height}
@@ -1320,7 +1512,7 @@ export function DocumentEditor({
         {!preview && citationsOpen && (
           <DocumentCitationsPanel
             editor={editor}
-            content={content}
+            content={currentContent}
             onClose={closeTaskPane}
             onDirtyChange={setCitationsDirty}
           />
@@ -1329,7 +1521,7 @@ export function DocumentEditor({
           <DocumentChangesPanel
             editor={editor}
             changes={changes}
-            trackChanges={Boolean(content.trackChanges)}
+            trackChanges={Boolean(currentContent.trackChanges)}
             onTrackChangesChange={(enabled) =>
               editor.commands.setDocumentTrackChanges(enabled)
             }
@@ -1369,7 +1561,7 @@ export function DocumentEditor({
         </WorkOfficeStatusBar>
       ) : (
         <DocumentStatusBar
-          bibliographyCount={content.bibliography?.sources.length ?? 0}
+          bibliographyCount={currentContent.bibliography?.sources.length ?? 0}
           citationCount={citationCount}
           currentPage={currentPage}
           pageCount={pageCount}

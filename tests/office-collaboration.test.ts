@@ -4,10 +4,35 @@ import {
   createOfficeCollaborationSession,
   createOfficeMarkdownCollaborationBinding,
   initializeOfficeMarkdownCollaboration,
+  type OfficeCollaborationOrigin,
   OfficeCollaborationError,
   readOfficeCollaborationMetadata,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
+
+test('rejects forged transaction and binding origins at runtime', () => {
+  const session = createOfficeCollaborationSession({
+    artifactId: 'notes-invalid-origin',
+    kind: 'markdown',
+  });
+  initializeOfficeMarkdownCollaboration(session, {
+    type: 'markdown',
+    markdown: 'Shared',
+  });
+  const invalidOrigin = {
+    protocol: 'a3s.office.collaboration',
+    kind: 'untrusted',
+  } as unknown as OfficeCollaborationOrigin;
+
+  expect(() => session.transact(() => undefined, invalidOrigin)).toThrow(
+    /origin kind 'untrusted' is invalid/,
+  );
+  expect(() =>
+    createOfficeMarkdownCollaborationBinding(session, {
+      origin: invalidOrigin,
+    }),
+  ).toThrow(/origin kind 'untrusted' is invalid/);
+});
 
 test('initializes one versioned Markdown collaboration document', () => {
   const document = new Y.Doc();

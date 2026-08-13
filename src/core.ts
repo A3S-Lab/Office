@@ -1,39 +1,45 @@
+export type {
+  WorkOfficeCollaborationActor as OfficeCollaborationActor,
+  WorkOfficeCollaborationActorKind as OfficeCollaborationActorKind,
+  WorkOfficeCollaborationAwareness as OfficeCollaborationAwareness,
+  WorkOfficeCollaborationErrorCode as OfficeCollaborationErrorCode,
+  WorkOfficeCollaborationMetadata as OfficeCollaborationMetadata,
+  WorkOfficeCollaborationMode as OfficeCollaborationMode,
+  WorkOfficeCollaborationOrigin as OfficeCollaborationOrigin,
+  WorkOfficeCollaborationOriginKind as OfficeCollaborationOriginKind,
+  WorkOfficeCollaborationSession as OfficeCollaborationSession,
+  WorkOfficeCollaborationSessionOptions as OfficeCollaborationSessionOptions,
+} from './internal/collaboration/office-collaboration';
 export {
-  createWorkArtifact as createArtifact,
-  createWorkId as createOfficeId,
-  WORK_TEMPLATES as officeTemplates,
-} from './internal/features/work/work-templates';
+  createWorkOfficeCollaborationSession as createOfficeCollaborationSession,
+  readWorkOfficeCollaborationMetadata as readOfficeCollaborationMetadata,
+  WORK_OFFICE_COLLABORATION_NAMESPACE as OFFICE_COLLABORATION_NAMESPACE,
+  WORK_OFFICE_COLLABORATION_PROTOCOL as OFFICE_COLLABORATION_PROTOCOL,
+  WORK_OFFICE_COLLABORATION_VERSION as OFFICE_COLLABORATION_VERSION,
+  WorkOfficeCollaborationError as OfficeCollaborationError,
+} from './internal/collaboration/office-collaboration';
+export type {
+  WorkOfficeDocumentCollaborationBinding as OfficeDocumentCollaborationBinding,
+  WorkOfficeDocumentCollaborationBindingOptions as OfficeDocumentCollaborationBindingOptions,
+  WorkOfficeDocumentCollaborationChange as OfficeDocumentCollaborationChange,
+} from './internal/collaboration/office-document-collaboration';
 export {
-  createWorkArtifactBlob as createArtifactBlob,
-  exportWorkArtifact as downloadArtifact,
-  importWorkFile as importOfficeFile,
-  WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT,
-  workKindForFile as officeKindForFile,
-} from './internal/features/work/work-file-io';
-export type { WorkArtifactExportOptions as ArtifactExportOptions } from './internal/features/work/work-file-io';
-export { defaultPptxRuntimeUrl } from './internal/features/work/work-presentation-file-io';
+  createWorkOfficeDocumentCollaborationBinding as createOfficeDocumentCollaborationBinding,
+  initializeWorkOfficeDocumentCollaboration as initializeOfficeDocumentCollaboration,
+  readWorkOfficeDocumentCollaboration as readOfficeDocumentCollaboration,
+  workOfficeDocumentCollaborationFragment as officeDocumentCollaborationFragment,
+} from './internal/collaboration/office-document-collaboration';
+export type {
+  WorkOfficeMarkdownCollaborationBinding as OfficeMarkdownCollaborationBinding,
+  WorkOfficeMarkdownCollaborationBindingOptions as OfficeMarkdownCollaborationBindingOptions,
+  WorkOfficeMarkdownCollaborationChange as OfficeMarkdownCollaborationChange,
+} from './internal/collaboration/office-markdown-collaboration';
 export {
-  forgetWorkSourceBlob as forgetSourceBlob,
-  readWorkSourceBlob as readSourceBlob,
-  rememberWorkSourceBlob as registerSourceBlob,
-} from './internal/features/work/work-repository';
-export {
-  exportWorkArtifactPdf as downloadArtifactPdf,
-  type WorkPdfExportOptions as PdfExportOptions,
-  workPdfPagesForExport as pdfPagesForExport,
-} from './internal/features/work/work-pdf-export';
-export {
-  OFFICE_NOTIFICATION_EVENT,
-  type OfficeNotification,
-  type OfficeNotificationTone,
-  subscribeOfficeNotifications,
-} from './internal/state/app-state';
-export {
-  createWorkAgentProposalRequest as createAgentProposalRequest,
-  WORK_AGENT_PROPOSAL_PROTOCOL as AGENT_PROPOSAL_PROTOCOL,
-  workAgentProposalInstruction as createAgentProposalInstruction,
-  workAgentProposalStatus as getAgentProposalStatus,
-} from './internal/features/work/work-agent-proposal';
+  createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
+  initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,
+  readWorkOfficeMarkdownCollaboration as readOfficeMarkdownCollaboration,
+  replaceWorkOfficeMarkdownCollaboration as replaceOfficeMarkdownCollaboration,
+} from './internal/collaboration/office-markdown-collaboration';
 export type {
   WorkAgentProposal as AgentProposal,
   WorkAgentProposalApplyResult as AgentProposalApplyResult,
@@ -44,7 +50,19 @@ export type {
   WorkAgentProposalStatus as AgentProposalStatus,
   WorkAgentProposalTarget as AgentProposalTarget,
 } from './internal/features/work/work-agent-proposal';
+export {
+  createWorkAgentProposalRequest as createAgentProposalRequest,
+  WORK_AGENT_PROPOSAL_PROTOCOL as AGENT_PROPOSAL_PROTOCOL,
+  workAgentProposalInstruction as createAgentProposalInstruction,
+  workAgentProposalStatus as getAgentProposalStatus,
+} from './internal/features/work/work-agent-proposal';
 export type { WorkEditorAgentRequest as EditorAgentRequest } from './internal/features/work/work-agent-request';
+export type {
+  WorkDocumentReviewConflict as DocumentReviewConflict,
+  WorkDocumentReviewConflictEvent as DocumentReviewConflictEvent,
+  WorkDocumentReviewConflictReason as DocumentReviewConflictReason,
+  WorkDocumentReviewKind as DocumentReviewKind,
+} from './internal/features/work/work-document-review-conflicts';
 export type {
   WorkDocumentSelectionCommandFailure as DocumentSelectionCommandFailure,
   WorkDocumentSelectionCommandResult as DocumentSelectionCommandResult,
@@ -55,6 +73,14 @@ export type {
   WorkDocumentSelectionSnapshot as DocumentSelectionSnapshot,
   WorkGetDocumentSelectionMenuItems as GetDocumentSelectionMenuItems,
 } from './internal/features/work/work-document-selection-menu';
+export type { WorkArtifactExportOptions as ArtifactExportOptions } from './internal/features/work/work-file-io';
+export {
+  createWorkArtifactBlob as createArtifactBlob,
+  exportWorkArtifact as downloadArtifact,
+  importWorkFile as importOfficeFile,
+  WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT,
+  workKindForFile as officeKindForFile,
+} from './internal/features/work/work-file-io';
 export type {
   WorkGetMarkdownSelectionMenuItems as GetMarkdownSelectionMenuItems,
   WorkMarkdownSelectionCommandFailure as MarkdownSelectionCommandFailure,
@@ -65,16 +91,22 @@ export type {
   WorkMarkdownSelectionMenuItem as MarkdownSelectionMenuItem,
   WorkMarkdownSelectionSnapshot as MarkdownSelectionSnapshot,
 } from './internal/features/work/work-markdown-selection-menu';
-export type {
-  WorkDocumentReviewConflict as DocumentReviewConflict,
-  WorkDocumentReviewConflictEvent as DocumentReviewConflictEvent,
-  WorkDocumentReviewConflictReason as DocumentReviewConflictReason,
-  WorkDocumentReviewKind as DocumentReviewKind,
-} from './internal/features/work/work-document-review-conflicts';
 export {
-  workArtifactExtension as artifactExtension,
-  workArtifactKindLabel as artifactKindLabel,
-} from './internal/features/work/work-types';
+  exportWorkArtifactPdf as downloadArtifactPdf,
+  type WorkPdfExportOptions as PdfExportOptions,
+  workPdfPagesForExport as pdfPagesForExport,
+} from './internal/features/work/work-pdf-export';
+export { defaultPptxRuntimeUrl } from './internal/features/work/work-presentation-file-io';
+export {
+  forgetWorkSourceBlob as forgetSourceBlob,
+  readWorkSourceBlob as readSourceBlob,
+  rememberWorkSourceBlob as registerSourceBlob,
+} from './internal/features/work/work-repository';
+export {
+  createWorkArtifact as createArtifact,
+  createWorkId as createOfficeId,
+  WORK_TEMPLATES as officeTemplates,
+} from './internal/features/work/work-templates';
 export type {
   WorkArtifact as OfficeArtifact,
   WorkArtifactContent as OfficeArtifactContent,
@@ -91,33 +123,12 @@ export type {
 } from './internal/features/work/work-types';
 export * from './internal/features/work/work-types';
 export {
-  createWorkOfficeCollaborationSession as createOfficeCollaborationSession,
-  readWorkOfficeCollaborationMetadata as readOfficeCollaborationMetadata,
-  WORK_OFFICE_COLLABORATION_NAMESPACE as OFFICE_COLLABORATION_NAMESPACE,
-  WORK_OFFICE_COLLABORATION_PROTOCOL as OFFICE_COLLABORATION_PROTOCOL,
-  WORK_OFFICE_COLLABORATION_VERSION as OFFICE_COLLABORATION_VERSION,
-  WorkOfficeCollaborationError as OfficeCollaborationError,
-} from './internal/collaboration/office-collaboration';
-export type {
-  WorkOfficeCollaborationActor as OfficeCollaborationActor,
-  WorkOfficeCollaborationActorKind as OfficeCollaborationActorKind,
-  WorkOfficeCollaborationAwareness as OfficeCollaborationAwareness,
-  WorkOfficeCollaborationErrorCode as OfficeCollaborationErrorCode,
-  WorkOfficeCollaborationMetadata as OfficeCollaborationMetadata,
-  WorkOfficeCollaborationMode as OfficeCollaborationMode,
-  WorkOfficeCollaborationOrigin as OfficeCollaborationOrigin,
-  WorkOfficeCollaborationOriginKind as OfficeCollaborationOriginKind,
-  WorkOfficeCollaborationSession as OfficeCollaborationSession,
-  WorkOfficeCollaborationSessionOptions as OfficeCollaborationSessionOptions,
-} from './internal/collaboration/office-collaboration';
+  workArtifactExtension as artifactExtension,
+  workArtifactKindLabel as artifactKindLabel,
+} from './internal/features/work/work-types';
 export {
-  createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
-  initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,
-  readWorkOfficeMarkdownCollaboration as readOfficeMarkdownCollaboration,
-  replaceWorkOfficeMarkdownCollaboration as replaceOfficeMarkdownCollaboration,
-} from './internal/collaboration/office-markdown-collaboration';
-export type {
-  WorkOfficeMarkdownCollaborationBinding as OfficeMarkdownCollaborationBinding,
-  WorkOfficeMarkdownCollaborationBindingOptions as OfficeMarkdownCollaborationBindingOptions,
-  WorkOfficeMarkdownCollaborationChange as OfficeMarkdownCollaborationChange,
-} from './internal/collaboration/office-markdown-collaboration';
+  OFFICE_NOTIFICATION_EVENT,
+  type OfficeNotification,
+  type OfficeNotificationTone,
+  subscribeOfficeNotifications,
+} from './internal/state/app-state';

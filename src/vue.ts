@@ -2,14 +2,14 @@ import type { Extensions } from '@tiptap/core';
 import { createElement, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
-  DocumentEditor as ReactDocumentEditor,
-  type DocumentLayoutFont,
-  MarkdownEditor as ReactMarkdownEditor,
-  type OfficeFileAction,
-  PdfViewer as ReactPdfViewer,
-  PresentationEditor as ReactPresentationEditor,
-  SpreadsheetEditor as ReactSpreadsheetEditor,
-} from './react';
+  defineComponent,
+  h,
+  onBeforeUnmount,
+  onMounted,
+  onUpdated,
+  type PropType,
+  ref,
+} from 'vue';
 import type {
   DocumentContent,
   DocumentReviewConflictEvent,
@@ -21,16 +21,16 @@ import type {
   PresentationContent,
   SpreadsheetContent,
 } from './core';
-import {
-  defineComponent,
-  h,
-  onBeforeUnmount,
-  onMounted,
-  onUpdated,
-  ref,
-  type PropType,
-} from 'vue';
 import type { OfficeTheme } from './office-surface';
+import {
+  type DocumentLayoutFont,
+  type OfficeFileAction,
+  DocumentEditor as ReactDocumentEditor,
+  MarkdownEditor as ReactMarkdownEditor,
+  PdfViewer as ReactPdfViewer,
+  PresentationEditor as ReactPresentationEditor,
+  SpreadsheetEditor as ReactSpreadsheetEditor,
+} from './react';
 
 function createReactRenderer(renderNode: () => ReactNode) {
   const host = ref<HTMLDivElement | null>(null);
@@ -71,6 +71,7 @@ export const DocumentEditor = defineComponent({
   name: 'A3SDocumentEditor',
   props: {
     artifactId: String,
+    collaboration: Object as PropType<OfficeCollaborationSession>,
     content: {
       required: true,
       type: Object as PropType<DocumentContent>,
@@ -103,6 +104,7 @@ export const DocumentEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactDocumentEditor, {
         artifactId: props.artifactId,
+        collaboration: props.collaboration,
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,

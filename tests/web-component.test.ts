@@ -1,10 +1,11 @@
-import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, waitFor } from '@testing-library/dom';
+import { Extension } from '@tiptap/core';
 import {
   createOfficeCollaborationSession,
   type DocumentContent,
   type DocumentReviewConflictEvent,
+  initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
@@ -105,6 +106,33 @@ test('dispatches controlled document review conflicts from the custom element', 
     kind: 'comment',
     reason: 'text-changed',
   });
+
+  element.remove();
+});
+
+test('passes a synchronized Document session through the custom element property', async () => {
+  defineA3SOfficeElements();
+  const content: DocumentContent = {
+    type: 'document',
+    html: '<p>Shared through an element</p>',
+    pageSize: 'a4',
+  };
+  const session = createOfficeCollaborationSession({
+    artifactId: 'element-shared-document',
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(session, content);
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.document,
+  ) as A3SDocumentEditorElement;
+  element.collaboration = session;
+  element.content = content;
+  document.body.append(element);
+
+  await waitFor(() => {
+    expect(element.querySelector('[aria-label="文档正文"]')).not.toBeNull();
+  });
+  expect(element.collaboration).toBe(session);
 
   element.remove();
 });

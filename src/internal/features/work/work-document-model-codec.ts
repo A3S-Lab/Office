@@ -1,7 +1,7 @@
 import {
+  type Extensions,
   generateHTML,
   getSchema,
-  type Extensions,
   type JSONContent,
 } from '@tiptap/core';
 import { DOMParser as ProseMirrorDOMParser } from '@tiptap/pm/model';
@@ -17,6 +17,15 @@ import type { WorkDocumentContent, WorkDocumentNode } from './work-types';
 let schema: ReturnType<typeof getSchema> | null = null;
 let extensions: Extensions | null = null;
 
+export function workDocumentSchema(): ReturnType<typeof getSchema> {
+  schema ??= getSchema(documentExtensions());
+  return schema;
+}
+
+export function serializeWorkDocumentNode(root: WorkDocumentNode): string {
+  return generateHTML(root as unknown as JSONContent, documentExtensions());
+}
+
 export function createWorkDocumentModelFromContent(
   content: WorkDocumentContent,
 ): WorkDocumentContent {
@@ -26,8 +35,7 @@ export function createWorkDocumentModelFromContent(
     synchronized.html,
     'text/html',
   );
-  schema ??= getSchema(documentExtensions());
-  const root = ProseMirrorDOMParser.fromSchema(schema)
+  const root = ProseMirrorDOMParser.fromSchema(workDocumentSchema())
     .parse(document.body)
     .toJSON() as unknown as WorkDocumentNode;
   return {
@@ -43,10 +51,7 @@ export function materializeWorkDocumentContent(
   if (!model) return content;
   let html: string;
   try {
-    html = generateHTML(
-      model.root as unknown as JSONContent,
-      documentExtensions(),
-    );
+    html = serializeWorkDocumentNode(model.root);
   } catch (error) {
     throw new Error(
       'The structured document model cannot be serialized by this Office schema.',

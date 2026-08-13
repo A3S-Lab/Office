@@ -203,7 +203,7 @@ class WorkOfficeCollaborationSessionImpl
   ): T {
     this.ensureActive();
     assertWorkOfficeCollaborationEditable(this);
-    assertCollaborationOrigin(origin);
+    assertWorkOfficeCollaborationOrigin(origin);
     let result: T | undefined;
     this.document.transact((transaction) => {
       result = operation(transaction);
@@ -402,7 +402,7 @@ function normalizedIdentifier(value: string, label: string): string {
   return normalized;
 }
 
-function assertCollaborationOrigin(
+export function assertWorkOfficeCollaborationOrigin(
   origin: WorkOfficeCollaborationOrigin,
 ): void {
   if (!origin || origin.protocol !== WORK_OFFICE_COLLABORATION_PROTOCOL) {

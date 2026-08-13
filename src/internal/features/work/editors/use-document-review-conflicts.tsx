@@ -26,6 +26,7 @@ export interface UseDocumentReviewConflictsOptions {
   editorInput: WorkDocumentEditorInput;
   normalizedContent: string;
   onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
+  reconcileControlledUpdates?: boolean;
 }
 
 export function useDocumentReviewConflicts({
@@ -37,6 +38,7 @@ export function useDocumentReviewConflicts({
   editorInput,
   normalizedContent,
   onReviewConflict,
+  reconcileControlledUpdates = true,
 }: UseDocumentReviewConflictsOptions) {
   const appliedArtifactIdRef = useRef(artifactId);
   const onReviewConflictRef = useRef(onReviewConflict);
@@ -46,7 +48,7 @@ export function useDocumentReviewConflicts({
   onReviewConflictRef.current = onReviewConflict;
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || !reconcileControlledUpdates) return;
     const artifactChanged = appliedArtifactIdRef.current !== artifactId;
     const sourceChanged = appliedSourceKeyRef.current !== editorInput.sourceKey;
     appliedArtifactIdRef.current = artifactId;
@@ -106,6 +108,7 @@ export function useDocumentReviewConflicts({
     editor,
     editorInput,
     normalizedContent,
+    reconcileControlledUpdates,
   ]);
 
   return {

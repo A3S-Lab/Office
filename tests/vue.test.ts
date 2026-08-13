@@ -1,12 +1,13 @@
-import { Extension } from '@tiptap/core';
 import { expect, test } from '@rstest/core';
 import { fireEvent, waitFor } from '@testing-library/dom';
+import { Extension } from '@tiptap/core';
 import { createApp, h, nextTick, ref } from 'vue';
 import {
-  createOfficeCollaborationSession,
   createArtifact,
+  createOfficeCollaborationSession,
   type DocumentContent,
   type DocumentReviewConflictEvent,
+  initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
   type MarkdownContent,
   readOfficeMarkdownCollaboration,
@@ -35,6 +36,35 @@ test('mounts the Vue adapter and renders the React editor', async () => {
     expect(
       target.querySelector('[data-work-pdf-surface="live"]'),
     ).toHaveAttribute('data-work-pdf-artifact', artifact.id);
+  });
+
+  app.unmount();
+  target.remove();
+});
+
+test('passes a synchronized Document session through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a Document artifact.');
+  }
+  const session = createOfficeCollaborationSession({
+    artifactId: 'vue-shared-document',
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(session, artifact.content);
+  const app = createApp({
+    render: () =>
+      h(DocumentEditor, {
+        collaboration: session,
+        content: artifact.content as DocumentContent,
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.querySelector('[aria-label="文档正文"]')).not.toBeNull();
   });
 
   app.unmount();

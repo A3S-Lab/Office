@@ -43,6 +43,12 @@ Rules:
 3. Custom Nodes and Marks need matching DOCX or Markdown round-trip semantics.
 4. Do not import implementation modules from `@a3s-lab/office/internal` paths.
 
+In a collaborative Document, `extensions` currently accepts behavior-only
+TipTap `Extension` values such as shortcuts and plugins. Custom Nodes, Marks,
+global attributes, extension kits, and other schema mutations are rejected
+because every participant must use the same versioned shared schema; add them
+through an A3S Office schema migration before storing them in shared content.
+
 ## Host extension ports
 
 | Port | Use |

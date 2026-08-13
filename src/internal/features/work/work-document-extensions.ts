@@ -62,6 +62,7 @@ import {
 import type { WorkDocumentContent } from './work-types';
 
 export interface WorkDocumentExtensionOptions {
+  collaborative?: boolean;
   getContent?: () => WorkDocumentContent | null;
   isTracking?: () => boolean;
   createChange?: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity;
@@ -104,6 +105,7 @@ export function createWorkDocumentExtensions(
       trailingNode: {
         notAfter: ['documentSection'],
       },
+      ...(options.collaborative ? { undoRedo: false } : {}),
     }),
     DocumentBulletList,
     DocumentOrderedList,

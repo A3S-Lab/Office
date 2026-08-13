@@ -12,6 +12,7 @@ import type {
   PresentationContent,
   SpreadsheetContent,
 } from './core';
+import type { OfficeTheme } from './office-surface';
 import {
   DocumentEditor,
   type DocumentLayoutFont,
@@ -21,7 +22,6 @@ import {
   PresentationEditor,
   SpreadsheetEditor,
 } from './react';
-import type { OfficeTheme } from './office-surface';
 
 const HTMLElementBase =
   typeof HTMLElement === 'undefined'
@@ -150,6 +150,7 @@ abstract class A3SContentEditorElement<
 }
 
 export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentContent> {
+  #collaboration: OfficeCollaborationSession | undefined;
   #extensions: Extensions | undefined;
   #getSelectionMenuItems: GetDocumentSelectionMenuItems | undefined;
   #layoutFonts: readonly DocumentLayoutFont[] | undefined;
@@ -166,6 +167,15 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
 
   get artifactId(): string | undefined {
     return this.getAttribute('artifact-id') ?? undefined;
+  }
+
+  get collaboration(): OfficeCollaborationSession | undefined {
+    return this.#collaboration;
+  }
+
+  set collaboration(value: OfficeCollaborationSession | undefined) {
+    this.#collaboration = value;
+    this.requestRender();
   }
 
   set artifactId(value: string | undefined) {
@@ -213,6 +223,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     if (!this.content) return missingContent('document', this.theme);
     return createElement(DocumentEditor, {
       artifactId: this.artifactId,
+      collaboration: this.collaboration,
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,

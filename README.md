@@ -253,7 +253,8 @@ into the PDF; searchable text and vector output remain future fidelity work.
 - `@a3s-lab/office/web-component` — Custom Elements for framework-agnostic UI
   composition.
 - `@a3s-lab/office/core` — Typed models, templates, import, export, and browser
-  file workflows.
+  file workflows, plus transport-neutral Yjs bindings for Markdown and
+  Document collaboration.
 - `@a3s-lab/office/styles.css` — Shared editor and interaction-system styles.
 
 Copyable React, Vue, and Web Component examples live in the
@@ -1016,6 +1017,8 @@ without hard-coded return URLs.
 - [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)
 - [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)
 - [React, Vue, and Web Component integration](https://a3s-lab.github.io/Office/docs/components/)
+- [Real-time collaboration](https://a3s-lab.github.io/Office/docs/en/components/collaboration.html)
+- [Collaboration delivery roadmap](COLLABORATION_ROADMAP.md)
 - [Office CLI and coding-agent Skill](https://a3s-lab.github.io/Office/docs/automation/)
 - [Browser editor architecture](docs/latest/en/browser-editor-architecture.md)
 - [Native Office engine](docs/latest/en/native-office-engine.md)

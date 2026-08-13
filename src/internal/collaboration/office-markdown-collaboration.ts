@@ -2,6 +2,7 @@ import * as Y from 'yjs';
 import type { WorkMarkdownContent } from '../features/work/work-types';
 import {
   assertWorkOfficeCollaborationEditable,
+  assertWorkOfficeCollaborationOrigin,
   initializeWorkOfficeCollaborationMetadata,
   markWorkOfficeCollaborationInitialized,
   readWorkOfficeCollaborationMetadata,
@@ -132,6 +133,7 @@ class WorkOfficeMarkdownCollaborationBindingImpl
     this.#source = markdownSource(session);
     this.origin =
       options.origin ?? session.createOrigin(session.localOrigin.kind);
+    assertWorkOfficeCollaborationOrigin(this.origin);
     this.#undoManager = new Y.UndoManager(this.#source, {
       captureTimeout: options.captureTimeoutMs ?? 1_000,
       trackedOrigins: new Set([this.origin]),

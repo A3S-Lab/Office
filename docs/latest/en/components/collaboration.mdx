@@ -9,8 +9,8 @@ A3S Office exposes a transport-neutral Yjs collaboration boundary. The host
 owns rooms, authentication, authorization, network providers, persistence, and
 the `Y.Doc`; the editor owns the format-specific binding and interaction.
 
-Markdown is the first supported editor. Document, Spreadsheet, Presentation,
-PDF, and native Yrs clients are tracked in the
+Markdown and Document have browser collaboration bindings. Spreadsheet,
+Presentation, PDF, and native Yrs clients are tracked in the
 [collaboration roadmap](https://github.com/A3S-Lab/Office/blob/main/COLLABORATION_ROADMAP.md).
 
 ## Open a Markdown session
@@ -71,7 +71,7 @@ export function SharedMarkdown({
       key={`${session.artifactId}:${session.document.clientID}`}
       collaboration={session}
       content={initialContent}
-      onChange={(snapshot) => reportLocalSnapshot(snapshot)}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
     />
   );
 }
@@ -82,6 +82,57 @@ initialized metadata. `initializeOfficeMarkdownCollaboration` is idempotent
 after a synchronized initialization, but intentionally reports concurrent
 independent seeds as an error.
 
+## Open a Document session
+
+Document uses a ProseMirror `Y.XmlFragment` for structured content and
+conflict-local maps for document options, comment threads, and bibliography
+sources. Initialize after provider sync just like Markdown:
+
+```tsx title="SharedDocument.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeDocumentCollaboration,
+  type DocumentContent,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'document',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficeDocumentCollaboration(session, initialContent);
+}
+
+export function SharedDocument({
+  initialContent,
+}: {
+  initialContent: DocumentContent;
+}) {
+  return (
+    <DocumentEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The fragment includes the structured section layout, comment anchors, and
+tracked-change marks. Comment thread bodies/replies and bibliography sources
+are stored by stable ID, so independent records can merge without replacing a
+document-sized JSON value. Append-only creation claims make identical offline
+retries idempotent and reject conflicting assignments of the same stable ID
+after synchronization. Unsupported OOXML package parts remain the host's
+import/export responsibility and must not be projected into Yjs as a full ZIP
+replacement.
+
 ## Contract
 
 | Concern | Behavior |
@@ -90,11 +141,12 @@ independent seeds as an error.
 | Initial sync | The host finishes provider sync and initialization before mounting. The editor does not guess whether an empty document is new or still downloading. |
 | Session identity | A mounted editor accepts one session object. Remount it when the artifact or `Y.Doc` changes. |
 | Undo/redo | Tracks only transactions created by this local binding; remote edits remain intact. |
-| Modes | `edit` can change Markdown. `view`, `comment`, and `suggest` are read-only until Markdown review models exist. |
+| Modes | `edit` can change Markdown or Document. `view`, `comment`, and `suggest` remain read-only until each format's durable authorization/review model is complete. |
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
 | Awareness | The session accepts a structural awareness object, but participant UI and collaborative cursors are not implemented yet. |
+| Extensions | Collaborative Documents accept behavior-only TipTap `Extension` values. Custom Nodes, Marks, global attributes, and extension kits require a versioned Office schema migration and are rejected. |
 
 `onChange` receives complete snapshots for local and remote shared changes. Use
 Yjs updates for durable collaboration persistence; do not turn every snapshot
@@ -110,6 +162,12 @@ Vue exposes the same session as the `collaboration` prop:
   :content="content"
   @change="handleSnapshot"
 />
+
+<DocumentEditor
+  :collaboration="documentSession"
+  :content="documentContent"
+  @change="handleDocumentSnapshot"
+/>
 ```
 
 Custom elements accept complex values through JavaScript properties:
@@ -118,6 +176,10 @@ Custom elements accept complex values through JavaScript properties:
 const editor = document.querySelector('a3s-markdown-editor');
 editor.collaboration = session;
 editor.content = content;
+
+const documentEditor = document.querySelector('a3s-document-editor');
+documentEditor.collaboration = documentSession;
+documentEditor.content = documentContent;
 ```
 
 Do not serialize the session or a `Y.Doc` into an HTML attribute.
