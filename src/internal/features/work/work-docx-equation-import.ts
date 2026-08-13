@@ -41,6 +41,7 @@ import {
   type WorkDocumentEquationWordGradientStop,
   type WorkDocumentEquationWordHighlight,
   type WorkDocumentEquationWordLanguages,
+  type WorkDocumentEquationWordLigatures,
   type WorkDocumentEquationWordLightRigDirection,
   type WorkDocumentEquationWordLightRigPreset,
   type WorkDocumentEquationWordLineBorderStyle,
@@ -204,6 +205,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:textFill',
   'w14:scene3d',
   'w14:props3d',
+  'w14:ligatures',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -481,6 +483,24 @@ const WORD_2010_PROPERTIES_3D_MATERIAL_PRESETS = new Map<
   ['flat', 'flat'],
   ['softmetal', 'softMetal'],
   ['none', 'none'],
+]);
+const WORD_2010_LIGATURES = new Set<WorkDocumentEquationWordLigatures>([
+  'none',
+  'standard',
+  'contextual',
+  'historical',
+  'discretional',
+  'standardContextual',
+  'standardHistorical',
+  'contextualHistorical',
+  'standardDiscretional',
+  'contextualDiscretional',
+  'historicalDiscretional',
+  'standardContextualHistorical',
+  'standardContextualDiscretional',
+  'standardHistoricalDiscretional',
+  'contextualHistoricalDiscretional',
+  'all',
 ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
@@ -1279,6 +1299,7 @@ function parseWordRunProperties(
   );
   const scene3D = parseWordScene3D(word2010Children.get('scene3d'));
   const properties3D = parseWordProperties3D(word2010Children.get('props3d'));
+  const ligatures = parseWordLigatures(word2010Children.get('ligatures'));
   if (
     fonts === null ||
     color === null ||
@@ -1304,7 +1325,8 @@ function parseWordRunProperties(
     textOutlineEffect === null ||
     textFillEffect === null ||
     scene3D === null ||
-    properties3D === null
+    properties3D === null ||
+    ligatures === null
   ) {
     return null;
   }
@@ -1406,6 +1428,7 @@ function parseWordRunProperties(
     ...(textFillEffect ? { textFillEffect } : {}),
     ...(scene3D ? { scene3D } : {}),
     ...(properties3D ? { properties3D } : {}),
+    ...(ligatures !== undefined ? { ligatures } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2646,6 +2669,18 @@ function parseWordProperties3DColor(
   const children = directChildren(element);
   return children.length === 1 && children[0]
     ? parseWord2010EffectColor(children[0])
+    : null;
+}
+
+function parseWordLigatures(
+  element: Element | undefined,
+): WorkDocumentEquationWordLigatures | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010LeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const value = attributes.get('val') ?? '';
+  return WORD_2010_LIGATURES.has(value as WorkDocumentEquationWordLigatures)
+    ? (value as WorkDocumentEquationWordLigatures)
     : null;
 }
 

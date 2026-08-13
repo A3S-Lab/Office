@@ -1271,7 +1271,8 @@ Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
 flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
-3D-scene, and 3D-property effects. Glow preserves an optional 0 through
+3D-scene, and 3D-property effects plus all 16 ligature combinations. Glow
+preserves an optional 0 through
 2,147,483,647 EMU
 radius, exactly
 one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
@@ -1312,6 +1313,9 @@ and bottom bevels with independently optional bounded width and height plus all
 12 bevel presets, and ordered extrusion and contour RGB/theme colors with the
 same bounded transform chains. The exact
 `bevelT -> bevelB -> extrusionClr -> contourClr` order remains intact.
+The Office 2010 ligature leaf requires one exact value and preserves every
+combination of standard, contextual, historical, and discretional OpenType
+ligatures, including explicit `none` and `all` values.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1344,6 +1348,9 @@ A present empty `w14:props3d` remains distinct from omission and retains zero
 extrusion and contour geometry, warm-matte material, and black color defaults.
 Attribute-free bevels likewise remain present with zero width/height and circle
 defaults.
+An omitted `w14:ligatures` uses Word's no-ligature default. A present leaf must
+carry `w14:val`; explicit `none` remains present so it can reset inherited
+formatting.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 exact transform-free Office 2010 RGB text fills and black fill defaults,
@@ -1355,11 +1362,14 @@ as filled dots, a literal comma, or an open circle above the text, or a filled
 dot below it. Superscript and subscript also project the smaller rendered size
 required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
 native schema order and the later explicit alignment controls the CSS vertical
-position. `w:em` remains after `w:rtl`/`w:cs` and before `w:lang`, while
+position. All 16 explicit ligature values map exactly to CSS
+`font-variant-ligatures` by setting positive or negative controls for common,
+contextual, historical, and discretionary ligatures. `w:em` remains after
+`w:rtl`/`w:cs` and before `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
 `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
-`w14:textFill`, `w14:scene3d`, and `w14:props3d`. Simple
+`w14:textFill`, `w14:scene3d`, `w14:props3d`, and `w14:ligatures`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1405,7 +1415,8 @@ flags, malformed glow radii, shadow or reflection geometry, text-outline
 fill/gradient/dash/join structure, text-fill wrapper/fill/gradient structure,
 color choices or transform chains, 3D-scene camera/light structure,
 3D-property extrusion/contour/bevel/color structure, bounded coordinates,
-preset values, directions, or rotation angles, and unknown, duplicated, reordered,
+missing or malformed ligature values, non-leaf ligature content, preset values,
+directions, or rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their

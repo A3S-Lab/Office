@@ -44,7 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_LIGATURES = `<w14:ligatures xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2010_NUM_FORM = `<w14:numForm xmlns:w14="${WORD_2010_NAMESPACE}" w14:val="default"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2080,6 +2080,7 @@ describe('document equations', () => {
       '<w14:textFill><w14:solidFill><w14:srgbClr w14:val="2468AC"><w14:shade w14:val="25000"/></w14:srgbClr></w14:solidFill></w14:textFill>',
       '<w14:scene3d><w14:camera w14:prst="perspectiveHeroicRightFacing"/><w14:lightRig w14:rig="twoPt" w14:dir="bl"><w14:rot w14:lat="0" w14:lon="10800000" w14:rev="21599999"/></w14:lightRig></w14:scene3d>',
       '<w14:props3d w14:extrusionH="50800" w14:contourW="12700" w14:prstMaterial="softmetal"><w14:bevelT w14:w="25400" w14:h="12700" w14:prst="convex"/><w14:bevelB w14:w="6350" w14:h="3175" w14:prst="hardEdge"/><w14:extrusionClr><w14:schemeClr w14:val="accent1"><w14:alpha w14:val="60000"/></w14:schemeClr></w14:extrusionClr><w14:contourClr><w14:srgbClr w14:val="ABCDEF"><w14:shade w14:val="30000"/></w14:srgbClr></w14:contourClr></w14:props3d>',
+      '<w14:ligatures w14:val="standardContextualHistorical"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2188,7 +2189,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2222,7 +2223,7 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`, '<w:t>fallback</w:t>'),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4438,7 +4439,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4869,7 +4870,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5296,7 +5297,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5663,7 +5664,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6395,7 +6396,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6849,7 +6850,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7376,7 +7377,7 @@ describe('document equations', () => {
       wordRun('<w:scene3d/>'),
       wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
       wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7761,7 +7762,7 @@ describe('document equations', () => {
           '<w14:contourClr><w14:srgbClr w14:val="XYZXYZ"/></w14:contourClr>',
         ),
       ),
-      wordRun(WORD_2010_LIGATURES),
+      wordRun(WORD_2010_NUM_FORM),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7827,6 +7828,283 @@ describe('document equations', () => {
       expect.objectContaining({ code: 'docx.equations.unsupported' }),
     );
     await expectNativeWordRunProperties3D(await createArtifactBlob(imported));
+  });
+
+  test('preserves all Office 2010 ligature combinations and projects their exact OpenType controls', async () => {
+    const ligatureValues = [
+      'none',
+      'standard',
+      'contextual',
+      'historical',
+      'discretional',
+      'standardContextual',
+      'standardHistorical',
+      'contextualHistorical',
+      'standardDiscretional',
+      'contextualDiscretional',
+      'historicalDiscretional',
+      'standardContextualHistorical',
+      'standardContextualDiscretional',
+      'standardHistoricalDiscretional',
+      'contextualHistoricalDiscretional',
+      'all',
+    ] as const;
+    const expectedCss = new Map([
+      ['none', 'none'],
+      [
+        'standard',
+        'common-ligatures no-contextual no-historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'contextual',
+        'no-common-ligatures contextual no-historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'historical',
+        'no-common-ligatures no-contextual historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'discretional',
+        'no-common-ligatures no-contextual no-historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'standardContextual',
+        'common-ligatures contextual no-historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'standardHistorical',
+        'common-ligatures no-contextual historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'contextualHistorical',
+        'no-common-ligatures contextual historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'standardDiscretional',
+        'common-ligatures no-contextual no-historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'contextualDiscretional',
+        'no-common-ligatures contextual no-historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'historicalDiscretional',
+        'no-common-ligatures no-contextual historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'standardContextualHistorical',
+        'common-ligatures contextual historical-ligatures no-discretionary-ligatures',
+      ],
+      [
+        'standardContextualDiscretional',
+        'common-ligatures contextual no-historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'standardHistoricalDiscretional',
+        'common-ligatures no-contextual historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'contextualHistoricalDiscretional',
+        'no-common-ligatures contextual historical-ligatures discretionary-ligatures',
+      ],
+      [
+        'all',
+        'common-ligatures contextual historical-ligatures discretionary-ligatures',
+      ],
+    ] as const);
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        ...ligatureValues.map((ligatures) => ({
+          type: 'run',
+          text: `ligatures-${ligatures}`,
+          wordRunProperties: { ligatures },
+        })),
+        {
+          type: 'run',
+          text: 'ordered-ligatures',
+          wordRunProperties: {
+            paragraphMarkAlwaysHidden: false,
+            properties3D: {},
+            ligatures: 'all',
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            ligatures: 'standardContextualDiscretional',
+          },
+          children: [{ type: 'run', text: 'control-ligatures' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithLigatures = (ligatures: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: 'x', wordRunProperties: { ligatures } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equationWithLigatures(undefined))).toEqual(
+      simpleEquation('x'),
+    );
+    for (const ligatures of ligatureValues) {
+      expect(
+        normalizeDocumentEquation(equationWithLigatures(ligatures)),
+      ).toEqual(equationWithLigatures(ligatures));
+    }
+    const invalidLigatures = [
+      null,
+      false,
+      0,
+      [],
+      {},
+      '',
+      'normal',
+      'discretionary',
+      'Standard',
+      ' standard',
+      'standard ',
+      'standardcontextual',
+      'standardContextualHistoricalDiscretional',
+    ];
+    expect(
+      invalidLigatures.map((ligatures) =>
+        normalizeDocumentEquation(equationWithLigatures(ligatures)),
+      ),
+    ).toEqual(invalidLigatures.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>x</m:t></m:r>`;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      for (const ligatures of ligatureValues) {
+        expect(
+          inspectEquationModel(
+            wordRun(`<w14:ligatures w14:val="${ligatures}"/>`, namespace),
+          )?.children[0],
+        ).toEqual({
+          type: 'run',
+          text: 'x',
+          wordRunProperties: { ligatures },
+        });
+      }
+    }
+    const validOrderedMarkup =
+      '<w:specVanish w:val="0"/><w14:props3d/>' +
+      '<w14:ligatures w14:val="all"/>';
+    expect(inspectEquationBody(wordRun(validOrderedMarkup))).toBe('supported');
+    const invalidMarkup = [
+      wordRun(
+        '<w14:ligatures w14:val="standard"/><w14:ligatures w14:val="contextual"/>',
+      ),
+      wordRun('<w14:ligatures w14:val="standard"/><w14:props3d/>'),
+      wordRun('<w14:ligatures w14:val="standard"/><w:specVanish/>'),
+      wordRun('<w14:ligatures/>'),
+      wordRun('<w14:ligatures val="standard"/>'),
+      wordRun('<w14:ligatures w14:val="unknown"/>'),
+      wordRun('<w14:ligatures w14:val="Standard"/>'),
+      wordRun('<w14:ligatures w14:val=" standard"/>'),
+      wordRun('<w14:ligatures w14:val="standard "/>'),
+      wordRun('<w14:ligatures w14:val="standard" w14:extra="1"/>'),
+      wordRun(
+        `<w14:ligatures xmlns:r="${RELATIONSHIP_NAMESPACE}" w14:val="standard" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:ligatures w14:val="standard">text</w14:ligatures>'),
+      wordRun(
+        '<w14:ligatures w14:val="standard"><w14:ligature/></w14:ligatures>',
+      ),
+      wordRun(
+        `<w14:ligatures xmlns:w14="${VENDOR_NAMESPACE}" w14:val="standard"/>`,
+      ),
+      wordRun('<w:ligatures w:val="standard"/>'),
+      wordRun(`<v:ligatures xmlns:v="${VENDOR_NAMESPACE}" v:val="standard"/>`),
+      wordRun(WORD_2010_NUM_FORM),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const ligatures of ligatureValues) {
+      const run = Array.from(preview.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === `ligatures-${ligatures}`,
+      );
+      expect(run, ligatures).toBeDefined();
+      expect(run?.getAttribute('style'), ligatures).toContain(
+        `font-variant-ligatures:${expectedCss.get(ligatures)}`,
+      );
+    }
+    const controlOperator = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '\u2211',
+    );
+    expect(controlOperator?.getAttribute('style')).toContain(
+      `font-variant-ligatures:${expectedCss.get('standardContextualDiscretional')}`,
+    );
+    const plainPreview = createDocumentEquationElement(
+      document,
+      simpleEquation('plain'),
+    );
+    expect(
+      plainPreview.querySelector('mtext')?.getAttribute('style') ?? '',
+    ).not.toContain('font-variant-ligatures');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    for (const ligatures of ligatureValues) {
+      const run = Array.from(sanitized.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === `ligatures-${ligatures}`,
+      );
+      expect(run?.getAttribute('style'), ligatures).toContain(
+        `font-variant-ligatures:${expectedCss.get(ligatures)}`,
+      );
+    }
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunLigatures(first, ligatureValues);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-ligatures.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunLigatures(
+      await createArtifactBlob(imported),
+      ligatureValues,
+    );
   });
 
   test('preserves bounded Word control properties across OMML object containers', async () => {
@@ -7917,7 +8195,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_LIGATURES}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -8194,7 +8472,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_LIGATURES}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_NUM_FORM}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -9508,6 +9786,7 @@ function richWordRunProperties() {
         transforms: [{ type: 'shade' as const, value: 30_000 }],
       },
     },
+    ligatures: 'standardContextualHistorical' as const,
   };
 }
 
@@ -12445,6 +12724,88 @@ async function expectNativeWordRunProperties3D(blob: Blob): Promise<void> {
   );
 }
 
+async function expectNativeWordRunLigatures(
+  blob: Blob,
+  ligatureValues: readonly string[],
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const root = document.documentElement;
+  const ignorable = Array.from(root.attributes).find(
+    (attribute) =>
+      xmlAttributeNamespace(root, attribute) ===
+        MARKUP_COMPATIBILITY_NAMESPACE &&
+      xmlAttributeLocalName(attribute) === 'Ignorable',
+  );
+  expect(ignorable).toBeDefined();
+  expect(
+    (ignorable?.value ?? '')
+      .trim()
+      .split(/\s+/u)
+      .filter(Boolean)
+      .some((prefix) => xmlNamespaceUri(root, prefix) === WORD_2010_NAMESPACE),
+  ).toBe(true);
+
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  for (const value of ligatureValues) {
+    const properties = wordPropertiesFor(`ligatures-${value}`);
+    const children = directChildren(properties);
+    expect(
+      children.map((child) => child.localName),
+      value,
+    ).toEqual(['ligatures']);
+    expect(children[0].namespaceURI, value).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(children[0]), value).toEqual({ val: value });
+    expect(directChildren(children[0]), value).toHaveLength(0);
+  }
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-ligatures'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'specVanish',
+    'props3d',
+    'ligatures',
+  ]);
+  expect(orderedProperties.map((child) => child.namespaceURI)).toEqual([
+    WORD_NAMESPACE,
+    WORD_2010_NAMESPACE,
+    WORD_2010_NAMESPACE,
+  ]);
+  expect(word2010Attributes(orderedProperties.at(-1) as Element)).toEqual({
+    val: 'all',
+  });
+  expect(directChildren(orderedProperties.at(-1) as Element)).toHaveLength(0);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-ligatures'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const ligatures = directChildren(wordProperties as Element, 'ligatures')[0];
+  expect(ligatures.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(ligatures)).toEqual({
+    val: 'standardContextualDiscretional',
+  });
+  expect(directChildren(ligatures)).toHaveLength(0);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -12512,6 +12873,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'textFill',
     'scene3d',
     'props3d',
+    'ligatures',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -12599,6 +12961,7 @@ async function expectNativeArgumentControlProperties(
     'textFill',
     'scene3d',
     'props3d',
+    'ligatures',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -13173,6 +13536,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'textFill',
     'scene3d',
     'props3d',
+    'ligatures',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -13280,6 +13644,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       contourW: '12700',
       prstMaterial: 'softmetal',
     },
+    { val: 'standardContextualHistorical' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -13433,6 +13798,12 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(contourShade.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(contourShade.localName).toBe('shade');
     expect(word2010Attributes(contourShade)).toEqual({ val: '30000' });
+    const ligatures = directChildren(properties, 'ligatures')[0];
+    expect(ligatures.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(ligatures)).toEqual({
+      val: 'standardContextualHistorical',
+    });
+    expect(directChildren(ligatures)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

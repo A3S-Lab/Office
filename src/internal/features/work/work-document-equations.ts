@@ -522,6 +522,24 @@ export interface WorkDocumentEquationWordProperties3D {
   contourColor?: WorkDocumentEquationWordEffectColor;
 }
 
+export type WorkDocumentEquationWordLigatures =
+  | 'none'
+  | 'standard'
+  | 'contextual'
+  | 'historical'
+  | 'discretional'
+  | 'standardContextual'
+  | 'standardHistorical'
+  | 'contextualHistorical'
+  | 'standardDiscretional'
+  | 'contextualDiscretional'
+  | 'historicalDiscretional'
+  | 'standardContextualHistorical'
+  | 'standardContextualDiscretional'
+  | 'standardHistoricalDiscretional'
+  | 'contextualHistoricalDiscretional'
+  | 'all';
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -644,6 +662,7 @@ export interface WorkDocumentEquationWordRunProperties {
   textFillEffect?: WorkDocumentEquationWordTextFillEffect;
   scene3D?: WorkDocumentEquationWordScene3D;
   properties3D?: WorkDocumentEquationWordProperties3D;
+  ligatures?: WorkDocumentEquationWordLigatures;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1305,6 +1324,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'textFillEffect',
   'scene3D',
   'properties3D',
+  'ligatures',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1433,6 +1453,60 @@ const WORD_PROPERTIES_3D_MATERIAL_PRESETS =
     'softMetal',
     'none',
   ]);
+const WORD_LIGATURE_STANDARD = 1;
+const WORD_LIGATURE_CONTEXTUAL = 2;
+const WORD_LIGATURE_HISTORICAL = 4;
+const WORD_LIGATURE_DISCRETIONAL = 8;
+const WORD_LIGATURE_FLAGS = new Map<WorkDocumentEquationWordLigatures, number>([
+  ['none', 0],
+  ['standard', WORD_LIGATURE_STANDARD],
+  ['contextual', WORD_LIGATURE_CONTEXTUAL],
+  ['historical', WORD_LIGATURE_HISTORICAL],
+  ['discretional', WORD_LIGATURE_DISCRETIONAL],
+  ['standardContextual', WORD_LIGATURE_STANDARD | WORD_LIGATURE_CONTEXTUAL],
+  ['standardHistorical', WORD_LIGATURE_STANDARD | WORD_LIGATURE_HISTORICAL],
+  ['contextualHistorical', WORD_LIGATURE_CONTEXTUAL | WORD_LIGATURE_HISTORICAL],
+  ['standardDiscretional', WORD_LIGATURE_STANDARD | WORD_LIGATURE_DISCRETIONAL],
+  [
+    'contextualDiscretional',
+    WORD_LIGATURE_CONTEXTUAL | WORD_LIGATURE_DISCRETIONAL,
+  ],
+  [
+    'historicalDiscretional',
+    WORD_LIGATURE_HISTORICAL | WORD_LIGATURE_DISCRETIONAL,
+  ],
+  [
+    'standardContextualHistorical',
+    WORD_LIGATURE_STANDARD |
+      WORD_LIGATURE_CONTEXTUAL |
+      WORD_LIGATURE_HISTORICAL,
+  ],
+  [
+    'standardContextualDiscretional',
+    WORD_LIGATURE_STANDARD |
+      WORD_LIGATURE_CONTEXTUAL |
+      WORD_LIGATURE_DISCRETIONAL,
+  ],
+  [
+    'standardHistoricalDiscretional',
+    WORD_LIGATURE_STANDARD |
+      WORD_LIGATURE_HISTORICAL |
+      WORD_LIGATURE_DISCRETIONAL,
+  ],
+  [
+    'contextualHistoricalDiscretional',
+    WORD_LIGATURE_CONTEXTUAL |
+      WORD_LIGATURE_HISTORICAL |
+      WORD_LIGATURE_DISCRETIONAL,
+  ],
+  [
+    'all',
+    WORD_LIGATURE_STANDARD |
+      WORD_LIGATURE_CONTEXTUAL |
+      WORD_LIGATURE_HISTORICAL |
+      WORD_LIGATURE_DISCRETIONAL,
+  ],
+]);
 const WORD_SCENE_3D_CAMERA_PRESETS =
   new Set<WorkDocumentEquationWordPresetCamera>([
     'legacyObliqueTopLeft',
@@ -3654,6 +3728,14 @@ function normalizeEquationWordRunProperties(
     source.properties3D === undefined
       ? undefined
       : normalizeEquationWordProperties3D(source.properties3D);
+  const ligatures =
+    source.ligatures === undefined
+      ? undefined
+      : WORD_LIGATURE_FLAGS.has(
+            source.ligatures as WorkDocumentEquationWordLigatures,
+          )
+        ? (source.ligatures as WorkDocumentEquationWordLigatures)
+        : null;
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3712,6 +3794,7 @@ function normalizeEquationWordRunProperties(
     textFillEffect === null ||
     scene3D === null ||
     properties3D === null ||
+    ligatures === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3857,6 +3940,7 @@ function normalizeEquationWordRunProperties(
     ...(textFillEffect ? { textFillEffect } : {}),
     ...(scene3D ? { scene3D } : {}),
     ...(properties3D ? { properties3D } : {}),
+    ...(ligatures !== undefined ? { ligatures } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -5151,6 +5235,7 @@ function wordPropertiesMathMlAttributes(
     bold === undefined ? '' : `font-weight:${bold ? 'bold' : 'normal'}`,
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunCaseStyles(properties),
+    wordRunLigatureStyles(properties.ligatures),
     wordRunTextDecoration(properties),
     wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
@@ -5180,6 +5265,25 @@ function wordPropertiesMathMlAttributes(
     ...(language ? { lang: language } : {}),
     ...(styles.length ? { style: styles.join(';') } : {}),
   };
+}
+
+function wordRunLigatureStyles(
+  ligatures: WorkDocumentEquationWordLigatures | undefined,
+): string {
+  if (ligatures === undefined) return '';
+  const flags = WORD_LIGATURE_FLAGS.get(ligatures);
+  if (flags === undefined) return '';
+  if (flags === 0) return 'font-variant-ligatures:none';
+  return `font-variant-ligatures:${[
+    flags & WORD_LIGATURE_STANDARD ? 'common-ligatures' : 'no-common-ligatures',
+    flags & WORD_LIGATURE_CONTEXTUAL ? 'contextual' : 'no-contextual',
+    flags & WORD_LIGATURE_HISTORICAL
+      ? 'historical-ligatures'
+      : 'no-historical-ligatures',
+    flags & WORD_LIGATURE_DISCRETIONAL
+      ? 'discretionary-ligatures'
+      : 'no-discretionary-ligatures',
+  ].join(' ')}`;
 }
 
 function wordRunTextFillMathMlColor(

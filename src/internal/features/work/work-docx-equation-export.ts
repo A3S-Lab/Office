@@ -1530,6 +1530,12 @@ function createWordRunProperties(
       createWord2010Properties3D(document, properties.properties3D),
     );
   }
+  if (properties.ligatures !== undefined) {
+    const prefix = ensureWord2010Prefix(document.documentElement);
+    const ligatures = createWord2010Element(document, prefix, 'ligatures');
+    setWord2010Attribute(ligatures, prefix, 'val', properties.ligatures);
+    result.append(ligatures);
+  }
   return result;
 }
 
