@@ -149,3 +149,52 @@ test('keeps an incomplete starting page number out of the section model', () => 
   expect(start).toHaveValue('13');
   expect(changes.at(-1)?.pageNumberStart).toBe(13);
 });
+
+test('edits exact page chrome, overlap, mirror, and gutter geometry', () => {
+  const changes: WorkDocumentSectionLayout[] = [];
+
+  function Fixture() {
+    const [current, setCurrent] = useState(layout);
+    return (
+      <DocumentLayoutPanel
+        layout={current}
+        sectionIndex={0}
+        sectionCount={2}
+        onChange={(next) => {
+          changes.push(next);
+          setCurrent(next);
+        }}
+        onInsertSection={() => undefined}
+        onMergeSection={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+  }
+
+  render(<Fixture />);
+  const headerDistance = screen.getByRole('textbox', {
+    name: '页眉距顶端',
+  });
+  fireEvent.change(headerDistance, { target: { value: '10' } });
+  fireEvent.keyDown(headerDistance, { key: 'Enter' });
+  expect(changes.at(-1)?.pageMargins?.header).toBe(567);
+
+  fireEvent.click(screen.getByRole('combobox', { name: '上边距与页眉关系' }));
+  fireEvent.click(screen.getByRole('option', { name: '允许重叠' }));
+  expect(changes.at(-1)?.pageMargins?.top).toBe(-1_417);
+
+  fireEvent.click(screen.getByRole('combobox', { name: '镜像页边距' }));
+  fireEvent.click(screen.getByRole('option', { name: '镜像页边距' }));
+  expect(changes.at(-1)?.pageMargins).toMatchObject({
+    mirrorMargins: true,
+    gutterAtTop: false,
+  });
+
+  fireEvent.click(screen.getByRole('combobox', { name: '装订线位置' }));
+  fireEvent.click(screen.getByRole('option', { name: '顶部' }));
+  expect(changes.at(-1)?.pageMargins).toMatchObject({
+    mirrorMargins: false,
+    gutterAtTop: true,
+    gutterOnRight: false,
+  });
+});

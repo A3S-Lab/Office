@@ -7,6 +7,12 @@ import {
   documentSectionNodeAttributes,
   type DocumentSectionNodeAttributes,
 } from './work-document-section';
+import {
+  documentPageMarginGlobalsChanged,
+  documentPageMarginsForLayout,
+  reconcileDocumentPageMarginUpdate,
+  synchronizeDocumentPageMarginGlobals,
+} from './work-document-page-margins';
 import type {
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -97,11 +103,33 @@ export function updateDocumentSection(
   const state = commandContext.state;
   const section = documentSectionByIdInDocument(state.doc, sectionId);
   if (!section) return false;
-  commandContext.tr.setNodeMarkup(
-    section.position,
-    undefined,
-    documentSectionNodeAttributes(layout, section.id),
-  );
+  const next = reconcileDocumentPageMarginUpdate(section.layout, layout);
+  if (documentPageMarginGlobalsChanged(section.layout, next)) {
+    const globals = documentPageMarginsForLayout(next);
+    for (const [index, candidate] of directDocumentSections(
+      state.doc,
+    ).entries()) {
+      const id = documentSectionId(candidate.node, index);
+      const current = documentSectionLayoutFromNodeAttributes(
+        candidate.node.attrs as Partial<DocumentSectionNodeAttributes>,
+      );
+      const synchronized = synchronizeDocumentPageMarginGlobals(
+        id === sectionId ? next : current,
+        globals,
+      );
+      commandContext.tr.setNodeMarkup(
+        candidate.position,
+        undefined,
+        documentSectionNodeAttributes(synchronized, id),
+      );
+    }
+  } else {
+    commandContext.tr.setNodeMarkup(
+      section.position,
+      undefined,
+      documentSectionNodeAttributes(next, section.id),
+    );
+  }
   return true;
 }
 
@@ -219,6 +247,12 @@ function directDocumentSections(
     if (node.type.name === 'documentSection') sections.push({ position, node });
   });
   return sections;
+}
+
+function documentSectionId(node: ProseMirrorNode, index: number): string {
+  return typeof node.attrs.id === 'string' && node.attrs.id
+    ? node.attrs.id
+    : `document-section-${index + 1}`;
 }
 
 function sectionChildIndex(

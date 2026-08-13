@@ -1,5 +1,6 @@
 import { WorkDocumentPageBorder } from '../components/work-document-page-border';
 import { resolveDocumentPageBorders } from '../work-document-page-borders';
+import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import type { WorkDocumentSectionLayout } from '../work-types';
 
 interface DocumentPageStackProps {
@@ -9,6 +10,7 @@ interface DocumentPageStackProps {
   pageHeight: number;
   pages?: readonly {
     layout: WorkDocumentSectionLayout;
+    physicalPage?: number;
     sectionPage: number;
   }[];
 }
@@ -59,7 +61,10 @@ export function DocumentPageStack({
             const resolved = page
               ? resolveDocumentPageBorders(
                   page.layout.pageBorders,
-                  page.layout.margins,
+                  resolveDocumentPageMargins(
+                    page.layout,
+                    page.physicalPage ?? pageIndex + 1,
+                  ).body,
                 )
               : null;
             if (!page || resolved?.zOrder !== zOrder) return [];
@@ -75,6 +80,7 @@ export function DocumentPageStack({
               >
                 <WorkDocumentPageBorder
                   layout={page.layout}
+                  physicalPage={page.physicalPage ?? pageIndex + 1}
                   sectionPage={page.sectionPage}
                 />
               </div>,

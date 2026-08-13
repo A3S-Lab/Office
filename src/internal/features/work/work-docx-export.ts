@@ -15,6 +15,7 @@ import {
   type WorkDocumentNoteKind,
 } from './work-document-notes';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
+import { documentPageMarginsForLayout } from './work-document-page-margins';
 import { documentSections } from './work-document-section';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import {
@@ -340,6 +341,7 @@ function sectionProperties(
           width: landscape ? 16_838 : 11_906,
           height: landscape ? 11_906 : 16_838,
         };
+  const pageMargins = documentPageMarginsForLayout(layout);
   return {
     type: docxSectionType(layout.breakAfter, docx),
     titlePage: normalizeDocumentPageChrome(layout.pageChrome, layout)
@@ -352,10 +354,13 @@ function sectionProperties(
           : docx.PageOrientation.PORTRAIT,
       },
       margin: {
-        top: millimetersToTwips(layout.margins.top),
-        right: millimetersToTwips(layout.margins.right),
-        bottom: millimetersToTwips(layout.margins.bottom),
-        left: millimetersToTwips(layout.margins.left),
+        top: pageMargins.top,
+        right: pageMargins.right,
+        bottom: pageMargins.bottom,
+        left: pageMargins.left,
+        header: pageMargins.header,
+        footer: pageMargins.footer,
+        gutter: pageMargins.gutter,
       },
       pageNumbers: layout.pageNumberStart
         ? { start: layout.pageNumberStart }
@@ -548,10 +553,6 @@ function paragraphHeadingLevel(tag: string, docx: typeof import('docx')) {
   if (tag === 'h5') return docx.HeadingLevel.HEADING_5;
   if (tag === 'h6') return docx.HeadingLevel.HEADING_6;
   return undefined;
-}
-
-function millimetersToTwips(value: number): number {
-  return Math.round((value * 1440) / 25.4);
 }
 
 async function pageChromeBlocks(

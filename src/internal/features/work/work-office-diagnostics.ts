@@ -6,6 +6,7 @@ import { diagnoseDocxEquations } from './work-docx-equation-diagnostics';
 import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
+import { diagnoseDocxPageMargins } from './work-docx-page-margins-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
@@ -50,7 +51,7 @@ export async function analyzeDocxCompatibility(
     issue(
       'docx.page-layout',
       'Page layout',
-      'Per-section paper size, orientation, basic margins, one-to-six equal or custom-width columns, section breaks, and explicit page breaks are preserved; exact pagination and line wrapping may normalize.',
+      'Per-section paper size, orientation, exact native page margins, one-to-six equal or custom-width columns, section breaks, and explicit page breaks are preserved; exact pagination and line wrapping may normalize.',
     ),
     issue(
       'docx.package-state',
@@ -182,6 +183,7 @@ export async function analyzeDocxCompatibility(
       );
     }
     if (document) {
+      issues.push(...(await diagnoseDocxPageMargins(archive, document)));
       issues.push(...(await diagnoseDocxPageBorders(archive, document)));
       issues.push(...(await diagnoseDocxParagraphBorders(archive, document)));
       issues.push(...(await diagnoseDocxParagraphShading(archive, document)));

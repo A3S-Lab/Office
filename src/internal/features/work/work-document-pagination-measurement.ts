@@ -5,6 +5,7 @@ import type {
   OfficeKernelTextLayoutParagraphResult,
 } from '../../kernel/office-kernel-protocol';
 import { millimetersToPixels } from './work-document-layout';
+import { resolveDocumentPageMargins } from './work-document-page-margins';
 import { normalizeDocumentImageLayout } from './work-document-image-layout';
 import { measureParagraphLineFragments } from './work-document-line-measurement';
 import {
@@ -91,13 +92,14 @@ export function documentPageMetrics(
           height: millimetersToPixels(297),
         };
   const landscape = layout.orientation === 'landscape';
+  const margins = resolveDocumentPageMargins(layout, 1).body;
   return {
     width: landscape ? portrait.height : portrait.width,
     height: landscape ? portrait.width : portrait.height,
-    marginTop: millimetersToPixels(layout.margins.top),
-    marginRight: millimetersToPixels(layout.margins.right),
-    marginBottom: millimetersToPixels(layout.margins.bottom),
-    marginLeft: millimetersToPixels(layout.margins.left),
+    marginTop: millimetersToPixels(margins.top),
+    marginRight: millimetersToPixels(margins.right),
+    marginBottom: millimetersToPixels(margins.bottom),
+    marginLeft: millimetersToPixels(margins.left),
     headerHeight: 0,
     footerHeight: 0,
     pageGap: 28,

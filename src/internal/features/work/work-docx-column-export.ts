@@ -1,4 +1,5 @@
 import { normalizeDocumentColumns } from './work-document-columns';
+import { documentPageHorizontalMarginTwips } from './work-document-page-margins';
 import type { WorkDocumentSectionLayout } from './work-types';
 
 const MIN_COLUMN_WIDTH_TWIPS = 240;
@@ -20,7 +21,7 @@ export function docxSectionColumns(
 
   const contentWidth = Math.max(
     columns.count * MIN_COLUMN_WIDTH_TWIPS,
-    pageWidth - millimetersToTwips(layout.margins.left + layout.margins.right),
+    pageWidth - documentPageHorizontalMarginTwips(layout),
   );
   const requestedSpaces = columns.custom
     .slice(0, -1)

@@ -29,7 +29,7 @@ import {
 } from '../work-document-comments';
 import { createWorkDocumentExtensions } from '../work-document-extensions';
 import type { WorkDocumentLayoutFont } from '../work-document-fonts';
-import { documentMargins, millimetersToPixels } from '../work-document-layout';
+import { millimetersToPixels } from '../work-document-layout';
 import {
   createWorkDocumentModel,
   resolveWorkDocumentEditorInput,
@@ -39,6 +39,7 @@ import {
   documentPageColor,
   normalizeDocumentPageColor,
 } from '../work-document-page-color';
+import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import {
   DocumentPagination,
   documentPageMetrics,
@@ -587,11 +588,8 @@ export function DocumentEditor({
 
   const section = editor ? activeDocumentSection(editor) : null;
   const layout = section?.layout ?? documentInitialSectionLayout(content);
-  const margins = documentMargins({
-    ...content,
-    pageSize: layout.pageSize,
-    margins: layout.margins,
-  });
+  const resolvedMargins = resolveDocumentPageMargins(layout, 1);
+  const margins = resolvedMargins.body;
   const marginPixels = {
     top: millimetersToPixels(margins.top),
     right: millimetersToPixels(margins.right),
@@ -622,6 +620,7 @@ export function DocumentEditor({
       layoutOpen,
       JSON.stringify(pageChrome),
       JSON.stringify(layout.pageBorders),
+      JSON.stringify(layout.pageMargins),
     ].join(':'),
     page: kernelPage,
     selectionVersion,
@@ -1050,6 +1049,19 @@ export function DocumentEditor({
                       ? kernelPage.width
                       : undefined
                   }
+                  data-document-page-gutter-position={
+                    resolvedMargins.gutterPosition
+                  }
+                  data-document-page-margins-bounded={String(
+                    resolvedMargins.bounded,
+                  )}
+                  data-document-page-mirror-margins={String(
+                    resolvedMargins.mirrorMargins,
+                  )}
+                  data-document-page-top-margin-mode={resolvedMargins.topMode}
+                  data-document-page-bottom-margin-mode={
+                    resolvedMargins.bottomMode
+                  }
                   aria-label={preview ? '文字预览' : '文字页面'}
                   style={
                     {
@@ -1063,6 +1075,22 @@ export function DocumentEditor({
                       '--work-document-page-margin-right': `${marginPixels.right}px`,
                       '--work-document-page-margin-top': `${marginPixels.top}px`,
                       '--work-document-page-margin-bottom': `${marginPixels.bottom}px`,
+                      '--work-document-page-header-distance': `${millimetersToPixels(
+                        resolvedMargins.headerDistance,
+                      )}px`,
+                      '--work-document-page-footer-distance': `${millimetersToPixels(
+                        resolvedMargins.footerDistance,
+                      )}px`,
+                      '--work-document-page-header-height': `${Math.max(
+                        0,
+                        marginPixels.top -
+                          millimetersToPixels(resolvedMargins.headerDistance),
+                      )}px`,
+                      '--work-document-page-footer-height': `${Math.max(
+                        0,
+                        marginPixels.bottom -
+                          millimetersToPixels(resolvedMargins.footerDistance),
+                      )}px`,
                     } as CSSProperties
                   }
                 >

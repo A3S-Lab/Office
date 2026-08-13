@@ -5,19 +5,25 @@ import {
   normalizeDocumentPageBorders,
   resolveDocumentPageBorders,
 } from '../work-document-page-borders';
+import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import { isDocumentParagraphArtBorderStyle } from '../work-document-paragraph-borders';
 import type { WorkDocumentSectionLayout } from '../work-types';
 
 export function WorkDocumentPageBorder({
   layout,
+  physicalPage = 1,
   sectionPage,
 }: {
   layout: WorkDocumentSectionLayout;
+  physicalPage?: number;
   sectionPage: number;
 }) {
   const source = normalizeDocumentPageBorders(layout.pageBorders);
   if (!source || !documentPageBordersVisible(source, sectionPage)) return null;
-  const resolved = resolveDocumentPageBorders(source, layout.margins);
+  const resolved = resolveDocumentPageBorders(
+    source,
+    resolveDocumentPageMargins(layout, physicalPage).body,
+  );
   if (!resolved) return null;
   const visibleEdges = DOCUMENT_PAGE_BORDER_EDGES.filter(
     (edge) => (resolved.edges[edge]?.width ?? 0) > 0,

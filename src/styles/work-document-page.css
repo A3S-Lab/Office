@@ -182,10 +182,19 @@
   white-space: pre-wrap;
 }
 
+:is(.work-document-preview-page, .work-pdf-export-page.document) > header,
+:is(.work-document-preview-page, .work-pdf-export-page.document) > footer {
+  min-height: 0;
+}
+
 .work-document-page-header,
 :is(.work-document-preview-page, .work-pdf-export-page.document) > header {
-  top: 0;
-  height: var(--work-document-page-margin-top, 86px);
+  top: var(--work-document-page-header-distance, 0px);
+  height: var(
+    --work-document-page-header-height,
+    var(--work-document-page-margin-top, 86px)
+  );
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -195,8 +204,12 @@
 
 .work-document-page-footer,
 :is(.work-document-preview-page, .work-pdf-export-page.document) > footer {
-  bottom: 0;
-  height: var(--work-document-page-margin-bottom, 96px);
+  bottom: var(--work-document-page-footer-distance, 0px);
+  height: var(
+    --work-document-page-footer-height,
+    var(--work-document-page-margin-bottom, 96px)
+  );
+  align-items: flex-end;
   justify-content: space-between;
 }
 

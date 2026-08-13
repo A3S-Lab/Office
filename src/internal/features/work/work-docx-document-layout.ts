@@ -3,6 +3,11 @@ import {
   DOCUMENT_PAGE_BORDER_EDGES,
   normalizeDocumentPageBorders,
 } from './work-document-page-borders';
+import {
+  DOCUMENT_PAGE_MARGIN_KEYS,
+  type WorkDocumentPageMargins,
+  normalizeDocumentPageMargins,
+} from './work-document-page-margins';
 import type { WorkDocumentSection } from './work-document-section';
 import { setDocxBorderAttributes } from './work-docx-paragraph-borders-export';
 import {
@@ -38,6 +43,25 @@ const SECTION_PROPERTY_ORDER = [
   'printerSettings',
   'sectPrChange',
 ] as const;
+const SETTINGS_ORDER = [
+  'mirrorMargins',
+  'alignBordersAndEdges',
+  'bordersDoNotSurroundHeader',
+  'bordersDoNotSurroundFooter',
+  'gutterAtTop',
+  'hideSpellingErrors',
+  'hideGrammaticalErrors',
+  'activeWritingStyle',
+  'proofState',
+  'formsDesign',
+  'attachedTemplate',
+  'linkStyles',
+  'trackRevisions',
+  'evenAndOddHeaders',
+  'updateFields',
+  'defaultTabStop',
+  'compat',
+] as const;
 
 export async function patchDocxDocumentLayout(
   buffer: ArrayBuffer,
@@ -47,13 +71,150 @@ export async function patchDocxDocumentLayout(
   const entry = archive.file('word/document.xml');
   if (!entry) return buffer;
   const document = parseXml(await entry.async('string'), 'word/document.xml');
+  patchSectionPageMargins(document, sections);
   patchSectionPageBorders(document, sections);
   patchSectionDocumentGrids(document, sections);
   archive.file(
     'word/document.xml',
     new XMLSerializer().serializeToString(document),
   );
+  await patchDocumentPageMarginSettings(archive, sections);
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function patchSectionPageMargins(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  if (
+    sections.some((section) => section.layout.pageMargins) &&
+    sectionProperties.length !== sections.length
+  ) {
+    throw new Error(
+      `Generated DOCX has ${sectionProperties.length} section properties for ${sections.length} exact page-margin section(s).`,
+    );
+  }
+  const prefix =
+    xmlNamespacePrefix(document.documentElement, WORD_NAMESPACE) ?? 'w';
+  for (const [index, properties] of sectionProperties.entries()) {
+    const pageMargins = normalizeDocumentPageMargins(
+      sections[index]?.layout.pageMargins,
+    );
+    if (pageMargins) {
+      for (const element of directChildren(properties, 'pgMar').filter(
+        (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+      )) {
+        element.remove();
+      }
+      const element = document.createElementNS(
+        WORD_NAMESPACE,
+        `${prefix}:pgMar`,
+      );
+      for (const key of DOCUMENT_PAGE_MARGIN_KEYS) {
+        setWordAttribute(document, element, key, String(pageMargins[key]));
+      }
+      insertSectionProperty(properties, element);
+    }
+    for (const element of directChildren(properties, 'rtlGutter').filter(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    )) {
+      element.remove();
+    }
+    if (pageMargins?.gutterOnRight !== undefined) {
+      const element = document.createElementNS(
+        WORD_NAMESPACE,
+        `${prefix}:rtlGutter`,
+      );
+      setWordAttribute(
+        document,
+        element,
+        'val',
+        pageMargins.gutterOnRight ? '1' : '0',
+      );
+      insertSectionProperty(properties, element);
+    }
+  }
+}
+
+async function patchDocumentPageMarginSettings(
+  archive: JSZip,
+  sections: readonly WorkDocumentSection[],
+): Promise<void> {
+  const pageMargins = sections.flatMap((section) => {
+    const value = normalizeDocumentPageMargins(section.layout.pageMargins);
+    return value ? [value] : [];
+  });
+  if (!pageMargins.length) return;
+  assertConsistentPageMarginSettings(pageMargins);
+  const entry = archive.file('word/settings.xml');
+  if (!entry) {
+    throw new Error(
+      'Generated DOCX lacks word/settings.xml for exact page-margin settings.',
+    );
+  }
+  const document = parseXml(await entry.async('string'), 'word/settings.xml');
+  const root = document.documentElement;
+  if (root.localName !== 'settings' || root.namespaceURI !== WORD_NAMESPACE) {
+    throw new Error(
+      'Generated DOCX word/settings.xml is not WordprocessingML.',
+    );
+  }
+  replaceSettingsOnOff(
+    document,
+    root,
+    'mirrorMargins',
+    pageMargins[0]?.mirrorMargins,
+  );
+  replaceSettingsOnOff(
+    document,
+    root,
+    'gutterAtTop',
+    pageMargins[0]?.gutterAtTop,
+  );
+  archive.file(
+    'word/settings.xml',
+    new XMLSerializer().serializeToString(document),
+  );
+}
+
+function assertConsistentPageMarginSettings(
+  pageMargins: readonly WorkDocumentPageMargins[],
+): void {
+  const first = pageMargins[0];
+  if (!first) return;
+  if (
+    pageMargins.some(
+      (value) =>
+        value.mirrorMargins !== first.mirrorMargins ||
+        value.gutterAtTop !== first.gutterAtTop,
+    )
+  ) {
+    throw new Error(
+      'Document-wide mirrorMargins and gutterAtTop values must match across all sections.',
+    );
+  }
+}
+
+function replaceSettingsOnOff(
+  document: Document,
+  root: Element,
+  localName: 'gutterAtTop' | 'mirrorMargins',
+  value: boolean | undefined,
+): void {
+  for (const element of directChildren(root, localName).filter(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  )) {
+    element.remove();
+  }
+  if (value === undefined) return;
+  const prefix = xmlNamespacePrefix(root, WORD_NAMESPACE) ?? 'w';
+  const element = document.createElementNS(
+    WORD_NAMESPACE,
+    `${prefix}:${localName}`,
+  );
+  setWordAttribute(document, element, 'val', value ? '1' : '0');
+  insertOrderedProperty(root, element, SETTINGS_ORDER);
 }
 
 function patchSectionPageBorders(
@@ -132,13 +293,17 @@ function effectiveSectionProperties(document: Document): Element[] {
 }
 
 function insertSectionProperty(parent: Element, element: Element): void {
-  const targetIndex = SECTION_PROPERTY_ORDER.indexOf(
-    element.localName as (typeof SECTION_PROPERTY_ORDER)[number],
-  );
+  insertOrderedProperty(parent, element, SECTION_PROPERTY_ORDER);
+}
+
+function insertOrderedProperty<const T extends readonly string[]>(
+  parent: Element,
+  element: Element,
+  order: T,
+): void {
+  const targetIndex = order.indexOf(element.localName as T[number]);
   const next = directChildren(parent).find((candidate) => {
-    const index = SECTION_PROPERTY_ORDER.indexOf(
-      candidate.localName as (typeof SECTION_PROPERTY_ORDER)[number],
-    );
+    const index = order.indexOf(candidate.localName as T[number]);
     return index >= 0 && index > targetIndex;
   });
   parent.insertBefore(element, next ?? null);

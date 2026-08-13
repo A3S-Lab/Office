@@ -161,7 +161,8 @@ function samePhysicalPageLayout(
     current.margins.top === next.margins.top &&
     current.margins.right === next.margins.right &&
     current.margins.bottom === next.margins.bottom &&
-    current.margins.left === next.margins.left
+    current.margins.left === next.margins.left &&
+    JSON.stringify(current.pageMargins) === JSON.stringify(next.pageMargins)
   );
 }
 

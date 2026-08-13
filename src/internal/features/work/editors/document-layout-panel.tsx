@@ -2,6 +2,16 @@ import { useId, useState } from 'react';
 import { Button, Tabs } from '../../../design-system/primitives';
 import { clampDocumentMargin } from '../work-document-layout';
 import {
+  documentPageMarginsForLayout,
+  type WorkDocumentGutterPosition,
+  type WorkDocumentPageMarginMode,
+  twipsToMillimeters,
+  updateDocumentGutterPosition,
+  updateDocumentMirrorMargins,
+  updateDocumentPageMarginMillimeters,
+  updateDocumentPageMarginMode,
+} from '../work-document-page-margins';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
 } from '../work-document-page-chrome';
@@ -51,6 +61,12 @@ export function DocumentLayoutPanel({
     ['bottom', '下'],
     ['left', '左'],
   ];
+  const pageMargins = documentPageMarginsForLayout(layout);
+  const gutterPosition: WorkDocumentGutterPosition = pageMargins.gutterAtTop
+    ? 'top'
+    : pageMargins.gutterOnRight
+      ? 'right'
+      : 'left';
   const update = (patch: Partial<WorkDocumentSectionLayout>) =>
     onChange({ ...layout, ...patch });
   return (
@@ -140,18 +156,127 @@ export function DocumentLayoutPanel({
                       value={layout.margins[side]}
                       normalizeValue={normalizeDocumentMarginInput}
                       onValueCommit={(value) =>
-                        update({
-                          margins: {
-                            ...layout.margins,
-                            [side]: value,
-                          },
-                        })
+                        onChange(
+                          updateDocumentPageMarginMillimeters(
+                            layout,
+                            side,
+                            value,
+                          ),
+                        )
                       }
                     />
                   </div>
                 ))}
               </div>
             </fieldset>
+            <section
+              className="work-document-layout-group"
+              aria-label="高级页边距"
+            >
+              <h3>高级页边距</h3>
+              <div className="work-document-layout-margin-grid">
+                {(
+                  [
+                    ['header', '页眉距顶端'],
+                    ['footer', '页脚距底端'],
+                    ['gutter', '装订线'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div className="work-office-field" key={key}>
+                    <span>{label}</span>
+                    <CommittedOfficeNumberField
+                      min={0}
+                      max={60}
+                      step={0.1}
+                      ariaLabel={label}
+                      value={twipsToMillimeters(pageMargins[key])}
+                      normalizeValue={normalizeDocumentPageOffsetInput}
+                      onValueCommit={(value) =>
+                        onChange(
+                          updateDocumentPageMarginMillimeters(
+                            layout,
+                            key,
+                            value,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="work-document-layout-paired-fields">
+                <div className="work-office-field">
+                  <span>上边距规则</span>
+                  <OfficeSelect<WorkDocumentPageMarginMode>
+                    ariaLabel="上边距与页眉关系"
+                    value={pageMargins.top < 0 ? 'fromPageEdge' : 'clearChrome'}
+                    options={[
+                      { value: 'clearChrome', label: '避让页眉' },
+                      { value: 'fromPageEdge', label: '允许重叠' },
+                    ]}
+                    onValueChange={(mode) =>
+                      onChange(
+                        updateDocumentPageMarginMode(layout, 'top', mode),
+                      )
+                    }
+                  />
+                </div>
+                <div className="work-office-field">
+                  <span>下边距规则</span>
+                  <OfficeSelect<WorkDocumentPageMarginMode>
+                    ariaLabel="下边距与页脚关系"
+                    value={
+                      pageMargins.bottom < 0 ? 'fromPageEdge' : 'clearChrome'
+                    }
+                    options={[
+                      { value: 'clearChrome', label: '避让页脚' },
+                      { value: 'fromPageEdge', label: '允许重叠' },
+                    ]}
+                    onValueChange={(mode) =>
+                      onChange(
+                        updateDocumentPageMarginMode(layout, 'bottom', mode),
+                      )
+                    }
+                  />
+                </div>
+              </div>
+              <div className="work-document-layout-paired-fields">
+                <div className="work-office-field">
+                  <span>多页方式</span>
+                  <OfficeSelect<'mirrored' | 'normal'>
+                    ariaLabel="镜像页边距"
+                    value={pageMargins.mirrorMargins ? 'mirrored' : 'normal'}
+                    options={[
+                      { value: 'normal', label: '普通' },
+                      { value: 'mirrored', label: '镜像页边距' },
+                    ]}
+                    onValueChange={(value) =>
+                      onChange(
+                        updateDocumentMirrorMargins(
+                          layout,
+                          value === 'mirrored',
+                        ),
+                      )
+                    }
+                  />
+                </div>
+                <div className="work-office-field">
+                  <span>装订线位置</span>
+                  <OfficeSelect<WorkDocumentGutterPosition>
+                    ariaLabel="装订线位置"
+                    value={gutterPosition}
+                    options={[
+                      { value: 'left', label: '左侧' },
+                      { value: 'right', label: '右侧' },
+                      { value: 'top', label: '顶部' },
+                    ]}
+                    onValueChange={(position) =>
+                      onChange(updateDocumentGutterPosition(layout, position))
+                    }
+                  />
+                </div>
+              </div>
+            </section>
           </div>
         )}
         {activeTab === 'columns' && (
@@ -240,6 +365,14 @@ function normalizeDocumentMarginInput(value: string): number | null {
   if (!value.trim()) return null;
   const number = Number(value);
   return Number.isFinite(number) ? clampDocumentMargin(number) : null;
+}
+
+function normalizeDocumentPageOffsetInput(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(60, Math.max(0, Math.round(number * 10) / 10))
+    : null;
 }
 
 function normalizeDocumentPageNumberInput(value: string): number | null {

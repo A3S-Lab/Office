@@ -78,6 +78,15 @@ import {
 import { parseDocxPageBorders } from './work-docx-page-borders-import';
 import { importDocxPageColor } from './work-docx-page-color';
 import {
+  documentPageMarginBody,
+  documentPageMarginsForLayout,
+} from './work-document-page-margins';
+import {
+  inspectDocxPageMarginSettings,
+  type InspectedDocxPageMarginSettings,
+  parseDocxPageMargins,
+} from './work-docx-page-margins-import';
+import {
   applyImportedDocxParagraphAlignmentMarkers,
   hasImportedDocxParagraphAlignmentMarkers,
   type ImportedDocxParagraphAlignmentMarkers,
@@ -172,7 +181,6 @@ import type {
   WorkDocumentContent,
   WorkDocumentGrid,
   WorkDocumentGridType,
-  WorkDocumentMargins,
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
 } from './work-types';
@@ -209,7 +217,6 @@ export interface PreparedDocxImport {
   trackChanges: boolean;
 }
 
-const TWIPS_PER_MILLIMETER = 1440 / 25.4;
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
@@ -330,6 +337,7 @@ export async function prepareDocxImport(
   const settings = archive.has('word/settings.xml')
     ? await archive.xml('word/settings.xml')
     : null;
+  const pageMarginSettings = inspectDocxPageMarginSettings(settings);
   const theme = createDocxThemeResolver(themeDocument, settings);
   const paragraphBorderMarkers = markDocxParagraphBorders(
     document,
@@ -428,6 +436,7 @@ export async function prepareDocxImport(
       previous,
       oddEvenPageChrome,
       theme,
+      pageMarginSettings,
     );
     sections.push({ id: `document-section-${index + 1}`, layout });
     previous = layout;
@@ -638,6 +647,7 @@ async function parseSectionLayout(
   previous: WorkDocumentSectionLayout,
   oddEvenPageChrome: boolean,
   theme: DocxThemeResolver,
+  pageMarginSettings: InspectedDocxPageMarginSettings,
 ): Promise<WorkDocumentSectionLayout> {
   const pageSize = firstDescendant(section, 'pgSz');
   const width = numberAttribute(pageSize, 'w');
@@ -655,10 +665,18 @@ async function parseSectionLayout(
       ? 'letter'
       : 'a4'
     : previous.pageSize;
-  const marginsElement = firstDescendant(section, 'pgMar');
   const columnsElement = firstDescendant(section, 'cols');
   const documentGridElement = directChild(section, 'docGrid');
   const pageBorders = parseDocxPageBorders(section, theme);
+  const parsedPageMargins = parseDocxPageMargins(
+    section,
+    pageMarginSettings,
+    documentPageMarginsForLayout(previous),
+  );
+  const pageMargins =
+    parsedPageMargins === null
+      ? documentPageMarginsForLayout(previous)
+      : parsedPageMargins;
   const pageChrome = await importSectionPageChrome(
     section,
     archive,
@@ -673,9 +691,7 @@ async function parseSectionLayout(
   return {
     pageSize: size,
     orientation,
-    margins: marginsElement
-      ? parseMargins(marginsElement, previous.margins)
-      : { ...previous.margins },
+    margins: documentPageMarginBody(pageMargins, previous.margins),
     columns: columnsElement
       ? importDocxColumns(columnsElement, previous.columns)
       : { ...previous.columns },
@@ -685,6 +701,7 @@ async function parseSectionLayout(
         ? { documentGrid: { ...previous.documentGrid } }
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
+    ...(pageMargins ? { pageMargins } : {}),
     breakAfter: parseSectionBreak(firstDescendant(section, 'type')),
     ...pageChrome,
     pageNumberStart: pageNumberStart > 0 ? pageNumberStart : undefined,
@@ -815,24 +832,6 @@ function sectionMarker(index: number): string {
   return `__A3S_WORK_DOCUMENT_SECTION_${index + 1}__`;
 }
 
-function parseMargins(
-  element: Element,
-  fallback: WorkDocumentMargins,
-): WorkDocumentMargins {
-  return {
-    top: twipsToMillimeters(numberAttribute(element, 'top'), fallback.top),
-    right: twipsToMillimeters(
-      numberAttribute(element, 'right'),
-      fallback.right,
-    ),
-    bottom: twipsToMillimeters(
-      numberAttribute(element, 'bottom'),
-      fallback.bottom,
-    ),
-    left: twipsToMillimeters(numberAttribute(element, 'left'), fallback.left),
-  };
-}
-
 function parseSectionBreak(
   element: Element | undefined,
 ): WorkDocumentSectionBreakType {
@@ -861,9 +860,4 @@ function closestAncestor(element: Element, localName: string): Element | null {
     current = current.parentElement;
   }
   return null;
-}
-
-function twipsToMillimeters(value: number, fallback: number): number {
-  if (value <= 0) return fallback;
-  return Math.round((value / TWIPS_PER_MILLIMETER) * 10) / 10;
 }

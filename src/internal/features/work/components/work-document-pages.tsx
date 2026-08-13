@@ -7,6 +7,7 @@ import {
 } from '../work-document-columns';
 import { resolveDocumentPageChrome } from '../work-document-page-chrome';
 import { documentPageColor } from '../work-document-page-color';
+import { resolveDocumentPageMargins } from '../work-document-page-margins';
 import {
   documentPageDescriptors,
   type WorkDocumentPageDescriptor,
@@ -49,12 +50,15 @@ function DocumentPdfPage({
     page.physicalPage,
   );
   const pageClass = `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`;
+  const resolvedMargins = resolveDocumentPageMargins(layout, page.physicalPage);
   const marginPixels = {
-    top: millimetersToPixels(layout.margins.top),
-    right: millimetersToPixels(layout.margins.right),
-    bottom: millimetersToPixels(layout.margins.bottom),
-    left: millimetersToPixels(layout.margins.left),
+    top: millimetersToPixels(resolvedMargins.body.top),
+    right: millimetersToPixels(resolvedMargins.body.right),
+    bottom: millimetersToPixels(resolvedMargins.body.bottom),
+    left: millimetersToPixels(resolvedMargins.body.left),
   };
+  const headerDistance = millimetersToPixels(resolvedMargins.headerDistance);
+  const footerDistance = millimetersToPixels(resolvedMargins.footerDistance);
   useLayoutEffect(() => {
     const element = pageRef.current;
     if (!element) return;
@@ -89,6 +93,11 @@ function DocumentPdfPage({
       data-document-page-number={page.pageNumber}
       data-document-blank-page={String(page.blank)}
       data-document-page-chrome={pageChrome.variant}
+      data-document-page-gutter-position={resolvedMargins.gutterPosition}
+      data-document-page-margins-bounded={String(resolvedMargins.bounded)}
+      data-document-page-mirror-margins={String(resolvedMargins.mirrorMargins)}
+      data-document-page-top-margin-mode={resolvedMargins.topMode}
+      data-document-page-bottom-margin-mode={resolvedMargins.bottomMode}
       data-document-comment-appearance="plain"
       aria-label={`文字打印预览第 ${page.physicalPage} 页`}
       style={
@@ -99,10 +108,24 @@ function DocumentPdfPage({
           '--work-document-page-margin-right': `${marginPixels.right}px`,
           '--work-document-page-margin-bottom': `${marginPixels.bottom}px`,
           '--work-document-page-margin-left': `${marginPixels.left}px`,
+          '--work-document-page-header-distance': `${headerDistance}px`,
+          '--work-document-page-footer-distance': `${footerDistance}px`,
+          '--work-document-page-header-height': `${Math.max(
+            0,
+            marginPixels.top - headerDistance,
+          )}px`,
+          '--work-document-page-footer-height': `${Math.max(
+            0,
+            marginPixels.bottom - footerDistance,
+          )}px`,
         } as CSSProperties
       }
     >
-      <WorkDocumentPageBorder layout={layout} sectionPage={page.sectionPage} />
+      <WorkDocumentPageBorder
+        layout={layout}
+        physicalPage={page.physicalPage}
+        sectionPage={page.sectionPage}
+      />
       {pageChrome.headerHtml && (
         <header>
           <div

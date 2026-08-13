@@ -67,7 +67,8 @@ collaboration transport, and AI providers.
 | --- | --- | --- | --- |
 | Text entry, character and paragraph formatting, styles, clipboard, format painter, undo/redo | **Supported** | Long-tail Word style/effect properties can normalize | Maintain / P0 fidelity |
 | Bullets, numbering, nesting, restarts, RTL lists | **Supported** for common editable structures | Exotic numbering pictures and some inherited list metadata remain compatibility work | P1 |
-| Page size, orientation, margins, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
+| Page size, orientation, columns, section/page breaks | **Supported** per section | Browser line breaking and pagination are not yet desktop-engine exact | P0 |
+| Page margins (`w:pgMar`, `mirrorMargins`, `gutterAtTop`, `rtlGutter`) | **Supported** on current `main`: all seven native twip values, signed top/bottom overlap semantics, strict universal measures, header/footer distances, top/left/right gutters, facing-page swaps, multi-section inheritance, diagnostics, editing, PDF preview, and exact DOCX export | The continuous editing surface projects the first-page horizontal origin; physical-page PDF preview is authoritative for facing-page placement | Maintain / P0 regression gate |
 | Headers, footers, first/even/default variants, page numbers | **Supported** | Complex fields and application-specific placement settings remain partial | P0 |
 | Page borders (`w:pgBorders`) | **Supported** on current `main`: four ordered edges, 197 styles, theme/direct colors, page/text offsets, first/not-first display, front/back order, strict namespaces, diagnostics, exact DOCX export | Art borders and document-wide compatibility modifiers use bounded browser approximations | Maintain / P0 regression gate |
 | Document grid and script-aware typography | **Supported** for section grid, run snap overrides, bundled/host/imported font choices, and WPS layout fixtures | Font substitution and exact shaping can still alter pagination | P0 |
@@ -160,6 +161,10 @@ a phase exits only when its evidence is complete.
 - Treat `w:pgBorders` support as the first completed section-decoration slice;
   keep its malformed, theme, multi-section, preview, and exact-export tests as
   permanent gates.
+- Treat `w:pgMar`, document-wide mirror/top-gutter settings, and per-section
+  `w:rtlGutter` as a completed section-geometry slice; retain exact native
+  twips, signed overlap, strict-measure, malformed-input, inheritance,
+  physical-page preview, editing, diagnostics, and round-trip tests as gates.
 - Expand tracked changes from body-text insertion/deletion to formatting,
   numbering, section, table, row, cell, and move revisions.
 - Make unsupported semantics explicit in compatibility reports; never attach

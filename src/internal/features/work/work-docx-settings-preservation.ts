@@ -20,9 +20,11 @@ const SOURCE_SETTING_DENYLIST = new Set([
   'attachedTemplate',
   'documentProtection',
   'mailMerge',
+  'mirrorMargins',
   'trackRevisions',
   'updateFields',
   'writeProtection',
+  'gutterAtTop',
 ]);
 
 /**
