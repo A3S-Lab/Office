@@ -63,6 +63,8 @@ export const DocumentSection = Node.create({
       pageChrome: hiddenAttribute(''),
       pageBorders: hiddenAttribute(''),
       pageMargins: hiddenAttribute(''),
+      pageGeometry: hiddenAttribute(''),
+      paperSource: hiddenAttribute(''),
       documentGridType: hiddenAttribute(''),
       documentGridLinePitch: hiddenAttribute(null),
     };
@@ -146,6 +148,8 @@ export const DocumentSection = Node.create({
             pageChrome: node.dataset.sectionPageChrome ?? '',
             pageBorders: node.dataset.sectionPageBorders ?? '',
             pageMargins: node.dataset.sectionPageMargins ?? '',
+            pageGeometry: node.dataset.sectionPageGeometry ?? '',
+            paperSource: node.dataset.sectionPaperSource ?? '',
             documentGridType: (node.dataset.sectionDocumentGridType ??
               '') as DocumentSectionNodeAttributes['documentGridType'],
             documentGridLinePitch: nullableNumberAttribute(

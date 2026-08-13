@@ -165,6 +165,15 @@ a phase exits only when its evidence is complete.
   `w:rtlGutter` as a completed section-geometry slice; retain exact native
   twips, signed overlap, strict-measure, malformed-input, inheritance,
   physical-page preview, editing, diagnostics, and round-trip tests as gates.
+- Treat exact `w:pgSz` width, height, orientation, and paper code plus
+  printer-specific `w:paperSrc` tray codes as a completed page-geometry slice;
+  retain strict/transitional exact-measure, malformed and namespace-spoofed
+  input, inheritance, custom-size editing, bounded tiny-page projection,
+  per-page PDF geometry, diagnostics, and exact round-trip tests as gates.
+- Replace the live editor's shared page stack with per-section page metrics so
+  mixed custom-size sections paginate exactly instead of using the active
+  section's geometry; static print preview and PDF already use each page's
+  exact dimensions.
 - Expand tracked changes from body-text insertion/deletion to formatting,
   numbering, section, table, row, cell, and move revisions.
 - Make unsupported semantics explicit in compatibility reports; never attach

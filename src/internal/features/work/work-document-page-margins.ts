@@ -2,6 +2,7 @@ import type {
   WorkDocumentMargins,
   WorkDocumentSectionLayout,
 } from './work-types';
+import { resolveDocumentPageSize } from './work-document-page-size';
 
 export const DOCUMENT_PAGE_MARGIN_KEYS = [
   'top',
@@ -196,7 +197,7 @@ export function documentPageHorizontalMarginTwips(
 export function resolveDocumentPageMargins(
   layout: Pick<
     WorkDocumentSectionLayout,
-    'margins' | 'orientation' | 'pageMargins' | 'pageSize'
+    'margins' | 'orientation' | 'pageGeometry' | 'pageMargins' | 'pageSize'
   >,
   physicalPage = 1,
 ): ResolvedDocumentPageMargins {
@@ -411,15 +412,13 @@ function oppositeSide(side: 'left' | 'right'): 'left' | 'right' {
 }
 
 function documentPageSizeMillimeters(
-  layout: Pick<WorkDocumentSectionLayout, 'orientation' | 'pageSize'>,
+  layout: Pick<
+    WorkDocumentSectionLayout,
+    'orientation' | 'pageGeometry' | 'pageSize'
+  >,
 ): { width: number; height: number } {
-  const portrait =
-    layout.pageSize === 'letter'
-      ? { width: 215.9, height: 279.4 }
-      : { width: 210, height: 297 };
-  return layout.orientation === 'landscape'
-    ? { width: portrait.height, height: portrait.width }
-    : portrait;
+  const pageSize = resolveDocumentPageSize(layout);
+  return { width: pageSize.width, height: pageSize.height };
 }
 
 function boundMarginPair(

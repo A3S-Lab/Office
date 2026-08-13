@@ -24,6 +24,16 @@ import {
   serializeDocumentPageMargins,
 } from './work-document-page-margins';
 import {
+  applyDocumentPageGeometry,
+  normalizeDocumentPageGeometry,
+  normalizeDocumentPaperSize,
+  normalizeDocumentPaperSource,
+  parseDocumentPageGeometry,
+  parseDocumentPaperSource,
+  serializeDocumentPageGeometry,
+  serializeDocumentPaperSource,
+} from './work-document-page-size';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
   parseDocumentPageChrome,
@@ -63,6 +73,8 @@ export interface DocumentSectionNodeAttributes {
   pageChrome: string;
   pageBorders: string;
   pageMargins: string;
+  pageGeometry: string;
+  paperSource: string;
   documentGridType: WorkDocumentGridType | '';
   documentGridLinePitch: number | null;
 }
@@ -76,9 +88,11 @@ export function documentInitialSectionLayout(
   const legacy = documentPageChromeLegacyFields(pageChrome);
   const pageBorders = normalizeDocumentPageBorders(content.pageBorders);
   const pageMargins = normalizeDocumentPageMargins(content.pageMargins);
+  const pageGeometry = normalizeDocumentPageGeometry(content.pageGeometry);
+  const paperSource = normalizeDocumentPaperSource(content.paperSource);
   const margins = documentMargins(content);
-  return {
-    pageSize: content.pageSize,
+  const layout: WorkDocumentSectionLayout = {
+    pageSize: normalizeDocumentPaperSize(content.pageSize),
     orientation: content.orientation ?? 'portrait',
     margins: documentPageMarginBody(pageMargins, margins),
     columns: normalizeDocumentColumns(content.columns),
@@ -90,7 +104,12 @@ export function documentInitialSectionLayout(
     pageChrome,
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
+    ...(pageGeometry ? { pageGeometry } : {}),
+    ...(paperSource ? { paperSource } : {}),
   };
+  return pageGeometry
+    ? applyDocumentPageGeometry(layout, pageGeometry)
+    : layout;
 }
 
 export function normalizeDocumentHtml(content: WorkDocumentContent): string {
@@ -191,6 +210,8 @@ export function documentSectionNodeAttributes(
     pageChrome: serializeDocumentPageChrome(pageChrome),
     pageBorders: serializeDocumentPageBorders(layout.pageBorders) ?? '',
     pageMargins: serializeDocumentPageMargins(layout.pageMargins) ?? '',
+    pageGeometry: serializeDocumentPageGeometry(layout.pageGeometry) ?? '',
+    paperSource: serializeDocumentPaperSource(layout.paperSource) ?? '',
     documentGridType: layout.documentGrid?.type ?? '',
     documentGridLinePitch:
       normalizedDocumentGrid(layout.documentGrid)?.linePitch ?? null,
@@ -223,6 +244,8 @@ export function documentSectionLayoutFromNodeAttributes(
   const documentGrid = documentGridFromNodeAttributes(attributes, base);
   const pageBorders = parseDocumentPageBorders(attributes.pageBorders);
   const pageMargins = parseDocumentPageMargins(attributes.pageMargins);
+  const pageGeometry = parseDocumentPageGeometry(attributes.pageGeometry);
+  const paperSource = parseDocumentPaperSource(attributes.paperSource);
   const margins = {
     top: clampDocumentMargin(
       finiteNumber(attributes.marginTop, base.margins.top),
@@ -237,13 +260,8 @@ export function documentSectionLayoutFromNodeAttributes(
       finiteNumber(attributes.marginLeft, base.margins.left),
     ),
   };
-  return {
-    pageSize:
-      attributes.pageSize === 'letter'
-        ? 'letter'
-        : attributes.pageSize === 'a4'
-          ? 'a4'
-          : base.pageSize,
+  const layout: WorkDocumentSectionLayout = {
+    pageSize: normalizeDocumentPaperSize(attributes.pageSize, base.pageSize),
     orientation:
       attributes.orientation === 'landscape'
         ? 'landscape'
@@ -269,7 +287,12 @@ export function documentSectionLayoutFromNodeAttributes(
     ...(documentGrid ? { documentGrid } : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
+    ...(pageGeometry ? { pageGeometry } : {}),
+    ...(paperSource ? { paperSource } : {}),
   };
+  return pageGeometry
+    ? applyDocumentPageGeometry(layout, pageGeometry)
+    : layout;
 }
 
 export function documentSectionDomAttributes(
@@ -301,6 +324,8 @@ export function documentSectionDomAttributes(
     'data-section-page-chrome': attributes.pageChrome,
     'data-section-page-borders': attributes.pageBorders,
     'data-section-page-margins': attributes.pageMargins,
+    'data-section-page-geometry': attributes.pageGeometry,
+    'data-section-paper-source': attributes.paperSource,
     'data-section-document-grid-type': attributes.documentGridType,
     'data-section-document-grid-line-pitch':
       attributes.documentGridLinePitch === null
@@ -337,6 +362,8 @@ export function documentSectionLayoutFromElement(
       pageChrome: element.dataset.sectionPageChrome ?? '',
       pageBorders: element.dataset.sectionPageBorders ?? '',
       pageMargins: element.dataset.sectionPageMargins ?? '',
+      pageGeometry: element.dataset.sectionPageGeometry ?? '',
+      paperSource: element.dataset.sectionPaperSource ?? '',
       documentGridType: element.dataset
         .sectionDocumentGridType as WorkDocumentGridType,
       documentGridLinePitch:
@@ -372,6 +399,8 @@ export function syncDocumentContentFromHtml(
     pageChrome: first.pageChrome,
     pageBorders: first.pageBorders,
     pageMargins: first.pageMargins,
+    pageGeometry: first.pageGeometry,
+    paperSource: first.paperSource,
   };
 }
 
@@ -390,6 +419,8 @@ export function documentContentLayoutProperties(
     pageChrome: layout.pageChrome,
     pageBorders: layout.pageBorders,
     pageMargins: layout.pageMargins,
+    pageGeometry: layout.pageGeometry,
+    paperSource: layout.paperSource,
   };
 }
 

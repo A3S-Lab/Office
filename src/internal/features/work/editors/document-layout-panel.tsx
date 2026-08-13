@@ -12,11 +12,20 @@ import {
   updateDocumentPageMarginMode,
 } from '../work-document-page-margins';
 import {
+  normalizeDocumentPageGeometry,
+  pageTwipsToMillimeters,
+  resolveDocumentPageSize,
+  updateDocumentCustomPageMillimeters,
+  updateDocumentPageOrientation,
+  updateDocumentPaperSizePreset,
+} from '../work-document-page-size';
+import {
   documentPageChromeLegacyFields,
   normalizeDocumentPageChrome,
 } from '../work-document-page-chrome';
 import type {
   WorkDocumentMargins,
+  WorkDocumentPaperSize,
   WorkDocumentSectionLayout,
 } from '../work-types';
 import { DocumentColumnsPanel } from './document-columns-panel';
@@ -50,6 +59,9 @@ export function DocumentLayoutPanel({
   const tabsId = useId();
   const [internalActiveTab, setInternalActiveTab] =
     useState<DocumentLayoutPanelTab>('page');
+  const [customPaperSelected, setCustomPaperSelected] = useState(
+    layout.pageSize === 'custom',
+  );
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const changeActiveTab = (tab: DocumentLayoutPanelTab) => {
     if (controlledActiveTab === undefined) setInternalActiveTab(tab);
@@ -62,6 +74,14 @@ export function DocumentLayoutPanel({
     ['left', '左'],
   ];
   const pageMargins = documentPageMarginsForLayout(layout);
+  const exactPageGeometry = normalizeDocumentPageGeometry(layout.pageGeometry);
+  const resolvedPageSize = resolveDocumentPageSize(layout);
+  const customPageDimensions = exactPageGeometry
+    ? {
+        width: pageTwipsToMillimeters(exactPageGeometry.width),
+        height: pageTwipsToMillimeters(exactPageGeometry.height),
+      }
+    : { width: resolvedPageSize.width, height: resolvedPageSize.height };
   const gutterPosition: WorkDocumentGutterPosition = pageMargins.gutterAtTop
     ? 'top'
     : pageMargins.gutterOnRight
@@ -118,14 +138,26 @@ export function DocumentLayoutPanel({
               <div className="work-document-layout-paired-fields">
                 <div className="work-office-field">
                   <span>大小</span>
-                  <OfficeSelect
+                  <OfficeSelect<WorkDocumentPaperSize>
                     ariaLabel="纸张大小"
-                    value={layout.pageSize}
+                    value={customPaperSelected ? 'custom' : layout.pageSize}
                     options={[
+                      { value: 'a3', label: 'A3' },
                       { value: 'a4', label: 'A4' },
+                      { value: 'a5', label: 'A5' },
                       { value: 'letter', label: 'Letter' },
+                      { value: 'legal', label: 'Legal' },
+                      { value: 'tabloid', label: 'Tabloid' },
+                      { value: 'custom', label: '自定义' },
                     ]}
-                    onValueChange={(pageSize) => update({ pageSize })}
+                    onValueChange={(pageSize) => {
+                      if (pageSize === 'custom') {
+                        setCustomPaperSelected(true);
+                        return;
+                      }
+                      setCustomPaperSelected(false);
+                      onChange(updateDocumentPaperSizePreset(layout, pageSize));
+                    }}
                   />
                 </div>
                 <div className="work-office-field">
@@ -137,10 +169,46 @@ export function DocumentLayoutPanel({
                       { value: 'portrait', label: '纵向' },
                       { value: 'landscape', label: '横向' },
                     ]}
-                    onValueChange={(orientation) => update({ orientation })}
+                    onValueChange={(orientation) =>
+                      onChange(
+                        updateDocumentPageOrientation(layout, orientation),
+                      )
+                    }
                   />
                 </div>
               </div>
+              {(customPaperSelected || layout.pageSize === 'custom') && (
+                <div className="work-document-layout-paired-fields">
+                  {(
+                    [
+                      ['width', '宽度'],
+                      ['height', '高度'],
+                    ] as const
+                  ).map(([dimension, label]) => (
+                    <div className="work-office-field" key={dimension}>
+                      <span>{label}（毫米）</span>
+                      <CommittedOfficeNumberField
+                        min={25.4}
+                        max={558.8}
+                        step={0.1}
+                        ariaLabel={`纸张${label}`}
+                        value={customPageDimensions[dimension]}
+                        normalizeValue={normalizeDocumentPageDimensionInput}
+                        onValueCommit={(value) => {
+                          setCustomPaperSelected(false);
+                          onChange(
+                            updateDocumentCustomPageMillimeters(
+                              layout,
+                              dimension,
+                              value,
+                            ),
+                          );
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
             <fieldset className="work-document-layout-group">
               <legend>页边距（毫米）</legend>
@@ -372,6 +440,14 @@ function normalizeDocumentPageOffsetInput(value: string): number | null {
   const number = Number(value);
   return Number.isFinite(number)
     ? Math.min(60, Math.max(0, Math.round(number * 10) / 10))
+    : null;
+}
+
+function normalizeDocumentPageDimensionInput(value: string): number | null {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? Math.min(558.8, Math.max(25.4, Math.round(number * 10) / 10))
     : null;
 }
 

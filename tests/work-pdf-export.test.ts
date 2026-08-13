@@ -82,6 +82,39 @@ test('rejects stale or malformed live pagination metadata', () => {
   expect(workLiveDocumentPdfSurfaceForExport('document-1')).toBeNull();
 });
 
+test('keeps exact custom page points on a live pagination surface', () => {
+  document.body.innerHTML = `
+    <section data-work-pdf-artifact="document-custom" data-work-pdf-surface="live">
+      <article
+        data-work-pdf-live-document
+        data-pdf-orientation="landscape"
+        data-pdf-page-count="1"
+        data-pdf-page-gap="28"
+        data-pdf-page-height="640.4"
+        data-pdf-page-height-points="480.3"
+        data-pdf-page-size="custom"
+        data-pdf-page-width="1067.2"
+        data-pdf-page-width-points="800.4"
+      >
+        <section class="work-document-editable">
+          <div
+            class="ProseMirror"
+            data-pagination-pages="1"
+            data-pagination-state="ready"
+          ></div>
+        </section>
+      </article>
+    </section>
+  `;
+
+  expect(workLiveDocumentPdfSurfaceForExport('document-custom')).toMatchObject({
+    orientation: 'landscape',
+    pageHeightPoints: 480.3,
+    pageSize: 'a4',
+    pageWidthPoints: 800.4,
+  });
+});
+
 test('keeps explicit PDF page selection in physical document order', () => {
   document.body.innerHTML = `
     <section data-work-pdf-artifact="document-2" data-work-pdf-surface="export">

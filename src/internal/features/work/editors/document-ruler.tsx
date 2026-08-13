@@ -17,6 +17,7 @@ import {
   type DocumentParagraphIndent,
 } from '../work-document-paragraph-formatting';
 import type { DocumentTabStop } from '../work-document-tab-stops';
+import { resolveDocumentPageSize } from '../work-document-page-size';
 import type { WorkDocumentSectionLayout } from '../work-types';
 import { DocumentRulerTabStops } from './document-ruler-tab-stops';
 
@@ -374,27 +375,13 @@ function DocumentRulerHandle({
 export function documentRulerPageWidth(
   layout: WorkDocumentSectionLayout,
 ): number {
-  const portrait = documentRulerPortraitPage(layout);
-  return layout.orientation === 'landscape' ? portrait.height : portrait.width;
+  return resolveDocumentPageSize(layout).widthPixels;
 }
 
 export function documentRulerPageHeight(
   layout: WorkDocumentSectionLayout,
 ): number {
-  const portrait = documentRulerPortraitPage(layout);
-  return layout.orientation === 'landscape' ? portrait.width : portrait.height;
-}
-
-function documentRulerPortraitPage(layout: WorkDocumentSectionLayout): {
-  width: number;
-  height: number;
-} {
-  return layout.pageSize === 'letter'
-    ? { width: 816, height: 1056 }
-    : {
-        width: millimetersToPixels(210),
-        height: millimetersToPixels(297),
-      };
+  return resolveDocumentPageSize(layout).heightPixels;
 }
 
 export function documentRulerMaximumIndentLevel(

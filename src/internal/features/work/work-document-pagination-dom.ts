@@ -144,6 +144,7 @@ export function documentPaginationLayoutKey(
   return JSON.stringify({
     margins: layout.margins,
     orientation: layout.orientation,
+    pageGeometry: layout.pageGeometry,
     pageMargins: layout.pageMargins,
     pageSize: layout.pageSize,
   });

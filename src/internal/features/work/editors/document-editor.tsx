@@ -40,6 +40,7 @@ import {
   normalizeDocumentPageColor,
 } from '../work-document-page-color';
 import { resolveDocumentPageMargins } from '../work-document-page-margins';
+import { resolveDocumentPageSize } from '../work-document-page-size';
 import {
   DocumentPagination,
   documentPageMetrics,
@@ -588,6 +589,7 @@ export function DocumentEditor({
 
   const section = editor ? activeDocumentSection(editor) : null;
   const layout = section?.layout ?? documentInitialSectionLayout(content);
+  const resolvedPageSize = resolveDocumentPageSize(layout);
   const resolvedMargins = resolveDocumentPageMargins(layout, 1);
   const margins = resolvedMargins.body;
   const marginPixels = {
@@ -605,6 +607,7 @@ export function DocumentEditor({
       layout.margins.right,
       layout.margins.top,
       layout.orientation,
+      JSON.stringify(layout.pageGeometry),
       layout.pageSize,
     ],
   );
@@ -1044,6 +1047,16 @@ export function DocumentEditor({
                       ? layout.pageSize
                       : undefined
                   }
+                  data-pdf-page-width-points={
+                    artifactId && pagination.pageCount
+                      ? resolvedPageSize.widthPoints
+                      : undefined
+                  }
+                  data-pdf-page-height-points={
+                    artifactId && pagination.pageCount
+                      ? resolvedPageSize.heightPoints
+                      : undefined
+                  }
                   data-pdf-page-width={
                     artifactId && pagination.pageCount
                       ? kernelPage.width
@@ -1067,7 +1080,11 @@ export function DocumentEditor({
                     {
                       padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
                       backgroundColor: documentPageColor(content.pageColor),
-                      minHeight: paginationSurfaceHeight,
+                      width: viewMode === 'page' ? kernelPage.width : undefined,
+                      minHeight:
+                        viewMode === 'page'
+                          ? (paginationSurfaceHeight ?? kernelPage.height)
+                          : undefined,
                       '--work-document-page-color': documentPageColor(
                         content.pageColor,
                       ),

@@ -198,3 +198,44 @@ test('edits exact page chrome, overlap, mirror, and gutter geometry', () => {
     gutterOnRight: false,
   });
 });
+
+test('selects extended paper presets and commits custom page geometry', () => {
+  const changes: WorkDocumentSectionLayout[] = [];
+
+  function Fixture() {
+    const [current, setCurrent] = useState(layout);
+    return (
+      <DocumentLayoutPanel
+        layout={current}
+        sectionIndex={0}
+        sectionCount={1}
+        onChange={(next) => {
+          changes.push(next);
+          setCurrent(next);
+        }}
+        onInsertSection={() => undefined}
+        onMergeSection={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+  }
+
+  render(<Fixture />);
+  fireEvent.click(screen.getByRole('combobox', { name: '纸张大小' }));
+  fireEvent.click(screen.getByRole('option', { name: 'A3' }));
+  expect(changes.at(-1)?.pageSize).toBe('a3');
+
+  fireEvent.click(screen.getByRole('combobox', { name: '纸张大小' }));
+  fireEvent.click(screen.getByRole('option', { name: '自定义' }));
+  const width = screen.getByRole('textbox', { name: '纸张宽度' });
+  const height = screen.getByRole('textbox', { name: '纸张高度' });
+  expect(width).toHaveValue('297');
+  expect(height).toHaveValue('420');
+  fireEvent.change(width, { target: { value: '180' } });
+  fireEvent.keyDown(width, { key: 'Enter' });
+  expect(changes.at(-1)?.pageSize).toBe('custom');
+  expect(changes.at(-1)?.pageGeometry).toMatchObject({
+    width: 10_205,
+    height: 23_811,
+  });
+});

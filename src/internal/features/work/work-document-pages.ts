@@ -158,6 +158,8 @@ function samePhysicalPageLayout(
   return (
     current.pageSize === next.pageSize &&
     current.orientation === next.orientation &&
+    JSON.stringify(current.pageGeometry) ===
+      JSON.stringify(next.pageGeometry) &&
     current.margins.top === next.margins.top &&
     current.margins.right === next.margins.right &&
     current.margins.bottom === next.margins.bottom &&

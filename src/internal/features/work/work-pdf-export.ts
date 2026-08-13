@@ -14,8 +14,16 @@ export interface WorkLiveDocumentPdfSurface {
   pageCount: number;
   pageGap: number;
   pageHeight: number;
+  pageHeightPoints: number;
   pageSize: PdfPageSize;
   pageWidth: number;
+  pageWidthPoints: number;
+}
+
+interface PdfPageDefinition {
+  format: PdfPageSize | [number, number];
+  height: number;
+  width: number;
 }
 
 const PDF_PAGE_DIMENSIONS: Record<
@@ -100,7 +108,12 @@ export async function exportWorkArtifactPdf(
             pdf,
             pageCanvas,
             liveDocument.orientation,
-            liveDocument.pageSize,
+            pdfPageDefinition(
+              liveDocument.pageSize,
+              liveDocument.orientation,
+              liveDocument.pageWidthPoints,
+              liveDocument.pageHeightPoints,
+            ),
             jsPDF,
           );
         }
@@ -113,6 +126,12 @@ export async function exportWorkArtifactPdf(
       const orientation =
         page.dataset.pdfOrientation === 'portrait' ? 'portrait' : 'landscape';
       const pageSize = pdfPageSize(page.dataset.pdfPageSize);
+      const pageDefinition = pdfPageDefinition(
+        pageSize,
+        orientation,
+        finiteDatasetNumber(page.dataset.pdfPageWidthPoints, 1),
+        finiteDatasetNumber(page.dataset.pdfPageHeightPoints, 1),
+      );
       const backgroundColor =
         getComputedStyle(page).backgroundColor || '#ffffff';
       const canvas = await html2canvas(page, {
@@ -127,7 +146,7 @@ export async function exportWorkArtifactPdf(
         pdf,
         canvas,
         orientation,
-        pageSize,
+        pageDefinition,
         backgroundColor,
         jsPDF,
       );
@@ -158,6 +177,16 @@ export function workLiveDocumentPdfSurfaceForExport(
   const pageGap = finiteDatasetNumber(element.dataset.pdfPageGap, 0);
   const pageHeight = finiteDatasetNumber(element.dataset.pdfPageHeight, 1);
   const pageWidth = finiteDatasetNumber(element.dataset.pdfPageWidth, 1);
+  const fallback = pdfPageDefinition(
+    pdfPageSize(element.dataset.pdfPageSize),
+    element.dataset.pdfOrientation === 'landscape' ? 'landscape' : 'portrait',
+  );
+  const pageHeightPoints =
+    finiteDatasetNumber(element.dataset.pdfPageHeightPoints, 1) ??
+    fallback.height;
+  const pageWidthPoints =
+    finiteDatasetNumber(element.dataset.pdfPageWidthPoints, 1) ??
+    fallback.width;
   if (
     pageCount === null ||
     pageGap === null ||
@@ -177,8 +206,10 @@ export function workLiveDocumentPdfSurfaceForExport(
     pageCount,
     pageGap,
     pageHeight,
+    pageHeightPoints,
     pageSize: pdfPageSize(element.dataset.pdfPageSize),
     pageWidth,
+    pageWidthPoints,
   };
 }
 
@@ -291,29 +322,31 @@ function appendCanvas(
   pdf: JsPdf | null,
   source: HTMLCanvasElement,
   orientation: 'portrait' | 'landscape',
-  pageSize: PdfPageSize,
+  page: PdfPageDefinition,
   backgroundColor: string,
   Pdf: typeof import('jspdf').jsPDF,
 ): JsPdf {
   let document = pdf;
+  const pageOrientation = Array.isArray(page.format)
+    ? page.width > page.height
+      ? 'landscape'
+      : 'portrait'
+    : orientation;
   const ensurePage = () => {
     if (!document) {
       document = new Pdf({
-        orientation,
+        orientation: pageOrientation,
         unit: 'pt',
-        format: pageSize,
+        format: page.format,
         compress: true,
       });
     } else {
-      document.addPage(pageSize, orientation);
+      document.addPage(page.format, pageOrientation);
     }
   };
 
-  const dimensions = PDF_PAGE_DIMENSIONS[pageSize];
-  const standardWidth =
-    orientation === 'portrait' ? dimensions.width : dimensions.height;
-  const standardHeight =
-    orientation === 'portrait' ? dimensions.height : dimensions.width;
+  const standardWidth = page.width;
+  const standardHeight = page.height;
   const sliceHeight = Math.max(
     1,
     Math.floor((source.width * standardHeight) / standardWidth),
@@ -356,24 +389,26 @@ function appendExactCanvasPage(
   pdf: JsPdf | null,
   source: HTMLCanvasElement,
   orientation: 'portrait' | 'landscape',
-  pageSize: PdfPageSize,
+  page: PdfPageDefinition,
   Pdf: typeof import('jspdf').jsPDF,
 ): JsPdf {
+  const pageOrientation = Array.isArray(page.format)
+    ? page.width > page.height
+      ? 'landscape'
+      : 'portrait'
+    : orientation;
   const document =
     pdf ??
     new Pdf({
-      orientation,
+      orientation: pageOrientation,
       unit: 'pt',
-      format: pageSize,
+      format: page.format,
       compress: true,
     });
-  if (pdf) document.addPage(pageSize, orientation);
+  if (pdf) document.addPage(page.format, pageOrientation);
 
-  const dimensions = PDF_PAGE_DIMENSIONS[pageSize];
-  const width =
-    orientation === 'portrait' ? dimensions.width : dimensions.height;
-  const height =
-    orientation === 'portrait' ? dimensions.height : dimensions.width;
+  const width = page.width;
+  const height = page.height;
   document.addImage(
     source.toDataURL('image/jpeg', 0.92),
     'JPEG',
@@ -391,6 +426,30 @@ function pdfPageSize(value: string | undefined): PdfPageSize {
   return value && Object.hasOwn(PDF_PAGE_DIMENSIONS, value)
     ? (value as PdfPageSize)
     : 'a4';
+}
+
+function pdfPageDefinition(
+  pageSize: PdfPageSize,
+  orientation: 'portrait' | 'landscape',
+  exactWidth?: number | null,
+  exactHeight?: number | null,
+): PdfPageDefinition {
+  if (
+    exactWidth !== undefined &&
+    exactWidth !== null &&
+    exactHeight !== undefined &&
+    exactHeight !== null
+  ) {
+    return {
+      format: [exactWidth, exactHeight],
+      width: exactWidth,
+      height: exactHeight,
+    };
+  }
+  const dimensions = PDF_PAGE_DIMENSIONS[pageSize];
+  return orientation === 'portrait'
+    ? { format: pageSize, width: dimensions.width, height: dimensions.height }
+    : { format: pageSize, width: dimensions.height, height: dimensions.width };
 }
 
 function documentCanvas(width: number, height: number): HTMLCanvasElement {

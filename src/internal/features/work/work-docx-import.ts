@@ -81,11 +81,16 @@ import {
   documentPageMarginBody,
   documentPageMarginsForLayout,
 } from './work-document-page-margins';
+import { applyDocumentPageGeometry } from './work-document-page-size';
 import {
   inspectDocxPageMarginSettings,
   type InspectedDocxPageMarginSettings,
   parseDocxPageMargins,
 } from './work-docx-page-margins-import';
+import {
+  parseDocxPageGeometry,
+  parseDocxPaperSource,
+} from './work-docx-page-size-import';
 import {
   applyImportedDocxParagraphAlignmentMarkers,
   hasImportedDocxParagraphAlignmentMarkers,
@@ -649,22 +654,15 @@ async function parseSectionLayout(
   theme: DocxThemeResolver,
   pageMarginSettings: InspectedDocxPageMarginSettings,
 ): Promise<WorkDocumentSectionLayout> {
-  const pageSize = firstDescendant(section, 'pgSz');
-  const width = numberAttribute(pageSize, 'w');
-  const height = numberAttribute(pageSize, 'h');
-  const orientation =
-    attribute(pageSize ?? section, 'orient') === 'landscape' ||
-    (width > 0 && height > 0 && width > height)
-      ? 'landscape'
-      : pageSize
-        ? 'portrait'
-        : previous.orientation;
-  const shortEdge = Math.min(width || 11_906, height || 16_838);
-  const size = pageSize
-    ? Math.abs(shortEdge - 12_240) < Math.abs(shortEdge - 11_906)
-      ? 'letter'
-      : 'a4'
-    : previous.pageSize;
+  const parsedPageGeometry = parseDocxPageGeometry(
+    section,
+    previous.pageGeometry,
+  );
+  const pageGeometry =
+    parsedPageGeometry === null ? previous.pageGeometry : parsedPageGeometry;
+  const parsedPaperSource = parseDocxPaperSource(section, previous.paperSource);
+  const paperSource =
+    parsedPaperSource === null ? previous.paperSource : parsedPaperSource;
   const columnsElement = firstDescendant(section, 'cols');
   const documentGridElement = directChild(section, 'docGrid');
   const pageBorders = parseDocxPageBorders(section, theme);
@@ -688,9 +686,9 @@ async function parseSectionLayout(
     firstDescendant(section, 'pgNumType'),
     'start',
   );
-  return {
-    pageSize: size,
-    orientation,
+  const layout: WorkDocumentSectionLayout = {
+    pageSize: previous.pageSize,
+    orientation: previous.orientation,
     margins: documentPageMarginBody(pageMargins, previous.margins),
     columns: columnsElement
       ? importDocxColumns(columnsElement, previous.columns)
@@ -702,10 +700,15 @@ async function parseSectionLayout(
         : {}),
     ...(pageBorders ? { pageBorders } : {}),
     ...(pageMargins ? { pageMargins } : {}),
+    ...(pageGeometry ? { pageGeometry } : {}),
+    ...(paperSource ? { paperSource } : {}),
     breakAfter: parseSectionBreak(firstDescendant(section, 'type')),
     ...pageChrome,
     pageNumberStart: pageNumberStart > 0 ? pageNumberStart : undefined,
   };
+  return pageGeometry
+    ? applyDocumentPageGeometry(layout, pageGeometry)
+    : layout;
 }
 
 function parseDocumentGrid(element: Element): WorkDocumentGrid {

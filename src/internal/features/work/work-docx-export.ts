@@ -16,6 +16,7 @@ import {
 } from './work-document-notes';
 import { normalizeDocumentPageChrome } from './work-document-page-chrome';
 import { documentPageMarginsForLayout } from './work-document-page-margins';
+import { documentPageGeometryForLayout } from './work-document-page-size';
 import { documentSections } from './work-document-section';
 import { patchDocxBibliography } from './work-docx-bibliography';
 import {
@@ -331,16 +332,7 @@ function sectionProperties(
   docx: typeof import('docx'),
 ): NonNullable<ISectionOptions['properties']> {
   const landscape = layout.orientation === 'landscape';
-  const dimensions =
-    layout.pageSize === 'letter'
-      ? {
-          width: landscape ? 15_840 : 12_240,
-          height: landscape ? 12_240 : 15_840,
-        }
-      : {
-          width: landscape ? 16_838 : 11_906,
-          height: landscape ? 11_906 : 16_838,
-        };
+  const dimensions = documentPageGeometryForLayout(layout);
   const pageMargins = documentPageMarginsForLayout(layout);
   return {
     type: docxSectionType(layout.breakAfter, docx),

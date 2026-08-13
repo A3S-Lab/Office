@@ -10,6 +10,10 @@ import {
   xmlAttributeNamespace,
 } from './work-docx-settings-xml';
 import { directChildren } from './work-ooxml-package';
+import {
+  parseDocxTwipsMeasure,
+  STRICT_WORDPROCESSING_NAMESPACE,
+} from './work-docx-twips';
 
 export interface InspectedDocxPageMarginSettings {
   mirrorMargins?: boolean;
@@ -27,8 +31,6 @@ export interface InspectedDocxPageMargins {
   spoofedCount: number;
 }
 
-const STRICT_WORD_NAMESPACE =
-  'http://purl.oclc.org/ooxml/wordprocessingml/main';
 const PAGE_MARGIN_ATTRIBUTE_SET = new Set([
   'top',
   'right',
@@ -50,16 +52,6 @@ const PAGE_MARGIN_KEYS = [
 const MAX_UNSIGNED_WORD_TWIPS = 31_680;
 const MIN_SIGNED_WORD_TWIPS = -2_147_483_648;
 const MAX_SIGNED_WORD_TWIPS = 2_147_483_647;
-const UNIVERSAL_TWIP_RATIOS: Readonly<
-  Record<string, readonly [bigint, bigint]>
-> = {
-  mm: [7_200n, 127n],
-  cm: [72_000n, 127n],
-  in: [1_440n, 1n],
-  pt: [20n, 1n],
-  pc: [240n, 1n],
-  pi: [240n, 1n],
-};
 
 export function inspectDocxPageMarginSettings(
   settings: Document | null | undefined,
@@ -152,11 +144,12 @@ export function inspectDocxPageMargins(
   const values = {} as Record<WorkDocumentPageMarginKey, number>;
   for (const key of PAGE_MARGIN_KEYS) {
     const signed = key === 'top' || key === 'bottom';
-    const value = parseTwipsMeasure(
-      attributes.get(key) ?? '',
+    const value = parseDocxTwipsMeasure(attributes.get(key) ?? '', {
       signed,
-      element.namespaceURI === STRICT_WORD_NAMESPACE,
-    );
+      strict: element.namespaceURI === STRICT_WORDPROCESSING_NAMESPACE,
+      minimum: signed ? MIN_SIGNED_WORD_TWIPS : 0,
+      maximum: signed ? MAX_SIGNED_WORD_TWIPS : MAX_UNSIGNED_WORD_TWIPS,
+    });
     if (value === null) {
       return {
         status: 'invalid',
@@ -284,57 +277,6 @@ function inspectOnOffChild(
     return { value: false, invalidCount: 0, spoofedCount };
   }
   return { invalidCount: 1, spoofedCount };
-}
-
-function parseTwipsMeasure(
-  source: string,
-  signed: boolean,
-  strict: boolean,
-): number | null {
-  const minimum = signed ? MIN_SIGNED_WORD_TWIPS : 0;
-  const maximum = signed ? MAX_SIGNED_WORD_TWIPS : MAX_UNSIGNED_WORD_TWIPS;
-  const integer = wordInteger(source, signed, minimum, maximum);
-  if (integer !== null) return integer;
-  return strict ? strictUniversalTwips(source, signed, minimum, maximum) : null;
-}
-
-function wordInteger(
-  source: string,
-  signed: boolean,
-  minimum: number,
-  maximum: number,
-): number | null {
-  if (source.length > 32) return null;
-  const pattern = signed ? /^[+-]?\d+$/u : /^\+?\d+$/u;
-  if (!pattern.test(source)) return null;
-  const value = Number(source);
-  return Number.isSafeInteger(value) && value >= minimum && value <= maximum
-    ? Object.is(value, -0)
-      ? 0
-      : value
-    : null;
-}
-
-function strictUniversalTwips(
-  source: string,
-  signed: boolean,
-  minimum: number,
-  maximum: number,
-): number | null {
-  if (source.length > 64) return null;
-  const match = /^(-?)(\d+)(?:\.(\d+))?(mm|cm|in|pt|pc|pi)$/u.exec(source);
-  if (!match) return null;
-  const [, sign, whole = '', fraction = '', unit = ''] = match;
-  if (!signed && sign) return null;
-  const conversion = UNIVERSAL_TWIP_RATIOS[unit];
-  if (!conversion) return null;
-  const denominator = 10n ** BigInt(fraction.length) * conversion[1];
-  const numerator =
-    BigInt(`${whole}${fraction}`) * conversion[0] * (sign ? -1n : 1n);
-  if (numerator % denominator !== 0n) return null;
-  const twips = numerator / denominator;
-  if (twips < BigInt(minimum) || twips > BigInt(maximum)) return null;
-  return Number(twips);
 }
 
 function hasElementOrNonWhitespaceContent(element: Element): boolean {

@@ -8,6 +8,10 @@ import {
   type WorkDocumentPageMargins,
   normalizeDocumentPageMargins,
 } from './work-document-page-margins';
+import {
+  documentPageGeometryForLayout,
+  normalizeDocumentPaperSource,
+} from './work-document-page-size';
 import type { WorkDocumentSection } from './work-document-section';
 import { setDocxBorderAttributes } from './work-docx-paragraph-borders-export';
 import {
@@ -71,6 +75,7 @@ export async function patchDocxDocumentLayout(
   const entry = archive.file('word/document.xml');
   if (!entry) return buffer;
   const document = parseXml(await entry.async('string'), 'word/document.xml');
+  patchSectionPageSetup(document, sections);
   patchSectionPageMargins(document, sections);
   patchSectionPageBorders(document, sections);
   patchSectionDocumentGrids(document, sections);
@@ -80,6 +85,59 @@ export async function patchDocxDocumentLayout(
   );
   await patchDocumentPageMarginSettings(archive, sections);
   return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function patchSectionPageSetup(
+  document: Document,
+  sections: readonly WorkDocumentSection[],
+): void {
+  const sectionProperties = effectiveSectionProperties(document);
+  if (sectionProperties.length !== sections.length) {
+    throw new Error(
+      `Generated DOCX has ${sectionProperties.length} section properties for ${sections.length} exact page-setup section(s).`,
+    );
+  }
+  const prefix =
+    xmlNamespacePrefix(document.documentElement, WORD_NAMESPACE) ?? 'w';
+  for (const [index, properties] of sectionProperties.entries()) {
+    const layout = sections[index]?.layout;
+    if (!layout) continue;
+    for (const element of directChildren(properties, 'pgSz').filter(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    )) {
+      element.remove();
+    }
+    const geometry = documentPageGeometryForLayout(layout);
+    const pageSize = document.createElementNS(WORD_NAMESPACE, `${prefix}:pgSz`);
+    setWordAttribute(document, pageSize, 'w', String(geometry.width));
+    setWordAttribute(document, pageSize, 'h', String(geometry.height));
+    if (geometry.orientation) {
+      setWordAttribute(document, pageSize, 'orient', geometry.orientation);
+    }
+    if (geometry.code !== undefined) {
+      setWordAttribute(document, pageSize, 'code', String(geometry.code));
+    }
+    insertSectionProperty(properties, pageSize);
+
+    const paperSource = normalizeDocumentPaperSource(layout.paperSource);
+    if (!paperSource) continue;
+    for (const element of directChildren(properties, 'paperSrc').filter(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    )) {
+      element.remove();
+    }
+    const source = document.createElementNS(
+      WORD_NAMESPACE,
+      `${prefix}:paperSrc`,
+    );
+    if (paperSource.first !== undefined) {
+      setWordAttribute(document, source, 'first', String(paperSource.first));
+    }
+    if (paperSource.other !== undefined) {
+      setWordAttribute(document, source, 'other', String(paperSource.other));
+    }
+    insertSectionProperty(properties, source);
+  }
 }
 
 function patchSectionPageMargins(

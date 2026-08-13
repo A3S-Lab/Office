@@ -29,6 +29,19 @@ test('matches the active page orientation and available indent width', () => {
     documentRulerPageHeight({ ...layout, orientation: 'landscape' }),
   ).toBeCloseTo(793.7, 1);
   expect(documentRulerMaximumIndentLevel(layout)).toBe(8);
+  const custom = {
+    ...layout,
+    pageSize: 'custom' as const,
+    pageGeometry: { width: 10_001, height: 15_003 },
+  };
+  expect(documentRulerPageWidth(custom)).toBeCloseTo(666.7333, 3);
+  expect(documentRulerPageHeight(custom)).toBeCloseTo(1000.2, 3);
+  expect(
+    documentRulerPageWidth({
+      ...custom,
+      pageGeometry: { width: 1, height: 15_003 },
+    }),
+  ).toBe(96);
 });
 
 test('updates margins and paragraph indent from accessible ruler handles', () => {

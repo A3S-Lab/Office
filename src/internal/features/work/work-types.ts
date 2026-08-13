@@ -1,6 +1,10 @@
 import type { Sheet } from '@fortune-sheet/core';
 import type { WorkDocumentPageBorders } from './work-document-page-borders';
 import type { WorkDocumentPageMargins } from './work-document-page-margins';
+import type {
+  WorkDocumentPageGeometry,
+  WorkDocumentPaperSource,
+} from './work-document-page-size';
 import type { WorkSpreadsheetChartLayout } from './work-spreadsheet-chart-layout';
 import type {
   WorkSpreadsheetChart,
@@ -82,8 +86,17 @@ export interface WorkDocumentGrid {
   linePitch: number;
 }
 
+export type WorkDocumentPaperSize =
+  | 'a3'
+  | 'a4'
+  | 'a5'
+  | 'letter'
+  | 'legal'
+  | 'tabloid'
+  | 'custom';
+
 export interface WorkDocumentSectionLayout {
-  pageSize: 'a4' | 'letter';
+  pageSize: WorkDocumentPaperSize;
   orientation: 'portrait' | 'landscape';
   margins: WorkDocumentMargins;
   columns: WorkDocumentColumns;
@@ -96,6 +109,8 @@ export interface WorkDocumentSectionLayout {
   documentGrid?: WorkDocumentGrid;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
+  pageGeometry?: WorkDocumentPageGeometry;
+  paperSource?: WorkDocumentPaperSource;
 }
 
 export type WorkDocumentAttributeValue =
@@ -131,7 +146,7 @@ export interface WorkDocumentContent {
   type: 'document';
   html: string;
   model?: WorkDocumentModel;
-  pageSize: 'a4' | 'letter';
+  pageSize: WorkDocumentPaperSize;
   pageColor?: string;
   orientation?: 'portrait' | 'landscape';
   margins?: WorkDocumentMargins;
@@ -143,6 +158,8 @@ export interface WorkDocumentContent {
   pageChrome?: WorkDocumentPageChrome;
   pageBorders?: WorkDocumentPageBorders;
   pageMargins?: WorkDocumentPageMargins;
+  pageGeometry?: WorkDocumentPageGeometry;
+  paperSource?: WorkDocumentPaperSource;
   trackChanges?: boolean;
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;

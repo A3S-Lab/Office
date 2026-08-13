@@ -13,6 +13,7 @@ import {
   reconcileDocumentPageMarginUpdate,
   synchronizeDocumentPageMarginGlobals,
 } from './work-document-page-margins';
+import { reconcileDocumentPageSizeUpdate } from './work-document-page-size';
 import type {
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -103,7 +104,8 @@ export function updateDocumentSection(
   const state = commandContext.state;
   const section = documentSectionByIdInDocument(state.doc, sectionId);
   if (!section) return false;
-  const next = reconcileDocumentPageMarginUpdate(section.layout, layout);
+  const pageSize = reconcileDocumentPageSizeUpdate(section.layout, layout);
+  const next = reconcileDocumentPageMarginUpdate(section.layout, pageSize);
   if (documentPageMarginGlobalsChanged(section.layout, next)) {
     const globals = documentPageMarginsForLayout(next);
     for (const [index, candidate] of directDocumentSections(

@@ -7,6 +7,7 @@ import { diagnoseDocxNotes } from './work-docx-note-diagnostics';
 import { diagnoseDocxPageBorders } from './work-docx-page-borders-diagnostics';
 import { diagnoseDocxPageChrome } from './work-docx-page-chrome-diagnostics';
 import { diagnoseDocxPageMargins } from './work-docx-page-margins-diagnostics';
+import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
@@ -183,6 +184,7 @@ export async function analyzeDocxCompatibility(
       );
     }
     if (document) {
+      issues.push(...diagnoseDocxPageSize(document));
       issues.push(...(await diagnoseDocxPageMargins(archive, document)));
       issues.push(...(await diagnoseDocxPageBorders(archive, document)));
       issues.push(...(await diagnoseDocxParagraphBorders(archive, document)));

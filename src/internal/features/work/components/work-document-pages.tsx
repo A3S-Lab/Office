@@ -8,6 +8,7 @@ import {
 import { resolveDocumentPageChrome } from '../work-document-page-chrome';
 import { documentPageColor } from '../work-document-page-color';
 import { resolveDocumentPageMargins } from '../work-document-page-margins';
+import { resolveDocumentPageSize } from '../work-document-page-size';
 import {
   documentPageDescriptors,
   type WorkDocumentPageDescriptor,
@@ -51,6 +52,7 @@ function DocumentPdfPage({
   );
   const pageClass = `work-pdf-export-page document ${layout.pageSize} ${layout.orientation}`;
   const resolvedMargins = resolveDocumentPageMargins(layout, page.physicalPage);
+  const resolvedPageSize = resolveDocumentPageSize(layout);
   const marginPixels = {
     top: millimetersToPixels(resolvedMargins.body.top),
     right: millimetersToPixels(resolvedMargins.body.right),
@@ -89,6 +91,8 @@ function DocumentPdfPage({
       data-work-pdf-page=""
       data-pdf-orientation={layout.orientation}
       data-pdf-page-size={layout.pageSize}
+      data-pdf-page-width-points={resolvedPageSize.widthPoints}
+      data-pdf-page-height-points={resolvedPageSize.heightPoints}
       data-document-physical-page={page.physicalPage}
       data-document-page-number={page.pageNumber}
       data-document-blank-page={String(page.blank)}
@@ -103,6 +107,8 @@ function DocumentPdfPage({
       style={
         {
           backgroundColor: pageColor,
+          width: `${resolvedPageSize.widthPixels}px`,
+          minHeight: `${resolvedPageSize.heightPixels}px`,
           padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
           '--work-document-page-margin-top': `${marginPixels.top}px`,
           '--work-document-page-margin-right': `${marginPixels.right}px`,

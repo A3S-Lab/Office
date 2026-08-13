@@ -6,6 +6,7 @@ import type {
 } from '../../kernel/office-kernel-protocol';
 import { millimetersToPixels } from './work-document-layout';
 import { resolveDocumentPageMargins } from './work-document-page-margins';
+import { resolveDocumentPageSize } from './work-document-page-size';
 import { normalizeDocumentImageLayout } from './work-document-image-layout';
 import { measureParagraphLineFragments } from './work-document-line-measurement';
 import {
@@ -84,18 +85,11 @@ export function measureDocumentLayoutBlocks(
 export function documentPageMetrics(
   layout: WorkDocumentSectionLayout,
 ): OfficeKernelPageMetrics {
-  const portrait =
-    layout.pageSize === 'letter'
-      ? { width: 816, height: 1056 }
-      : {
-          width: millimetersToPixels(210),
-          height: millimetersToPixels(297),
-        };
-  const landscape = layout.orientation === 'landscape';
+  const pageSize = resolveDocumentPageSize(layout);
   const margins = resolveDocumentPageMargins(layout, 1).body;
   return {
-    width: landscape ? portrait.height : portrait.width,
-    height: landscape ? portrait.width : portrait.height,
+    width: pageSize.widthPixels,
+    height: pageSize.heightPixels,
     marginTop: millimetersToPixels(margins.top),
     marginRight: millimetersToPixels(margins.right),
     marginBottom: millimetersToPixels(margins.bottom),

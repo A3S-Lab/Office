@@ -3,7 +3,8 @@ import {
   inspectDocxPageMargins,
   inspectDocxPageMarginSettings,
 } from './work-docx-page-margins-import';
-import { attribute, descendants, directChild } from './work-ooxml-package';
+import { inspectDocxPageSize } from './work-docx-page-size-import';
+import { descendants } from './work-ooxml-package';
 import type { OoxmlPackage } from './work-ooxml-package';
 import type { WorkCompatibilityIssue } from './work-types';
 
@@ -87,9 +88,9 @@ export async function diagnoseDocxPageMargins(
     });
   }
   const bounded = valid.filter(({ section, pageMargins }) => {
-    const size = directChild(section, 'pgSz');
-    const width = finitePositive(size ? attribute(size, 'w') : null) ?? 11_906;
-    const height = finitePositive(size ? attribute(size, 'h') : null) ?? 16_838;
+    const inspectedSize = inspectDocxPageSize(section);
+    const width = inspectedSize.pageGeometry?.width ?? 11_906;
+    const height = inspectedSize.pageGeometry?.height ?? 16_838;
     const topGutter =
       pageMargins.gutterAtTop === true && pageMargins.mirrorMargins !== true;
     return (
@@ -112,11 +113,6 @@ export async function diagnoseDocxPageMargins(
     });
   }
   return issues;
-}
-
-function finitePositive(value: string | null): number | null {
-  const number = Number(value);
-  return Number.isFinite(number) && number > 0 ? number : null;
 }
 
 function hasAncestor(element: Element, localName: string): boolean {

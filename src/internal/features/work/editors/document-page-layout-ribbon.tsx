@@ -1,6 +1,10 @@
 import type { Editor } from '@tiptap/core';
 import { Columns3, FilePlus2, Palette, Settings2 } from 'lucide-react';
 import { normalizeDocumentColumns } from '../work-document-columns';
+import {
+  updateDocumentPageOrientation,
+  updateDocumentPaperSizePreset,
+} from '../work-document-page-size';
 import type {
   WorkDocumentMargins,
   WorkDocumentSectionLayout,
@@ -104,7 +108,9 @@ export function DocumentPageLayoutRibbon({
               { value: 'portrait', label: '纵向' },
               { value: 'landscape', label: '横向' },
             ]}
-            onValueChange={(orientation) => update({ orientation })}
+            onValueChange={(orientation) =>
+              onLayoutChange(updateDocumentPageOrientation(layout, orientation))
+            }
           />
         </div>
         <div className="work-office-field work-document-page-setup-choice">
@@ -113,10 +119,21 @@ export function DocumentPageLayoutRibbon({
             ariaLabel="纸张大小"
             value={layout.pageSize}
             options={[
+              { value: 'a3', label: 'A3' },
               { value: 'a4', label: 'A4' },
+              { value: 'a5', label: 'A5' },
               { value: 'letter', label: 'Letter' },
+              { value: 'legal', label: 'Legal' },
+              { value: 'tabloid', label: 'Tabloid' },
+              { value: 'custom', label: '自定义' },
             ]}
-            onValueChange={(pageSize) => update({ pageSize })}
+            onValueChange={(pageSize) => {
+              if (pageSize === 'custom') {
+                onOpenLayout('page');
+                return;
+              }
+              onLayoutChange(updateDocumentPaperSizePreset(layout, pageSize));
+            }}
           />
         </div>
         <div className="work-office-field work-document-page-setup-choice">
