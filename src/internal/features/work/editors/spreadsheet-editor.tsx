@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import { showToast } from '../../../state/app-state';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -99,6 +100,11 @@ import {
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
+  type SpreadsheetCollaborationHistory,
+  type SpreadsheetCollaborationViewController,
+  useSpreadsheetCollaboration,
+} from './use-spreadsheet-collaboration';
+import {
   type WorkOfficeFileAction,
   WorkOfficePreviewBar,
   WorkOfficeStatusBar,
@@ -106,6 +112,7 @@ import {
 } from './work-office-chrome';
 
 export interface SpreadsheetEditorProps {
+  collaboration?: WorkOfficeCollaborationSession;
   content: WorkSpreadsheetContent;
   kernelWasmUrl?: string;
   preview: boolean;
@@ -132,15 +139,57 @@ interface SpreadsheetContextMenuState {
   selection: WorkSpreadsheetAgentSelection;
 }
 
-export function SpreadsheetEditor({
+export function SpreadsheetEditor(props: SpreadsheetEditorProps) {
+  if (props.collaboration) {
+    return (
+      <CollaborativeSpreadsheetEditor
+        {...props}
+        collaboration={props.collaboration}
+      />
+    );
+  }
+  return <SpreadsheetEditorSurface {...props} />;
+}
+
+function CollaborativeSpreadsheetEditor(
+  props: SpreadsheetEditorProps & {
+    collaboration: WorkOfficeCollaborationSession;
+  },
+) {
+  const { collaboration } = props;
+  const shared = useSpreadsheetCollaboration({
+    initialContent: props.content,
+    onChange: props.onChange,
+    session: collaboration,
+  });
+  return (
+    <SpreadsheetEditorSurface
+      {...props}
+      content={shared.content}
+      collaborationHistory={shared.history}
+      collaborationView={shared.view}
+      onChange={shared.onChange}
+      preview={props.preview || shared.readOnly}
+    />
+  );
+}
+
+interface SpreadsheetEditorSurfaceProps extends SpreadsheetEditorProps {
+  collaborationHistory?: SpreadsheetCollaborationHistory;
+  collaborationView?: SpreadsheetCollaborationViewController;
+}
+
+function SpreadsheetEditorSurface({
   content,
+  collaborationHistory,
+  collaborationView,
   kernelWasmUrl,
   preview,
   saveStatus = '已自动保存',
   fileActions,
   onChange,
   onAgentRequest,
-}: SpreadsheetEditorProps) {
+}: SpreadsheetEditorSurfaceProps) {
   const materializedContent = useMemo(
     () => refreshSpreadsheetPivotTables(content),
     [content],
@@ -209,7 +258,7 @@ export function SpreadsheetEditor({
   const focusedSheetIdRef = useRef<string | null>(null);
   contentRef.current = materializedContent;
   previewRef.current = preview;
-  const history = useOfficeHistory({
+  const controlledHistory = useOfficeHistory({
     content,
     onChange: (next) => {
       const liveSelection = workbookRef.current?.getSelection()?.at(-1);
@@ -221,8 +270,11 @@ export function SpreadsheetEditor({
         ),
       );
     },
-    sameValue: sameSpreadsheetHistoryContent,
+    sameValue: collaborationHistory
+      ? ignoreSpreadsheetControlledHistory
+      : sameSpreadsheetHistoryContent,
   });
+  const history = collaborationHistory ?? controlledHistory;
   const conditionalStylesBySheet = useMemo(
     () =>
       new Map(
@@ -285,10 +337,12 @@ export function SpreadsheetEditor({
     () => ({
       afterActivateSheet: (id) => {
         activeSheetIdRef.current = id;
+        collaborationView?.activateSheet(id);
         if (previewRef.current) setPreviewActiveSheetId(id);
         setSelectionState(null);
       },
       afterSelectionChange: (sheetId, selection) => {
+        collaborationView?.select(sheetId, selection);
         setSelectionState({ sheetId, selection });
         formatPainterSelectionHandlerRef.current(sheetId, selection);
       },
@@ -354,7 +408,7 @@ export function SpreadsheetEditor({
         if (cell?.ps) drawSpreadsheetCommentMarker(context, cellInfo);
       },
     }),
-    [conditionalStylesBySheet],
+    [collaborationView, conditionalStylesBySheet],
   );
   const conditionalFormatKey = content.sheets
     .map(
@@ -544,22 +598,26 @@ export function SpreadsheetEditor({
     );
     return true;
   };
-  const activateReadOnlySpreadsheetSheet = useCallback((sheetId: string) => {
-    if (!previewRef.current) return false;
-    const sheet = contentRef.current.sheets.find(
-      (candidate) => candidate.id === sheetId && candidate.hide !== 1,
-    );
-    if (!sheet) return false;
-    activeSheetIdRef.current = sheetId;
-    setSelectionState(null);
-    setPreviewActiveSheetId(sheetId);
-    try {
-      workbookRef.current?.activateSheet({ id: sheetId });
-    } catch {
-      return false;
-    }
-    return true;
-  }, []);
+  const activateReadOnlySpreadsheetSheet = useCallback(
+    (sheetId: string) => {
+      if (!previewRef.current) return false;
+      const sheet = contentRef.current.sheets.find(
+        (candidate) => candidate.id === sheetId && candidate.hide !== 1,
+      );
+      if (!sheet) return false;
+      activeSheetIdRef.current = sheetId;
+      collaborationView?.activateSheet(sheetId);
+      setSelectionState(null);
+      setPreviewActiveSheetId(sheetId);
+      try {
+        workbookRef.current?.activateSheet({ id: sheetId });
+      } catch {
+        return false;
+      }
+      return true;
+    },
+    [collaborationView],
+  );
   const spreadsheetExtensions = useMemo(createSpreadsheetEditorExtensions, []);
   const spreadsheetEditor = useOfficeEditorRuntime(
     {
@@ -670,6 +728,8 @@ export function SpreadsheetEditor({
     const next = stepOfficeZoom(current, direction);
     if (next === current) return;
     spreadsheetZoomRef.current = next;
+    const sheetId = activeSheetIdRef.current;
+    if (sheetId) collaborationView?.setZoom(sheetId, next / 100);
     if (previewRef.current) setPreviewZoom(next);
     else spreadsheetCommandsRef.current?.setZoom(next);
   };
@@ -1011,6 +1071,9 @@ export function SpreadsheetEditor({
                 outputLabel="表格缩放比例"
                 sliderLabel="表格缩放"
                 onChange={(nextZoom) => {
+                  const sheetId = activeSheetIdRef.current;
+                  if (sheetId)
+                    collaborationView?.setZoom(sheetId, nextZoom / 100);
                   if (preview) setPreviewZoom(nextZoom);
                   else spreadsheetCommands.setZoom(nextZoom);
                 }}
@@ -1252,6 +1315,10 @@ export function spreadsheetCommandsWithGridFocus(
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     undo: afterSuccessfulCommand(commands.undo),
   };
+}
+
+function ignoreSpreadsheetControlledHistory(): boolean {
+  return true;
 }
 
 function spreadsheetFormatPainterStatus(

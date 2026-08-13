@@ -141,8 +141,8 @@ comments, and delete-vs-edit cases converge and survive PPTX round trips.
 
 ### Phase 4: Spreadsheet
 
-Status: transport-neutral browser core implemented; editor adapters, structural
-operations, and native recalculation parity are pending.
+Status: browser collaboration foundation implemented; structural operations,
+native recalculation parity, and XLSX concurrency coverage are pending.
 
 - Stable sheet/named-range order arrays, ID-keyed records, and append-only
   creation claims avoid a serialized workbook or dense worksheet root.
@@ -163,11 +163,13 @@ operations, and native recalculation parity are pending.
   subscriptions, and per-client undo/redo. Tests cover bootstrap races,
   malformed roots, identity collisions, stale snapshots, OOXML field
   convergence, and local-only undo.
+- React, Vue, and Web Component editors project remote workbook snapshots and
+  route canonical edits plus local-only undo/redo through the same binding.
+  Active-sheet status, selections, zoom, and Fortune Sheet focus remain local
+  view state and are reapplied after remote canonical updates.
 
 Remaining:
 
-- Wire the binding into React, Vue, and Web Component editors while retaining
-  local sheet activation, selection, zoom, and Fortune Sheet focus state.
 - Translate one user gesture into one transaction; batch paste/fill/sort/filter
   without emitting a document-sized replacement.
 - Add stable structural operations and reference transforms for row/column

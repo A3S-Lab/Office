@@ -173,6 +173,7 @@ export const MarkdownEditor = defineComponent({
 export const SpreadsheetEditor = defineComponent({
   name: 'A3SSpreadsheetEditor',
   props: {
+    collaboration: Object as PropType<OfficeCollaborationSession>,
     content: {
       required: true,
       type: Object as PropType<SpreadsheetContent>,
@@ -194,6 +195,7 @@ export const SpreadsheetEditor = defineComponent({
   setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactSpreadsheetEditor, {
+        collaboration: props.collaboration,
         content: props.content,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,

@@ -8,6 +8,7 @@ import {
   initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
   initializeOfficePresentationCollaboration,
+  initializeOfficeSpreadsheetCollaboration,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
 import {
@@ -19,6 +20,7 @@ import {
   defineA3SOfficeElements,
 } from '../src/web-component';
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
+import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 
 test('registers every custom element idempotently', async () => {
   defineA3SOfficeElements();
@@ -194,6 +196,30 @@ test('passes a synchronized Presentation session through the custom element prop
 
   await waitFor(() => {
     expect(element.textContent).toContain('Shared presentation');
+  });
+  expect(element.collaboration).toBe(session);
+
+  element.remove();
+});
+
+test('passes a synchronized Spreadsheet session through the custom element property', async () => {
+  defineA3SOfficeElements();
+  const content = spreadsheetCollaborationFixture();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'element-shared-spreadsheet',
+    kind: 'spreadsheet',
+  });
+  initializeOfficeSpreadsheetCollaboration(session, content);
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.spreadsheet,
+  ) as A3SSpreadsheetEditorElement;
+  element.collaboration = session;
+  element.content = content;
+  element.preview = true;
+  document.body.append(element);
+
+  await waitFor(() => {
+    expect(element.textContent).toContain('Inputs');
   });
   expect(element.collaboration).toBe(session);
 

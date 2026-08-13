@@ -10,10 +10,17 @@ import {
   initializeOfficeDocumentCollaboration,
   initializeOfficeMarkdownCollaboration,
   initializeOfficePresentationCollaboration,
+  initializeOfficeSpreadsheetCollaboration,
   type MarkdownContent,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
-import { DocumentEditor, MarkdownEditor, PresentationEditor } from '../src/vue';
+import {
+  DocumentEditor,
+  MarkdownEditor,
+  PresentationEditor,
+  SpreadsheetEditor,
+} from '../src/vue';
+import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 
 test('mounts the Vue adapter and renders the React editor', async () => {
@@ -211,6 +218,33 @@ test('passes a synchronized Presentation session through the Vue adapter', async
   app.mount(target);
   await waitFor(() => {
     expect(target.textContent).toContain('Shared presentation');
+  });
+
+  app.unmount();
+  target.remove();
+});
+
+test('passes a synchronized Spreadsheet session through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const content = spreadsheetCollaborationFixture();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'vue-shared-spreadsheet',
+    kind: 'spreadsheet',
+  });
+  initializeOfficeSpreadsheetCollaboration(session, content);
+  const app = createApp({
+    render: () =>
+      h(SpreadsheetEditor, {
+        collaboration: session,
+        content,
+        preview: true,
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.textContent).toContain('Inputs');
   });
 
   app.unmount();

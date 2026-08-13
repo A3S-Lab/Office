@@ -294,12 +294,23 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
 }
 
 export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<SpreadsheetContent> {
+  #collaboration: OfficeCollaborationSession | undefined;
+
   static get observedAttributes() {
     return ['kernel-wasm-url', 'preview', 'save-status', 'theme'];
   }
 
   get kernelWasmUrl(): string | undefined {
     return this.getAttribute('kernel-wasm-url') ?? undefined;
+  }
+
+  get collaboration(): OfficeCollaborationSession | undefined {
+    return this.#collaboration;
+  }
+
+  set collaboration(value: OfficeCollaborationSession | undefined) {
+    this.#collaboration = value;
+    this.requestRender();
   }
 
   set kernelWasmUrl(value: string | undefined) {
@@ -310,6 +321,7 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
   protected editorNode(): ReactNode {
     if (!this.content) return missingContent('spreadsheet', this.theme);
     return createElement(SpreadsheetEditor, {
+      collaboration: this.collaboration,
       content: this.content,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,
