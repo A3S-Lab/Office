@@ -25,6 +25,7 @@
   <a href="#five-format-native-surfaces">Editors</a> ·
   <a href="#native-automation">Automation</a> ·
   <a href="#architecture">Architecture</a> ·
+  <a href="ROADMAP.md">WPS gap roadmap</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
