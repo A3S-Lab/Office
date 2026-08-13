@@ -48,6 +48,7 @@ import {
   type WorkDocumentEquationWordLineDash,
   type WorkDocumentEquationWordLineJoin,
   type WorkDocumentEquationWordNumberForm,
+  type WorkDocumentEquationWordNumberSpacing,
   type WorkDocumentEquationWordPresetCamera,
   type WorkDocumentEquationWordPresetLineDash,
   type WorkDocumentEquationWordPresetMaterial,
@@ -208,6 +209,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:props3d',
   'w14:ligatures',
   'w14:numForm',
+  'w14:numSpacing',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -509,6 +511,12 @@ const WORD_2010_NUMBER_FORMS = new Set<WorkDocumentEquationWordNumberForm>([
   'lining',
   'oldStyle',
 ]);
+const WORD_2010_NUMBER_SPACINGS =
+  new Set<WorkDocumentEquationWordNumberSpacing>([
+    'default',
+    'proportional',
+    'tabular',
+  ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
   'words',
@@ -1308,6 +1316,9 @@ function parseWordRunProperties(
   const properties3D = parseWordProperties3D(word2010Children.get('props3d'));
   const ligatures = parseWordLigatures(word2010Children.get('ligatures'));
   const numberForm = parseWordNumberForm(word2010Children.get('numForm'));
+  const numberSpacing = parseWordNumberSpacing(
+    word2010Children.get('numSpacing'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -1335,7 +1346,8 @@ function parseWordRunProperties(
     scene3D === null ||
     properties3D === null ||
     ligatures === null ||
-    numberForm === null
+    numberForm === null ||
+    numberSpacing === null
   ) {
     return null;
   }
@@ -1439,6 +1451,7 @@ function parseWordRunProperties(
     ...(properties3D ? { properties3D } : {}),
     ...(ligatures !== undefined ? { ligatures } : {}),
     ...(numberForm !== undefined ? { numberForm } : {}),
+    ...(numberSpacing !== undefined ? { numberSpacing } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2703,6 +2716,20 @@ function parseWordNumberForm(
   const value = attributes.get('val') ?? '';
   return WORD_2010_NUMBER_FORMS.has(value as WorkDocumentEquationWordNumberForm)
     ? (value as WorkDocumentEquationWordNumberForm)
+    : null;
+}
+
+function parseWordNumberSpacing(
+  element: Element | undefined,
+): WorkDocumentEquationWordNumberSpacing | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010LeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const value = attributes.get('val') ?? '';
+  return WORD_2010_NUMBER_SPACINGS.has(
+    value as WorkDocumentEquationWordNumberSpacing,
+  )
+    ? (value as WorkDocumentEquationWordNumberSpacing)
     : null;
 }
 

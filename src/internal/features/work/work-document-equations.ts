@@ -545,6 +545,11 @@ export type WorkDocumentEquationWordNumberForm =
   | 'lining'
   | 'oldStyle';
 
+export type WorkDocumentEquationWordNumberSpacing =
+  | 'default'
+  | 'proportional'
+  | 'tabular';
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -669,6 +674,7 @@ export interface WorkDocumentEquationWordRunProperties {
   properties3D?: WorkDocumentEquationWordProperties3D;
   ligatures?: WorkDocumentEquationWordLigatures;
   numberForm?: WorkDocumentEquationWordNumberForm;
+  numberSpacing?: WorkDocumentEquationWordNumberSpacing;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1332,6 +1338,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'properties3D',
   'ligatures',
   'numberForm',
+  'numberSpacing',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1518,6 +1525,11 @@ const WORD_NUMBER_FORMS = new Set<WorkDocumentEquationWordNumberForm>([
   'default',
   'lining',
   'oldStyle',
+]);
+const WORD_NUMBER_SPACINGS = new Set<WorkDocumentEquationWordNumberSpacing>([
+  'default',
+  'proportional',
+  'tabular',
 ]);
 const WORD_SCENE_3D_CAMERA_PRESETS =
   new Set<WorkDocumentEquationWordPresetCamera>([
@@ -3756,6 +3768,14 @@ function normalizeEquationWordRunProperties(
           )
         ? (source.numberForm as WorkDocumentEquationWordNumberForm)
         : null;
+  const numberSpacing =
+    source.numberSpacing === undefined
+      ? undefined
+      : WORD_NUMBER_SPACINGS.has(
+            source.numberSpacing as WorkDocumentEquationWordNumberSpacing,
+          )
+        ? (source.numberSpacing as WorkDocumentEquationWordNumberSpacing)
+        : null;
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3816,6 +3836,7 @@ function normalizeEquationWordRunProperties(
     properties3D === null ||
     ligatures === null ||
     numberForm === null ||
+    numberSpacing === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3963,6 +3984,7 @@ function normalizeEquationWordRunProperties(
     ...(properties3D ? { properties3D } : {}),
     ...(ligatures !== undefined ? { ligatures } : {}),
     ...(numberForm !== undefined ? { numberForm } : {}),
+    ...(numberSpacing !== undefined ? { numberSpacing } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -5258,7 +5280,7 @@ function wordPropertiesMathMlAttributes(
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunCaseStyles(properties),
     wordRunLigatureStyles(properties.ligatures),
-    wordRunNumberFormStyles(properties.numberForm),
+    wordRunNumberStyles(properties.numberForm, properties.numberSpacing),
     wordRunTextDecoration(properties),
     wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
@@ -5309,17 +5331,24 @@ function wordRunLigatureStyles(
   ].join(' ')}`;
 }
 
-function wordRunNumberFormStyles(
+function wordRunNumberStyles(
   numberForm: WorkDocumentEquationWordNumberForm | undefined,
+  numberSpacing: WorkDocumentEquationWordNumberSpacing | undefined,
 ): string {
-  if (numberForm === undefined) return '';
-  const value =
+  if (numberForm === undefined && numberSpacing === undefined) return '';
+  const values = [
     numberForm === 'lining'
       ? 'lining-nums'
       : numberForm === 'oldStyle'
         ? 'oldstyle-nums'
-        : 'normal';
-  return `font-variant-numeric:${value}`;
+        : '',
+    numberSpacing === 'proportional'
+      ? 'proportional-nums'
+      : numberSpacing === 'tabular'
+        ? 'tabular-nums'
+        : '',
+  ].filter(Boolean);
+  return `font-variant-numeric:${values.length ? values.join(' ') : 'normal'}`;
 }
 
 function wordRunTextFillMathMlColor(

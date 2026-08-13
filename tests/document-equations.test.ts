@@ -44,7 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_NUM_SPACING = `<w14:numSpacing xmlns:w14="${WORD_2010_NAMESPACE}" w14:val="default"/>`;
+const WORD_2010_STYLISTIC_SETS = `<w14:stylisticSets xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2082,6 +2082,7 @@ describe('document equations', () => {
       '<w14:props3d w14:extrusionH="50800" w14:contourW="12700" w14:prstMaterial="softmetal"><w14:bevelT w14:w="25400" w14:h="12700" w14:prst="convex"/><w14:bevelB w14:w="6350" w14:h="3175" w14:prst="hardEdge"/><w14:extrusionClr><w14:schemeClr w14:val="accent1"><w14:alpha w14:val="60000"/></w14:schemeClr></w14:extrusionClr><w14:contourClr><w14:srgbClr w14:val="ABCDEF"><w14:shade w14:val="30000"/></w14:srgbClr></w14:contourClr></w14:props3d>',
       '<w14:ligatures w14:val="standardContextualHistorical"/>',
       '<w14:numForm w14:val="oldStyle"/>',
+      '<w14:numSpacing w14:val="tabular"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2190,7 +2191,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_STYLISTIC_SETS}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2225,7 +2226,7 @@ describe('document equations', () => {
     expect(
       inspectEquation(
         wordRun(
-          `<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`,
+          `<w:rPr>${WORD_2010_STYLISTIC_SETS}</w:rPr>`,
           '<w:t>fallback</w:t>',
         ),
       ),
@@ -4443,7 +4444,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4874,7 +4875,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5301,7 +5302,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5668,7 +5669,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6400,7 +6401,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6854,7 +6855,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7381,7 +7382,7 @@ describe('document equations', () => {
       wordRun('<w:scene3d/>'),
       wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
       wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7766,7 +7767,7 @@ describe('document equations', () => {
           '<w14:contourClr><w14:srgbClr w14:val="XYZXYZ"/></w14:contourClr>',
         ),
       ),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8028,7 +8029,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:ligatures w:val="standard"/>'),
       wordRun(`<v:ligatures xmlns:v="${VENDOR_NAMESPACE}" v:val="standard"/>`),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8229,7 +8230,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:numForm w:val="lining"/>'),
       wordRun(`<v:numForm xmlns:v="${VENDOR_NAMESPACE}" v:val="lining"/>`),
-      wordRun(WORD_2010_NUM_SPACING),
+      wordRun(WORD_2010_STYLISTIC_SETS),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8311,6 +8312,244 @@ describe('document equations', () => {
     await expectNativeWordRunNumberForms(
       await createArtifactBlob(imported),
       numberForms,
+    );
+  });
+
+  test('preserves every Office 2010 numeral spacing and composes exact OpenType numeral styles', async () => {
+    const numberSpacings = [
+      ['default', 'normal'],
+      ['proportional', 'proportional-nums'],
+      ['tabular', 'tabular-nums'],
+    ] as const;
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        ...numberSpacings.map(([numberSpacing]) => ({
+          type: 'run',
+          text: `number-spacing-${numberSpacing}-0123`,
+          wordRunProperties: { numberSpacing },
+        })),
+        {
+          type: 'run',
+          text: 'ordered-number-spacing-4567',
+          wordRunProperties: {
+            properties3D: {},
+            ligatures: 'all',
+            numberForm: 'oldStyle',
+            numberSpacing: 'tabular',
+          },
+        },
+        {
+          type: 'run',
+          text: 'default-form-tabular-spacing-01',
+          wordRunProperties: {
+            numberForm: 'default',
+            numberSpacing: 'tabular',
+          },
+        },
+        {
+          type: 'run',
+          text: 'lining-form-default-spacing-23',
+          wordRunProperties: {
+            numberForm: 'lining',
+            numberSpacing: 'default',
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: {
+            numberForm: 'lining',
+            numberSpacing: 'proportional',
+          },
+          children: [{ type: 'run', text: 'control-number-spacing-89' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithNumberSpacing = (numberSpacing: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: '0123', wordRunProperties: { numberSpacing } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation(equationWithNumberSpacing(undefined)),
+    ).toEqual(simpleEquation('0123'));
+    for (const [numberSpacing] of numberSpacings) {
+      expect(
+        normalizeDocumentEquation(equationWithNumberSpacing(numberSpacing)),
+      ).toEqual(equationWithNumberSpacing(numberSpacing));
+    }
+    const invalidNumberSpacings = [
+      null,
+      false,
+      0,
+      [],
+      {},
+      '',
+      'normal',
+      'lining',
+      'oldStyle',
+      'Proportional',
+      ' proportional',
+      'proportional ',
+    ];
+    expect(
+      invalidNumberSpacings.map((numberSpacing) =>
+        normalizeDocumentEquation(equationWithNumberSpacing(numberSpacing)),
+      ),
+    ).toEqual(invalidNumberSpacings.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>0123</m:t></m:r>`;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      for (const [numberSpacing] of numberSpacings) {
+        expect(
+          inspectEquationModel(
+            wordRun(`<w14:numSpacing w14:val="${numberSpacing}"/>`, namespace),
+          )?.children[0],
+        ).toEqual({
+          type: 'run',
+          text: '0123',
+          wordRunProperties: { numberSpacing },
+        });
+      }
+    }
+    expect(
+      inspectEquationBody(
+        wordRun(
+          '<w14:props3d/><w14:ligatures w14:val="standard"/><w14:numForm w14:val="lining"/><w14:numSpacing w14:val="tabular"/>',
+        ),
+      ),
+    ).toBe('supported');
+    const invalidMarkup = [
+      wordRun(
+        '<w14:numSpacing w14:val="default"/><w14:numSpacing w14:val="tabular"/>',
+      ),
+      wordRun(
+        '<w14:numSpacing w14:val="tabular"/><w14:numForm w14:val="lining"/>',
+      ),
+      wordRun(
+        '<w14:numSpacing w14:val="tabular"/><w14:ligatures w14:val="standard"/>',
+      ),
+      wordRun('<w14:numSpacing w14:val="tabular"/><w14:props3d/>'),
+      wordRun('<w14:numSpacing/>'),
+      wordRun('<w14:numSpacing val="tabular"/>'),
+      wordRun('<w14:numSpacing w14:val="unknown"/>'),
+      wordRun('<w14:numSpacing w14:val="Tabular"/>'),
+      wordRun('<w14:numSpacing w14:val=" tabular"/>'),
+      wordRun('<w14:numSpacing w14:val="tabular "/>'),
+      wordRun('<w14:numSpacing w14:val="oldStyle"/>'),
+      wordRun('<w14:numSpacing w14:val="tabular" w14:extra="1"/>'),
+      wordRun(
+        `<w14:numSpacing xmlns:r="${RELATIONSHIP_NAMESPACE}" w14:val="tabular" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:numSpacing w14:val="tabular">text</w14:numSpacing>'),
+      wordRun(
+        '<w14:numSpacing w14:val="tabular"><w14:number/></w14:numSpacing>',
+      ),
+      wordRun(
+        `<w14:numSpacing xmlns:w14="${VENDOR_NAMESPACE}" w14:val="tabular"/>`,
+      ),
+      wordRun('<w:numSpacing w:val="tabular"/>'),
+      wordRun(`<v:numSpacing xmlns:v="${VENDOR_NAMESPACE}" v:val="tabular"/>`),
+      wordRun(WORD_2010_STYLISTIC_SETS),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const numericStyleFor = (root: ParentNode, text: string): string => {
+      const run = Array.from(root.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === text,
+      );
+      expect(run, text).toBeDefined();
+      const declarations = Array.from(
+        (run?.getAttribute('style') ?? '').matchAll(
+          /(?:^|;)font-variant-numeric:([^;]+)/g,
+        ),
+      );
+      expect(declarations, text).toHaveLength(1);
+      return declarations[0][1];
+    };
+    for (const [numberSpacing, expectedCss] of numberSpacings) {
+      expect(
+        numericStyleFor(preview, `number-spacing-${numberSpacing}-0123`),
+        numberSpacing,
+      ).toBe(expectedCss);
+    }
+    expect(numericStyleFor(preview, 'ordered-number-spacing-4567')).toBe(
+      'oldstyle-nums tabular-nums',
+    );
+    expect(numericStyleFor(preview, 'default-form-tabular-spacing-01')).toBe(
+      'tabular-nums',
+    );
+    expect(numericStyleFor(preview, 'lining-form-default-spacing-23')).toBe(
+      'lining-nums',
+    );
+    expect(numericStyleFor(preview, '\u2211')).toBe(
+      'lining-nums proportional-nums',
+    );
+    const plainPreview = createDocumentEquationElement(
+      document,
+      simpleEquation('plain-spacing-0123'),
+    );
+    expect(
+      plainPreview.querySelector('mtext')?.getAttribute('style') ?? '',
+    ).not.toContain('font-variant-numeric');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(numericStyleFor(sanitized, 'ordered-number-spacing-4567')).toBe(
+      'oldstyle-nums tabular-nums',
+    );
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunNumberSpacings(first, numberSpacings);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-number-spacings.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunNumberSpacings(
+      await createArtifactBlob(imported),
+      numberSpacings,
     );
   });
 
@@ -8402,7 +8641,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_STYLISTIC_SETS}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -8679,7 +8918,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_NUM_SPACING}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_STYLISTIC_SETS}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -9995,6 +10234,7 @@ function richWordRunProperties() {
     },
     ligatures: 'standardContextualHistorical' as const,
     numberForm: 'oldStyle' as const,
+    numberSpacing: 'tabular' as const,
   };
 }
 
@@ -13078,6 +13318,96 @@ async function expectNativeWordRunNumberForms(
   expect(directChildren(numberForm)).toHaveLength(0);
 }
 
+async function expectNativeWordRunNumberSpacings(
+  blob: Blob,
+  numberSpacings: ReadonlyArray<readonly [string, string]>,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const expectLeaf = (element: Element, name: string, value: string): void => {
+    expect(element.localName, name).toBe(name);
+    expect(element.namespaceURI, name).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(element), name).toEqual({ val: value });
+    expect(directChildren(element), name).toHaveLength(0);
+  };
+  for (const [value] of numberSpacings) {
+    const properties = wordPropertiesFor(`number-spacing-${value}-0123`);
+    const children = directChildren(properties);
+    expect(
+      children.map((child) => child.localName),
+      value,
+    ).toEqual(['numSpacing']);
+    expectLeaf(children[0], 'numSpacing', value);
+  }
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-number-spacing-4567'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'props3d',
+    'ligatures',
+    'numForm',
+    'numSpacing',
+  ]);
+  expect(
+    orderedProperties.every(
+      (child) => child.namespaceURI === WORD_2010_NAMESPACE,
+    ),
+  ).toBe(true);
+  expectLeaf(orderedProperties[2], 'numForm', 'oldStyle');
+  expectLeaf(orderedProperties[3], 'numSpacing', 'tabular');
+
+  const defaultFormProperties = directChildren(
+    wordPropertiesFor('default-form-tabular-spacing-01'),
+  );
+  expect(defaultFormProperties.map((child) => child.localName)).toEqual([
+    'numForm',
+    'numSpacing',
+  ]);
+  expectLeaf(defaultFormProperties[0], 'numForm', 'default');
+  expectLeaf(defaultFormProperties[1], 'numSpacing', 'tabular');
+
+  const defaultSpacingProperties = directChildren(
+    wordPropertiesFor('lining-form-default-spacing-23'),
+  );
+  expect(defaultSpacingProperties.map((child) => child.localName)).toEqual([
+    'numForm',
+    'numSpacing',
+  ]);
+  expectLeaf(defaultSpacingProperties[0], 'numForm', 'lining');
+  expectLeaf(defaultSpacingProperties[1], 'numSpacing', 'default');
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-number-spacing-89'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const numberProperties = directChildren(wordProperties as Element);
+  expect(numberProperties.map((child) => child.localName)).toEqual([
+    'numForm',
+    'numSpacing',
+  ]);
+  expectLeaf(numberProperties[0], 'numForm', 'lining');
+  expectLeaf(numberProperties[1], 'numSpacing', 'proportional');
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -13147,6 +13477,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'props3d',
     'ligatures',
     'numForm',
+    'numSpacing',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -13236,6 +13567,7 @@ async function expectNativeArgumentControlProperties(
     'props3d',
     'ligatures',
     'numForm',
+    'numSpacing',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -13812,6 +14144,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'props3d',
     'ligatures',
     'numForm',
+    'numSpacing',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -13921,6 +14254,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     },
     { val: 'standardContextualHistorical' },
     { val: 'oldStyle' },
+    { val: 'tabular' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -14084,6 +14418,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(numberForm.namespaceURI).toBe(WORD_2010_NAMESPACE);
     expect(word2010Attributes(numberForm)).toEqual({ val: 'oldStyle' });
     expect(directChildren(numberForm)).toHaveLength(0);
+    const numberSpacing = directChildren(properties, 'numSpacing')[0];
+    expect(numberSpacing.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(numberSpacing)).toEqual({ val: 'tabular' });
+    expect(directChildren(numberSpacing)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

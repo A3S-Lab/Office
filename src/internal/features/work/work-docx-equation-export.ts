@@ -1542,6 +1542,17 @@ function createWordRunProperties(
     setWord2010Attribute(numberForm, prefix, 'val', properties.numberForm);
     result.append(numberForm);
   }
+  if (properties.numberSpacing !== undefined) {
+    const prefix = ensureWord2010Prefix(document.documentElement);
+    const numberSpacing = createWord2010Element(document, prefix, 'numSpacing');
+    setWord2010Attribute(
+      numberSpacing,
+      prefix,
+      'val',
+      properties.numberSpacing,
+    );
+    result.append(numberSpacing);
+  }
   return result;
 }
 
