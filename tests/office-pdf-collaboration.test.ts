@@ -5,12 +5,13 @@ import {
   createOfficeCollaborationSession,
   createOfficePdfCollaborationBinding,
   initializeOfficePdfCollaboration,
-  readOfficePdfCollaboration,
   type PdfCollaborationContent,
+  readOfficePdfCollaboration,
+  readOfficePdfCollaborationSource,
 } from '../src/core';
 import {
-  PDF_COLLABORATION_SOURCE,
   pdfCollaborationFixture as fixture,
+  PDF_COLLABORATION_SOURCE,
 } from './fixtures/pdf-collaboration';
 
 test('initializes typed PDF roots without storing source bytes', () => {
@@ -29,6 +30,23 @@ test('initializes typed PDF roots without storing source bytes', () => {
   expect(
     session.document.getMap(session.rootName('pdf.source')).toJSON(),
   ).toEqual(PDF_COLLABORATION_SOURCE);
+  expect(readOfficePdfCollaborationSource(session)).toEqual(
+    PDF_COLLABORATION_SOURCE,
+  );
+});
+
+test('normalizes viewer annotation dates to portable ISO strings', () => {
+  const session = pdfSession('pdf-viewer-date');
+  const content = fixture();
+  content.annotations[0].annotation.created = new Date(
+    '2026-08-14T03:04:05.000Z',
+  );
+
+  initializeOfficePdfCollaboration(session, content);
+
+  expect(
+    readOfficePdfCollaboration(session).annotations[0].annotation.created,
+  ).toBe('2026-08-14T03:04:05.000Z');
 });
 
 test('rejects another byte source even when the page count matches', () => {
@@ -48,6 +66,90 @@ test('rejects another byte source even when the page count matches', () => {
       source: anotherSource,
     }),
   ).toThrow(/does not match collaboration artifact/);
+});
+
+test('detects a direct Yjs rewrite of the immutable PDF source', () => {
+  const session = pdfSession('pdf-source-claim');
+  initializeOfficePdfCollaboration(session, fixture());
+  session.document
+    .getMap(session.rootName('pdf.source'))
+    .set('sha256', 'f'.repeat(64));
+
+  expect(() => readOfficePdfCollaboration(session)).toThrow(
+    /immutable source identity/,
+  );
+});
+
+test('detects a direct Yjs rewrite of a claimed PDF annotation type', () => {
+  const session = pdfSession('pdf-annotation-type-claim');
+  initializeOfficePdfCollaboration(session, fixture());
+  const fields = session.document.getMap(
+    session.rootName('pdf.annotations.fields'),
+  );
+  fields.set(
+    JSON.stringify([
+      'annotation-base-1',
+      JSON.stringify(['value', 'annotation', 'type']),
+    ]),
+    15,
+  );
+
+  expect(() => readOfficePdfCollaboration(session)).toThrow(
+    /immutable identity claim/,
+  );
+});
+
+test('reads legacy protocol-v1 PDF state without the additive source identity root', () => {
+  const original = pdfSession('pdf-source-legacy');
+  initializeOfficePdfCollaboration(original, fixture());
+  const identities = original.document.getArray(
+    original.rootName('pdf.source-identities'),
+  );
+  identities.delete(0, identities.length);
+  const legacyDocument = new Y.Doc();
+  Y.applyUpdate(legacyDocument, Y.encodeStateAsUpdate(original.document));
+  const legacy = pdfSession('pdf-source-legacy', legacyDocument);
+
+  expect(readOfficePdfCollaboration(legacy)).toEqual(fixture());
+});
+
+test('reads legacy protocol-v1 PDF annotation claims without a type identity', () => {
+  const legacyFixture = fixture();
+  const document = new Y.Doc();
+  const session = pdfSession('pdf-annotation-claim-legacy', document);
+  initializeOfficePdfCollaboration(session, legacyFixture);
+  const legacy = new Y.Doc();
+  Y.applyUpdate(legacy, Y.encodeStateAsUpdate(document));
+  const claims = legacy.getArray<string>(session.rootName('pdf.record-claims'));
+  const values = claims.toArray().map((raw) => {
+    const claim = JSON.parse(raw) as {
+      fingerprint: string;
+      id: string;
+      kind: string;
+    };
+    if (claim.kind !== 'annotation') return raw;
+    const fingerprint = JSON.parse(claim.fingerprint) as Record<
+      string,
+      unknown
+    >;
+    return JSON.stringify({
+      fingerprint: JSON.stringify({
+        id: fingerprint.id,
+        pageIndex: fingerprint.pageIndex,
+        source: fingerprint.source,
+      }),
+      id: claim.id,
+      kind: claim.kind,
+    });
+  });
+  claims.delete(0, claims.length);
+  claims.push(values);
+
+  expect(
+    readOfficePdfCollaboration(
+      pdfSession('pdf-annotation-claim-legacy', legacy),
+    ),
+  ).toEqual(legacyFixture);
 });
 
 test('validates references and destructive review records before bootstrap', () => {
@@ -151,6 +253,75 @@ test('converges a deletion tombstone with an independent annotation edit', () =>
       }),
     }),
   ).toThrow(/tombstone/);
+});
+
+test('keeps an existing PDF annotation source, page, and type immutable', () => {
+  const session = pdfSession('pdf-annotation-page-identity');
+  initializeOfficePdfCollaboration(session, fixture());
+  const binding = createOfficePdfCollaborationBinding(session);
+  const before = binding.content();
+
+  expect(() =>
+    binding.replace(before, {
+      ...before,
+      annotations: before.annotations.map((record) =>
+        record.id === 'annotation-base-1'
+          ? {
+              ...record,
+              pageIndex: 2,
+              annotation: { ...record.annotation, pageIndex: 2 },
+            }
+          : record,
+      ),
+    }),
+  ).toThrow(/cannot change its page identity/);
+  expect(binding.content()).toEqual(before);
+
+  expect(() =>
+    binding.replace(before, {
+      ...before,
+      annotations: before.annotations.map((record) =>
+        record.id === 'annotation-base-1'
+          ? {
+              ...record,
+              annotation: { ...record.annotation, type: 15 },
+            }
+          : record,
+      ),
+    }),
+  ).toThrow(/cannot change its type identity/);
+  expect(binding.content()).toEqual(before);
+});
+
+test('never resurrects a durable annotation tombstone through local undo', () => {
+  const session = pdfSession('pdf-tombstone-undo');
+  initializeOfficePdfCollaboration(session, fixture());
+  const binding = createOfficePdfCollaborationBinding(session, {
+    captureTimeoutMs: 0,
+  });
+  const beforeEdit = binding.content();
+  binding.replace(
+    beforeEdit,
+    updateAnnotation(beforeEdit, 'annotation-base-1', (annotation) => ({
+      ...annotation,
+      color: '#00ff00',
+    })),
+  );
+  expect(binding.canUndo()).toBe(true);
+
+  const beforeDeletion = binding.content();
+  binding.replace(
+    beforeDeletion,
+    updateAnnotationRecord(beforeDeletion, 'annotation-base-1', (record) => ({
+      ...record,
+      deleted: true,
+    })),
+  );
+
+  expect(binding.canUndo()).toBe(false);
+  expect(binding.canRedo()).toBe(false);
+  expect(binding.undo()).toBe(false);
+  expect(binding.content().annotations[0].deleted).toBe(true);
 });
 
 test('deduplicates identical offline creations and rejects same-ID reuse', () => {

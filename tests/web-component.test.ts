@@ -3,6 +3,7 @@ import { fireEvent, waitFor } from '@testing-library/dom';
 import { Extension } from '@tiptap/core';
 import {
   createOfficeCollaborationSession,
+  createPdfCollaborationContent,
   type DocumentContent,
   type DocumentReviewConflictEvent,
   initializeOfficeDocumentCollaboration,
@@ -15,10 +16,12 @@ import {
   A3S_OFFICE_ELEMENT_NAMES,
   A3SDocumentEditorElement,
   A3SMarkdownEditorElement,
+  A3SPdfViewerElement,
   type A3SPresentationEditorElement,
   type A3SSpreadsheetEditorElement,
   defineA3SOfficeElements,
 } from '../src/web-component';
+import { PDF_COLLABORATION_SOURCE } from './fixtures/pdf-collaboration';
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
 import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 
@@ -84,7 +87,56 @@ test('registers every custom element idempotently', async () => {
     '/assets/presentation-kernel.wasm',
   );
 
+  const pdfViewer = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.pdf,
+  ) as A3SPdfViewerElement;
+  const pdfSession = createOfficeCollaborationSession({
+    artifactId: 'element-shared-pdf',
+    kind: 'pdf',
+  });
+  const loadPdfSource = () => Promise.resolve(new Blob());
+  const onCollaborationChange = () => undefined;
+  pdfViewer.collaboration = pdfSession;
+  pdfViewer.loadSource = loadPdfSource;
+  pdfViewer.onCollaborationChange = onCollaborationChange;
+  expect(pdfViewer.collaboration).toBe(pdfSession);
+  expect(pdfViewer.loadSource).toBe(loadPdfSource);
+  expect(pdfViewer.onCollaborationChange).toBe(onCollaborationChange);
+
   element.remove();
+});
+
+test('bridges PDF collaboration snapshots to its callback and custom event', () => {
+  const name = 'a3s-test-pdf-collaboration-events';
+  if (!customElements.get(name)) {
+    customElements.define(name, InspectablePdfViewerElement);
+  }
+  const element = document.createElement(name) as InspectablePdfViewerElement;
+  const detail = createPdfCollaborationContent(PDF_COLLABORATION_SOURCE);
+  const callbacks: unknown[] = [];
+  const events: CustomEvent[] = [];
+  element.loadSource = () => Promise.resolve(new Blob());
+  element.onCollaborationChange = (content) => callbacks.push(content);
+  element.addEventListener('collaboration-change', (event) => {
+    events.push(event as CustomEvent);
+  });
+
+  const node = element.readEditorNode();
+  if (!node || typeof node !== 'object' || !('props' in node)) {
+    throw new Error('Expected the PDF custom element to render a React node.');
+  }
+  const props = (
+    node as {
+      props: { onCollaborationChange: (content: typeof detail) => void };
+    }
+  ).props;
+  props.onCollaborationChange(detail);
+
+  expect(callbacks).toEqual([detail]);
+  expect(events).toHaveLength(1);
+  expect(events[0]?.detail).toBe(detail);
+  expect(events[0]?.bubbles).toBe(true);
+  expect(events[0]?.composed).toBe(true);
 });
 
 test('dispatches controlled document review conflicts from the custom element', async () => {
@@ -241,4 +293,10 @@ function reviewDocument(anchorText: string): DocumentContent {
       },
     ],
   };
+}
+
+class InspectablePdfViewerElement extends A3SPdfViewerElement {
+  readEditorNode() {
+    return this.editorNode();
+  }
 }

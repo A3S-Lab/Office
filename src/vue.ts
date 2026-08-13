@@ -18,6 +18,7 @@ import type {
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
   OfficeCollaborationSession,
+  PdfCollaborationContent,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -259,6 +260,7 @@ export const PresentationEditor = defineComponent({
 export const PdfViewer = defineComponent({
   name: 'A3SPdfViewer',
   props: {
+    collaboration: Object as PropType<OfficeCollaborationSession>,
     fileName: String,
     loadSource: {
       required: true,
@@ -270,11 +272,17 @@ export const PdfViewer = defineComponent({
     theme: themeProp,
     wasmUrl: String,
   },
-  setup(props) {
+  emits: {
+    collaborationChange: (_content: PdfCollaborationContent) => true,
+  },
+  setup(props, { emit }) {
     return createReactRenderer(() =>
       createElement(ReactPdfViewer, {
+        collaboration: props.collaboration,
         fileName: props.fileName,
         loadSource: props.loadSource,
+        onCollaborationChange: (content) =>
+          emit('collaborationChange', content),
         onSave: props.onSave,
         saveLabel: props.saveLabel,
         sourceKey: props.sourceKey,

@@ -83,7 +83,7 @@ The images below are committed visual-regression baselines from the real
       <a href="visual-tests/__snapshots__/linux/desktop-1280/pdf.png">
         <img src="visual-tests/__snapshots__/linux/desktop-1280/pdf.png" alt="A3S Office PDF editor with search, annotation, save, and download controls">
       </a>
-      <br><sub><strong>PDF</strong> — PDFium rendering, forms, annotations, and save</sub>
+      <br><sub><strong>PDF</strong> — PDFium rendering, forms, annotations, Yjs overlays, and save</sub>
     </td>
   </tr>
 </table>

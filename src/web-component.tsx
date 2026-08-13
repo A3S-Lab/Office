@@ -9,6 +9,7 @@ import type {
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
   OfficeCollaborationSession,
+  PdfCollaborationContent,
   PresentationContent,
   SpreadsheetContent,
 } from './core';
@@ -378,11 +379,24 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
 }
 
 export class A3SPdfViewerElement extends A3SOfficeElement {
+  #collaboration: OfficeCollaborationSession | undefined;
   #loadSource: (() => Promise<Blob>) | undefined;
+  #onCollaborationChange:
+    | ((content: PdfCollaborationContent) => void)
+    | undefined;
   #onSave: ((pdf: Blob) => Promise<boolean>) | undefined;
 
   static get observedAttributes() {
     return ['file-name', 'save-label', 'source-key', 'theme', 'wasm-url'];
+  }
+
+  get collaboration(): OfficeCollaborationSession | undefined {
+    return this.#collaboration;
+  }
+
+  set collaboration(value: OfficeCollaborationSession | undefined) {
+    this.#collaboration = value;
+    this.requestRender();
   }
 
   get loadSource(): (() => Promise<Blob>) | undefined {
@@ -391,6 +405,19 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
 
   set loadSource(value: (() => Promise<Blob>) | undefined) {
     this.#loadSource = value;
+    this.requestRender();
+  }
+
+  get onCollaborationChange():
+    | ((content: PdfCollaborationContent) => void)
+    | undefined {
+    return this.#onCollaborationChange;
+  }
+
+  set onCollaborationChange(value:
+    | ((content: PdfCollaborationContent) => void)
+    | undefined,) {
+    this.#onCollaborationChange = value;
     this.requestRender();
   }
 
@@ -415,8 +442,13 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
     if (!this.loadSource)
       return missingContent('PDF source loader', this.theme);
     return createElement(PdfViewer, {
+      collaboration: this.collaboration,
       fileName: this.getAttribute('file-name') ?? undefined,
       loadSource: this.loadSource,
+      onCollaborationChange: (content) => {
+        this.onCollaborationChange?.(content);
+        dispatchDetail(this, 'collaboration-change', content);
+      },
       onSave: this.onSave,
       saveLabel: this.getAttribute('save-label') ?? undefined,
       sourceKey: this.getAttribute('source-key') ?? undefined,

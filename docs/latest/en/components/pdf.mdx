@@ -8,13 +8,17 @@ description: PDF source lifecycle, PDFium resource configuration, annotations, a
 `PdfViewer` loads PDF data on demand, renders pages through PDFium WebAssembly,
 and exposes navigation, search, annotations, history, and save behavior.
 
-Unlike the other editors, PDF does not use a controlled content object. The
-host provides and persists complete `Blob` values through explicit ports.
+Unlike the other editors, PDF source bytes do not use a controlled content
+object. The host provides and persists complete `Blob` values through explicit
+ports. An optional Yjs session adds a typed annotation/form overlay without
+putting the source PDF in the shared document.
 
 ## Properties
 
 | Property | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
+| `collaboration` | `OfficeCollaborationSession` | No | — | Initialized PDF Yjs session. Its immutable source identity must match `loadSource`. |
+| `onCollaborationChange` | `(content: PdfCollaborationContent) => void` | No | — | Receives local and remote collaboration snapshots. Persist Yjs updates rather than rewriting the snapshot. |
 | `loadSource` | `() => Promise<Blob>` | Yes | — | Reads the PDF without requiring file-system access. |
 | `onSave` | `(pdf: Blob) => Promise<boolean>` | No | — | Persists an edited PDF. Returning `true` reports success. |
 | `fileName` | `string` | No | `'document.pdf'` | File identity and download name. |
@@ -44,6 +48,25 @@ export function PdfPage({ file }: { file: File }) {
 Use `loadSource` to connect object storage, IndexedDB, or a local file handle.
 Use `onSave` to own authorization, progress, versioning, and failure behavior.
 PDFium and annotation-controller internals are not public extension points.
+
+## Collaboration
+
+Initialize a `kind: 'pdf'` collaboration session only after the provider's
+initial synchronization, then pass the session and exact immutable source to
+`PdfViewer`. The viewer verifies SHA-256, byte length, and page count, captures
+source annotations and form values, and projects shared overlay records in
+both directions. Annotation deletion is a durable tombstone and cannot be
+restored by undo. Created annotations and form edits use local-origin Yjs
+undo/redo; remote updates never enter the local history stack.
+
+Collaborative annotation projection currently covers free text, highlight,
+underline, strikeout, and ink. Binary-context annotation kinds such as stamps
+and signatures fail closed until an authenticated host asset port is supplied.
+Shared form values must target an existing writable field in the source PDF.
+
+The collaborative model excludes current page, zoom, search, selection,
+rendered bitmaps, caches, and source bytes. The host remains responsible for
+transport authorization and for saving/reopening a complete merged PDF.
 
 ## Page navigation
 

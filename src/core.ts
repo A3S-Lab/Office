@@ -34,17 +34,12 @@ export type {
   WorkOfficeMarkdownCollaborationBindingOptions as OfficeMarkdownCollaborationBindingOptions,
   WorkOfficeMarkdownCollaborationChange as OfficeMarkdownCollaborationChange,
 } from './internal/collaboration/office-markdown-collaboration';
-export type {
-  WorkOfficePresentationCollaborationBinding as OfficePresentationCollaborationBinding,
-  WorkOfficePresentationCollaborationBindingOptions as OfficePresentationCollaborationBindingOptions,
-  WorkOfficePresentationCollaborationChange as OfficePresentationCollaborationChange,
-} from './internal/collaboration/office-presentation-collaboration';
 export {
-  createWorkOfficePresentationCollaborationBinding as createOfficePresentationCollaborationBinding,
-  initializeWorkOfficePresentationCollaboration as initializeOfficePresentationCollaboration,
-  readWorkOfficePresentationCollaboration as readOfficePresentationCollaboration,
-  replaceWorkOfficePresentationCollaboration as replaceOfficePresentationCollaboration,
-} from './internal/collaboration/office-presentation-collaboration';
+  createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
+  initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,
+  readWorkOfficeMarkdownCollaboration as readOfficeMarkdownCollaboration,
+  replaceWorkOfficeMarkdownCollaboration as replaceOfficeMarkdownCollaboration,
+} from './internal/collaboration/office-markdown-collaboration';
 export type {
   WorkOfficePdfCollaborationBinding as OfficePdfCollaborationBinding,
   WorkOfficePdfCollaborationBindingOptions as OfficePdfCollaborationBindingOptions,
@@ -54,8 +49,8 @@ export type {
   WorkPdfCollaborationDeletePagesOperation as PdfCollaborationDeletePagesOperation,
   WorkPdfCollaborationFormValue as PdfCollaborationFormValue,
   WorkPdfCollaborationPageOperation as PdfCollaborationPageOperation,
-  WorkPdfCollaborationRedactionProposal as PdfCollaborationRedactionProposal,
   WorkPdfCollaborationRect as PdfCollaborationRect,
+  WorkPdfCollaborationRedactionProposal as PdfCollaborationRedactionProposal,
   WorkPdfCollaborationReorderPagesOperation as PdfCollaborationReorderPagesOperation,
   WorkPdfCollaborationReviewDecision as PdfCollaborationReviewDecision,
   WorkPdfCollaborationRotatePagesOperation as PdfCollaborationRotatePagesOperation,
@@ -68,9 +63,21 @@ export {
   createWorkOfficePdfCollaborationBinding as createOfficePdfCollaborationBinding,
   initializeWorkOfficePdfCollaboration as initializeOfficePdfCollaboration,
   readWorkOfficePdfCollaboration as readOfficePdfCollaboration,
+  readWorkOfficePdfCollaborationSource as readOfficePdfCollaborationSource,
   replaceWorkOfficePdfCollaboration as replaceOfficePdfCollaboration,
 } from './internal/collaboration/office-pdf-collaboration';
 export { createWorkPdfCollaborationContent as createPdfCollaborationContent } from './internal/collaboration/office-pdf-collaboration-types';
+export type {
+  WorkOfficePresentationCollaborationBinding as OfficePresentationCollaborationBinding,
+  WorkOfficePresentationCollaborationBindingOptions as OfficePresentationCollaborationBindingOptions,
+  WorkOfficePresentationCollaborationChange as OfficePresentationCollaborationChange,
+} from './internal/collaboration/office-presentation-collaboration';
+export {
+  createWorkOfficePresentationCollaborationBinding as createOfficePresentationCollaborationBinding,
+  initializeWorkOfficePresentationCollaboration as initializeOfficePresentationCollaboration,
+  readWorkOfficePresentationCollaboration as readOfficePresentationCollaboration,
+  replaceWorkOfficePresentationCollaboration as replaceOfficePresentationCollaboration,
+} from './internal/collaboration/office-presentation-collaboration';
 export type {
   WorkOfficeSpreadsheetCollaborationBinding as OfficeSpreadsheetCollaborationBinding,
   WorkOfficeSpreadsheetCollaborationBindingOptions as OfficeSpreadsheetCollaborationBindingOptions,
@@ -82,12 +89,6 @@ export {
   readWorkOfficeSpreadsheetCollaboration as readOfficeSpreadsheetCollaboration,
   replaceWorkOfficeSpreadsheetCollaboration as replaceOfficeSpreadsheetCollaboration,
 } from './internal/collaboration/office-spreadsheet-collaboration';
-export {
-  createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
-  initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,
-  readWorkOfficeMarkdownCollaboration as readOfficeMarkdownCollaboration,
-  replaceWorkOfficeMarkdownCollaboration as replaceOfficeMarkdownCollaboration,
-} from './internal/collaboration/office-markdown-collaboration';
 export type {
   WorkAgentProposal as AgentProposal,
   WorkAgentProposalApplyResult as AgentProposalApplyResult,

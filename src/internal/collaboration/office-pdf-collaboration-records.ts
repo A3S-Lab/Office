@@ -100,6 +100,31 @@ export function workOfficePdfRecordCollectionUndoScope(
   return [roots.presence, roots.fields, roots.order];
 }
 
+/**
+ * Reports whether a transaction changed one recursively addressed record
+ * field. This lets format bindings keep an otherwise mutable collection on
+ * the local undo stack while treating selected fields as irreversible.
+ */
+export function workOfficePdfRecordFieldChanged(
+  transaction: Y.Transaction,
+  roots: WorkOfficePdfRecordCollectionRoots,
+  path: readonly string[],
+): boolean {
+  const changedKeys = transaction.changed.get(
+    roots.fields as unknown as Y.AbstractType<
+      Y.YEvent<Y.AbstractType<unknown>>
+    >,
+  );
+  if (!changedKeys) return false;
+  const encodedField = JSON.stringify(['value', ...path]);
+  for (const key of changedKeys) {
+    if (key === null) return true;
+    const identity = tryDecodeRecordFieldIdentity(key);
+    if (identity?.[1] === encodedField) return true;
+  }
+  return false;
+}
+
 function validatedPdfOrder(
   order: Y.Array<string>,
   presence: Y.Map<unknown>,
@@ -208,21 +233,31 @@ function decodedRecordFieldIdentity(
   encoded: string,
   label: string,
 ): [string, string] {
+  const identity = tryDecodeRecordFieldIdentity(encoded);
+  if (!identity?.[0].trim()) {
+    invalidSharedPdf(`${label} field identity`);
+  }
+  if (encodedRecordFieldIdentity(identity[0], identity[1]) !== encoded) {
+    invalidSharedPdf(`${label} field identity`);
+  }
+  return identity;
+}
+
+function tryDecodeRecordFieldIdentity(
+  encoded: string,
+): [string, string] | undefined {
   let identity: unknown;
   try {
     identity = JSON.parse(encoded);
   } catch {
-    invalidSharedPdf(`${label} field identity`);
+    return undefined;
   }
   if (
     !Array.isArray(identity) ||
     identity.length !== 2 ||
-    identity.some((value) => typeof value !== 'string') ||
-    !(identity[0] as string).trim() ||
-    encodedRecordFieldIdentity(identity[0] as string, identity[1] as string) !==
-      encoded
+    identity.some((value) => typeof value !== 'string')
   ) {
-    invalidSharedPdf(`${label} field identity`);
+    return undefined;
   }
   return identity as [string, string];
 }

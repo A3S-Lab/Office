@@ -218,6 +218,52 @@ test('serializes page jumps and preserves the latest navigation intent', async (
   expect(calls).toEqual(['page:4:auto', 'page:2:auto']);
 });
 
+test('uses Yjs history instead of the viewer stack while collaborating', async () => {
+  const calls: string[] = [];
+  const capabilities = {
+    'document-manager': {
+      getActiveDocumentId: () => 'document-1',
+    },
+    history: {
+      forDocument: () => ({
+        canRedo: () => true,
+        canUndo: () => true,
+        redo: () => calls.push('viewer-redo'),
+        undo: () => calls.push('viewer-undo'),
+      }),
+    },
+  };
+  const registry = {
+    pluginsReady: () => Promise.resolve(),
+    getPlugin: (id: keyof typeof capabilities) => {
+      const capability = capabilities[id];
+      return capability ? { provides: () => capability } : undefined;
+    },
+  } as unknown as PluginRegistry;
+  const history = {
+    canRedo: false,
+    canUndo: true,
+    redo: () => calls.push('yjs-redo'),
+    undo: () => calls.push('yjs-undo'),
+  };
+
+  const { result } = renderHook(() =>
+    usePdfViewerController(registry, history),
+  );
+  await waitFor(() => expect(result.current.state.ready).toBe(true));
+
+  expect(result.current.state).toMatchObject({
+    canRedo: false,
+    canUndo: true,
+    features: { history: true },
+  });
+  act(() => {
+    result.current.undo();
+    result.current.redo();
+  });
+  expect(calls).toEqual(['yjs-undo', 'yjs-redo']);
+});
+
 function createEvent<T = unknown>() {
   const listeners = new Set<(value: T) => void>();
   return {

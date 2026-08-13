@@ -48,6 +48,11 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `presentation.*` | Typed maps/arrays | Slide/master/layout order, ID-keyed scene objects, notes, transitions, and comments. |
 | `pdf.*` | Typed maps/arrays | Immutable source identity, annotations, forms, signatures, redaction proposals, reviewed page operations, and final decisions. |
 
+Optional additive roots such as `pdf.source-identities` let newer clients
+validate sessions created by newer clients while continuing to accept legacy
+protocol-v1 documents that do not contain the root. Older clients ignore the
+unknown root.
+
 Schema additions must be backward readable within protocol v1. A breaking root
 or meaning change requires a new protocol version and an explicit migration.
 
@@ -184,8 +189,8 @@ untouched unsupported package state.
 
 ### Phase 5: PDF
 
-Status: browser Core collaboration model implemented; PDF viewer/framework
-projection and save/reopen coverage are pending.
+Status: browser Core plus PDF viewer/framework projection implemented;
+save/reopen, authenticated assets, and native parity are pending.
 
 - Shared artifacts are bound to a lowercase SHA-256 fingerprint, exact byte
   length, and page count. Source bytes never enter Yjs, and a binding rejects
@@ -205,13 +210,27 @@ projection and save/reopen coverage are pending.
   values.
 - Core tests cover source mismatch, validation, bootstrap races, field-level
   convergence, delete-vs-edit, offline creation collisions, append-only review
-  records, stale-write atomicity, local-only undo, and permissions.
+  records, stale-write atomicity, local-only undo, permissions, immutable
+  annotation identities, and legacy protocol-v1 reads.
+- The React viewer captures the immutable PDFium annotation/form baseline,
+  projects Yjs overlays in both directions, verifies source bytes and page
+  count, and replaces EmbedPDF history with local-origin Yjs history. Viewer
+  history is purged after projection so one user gesture cannot create two
+  competing undo stacks.
+- Browser projection currently accepts the five public editor tools: free
+  text, highlight, underline, strikeout, and ink. Annotation kinds that need
+  unsynchronized binary/context payloads, including stamps and signatures,
+  fail closed until their authenticated asset port is available. Shared form
+  records must match an existing writable field name.
+- Vue emits `collaborationChange`; the Web Component dispatches
+  `collaboration-change` and also supports a callback property. Viewport,
+  search, selection, render caches, and page bitmaps stay local.
+- Projection tests cover base annotation edits/deletion, created annotations,
+  forms, remote echo suppression (including renderer-added default authors),
+  ISO date portability, local undo, and irreversible tombstones.
 
 Remaining:
 
-- Project annotation and form events between the shared model and the PDFium
-  viewer in React, Vue, and Web Components without persisting viewport, search,
-  selection, render caches, or page bitmaps.
 - Resolve signature appearance assets through an explicit authenticated host
   port and keep asset hashes aligned with the audit record.
 - Apply approved redaction/page operations in a non-retryable host workflow,

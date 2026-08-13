@@ -1,5 +1,6 @@
 import type * as Y from 'yjs';
 import { WorkOfficeCollaborationError } from './office-collaboration';
+import { canonicalWorkOfficeCollaborationJson as canonicalJson } from './office-collaboration-json';
 import {
   appendWorkOfficePdfRecordClaims,
   assertWorkOfficePdfRecordClaims,
@@ -9,9 +10,10 @@ import {
   assertWorkOfficePdfRecordCollectionEmpty,
   patchWorkOfficePdfRecords,
   readWorkOfficePdfRecords,
+  type WorkOfficePdfRecordCollectionRoots,
   workOfficePdfRecordCollectionRoots,
   workOfficePdfRecordCollectionUndoScope,
-  type WorkOfficePdfRecordCollectionRoots,
+  workOfficePdfRecordFieldChanged,
 } from './office-pdf-collaboration-records';
 import type {
   WorkPdfCollaborationAnnotation,
@@ -31,10 +33,12 @@ import {
 export { validateWorkOfficePdfCollaborationContent } from './office-pdf-collaboration-validation';
 
 export const PDF_SOURCE_ROOT = 'pdf.source';
+export const PDF_SOURCE_IDENTITIES_ROOT = 'pdf.source-identities';
 export const PDF_RECORD_CLAIMS_ROOT = 'pdf.record-claims';
 
 export interface WorkOfficePdfRoots {
   source: Y.Map<unknown>;
+  sourceIdentities: Y.Array<string>;
   annotations: WorkOfficePdfRecordCollectionRoots;
   formValues: WorkOfficePdfRecordCollectionRoots;
   signaturePlacements: WorkOfficePdfRecordCollectionRoots;
@@ -50,6 +54,7 @@ export function workOfficePdfRoots(
 ): WorkOfficePdfRoots {
   return {
     source: document.getMap(rootName(PDF_SOURCE_ROOT)),
+    sourceIdentities: document.getArray(rootName(PDF_SOURCE_IDENTITIES_ROOT)),
     annotations: workOfficePdfRecordCollectionRoots(
       document,
       rootName,
@@ -89,6 +94,7 @@ export function initializeWorkOfficePdfRoots(
   content: WorkPdfCollaborationContent,
 ): void {
   patchSource(roots.source, content.source);
+  roots.sourceIdentities.push([canonicalJson(content.source)]);
   appendWorkOfficePdfRecordClaims(roots.recordClaims, undefined, content);
   patchCollections(roots, undefined, content);
 }
@@ -119,6 +125,7 @@ export function readWorkOfficePdfRoots(
     >(roots.reviewDecisions, 'review decision'),
   };
   const validated = validateSharedWorkOfficePdfCollaborationContent(content);
+  assertSourceIdentity(roots.sourceIdentities, validated.source);
   assertWorkOfficePdfRecordClaims(roots.recordClaims, validated);
   return validated;
 }
@@ -137,6 +144,7 @@ export function patchWorkOfficePdfRoots(
 export function assertWorkOfficePdfRootsEmpty(roots: WorkOfficePdfRoots): void {
   if (
     roots.source.size > 0 ||
+    roots.sourceIdentities.length > 0 ||
     !assertWorkOfficePdfRecordCollectionEmpty(roots.annotations) ||
     !assertWorkOfficePdfRecordCollectionEmpty(roots.formValues) ||
     !assertWorkOfficePdfRecordCollectionEmpty(roots.signaturePlacements) ||
@@ -170,6 +178,23 @@ export function workOfficePdfIrreversibleScope(
     ...workOfficePdfRecordCollectionUndoScope(roots.pageOperations),
     ...workOfficePdfRecordCollectionUndoScope(roots.reviewDecisions),
   ];
+}
+
+export function workOfficePdfIrreversibleChange(
+  roots: WorkOfficePdfRoots,
+  transaction: Y.Transaction,
+): boolean {
+  const changedParents = transaction.changedParentTypes;
+  return (
+    workOfficePdfRecordFieldChanged(transaction, roots.annotations, [
+      'deleted',
+    ]) ||
+    workOfficePdfIrreversibleScope(roots).some((root) =>
+      changedParents.has(
+        root as unknown as Y.AbstractType<Y.YEvent<Y.AbstractType<unknown>>>,
+      ),
+    )
+  );
 }
 
 function patchCollections(
@@ -237,4 +262,14 @@ function readSource(target: Y.Map<unknown>): WorkPdfCollaborationSource {
     invalidSharedPdf('source identity');
   }
   return { sha256, byteLength, pageCount };
+}
+
+function assertSourceIdentity(
+  identities: Y.Array<string>,
+  source: WorkPdfCollaborationSource,
+): void {
+  if (identities.length === 0) return;
+  if (identities.length !== 1 || identities.get(0) !== canonicalJson(source)) {
+    invalidSharedPdf('immutable source identity');
+  }
 }

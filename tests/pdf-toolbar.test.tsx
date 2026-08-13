@@ -78,6 +78,54 @@ test('keeps PDF navigation, search, zoom, history, and save in one toolbar', () 
   expect(screen.getByText('/ 8')).toBeInTheDocument();
 });
 
+test('keeps collaboration editing controls without showing a host save port', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+
+  render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable
+      saveAvailable={false}
+      saveLabel="淇濆瓨"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  expect(screen.queryByRole('button', { name: '淇濆瓨' })).toBeNull();
+  expect(screen.getByRole('button', { name: '撤销' })).not.toBeNull();
+  expect(screen.getByRole('button', { name: '高亮' })).not.toBeNull();
+});
+
+test('does not expose a save port while the PDF session is read-only', () => {
+  const calls: string[] = [];
+  const controller = createController(calls);
+  const annotation = createAnnotationController(calls);
+  const { container } = render(
+    <PdfToolbar
+      annotationState={annotation.state}
+      can={createCanCommands(controller)}
+      commands={createCommands(controller, annotation, calls)}
+      editable={false}
+      saveAvailable={false}
+      saveLabel="Save"
+      saveState="idle"
+      searchInputRef={createRef<HTMLInputElement>()}
+      state={controller.state}
+    />,
+  );
+
+  expect(container.querySelector('[aria-label="Save"]')).toBeNull();
+  expect(
+    container.querySelector('[aria-label="PDF annotation tools"]'),
+  ).toBeNull();
+});
+
 test('keeps the compact page-navigation trigger inside the page controls', () => {
   const controller = createController([]);
   const annotation = createAnnotationController([]);

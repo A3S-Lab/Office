@@ -1,18 +1,18 @@
 import {
-  DocumentManagerPlugin,
   type DocumentManagerCapability,
-  ExportPlugin,
+  DocumentManagerPlugin,
   type ExportCapability,
-  HistoryPlugin,
+  ExportPlugin,
   type HistoryCapability,
+  HistoryPlugin,
   type PluginRegistry,
-  SearchPlugin,
-  type SearchCapability,
-  ScrollPlugin,
   type ScrollCapability,
+  ScrollPlugin,
+  type SearchCapability,
+  SearchPlugin,
+  type ZoomCapability,
   ZoomMode,
   ZoomPlugin,
-  type ZoomCapability,
 } from '@embedpdf/react-pdf-viewer';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -65,6 +65,13 @@ export interface PdfViewerController {
   zoomOut: () => void;
 }
 
+export interface PdfViewerHistoryOverride {
+  canRedo: boolean;
+  canUndo: boolean;
+  redo: () => void;
+  undo: () => void;
+}
+
 interface PdfViewerCapabilities {
   documentManager: DocumentManagerCapability | null;
   export: ExportCapability | null;
@@ -107,12 +114,15 @@ export const initialPdfViewerControllerState: PdfViewerControllerState = {
 
 export function usePdfViewerController(
   registry: PluginRegistry | null,
+  historyOverride?: PdfViewerHistoryOverride,
 ): PdfViewerController {
   const capabilitiesRef = useRef<PdfViewerCapabilities | null>(null);
   const pendingPageRef = useRef<number | null>(null);
   const [state, setState] = useState<PdfViewerControllerState>(
     initialPdfViewerControllerState,
   );
+  const historyOverrideRef = useRef(historyOverride);
+  historyOverrideRef.current = historyOverride;
 
   useEffect(() => {
     let disposed = false;
@@ -305,12 +315,22 @@ export function usePdfViewerController(
   }, []);
 
   const undo = useCallback(() => {
+    const collaborationHistory = historyOverrideRef.current;
+    if (collaborationHistory) {
+      collaborationHistory.undo();
+      return;
+    }
     withActiveDocument(capabilitiesRef.current, ({ history }, documentId) => {
       history?.forDocument(documentId).undo();
     });
   }, []);
 
   const redo = useCallback(() => {
+    const collaborationHistory = historyOverrideRef.current;
+    if (collaborationHistory) {
+      collaborationHistory.redo();
+      return;
+    }
     withActiveDocument(capabilitiesRef.current, ({ history }, documentId) => {
       history?.forDocument(documentId).redo();
     });
@@ -329,9 +349,22 @@ export function usePdfViewerController(
     return new Blob([buffer], { type: 'application/pdf' });
   }, []);
 
+  const projectedState = useMemo(
+    () =>
+      historyOverride
+        ? {
+            ...state,
+            canRedo: historyOverride.canRedo,
+            canUndo: historyOverride.canUndo,
+            features: { ...state.features, history: true },
+          }
+        : state,
+    [historyOverride, state],
+  );
+
   return useMemo(
     () => ({
-      state,
+      state: projectedState,
       clearSearch,
       fitPage,
       fitWidth,
@@ -348,7 +381,7 @@ export function usePdfViewerController(
       zoomOut,
     }),
     [
-      state,
+      projectedState,
       clearSearch,
       fitPage,
       fitWidth,

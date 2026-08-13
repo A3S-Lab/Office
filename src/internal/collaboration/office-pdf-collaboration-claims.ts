@@ -1,11 +1,11 @@
 import type * as Y from 'yjs';
+import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   canonicalWorkOfficeCollaborationJson as canonicalJson,
   isWorkOfficeCollaborationRecord as isRecord,
 } from './office-collaboration-json';
 import type { WorkPdfCollaborationContent } from './office-pdf-collaboration-types';
 import { invalidWorkOfficePdfShared as invalidSharedPdf } from './office-pdf-collaboration-validation';
-import { WorkOfficeCollaborationError } from './office-collaboration';
 
 type PdfRecordClaimKind =
   | 'annotation'
@@ -76,6 +76,7 @@ export function assertWorkOfficePdfRecordClaims(
     fingerprints.set(identity, claim.fingerprint);
   }
   assertClaims(fingerprints, 'annotation', content.annotations);
+  assertAnnotationClaimIdentities(fingerprints, content.annotations);
   assertClaims(
     fingerprints,
     'signature-placement',
@@ -84,6 +85,40 @@ export function assertWorkOfficePdfRecordClaims(
   assertClaims(fingerprints, 'redaction', content.redactionProposals);
   assertClaims(fingerprints, 'page-operation', content.pageOperations);
   assertClaims(fingerprints, 'review-decision', content.reviewDecisions);
+}
+
+function assertAnnotationClaimIdentities(
+  claims: ReadonlyMap<string, string>,
+  annotations: WorkPdfCollaborationContent['annotations'],
+): void {
+  for (const annotation of annotations) {
+    const fingerprint = claims.get(claimIdentity('annotation', annotation.id));
+    if (fingerprint === undefined) continue;
+    let claimed: unknown;
+    try {
+      claimed = JSON.parse(fingerprint);
+    } catch {
+      invalidSharedPdf('annotation record claim');
+    }
+    if (
+      !isRecord(claimed) ||
+      claimed.id !== annotation.id ||
+      claimed.pageIndex !== annotation.pageIndex ||
+      claimed.source !== annotation.source
+    ) {
+      invalidSharedPdf('annotation immutable identity claim');
+    }
+    const claimedAnnotation = isRecord(claimed.annotation)
+      ? claimed.annotation
+      : undefined;
+    const claimedType = claimed.type ?? claimedAnnotation?.type;
+    if (
+      (annotation.source === 'created' && claimedType === undefined) ||
+      (claimedType !== undefined && claimedType !== annotation.annotation.type)
+    ) {
+      invalidSharedPdf('annotation immutable identity claim');
+    }
+  }
 }
 
 function appendClaims<T extends { id: string }>(
@@ -109,7 +144,12 @@ function annotationFingerprint(
   value: WorkPdfCollaborationContent['annotations'][number],
 ): unknown {
   return value.source === 'base'
-    ? { id: value.id, pageIndex: value.pageIndex, source: value.source }
+    ? {
+        id: value.id,
+        pageIndex: value.pageIndex,
+        source: value.source,
+        type: value.annotation.type,
+      }
     : value;
 }
 

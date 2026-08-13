@@ -17,11 +17,12 @@ import {
 import {
   DocumentEditor,
   MarkdownEditor,
+  PdfViewer,
   PresentationEditor,
   SpreadsheetEditor,
 } from '../src/vue';
-import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 import { presentationCollaborationFixture } from './fixtures/presentation-collaboration';
+import { spreadsheetCollaborationFixture } from './fixtures/spreadsheet-collaboration';
 
 test('mounts the Vue adapter and renders the React editor', async () => {
   const target = document.createElement('div');
@@ -49,6 +50,16 @@ test('mounts the Vue adapter and renders the React editor', async () => {
 
   app.unmount();
   target.remove();
+});
+
+test('declares the PDF collaboration snapshot event on the Vue adapter', () => {
+  const emits = PdfViewer.emits;
+  expect(emits).toBeDefined();
+  expect(
+    Array.isArray(emits)
+      ? emits.includes('collaborationChange')
+      : Object.hasOwn(emits ?? {}, 'collaborationChange'),
+  ).toBe(true);
 });
 
 test('passes a synchronized Document session through the Vue adapter', async () => {

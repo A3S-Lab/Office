@@ -9,8 +9,8 @@ import {
   Highlighter,
   Loader2,
   Minus,
-  MoveHorizontal,
   MousePointer2,
+  MoveHorizontal,
   Pencil,
   Plus,
   Redo2,
@@ -21,8 +21,8 @@ import {
   Strikethrough,
   Trash2,
   Type,
-  Undo2,
   Underline,
+  Undo2,
   X,
 } from 'lucide-react';
 import {
@@ -77,6 +77,7 @@ export function PdfToolbar({
   commands,
   editable,
   pageNavigation,
+  saveAvailable,
   saveLabel,
   saveState,
   searchInputRef,
@@ -87,11 +88,13 @@ export function PdfToolbar({
   commands: PdfEditorCommands;
   editable: boolean;
   pageNavigation?: PdfPageNavigationControl;
+  saveAvailable?: boolean;
   saveLabel: string;
   saveState: PdfSaveState;
   searchInputRef: RefObject<HTMLInputElement | null>;
   state: PdfViewerControllerState;
 }) {
+  const showSave = saveAvailable ?? editable;
   const [pageValue, setPageValue] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const cancelPageBlurCommitRef = useRef(false);
@@ -132,7 +135,7 @@ export function PdfToolbar({
 
   return (
     <header className="work-pdf-toolbar" role="toolbar" aria-label="PDF 工具栏">
-      {editable && (
+      {showSave && (
         <div className="work-pdf-toolbar-group work-pdf-save">
           <output aria-label="PDF 保存状态" aria-live="polite">
             {saveState === 'saving' && (

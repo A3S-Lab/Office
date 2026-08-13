@@ -82,6 +82,18 @@ function assertAnnotationCollection(
         `PDF annotation '${before.id}' cannot change its source identity.`,
       );
     }
+    if (after.pageIndex !== before.pageIndex) {
+      throw new WorkOfficeCollaborationError(
+        'office.collaboration.content_invalid',
+        `PDF annotation '${before.id}' cannot change its page identity.`,
+      );
+    }
+    if (after.annotation.type !== before.annotation.type) {
+      throw new WorkOfficeCollaborationError(
+        'office.collaboration.content_invalid',
+        `PDF annotation '${before.id}' cannot change its type identity.`,
+      );
+    }
     if (before.deleted && !after.deleted) {
       throw new WorkOfficeCollaborationError(
         'office.collaboration.content_invalid',
@@ -92,6 +104,10 @@ function assertAnnotationCollection(
     if (!current) removedConflict(`PDF annotation '${before.id}'`);
     if (current.source !== before.source)
       conflict(`PDF annotation '${before.id}' source`);
+    if (current.pageIndex !== before.pageIndex)
+      conflict(`PDF annotation '${before.id}' page identity`);
+    if (current.annotation.type !== before.annotation.type)
+      conflict(`PDF annotation '${before.id}' type identity`);
     assertCompatibleValue(
       before,
       after,

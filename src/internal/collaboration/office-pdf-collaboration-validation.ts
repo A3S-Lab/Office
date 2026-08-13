@@ -445,13 +445,45 @@ function validateJsonRecord(
 ): Record<string, unknown> {
   const record = requiredRecord(value, label);
   try {
-    return cloneJsonValue(record) as Record<string, unknown>;
+    return clonePdfJsonValue(record) as Record<string, unknown>;
   } catch (error) {
     throw new WorkOfficeCollaborationError(
       'office.collaboration.content_invalid',
       `PDF collaboration requires a JSON-compatible ${label}: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+function clonePdfJsonValue(
+  value: unknown,
+  seen = new WeakSet<object>(),
+): unknown {
+  if (value instanceof Date) {
+    if (!Number.isFinite(value.getTime())) invalid('valid annotation dates');
+    return value.toISOString();
+  }
+  if (Array.isArray(value)) {
+    if (seen.has(value)) invalid('acyclic annotation values');
+    seen.add(value);
+    const result = value.map((item) => clonePdfJsonValue(item, seen));
+    seen.delete(value);
+    return result;
+  }
+  if (!isRecord(value)) return cloneJsonValue(value);
+  if (seen.has(value)) invalid('acyclic annotation values');
+  seen.add(value);
+  const result: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (item === undefined) continue;
+    Object.defineProperty(result, key, {
+      configurable: true,
+      enumerable: true,
+      value: clonePdfJsonValue(item, seen),
+      writable: true,
+    });
+  }
+  seen.delete(value);
+  return result;
 }
 
 function requiredPageIndex(

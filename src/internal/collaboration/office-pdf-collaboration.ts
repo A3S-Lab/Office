@@ -6,9 +6,9 @@ import {
   markWorkOfficeCollaborationInitialized,
   readWorkOfficeCollaborationMetadata,
   registerWorkOfficeCollaborationInitializer,
+  WorkOfficeCollaborationError,
   type WorkOfficeCollaborationOrigin,
   type WorkOfficeCollaborationSession,
-  WorkOfficeCollaborationError,
 } from './office-collaboration';
 import { workOfficeCollaborationJsonEqual as jsonEqual } from './office-collaboration-json';
 import {
@@ -17,6 +17,7 @@ import {
   patchWorkOfficePdfRoots,
   readWorkOfficePdfRoots,
   validateWorkOfficePdfCollaborationContent,
+  workOfficePdfIrreversibleChange,
   workOfficePdfIrreversibleScope,
   workOfficePdfRoots,
   workOfficePdfUndoScope,
@@ -112,6 +113,12 @@ export function assertWorkOfficePdfCollaborationSource(
   );
 }
 
+export function readWorkOfficePdfCollaborationSource(
+  session: WorkOfficeCollaborationSession,
+): WorkPdfCollaborationSource {
+  return readWorkOfficePdfCollaboration(session).source;
+}
+
 export function replaceWorkOfficePdfCollaboration(
   session: WorkOfficeCollaborationSession,
   previous: WorkPdfCollaborationContent,
@@ -170,7 +177,13 @@ class WorkOfficePdfCollaborationBindingImpl
     assertWorkOfficeCollaborationOrigin(this.origin);
     this.#undoScope = workOfficePdfUndoScope(this.#roots);
     this.#irreversibleScope = workOfficePdfIrreversibleScope(this.#roots);
-    this.#changeScope = [...this.#undoScope, ...this.#irreversibleScope];
+    this.#changeScope = [
+      this.#roots.source,
+      this.#roots.sourceIdentities,
+      this.#roots.recordClaims,
+      ...this.#undoScope,
+      ...this.#irreversibleScope,
+    ];
     this.#undoManager = new Y.UndoManager(this.#undoScope, {
       captureTimeout: options.captureTimeoutMs ?? 500,
       trackedOrigins: new Set([this.origin]),
@@ -179,6 +192,7 @@ class WorkOfficePdfCollaborationBindingImpl
     this.#undoManager.on('stack-item-added', this.#onHistoryChange);
     this.#undoManager.on('stack-item-popped', this.#onHistoryChange);
     this.#undoManager.on('stack-item-updated', this.#onHistoryChange);
+    this.#undoManager.on('stack-cleared', this.#onHistoryChange);
   }
 
   content(): WorkPdfCollaborationContent {
@@ -254,6 +268,7 @@ class WorkOfficePdfCollaborationBindingImpl
     this.#undoManager.off('stack-item-added', this.#onHistoryChange);
     this.#undoManager.off('stack-item-popped', this.#onHistoryChange);
     this.#undoManager.off('stack-item-updated', this.#onHistoryChange);
+    this.#undoManager.off('stack-cleared', this.#onHistoryChange);
     this.#undoManager.destroy();
     this.#listeners.clear();
     this.#errorListeners.clear();
@@ -264,7 +279,7 @@ class WorkOfficePdfCollaborationBindingImpl
     const changedParents = new Set<unknown>(
       transaction.changedParentTypes.keys(),
     );
-    if (this.#irreversibleScope.some((root) => changedParents.has(root))) {
+    if (workOfficePdfIrreversibleChange(this.#roots, transaction)) {
       this.#undoManager.clear();
     }
     if (

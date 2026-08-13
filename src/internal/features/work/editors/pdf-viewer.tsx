@@ -12,16 +12,23 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import {
+  assertWorkOfficePdfCollaborationSource,
+  readWorkOfficePdfCollaborationSource,
+} from '../../../collaboration/office-pdf-collaboration';
+import type { WorkPdfCollaborationContent } from '../../../collaboration/office-pdf-collaboration-types';
 import { Button, StateView } from '../../../design-system/primitives';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import { usePdfAnnotationController } from './pdf-annotation-controller';
+import { createWorkPdfCollaborationProjection } from './pdf-collaboration-projection';
 import { createPdfEditorExtensions } from './pdf-editor-extensions';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
-import { PdfToolbar, type PdfSaveState } from './pdf-toolbar';
+import { type PdfSaveState, PdfToolbar } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
 import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
-import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 import { useOfficeEditorRuntime } from './use-office-editor-runtime';
+import { useOfficeEditorWheelZoom } from './use-office-editor-wheel-zoom';
 
 const PDFIUM_WASM_PATH = '/vendor/embedpdf/pdfium.wasm';
 // PDFium can take longer on its first WASM startup, especially after a fresh
@@ -42,8 +49,10 @@ export const a3sPdfUiSchema: UISchema = {
 };
 
 export interface PdfViewerProps {
+  collaboration?: WorkOfficeCollaborationSession;
   fileName?: string;
   loadSource: () => Promise<Blob>;
+  onCollaborationChange?: (content: WorkPdfCollaborationContent) => void;
   onSave?: (pdf: Blob) => Promise<boolean>;
   saveLabel?: string;
   sourceKey?: string;
@@ -51,8 +60,10 @@ export interface PdfViewerProps {
 }
 
 export function PdfViewer({
+  collaboration,
   fileName = 'document.pdf',
   loadSource,
+  onCollaborationChange,
   onSave,
   saveLabel = '保存',
   sourceKey,
@@ -63,6 +74,7 @@ export function PdfViewer({
   const [saveState, setSaveState] = useState<PdfSaveState>('idle');
   const [retryCount, setRetryCount] = useState(0);
   const [registry, setRegistry] = useState<PluginRegistry | null>(null);
+  const [, refreshCollaborationHistory] = useState(0);
   const [mobilePageNavigationOpen, setMobilePageNavigationOpen] =
     useState(false);
   const pdfRootRef = useRef<HTMLElement>(null);
@@ -70,12 +82,32 @@ export function PdfViewer({
   const mobilePageNavigationId = useId();
   const mobilePageNavigationToggleRef = useRef<HTMLButtonElement>(null);
   const mobilePageNavigationCloseRef = useRef<HTMLButtonElement>(null);
-  const controller = usePdfViewerController(registry);
+  const collaborationProjectionRef = useRef<
+    ReturnType<typeof createWorkPdfCollaborationProjection> | undefined
+  >(undefined);
+  const collaborationHistory = collaboration
+    ? {
+        canRedo: collaborationProjectionRef.current?.binding.canRedo() ?? false,
+        canUndo: collaborationProjectionRef.current?.binding.canUndo() ?? false,
+        redo: () => collaborationProjectionRef.current?.binding.redo(),
+        undo: () => collaborationProjectionRef.current?.binding.undo(),
+      }
+    : undefined;
+  const controller = usePdfViewerController(registry, collaborationHistory);
   const annotation = usePdfAnnotationController(registry);
   const viewerReady = controller.state.ready && controller.state.documentOpen;
   const mobilePageNavigationModal = usePdfMobilePageNavigationModal();
   const mobilePageNavigationModalOpen =
     mobilePageNavigationOpen && mobilePageNavigationModal;
+  const editable = collaboration
+    ? collaboration.mode === 'edit'
+    : Boolean(onSave);
+  const collaborationRef = useRef(collaboration);
+  if (collaborationRef.current !== collaboration) {
+    throw new Error(
+      'PdfViewer collaboration sessions cannot be replaced while mounted. Remount the viewer for another shared PDF.',
+    );
+  }
 
   const closeMobilePageNavigation = useCallback(() => {
     setMobilePageNavigationOpen(false);
@@ -109,7 +141,11 @@ export function PdfViewer({
     setMobilePageNavigationOpen(false);
 
     void loadSource()
-      .then((source) => {
+      .then(async (source) => {
+        if (disposed) return;
+        if (collaboration) {
+          await assertPdfCollaborationBlob(collaboration, source);
+        }
         if (disposed) return;
         objectUrl = URL.createObjectURL(
           source.type === 'application/pdf'
@@ -126,13 +162,72 @@ export function PdfViewer({
       disposed = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [loadSource, retryCount, sourceKey]);
+  }, [collaboration, loadSource, retryCount, sourceKey]);
 
   useEffect(() => {
     if (controller.state.error) {
       setLoadError(controller.state.error);
     }
   }, [controller.state.error]);
+
+  useEffect(() => {
+    if (!collaboration || !viewerReady) return;
+    if (controller.state.totalPages < 1) return;
+    const expectedPages = readWorkPdfSourcePageCount(collaboration);
+    if (controller.state.totalPages !== expectedPages) {
+      setRegistry(null);
+      setLoadError(
+        `The loaded PDF has ${controller.state.totalPages} pages, but collaboration artifact '${collaboration.artifactId}' requires ${expectedPages}.`,
+      );
+    }
+  }, [collaboration, controller.state.totalPages, viewerReady]);
+
+  useEffect(() => {
+    if (!registry || !collaboration || !viewerReady) return;
+    if (controller.state.totalPages < 1) return;
+    const expectedPages = readWorkPdfSourcePageCount(collaboration);
+    if (controller.state.totalPages !== expectedPages) return;
+    const projection = createWorkPdfCollaborationProjection(
+      registry,
+      collaboration,
+    );
+    collaborationProjectionRef.current = projection;
+    const handleProjectionError = (error: unknown) => {
+      if (collaborationProjectionRef.current !== projection) return;
+      collaborationProjectionRef.current = undefined;
+      setRegistry(null);
+      setLoadError(pdfErrorMessage(error));
+    };
+    const unsubscribeError = projection.subscribeError(handleProjectionError);
+    void projection.ready.catch(handleProjectionError);
+    const unsubscribeHistory = projection.binding.subscribeHistory(() =>
+      refreshCollaborationHistory((value) => value + 1),
+    );
+    refreshCollaborationHistory((value) => value + 1);
+    return () => {
+      unsubscribeError();
+      unsubscribeHistory();
+      if (collaborationProjectionRef.current === projection) {
+        collaborationProjectionRef.current = undefined;
+      }
+      projection.destroy();
+    };
+  }, [collaboration, controller.state.totalPages, registry, viewerReady]);
+
+  useEffect(() => {
+    if (!collaboration || !onCollaborationChange) return;
+    const handleUpdate = () => {
+      const projection = collaborationProjectionRef.current;
+      if (!projection) return;
+      queueMicrotask(() => {
+        if (collaborationProjectionRef.current === projection) {
+          onCollaborationChange(projection.binding.content());
+        }
+      });
+    };
+    collaboration.document.on('update', handleUpdate);
+    return () => collaboration.document.off('update', handleUpdate);
+  }, [collaboration, onCollaborationChange]);
 
   useEffect(() => {
     if (!sourceUrl || viewerReady || loadError) return;
@@ -157,7 +252,7 @@ export function PdfViewer({
   const pdfEditor = useOfficeEditorRuntime(
     {
       annotation,
-      editable: Boolean(onSave),
+      editable,
       focusSearch: () => {
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
@@ -223,7 +318,8 @@ export function PdfViewer({
         annotationState={annotation.state}
         can={pdfEditor.can()}
         commands={pdfCommands}
-        editable={Boolean(onSave)}
+        editable={editable}
+        saveAvailable={editable && Boolean(onSave)}
         pageNavigation={
           viewerReady && registry && controller.state.totalPages > 0
             ? {
@@ -309,7 +405,7 @@ export function PdfViewer({
               },
               export: { defaultFileName: fileName },
               fonts: { ui: null, signature: null },
-              disabledCategories: onSave
+              disabledCategories: editable
                 ? undefined
                 : ['annotation', 'redaction', 'form', 'history'],
             }}
@@ -330,6 +426,37 @@ export function PdfViewer({
 function pdfErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return 'Unable to read this PDF file.';
+}
+
+async function assertPdfCollaborationBlob(
+  session: WorkOfficeCollaborationSession,
+  source: Blob,
+): Promise<void> {
+  const expected = readWorkOfficePdfCollaborationSource(session);
+  if (source.size !== expected.byteLength) {
+    throw new Error(
+      `The loaded PDF source does not match collaboration artifact '${session.artifactId}'.`,
+    );
+  }
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error('SHA-256 PDF source verification is unavailable.');
+  }
+  const digest = new Uint8Array(
+    await subtle.digest('SHA-256', await source.arrayBuffer()),
+  );
+  assertWorkOfficePdfCollaborationSource(session, {
+    ...expected,
+    sha256: Array.from(digest, (value) =>
+      value.toString(16).padStart(2, '0'),
+    ).join(''),
+  });
+}
+
+function readWorkPdfSourcePageCount(
+  session: WorkOfficeCollaborationSession,
+): number {
+  return readWorkOfficePdfCollaborationSource(session).pageCount;
 }
 
 function usePdfMobilePageNavigationModal(): boolean {
