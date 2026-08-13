@@ -45,6 +45,17 @@ export {
   readWorkOfficePresentationCollaboration as readOfficePresentationCollaboration,
   replaceWorkOfficePresentationCollaboration as replaceOfficePresentationCollaboration,
 } from './internal/collaboration/office-presentation-collaboration';
+export type {
+  WorkOfficeSpreadsheetCollaborationBinding as OfficeSpreadsheetCollaborationBinding,
+  WorkOfficeSpreadsheetCollaborationBindingOptions as OfficeSpreadsheetCollaborationBindingOptions,
+  WorkOfficeSpreadsheetCollaborationChange as OfficeSpreadsheetCollaborationChange,
+} from './internal/collaboration/office-spreadsheet-collaboration';
+export {
+  createWorkOfficeSpreadsheetCollaborationBinding as createOfficeSpreadsheetCollaborationBinding,
+  initializeWorkOfficeSpreadsheetCollaboration as initializeOfficeSpreadsheetCollaboration,
+  readWorkOfficeSpreadsheetCollaboration as readOfficeSpreadsheetCollaboration,
+  replaceWorkOfficeSpreadsheetCollaboration as replaceOfficeSpreadsheetCollaboration,
+} from './internal/collaboration/office-spreadsheet-collaboration';
 export {
   createWorkOfficeMarkdownCollaborationBinding as createOfficeMarkdownCollaborationBinding,
   initializeWorkOfficeMarkdownCollaboration as initializeOfficeMarkdownCollaboration,

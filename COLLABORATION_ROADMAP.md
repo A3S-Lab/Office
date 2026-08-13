@@ -44,7 +44,7 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `document.options` | `Y.Map` | Document-level editable options such as page color and tracking mode. |
 | `document.comments` / `document.comment-order` | `Y.Map` / `Y.Array` | ID-keyed durable comment/reply records and deterministic presentation order. |
 | `document.bibliography*` | Typed maps/arrays | Bibliography settings and ID-keyed citation sources. |
-| `spreadsheet.*` | Typed maps/arrays | Planned sheet order, sparse cells, styles, objects, and review state. |
+| `spreadsheet.*` | Typed maps/arrays | Sheet order, field-addressed sparse cells, formulas, styles, objects, names, and print state. |
 | `presentation.*` | Typed maps/arrays | Slide/master/layout order, ID-keyed scene objects, notes, transitions, and comments. |
 | `pdf.*` | Typed maps/arrays | Planned source identity, annotations, forms, and reviewed page operations. |
 
@@ -141,15 +141,40 @@ comments, and delete-vs-edit cases converge and survive PPTX round trips.
 
 ### Phase 4: Spreadsheet
 
-- Model sheet order, identities, sparse cells, formulas, styles, merges,
-  validations, comments, tables, charts, and names as typed shared structures.
+Status: transport-neutral browser core implemented; editor adapters, structural
+operations, and native recalculation parity are pending.
+
+- Stable sheet/named-range order arrays, ID-keyed records, and append-only
+  creation claims avoid a serialized workbook or dense worksheet root.
+- Sparse cell presence and recursively field-addressed values let formula,
+  cached value, number format, style, hyperlink, and note edits converge even
+  when two disconnected clients first populate the same blank cell.
+- Sheet configuration and formula metadata are recursively field-addressed,
+  so independent merge geometry, row/column sizing, protection, source-formula,
+  and dynamic-array metadata leaves do not replace their containing object.
+- Images, charts, pivot tables, defined names, calculation settings, print
+  areas/titles, page breaks, and page setup have conflict-local typed roots.
+- Snapshot writes are translated into `previous -> next` patches. Unrelated
+  stale snapshots preserve remote cells and records; a delete that would
+  discard a remote edit fails closed and asks the caller to refresh.
+- Selection, active-sheet status, zoom, calculation chains, dynamic-array
+  caches, and derived chart preview images are excluded from canonical state.
+- The public Core binding supports typed origins, edit permissions,
+  subscriptions, and per-client undo/redo. Tests cover bootstrap races,
+  malformed roots, identity collisions, stale snapshots, OOXML field
+  convergence, and local-only undo.
+
+Remaining:
+
+- Wire the binding into React, Vue, and Web Component editors while retaining
+  local sheet activation, selection, zoom, and Fortune Sheet focus state.
 - Translate one user gesture into one transaction; batch paste/fill/sort/filter
   without emitting a document-sized replacement.
-- Treat calculated values, viewport state, and selection as derived or
-  awareness data. Formula source remains canonical and recalculation is
-  deterministic.
-- Define structural conflict behavior for row/column insertion, deletion,
-  merged ranges, table resize, sort, and named references.
+- Add stable structural operations and reference transforms for row/column
+  insertion/deletion, merged ranges, tables, sort, and named references.
+- Treat calculated values as derived once browser and native recalculation are
+  deterministic and source formulas remain the only canonical formula state.
+- Add offline/reordered-update property tests plus merged XLSX export/reopen.
 
 Exit criterion: multi-client structural edits converge, recalculation agrees
 across browser and native clients, and XLSX round trips preserve supported plus
