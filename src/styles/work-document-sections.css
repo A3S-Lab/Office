@@ -271,6 +271,33 @@
   min-height: 460px;
 }
 
+.work-document-page.paginated .tiptap > .work-document-section {
+  box-sizing: border-box;
+  width: var(--work-document-section-body-width, auto);
+  margin-right: 0;
+  margin-left: calc(
+    (100% - var(--work-document-section-page-width, 100%)) /
+    2 +
+    var(--work-document-section-margin-left, 0px)
+  );
+}
+
+.work-document-page.paginated
+  .tiptap
+  > .work-document-section
+  + .work-document-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.work-document-page.paginated
+  .tiptap
+  > .work-document-section
+  + .work-document-section::before {
+  display: none;
+}
+
 .work-document-page .tiptap > .work-document-section + .work-document-section {
   margin-top: 46px;
   padding-top: 28px;

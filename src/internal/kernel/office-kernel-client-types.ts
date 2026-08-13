@@ -17,6 +17,7 @@ export interface OfficeKernelLayoutInput {
   documentRevision: number;
   startPageIndex?: number;
   page: OfficeKernelLayoutRequest['page'];
+  pageStyles?: OfficeKernelLayoutRequest['pageStyles'];
   blocks: OfficeKernelLayoutRequest['blocks'];
 }
 

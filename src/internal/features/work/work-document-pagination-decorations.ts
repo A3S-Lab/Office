@@ -198,11 +198,11 @@ function applyDocumentPageBreakVariables(
   );
   element.style.setProperty(
     '--work-document-page-gap-offset',
-    `${pageBreak.remainingBodyHeight + pageBreak.page.marginBottom}px`,
+    `${pageBreak.remainingBodyHeight + pageBreak.previousPage.marginBottom}px`,
   );
   element.style.setProperty(
     '--work-document-page-gap-height',
-    `${pageBreak.page.pageGap}px`,
+    `${pageBreak.previousPage.pageGap}px`,
   );
   element.style.setProperty(
     '--work-document-previous-page-footer-top',
@@ -212,25 +212,43 @@ function applyDocumentPageBreakVariables(
     '--work-document-next-page-header-top',
     `${
       pageBreak.remainingBodyHeight +
-      pageBreak.page.marginBottom +
-      pageBreak.page.pageGap
+      pageBreak.previousPage.marginBottom +
+      pageBreak.previousPage.pageGap
     }px`,
   );
   element.style.setProperty(
     '--work-document-page-header-height',
-    `${pageBreak.page.headerHeight}px`,
+    `${pageBreak.nextPage.headerHeight}px`,
   );
   element.style.setProperty(
     '--work-document-page-footer-height',
-    `${pageBreak.page.footerHeight}px`,
+    `${pageBreak.previousPage.footerHeight}px`,
   );
   element.style.setProperty(
     '--work-document-page-margin-left',
-    `${pageBreak.page.marginLeft}px`,
+    `${pageBreak.nextPage.marginLeft}px`,
   );
   element.style.setProperty(
     '--work-document-page-margin-right',
-    `${pageBreak.page.marginRight}px`,
+    `${pageBreak.nextPage.marginRight}px`,
+  );
+  const previousPageOffset =
+    (pageBreak.nextPage.width - pageBreak.previousPage.width) / 2;
+  element.style.setProperty(
+    '--work-document-previous-page-margin-left',
+    `${previousPageOffset + pageBreak.previousPage.marginLeft}px`,
+  );
+  element.style.setProperty(
+    '--work-document-previous-page-margin-right',
+    `${previousPageOffset + pageBreak.previousPage.marginRight}px`,
+  );
+  element.style.setProperty(
+    '--work-document-next-page-margin-left',
+    `${pageBreak.nextPage.marginLeft}px`,
+  );
+  element.style.setProperty(
+    '--work-document-next-page-margin-right',
+    `${pageBreak.nextPage.marginRight}px`,
   );
   element.style.setProperty(
     '--work-document-break-inline-offset-left',

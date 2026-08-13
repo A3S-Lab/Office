@@ -3,10 +3,12 @@ import {
   type OfficeKernelLayoutPage,
   type OfficeKernelLayoutRequest,
   type OfficeKernelLayoutResult,
+  type OfficeKernelPageMetrics,
   OFFICE_KERNEL_PROTOCOL_VERSION,
 } from './office-kernel-protocol';
 
 const MAX_LAYOUT_BLOCKS = 10_000;
+const MAX_LAYOUT_PAGE_STYLES = MAX_LAYOUT_BLOCKS;
 const MAX_LAYOUT_EXTENT = 1_000_000;
 const MAX_LAYOUT_PAGE_INDEX = 1_000_000;
 
@@ -14,24 +16,32 @@ export function layoutOfficeDocumentInJavaScript(
   request: OfficeKernelLayoutRequest,
 ): OfficeKernelLayoutResult {
   validateLayoutRequest(request);
-  const availableHeight = Math.max(
-    1,
-    request.page.height - request.page.marginTop - request.page.marginBottom,
+  const pageStyles = new Map(
+    (request.pageStyles ?? []).map(({ id, page }) => [id, page] as const),
+  );
+  const firstPage = pageMetricsForBlock(
+    request.blocks[0],
+    request.page,
+    pageStyles,
   );
   const pages: OfficeKernelLayoutPage[] = [
-    emptyPage(request.startPageIndex, availableHeight),
+    emptyPage(request.startPageIndex, firstPage),
   ];
 
   let index = 0;
   while (index < request.blocks.length) {
     const block = request.blocks[index];
+    const page = pageMetricsForBlock(block, request.page, pageStyles);
+    ensurePageMetrics(pages, page);
     if (block.flowCount !== undefined) {
       const end = index + block.flowCount;
       layoutFlow(
         request.blocks.slice(index, end),
         request.blocks.slice(end),
         pages,
-        availableHeight,
+        page,
+        request.page,
+        pageStyles,
         end < request.blocks.length,
       );
       index = end;
@@ -40,7 +50,9 @@ export function layoutOfficeDocumentInJavaScript(
         block,
         request.blocks.slice(index + 1),
         pages,
-        availableHeight,
+        page,
+        request.page,
+        pageStyles,
         index + 1 < request.blocks.length,
       );
       index += 1;
@@ -58,7 +70,7 @@ export function layoutOfficeDocumentInJavaScript(
     startPageIndex: request.startPageIndex,
     engine: 'javascript',
     pages,
-    breaks: layoutBreaks(pages, request),
+    breaks: layoutBreaks(pages),
   };
 }
 
@@ -102,26 +114,30 @@ function validateLayoutRequest(request: OfficeKernelLayoutRequest): void {
       `A layout request may contain at most ${MAX_LAYOUT_BLOCKS} blocks.`,
     );
   }
-  for (const [name, value] of Object.entries(request.page)) {
-    validateExtent(`page.${name}`, value);
-  }
-  if (
-    request.page.width <=
-    request.page.marginLeft + request.page.marginRight
-  ) {
+  validatePageMetrics('page', request.page);
+  const pageStyles = request.pageStyles ?? [];
+  if (pageStyles.length > MAX_LAYOUT_PAGE_STYLES) {
     throw kernelError(
-      'office.kernel.page_width_invalid',
-      'Page width must be greater than its horizontal margins.',
+      'office.kernel.page_style_limit_exceeded',
+      `A layout request may contain at most ${MAX_LAYOUT_PAGE_STYLES} page styles.`,
     );
   }
-  if (
-    request.page.height <=
-    request.page.marginTop + request.page.marginBottom
-  ) {
-    throw kernelError(
-      'office.kernel.page_height_invalid',
-      'Page height must leave a positive body area.',
-    );
+  const pageStyleIds = new Set<string>();
+  for (const style of pageStyles) {
+    if (!style.id.trim() || style.id.length > 256) {
+      throw kernelError(
+        'office.kernel.page_style_id_invalid',
+        'Every page style requires a non-empty ID of at most 256 bytes.',
+      );
+    }
+    if (pageStyleIds.has(style.id)) {
+      throw kernelError(
+        'office.kernel.page_style_id_duplicate',
+        `Page style ID '${style.id}' is duplicated.`,
+      );
+    }
+    pageStyleIds.add(style.id);
+    validatePageMetrics(`pageStyles.${style.id}.page`, style.page);
   }
   const blockIds = new Set<string>();
   for (const block of request.blocks) {
@@ -138,6 +154,17 @@ function validateLayoutRequest(request: OfficeKernelLayoutRequest): void {
       );
     }
     blockIds.add(block.id);
+    if (
+      block.pageStyleId !== undefined &&
+      (!block.pageStyleId.trim() ||
+        block.pageStyleId.length > 256 ||
+        !pageStyleIds.has(block.pageStyleId))
+    ) {
+      throw kernelError(
+        'office.kernel.page_style_reference_invalid',
+        `Layout block '${block.id}' references an unknown page style.`,
+      );
+    }
     validateExtent('block.height', block.height);
     validateFlowMetadata(block);
   }
@@ -148,19 +175,27 @@ function layoutSingleBlock(
   block: OfficeKernelLayoutRequest['blocks'][number],
   next: OfficeKernelLayoutRequest['blocks'],
   pages: OfficeKernelLayoutPage[],
-  availableHeight: number,
+  page: OfficeKernelPageMetrics,
+  defaultPage: OfficeKernelPageMetrics,
+  pageStyles: ReadonlyMap<string, OfficeKernelPageMetrics>,
   hasMoreBlocks: boolean,
 ): void {
+  const availableHeight = pageBodyHeight(page);
   let current = pages.at(-1) as OfficeKernelLayoutPage;
   let currentHasContent = current.placements.length > 0;
   if (block.breakBefore && currentHasContent) {
-    current = emptyPage(nextPageIndex(pages), availableHeight);
+    current = emptyPage(nextPageIndex(pages), page);
     pages.push(current);
     currentHasContent = false;
   }
 
   const remaining = Math.max(0, availableHeight - current.usedHeight);
-  const nextHeight = nextBlockPreviewHeight(next);
+  const nextHeight = nextBlockPreviewHeight(
+    next,
+    page,
+    defaultPage,
+    pageStyles,
+  );
   const groupedHeight = block.height + (block.keepWithNext ? nextHeight : 0);
   const shouldAdvance =
     currentHasContent &&
@@ -169,13 +204,13 @@ function layoutSingleBlock(
         groupedHeight <= availableHeight &&
         groupedHeight > remaining));
   if (shouldAdvance) {
-    current = emptyPage(nextPageIndex(pages), availableHeight);
+    current = emptyPage(nextPageIndex(pages), page);
     pages.push(current);
   }
 
   placeFragment(block, current, availableHeight);
   if (block.breakAfter && hasMoreBlocks) {
-    pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+    pages.push(emptyPage(nextPageIndex(pages), page));
   }
 }
 
@@ -183,17 +218,22 @@ function layoutFlow(
   blocks: OfficeKernelLayoutRequest['blocks'],
   next: OfficeKernelLayoutRequest['blocks'],
   pages: OfficeKernelLayoutPage[],
-  availableHeight: number,
+  page: OfficeKernelPageMetrics,
+  defaultPage: OfficeKernelPageMetrics,
+  pageStyles: ReadonlyMap<string, OfficeKernelPageMetrics>,
   hasMoreBlocks: boolean,
 ): void {
+  const availableHeight = pageBodyHeight(page);
   const first = blocks[0];
   const last = blocks.at(-1) as OfficeKernelLayoutRequest['blocks'][number];
   if (first.breakBefore && pages.at(-1)?.placements.length) {
-    pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+    pages.push(emptyPage(nextPageIndex(pages), page));
   }
 
   const totalHeight = fragmentHeight(blocks, 0, blocks.length);
-  const nextHeight = last.keepWithNext ? nextBlockPreviewHeight(next) : 0;
+  const nextHeight = last.keepWithNext
+    ? nextBlockPreviewHeight(next, page, defaultPage, pageStyles)
+    : 0;
   let current = pages.at(-1) as OfficeKernelLayoutPage;
   const repeatHeaderCount = first.repeatHeaderCount ?? 0;
   const repeatHeaderHeight = first.repeatHeaderHeight ?? 0;
@@ -204,7 +244,7 @@ function layoutFlow(
     groupedHeight <= availableHeight &&
     groupedHeight > Math.max(0, availableHeight - current.usedHeight)
   ) {
-    current = emptyPage(nextPageIndex(pages), availableHeight);
+    current = emptyPage(nextPageIndex(pages), page);
     pages.push(current);
   }
   if (repeatHeaderCount > 0 && repeatHeaderCount < blocks.length) {
@@ -215,7 +255,7 @@ function layoutFlow(
       leadingHeight <= availableHeight &&
       leadingHeight > remainingHeight
     ) {
-      current = emptyPage(nextPageIndex(pages), availableHeight);
+      current = emptyPage(nextPageIndex(pages), page);
       pages.push(current);
     }
   }
@@ -244,7 +284,7 @@ function layoutFlow(
       remainingFlowHeight + nextHeight > remainingHeight &&
       remainingFlowHeight + nextHeight <= availableHeight
     ) {
-      pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+      pages.push(emptyPage(nextPageIndex(pages), page));
       continue;
     }
     let fitting = fragmentsFitting(
@@ -261,7 +301,7 @@ function layoutFlow(
     }
     if (fitting === 0) {
       if (currentHasContent) {
-        pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+        pages.push(emptyPage(nextPageIndex(pages), page));
         continue;
       }
       fitting = 1;
@@ -271,27 +311,38 @@ function layoutFlow(
     }
     const minimumHere = Math.min(minimum, remainingFragments);
     if (fitting < minimumHere && currentHasContent) {
-      pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+      pages.push(emptyPage(nextPageIndex(pages), page));
       continue;
     }
     fitting = Math.max(1, fitting);
     placeFragments(blocks, cursor, cursor + fitting, current, availableHeight);
     cursor += fitting;
     if (cursor < blocks.length) {
-      pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+      pages.push(emptyPage(nextPageIndex(pages), page));
     }
   }
 
   if (last.breakAfter && hasMoreBlocks) {
-    pages.push(emptyPage(nextPageIndex(pages), availableHeight));
+    pages.push(emptyPage(nextPageIndex(pages), page));
   }
 }
 
 function nextBlockPreviewHeight(
   blocks: OfficeKernelLayoutRequest['blocks'],
+  currentPage: OfficeKernelPageMetrics,
+  defaultPage: OfficeKernelPageMetrics,
+  pageStyles: ReadonlyMap<string, OfficeKernelPageMetrics>,
 ): number {
   const first = blocks[0];
   if (!first || first.breakBefore) return 0;
+  if (
+    !pageMetricsEqual(
+      currentPage,
+      pageMetricsForBlock(first, defaultPage, pageStyles),
+    )
+  ) {
+    return 0;
+  }
   const count = Math.min(2, first.flowCount ?? 1);
   return fragmentHeight(blocks, 0, count);
 }
@@ -477,7 +528,8 @@ function validateFlowSequences(
         fragment.flowCount !== count ||
         fragment.minimumFragmentsPerPage !== block.minimumFragmentsPerPage ||
         fragment.repeatHeaderCount !== repeatHeaderCount ||
-        fragment.repeatHeaderHeight !== repeatHeaderHeight
+        fragment.repeatHeaderHeight !== repeatHeaderHeight ||
+        fragment.pageStyleId !== block.pageStyleId
       ) {
         throw kernelError(
           'office.kernel.flow_sequence_invalid',
@@ -503,12 +555,13 @@ function validateFlowSequences(
 
 function emptyPage(
   index: number,
-  availableHeight: number,
+  page: OfficeKernelPageMetrics,
 ): OfficeKernelLayoutPage {
   return {
     index,
+    page: { ...page },
     usedHeight: 0,
-    availableHeight,
+    availableHeight: pageBodyHeight(page),
     placements: [],
   };
 }
@@ -519,7 +572,6 @@ function nextPageIndex(pages: readonly OfficeKernelLayoutPage[]): number {
 
 function layoutBreaks(
   pages: OfficeKernelLayoutPage[],
-  request: OfficeKernelLayoutRequest,
 ): OfficeKernelLayoutBreak[] {
   return pages.slice(1).flatMap((page, localIndex) => {
     const beforeBlockId = page.placements[0]?.blockId;
@@ -536,12 +588,78 @@ function layoutBreaks(
         remainingBodyHeight,
         spacerHeight:
           remainingBodyHeight +
-          request.page.marginBottom +
-          request.page.pageGap +
-          request.page.marginTop,
+          previous.page.marginBottom +
+          previous.page.pageGap +
+          page.page.marginTop,
       },
     ];
   });
+}
+
+function ensurePageMetrics(
+  pages: OfficeKernelLayoutPage[],
+  page: OfficeKernelPageMetrics,
+): void {
+  const current = pages.at(-1) as OfficeKernelLayoutPage;
+  if (pageMetricsEqual(current.page, page)) return;
+  if (current.placements.length === 0 && current.usedHeight === 0) {
+    current.page = { ...page };
+    current.availableHeight = pageBodyHeight(page);
+    return;
+  }
+  pages.push(emptyPage(nextPageIndex(pages), page));
+}
+
+function pageMetricsForBlock(
+  block: OfficeKernelLayoutRequest['blocks'][number] | undefined,
+  defaultPage: OfficeKernelPageMetrics,
+  pageStyles: ReadonlyMap<string, OfficeKernelPageMetrics>,
+): OfficeKernelPageMetrics {
+  return block?.pageStyleId
+    ? (pageStyles.get(block.pageStyleId) ?? defaultPage)
+    : defaultPage;
+}
+
+function pageBodyHeight(page: OfficeKernelPageMetrics): number {
+  return Math.max(1, page.height - page.marginTop - page.marginBottom);
+}
+
+function pageMetricsEqual(
+  left: OfficeKernelPageMetrics,
+  right: OfficeKernelPageMetrics,
+): boolean {
+  return (
+    left.width === right.width &&
+    left.height === right.height &&
+    left.marginTop === right.marginTop &&
+    left.marginRight === right.marginRight &&
+    left.marginBottom === right.marginBottom &&
+    left.marginLeft === right.marginLeft &&
+    left.headerHeight === right.headerHeight &&
+    left.footerHeight === right.footerHeight &&
+    left.pageGap === right.pageGap
+  );
+}
+
+function validatePageMetrics(
+  name: string,
+  page: OfficeKernelPageMetrics,
+): void {
+  for (const [property, value] of Object.entries(page)) {
+    validateExtent(`${name}.${property}`, value);
+  }
+  if (page.width <= page.marginLeft + page.marginRight) {
+    throw kernelError(
+      'office.kernel.page_width_invalid',
+      'Page width must be greater than its horizontal margins.',
+    );
+  }
+  if (page.height <= page.marginTop + page.marginBottom) {
+    throw kernelError(
+      'office.kernel.page_height_invalid',
+      'Page height must leave a positive body area.',
+    );
+  }
 }
 
 function validateExtent(name: string, value: number): void {

@@ -3,7 +3,6 @@ import type {
   OfficeKernelLayoutBreak,
   OfficeKernelLayoutPage,
   OfficeKernelLayoutResult,
-  OfficeKernelPageMetrics,
 } from '../../kernel/office-kernel-protocol';
 
 export interface PositionedOfficeKernelLayoutBlock {
@@ -144,7 +143,6 @@ export function planIncrementalDocumentLayout(
 export function mergeIncrementalDocumentLayout(
   previous: OfficeKernelLayoutResult,
   partial: OfficeKernelLayoutResult,
-  page: OfficeKernelPageMetrics,
 ): OfficeKernelLayoutResult {
   if (partial.startPageIndex === 0) return partial;
   const startPageIndex = partial.startPageIndex;
@@ -162,7 +160,6 @@ export function mergeIncrementalDocumentLayout(
   const boundaryBreak = incrementalBoundaryBreak(
     prefixPages.at(-1),
     partial.pages[0],
-    page,
   );
   return {
     ...partial,
@@ -230,6 +227,7 @@ function sameLayoutBlock(
   return (
     left.id === right.id &&
     left.height === right.height &&
+    left.pageStyleId === right.pageStyleId &&
     left.breakBefore === right.breakBefore &&
     left.breakAfter === right.breakAfter &&
     left.keepTogether === right.keepTogether &&
@@ -246,7 +244,6 @@ function sameLayoutBlock(
 function incrementalBoundaryBreak(
   previous: OfficeKernelLayoutPage | undefined,
   next: OfficeKernelLayoutPage | undefined,
-  page: OfficeKernelPageMetrics,
 ): OfficeKernelLayoutBreak | null {
   const beforeBlockId = next?.placements[0]?.blockId;
   if (!previous || !next || !beforeBlockId) return null;
@@ -259,6 +256,9 @@ function incrementalBoundaryBreak(
     pageIndex: next.index,
     remainingBodyHeight,
     spacerHeight:
-      remainingBodyHeight + page.marginBottom + page.pageGap + page.marginTop,
+      remainingBodyHeight +
+      previous.page.marginBottom +
+      previous.page.pageGap +
+      next.page.marginTop,
   };
 }

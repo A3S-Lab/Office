@@ -324,7 +324,7 @@ describe('DOCX page size and paper source', () => {
     expect(codes).toContain('docx.paper-source');
     expect(codes).toContain('docx.page-size.invalid');
     expect(codes).toContain('docx.page-size.browser-bounds');
-    expect(codes).toContain('docx.page-size.mixed-live-layout');
+    expect(codes).not.toContain('docx.page-size.mixed-live-layout');
   });
 });
 

@@ -300,12 +300,13 @@ mode changes editability, accessible role, command chrome, and contextual
 interactions without replacing the ProseMirror DOM or clearing its measured
 blocks, shaped runs, page descriptors, and automatic-break decorations. Page
 headers and footers are visual overlays inside the configured top and bottom
-margins. Kernel protocol 15 therefore computes body height from page height
+margins. Kernel protocol 16 therefore computes body height from page height
 minus physical margins only; page-chrome heights position repeated overlays
 and do not subtract the same space again. Browser PDF export locates the ready
 surface through the host's stable artifact ID, clones its ProseMirror DOM once,
 removes editing-only state, and crops exact physical pages from bounded capture
-batches. Explicit descriptor pages remain a fallback for surfaces without a
+batches when their geometry is uniform or from exact per-page viewports when
+it differs. Explicit descriptor pages remain a fallback for surfaces without a
 registered live document.
 
 The Word navigation pane uses that same capture boundary for real physical-page
@@ -843,6 +844,14 @@ text validation, UTF-16 offset mapping, shaping, and their tests live in
 focused modules. This keeps the fallback and WASM paths independently
 testable without duplicating their public protocol.
 
+Layout requests carry a bounded, deduplicated page-style table and let each
+measured block reference its section geometry. A geometry transition opens a
+new physical page in both the JavaScript fallback and Rust/WASM kernel, and
+each result page owns its exact metrics. The live page stack, navigation
+thumbnail capture, and PDF capture all consume those result metrics, including
+mixed custom sizes and orientations, instead of projecting the active
+section's dimensions across the document.
+
 The npm package emits `office-kernel.worker.js`, `office-kernel.wasm`, and
 default Noto Sans, Noto Sans Hans, Noto Naskh Arabic, and Noto Sans Hebrew
 regular faces beside the public JavaScript entries. Hosts may override the
@@ -993,7 +1002,7 @@ bundle regression.
   inheritance beyond the implemented paragraph slices.
 - Complete row-internal splitting for single indivisible paragraphs and full
   floating-object geometry beyond the supported wrap, precise-anchor, and
-  image-layer subset, plus footnote balancing, columns, and mixed page sections. Row-flow
+  image-layer subset, plus footnote balancing and columns. Row-flow
   pagination, direct-cell and nested-row splitting, merged-cell continuations,
   repeating headers, and the current image-wrapping slice are already
   implemented.
@@ -1199,8 +1208,8 @@ repeatable fixtures. The targets below are release gates, not current claims:
 - WebAssembly performs no network or filesystem access.
 - Worker failure is recoverable and does not block typing.
 - Automatic pagination transactions are excluded from editor history.
-- Multi-column and mixed-page-layout documents currently retain explicit-break
-  behavior until their layout protocols are implemented.
+- Multi-column documents currently retain explicit-break behavior until their
+  layout protocol is implemented.
 
 ## Verification
 

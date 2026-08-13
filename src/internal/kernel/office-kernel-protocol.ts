@@ -45,9 +45,15 @@ export interface OfficeKernelPageMetrics {
   pageGap: number;
 }
 
+export interface OfficeKernelPageStyle {
+  id: string;
+  page: OfficeKernelPageMetrics;
+}
+
 export interface OfficeKernelLayoutBlock {
   id: string;
   height: number;
+  pageStyleId?: string;
   breakBefore?: boolean;
   breakAfter?: boolean;
   keepTogether?: boolean;
@@ -68,6 +74,7 @@ export interface OfficeKernelLayoutRequest {
   documentRevision: number;
   startPageIndex: number;
   page: OfficeKernelPageMetrics;
+  pageStyles?: OfficeKernelPageStyle[];
   blocks: OfficeKernelLayoutBlock[];
 }
 
@@ -80,6 +87,7 @@ export interface OfficeKernelLayoutPlacement {
 
 export interface OfficeKernelLayoutPage {
   index: number;
+  page: OfficeKernelPageMetrics;
   usedHeight: number;
   availableHeight: number;
   placements: OfficeKernelLayoutPlacement[];
@@ -450,10 +458,29 @@ function isLayoutPage(value: unknown): boolean {
   const page = value as Record<string, unknown>;
   return (
     isNonNegativeInteger(page.index) &&
+    isPageMetrics(page.page) &&
     isNonNegativeNumber(page.usedHeight) &&
     isNonNegativeNumber(page.availableHeight) &&
     Array.isArray(page.placements) &&
     page.placements.every(isLayoutPlacement)
+  );
+}
+
+function isPageMetrics(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const page = value as Record<string, unknown>;
+  return (
+    isPositiveNumber(page.width) &&
+    isPositiveNumber(page.height) &&
+    isNonNegativeNumber(page.marginTop) &&
+    isNonNegativeNumber(page.marginRight) &&
+    isNonNegativeNumber(page.marginBottom) &&
+    isNonNegativeNumber(page.marginLeft) &&
+    isNonNegativeNumber(page.headerHeight) &&
+    isNonNegativeNumber(page.footerHeight) &&
+    isNonNegativeNumber(page.pageGap) &&
+    Number(page.width) > Number(page.marginLeft) + Number(page.marginRight) &&
+    Number(page.height) > Number(page.marginTop) + Number(page.marginBottom)
   );
 }
 

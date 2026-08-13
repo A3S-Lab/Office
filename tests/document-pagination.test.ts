@@ -13,6 +13,7 @@ import {
   createDocumentTableRowFragmentPlan,
   createShapedDocumentLineFragments,
   documentPageBodyHeight,
+  documentPageMetrics,
   documentPaginationSurfaceHeight,
   findDocumentLineStartOffset,
   reusableDocumentLayoutBlocks,
@@ -624,8 +625,9 @@ function measuredBlock(
   layout: WorkDocumentSectionLayout,
   element: HTMLElement,
 ): MeasuredDocumentLayoutBlock {
+  const page = documentPageMetrics(layout);
   return {
-    block: { id, height: 20 },
+    block: { id, height: 20, pageStyleId: `section-${sectionIndex}` },
     element,
     from: sectionIndex * 100 + 1,
     to: sectionIndex * 100 + 20,
@@ -637,6 +639,8 @@ function measuredBlock(
       index: sectionIndex,
       position: sectionIndex * 100,
       layout,
+      pageStyleId: `section-${sectionIndex}`,
+      page,
     },
   };
 }
@@ -654,6 +658,7 @@ function paginationLayout(
     engine: 'javascript',
     pages: pageBlocks.map((source, index) => ({
       index,
+      page: documentPageMetrics(sectionLayout()),
       usedHeight: 20,
       availableHeight: 900,
       placements: (Array.isArray(source) ? source : [source]).map(

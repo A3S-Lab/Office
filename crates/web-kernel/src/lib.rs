@@ -4,7 +4,7 @@
 //! dependency. Native tests exercise the same deterministic layout function
 //! exported through the raw WebAssembly ABI.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -33,8 +33,9 @@ pub use text_layout::{
     TextTabAlignment, TextTabLayout, TextTabStop, TextWhiteSpace,
 };
 
-pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 15;
+pub const OFFICE_KERNEL_PROTOCOL_VERSION: u32 = 16;
 const MAX_LAYOUT_BLOCKS: usize = 10_000;
+const MAX_LAYOUT_PAGE_STYLES: usize = MAX_LAYOUT_BLOCKS;
 const MAX_LAYOUT_EXTENT: f64 = 1_000_000.0;
 const MAX_LAYOUT_PAGE_INDEX: u32 = 1_000_000;
 
@@ -92,9 +93,18 @@ impl LayoutPageMetrics {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct LayoutPageStyle {
+    pub id: String,
+    pub page: LayoutPageMetrics,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LayoutBlock {
     pub id: String,
     pub height: f64,
+    #[serde(default)]
+    pub page_style_id: Option<String>,
     #[serde(default)]
     pub break_before: bool,
     #[serde(default)]
@@ -217,6 +227,8 @@ pub struct LayoutRequest {
     pub document_revision: u64,
     pub start_page_index: u32,
     pub page: LayoutPageMetrics,
+    #[serde(default)]
+    pub page_styles: Vec<LayoutPageStyle>,
     pub blocks: Vec<LayoutBlock>,
 }
 
@@ -233,6 +245,7 @@ pub struct LayoutPlacement {
 #[serde(rename_all = "camelCase")]
 pub struct LayoutPage {
     pub index: u32,
+    pub page: LayoutPageMetrics,
     pub used_height: f64,
     pub available_height: f64,
     pub placements: Vec<LayoutPlacement>,
@@ -292,18 +305,27 @@ struct KernelErrorResponse {
 
 pub fn layout_document(request: &LayoutRequest) -> Result<LayoutResult, KernelError> {
     validate_request(request)?;
-    let available_height = request.page.available_height();
-    let mut pages = vec![empty_page(request.start_page_index, available_height)];
+    let page_styles = request
+        .page_styles
+        .iter()
+        .map(|style| (style.id.as_str(), &style.page))
+        .collect::<HashMap<_, _>>();
+    let first_page = page_metrics_for_block(request.blocks.first(), &request.page, &page_styles);
+    let mut pages = vec![empty_page(request.start_page_index, first_page)];
     let mut index = 0;
     while index < request.blocks.len() {
         let block = &request.blocks[index];
+        let page = page_metrics_for_block(Some(block), &request.page, &page_styles);
+        ensure_page_metrics(&mut pages, page);
         if let Some(flow_count) = block.flow_count {
             let end = index + flow_count as usize;
             layout_flow(
                 &request.blocks[index..end],
                 &request.blocks[end..],
                 &mut pages,
-                available_height,
+                page,
+                &request.page,
+                &page_styles,
                 end < request.blocks.len(),
             );
             index = end;
@@ -312,7 +334,9 @@ pub fn layout_document(request: &LayoutRequest) -> Result<LayoutResult, KernelEr
                 block,
                 &request.blocks[index + 1..],
                 &mut pages,
-                available_height,
+                page,
+                &request.page,
+                &page_styles,
                 index + 1 < request.blocks.len(),
             );
             index += 1;
@@ -322,7 +346,7 @@ pub fn layout_document(request: &LayoutRequest) -> Result<LayoutResult, KernelEr
     if pages.len() > 1 && pages.last().is_some_and(|page| page.placements.is_empty()) {
         pages.pop();
     }
-    let breaks = layout_breaks(&pages, &request.page);
+    let breaks = layout_breaks(&pages);
     Ok(LayoutResult {
         protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
         kind: "layoutResult".into(),
@@ -340,17 +364,20 @@ fn layout_single_block(
     block: &LayoutBlock,
     next: &[LayoutBlock],
     pages: &mut Vec<LayoutPage>,
-    available_height: f64,
+    page: &LayoutPageMetrics,
+    default_page: &LayoutPageMetrics,
+    page_styles: &HashMap<&str, &LayoutPageMetrics>,
     has_more_blocks: bool,
 ) {
+    let available_height = page.available_height();
     let current_has_content = pages.last().is_some_and(|page| !page.placements.is_empty());
     if block.break_before && current_has_content {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
 
     let current = pages.last().expect("layout always contains one page");
     let remaining = (available_height - current.used_height).max(0.0);
-    let next_height = next_block_preview_height(next);
+    let next_height = next_block_preview_height(next, page, default_page, page_styles);
     let grouped_height = block.height
         + if block.keep_with_next {
             next_height
@@ -363,12 +390,12 @@ fn layout_single_block(
                 && grouped_height <= available_height
                 && grouped_height > remaining));
     if should_advance {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
 
     place_fragment(block, pages, available_height);
     if block.break_after && has_more_blocks {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
 }
 
@@ -376,18 +403,21 @@ fn layout_flow(
     blocks: &[LayoutBlock],
     next: &[LayoutBlock],
     pages: &mut Vec<LayoutPage>,
-    available_height: f64,
+    page: &LayoutPageMetrics,
+    default_page: &LayoutPageMetrics,
+    page_styles: &HashMap<&str, &LayoutPageMetrics>,
     has_more_blocks: bool,
 ) {
+    let available_height = page.available_height();
     let first = blocks.first().expect("validated flow is non-empty");
     let last = blocks.last().expect("validated flow is non-empty");
     if first.break_before && pages.last().is_some_and(|page| !page.placements.is_empty()) {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
 
     let total_height = blocks.iter().map(|block| block.height).sum::<f64>();
     let next_height = if last.keep_with_next {
-        next_block_preview_height(next)
+        next_block_preview_height(next, page, default_page, page_styles)
     } else {
         0.0
     };
@@ -402,7 +432,7 @@ fn layout_flow(
         && grouped_height <= available_height
         && grouped_height > remaining
     {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
     if repeat_header_count > 0 && repeat_header_count < blocks.len() {
         let leading_height = blocks[..repeat_header_count + 1]
@@ -415,7 +445,7 @@ fn layout_flow(
             && leading_height <= available_height
             && leading_height > remaining
         {
-            pages.push(empty_page(next_page_index(pages), available_height));
+            pages.push(empty_page(next_page_index(pages), page));
         }
     }
 
@@ -448,7 +478,7 @@ fn layout_flow(
             && remaining_flow_height + next_height > remaining_height
             && remaining_flow_height + next_height <= available_height
         {
-            pages.push(empty_page(next_page_index(pages), available_height));
+            pages.push(empty_page(next_page_index(pages), page));
             continue;
         }
         let mut fitting = fragments_fitting(&blocks[cursor..], remaining_height);
@@ -460,7 +490,7 @@ fn layout_flow(
         }
         if fitting == 0 {
             if current_has_content {
-                pages.push(empty_page(next_page_index(pages), available_height));
+                pages.push(empty_page(next_page_index(pages), page));
                 continue;
             }
             fitting = 1;
@@ -471,26 +501,34 @@ fn layout_flow(
         }
         let minimum_here = minimum.min(remaining_fragments);
         if fitting < minimum_here && current_has_content {
-            pages.push(empty_page(next_page_index(pages), available_height));
+            pages.push(empty_page(next_page_index(pages), page));
             continue;
         }
         let fitting = fitting.max(1);
         place_fragments(&blocks[cursor..cursor + fitting], pages, available_height);
         cursor += fitting;
         if cursor < blocks.len() {
-            pages.push(empty_page(next_page_index(pages), available_height));
+            pages.push(empty_page(next_page_index(pages), page));
         }
     }
 
     if last.break_after && has_more_blocks {
-        pages.push(empty_page(next_page_index(pages), available_height));
+        pages.push(empty_page(next_page_index(pages), page));
     }
 }
 
-fn next_block_preview_height(blocks: &[LayoutBlock]) -> f64 {
+fn next_block_preview_height(
+    blocks: &[LayoutBlock],
+    current_page: &LayoutPageMetrics,
+    default_page: &LayoutPageMetrics,
+    page_styles: &HashMap<&str, &LayoutPageMetrics>,
+) -> f64 {
     let Some(first) = blocks.first().filter(|block| !block.break_before) else {
         return 0.0;
     };
+    if page_metrics_for_block(Some(first), default_page, page_styles) != current_page {
+        return 0.0;
+    }
     let count = first.flow_count.unwrap_or(1).min(2) as usize;
     blocks.iter().take(count).map(|block| block.height).sum()
 }
@@ -556,9 +594,42 @@ fn validate_request(request: &LayoutRequest) -> Result<(), KernelError> {
         ));
     }
     request.page.validate()?;
+    if request.page_styles.len() > MAX_LAYOUT_PAGE_STYLES {
+        return Err(KernelError::invalid(
+            "office.kernel.page_style_limit_exceeded",
+            format!("A layout request may contain at most {MAX_LAYOUT_PAGE_STYLES} page styles."),
+        ));
+    }
+    let mut page_style_ids = HashSet::with_capacity(request.page_styles.len());
+    for style in &request.page_styles {
+        if style.id.trim().is_empty() || style.id.len() > 256 {
+            return Err(KernelError::invalid(
+                "office.kernel.page_style_id_invalid",
+                "Every page style requires a non-empty ID of at most 256 bytes.",
+            ));
+        }
+        if !page_style_ids.insert(style.id.as_str()) {
+            return Err(KernelError::invalid(
+                "office.kernel.page_style_id_duplicate",
+                format!("Page style ID '{}' is duplicated.", style.id),
+            ));
+        }
+        style.page.validate()?;
+    }
     let mut block_ids = HashSet::with_capacity(request.blocks.len());
     for block in &request.blocks {
         block.validate()?;
+        if block.page_style_id.as_deref().is_some_and(|id| {
+            id.trim().is_empty() || id.len() > 256 || !page_style_ids.contains(id)
+        }) {
+            return Err(KernelError::invalid(
+                "office.kernel.page_style_reference_invalid",
+                format!(
+                    "Layout block '{}' references an unknown page style.",
+                    block.id
+                ),
+            ));
+        }
         if !block_ids.insert(block.id.as_str()) {
             return Err(KernelError::invalid(
                 "office.kernel.block_id_duplicate",
@@ -608,6 +679,7 @@ fn validate_flows(blocks: &[LayoutBlock]) -> Result<(), KernelError> {
                 || fragment.minimum_fragments_per_page != minimum
                 || fragment.repeat_header_count != repeat_header_count
                 || fragment.repeat_header_height != repeat_header_height
+                || fragment.page_style_id != block.page_style_id
             {
                 return Err(KernelError::invalid(
                     "office.kernel.flow_sequence_invalid",
@@ -632,11 +704,12 @@ fn validate_flows(blocks: &[LayoutBlock]) -> Result<(), KernelError> {
     Ok(())
 }
 
-fn empty_page(index: u32, available_height: f64) -> LayoutPage {
+fn empty_page(index: u32, page: &LayoutPageMetrics) -> LayoutPage {
     LayoutPage {
         index,
+        page: page.clone(),
         used_height: 0.0,
-        available_height,
+        available_height: page.available_height(),
         placements: Vec::new(),
     }
 }
@@ -645,7 +718,7 @@ fn next_page_index(pages: &[LayoutPage]) -> u32 {
     pages.last().map_or(0, |page| page.index.saturating_add(1))
 }
 
-fn layout_breaks(pages: &[LayoutPage], metrics: &LayoutPageMetrics) -> Vec<LayoutBreak> {
+fn layout_breaks(pages: &[LayoutPage]) -> Vec<LayoutBreak> {
     pages
         .iter()
         .enumerate()
@@ -658,13 +731,37 @@ fn layout_breaks(pages: &[LayoutPage], metrics: &LayoutPageMetrics) -> Vec<Layou
                 before_block_id,
                 page_index: page.index,
                 spacer_height: remaining_body_height
-                    + metrics.margin_bottom
-                    + metrics.page_gap
-                    + metrics.margin_top,
+                    + previous.page.margin_bottom
+                    + previous.page.page_gap
+                    + page.page.margin_top,
                 remaining_body_height,
             })
         })
         .collect()
+}
+
+fn ensure_page_metrics(pages: &mut Vec<LayoutPage>, page: &LayoutPageMetrics) {
+    let current = pages.last_mut().expect("layout always contains one page");
+    if current.page == *page {
+        return;
+    }
+    if current.placements.is_empty() && current.used_height == 0.0 {
+        current.page = page.clone();
+        current.available_height = page.available_height();
+        return;
+    }
+    pages.push(empty_page(next_page_index(pages), page));
+}
+
+fn page_metrics_for_block<'a>(
+    block: Option<&LayoutBlock>,
+    default_page: &'a LayoutPageMetrics,
+    page_styles: &HashMap<&str, &'a LayoutPageMetrics>,
+) -> &'a LayoutPageMetrics {
+    block
+        .and_then(|block| block.page_style_id.as_deref())
+        .and_then(|id| page_styles.get(id).copied())
+        .unwrap_or(default_page)
 }
 
 fn validate_extent(name: &str, value: f64) -> Result<(), KernelError> {

@@ -70,24 +70,7 @@ export function diagnoseDocxPageSize(
       message: `${bounded} valid section page-size set(s) use an edge below one inch. Exact native values remain authoritative for DOCX output; browser editing and PDF projection bound the affected edge to one inch so the page remains inspectable.`,
     });
   }
-  if (new Set(validSizes.map((geometry) => geometryKey(geometry))).size > 1) {
-    issues.push({
-      code: 'docx.page-size.mixed-live-layout',
-      severity: 'warning',
-      feature: 'Mixed section page sizes',
-      message:
-        'Static print preview and PDF use each section page size exactly. The continuous live paginated editor currently uses the active page metrics for its shared page stack, so mixed-size section transitions may paginate approximately while their native section geometry remains intact.',
-    });
-  }
   return issues;
-}
-
-function geometryKey(geometry: {
-  width: number;
-  height: number;
-  orientation?: string;
-}): string {
-  return `${geometry.width}:${geometry.height}:${geometry.orientation ?? ''}`;
 }
 
 function hasAncestor(element: Element, localName: string): boolean {

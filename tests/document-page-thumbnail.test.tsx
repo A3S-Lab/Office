@@ -56,6 +56,42 @@ test('rasterizes one exact physical page from the live paginated surface', async
   expect(document.querySelector('.work-pdf-export-surface')).toBeNull();
 });
 
+test('captures a mixed-size page at its own viewport and surface offset', async () => {
+  const source = createThumbnailSource();
+  source.pages = [
+    { height: 400, left: 100, top: 0, width: 300 },
+    { height: 200, left: 0, top: 420, width: 500 },
+    { height: 600, left: 50, top: 650, width: 400 },
+  ];
+  let capturedViewport: HTMLElement | null = null;
+  let capturedScale = 0;
+
+  await renderDocumentPageThumbnail(
+    source,
+    1,
+    276,
+    async (viewport, options) => {
+      capturedViewport = viewport;
+      capturedScale = options.scale;
+      const canvas = document.createElement('canvas');
+      Object.defineProperty(canvas, 'toDataURL', {
+        value: () => 'data:image/png;base64,mixed-page-two',
+      });
+      return canvas;
+    },
+  );
+
+  expect(capturedScale).toBeCloseTo(276 / 500);
+  expect(capturedViewport?.style.height).toBe('200px');
+  expect(capturedViewport?.style.width).toBe('500px');
+  const snapshot = capturedViewport?.querySelector<HTMLElement>(
+    '.work-document-live-pdf-snapshot',
+  );
+  expect(snapshot?.style.left).toBe('0px');
+  expect(snapshot?.style.top).toBe('-420px');
+  expect(snapshot?.style.width).toBe('500px');
+});
+
 test('does not wait for unrelated page-wide fonts after pagination is ready', async () => {
   const fontsDescriptor = Object.getOwnPropertyDescriptor(document, 'fonts');
   const originalRequestAnimationFrame = globalThis.requestAnimationFrame;

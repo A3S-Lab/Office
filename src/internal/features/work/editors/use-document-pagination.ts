@@ -31,8 +31,7 @@ import {
   collectDocumentTextLayoutParagraphs,
   type DocumentPaginationSnapshot,
   type DocumentPaginationVisualPageChrome,
-  documentPageBodyHeight,
-  documentPageChromeHeights,
+  documentPageMetrics,
   type MeasuredDocumentLayoutBlock,
   measureDocumentLayoutBlocks,
 } from '../work-document-pagination';
@@ -56,6 +55,7 @@ export interface DocumentPaginationPageDescriptor {
   sectionIndex: number;
   layout: WorkDocumentSectionLayout;
   pageChrome: ResolvedDocumentPageChrome;
+  page: OfficeKernelPageMetrics;
 }
 
 export interface DocumentPaginationPageDescriptorDerivation {
@@ -323,17 +323,11 @@ export function useDocumentPagination({
           0,
         ),
       );
-      const effectivePage = {
-        ...page,
-        ...documentPageChromeHeights(editor),
-      };
-      const availablePageHeight = documentPageBodyHeight(effectivePage);
       const snapshot = measureDocumentLayoutBlocks(
         editor,
         measurementCache.current,
         measurementStart,
         textLayouts,
-        availablePageHeight,
       );
       measurementCache.current = snapshot;
       editorDom.dataset.paginationBlocks = String(snapshot.blocks.length);
@@ -379,7 +373,8 @@ export function useDocumentPagination({
             revision: nextRevision,
             documentRevision,
             startPageIndex: layoutPlan.startPageIndex,
-            page: effectivePage,
+            page,
+            pageStyles: snapshot.pageStyles,
             blocks: layoutPlan.blocks,
           },
           controller.signal,
@@ -397,7 +392,6 @@ export function useDocumentPagination({
             ? mergeIncrementalDocumentLayout(
                 previousPagination.layout,
                 partialLayout,
-                effectivePage,
               )
             : partialLayout;
         const blockById = new Map(
@@ -431,7 +425,14 @@ export function useDocumentPagination({
               ? [
                   {
                     ...pageBreak,
-                    page: effectivePage,
+                    previousPage:
+                      pageByIndex.get(pageBreak.pageIndex - 1)?.page ??
+                      layout.pages[pageBreak.pageIndex - 1]?.page ??
+                      page,
+                    nextPage:
+                      pageByIndex.get(pageBreak.pageIndex)?.page ??
+                      layout.pages[pageBreak.pageIndex]?.page ??
+                      page,
                     position: block.from,
                     inlineOffsetLeft: block.inlineOffsetLeft,
                     inlineOffsetRight: block.inlineOffsetRight,
@@ -696,6 +697,7 @@ export function deriveDocumentPaginationPageDescriptors(
         section.id,
         section.index,
         section.layout,
+        page.page,
       )
     ) {
       descriptors.push(previousPage);
@@ -725,6 +727,7 @@ export function deriveDocumentPaginationPageDescriptors(
         sectionPage,
         physicalPage,
       ),
+      page: documentPageMetrics(section.layout, physicalPage),
     });
   }
   return {
@@ -742,6 +745,7 @@ function reusableDocumentPageDescriptor(
   sectionId: string,
   sectionIndex: number,
   layout: WorkDocumentSectionLayout,
+  page: OfficeKernelPageMetrics,
 ): boolean {
   return (
     candidate.pageIndex === physicalPage - 1 &&
@@ -750,6 +754,7 @@ function reusableDocumentPageDescriptor(
     candidate.sectionPage === sectionPage &&
     candidate.sectionId === sectionId &&
     candidate.sectionIndex === sectionIndex &&
+    pageMetricsKey(candidate.page) === pageMetricsKey(page) &&
     JSON.stringify(candidate.layout) === JSON.stringify(layout)
   );
 }

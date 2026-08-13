@@ -2,13 +2,15 @@ import type {
   OfficeKernelLayoutBlock,
   OfficeKernelLayoutBreak,
   OfficeKernelPageMetrics,
+  OfficeKernelPageStyle,
   OfficeKernelTextLayoutParagraph,
 } from '../../kernel/office-kernel-protocol';
 import type { WorkDocumentSectionLayout } from './work-types';
 
 export interface DocumentPaginationVisualBreak extends OfficeKernelLayoutBreak {
   position: number;
-  page: OfficeKernelPageMetrics;
+  previousPage: OfficeKernelPageMetrics;
+  nextPage: OfficeKernelPageMetrics;
   inlineOffsetLeft: number;
   inlineOffsetRight: number;
   previousPageChrome?: DocumentPaginationVisualPageChrome;
@@ -29,6 +31,8 @@ export interface DocumentPaginationSection {
   index: number;
   position: number;
   layout: WorkDocumentSectionLayout;
+  pageStyleId: string;
+  page: OfficeKernelPageMetrics;
 }
 
 export interface DocumentTablePaginationBreak {
@@ -89,6 +93,7 @@ export interface MeasuredDocumentLayoutBlock {
 
 export interface DocumentPaginationSnapshot {
   blocks: MeasuredDocumentLayoutBlock[];
+  pageStyles: OfficeKernelPageStyle[];
   measuredBlockCount: number;
   reusedBlockCount: number;
   unsupportedLayout: boolean;

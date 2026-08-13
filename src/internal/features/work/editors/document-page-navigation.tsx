@@ -108,7 +108,12 @@ export function DocumentPageNavigation({
       pages.map((page) =>
         estimatedDocumentPageItemHeight(page, thumbnailSource),
       ),
-    [pages, thumbnailSource?.pageHeight, thumbnailSource?.pageWidth],
+    [
+      pages,
+      thumbnailSource?.pageHeight,
+      thumbnailSource?.pageWidth,
+      thumbnailSource?.pages,
+    ],
   );
   const pageStarts = useMemo(
     () => documentNavigationItemStarts(itemHeights, DOCUMENT_PAGE_ITEM_GAP),
@@ -343,10 +348,13 @@ function estimatedDocumentPageItemHeight(
     page.orientation === 'landscape'
       ? DOCUMENT_PAGE_LANDSCAPE_WIDTH
       : DOCUMENT_PAGE_PORTRAIT_WIDTH;
+  const sourcePage = source?.pages?.[page.physicalPage - 1];
   const sourceRatio =
-    source && source.pageWidth > 0 && source.pageHeight > 0
-      ? source.pageHeight / source.pageWidth
-      : null;
+    sourcePage && sourcePage.width > 0 && sourcePage.height > 0
+      ? sourcePage.height / sourcePage.width
+      : source && source.pageWidth > 0 && source.pageHeight > 0
+        ? source.pageHeight / source.pageWidth
+        : null;
   const fallbackRatio =
     page.orientation === 'landscape' ? 210 / 297 : 297 / 210;
   return Math.ceil(

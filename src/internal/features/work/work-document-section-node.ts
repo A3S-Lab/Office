@@ -12,6 +12,8 @@ import {
   updateActiveDocumentSection as updateActiveSection,
   updateDocumentSection as updateSection,
 } from './work-document-section-editor';
+import { documentPageMetrics } from './work-document-pagination-measurement';
+import { normalizeDocumentPaperSize } from './work-document-page-size';
 import type {
   WorkDocumentSectionBreakType,
   WorkDocumentSectionLayout,
@@ -123,8 +125,7 @@ export const DocumentSection = Node.create({
           if (!(node instanceof HTMLElement)) return false;
           return {
             id: node.dataset.sectionId ?? '',
-            pageSize:
-              node.dataset.sectionPageSize === 'letter' ? 'letter' : 'a4',
+            pageSize: normalizeDocumentPaperSize(node.dataset.sectionPageSize),
             orientation:
               node.dataset.sectionOrientation === 'landscape'
                 ? 'landscape'
@@ -169,10 +170,18 @@ export const DocumentSection = Node.create({
         ? node.attrs.id
         : 'document-section';
     const columns = layout.columns;
+    const page = documentPageMetrics(layout);
     const style = [
       `--work-document-column-count:${columns.count}`,
       `--work-document-column-gap:${columns.spacing}mm`,
       `--work-document-column-rule:${columns.separator ? '1px solid var(--a3s-line-strong)' : 'none'}`,
+      `--work-document-section-page-width:${page.width}px`,
+      `--work-document-section-page-height:${page.height}px`,
+      `--work-document-section-body-width:${page.width - page.marginLeft - page.marginRight}px`,
+      `--work-document-section-margin-top:${page.marginTop}px`,
+      `--work-document-section-margin-right:${page.marginRight}px`,
+      `--work-document-section-margin-bottom:${page.marginBottom}px`,
+      `--work-document-section-margin-left:${page.marginLeft}px`,
       ...(layout.documentGrid
         ? [
             `--work-document-word-grid-line-pitch:${layout.documentGrid.linePitch}pt`,

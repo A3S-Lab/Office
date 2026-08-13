@@ -66,8 +66,6 @@
 
 .work-document-page-border-surface {
   position: absolute;
-  right: 0;
-  left: 0;
   overflow: hidden;
 }
 
@@ -94,8 +92,6 @@
 
 .work-document-page-sheet {
   position: absolute;
-  right: 0;
-  left: 0;
   box-sizing: border-box;
   border: 1px solid var(--a3s-line);
   box-shadow: 0 8px 28px rgb(30 38 55 / 10%);
@@ -364,11 +360,27 @@
 
 .work-document-page .tiptap .work-document-page-break-chrome.header {
   top: var(--work-document-next-page-header-top);
+  right: var(
+    --work-document-next-page-margin-right,
+    var(--work-document-page-margin-right)
+  );
+  left: var(
+    --work-document-next-page-margin-left,
+    var(--work-document-page-margin-left)
+  );
   height: var(--work-document-page-header-height);
 }
 
 .work-document-page .tiptap .work-document-page-break-chrome.footer {
   top: var(--work-document-previous-page-footer-top);
+  right: var(
+    --work-document-previous-page-margin-right,
+    var(--work-document-page-margin-right)
+  );
+  left: var(
+    --work-document-previous-page-margin-left,
+    var(--work-document-page-margin-left)
+  );
   height: var(--work-document-page-footer-height);
   justify-content: space-between;
 }

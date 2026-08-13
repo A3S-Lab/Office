@@ -17,7 +17,6 @@ export {
 export { reusableDocumentLayoutBlocks } from './work-document-pagination-dom';
 export {
   documentPageBodyHeight,
-  documentPageChromeHeights,
   documentPageMetrics,
   documentPaginationSurfaceHeight,
   measureDocumentLayoutBlocks,

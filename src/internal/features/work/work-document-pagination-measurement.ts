@@ -2,6 +2,7 @@ import type { Editor } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type {
   OfficeKernelPageMetrics,
+  OfficeKernelPageStyle,
   OfficeKernelTextLayoutParagraphResult,
 } from '../../kernel/office-kernel-protocol';
 import { millimetersToPixels } from './work-document-layout';
@@ -14,7 +15,6 @@ import {
   documentInlineOffsets,
   documentListChildId,
   documentNodeParagraphPagination,
-  documentPaginationLayoutKey,
   elementForNode,
   isDocumentListNode,
   measuredDocumentBlock,
@@ -47,18 +47,24 @@ export function measureDocumentLayoutBlocks(
   maximumFragmentedTableRowHeight = 1_000_000,
 ): DocumentPaginationSnapshot {
   const blocks: MeasuredDocumentLayoutBlock[] = [];
+  const pageStyleByMetrics = new Map<string, OfficeKernelPageStyle>();
   const counts = { measured: 0, reused: 0 };
   let unsupportedLayout = false;
-  let firstLayoutKey: string | null = null;
   editor.state.doc.forEach((section, sectionPosition, sectionIndex) => {
     if (section.type.name !== 'documentSection') return;
     const layout = documentSectionLayoutFromNodeAttributes(
       section.attrs as Partial<DocumentSectionNodeAttributes>,
     );
-    const layoutKey = documentPaginationLayoutKey(layout);
-    firstLayoutKey ??= layoutKey;
-    if (layout.columns.count > 1 || layoutKey !== firstLayoutKey) {
-      unsupportedLayout = true;
+    if (layout.columns.count > 1) unsupportedLayout = true;
+    const page = documentPageMetrics(layout);
+    const metricsKey = documentPageMetricsKey(page);
+    let pageStyle = pageStyleByMetrics.get(metricsKey);
+    if (!pageStyle) {
+      pageStyle = {
+        id: `document-page-style-${pageStyleByMetrics.size + 1}`,
+        page,
+      };
+      pageStyleByMetrics.set(metricsKey, pageStyle);
     }
     measureSectionBlocks(
       editor,
@@ -66,16 +72,21 @@ export function measureDocumentLayoutBlocks(
       sectionPosition,
       sectionIndex,
       layout,
+      pageStyle,
       previous?.blocks ?? [],
       dirtyFrom,
       textLayouts,
-      maximumFragmentedTableRowHeight,
+      Math.min(
+        maximumFragmentedTableRowHeight,
+        documentPageBodyHeight(pageStyle.page),
+      ),
       counts,
       blocks,
     );
   });
   return {
     blocks,
+    pageStyles: [...pageStyleByMetrics.values()],
     measuredBlockCount: counts.measured,
     reusedBlockCount: counts.reused,
     unsupportedLayout,
@@ -84,18 +95,28 @@ export function measureDocumentLayoutBlocks(
 
 export function documentPageMetrics(
   layout: WorkDocumentSectionLayout,
+  physicalPage = 1,
 ): OfficeKernelPageMetrics {
   const pageSize = resolveDocumentPageSize(layout);
-  const margins = resolveDocumentPageMargins(layout, 1).body;
+  const resolvedMargins = resolveDocumentPageMargins(layout, physicalPage);
+  const margins = resolvedMargins.body;
+  const marginTop = millimetersToPixels(margins.top);
+  const marginBottom = millimetersToPixels(margins.bottom);
   return {
     width: pageSize.widthPixels,
     height: pageSize.heightPixels,
-    marginTop: millimetersToPixels(margins.top),
+    marginTop,
     marginRight: millimetersToPixels(margins.right),
-    marginBottom: millimetersToPixels(margins.bottom),
+    marginBottom,
     marginLeft: millimetersToPixels(margins.left),
-    headerHeight: 0,
-    footerHeight: 0,
+    headerHeight: Math.max(
+      0,
+      marginTop - millimetersToPixels(resolvedMargins.headerDistance),
+    ),
+    footerHeight: Math.max(
+      0,
+      marginBottom - millimetersToPixels(resolvedMargins.footerDistance),
+    ),
     pageGap: 28,
   };
 }
@@ -112,26 +133,13 @@ export function documentPaginationSurfaceHeight(
   return page.height * count + page.pageGap * (count - 1);
 }
 
-export function documentPageChromeHeights(
-  editor: Editor,
-): Pick<OfficeKernelPageMetrics, 'headerHeight' | 'footerHeight'> {
-  const page = editor.view.dom.closest<HTMLElement>('.work-document-page');
-  return {
-    headerHeight: outerHeight(
-      page?.querySelector<HTMLElement>('.work-document-page-header') ?? null,
-    ),
-    footerHeight: outerHeight(
-      page?.querySelector<HTMLElement>('.work-document-page-footer') ?? null,
-    ),
-  };
-}
-
 function measureSectionBlocks(
   editor: Editor,
   section: ProseMirrorNode,
   sectionPosition: number,
   sectionIndex: number,
   layout: WorkDocumentSectionLayout,
+  pageStyle: OfficeKernelPageStyle,
   previous: readonly MeasuredDocumentLayoutBlock[],
   dirtyFrom: number,
   textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
@@ -251,9 +259,28 @@ function measureSectionBlocks(
     index: sectionIndex,
     position: sectionPosition,
     layout,
+    pageStyleId: pageStyle.id,
+    page: pageStyle.page,
   };
-  for (const block of sectionBlocks) block.section = sectionMetadata;
+  for (const block of sectionBlocks) {
+    block.block.pageStyleId = pageStyle.id;
+    block.section = sectionMetadata;
+  }
   result.push(...sectionBlocks);
+}
+
+function documentPageMetricsKey(page: OfficeKernelPageMetrics): string {
+  return [
+    page.width,
+    page.height,
+    page.marginTop,
+    page.marginRight,
+    page.marginBottom,
+    page.marginLeft,
+    page.headerHeight,
+    page.footerHeight,
+    page.pageGap,
+  ].join(':');
 }
 
 function measureDocumentListBlocks(

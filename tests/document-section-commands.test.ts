@@ -2,12 +2,54 @@ import { Editor } from '@tiptap/core';
 import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { updateDocumentMirrorMargins } from '../src/internal/features/work/work-document-page-margins';
+import { measureDocumentLayoutBlocks } from '../src/internal/features/work/work-document-pagination';
 import {
   activeDocumentSection,
   documentSectionById,
 } from '../src/internal/features/work/work-document-section-editor';
+import { layoutOfficeDocumentInJavaScript } from '../src/internal/kernel/office-kernel-fallback';
+import { OFFICE_KERNEL_PROTOCOL_VERSION } from '../src/internal/kernel/office-kernel-protocol';
 
 describe('document section commands', () => {
+  test('paginates mixed section page geometry instead of rejecting it', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1" data-section-break-after="continuous" data-section-page-size="a4"><p>First</p></section>',
+        '<section data-document-section="true" data-section-id="section-2" data-section-page-size="legal"><p>Second</p></section>',
+      ].join(''),
+    });
+
+    const snapshot = measureDocumentLayoutBlocks(editor);
+
+    expect(snapshot.unsupportedLayout).toBe(false);
+    expect(snapshot.pageStyles).toHaveLength(2);
+    expect(snapshot.blocks.map((block) => block.block.pageStyleId)).toEqual([
+      'document-page-style-1',
+      'document-page-style-2',
+    ]);
+    expect(snapshot.blocks[1]?.section?.layout.pageSize).toBe('legal');
+
+    const layout = layoutOfficeDocumentInJavaScript({
+      protocol: OFFICE_KERNEL_PROTOCOL_VERSION,
+      kind: 'layout',
+      requestId: 1,
+      revision: 1,
+      documentRevision: 1,
+      startPageIndex: 0,
+      page: snapshot.pageStyles[0].page,
+      pageStyles: snapshot.pageStyles,
+      blocks: snapshot.blocks.map(({ block }) => block),
+    });
+
+    expect(layout.pages).toHaveLength(2);
+    expect(layout.pages.map((page) => page.page.height)).toEqual(
+      snapshot.pageStyles.map(({ page }) => page.height),
+    );
+
+    editor.destroy();
+  });
+
   test('inserts, updates, and merges sections through TipTap commands', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),

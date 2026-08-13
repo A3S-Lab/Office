@@ -84,11 +84,7 @@ describe('incremental document layout', () => {
       startPageIndex: 3,
     });
 
-    const merged = mergeIncrementalDocumentLayout(
-      previousLayout,
-      partial,
-      partialPageMetrics(),
-    );
+    const merged = mergeIncrementalDocumentLayout(previousLayout, partial);
 
     expect(merged.startPageIndex).toBe(0);
     expect(merged.documentRevision).toBe(5);

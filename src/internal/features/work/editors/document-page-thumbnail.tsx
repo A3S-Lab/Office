@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { mountWorkLiveDocumentCapture } from '../work-document-page-capture';
+import {
+  mountWorkLiveDocumentCapture,
+  type WorkLiveDocumentCapturePage,
+} from '../work-document-page-capture';
 
 export interface WorkDocumentPageThumbnailSource {
   element: HTMLElement;
@@ -7,6 +10,7 @@ export interface WorkDocumentPageThumbnailSource {
   pageGap: number;
   pageHeight: number;
   pageWidth: number;
+  pages?: readonly WorkLiveDocumentCapturePage[];
   revision: string;
 }
 
@@ -62,6 +66,7 @@ export function DocumentPageThumbnail({
   const [state, setState] = useState<ThumbnailState>(
     source ? 'loading' : 'idle',
   );
+  const sourcePage = source ? thumbnailSourcePage(source, pageIndex) : null;
 
   useEffect(() => {
     if (!source || !captureActive) {
@@ -109,6 +114,10 @@ export function DocumentPageThumbnail({
     source?.pageGap,
     source?.pageHeight,
     source?.pageWidth,
+    sourcePage?.height,
+    sourcePage?.left,
+    sourcePage?.top,
+    sourcePage?.width,
     source?.revision,
     sourceMutation,
   ]);
@@ -123,7 +132,9 @@ export function DocumentPageThumbnail({
       aria-hidden="true"
       style={{
         aspectRatio: source
-          ? `${source.pageWidth} / ${source.pageHeight}`
+          ? `${sourcePage?.width ?? source.pageWidth} / ${
+              sourcePage?.height ?? source.pageHeight
+            }`
           : undefined,
         backgroundColor,
       }}
@@ -164,25 +175,37 @@ export async function renderDocumentPageThumbnail(
     // unrelated faces or a background agent tab. The mounted clone has all
     // dimensions set synchronously, and html2canvas performs its own layout
     // read before rendering.
-    const scale = Math.max(
-      0.1,
-      Math.min(1, targetPixelWidth / source.pageWidth),
-    );
+    const page = thumbnailSourcePage(source, pageIndex);
+    const scale = Math.max(0.1, Math.min(1, targetPixelWidth / page.width));
     const canvas = await renderCanvas(capture.viewport, {
       backgroundColor: capture.backgroundColor,
       fontReadyTimeout: 0,
-      height: source.pageHeight,
+      height: page.height,
       logging: false,
       scale,
       useCORS: true,
-      width: source.pageWidth,
-      windowHeight: Math.ceil(source.pageHeight),
-      windowWidth: Math.ceil(source.pageWidth),
+      width: page.width,
+      windowHeight: Math.ceil(page.height),
+      windowWidth: Math.ceil(page.width),
     });
     return canvas.toDataURL('image/png');
   } finally {
     capture.host.remove();
   }
+}
+
+function thumbnailSourcePage(
+  source: WorkDocumentPageThumbnailSource,
+  pageIndex: number,
+): WorkLiveDocumentCapturePage {
+  return (
+    source.pages?.[pageIndex] ?? {
+      height: source.pageHeight,
+      left: 0,
+      top: pageIndex * (source.pageHeight + source.pageGap),
+      width: source.pageWidth,
+    }
+  );
 }
 
 async function renderDocumentPageCanvas(

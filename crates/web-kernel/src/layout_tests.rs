@@ -19,6 +19,7 @@ fn request(blocks: Vec<LayoutBlock>) -> LayoutRequest {
             footer_height: 0.0,
             page_gap: 24.0,
         },
+        page_styles: Vec::new(),
         blocks,
     }
 }
@@ -27,6 +28,7 @@ fn block(id: &str, height: f64) -> LayoutBlock {
     LayoutBlock {
         id: id.into(),
         height,
+        page_style_id: None,
         break_before: false,
         break_after: false,
         keep_together: false,
@@ -198,6 +200,73 @@ fn keeps_page_chrome_inside_the_physical_margins() {
     assert_eq!(result.breaks[0].before_block_id, "tail");
     assert_eq!(result.breaks[0].remaining_body_height, 10.0);
     assert_eq!(result.breaks[0].spacer_height, 80.0);
+}
+
+#[test]
+fn starts_a_physical_page_when_page_geometry_changes() {
+    let mut landscape = block("landscape", 120.0);
+    landscape.page_style_id = Some("landscape".into());
+    let mut input = request(vec![block("portrait", 100.0), landscape]);
+    input.page = LayoutPageMetrics {
+        width: 300.0,
+        height: 200.0,
+        margin_top: 20.0,
+        margin_right: 20.0,
+        margin_bottom: 20.0,
+        margin_left: 20.0,
+        header_height: 10.0,
+        footer_height: 10.0,
+        page_gap: 30.0,
+    };
+    input.page_styles = vec![LayoutPageStyle {
+        id: "landscape".into(),
+        page: LayoutPageMetrics {
+            width: 400.0,
+            height: 260.0,
+            margin_top: 30.0,
+            margin_right: 10.0,
+            margin_bottom: 40.0,
+            margin_left: 10.0,
+            header_height: 15.0,
+            footer_height: 20.0,
+            page_gap: 50.0,
+        },
+    }];
+
+    let result = layout_document(&input).expect("mixed page layout");
+
+    assert_eq!(result.pages.len(), 2);
+    assert_eq!(result.pages[0].available_height, 160.0);
+    assert_eq!(result.pages[0].page, input.page);
+    assert_eq!(result.pages[1].available_height, 190.0);
+    assert_eq!(result.pages[1].page, input.page_styles[0].page);
+    assert_eq!(result.breaks[0].before_block_id, "landscape");
+    assert_eq!(result.breaks[0].remaining_body_height, 60.0);
+    assert_eq!(result.breaks[0].spacer_height, 140.0);
+}
+
+#[test]
+fn keeps_equal_page_metrics_on_one_page_across_style_ids() {
+    let mut first = block("first", 100.0);
+    first.page_style_id = Some("first".into());
+    let mut second = block("second", 100.0);
+    second.page_style_id = Some("second".into());
+    let mut input = request(vec![first, second]);
+    input.page_styles = vec![
+        LayoutPageStyle {
+            id: "first".into(),
+            page: input.page.clone(),
+        },
+        LayoutPageStyle {
+            id: "second".into(),
+            page: input.page.clone(),
+        },
+    ];
+
+    let result = layout_document(&input).expect("equivalent page styles");
+
+    assert_eq!(result.pages.len(), 1);
+    assert_eq!(result.pages[0].placements.len(), 2);
 }
 
 #[test]
@@ -510,4 +579,14 @@ fn rejects_duplicate_block_ids() {
     let error = layout_document(&request(vec![block("same", 10.0), block("same", 20.0)]))
         .expect_err("duplicate block ID");
     assert_eq!(error.code, "office.kernel.block_id_duplicate");
+}
+
+#[test]
+fn rejects_unknown_page_style_references() {
+    let mut styled = block("one", 10.0);
+    styled.page_style_id = Some("missing".into());
+
+    let error = layout_document(&request(vec![styled])).expect_err("unknown page style");
+
+    assert_eq!(error.code, "office.kernel.page_style_reference_invalid");
 }

@@ -211,17 +211,8 @@ describe('document lists', () => {
         pageIndex: 1,
         spacerHeight: 120,
         remainingBodyHeight: 30,
-        page: {
-          width: 300,
-          height: 200,
-          marginTop: 20,
-          marginRight: 20,
-          marginBottom: 20,
-          marginLeft: 20,
-          headerHeight: 10,
-          footerHeight: 10,
-          pageGap: 30,
-        },
+        previousPage: testPageMetrics(),
+        nextPage: testPageMetrics(),
         position: second.from,
         inlineOffsetLeft: second.inlineOffsetLeft,
         inlineOffsetRight: second.inlineOffsetRight,
@@ -711,6 +702,20 @@ describe('document lists', () => {
     );
   });
 });
+
+function testPageMetrics() {
+  return {
+    width: 300,
+    height: 200,
+    marginTop: 20,
+    marginRight: 20,
+    marginBottom: 20,
+    marginLeft: 20,
+    headerHeight: 10,
+    footerHeight: 10,
+    pageGap: 30,
+  };
+}
 
 function createListEditor(): Editor {
   return new Editor({

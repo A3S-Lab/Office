@@ -1,9 +1,17 @@
+export interface WorkLiveDocumentCapturePage {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+}
+
 export interface WorkLiveDocumentCaptureSurface {
   element: HTMLElement;
   pageCount: number;
   pageGap: number;
   pageHeight: number;
   pageWidth: number;
+  pages?: readonly WorkLiveDocumentCapturePage[];
 }
 
 export interface WorkLiveDocumentCapture {
@@ -16,7 +24,7 @@ export interface WorkLiveDocumentCapture {
 export function mountWorkLiveDocumentCapture(
   surface: WorkLiveDocumentCaptureSurface,
   firstPageIndex = 0,
-  captureHeight = surface.pageHeight,
+  captureHeight?: number,
 ): WorkLiveDocumentCapture {
   const host = document.createElement('div');
   host.className = 'work-pdf-export-surface';
@@ -28,10 +36,8 @@ export function mountWorkLiveDocumentCapture(
     getComputedStyle(surface.element).backgroundColor || '#ffffff';
   Object.assign(viewport.style, {
     backgroundColor,
-    height: `${captureHeight}px`,
     overflow: 'hidden',
     position: 'relative',
-    width: `${surface.pageWidth}px`,
   });
 
   const snapshot = surface.element.cloneNode(true) as HTMLElement;
@@ -48,26 +54,58 @@ export function mountWorkLiveDocumentCapture(
   );
   snapshot.dataset.documentCommentAppearance = 'plain';
   snapshot.setAttribute('aria-hidden', 'true');
-  const surfaceHeight =
-    surface.pageCount * surface.pageHeight +
-    Math.max(0, surface.pageCount - 1) * surface.pageGap;
+  const pages = capturePages(surface);
+  const surfaceHeight = Math.max(
+    1,
+    ...pages.map((page) => page.top + page.height),
+  );
+  const surfaceWidth = Math.max(
+    1,
+    ...pages.map((page) => page.left + page.width),
+  );
   Object.assign(snapshot.style, {
     borderColor: 'transparent',
     boxShadow: 'none',
     height: `${surfaceHeight}px`,
-    left: '0',
     margin: '0',
     minHeight: `${surfaceHeight}px`,
     position: 'absolute',
-    top: `-${firstPageIndex * (surface.pageHeight + surface.pageGap)}px`,
-    width: `${surface.pageWidth}px`,
+    width: `${surfaceWidth}px`,
   });
   normalizeWorkLiveDocumentSnapshot(snapshot);
 
   viewport.append(snapshot);
   host.append(viewport);
   document.body.append(host);
-  return { backgroundColor, host, snapshot, viewport };
+  const capture = { backgroundColor, host, snapshot, viewport };
+  positionWorkLiveDocumentCapture(
+    capture,
+    surface,
+    firstPageIndex,
+    captureHeight,
+  );
+  return capture;
+}
+
+export function positionWorkLiveDocumentCapture(
+  capture: WorkLiveDocumentCapture,
+  surface: WorkLiveDocumentCaptureSurface,
+  pageIndex: number,
+  captureHeight?: number,
+): WorkLiveDocumentCapturePage {
+  const pages = capturePages(surface);
+  const page = pages[pageIndex];
+  if (!page)
+    throw new Error('The requested live document page is unavailable.');
+  Object.assign(capture.viewport.style, {
+    height: `${captureHeight ?? page.height}px`,
+    width: `${page.width}px`,
+  });
+  Object.assign(capture.snapshot.style, {
+    left: `-${page.left}px`,
+    top: `-${page.top}px`,
+  });
+  return page;
 }
 
 export function normalizeWorkLiveDocumentSnapshot(snapshot: HTMLElement): void {
@@ -98,4 +136,18 @@ export function normalizeWorkLiveDocumentSnapshot(snapshot: HTMLElement): void {
       'selectedCell',
     );
   }
+}
+
+function capturePages(
+  surface: WorkLiveDocumentCaptureSurface,
+): WorkLiveDocumentCapturePage[] {
+  if (surface.pages?.length === surface.pageCount) {
+    return surface.pages.map((page) => ({ ...page }));
+  }
+  return Array.from({ length: surface.pageCount }, (_, pageIndex) => ({
+    height: surface.pageHeight,
+    left: 0,
+    top: pageIndex * (surface.pageHeight + surface.pageGap),
+    width: surface.pageWidth,
+  }));
 }

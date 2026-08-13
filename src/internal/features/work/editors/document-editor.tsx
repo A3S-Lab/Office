@@ -40,11 +40,11 @@ import {
   normalizeDocumentPageColor,
 } from '../work-document-page-color';
 import { resolveDocumentPageMargins } from '../work-document-page-margins';
+import { documentPageSurfaceGeometry } from '../work-document-page-frames';
 import { resolveDocumentPageSize } from '../work-document-page-size';
 import {
   DocumentPagination,
   documentPageMetrics,
-  documentPaginationSurfaceHeight,
 } from '../work-document-pagination';
 import { documentParagraphIndent } from '../work-document-paragraph-formatting';
 import type {
@@ -608,6 +608,7 @@ export function DocumentEditor({
       layout.margins.top,
       layout.orientation,
       JSON.stringify(layout.pageGeometry),
+      JSON.stringify(layout.pageMargins),
       layout.pageSize,
     ],
   );
@@ -648,9 +649,13 @@ export function DocumentEditor({
   const pageCount = editor
     ? (pagination.pageCount ?? documentPageCount(editor))
     : 1;
-  const paginationSurfaceHeight = pagination.pageCount
-    ? documentPaginationSurfaceHeight(pagination.pageCount, kernelPage)
-    : undefined;
+  const paginationGeometry = pagination.pageCount
+    ? documentPageSurfaceGeometry(
+        pagination.pages.map((page) => page.page),
+        kernelPage,
+        pagination.pageCount,
+      )
+    : null;
   const currentPage = editor
     ? Math.min(pageCount, pagination.currentPage ?? documentCurrentPage(editor))
     : 1;
@@ -666,6 +671,16 @@ export function DocumentEditor({
     pagination.pages[0] ??
     fallbackPaginationPageDescriptor(section?.id, section?.index, layout, 1);
   const lastPageDescriptor = pagination.pages.at(-1) ?? currentPageDescriptor;
+  const firstPageFrame = paginationGeometry?.frames[0];
+  const lastPageFrame = paginationGeometry?.frames.at(-1);
+  const firstPageMargins = resolveDocumentPageMargins(
+    firstPageDescriptor.layout,
+    firstPageDescriptor.physicalPage,
+  );
+  const lastPageMargins = resolveDocumentPageMargins(
+    lastPageDescriptor.layout,
+    lastPageDescriptor.physicalPage,
+  );
   const {
     chromeEditor: pageChromeEditor,
     close: closePageChrome,
@@ -768,8 +783,8 @@ export function DocumentEditor({
       const style = getComputedStyle(viewport);
       setZoom(
         documentZoomForFit(fit, {
-          pageHeight: kernelPage.height,
-          pageWidth: kernelPage.width,
+          pageHeight: currentPageDescriptor.page.height,
+          pageWidth: currentPageDescriptor.page.width,
           viewportHeight: viewport.clientHeight,
           viewportWidth: viewport.clientWidth,
           viewportPadding: {
@@ -952,6 +967,7 @@ export function DocumentEditor({
                     pageGap: kernelPage.pageGap,
                     pageHeight: kernelPage.height,
                     pageWidth: kernelPage.width,
+                    pages: paginationGeometry?.frames,
                     revision: editorInput.sourceKey,
                   }
                 : undefined
@@ -1078,12 +1094,17 @@ export function DocumentEditor({
                   aria-label={preview ? '文字预览' : '文字页面'}
                   style={
                     {
-                      padding: `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
+                      padding: paginationGeometry
+                        ? `${firstPageDescriptor.page.marginTop}px 0 ${lastPageDescriptor.page.marginBottom}px`
+                        : `${marginPixels.top}px ${marginPixels.right}px ${marginPixels.bottom}px ${marginPixels.left}px`,
                       backgroundColor: documentPageColor(content.pageColor),
-                      width: viewMode === 'page' ? kernelPage.width : undefined,
+                      width:
+                        viewMode === 'page'
+                          ? (paginationGeometry?.width ?? kernelPage.width)
+                          : undefined,
                       minHeight:
                         viewMode === 'page'
-                          ? (paginationSurfaceHeight ?? kernelPage.height)
+                          ? (paginationGeometry?.height ?? kernelPage.height)
                           : undefined,
                       '--work-document-page-color': documentPageColor(
                         content.pageColor,
@@ -1117,6 +1138,7 @@ export function DocumentEditor({
                       pageCount={pagination.pageCount}
                       pageGap={kernelPage.pageGap}
                       pageHeight={kernelPage.height}
+                      pageWidth={kernelPage.width}
                       pages={pagination.pages}
                     />
                   )}
@@ -1128,6 +1150,24 @@ export function DocumentEditor({
                         className={`work-document-page-header${!preview && pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
                         data-document-page-chrome={
                           firstPageDescriptor.pageChrome.variant
+                        }
+                        style={
+                          firstPageFrame && paginationGeometry
+                            ? {
+                                height: firstPageDescriptor.page.headerHeight,
+                                left:
+                                  firstPageFrame.left +
+                                  firstPageDescriptor.page.marginLeft,
+                                right:
+                                  paginationGeometry.width -
+                                  firstPageFrame.left -
+                                  firstPageFrame.width +
+                                  firstPageDescriptor.page.marginRight,
+                                top: millimetersToPixels(
+                                  firstPageMargins.headerDistance,
+                                ),
+                              }
+                            : undefined
                         }
                         onDoubleClick={
                           preview
@@ -1196,6 +1236,24 @@ export function DocumentEditor({
                         className={`work-document-page-footer${!preview && pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
                         data-document-page-chrome={
                           lastPageDescriptor.pageChrome.variant
+                        }
+                        style={
+                          lastPageFrame && paginationGeometry
+                            ? {
+                                bottom: millimetersToPixels(
+                                  lastPageMargins.footerDistance,
+                                ),
+                                height: lastPageDescriptor.page.footerHeight,
+                                left:
+                                  lastPageFrame.left +
+                                  lastPageDescriptor.page.marginLeft,
+                                right:
+                                  paginationGeometry.width -
+                                  lastPageFrame.left -
+                                  lastPageFrame.width +
+                                  lastPageDescriptor.page.marginRight,
+                              }
+                            : undefined
                         }
                         onDoubleClick={
                           preview

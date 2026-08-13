@@ -170,10 +170,10 @@ a phase exits only when its evidence is complete.
   retain strict/transitional exact-measure, malformed and namespace-spoofed
   input, inheritance, custom-size editing, bounded tiny-page projection,
   per-page PDF geometry, diagnostics, and exact round-trip tests as gates.
-- Replace the live editor's shared page stack with per-section page metrics so
-  mixed custom-size sections paginate exactly instead of using the active
-  section's geometry; static print preview and PDF already use each page's
-  exact dimensions.
+- Treat per-section live page metrics as a completed page-geometry slice;
+  mixed custom-size and orientation transitions now paginate in the shared
+  JS/Rust kernel, render as variable-size live sheets, and retain exact
+  per-page geometry in thumbnails and PDF capture.
 - Expand tracked changes from body-text insertion/deletion to formatting,
   numbering, section, table, row, cell, and move revisions.
 - Make unsupported semantics explicit in compatibility reports; never attach

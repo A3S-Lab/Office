@@ -329,17 +329,8 @@ describe('document tables', () => {
         pageIndex: 1,
         spacerHeight: 120,
         remainingBodyHeight: 20,
-        page: {
-          width: 300,
-          height: 200,
-          marginTop: 20,
-          marginRight: 20,
-          marginBottom: 20,
-          marginLeft: 20,
-          headerHeight: 10,
-          footerHeight: 10,
-          pageGap: 30,
-        },
+        previousPage: testPageMetrics(),
+        nextPage: testPageMetrics(),
         position: continuation.from,
         inlineOffsetLeft: continuation.inlineOffsetLeft,
         inlineOffsetRight: continuation.inlineOffsetRight,
@@ -375,17 +366,8 @@ describe('document tables', () => {
         pageIndex: 1,
         spacerHeight: 120,
         remainingBodyHeight: 30,
-        page: {
-          width: 300,
-          height: 200,
-          marginTop: 20,
-          marginRight: 20,
-          marginBottom: 20,
-          marginLeft: 20,
-          headerHeight: 10,
-          footerHeight: 10,
-          pageGap: 30,
-        },
+        previousPage: testPageMetrics(),
+        nextPage: testPageMetrics(),
         position: fragment.from,
         inlineOffsetLeft: fragment.inlineOffsetLeft,
         inlineOffsetRight: fragment.inlineOffsetRight,
@@ -683,4 +665,18 @@ function setElementBox(
       y: box.top,
       toJSON: () => ({}),
     }) as DOMRect;
+}
+
+function testPageMetrics() {
+  return {
+    width: 300,
+    height: 200,
+    marginTop: 20,
+    marginRight: 20,
+    marginBottom: 20,
+    marginLeft: 20,
+    headerHeight: 10,
+    footerHeight: 10,
+    pageGap: 30,
+  };
 }

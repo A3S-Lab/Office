@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Live Word pagination now preserves each section's exact page size,
+  orientation, margins, and page gap across mixed-layout documents. Kernel
+  protocol 16 carries deduplicated page styles into both JS and Rust/WASM,
+  returns metrics on every physical page, and drives variable-size page
+  sheets, borders, navigation thumbnails, and exact per-page PDF capture.
 - Added bounded structured OMML equations for Word documents. Inline and
   display equations now round-trip as native `m:oMath` and `m:oMathPara`
   across the document body, headers, footers, footnotes, and endnotes, with an

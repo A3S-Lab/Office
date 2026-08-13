@@ -1,11 +1,22 @@
 import type { jsPDF as JsPdf } from 'jspdf';
 import type { WorkArtifact, WorkSpreadsheetPaperSize } from './work-types';
-import { mountWorkLiveDocumentCapture } from './work-document-page-capture';
+import {
+  mountWorkLiveDocumentCapture,
+  positionWorkLiveDocumentCapture,
+  type WorkLiveDocumentCapturePage,
+} from './work-document-page-capture';
 
 type PdfPageSize = WorkSpreadsheetPaperSize;
 
 export interface WorkPdfExportOptions {
   pageIndexes?: number[];
+}
+
+export interface WorkLiveDocumentPdfPage extends WorkLiveDocumentCapturePage {
+  orientation: 'portrait' | 'landscape';
+  pageHeightPoints: number;
+  pageSize: PdfPageSize;
+  pageWidthPoints: number;
 }
 
 export interface WorkLiveDocumentPdfSurface {
@@ -18,6 +29,7 @@ export interface WorkLiveDocumentPdfSurface {
   pageSize: PdfPageSize;
   pageWidth: number;
   pageWidthPoints: number;
+  pages: WorkLiveDocumentPdfPage[];
 }
 
 interface PdfPageDefinition {
@@ -66,56 +78,70 @@ export async function exportWorkArtifactPdf(
   let pdf: JsPdf | null = null;
 
   if (liveDocument) {
-    const capture = mountWorkLiveDocumentCapture(liveDocument);
+    const firstSelectedPage = livePageIndexes[0] ?? 0;
+    const capture = mountWorkLiveDocumentCapture(
+      liveDocument,
+      firstSelectedPage,
+    );
     try {
-      const batches = workLiveDocumentPdfCaptureBatches(
-        livePageIndexes,
-        liveDocument,
-      );
-      for (const batch of batches) {
-        capture.snapshot.style.top = `-${
-          batch.firstPageIndex *
-          (liveDocument.pageHeight + liveDocument.pageGap)
-        }px`;
-        capture.viewport.style.height = `${batch.captureHeight}px`;
-        await nextPaint();
-        const batchCanvas = await html2canvas(capture.viewport, {
-          backgroundColor: capture.backgroundColor,
-          height: batch.captureHeight,
-          logging: false,
-          scale: 2,
-          useCORS: true,
-          width: liveDocument.pageWidth,
-          windowHeight: Math.ceil(batch.captureHeight),
-          windowWidth: Math.ceil(liveDocument.pageWidth),
-        });
-        const scaleY = batchCanvas.height / batch.captureHeight;
-        for (const pageIndex of batch.pageIndexes) {
-          const pageOffset =
-            (pageIndex - batch.firstPageIndex) *
-            (liveDocument.pageHeight + liveDocument.pageGap);
-          const sourceTop = Math.round(pageOffset * scaleY);
-          const sourceBottom = Math.round(
-            (pageOffset + liveDocument.pageHeight) * scaleY,
+      if (uniformLiveDocumentPages(liveDocument.pages)) {
+        const batches = workLiveDocumentPdfCaptureBatches(
+          livePageIndexes,
+          liveDocument,
+        );
+        for (const batch of batches) {
+          const firstPage = positionWorkLiveDocumentCapture(
+            capture,
+            liveDocument,
+            batch.firstPageIndex,
+            batch.captureHeight,
           );
-          const pageCanvas = cropDocumentCanvas(
-            batchCanvas,
-            sourceTop,
-            Math.max(1, sourceBottom - sourceTop),
-            capture.backgroundColor,
-          );
-          pdf = appendExactCanvasPage(
-            pdf,
-            pageCanvas,
-            liveDocument.orientation,
-            pdfPageDefinition(
-              liveDocument.pageSize,
-              liveDocument.orientation,
-              liveDocument.pageWidthPoints,
-              liveDocument.pageHeightPoints,
-            ),
-            jsPDF,
-          );
+          await nextPaint();
+          const batchCanvas = await html2canvas(capture.viewport, {
+            backgroundColor: capture.backgroundColor,
+            height: batch.captureHeight,
+            logging: false,
+            scale: 2,
+            useCORS: true,
+            width: firstPage.width,
+            windowHeight: Math.ceil(batch.captureHeight),
+            windowWidth: Math.ceil(firstPage.width),
+          });
+          const scaleY = batchCanvas.height / batch.captureHeight;
+          for (const pageIndex of batch.pageIndexes) {
+            const page = liveDocument.pages[pageIndex];
+            if (!page) continue;
+            const pageOffset = page.top - firstPage.top;
+            const sourceTop = Math.round(pageOffset * scaleY);
+            const sourceBottom = Math.round(
+              (pageOffset + page.height) * scaleY,
+            );
+            const pageCanvas = cropDocumentCanvas(
+              batchCanvas,
+              sourceTop,
+              Math.max(1, sourceBottom - sourceTop),
+              capture.backgroundColor,
+            );
+            pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
+          }
+        }
+      } else {
+        for (const pageIndex of livePageIndexes) {
+          const page = liveDocument.pages[pageIndex];
+          if (!page) continue;
+          positionWorkLiveDocumentCapture(capture, liveDocument, pageIndex);
+          await nextPaint();
+          const pageCanvas = await html2canvas(capture.viewport, {
+            backgroundColor: capture.backgroundColor,
+            height: page.height,
+            logging: false,
+            scale: 2,
+            useCORS: true,
+            width: page.width,
+            windowHeight: Math.ceil(page.height),
+            windowWidth: Math.ceil(page.width),
+          });
+          pdf = appendLiveDocumentCanvasPage(pdf, pageCanvas, page, jsPDF);
         }
       }
     } finally {
@@ -199,17 +225,93 @@ export function workLiveDocumentPdfSurfaceForExport(
     return null;
   }
 
+  const sheets = Array.from(
+    element.querySelectorAll<HTMLElement>(
+      '.work-document-page-stack > [data-work-document-page-sheet]',
+    ),
+  );
+  if (sheets.length > 0 && sheets.length !== pageCount) return null;
+  const pages = sheets.length
+    ? sheets.map((sheet, pageIndex) =>
+        liveDocumentPdfPageFromSheet(sheet, pageIndex),
+      )
+    : Array.from({ length: pageCount }, (_, pageIndex) => ({
+        height: pageHeight,
+        left: 0,
+        orientation:
+          element.dataset.pdfOrientation === 'landscape'
+            ? ('landscape' as const)
+            : ('portrait' as const),
+        pageHeightPoints,
+        pageSize: pdfPageSize(element.dataset.pdfPageSize),
+        pageWidthPoints,
+        top: pageIndex * (pageHeight + pageGap),
+        width: pageWidth,
+      }));
+  if (pages.some((page) => page === null)) return null;
+  const resolvedPages = pages as WorkLiveDocumentPdfPage[];
+  const firstPage = resolvedPages[0];
+  if (!firstPage) return null;
+  const resolvedPageGap =
+    resolvedPages.length > 1
+      ? Math.max(0, resolvedPages[1].top - firstPage.top - firstPage.height)
+      : pageGap;
+  const surfaceWidth = Math.max(
+    1,
+    ...resolvedPages.map((page) => page.left + page.width),
+  );
+
   return {
     element,
-    orientation:
-      element.dataset.pdfOrientation === 'landscape' ? 'landscape' : 'portrait',
+    orientation: firstPage.orientation,
     pageCount,
-    pageGap,
-    pageHeight,
+    pageGap: resolvedPageGap,
+    pageHeight: firstPage.height,
+    pageHeightPoints: firstPage.pageHeightPoints,
+    pageSize: firstPage.pageSize,
+    pageWidth: surfaceWidth,
+    pageWidthPoints: firstPage.pageWidthPoints,
+    pages: resolvedPages,
+  };
+}
+
+function liveDocumentPdfPageFromSheet(
+  sheet: HTMLElement,
+  pageIndex: number,
+): WorkLiveDocumentPdfPage | null {
+  if (Number(sheet.dataset.pageIndex) !== pageIndex + 1) return null;
+  const height = finiteDatasetNumber(sheet.dataset.pageHeight, 1);
+  const left = finiteDatasetNumber(sheet.dataset.pageLeft, 0);
+  const pageHeightPoints = finiteDatasetNumber(
+    sheet.dataset.pdfPageHeightPoints,
+    1,
+  );
+  const pageWidthPoints = finiteDatasetNumber(
+    sheet.dataset.pdfPageWidthPoints,
+    1,
+  );
+  const top = finiteDatasetNumber(sheet.dataset.pageTop, 0);
+  const width = finiteDatasetNumber(sheet.dataset.pageWidth, 1);
+  if (
+    height === null ||
+    left === null ||
+    pageHeightPoints === null ||
+    pageWidthPoints === null ||
+    top === null ||
+    width === null
+  ) {
+    return null;
+  }
+  return {
+    height,
+    left,
+    orientation:
+      sheet.dataset.pdfOrientation === 'landscape' ? 'landscape' : 'portrait',
     pageHeightPoints,
-    pageSize: pdfPageSize(element.dataset.pdfPageSize),
-    pageWidth,
+    pageSize: pdfPageSize(sheet.dataset.pdfPageSize),
     pageWidthPoints,
+    top,
+    width,
   };
 }
 
@@ -294,6 +396,28 @@ export function workLiveDocumentPdfCaptureBatches(
     current.pageIndexes.push(pageIndex);
   }
   return batches;
+}
+
+function uniformLiveDocumentPages(
+  pages: readonly WorkLiveDocumentPdfPage[],
+): boolean {
+  const first = pages[0];
+  if (!first) return false;
+  const firstGap = pages[1] ? pages[1].top - first.top - first.height : 0;
+  return pages.every((page, pageIndex) => {
+    if (
+      page.width !== first.width ||
+      page.height !== first.height ||
+      page.left !== first.left
+    ) {
+      return false;
+    }
+    if (pageIndex === 0) return true;
+    const previous = pages[pageIndex - 1];
+    return Boolean(
+      previous && page.top - previous.top - previous.height === firstGap,
+    );
+  });
 }
 
 function finiteDatasetNumber(
@@ -420,6 +544,26 @@ function appendExactCanvasPage(
     'FAST',
   );
   return document;
+}
+
+function appendLiveDocumentCanvasPage(
+  pdf: JsPdf | null,
+  source: HTMLCanvasElement,
+  page: WorkLiveDocumentPdfPage,
+  Pdf: typeof import('jspdf').jsPDF,
+): JsPdf {
+  return appendExactCanvasPage(
+    pdf,
+    source,
+    page.orientation,
+    pdfPageDefinition(
+      page.pageSize,
+      page.orientation,
+      page.pageWidthPoints,
+      page.pageHeightPoints,
+    ),
+    Pdf,
+  );
 }
 
 function pdfPageSize(value: string | undefined): PdfPageSize {

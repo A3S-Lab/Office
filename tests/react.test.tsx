@@ -283,6 +283,63 @@ test('keeps document pagination available under React strict effects', async () 
   expect(rulerToggle).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('renders mixed section geometry as exact live pagination sheets', async () => {
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a document artifact.');
+  }
+  const content: DocumentContent = {
+    ...artifact.content,
+    html: [
+      '<section data-document-section="true" data-section-id="section-a4" data-section-break-after="continuous" data-section-page-size="a4" data-section-orientation="portrait"><p>Portrait page</p></section>',
+      '<section data-document-section="true" data-section-id="section-legal" data-section-page-size="legal" data-section-orientation="landscape"><p>Landscape legal page</p></section>',
+    ].join(''),
+    model: undefined,
+  };
+  const { container } = render(
+    <DocumentEditor
+      content={content}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  await waitFor(() => {
+    expect(container.querySelector('.ProseMirror')).toHaveAttribute(
+      'data-pagination-state',
+      'ready',
+    );
+  });
+
+  const sheets = container.querySelectorAll<HTMLElement>(
+    '[data-work-document-page-sheet]',
+  );
+  expect(sheets).toHaveLength(2);
+  const portraitWidth = Number(sheets[0]?.dataset.pageWidth);
+  const portraitHeight = Number(sheets[0]?.dataset.pageHeight);
+  const landscapeWidth = Number(sheets[1]?.dataset.pageWidth);
+  const landscapeHeight = Number(sheets[1]?.dataset.pageHeight);
+  expect(portraitWidth).toBeCloseTo((210 / 25.4) * 96, 3);
+  expect(portraitHeight).toBeCloseTo((297 / 25.4) * 96, 3);
+  expect(landscapeWidth).toBeCloseTo((355.6 / 25.4) * 96, 3);
+  expect(landscapeHeight).toBeCloseTo((215.9 / 25.4) * 96, 3);
+  expect(Number(sheets[1]?.dataset.pageTop)).toBeCloseTo(
+    portraitHeight + 28,
+    3,
+  );
+  const pageSurface = container.querySelector<HTMLElement>(
+    '.work-document-page.paginated',
+  );
+  expect(Number.parseFloat(pageSurface?.style.width ?? '')).toBeCloseTo(
+    landscapeWidth,
+    3,
+  );
+  expect(Number.parseFloat(pageSurface?.style.minHeight ?? '')).toBeCloseTo(
+    portraitHeight + 28 + landscapeHeight,
+    3,
+  );
+});
+
 test('updates the controlled page color and renders it on the paper', async () => {
   const artifact = createArtifact('blank-document');
   if (artifact.content.type !== 'document')

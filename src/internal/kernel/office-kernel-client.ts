@@ -127,6 +127,7 @@ class BrowserOfficeKernelClient implements OfficeKernelClient {
       documentRevision: input.documentRevision,
       startPageIndex: input.startPageIndex ?? 0,
       page: input.page,
+      pageStyles: input.pageStyles,
       blocks: input.blocks,
     };
     if (signal?.aborted) return Promise.reject(abortError());

@@ -115,6 +115,85 @@ test('keeps exact custom page points on a live pagination surface', () => {
   });
 });
 
+test('reads exact geometry for every mixed-size live document page', () => {
+  document.body.innerHTML = `
+    <section data-work-pdf-artifact="document-mixed" data-work-pdf-surface="live">
+      <article
+        data-work-pdf-live-document
+        data-pdf-orientation="portrait"
+        data-pdf-page-count="2"
+        data-pdf-page-gap="20"
+        data-pdf-page-height="400"
+        data-pdf-page-size="a4"
+        data-pdf-page-width="500"
+      >
+        <div class="work-document-page-stack">
+          <div
+            data-work-document-page-sheet
+            data-page-index="1"
+            data-page-top="0"
+            data-page-left="100"
+            data-page-width="300"
+            data-page-height="400"
+            data-pdf-orientation="portrait"
+            data-pdf-page-size="a4"
+            data-pdf-page-width-points="225"
+            data-pdf-page-height-points="300"
+          ></div>
+          <div
+            data-work-document-page-sheet
+            data-page-index="2"
+            data-page-top="420"
+            data-page-left="0"
+            data-page-width="500"
+            data-page-height="200"
+            data-pdf-orientation="landscape"
+            data-pdf-page-size="letter"
+            data-pdf-page-width-points="375"
+            data-pdf-page-height-points="150"
+          ></div>
+        </div>
+        <section class="work-document-editable">
+          <div
+            class="ProseMirror"
+            data-pagination-pages="2"
+            data-pagination-state="ready"
+          ></div>
+        </section>
+      </article>
+    </section>
+  `;
+
+  const surface = workLiveDocumentPdfSurfaceForExport('document-mixed');
+
+  expect(surface).toMatchObject({
+    pageCount: 2,
+    pageGap: 20,
+    pageHeight: 400,
+    pageWidth: 500,
+    pages: [
+      {
+        height: 400,
+        left: 100,
+        orientation: 'portrait',
+        pageHeightPoints: 300,
+        pageWidthPoints: 225,
+        top: 0,
+        width: 300,
+      },
+      {
+        height: 200,
+        left: 0,
+        orientation: 'landscape',
+        pageHeightPoints: 150,
+        pageWidthPoints: 375,
+        top: 420,
+        width: 500,
+      },
+    ],
+  });
+});
+
 test('keeps explicit PDF page selection in physical document order', () => {
   document.body.innerHTML = `
     <section data-work-pdf-artifact="document-2" data-work-pdf-surface="export">

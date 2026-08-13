@@ -1,4 +1,5 @@
 import { resolveDocumentPageChrome } from '../work-document-page-chrome';
+import { documentPageMetrics } from '../work-document-pagination-measurement';
 import type { documentInitialSectionLayout } from '../work-document-section';
 import type { DocumentPaginationPageDescriptor } from './use-document-pagination';
 
@@ -20,5 +21,6 @@ export function fallbackPaginationPageDescriptor(
     sectionIndex: sectionIndex ?? 0,
     layout,
     pageChrome: resolveDocumentPageChrome(layout, sectionPage, sectionPage),
+    page: documentPageMetrics(layout),
   };
 }

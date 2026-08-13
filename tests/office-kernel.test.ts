@@ -63,6 +63,77 @@ describe('Office layout kernel', () => {
     });
   });
 
+  test('starts a physical page when a block switches page geometry', () => {
+    const input = request([
+      block('portrait', 100),
+      { ...block('landscape', 120), pageStyleId: 'landscape' },
+    ]);
+    input.page = {
+      width: 300,
+      height: 200,
+      marginTop: 20,
+      marginRight: 20,
+      marginBottom: 20,
+      marginLeft: 20,
+      headerHeight: 10,
+      footerHeight: 10,
+      pageGap: 30,
+    };
+    input.pageStyles = [
+      {
+        id: 'landscape',
+        page: {
+          width: 400,
+          height: 260,
+          marginTop: 30,
+          marginRight: 10,
+          marginBottom: 40,
+          marginLeft: 10,
+          headerHeight: 15,
+          footerHeight: 20,
+          pageGap: 50,
+        },
+      },
+    ];
+
+    const result = layoutOfficeDocumentInJavaScript(input);
+
+    expect(result.pages).toHaveLength(2);
+    expect(result.pages[0]).toMatchObject({
+      availableHeight: 160,
+      page: input.page,
+    });
+    expect(result.pages[1]).toMatchObject({
+      availableHeight: 190,
+      page: input.pageStyles[0].page,
+    });
+    expect(result.breaks[0]).toMatchObject({
+      beforeBlockId: 'landscape',
+      remainingBodyHeight: 60,
+      spacerHeight: 140,
+    });
+    expect(isOfficeKernelResponse(result)).toBe(true);
+  });
+
+  test('does not split equal page metrics referenced by different styles', () => {
+    const input = request([
+      { ...block('first', 100), pageStyleId: 'first' },
+      { ...block('second', 100), pageStyleId: 'second' },
+    ]);
+    input.pageStyles = [
+      { id: 'first', page: { ...input.page } },
+      { id: 'second', page: { ...input.page } },
+    ];
+
+    const result = layoutOfficeDocumentInJavaScript(input);
+
+    expect(result.pages).toHaveLength(1);
+    expect(result.pages[0].placements.map(({ blockId }) => blockId)).toEqual([
+      'first',
+      'second',
+    ]);
+  });
+
   test('keeps a heading with its following block when they fit together', () => {
     const result = layoutOfficeDocumentInJavaScript(
       request([
@@ -448,6 +519,14 @@ describe('Office layout kernel', () => {
         request([block('same', 10), block('same', 20)]),
       ),
     ).toThrow("Layout block ID 'same' is duplicated.");
+  });
+
+  test('rejects unknown page-style references', () => {
+    expect(() =>
+      layoutOfficeDocumentInJavaScript(
+        request([{ ...block('one', 10), pageStyleId: 'missing' }]),
+      ),
+    ).toThrow("Layout block 'one' references an unknown page style.");
   });
 
   test('rejects malformed responses at the Worker boundary', () => {
