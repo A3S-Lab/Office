@@ -676,6 +676,7 @@ export interface WorkDocumentEquationWordRunProperties {
   numberForm?: WorkDocumentEquationWordNumberForm;
   numberSpacing?: WorkDocumentEquationWordNumberSpacing;
   stylisticSets?: number[];
+  contextualAlternates?: boolean;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1344,6 +1345,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'numberForm',
   'numberSpacing',
   'stylisticSets',
+  'contextualAlternates',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -3892,6 +3894,7 @@ function normalizeEquationWordRunProperties(
     'rightToLeft',
     'complexScript',
     'paragraphMarkAlwaysHidden',
+    'contextualAlternates',
   ] as const) {
     if (source[key] !== undefined && typeof source[key] !== 'boolean') {
       return null;
@@ -3996,6 +3999,9 @@ function normalizeEquationWordRunProperties(
     ...(numberForm !== undefined ? { numberForm } : {}),
     ...(numberSpacing !== undefined ? { numberSpacing } : {}),
     ...(stylisticSets !== undefined ? { stylisticSets } : {}),
+    ...(source.contextualAlternates !== undefined
+      ? { contextualAlternates: source.contextualAlternates as boolean }
+      : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -5316,9 +5322,12 @@ function wordPropertiesMathMlAttributes(
     bold === undefined ? '' : `font-weight:${bold ? 'bold' : 'normal'}`,
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunCaseStyles(properties),
-    wordRunLigatureStyles(properties.ligatures),
+    wordRunOpenTypeFeatureStyles(
+      properties.ligatures,
+      properties.stylisticSets,
+    ),
+    wordRunContextualAlternateStyles(properties.contextualAlternates),
     wordRunNumberStyles(properties.numberForm, properties.numberSpacing),
-    wordRunStylisticSetStyles(properties.stylisticSets),
     wordRunTextDecoration(properties),
     wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
@@ -5350,23 +5359,35 @@ function wordPropertiesMathMlAttributes(
   };
 }
 
-function wordRunLigatureStyles(
+function wordRunOpenTypeFeatureStyles(
   ligatures: WorkDocumentEquationWordLigatures | undefined,
+  stylisticSets: number[] | undefined,
 ): string {
-  if (ligatures === undefined) return '';
-  const flags = WORD_LIGATURE_FLAGS.get(ligatures);
-  if (flags === undefined) return '';
-  if (flags === 0) return 'font-variant-ligatures:none';
-  return `font-variant-ligatures:${[
-    flags & WORD_LIGATURE_STANDARD ? 'common-ligatures' : 'no-common-ligatures',
-    flags & WORD_LIGATURE_CONTEXTUAL ? 'contextual' : 'no-contextual',
-    flags & WORD_LIGATURE_HISTORICAL
-      ? 'historical-ligatures'
-      : 'no-historical-ligatures',
-    flags & WORD_LIGATURE_DISCRETIONAL
-      ? 'discretionary-ligatures'
-      : 'no-discretionary-ligatures',
-  ].join(' ')}`;
+  if (ligatures === undefined && stylisticSets === undefined) return '';
+  const values: string[] = [];
+  const flags =
+    ligatures === undefined ? undefined : WORD_LIGATURE_FLAGS.get(ligatures);
+  if (flags !== undefined) {
+    values.push(
+      `"liga" ${flags & WORD_LIGATURE_STANDARD ? 1 : 0}`,
+      `"clig" ${flags & WORD_LIGATURE_CONTEXTUAL ? 1 : 0}`,
+      `"hlig" ${flags & WORD_LIGATURE_HISTORICAL ? 1 : 0}`,
+      `"dlig" ${flags & WORD_LIGATURE_DISCRETIONAL ? 1 : 0}`,
+    );
+  }
+  if (stylisticSets !== undefined) {
+    values.push(
+      ...stylisticSets.map((id) => `"ss${String(id).padStart(2, '0')}" 1`),
+    );
+  }
+  return `font-feature-settings:${values.length ? values.join(', ') : 'normal'}`;
+}
+
+function wordRunContextualAlternateStyles(
+  contextualAlternates: boolean | undefined,
+): string {
+  if (contextualAlternates === undefined) return '';
+  return `font-variant-ligatures:${contextualAlternates ? 'contextual' : 'no-contextual'}`;
 }
 
 function wordRunNumberStyles(
@@ -5387,16 +5408,6 @@ function wordRunNumberStyles(
         : '',
   ].filter(Boolean);
   return `font-variant-numeric:${values.length ? values.join(' ') : 'normal'}`;
-}
-
-function wordRunStylisticSetStyles(
-  stylisticSets: number[] | undefined,
-): string {
-  if (stylisticSets === undefined) return '';
-  if (!stylisticSets.length) return 'font-feature-settings:normal';
-  return `font-feature-settings:${stylisticSets
-    .map((id) => `"ss${String(id).padStart(2, '0')}" 1`)
-    .join(', ')}`;
 }
 
 function wordRunTextFillMathMlColor(

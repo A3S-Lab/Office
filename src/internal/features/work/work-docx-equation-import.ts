@@ -211,6 +211,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:numForm',
   'w14:numSpacing',
   'w14:stylisticSets',
+  'w14:cntxtAlts',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -1326,6 +1327,9 @@ function parseWordRunProperties(
   const stylisticSets = parseWordStylisticSets(
     word2010Children.get('stylisticSets'),
   );
+  const contextualAlternates = parseWordContextualAlternates(
+    word2010Children.get('cntxtAlts'),
+  );
   if (
     fonts === null ||
     color === null ||
@@ -1355,7 +1359,8 @@ function parseWordRunProperties(
     ligatures === null ||
     numberForm === null ||
     numberSpacing === null ||
-    stylisticSets === null
+    stylisticSets === null ||
+    contextualAlternates === null
   ) {
     return null;
   }
@@ -1461,6 +1466,7 @@ function parseWordRunProperties(
     ...(numberForm !== undefined ? { numberForm } : {}),
     ...(numberSpacing !== undefined ? { numberSpacing } : {}),
     ...(stylisticSets !== undefined ? { stylisticSets } : {}),
+    ...(contextualAlternates !== undefined ? { contextualAlternates } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2779,6 +2785,17 @@ function parseWordStylisticSets(
     }
   }
   return stylisticSets;
+}
+
+function parseWordContextualAlternates(
+  element: Element | undefined,
+): boolean | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010LeafAttributes(element, new Set(['val']));
+  if (!attributes) return null;
+  return attributes.has('val')
+    ? word2010StrictOnOffAttribute(attributes.get('val'))
+    : true;
 }
 
 function word2010StrictOnOffAttribute(

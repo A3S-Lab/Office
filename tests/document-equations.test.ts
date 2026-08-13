@@ -39,12 +39,14 @@ const WORD_DATE_UTC_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2023/wordml/word16du';
 const WORD_2010_NAMESPACE =
   'http://schemas.microsoft.com/office/word/2010/wordml';
+const WORD_2012_NAMESPACE =
+  'http://schemas.microsoft.com/office/word/2012/wordml';
 const WORD_2010_GLOW = `<w14:glow xmlns:w14="${WORD_2010_NAMESPACE}" w14:rad="63500"><w14:srgbClr w14:val="FFFF00"/></w14:glow>`;
 const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:srgbClr w14:val="000000"/></w14:shadow>`;
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_CONTEXTUAL_ALTERNATES = `<w14:cntxtAlts xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
+const WORD_2013_COLLAPSED_RUN_PROPERTY = `<w15:collapsed xmlns:w15="${WORD_2012_NAMESPACE}"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2084,6 +2086,7 @@ describe('document equations', () => {
       '<w14:numForm w14:val="oldStyle"/>',
       '<w14:numSpacing w14:val="tabular"/>',
       '<w14:stylisticSets><w14:styleSet w14:id="1"/><w14:styleSet w14:id="4" w14:val="true"/><w14:styleSet w14:id="9" w14:val="false"/><w14:styleSet w14:id="1" w14:val="1"/></w14:stylisticSets>',
+      '<w14:cntxtAlts w14:val="true"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2192,7 +2195,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_CONTEXTUAL_ALTERNATES}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2013_COLLAPSED_RUN_PROPERTY}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2227,7 +2230,7 @@ describe('document equations', () => {
     expect(
       inspectEquation(
         wordRun(
-          `<w:rPr>${WORD_2010_CONTEXTUAL_ALTERNATES}</w:rPr>`,
+          `<w:rPr>${WORD_2013_COLLAPSED_RUN_PROPERTY}</w:rPr>`,
           '<w:t>fallback</w:t>',
         ),
       ),
@@ -4445,7 +4448,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4876,7 +4879,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5303,7 +5306,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5670,7 +5673,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6402,7 +6405,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6856,7 +6859,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7383,7 +7386,7 @@ describe('document equations', () => {
       wordRun('<w:scene3d/>'),
       wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
       wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7768,7 +7771,7 @@ describe('document equations', () => {
           '<w14:contourClr><w14:srgbClr w14:val="XYZXYZ"/></w14:contourClr>',
         ),
       ),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7856,67 +7859,34 @@ describe('document equations', () => {
       'all',
     ] as const;
     const expectedCss = new Map([
-      ['none', 'none'],
-      [
-        'standard',
-        'common-ligatures no-contextual no-historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'contextual',
-        'no-common-ligatures contextual no-historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'historical',
-        'no-common-ligatures no-contextual historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'discretional',
-        'no-common-ligatures no-contextual no-historical-ligatures discretionary-ligatures',
-      ],
-      [
-        'standardContextual',
-        'common-ligatures contextual no-historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'standardHistorical',
-        'common-ligatures no-contextual historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'contextualHistorical',
-        'no-common-ligatures contextual historical-ligatures no-discretionary-ligatures',
-      ],
-      [
-        'standardDiscretional',
-        'common-ligatures no-contextual no-historical-ligatures discretionary-ligatures',
-      ],
-      [
-        'contextualDiscretional',
-        'no-common-ligatures contextual no-historical-ligatures discretionary-ligatures',
-      ],
-      [
-        'historicalDiscretional',
-        'no-common-ligatures no-contextual historical-ligatures discretionary-ligatures',
-      ],
+      ['none', '"liga" 0, "clig" 0, "hlig" 0, "dlig" 0'],
+      ['standard', '"liga" 1, "clig" 0, "hlig" 0, "dlig" 0'],
+      ['contextual', '"liga" 0, "clig" 1, "hlig" 0, "dlig" 0'],
+      ['historical', '"liga" 0, "clig" 0, "hlig" 1, "dlig" 0'],
+      ['discretional', '"liga" 0, "clig" 0, "hlig" 0, "dlig" 1'],
+      ['standardContextual', '"liga" 1, "clig" 1, "hlig" 0, "dlig" 0'],
+      ['standardHistorical', '"liga" 1, "clig" 0, "hlig" 1, "dlig" 0'],
+      ['contextualHistorical', '"liga" 0, "clig" 1, "hlig" 1, "dlig" 0'],
+      ['standardDiscretional', '"liga" 1, "clig" 0, "hlig" 0, "dlig" 1'],
+      ['contextualDiscretional', '"liga" 0, "clig" 1, "hlig" 0, "dlig" 1'],
+      ['historicalDiscretional', '"liga" 0, "clig" 0, "hlig" 1, "dlig" 1'],
       [
         'standardContextualHistorical',
-        'common-ligatures contextual historical-ligatures no-discretionary-ligatures',
+        '"liga" 1, "clig" 1, "hlig" 1, "dlig" 0',
       ],
       [
         'standardContextualDiscretional',
-        'common-ligatures contextual no-historical-ligatures discretionary-ligatures',
+        '"liga" 1, "clig" 1, "hlig" 0, "dlig" 1',
       ],
       [
         'standardHistoricalDiscretional',
-        'common-ligatures no-contextual historical-ligatures discretionary-ligatures',
+        '"liga" 1, "clig" 0, "hlig" 1, "dlig" 1',
       ],
       [
         'contextualHistoricalDiscretional',
-        'no-common-ligatures contextual historical-ligatures discretionary-ligatures',
+        '"liga" 0, "clig" 1, "hlig" 1, "dlig" 1',
       ],
-      [
-        'all',
-        'common-ligatures contextual historical-ligatures discretionary-ligatures',
-      ],
+      ['all', '"liga" 1, "clig" 1, "hlig" 1, "dlig" 1'],
     ] as const);
     const equation = {
       version: 1,
@@ -8030,7 +8000,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:ligatures w:val="standard"/>'),
       wordRun(`<v:ligatures xmlns:v="${VENDOR_NAMESPACE}" v:val="standard"/>`),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8044,14 +8014,14 @@ describe('document equations', () => {
       );
       expect(run, ligatures).toBeDefined();
       expect(run?.getAttribute('style'), ligatures).toContain(
-        `font-variant-ligatures:${expectedCss.get(ligatures)}`,
+        `font-feature-settings:${expectedCss.get(ligatures)}`,
       );
     }
     const controlOperator = Array.from(preview.querySelectorAll('mo')).find(
       (candidate) => candidate.textContent === '\u2211',
     );
     expect(controlOperator?.getAttribute('style')).toContain(
-      `font-variant-ligatures:${expectedCss.get('standardContextualDiscretional')}`,
+      `font-feature-settings:${expectedCss.get('standardContextualDiscretional')}`,
     );
     const plainPreview = createDocumentEquationElement(
       document,
@@ -8059,7 +8029,7 @@ describe('document equations', () => {
     );
     expect(
       plainPreview.querySelector('mtext')?.getAttribute('style') ?? '',
-    ).not.toContain('font-variant-ligatures');
+    ).not.toContain('font-feature-settings');
     const sanitized = new DOMParser().parseFromString(
       sanitizeDocumentPageChromeHtml(preview.outerHTML),
       'text/html',
@@ -8076,7 +8046,7 @@ describe('document equations', () => {
         (candidate) => candidate.textContent === `ligatures-${ligatures}`,
       );
       expect(run?.getAttribute('style'), ligatures).toContain(
-        `font-variant-ligatures:${expectedCss.get(ligatures)}`,
+        `font-feature-settings:${expectedCss.get(ligatures)}`,
       );
     }
 
@@ -8231,7 +8201,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:numForm w:val="lining"/>'),
       wordRun(`<v:numForm xmlns:v="${VENDOR_NAMESPACE}" v:val="lining"/>`),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8460,7 +8430,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:numSpacing w:val="tabular"/>'),
       wordRun(`<v:numSpacing xmlns:v="${VENDOR_NAMESPACE}" v:val="tabular"/>`),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8780,7 +8750,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:stylisticSets><w:styleSet w:id="1"/></w:stylisticSets>'),
       wordRun(tooManyStyleSets),
-      wordRun(WORD_2010_CONTEXTUAL_ALTERNATES),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8807,7 +8777,7 @@ describe('document equations', () => {
       );
     }
     expect(featureStyleFor(preview, 'ordered-stylistic-sets')).toBe(
-      '"ss20" 1, "ss01" 1, "ss04" 1',
+      '"liga" 1, "clig" 1, "hlig" 1, "dlig" 1, "ss20" 1, "ss01" 1, "ss04" 1',
     );
     expect(featureStyleFor(preview, '\u2211')).toBe('"ss02" 1, "ss19" 1');
     const plainPreview = createDocumentEquationElement(
@@ -8829,7 +8799,7 @@ describe('document equations', () => {
       ),
     ).toEqual(equation);
     expect(featureStyleFor(sanitized, 'ordered-stylistic-sets')).toBe(
-      '"ss20" 1, "ss01" 1, "ss04" 1',
+      '"liga" 1, "clig" 1, "hlig" 1, "dlig" 1, "ss20" 1, "ss01" 1, "ss04" 1',
     );
 
     const artifact = createArtifact('blank-document');
@@ -8862,6 +8832,239 @@ describe('document equations', () => {
     await expectNativeWordRunStylisticSets(
       await createArtifactBlob(imported),
       stylisticSetCases,
+    );
+  });
+
+  test('preserves Office 2010 contextual alternates and separates calt from clig', async () => {
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        {
+          type: 'run',
+          text: 'contextual-alternates-on',
+          wordRunProperties: { contextualAlternates: true },
+        },
+        {
+          type: 'run',
+          text: 'contextual-alternates-off',
+          wordRunProperties: { contextualAlternates: false },
+        },
+        {
+          type: 'run',
+          text: 'combined-contextual-features',
+          wordRunProperties: {
+            properties3D: {},
+            ligatures: 'contextual',
+            numberForm: 'lining',
+            numberSpacing: 'tabular',
+            stylisticSets: [1, 4],
+            contextualAlternates: false,
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { contextualAlternates: true },
+          children: [{ type: 'run', text: 'control-contextual-alternates' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithContextualAlternates = (contextualAlternates: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          {
+            type: 'run',
+            text: 'alternates',
+            wordRunProperties: { contextualAlternates },
+          },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation(equationWithContextualAlternates(undefined)),
+    ).toEqual(simpleEquation('alternates'));
+    for (const contextualAlternates of [true, false]) {
+      expect(
+        normalizeDocumentEquation(
+          equationWithContextualAlternates(contextualAlternates),
+        ),
+      ).toEqual(equationWithContextualAlternates(contextualAlternates));
+    }
+    const invalidContextualAlternates = [null, 0, 1, '', 'true', [], {}];
+    expect(
+      invalidContextualAlternates.map((contextualAlternates) =>
+        normalizeDocumentEquation(
+          equationWithContextualAlternates(contextualAlternates),
+        ),
+      ),
+    ).toEqual(invalidContextualAlternates.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>alternates</m:t></m:r>`;
+    const validContextualAlternates = [
+      ['<w14:cntxtAlts/>', true],
+      ['<w14:cntxtAlts w14:val="true"/>', true],
+      ['<w14:cntxtAlts w14:val="1"/>', true],
+      ['<w14:cntxtAlts w14:val="false"/>', false],
+      ['<w14:cntxtAlts w14:val="0"/>', false],
+    ] as const;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      for (const [markup, contextualAlternates] of validContextualAlternates) {
+        expect(
+          inspectEquationModel(wordRun(markup, namespace))?.children[0],
+        ).toEqual({
+          type: 'run',
+          text: 'alternates',
+          wordRunProperties: { contextualAlternates },
+        });
+      }
+    }
+    expect(
+      inspectEquationBody(
+        wordRun(
+          '<w14:props3d/><w14:ligatures w14:val="contextual"/><w14:numForm w14:val="lining"/><w14:numSpacing w14:val="tabular"/><w14:stylisticSets><w14:styleSet w14:id="1"/></w14:stylisticSets><w14:cntxtAlts/>',
+        ),
+      ),
+    ).toBe('supported');
+    const invalidMarkup = [
+      wordRun('<w14:cntxtAlts/><w14:cntxtAlts w14:val="0"/>'),
+      wordRun('<w14:cntxtAlts/><w14:stylisticSets/>'),
+      wordRun('<w14:cntxtAlts/><w14:numSpacing w14:val="tabular"/>'),
+      wordRun('<w14:cntxtAlts val="1"/>'),
+      wordRun('<w14:cntxtAlts w14:val=""/>'),
+      wordRun('<w14:cntxtAlts w14:val="on"/>'),
+      wordRun('<w14:cntxtAlts w14:val="off"/>'),
+      wordRun('<w14:cntxtAlts w14:val="TRUE"/>'),
+      wordRun('<w14:cntxtAlts w14:val=" true"/>'),
+      wordRun('<w14:cntxtAlts w14:val="1 "/>'),
+      wordRun('<w14:cntxtAlts w14:val="2"/>'),
+      wordRun('<w14:cntxtAlts w14:val="1" w14:extra="1"/>'),
+      wordRun(
+        `<w14:cntxtAlts xmlns:r="${RELATIONSHIP_NAMESPACE}" w14:val="1" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:cntxtAlts>text</w14:cntxtAlts>'),
+      wordRun('<w14:cntxtAlts><w14:child/></w14:cntxtAlts>'),
+      wordRun(`<w14:cntxtAlts xmlns:w14="${VENDOR_NAMESPACE}" w14:val="1"/>`),
+      wordRun(`<v:cntxtAlts xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
+      wordRun('<w:cntxtAlts w:val="1"/>'),
+      wordRun(WORD_2013_COLLAPSED_RUN_PROPERTY),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    const styleValueFor = (
+      root: ParentNode,
+      text: string,
+      property: string,
+    ): string => {
+      const run = Array.from(root.querySelectorAll('mtext, mo')).find(
+        (candidate) => candidate.textContent === text,
+      );
+      expect(run, text).toBeDefined();
+      const declarations = Array.from(
+        (run?.getAttribute('style') ?? '').matchAll(
+          new RegExp(`(?:^|;)${property}:([^;]+)`, 'g'),
+        ),
+      );
+      expect(declarations, `${text}:${property}`).toHaveLength(1);
+      return declarations[0][1];
+    };
+    expect(
+      styleValueFor(
+        preview,
+        'contextual-alternates-on',
+        'font-variant-ligatures',
+      ),
+    ).toBe('contextual');
+    expect(
+      styleValueFor(
+        preview,
+        'contextual-alternates-off',
+        'font-variant-ligatures',
+      ),
+    ).toBe('no-contextual');
+    expect(
+      styleValueFor(
+        preview,
+        'combined-contextual-features',
+        'font-feature-settings',
+      ),
+    ).toBe('"liga" 0, "clig" 1, "hlig" 0, "dlig" 0, "ss01" 1, "ss04" 1');
+    expect(
+      styleValueFor(
+        preview,
+        'combined-contextual-features',
+        'font-variant-ligatures',
+      ),
+    ).toBe('no-contextual');
+    expect(styleValueFor(preview, '\u2211', 'font-variant-ligatures')).toBe(
+      'contextual',
+    );
+    const plainPreview = createDocumentEquationElement(
+      document,
+      simpleEquation('plain-contextual-alternates'),
+    );
+    expect(
+      plainPreview.querySelector('mtext')?.getAttribute('style') ?? '',
+    ).not.toContain('font-variant-ligatures');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(
+      styleValueFor(
+        sanitized,
+        'combined-contextual-features',
+        'font-feature-settings',
+      ),
+    ).toBe('"liga" 0, "clig" 1, "hlig" 0, "dlig" 0, "ss01" 1, "ss04" 1');
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunContextualAlternates(first);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-contextual-alternates.docx', {
+        type: first.type,
+      }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunContextualAlternates(
+      await createArtifactBlob(imported),
     );
   });
 
@@ -8954,7 +9157,7 @@ describe('document equations', () => {
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
       invalidControlProperties(
-        `<w:rPr>${WORD_2010_CONTEXTUAL_ALTERNATES}</w:rPr>`,
+        `<w:rPr>${WORD_2013_COLLAPSED_RUN_PROPERTY}</w:rPr>`,
       ),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
@@ -9232,7 +9435,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_CONTEXTUAL_ALTERNATES}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2013_COLLAPSED_RUN_PROPERTY}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -10550,6 +10753,7 @@ function richWordRunProperties() {
     numberForm: 'oldStyle' as const,
     numberSpacing: 'tabular' as const,
     stylisticSets: [1, 4],
+    contextualAlternates: true,
   };
 }
 
@@ -13807,6 +14011,75 @@ async function expectNativeWordRunStylisticSets(
   expectContainer(stylisticSets[0], [2, 19]);
 }
 
+async function expectNativeWordRunContextualAlternates(
+  blob: Blob,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  const expectLeaf = (element: Element, value: '0' | '1'): void => {
+    expect(element.localName).toBe('cntxtAlts');
+    expect(element.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(element)).toEqual({ val: value });
+    expect(directChildren(element)).toHaveLength(0);
+  };
+  for (const [text, value] of [
+    ['contextual-alternates-on', '1'],
+    ['contextual-alternates-off', '0'],
+  ] as const) {
+    const children = directChildren(wordPropertiesFor(text));
+    expect(
+      children.map((child) => child.localName),
+      text,
+    ).toEqual(['cntxtAlts']);
+    expectLeaf(children[0], value);
+  }
+
+  const combined = directChildren(
+    wordPropertiesFor('combined-contextual-features'),
+  );
+  expect(combined.map((child) => child.localName)).toEqual([
+    'props3d',
+    'ligatures',
+    'numForm',
+    'numSpacing',
+    'stylisticSets',
+    'cntxtAlts',
+  ]);
+  expect(
+    combined.every((child) => child.namespaceURI === WORD_2010_NAMESPACE),
+  ).toBe(true);
+  expectLeaf(combined.at(-1) as Element, '0');
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-contextual-alternates'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const contextualAlternates = directChildren(
+    wordProperties as Element,
+    'cntxtAlts',
+  );
+  expect(contextualAlternates).toHaveLength(1);
+  expectLeaf(contextualAlternates[0], '1');
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -13878,6 +14151,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'numForm',
     'numSpacing',
     'stylisticSets',
+    'cntxtAlts',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -13969,6 +14243,7 @@ async function expectNativeArgumentControlProperties(
     'numForm',
     'numSpacing',
     'stylisticSets',
+    'cntxtAlts',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -14547,6 +14822,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'numForm',
     'numSpacing',
     'stylisticSets',
+    'cntxtAlts',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -14658,6 +14934,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     { val: 'oldStyle' },
     { val: 'tabular' },
     {},
+    { val: '1' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -14843,6 +15120,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     expect(styleSets.every((child) => directChildren(child).length === 0)).toBe(
       true,
     );
+    const contextualAlternates = directChildren(properties, 'cntxtAlts')[0];
+    expect(contextualAlternates.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(contextualAlternates)).toEqual({ val: '1' });
+    expect(directChildren(contextualAlternates)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

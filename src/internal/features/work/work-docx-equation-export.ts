@@ -1567,6 +1567,21 @@ function createWordRunProperties(
     }
     result.append(stylisticSets);
   }
+  if (properties.contextualAlternates !== undefined) {
+    const prefix = ensureWord2010Prefix(document.documentElement);
+    const contextualAlternates = createWord2010Element(
+      document,
+      prefix,
+      'cntxtAlts',
+    );
+    setWord2010Attribute(
+      contextualAlternates,
+      prefix,
+      'val',
+      properties.contextualAlternates ? '1' : '0',
+    );
+    result.append(contextualAlternates);
+  }
   return result;
 }
 

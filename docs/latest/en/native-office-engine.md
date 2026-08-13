@@ -1269,8 +1269,9 @@ flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
 flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
 3D-scene, and 3D-property effects plus all 16 ligature combinations, all three
-numeral forms, all three numeral-spacing modes, and bounded lists of all 20
-OpenType stylistic sets. Glow preserves an optional
+numeral forms, all three numeral-spacing modes, bounded lists of all 20
+OpenType stylistic sets, and explicit contextual-alternate enable/reset values.
+Glow preserves an optional
 0 through
 2,147,483,647 EMU
 radius, exactly
@@ -1325,6 +1326,8 @@ The Office 2010 stylistic-set container accepts up to 4,096 raw entries and
 canonicalizes enabled IDs from 1 through 20 into a unique list in first-enabled
 order. An omitted `w14:val`, `true`, or `1` enables an entry; `false` or `0`
 does not enable it.
+The leaf Office 2010 contextual-alternates property has no child content and
+accepts only the exact `true`, `false`, `1`, or `0` lexical values.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1366,6 +1369,9 @@ reset.
 An omitted `w14:stylisticSets` enables no stylistic sets. A present empty
 container remains explicit so it can reset inherited sets; export emits one
 canonical attribute-free `w14:styleSet` child for each enabled ID.
+An omitted `w14:cntxtAlts` uses Word's disabled default. A present leaf with no
+`w14:val` means `true`; explicit `false` remains present as an inheritance
+reset, and export canonicalizes both states to `1` or `0`.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 exact transform-free Office 2010 RGB text fills and black fill defaults,
@@ -1377,23 +1383,25 @@ as filled dots, a literal comma, or an open circle above the text, or a filled
 dot below it. Superscript and subscript also project the smaller rendered size
 required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
 native schema order and the later explicit alignment controls the CSS vertical
-position. All 16 explicit ligature values map exactly to CSS
-`font-variant-ligatures` by setting positive or negative controls for common,
-contextual, historical, and discretionary ligatures. Numeral forms and spacing
+position. All 16 explicit ligature values map exactly to the OpenType `liga`,
+`clig`, `hlig`, and `dlig` tags. Those controls compose with stylistic-set IDs
+in exactly one CSS `font-feature-settings` declaration, using `"ss01" 1`
+through `"ss20" 1`; an explicit empty stylistic-set list emits `normal` when
+there are no ligature controls. `w14:cntxtAlts` maps independently to CSS
+`font-variant-ligatures: contextual` or `no-contextual`, which controls the
+OpenType `calt` feature without conflating it with the `clig` contextual
+ligature feature. Numeral forms and spacing
 compose into exactly one CSS `font-variant-numeric` declaration: forms map to
 `normal`, `lining-nums`, or `oldstyle-nums`, while spacing maps to `normal`,
 `proportional-nums`, or `tabular-nums`. A default paired with a non-default
 category emits only the non-default token; two explicit defaults emit `normal`.
-Stylistic-set IDs map exactly to a single CSS `font-feature-settings`
-declaration using `"ss01" 1` through `"ss20" 1`. An explicit empty list emits
-`normal`, while omission emits no declaration.
 `w:em` remains after `w:rtl`/`w:cs` and before
 `w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
 `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
 `w14:textFill`, `w14:scene3d`, `w14:props3d`, `w14:ligatures`, `w14:numForm`,
-`w14:numSpacing`, and `w14:stylisticSets`. Simple
+`w14:numSpacing`, `w14:stylisticSets`, and `w14:cntxtAlts`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1443,7 +1451,8 @@ missing or malformed ligature values, non-leaf ligature content, preset values,
 missing or malformed numeral-form values, non-leaf numeral-form content,
 missing or malformed numeral-spacing values, non-leaf numeral-spacing content,
 malformed or over-limit stylistic-set containers, entries, IDs, or on/off
-values, directions, or rotation angles, and unknown, duplicated, reordered,
+values, malformed or non-leaf contextual-alternate values, directions, or
+rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.
 Border-box, box, and equation-array flags retain their
