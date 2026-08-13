@@ -44,7 +44,7 @@ const WORD_2010_SHADOW = `<w14:shadow xmlns:w14="${WORD_2010_NAMESPACE}"><w14:sr
 const WORD_2010_REFLECTION = `<w14:reflection xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_OUTLINE = `<w14:textOutline xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
 const WORD_2010_TEXT_FILL = `<w14:textFill xmlns:w14="${WORD_2010_NAMESPACE}"/>`;
-const WORD_2010_NUM_FORM = `<w14:numForm xmlns:w14="${WORD_2010_NAMESPACE}" w14:val="default"/>`;
+const WORD_2010_NUM_SPACING = `<w14:numSpacing xmlns:w14="${WORD_2010_NAMESPACE}" w14:val="default"/>`;
 const MATH_NAMESPACE =
   'http://schemas.openxmlformats.org/officeDocument/2006/math';
 const STRICT_MATH_NAMESPACE = 'http://purl.oclc.org/ooxml/officeDocument/math';
@@ -2081,6 +2081,7 @@ describe('document equations', () => {
       '<w14:scene3d><w14:camera w14:prst="perspectiveHeroicRightFacing"/><w14:lightRig w14:rig="twoPt" w14:dir="bl"><w14:rot w14:lat="0" w14:lon="10800000" w14:rev="21599999"/></w14:lightRig></w14:scene3d>',
       '<w14:props3d w14:extrusionH="50800" w14:contourW="12700" w14:prstMaterial="softmetal"><w14:bevelT w14:w="25400" w14:h="12700" w14:prst="convex"/><w14:bevelB w14:w="6350" w14:h="3175" w14:prst="hardEdge"/><w14:extrusionClr><w14:schemeClr w14:val="accent1"><w14:alpha w14:val="60000"/></w14:schemeClr></w14:extrusionClr><w14:contourClr><w14:srgbClr w14:val="ABCDEF"><w14:shade w14:val="30000"/></w14:srgbClr></w14:contourClr></w14:props3d>',
       '<w14:ligatures w14:val="standardContextualHistorical"/>',
+      '<w14:numForm w14:val="oldStyle"/>',
     ].join('');
     const richRun = (mathNamespace: string, wordNamespace: string) =>
       `<m:oMath xmlns:m="${mathNamespace}" xmlns:w="${wordNamespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><m:r><m:rPr><m:lit m:val="1"/><m:scr m:val="fraktur"/><m:sty m:val="b"/><m:brk m:alnAt="3"/><m:aln m:val="1"/></m:rPr><w:rPr>${wordProperties}</w:rPr><m:t>styledF</m:t></m:r></m:oMath>`;
@@ -2189,7 +2190,7 @@ describe('document equations', () => {
       wordRun('<w:rPr/><w:rPr/>'),
       wordRun('<w:rPr w:val="semantic"/>'),
       wordRun('<w:rPr>meaningful</w:rPr>'),
-      wordRun(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`),
+      wordRun(`<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`),
       wordRun('<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>'),
       wordRun('<w:rPr><w:b/><w:b/></w:rPr>'),
       wordRun('<w:rPr><w:b w:val="maybe"/></w:rPr>'),
@@ -2223,7 +2224,10 @@ describe('document equations', () => {
     );
     expect(
       inspectEquation(
-        wordRun(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`, '<w:t>fallback</w:t>'),
+        wordRun(
+          `<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`,
+          '<w:t>fallback</w:t>',
+        ),
       ),
     ).toMatchObject({ status: 'unsupported', text: 'fallback' });
   });
@@ -4439,7 +4443,7 @@ describe('document equations', () => {
       wordRun('<w:specVanish/><w:lang w:eastAsia="zh-CN"/>'),
       wordRun(`<v:specVanish xmlns:v="${VENDOR_NAMESPACE}" v:val="1"/>`),
       wordRun('<m:specVanish m:val="1"/>'),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -4870,7 +4874,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:glow><w14:srgbClr w14:val="A1B2C3"><v:alpha xmlns:v="urn:a3s:test" v:val="50000"/></w14:srgbClr></w14:glow>',
       ),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5297,7 +5301,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:shadow><v:srgbClr xmlns:v="urn:a3s:test" v:val="A1B2C3"/></w14:shadow>',
       ),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -5664,7 +5668,7 @@ describe('document equations', () => {
       ),
       wordRun('<w14:reflection>meaningful</w14:reflection>'),
       wordRun('<w14:reflection><w14:alpha w14:val="50000"/></w14:reflection>'),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6396,7 +6400,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textOutline><v:noFill xmlns:v="urn:a3s:test"/></w14:textOutline>',
       ),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -6850,7 +6854,7 @@ describe('document equations', () => {
       wordRun(
         '<w14:textFill><v:noFill xmlns:v="urn:a3s:test"/></w14:textFill>',
       ),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7377,7 +7381,7 @@ describe('document equations', () => {
       wordRun('<w:scene3d/>'),
       wordRun(`<v:scene3d xmlns:v="${VENDOR_NAMESPACE}"/>`),
       wordRun(`<w14:scene3d xmlns:w14="${VENDOR_NAMESPACE}"/>`),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -7762,7 +7766,7 @@ describe('document equations', () => {
           '<w14:contourClr><w14:srgbClr w14:val="XYZXYZ"/></w14:contourClr>',
         ),
       ),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8024,7 +8028,7 @@ describe('document equations', () => {
       ),
       wordRun('<w:ligatures w:val="standard"/>'),
       wordRun(`<v:ligatures xmlns:v="${VENDOR_NAMESPACE}" v:val="standard"/>`),
-      wordRun(WORD_2010_NUM_FORM),
+      wordRun(WORD_2010_NUM_SPACING),
     ];
     expect(invalidMarkup.map(inspectEquationBody)).toEqual(
       invalidMarkup.map(() => 'unsupported'),
@@ -8104,6 +8108,209 @@ describe('document equations', () => {
     await expectNativeWordRunLigatures(
       await createArtifactBlob(imported),
       ligatureValues,
+    );
+  });
+
+  test('preserves every Office 2010 numeral form and projects exact OpenType numeral styles', async () => {
+    const numberForms = [
+      ['default', 'normal'],
+      ['lining', 'lining-nums'],
+      ['oldStyle', 'oldstyle-nums'],
+    ] as const;
+    const equation = {
+      version: 1,
+      display: 'inline',
+      children: [
+        ...numberForms.map(([numberForm]) => ({
+          type: 'run',
+          text: `number-form-${numberForm}-0123`,
+          wordRunProperties: { numberForm },
+        })),
+        {
+          type: 'run',
+          text: 'ordered-number-form-4567',
+          wordRunProperties: {
+            properties3D: {},
+            ligatures: 'all',
+            numberForm: 'oldStyle',
+          },
+        },
+        {
+          type: 'nary',
+          operator: '\u2211',
+          limitLocation: 'underOver',
+          controlProperties: { numberForm: 'lining' },
+          children: [{ type: 'run', text: 'control-number-form-89' }],
+        },
+      ],
+    } as unknown as WorkDocumentEquation;
+    expect(normalizeDocumentEquation(equation)).toEqual(equation);
+
+    const equationWithNumberForm = (numberForm: unknown) =>
+      ({
+        version: 1,
+        display: 'inline',
+        children: [
+          { type: 'run', text: '0123', wordRunProperties: { numberForm } },
+        ],
+      }) as unknown as WorkDocumentEquation;
+    expect(
+      normalizeDocumentEquation(equationWithNumberForm(undefined)),
+    ).toEqual(simpleEquation('0123'));
+    for (const [numberForm] of numberForms) {
+      expect(
+        normalizeDocumentEquation(equationWithNumberForm(numberForm)),
+      ).toEqual(equationWithNumberForm(numberForm));
+    }
+    const invalidNumberForms = [
+      null,
+      false,
+      0,
+      [],
+      {},
+      '',
+      'normal',
+      'oldstyle',
+      'OldStyle',
+      ' default',
+      'default ',
+      'tabular',
+    ];
+    expect(
+      invalidNumberForms.map((numberForm) =>
+        normalizeDocumentEquation(equationWithNumberForm(numberForm)),
+      ),
+    ).toEqual(invalidNumberForms.map(() => null));
+
+    const wordRun = (properties: string, namespace = WORD_NAMESPACE) =>
+      `<m:r xmlns:w="${namespace}" xmlns:w14="${WORD_2010_NAMESPACE}"><w:rPr>${properties}</w:rPr><m:t>0123</m:t></m:r>`;
+    for (const namespace of [WORD_NAMESPACE, STRICT_WORD_NAMESPACE]) {
+      for (const [numberForm] of numberForms) {
+        expect(
+          inspectEquationModel(
+            wordRun(`<w14:numForm w14:val="${numberForm}"/>`, namespace),
+          )?.children[0],
+        ).toEqual({
+          type: 'run',
+          text: '0123',
+          wordRunProperties: { numberForm },
+        });
+      }
+    }
+    expect(
+      inspectEquationBody(
+        wordRun(
+          '<w14:props3d/><w14:ligatures w14:val="standard"/><w14:numForm w14:val="lining"/>',
+        ),
+      ),
+    ).toBe('supported');
+    const invalidMarkup = [
+      wordRun(
+        '<w14:numForm w14:val="default"/><w14:numForm w14:val="lining"/>',
+      ),
+      wordRun(
+        '<w14:numForm w14:val="lining"/><w14:ligatures w14:val="standard"/>',
+      ),
+      wordRun('<w14:numForm w14:val="lining"/><w14:props3d/>'),
+      wordRun('<w14:numForm/>'),
+      wordRun('<w14:numForm val="lining"/>'),
+      wordRun('<w14:numForm w14:val="unknown"/>'),
+      wordRun('<w14:numForm w14:val="Lining"/>'),
+      wordRun('<w14:numForm w14:val=" lining"/>'),
+      wordRun('<w14:numForm w14:val="lining "/>'),
+      wordRun('<w14:numForm w14:val="lining" w14:extra="1"/>'),
+      wordRun(
+        `<w14:numForm xmlns:r="${RELATIONSHIP_NAMESPACE}" w14:val="lining" r:id="rIdUnsafe"/>`,
+      ),
+      wordRun('<w14:numForm w14:val="lining">text</w14:numForm>'),
+      wordRun('<w14:numForm w14:val="lining"><w14:number/></w14:numForm>'),
+      wordRun(
+        `<w14:numForm xmlns:w14="${VENDOR_NAMESPACE}" w14:val="lining"/>`,
+      ),
+      wordRun('<w:numForm w:val="lining"/>'),
+      wordRun(`<v:numForm xmlns:v="${VENDOR_NAMESPACE}" v:val="lining"/>`),
+      wordRun(WORD_2010_NUM_SPACING),
+    ];
+    expect(invalidMarkup.map(inspectEquationBody)).toEqual(
+      invalidMarkup.map(() => 'unsupported'),
+    );
+
+    const document = new DOMParser().parseFromString('', 'text/html');
+    const preview = createDocumentEquationElement(document, equation);
+    for (const [numberForm, expectedCss] of numberForms) {
+      const run = Array.from(preview.querySelectorAll('mtext, mo')).find(
+        (candidate) =>
+          candidate.textContent === `number-form-${numberForm}-0123`,
+      );
+      expect(run, numberForm).toBeDefined();
+      expect(run?.getAttribute('style'), numberForm).toContain(
+        `font-variant-numeric:${expectedCss}`,
+      );
+    }
+    const controlOperator = Array.from(preview.querySelectorAll('mo')).find(
+      (candidate) => candidate.textContent === '\u2211',
+    );
+    expect(controlOperator?.getAttribute('style')).toContain(
+      'font-variant-numeric:lining-nums',
+    );
+    const plainPreview = createDocumentEquationElement(
+      document,
+      simpleEquation('plain-0123'),
+    );
+    expect(
+      plainPreview.querySelector('mtext')?.getAttribute('style') ?? '',
+    ).not.toContain('font-variant-numeric');
+    const sanitized = new DOMParser().parseFromString(
+      sanitizeDocumentPageChromeHtml(preview.outerHTML),
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        sanitized.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    for (const [numberForm, expectedCss] of numberForms) {
+      const run = Array.from(sanitized.querySelectorAll('mtext, mo')).find(
+        (candidate) =>
+          candidate.textContent === `number-form-${numberForm}-0123`,
+      );
+      expect(run?.getAttribute('style'), numberForm).toContain(
+        `font-variant-numeric:${expectedCss}`,
+      );
+    }
+
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html = `<p>${preview.outerHTML}</p>`;
+    const first = await createArtifactBlob(artifact);
+    await expectNativeWordRunNumberForms(first, numberForms);
+    const imported = await importOfficeFile(
+      new File([first], 'word-run-number-forms.docx', { type: first.type }),
+    );
+    if (imported.content.type !== 'document') {
+      throw new Error('Expected an imported document artifact.');
+    }
+    const importedDocument = new DOMParser().parseFromString(
+      imported.content.html,
+      'text/html',
+    );
+    expect(
+      documentEquationFromElement(
+        importedDocument.body.querySelector<HTMLElement>(
+          '[data-document-equation]',
+        ) as HTMLElement,
+      ),
+    ).toEqual(equation);
+    expect(imported.compatibility.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'docx.equations.unsupported' }),
+    );
+    await expectNativeWordRunNumberForms(
+      await createArtifactBlob(imported),
+      numberForms,
     );
   });
 
@@ -8195,7 +8402,7 @@ describe('document equations', () => {
       invalidControlProperties('<v:rPr/>'),
       invalidControlProperties('<m:rPr/>'),
       invalidControlProperties('<w:rPr r:id="rIdUnsafe"/>'),
-      invalidControlProperties(`<w:rPr>${WORD_2010_NUM_FORM}</w:rPr>`),
+      invalidControlProperties(`<w:rPr>${WORD_2010_NUM_SPACING}</w:rPr>`),
       invalidControlProperties(
         '<w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr>',
       ),
@@ -8472,7 +8679,7 @@ describe('document equations', () => {
       argument(`${run}<m:ctrlPr r:id="rIdUnsafe"/>`),
       argument(`${run}<m:ctrlPr><w:rPr r:id="rIdUnsafe"/></m:ctrlPr>`),
       argument(
-        `${run}<m:ctrlPr><w:rPr>${WORD_2010_NUM_FORM}</w:rPr></m:ctrlPr>`,
+        `${run}<m:ctrlPr><w:rPr>${WORD_2010_NUM_SPACING}</w:rPr></m:ctrlPr>`,
       ),
       argument(
         `${run}<m:ctrlPr><w:rPr><w:b/><w:rFonts w:ascii="Cambria Math"/></w:rPr></m:ctrlPr>`,
@@ -9787,6 +9994,7 @@ function richWordRunProperties() {
       },
     },
     ligatures: 'standardContextualHistorical' as const,
+    numberForm: 'oldStyle' as const,
   };
 }
 
@@ -12806,6 +13014,70 @@ async function expectNativeWordRunLigatures(
   expect(directChildren(ligatures)).toHaveLength(0);
 }
 
+async function expectNativeWordRunNumberForms(
+  blob: Blob,
+  numberForms: ReadonlyArray<readonly [string, string]>,
+): Promise<void> {
+  const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+  const document = await xmlEntry(archive, 'word/document.xml');
+  const mathRuns = descendants(document, 'r').filter(
+    (run) => run.namespaceURI === MATH_NAMESPACE,
+  );
+  const wordPropertiesFor = (text: string): Element => {
+    const run = mathRuns.find((candidate) => candidate.textContent === text);
+    expect(run, text).toBeDefined();
+    const properties = directChildren(run as Element, 'rPr').find(
+      (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+    );
+    expect(properties, text).toBeDefined();
+    return properties as Element;
+  };
+  for (const [value] of numberForms) {
+    const properties = wordPropertiesFor(`number-form-${value}-0123`);
+    const children = directChildren(properties);
+    expect(
+      children.map((child) => child.localName),
+      value,
+    ).toEqual(['numForm']);
+    expect(children[0].namespaceURI, value).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(children[0]), value).toEqual({ val: value });
+    expect(directChildren(children[0]), value).toHaveLength(0);
+  }
+
+  const orderedProperties = directChildren(
+    wordPropertiesFor('ordered-number-form-4567'),
+  );
+  expect(orderedProperties.map((child) => child.localName)).toEqual([
+    'props3d',
+    'ligatures',
+    'numForm',
+  ]);
+  expect(
+    orderedProperties.every(
+      (child) => child.namespaceURI === WORD_2010_NAMESPACE,
+    ),
+  ).toBe(true);
+  expect(word2010Attributes(orderedProperties.at(-1) as Element)).toEqual({
+    val: 'oldStyle',
+  });
+  expect(directChildren(orderedProperties.at(-1) as Element)).toHaveLength(0);
+
+  const nary = descendants(document, 'nary').find((candidate) =>
+    candidate.textContent?.includes('control-number-form-89'),
+  );
+  expect(nary).toBeDefined();
+  const naryProperties = directChildren(nary as Element, 'naryPr')[0];
+  const controlProperties = directChildren(naryProperties, 'ctrlPr')[0];
+  const wordProperties = directChildren(controlProperties, 'rPr').find(
+    (candidate) => candidate.namespaceURI === WORD_NAMESPACE,
+  );
+  expect(wordProperties).toBeDefined();
+  const numberForm = directChildren(wordProperties as Element, 'numForm')[0];
+  expect(numberForm.namespaceURI).toBe(WORD_2010_NAMESPACE);
+  expect(word2010Attributes(numberForm)).toEqual({ val: 'lining' });
+  expect(directChildren(numberForm)).toHaveLength(0);
+}
+
 async function expectNativeControlProperties(blob: Blob): Promise<void> {
   const archive = await JSZip.loadAsync(await blob.arrayBuffer());
   const document = await xmlEntry(archive, 'word/document.xml');
@@ -12874,6 +13146,7 @@ async function expectNativeControlProperties(blob: Blob): Promise<void> {
     'scene3d',
     'props3d',
     'ligatures',
+    'numForm',
   ];
   for (const name of propertyContainerNames) {
     const containers = descendants(document, name).filter(
@@ -12962,6 +13235,7 @@ async function expectNativeArgumentControlProperties(
     'scene3d',
     'props3d',
     'ligatures',
+    'numForm',
   ];
   for (const controlProperty of controlProperties) {
     const argument = controlProperty.parentElement;
@@ -13537,6 +13811,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
     'scene3d',
     'props3d',
     'ligatures',
+    'numForm',
   ];
   const expectedWordPropertyAttributes = [
     {
@@ -13645,6 +13920,7 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       prstMaterial: 'softmetal',
     },
     { val: 'standardContextualHistorical' },
+    { val: 'oldStyle' },
   ];
   for (const run of styledWordRuns) {
     const properties = directChildren(run, 'rPr').find(
@@ -13804,6 +14080,10 @@ async function expectNativeEquations(blob: Blob): Promise<void> {
       val: 'standardContextualHistorical',
     });
     expect(directChildren(ligatures)).toHaveLength(0);
+    const numberForm = directChildren(properties, 'numForm')[0];
+    expect(numberForm.namespaceURI).toBe(WORD_2010_NAMESPACE);
+    expect(word2010Attributes(numberForm)).toEqual({ val: 'oldStyle' });
+    expect(directChildren(numberForm)).toHaveLength(0);
   }
   const accents = descendants(document, 'acc');
   expect(accents).toHaveLength(2);

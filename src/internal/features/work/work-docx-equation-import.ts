@@ -47,6 +47,7 @@ import {
   type WorkDocumentEquationWordLineBorderStyle,
   type WorkDocumentEquationWordLineDash,
   type WorkDocumentEquationWordLineJoin,
+  type WorkDocumentEquationWordNumberForm,
   type WorkDocumentEquationWordPresetCamera,
   type WorkDocumentEquationWordPresetLineDash,
   type WorkDocumentEquationWordPresetMaterial,
@@ -206,6 +207,7 @@ const WORD_RUN_PROPERTY_ORDER = [
   'w14:scene3d',
   'w14:props3d',
   'w14:ligatures',
+  'w14:numForm',
 ] as const;
 const WORD_THEME_FONTS = new Set<WorkDocumentEquationThemeFont>([
   'majorEastAsia',
@@ -501,6 +503,11 @@ const WORD_2010_LIGATURES = new Set<WorkDocumentEquationWordLigatures>([
   'standardHistoricalDiscretional',
   'contextualHistoricalDiscretional',
   'all',
+]);
+const WORD_2010_NUMBER_FORMS = new Set<WorkDocumentEquationWordNumberForm>([
+  'default',
+  'lining',
+  'oldStyle',
 ]);
 const WORD_UNDERLINE_STYLES = new Set<WorkDocumentEquationUnderlineStyle>([
   'none',
@@ -1300,6 +1307,7 @@ function parseWordRunProperties(
   const scene3D = parseWordScene3D(word2010Children.get('scene3d'));
   const properties3D = parseWordProperties3D(word2010Children.get('props3d'));
   const ligatures = parseWordLigatures(word2010Children.get('ligatures'));
+  const numberForm = parseWordNumberForm(word2010Children.get('numForm'));
   if (
     fonts === null ||
     color === null ||
@@ -1326,7 +1334,8 @@ function parseWordRunProperties(
     textFillEffect === null ||
     scene3D === null ||
     properties3D === null ||
-    ligatures === null
+    ligatures === null ||
+    numberForm === null
   ) {
     return null;
   }
@@ -1429,6 +1438,7 @@ function parseWordRunProperties(
     ...(scene3D ? { scene3D } : {}),
     ...(properties3D ? { properties3D } : {}),
     ...(ligatures !== undefined ? { ligatures } : {}),
+    ...(numberForm !== undefined ? { numberForm } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -2681,6 +2691,18 @@ function parseWordLigatures(
   const value = attributes.get('val') ?? '';
   return WORD_2010_LIGATURES.has(value as WorkDocumentEquationWordLigatures)
     ? (value as WorkDocumentEquationWordLigatures)
+    : null;
+}
+
+function parseWordNumberForm(
+  element: Element | undefined,
+): WorkDocumentEquationWordNumberForm | null | undefined {
+  if (!element) return undefined;
+  const attributes = word2010LeafAttributes(element, new Set(['val']));
+  if (!attributes || attributes.size !== 1) return null;
+  const value = attributes.get('val') ?? '';
+  return WORD_2010_NUMBER_FORMS.has(value as WorkDocumentEquationWordNumberForm)
+    ? (value as WorkDocumentEquationWordNumberForm)
     : null;
 }
 

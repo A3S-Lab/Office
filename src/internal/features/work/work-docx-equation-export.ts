@@ -1536,6 +1536,12 @@ function createWordRunProperties(
     setWord2010Attribute(ligatures, prefix, 'val', properties.ligatures);
     result.append(ligatures);
   }
+  if (properties.numberForm !== undefined) {
+    const prefix = ensureWord2010Prefix(document.documentElement);
+    const numberForm = createWord2010Element(document, prefix, 'numForm');
+    setWord2010Attribute(numberForm, prefix, 'val', properties.numberForm);
+    result.append(numberForm);
+  }
   return result;
 }
 

@@ -1271,8 +1271,8 @@ Asian typography metadata with optional signed 32-bit run IDs, two-lines-in-one
 flags, all five enclosing-bracket styles, horizontal-in-vertical rotation, and
 rotated-text compression, plus explicit paragraph-mark always-hidden/reset
 flags and Office 2010 text glow, shadow, reflection, text-outline, text-fill,
-3D-scene, and 3D-property effects plus all 16 ligature combinations. Glow
-preserves an optional 0 through
+3D-scene, and 3D-property effects plus all 16 ligature combinations and all
+three numeral forms. Glow preserves an optional 0 through
 2,147,483,647 EMU
 radius, exactly
 one RGB or 17-slot theme color source, and up to 64 ordered, repeatable tint,
@@ -1316,6 +1316,9 @@ same bounded transform chains. The exact
 The Office 2010 ligature leaf requires one exact value and preserves every
 combination of standard, contextual, historical, and discretional OpenType
 ligatures, including explicit `none` and `all` values.
+The Office 2010 numeral-form leaf likewise requires one exact value and retains
+the font default, lining numerals, or oldstyle numerals without conflating an
+explicit default reset with omission.
 Explicit zero/default geometry values remain present so they can reset
 inherited formatting. Strict universal font-size and position measures are
 accepted only when they convert exactly to the bounded half-point model. Strict
@@ -1351,6 +1354,9 @@ defaults.
 An omitted `w14:ligatures` uses Word's no-ligature default. A present leaf must
 carry `w14:val`; explicit `none` remains present so it can reset inherited
 formatting.
+An omitted `w14:numForm` uses the font's default numeral form. A present leaf
+must carry `w14:val`, and explicit `default` remains present as an inheritance
+reset.
 Explicit on/off values remain distinct, export uses canonical
 `m:rPr -> w:rPr -> m:t`, and the MathML preview projects safe direct color,
 exact transform-free Office 2010 RGB text fills and black fill defaults,
@@ -1364,12 +1370,15 @@ required by Word. When `w:position` and `w:vertAlign` coexist, both remain in
 native schema order and the later explicit alignment controls the CSS vertical
 position. All 16 explicit ligature values map exactly to CSS
 `font-variant-ligatures` by setting positive or negative controls for common,
-contextual, historical, and discretionary ligatures. `w:em` remains after
-`w:rtl`/`w:cs` and before `w:lang`, while
+contextual, historical, and discretionary ligatures. Numeral forms map exactly
+to CSS `normal`, `lining-nums`, or `oldstyle-nums` through
+`font-variant-numeric`. `w:em` remains after `w:rtl`/`w:cs` and before
+`w:lang`, while
 `w:eastAsianLayout` remains after `w:lang`, `w:specVanish` follows it,
 `w14:glow` follows `w:specVanish`, `w14:shadow` follows `w14:glow`, and
 `w14:reflection` follows `w14:shadow`, followed by `w14:textOutline`,
-`w14:textFill`, `w14:scene3d`, `w14:props3d`, and `w14:ligatures`. Simple
+`w14:textFill`, `w14:scene3d`, `w14:props3d`, `w14:ligatures`, and
+`w14:numForm`. Simple
 explicitly sized solid, double, dotted, dashed, inset, and outset line borders
 project through CSS with direct or automatic color and point padding; explicit
 `nil`/`none` resets also project. Outline, shadow, emboss, imprint, legacy text
@@ -1416,6 +1425,7 @@ fill/gradient/dash/join structure, text-fill wrapper/fill/gradient structure,
 color choices or transform chains, 3D-scene camera/light structure,
 3D-property extrusion/contour/bevel/color structure, bounded coordinates,
 missing or malformed ligature values, non-leaf ligature content, preset values,
+missing or malformed numeral-form values, non-leaf numeral-form content,
 directions, or rotation angles, and unknown, duplicated, reordered,
 namespace-spoofed, or relationship-bound Word run properties fail
 closed instead of being silently discarded.

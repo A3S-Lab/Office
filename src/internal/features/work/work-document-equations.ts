@@ -540,6 +540,11 @@ export type WorkDocumentEquationWordLigatures =
   | 'contextualHistoricalDiscretional'
   | 'all';
 
+export type WorkDocumentEquationWordNumberForm =
+  | 'default'
+  | 'lining'
+  | 'oldStyle';
+
 export interface WorkDocumentEquationWordLineDash {
   preset?: WorkDocumentEquationWordPresetLineDash;
 }
@@ -663,6 +668,7 @@ export interface WorkDocumentEquationWordRunProperties {
   scene3D?: WorkDocumentEquationWordScene3D;
   properties3D?: WorkDocumentEquationWordProperties3D;
   ligatures?: WorkDocumentEquationWordLigatures;
+  numberForm?: WorkDocumentEquationWordNumberForm;
 }
 
 export interface WorkDocumentEquationManualBreak {
@@ -1325,6 +1331,7 @@ const WORD_RUN_PROPERTY_KEYS = new Set([
   'scene3D',
   'properties3D',
   'ligatures',
+  'numberForm',
 ]);
 const WORD_RUN_FONT_KEYS = new Set([
   'ascii',
@@ -1506,6 +1513,11 @@ const WORD_LIGATURE_FLAGS = new Map<WorkDocumentEquationWordLigatures, number>([
       WORD_LIGATURE_HISTORICAL |
       WORD_LIGATURE_DISCRETIONAL,
   ],
+]);
+const WORD_NUMBER_FORMS = new Set<WorkDocumentEquationWordNumberForm>([
+  'default',
+  'lining',
+  'oldStyle',
 ]);
 const WORD_SCENE_3D_CAMERA_PRESETS =
   new Set<WorkDocumentEquationWordPresetCamera>([
@@ -3736,6 +3748,14 @@ function normalizeEquationWordRunProperties(
           )
         ? (source.ligatures as WorkDocumentEquationWordLigatures)
         : null;
+  const numberForm =
+    source.numberForm === undefined
+      ? undefined
+      : WORD_NUMBER_FORMS.has(
+            source.numberForm as WorkDocumentEquationWordNumberForm,
+          )
+        ? (source.numberForm as WorkDocumentEquationWordNumberForm)
+        : null;
   const characterSpacingTwips =
     source.characterSpacingTwips === undefined
       ? undefined
@@ -3795,6 +3815,7 @@ function normalizeEquationWordRunProperties(
     scene3D === null ||
     properties3D === null ||
     ligatures === null ||
+    numberForm === null ||
     characterSpacingTwips === null ||
     characterScalePercent === null ||
     kerningThresholdHalfPoints === null ||
@@ -3941,6 +3962,7 @@ function normalizeEquationWordRunProperties(
     ...(scene3D ? { scene3D } : {}),
     ...(properties3D ? { properties3D } : {}),
     ...(ligatures !== undefined ? { ligatures } : {}),
+    ...(numberForm !== undefined ? { numberForm } : {}),
   };
   return Object.keys(normalized).length ? normalized : undefined;
 }
@@ -5236,6 +5258,7 @@ function wordPropertiesMathMlAttributes(
     italic === undefined ? '' : `font-style:${italic ? 'italic' : 'normal'}`,
     wordRunCaseStyles(properties),
     wordRunLigatureStyles(properties.ligatures),
+    wordRunNumberFormStyles(properties.numberForm),
     wordRunTextDecoration(properties),
     wordRunBorderStyles(properties),
     properties.characterSpacingTwips === undefined
@@ -5284,6 +5307,19 @@ function wordRunLigatureStyles(
       ? 'discretionary-ligatures'
       : 'no-discretionary-ligatures',
   ].join(' ')}`;
+}
+
+function wordRunNumberFormStyles(
+  numberForm: WorkDocumentEquationWordNumberForm | undefined,
+): string {
+  if (numberForm === undefined) return '';
+  const value =
+    numberForm === 'lining'
+      ? 'lining-nums'
+      : numberForm === 'oldStyle'
+        ? 'oldstyle-nums'
+        : 'normal';
+  return `font-variant-numeric:${value}`;
 }
 
 function wordRunTextFillMathMlColor(
