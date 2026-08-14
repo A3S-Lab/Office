@@ -147,17 +147,21 @@ reject surrogate-splitting ranges, require `edit`, and commit through the same
 checksummed update/receipt path as externally delivered updates. Typed Document
 replacement scans ProseMirror `Y.XmlText` rather than serialized HTML, requires
 an exact non-overlapping match count, preserves the first replaced character's
-format attributes, and never crosses an XML text-node or inline-atom boundary.
-Page color and track-changes mutate independent `document.options` fields. Raw
-remote updates remain mode-neutral for convergence. Authenticated browser
-actor/operation origins are retained separately from host delivery identity in
-durable events and are re-emitted across the live boundary.
+format attributes, rotates each affected Word `textId` once, and never crosses
+an XML text-node or inline-atom boundary. A separate structural mutation can
+insert a plain paragraph next to a stable direct-section paragraph identity.
+Deletion requires the target's current `textId` and complete text, preserves a
+section's final block, and rejects inline atoms and review marks. Page color and
+track-changes mutate independent `document.options` fields. Raw remote updates
+remain mode-neutral for convergence. Authenticated browser actor/operation
+origins are retained separately from host delivery identity in durable events
+and are re-emitted across the live boundary.
 
 Neither native surface opens a network provider, chooses a room, authenticates
-a participant, persists Awareness, or polls a whole Office file. Structural
-and review Document operations, typed Spreadsheet/Presentation/PDF mutations,
-durable comment/suggest authorization, and native presence projection remain
-later milestones.
+a participant, persists Awareness, or polls a whole Office file. Nested/list/
+table Document structures and review operations, typed Spreadsheet/
+Presentation/PDF mutations, durable comment/suggest authorization, and native
+presence projection remain later milestones.
 
 ## Safety and fidelity invariants
 

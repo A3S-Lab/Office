@@ -987,6 +987,12 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --artifact-id report --kind document --actor-id agent-7 --mode edit \
   --operation-id edit-43 \
   --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' --json
+
+# Insert one plain paragraph beside a stable direct-section paragraph.
+cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 --mode edit \
+  --operation-id edit-44 \
+  --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
@@ -1002,10 +1008,14 @@ backend. The native CLI's JSONL session bridges the same host-channel envelope,
 including reconnect handshakes, durable agent updates, and remote-echo
 suppression, without opening its own network provider. Typed Markdown
 replace/splice operations use browser UTF-16 offsets. Document mutations edit
-ProseMirror `Y.XmlText` in place, preserve the first replaced character's rich
-text marks, and update page-color/track-changes sidecars without replacing HTML.
-All use the same durable event path. Validated browser source origins survive
-native persistence and are re-emitted separately from host delivery IDs.
+ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, insert a
+plain direct-section paragraph beside a stable paragraph identity, or delete
+one only after its complete text and `textId` still match. Deletion rejects the
+last block in a section and paragraphs containing inline atoms or review marks.
+Page-color/track-changes sidecars remain independent conflict-local fields. All
+mutations use the same durable event path. Validated browser source origins
+survive native persistence and are re-emitted separately from host delivery
+IDs.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

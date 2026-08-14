@@ -80,6 +80,12 @@ a3s-office collab mutate .a3s/report.replica \
   --operation-id edit-43 \
   --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
   --json
+
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode edit \
+  --operation-id edit-44 \
+  --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' \
+  --json
 ```
 
 The host forwards `session` outbound envelopes to its authenticated room and
@@ -90,8 +96,14 @@ offsets are UTF-16 code units, matching browser Yjs; ranges that split a
 surrogate pair fail closed. Document replacement edits ProseMirror
 `Y.XmlText` directly, may span formatting runs inside that text node, preserves
 the first replaced character's marks, and fails unless `expectedMatches`
-matches current state. `document-set-page-color`/`document-clear-page-color`
-and `document-set-track-changes`/`document-clear-track-changes` update their
+matches current state; each changed paragraph rotates its Word `textId` once.
+`document-insert-paragraph` creates a plain paragraph before or after a stable
+direct-section paragraph identity. `document-delete-paragraph` additionally
+requires the current `textId` and complete text, and refuses last-section-block,
+inline-atom, comment-mark, and tracked-change cases. Word paragraph identities
+are uppercase eight-digit positive 31-bit hexadecimal values.
+`document-set-page-color`/`document-clear-page-color` and
+`document-set-track-changes`/`document-clear-track-changes` update their
 independent typed option fields. Explicit clear variants keep missing set
 fields fail-closed. Use `--mutation-input <file>` for larger or multiline JSON.
 

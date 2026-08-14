@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 
 use super::collaboration_error;
 
+mod mutation;
+
+pub use mutation::*;
+
 pub const NATIVE_OFFICE_COLLABORATION_PROTOCOL: &str = "a3s.office.collaboration";
 pub const NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION: u32 = 1;
 pub const NATIVE_OFFICE_COLLABORATION_NAMESPACE: &str = "a3s.office";
@@ -276,54 +280,6 @@ pub struct NativeOfficeCollaborationApplyRequest {
     /// Optional authenticated source attribution supplied by a host
     /// transport. This is audit metadata, not an authorization token.
     pub origin: Option<NativeOfficeCollaborationOrigin>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(
-    tag = "type",
-    rename_all = "kebab-case",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub enum NativeOfficeCollaborationMutation {
-    /// Replace the canonical Markdown source while retaining the longest
-    /// common prefix and suffix in the underlying Y.Text.
-    MarkdownReplace { markdown: String },
-    /// Splice the canonical Markdown Y.Text using browser-compatible UTF-16
-    /// offsets. Surrogate pairs may not be split.
-    MarkdownSplice {
-        index_utf16: u32,
-        delete_utf16: u32,
-        insert: String,
-    },
-    /// Replace an exact number of non-overlapping text matches inside the
-    /// canonical ProseMirror `Y.XmlFragment`. Matches may span formatting
-    /// runs inside one `Y.XmlText`, but never cross an embedded object or XML
-    /// text-node boundary.
-    DocumentReplaceText {
-        search: String,
-        replacement: String,
-        expected_matches: u32,
-    },
-    /// Set the conflict-local Document page-color option.
-    DocumentSetPageColor { page_color: String },
-    /// Explicitly clear the conflict-local Document page-color option.
-    DocumentClearPageColor {},
-    /// Set the conflict-local Document track-changes option.
-    DocumentSetTrackChanges { track_changes: bool },
-    /// Explicitly clear the conflict-local Document track-changes option.
-    DocumentClearTrackChanges {},
-}
-
-#[derive(Debug, Clone)]
-pub struct NativeOfficeCollaborationMutationRequest {
-    pub operation_id: String,
-    pub actor_id: String,
-    pub mode: NativeOfficeCollaborationMode,
-    pub expected_artifact_id: String,
-    pub expected_kind: NativeOfficeCollaborationArtifactKind,
-    pub mutation: NativeOfficeCollaborationMutation,
-    pub if_state_vector: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone)]

@@ -6,7 +6,7 @@ use yrs::encoding::read::Cursor;
 use yrs::sync::{Message, SyncMessage};
 use yrs::updates::decoder::{Decode, DecoderV1};
 use yrs::{
-    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, XmlFragment,
+    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, Xml, XmlFragment,
     XmlOut,
 };
 
@@ -140,9 +140,21 @@ fn markdown_source(store: &NativeOfficeCollaborationStore) -> String {
         .get_string(&transaction)
 }
 
-fn document_state(
-    store: &NativeOfficeCollaborationStore,
-) -> (Vec<String>, Option<String>, Option<bool>) {
+#[derive(Debug, PartialEq, Eq)]
+struct DocumentParagraphState {
+    paragraph_id: Option<String>,
+    text_id: Option<String>,
+    text: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct DocumentState {
+    paragraphs: Vec<DocumentParagraphState>,
+    page_color: Option<String>,
+    track_changes: Option<bool>,
+}
+
+fn document_state(store: &NativeOfficeCollaborationStore) -> DocumentState {
     let exported = store.synchronize(None).unwrap();
     let peer = Doc::with_client_id(818_182);
     peer.transact_mut()
@@ -151,10 +163,23 @@ fn document_state(
     let fragment = peer.get_or_insert_xml_fragment("a3s.office.document.content");
     let options = peer.get_or_insert_map("a3s.office.document.options");
     let transaction = peer.transact();
-    let text = fragment
+    let paragraphs = fragment
         .successors(&transaction)
         .filter_map(|node| match node {
-            XmlOut::Text(text) => Some(text.get_string(&transaction)),
+            XmlOut::Element(element) if element.tag().as_ref() == "paragraph" => {
+                let text = element
+                    .children(&transaction)
+                    .filter_map(|child| match child {
+                        XmlOut::Text(text) => Some(text.get_string(&transaction)),
+                        _ => None,
+                    })
+                    .collect::<String>();
+                Some(DocumentParagraphState {
+                    paragraph_id: xml_string_attribute(&element, &transaction, "paragraphId"),
+                    text_id: xml_string_attribute(&element, &transaction, "textId"),
+                    text,
+                })
+            }
             _ => None,
         })
         .collect::<Vec<_>>();
@@ -168,7 +193,31 @@ fn document_state(
         None => None,
         value => panic!("unexpected track-changes value: {value:?}"),
     };
-    (text, page_color, track_changes)
+    DocumentState {
+        paragraphs,
+        page_color,
+        track_changes,
+    }
+}
+
+fn xml_string_attribute<T: ReadTxn>(
+    element: &impl Xml,
+    transaction: &T,
+    name: &str,
+) -> Option<String> {
+    match element.get_attribute(transaction, name) {
+        Some(Out::Any(Any::String(value))) => Some(value.to_string()),
+        None => None,
+        value => panic!("unexpected XML attribute '{name}': {value:?}"),
+    }
+}
+
+fn document_paragraph(paragraph_id: &str, text_id: &str, text: &str) -> DocumentParagraphState {
+    DocumentParagraphState {
+        paragraph_id: Some(paragraph_id.to_owned()),
+        text_id: Some(text_id.to_owned()),
+        text: text.to_owned(),
+    }
 }
 
 fn agent_notes_update(client_id: u64, value: &str) -> Vec<u8> {
@@ -336,11 +385,11 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
         .unwrap();
     assert_eq!(
         document_state(&store),
-        (
-            vec!["Hello 😀 world".to_owned()],
-            Some("#F8FAFC".to_owned()),
-            Some(true),
-        )
+        DocumentState {
+            paragraphs: vec![document_paragraph("00000001", "00000002", "Hello 😀 world",)],
+            page_color: Some("#F8FAFC".to_owned()),
+            track_changes: Some(true),
+        }
     );
 
     let replace_request = document_mutation_request(
@@ -374,13 +423,59 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
         .unwrap();
     assert!(track_changes.state_changed);
     assert_eq!(track_changes.sequence, Some(4));
+
+    let temporary = store
+        .mutate(document_mutation_request(
+            "document-insert-temporary-1",
+            NativeOfficeCollaborationMutation::DocumentInsertParagraph {
+                anchor_paragraph_id: "00000001".to_owned(),
+                position: NativeOfficeCollaborationParagraphPosition::After,
+                paragraph_id: "00000010".to_owned(),
+                text_id: "00000011".to_owned(),
+                text: "Temporary".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert!(temporary.state_changed);
+    assert_eq!(temporary.sequence, Some(5));
+
+    let inserted = store
+        .mutate(document_mutation_request(
+            "document-insert-final-1",
+            NativeOfficeCollaborationMutation::DocumentInsertParagraph {
+                anchor_paragraph_id: "00000010".to_owned(),
+                position: NativeOfficeCollaborationParagraphPosition::After,
+                paragraph_id: "00000012".to_owned(),
+                text_id: "00000013".to_owned(),
+                text: "Native paragraph".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert!(inserted.state_changed);
+    assert_eq!(inserted.sequence, Some(6));
+
+    let deleted = store
+        .mutate(document_mutation_request(
+            "document-delete-temporary-1",
+            NativeOfficeCollaborationMutation::DocumentDeleteParagraph {
+                paragraph_id: "00000010".to_owned(),
+                expected_text_id: "00000011".to_owned(),
+                expected_text: "Temporary".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert!(deleted.state_changed);
+    assert_eq!(deleted.sequence, Some(7));
     assert_eq!(
         document_state(&store),
-        (
-            vec!["Hello 🦀 world".to_owned()],
-            Some("#101828".to_owned()),
-            None,
-        )
+        DocumentState {
+            paragraphs: vec![
+                document_paragraph("00000001", "00000003", "Hello 🦀 world"),
+                document_paragraph("00000012", "00000013", "Native paragraph"),
+            ],
+            page_color: Some("#101828".to_owned()),
+            track_changes: None,
+        }
     );
 
     let replay = store.mutate(replace_request).unwrap();
@@ -388,6 +483,20 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
     assert_eq!(replay.sequence, Some(2));
 
     let before_conflict = store.inspect().unwrap();
+    let delete_conflict = store
+        .mutate(document_mutation_request(
+            "document-delete-conflict",
+            NativeOfficeCollaborationMutation::DocumentDeleteParagraph {
+                paragraph_id: "00000012".to_owned(),
+                expected_text_id: "00000014".to_owned(),
+                expected_text: "Native paragraph".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        delete_conflict.code,
+        "office.collaboration.mutation_match_conflict"
+    );
     let conflict = store
         .mutate(document_mutation_request(
             "document-replace-conflict",
@@ -416,19 +525,22 @@ fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
     let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
     assert_eq!(
         document_state(&reopened),
-        (
-            vec!["Hello 🦀 world".to_owned()],
-            Some("#101828".to_owned()),
-            None,
-        )
+        DocumentState {
+            paragraphs: vec![
+                document_paragraph("00000001", "00000003", "Hello 🦀 world"),
+                document_paragraph("00000012", "00000013", "Native paragraph"),
+            ],
+            page_color: Some("#101828".to_owned()),
+            track_changes: None,
+        }
     );
     let events = reopened
         .events(NativeOfficeCollaborationEventsRequest {
             after_sequence: Some(1),
-            limit: 3,
+            limit: 6,
         })
         .unwrap();
-    assert_eq!(events.updates.len(), 3);
+    assert_eq!(events.updates.len(), 6);
     assert!(events
         .updates
         .iter()

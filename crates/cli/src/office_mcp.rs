@@ -191,7 +191,7 @@ impl NativeOfficeMcpServer {
 
     #[tool(
         name = "office_collaboration_mutate",
-        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits and fail-closed Document text/options edits",
+        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits and fail-closed Document text, direct-section paragraph, and option edits",
         annotations(
             read_only_hint = false,
             destructive_hint = false,

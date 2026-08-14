@@ -40,7 +40,9 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
-        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             NativeOfficeCollaborationArtifactKind::Document
         }
     };
@@ -120,7 +122,9 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
-        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
+        | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             apply_document_mutation(doc, manifest, mutation)?;
         }
     }
@@ -230,7 +234,7 @@ fn utf16_len(value: &str) -> UseResult<u32> {
     u32::try_from(value.encode_utf16().count()).map_err(|_| {
         collaboration_error(
             "office.collaboration.mutation_too_large",
-            "The Markdown source exceeds the supported UTF-16 offset range.",
+            "The collaboration text exceeds the supported UTF-16 offset range.",
         )
     })
 }

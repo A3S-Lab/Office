@@ -78,8 +78,11 @@ Use `office_collaboration_mutate` for local typed Markdown or Document
 operations instead of generating Yjs bytes; keep the operation ID stable and
 use the last inspected state vector as a precondition when rebasing matters.
 Document exact-text replacement requires the current match count and preserves
-the first replaced character's marks; page color and track-changes are separate
-conflict-local option mutations.
+the first replaced character's marks while rotating the affected Word `textId`.
+Direct-section paragraph insertion uses explicit stable IDs; deletion requires
+the current `textId` plus complete text and refuses inline/review content or a
+section's final block. Page color and track-changes are separate conflict-local
+option mutations.
 
 In a CLI-only agent host, run the collaboration event stream in a separate
 process:
@@ -117,7 +120,9 @@ Make local typed Markdown or Document changes from another CLI process with
 `collab mutate`; the running session observes its durable event and publishes
 the incremental update. Markdown splice offsets are UTF-16 code units.
 Document replacement fails closed on a stale match count and never replaces
-the shared HTML/XML tree. Canonical typed mutations require an `edit`-mode
+the shared HTML/XML tree. Paragraph insert/delete mutations are limited to
+direct children of top-level sections and use uppercase eight-digit positive
+31-bit hexadecimal Word IDs. Canonical typed mutations require an `edit`-mode
 replica.
 
 ## Choose the Surface

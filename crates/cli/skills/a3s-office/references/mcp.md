@@ -128,7 +128,8 @@ UTF-16 code-unit offsets and may not split a surrogate pair:
 Document exact replacement edits ProseMirror `Y.XmlText` in place and fails
 unless `expectedMatches` equals the current non-overlapping match count. It may
 cross formatting runs inside one text node, preserves the first replaced
-character's attributes, and never crosses an XML-node or inline-atom boundary:
+character's attributes, rotates the affected Word `textId` once, and never
+crosses an XML-node or inline-atom boundary:
 
 ```json
 {
@@ -147,6 +148,35 @@ character's attributes, and never crosses an XML-node or inline-atom boundary:
   "ifStateVectorBase64": "..."
 }
 ```
+
+Insert a plain paragraph beside a stable paragraph, heading, or document
+caption that is a direct child of a top-level section. Word identities are
+explicit uppercase eight-digit positive 31-bit hexadecimal values:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "operationId": "agent-edit-46",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "report",
+  "kind": "document",
+  "mutation": {
+    "type": "document-insert-paragraph",
+    "anchorParagraphId": "00000001",
+    "position": "after",
+    "paragraphId": "00000012",
+    "textId": "00000013",
+    "text": "Native paragraph"
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Delete through `document-delete-paragraph` only after inspecting and supplying
+`paragraphId`, `expectedTextId`, and the complete `expectedText`. It rejects a
+stale identity/text pair, a section's final block, nested paragraphs, inline
+atoms/embeds, and comment or tracked-change marks.
 
 Use `document-set-page-color` with `pageColor` and
 `document-set-track-changes` with `trackChanges`. Clear a value only through

@@ -18,10 +18,16 @@ const NATIVE_MARKDOWN_SPLICE_BASE64 =
   'AQGh9zYExKH3NgKh9zYDBPCfpoACsvIZAQYVofc2AQEC';
 const BROWSER_DOCUMENT_FIXTURE_BASE64 =
   'AQ+y8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtZG9jdW1lbnQoARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhkb2N1bWVudCgBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUHARthM3Mub2ZmaWNlLmRvY3VtZW50LmNvbnRlbnQDD2RvY3VtZW50U2VjdGlvbgcAsvIZBgMJcGFyYWdyYXBoBwCy8hkHBgQAsvIZCBBIZWxsbyDwn5iAIHdvcmxkKACy8hkHC3BhcmFncmFwaElkAXcIMDAwMDAwMDEoALLyGQcGdGV4dElkAXcIMDAwMDAwMDIoALLyGQYCaWQBdxJkb2N1bWVudC1zZWN0aW9uLTEoARthM3Mub2ZmaWNlLmRvY3VtZW50Lm9wdGlvbnMJcGFnZUNvbG9yAXcHI0Y4RkFGQygBG2Ezcy5vZmZpY2UuZG9jdW1lbnQub3B0aW9ucwx0cmFja0NoYW5nZXMBeAA=';
-const NATIVE_DOCUMENT_REPLACE_BASE64 = 'AQGi9zYAxLLyGRCy8hkRBPCfpoABsvIZAQ8C';
+const NATIVE_DOCUMENT_REPLACE_BASE64 =
+  'AQKi9zYAxLLyGRCy8hkRBPCfpoCosvIZGAF3CDAwMDAwMDAzAbLyGQIPAhgB';
 const NATIVE_DOCUMENT_PAGE_COLOR_BASE64 =
-  'AQGi9zYCqLLyGRoBdwcjMTAxODI4AbLyGQIPAhoB';
-const NATIVE_DOCUMENT_TRACK_CHANGES_BASE64 = 'AAGy8hkCDwIaAg==';
+  'AQGi9zYDqLLyGRoBdwcjMTAxODI4AbLyGQMPAhgBGgE=';
+const NATIVE_DOCUMENT_TRACK_CHANGES_BASE64 = 'AAGy8hkDDwIYARoC';
+const NATIVE_DOCUMENT_INSERT_TEMPORARY_BASE64 =
+  'AQWi9zYEh7LyGQcDCXBhcmFncmFwaCgAovc2BAZ0ZXh0SWQBdwgwMDAwMDAxMSgAovc2BAtwYXJhZ3JhcGhJZAF3CDAwMDAwMDEwBwCi9zYEBgQAovc2BwlUZW1wb3JhcnkBsvIZAw8CGAEaAg==';
+const NATIVE_DOCUMENT_INSERT_FINAL_BASE64 =
+  'AQWi9zYRh6L3NgQDCXBhcmFncmFwaCgAovc2EQtwYXJhZ3JhcGhJZAF3CDAwMDAwMDEyKACi9zYRBnRleHRJZAF3CDAwMDAwMDEzBwCi9zYRBgQAovc2FBBOYXRpdmUgcGFyYWdyYXBoAbLyGQMPAhgBGgI=';
+const NATIVE_DOCUMENT_DELETE_TEMPORARY_BASE64 = 'AAKy8hkDDwIYARoCovc2AQQN';
 
 test('applies UTF-16-safe native typed Markdown updates in browser Yjs', () => {
   const document = new Y.Doc();
@@ -38,7 +44,7 @@ test('applies UTF-16-safe native typed Markdown updates in browser Yjs', () => {
   );
 });
 
-test('applies native typed Document XML and option updates in browser Yjs', () => {
+test('applies native typed Document text, paragraph, and option updates in browser Yjs', () => {
   const browserDocument = new Y.Doc();
   const nativeDocument = new Y.Doc();
   for (const document of [browserDocument, nativeDocument]) {
@@ -52,11 +58,26 @@ test('applies native typed Document XML and option updates in browser Yjs', () =
   if (!(text instanceof Y.XmlText)) {
     throw new Error('Expected the browser Document fixture text node.');
   }
-  text.insert(text.length, ' from browser');
+  browserDocument.transact(() => {
+    text.insert(text.length, ' from browser');
+    const browserParagraph = new Y.XmlElement('paragraph');
+    browserParagraph.setAttribute('paragraphId', '00000020');
+    browserParagraph.setAttribute('textId', '00000021');
+    const browserText = new Y.XmlText();
+    browserText.insert(0, 'Browser paragraph');
+    browserParagraph.insert(0, [browserText]);
+    if (!(section instanceof Y.XmlElement)) {
+      throw new Error('Expected the browser Document fixture section.');
+    }
+    section.insert(1, [browserParagraph]);
+  });
   for (const encoded of [
     NATIVE_DOCUMENT_REPLACE_BASE64,
     NATIVE_DOCUMENT_PAGE_COLOR_BASE64,
     NATIVE_DOCUMENT_TRACK_CHANGES_BASE64,
+    NATIVE_DOCUMENT_INSERT_TEMPORARY_BASE64,
+    NATIVE_DOCUMENT_INSERT_FINAL_BASE64,
+    NATIVE_DOCUMENT_DELETE_TEMPORARY_BASE64,
   ]) {
     Y.applyUpdate(nativeDocument, decodeBase64(encoded));
   }
@@ -73,22 +94,43 @@ test('applies native typed Document XML and option updates in browser Yjs', () =
   );
   for (const content of contents) {
     expect(content.html).toContain('Hello 🦀 world from browser');
+    expect(content.html).toContain('Native paragraph');
+    expect(content.html).toContain('Browser paragraph');
+    expect(content.html).not.toContain('Temporary');
     expect(content.pageColor).toBe('#101828');
     expect(content.trackChanges).toBeUndefined();
-    expect(content.model?.root).toMatchObject({
-      type: 'doc',
-      content: [
-        {
-          type: 'documentSection',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: 'Hello 🦀 world from browser' }],
-            },
-          ],
-        },
-      ],
-    });
+    const paragraphs = content.model?.root.content?.[0]?.content ?? [];
+    expect(
+      paragraphs.map((node) => node.content?.map((item) => item.text).join('')),
+    ).toEqual(
+      expect.arrayContaining([
+        'Hello 🦀 world from browser',
+        'Native paragraph',
+        'Browser paragraph',
+      ]),
+    );
+    expect(paragraphs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          attrs: expect.objectContaining({
+            paragraphId: '00000001',
+            textId: '00000003',
+          }),
+        }),
+        expect.objectContaining({
+          attrs: expect.objectContaining({
+            paragraphId: '00000012',
+            textId: '00000013',
+          }),
+        }),
+        expect.objectContaining({
+          attrs: expect.objectContaining({
+            paragraphId: '00000020',
+            textId: '00000021',
+          }),
+        }),
+      ]),
+    );
   }
   expect(contents[0]?.html).toBe(contents[1]?.html);
 });

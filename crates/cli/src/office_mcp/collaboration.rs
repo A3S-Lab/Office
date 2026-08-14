@@ -5,9 +5,8 @@ use a3s_office::{
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationCheckpointRequest,
     NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationEventBatch,
     NativeOfficeCollaborationEventsRequest, NativeOfficeCollaborationInspection,
-    NativeOfficeCollaborationMode, NativeOfficeCollaborationMutation,
-    NativeOfficeCollaborationMutationRequest, NativeOfficeCollaborationStore,
-    MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+    NativeOfficeCollaborationMode, NativeOfficeCollaborationMutationRequest,
+    NativeOfficeCollaborationStore, MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
     MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
 };
 use a3s_use_core::{UseError, UseResult};
@@ -18,6 +17,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use super::support::output_encoding_error;
+
+mod mutation;
+
+use mutation::OfficeCollaborationMutation;
 
 const DEFAULT_EVENT_LIMIT: usize = 64;
 const MAX_MCP_COLLABORATION_UPDATE_BYTES: usize = 4 * 1024 * 1024;
@@ -79,78 +82,6 @@ impl From<OfficeCollaborationMode> for NativeOfficeCollaborationMode {
             OfficeCollaborationMode::Comment => Self::Comment,
             OfficeCollaborationMode::Suggest => Self::Suggest,
             OfficeCollaborationMode::Edit => Self::Edit,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
-#[serde(
-    tag = "type",
-    rename_all = "kebab-case",
-    rename_all_fields = "camelCase",
-    deny_unknown_fields
-)]
-pub(super) enum OfficeCollaborationMutation {
-    /// Replace the canonical Markdown source using a minimal Y.Text edit.
-    MarkdownReplace { markdown: String },
-    /// Splice Markdown using browser-compatible UTF-16 code-unit offsets.
-    MarkdownSplice {
-        index_utf16: u32,
-        delete_utf16: u32,
-        insert: String,
-    },
-    /// Replace an exact number of non-overlapping Document Y.XmlText matches.
-    DocumentReplaceText {
-        search: String,
-        replacement: String,
-        expected_matches: u32,
-    },
-    /// Set the conflict-local Document page-color option.
-    DocumentSetPageColor { page_color: String },
-    /// Explicitly clear the conflict-local Document page-color option.
-    DocumentClearPageColor {},
-    /// Set the conflict-local Document track-changes option.
-    DocumentSetTrackChanges { track_changes: bool },
-    /// Explicitly clear the conflict-local Document track-changes option.
-    DocumentClearTrackChanges {},
-}
-
-impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
-    fn from(value: OfficeCollaborationMutation) -> Self {
-        match value {
-            OfficeCollaborationMutation::MarkdownReplace { markdown } => {
-                Self::MarkdownReplace { markdown }
-            }
-            OfficeCollaborationMutation::MarkdownSplice {
-                index_utf16,
-                delete_utf16,
-                insert,
-            } => Self::MarkdownSplice {
-                index_utf16,
-                delete_utf16,
-                insert,
-            },
-            OfficeCollaborationMutation::DocumentReplaceText {
-                search,
-                replacement,
-                expected_matches,
-            } => Self::DocumentReplaceText {
-                search,
-                replacement,
-                expected_matches,
-            },
-            OfficeCollaborationMutation::DocumentSetPageColor { page_color } => {
-                Self::DocumentSetPageColor { page_color }
-            }
-            OfficeCollaborationMutation::DocumentClearPageColor { .. } => {
-                Self::DocumentClearPageColor {}
-            }
-            OfficeCollaborationMutation::DocumentSetTrackChanges { track_changes } => {
-                Self::DocumentSetTrackChanges { track_changes }
-            }
-            OfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
-                Self::DocumentClearTrackChanges {}
-            }
         }
     }
 }
@@ -668,6 +599,16 @@ mod tests {
             "document-set-track-changes",
             "trackChanges",
             "document-clear-track-changes",
+            "document-insert-paragraph",
+            "anchorParagraphId",
+            "position",
+            "before",
+            "after",
+            "paragraphId",
+            "textId",
+            "document-delete-paragraph",
+            "expectedTextId",
+            "expectedText",
             "ifStateVectorBase64",
         ] {
             assert!(encoded.contains(expected), "missing {expected}");
@@ -696,6 +637,26 @@ mod tests {
             serde_json::from_value::<OfficeCollaborationMutation>(json!({
                 "type": "document-clear-page-color",
                 "pageColor": "#FFFFFF"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-insert-paragraph",
+                "anchorParagraphId": "00000001",
+                "paragraphId": "00000002",
+                "textId": "00000003",
+                "text": "missing position"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-delete-paragraph",
+                "paragraphId": "00000002",
+                "expectedTextId": "00000003",
+                "expectedText": "value",
+                "force": true
             }))
             .is_err()
         );

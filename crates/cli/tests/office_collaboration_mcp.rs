@@ -6,7 +6,7 @@ use base64::Engine as _;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use yrs::updates::decoder::Decode;
 use yrs::{
-    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, XmlFragment,
+    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, Xml, XmlFragment,
     XmlOut,
 };
 
@@ -107,6 +107,12 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "expectedMatches",
         "document-set-page-color",
         "pageColor",
+        "document-insert-paragraph",
+        "anchorParagraphId",
+        "paragraphId",
+        "textId",
+        "document-delete-paragraph",
+        "expectedTextId",
     ] {
         assert!(mutation_schema.contains(expected), "missing {expected}");
     }
@@ -409,10 +415,42 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         document_page_color["result"]["isError"], true,
         "{document_page_color}"
     );
-    let document_diff = call(
+    let document_inserted = call(
         &mut stdin,
         &mut stdout,
         96,
+        "office_collaboration_mutate",
+        serde_json::json!({
+            "store": document_replica_text,
+            "operationId": "typed-document-insert-1",
+            "actorId": "coding-agent-10",
+            "mode": "edit",
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "mutation": {
+                "type": "document-insert-paragraph",
+                "anchorParagraphId": "00000001",
+                "position": "after",
+                "paragraphId": "00000040",
+                "textId": "00000041",
+                "text": "MCP paragraph"
+            }
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        document_inserted["result"]["isError"], true,
+        "{document_inserted}"
+    );
+    assert_eq!(
+        document_inserted["result"]["structuredContent"]["sequence"],
+        3
+    );
+    let document_diff = call(
+        &mut stdin,
+        &mut stdout,
+        97,
         "office_collaboration_diff",
         serde_json::json!({"store": document_replica_text}),
         TIMEOUT,
@@ -438,15 +476,33 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     let document_fragment = document_peer.get_or_insert_xml_fragment("a3s.office.document.content");
     let document_options = document_peer.get_or_insert_map("a3s.office.document.options");
     let document_transaction = document_peer.transact();
+    let document_paragraphs = document_fragment
+        .successors(&document_transaction)
+        .filter_map(|node| match node {
+            XmlOut::Element(element) if element.tag().as_ref() == "paragraph" => Some((
+                element
+                    .get_attribute(&document_transaction, "paragraphId")
+                    .and_then(|value| match value {
+                        Out::Any(Any::String(value)) => Some(value.to_string()),
+                        _ => None,
+                    }),
+                element
+                    .children(&document_transaction)
+                    .filter_map(|child| match child {
+                        XmlOut::Text(text) => Some(text.get_string(&document_transaction)),
+                        _ => None,
+                    })
+                    .collect::<String>(),
+            )),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
     assert_eq!(
-        document_fragment
-            .successors(&document_transaction)
-            .find_map(|node| match node {
-                XmlOut::Text(text) => Some(text.get_string(&document_transaction)),
-                _ => None,
-            })
-            .unwrap(),
-        "Hello 🦀 world"
+        document_paragraphs,
+        vec![
+            (Some("00000001".to_owned()), "Hello 🦀 world".to_owned()),
+            (Some("00000040".to_owned()), "MCP paragraph".to_owned()),
+        ]
     );
     assert!(matches!(
         document_options.get(&document_transaction, "pageColor"),

@@ -7,7 +7,7 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 use yrs::updates::decoder::Decode;
 use yrs::{
-    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, XmlFragment,
+    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, Xml, XmlFragment,
     XmlOut,
 };
 
@@ -193,7 +193,7 @@ fn cli_requires_explicit_mutation_identity_and_reports_stale_state() {
 }
 
 #[test]
-fn cli_applies_typed_document_text_and_option_mutations() {
+fn cli_applies_typed_document_text_option_and_paragraph_mutations() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("document-agent.replica");
     let input = temp.path().join("browser-document.update");
@@ -266,6 +266,26 @@ fn cli_applies_typed_document_text_and_option_mutations() {
     ]);
     assert_eq!(page_color["data"]["sequence"], 2);
 
+    let inserted = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000030","textId":"00000031","text":"CLI paragraph"}"#,
+        "--actor-id",
+        "coding-agent-8",
+        "--operation-id",
+        "document-insert-paragraph-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(inserted["data"]["sequence"], 3);
+
     let exported = run(&["collab", "diff", replica.to_str().unwrap(), "--json"]);
     let peer = Doc::with_client_id(700_008);
     peer.transact_mut()
@@ -281,14 +301,48 @@ fn cli_applies_typed_document_text_and_option_mutations() {
     let fragment = peer.get_or_insert_xml_fragment("a3s.office.document.content");
     let options = peer.get_or_insert_map("a3s.office.document.options");
     let transaction = peer.transact();
-    let text = fragment
+    let paragraphs = fragment
         .successors(&transaction)
-        .find_map(|node| match node {
-            XmlOut::Text(text) => Some(text.get_string(&transaction)),
+        .filter_map(|node| match node {
+            XmlOut::Element(element) if element.tag().as_ref() == "paragraph" => Some((
+                element
+                    .get_attribute(&transaction, "paragraphId")
+                    .and_then(|value| match value {
+                        Out::Any(Any::String(value)) => Some(value.to_string()),
+                        _ => None,
+                    }),
+                element
+                    .get_attribute(&transaction, "textId")
+                    .and_then(|value| match value {
+                        Out::Any(Any::String(value)) => Some(value.to_string()),
+                        _ => None,
+                    }),
+                element
+                    .children(&transaction)
+                    .filter_map(|child| match child {
+                        XmlOut::Text(text) => Some(text.get_string(&transaction)),
+                        _ => None,
+                    })
+                    .collect::<String>(),
+            )),
             _ => None,
         })
-        .unwrap();
-    assert_eq!(text, "Hello 🦀 world");
+        .collect::<Vec<_>>();
+    assert_eq!(
+        paragraphs,
+        vec![
+            (
+                Some("00000001".to_owned()),
+                Some("00000003".to_owned()),
+                "Hello 🦀 world".to_owned(),
+            ),
+            (
+                Some("00000030".to_owned()),
+                Some("00000031".to_owned()),
+                "CLI paragraph".to_owned(),
+            ),
+        ]
+    );
     assert!(matches!(
         options.get(&transaction, "pageColor"),
         Some(Out::Any(Any::String(value))) if value.as_ref() == "#101828"
