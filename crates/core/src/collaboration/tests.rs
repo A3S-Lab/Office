@@ -60,6 +60,16 @@ fn checkpoint_request(operation_id: &str) -> NativeOfficeCollaborationCheckpoint
     }
 }
 
+fn agent_notes_update(client_id: u64, value: &str) -> Vec<u8> {
+    let peer = Doc::with_client_id(client_id);
+    let text = peer.get_or_insert_text("agent.notes");
+    text.insert(&mut peer.transact_mut(), 0, value);
+    let update = peer
+        .transact()
+        .encode_state_as_update_v1(&StateVector::default());
+    update
+}
+
 #[test]
 fn yjs_fixture_round_trips_through_yrs_state_vectors() {
     let temp = tempfile::tempdir().unwrap();
@@ -283,6 +293,124 @@ fn checkpoint_compacts_updates_but_preserves_operation_receipts() {
         ))
         .unwrap();
     assert!(replay.duplicate);
+}
+
+#[test]
+fn durable_events_are_bounded_resumable_and_auditable() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+
+    let initial = store
+        .events(NativeOfficeCollaborationEventsRequest::default())
+        .unwrap();
+    assert_eq!(initial.starting_sequence, 0);
+    assert_eq!(initial.cursor_sequence, 0);
+    assert!(initial.updates.is_empty());
+
+    let browser_update = STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap();
+    store
+        .apply(apply_request("sync-browser-1", browser_update.clone()))
+        .unwrap();
+    let agent_update = agent_notes_update(777_777, "next");
+    store
+        .apply(apply_request("sync-agent-2", agent_update.clone()))
+        .unwrap();
+
+    let first = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(0),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(first.current_sequence, 2);
+    assert_eq!(first.cursor_sequence, 1);
+    assert!(first.has_more);
+    assert!(first.reset.is_none());
+    assert_eq!(first.updates.len(), 1);
+    let event = &first.updates[0];
+    assert_eq!(event.sequence, 1);
+    assert_eq!(event.operation_id, "sync-browser-1");
+    assert_eq!(
+        event.operation_kind,
+        NativeOfficeCollaborationOperationKind::Synchronize
+    );
+    assert_eq!(event.actor_id, "agent-alpha");
+    assert_eq!(event.actor_kind, NativeOfficeCollaborationActorKind::Agent);
+    assert_eq!(event.update, browser_update);
+    assert_eq!(event.update_bytes, event.update.len() as u64);
+    assert_eq!(event.update_sha256, sha256_hex(&event.update));
+
+    let second = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(first.cursor_sequence),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(second.cursor_sequence, 2);
+    assert!(!second.has_more);
+    assert_eq!(second.updates.len(), 1);
+    assert_eq!(second.updates[0].operation_id, "sync-agent-2");
+    assert_eq!(second.updates[0].update, agent_update);
+
+    let invalid_limit = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(2),
+            limit: 0,
+        })
+        .unwrap_err();
+    assert_eq!(
+        invalid_limit.code,
+        "office.collaboration.event_limit_invalid"
+    );
+    let ahead = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(3),
+            limit: 1,
+        })
+        .unwrap_err();
+    assert_eq!(ahead.code, "office.collaboration.sequence_ahead");
+}
+
+#[test]
+fn compacted_event_history_returns_a_complete_reset_update() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    store
+        .apply(apply_request(
+            "sync-browser-1",
+            STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    store
+        .checkpoint(checkpoint_request("checkpoint-1"))
+        .unwrap();
+
+    let batch = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(0),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(batch.starting_sequence, 0);
+    assert_eq!(batch.checkpoint_sequence, 1);
+    assert_eq!(batch.current_sequence, 1);
+    assert_eq!(batch.cursor_sequence, 1);
+    assert!(!batch.has_more);
+    assert!(batch.updates.is_empty());
+    let reset = batch.reset.unwrap();
+    assert_eq!(reset.sequence, 1);
+    assert_eq!(reset.update_bytes, reset.update.len() as u64);
+    assert_eq!(reset.update_sha256, sha256_hex(&reset.update));
+
+    let peer = Doc::with_client_id(81);
+    peer.transact_mut()
+        .apply_update(Update::decode_v1(&reset.update).unwrap())
+        .unwrap();
+    let transaction = peer.transact();
+    let source = transaction.get_text("a3s.office.markdown.source").unwrap();
+    assert_eq!(source.get_string(&transaction), "# Shared\n\nYjs to Yrs.");
 }
 
 #[test]

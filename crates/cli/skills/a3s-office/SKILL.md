@@ -69,6 +69,22 @@ does not expose OfficeCLI's resident protocol, and does not observe unsaved MCP
 session changes until `office_save`. Stop it with Ctrl+C; use `--timeout-ms`
 when an agent must bound its lifetime.
 
+For a coding agent participating in the shared Yjs document state, run the
+collaboration event stream in a separate process:
+
+```bash
+a3s use office collab watch "$REPLICA" \
+  --after-sequence "$CURSOR" --include-updates --json
+```
+
+Read its JSONL records incrementally. Persist `cursorSequence` only after the
+corresponding `updateBase64` has been handled successfully, then pass that
+cursor back on reconnect. A `reset` record means checkpoint compaction removed
+the requested incremental history: replace/rebuild the local Yjs state from
+its complete update and persist the reset cursor. Bound unattended runs with
+`--max-events` or `--timeout-ms`. Omitting `--after-sequence` starts at the
+current durable sequence and watches only future changes.
+
 ## Choose the Surface
 
 - In an A3S Code `use` worker, use `mcp__use_office__*` and keep the returned
@@ -76,6 +92,8 @@ when an agent must bound its lifetime.
 - Use `mcp__use_office_compat__*` only when the native route lacks the requested
   operation and the compatibility tools are actually present.
 - Use `a3s use office native ... --json` for local automation and scripts.
+- Use `a3s use office collab ... --json` for durable Yjs/Yrs replica exchange
+  and resumable coding-agent event streams.
 - Use `a3s use mcp serve office-native` for typed, stateful agent sessions.
   Read [references/mcp.md](references/mcp.md) before using its session tools.
 - Use the typed Rust API when embedding Office behavior in Rust.

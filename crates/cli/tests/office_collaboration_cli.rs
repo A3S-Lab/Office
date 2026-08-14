@@ -1,9 +1,11 @@
 use std::fs;
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
+use yrs::{Doc, ReadTxn, StateVector, Text, Transact};
 
 const YJS_MARKDOWN_UPDATE_BASE64: &str = "AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A";
 
@@ -242,4 +244,103 @@ fn cli_operation_replay_survives_checkpoint_and_leave() {
             ["initialized"],
         true
     );
+}
+
+#[test]
+fn cli_watch_streams_resumable_jsonl_updates_between_agent_processes() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("agent.replica");
+    let initial = temp.path().join("browser.update");
+    let live = temp.path().join("live-agent.update");
+    fs::write(
+        &initial,
+        STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+    )
+    .unwrap();
+    join(&replica, &initial);
+
+    let peer = Doc::with_client_id(800_008);
+    let notes = peer.get_or_insert_text("agent.notes");
+    notes.insert(&mut peer.transact_mut(), 0, "live change");
+    let update = peer
+        .transact()
+        .encode_state_as_update_v1(&StateVector::default());
+    fs::write(&live, &update).unwrap();
+
+    let mut watcher = Command::new(binary())
+        .args([
+            "collab",
+            "watch",
+            replica.to_str().unwrap(),
+            "--after-sequence",
+            "0",
+            "--poll-ms",
+            "50",
+            "--timeout-ms",
+            "5000",
+            "--max-events",
+            "1",
+            "--include-updates",
+            "--json",
+        ])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdout = BufReader::new(watcher.stdout.take().unwrap());
+    let mut stderr = watcher.stderr.take().unwrap();
+
+    let ready = read_jsonl(&mut stdout);
+    assert_eq!(ready["type"], "ready");
+    assert_eq!(ready["startingSequence"], 0);
+    assert_eq!(ready["cursorSequence"], 0);
+    assert_eq!(ready["artifactId"], "fixture-markdown");
+
+    let applied = run(&[
+        "collab",
+        "apply",
+        replica.to_str().unwrap(),
+        "--input",
+        live.to_str().unwrap(),
+        "--actor-id",
+        "coding-agent-7",
+        "--operation-id",
+        "live-agent-1",
+        "--artifact-id",
+        "fixture-markdown",
+        "--kind",
+        "markdown",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(applied["data"]["sequence"], 1);
+
+    let event = read_jsonl(&mut stdout);
+    assert_eq!(event["type"], "update");
+    assert_eq!(event["sequence"], 1);
+    assert_eq!(event["cursorSequence"], 1);
+    assert_eq!(event["operationId"], "live-agent-1");
+    assert_eq!(event["actorId"], "coding-agent-7");
+    assert_eq!(event["updateBase64"], STANDARD.encode(&update));
+
+    let complete = read_jsonl(&mut stdout);
+    assert_eq!(complete["type"], "complete");
+    assert_eq!(complete["reason"], "max-events");
+    assert_eq!(complete["cursorSequence"], 1);
+    assert_eq!(complete["eventCount"], 1);
+
+    let status = watcher.wait().unwrap();
+    let mut error_text = String::new();
+    stderr.read_to_string(&mut error_text).unwrap();
+    assert!(status.success(), "watch failed: {error_text}");
+}
+
+fn read_jsonl(reader: &mut impl BufRead) -> serde_json::Value {
+    let mut line = String::new();
+    assert!(
+        reader.read_line(&mut line).unwrap() > 0,
+        "watch ended early"
+    );
+    serde_json::from_str(&line).unwrap()
 }

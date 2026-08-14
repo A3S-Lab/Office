@@ -13,6 +13,7 @@ pub const NATIVE_OFFICE_COLLABORATION_STORE_FORMAT: &str = "a3s.office.collabora
 pub const NATIVE_OFFICE_COLLABORATION_STORE_SCHEMA_VERSION: u32 = 1;
 pub const MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES: usize = 1024 * 1024;
+pub const MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH: usize = 256;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -203,6 +204,22 @@ pub struct NativeOfficeCollaborationCheckpointRequest {
     pub if_state_vector: Option<Vec<u8>>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeOfficeCollaborationEventsRequest {
+    /// `None` starts at the current durable sequence and observes new events.
+    pub after_sequence: Option<u64>,
+    pub limit: usize,
+}
+
+impl Default for NativeOfficeCollaborationEventsRequest {
+    fn default() -> Self {
+        Self {
+            after_sequence: None,
+            limit: MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeOfficeCollaborationApplyResult {
@@ -262,6 +279,48 @@ pub struct NativeOfficeCollaborationSyncMessageResult {
     pub state_vector: Vec<u8>,
     pub state_vector_sha256: String,
     pub apply: Option<NativeOfficeCollaborationApplyResult>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationUpdateEvent {
+    pub sequence: u64,
+    pub operation_id: String,
+    pub operation_kind: NativeOfficeCollaborationOperationKind,
+    pub actor_id: String,
+    pub actor_kind: NativeOfficeCollaborationActorKind,
+    pub mode: NativeOfficeCollaborationMode,
+    pub artifact_id: String,
+    pub artifact_kind: NativeOfficeCollaborationArtifactKind,
+    pub payload_sha256: String,
+    pub update: Vec<u8>,
+    pub update_bytes: u64,
+    pub update_sha256: String,
+    pub before_state_vector_sha256: String,
+    pub after_state_vector_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationResetEvent {
+    pub sequence: u64,
+    pub update: Vec<u8>,
+    pub update_bytes: u64,
+    pub update_sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationEventBatch {
+    pub starting_sequence: u64,
+    pub cursor_sequence: u64,
+    pub checkpoint_sequence: u64,
+    pub current_sequence: u64,
+    pub has_more: bool,
+    pub current_state_vector: Vec<u8>,
+    pub current_state_vector_sha256: String,
+    pub reset: Option<NativeOfficeCollaborationResetEvent>,
+    pub updates: Vec<NativeOfficeCollaborationUpdateEvent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

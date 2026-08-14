@@ -173,6 +173,111 @@ impl NativeOfficeCollaborationStore {
         inspection_from_loaded(&self.root, &loaded)
     }
 
+    /// Read a bounded, resumable batch of durable collaboration updates.
+    ///
+    /// A missing cursor starts at the current sequence so callers can begin
+    /// watching without racing a separate inspection. If compaction has
+    /// removed the requested history, `reset` contains a complete Yjs v1
+    /// update and advances the cursor to the current durable sequence.
+    pub fn events(
+        &self,
+        request: NativeOfficeCollaborationEventsRequest,
+    ) -> UseResult<NativeOfficeCollaborationEventBatch> {
+        if request.limit == 0 || request.limit > MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH {
+            return Err(collaboration_error(
+                "office.collaboration.event_limit_invalid",
+                format!(
+                    "The collaboration event batch limit must be between 1 and {MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH}."
+                ),
+            )
+            .with_detail("limit", request.limit)
+            .with_detail(
+                "maximum",
+                MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+            ));
+        }
+
+        let (_lock, loaded) = self.lock_and_load()?;
+        let starting_sequence = request.after_sequence.unwrap_or(loaded.current_sequence);
+        if starting_sequence > loaded.current_sequence {
+            return Err(collaboration_error(
+                "office.collaboration.sequence_ahead",
+                format!(
+                    "The requested collaboration cursor {starting_sequence} is ahead of the current durable sequence {}.",
+                    loaded.current_sequence
+                ),
+            )
+            .with_suggestion(
+                "Inspect the replica and resume from a cursor at or before its current sequence.",
+            )
+            .with_detail("afterSequence", starting_sequence)
+            .with_detail("currentSequence", loaded.current_sequence));
+        }
+
+        let transaction = loaded.doc.transact();
+        let current_state_vector = canonical_state_vector(&transaction.state_vector());
+        let current_state_vector_sha256 = sha256_hex(&current_state_vector);
+        if starting_sequence < loaded.checkpoint_sequence {
+            let update = transaction.encode_state_as_update_v1(&StateVector::default());
+            validate_update_size(&update)?;
+            return Ok(NativeOfficeCollaborationEventBatch {
+                starting_sequence,
+                cursor_sequence: loaded.current_sequence,
+                checkpoint_sequence: loaded.checkpoint_sequence,
+                current_sequence: loaded.current_sequence,
+                has_more: false,
+                current_state_vector,
+                current_state_vector_sha256,
+                reset: Some(NativeOfficeCollaborationResetEvent {
+                    sequence: loaded.current_sequence,
+                    update_bytes: update.len() as u64,
+                    update_sha256: sha256_hex(&update),
+                    update,
+                }),
+                updates: Vec::new(),
+            });
+        }
+        drop(transaction);
+
+        let updates = loaded
+            .update_entries
+            .iter()
+            .filter(|entry| entry.sequence > starting_sequence)
+            .take(request.limit)
+            .map(|entry| NativeOfficeCollaborationUpdateEvent {
+                sequence: entry.sequence,
+                operation_id: entry.operation.operation_id.clone(),
+                operation_kind: entry.operation.kind,
+                actor_id: entry.operation.actor_id.clone(),
+                actor_kind: entry.operation.actor_kind,
+                mode: entry.operation.mode,
+                artifact_id: entry.operation.artifact_id.clone(),
+                artifact_kind: entry.operation.artifact_kind,
+                payload_sha256: entry.operation.payload_sha256.clone(),
+                update: entry.update.clone(),
+                update_bytes: entry.update_bytes,
+                update_sha256: sha256_hex(&entry.update),
+                before_state_vector_sha256: entry.operation.before_state_vector_sha256.clone(),
+                after_state_vector_sha256: entry.operation.after_state_vector_sha256.clone(),
+            })
+            .collect::<Vec<_>>();
+        let cursor_sequence = updates
+            .last()
+            .map_or(starting_sequence, |event| event.sequence);
+
+        Ok(NativeOfficeCollaborationEventBatch {
+            starting_sequence,
+            cursor_sequence,
+            checkpoint_sequence: loaded.checkpoint_sequence,
+            current_sequence: loaded.current_sequence,
+            has_more: cursor_sequence < loaded.current_sequence,
+            current_state_vector,
+            current_state_vector_sha256,
+            reset: None,
+            updates,
+        })
+    }
+
     /// Encode the local state missing from `remote_state_vector`. Supplying
     /// `None` produces a complete standard Yjs v1 update.
     pub fn synchronize(

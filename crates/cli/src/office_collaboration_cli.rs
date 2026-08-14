@@ -1,5 +1,6 @@
 mod arguments;
 mod binary_io;
+mod watch;
 
 use std::path::PathBuf;
 
@@ -34,6 +35,7 @@ const HELP: &str = concat!(
     "  a3s-office collab encode-update --input <update.bin> [--output <message.bin>] [--json]\n",
     "  a3s-office collab handle-message <store> --input <message.bin> [--output <response.bin>|mutation identity options] [--json]\n",
     "  a3s-office collab apply <store> --input <update.bin> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
+    "  a3s-office collab watch <store> [--after-sequence <u64>] [--poll-ms <50..10000>] [--timeout-ms <u64>] [--max-events <u64>] [--include-updates] [--json]\n",
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
@@ -41,6 +43,9 @@ const HELP: &str = concat!(
 );
 
 pub(crate) async fn run(args: &[String]) -> UseResult<CommandOutput> {
+    if matches!(args.first().map(String::as_str), Some("watch")) {
+        return watch::run(args).await;
+    }
     let filtered = args
         .iter()
         .filter(|argument| argument.as_str() != "--json")
@@ -512,7 +517,7 @@ fn help() -> CommandOutput {
     CommandOutput::success(
         HELP,
         json!({
-            "commands": ["create", "join", "inspect", "diff", "sync-step1", "encode-update", "handle-message", "apply", "checkpoint", "leave"],
+            "commands": ["create", "join", "inspect", "diff", "sync-step1", "encode-update", "handle-message", "apply", "watch", "checkpoint", "leave"],
             "encoding": "yjs-v1",
             "syncProtocol": "y-sync-v1",
             "formats": ["document", "markdown", "spreadsheet", "presentation", "pdf"],

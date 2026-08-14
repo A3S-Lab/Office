@@ -40,3 +40,4 @@ url.workspace = true
 [dev-dependencies]
 async-trait.workspace = true
 reqwest.workspace = true
+yrs.workspace = true

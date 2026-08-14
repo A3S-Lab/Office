@@ -55,6 +55,12 @@ a3s-office collab apply .a3s/report.replica \
   --artifact-id report --kind document --mode edit \
   --if-state-vector-input inspected.state-vector --json
 
+# Follow durable updates from other humans or agents. JSON mode is JSONL: one
+# ready, update/reset, and complete record per line. Persist cursorSequence only
+# after consuming that record so a disconnected agent can resume safely.
+a3s-office collab watch .a3s/report.replica \
+  --after-sequence 42 --poll-ms 250 --include-updates --json
+
 # Compact covered update entries into a full-state checkpoint. `leave` performs
 # the same durable checkpoint and releases the invocation lock while retaining
 # the replica for offline reconnect.
@@ -76,10 +82,25 @@ mismatches, malformed or oversized updates, ambiguous browser bootstrap,
 corrupt checkpoints, and sequence gaps are structured failures. State vectors
 and updates are bounded to 1 MiB and 64 MiB respectively.
 
+`collab watch` starts at the replica's current sequence when
+`--after-sequence` is omitted, so it observes only later changes without an
+inspect/watch race. With an explicit cursor it first drains durable backlog,
+then polls for new updates. Each `update` record carries operation, actor,
+mode, artifact, hash, and state-vector audit fields. `--include-updates` adds
+the standard Yjs v1 payload as `updateBase64`; omit it for a metadata-only
+observer. If a checkpoint compacted history older than the requested cursor,
+the stream emits one `reset` record and advances the cursor atomically. With
+`--include-updates`, that record contains the complete current update.
+Participating consumers must replace/rebuild their local state from that reset
+rather than treating it as the missing incremental update. `--max-events` and
+`--timeout-ms` provide bounded coding-agent runs; Ctrl+C or process termination
+ends an unbounded foreground watch.
+
 This foundation currently exposes transport-neutral synchronization, standard
-y-sync `SyncStep1`/`Update` framing, and durable attribution. A host-injected
-transport session, streaming `watch`, typed format-model mutations, MCP tools,
-and `a3s code` event-loop integration are the next Phase 6 milestones.
+y-sync `SyncStep1`/`Update` framing, durable attribution, and resumable JSONL
+event streaming for coding agents. A host-injected transport session, typed
+format-model mutations, MCP tools, and direct `a3s code` event-loop integration
+are the next Phase 6 milestones.
 
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package
