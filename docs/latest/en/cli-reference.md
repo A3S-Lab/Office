@@ -1,5 +1,86 @@
 # A3S Office CLI reference
 
+## Native real-time collaboration replicas
+
+`a3s-office collab` gives a CLI or coding agent a durable local Yrs replica of
+the same versioned document used by browser editors. It exchanges standard
+Yjs v1 updates and state vectors; it does not synchronize by repeatedly
+rewriting DOCX, XLSX, PPTX, PDF, or a universal JSON snapshot. The host remains
+responsible for transport, rooms, authentication, authorization, and update
+retention.
+
+```bash
+# Create an empty local replica. A browser can bootstrap the canonical model
+# later, or use `join --input` to seed it from a received Yjs v1 update.
+a3s-office collab create .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode edit --operation-id create-1 --json
+
+a3s-office collab join .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode edit --operation-id join-1 \
+  --input browser.update --json
+
+# Inspect identity, browser metadata/bootstrap validity, root names, the
+# canonical state vector, checkpoint/log sequences, and durable receipts.
+a3s-office collab inspect .a3s/report.replica --json
+
+# Export a full update, or only the state missing from a remote state vector.
+# Binary paths use no-clobber publication; without --output the update is
+# returned as updateBase64 in the JSON payload.
+a3s-office collab diff .a3s/report.replica \
+  --state-vector-input browser.state-vector \
+  --output agent.update --json
+
+# Build standard y-sync messages for a host-owned WebSocket/IPC transport.
+a3s-office collab sync-step1 .a3s/report.replica \
+  --output sync-step-1.message --json
+a3s-office collab encode-update --input agent.update \
+  --output sync-update.message --json
+a3s-office collab handle-message .a3s/report.replica \
+  --input peer-sync-step-1.message --output local-sync-step-2.message --json
+
+# Receiving SyncStep2/Update is a durable mutation and therefore needs the
+# same full identity contract as `apply`.
+a3s-office collab handle-message .a3s/report.replica \
+  --input peer-update.message --actor-id agent-7 \
+  --operation-id receive-43 --artifact-id report \
+  --kind document --mode edit --json
+
+# Apply a delivered update. The replica identity and mode must match exactly.
+# An optional precondition makes a local agent decision fail if state changed
+# after inspection; the CLI never rebases or retries that ambiguous decision.
+a3s-office collab apply .a3s/report.replica \
+  --input browser.update --actor-id agent-7 --operation-id receive-42 \
+  --artifact-id report --kind document --mode edit \
+  --if-state-vector-input inspected.state-vector --json
+
+# Compact covered update entries into a full-state checkpoint. `leave` performs
+# the same durable checkpoint and releases the invocation lock while retaining
+# the replica for offline reconnect.
+a3s-office collab checkpoint .a3s/report.replica \
+  --actor-id agent-7 --operation-id checkpoint-9 \
+  --artifact-id report --kind document --mode edit --json
+a3s-office collab leave .a3s/report.replica \
+  --actor-id agent-7 --operation-id leave-10 \
+  --artifact-id report --kind document --mode edit --json
+```
+
+Every replica stores one stable 53-bit Yjs-compatible client ID plus actor ID,
+actor kind (`human`, `agent`, or `system`), mode (`view`, `comment`, `suggest`,
+or `edit`), artifact ID/kind, and namespace. Apply, checkpoint, and leave
+require a stable operation ID. Repeating the identical operation is
+idempotent; reusing its ID for another payload returns
+`office.collaboration.operation_conflict`. Stale vectors, identity/mode
+mismatches, malformed or oversized updates, ambiguous browser bootstrap,
+corrupt checkpoints, and sequence gaps are structured failures. State vectors
+and updates are bounded to 1 MiB and 64 MiB respectively.
+
+This foundation currently exposes transport-neutral synchronization, standard
+y-sync `SyncStep1`/`Update` framing, and durable attribution. A host-injected
+transport session, streaming `watch`, typed format-model mutations, MCP tools,
+and `a3s code` event-loop integration are the next Phase 6 milestones.
+
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package
 admission, byte-preserving XML, content types, a safe relationship graph,

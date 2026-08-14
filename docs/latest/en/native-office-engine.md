@@ -118,6 +118,26 @@ browser-independent. The root `a3s-use` facade implements screenshots by
 injecting the existing `a3s-use-browser` `PageRenderer` contract instead of
 embedding a second browser runtime in the Office engine.
 
+Native collaboration is a second, format-model synchronization boundary next
+to local OOXML mutation. The Rust core uses Yrs and shares the browser's
+`a3s.office.collaboration` protocol; it accepts and emits standard Yjs v1
+updates/state vectors rather than inventing an A3S CRDT envelope. One durable
+replica directory binds artifact, actor, mode, namespace, and client identity.
+Checksummed append-only entries and full-state checkpoints are published
+atomically, replayed under an exclusive cross-process lock, and rejected on
+sequence gaps or corruption. Compaction first archives immutable operation
+receipts, so a process restart preserves both CRDT convergence and stable
+operation-ID idempotency.
+
+The current `a3s-office collab` surface is deliberately transport-neutral and
+non-interactive. It can create/join/inspect a replica, compute a state-vector
+diff, apply a received update with an optional stale-state guard, checkpoint,
+and leave. It can also encode standard y-sync `SyncStep1` and `Update` messages
+for a host-owned transport. It never opens a network provider or polls a whole
+Office file. Typed Office-model mutation, a host-injected transport session,
+watch streams, MCP, and `a3s code` projection remain later collaboration
+milestones.
+
 ## Safety and fidelity invariants
 
 1. Opening a document never downloads a relationship target or executes a

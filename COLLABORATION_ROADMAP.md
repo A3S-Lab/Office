@@ -242,18 +242,43 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 ### Phase 6: CLI, MCP, and coding agents
 
-- Add Yrs with Yjs-compatible client IDs and standard sync protocol support to
-  the native Office workspace.
-- Persist append-only updates plus periodic snapshots/state vectors with
-  bounded compaction and crash recovery.
-- Expose typed commands to create, join, inspect, watch, synchronize, mutate,
-  checkpoint, and leave sessions. Commands emit machine-readable progress and
-  never require a TTY.
-- Give every agent a stable actor ID and require an operation ID, expected
-  artifact identity, permission mode, and optional state-vector precondition
-  for mutations.
-- Return structured conflict, stale-state, and permission errors. Ambiguous
-  Office mutations are never automatically retried.
+Status: native Yrs replica store and non-interactive CLI foundation
+implemented; typed Office mutations, watch streams, MCP, and `a3s code`
+projection are pending.
+
+- Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
+  Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
+  the browser package.
+- Native replicas persist immutable, checksummed update entries and periodic
+  full-state checkpoints/state vectors. Atomic no-clobber publication,
+  contiguous sequence validation, startup replay, bounded automatic/manual
+  compaction, and durable operation receipts provide crash recovery.
+- `a3s-office collab` exposes non-interactive `create`, `join`, `inspect`,
+  `diff`/`synchronize`, `apply`, `checkpoint`, and `leave` commands with JSON
+  output and optional no-clobber binary output. `sync-step1`, `encode-update`,
+  and `handle-message` expose standard y-sync document handshakes; mutating
+  SyncStep2/Update messages use the same identity and receipt path. `watch` and
+  typed Office-model mutation remain pending.
+- Each replica binds one stable actor ID, actor kind, permission mode, artifact
+  identity/kind, namespace, and client ID. Apply/checkpoint/leave require the
+  same identity plus a stable operation ID and accept an optional state-vector
+  precondition.
+- Durable operation receipts make identical retries idempotent and reject an
+  operation ID reused for another payload. Artifact, kind, actor, mode,
+  stale-state, invalid update, ambiguous bootstrap, corrupt log, and incomplete
+  log failures are structured and fail closed.
+- Cross-language tests import a fixture emitted by Yjs, validate browser
+  metadata/bootstrap roots in Yrs, and apply the exported update to another
+  Yrs peer. Core and process tests cover restart, checkpoint compaction,
+  duplicate operations, stale preconditions, identity mismatches, and missing
+  log entries.
+
+Remaining:
+
+- Add a host-injected transport session around the implemented y-sync message
+  framing; stream changes without scanning the source Office file.
+- Add typed format-model mutations with edit/comment/suggest authorization and
+  preserve actor/operation origins across browser/native audit records.
 - Project the same commands into MCP and `a3s code` tools; stream remote changes
   into the agent event loop without polling the whole file.
 

@@ -1,6 +1,7 @@
 //! Standalone command-line and preview surfaces for A3S Office.
 
 mod office_artifact;
+mod office_collaboration_cli;
 mod office_mcp;
 mod office_native_cli;
 #[cfg(feature = "browser")]
@@ -51,6 +52,7 @@ pub async fn run(args: &[String]) -> UseResult<CommandOutput> {
             Ok(CommandOutput::silent())
         }
         Some("native") => office_native_cli::run(&args[1..]).await,
+        Some("collab" | "collaboration") => office_collaboration_cli::run(&args[1..]).await,
         Some("skills") => office_skills::run(&args[1..]).await,
         Some(_) => office_native_cli::run(args).await,
     }
@@ -110,12 +112,13 @@ fn help() -> CommandOutput {
             "usage:\n",
             "  a3s-office <command> [args]\n",
             "  a3s-office native <command> [args]\n",
+            "  a3s-office collab <command> [args]\n",
             "  a3s-office skills list|get|path [args]\n",
             "  a3s-office mcp\n\n",
-            "Run 'a3s-office native --help' for document commands."
+            "Run 'a3s-office native --help' for document commands or 'a3s-office collab --help' for collaboration commands."
         ),
         serde_json::json!({
-            "commands": ["native", "skills", "mcp"],
+            "commands": ["native", "collab", "skills", "mcp"],
             "formats": ["docx", "xlsx", "pptx"]
         }),
     )

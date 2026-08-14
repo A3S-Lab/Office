@@ -12,6 +12,7 @@ use a3s_use_core::{UseError, UseResult, UseSessionId};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
+mod collaboration;
 mod command;
 mod discovery;
 mod editor;
@@ -36,6 +37,21 @@ mod xml;
 mod xml_edit;
 mod xml_tree;
 
+pub use collaboration::{
+    NativeOfficeCollaborationActorKind, NativeOfficeCollaborationApplyRequest,
+    NativeOfficeCollaborationApplyResult, NativeOfficeCollaborationArtifactKind,
+    NativeOfficeCollaborationCheckpointRequest, NativeOfficeCollaborationCheckpointResult,
+    NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationInspection,
+    NativeOfficeCollaborationManifest, NativeOfficeCollaborationMetadata,
+    NativeOfficeCollaborationMode, NativeOfficeCollaborationOperationKind,
+    NativeOfficeCollaborationStateVectorEntry, NativeOfficeCollaborationStore,
+    NativeOfficeCollaborationSyncMessageKind, NativeOfficeCollaborationSyncMessageResult,
+    NativeOfficeCollaborationSyncResult, NativeOfficeCollaborationSyncStepResult,
+    MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+    MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES, NATIVE_OFFICE_COLLABORATION_NAMESPACE,
+    NATIVE_OFFICE_COLLABORATION_PROTOCOL, NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
+    NATIVE_OFFICE_COLLABORATION_STORE_FORMAT, NATIVE_OFFICE_COLLABORATION_STORE_SCHEMA_VERSION,
+};
 pub use command::{delegate_native, OfficeCliProvider};
 pub use discovery::{
     discover_office_cli, doctor, office_status, OfficeInstallSource, OfficeRuntimeStatus,

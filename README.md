@@ -134,7 +134,9 @@ The images below are committed visual-regression baselines from the real
 - **AI without UI scraping** — Typed agent ports and host-defined selection
   actions receive structured context and editing commands.
 - **Automation outside the browser** — The native Rust CLI, standard MCP
-  server, and Office Skill share bounded mutation contracts.
+  server, and Office Skill share bounded mutation contracts. Coding agents can
+  also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
+  vectors, and checkpoint without replacing a whole Office file.
 
 ## Quick start
 
@@ -944,11 +946,21 @@ cargo run -p a3s-office-cli -- set report.docx /body --find Draft --replace Fina
 
 # Start the standard MCP server
 cargo run -p a3s-office-cli -- mcp
+
+# Join a browser-owned Yjs document as a durable coding-agent replica.
+cargo run -p a3s-office-cli -- collab join .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --operation-id join-1 --input browser.update --json
+
+# Export only the CRDT state missing from a remote state vector.
+cargo run -p a3s-office-cli -- collab diff .a3s/report.replica \
+  --state-vector-input browser.state-vector --output agent.update --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
 bounded contracts. They inspect and modify files without launching desktop
-Office or scraping editor UI.
+Office or scraping editor UI. The collaboration replica is transport-neutral:
+the host still owns rooms, authentication, authorization, and delivery.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
