@@ -3,6 +3,7 @@
 ## Contents
 
 - [Session Workflow](#session-workflow)
+- [Real-time Collaboration](#real-time-collaboration)
 - [Typed Mutations](#typed-mutations)
 - [Views and Compatibility](#views-and-compatibility)
 
@@ -31,10 +32,80 @@ Use its typed tools rather than passing shell command strings:
 - `office_list` reports sessions owned by this server process.
 - `office_install_compat` prepares the optional pinned compatibility provider;
   in Code it must pass parent confirmation before network access.
+- `office_collaboration_create`, `office_collaboration_inspect`,
+  `office_collaboration_diff`, `office_collaboration_events`,
+  `office_collaboration_apply`, and `office_collaboration_checkpoint` expose a
+  durable Yjs/Yrs replica without opening an OOXML session.
 
 Mutations remain unsaved until `office_save`. Do not discard a dirty session
 unless the user explicitly accepts losing its changes. Release the session as
 soon as the workflow finishes.
+
+## Real-time Collaboration
+
+Collaboration tools operate on the same durable replica as `a3s-office collab`
+and are intentionally independent from in-memory OOXML sessions. They exchange
+standard Yjs v1 updates and state vectors; room transport, awareness, identity
+authentication, and authorization remain host responsibilities.
+
+Create an empty replica, or include `initialUpdateBase64` to join state received
+from a browser peer:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "artifactId": "report",
+  "kind": "document",
+  "actorId": "agent-7",
+  "actorKind": "agent",
+  "mode": "edit",
+  "operationId": "join-1",
+  "initialUpdateBase64": "..."
+}
+```
+
+Call `office_collaboration_events` repeatedly. Omit `afterSequence` only on the
+first call to start atomically at the current durable sequence. Thereafter pass
+the last successfully consumed `cursorSequence`:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "afterSequence": 42,
+  "limit": 64,
+  "includeUpdates": true
+}
+```
+
+Persist a cursor only after handling every returned update. If `hasMore=true`,
+poll immediately; otherwise wait according to the host's cancellation and
+backoff policy. A `reset` means checkpoint compaction removed the requested
+incremental history. With `includeUpdates=true`, rebuild the local Yjs state
+from its complete `updateBase64`, then persist the reset cursor.
+
+Deliver a local or remote update with a stable operation ID. Exact replay is
+idempotent; reusing the ID for another payload fails closed. Supply
+`ifStateVectorBase64` when the agent's decision must fail if shared state has
+changed since inspection:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "operationId": "agent-edit-43",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "report",
+  "kind": "document",
+  "updateBase64": "...",
+  "ifStateVectorBase64": "..."
+}
+```
+
+The MCP JSON transport accepts update inputs up to 4 MiB and all structured
+results remain under the server's 8 MiB bound. Reduce the event `limit` when a
+batch is too large. Use the CLI binary-file route for larger updates or full
+state snapshots. `office_collaboration_checkpoint` compacts covered entries;
+set `leave=true` only when recording an explicit durable leave operation.
 
 ## Typed Mutations
 

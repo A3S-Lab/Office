@@ -98,9 +98,10 @@ ends an unbounded foreground watch.
 
 This foundation currently exposes transport-neutral synchronization, standard
 y-sync `SyncStep1`/`Update` framing, durable attribution, and resumable JSONL
-event streaming for coding agents. A host-injected transport session, typed
-format-model mutations, MCP tools, and direct `a3s code` event-loop integration
-are the next Phase 6 milestones.
+event streaming for coding agents. The standard native MCP server exposes the
+same create, inspect, diff, resumable event, apply, and checkpoint lifecycle to
+an A3S Code `use` worker without shell access. A host-injected transport session
+and typed format-model collaboration mutations are the next Phase 6 milestones.
 
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package

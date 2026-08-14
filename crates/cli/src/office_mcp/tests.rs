@@ -24,6 +24,12 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         [
             "office_apply_batch",
             "office_close",
+            "office_collaboration_apply",
+            "office_collaboration_checkpoint",
+            "office_collaboration_create",
+            "office_collaboration_diff",
+            "office_collaboration_events",
+            "office_collaboration_inspect",
             "office_create",
             "office_get",
             "office_install_compat",
@@ -51,6 +57,9 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         "office_get",
         "office_query",
         "office_raw_xml",
+        "office_collaboration_diff",
+        "office_collaboration_events",
+        "office_collaboration_inspect",
     ] {
         let annotation = annotations(name);
         assert_eq!(annotation.read_only_hint, Some(true), "{name}");
@@ -60,6 +69,15 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         annotations("office_apply_batch").read_only_hint,
         Some(false)
     );
+    for name in [
+        "office_collaboration_apply",
+        "office_collaboration_checkpoint",
+        "office_collaboration_create",
+    ] {
+        let annotation = annotations(name);
+        assert_eq!(annotation.read_only_hint, Some(false), "{name}");
+        assert_eq!(annotation.idempotent_hint, Some(true), "{name}");
+    }
     assert_eq!(annotations("office_save").destructive_hint, Some(true));
 }
 

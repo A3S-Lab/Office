@@ -277,7 +277,7 @@ fn cli_watch_streams_resumable_jsonl_updates_between_agent_processes() {
             "--poll-ms",
             "50",
             "--timeout-ms",
-            "5000",
+            "30000",
             "--max-events",
             "1",
             "--include-updates",

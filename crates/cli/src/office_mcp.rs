@@ -1,5 +1,6 @@
 //! Explicit preview MCP surface for the in-process native Office engine.
 
+mod collaboration;
 mod input;
 mod session;
 mod support;
@@ -101,6 +102,108 @@ impl NativeOfficeMcpServer {
         }
         .await;
         Ok(tool_result(result))
+    }
+
+    #[tool(
+        name = "office_collaboration_create",
+        description = "Create or join an idempotent durable Yjs/Yrs Office collaboration replica for a human or coding agent",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_create(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationCreateInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::create(input).await))
+    }
+
+    #[tool(
+        name = "office_collaboration_inspect",
+        description = "Inspect one durable Office collaboration replica, including identity, Yjs roots, state vector, checkpoints, and audit receipts",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_inspect(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationStoreInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::inspect(input).await))
+    }
+
+    #[tool(
+        name = "office_collaboration_diff",
+        description = "Encode the complete local Yjs state or the update missing from a remote state vector",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_diff(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationDiffInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::diff(input).await))
+    }
+
+    #[tool(
+        name = "office_collaboration_events",
+        description = "Poll a bounded resumable batch of durable collaboration updates; persist cursorSequence only after consuming each result",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_events(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationEventsInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::events(input).await))
+    }
+
+    #[tool(
+        name = "office_collaboration_apply",
+        description = "Idempotently apply one delivered standard Yjs v1 update with explicit actor, artifact, mode, and optional state-vector precondition",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_apply(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationApplyInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::apply(input).await))
+    }
+
+    #[tool(
+        name = "office_collaboration_checkpoint",
+        description = "Idempotently checkpoint or leave a durable collaboration replica while preserving reconnect state and operation receipts",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_checkpoint(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationCheckpointInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::checkpoint(input).await))
     }
 
     #[tool(
@@ -555,7 +658,7 @@ impl ServerHandler for NativeOfficeMcpServer {
                 website_url: Some("https://github.com/A3S-Lab/Office".to_string()),
             },
             instructions: Some(
-                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready. Create or open a native session first. Mutations remain in memory until office_save; office_close refuses unsaved changes unless discard=true."
+                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, and apply updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
                     .to_string(),
             ),
             ..Default::default()

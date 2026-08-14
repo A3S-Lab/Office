@@ -129,14 +129,16 @@ sequence gaps or corruption. Compaction first archives immutable operation
 receipts, so a process restart preserves both CRDT convergence and stable
 operation-ID idempotency.
 
-The current `a3s-office collab` surface is deliberately transport-neutral and
-non-interactive. It can create/join/inspect a replica, compute a state-vector
-diff, apply a received update with an optional stale-state guard, checkpoint,
-and leave. It can also encode standard y-sync `SyncStep1` and `Update` messages
-for a host-owned transport. It never opens a network provider or polls a whole
-Office file. Typed Office-model mutation, a host-injected transport session,
-watch streams, MCP, and `a3s code` projection remain later collaboration
-milestones.
+The current collaboration surface is deliberately transport-neutral. Coding
+agents can create or join, inspect, diff from a remote state vector, apply
+updates with optimistic vector preconditions, checkpoint, replay, leave, and
+consume a resumable durable event cursor. The CLI provides a JSONL watch
+stream; the standard native MCP server provides bounded polling tools that
+project into an A3S Code `use` worker. The CLI can also encode standard y-sync
+`SyncStep1` and `Update` messages for a host-owned transport. Neither surface
+opens a network provider or polls a whole Office file. Typed Office-model
+collaboration mutations and a host-injected transport/presence adapter remain
+later milestones.
 
 ## Safety and fidelity invariants
 

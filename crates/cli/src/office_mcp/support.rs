@@ -73,7 +73,9 @@ pub(super) fn tool_result(result: UseResult<serde_json::Value>) -> CallToolResul
                         bytes.len()
                     ),
                 )
-                .with_suggestion("Narrow the semantic path, query selector, or requested view."),
+                .with_suggestion(
+                    "Narrow the semantic path, query selector, requested view, or collaboration event limit. Use the collaboration CLI binary-file route for larger Yjs payloads.",
+                ),
             ),
             Err(error) => tool_error(output_encoding_error(error)),
         },

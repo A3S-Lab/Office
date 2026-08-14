@@ -1,6 +1,6 @@
 ---
 name: a3s-office
-description: Inspect, create, edit, validate, merge, render, and live-preview .docx, .xlsx, and .pptx files through the A3S Use native CLI or standard MCP server, with explicit fallback to its pinned OfficeCLI compatibility route for unpromoted operations. Use when an agent needs to work with Microsoft Office OOXML documents, automate Word, Spreadsheet, or Presentation changes, diagnose document issues, preview saved changes, or choose between native and compatibility Office capabilities.
+description: Inspect, create, edit, validate, merge, render, live-preview, and collaboratively synchronize .docx, .xlsx, and .pptx Office artifacts through the A3S Use native CLI or standard MCP server, with explicit fallback to its pinned OfficeCLI compatibility route for unpromoted operations. Use when an agent needs to work with Microsoft Office OOXML documents, participate in durable Yjs collaboration, automate Word, Spreadsheet, or Presentation changes, diagnose document issues, preview saved changes, or choose between native and compatibility Office capabilities.
 ---
 
 # A3S Office
@@ -69,8 +69,14 @@ does not expose OfficeCLI's resident protocol, and does not observe unsaved MCP
 session changes until `office_save`. Stop it with Ctrl+C; use `--timeout-ms`
 when an agent must bound its lifetime.
 
-For a coding agent participating in the shared Yjs document state, run the
-collaboration event stream in a separate process:
+In an A3S Code `use` worker, participate in shared Yjs state through the
+available `mcp__use_office__office_collaboration_*` tools. Create or join the
+replica once, then poll `office_collaboration_events` with the last successfully
+consumed `cursorSequence`; use `includeUpdates=true` when the agent needs to
+apply the update locally. No OOXML session is required for collaboration.
+
+In a CLI-only agent host, run the collaboration event stream in a separate
+process:
 
 ```bash
 a3s use office collab watch "$REPLICA" \
