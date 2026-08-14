@@ -44,9 +44,10 @@ pub enum NativeOfficeCollaborationMutation {
     DocumentSetTrackChanges { track_changes: bool },
     /// Explicitly clear the conflict-local Document track-changes option.
     DocumentClearTrackChanges {},
-    /// Insert one plain paragraph next to a uniquely identified direct child
-    /// of a Document section. New Word paragraph identities are explicit so
-    /// independent native replicas encode the same logical operation.
+    /// Insert one plain paragraph next to a uniquely identified paragraph in
+    /// a supported section, list-item, table-cell, or blockquote container.
+    /// New Word identities are explicit so independent native replicas encode
+    /// the same logical operation.
     DocumentInsertParagraph {
         anchor_paragraph_id: String,
         position: NativeOfficeCollaborationParagraphPosition,
@@ -54,8 +55,8 @@ pub enum NativeOfficeCollaborationMutation {
         text_id: String,
         text: String,
     },
-    /// Delete one direct-section plain paragraph after verifying its current
-    /// Word text identity and complete visible text.
+    /// Delete one plain paragraph from a supported structural container after
+    /// verifying its current Word text identity and complete visible text.
     DocumentDeleteParagraph {
         paragraph_id: String,
         expected_text_id: String,

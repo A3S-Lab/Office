@@ -988,7 +988,8 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --operation-id edit-43 \
   --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' --json
 
-# Insert one plain paragraph beside a stable direct-section paragraph.
+# Insert one plain paragraph beside a stable paragraph in a supported block
+# container, including a nested list item or table cell.
 cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --artifact-id report --kind document --actor-id agent-7 --mode edit \
   --operation-id edit-44 \
@@ -1009,9 +1010,13 @@ including reconnect handshakes, durable agent updates, and remote-echo
 suppression, without opening its own network provider. Typed Markdown
 replace/splice operations use browser UTF-16 offsets. Document mutations edit
 ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, insert a
-plain direct-section paragraph beside a stable paragraph identity, or delete
-one only after its complete text and `textId` still match. Deletion rejects the
-last block in a section and paragraphs containing inline atoms or review marks.
+plain paragraph beside a stable identity in a bounded section, list-item,
+table-cell/header, or blockquote container, or delete one only after its
+complete text and `textId` still match. Required container blocks and each list
+item's leading paragraph are preserved. Text or structural edits inside a
+table rotate every identified ancestor row's `rowTextId`; incomplete row
+identities fail before any write. Paragraphs containing inline atoms or review
+marks remain guarded.
 Page-color/track-changes sidecars remain independent conflict-local fields. All
 mutations use the same durable event path. Validated browser source origins
 survive native persistence and are re-emitted separately from host delivery

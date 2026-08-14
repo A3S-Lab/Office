@@ -48,7 +48,7 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
     DocumentSetTrackChanges { track_changes: bool },
     /// Explicitly clear the conflict-local Document track-changes option.
     DocumentClearTrackChanges {},
-    /// Insert a plain paragraph before or after one stable direct-section paragraph.
+    /// Insert a plain paragraph beside a stable paragraph in a supported block container.
     DocumentInsertParagraph {
         anchor_paragraph_id: String,
         position: OfficeCollaborationParagraphPosition,
@@ -56,7 +56,7 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         text_id: String,
         text: String,
     },
-    /// Delete a plain direct-section paragraph with exact identity/text guards.
+    /// Delete a plain paragraph from a supported block container with exact guards.
     DocumentDeleteParagraph {
         paragraph_id: String,
         expected_text_id: String,

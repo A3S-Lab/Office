@@ -78,8 +78,9 @@ a3s-office collab mutate .a3s/report.replica \
   --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
   --json
 
-# Insert a plain paragraph after a stable direct-section paragraph. Word IDs
-# are explicit uppercase eight-digit positive 31-bit hexadecimal values.
+# Insert a plain paragraph after a stable paragraph in a supported section,
+# list-item, table-cell/header, or blockquote container. Word IDs are explicit
+# uppercase eight-digit positive 31-bit hexadecimal values.
 a3s-office collab mutate .a3s/report.replica \
   --actor-id agent-7 --operation-id edit-45 --artifact-id report \
   --kind document --mode edit \
@@ -133,11 +134,16 @@ replaced character's attributes, and fails unless `expectedMatches` equals the
 current non-overlapping match count. A changed paragraph rotates its Word
 `textId` once. Paragraph insertion creates one plain paragraph immediately
 before or after a uniquely identified paragraph, heading, or document caption
-that is a direct child of a top-level section. The supplied `paragraphId` must
-be unused. Deletion is limited to plain direct-section paragraphs and requires
-the current `textId` and complete visible text; it rejects the section's last
-block, inline atoms/embeds, and comment or tracked-change marks. All paragraph
-identities use uppercase eight-digit positive 31-bit hexadecimal values.
+whose direct container is a top-level section, nested list item, table cell or
+header, or blockquote along a bounded path to a top-level section. The supplied
+`paragraphId` must be unused. Deletion is limited to plain paragraphs in those
+containers and requires the current `textId` and complete visible text; it
+preserves each required container block and a list item's leading paragraph,
+and rejects inline atoms/embeds and comment or tracked-change marks. Text or
+structural edits inside tables rotate every identified ancestor table row's
+`rowTextId` in the same transaction; partial row identities fail before any
+write. All Word identities use uppercase eight-digit positive 31-bit
+hexadecimal values.
 Clearing an option requires its explicit clear variant; a missing set field is
 rejected by the closed schema. All typed canonical mutations require an
 `edit`-mode replica and fail without appending a log entry when their

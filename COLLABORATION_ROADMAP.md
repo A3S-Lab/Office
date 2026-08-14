@@ -99,7 +99,7 @@ Remaining before this phase is production complete:
 
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, and native
-text/options/direct-section paragraph mutations implemented; rich native
+text/options/bounded structural paragraph mutations implemented; rich native
 parity and the remaining review authorization matrix are pending.
 
 - TipTap is bound to `document.content` through
@@ -121,23 +121,28 @@ parity and the remaining review authorization matrix are pending.
   replacing the shared HTML/XML tree. The replacement preserves the first
   deleted character's rich-text attributes and rotates the affected Word
   `textId` once. They can also insert a plain paragraph before or after a
-  uniquely identified direct-section paragraph and delete a plain paragraph
-  only when its complete text and current `textId` still match. Page color and
-  track-changes settings mutate their conflict-local `document.options`
+  uniquely identified paragraph, heading, or document caption in a bounded
+  top-level section, nested list item, table cell/header, or blockquote path,
+  and delete a plain paragraph only when its complete text and current
+  `textId` still match. Required container blocks and list-leading paragraphs
+  are preserved. Any text or structural edit inside a table rotates every
+  identified ancestor row's `rowTextId` in the same transaction. Page color
+  and track-changes settings mutate their conflict-local `document.options`
   entries.
 - Deterministic browser-to-Yrs and Yrs-to-browser fixtures prove that native
   text/options/paragraph updates remain readable by the Office TipTap schema
   after durable restart and replay, including concurrent native and browser
-  paragraph insertion.
+  paragraph insertion across nested lists and nested tables. Real CLI and MCP
+  subprocess tests exercise the same bounded structural mutations.
 
 Remaining:
 
 - Add suggestion-only authorization and durable accept/reject decision audit
   records; `comment` and `suggest` remain read-only until those models exist.
-- Prove concurrent text, direct-section paragraph, table, list, section,
-  comment, and revision workflows, plus DOCX import/export after merged edits.
-- Expand native convergence to nested/list/table paragraph structures, tables,
-  lists, sections, comments, and tracked revisions.
+- Prove concurrent full-table, list-restructure, section, comment, and revision
+  workflows, plus DOCX import/export after merged edits.
+- Expand native convergence from bounded paragraph edits to complete table,
+  list, and section operations, comments, and tracked revisions.
 
 Exit criterion: two browsers and one native client converge on document
 content and review state; local undo never removes a remote change; a DOCX
@@ -312,10 +317,11 @@ mutations and native presence projection are pending.
   writes canonical `Y.Text` with browser UTF-16 offsets. Document exact-match
   replacement edits ProseMirror `Y.XmlText` in place, preserves the first
   replaced character's formatting attributes, rotates Word `textId`, and fails
-  if the declared match count is stale. Direct-section paragraph insert/delete
-  uses explicit stable identities and exact deletion guards; page color and
-  track-changes write their typed option fields. All emit minimal incremental
-  updates through the same durable
+  if the declared match count is stale. Bounded section/list/table/blockquote
+  paragraph insert/delete uses explicit stable identities and exact deletion
+  guards, while table-contained edits rotate all ancestor row text identities;
+  page color and track-changes write their typed option fields. All emit minimal
+  incremental updates through the same durable
   receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
   updates remain receivable in every mode so read-only peers still converge.
 - Durable operation receipts make identical retries idempotent and reject an

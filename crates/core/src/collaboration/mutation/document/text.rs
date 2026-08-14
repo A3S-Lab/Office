@@ -4,7 +4,10 @@ use yrs::{Any, Out, ReadTxn, Text, Transact, Xml, XmlElementRef, XmlFragment, Xm
 
 use super::super::super::{collaboration_error, NativeOfficeCollaborationManifest};
 use super::super::utf16_len;
-use super::identity::paragraph_text_id_rotations;
+use super::identity::{
+    ancestor_table_rows, paragraph_text_id_rotations, table_row_text_id_rotations,
+    ROW_TEXT_ID_ATTRIBUTE,
+};
 
 const MAX_DOCUMENT_TEXT_REPLACEMENTS: u32 = 4_096;
 
@@ -81,6 +84,8 @@ pub(super) fn replace_document_text(
         }
     }
     let text_id_rotations = paragraph_text_id_rotations(&paragraphs, &transaction)?;
+    let table_rows = ancestor_table_rows(&paragraphs)?;
+    let row_text_id_rotations = table_row_text_id_rotations(&table_rows, &transaction)?;
     drop(transaction);
 
     // Replacing from the end keeps every previously computed UTF-16 offset
@@ -112,6 +117,9 @@ pub(super) fn replace_document_text(
     }
     for (paragraph, next_text_id) in text_id_rotations {
         paragraph.insert_attribute(&mut transaction, "textId", next_text_id);
+    }
+    for (row, next_text_id) in row_text_id_rotations {
+        row.insert_attribute(&mut transaction, ROW_TEXT_ID_ATTRIBUTE, next_text_id);
     }
     Ok(())
 }
@@ -229,7 +237,7 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use yrs::{Any, Text, Transact, Xml, XmlElementPrelim, XmlFragment, XmlTextPrelim};
+    use yrs::{Any, GetString, Text, Transact, Xml, XmlElementPrelim, XmlFragment, XmlTextPrelim};
 
     use super::*;
     use crate::collaboration::document::new_replica_document;
@@ -300,6 +308,85 @@ mod tests {
             paragraph.get_attribute(&transaction, "textId"),
             Some(Out::Any(Any::String(value))) if value.as_ref() == "00000003"
         ));
+    }
+
+    #[test]
+    fn replacement_rotates_every_ancestor_table_row_text_identity() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        let (outer_row, inner_row, paragraph, text) = {
+            let mut transaction = doc.transact_mut();
+            let section =
+                fragment.push_back(&mut transaction, XmlElementPrelim::empty("documentSection"));
+            let outer_table = section.push_back(&mut transaction, XmlElementPrelim::empty("table"));
+            let outer_row =
+                outer_table.push_back(&mut transaction, XmlElementPrelim::empty("tableRow"));
+            outer_row.insert_attribute(&mut transaction, "rowId", "00000010");
+            outer_row.insert_attribute(&mut transaction, "rowTextId", "00000011");
+            let outer_cell =
+                outer_row.push_back(&mut transaction, XmlElementPrelim::empty("tableCell"));
+            let inner_table =
+                outer_cell.push_back(&mut transaction, XmlElementPrelim::empty("table"));
+            let inner_row =
+                inner_table.push_back(&mut transaction, XmlElementPrelim::empty("tableRow"));
+            inner_row.insert_attribute(&mut transaction, "rowId", "00000020");
+            inner_row.insert_attribute(&mut transaction, "rowTextId", "00000021");
+            let inner_cell =
+                inner_row.push_back(&mut transaction, XmlElementPrelim::empty("tableCell"));
+            let paragraph =
+                inner_cell.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            paragraph.insert_attribute(&mut transaction, "paragraphId", "00000030");
+            paragraph.insert_attribute(&mut transaction, "textId", "00000031");
+            let text = paragraph.push_back(&mut transaction, XmlTextPrelim::new("Nested text"));
+            (outer_row, inner_row, paragraph, text)
+        };
+
+        replace_document_text(&doc, &manifest(), "Nested", "Shared", 1).unwrap();
+
+        let transaction = doc.transact();
+        assert_eq!(text.get_string(&transaction), "Shared text");
+        for (element, attribute, expected) in [
+            (&paragraph, "textId", "00000032"),
+            (&inner_row, "rowTextId", "00000022"),
+            (&outer_row, "rowTextId", "00000012"),
+        ] {
+            assert!(matches!(
+                element.get_attribute(&transaction, attribute),
+                Some(Out::Any(Any::String(value))) if value.as_ref() == expected
+            ));
+        }
+    }
+
+    #[test]
+    fn replacement_rejects_partial_ancestor_table_row_identity_before_writing() {
+        let doc = new_replica_document(
+            7,
+            "a3s.office",
+            NativeOfficeCollaborationArtifactKind::Document,
+        );
+        let fragment = doc.get_or_insert_xml_fragment("a3s.office.document.content");
+        let text = {
+            let mut transaction = doc.transact_mut();
+            let section =
+                fragment.push_back(&mut transaction, XmlElementPrelim::empty("documentSection"));
+            let table = section.push_back(&mut transaction, XmlElementPrelim::empty("table"));
+            let row = table.push_back(&mut transaction, XmlElementPrelim::empty("tableRow"));
+            row.insert_attribute(&mut transaction, "rowId", "00000010");
+            let cell = row.push_back(&mut transaction, XmlElementPrelim::empty("tableCell"));
+            let paragraph = cell.push_back(&mut transaction, XmlElementPrelim::empty("paragraph"));
+            paragraph.insert_attribute(&mut transaction, "paragraphId", "00000020");
+            paragraph.insert_attribute(&mut transaction, "textId", "00000021");
+            paragraph.push_back(&mut transaction, XmlTextPrelim::new("Unchanged"))
+        };
+
+        let error =
+            replace_document_text(&doc, &manifest(), "Unchanged", "Changed", 1).unwrap_err();
+        assert_eq!(error.code, "office.collaboration.content_invalid");
+        assert_eq!(text.get_string(&doc.transact()), "Unchanged");
     }
 
     fn manifest() -> NativeOfficeCollaborationManifest {

@@ -98,10 +98,13 @@ surrogate pair fail closed. Document replacement edits ProseMirror
 the first replaced character's marks, and fails unless `expectedMatches`
 matches current state; each changed paragraph rotates its Word `textId` once.
 `document-insert-paragraph` creates a plain paragraph before or after a stable
-direct-section paragraph identity. `document-delete-paragraph` additionally
-requires the current `textId` and complete text, and refuses last-section-block,
-inline-atom, comment-mark, and tracked-change cases. Word paragraph identities
-are uppercase eight-digit positive 31-bit hexadecimal values.
+paragraph identity in a bounded top-level section, nested list item, table
+cell/header, or blockquote path. `document-delete-paragraph` additionally
+requires the current `textId` and complete text, preserves required container
+blocks and list-leading paragraphs, and refuses inline-atom, comment-mark, and
+tracked-change cases. Table-contained edits rotate every identified ancestor
+row's `rowTextId` atomically; partial row identities fail before writing. Word
+identities are uppercase eight-digit positive 31-bit hexadecimal values.
 `document-set-page-color`/`document-clear-page-color` and
 `document-set-track-changes`/`document-clear-track-changes` update their
 independent typed option fields. Explicit clear variants keep missing set

@@ -79,10 +79,12 @@ operations instead of generating Yjs bytes; keep the operation ID stable and
 use the last inspected state vector as a precondition when rebasing matters.
 Document exact-text replacement requires the current match count and preserves
 the first replaced character's marks while rotating the affected Word `textId`.
-Direct-section paragraph insertion uses explicit stable IDs; deletion requires
-the current `textId` plus complete text and refuses inline/review content or a
-section's final block. Page color and track-changes are separate conflict-local
-option mutations.
+Bounded section/list-item/table-cell/header/blockquote paragraph insertion uses
+explicit stable IDs; deletion requires the current `textId` plus complete text
+and preserves required container blocks and list-leading paragraphs. It refuses
+inline/review content. Table-contained edits rotate every identified ancestor
+row's `rowTextId` atomically. Page color and track-changes are separate
+conflict-local option mutations.
 
 In a CLI-only agent host, run the collaboration event stream in a separate
 process:

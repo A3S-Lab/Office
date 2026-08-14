@@ -150,8 +150,9 @@ crosses an XML-node or inline-atom boundary:
 ```
 
 Insert a plain paragraph beside a stable paragraph, heading, or document
-caption that is a direct child of a top-level section. Word identities are
-explicit uppercase eight-digit positive 31-bit hexadecimal values:
+caption in a bounded top-level section, nested list-item, table-cell/header, or
+blockquote path. Word identities are explicit uppercase eight-digit positive
+31-bit hexadecimal values:
 
 ```json
 {
@@ -175,8 +176,11 @@ explicit uppercase eight-digit positive 31-bit hexadecimal values:
 
 Delete through `document-delete-paragraph` only after inspecting and supplying
 `paragraphId`, `expectedTextId`, and the complete `expectedText`. It rejects a
-stale identity/text pair, a section's final block, nested paragraphs, inline
-atoms/embeds, and comment or tracked-change marks.
+stale identity/text pair, deletion of a required container block or
+list-leading paragraph, inline atoms/embeds, and comment or tracked-change
+marks. Text and structural edits inside a table rotate every identified
+ancestor row's `rowTextId`; an incomplete row identity rejects the entire
+mutation before writing.
 
 Use `document-set-page-color` with `pageColor` and
 `document-set-track-changes` with `trackChanges`. Clear a value only through

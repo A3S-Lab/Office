@@ -7,6 +7,7 @@ use super::super::{
 
 mod identity;
 mod paragraph;
+mod structure;
 mod text;
 
 pub(super) fn validate_document_mutation(
