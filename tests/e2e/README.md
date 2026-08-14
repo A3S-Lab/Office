@@ -26,6 +26,13 @@ bun run test:e2e:initial-focus:check
 bun run test:e2e:initial-focus
 ```
 
+The collaboration participant roster has a focused desktop/phone gate:
+
+```bash
+bun run test:e2e:collaboration-participants:check
+bun run test:e2e:collaboration-participants
+```
+
 The suites cover focused Word page-color, a desktop Writer quick-access and
 adaptive, collapsible-ribbon workflow covering comfortable, priority-compacted,
 persistent collapsed, and temporary tab states without document layout
@@ -127,6 +134,9 @@ documentation tree, and the same-deployment return to the Playground homepage.
 The responsive Office-shell workflow also crosses from a persistent desktop
 sidebar into a 390 px workspace, proves the phone drawer stays closed without
 moving search focus, and restores the prior persistent sidebar on return.
+The collaboration roster workflow projects human and agent Awareness state in
+edit and preview chrome, keeps the phone popover in view, and restores the
+exact trigger after Escape.
 Each suite owns only its browser surface. Keep the preview process under the
 terminal that started it and stop that process separately when testing is
 complete.

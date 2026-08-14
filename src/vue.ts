@@ -17,6 +17,7 @@ import type {
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
+  OfficeCollaborationPresence,
   OfficeCollaborationSession,
   PdfCollaborationContent,
   PresentationContent,
@@ -73,6 +74,7 @@ export const DocumentEditor = defineComponent({
   props: {
     artifactId: String,
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    presence: Object as PropType<OfficeCollaborationPresence>,
     content: {
       required: true,
       type: Object as PropType<DocumentContent>,
@@ -106,6 +108,7 @@ export const DocumentEditor = defineComponent({
       createElement(ReactDocumentEditor, {
         artifactId: props.artifactId,
         collaboration: props.collaboration,
+        presence: props.presence,
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,
@@ -130,6 +133,7 @@ export const MarkdownEditor = defineComponent({
   name: 'A3SMarkdownEditor',
   props: {
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    presence: Object as PropType<OfficeCollaborationPresence>,
     content: {
       required: true,
       type: Object as PropType<MarkdownContent>,
@@ -155,6 +159,7 @@ export const MarkdownEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactMarkdownEditor, {
         collaboration: props.collaboration,
+        presence: props.presence,
         content: props.content,
         extensions: props.extensions,
         fileActions: props.fileActions,
@@ -175,6 +180,7 @@ export const SpreadsheetEditor = defineComponent({
   name: 'A3SSpreadsheetEditor',
   props: {
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    presence: Object as PropType<OfficeCollaborationPresence>,
     content: {
       required: true,
       type: Object as PropType<SpreadsheetContent>,
@@ -197,6 +203,7 @@ export const SpreadsheetEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactSpreadsheetEditor, {
         collaboration: props.collaboration,
+        presence: props.presence,
         content: props.content,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,
@@ -217,6 +224,7 @@ export const PresentationEditor = defineComponent({
   name: 'A3SPresentationEditor',
   props: {
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    presence: Object as PropType<OfficeCollaborationPresence>,
     content: {
       required: true,
       type: Object as PropType<PresentationContent>,
@@ -240,6 +248,7 @@ export const PresentationEditor = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactPresentationEditor, {
         collaboration: props.collaboration,
+        presence: props.presence,
         content: props.content,
         fileActions: props.fileActions,
         kernelWasmUrl: props.kernelWasmUrl,
@@ -261,6 +270,7 @@ export const PdfViewer = defineComponent({
   name: 'A3SPdfViewer',
   props: {
     collaboration: Object as PropType<OfficeCollaborationSession>,
+    presence: Object as PropType<OfficeCollaborationPresence>,
     fileName: String,
     loadSource: {
       required: true,
@@ -279,6 +289,7 @@ export const PdfViewer = defineComponent({
     return createReactRenderer(() =>
       createElement(ReactPdfViewer, {
         collaboration: props.collaboration,
+        presence: props.presence,
         fileName: props.fileName,
         loadSource: props.loadSource,
         onCollaborationChange: (content) =>

@@ -20,6 +20,7 @@ import {
   useState,
 } from 'react';
 import { Popover, Tabs } from '../../../design-system/primitives';
+import { WorkOfficeCollaborationParticipants } from './office-collaboration-participants';
 import { OfficeSlider } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
 import {
@@ -535,6 +536,7 @@ export function WorkOfficePreviewBar({
         <strong>{label}</strong>
         {detail && <span>{detail}</span>}
       </div>
+      <WorkOfficeCollaborationParticipants variant="toolbar" />
     </section>
   );
 }
@@ -702,6 +704,7 @@ export function WorkOfficeStatusBar({
       aria-label={ariaLabel}
     >
       <div className="work-office-status-info">{children}</div>
+      <WorkOfficeCollaborationParticipants />
       {controls && (
         <div
           className="work-office-status-view"

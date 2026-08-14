@@ -10,6 +10,7 @@ import {
   initializeOfficeMarkdownCollaboration,
   initializeOfficePresentationCollaboration,
   initializeOfficeSpreadsheetCollaboration,
+  type OfficeCollaborationPresence,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
 import {
@@ -63,6 +64,9 @@ test('registers every custom element idempotently', async () => {
   const getSelectionMenuItems = () => [];
   documentEditor.getSelectionMenuItems = getSelectionMenuItems;
   expect(documentEditor.getSelectionMenuItems).toBe(getSelectionMenuItems);
+  const presence = {} as OfficeCollaborationPresence;
+  documentEditor.presence = presence;
+  expect(documentEditor.presence).toBe(presence);
 
   const markdownEditor = document.createElement(
     A3S_OFFICE_ELEMENT_NAMES.markdown,
@@ -113,9 +117,11 @@ test('bridges PDF collaboration snapshots to its callback and custom event', () 
   }
   const element = document.createElement(name) as InspectablePdfViewerElement;
   const detail = createPdfCollaborationContent(PDF_COLLABORATION_SOURCE);
+  const presence = {} as OfficeCollaborationPresence;
   const callbacks: unknown[] = [];
   const events: CustomEvent[] = [];
   element.loadSource = () => Promise.resolve(new Blob());
+  element.presence = presence;
   element.onCollaborationChange = (content) => callbacks.push(content);
   element.addEventListener('collaboration-change', (event) => {
     events.push(event as CustomEvent);
@@ -127,9 +133,13 @@ test('bridges PDF collaboration snapshots to its callback and custom event', () 
   }
   const props = (
     node as {
-      props: { onCollaborationChange: (content: typeof detail) => void };
+      props: {
+        onCollaborationChange: (content: typeof detail) => void;
+        presence?: OfficeCollaborationPresence;
+      };
     }
   ).props;
+  expect(props.presence).toBe(presence);
   props.onCollaborationChange(detail);
 
   expect(callbacks).toEqual([detail]);

@@ -102,6 +102,29 @@ unsubscribe();
 presence.destroy();
 ```
 
+Pass that same host-owned controller beside its exact session to any React,
+Vue, or Web Component editor. A mismatched artifact, kind, Y.Doc client,
+actor, namespace, or mode fails closed instead of showing another room's
+participants.
+
+```tsx title="SharedSpreadsheet.tsx"
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+<SpreadsheetEditor
+  collaboration={session}
+  content={initialSnapshot}
+  onChange={setSnapshot}
+  presence={presence}
+/>;
+```
+
+Editable status bars and preview/PDF toolbars render one responsive,
+keyboard-accessible participant roster. It distinguishes local and remote
+humans, agents, and system actors and summarizes activity, mode, and typed
+format location. The host still owns the controller lifecycle and Awareness
+transport. Canvas-level remote carets and selection geometry are a separate
+projection layer and are not rendered yet.
+
 Locations are format-specific: Document and Markdown use anchor/head model
 positions, Spreadsheet uses bounded zero-based ranges, Presentation uses one
 slide plus stable element IDs, and PDF uses a zero-based page plus an optional
@@ -409,7 +432,7 @@ existing writable PDF field.
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
-| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it; participant UI and collaborative cursors are the next projection layer. |
+| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it. All editors project a shared participant roster; canvas-level remote carets and selections remain pending. |
 | Extensions | Collaborative Documents accept behavior-only TipTap `Extension` values. Custom Nodes, Marks, global attributes, and extension kits require a versioned Office schema migration and are rejected. |
 
 `onChange` receives complete snapshots for local and remote shared changes. Use

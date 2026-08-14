@@ -1,0 +1,125 @@
+suite "collaboration-participants" {
+    version = 1
+
+    scenario "desktop-participant-roster" {
+        name = "Inspect shared collaboration participants and restore trigger focus"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-presence-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-presence"
+        }
+
+        click "open-document" {
+            target = text("新项目方案", true)
+        }
+
+        wait "participant-trigger-ready" {
+            visible = css("button[data-collaboration-count='2']")
+        }
+
+        click "open-participant-roster" {
+            target = css("button[data-collaboration-count='2']")
+        }
+
+        expect "agent-location-visible" {
+            text = "已选择 6 个位置"
+        }
+
+        screenshot "participant-roster" {
+            path = "screenshots/collaboration-participants-desktop.png"
+        }
+
+        press "close-participant-roster" {
+            key = "Escape"
+        }
+
+        wait "participant-trigger-focus-restored" {
+            visible = css("button[data-collaboration-count='2']:focus")
+        }
+
+        accessibility "participant-accessibility" {
+            path = "evidence/collaboration-participants-accessibility.json"
+            interactive = true
+        }
+
+        console "participant-console" {
+            path = "diagnostics/collaboration-participants-console.json"
+            clear = false
+        }
+
+        page_errors "participant-errors" {
+            path = "diagnostics/collaboration-participants-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "compact-preview-participant-roster" {
+        name = "Keep participants reachable from compact preview chrome"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-compact-presence-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-presence"
+        }
+
+        click "open-compact-document" {
+            target = text("新项目方案", true)
+        }
+
+        wait "compact-participant-trigger-ready" {
+            visible = css("button[data-collaboration-count='2']")
+        }
+
+        click "switch-to-preview" {
+            target = css("button[aria-label='预览']")
+        }
+
+        click "open-compact-participant-roster" {
+            target = css(".work-office-preview-bar button[data-collaboration-count='2']")
+        }
+
+        expect "compact-agent-visible" {
+            text = "A3S Agent"
+        }
+
+        screenshot "compact-participant-roster" {
+            path = "screenshots/collaboration-participants-compact.png"
+        }
+
+        press "close-compact-participant-roster" {
+            key = "Escape"
+        }
+
+        wait "compact-trigger-focus-restored" {
+            visible = css(".work-office-preview-bar button[data-collaboration-count='2']:focus")
+        }
+
+        accessibility "compact-participant-accessibility" {
+            path = "evidence/collaboration-participants-compact-accessibility.json"
+            interactive = true
+        }
+
+        console "compact-participant-console" {
+            path = "diagnostics/collaboration-participants-compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-participant-errors" {
+            path = "diagnostics/collaboration-participants-compact-errors.json"
+            clear = false
+        }
+    }
+}

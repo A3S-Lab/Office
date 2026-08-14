@@ -1,11 +1,17 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, type ReactNode, Suspense } from 'react';
+import type { WorkOfficeCollaborationSession } from './internal/collaboration/office-collaboration';
+import type { WorkOfficeCollaborationPresence } from './internal/collaboration/office-collaboration-presence';
 import { WorkEditorLoadingState } from './internal/features/work/components/work-editor-loading-state';
 import type { DocumentEditorProps as InternalDocumentEditorProps } from './internal/features/work/editors/document-editor';
 import type { MarkdownEditorProps as InternalMarkdownEditorProps } from './internal/features/work/editors/markdown-editor';
+import {
+  assertOfficeCollaborationPresencePairing,
+  OfficeCollaborationPresenceProvider,
+} from './internal/features/work/editors/office-collaboration-presence-context';
+import { OfficeEditorFocusHandoff } from './internal/features/work/editors/office-editor-focus-handoff';
 import type { PdfViewerProps as InternalPdfViewerProps } from './internal/features/work/editors/pdf-viewer';
 import type { PresentationEditorProps as InternalPresentationEditorProps } from './internal/features/work/editors/presentation-editor';
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
-import { OfficeEditorFocusHandoff } from './internal/features/work/editors/office-editor-focus-handoff';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';
 import {
   OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_FAMILY,
@@ -155,28 +161,50 @@ export const defaultDocumentLayoutFonts: readonly DocumentLayoutFont[] = [
   },
 ];
 
-export type { WorkOfficeFileAction as OfficeFileAction };
-export type { OfficeSurfaceProps, OfficeTheme };
+export type {
+  OfficeSurfaceProps,
+  OfficeTheme,
+  WorkOfficeFileAction as OfficeFileAction,
+};
 
 function OfficeEditorLoader({
   children,
+  collaboration,
+  kind,
+  presence,
   title,
 }: {
   children: ReactNode;
+  collaboration?: WorkOfficeCollaborationSession;
+  kind: OfficeEditorKind;
+  presence?: WorkOfficeCollaborationPresence;
   title: string;
 }) {
+  assertOfficeCollaborationPresencePairing({
+    expectedKind: kind,
+    presence,
+    session: collaboration,
+  });
   return (
-    <OfficeEditorFocusHandoff>
-      <Suspense fallback={<WorkEditorLoadingState title={title} />}>
-        {children}
-      </Suspense>
-    </OfficeEditorFocusHandoff>
+    <OfficeCollaborationPresenceProvider presence={presence}>
+      <OfficeEditorFocusHandoff>
+        <Suspense fallback={<WorkEditorLoadingState title={title} />}>
+          {children}
+        </Suspense>
+      </OfficeEditorFocusHandoff>
+    </OfficeCollaborationPresenceProvider>
   );
+}
+
+interface OfficeCollaborationSurfaceProps {
+  /** Host-owned Awareness projection paired with the editor collaboration session. */
+  presence?: WorkOfficeCollaborationPresence;
 }
 
 export interface DocumentEditorProps
   extends Omit<InternalDocumentEditorProps, 'layoutFonts' | 'preview'>,
-    OfficeSurfaceProps {
+    OfficeSurfaceProps,
+    OfficeCollaborationSurfaceProps {
   preview?: boolean;
   layoutFonts?: readonly DocumentLayoutFont[];
 }
@@ -185,6 +213,7 @@ export function DocumentEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
   layoutFonts = defaultDocumentLayoutFonts,
+  presence,
   preview = false,
   style,
   theme,
@@ -192,7 +221,12 @@ export function DocumentEditor({
 }: DocumentEditorProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <OfficeEditorLoader title="正在打开文字编辑器">
+      <OfficeEditorLoader
+        collaboration={editorProps.collaboration}
+        kind="document"
+        presence={presence}
+        title="正在打开文字编辑器"
+      >
         <LazyDocumentEditor
           {...editorProps}
           kernelWasmUrl={kernelWasmUrl}
@@ -206,12 +240,14 @@ export function DocumentEditor({
 
 export interface MarkdownEditorProps
   extends Omit<InternalMarkdownEditorProps, 'preview'>,
-    OfficeSurfaceProps {
+    OfficeSurfaceProps,
+    OfficeCollaborationSurfaceProps {
   preview?: boolean;
 }
 
 export function MarkdownEditor({
   className,
+  presence,
   preview = false,
   style,
   theme,
@@ -219,7 +255,12 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <OfficeEditorLoader title="正在打开 Markdown 编辑器">
+      <OfficeEditorLoader
+        collaboration={editorProps.collaboration}
+        kind="markdown"
+        presence={presence}
+        title="正在打开 Markdown 编辑器"
+      >
         <LazyMarkdownEditor {...editorProps} preview={preview} />
       </OfficeEditorLoader>
     </OfficeSurface>
@@ -228,13 +269,15 @@ export function MarkdownEditor({
 
 export interface SpreadsheetEditorProps
   extends Omit<InternalSpreadsheetEditorProps, 'preview'>,
-    OfficeSurfaceProps {
+    OfficeSurfaceProps,
+    OfficeCollaborationSurfaceProps {
   preview?: boolean;
 }
 
 export function SpreadsheetEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
+  presence,
   preview = false,
   style,
   theme,
@@ -242,7 +285,12 @@ export function SpreadsheetEditor({
 }: SpreadsheetEditorProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <OfficeEditorLoader title="正在打开表格编辑器">
+      <OfficeEditorLoader
+        collaboration={editorProps.collaboration}
+        kind="spreadsheet"
+        presence={presence}
+        title="正在打开表格编辑器"
+      >
         <LazySpreadsheetEditor
           {...editorProps}
           kernelWasmUrl={kernelWasmUrl}
@@ -255,13 +303,15 @@ export function SpreadsheetEditor({
 
 export interface PresentationEditorProps
   extends Omit<InternalPresentationEditorProps, 'preview'>,
-    OfficeSurfaceProps {
+    OfficeSurfaceProps,
+    OfficeCollaborationSurfaceProps {
   preview?: boolean;
 }
 
 export function PresentationEditor({
   className,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
+  presence,
   preview = false,
   style,
   theme,
@@ -269,7 +319,12 @@ export function PresentationEditor({
 }: PresentationEditorProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <OfficeEditorLoader title="正在打开演示编辑器">
+      <OfficeEditorLoader
+        collaboration={editorProps.collaboration}
+        kind="presentation"
+        presence={presence}
+        title="正在打开演示编辑器"
+      >
         <LazyPresentationEditor
           {...editorProps}
           kernelWasmUrl={kernelWasmUrl}
@@ -282,10 +337,12 @@ export function PresentationEditor({
 
 export interface PdfViewerProps
   extends InternalPdfViewerProps,
-    OfficeSurfaceProps {}
+    OfficeSurfaceProps,
+    OfficeCollaborationSurfaceProps {}
 
 export function PdfViewer({
   className,
+  presence,
   style,
   theme,
   wasmUrl = defaultPdfiumWasmUrl,
@@ -293,7 +350,12 @@ export function PdfViewer({
 }: PdfViewerProps) {
   return (
     <OfficeSurface className={className} style={style} theme={theme}>
-      <OfficeEditorLoader title="正在打开 PDF">
+      <OfficeEditorLoader
+        collaboration={viewerProps.collaboration}
+        kind="pdf"
+        presence={presence}
+        title="正在打开 PDF"
+      >
         <LazyPdfViewer {...viewerProps} wasmUrl={wasmUrl} />
       </OfficeEditorLoader>
     </OfficeSurface>

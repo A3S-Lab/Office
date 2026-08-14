@@ -41,6 +41,7 @@ import {
   Popover,
   StatusBadge,
 } from '../../../design-system/primitives';
+import { WorkOfficeCollaborationParticipants } from './office-collaboration-participants';
 import { OfficeColorPicker } from './office-color-picker';
 import { OfficeTextField } from './office-controls';
 import { moveOfficeMenuFocus } from './office-menu-keyboard';
@@ -457,6 +458,7 @@ export function PdfToolbar({
           页宽
         </button>
       </div>
+      <WorkOfficeCollaborationParticipants variant="toolbar" />
     </header>
   );
 }

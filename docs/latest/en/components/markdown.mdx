@@ -25,6 +25,7 @@ the switch does not change the selected editing mode or the controlled content.
 | `content` | `MarkdownContent` | Yes | — | Controlled Markdown value. |
 | `onChange` | `(content: MarkdownContent) => void` | Yes | — | Emits the complete next value. |
 | `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Markdown document as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Projects the host-owned participant roster; requires the exact `collaboration` session. |
 | `preview` | `boolean` | No | `false` | Read-only rendering. |
 | `saveStatus` | `string` | No | — | Host-owned save status. |
 | `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |

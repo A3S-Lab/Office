@@ -8,6 +8,7 @@ import type {
   GetDocumentSelectionMenuItems,
   GetMarkdownSelectionMenuItems,
   MarkdownContent,
+  OfficeCollaborationPresence,
   OfficeCollaborationSession,
   PdfCollaborationContent,
   PresentationContent,
@@ -30,7 +31,17 @@ const HTMLElementBase =
     : HTMLElement;
 
 abstract class A3SOfficeElement extends HTMLElementBase {
+  #presence: OfficeCollaborationPresence | undefined;
   #root: Root | null = null;
+
+  get presence(): OfficeCollaborationPresence | undefined {
+    return this.#presence;
+  }
+
+  set presence(value: OfficeCollaborationPresence | undefined) {
+    this.#presence = value;
+    this.requestRender();
+  }
 
   connectedCallback() {
     this.renderReactTree();
@@ -225,6 +236,7 @@ export class A3SDocumentEditorElement extends A3SContentEditorElement<DocumentCo
     return createElement(DocumentEditor, {
       artifactId: this.artifactId,
       collaboration: this.collaboration,
+      presence: this.presence,
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,
@@ -282,6 +294,7 @@ export class A3SMarkdownEditorElement extends A3SContentEditorElement<MarkdownCo
     if (!this.content) return missingContent('Markdown', this.theme);
     return createElement(MarkdownEditor, {
       collaboration: this.collaboration,
+      presence: this.presence,
       content: this.content,
       extensions: this.extensions,
       fileActions: this.fileActions,
@@ -323,6 +336,7 @@ export class A3SSpreadsheetEditorElement extends A3SContentEditorElement<Spreads
     if (!this.content) return missingContent('spreadsheet', this.theme);
     return createElement(SpreadsheetEditor, {
       collaboration: this.collaboration,
+      presence: this.presence,
       content: this.content,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,
@@ -364,6 +378,7 @@ export class A3SPresentationEditorElement extends A3SContentEditorElement<Presen
     if (!this.content) return missingContent('presentation', this.theme);
     return createElement(PresentationEditor, {
       collaboration: this.collaboration,
+      presence: this.presence,
       content: this.content,
       fileActions: this.fileActions,
       kernelWasmUrl: this.kernelWasmUrl,
@@ -443,6 +458,7 @@ export class A3SPdfViewerElement extends A3SOfficeElement {
       return missingContent('PDF source loader', this.theme);
     return createElement(PdfViewer, {
       collaboration: this.collaboration,
+      presence: this.presence,
       fileName: this.getAttribute('file-name') ?? undefined,
       loadSource: this.loadSource,
       onCollaborationChange: (content) => {

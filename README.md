@@ -460,6 +460,13 @@ ports.
 and collaboration; the application shell and navigation; AI providers,
 prompts, policy, and request lifecycle.
 
+For collaborative surfaces, pass the host-owned typed Presence controller as
+`presence` beside its exact `collaboration` session. Every editor projects the
+same responsive participant roster across editing and preview chrome, including
+human/agent identity, mode, activity, and a format-specific location summary.
+The host continues to synchronize Awareness and own both lifecycles; remote
+caret and selection overlays remain a separate roadmap item.
+
 Document and Markdown selection menus can be replaced with host-defined typed
 actions. Each action receives an immutable selection snapshot, nearby text,
 the complete controlled content, and conflict-aware `replaceText`,
@@ -963,7 +970,9 @@ Office or scraping editor UI. The collaboration replica is transport-neutral:
 the host still owns rooms, authentication, authorization, and delivery. Browser
 Core also provides a bounded host-channel adapter for Yjs state-vector/update
 sync and a typed, ephemeral Awareness controller for participants and
-format-specific locations; neither component creates an account or backend.
+format-specific locations. React, Vue, and Web Components can project that
+controller as a shared participant roster; neither component creates an
+account or backend.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

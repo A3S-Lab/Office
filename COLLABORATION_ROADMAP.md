@@ -75,13 +75,18 @@ Status: implemented in the browser library.
 - A provider-owned Awareness controller publishes validated actor, mode,
   activity, and format-specific locations for all five artifact kinds without
   persisting presence in the shared document.
-- React, Vue, and Web Component session plumbing.
+- A shared, accessible participant roster projects local and remote humans,
+  agents, modes, activity, and typed location summaries into editable and
+  preview chrome for all five editor kinds. Pairing fails closed across
+  artifact, kind, Y.Doc client, actor, namespace, or mode boundaries.
+- React, Vue, and Web Component session and presence plumbing.
 - Convergence, offline/reconnect, transport-boundary, presence, permission,
   StrictMode, framework-parity, and ownership tests.
 
 Remaining before this phase is production complete:
 
-- Project typed participants and remote selections/carets into each editor UI.
+- Project format-specific remote selections/carets into each editing canvas
+  and support participant-to-location navigation from the shared roster.
 - Add reference WebSocket/WebTransport relay examples with provider-side
   authorization and persistent update replay.
 - Durable update persistence and compaction reference implementation.
@@ -89,8 +94,8 @@ Remaining before this phase is production complete:
 
 ### Phase 2: Document
 
-Status: browser collaboration foundation implemented; native parity and the
-remaining review/presence matrix are pending.
+Status: browser collaboration foundation and shared participant roster
+implemented; native parity and the remaining review/cursor matrix are pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the

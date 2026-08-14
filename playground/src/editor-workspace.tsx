@@ -1,4 +1,28 @@
 import {
+  type DocumentContent,
+  type DocumentSelectionContext,
+  downloadArtifact,
+  downloadArtifactPdf,
+  type EditorAgentRequest,
+  type GetDocumentSelectionMenuItems,
+  type GetMarkdownSelectionMenuItems,
+  type MarkdownContent,
+  type MarkdownSelectionContext,
+  type OfficeArtifact,
+  type OfficeArtifactContent,
+  type PresentationContent,
+  readSourceBlob,
+  registerSourceBlob,
+  type SpreadsheetContent,
+} from '@a3s-lab/office/core';
+import {
+  DocumentEditor,
+  MarkdownEditor,
+  PdfViewer,
+  PresentationEditor,
+  SpreadsheetEditor,
+} from '@a3s-lab/office/react';
+import {
   ArrowLeft,
   Download,
   Eye,
@@ -18,31 +42,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  downloadArtifact,
-  downloadArtifactPdf,
-  readSourceBlob,
-  registerSourceBlob,
-  type DocumentContent,
-  type DocumentSelectionContext,
-  type EditorAgentRequest,
-  type GetDocumentSelectionMenuItems,
-  type GetMarkdownSelectionMenuItems,
-  type MarkdownContent,
-  type MarkdownSelectionContext,
-  type OfficeArtifact,
-  type OfficeArtifactContent,
-  type PresentationContent,
-  type SpreadsheetContent,
-} from '@a3s-lab/office/core';
-import {
-  DocumentEditor,
-  MarkdownEditor,
-  PdfViewer,
-  PresentationEditor,
-  SpreadsheetEditor,
-} from '@a3s-lab/office/react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
+import { usePlaygroundCollaborationPresenceFixture } from './collaboration-presence-fixture';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 import type { NoticeTone } from './playground-types';
 
@@ -87,13 +88,23 @@ export function EditorWorkspace({
   const [assistantQuestion, setAssistantQuestion] =
     useState<PlaygroundAssistantQuestionDraft | null>(null);
   const extension = fileKindExtension(artifact.kind);
-  const controlledReviewFixture =
+  const e2eFixture =
     typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('e2e') ===
-      'word-review-conflict';
+    new URLSearchParams(window.location.search).get('e2e');
+  const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
     artifact.content.type === 'document' &&
     artifact.content.html.includes(CONTROLLED_REVIEW_COMMENT_ID);
+  const collaborationPresenceFixture =
+    usePlaygroundCollaborationPresenceFixture(
+      e2eFixture === 'collaboration-presence' &&
+        artifact.content.type === 'document'
+        ? { artifactId: artifact.id, content: artifact.content }
+        : undefined,
+    );
+  const collaborationPresenceFixtureEnabled =
+    e2eFixture === 'collaboration-presence' &&
+    artifact.content.type === 'document';
 
   const handleAgentRequest = useCallback(
     (request: EditorAgentRequest) => {
@@ -302,24 +313,33 @@ export function EditorWorkspace({
               />
             </div>
           </header>
-          {artifact.content.type === 'document' && (
-            <DocumentEditor
-              artifactId={artifact.id}
-              content={artifact.content}
-              getSelectionMenuItems={getDocumentSelectionMenuItems}
-              onAgentRequest={handleAgentRequest}
-              onChange={(content: DocumentContent) => onChange(content)}
-              onReviewConflict={(event) =>
-                onNotice(
-                  `检测到 ${event.conflicts.length} 个审阅冲突`,
-                  'neutral',
-                )
-              }
-              preview={preview}
-              saveStatus="本次会话已保存"
-              theme="light"
-            />
-          )}
+          {artifact.content.type === 'document' &&
+            (!collaborationPresenceFixtureEnabled ||
+              collaborationPresenceFixture) && (
+              <DocumentEditor
+                artifactId={artifact.id}
+                collaboration={collaborationPresenceFixture?.collaboration}
+                content={artifact.content}
+                getSelectionMenuItems={getDocumentSelectionMenuItems}
+                onAgentRequest={handleAgentRequest}
+                onChange={(content: DocumentContent) => onChange(content)}
+                onReviewConflict={(event) =>
+                  onNotice(
+                    `检测到 ${event.conflicts.length} 个审阅冲突`,
+                    'neutral',
+                  )
+                }
+                preview={preview}
+                presence={collaborationPresenceFixture?.presence}
+                saveStatus="本次会话已保存"
+                theme="light"
+              />
+            )}
+          {artifact.content.type === 'document' &&
+            collaborationPresenceFixtureEnabled &&
+            !collaborationPresenceFixture && (
+              <div role="status">正在准备协作测试夹具</div>
+            )}
           {artifact.content.type === 'markdown' && (
             <MarkdownEditor
               content={artifact.content}

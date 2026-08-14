@@ -18,6 +18,7 @@ putting the source PDF in the shared document.
 | Property | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `collaboration` | `OfficeCollaborationSession` | No | — | Initialized PDF Yjs session. Its immutable source identity must match `loadSource`. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Projects the host-owned participant roster; requires the exact `collaboration` session. |
 | `onCollaborationChange` | `(content: PdfCollaborationContent) => void` | No | — | Receives local and remote collaboration snapshots. Persist Yjs updates rather than rewriting the snapshot. |
 | `loadSource` | `() => Promise<Blob>` | Yes | — | Reads the PDF without requiring file-system access. |
 | `onSave` | `(pdf: Blob) => Promise<boolean>` | No | — | Persists an edited PDF. Returning `true` reports success. |

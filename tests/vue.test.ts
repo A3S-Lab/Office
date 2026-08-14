@@ -2,8 +2,11 @@ import { expect, test } from '@rstest/core';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import { Extension } from '@tiptap/core';
 import { createApp, h, nextTick, ref } from 'vue';
+import { Awareness } from 'y-protocols/awareness';
+import * as Y from 'yjs';
 import {
   createArtifact,
+  createOfficeCollaborationPresence,
   createOfficeCollaborationSession,
   type DocumentContent,
   type DocumentReviewConflictEvent,
@@ -69,16 +72,23 @@ test('passes a synchronized Document session through the Vue adapter', async () 
   if (artifact.content.type !== 'document') {
     throw new Error('Expected a Document artifact.');
   }
+  const sharedDocument = new Y.Doc();
+  const awareness = new Awareness(sharedDocument);
   const session = createOfficeCollaborationSession({
+    actor: { id: 'vue-editor', name: 'Vue editor' },
     artifactId: 'vue-shared-document',
+    awareness,
+    document: sharedDocument,
     kind: 'document',
   });
   initializeOfficeDocumentCollaboration(session, artifact.content);
+  const presence = createOfficeCollaborationPresence(session);
   const app = createApp({
     render: () =>
       h(DocumentEditor, {
         collaboration: session,
         content: artifact.content as DocumentContent,
+        presence,
       }),
   });
 
@@ -86,8 +96,12 @@ test('passes a synchronized Document session through the Vue adapter', async () 
   await waitFor(() => {
     expect(target.querySelector('[aria-label="文档正文"]')).not.toBeNull();
   });
+  expect(target.querySelector('[data-collaboration-count="1"]')).not.toBeNull();
 
   app.unmount();
+  presence.destroy();
+  awareness.destroy();
+  sharedDocument.destroy();
   target.remove();
 });
 
