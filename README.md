@@ -136,8 +136,9 @@ The images below are committed visual-regression baselines from the real
 - **Automation outside the browser** — The native Rust CLI, standard MCP
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
-  vectors, perform authorized typed Markdown changes, retain browser/native
-  actor attribution, and checkpoint without replacing a whole Office file.
+  vectors, perform authorized typed Markdown and Document changes, retain
+  browser/native actor attribution, and checkpoint without replacing a whole
+  Office file.
 
 ## Quick start
 
@@ -979,6 +980,13 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/notes.replica \
   --artifact-id notes --kind markdown --actor-id agent-7 --mode edit \
   --operation-id edit-42 \
   --mutation '{"type":"markdown-replace","markdown":"# Shared notes"}' --json
+
+# Document text replacement is fail-closed: the shared XmlText must contain
+# exactly the declared number of non-overlapping matches.
+cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
+  --artifact-id report --kind document --actor-id agent-7 --mode edit \
+  --operation-id edit-43 \
+  --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
@@ -993,9 +1001,11 @@ participant-to-location navigation; neither component creates an account or
 backend. The native CLI's JSONL session bridges the same host-channel envelope,
 including reconnect handshakes, durable agent updates, and remote-echo
 suppression, without opening its own network provider. Typed Markdown
-replace/splice operations use browser UTF-16 offsets and share that durable
-event path. Validated browser source origins survive native persistence and are
-re-emitted separately from host delivery IDs.
+replace/splice operations use browser UTF-16 offsets. Document mutations edit
+ProseMirror `Y.XmlText` in place, preserve the first replaced character's rich
+text marks, and update page-color/track-changes sidecars without replacing HTML.
+All use the same durable event path. Validated browser source origins survive
+native persistence and are re-emitted separately from host delivery IDs.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

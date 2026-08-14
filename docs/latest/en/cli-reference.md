@@ -61,12 +61,21 @@ a3s-office collab apply .a3s/report.replica \
   --artifact-id report --kind document --mode edit \
   --if-state-vector-input inspected.state-vector --json
 
-# Prefer a typed operation for local Markdown changes. The mutation can also
-# come from --mutation-input <file>; splice offsets are UTF-16 code units.
+# Prefer a typed operation for local Markdown or Document changes. The
+# mutation can also come from --mutation-input <file>; Markdown splice offsets
+# are UTF-16 code units.
 a3s-office collab mutate .a3s/notes.replica \
   --actor-id agent-7 --operation-id edit-43 --artifact-id notes \
   --kind markdown --mode edit \
   --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --json
+
+# Document replacement edits matching ProseMirror Y.XmlText ranges in place.
+# It fails unless the current non-overlapping match count is exactly one.
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --operation-id edit-44 --artifact-id report \
+  --kind document --mode edit \
+  --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
   --json
 
 # Follow durable updates from other humans or agents. JSON mode is JSONL: one
@@ -96,14 +105,23 @@ mismatches, malformed or oversized updates, ambiguous browser bootstrap,
 corrupt checkpoints, and sequence gaps are structured failures. State vectors
 and updates are bounded to 1 MiB and 64 MiB respectively.
 
-`collab mutate` is the format-aware local authorization boundary. Its initial
-closed variants are `markdown-replace` and `markdown-splice`; both update the
-canonical Markdown `Y.Text`, produce a minimal incremental update, and require
-an `edit`-mode replica. UTF-16 ranges that are stale, out of bounds, or split a
-surrogate pair fail without appending a log entry. Raw `apply` and received
-y-sync updates remain usable in every replica mode because read-only peers must
-still integrate remote changes authorized by the host. Local `comment` and
-`suggest` operations are not enabled until their durable review models exist.
+`collab mutate` is the format-aware local authorization boundary. Its Markdown
+variants are `markdown-replace` and `markdown-splice`; both update canonical
+`Y.Text`, produce a minimal incremental update, and use browser UTF-16 offsets.
+Its Document variants are `document-replace-text`,
+`document-set-page-color`, `document-clear-page-color`,
+`document-set-track-changes`, and `document-clear-track-changes`. Exact text
+replacement searches within each ProseMirror `Y.XmlText`, may cross rich-text
+format runs but not XML node or inline-atom boundaries, preserves the first
+replaced character's attributes, and fails unless `expectedMatches` equals the
+current non-overlapping match count. Clearing an option requires its explicit
+clear variant; a missing set field is rejected by the closed schema. All typed
+canonical mutations require an
+`edit`-mode replica and fail without appending a log entry when their
+preconditions are stale. Raw `apply` and received y-sync updates remain usable
+in every replica mode because read-only peers must still integrate remote
+changes authorized by the host. Local `comment` and `suggest` operations are
+not enabled until their durable review models exist.
 
 `collab watch` starts at the replica's current sequence when
 `--after-sequence` is omitted, so it observes only later changes without an
@@ -163,8 +181,9 @@ token.
 
 The standard native MCP server exposes create, inspect, diff, resumable event,
 apply, typed mutate, and checkpoint operations to an A3S Code `use` worker
-without shell access. Typed mutations for Document, Spreadsheet, Presentation,
-and PDF plus native presence projection are the remaining Phase 6 milestones.
+without shell access. Rich structural/review Document mutations, typed
+Spreadsheet, Presentation, and PDF mutations, plus native presence projection
+are the remaining Phase 6 milestones.
 
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package

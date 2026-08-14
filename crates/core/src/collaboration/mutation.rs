@@ -8,6 +8,10 @@ use super::{
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
 };
 
+mod document;
+
+use document::{apply_document_mutation, validate_document_mutation};
+
 pub(super) fn validate_mutation_contract(
     manifest: &NativeOfficeCollaborationManifest,
     mode: NativeOfficeCollaborationMode,
@@ -31,6 +35,13 @@ pub(super) fn validate_mutation_contract(
         NativeOfficeCollaborationMutation::MarkdownReplace { .. }
         | NativeOfficeCollaborationMutation::MarkdownSplice { .. } => {
             NativeOfficeCollaborationArtifactKind::Markdown
+        }
+        NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
+        | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
+        | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
+        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
+            NativeOfficeCollaborationArtifactKind::Document
         }
     };
     if manifest.kind != mutation_kind {
@@ -67,6 +78,9 @@ pub(super) fn validate_mutation_contract(
             MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES as u64,
         ));
     }
+    if mutation_kind == NativeOfficeCollaborationArtifactKind::Document {
+        validate_document_mutation(mutation)?;
+    }
     Ok(())
 }
 
@@ -101,6 +115,13 @@ pub(super) fn apply_mutation(
             insert,
         } => {
             apply_markdown_splice(doc, manifest, *index_utf16, *delete_utf16, insert)?;
+        }
+        NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
+        | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
+        | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
+        | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
+            apply_document_mutation(doc, manifest, mutation)?;
         }
     }
     inspect_document(doc, manifest)?;

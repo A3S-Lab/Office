@@ -5,9 +5,13 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use yrs::updates::decoder::Decode;
-use yrs::{Doc, GetString, ReadTxn, StateVector, Text, Transact, Update};
+use yrs::{
+    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, XmlFragment,
+    XmlOut,
+};
 
 const YJS_MARKDOWN_UPDATE_BASE64: &str = "AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A";
+const YJS_DOCUMENT_UPDATE_BASE64: &str = "AQ+y8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtZG9jdW1lbnQoARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhkb2N1bWVudCgBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUHARthM3Mub2ZmaWNlLmRvY3VtZW50LmNvbnRlbnQDD2RvY3VtZW50U2VjdGlvbgcAsvIZBgMJcGFyYWdyYXBoBwCy8hkHBgQAsvIZCBBIZWxsbyDwn5iAIHdvcmxkKACy8hkHC3BhcmFncmFwaElkAXcIMDAwMDAwMDEoALLyGQcGdGV4dElkAXcIMDAwMDAwMDIoALLyGQYCaWQBdxJkb2N1bWVudC1zZWN0aW9uLTEoARthM3Mub2ZmaWNlLmRvY3VtZW50Lm9wdGlvbnMJcGFnZUNvbG9yAXcHI0Y4RkFGQygBG2Ezcy5vZmZpY2UuZG9jdW1lbnQub3B0aW9ucwx0cmFja0NoYW5nZXMBeAA=";
 
 fn binary() -> &'static str {
     env!("CARGO_BIN_EXE_a3s-office")
@@ -21,6 +25,8 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     let provider = temp.path().join("must-not-be-invoked");
     let replica = temp.path().join("coding-agent.replica");
     let replica_text = replica.to_str().unwrap();
+    let document_replica = temp.path().join("document-coding-agent.replica");
+    let document_replica_text = document_replica.to_str().unwrap();
     let mut child = tokio::process::Command::new(binary())
         .args(["mcp"])
         .env("A3S_OFFICECLI_EXECUTABLE", &provider)
@@ -93,7 +99,15 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         .find(|tool| tool["name"] == "office_collaboration_mutate")
         .unwrap()["inputSchema"]
         .to_string();
-    for expected in ["markdown-splice", "indexUtf16", "deleteUtf16"] {
+    for expected in [
+        "markdown-splice",
+        "indexUtf16",
+        "deleteUtf16",
+        "document-replace-text",
+        "expectedMatches",
+        "document-set-page-color",
+        "pageColor",
+    ] {
         assert!(mutation_schema.contains(expected), "missing {expected}");
     }
 
@@ -317,6 +331,128 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     let mutation_event = &mutation_event["result"]["structuredContent"]["updates"][0];
     assert_eq!(mutation_event["operationId"], "typed-markdown-1");
     assert_eq!(mutation_event["operationKind"], "mutate");
+
+    let document_created = call(
+        &mut stdin,
+        &mut stdout,
+        93,
+        "office_collaboration_create",
+        serde_json::json!({
+            "store": document_replica_text,
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "actorId": "coding-agent-10",
+            "actorKind": "agent",
+            "mode": "edit",
+            "operationId": "join-browser-document-1",
+            "clientId": 900010,
+            "initialUpdateBase64": YJS_DOCUMENT_UPDATE_BASE64
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        document_created["result"]["isError"], true,
+        "{document_created}"
+    );
+    let document_mutated = call(
+        &mut stdin,
+        &mut stdout,
+        94,
+        "office_collaboration_mutate",
+        serde_json::json!({
+            "store": document_replica_text,
+            "operationId": "typed-document-text-1",
+            "actorId": "coding-agent-10",
+            "mode": "edit",
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "mutation": {
+                "type": "document-replace-text",
+                "search": "😀",
+                "replacement": "🦀",
+                "expectedMatches": 1
+            }
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        document_mutated["result"]["isError"], true,
+        "{document_mutated}"
+    );
+    assert_eq!(
+        document_mutated["result"]["structuredContent"]["sequence"],
+        1
+    );
+    let document_page_color = call(
+        &mut stdin,
+        &mut stdout,
+        95,
+        "office_collaboration_mutate",
+        serde_json::json!({
+            "store": document_replica_text,
+            "operationId": "typed-document-page-color-1",
+            "actorId": "coding-agent-10",
+            "mode": "edit",
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "mutation": {
+                "type": "document-set-page-color",
+                "pageColor": "#101828"
+            }
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        document_page_color["result"]["isError"], true,
+        "{document_page_color}"
+    );
+    let document_diff = call(
+        &mut stdin,
+        &mut stdout,
+        96,
+        "office_collaboration_diff",
+        serde_json::json!({"store": document_replica_text}),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(document_diff["result"]["isError"], true, "{document_diff}");
+    let document_peer = Doc::with_client_id(700_010);
+    document_peer
+        .transact_mut()
+        .apply_update(
+            Update::decode_v1(
+                &STANDARD
+                    .decode(
+                        document_diff["result"]["structuredContent"]["updateBase64"]
+                            .as_str()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+    let document_fragment = document_peer.get_or_insert_xml_fragment("a3s.office.document.content");
+    let document_options = document_peer.get_or_insert_map("a3s.office.document.options");
+    let document_transaction = document_peer.transact();
+    assert_eq!(
+        document_fragment
+            .successors(&document_transaction)
+            .find_map(|node| match node {
+                XmlOut::Text(text) => Some(text.get_string(&document_transaction)),
+                _ => None,
+            })
+            .unwrap(),
+        "Hello 🦀 world"
+    );
+    assert!(matches!(
+        document_options.get(&document_transaction, "pageColor"),
+        Some(Out::Any(Any::String(value))) if value.as_ref() == "#101828"
+    ));
+    drop(document_transaction);
 
     let checkpoint = call(
         &mut stdin,

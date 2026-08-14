@@ -98,8 +98,9 @@ Remaining before this phase is production complete:
 ### Phase 2: Document
 
 Status: browser collaboration foundation, participant roster, remote
-selection/caret projection, and participant navigation implemented; native
-parity and the remaining review authorization matrix are pending.
+selection/caret projection, participant navigation, and the first native
+text/options mutation bridge implemented; rich native parity and the remaining
+review authorization matrix are pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
@@ -115,6 +116,14 @@ parity and the remaining review authorization matrix are pending.
   stable-ID retries/collisions, stale-snapshot delete conflicts, local-only
   undo, permission guards, real TipTap peer edits, remote projection,
   StrictMode, and framework parity.
+- Native Rust, CLI, and MCP clients can replace an exact expected match count
+  inside ProseMirror `Y.XmlText`, including UTF-16 astral characters, without
+  replacing the shared HTML/XML tree. The replacement preserves the first
+  deleted character's rich-text attributes. Page color and track-changes
+  settings mutate their conflict-local `document.options` entries.
+- Deterministic browser-to-Yrs and Yrs-to-browser fixtures prove that native
+  text/options updates remain readable by the Office TipTap schema after
+  durable restart and replay.
 
 Remaining:
 
@@ -122,7 +131,8 @@ Remaining:
   records; `comment` and `suggest` remain read-only until those models exist.
 - Prove concurrent text, table, list, section, comment, and revision workflows,
   plus DOCX import/export after merged edits.
-- Add cross-language Yjs/Yrs fixtures and native client convergence.
+- Expand native convergence from exact text/options mutations to structural
+  paragraphs, tables, lists, sections, comments, and tracked revisions.
 
 Exit criterion: two browsers and one native client converge on document
 content and review state; local undo never removes a remote change; a DOCX
@@ -260,8 +270,8 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
 projection, a host-injected live CLI transport session, and the first typed
-Markdown mutation surface are implemented; the remaining format mutations and
-native presence projection are pending.
+Markdown and Document mutation surfaces are implemented; the remaining format
+mutations and native presence projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -293,11 +303,13 @@ native presence projection are pending.
   same identity plus a stable operation ID and accept an optional state-vector
   precondition.
 - `collab mutate` and `office_collaboration_mutate` accept a closed typed
-  operation instead of caller-authored Yjs bytes. Markdown replace/splice is
-  the first implementation: it writes the canonical `Y.Text`, uses browser
-  UTF-16 code-unit offsets without splitting surrogate pairs, emits a minimal
-  incremental update, and shares the same durable receipt/checkpoint path as
-  synchronized updates. Canonical typed mutations require `edit`; raw remote
+  operation instead of caller-authored Yjs bytes. Markdown replace/splice
+  writes canonical `Y.Text` with browser UTF-16 offsets. Document exact-match
+  replacement edits ProseMirror `Y.XmlText` in place, preserves the first
+  replaced character's formatting attributes, and fails if the declared match
+  count is stale; page color and track-changes write their typed option fields.
+  All emit minimal incremental updates through the same durable
+  receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
   updates remain receivable in every mode so read-only peers still converge.
 - Durable operation receipts make identical retries idempotent and reject an
   operation ID reused for another payload. Artifact, kind, actor, mode,
@@ -313,17 +325,18 @@ native presence projection are pending.
   live transports. The host delivery operation remains distinct from the
   source browser operation, and source attribution is audit data rather than
   an authorization token.
-- Cross-language tests now apply deterministic native UTF-16 Markdown updates
-  in browser Yjs, in addition to importing browser Yjs fixtures in Yrs.
+- Cross-language tests apply deterministic native UTF-16 Markdown and
+  ProseMirror Document text/options updates in browser Yjs, in addition to
+  importing browser Yjs fixtures in Yrs.
 - Standard MCP exposes the durable replica lifecycle and bounded event stream;
   the same seven collaboration tools are explicitly available to the dedicated
   `a3s code` Use worker.
 
 Remaining:
 
-- Extend typed format-model mutations from Markdown to Document, Spreadsheet,
-  Presentation, and PDF; add durable comment/suggest operations before enabling
-  those modes for local mutation.
+- Extend typed format-model mutations to Spreadsheet, Presentation, and PDF;
+  deepen Document mutations to structural/review operations, and add durable
+  comment/suggest operations before enabling those modes for local mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

@@ -43,7 +43,7 @@ const HELP: &str = concat!(
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
-    "Typed mutations: markdown-replace {markdown}; markdown-splice {indexUtf16,deleteUtf16,insert}.\n",
+    "Typed mutations: markdown-replace/splice; document-replace-text; document-set/clear-page-color; document-set/clear-track-changes.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -325,7 +325,7 @@ async fn mutate(args: &[String]) -> UseResult<CommandOutput> {
                 format!("The typed collaboration mutation JSON is invalid: {error}"),
             )
             .with_suggestion(
-                "Use a closed mutation object such as {\"type\":\"markdown-splice\",\"indexUtf16\":0,\"deleteUtf16\":0,\"insert\":\"text\"}.",
+                "Use a closed mutation object such as {\"type\":\"document-replace-text\",\"search\":\"old\",\"replacement\":\"new\",\"expectedMatches\":1}.",
             )
         })?;
     let output_mutation = mutation.clone();

@@ -99,6 +99,20 @@ pub(super) enum OfficeCollaborationMutation {
         delete_utf16: u32,
         insert: String,
     },
+    /// Replace an exact number of non-overlapping Document Y.XmlText matches.
+    DocumentReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+    },
+    /// Set the conflict-local Document page-color option.
+    DocumentSetPageColor { page_color: String },
+    /// Explicitly clear the conflict-local Document page-color option.
+    DocumentClearPageColor {},
+    /// Set the conflict-local Document track-changes option.
+    DocumentSetTrackChanges { track_changes: bool },
+    /// Explicitly clear the conflict-local Document track-changes option.
+    DocumentClearTrackChanges {},
 }
 
 impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
@@ -116,6 +130,27 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 delete_utf16,
                 insert,
             },
+            OfficeCollaborationMutation::DocumentReplaceText {
+                search,
+                replacement,
+                expected_matches,
+            } => Self::DocumentReplaceText {
+                search,
+                replacement,
+                expected_matches,
+            },
+            OfficeCollaborationMutation::DocumentSetPageColor { page_color } => {
+                Self::DocumentSetPageColor { page_color }
+            }
+            OfficeCollaborationMutation::DocumentClearPageColor { .. } => {
+                Self::DocumentClearPageColor {}
+            }
+            OfficeCollaborationMutation::DocumentSetTrackChanges { track_changes } => {
+                Self::DocumentSetTrackChanges { track_changes }
+            }
+            OfficeCollaborationMutation::DocumentClearTrackChanges { .. } => {
+                Self::DocumentClearTrackChanges {}
+            }
         }
     }
 }
@@ -211,7 +246,7 @@ pub(super) struct OfficeCollaborationMutationInput {
     pub(super) artifact_id: String,
     /// Expected canonical collaborative model family.
     pub(super) kind: OfficeCollaborationArtifactKind,
-    /// Closed, format-aware mutation. The first native surface supports Markdown.
+    /// Closed, format-aware Markdown or Document mutation.
     pub(super) mutation: OfficeCollaborationMutation,
     /// Optional exact state-vector precondition for fail-closed agent decisions.
     pub(super) if_state_vector_base64: Option<String>,
@@ -625,6 +660,14 @@ mod tests {
             "markdown-splice",
             "indexUtf16",
             "deleteUtf16",
+            "document-replace-text",
+            "expectedMatches",
+            "document-set-page-color",
+            "pageColor",
+            "document-clear-page-color",
+            "document-set-track-changes",
+            "trackChanges",
+            "document-clear-track-changes",
             "ifStateVectorBase64",
         ] {
             assert!(encoded.contains(expected), "missing {expected}");
@@ -637,6 +680,25 @@ mod tests {
             "force": true
         }));
         assert!(unknown_mutation.is_err());
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-set-page-color"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-set-track-changes"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-clear-page-color",
+                "pageColor": "#FFFFFF"
+            }))
+            .is_err()
+        );
     }
 
     #[test]

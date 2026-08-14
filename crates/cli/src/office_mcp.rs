@@ -191,7 +191,7 @@ impl NativeOfficeMcpServer {
 
     #[tool(
         name = "office_collaboration_mutate",
-        description = "Idempotently apply one authorized format-aware Office collaboration mutation; Markdown replace/splice use browser-compatible UTF-16 offsets",
+        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits and fail-closed Document text/options edits",
         annotations(
             read_only_hint = false,
             destructive_hint = false,
@@ -675,7 +675,7 @@ impl ServerHandler for NativeOfficeMcpServer {
                 website_url: Some("https://github.com/A3S-Lab/Office".to_string()),
             },
             instructions: Some(
-                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
+                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown or Document changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
                     .to_string(),
             ),
             ..Default::default()

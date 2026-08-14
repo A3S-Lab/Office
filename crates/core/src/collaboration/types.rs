@@ -296,6 +296,23 @@ pub enum NativeOfficeCollaborationMutation {
         delete_utf16: u32,
         insert: String,
     },
+    /// Replace an exact number of non-overlapping text matches inside the
+    /// canonical ProseMirror `Y.XmlFragment`. Matches may span formatting
+    /// runs inside one `Y.XmlText`, but never cross an embedded object or XML
+    /// text-node boundary.
+    DocumentReplaceText {
+        search: String,
+        replacement: String,
+        expected_matches: u32,
+    },
+    /// Set the conflict-local Document page-color option.
+    DocumentSetPageColor { page_color: String },
+    /// Explicitly clear the conflict-local Document page-color option.
+    DocumentClearPageColor {},
+    /// Set the conflict-local Document track-changes option.
+    DocumentSetTrackChanges { track_changes: bool },
+    /// Explicitly clear the conflict-local Document track-changes option.
+    DocumentClearTrackChanges {},
 }
 
 #[derive(Debug, Clone)]

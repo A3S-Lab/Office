@@ -102,10 +102,10 @@ changed since inspection:
 }
 ```
 
-For local canonical Markdown changes, prefer
-`office_collaboration_mutate` over constructing Yjs bytes. It accepts closed
-`markdown-replace` and `markdown-splice` variants; splice positions are UTF-16
-code-unit offsets and may not split a surrogate pair:
+For local canonical Markdown or Document changes, prefer
+`office_collaboration_mutate` over constructing Yjs bytes. Markdown accepts
+closed `markdown-replace` and `markdown-splice` variants; splice positions are
+UTF-16 code-unit offsets and may not split a surrogate pair:
 
 ```json
 {
@@ -124,6 +124,34 @@ code-unit offsets and may not split a surrogate pair:
   "ifStateVectorBase64": "..."
 }
 ```
+
+Document exact replacement edits ProseMirror `Y.XmlText` in place and fails
+unless `expectedMatches` equals the current non-overlapping match count. It may
+cross formatting runs inside one text node, preserves the first replaced
+character's attributes, and never crosses an XML-node or inline-atom boundary:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "operationId": "agent-edit-45",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "report",
+  "kind": "document",
+  "mutation": {
+    "type": "document-replace-text",
+    "search": "Draft",
+    "replacement": "Final",
+    "expectedMatches": 1
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Use `document-set-page-color` with `pageColor` and
+`document-set-track-changes` with `trackChanges`. Clear a value only through
+`document-clear-page-color` or `document-clear-track-changes`; the explicit
+variants prevent a missing set field from silently removing shared state.
 
 Typed canonical mutations require `edit`. Raw received updates remain
 applicable in read-only modes so remote state still converges. Durable native

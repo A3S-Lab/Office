@@ -5,11 +5,15 @@ use base64::Engine as _;
 use yrs::encoding::read::Cursor;
 use yrs::sync::{Message, SyncMessage};
 use yrs::updates::decoder::{Decode, DecoderV1};
-use yrs::{Doc, GetString, Map, ReadTxn, StateVector, Text, Transact, Update};
+use yrs::{
+    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, XmlFragment,
+    XmlOut,
+};
 
 use super::*;
 
 const YJS_MARKDOWN_UPDATE_BASE64: &str = "AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A";
+const YJS_DOCUMENT_UPDATE_BASE64: &str = "AQ+y8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtZG9jdW1lbnQoARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhkb2N1bWVudCgBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUHARthM3Mub2ZmaWNlLmRvY3VtZW50LmNvbnRlbnQDD2RvY3VtZW50U2VjdGlvbgcAsvIZBgMJcGFyYWdyYXBoBwCy8hkHBgQAsvIZCBBIZWxsbyDwn5iAIHdvcmxkKACy8hkHC3BhcmFncmFwaElkAXcIMDAwMDAwMDEoALLyGQcGdGV4dElkAXcIMDAwMDAwMDIoALLyGQYCaWQBdxJkb2N1bWVudC1zZWN0aW9uLTEoARthM3Mub2ZmaWNlLmRvY3VtZW50Lm9wdGlvbnMJcGFnZUNvbG9yAXcHI0Y4RkFGQygBG2Ezcy5vZmZpY2UuZG9jdW1lbnQub3B0aW9ucwx0cmFja0NoYW5nZXMBeAA=";
 const YJS_MARKDOWN_STATE_VECTOR_BASE64: &str = "AbLyGRs=";
 const YJS_REORDERED_FIRST_UPDATE_BASE64: &str = "AQfPuB8AKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjUxNTE1MTpicm93c2VyLW9mZmxpbmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZQFBAA==";
 const YJS_REORDERED_SECOND_UPDATE_BASE64: &str = "AQHPuB8HhM+4HwYBQgA=";
@@ -77,6 +81,52 @@ fn mutation_request(
     }
 }
 
+fn document_create_request(root: &std::path::Path) -> NativeOfficeCollaborationCreateRequest {
+    NativeOfficeCollaborationCreateRequest {
+        store: root.to_path_buf(),
+        artifact_id: "fixture-document".to_owned(),
+        kind: NativeOfficeCollaborationArtifactKind::Document,
+        actor_id: "agent-alpha".to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::Agent,
+        mode: NativeOfficeCollaborationMode::Edit,
+        operation_id: "create-document-1".to_owned(),
+        namespace: None,
+        client_id: Some(900_002),
+        initial_update: None,
+    }
+}
+
+fn document_apply_request(
+    operation_id: &str,
+    update: Vec<u8>,
+) -> NativeOfficeCollaborationApplyRequest {
+    NativeOfficeCollaborationApplyRequest {
+        operation_id: operation_id.to_owned(),
+        actor_id: "agent-alpha".to_owned(),
+        mode: NativeOfficeCollaborationMode::Edit,
+        expected_artifact_id: "fixture-document".to_owned(),
+        expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+        update,
+        if_state_vector: None,
+        origin: None,
+    }
+}
+
+fn document_mutation_request(
+    operation_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> NativeOfficeCollaborationMutationRequest {
+    NativeOfficeCollaborationMutationRequest {
+        operation_id: operation_id.to_owned(),
+        actor_id: "agent-alpha".to_owned(),
+        mode: NativeOfficeCollaborationMode::Edit,
+        expected_artifact_id: "fixture-document".to_owned(),
+        expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+        mutation,
+        if_state_vector: None,
+    }
+}
+
 fn markdown_source(store: &NativeOfficeCollaborationStore) -> String {
     let exported = store.synchronize(None).unwrap();
     let peer = Doc::with_client_id(818_181);
@@ -88,6 +138,37 @@ fn markdown_source(store: &NativeOfficeCollaborationStore) -> String {
         .get_text("a3s.office.markdown.source")
         .unwrap()
         .get_string(&transaction)
+}
+
+fn document_state(
+    store: &NativeOfficeCollaborationStore,
+) -> (Vec<String>, Option<String>, Option<bool>) {
+    let exported = store.synchronize(None).unwrap();
+    let peer = Doc::with_client_id(818_182);
+    peer.transact_mut()
+        .apply_update(Update::decode_v1(&exported.update).unwrap())
+        .unwrap();
+    let fragment = peer.get_or_insert_xml_fragment("a3s.office.document.content");
+    let options = peer.get_or_insert_map("a3s.office.document.options");
+    let transaction = peer.transact();
+    let text = fragment
+        .successors(&transaction)
+        .filter_map(|node| match node {
+            XmlOut::Text(text) => Some(text.get_string(&transaction)),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let page_color = match options.get(&transaction, "pageColor") {
+        Some(Out::Any(Any::String(value))) => Some(value.to_string()),
+        None => None,
+        value => panic!("unexpected page color: {value:?}"),
+    };
+    let track_changes = match options.get(&transaction, "trackChanges") {
+        Some(Out::Any(Any::Bool(value))) => Some(value),
+        None => None,
+        value => panic!("unexpected track-changes value: {value:?}"),
+    };
+    (text, page_color, track_changes)
 }
 
 fn agent_notes_update(client_id: u64, value: &str) -> Vec<u8> {
@@ -236,6 +317,118 @@ fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
         })
         .unwrap();
     assert_eq!(events.updates.len(), 2);
+    assert!(events
+        .updates
+        .iter()
+        .all(|event| event.operation_kind == NativeOfficeCollaborationOperationKind::Mutate));
+}
+
+#[test]
+fn typed_document_mutations_converge_with_browser_xml_and_sidecars() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("document-replica");
+    let store = NativeOfficeCollaborationStore::create(document_create_request(&root)).unwrap();
+    store
+        .apply(document_apply_request(
+            "bootstrap-browser-document",
+            STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+    assert_eq!(
+        document_state(&store),
+        (
+            vec!["Hello 😀 world".to_owned()],
+            Some("#F8FAFC".to_owned()),
+            Some(true),
+        )
+    );
+
+    let replace_request = document_mutation_request(
+        "document-replace-1",
+        NativeOfficeCollaborationMutation::DocumentReplaceText {
+            search: "😀".to_owned(),
+            replacement: "🦀".to_owned(),
+            expected_matches: 1,
+        },
+    );
+    let replaced = store.mutate(replace_request.clone()).unwrap();
+    assert!(replaced.state_changed);
+    assert_eq!(replaced.sequence, Some(2));
+
+    let page_color = store
+        .mutate(document_mutation_request(
+            "document-page-color-1",
+            NativeOfficeCollaborationMutation::DocumentSetPageColor {
+                page_color: "#101828".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert!(page_color.state_changed);
+    assert_eq!(page_color.sequence, Some(3));
+
+    let track_changes = store
+        .mutate(document_mutation_request(
+            "document-track-changes-1",
+            NativeOfficeCollaborationMutation::DocumentClearTrackChanges {},
+        ))
+        .unwrap();
+    assert!(track_changes.state_changed);
+    assert_eq!(track_changes.sequence, Some(4));
+    assert_eq!(
+        document_state(&store),
+        (
+            vec!["Hello 🦀 world".to_owned()],
+            Some("#101828".to_owned()),
+            None,
+        )
+    );
+
+    let replay = store.mutate(replace_request).unwrap();
+    assert!(replay.duplicate);
+    assert_eq!(replay.sequence, Some(2));
+
+    let before_conflict = store.inspect().unwrap();
+    let conflict = store
+        .mutate(document_mutation_request(
+            "document-replace-conflict",
+            NativeOfficeCollaborationMutation::DocumentReplaceText {
+                search: "world".to_owned(),
+                replacement: "document".to_owned(),
+                expected_matches: 2,
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        conflict.code,
+        "office.collaboration.mutation_match_conflict"
+    );
+    let after_conflict = store.inspect().unwrap();
+    assert_eq!(
+        after_conflict.current_sequence,
+        before_conflict.current_sequence
+    );
+    assert_eq!(
+        after_conflict.document_state_sha256,
+        before_conflict.document_state_sha256
+    );
+
+    drop(store);
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    assert_eq!(
+        document_state(&reopened),
+        (
+            vec!["Hello 🦀 world".to_owned()],
+            Some("#101828".to_owned()),
+            None,
+        )
+    );
+    let events = reopened
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(1),
+            limit: 3,
+        })
+        .unwrap();
+    assert_eq!(events.updates.len(), 3);
     assert!(events
         .updates
         .iter()

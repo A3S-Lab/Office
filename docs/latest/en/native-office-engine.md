@@ -131,9 +131,9 @@ operation-ID idempotency.
 
 The current collaboration surface is deliberately transport-neutral. Coding
 agents can create or join, inspect, diff from a remote state vector, apply
-updates with optimistic vector preconditions, perform typed Markdown
-replace/splice operations, checkpoint, replay, leave, and consume a resumable
-durable event cursor. The CLI provides both a JSONL watch
+updates with optimistic vector preconditions, perform typed Markdown and
+Document operations, checkpoint, replay, leave, and consume a resumable durable
+event cursor. The CLI provides both a JSONL watch
 stream and a long-lived, host-injected JSONL transport session; the standard
 native MCP server provides bounded polling tools that project into an A3S Code
 `use` worker. The live session accepts the browser host-channel identity
@@ -144,15 +144,20 @@ sends one complete update and restarts the state-vector handshake.
 
 Typed Markdown operations use browser-compatible UTF-16 code-unit offsets,
 reject surrogate-splitting ranges, require `edit`, and commit through the same
-checksummed update/receipt path as externally delivered updates. Raw remote
-updates remain mode-neutral for convergence. Authenticated browser
+checksummed update/receipt path as externally delivered updates. Typed Document
+replacement scans ProseMirror `Y.XmlText` rather than serialized HTML, requires
+an exact non-overlapping match count, preserves the first replaced character's
+format attributes, and never crosses an XML text-node or inline-atom boundary.
+Page color and track-changes mutate independent `document.options` fields. Raw
+remote updates remain mode-neutral for convergence. Authenticated browser
 actor/operation origins are retained separately from host delivery identity in
 durable events and are re-emitted across the live boundary.
 
 Neither native surface opens a network provider, chooses a room, authenticates
-a participant, persists Awareness, or polls a whole Office file. Typed
-Office-model collaboration mutations beyond Markdown, durable comment/suggest
-authorization, and native presence projection remain later milestones.
+a participant, persists Awareness, or polls a whole Office file. Structural
+and review Document operations, typed Spreadsheet/Presentation/PDF mutations,
+durable comment/suggest authorization, and native presence projection remain
+later milestones.
 
 ## Safety and fidelity invariants
 

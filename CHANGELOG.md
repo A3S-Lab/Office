@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Extended typed native collaboration mutations to Document. Coding agents can
+  replace an exact, fail-closed match count inside ProseMirror `Y.XmlText`
+  without replacing HTML, preserve the first replaced character's rich-text
+  attributes, and set or clear conflict-local page-color and track-changes
+  options. Rust, CLI, MCP, and browser Yjs fixtures cover restart,
+  idempotency, mismatch rollback, emoji offsets, and cross-language replay.
 - Added idempotent typed native collaboration mutations through Rust,
   `collab mutate`, standard MCP, and A3S Code. The initial Markdown
   replace/splice surface writes canonical `Y.Text` with browser-compatible

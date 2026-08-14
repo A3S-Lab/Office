@@ -7,6 +7,7 @@ import {
   type OfficeCollaborationOrigin,
   OfficeCollaborationError,
   readOfficeCollaborationMetadata,
+  readOfficeDocumentCollaboration,
   readOfficeMarkdownCollaboration,
 } from '../src/core';
 
@@ -15,6 +16,12 @@ const BROWSER_MARKDOWN_FIXTURE_BASE64 =
 const NATIVE_MARKDOWN_REPLACE_BASE64 = 'AQGh9zYAhLLyGRoGQfCfmIBCAbLyGQEGFQ==';
 const NATIVE_MARKDOWN_SPLICE_BASE64 =
   'AQGh9zYExKH3NgKh9zYDBPCfpoACsvIZAQYVofc2AQEC';
+const BROWSER_DOCUMENT_FIXTURE_BASE64 =
+  'AQ+y8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtZG9jdW1lbnQoARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhkb2N1bWVudCgBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUHARthM3Mub2ZmaWNlLmRvY3VtZW50LmNvbnRlbnQDD2RvY3VtZW50U2VjdGlvbgcAsvIZBgMJcGFyYWdyYXBoBwCy8hkHBgQAsvIZCBBIZWxsbyDwn5iAIHdvcmxkKACy8hkHC3BhcmFncmFwaElkAXcIMDAwMDAwMDEoALLyGQcGdGV4dElkAXcIMDAwMDAwMDIoALLyGQYCaWQBdxJkb2N1bWVudC1zZWN0aW9uLTEoARthM3Mub2ZmaWNlLmRvY3VtZW50Lm9wdGlvbnMJcGFnZUNvbG9yAXcHI0Y4RkFGQygBG2Ezcy5vZmZpY2UuZG9jdW1lbnQub3B0aW9ucwx0cmFja0NoYW5nZXMBeAA=';
+const NATIVE_DOCUMENT_REPLACE_BASE64 = 'AQGi9zYAxLLyGRCy8hkRBPCfpoABsvIZAQ8C';
+const NATIVE_DOCUMENT_PAGE_COLOR_BASE64 =
+  'AQGi9zYCqLLyGRoBdwcjMTAxODI4AbLyGQIPAhoB';
+const NATIVE_DOCUMENT_TRACK_CHANGES_BASE64 = 'AAGy8hkCDwIaAg==';
 
 test('applies UTF-16-safe native typed Markdown updates in browser Yjs', () => {
   const document = new Y.Doc();
@@ -29,6 +36,61 @@ test('applies UTF-16-safe native typed Markdown updates in browser Yjs', () => {
   expect(document.getText('a3s.office.markdown.source').toString()).toBe(
     'A🦀B',
   );
+});
+
+test('applies native typed Document XML and option updates in browser Yjs', () => {
+  const browserDocument = new Y.Doc();
+  const nativeDocument = new Y.Doc();
+  for (const document of [browserDocument, nativeDocument]) {
+    Y.applyUpdate(document, decodeBase64(BROWSER_DOCUMENT_FIXTURE_BASE64));
+  }
+  const section = browserDocument
+    .getXmlFragment('a3s.office.document.content')
+    .get(0);
+  const paragraph = section instanceof Y.XmlElement ? section.get(0) : null;
+  const text = paragraph instanceof Y.XmlElement ? paragraph.get(0) : null;
+  if (!(text instanceof Y.XmlText)) {
+    throw new Error('Expected the browser Document fixture text node.');
+  }
+  text.insert(text.length, ' from browser');
+  for (const encoded of [
+    NATIVE_DOCUMENT_REPLACE_BASE64,
+    NATIVE_DOCUMENT_PAGE_COLOR_BASE64,
+    NATIVE_DOCUMENT_TRACK_CHANGES_BASE64,
+  ]) {
+    Y.applyUpdate(nativeDocument, decodeBase64(encoded));
+  }
+  exchangeUpdates(browserDocument, nativeDocument);
+
+  const contents = [browserDocument, nativeDocument].map((document) =>
+    readOfficeDocumentCollaboration(
+      createOfficeCollaborationSession({
+        artifactId: 'fixture-document',
+        document,
+        kind: 'document',
+      }),
+    ),
+  );
+  for (const content of contents) {
+    expect(content.html).toContain('Hello 🦀 world from browser');
+    expect(content.pageColor).toBe('#101828');
+    expect(content.trackChanges).toBeUndefined();
+    expect(content.model?.root).toMatchObject({
+      type: 'doc',
+      content: [
+        {
+          type: 'documentSection',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Hello 🦀 world from browser' }],
+            },
+          ],
+        },
+      ],
+    });
+  }
+  expect(contents[0]?.html).toBe(contents[1]?.html);
 });
 
 test('rejects forged transaction and binding origins at runtime', () => {
