@@ -69,13 +69,21 @@ Status: implemented in the browser library.
 - Canonical `Y.Text` Markdown binding with bounded UTF-16-safe replacements.
 - Remote update projection into source and visual panes.
 - Per-client undo/redo that preserves remote operations.
+- A bounded, identity-bound host transport adapter exchanges standard Yjs v1
+  state vectors and updates, preserves typed incremental origins, suppresses
+  update echoes, and exposes explicit reconnect synchronization.
+- A provider-owned Awareness controller publishes validated actor, mode,
+  activity, and format-specific locations for all five artifact kinds without
+  persisting presence in the shared document.
 - React, Vue, and Web Component session plumbing.
-- Convergence, permission, StrictMode, framework-parity, and ownership tests.
+- Convergence, offline/reconnect, transport-boundary, presence, permission,
+  StrictMode, framework-parity, and ownership tests.
 
 Remaining before this phase is production complete:
 
-- Provider integration examples and reconnect/offline browser tests.
-- Awareness-backed participant state and source selections.
+- Project typed participants and remote selections/carets into each editor UI.
+- Add reference WebSocket/WebTransport relay examples with provider-side
+  authorization and persistent update replay.
 - Durable update persistence and compaction reference implementation.
 - Cross-language Yjs/Yrs fixture tests.
 
@@ -242,9 +250,9 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 ### Phase 6: CLI, MCP, and coding agents
 
-Status: native Yrs replica store and non-interactive CLI foundation
-implemented; typed Office mutations, watch streams, MCP, and `a3s code`
-projection are pending.
+Status: native Yrs replica store, resumable CLI/MCP event streams, and
+`a3s code` projection are implemented; typed Office-model mutations and a
+host-injected live native transport session remain pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -254,11 +262,12 @@ projection are pending.
   contiguous sequence validation, startup replay, bounded automatic/manual
   compaction, and durable operation receipts provide crash recovery.
 - `a3s-office collab` exposes non-interactive `create`, `join`, `inspect`,
-  `diff`/`synchronize`, `apply`, `checkpoint`, and `leave` commands with JSON
-  output and optional no-clobber binary output. `sync-step1`, `encode-update`,
-  and `handle-message` expose standard y-sync document handshakes; mutating
-  SyncStep2/Update messages use the same identity and receipt path. `watch` and
-  typed Office-model mutation remain pending.
+  `diff`/`synchronize`, `apply`, `checkpoint`, `watch`, and `leave` commands
+  with JSON output and optional no-clobber binary output. `sync-step1`,
+  `encode-update`, and `handle-message` expose standard y-sync document
+  handshakes; mutating SyncStep2/Update messages use the same identity and
+  receipt path. Resumable event cursors report compaction gaps as explicit
+  full-state resets.
 - Each replica binds one stable actor ID, actor kind, permission mode, artifact
   identity/kind, namespace, and client ID. Apply/checkpoint/leave require the
   same identity plus a stable operation ID and accept an optional state-vector
@@ -272,15 +281,18 @@ projection are pending.
   Yrs peer. Core and process tests cover restart, checkpoint compaction,
   duplicate operations, stale preconditions, identity mismatches, and missing
   log entries.
+- Standard MCP exposes the durable replica lifecycle and bounded event stream;
+  the same six collaboration tools are explicitly available to the dedicated
+  `a3s code` Use worker.
 
 Remaining:
 
-- Add a host-injected transport session around the implemented y-sync message
-  framing; stream changes without scanning the source Office file.
+- Connect the browser host-channel contract to a host-injected native transport
+  session around the implemented y-sync framing.
 - Add typed format-model mutations with edit/comment/suggest authorization and
   preserve actor/operation origins across browser/native audit records.
-- Project the same commands into MCP and `a3s code` tools; stream remote changes
-  into the agent event loop without polling the whole file.
+- Project editor-visible presence and selection state while keeping Awareness
+  ephemeral and outside native replica persistence.
 
 Exit criterion: a browser, `office` CLI, MCP client, and `a3s code` agent edit
 the same artifact concurrently, converge at the shared-model level, reconnect

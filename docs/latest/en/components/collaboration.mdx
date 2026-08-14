@@ -10,7 +10,104 @@ owns rooms, authentication, authorization, network providers, persistence, and
 the `Y.Doc`; the editor owns the format-specific binding and interaction.
 
 Markdown, Document, Presentation, Spreadsheet, and PDF have browser editor
-bindings. Native Yrs clients remain a later phase.
+bindings. Native Yrs replicas expose the same Yjs v1 state-vector and update
+protocol through the CLI and MCP.
+
+## Attach a host transport
+
+`createOfficeCollaborationTransportBinding` is a small reference adapter for a
+host-owned room channel. Its envelope binds every message to the protocol
+version, artifact ID, artifact kind, namespace, and Yjs client ID. Payloads are
+bounded standard Yjs v1 state vectors or updates; incremental updates retain a
+validated Office actor/operation origin when one exists.
+
+```ts title="host-room.ts"
+import {
+  createOfficeCollaborationTransportBinding,
+  type OfficeCollaborationTransport,
+} from '@a3s-lab/office/core';
+
+const channel: OfficeCollaborationTransport = {
+  publish(message) {
+    room.publish(message); // Preserve Uint8Array payloads when encoding.
+  },
+  subscribe(listener) {
+    return room.subscribe(listener);
+  },
+};
+
+const transport = createOfficeCollaborationTransportBinding(session, channel, {
+  // Wait until the authenticated room subscription is ready.
+  autoSynchronize: false,
+});
+
+room.onConnected(() => transport.synchronize());
+room.onReconnected(() => transport.synchronize());
+
+// Unsubscribe without destroying the host-owned room or Y.Doc.
+transport.destroy();
+```
+
+Every peer sends a fresh state vector after its subscription becomes active and
+after each reconnect. A peer answers with only the missing update. Repeating
+the handshake is safe, and inbound updates are not echoed back into the same
+channel. The host still owns delivery guarantees, offline buffering,
+authorization, persistence, and room membership. A transport message is not an
+authorization token.
+
+## Publish ephemeral presence
+
+Pass provider-owned Yjs Awareness to the session, then create one typed
+presence controller for that local client. The provider remains responsible
+for synchronizing Awareness; the document transport adapter above deliberately
+does not persist or relay ephemeral state.
+
+```ts title="shared-presence.ts"
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+
+const awareness = new Awareness(document);
+provider.attachAwareness(awareness);
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', color: '#7c3aed' },
+  artifactId,
+  awareness,
+  document,
+  kind: 'spreadsheet',
+  mode: 'edit',
+});
+
+const presence = createOfficeCollaborationPresence(session);
+const unsubscribe = presence.subscribe(({ participants }) => {
+  renderParticipants(participants);
+});
+
+presence.update({
+  activity: 'active',
+  location: {
+    kind: 'spreadsheet',
+    sheetId: 'sheet-1',
+    ranges: [
+      { startRow: 4, startColumn: 1, endRow: 6, endColumn: 3 },
+    ],
+    activeCell: { row: 4, column: 1 },
+  },
+});
+
+unsubscribe();
+presence.destroy();
+```
+
+Locations are format-specific: Document and Markdown use anchor/head model
+positions, Spreadsheet uses bounded zero-based ranges, Presentation uses one
+slide plus stable element IDs, and PDF uses a zero-based page plus an optional
+annotation ID. Remote states with the wrong artifact identity, protocol,
+actor, mode, or location shape are ignored. Presence is advisory UI data, not
+canonical content, durable audit history, or permission enforcement.
 
 ## Open a Markdown session
 
@@ -312,7 +409,7 @@ existing writable PDF field.
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
-| Awareness | The session accepts a structural awareness object, but participant UI and collaborative cursors are not implemented yet. |
+| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it; participant UI and collaborative cursors are the next projection layer. |
 | Extensions | Collaborative Documents accept behavior-only TipTap `Extension` values. Custom Nodes, Marks, global attributes, and extension kits require a versioned Office schema migration and are rejected. |
 
 `onChange` receives complete snapshots for local and remote shared changes. Use

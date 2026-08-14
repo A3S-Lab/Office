@@ -19,6 +19,38 @@ export {
   WorkOfficeCollaborationError as OfficeCollaborationError,
 } from './internal/collaboration/office-collaboration';
 export type {
+  WorkOfficeCollaborationParticipant as OfficeCollaborationParticipant,
+  WorkOfficeCollaborationPresence as OfficeCollaborationPresence,
+  WorkOfficeCollaborationPresenceActivity as OfficeCollaborationPresenceActivity,
+  WorkOfficeCollaborationPresenceActor as OfficeCollaborationPresenceActor,
+  WorkOfficeCollaborationPresenceLocation as OfficeCollaborationPresenceLocation,
+  WorkOfficeCollaborationPresenceSnapshot as OfficeCollaborationPresenceSnapshot,
+  WorkOfficeCollaborationPresenceState as OfficeCollaborationPresenceState,
+  WorkOfficeCollaborationPresenceUpdate as OfficeCollaborationPresenceUpdate,
+  WorkOfficePdfPresenceLocation as OfficePdfPresenceLocation,
+  WorkOfficePresentationPresenceLocation as OfficePresentationPresenceLocation,
+  WorkOfficeSpreadsheetPresenceCell as OfficeSpreadsheetPresenceCell,
+  WorkOfficeSpreadsheetPresenceLocation as OfficeSpreadsheetPresenceLocation,
+  WorkOfficeSpreadsheetPresenceRange as OfficeSpreadsheetPresenceRange,
+  WorkOfficeTextPresenceLocation as OfficeTextPresenceLocation,
+} from './internal/collaboration/office-collaboration-presence';
+export {
+  createWorkOfficeCollaborationPresence as createOfficeCollaborationPresence,
+  WORK_OFFICE_COLLABORATION_PRESENCE_FIELD as OFFICE_COLLABORATION_PRESENCE_FIELD,
+} from './internal/collaboration/office-collaboration-presence';
+export type {
+  WorkOfficeCollaborationTransport as OfficeCollaborationTransport,
+  WorkOfficeCollaborationTransportBinding as OfficeCollaborationTransportBinding,
+  WorkOfficeCollaborationTransportBindingOptions as OfficeCollaborationTransportBindingOptions,
+  WorkOfficeCollaborationTransportMessage as OfficeCollaborationTransportMessage,
+  WorkOfficeCollaborationTransportMessageType as OfficeCollaborationTransportMessageType,
+} from './internal/collaboration/office-collaboration-transport';
+export {
+  createWorkOfficeCollaborationTransportBinding as createOfficeCollaborationTransportBinding,
+  WORK_OFFICE_COLLABORATION_DEFAULT_MAX_TRANSPORT_PAYLOAD_BYTES as OFFICE_COLLABORATION_DEFAULT_MAX_TRANSPORT_PAYLOAD_BYTES,
+  WORK_OFFICE_COLLABORATION_MAX_TRANSPORT_PAYLOAD_BYTES as OFFICE_COLLABORATION_MAX_TRANSPORT_PAYLOAD_BYTES,
+} from './internal/collaboration/office-collaboration-transport';
+export type {
   WorkOfficeDocumentCollaborationBinding as OfficeDocumentCollaborationBinding,
   WorkOfficeDocumentCollaborationBindingOptions as OfficeDocumentCollaborationBindingOptions,
   WorkOfficeDocumentCollaborationChange as OfficeDocumentCollaborationChange,

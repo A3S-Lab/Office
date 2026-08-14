@@ -51,7 +51,7 @@ collaboration transport, and AI providers.
 | Browser embedding | WPS offers web and native applications | **Supported**, with React, Vue, Web Components, and Core entry points | A3S differentiator |
 | Native Windows/macOS/Linux/iOS/Android applications | Product-owned native applications | **Host-owned**; A3S ships a browser component and native automation engine, not app shells | No core editor work |
 | Cloud storage and multi-device sync | Integrated cloud documents and sync | **Host-owned** through controlled values, file actions, and repository ports | Publish reference adapters, not a storage service |
-| Real-time co-editing, presence, reactions, sharing, permissions | Integrated collaboration workspace | **Partial**: browser/native Yjs replicas plus resumable CLI and MCP coding-agent event loops are supported; transport, presence, reactions, sharing, and ACL services remain host-owned | P1 transport/presence reference adapter and typed collaboration mutations |
+| Real-time co-editing, presence, reactions, sharing, permissions | Integrated collaboration workspace | **Partial**: browser/native Yjs replicas, a bounded host-channel sync adapter, typed Awareness presence, and resumable CLI/MCP coding-agent event loops are supported; relay services, presence UI, reactions, sharing, and ACL enforcement remain host-owned | P1 editor presence projection, native transport adapter, and typed collaboration mutations |
 | Version history and recovery | Integrated cloud workflow | **Host-owned**; controlled revisions and repository contracts exist | Keep persistence outside the package |
 | AI writing, document analysis, slide creation, formulas, and PDF chat | Integrated WPS AI features on supported plans | **Host-owned** typed agent ports and immutable selection context; no bundled model/provider | Maintain provider-neutral boundary |
 | Templates and asset marketplace | Large WPS template catalog | **Partial**: small built-in starter templates, no marketplace | P3; host-extensible template catalog |
@@ -244,8 +244,14 @@ independent parser; redaction and signatures meet byte-level safety rules.
 - The transport-neutral Yjs/Yrs document layer now includes durable native
   replicas plus bounded, resumable CLI and MCP event cursors. Checkpoint gaps
   produce an explicit full-state reset instead of silently dropping history.
-- Extend that layer with an operation/presence contract and reference adapter
-  without embedding accounts, storage, or authorization.
+- The browser Core now exposes an identity-bound, bounded host-channel adapter
+  for Yjs v1 state-vector/update synchronization and an ephemeral Awareness
+  contract for typed actors, modes, activity, and format-specific locations.
+  Typed incremental origins survive live transport without entering canonical
+  document state.
+- Connect that contract to a native host transport and project participants,
+  selections, and cursors into editor UI without embedding accounts, storage,
+  or authorization.
 - Map comments, revisions, selections, cursors, permissions, and conflict
   handling onto the existing controlled editor model.
 - Publish provider-neutral examples for writing, formula, slide, and PDF AI

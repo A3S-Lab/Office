@@ -4,6 +4,11 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a bounded, identity-bound host transport adapter for Yjs v1
+  state-vector/update synchronization with explicit reconnect, echo
+  suppression, and typed incremental origins. Added a provider-owned Awareness
+  controller with validated participant state and format-specific locations for
+  Document, Markdown, Spreadsheet, Presentation, and PDF sessions.
 - Live Word pagination now preserves each section's exact page size,
   orientation, margins, and page gap across mixed-layout documents. Kernel
   protocol 16 carries deduplicated page styles into both JS and Rust/WASM,

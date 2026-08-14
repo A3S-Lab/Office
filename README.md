@@ -960,7 +960,10 @@ cargo run -p a3s-office-cli -- collab diff .a3s/report.replica \
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
 bounded contracts. They inspect and modify files without launching desktop
 Office or scraping editor UI. The collaboration replica is transport-neutral:
-the host still owns rooms, authentication, authorization, and delivery.
+the host still owns rooms, authentication, authorization, and delivery. Browser
+Core also provides a bounded host-channel adapter for Yjs state-vector/update
+sync and a typed, ephemeral Awareness controller for participants and
+format-specific locations; neither component creates an account or backend.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

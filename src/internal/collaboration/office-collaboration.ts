@@ -121,8 +121,15 @@ export type WorkOfficeCollaborationErrorCode =
   | 'office.collaboration.not_initialized'
   | 'office.collaboration.origin_invalid'
   | 'office.collaboration.permission_denied'
+  | 'office.collaboration.presence_conflict'
+  | 'office.collaboration.presence_invalid'
+  | 'office.collaboration.presence_unavailable'
   | 'office.collaboration.root_invalid'
-  | 'office.collaboration.session_destroyed';
+  | 'office.collaboration.session_destroyed'
+  | 'office.collaboration.transport_identity_mismatch'
+  | 'office.collaboration.transport_invalid'
+  | 'office.collaboration.transport_message_invalid'
+  | 'office.collaboration.transport_message_too_large';
 
 export class WorkOfficeCollaborationError extends Error {
   readonly code: WorkOfficeCollaborationErrorCode;
@@ -431,11 +438,38 @@ function normalizedActor(
     );
   }
   return Object.freeze({
-    ...actor,
     id: normalizedIdentifier(actor.id, 'actor ID'),
     name: normalizedIdentifier(actor.name, 'actor name'),
+    color: normalizedOptionalActorField(actor.color, 'color', 64),
+    avatarUrl: normalizedOptionalActorField(
+      actor.avatarUrl,
+      'avatar URL',
+      2_048,
+    ),
     kind,
   });
+}
+
+function normalizedOptionalActorField(
+  value: string | undefined,
+  label: string,
+  maximumLength: number,
+): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string') {
+    throw new WorkOfficeCollaborationError(
+      'office.collaboration.actor_invalid',
+      `The collaboration actor ${label} must be a string when provided.`,
+    );
+  }
+  const normalized = value.trim();
+  if (!normalized || normalized.length > maximumLength) {
+    throw new WorkOfficeCollaborationError(
+      'office.collaboration.actor_invalid',
+      `The collaboration actor ${label} must contain between 1 and ${maximumLength} characters.`,
+    );
+  }
+  return normalized;
 }
 
 function normalizedArtifactKind(value: WorkArtifactKind): WorkArtifactKind {
