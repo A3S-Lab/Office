@@ -54,6 +54,17 @@ test('does not steal focus when the user moves on while an editor opens', async 
   await waitFor(() => expect(next).toHaveFocus());
 });
 
+test('keeps opener focus when first-open focus is disabled', async () => {
+  render(<DocumentOpeningHarness autoFocus={false} />);
+
+  const opener = screen.getByRole('button', { name: 'Open document' });
+  opener.focus();
+  fireEvent.click(opener);
+
+  await screen.findByRole('textbox', { name: '文档正文' });
+  await waitFor(() => expect(opener).toHaveFocus());
+});
+
 test('focuses the spreadsheet grid when the editor first opens', async () => {
   const view = render(<SpreadsheetOpeningHarness />);
 
@@ -89,8 +100,10 @@ test('focuses the active slide when the presentation first opens', async () => {
 });
 
 function DocumentOpeningHarness({
+  autoFocus,
   showNextControl = false,
 }: {
+  autoFocus?: boolean;
   showNextControl?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -103,6 +116,7 @@ function DocumentOpeningHarness({
       {showNextControl && <button type="button">Next control</button>}
       {open && (
         <DocumentEditor
+          autoFocus={autoFocus}
           content={artifact.content}
           onChange={() => undefined}
           theme="light"

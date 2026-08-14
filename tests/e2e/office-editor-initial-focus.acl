@@ -1,0 +1,183 @@
+suite "office-editor-initial-focus" {
+    version = 1
+
+    scenario "focus-and-edit-writer-on-first-open" {
+        name = "Focus the editable Writer body when a document first opens"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-document" {
+            target = text("新项目方案", true)
+        }
+
+        wait "writer-focused-and-editable" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true']:focus")
+        }
+
+        type "enter-first-writer-text" {
+            target = css(".work-document-editable .ProseMirror[contenteditable='true']")
+            value = " FIRST_OPEN_WRITER"
+        }
+
+        expect "first-writer-text-accepted" {
+            text = "FIRST_OPEN_WRITER"
+        }
+
+        accessibility "writer-accessibility" {
+            path = "evidence/writer-accessibility.json"
+            interactive = true
+        }
+
+        console "writer-console" {
+            path = "diagnostics/writer-console.json"
+            clear = false
+        }
+
+        page_errors "writer-errors" {
+            path = "diagnostics/writer-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "focus-markdown-source-on-first-open" {
+        name = "Focus the editable Markdown source when it first opens"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-markdown" {
+            target = text("产品说明", true)
+        }
+
+        wait "markdown-focused-and-editable" {
+            visible = css("textarea[aria-label='Markdown 源码']:focus:not([readonly])")
+        }
+
+        type "enter-first-markdown-text" {
+            target = css("textarea[aria-label='Markdown 源码']")
+            value = "FIRST_OPEN_MARKDOWN"
+        }
+
+        console "markdown-console" {
+            path = "diagnostics/markdown-console.json"
+            clear = false
+        }
+
+        page_errors "markdown-errors" {
+            path = "diagnostics/markdown-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "focus-spreadsheet-grid-on-first-open" {
+        name = "Focus the Spreadsheet grid when a workbook first opens"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-grid-focused" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        type "enter-first-cell-text" {
+            target = css(".fortune-sheet-overlay")
+            value = "FIRST_OPEN_SHEET"
+        }
+
+        press "commit-first-cell-text" {
+            key = "Enter"
+        }
+
+        press "return-to-first-cell" {
+            key = "ArrowUp"
+        }
+
+        expect "first-cell-text-accepted" {
+            text = "FIRST_OPEN_SHEET"
+        }
+
+        console "spreadsheet-console" {
+            path = "diagnostics/spreadsheet-console.json"
+            clear = false
+        }
+
+        page_errors "spreadsheet-errors" {
+            path = "diagnostics/spreadsheet-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "focus-presentation-slide-on-first-open" {
+        name = "Focus the active slide when a presentation first opens"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-presentation" {
+            target = text("业务策略汇报", true)
+        }
+
+        wait "active-slide-focused" {
+            visible = css("[data-slide-thumbnail].active:focus")
+        }
+
+        screenshot "focused-editors" {
+            path = "screenshots/presentation-first-focus.png"
+        }
+
+        console "presentation-console" {
+            path = "diagnostics/presentation-console.json"
+            clear = false
+        }
+
+        page_errors "presentation-errors" {
+            path = "diagnostics/presentation-errors.json"
+            clear = false
+        }
+    }
+}

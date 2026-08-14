@@ -102,32 +102,11 @@ export function restorePresentationWorkspaceFocus(
   requestAnimationFrame(restore);
 }
 
-export function focusInitialPresentationWorkspace(
-  root: HTMLElement | null,
-  getState: () => PresentationWorkspaceFocusState,
-  focusOrigin: Element | null,
-): void {
-  if (!root) return;
-  const state = getState();
-  if (state.viewMode === 'normal' && state.editingElementId) return;
-  const target = presentationWorkspaceFocusTarget(root, state);
-  if (!target) return;
-  const activeElement = document.activeElement;
-  const canFocus =
-    activeElement === focusOrigin ||
-    activeElement === target ||
-    activeElement === document.body ||
-    activeElement === document.documentElement ||
-    !activeElement?.isConnected;
-  if (canFocus && activeElement !== target) {
-    target.focus({ preventScroll: true });
-  }
-}
-
-function presentationWorkspaceFocusTarget(
+export function presentationWorkspaceFocusTarget(
   root: HTMLElement,
   state: PresentationWorkspaceFocusState,
 ): HTMLElement | undefined {
+  if (state.viewMode === 'normal' && state.editingElementId) return undefined;
   const selectedElementId = state.selectedElementIds.at(-1);
   return state.viewMode === 'normal' && selectedElementId
     ? Array.from(

@@ -108,11 +108,11 @@ import {
   documentZoomForFit,
 } from './document-zoom';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
+import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import {
   useOfficeTaskPaneEscape,
   useOfficeTaskPaneModal,
 } from './office-task-pane';
-import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useDocumentComments } from './use-document-comments';
 import { useDocumentInsertCommands } from './use-document-insert-commands';
@@ -299,8 +299,6 @@ function DocumentEditorSurface({
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
-  const initialEditorFocusRequestedRef = useRef(false);
-  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const contentRef = useRef(effectiveContent);
   const onChangeRef = useRef(onChange);
   const trackChangesRef = useRef(Boolean(effectiveContent.trackChanges));
@@ -718,22 +716,12 @@ function DocumentEditorSurface({
     });
   }, [editor]);
 
-  useEffect(() => {
-    if (
-      !autoFocus ||
-      readOnly ||
-      !editor ||
-      editor.isDestroyed ||
-      initialEditorFocusRequestedRef.current
-    ) {
-      return;
-    }
-    initialEditorFocusRequestedRef.current = true;
-    restoreDocumentEditorFocus(
-      () => (editor.isDestroyed ? null : editor.view.dom),
-      editorFocusOrigin,
-    );
-  }, [autoFocus, editor, editorFocusOrigin, readOnly]);
+  useOfficeEditorInitialFocus({
+    enabled: autoFocus && !readOnly && Boolean(editor && !editor.isDestroyed),
+    getTarget: () => (!editor || editor.isDestroyed ? null : editor.view.dom),
+    isTargetReady: (target) =>
+      target.getAttribute('contenteditable') === 'true',
+  });
 
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {

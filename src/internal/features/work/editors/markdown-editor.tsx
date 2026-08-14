@@ -9,12 +9,12 @@ import {
   useRef,
   useState,
 } from 'react';
+import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import {
   createWorkOfficeMarkdownCollaborationBinding,
   readWorkOfficeMarkdownCollaboration,
   type WorkOfficeMarkdownCollaborationBinding,
 } from '../../../collaboration/office-markdown-collaboration';
-import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
 import {
   type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
@@ -52,7 +52,7 @@ import {
 import { MarkdownStatus } from './markdown-status';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
-import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
+import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useMarkdownSourceHistory } from './use-markdown-source-history';
 import {
@@ -118,8 +118,6 @@ export function MarkdownEditor({
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sourceTextareaRef = useRef<HTMLTextAreaElement>(null);
   const markdownRootRef = useRef<HTMLElement>(null);
-  const initialEditorFocusRequestedRef = useRef(false);
-  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const [sourceMarkdown, setSourceMarkdown] = useState(initialContent.markdown);
   const [selectionMenu, setSelectionMenu] =
     useState<MarkdownSelectionMenuState | null>(null);
@@ -656,29 +654,21 @@ export function MarkdownEditor({
       ),
   });
 
-  useEffect(() => {
-    if (
-      !autoFocus ||
-      readOnly ||
-      !editor ||
-      !collaborationReady ||
-      initialEditorFocusRequestedRef.current
-    ) {
-      return;
-    }
-    initialEditorFocusRequestedRef.current = true;
-    restoreMarkdownEditingSurfaceFocus(() => {
+  useOfficeEditorInitialFocus({
+    enabled:
+      autoFocus &&
+      !readOnly &&
+      collaborationReady &&
+      Boolean(editor && !editor.isDestroyed),
+    getTarget: () => {
       if (viewMode !== 'visual') return sourceTextareaRef.current;
-      return editor.isDestroyed ? null : editor.view.dom;
-    }, editorFocusOrigin);
-  }, [
-    autoFocus,
-    collaborationReady,
-    editor,
-    editorFocusOrigin,
-    readOnly,
-    viewMode,
-  ]);
+      return !editor || editor.isDestroyed ? null : editor.view.dom;
+    },
+    isTargetReady: (target) =>
+      target instanceof HTMLTextAreaElement
+        ? !target.disabled && !target.readOnly
+        : target.getAttribute('contenteditable') === 'true',
+  });
 
   if (!editor || !collaborationReady) {
     return <WorkEditorLoadingState title="正在准备 Markdown 编辑器" />;

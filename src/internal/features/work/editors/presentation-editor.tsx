@@ -7,8 +7,8 @@ import {
   type WorkOfficePresentationCollaborationBinding,
 } from '../../../collaboration/office-presentation-collaboration';
 import {
-  type WorkspaceContextMenuEvent,
   WorkspaceContextMenu,
+  type WorkspaceContextMenuEvent,
   workspaceContextMenuPosition,
 } from '../../workspace/components/workspace-context-menu';
 import { presentationAgentMenuItems } from '../components/work-editor-agent-menus';
@@ -19,20 +19,22 @@ import {
   presentationNotesProposalTarget,
 } from '../work-presentation-agent-context';
 import {
-  presentationSlideView,
-  withPresentationDesign,
-} from '../work-presentation-layouts';
-import {
   canGroupPresentationElements,
   canUngroupPresentationElements,
   presentationSelectionUnits,
 } from '../work-presentation-groups';
+import {
+  presentationSlideView,
+  withPresentationDesign,
+} from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
 import { OfficeFileInput } from './office-controls';
+import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeTaskPaneEscape } from './office-task-pane';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
 import { createPresentationEditorExtensions } from './presentation-command-controller';
@@ -43,27 +45,25 @@ import {
 } from './presentation-comments-panel';
 import { presentationCoreContextMenuItems } from './presentation-context-menu';
 import { PresentationDesignPanel } from './presentation-design-panel';
-import { updatePresentationElements } from './presentation-editor-operations';
 import {
   type PresentationObjectFocusState,
   type PresentationWorkspaceFocusState,
-  focusInitialPresentationWorkspace,
   presentationCommandsWithObjectFocus,
+  presentationWorkspaceFocusTarget,
   restorePresentationWorkspaceFocus,
 } from './presentation-editor-focus';
-import {
-  presentationElementSupportsTextFormatting,
-  selectedPresentationElements,
-} from './presentation-selection';
+import { updatePresentationElements } from './presentation-editor-operations';
 import type {
   PresentationAgentMenuState,
   PresentationDesignMode,
   PresentationEditorProps,
 } from './presentation-editor-types';
 import { PresentationPlayer } from './presentation-player';
+import {
+  presentationElementSupportsTextFormatting,
+  selectedPresentationElements,
+} from './presentation-selection';
 import { PresentationStatusBar } from './presentation-status-bar';
-import { useOfficeTaskPaneEscape } from './office-task-pane';
-import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import {
   applyPresentationTextFormatting,
   presentationTextToolbarState,
@@ -71,17 +71,17 @@ import {
 import { presentationElementToolbarState } from './presentation-text-formatting';
 import { PresentationToolbar } from './presentation-toolbar';
 import { PresentationWorkspace } from './presentation-workspace';
+import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
+import { useOfficeEditorRuntime } from './use-office-editor-runtime';
+import {
+  stepOfficeZoom,
+  useOfficeEditorWheelZoom,
+} from './use-office-editor-wheel-zoom';
 import { usePresentationClipboard } from './use-presentation-clipboard';
 import { usePresentationDesignCommands } from './use-presentation-design-commands';
 import { usePresentationElementCommands } from './use-presentation-element-commands';
 import { usePresentationGeometry } from './use-presentation-geometry';
 import { usePresentationHistory } from './use-presentation-history';
-import { useOfficeEditorKeyboardShortcuts } from './use-office-editor-keyboard-shortcuts';
-import {
-  stepOfficeZoom,
-  useOfficeEditorWheelZoom,
-} from './use-office-editor-wheel-zoom';
-import { useOfficeEditorRuntime } from './use-office-editor-runtime';
 import { usePresentationReviewCommands } from './use-presentation-review-commands';
 import { usePresentationSelection } from './use-presentation-selection';
 import { usePresentationSlideCommands } from './use-presentation-slide-commands';
@@ -258,8 +258,6 @@ function PresentationEditingSurface({
   const commentsInvokerRef = useRef<HTMLElement | null>(null);
   const presentationRootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLElement>(null);
-  const initialEditorFocusRequestedRef = useRef(false);
-  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const objectFocusStateRef = useRef<PresentationObjectFocusState>({
     editingElementId: null,
     selectedElementIds: [],
@@ -327,17 +325,22 @@ function PresentationEditingSurface({
     selectedSlideId: selectedSlide.id,
     viewMode,
   };
-  useEffect(() => {
-    if (initialEditorFocusRequestedRef.current || !autoFocus) return;
-    const root = presentationRootRef.current;
-    if (!root) return;
-    initialEditorFocusRequestedRef.current = true;
-    focusInitialPresentationWorkspace(
-      root,
-      () => workspaceFocusStateRef.current,
-      editorFocusOrigin,
-    );
-  }, [autoFocus, editorFocusOrigin]);
+  useOfficeEditorInitialFocus({
+    enabled: autoFocus,
+    getTarget: () => {
+      const root = presentationRootRef.current;
+      return root
+        ? (presentationWorkspaceFocusTarget(
+            root,
+            workspaceFocusStateRef.current,
+          ) ?? null)
+        : null;
+    },
+    isTargetReady: (target) =>
+      target.tabIndex >= 0 &&
+      !target.hasAttribute('disabled') &&
+      target.getAttribute('aria-disabled') !== 'true',
+  });
   useEffect(() => {
     setDismissedChartPaneElementId(null);
   }, [selectedElementId]);

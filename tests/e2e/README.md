@@ -19,6 +19,13 @@ bun run test:e2e:check
 bun run test:e2e
 ```
 
+The first-open focus regression also has a focused gate:
+
+```bash
+bun run test:e2e:initial-focus:check
+bun run test:e2e:initial-focus
+```
+
 The suites cover focused Word page-color, a desktop Writer quick-access and
 adaptive, collapsible-ribbon workflow covering comfortable, priority-compacted,
 persistent collapsed, and temporary tab states without document layout
