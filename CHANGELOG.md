@@ -4,6 +4,12 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added a transport-neutral native collaboration session and the machine-only
+  `collab session` JSONL bridge. Coding agents can now join a host-owned live
+  room with browser-compatible `SyncStep1`/`SyncStep2` reconnect handshakes,
+  durable delivery receipts, external CLI/MCP update projection, compaction
+  recovery, typed outbound origins, and remote-echo suppression while the host
+  retains connectivity, room, authentication, and authorization ownership.
 - Added a bounded, identity-bound host transport adapter for Yjs v1
   state-vector/update synchronization with explicit reconnect, echo
   suppression, and typed incremental origins. Added a provider-owned Awareness

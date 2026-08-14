@@ -91,6 +91,22 @@ its complete update and persist the reset cursor. Bound unattended runs with
 `--max-events` or `--timeout-ms`. Omitting `--after-sequence` starts at the
 current durable sequence and watches only future changes.
 
+When the CLI-only host supplies an authenticated room transport, attach the
+replica as a live peer instead:
+
+```bash
+a3s use office collab session "$REPLICA" --poll-ms 100 --json
+```
+
+Treat stdin and stdout as JSONL. Forward each stdout `outbound.message` after
+decoding `payloadBase64`; send room messages back as `receive` records and use
+a stable host delivery `operationId` for every `sync-step-2` or `update`.
+Send `{"type":"reconnect"}` after every transport reconnect and
+`{"type":"close"}` for an orderly stop. The session owns Yjs/Yrs handshakes,
+durable receipts, external agent-update polling, and echo suppression; the host
+continues to own room identity, authentication, authorization, buffering, and
+delivery.
+
 ## Choose the Surface
 
 - In an A3S Code `use` worker, use `mcp__use_office__*` and keep the returned
@@ -98,8 +114,8 @@ current durable sequence and watches only future changes.
 - Use `mcp__use_office_compat__*` only when the native route lacks the requested
   operation and the compatibility tools are actually present.
 - Use `a3s use office native ... --json` for local automation and scripts.
-- Use `a3s use office collab ... --json` for durable Yjs/Yrs replica exchange
-  and resumable coding-agent event streams.
+- Use `a3s use office collab ... --json` for durable Yjs/Yrs replica exchange,
+  resumable coding-agent event streams, and host-injected live JSONL sessions.
 - Use `a3s use mcp serve office-native` for typed, stateful agent sessions.
   Read [references/mcp.md](references/mcp.md) before using its session tools.
 - Use the typed Rust API when embedding Office behavior in Rust.

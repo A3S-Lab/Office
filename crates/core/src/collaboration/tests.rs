@@ -20,6 +20,7 @@ fn assert_send_sync<T: Send + Sync>() {}
 #[test]
 fn collaboration_store_is_send_and_sync() {
     assert_send_sync::<NativeOfficeCollaborationStore>();
+    assert_send_sync::<NativeOfficeCollaborationTransportSession>();
 }
 
 fn create_request(root: &std::path::Path) -> NativeOfficeCollaborationCreateRequest {
@@ -68,6 +69,23 @@ fn agent_notes_update(client_id: u64, value: &str) -> Vec<u8> {
         .transact()
         .encode_state_as_update_v1(&StateVector::default());
     update
+}
+
+fn browser_transport_message(
+    message_type: NativeOfficeCollaborationTransportMessageType,
+    payload: Vec<u8>,
+) -> NativeOfficeCollaborationTransportMessage {
+    NativeOfficeCollaborationTransportMessage {
+        protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+        version: NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
+        artifact_id: "fixture-markdown".to_owned(),
+        artifact_kind: NativeOfficeCollaborationArtifactKind::Markdown,
+        namespace: NATIVE_OFFICE_COLLABORATION_NAMESPACE.to_owned(),
+        sender_client_id: 424_242,
+        message_type,
+        payload,
+        origin: None,
+    }
 }
 
 #[test]
@@ -179,6 +197,250 @@ fn y_sync_update_handler_requires_identity_and_persists_idempotently() {
     assert!(first.apply.as_ref().unwrap().state_changed);
     let replay = store.handle_sync_message(&message, Some(mutation)).unwrap();
     assert!(replay.apply.unwrap().duplicate);
+}
+
+#[test]
+fn live_transport_session_bridges_browser_envelopes_and_suppresses_echoes() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    let mut session = NativeOfficeCollaborationTransportSession::attach(store.clone()).unwrap();
+
+    let initial = session.synchronize().unwrap();
+    assert_eq!(
+        initial.message_type,
+        NativeOfficeCollaborationTransportMessageType::SyncStep1
+    );
+    assert_eq!(initial.sender_client_id, 900_001);
+
+    let browser_update = STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap();
+    let mut incoming = browser_transport_message(
+        NativeOfficeCollaborationTransportMessageType::Update,
+        browser_update.clone(),
+    );
+    incoming.origin = Some(NativeOfficeCollaborationOrigin {
+        protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+        kind: NativeOfficeCollaborationOriginKind::Editor,
+        actor_id: Some("browser-user".to_owned()),
+        operation_id: Some("browser-edit-1".to_owned()),
+    });
+    let received = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: incoming.clone(),
+            operation_id: Some("delivery-browser-edit-1".to_owned()),
+            if_state_vector: None,
+        })
+        .unwrap();
+    assert!(received.apply.as_ref().unwrap().state_changed);
+    assert_eq!(received.apply.as_ref().unwrap().sequence, Some(1));
+
+    let replay = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: incoming,
+            operation_id: Some("delivery-browser-edit-1".to_owned()),
+            if_state_vector: None,
+        })
+        .unwrap();
+    assert!(replay.apply.unwrap().duplicate);
+    let echoed = session
+        .poll(MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH)
+        .unwrap();
+    assert!(echoed.messages.is_empty());
+    assert_eq!(echoed.cursor_sequence, 1);
+
+    let local_update = agent_notes_update(700_007, "live native edit");
+    store
+        .apply(apply_request("native-live-1", local_update.clone()))
+        .unwrap();
+    let outbound = session
+        .poll(MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH)
+        .unwrap();
+    assert_eq!(outbound.messages.len(), 1);
+    let message = &outbound.messages[0];
+    assert_eq!(
+        message.message_type,
+        NativeOfficeCollaborationTransportMessageType::Update
+    );
+    assert_eq!(message.payload, local_update);
+    assert_eq!(
+        message.origin,
+        Some(NativeOfficeCollaborationOrigin {
+            protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+            kind: NativeOfficeCollaborationOriginKind::Agent,
+            actor_id: Some("agent-alpha".to_owned()),
+            operation_id: Some("native-live-1".to_owned()),
+        })
+    );
+
+    let browser = Doc::with_client_id(424_242);
+    browser
+        .transact_mut()
+        .apply_update(Update::decode_v1(&browser_update).unwrap())
+        .unwrap();
+    let browser_vector = canonical_state_vector(&browser.transact().state_vector());
+    let response = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: browser_transport_message(
+                NativeOfficeCollaborationTransportMessageType::SyncStep1,
+                browser_vector,
+            ),
+            operation_id: None,
+            if_state_vector: None,
+        })
+        .unwrap()
+        .response
+        .unwrap();
+    assert_eq!(
+        response.message_type,
+        NativeOfficeCollaborationTransportMessageType::SyncStep2
+    );
+    browser
+        .transact_mut()
+        .apply_update(Update::decode_v1(&response.payload).unwrap())
+        .unwrap();
+    let transaction = browser.transact();
+    assert_eq!(
+        transaction
+            .get_text("agent.notes")
+            .unwrap()
+            .get_string(&transaction),
+        "live native edit"
+    );
+}
+
+#[test]
+fn live_transport_session_repairs_compacted_history_bidirectionally() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    let mut session = NativeOfficeCollaborationTransportSession::attach(store.clone()).unwrap();
+    let update = agent_notes_update(700_008, "compacted native edit");
+    store
+        .apply(apply_request("native-before-compaction", update))
+        .unwrap();
+    store
+        .checkpoint(checkpoint_request("compact-live-history"))
+        .unwrap();
+
+    let recovery = session
+        .poll(MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH)
+        .unwrap();
+    assert!(recovery.resynchronized);
+    assert_eq!(recovery.cursor_sequence, 1);
+    assert_eq!(recovery.messages.len(), 2);
+
+    let full_state = &recovery.messages[0];
+    assert_eq!(
+        full_state.message_type,
+        NativeOfficeCollaborationTransportMessageType::Update
+    );
+    assert_eq!(
+        full_state.origin,
+        Some(NativeOfficeCollaborationOrigin {
+            protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+            kind: NativeOfficeCollaborationOriginKind::System,
+            actor_id: Some("agent-alpha".to_owned()),
+            operation_id: None,
+        })
+    );
+    let browser = Doc::with_client_id(424_243);
+    browser
+        .transact_mut()
+        .apply_update(Update::decode_v1(&full_state.payload).unwrap())
+        .unwrap();
+    let transaction = browser.transact();
+    assert_eq!(
+        transaction
+            .get_text("agent.notes")
+            .unwrap()
+            .get_string(&transaction),
+        "compacted native edit"
+    );
+    let browser_vector = canonical_state_vector(&transaction.state_vector());
+    drop(transaction);
+
+    let handshake = &recovery.messages[1];
+    assert_eq!(
+        handshake.message_type,
+        NativeOfficeCollaborationTransportMessageType::SyncStep1
+    );
+    assert_eq!(handshake.payload, browser_vector);
+    assert!(handshake.origin.is_none());
+}
+
+#[test]
+fn live_transport_session_fails_closed_across_identity_and_message_boundaries() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    let mut session = NativeOfficeCollaborationTransportSession::attach(store).unwrap();
+
+    let mut wrong_artifact = browser_transport_message(
+        NativeOfficeCollaborationTransportMessageType::SyncStep1,
+        canonical_state_vector(&StateVector::default()),
+    );
+    wrong_artifact.artifact_id = "another-artifact".to_owned();
+    let error = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: wrong_artifact,
+            operation_id: None,
+            if_state_vector: None,
+        })
+        .unwrap_err();
+    assert_eq!(
+        error.code,
+        "office.collaboration.transport_identity_mismatch"
+    );
+
+    let update = agent_notes_update(777_777, "remote");
+    let missing_operation = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: browser_transport_message(
+                NativeOfficeCollaborationTransportMessageType::Update,
+                update.clone(),
+            ),
+            operation_id: None,
+            if_state_vector: None,
+        })
+        .unwrap_err();
+    assert_eq!(
+        missing_operation.code,
+        "office.collaboration.sync_identity_required"
+    );
+
+    let mut own_message = browser_transport_message(
+        NativeOfficeCollaborationTransportMessageType::Update,
+        update,
+    );
+    own_message.sender_client_id = 900_001;
+    let ignored = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: own_message,
+            operation_id: Some("ignored-own-message".to_owned()),
+            if_state_vector: None,
+        })
+        .unwrap();
+    assert!(ignored.ignored);
+    assert!(ignored.apply.is_none());
+
+    let mut invalid_origin = browser_transport_message(
+        NativeOfficeCollaborationTransportMessageType::SyncStep1,
+        canonical_state_vector(&StateVector::default()),
+    );
+    invalid_origin.origin = Some(NativeOfficeCollaborationOrigin {
+        protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+        kind: NativeOfficeCollaborationOriginKind::System,
+        actor_id: None,
+        operation_id: None,
+    });
+    let error = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: invalid_origin,
+            operation_id: None,
+            if_state_vector: None,
+        })
+        .unwrap_err();
+    assert_eq!(error.code, "office.collaboration.transport_message_invalid");
 }
 
 #[test]

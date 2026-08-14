@@ -41,6 +41,15 @@ impl CommandOutput {
             should_print: false,
         }
     }
+
+    pub(crate) fn silent_failure() -> Self {
+        Self {
+            human: String::new(),
+            json: serde_json::Value::Null,
+            exit_code: 1,
+            should_print: false,
+        }
+    }
 }
 
 pub async fn run(args: &[String]) -> UseResult<CommandOutput> {

@@ -47,6 +47,12 @@ a3s-office collab handle-message .a3s/report.replica \
   --operation-id receive-43 --artifact-id report \
   --kind document --mode edit --json
 
+# Keep the replica attached to a host-owned WebSocket or IPC channel. This is
+# a machine-only JSONL session: commands arrive on stdin and events leave on
+# stdout. It sends SyncStep1 immediately and whenever the host reconnects.
+a3s-office collab session .a3s/report.replica \
+  --poll-ms 100 --timeout-ms 3600000 --json
+
 # Apply a delivered update. The replica identity and mode must match exactly.
 # An optional precondition makes a local agent decision fail if state changed
 # after inspection; the CLI never rebases or retries that ambiguous decision.
@@ -96,12 +102,49 @@ rather than treating it as the missing incremental update. `--max-events` and
 `--timeout-ms` provide bounded coding-agent runs; Ctrl+C or process termination
 ends an unbounded foreground watch.
 
-This foundation currently exposes transport-neutral synchronization, standard
-y-sync `SyncStep1`/`Update` framing, durable attribution, and resumable JSONL
-event streaming for coding agents. The standard native MCP server exposes the
-same create, inspect, diff, resumable event, apply, and checkpoint lifecycle to
-an A3S Code `use` worker without shell access. A host-injected transport session
-and typed format-model collaboration mutations are the next Phase 6 milestones.
+### Live host transport session
+
+`collab session` is the long-lived bridge between one durable native replica
+and the browser host-channel contract. Each stdout line is flushed JSON. The
+session emits `ready`, then an `outbound` `sync-step-1` envelope. Forward its
+message through the authenticated room after decoding `payloadBase64` to a
+`Uint8Array`. Forward browser envelopes back on stdin with the inverse
+encoding:
+
+```jsonl
+{"type":"reconnect"}
+{"type":"receive","message":{"protocol":"a3s.office.collaboration","version":1,"artifactId":"report","artifactKind":"document","namespace":"a3s.office","senderClientId":424242,"type":"sync-step-1","payloadBase64":"AA=="}}
+{"type":"receive","operationId":"room-delivery-43","message":{"protocol":"a3s.office.collaboration","version":1,"artifactId":"report","artifactKind":"document","namespace":"a3s.office","senderClientId":424242,"type":"update","payloadBase64":"<base64-yjs-v1-update>","origin":{"protocol":"a3s.office.collaboration","kind":"editor","actorId":"user-42","operationId":"edit-91"}}}
+{"type":"close"}
+```
+
+`sync-step-1` is read-only and must not include mutation identity. Every
+received `sync-step-2` or `update` requires a stable, host-generated
+`operationId`; an optional `ifStateVectorBase64` provides an optimistic
+precondition. Replaying the same delivery is idempotent. A message from the
+replica's own `senderClientId` is acknowledged as ignored, and an accepted
+remote update is consumed without being echoed back to the room.
+
+The session emits `received` receipts plus `outbound` messages with reasons
+`initial-connect`, `reconnect`, `peer-sync-step1`, `durable-update`, or
+`history-compacted`. `durable-update` projects changes written by another CLI
+or MCP process and includes its typed actor/operation origin. A compaction gap
+emits a complete system-origin `update` followed by a new `sync-step-1`, so
+both peers converge without replaying an incomplete history. `complete`
+records report host close, stdin EOF, timeout, or signal; invalid input
+produces one `error` record and a nonzero exit. JSONL records and decoded
+payloads are bounded, and `--poll-ms` must be between 50 and 10,000.
+
+The host still owns connectivity, rooms, authentication, authorization,
+buffering, and delivery ordering. The native session does not persist
+Awareness. A received browser origin is validated, but the current durable
+receipt is attributed to the replica actor and host delivery operation; exact
+cross-plane origin preservation remains a Phase 6 item.
+
+The standard native MCP server exposes create, inspect, diff, resumable event,
+apply, and checkpoint operations to an A3S Code `use` worker without shell
+access. Typed format-model collaboration mutations and native presence
+projection are the remaining Phase 6 milestones.
 
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package

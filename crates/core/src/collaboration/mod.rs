@@ -8,6 +8,7 @@
 
 mod document;
 mod persistence;
+mod transport;
 mod types;
 mod validation;
 
@@ -29,6 +30,7 @@ use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
     write_update_entry, LoadedStore, OperationRecord, StoreLock,
 };
+pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
 use validation::{
     assert_operation_replay, assert_state_vector_precondition, creation_payload_sha256,

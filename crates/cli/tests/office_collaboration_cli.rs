@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
@@ -336,6 +336,229 @@ fn cli_watch_streams_resumable_jsonl_updates_between_agent_processes() {
     assert!(status.success(), "watch failed: {error_text}");
 }
 
+#[test]
+fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("agent.replica");
+    let initial = temp.path().join("browser.update");
+    let local = temp.path().join("local-agent.update");
+    fs::write(
+        &initial,
+        STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+    )
+    .unwrap();
+    join(&replica, &initial);
+
+    let mut child = Command::new(binary())
+        .args([
+            "collab",
+            "session",
+            replica.to_str().unwrap(),
+            "--poll-ms",
+            "50",
+            "--timeout-ms",
+            "30000",
+            "--json",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = BufReader::new(child.stdout.take().unwrap());
+    let mut stderr = child.stderr.take().unwrap();
+
+    let ready = read_jsonl(&mut stdout);
+    assert_eq!(ready["type"], "ready");
+    assert_eq!(ready["artifactId"], "fixture-markdown");
+    assert_eq!(ready["clientId"], 900_007);
+    let initial_sync = read_jsonl(&mut stdout);
+    assert_eq!(initial_sync["type"], "outbound");
+    assert_eq!(initial_sync["reason"], "initial-connect");
+    assert_eq!(initial_sync["message"]["type"], "sync-step-1");
+    assert!(initial_sync["message"].get("origin").is_none());
+
+    let local_peer = Doc::with_client_id(700_007);
+    local_peer.get_or_insert_text("agent.live").insert(
+        &mut local_peer.transact_mut(),
+        0,
+        "agent update",
+    );
+    let local_update = local_peer
+        .transact()
+        .encode_state_as_update_v1(&StateVector::default());
+    fs::write(&local, &local_update).unwrap();
+    let applied = run(&[
+        "collab",
+        "apply",
+        replica.to_str().unwrap(),
+        "--input",
+        local.to_str().unwrap(),
+        "--actor-id",
+        "coding-agent-7",
+        "--operation-id",
+        "agent-live-1",
+        "--artifact-id",
+        "fixture-markdown",
+        "--kind",
+        "markdown",
+        "--mode",
+        "edit",
+        "--json",
+    ]);
+    assert_eq!(applied["data"]["sequence"], 1);
+
+    let outbound = read_jsonl(&mut stdout);
+    assert_eq!(outbound["type"], "outbound");
+    assert_eq!(outbound["reason"], "durable-update");
+    assert_eq!(outbound["message"]["type"], "update");
+    assert_eq!(
+        outbound["message"]["payloadBase64"],
+        STANDARD.encode(&local_update)
+    );
+    assert_eq!(outbound["message"]["origin"]["operationId"], "agent-live-1");
+
+    write_jsonl(&mut stdin, &serde_json::json!({ "type": "reconnect" }));
+    let reconnect = read_jsonl(&mut stdout);
+    assert_eq!(reconnect["type"], "outbound");
+    assert_eq!(reconnect["reason"], "reconnect");
+    assert_eq!(reconnect["message"]["type"], "sync-step-1");
+
+    write_jsonl(
+        &mut stdin,
+        &serde_json::json!({
+            "type": "receive",
+            "message": {
+                "protocol": "a3s.office.collaboration",
+                "version": 1,
+                "artifactId": "fixture-markdown",
+                "artifactKind": "markdown",
+                "namespace": "a3s.office",
+                "senderClientId": 424242,
+                "type": "sync-step-1",
+                "payloadBase64": "AA=="
+            }
+        }),
+    );
+    let received_step1 = read_jsonl(&mut stdout);
+    assert_eq!(received_step1["type"], "received");
+    assert_eq!(received_step1["messageType"], "sync-step-1");
+    let response = read_jsonl(&mut stdout);
+    assert_eq!(response["type"], "outbound");
+    assert_eq!(response["reason"], "peer-sync-step1");
+    assert_eq!(response["message"]["type"], "sync-step-2");
+    assert!(response["message"].get("origin").is_none());
+
+    let browser_peer = Doc::with_client_id(600_006);
+    browser_peer.get_or_insert_text("browser.live").insert(
+        &mut browser_peer.transact_mut(),
+        0,
+        "browser update",
+    );
+    let browser_update = browser_peer
+        .transact()
+        .encode_state_as_update_v1(&StateVector::default());
+    write_jsonl(
+        &mut stdin,
+        &serde_json::json!({
+            "type": "receive",
+            "operationId": "browser-delivery-1",
+            "message": {
+                "protocol": "a3s.office.collaboration",
+                "version": 1,
+                "artifactId": "fixture-markdown",
+                "artifactKind": "markdown",
+                "namespace": "a3s.office",
+                "senderClientId": 600006,
+                "type": "update",
+                "payloadBase64": STANDARD.encode(&browser_update),
+                "origin": {
+                    "protocol": "a3s.office.collaboration",
+                    "kind": "editor",
+                    "actorId": "browser-user",
+                    "operationId": "browser-edit-1"
+                }
+            }
+        }),
+    );
+    let received_update = read_jsonl(&mut stdout);
+    assert_eq!(
+        received_update["type"], "received",
+        "unexpected session response: {received_update}"
+    );
+    assert_eq!(received_update["messageType"], "update");
+    assert_eq!(received_update["operationId"], "browser-delivery-1");
+    assert_eq!(received_update["sequence"], 2);
+    assert_eq!(received_update["duplicate"], false);
+
+    write_jsonl(&mut stdin, &serde_json::json!({ "type": "close" }));
+    let complete = read_jsonl(&mut stdout);
+    assert_eq!(complete["type"], "complete");
+    assert_eq!(complete["reason"], "host-close");
+    assert_eq!(complete["cursorSequence"], 2);
+    drop(stdin);
+
+    let status = child.wait().unwrap();
+    let mut error_text = String::new();
+    stderr.read_to_string(&mut error_text).unwrap();
+    assert!(status.success(), "session failed: {error_text}");
+
+    let inspected = run(&["collab", "inspect", replica.to_str().unwrap(), "--json"]);
+    assert_eq!(inspected["data"]["currentSequence"], 2);
+}
+
+#[test]
+fn cli_session_reports_runtime_failures_as_one_jsonl_record() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("agent.replica");
+    let initial = temp.path().join("browser.update");
+    fs::write(
+        &initial,
+        STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+    )
+    .unwrap();
+    join(&replica, &initial);
+
+    let mut child = Command::new(binary())
+        .args([
+            "collab",
+            "session",
+            replica.to_str().unwrap(),
+            "--timeout-ms",
+            "30000",
+            "--json",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = BufReader::new(child.stdout.take().unwrap());
+    let mut stderr = child.stderr.take().unwrap();
+
+    assert_eq!(read_jsonl(&mut stdout)["type"], "ready");
+    assert_eq!(read_jsonl(&mut stdout)["type"], "outbound");
+    write_jsonl(&mut stdin, &serde_json::json!({ "type": "receive" }));
+    let error = read_jsonl(&mut stdout);
+    assert_eq!(error["type"], "error");
+    assert_eq!(
+        error["error"]["code"],
+        "office.collaboration.session_input_invalid"
+    );
+    drop(stdin);
+
+    let status = child.wait().unwrap();
+    assert_eq!(status.code(), Some(1));
+    let mut trailing_output = String::new();
+    stdout.read_to_string(&mut trailing_output).unwrap();
+    assert!(trailing_output.is_empty(), "{trailing_output}");
+    let mut error_text = String::new();
+    stderr.read_to_string(&mut error_text).unwrap();
+    assert!(error_text.is_empty(), "{error_text}");
+}
+
 fn read_jsonl(reader: &mut impl BufRead) -> serde_json::Value {
     let mut line = String::new();
     assert!(
@@ -343,4 +566,10 @@ fn read_jsonl(reader: &mut impl BufRead) -> serde_json::Value {
         "watch ended early"
     );
     serde_json::from_str(&line).unwrap()
+}
+
+fn write_jsonl(writer: &mut impl Write, value: &serde_json::Value) {
+    serde_json::to_writer(&mut *writer, value).unwrap();
+    writer.write_all(b"\n").unwrap();
+    writer.flush().unwrap();
 }

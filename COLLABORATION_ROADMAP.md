@@ -260,9 +260,9 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 ### Phase 6: CLI, MCP, and coding agents
 
-Status: native Yrs replica store, resumable CLI/MCP event streams, and
-`a3s code` projection are implemented; typed Office-model mutations and a
-host-injected live native transport session remain pending.
+Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
+projection, and a host-injected live CLI transport session are implemented;
+typed Office-model mutations and native presence projection remain pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -278,6 +278,16 @@ host-injected live native transport session remain pending.
   handshakes; mutating SyncStep2/Update messages use the same identity and
   receipt path. Resumable event cursors report compaction gaps as explicit
   full-state resets.
+- The transport-neutral Rust session accepts the browser host-channel envelope,
+  emits a fresh `SyncStep1` on connect/reconnect, answers peer handshakes with
+  `SyncStep2`, durably applies incremental updates, suppresses their room echo,
+  and projects updates committed by other CLI/MCP processes back to the host.
+  A compaction gap sends one complete update and restarts the state-vector
+  handshake instead of replaying an unsafe partial history.
+- `a3s-office collab session` exposes that state machine as bounded JSONL over
+  stdin/stdout for a coding-agent or product host. The host still owns the
+  WebSocket or IPC channel, room selection, authentication, authorization,
+  buffering, and delivery identities; the CLI never opens a provider itself.
 - Each replica binds one stable actor ID, actor kind, permission mode, artifact
   identity/kind, namespace, and client ID. Apply/checkpoint/leave require the
   same identity plus a stable operation ID and accept an optional state-vector
@@ -297,8 +307,6 @@ host-injected live native transport session remain pending.
 
 Remaining:
 
-- Connect the browser host-channel contract to a host-injected native transport
-  session around the implemented y-sync framing.
 - Add typed format-model mutations with edit/comment/suggest authorization and
   preserve actor/operation origins across browser/native audit records.
 - Project editor-visible presence and selection state while keeping Awareness

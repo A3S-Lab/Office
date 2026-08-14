@@ -132,13 +132,20 @@ operation-ID idempotency.
 The current collaboration surface is deliberately transport-neutral. Coding
 agents can create or join, inspect, diff from a remote state vector, apply
 updates with optimistic vector preconditions, checkpoint, replay, leave, and
-consume a resumable durable event cursor. The CLI provides a JSONL watch
-stream; the standard native MCP server provides bounded polling tools that
-project into an A3S Code `use` worker. The CLI can also encode standard y-sync
-`SyncStep1` and `Update` messages for a host-owned transport. Neither surface
-opens a network provider or polls a whole Office file. Typed Office-model
-collaboration mutations and a host-injected transport/presence adapter remain
-later milestones.
+consume a resumable durable event cursor. The CLI provides both a JSONL watch
+stream and a long-lived, host-injected JSONL transport session; the standard
+native MCP server provides bounded polling tools that project into an A3S Code
+`use` worker. The live session accepts the browser host-channel identity
+envelope, performs `SyncStep1`/`SyncStep2` reconnect handshakes, durably applies
+remote updates with stable delivery receipts, suppresses room echoes, and
+publishes changes committed by other CLI/MCP processes. A compacted cursor
+sends one complete update and restarts the state-vector handshake.
+
+Neither native surface opens a network provider, chooses a room, authenticates
+a participant, persists Awareness, or polls a whole Office file. Typed
+Office-model collaboration mutations, edit/comment/suggest authorization,
+exact browser-origin preservation in native audit records, and native presence
+projection remain later milestones.
 
 ## Safety and fidelity invariants
 

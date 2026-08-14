@@ -136,6 +136,86 @@ pub enum NativeOfficeCollaborationOperationKind {
     Leave,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationOriginKind {
+    Bootstrap,
+    Editor,
+    Agent,
+    Import,
+    System,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationOrigin {
+    pub protocol: String,
+    pub kind: NativeOfficeCollaborationOriginKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NativeOfficeCollaborationTransportMessageType {
+    #[serde(rename = "sync-step-1")]
+    SyncStep1,
+    #[serde(rename = "sync-step-2")]
+    SyncStep2,
+    #[serde(rename = "update")]
+    Update,
+}
+
+/// A native representation of the browser host-channel envelope. Payloads are
+/// raw Yjs v1 state vectors or updates; the live session translates them
+/// through the standard y-sync framing implemented by the durable store.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationTransportMessage {
+    pub protocol: String,
+    pub version: u32,
+    pub artifact_id: String,
+    pub artifact_kind: NativeOfficeCollaborationArtifactKind,
+    pub namespace: String,
+    pub sender_client_id: u64,
+    #[serde(rename = "type")]
+    pub message_type: NativeOfficeCollaborationTransportMessageType,
+    pub payload: Vec<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub origin: Option<NativeOfficeCollaborationOrigin>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NativeOfficeCollaborationTransportReceiveRequest {
+    pub message: NativeOfficeCollaborationTransportMessage,
+    /// Stable host delivery identity. Required for SyncStep2 and Update.
+    pub operation_id: Option<String>,
+    pub if_state_vector: Option<Vec<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationTransportReceiveResult {
+    pub kind: NativeOfficeCollaborationTransportMessageType,
+    pub ignored: bool,
+    pub response: Option<NativeOfficeCollaborationTransportMessage>,
+    pub apply: Option<NativeOfficeCollaborationApplyResult>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationTransportPollResult {
+    pub starting_sequence: u64,
+    pub cursor_sequence: u64,
+    pub current_sequence: u64,
+    pub has_more: bool,
+    /// True when compaction made incremental replay unsafe and `messages`
+    /// contains a complete Update followed by a fresh SyncStep1 handshake.
+    pub resynchronized: bool,
+    pub messages: Vec<NativeOfficeCollaborationTransportMessage>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeOfficeCollaborationManifest {

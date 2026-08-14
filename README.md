@@ -967,6 +967,10 @@ cargo run -p a3s-office-cli -- collab join .a3s/report.replica \
 # Export only the CRDT state missing from a remote state vector.
 cargo run -p a3s-office-cli -- collab diff .a3s/report.replica \
   --state-vector-input browser.state-vector --output agent.update --json
+
+# Bridge that replica to a host-owned room over machine-readable JSONL.
+cargo run -p a3s-office-cli -- collab session .a3s/report.replica \
+  --poll-ms 100 --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
@@ -978,7 +982,9 @@ sync and a typed, ephemeral Awareness controller for participants and
 format-specific locations. React, Vue, and Web Components can project that
 controller as a shared participant roster, remote canvas projection, and
 participant-to-location navigation; neither component creates an account or
-backend.
+backend. The native CLI's JSONL session bridges the same host-channel envelope,
+including reconnect handshakes, durable agent updates, and remote-echo
+suppression, without opening its own network provider.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
