@@ -47,6 +47,7 @@ import { updatePresentationElements } from './presentation-editor-operations';
 import {
   type PresentationObjectFocusState,
   type PresentationWorkspaceFocusState,
+  focusInitialPresentationWorkspace,
   presentationCommandsWithObjectFocus,
   restorePresentationWorkspaceFocus,
 } from './presentation-editor-focus';
@@ -62,6 +63,7 @@ import type {
 import { PresentationPlayer } from './presentation-player';
 import { PresentationStatusBar } from './presentation-status-bar';
 import { useOfficeTaskPaneEscape } from './office-task-pane';
+import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import {
   applyPresentationTextFormatting,
   presentationTextToolbarState,
@@ -214,6 +216,7 @@ function PresentationEditorSurface(props: PresentationEditorSurfaceProps) {
 
 function PresentationEditingSurface({
   initialSlide,
+  autoFocus = true,
   collaborationHistory,
   content,
   preview,
@@ -255,6 +258,8 @@ function PresentationEditingSurface({
   const commentsInvokerRef = useRef<HTMLElement | null>(null);
   const presentationRootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLElement>(null);
+  const initialEditorFocusRequestedRef = useRef(false);
+  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const objectFocusStateRef = useRef<PresentationObjectFocusState>({
     editingElementId: null,
     selectedElementIds: [],
@@ -322,6 +327,17 @@ function PresentationEditingSurface({
     selectedSlideId: selectedSlide.id,
     viewMode,
   };
+  useEffect(() => {
+    if (initialEditorFocusRequestedRef.current || !autoFocus) return;
+    const root = presentationRootRef.current;
+    if (!root) return;
+    initialEditorFocusRequestedRef.current = true;
+    focusInitialPresentationWorkspace(
+      root,
+      () => workspaceFocusStateRef.current,
+      editorFocusOrigin,
+    );
+  }, [autoFocus, editorFocusOrigin]);
   useEffect(() => {
     setDismissedChartPaneElementId(null);
   }, [selectedElementId]);

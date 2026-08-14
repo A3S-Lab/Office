@@ -52,6 +52,7 @@ import {
 import { MarkdownStatus } from './markdown-status';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
+import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useMarkdownSourceHistory } from './use-markdown-source-history';
 import {
@@ -68,6 +69,7 @@ export { markdownTaskCheckboxLabel };
 export interface MarkdownEditorProps {
   /** The host must initialize and synchronize this session before mounting. */
   collaboration?: WorkOfficeCollaborationSession;
+  autoFocus?: boolean;
   content: WorkMarkdownContent;
   extensions?: Extensions;
   preview: boolean;
@@ -81,6 +83,7 @@ const MARKDOWN_PREVIEW_SYNC_DELAY = 160;
 const EMPTY_MARKDOWN_EXTENSIONS: Extensions = [];
 
 export function MarkdownEditor({
+  autoFocus = true,
   collaboration,
   content,
   extensions: additionalExtensions = EMPTY_MARKDOWN_EXTENSIONS,
@@ -115,6 +118,8 @@ export function MarkdownEditor({
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sourceTextareaRef = useRef<HTMLTextAreaElement>(null);
   const markdownRootRef = useRef<HTMLElement>(null);
+  const initialEditorFocusRequestedRef = useRef(false);
+  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const [sourceMarkdown, setSourceMarkdown] = useState(initialContent.markdown);
   const [selectionMenu, setSelectionMenu] =
     useState<MarkdownSelectionMenuState | null>(null);
@@ -650,6 +655,30 @@ export function MarkdownEditor({
         stepOfficeZoom(current, 'out', { minimum: 60, maximum: 180 }),
       ),
   });
+
+  useEffect(() => {
+    if (
+      !autoFocus ||
+      readOnly ||
+      !editor ||
+      !collaborationReady ||
+      initialEditorFocusRequestedRef.current
+    ) {
+      return;
+    }
+    initialEditorFocusRequestedRef.current = true;
+    restoreMarkdownEditingSurfaceFocus(() => {
+      if (viewMode !== 'visual') return sourceTextareaRef.current;
+      return editor.isDestroyed ? null : editor.view.dom;
+    }, editorFocusOrigin);
+  }, [
+    autoFocus,
+    collaborationReady,
+    editor,
+    editorFocusOrigin,
+    readOnly,
+    viewMode,
+  ]);
 
   if (!editor || !collaborationReady) {
     return <WorkEditorLoadingState title="正在准备 Markdown 编辑器" />;

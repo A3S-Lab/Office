@@ -4,8 +4,9 @@ const MARKDOWN_SURFACE_FOCUS_RETRY_FRAMES = 4;
 
 export function restoreMarkdownEditingSurfaceFocus(
   getTarget: () => HTMLElement | null,
+  focusOrigin: Element | null = document.activeElement,
 ): void {
-  const commandTrigger = document.activeElement;
+  const commandTrigger = focusOrigin;
   let remainingFrames = MARKDOWN_SURFACE_FOCUS_RETRY_FRAMES;
 
   const restore = () => {

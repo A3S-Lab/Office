@@ -112,6 +112,7 @@ import {
   useOfficeTaskPaneEscape,
   useOfficeTaskPaneModal,
 } from './office-task-pane';
+import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useDocumentComments } from './use-document-comments';
 import { useDocumentInsertCommands } from './use-document-insert-commands';
@@ -131,6 +132,7 @@ import {
 
 export interface DocumentEditorProps {
   artifactId?: string;
+  autoFocus?: boolean;
   collaboration?: WorkOfficeCollaborationSession;
   content: WorkDocumentContent;
   extensions?: Extensions;
@@ -265,6 +267,7 @@ function CollaborativeDocumentEditor(
 
 function DocumentEditorSurface({
   artifactId,
+  autoFocus = true,
   collaboration,
   collaborationBinding,
   collaborationBridge,
@@ -296,6 +299,8 @@ function DocumentEditorSurface({
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
+  const initialEditorFocusRequestedRef = useRef(false);
+  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const contentRef = useRef(effectiveContent);
   const onChangeRef = useRef(onChange);
   const trackChangesRef = useRef(Boolean(effectiveContent.trackChanges));
@@ -712,6 +717,23 @@ function DocumentEditorSurface({
       return editor.view.dom;
     });
   }, [editor]);
+
+  useEffect(() => {
+    if (
+      !autoFocus ||
+      readOnly ||
+      !editor ||
+      editor.isDestroyed ||
+      initialEditorFocusRequestedRef.current
+    ) {
+      return;
+    }
+    initialEditorFocusRequestedRef.current = true;
+    restoreDocumentEditorFocus(
+      () => (editor.isDestroyed ? null : editor.view.dom),
+      editorFocusOrigin,
+    );
+  }, [autoFocus, editor, editorFocusOrigin, readOnly]);
 
   const replaceDocumentText = useCallback(
     (from: number, to: number, replacement: string) => {

@@ -2,8 +2,9 @@ const DOCUMENT_EDITOR_FOCUS_RETRY_FRAMES = 4;
 
 export function restoreDocumentEditorFocus(
   getTarget: () => HTMLElement | null,
+  focusOrigin: Element | null = document.activeElement,
 ): void {
-  const commandTrigger = document.activeElement;
+  const commandTrigger = focusOrigin;
   let remainingFrames = DOCUMENT_EDITOR_FOCUS_RETRY_FRAMES;
 
   const restore = () => {

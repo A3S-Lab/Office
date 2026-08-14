@@ -6,6 +6,7 @@ import type { WorkOfficeFileAction } from './work-office-chrome';
 export type PresentationDesignMode = 'slide' | 'layout' | 'master';
 
 export interface PresentationEditorProps {
+  autoFocus?: boolean;
   collaboration?: WorkOfficeCollaborationSession;
   content: WorkPresentationContent;
   preview: boolean;

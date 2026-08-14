@@ -5,6 +5,7 @@ import type { MarkdownEditorProps as InternalMarkdownEditorProps } from './inter
 import type { PdfViewerProps as InternalPdfViewerProps } from './internal/features/work/editors/pdf-viewer';
 import type { PresentationEditorProps as InternalPresentationEditorProps } from './internal/features/work/editors/presentation-editor';
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
+import { OfficeEditorFocusHandoff } from './internal/features/work/editors/office-editor-focus-handoff';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';
 import {
   OFFICE_DOCUMENT_LAYOUT_ARABIC_FONT_FAMILY,
@@ -165,9 +166,11 @@ function OfficeEditorLoader({
   title: string;
 }) {
   return (
-    <Suspense fallback={<WorkEditorLoadingState title={title} />}>
-      {children}
-    </Suspense>
+    <OfficeEditorFocusHandoff>
+      <Suspense fallback={<WorkEditorLoadingState title={title} />}>
+        {children}
+      </Suspense>
+    </OfficeEditorFocusHandoff>
   );
 }
 

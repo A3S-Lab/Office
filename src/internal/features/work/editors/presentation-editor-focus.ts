@@ -20,9 +20,10 @@ const PRESENTATION_WORKSPACE_FOCUS_RETRY_FRAMES = 6;
 export function restorePresentationObjectFocus(
   container: HTMLElement | null,
   getState: () => PresentationObjectFocusState,
+  focusOrigin: Element | null = document.activeElement,
 ): void {
   if (!container) return;
-  const commandTrigger = document.activeElement;
+  const commandTrigger = focusOrigin;
   let lastRestoredTarget: HTMLElement | null = null;
   let remainingFrames = PRESENTATION_OBJECT_FOCUS_RETRY_FRAMES;
 
@@ -67,9 +68,10 @@ export function restorePresentationObjectFocus(
 export function restorePresentationWorkspaceFocus(
   root: HTMLElement | null,
   getState: () => PresentationWorkspaceFocusState,
+  focusOrigin: Element | null = document.activeElement,
 ): void {
   if (!root) return;
-  const commandTrigger = document.activeElement;
+  const commandTrigger = focusOrigin;
   let lastRestoredTarget: HTMLElement | null = null;
   let remainingFrames = PRESENTATION_WORKSPACE_FOCUS_RETRY_FRAMES;
 
@@ -78,23 +80,7 @@ export function restorePresentationWorkspaceFocus(
     remainingFrames -= 1;
     const state = getState();
     if (state.viewMode === 'normal' && state.editingElementId) return;
-    const selectedElementId = state.selectedElementIds.at(-1);
-    const target =
-      state.viewMode === 'normal' && selectedElementId
-        ? Array.from(
-            root.querySelectorAll<HTMLElement>('[data-slide-element-id]'),
-          ).find(
-            (candidate) =>
-              candidate.dataset.slideElementId === selectedElementId &&
-              candidate.dataset.slideElementSelected === 'true',
-          )
-        : Array.from(
-            root.querySelectorAll<HTMLElement>('[data-slide-thumbnail]'),
-          ).find(
-            (candidate) =>
-              candidate.dataset.slideId === state.selectedSlideId &&
-              candidate.classList.contains('active'),
-          );
+    const target = presentationWorkspaceFocusTarget(root, state);
     if (!target) {
       requestAnimationFrame(restore);
       return;
@@ -114,6 +100,50 @@ export function restorePresentationWorkspaceFocus(
   };
 
   requestAnimationFrame(restore);
+}
+
+export function focusInitialPresentationWorkspace(
+  root: HTMLElement | null,
+  getState: () => PresentationWorkspaceFocusState,
+  focusOrigin: Element | null,
+): void {
+  if (!root) return;
+  const state = getState();
+  if (state.viewMode === 'normal' && state.editingElementId) return;
+  const target = presentationWorkspaceFocusTarget(root, state);
+  if (!target) return;
+  const activeElement = document.activeElement;
+  const canFocus =
+    activeElement === focusOrigin ||
+    activeElement === target ||
+    activeElement === document.body ||
+    activeElement === document.documentElement ||
+    !activeElement?.isConnected;
+  if (canFocus && activeElement !== target) {
+    target.focus({ preventScroll: true });
+  }
+}
+
+function presentationWorkspaceFocusTarget(
+  root: HTMLElement,
+  state: PresentationWorkspaceFocusState,
+): HTMLElement | undefined {
+  const selectedElementId = state.selectedElementIds.at(-1);
+  return state.viewMode === 'normal' && selectedElementId
+    ? Array.from(
+        root.querySelectorAll<HTMLElement>('[data-slide-element-id]'),
+      ).find(
+        (candidate) =>
+          candidate.dataset.slideElementId === selectedElementId &&
+          candidate.dataset.slideElementSelected === 'true',
+      )
+    : Array.from(
+        root.querySelectorAll<HTMLElement>('[data-slide-thumbnail]'),
+      ).find(
+        (candidate) =>
+          candidate.dataset.slideId === state.selectedSlideId &&
+          candidate.classList.contains('active'),
+      );
 }
 
 export function presentationCommandsWithObjectFocus(

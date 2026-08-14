@@ -44,6 +44,7 @@ import {
 import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { useOfficeDialog } from './office-dialog';
+import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
@@ -112,6 +113,7 @@ import {
 } from './work-office-chrome';
 
 export interface SpreadsheetEditorProps {
+  autoFocus?: boolean;
   collaboration?: WorkOfficeCollaborationSession;
   content: WorkSpreadsheetContent;
   kernelWasmUrl?: string;
@@ -180,6 +182,7 @@ interface SpreadsheetEditorSurfaceProps extends SpreadsheetEditorProps {
 }
 
 function SpreadsheetEditorSurface({
+  autoFocus = true,
   content,
   collaborationHistory,
   collaborationView,
@@ -199,6 +202,7 @@ function SpreadsheetEditorSurface({
   const previewRef = useRef(preview);
   const spreadsheetRootRef = useRef<HTMLElement>(null);
   const spreadsheetCanvasRef = useRef<HTMLDivElement>(null);
+  const editorFocusOrigin = useOfficeEditorFocusOrigin();
   const workbookRef = useRef<WorkbookInstance>(null);
   const spreadsheetZoomRef = useRef(100);
   const [workbookInstance, setWorkbookInstance] =
@@ -293,13 +297,26 @@ function SpreadsheetEditorSurface({
     activeSheetIdRef.current = activeSheetId;
   }, [activeSheetId]);
   useEffect(() => {
-    if (!activeSheetId || focusedSheetIdRef.current === activeSheetId) return;
+    if (
+      preview ||
+      !activeSheetId ||
+      focusedSheetIdRef.current === activeSheetId
+    )
+      return;
+    const initialFocus = focusedSheetIdRef.current === null;
+    if (initialFocus && !autoFocus) {
+      focusedSheetIdRef.current = activeSheetId;
+      return;
+    }
     focusedSheetIdRef.current = activeSheetId;
     const frame = requestAnimationFrame(() =>
-      focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+      focusSpreadsheetGrid(spreadsheetCanvasRef.current, {
+        focusOrigin: initialFocus ? editorFocusOrigin : document.activeElement,
+        forceInitial: !initialFocus,
+      }),
     );
     return () => cancelAnimationFrame(frame);
-  }, [activeSheetId]);
+  }, [activeSheetId, autoFocus, editorFocusOrigin, preview]);
   useEffect(() => {
     const container = spreadsheetCanvasRef.current;
     if (!container || preview) return;
@@ -1162,13 +1179,22 @@ function SpreadsheetEditorSurface({
   );
 }
 
-export function focusSpreadsheetGrid(container: HTMLElement | null): void {
+export function focusSpreadsheetGrid(
+  container: HTMLElement | null,
+  {
+    focusOrigin = document.activeElement,
+    forceInitial = true,
+  }: {
+    focusOrigin?: Element | null;
+    forceInitial?: boolean;
+  } = {},
+): void {
   if (!container) return;
   spreadsheetFocusCleanups.get(container)?.();
 
   let remainingFrames = spreadsheetFocusRetryFrames;
   let lastFocusedTarget: HTMLElement | null = null;
-  const commandTrigger = document.activeElement;
+  const commandTrigger = focusOrigin;
   const initialFocusTarget = spreadsheetGridFocusTarget(container);
   const initialFocusTargetReady =
     spreadsheetGridFocusTargetReady(initialFocusTarget);
@@ -1276,7 +1302,7 @@ export function focusSpreadsheetGrid(container: HTMLElement | null): void {
   );
   spreadsheetFocusCleanups.set(container, stopObservingFocusTarget);
 
-  restoreFocus(true);
+  restoreFocus(forceInitial);
 }
 
 export function spreadsheetCommandsWithGridFocus(
