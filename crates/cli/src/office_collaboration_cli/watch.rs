@@ -244,6 +244,9 @@ impl WatchOutput {
                 "beforeStateVectorSha256": event.before_state_vector_sha256,
                 "afterStateVectorSha256": event.after_state_vector_sha256,
             });
+            if let Some(origin) = &event.origin {
+                value["origin"] = json!(origin);
+            }
             if self.include_updates {
                 value["updateBase64"] = Value::String(STANDARD.encode(&event.update));
             }

@@ -61,6 +61,14 @@ a3s-office collab apply .a3s/report.replica \
   --artifact-id report --kind document --mode edit \
   --if-state-vector-input inspected.state-vector --json
 
+# Prefer a typed operation for local Markdown changes. The mutation can also
+# come from --mutation-input <file>; splice offsets are UTF-16 code units.
+a3s-office collab mutate .a3s/notes.replica \
+  --actor-id agent-7 --operation-id edit-43 --artifact-id notes \
+  --kind markdown --mode edit \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --json
+
 # Follow durable updates from other humans or agents. JSON mode is JSONL: one
 # ready, update/reset, and complete record per line. Persist cursorSequence only
 # after consuming that record so a disconnected agent can resume safely.
@@ -80,19 +88,29 @@ a3s-office collab leave .a3s/report.replica \
 
 Every replica stores one stable 53-bit Yjs-compatible client ID plus actor ID,
 actor kind (`human`, `agent`, or `system`), mode (`view`, `comment`, `suggest`,
-or `edit`), artifact ID/kind, and namespace. Apply, checkpoint, and leave
-require a stable operation ID. Repeating the identical operation is
+or `edit`), artifact ID/kind, and namespace. Apply, mutate, checkpoint, and
+leave require a stable operation ID. Repeating the identical operation is
 idempotent; reusing its ID for another payload returns
 `office.collaboration.operation_conflict`. Stale vectors, identity/mode
 mismatches, malformed or oversized updates, ambiguous browser bootstrap,
 corrupt checkpoints, and sequence gaps are structured failures. State vectors
 and updates are bounded to 1 MiB and 64 MiB respectively.
 
+`collab mutate` is the format-aware local authorization boundary. Its initial
+closed variants are `markdown-replace` and `markdown-splice`; both update the
+canonical Markdown `Y.Text`, produce a minimal incremental update, and require
+an `edit`-mode replica. UTF-16 ranges that are stale, out of bounds, or split a
+surrogate pair fail without appending a log entry. Raw `apply` and received
+y-sync updates remain usable in every replica mode because read-only peers must
+still integrate remote changes authorized by the host. Local `comment` and
+`suggest` operations are not enabled until their durable review models exist.
+
 `collab watch` starts at the replica's current sequence when
 `--after-sequence` is omitted, so it observes only later changes without an
 inspect/watch race. With an explicit cursor it first drains durable backlog,
 then polls for new updates. Each `update` record carries operation, actor,
-mode, artifact, hash, and state-vector audit fields. `--include-updates` adds
+mode, artifact, hash, state-vector, and optional source-origin audit fields.
+`--include-updates` adds
 the standard Yjs v1 payload as `updateBase64`; omit it for a metadata-only
 observer. If a checkpoint compacted history older than the requested cursor,
 the stream emits one `reset` record and advances the cursor atomically. With
@@ -137,14 +155,16 @@ payloads are bounded, and `--poll-ms` must be between 50 and 10,000.
 
 The host still owns connectivity, rooms, authentication, authorization,
 buffering, and delivery ordering. The native session does not persist
-Awareness. A received browser origin is validated, but the current durable
-receipt is attributed to the replica actor and host delivery operation; exact
-cross-plane origin preservation remains a Phase 6 item.
+Awareness. A received browser origin is validated and retained separately from
+the replica actor and host delivery operation. It survives restart, appears on
+durable events, and is re-emitted unchanged by other live sessions. The origin
+is an authenticated host claim for audit attribution, not an authorization
+token.
 
 The standard native MCP server exposes create, inspect, diff, resumable event,
-apply, and checkpoint operations to an A3S Code `use` worker without shell
-access. Typed format-model collaboration mutations and native presence
-projection are the remaining Phase 6 milestones.
+apply, typed mutate, and checkpoint operations to an A3S Code `use` worker
+without shell access. Typed mutations for Document, Spreadsheet, Presentation,
+and PDF plus native presence projection are the remaining Phase 6 milestones.
 
 Office is moving to an A3S-owned Rust engine for Word, Spreadsheet, and
 Presentation documents. The native engine now includes bounded package

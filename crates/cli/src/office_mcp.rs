@@ -190,6 +190,23 @@ impl NativeOfficeMcpServer {
     }
 
     #[tool(
+        name = "office_collaboration_mutate",
+        description = "Idempotently apply one authorized format-aware Office collaboration mutation; Markdown replace/splice use browser-compatible UTF-16 offsets",
+        annotations(
+            read_only_hint = false,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_mutate(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationMutationInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::mutate(input).await))
+    }
+
+    #[tool(
         name = "office_collaboration_checkpoint",
         description = "Idempotently checkpoint or leave a durable collaboration replica while preserving reconnect state and operation receipts",
         annotations(
@@ -658,7 +675,7 @@ impl ServerHandler for NativeOfficeMcpServer {
                 website_url: Some("https://github.com/A3S-Lab/Office".to_string()),
             },
             instructions: Some(
-                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, and apply updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
+                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
                     .to_string(),
             ),
             ..Default::default()

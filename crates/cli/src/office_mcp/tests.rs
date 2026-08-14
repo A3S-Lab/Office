@@ -30,6 +30,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
             "office_collaboration_diff",
             "office_collaboration_events",
             "office_collaboration_inspect",
+            "office_collaboration_mutate",
             "office_create",
             "office_get",
             "office_install_compat",
@@ -73,6 +74,7 @@ fn native_office_server_exposes_bounded_tools_and_confirmed_compat_install() {
         "office_collaboration_apply",
         "office_collaboration_checkpoint",
         "office_collaboration_create",
+        "office_collaboration_mutate",
     ] {
         let annotation = annotations(name);
         assert_eq!(annotation.read_only_hint, Some(false), "{name}");

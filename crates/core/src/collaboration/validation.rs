@@ -7,7 +7,8 @@ use super::document::state_vector_sha256;
 use super::persistence::{LoadedStore, OperationRecord};
 use super::{
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationManifest,
-    NativeOfficeCollaborationMode, NativeOfficeCollaborationOperationKind,
+    NativeOfficeCollaborationMode, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationOperationKind, NativeOfficeCollaborationOrigin,
     MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
 };
@@ -181,6 +182,31 @@ pub(super) fn normalized_namespace(value: &str) -> UseResult<String> {
     Ok(value.to_owned())
 }
 
+pub(super) fn normalized_origin(
+    origin: Option<NativeOfficeCollaborationOrigin>,
+) -> UseResult<Option<NativeOfficeCollaborationOrigin>> {
+    let Some(mut origin) = origin else {
+        return Ok(None);
+    };
+    if origin.protocol != super::NATIVE_OFFICE_COLLABORATION_PROTOCOL {
+        return Err(collaboration_error(
+            "office.collaboration.origin_invalid",
+            "Office collaboration origins require the versioned collaboration protocol.",
+        ));
+    }
+    origin.actor_id = origin
+        .actor_id
+        .as_deref()
+        .map(|value| normalized_identifier(value, "origin actor ID"))
+        .transpose()?;
+    origin.operation_id = origin
+        .operation_id
+        .as_deref()
+        .map(|value| normalized_identifier(value, "origin operation ID"))
+        .transpose()?;
+    Ok(Some(origin))
+}
+
 pub(super) fn validate_client_id(client_id: u64) -> UseResult<()> {
     if (1..=MAX_YJS_CLIENT_ID).contains(&client_id) {
         return Ok(());
@@ -218,6 +244,41 @@ pub(super) fn operation_payload_sha256(
     manifest: &NativeOfficeCollaborationManifest,
     operation_id: &str,
     update_sha256: Option<&str>,
+    origin: Option<&NativeOfficeCollaborationOrigin>,
+    precondition: Option<&[u8]>,
+) -> UseResult<String> {
+    let precondition_sha256 = precondition
+        .map(decode_state_vector)
+        .transpose()?
+        .as_ref()
+        .map(state_vector_sha256);
+    let mut payload = serde_json::json!({
+        "actorId": manifest.actor_id,
+        "artifactId": manifest.artifact_id,
+        "artifactKind": manifest.kind,
+        "kind": kind,
+        "mode": manifest.mode,
+        "operationId": operation_id,
+        "preconditionStateVectorSha256": precondition_sha256,
+        "updateSha256": update_sha256,
+    });
+    // Keep the legacy payload byte-for-byte stable when no source origin is
+    // present so durable operation IDs remain replayable after an upgrade.
+    if let Some(origin) = origin {
+        payload["origin"] = serde_json::to_value(origin).map_err(|error| {
+            collaboration_error(
+                "office.collaboration.operation_invalid",
+                format!("Failed to encode the collaboration origin: {error}"),
+            )
+        })?;
+    }
+    json_sha256(&payload)
+}
+
+pub(super) fn mutation_payload_sha256(
+    manifest: &NativeOfficeCollaborationManifest,
+    operation_id: &str,
+    mutation: &NativeOfficeCollaborationMutation,
     precondition: Option<&[u8]>,
 ) -> UseResult<String> {
     let precondition_sha256 = precondition
@@ -229,11 +290,11 @@ pub(super) fn operation_payload_sha256(
         "actorId": manifest.actor_id,
         "artifactId": manifest.artifact_id,
         "artifactKind": manifest.kind,
-        "kind": kind,
+        "kind": NativeOfficeCollaborationOperationKind::Mutate,
         "mode": manifest.mode,
+        "mutation": mutation,
         "operationId": operation_id,
         "preconditionStateVectorSha256": precondition_sha256,
-        "updateSha256": update_sha256,
     });
     json_sha256(&payload)
 }
@@ -254,4 +315,68 @@ pub(crate) fn sha256_hex(bytes: &[u8]) -> String {
 
 pub(crate) fn collaboration_error(code: &'static str, message: impl Into<String>) -> UseError {
     UseError::new(code, message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::collaboration::{
+        NativeOfficeCollaborationActorKind, NativeOfficeCollaborationArtifactKind,
+        NativeOfficeCollaborationOriginKind, NATIVE_OFFICE_COLLABORATION_PROTOCOL,
+        NATIVE_OFFICE_COLLABORATION_STORE_FORMAT, NATIVE_OFFICE_COLLABORATION_STORE_SCHEMA_VERSION,
+    };
+
+    #[test]
+    fn originless_operation_hash_remains_legacy_compatible() {
+        let manifest = NativeOfficeCollaborationManifest {
+            format: NATIVE_OFFICE_COLLABORATION_STORE_FORMAT.to_owned(),
+            schema_version: NATIVE_OFFICE_COLLABORATION_STORE_SCHEMA_VERSION,
+            protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+            protocol_version: 1,
+            namespace: "a3s.office".to_owned(),
+            artifact_id: "notes".to_owned(),
+            kind: NativeOfficeCollaborationArtifactKind::Markdown,
+            actor_id: "agent-7".to_owned(),
+            actor_kind: NativeOfficeCollaborationActorKind::Agent,
+            mode: NativeOfficeCollaborationMode::Edit,
+            client_id: 7,
+        };
+        let actual = operation_payload_sha256(
+            NativeOfficeCollaborationOperationKind::Synchronize,
+            &manifest,
+            "delivery-1",
+            Some("update-digest"),
+            None,
+            None,
+        )
+        .unwrap();
+        let legacy = json_sha256(&serde_json::json!({
+            "actorId": "agent-7",
+            "artifactId": "notes",
+            "artifactKind": NativeOfficeCollaborationArtifactKind::Markdown,
+            "kind": NativeOfficeCollaborationOperationKind::Synchronize,
+            "mode": NativeOfficeCollaborationMode::Edit,
+            "operationId": "delivery-1",
+            "preconditionStateVectorSha256": null,
+            "updateSha256": "update-digest",
+        }))
+        .unwrap();
+        assert_eq!(actual, legacy);
+
+        let attributed = operation_payload_sha256(
+            NativeOfficeCollaborationOperationKind::Synchronize,
+            &manifest,
+            "delivery-1",
+            Some("update-digest"),
+            Some(&NativeOfficeCollaborationOrigin {
+                protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+                kind: NativeOfficeCollaborationOriginKind::Editor,
+                actor_id: Some("user-1".to_owned()),
+                operation_id: Some("edit-1".to_owned()),
+            }),
+            None,
+        )
+        .unwrap();
+        assert_ne!(attributed, legacy);
+    }
 }

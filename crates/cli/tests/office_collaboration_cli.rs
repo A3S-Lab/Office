@@ -5,7 +5,8 @@ use std::process::{Command, Output, Stdio};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
-use yrs::{Doc, ReadTxn, StateVector, Text, Transact};
+use yrs::updates::decoder::Decode;
+use yrs::{Doc, GetString, ReadTxn, StateVector, Text, Transact, Update};
 
 const YJS_MARKDOWN_UPDATE_BASE64: &str = "AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A";
 
@@ -341,7 +342,7 @@ fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("agent.replica");
     let initial = temp.path().join("browser.update");
-    let local = temp.path().join("local-agent.update");
+    let local = temp.path().join("local-agent-mutation.json");
     fs::write(
         &initial,
         STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
@@ -379,21 +380,20 @@ fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
     assert_eq!(initial_sync["message"]["type"], "sync-step-1");
     assert!(initial_sync["message"].get("origin").is_none());
 
-    let local_peer = Doc::with_client_id(700_007);
-    local_peer.get_or_insert_text("agent.live").insert(
-        &mut local_peer.transact_mut(),
-        0,
-        "agent update",
-    );
-    let local_update = local_peer
-        .transact()
-        .encode_state_as_update_v1(&StateVector::default());
-    fs::write(&local, &local_update).unwrap();
+    fs::write(
+        &local,
+        serde_json::to_vec(&serde_json::json!({
+            "type": "markdown-replace",
+            "markdown": "# Agent live 😀"
+        }))
+        .unwrap(),
+    )
+    .unwrap();
     let applied = run(&[
         "collab",
-        "apply",
+        "mutate",
         replica.to_str().unwrap(),
-        "--input",
+        "--mutation-input",
         local.to_str().unwrap(),
         "--actor-id",
         "coding-agent-7",
@@ -413,11 +413,25 @@ fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
     assert_eq!(outbound["type"], "outbound");
     assert_eq!(outbound["reason"], "durable-update");
     assert_eq!(outbound["message"]["type"], "update");
-    assert_eq!(
-        outbound["message"]["payloadBase64"],
-        STANDARD.encode(&local_update)
-    );
     assert_eq!(outbound["message"]["origin"]["operationId"], "agent-live-1");
+    let typed_peer = Doc::with_client_id(700_007);
+    for encoded in [
+        YJS_MARKDOWN_UPDATE_BASE64,
+        outbound["message"]["payloadBase64"].as_str().unwrap(),
+    ] {
+        typed_peer
+            .transact_mut()
+            .apply_update(Update::decode_v1(&STANDARD.decode(encoded).unwrap()).unwrap())
+            .unwrap();
+    }
+    let transaction = typed_peer.transact();
+    assert_eq!(
+        transaction
+            .get_text("a3s.office.markdown.source")
+            .unwrap()
+            .get_string(&transaction),
+        "# Agent live 😀"
+    );
 
     write_jsonl(&mut stdin, &serde_json::json!({ "type": "reconnect" }));
     let reconnect = read_jsonl(&mut stdout);

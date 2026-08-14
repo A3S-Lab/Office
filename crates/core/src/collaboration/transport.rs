@@ -7,7 +7,7 @@ use yrs::sync::{Message, SyncMessage};
 use yrs::updates::decoder::{Decode, DecoderV1};
 use yrs::updates::encoder::{Encode, Encoder, EncoderV1};
 
-use super::validation::{decode_state_vector, normalized_identifier, validate_update_size};
+use super::validation::{decode_state_vector, normalized_origin, validate_update_size};
 use super::{
     collaboration_error, NativeOfficeCollaborationActorKind, NativeOfficeCollaborationApplyRequest,
     NativeOfficeCollaborationManifest, NativeOfficeCollaborationOperationKind,
@@ -75,6 +75,7 @@ impl NativeOfficeCollaborationTransportSession {
     ) -> UseResult<NativeOfficeCollaborationTransportReceiveResult> {
         let message = self.validate_message(request.message)?;
         let kind = message.message_type;
+        let source_origin = message.origin.clone();
         if message.sender_client_id == self.manifest.client_id {
             return Ok(NativeOfficeCollaborationTransportReceiveResult {
                 kind,
@@ -131,6 +132,7 @@ impl NativeOfficeCollaborationTransportSession {
                 expected_kind: self.manifest.kind,
                 update: Vec::new(),
                 if_state_vector: request.if_state_vector,
+                origin: source_origin,
             }),
         )?;
         let apply = handled.apply.ok_or_else(|| {
@@ -215,7 +217,7 @@ impl NativeOfficeCollaborationTransportSession {
 
     fn validate_message(
         &self,
-        message: NativeOfficeCollaborationTransportMessage,
+        mut message: NativeOfficeCollaborationTransportMessage,
     ) -> UseResult<NativeOfficeCollaborationTransportMessage> {
         if message.protocol != NATIVE_OFFICE_COLLABORATION_PROTOCOL
             || message.version != NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION
@@ -248,9 +250,7 @@ impl NativeOfficeCollaborationTransportSession {
                 "Only incremental Office collaboration Update messages may carry a typed origin.",
             ));
         }
-        if let Some(origin) = &message.origin {
-            validate_origin(origin)?;
-        }
+        message.origin = normalized_origin(message.origin)?;
         match message.message_type {
             NativeOfficeCollaborationTransportMessageType::SyncStep1 => {
                 decode_state_vector(&message.payload)?;
@@ -291,15 +291,19 @@ impl NativeOfficeCollaborationTransportSession {
             }
             _ => kind,
         };
-        self.message(
-            NativeOfficeCollaborationTransportMessageType::Update,
-            event.update.clone(),
-            Some(NativeOfficeCollaborationOrigin {
+        let origin = event
+            .origin
+            .clone()
+            .unwrap_or(NativeOfficeCollaborationOrigin {
                 protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
                 kind,
                 actor_id: Some(event.actor_id.clone()),
                 operation_id: Some(event.operation_id.clone()),
-            }),
+            });
+        self.message(
+            NativeOfficeCollaborationTransportMessageType::Update,
+            event.update.clone(),
+            Some(origin),
         )
     }
 
@@ -321,22 +325,6 @@ impl NativeOfficeCollaborationTransportSession {
             origin,
         }
     }
-}
-
-fn validate_origin(origin: &NativeOfficeCollaborationOrigin) -> UseResult<()> {
-    if origin.protocol != NATIVE_OFFICE_COLLABORATION_PROTOCOL {
-        return Err(collaboration_error(
-            "office.collaboration.origin_invalid",
-            "Office collaboration transport origins require the versioned collaboration protocol.",
-        ));
-    }
-    if let Some(actor_id) = &origin.actor_id {
-        normalized_identifier(actor_id, "origin actor ID")?;
-    }
-    if let Some(operation_id) = &origin.operation_id {
-        normalized_identifier(operation_id, "origin operation ID")?;
-    }
-    Ok(())
 }
 
 fn encode_y_sync_message(

@@ -5,7 +5,8 @@ use a3s_office::{
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationCheckpointRequest,
     NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationEventBatch,
     NativeOfficeCollaborationEventsRequest, NativeOfficeCollaborationInspection,
-    NativeOfficeCollaborationMode, NativeOfficeCollaborationStore,
+    NativeOfficeCollaborationMode, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationMutationRequest, NativeOfficeCollaborationStore,
     MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
     MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
 };
@@ -82,6 +83,43 @@ impl From<OfficeCollaborationMode> for NativeOfficeCollaborationMode {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(
+    tag = "type",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub(super) enum OfficeCollaborationMutation {
+    /// Replace the canonical Markdown source using a minimal Y.Text edit.
+    MarkdownReplace { markdown: String },
+    /// Splice Markdown using browser-compatible UTF-16 code-unit offsets.
+    MarkdownSplice {
+        index_utf16: u32,
+        delete_utf16: u32,
+        insert: String,
+    },
+}
+
+impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
+    fn from(value: OfficeCollaborationMutation) -> Self {
+        match value {
+            OfficeCollaborationMutation::MarkdownReplace { markdown } => {
+                Self::MarkdownReplace { markdown }
+            }
+            OfficeCollaborationMutation::MarkdownSplice {
+                index_utf16,
+                delete_utf16,
+                insert,
+            } => Self::MarkdownSplice {
+                index_utf16,
+                delete_utf16,
+                insert,
+            },
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(super) struct OfficeCollaborationCreateInput {
@@ -154,6 +192,27 @@ pub(super) struct OfficeCollaborationApplyInput {
     pub(super) kind: OfficeCollaborationArtifactKind,
     /// Standard Yjs v1 update, limited to 4 MiB on the MCP JSON transport.
     pub(super) update_base64: String,
+    /// Optional exact state-vector precondition for fail-closed agent decisions.
+    pub(super) if_state_vector_base64: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct OfficeCollaborationMutationInput {
+    /// Existing durable collaboration replica directory.
+    pub(super) store: String,
+    /// Stable idempotency key for this typed mutation.
+    pub(super) operation_id: String,
+    /// Actor identity, which must match the replica manifest.
+    pub(super) actor_id: String,
+    /// Authorized collaboration mode. Canonical mutations require `edit`.
+    pub(super) mode: OfficeCollaborationMode,
+    /// Expected host-owned artifact identity.
+    pub(super) artifact_id: String,
+    /// Expected canonical collaborative model family.
+    pub(super) kind: OfficeCollaborationArtifactKind,
+    /// Closed, format-aware mutation. The first native surface supports Markdown.
+    pub(super) mutation: OfficeCollaborationMutation,
     /// Optional exact state-vector precondition for fail-closed agent decisions.
     pub(super) if_state_vector_base64: Option<String>,
 }
@@ -280,12 +339,53 @@ pub(super) async fn apply(input: OfficeCollaborationApplyInput) -> UseResult<ser
         expected_kind: input.kind.into(),
         update,
         if_state_vector,
+        origin: None,
     };
     let result =
         run_blocking(move || NativeOfficeCollaborationStore::open(input.store)?.apply(request))
             .await?;
     let state_vector_base64 = STANDARD.encode(&result.state_vector);
     result_with_state_vector(result, state_vector_base64)
+}
+
+pub(super) async fn mutate(
+    input: OfficeCollaborationMutationInput,
+) -> UseResult<serde_json::Value> {
+    let mutation_bytes = serde_json::to_vec(&input.mutation).map_err(output_encoding_error)?;
+    if mutation_bytes.len() > MAX_MCP_COLLABORATION_UPDATE_BYTES {
+        return Err(UseError::new(
+            "office.collaboration.input_too_large",
+            format!(
+                "The MCP typed collaboration mutation is {} bytes; the limit is {} bytes.",
+                mutation_bytes.len(),
+                MAX_MCP_COLLABORATION_UPDATE_BYTES
+            ),
+        )
+        .with_suggestion("Use the collaboration CLI with a bounded mutation input file."));
+    }
+    let if_state_vector = decode_optional_binary(
+        input.if_state_vector_base64.as_deref(),
+        MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+        "state-vector precondition",
+    )?;
+    let output_mutation = input.mutation.clone();
+    let request = NativeOfficeCollaborationMutationRequest {
+        operation_id: input.operation_id,
+        actor_id: input.actor_id,
+        mode: input.mode.into(),
+        expected_artifact_id: input.artifact_id,
+        expected_kind: input.kind.into(),
+        mutation: input.mutation.into(),
+        if_state_vector,
+    };
+    let result =
+        run_blocking(move || NativeOfficeCollaborationStore::open(input.store)?.mutate(request))
+            .await?;
+    let state_vector_base64 = STANDARD.encode(&result.state_vector);
+    let mut value = result_with_state_vector(result, state_vector_base64)?;
+    value["action"] = Value::String("mutated".to_owned());
+    value["mutation"] = serde_json::to_value(output_mutation).map_err(output_encoding_error)?;
+    Ok(value)
 }
 
 pub(super) async fn checkpoint(
@@ -402,6 +502,9 @@ fn event_batch_value(
                 "beforeStateVectorSha256": event.before_state_vector_sha256,
                 "afterStateVectorSha256": event.after_state_vector_sha256,
             });
+            if let Some(origin) = &event.origin {
+                value["origin"] = json!(origin);
+            }
             if include_updates {
                 value["updateBase64"] = Value::String(STANDARD.encode(&event.update));
             }
@@ -514,6 +617,26 @@ mod tests {
             "subscribe": true
         }));
         assert!(unknown.is_err());
+
+        let mutation_schema = schemars::schema_for!(OfficeCollaborationMutationInput);
+        let encoded = serde_json::to_string(&mutation_schema).unwrap();
+        for expected in [
+            "markdown-replace",
+            "markdown-splice",
+            "indexUtf16",
+            "deleteUtf16",
+            "ifStateVectorBase64",
+        ] {
+            assert!(encoded.contains(expected), "missing {expected}");
+        }
+        let unknown_mutation = serde_json::from_value::<OfficeCollaborationMutation>(json!({
+            "type": "markdown-splice",
+            "indexUtf16": 0,
+            "deleteUtf16": 0,
+            "insert": "text",
+            "force": true
+        }));
+        assert!(unknown_mutation.is_err());
     }
 
     #[test]

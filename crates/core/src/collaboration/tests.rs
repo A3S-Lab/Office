@@ -47,6 +47,7 @@ fn apply_request(operation_id: &str, update: Vec<u8>) -> NativeOfficeCollaborati
         expected_kind: NativeOfficeCollaborationArtifactKind::Markdown,
         update,
         if_state_vector: None,
+        origin: None,
     }
 }
 
@@ -59,6 +60,34 @@ fn checkpoint_request(operation_id: &str) -> NativeOfficeCollaborationCheckpoint
         expected_kind: NativeOfficeCollaborationArtifactKind::Markdown,
         if_state_vector: None,
     }
+}
+
+fn mutation_request(
+    operation_id: &str,
+    mutation: NativeOfficeCollaborationMutation,
+) -> NativeOfficeCollaborationMutationRequest {
+    NativeOfficeCollaborationMutationRequest {
+        operation_id: operation_id.to_owned(),
+        actor_id: "agent-alpha".to_owned(),
+        mode: NativeOfficeCollaborationMode::Edit,
+        expected_artifact_id: "fixture-markdown".to_owned(),
+        expected_kind: NativeOfficeCollaborationArtifactKind::Markdown,
+        mutation,
+        if_state_vector: None,
+    }
+}
+
+fn markdown_source(store: &NativeOfficeCollaborationStore) -> String {
+    let exported = store.synchronize(None).unwrap();
+    let peer = Doc::with_client_id(818_181);
+    peer.transact_mut()
+        .apply_update(Update::decode_v1(&exported.update).unwrap())
+        .unwrap();
+    let transaction = peer.transact();
+    transaction
+        .get_text("a3s.office.markdown.source")
+        .unwrap()
+        .get_string(&transaction)
 }
 
 fn agent_notes_update(client_id: u64, value: &str) -> Vec<u8> {
@@ -135,6 +164,140 @@ fn yjs_fixture_round_trips_through_yrs_state_vectors() {
 }
 
 #[test]
+fn typed_markdown_mutations_are_utf16_safe_durable_and_idempotent() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    store
+        .apply(apply_request(
+            "bootstrap-browser",
+            STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+        ))
+        .unwrap();
+
+    let replaced = store
+        .mutate(mutation_request(
+            "typed-replace-1",
+            NativeOfficeCollaborationMutation::MarkdownReplace {
+                markdown: "A😀B".to_owned(),
+            },
+        ))
+        .unwrap();
+    assert!(replaced.state_changed);
+    assert_eq!(replaced.sequence, Some(2));
+    assert_eq!(markdown_source(&store), "A😀B");
+
+    let spliced_request = mutation_request(
+        "typed-splice-1",
+        NativeOfficeCollaborationMutation::MarkdownSplice {
+            index_utf16: 1,
+            delete_utf16: 2,
+            insert: "🦀".to_owned(),
+        },
+    );
+    let spliced = store.mutate(spliced_request.clone()).unwrap();
+    assert!(spliced.state_changed);
+    assert_eq!(spliced.sequence, Some(3));
+    assert_eq!(markdown_source(&store), "A🦀B");
+
+    let replay = store.mutate(spliced_request).unwrap();
+    assert!(replay.duplicate);
+    assert_eq!(replay.sequence, Some(3));
+
+    let before_invalid = store.inspect().unwrap();
+    let invalid = store
+        .mutate(mutation_request(
+            "typed-splice-invalid",
+            NativeOfficeCollaborationMutation::MarkdownSplice {
+                index_utf16: 2,
+                delete_utf16: 0,
+                insert: "!".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(invalid.code, "office.collaboration.mutation_range_invalid");
+    let after_invalid = store.inspect().unwrap();
+    assert_eq!(
+        after_invalid.current_sequence,
+        before_invalid.current_sequence
+    );
+    assert_eq!(
+        after_invalid.document_state_sha256,
+        before_invalid.document_state_sha256
+    );
+
+    drop(store);
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    assert_eq!(markdown_source(&reopened), "A🦀B");
+    let events = reopened
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(1),
+            limit: 2,
+        })
+        .unwrap();
+    assert_eq!(events.updates.len(), 2);
+    assert!(events
+        .updates
+        .iter()
+        .all(|event| event.operation_kind == NativeOfficeCollaborationOperationKind::Mutate));
+}
+
+#[test]
+fn typed_mutations_require_initialization_and_edit_mode_but_raw_sync_does_not() {
+    let temp = tempfile::tempdir().unwrap();
+    let uninitialized_root = temp.path().join("uninitialized");
+    let uninitialized =
+        NativeOfficeCollaborationStore::create(create_request(&uninitialized_root)).unwrap();
+    let error = uninitialized
+        .mutate(mutation_request(
+            "typed-before-bootstrap",
+            NativeOfficeCollaborationMutation::MarkdownReplace {
+                markdown: "blocked".to_owned(),
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(error.code, "office.collaboration.mutation_uninitialized");
+
+    for (index, mode) in [
+        NativeOfficeCollaborationMode::View,
+        NativeOfficeCollaborationMode::Comment,
+        NativeOfficeCollaborationMode::Suggest,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let root = temp.path().join(format!("read-only-{index}"));
+        let mut create = create_request(&root);
+        create.mode = mode;
+        create.client_id = Some(910_000 + index as u64);
+        create.operation_id = format!("create-read-only-{index}");
+        let store = NativeOfficeCollaborationStore::create(create).unwrap();
+
+        let mut raw = apply_request(
+            &format!("bootstrap-read-only-{index}"),
+            STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+        );
+        raw.mode = mode;
+        store.apply(raw).unwrap();
+        assert_eq!(markdown_source(&store), "# Shared\n\nYjs to Yrs.");
+
+        let mut typed = mutation_request(
+            &format!("typed-read-only-{index}"),
+            NativeOfficeCollaborationMutation::MarkdownReplace {
+                markdown: "blocked".to_owned(),
+            },
+        );
+        typed.mode = mode;
+        let before = store.inspect().unwrap();
+        let error = store.mutate(typed).unwrap_err();
+        assert_eq!(error.code, "office.collaboration.mutation_forbidden");
+        let after = store.inspect().unwrap();
+        assert_eq!(after.current_sequence, before.current_sequence);
+        assert_eq!(after.document_state_sha256, before.document_state_sha256);
+    }
+}
+
+#[test]
 fn standard_y_sync_messages_carry_the_replica_vector_and_update() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("replica");
@@ -205,6 +368,7 @@ fn live_transport_session_bridges_browser_envelopes_and_suppresses_echoes() {
     let root = temp.path().join("replica");
     let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
     let mut session = NativeOfficeCollaborationTransportSession::attach(store.clone()).unwrap();
+    let mut observer = NativeOfficeCollaborationTransportSession::attach(store.clone()).unwrap();
 
     let initial = session.synchronize().unwrap();
     assert_eq!(
@@ -233,15 +397,49 @@ fn live_transport_session_bridges_browser_envelopes_and_suppresses_echoes() {
         .unwrap();
     assert!(received.apply.as_ref().unwrap().state_changed);
     assert_eq!(received.apply.as_ref().unwrap().sequence, Some(1));
+    let durable = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(0),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(durable.updates[0].origin, incoming.origin);
+
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    let restarted = reopened
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(0),
+            limit: 1,
+        })
+        .unwrap();
+    assert_eq!(restarted.updates[0].origin, incoming.origin);
+    let forwarded = observer
+        .poll(MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH)
+        .unwrap();
+    assert_eq!(forwarded.messages.len(), 1);
+    assert_eq!(forwarded.messages[0].origin, incoming.origin);
+    assert_eq!(forwarded.messages[0].payload, browser_update);
 
     let replay = session
         .receive(NativeOfficeCollaborationTransportReceiveRequest {
-            message: incoming,
+            message: incoming.clone(),
             operation_id: Some("delivery-browser-edit-1".to_owned()),
             if_state_vector: None,
         })
         .unwrap();
     assert!(replay.apply.unwrap().duplicate);
+
+    let mut conflicting_origin = incoming.clone();
+    conflicting_origin.origin.as_mut().unwrap().operation_id =
+        Some("browser-edit-conflict".to_owned());
+    let conflict = session
+        .receive(NativeOfficeCollaborationTransportReceiveRequest {
+            message: conflicting_origin,
+            operation_id: Some("delivery-browser-edit-1".to_owned()),
+            if_state_vector: None,
+        })
+        .unwrap_err();
+    assert_eq!(conflict.code, "office.collaboration.operation_conflict");
     let echoed = session
         .poll(MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH)
         .unwrap();

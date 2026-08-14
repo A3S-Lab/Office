@@ -74,6 +74,9 @@ available `mcp__use_office__office_collaboration_*` tools. Create or join the
 replica once, then poll `office_collaboration_events` with the last successfully
 consumed `cursorSequence`; use `includeUpdates=true` when the agent needs to
 apply the update locally. No OOXML session is required for collaboration.
+Use `office_collaboration_mutate` for local typed Markdown replace/splice
+operations instead of generating Yjs bytes; keep the operation ID stable and
+use the last inspected state vector as a precondition when rebasing matters.
 
 In a CLI-only agent host, run the collaboration event stream in a separate
 process:
@@ -106,6 +109,11 @@ Send `{"type":"reconnect"}` after every transport reconnect and
 durable receipts, external agent-update polling, and echo suppression; the host
 continues to own room identity, authentication, authorization, buffering, and
 delivery.
+
+Make local typed Markdown changes from another CLI process with `collab mutate`;
+the running session observes its durable event and publishes the incremental
+update. Splice offsets are UTF-16 code units. Canonical typed mutations require
+an `edit`-mode replica.
 
 ## Choose the Surface
 

@@ -4,6 +4,16 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+- Added idempotent typed native collaboration mutations through Rust,
+  `collab mutate`, standard MCP, and A3S Code. The initial Markdown
+  replace/splice surface writes canonical `Y.Text` with browser-compatible
+  UTF-16 offsets, rejects surrogate-splitting or stale ranges, requires edit
+  mode, and publishes its incremental update through the existing durable live
+  session path.
+- Native collaboration receipts now preserve validated browser source
+  actor/operation origins separately from host delivery IDs. Attribution
+  survives restart, appears in resumable CLI/MCP events, participates in
+  idempotency conflicts, and is re-emitted unchanged to other live peers.
 - Added a transport-neutral native collaboration session and the machine-only
   `collab session` JSONL bridge. Coding agents can now join a host-owned live
   room with browser-compatible `SyncStep1`/`SyncStep2` reconnect handshakes,

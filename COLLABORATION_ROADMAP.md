@@ -94,8 +94,6 @@ Remaining before this phase is production complete:
 
 - Add reference WebSocket/WebTransport relay examples with provider-side
   authorization and persistent update replay.
-- Durable update persistence and compaction reference implementation.
-- Cross-language Yjs/Yrs fixture tests.
 
 ### Phase 2: Document
 
@@ -261,8 +259,9 @@ destructive actions remain attributable, reviewable, and non-retryable.
 ### Phase 6: CLI, MCP, and coding agents
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
-projection, and a host-injected live CLI transport session are implemented;
-typed Office-model mutations and native presence projection remain pending.
+projection, a host-injected live CLI transport session, and the first typed
+Markdown mutation surface are implemented; the remaining format mutations and
+native presence projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -272,7 +271,8 @@ typed Office-model mutations and native presence projection remain pending.
   contiguous sequence validation, startup replay, bounded automatic/manual
   compaction, and durable operation receipts provide crash recovery.
 - `a3s-office collab` exposes non-interactive `create`, `join`, `inspect`,
-  `diff`/`synchronize`, `apply`, `checkpoint`, `watch`, and `leave` commands
+  `diff`/`synchronize`, `apply`, `mutate`, `checkpoint`, `watch`, and `leave`
+  commands
   with JSON output and optional no-clobber binary output. `sync-step1`,
   `encode-update`, and `handle-message` expose standard y-sync document
   handshakes; mutating SyncStep2/Update messages use the same identity and
@@ -292,6 +292,13 @@ typed Office-model mutations and native presence projection remain pending.
   identity/kind, namespace, and client ID. Apply/checkpoint/leave require the
   same identity plus a stable operation ID and accept an optional state-vector
   precondition.
+- `collab mutate` and `office_collaboration_mutate` accept a closed typed
+  operation instead of caller-authored Yjs bytes. Markdown replace/splice is
+  the first implementation: it writes the canonical `Y.Text`, uses browser
+  UTF-16 code-unit offsets without splitting surrogate pairs, emits a minimal
+  incremental update, and shares the same durable receipt/checkpoint path as
+  synchronized updates. Canonical typed mutations require `edit`; raw remote
+  updates remain receivable in every mode so read-only peers still converge.
 - Durable operation receipts make identical retries idempotent and reject an
   operation ID reused for another payload. Artifact, kind, actor, mode,
   stale-state, invalid update, ambiguous bootstrap, corrupt log, and incomplete
@@ -301,14 +308,22 @@ typed Office-model mutations and native presence projection remain pending.
   Yrs peer. Core and process tests cover restart, checkpoint compaction,
   duplicate operations, stale preconditions, identity mismatches, and missing
   log entries.
+- Validated browser update origins are retained in immutable operation receipts
+  and resumable events, survive restart, and are re-emitted unchanged by native
+  live transports. The host delivery operation remains distinct from the
+  source browser operation, and source attribution is audit data rather than
+  an authorization token.
+- Cross-language tests now apply deterministic native UTF-16 Markdown updates
+  in browser Yjs, in addition to importing browser Yjs fixtures in Yrs.
 - Standard MCP exposes the durable replica lifecycle and bounded event stream;
-  the same six collaboration tools are explicitly available to the dedicated
+  the same seven collaboration tools are explicitly available to the dedicated
   `a3s code` Use worker.
 
 Remaining:
 
-- Add typed format-model mutations with edit/comment/suggest authorization and
-  preserve actor/operation origins across browser/native audit records.
+- Extend typed format-model mutations from Markdown to Document, Spreadsheet,
+  Presentation, and PDF; add durable comment/suggest operations before enabling
+  those modes for local mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

@@ -10,6 +10,27 @@ import {
   readOfficeMarkdownCollaboration,
 } from '../src/core';
 
+const BROWSER_MARKDOWN_FIXTURE_BASE64 =
+  'AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A';
+const NATIVE_MARKDOWN_REPLACE_BASE64 = 'AQGh9zYAhLLyGRoGQfCfmIBCAbLyGQEGFQ==';
+const NATIVE_MARKDOWN_SPLICE_BASE64 =
+  'AQGh9zYExKH3NgKh9zYDBPCfpoACsvIZAQYVofc2AQEC';
+
+test('applies UTF-16-safe native typed Markdown updates in browser Yjs', () => {
+  const document = new Y.Doc();
+  for (const encoded of [
+    BROWSER_MARKDOWN_FIXTURE_BASE64,
+    NATIVE_MARKDOWN_REPLACE_BASE64,
+    NATIVE_MARKDOWN_SPLICE_BASE64,
+  ]) {
+    Y.applyUpdate(document, decodeBase64(encoded));
+  }
+
+  expect(document.getText('a3s.office.markdown.source').toString()).toBe(
+    'A🦀B',
+  );
+});
+
 test('rejects forged transaction and binding origins at runtime', () => {
   const session = createOfficeCollaborationSession({
     artifactId: 'notes-invalid-origin',
@@ -33,6 +54,10 @@ test('rejects forged transaction and binding origins at runtime', () => {
     }),
   ).toThrow(/origin kind 'untrusted' is invalid/);
 });
+
+function decodeBase64(value: string): Uint8Array {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+}
 
 test('initializes one versioned Markdown collaboration document', () => {
   const document = new Y.Doc();

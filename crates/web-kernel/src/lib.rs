@@ -547,13 +547,13 @@ fn fragments_fitting(blocks: &[LayoutBlock], available_height: f64) -> usize {
         .count()
 }
 
-fn place_fragments(blocks: &[LayoutBlock], pages: &mut Vec<LayoutPage>, available_height: f64) {
+fn place_fragments(blocks: &[LayoutBlock], pages: &mut [LayoutPage], available_height: f64) {
     for block in blocks {
         place_fragment(block, pages, available_height);
     }
 }
 
-fn place_fragment(block: &LayoutBlock, pages: &mut Vec<LayoutPage>, available_height: f64) {
+fn place_fragment(block: &LayoutBlock, pages: &mut [LayoutPage], available_height: f64) {
     let current = pages.last_mut().expect("layout always contains one page");
     let y = current.used_height;
     current.placements.push(LayoutPlacement {

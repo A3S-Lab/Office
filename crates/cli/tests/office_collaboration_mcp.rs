@@ -72,6 +72,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "office_collaboration_diff",
         "office_collaboration_events",
         "office_collaboration_apply",
+        "office_collaboration_mutate",
         "office_collaboration_checkpoint",
     ] {
         assert!(
@@ -86,6 +87,14 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         .to_string();
     for expected in ["afterSequence", "limit", "includeUpdates"] {
         assert!(events_schema.contains(expected), "missing {expected}");
+    }
+    let mutation_schema = tools
+        .iter()
+        .find(|tool| tool["name"] == "office_collaboration_mutate")
+        .unwrap()["inputSchema"]
+        .to_string();
+    for expected in ["markdown-splice", "indexUtf16", "deleteUtf16"] {
+        assert!(mutation_schema.contains(expected), "missing {expected}");
     }
 
     let created = call(
@@ -254,6 +263,61 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
             > 2
     );
 
+    let mutation_arguments = serde_json::json!({
+        "store": replica_text,
+        "operationId": "typed-markdown-1",
+        "actorId": "coding-agent-9",
+        "mode": "edit",
+        "artifactId": "fixture-markdown",
+        "kind": "markdown",
+        "mutation": {
+            "type": "markdown-replace",
+            "markdown": "# MCP typed 😀"
+        }
+    });
+    let mutated = call(
+        &mut stdin,
+        &mut stdout,
+        90,
+        "office_collaboration_mutate",
+        mutation_arguments.clone(),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(mutated["result"]["isError"], true, "{mutated}");
+    assert_eq!(mutated["result"]["structuredContent"]["action"], "mutated");
+    assert_eq!(mutated["result"]["structuredContent"]["sequence"], 2);
+    let mutation_replay = call(
+        &mut stdin,
+        &mut stdout,
+        91,
+        "office_collaboration_mutate",
+        mutation_arguments,
+        TIMEOUT,
+    )
+    .await;
+    assert_eq!(
+        mutation_replay["result"]["structuredContent"]["duplicate"],
+        true
+    );
+    let mutation_event = call(
+        &mut stdin,
+        &mut stdout,
+        92,
+        "office_collaboration_events",
+        serde_json::json!({
+            "store": replica_text,
+            "afterSequence": 1,
+            "limit": 1,
+            "includeUpdates": true
+        }),
+        TIMEOUT,
+    )
+    .await;
+    let mutation_event = &mutation_event["result"]["structuredContent"]["updates"][0];
+    assert_eq!(mutation_event["operationId"], "typed-markdown-1");
+    assert_eq!(mutation_event["operationKind"], "mutate");
+
     let checkpoint = call(
         &mut stdin,
         &mut stdout,
@@ -271,10 +335,10 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     )
     .await;
     assert_ne!(checkpoint["result"]["isError"], true, "{checkpoint}");
-    assert_eq!(checkpoint["result"]["structuredContent"]["sequence"], 1);
+    assert_eq!(checkpoint["result"]["structuredContent"]["sequence"], 2);
     assert_eq!(
         checkpoint["result"]["structuredContent"]["compactedUpdates"],
-        1
+        2
     );
 
     let compacted = call(
@@ -292,7 +356,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     )
     .await;
     let compacted = &compacted["result"]["structuredContent"];
-    assert_eq!(compacted["cursorSequence"], 1);
+    assert_eq!(compacted["cursorSequence"], 2);
     assert_eq!(compacted["reset"]["reason"], "history-compacted");
     let reset_update = STANDARD
         .decode(compacted["reset"]["updateBase64"].as_str().unwrap())
@@ -308,7 +372,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
             .get_text("a3s.office.markdown.source")
             .unwrap()
             .get_string(&transaction),
-        "# Shared\n\nYjs to Yrs."
+        "# MCP typed 😀"
     );
     assert_eq!(
         transaction
@@ -338,7 +402,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     .await;
     assert_ne!(left["result"]["isError"], true, "{left}");
     assert_eq!(left["result"]["structuredContent"]["action"], "left");
-    assert_eq!(left["result"]["structuredContent"]["sequence"], 1);
+    assert_eq!(left["result"]["structuredContent"]["sequence"], 2);
 
     let ahead = call(
         &mut stdin,
@@ -347,7 +411,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "office_collaboration_events",
         serde_json::json!({
             "store": replica_text,
-            "afterSequence": 2,
+            "afterSequence": 3,
             "limit": 1
         }),
         TIMEOUT,

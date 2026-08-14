@@ -55,6 +55,48 @@ channel. The host still owns delivery guarantees, offline buffering,
 authorization, persistence, and room membership. A transport message is not an
 authorization token.
 
+## Drive a native coding agent
+
+Native replicas use Yrs with the same protocol roots and standard Yjs v1
+updates. A host can run `collab session` as a JSONL live peer while another
+agent process makes a typed local change:
+
+```bash
+a3s-office collab join .a3s/notes.replica \
+  --artifact-id notes --kind markdown --actor-id agent-7 \
+  --actor-kind agent --mode edit --operation-id join-1 \
+  --input browser-bootstrap.update --json
+
+a3s-office collab session .a3s/notes.replica --poll-ms 100 --json
+
+a3s-office collab mutate .a3s/notes.replica \
+  --actor-id agent-7 --artifact-id notes --kind markdown --mode edit \
+  --operation-id edit-42 \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --json
+```
+
+The host forwards `session` outbound envelopes to its authenticated room and
+delivers room envelopes back with stable host delivery IDs. `mutate` emits a
+minimal incremental update through the durable event log, so the running
+session publishes changes made by separate CLI or MCP processes. Markdown
+offsets are UTF-16 code units, matching browser Yjs; ranges that split a
+surrogate pair fail closed. Use `--mutation-input <file>` for larger or
+multiline JSON.
+
+The equivalent MCP tool is `office_collaboration_mutate`; coding agents should
+poll `office_collaboration_events` with a persisted `cursorSequence` for
+resumable delivery. Typed canonical mutations currently require `edit` mode.
+Raw remote updates remain receivable by `view`, `comment`, and `suggest`
+replicas so those peers can observe authorized changes; local comment and
+suggestion operations stay disabled until their durable review models exist.
+
+An authenticated host may attach a typed source origin to a browser Update.
+Native receipts and events preserve that source actor/operation separately
+from the host delivery operation ID and re-emit it on live transport. Origin is
+audit attribution, not proof of authorization; the host must authenticate it
+before delivery.
+
 ## Publish ephemeral presence
 
 Pass provider-owned Yjs Awareness to the session, then create one typed

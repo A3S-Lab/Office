@@ -9,6 +9,7 @@ use a3s_office::{
     NativeOfficeCollaborationActorKind, NativeOfficeCollaborationApplyRequest,
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationCheckpointRequest,
     NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationMode,
+    NativeOfficeCollaborationMutation, NativeOfficeCollaborationMutationRequest,
     NativeOfficeCollaborationStore, MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
 };
@@ -37,10 +38,12 @@ const HELP: &str = concat!(
     "  a3s-office collab handle-message <store> --input <message.bin> [--output <response.bin>|mutation identity options] [--json]\n",
     "  a3s-office collab session <store> [--poll-ms <50..10000>] [--timeout-ms <u64>] --json\n",
     "  a3s-office collab apply <store> --input <update.bin> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
+    "  a3s-office collab mutate <store> (--mutation <json>|--mutation-input <file>) --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab watch <store> [--after-sequence <u64>] [--poll-ms <50..10000>] [--timeout-ms <u64>] [--max-events <u64>] [--include-updates] [--json]\n",
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
+    "Typed mutations: markdown-replace {markdown}; markdown-splice {indexUtf16,deleteUtf16,insert}.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -66,6 +69,7 @@ pub(crate) async fn run(args: &[String]) -> UseResult<CommandOutput> {
         Some("encode-update") => encode_update(&filtered).await,
         Some("handle-message") => handle_message(&filtered).await,
         Some("apply") => apply(&filtered).await,
+        Some("mutate") => mutate(&filtered).await,
         Some("checkpoint") => checkpoint(&filtered, false).await,
         Some("leave") => checkpoint(&filtered, true).await,
         Some(command) => Err(usage_error(format!(
@@ -243,7 +247,7 @@ async fn apply(args: &[String]) -> UseResult<CommandOutput> {
         "update",
     )
     .await?;
-    let request = mutation_request(&parsed, update).await?;
+    let request = apply_request(&parsed, update).await?;
     let result =
         spawn_blocking(move || NativeOfficeCollaborationStore::open(store_path)?.apply(request))
             .await?;
@@ -251,6 +255,109 @@ async fn apply(args: &[String]) -> UseResult<CommandOutput> {
     Ok(CommandOutput::success(
         format!(
             "{} operation '{}' at sequence {}{}.",
+            if result.duplicate {
+                "Replayed"
+            } else {
+                "Applied"
+            },
+            result.operation_id,
+            result
+                .sequence
+                .map(|value| value.to_string())
+                .unwrap_or_else(|| "unchanged".to_owned()),
+            if result.checkpointed {
+                " and checkpointed"
+            } else {
+                ""
+            }
+        ),
+        value,
+    ))
+}
+
+async fn mutate(args: &[String]) -> UseResult<CommandOutput> {
+    let parsed = ParsedOptions::parse(args)?;
+    parsed.reject_unknown(&[
+        "actor-id",
+        "artifact-id",
+        "if-state-vector",
+        "if-state-vector-input",
+        "kind",
+        "mode",
+        "mutation",
+        "mutation-input",
+        "operation-id",
+    ])?;
+    let store_path = parsed.one_positional("collaboration replica path")?;
+    let mutation_bytes = match (parsed.value("mutation")?, parsed.value("mutation-input")?) {
+        (Some(_), Some(_)) => {
+            return Err(usage_error(
+                "Specify either --mutation <json> or --mutation-input <file>, not both.",
+            ))
+        }
+        (Some(value), None) => {
+            if value.len() > MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES {
+                return Err(collaboration_cli_error(
+                    "office.collaboration.input_too_large",
+                    "The inline typed mutation exceeds the bounded collaboration input size.",
+                ));
+            }
+            value.as_bytes().to_vec()
+        }
+        (None, Some(path)) => {
+            read_binary_input(
+                &PathBuf::from(path),
+                MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
+                "typed mutation",
+            )
+            .await?
+        }
+        (None, None) => {
+            return Err(usage_error(
+                "collab mutate requires --mutation <json> or --mutation-input <file>",
+            ))
+        }
+    };
+    let mutation = serde_json::from_slice::<NativeOfficeCollaborationMutation>(&mutation_bytes)
+        .map_err(|error| {
+            collaboration_cli_error(
+                "office.collaboration.mutation_invalid",
+                format!("The typed collaboration mutation JSON is invalid: {error}"),
+            )
+            .with_suggestion(
+                "Use a closed mutation object such as {\"type\":\"markdown-splice\",\"indexUtf16\":0,\"deleteUtf16\":0,\"insert\":\"text\"}.",
+            )
+        })?;
+    let output_mutation = mutation.clone();
+    let request = NativeOfficeCollaborationMutationRequest {
+        operation_id: parsed.required("operation-id")?.to_owned(),
+        actor_id: parsed.required("actor-id")?.to_owned(),
+        mode: parse_value(parsed.required("mode")?, "--mode")?,
+        expected_artifact_id: parsed.required("artifact-id")?.to_owned(),
+        expected_kind: parse_value(parsed.required("kind")?, "--kind")?,
+        mutation,
+        if_state_vector: read_optional_encoded_input(
+            parsed.value("if-state-vector")?,
+            parsed.value("if-state-vector-input")?,
+            MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
+            "state-vector precondition",
+        )
+        .await?,
+    };
+    let result =
+        spawn_blocking(move || NativeOfficeCollaborationStore::open(store_path)?.mutate(request))
+            .await?;
+    let mut value = value_with_base64(&result, &result.state_vector)?;
+    value["action"] = Value::String("mutated".to_owned());
+    value["mutation"] = serde_json::to_value(output_mutation).map_err(|error| {
+        collaboration_cli_error(
+            "office.collaboration.output_invalid",
+            format!("Failed to encode typed mutation output: {error}"),
+        )
+    })?;
+    Ok(CommandOutput::success(
+        format!(
+            "{} typed operation '{}' at sequence {}{}.",
             if result.duplicate {
                 "Replayed"
             } else {
@@ -401,7 +508,7 @@ async fn handle_message(args: &[String]) -> UseResult<CommandOutput> {
     )
     .await?;
     let mutation = if parsed.value("operation-id")?.is_some() {
-        Some(mutation_request(&parsed, Vec::new()).await?)
+        Some(apply_request(&parsed, Vec::new()).await?)
     } else {
         for option in [
             "actor-id",
@@ -461,7 +568,7 @@ async fn handle_message(args: &[String]) -> UseResult<CommandOutput> {
     ))
 }
 
-async fn mutation_request(
+async fn apply_request(
     parsed: &ParsedOptions,
     update: Vec<u8>,
 ) -> UseResult<NativeOfficeCollaborationApplyRequest> {
@@ -479,6 +586,7 @@ async fn mutation_request(
             "state-vector precondition",
         )
         .await?,
+        origin: None,
     })
 }
 

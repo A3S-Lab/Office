@@ -132,6 +132,7 @@ pub enum NativeOfficeCollaborationOperationKind {
     Create,
     Join,
     Synchronize,
+    Mutate,
     Checkpoint,
     Leave,
 }
@@ -272,6 +273,40 @@ pub struct NativeOfficeCollaborationApplyRequest {
     pub expected_kind: NativeOfficeCollaborationArtifactKind,
     pub update: Vec<u8>,
     pub if_state_vector: Option<Vec<u8>>,
+    /// Optional authenticated source attribution supplied by a host
+    /// transport. This is audit metadata, not an authorization token.
+    pub origin: Option<NativeOfficeCollaborationOrigin>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "type",
+    rename_all = "kebab-case",
+    rename_all_fields = "camelCase",
+    deny_unknown_fields
+)]
+pub enum NativeOfficeCollaborationMutation {
+    /// Replace the canonical Markdown source while retaining the longest
+    /// common prefix and suffix in the underlying Y.Text.
+    MarkdownReplace { markdown: String },
+    /// Splice the canonical Markdown Y.Text using browser-compatible UTF-16
+    /// offsets. Surrogate pairs may not be split.
+    MarkdownSplice {
+        index_utf16: u32,
+        delete_utf16: u32,
+        insert: String,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub struct NativeOfficeCollaborationMutationRequest {
+    pub operation_id: String,
+    pub actor_id: String,
+    pub mode: NativeOfficeCollaborationMode,
+    pub expected_artifact_id: String,
+    pub expected_kind: NativeOfficeCollaborationArtifactKind,
+    pub mutation: NativeOfficeCollaborationMutation,
+    pub if_state_vector: Option<Vec<u8>>,
 }
 
 #[derive(Debug, Clone)]
@@ -378,6 +413,8 @@ pub struct NativeOfficeCollaborationUpdateEvent {
     pub update_sha256: String,
     pub before_state_vector_sha256: String,
     pub after_state_vector_sha256: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub origin: Option<NativeOfficeCollaborationOrigin>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

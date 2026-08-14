@@ -7,6 +7,7 @@
 //! collaboration schema.
 
 mod document;
+mod mutation;
 mod persistence;
 mod transport;
 mod types;
@@ -26,6 +27,7 @@ use document::{
     canonical_state_vector, document_state_sha256, inspect_document, new_replica_document,
     state_vector_sha256, validate_and_apply_update,
 };
+use mutation::{apply_mutation, validate_mutation_contract};
 use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
     write_update_entry, LoadedStore, OperationRecord, StoreLock,
@@ -34,13 +36,25 @@ pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
 use validation::{
     assert_operation_replay, assert_state_vector_precondition, creation_payload_sha256,
-    decode_state_vector, normalized_identifier, normalized_namespace, operation_payload_sha256,
-    validate_client_id, validate_expected_replica, validate_update_size,
+    decode_state_vector, mutation_payload_sha256, normalized_identifier, normalized_namespace,
+    normalized_origin, operation_payload_sha256, validate_client_id, validate_expected_replica,
+    validate_update_size,
 };
 pub(crate) use validation::{collaboration_error, sha256_hex};
 
 const AUTO_CHECKPOINT_UPDATE_COUNT: usize = 64;
 const AUTO_CHECKPOINT_UPDATE_BYTES: u64 = 64 * 1024 * 1024;
+
+struct UpdateOperationIdentity {
+    operation_id: String,
+    actor_id: String,
+    mode: NativeOfficeCollaborationMode,
+    kind: NativeOfficeCollaborationOperationKind,
+    artifact_id: String,
+    artifact_kind: NativeOfficeCollaborationArtifactKind,
+    payload_sha256: String,
+    origin: Option<NativeOfficeCollaborationOrigin>,
+}
 
 /// A local native replica. Every method reopens and locks the durable state so
 /// separate CLI, MCP, and coding-agent processes can safely share one replica.
@@ -129,6 +143,7 @@ impl NativeOfficeCollaborationStore {
             after_state_vector_sha256: sha256_hex(&state_vector),
             sequence: Some(0),
             state_changed: request.initial_update.is_some(),
+            origin: None,
         };
         let root = match create_store(&request.store, &manifest, &doc, &operation) {
             Ok(root) => root,
@@ -261,6 +276,7 @@ impl NativeOfficeCollaborationStore {
                 update_sha256: sha256_hex(&entry.update),
                 before_state_vector_sha256: entry.operation.before_state_vector_sha256.clone(),
                 after_state_vector_sha256: entry.operation.after_state_vector_sha256.clone(),
+                origin: entry.operation.origin.clone(),
             })
             .collect::<Vec<_>>();
         let cursor_sequence = updates
@@ -461,7 +477,8 @@ impl NativeOfficeCollaborationStore {
         let actor_id = normalized_identifier(&request.actor_id, "actor ID")?;
         let expected_artifact_id =
             normalized_identifier(&request.expected_artifact_id, "expected artifact ID")?;
-        let (_lock, mut loaded) = self.lock_and_load()?;
+        let origin = normalized_origin(request.origin)?;
+        let (_lock, loaded) = self.lock_and_load()?;
         validate_expected_replica(
             &loaded.manifest,
             &actor_id,
@@ -475,27 +492,106 @@ impl NativeOfficeCollaborationStore {
             &loaded.manifest,
             &operation_id,
             Some(&update_sha256),
+            origin.as_ref(),
             request.if_state_vector.as_deref(),
         )?;
         if let Some(existing) = loaded.find_operation(&operation_id)? {
             assert_operation_replay(&existing, &payload_sha256)?;
-            let state_vector = canonical_state_vector(&loaded.doc.transact().state_vector());
-            return Ok(NativeOfficeCollaborationApplyResult {
-                operation_id,
-                duplicate: true,
-                state_changed: existing.state_changed,
-                sequence: existing.sequence,
-                update_sha256,
-                state_vector_sha256: sha256_hex(&state_vector),
-                state_vector,
-                checkpointed: false,
-            });
+            return duplicate_update_result(operation_id, &existing, &loaded);
         }
         assert_state_vector_precondition(&loaded, request.if_state_vector.as_deref())?;
 
         let before_state_vector = loaded.doc.transact().state_vector();
         let before_state_sha256 = document_state_sha256(&loaded.doc);
         validate_and_apply_update(&loaded.doc, &request.update, &loaded.manifest)?;
+        self.commit_integrated_update(
+            loaded,
+            UpdateOperationIdentity {
+                operation_id,
+                actor_id,
+                mode: request.mode,
+                kind: NativeOfficeCollaborationOperationKind::Synchronize,
+                artifact_id: expected_artifact_id,
+                artifact_kind: request.expected_kind,
+                payload_sha256,
+                origin,
+            },
+            request.update,
+            before_state_vector,
+            before_state_sha256,
+        )
+    }
+
+    /// Apply a format-aware local mutation. Unlike raw updates, typed local
+    /// operations are an authorization boundary and currently require edit
+    /// mode. Remote Yjs delivery remains permission-neutral so read-only
+    /// replicas can observe authorized changes.
+    pub fn mutate(
+        &self,
+        request: NativeOfficeCollaborationMutationRequest,
+    ) -> UseResult<NativeOfficeCollaborationApplyResult> {
+        let operation_id = normalized_identifier(&request.operation_id, "operation ID")?;
+        let actor_id = normalized_identifier(&request.actor_id, "actor ID")?;
+        let expected_artifact_id =
+            normalized_identifier(&request.expected_artifact_id, "expected artifact ID")?;
+        let (_lock, loaded) = self.lock_and_load()?;
+        validate_expected_replica(
+            &loaded.manifest,
+            &actor_id,
+            request.mode,
+            &expected_artifact_id,
+            request.expected_kind,
+        )?;
+        validate_mutation_contract(&loaded.manifest, request.mode, &request.mutation)?;
+        let payload_sha256 = mutation_payload_sha256(
+            &loaded.manifest,
+            &operation_id,
+            &request.mutation,
+            request.if_state_vector.as_deref(),
+        )?;
+        if let Some(existing) = loaded.find_operation(&operation_id)? {
+            assert_operation_replay(&existing, &payload_sha256)?;
+            return duplicate_update_result(operation_id, &existing, &loaded);
+        }
+        assert_state_vector_precondition(&loaded, request.if_state_vector.as_deref())?;
+
+        let before_state_vector = loaded.doc.transact().state_vector();
+        let before_state_sha256 = document_state_sha256(&loaded.doc);
+        let update = apply_mutation(
+            &loaded.doc,
+            &loaded.manifest,
+            &request.mutation,
+            &before_state_vector,
+        )?;
+        validate_update_size(&update)?;
+        self.commit_integrated_update(
+            loaded,
+            UpdateOperationIdentity {
+                operation_id,
+                actor_id,
+                mode: request.mode,
+                kind: NativeOfficeCollaborationOperationKind::Mutate,
+                artifact_id: expected_artifact_id,
+                artifact_kind: request.expected_kind,
+                payload_sha256,
+                origin: None,
+            },
+            update,
+            before_state_vector,
+            before_state_sha256,
+        )
+    }
+
+    fn commit_integrated_update(
+        &self,
+        mut loaded: LoadedStore,
+        identity: UpdateOperationIdentity,
+        update: Vec<u8>,
+        before_state_vector: StateVector,
+        before_state_sha256: String,
+    ) -> UseResult<NativeOfficeCollaborationApplyResult> {
+        let result_operation_id = identity.operation_id.clone();
+        let update_sha256 = sha256_hex(&update);
         let after_state_sha256 = document_state_sha256(&loaded.doc);
         let state_changed = before_state_sha256 != after_state_sha256;
         let state_vector = canonical_state_vector(&loaded.doc.transact().state_vector());
@@ -503,27 +599,23 @@ impl NativeOfficeCollaborationStore {
         let operation = OperationRecord {
             schema_version: 1,
             protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
-            operation_id: operation_id.clone(),
-            actor_id,
+            operation_id: identity.operation_id.clone(),
+            actor_id: identity.actor_id,
             actor_kind: loaded.manifest.actor_kind,
-            mode: request.mode,
-            kind: NativeOfficeCollaborationOperationKind::Synchronize,
-            artifact_id: expected_artifact_id,
-            artifact_kind: request.expected_kind,
-            payload_sha256,
+            mode: identity.mode,
+            kind: identity.kind,
+            artifact_id: identity.artifact_id,
+            artifact_kind: identity.artifact_kind,
+            payload_sha256: identity.payload_sha256,
             update_sha256: Some(update_sha256.clone()),
             before_state_vector_sha256: state_vector_sha256(&before_state_vector),
             after_state_vector_sha256: sha256_hex(&state_vector),
             sequence,
             state_changed,
+            origin: identity.origin,
         };
         if state_changed {
-            write_update_entry(
-                &self.root,
-                loaded.next_sequence,
-                &request.update,
-                &operation,
-            )?;
+            write_update_entry(&self.root, loaded.next_sequence, &update, &operation)?;
             loaded = load_store(&self.root)?;
         } else {
             write_archived_operation(&self.root, &operation)?;
@@ -537,7 +629,7 @@ impl NativeOfficeCollaborationStore {
             compact(&self.root, &loaded, checkpoint_sequence)?;
         }
         Ok(NativeOfficeCollaborationApplyResult {
-            operation_id,
+            operation_id: result_operation_id,
             duplicate: false,
             state_changed,
             sequence,
@@ -587,6 +679,7 @@ impl NativeOfficeCollaborationStore {
             &loaded.manifest,
             &operation_id,
             None,
+            None,
             request.if_state_vector.as_deref(),
         )?;
         let state_vector = canonical_state_vector(&loaded.doc.transact().state_vector());
@@ -623,6 +716,7 @@ impl NativeOfficeCollaborationStore {
             after_state_vector_sha256: state_vector_sha256.clone(),
             sequence: Some(sequence),
             state_changed: false,
+            origin: None,
         };
         write_archived_operation(&self.root, &operation)?;
         Ok(NativeOfficeCollaborationCheckpointResult {
@@ -640,6 +734,33 @@ impl NativeOfficeCollaborationStore {
         let loaded = load_store(&self.root)?;
         Ok((lock, loaded))
     }
+}
+
+fn duplicate_update_result(
+    operation_id: String,
+    existing: &OperationRecord,
+    loaded: &LoadedStore,
+) -> UseResult<NativeOfficeCollaborationApplyResult> {
+    let update_sha256 = existing.update_sha256.clone().ok_or_else(|| {
+        collaboration_error(
+            "office.collaboration.operation_invalid",
+            format!(
+                "Durable update operation '{}' is missing its update digest.",
+                existing.operation_id
+            ),
+        )
+    })?;
+    let state_vector = canonical_state_vector(&loaded.doc.transact().state_vector());
+    Ok(NativeOfficeCollaborationApplyResult {
+        operation_id,
+        duplicate: true,
+        state_changed: existing.state_changed,
+        sequence: existing.sequence,
+        update_sha256,
+        state_vector_sha256: sha256_hex(&state_vector),
+        state_vector,
+        checkpointed: false,
+    })
 }
 
 #[allow(clippy::too_many_arguments)]

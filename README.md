@@ -136,7 +136,8 @@ The images below are committed visual-regression baselines from the real
 - **Automation outside the browser** — The native Rust CLI, standard MCP
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
-  vectors, and checkpoint without replacing a whole Office file.
+  vectors, perform authorized typed Markdown changes, retain browser/native
+  actor attribution, and checkpoint without replacing a whole Office file.
 
 ## Quick start
 
@@ -971,6 +972,13 @@ cargo run -p a3s-office-cli -- collab diff .a3s/report.replica \
 # Bridge that replica to a host-owned room over machine-readable JSONL.
 cargo run -p a3s-office-cli -- collab session .a3s/report.replica \
   --poll-ms 100 --json
+
+# Make a typed local change in an initialized Markdown replica. A running
+# session publishes the resulting incremental Yjs update automatically.
+cargo run -p a3s-office-cli -- collab mutate .a3s/notes.replica \
+  --artifact-id notes --kind markdown --actor-id agent-7 --mode edit \
+  --operation-id edit-42 \
+  --mutation '{"type":"markdown-replace","markdown":"# Shared notes"}' --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
@@ -984,7 +992,10 @@ controller as a shared participant roster, remote canvas projection, and
 participant-to-location navigation; neither component creates an account or
 backend. The native CLI's JSONL session bridges the same host-channel envelope,
 including reconnect handshakes, durable agent updates, and remote-echo
-suppression, without opening its own network provider.
+suppression, without opening its own network provider. Typed Markdown
+replace/splice operations use browser UTF-16 offsets and share that durable
+event path. Validated browser source origins survive native persistence and are
+re-emitted separately from host delivery IDs.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

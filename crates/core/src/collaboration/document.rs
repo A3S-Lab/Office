@@ -1,6 +1,9 @@
 use a3s_use_core::UseResult;
 use yrs::updates::decoder::Decode;
-use yrs::{Any, Array, Doc, Map, Out, ReadTxn, StateVector, Transact, Update};
+use yrs::{
+    Any, Array, ClientID, Doc, Map, OffsetKind, Options, Out, ReadTxn, StateVector, Transact,
+    Update,
+};
 
 use super::{
     collaboration_error, sha256_hex, NativeOfficeCollaborationArtifactKind,
@@ -25,7 +28,11 @@ pub(super) fn new_replica_document(
     namespace: &str,
     kind: NativeOfficeCollaborationArtifactKind,
 ) -> Doc {
-    let doc = Doc::with_client_id(client_id);
+    let mut options = Options::with_client_id(ClientID::new(client_id));
+    // Browser Yjs indexes text by UTF-16 code units. Matching that convention
+    // is essential for native typed text operations around astral characters.
+    options.offset_kind = OffsetKind::Utf16;
+    let doc = Doc::with_options(options);
     // Named Yjs roots do not carry a standalone root-type declaration in an
     // update. Register the protocol roots before replay so Yrs interprets the
     // incoming named branches with the same types used by browser clients.

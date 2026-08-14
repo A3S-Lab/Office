@@ -34,8 +34,9 @@ Use its typed tools rather than passing shell command strings:
   in Code it must pass parent confirmation before network access.
 - `office_collaboration_create`, `office_collaboration_inspect`,
   `office_collaboration_diff`, `office_collaboration_events`,
-  `office_collaboration_apply`, and `office_collaboration_checkpoint` expose a
-  durable Yjs/Yrs replica without opening an OOXML session.
+  `office_collaboration_apply`, `office_collaboration_mutate`, and
+  `office_collaboration_checkpoint` expose a durable Yjs/Yrs replica without
+  opening an OOXML session.
 
 Mutations remain unsaved until `office_save`. Do not discard a dirty session
 unless the user explicitly accepts losing its changes. Release the session as
@@ -100,6 +101,33 @@ changed since inspection:
   "ifStateVectorBase64": "..."
 }
 ```
+
+For local canonical Markdown changes, prefer
+`office_collaboration_mutate` over constructing Yjs bytes. It accepts closed
+`markdown-replace` and `markdown-splice` variants; splice positions are UTF-16
+code-unit offsets and may not split a surrogate pair:
+
+```json
+{
+  "store": ".a3s/notes.replica",
+  "operationId": "agent-edit-44",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "notes",
+  "kind": "markdown",
+  "mutation": {
+    "type": "markdown-splice",
+    "indexUtf16": 4,
+    "deleteUtf16": 0,
+    "insert": " shared"
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Typed canonical mutations require `edit`. Raw received updates remain
+applicable in read-only modes so remote state still converges. Durable native
+comment/suggest mutations are not yet enabled.
 
 The MCP JSON transport accepts update inputs up to 4 MiB and all structured
 results remain under the server's 8 MiB bound. Reduce the event `limit` when a
