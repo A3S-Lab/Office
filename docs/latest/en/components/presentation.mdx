@@ -15,7 +15,7 @@ while a text box is being edited.
 | `content` | `PresentationContent` | Yes | — | Controlled presentation content. |
 | `onChange` | `(content: PresentationContent) => void` | Yes | — | Emits the complete next presentation. |
 | `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Presentation as the canonical value. |
-| `presence` | `OfficeCollaborationPresence` | No | none | Projects the host-owned participant roster; requires the exact `collaboration` session. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes slide/object selection, projects remote object frames and roster navigation; requires the exact `collaboration` session. |
 | `preview` | `boolean` | No | `false` | Read-only presentation surface. |
 | `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
 | `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |

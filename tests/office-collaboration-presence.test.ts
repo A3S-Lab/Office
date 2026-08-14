@@ -99,7 +99,12 @@ test('validates locations for every Office artifact kind', () => {
     },
     {
       kind: 'markdown',
-      location: { kind: 'markdown', anchor: 1, head: 3 },
+      location: {
+        kind: 'markdown',
+        anchor: 1,
+        head: 3,
+        surface: 'visual',
+      },
     },
     {
       kind: 'spreadsheet',
@@ -198,6 +203,42 @@ test('rejects mismatched, malformed, and unbounded local presence', () => {
   );
 
   presence.destroy();
+  awareness.destroy();
+  document.destroy();
+});
+
+test('keeps legacy Markdown offsets source-based and rejects unknown surfaces', () => {
+  const document = new Y.Doc();
+  const awareness = new Awareness(document);
+  const session = createOfficeCollaborationSession({
+    actor: { id: 'markdown-editor', name: 'Markdown editor' },
+    artifactId: 'presence-markdown-surface',
+    awareness,
+    document,
+    kind: 'markdown',
+  });
+  const presence = createOfficeCollaborationPresence(session, {
+    location: { kind: 'markdown', anchor: 2, head: 4 },
+  });
+
+  expect(presence.local().location).toEqual({
+    kind: 'markdown',
+    anchor: 2,
+    head: 4,
+  });
+  expect(() =>
+    presence.update({
+      location: {
+        kind: 'markdown',
+        anchor: 2,
+        head: 4,
+        surface: 'canvas',
+      } as OfficeCollaborationPresenceLocation,
+    }),
+  ).toThrow(/invalid for 'markdown'/);
+
+  presence.destroy();
+  session.destroy();
   awareness.destroy();
   document.destroy();
 });

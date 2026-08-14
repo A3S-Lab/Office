@@ -1,36 +1,23 @@
-import { Bot, UsersRound } from 'lucide-react';
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { LocateFixed, UsersRound } from 'lucide-react';
+import { useMemo } from 'react';
 import type {
   WorkOfficeCollaborationParticipant,
-  WorkOfficeCollaborationPresence,
   WorkOfficeCollaborationPresenceActivity,
-  WorkOfficeCollaborationPresenceSnapshot,
 } from '../../../collaboration/office-collaboration-presence';
 import { Popover } from '../../../design-system/primitives';
-import { useOfficeCollaborationPresence } from './office-collaboration-presence-context';
-
-const PRESENCE_COLORS = [
-  '#1d4ed8',
-  '#6d28d9',
-  '#be123c',
-  '#047857',
-  '#a16207',
-  '#0369a1',
-  '#9d174d',
-  '#4338ca',
-] as const;
-
-type PresenceAvatarStyle = CSSProperties & {
-  '--work-office-presence-color': string;
-};
+import { useOfficeCollaborationParticipantNavigation } from './office-collaboration-presence-context';
+import {
+  OfficePresenceAvatar,
+  useOfficePresenceSnapshot,
+} from './office-collaboration-presence-ui';
 
 export function WorkOfficeCollaborationParticipants({
   variant = 'status',
 }: {
   variant?: 'status' | 'toolbar';
 }) {
-  const presence = useOfficeCollaborationPresence();
-  const snapshot = useOfficePresenceSnapshot(presence);
+  const snapshot = useOfficePresenceSnapshot();
+  const navigateToParticipant = useOfficeCollaborationParticipantNavigation();
   const participants = useMemo(
     () => orderedParticipants(snapshot?.participants ?? []),
     [snapshot],
@@ -52,6 +39,9 @@ export function WorkOfficeCollaborationParticipants({
       panelClassName="work-office-collaboration-popover"
       placement={variant === 'status' ? 'top-end' : 'bottom-end'}
       portal
+      focusFirstOnOpen={participants.some(
+        (participant) => !participant.local && Boolean(participant.location),
+      )}
       trigger={(triggerProps, { open }) => (
         <button
           {...triggerProps}
@@ -62,7 +52,7 @@ export function WorkOfficeCollaborationParticipants({
         >
           <span className="work-office-collaboration-stack" aria-hidden="true">
             {visibleParticipants.map((participant) => (
-              <PresenceAvatar
+              <OfficePresenceAvatar
                 key={participant.presenceId}
                 participant={participant}
                 compact
@@ -83,64 +73,87 @@ export function WorkOfficeCollaborationParticipants({
         </button>
       )}
     >
-      <header className="work-office-collaboration-heading">
-        <span className="work-office-collaboration-heading-icon">
-          <UsersRound size={16} aria-hidden="true" />
-        </span>
-        <span>
-          <strong>协作者</strong>
-          <small>{count} 个在线会话</small>
-        </span>
-      </header>
-      <ul className="work-office-collaboration-list">
-        {participants.map((participant) => (
-          <li
-            key={participant.presenceId}
-            data-collaboration-participant={participant.actor.id}
-            data-activity={participant.activity}
-            data-local={participant.local ? 'true' : undefined}
-          >
-            <PresenceAvatar participant={participant} />
-            <span className="work-office-collaboration-person">
-              <span className="work-office-collaboration-name">
-                <strong>{participant.actor.name}</strong>
-                {participant.local && <small>你</small>}
-                {participant.actor.kind === 'agent' && <small>Agent</small>}
-                {participant.actor.kind === 'system' && <small>系统</small>}
-              </span>
-              <span className="work-office-collaboration-detail">
-                {presenceActivityLabel(participant.activity)} ·{' '}
-                {presenceModeLabel(participant.mode)} ·{' '}
-                {presenceLocationLabel(participant)}
-              </span>
+      {(close) => (
+        <>
+          <header className="work-office-collaboration-heading">
+            <span className="work-office-collaboration-heading-icon">
+              <UsersRound size={16} aria-hidden="true" />
             </span>
-          </li>
-        ))}
-      </ul>
+            <span>
+              <strong>协作者</strong>
+              <small>{count} 个在线会话</small>
+            </span>
+          </header>
+          <ul className="work-office-collaboration-list">
+            {participants.map((participant) => {
+              const locationLabel = presenceLocationLabel(participant);
+              const navigable =
+                !participant.local &&
+                Boolean(participant.location) &&
+                Boolean(navigateToParticipant);
+              const content = (
+                <>
+                  <OfficePresenceAvatar participant={participant} />
+                  <span className="work-office-collaboration-person">
+                    <span className="work-office-collaboration-name">
+                      <strong>{participant.actor.name}</strong>
+                      {participant.local && <small>你</small>}
+                      {participant.actor.kind === 'agent' && (
+                        <small>Agent</small>
+                      )}
+                      {participant.actor.kind === 'system' && (
+                        <small>系统</small>
+                      )}
+                    </span>
+                    <span className="work-office-collaboration-detail">
+                      {presenceActivityLabel(participant.activity)} ·{' '}
+                      {presenceModeLabel(participant.mode)} · {locationLabel}
+                    </span>
+                  </span>
+                  {navigable && (
+                    <LocateFixed
+                      className="work-office-collaboration-locate"
+                      size={14}
+                      aria-hidden="true"
+                    />
+                  )}
+                </>
+              );
+              return (
+                <li
+                  key={participant.presenceId}
+                  data-collaboration-participant={participant.actor.id}
+                  data-activity={participant.activity}
+                  data-local={participant.local ? 'true' : undefined}
+                  data-navigable={navigable ? 'true' : undefined}
+                >
+                  {navigable ? (
+                    <button
+                      type="button"
+                      className="work-office-collaboration-participant"
+                      aria-label={`跳转到 ${participant.actor.name} 的位置，${locationLabel}`}
+                      onClick={() => {
+                        close();
+                        requestAnimationFrame(() =>
+                          navigateToParticipant?.(participant),
+                        );
+                      }}
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <span className="work-office-collaboration-participant">
+                      {content}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
     </Popover>
   );
-}
-
-function useOfficePresenceSnapshot(
-  presence: WorkOfficeCollaborationPresence | undefined,
-): WorkOfficeCollaborationPresenceSnapshot | undefined {
-  const [state, setState] = useState<{
-    owner?: WorkOfficeCollaborationPresence;
-    snapshot?: WorkOfficeCollaborationPresenceSnapshot;
-  }>(() => ({ owner: presence, snapshot: presence?.snapshot() }));
-
-  useEffect(() => {
-    if (!presence) {
-      setState({ owner: undefined, snapshot: undefined });
-      return;
-    }
-    setState({ owner: presence, snapshot: presence.snapshot() });
-    return presence.subscribe((snapshot) =>
-      setState({ owner: presence, snapshot }),
-    );
-  }, [presence]);
-
-  return state.owner === presence ? state.snapshot : presence?.snapshot();
 }
 
 function orderedParticipants(
@@ -154,87 +167,6 @@ function orderedParticipants(
       left.actor.name.localeCompare(right.actor.name) ||
       left.clientId - right.clientId,
   );
-}
-
-function PresenceAvatar({
-  compact = false,
-  participant,
-}: {
-  compact?: boolean;
-  participant: WorkOfficeCollaborationParticipant;
-}) {
-  const avatarUrl = safeAvatarUrl(participant.actor.avatarUrl);
-  const style: PresenceAvatarStyle = {
-    '--work-office-presence-color': presenceColor(participant),
-  };
-  return (
-    <span
-      className="work-office-collaboration-avatar"
-      data-activity={participant.activity}
-      data-compact={compact ? 'true' : undefined}
-      style={style}
-      aria-hidden="true"
-    >
-      {participant.actor.kind === 'agent' ? (
-        <Bot size={compact ? 10 : 12} />
-      ) : (
-        <span>{participantInitial(participant.actor.name)}</span>
-      )}
-      {avatarUrl && (
-        <img
-          src={avatarUrl}
-          alt=""
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          onError={(event) => {
-            event.currentTarget.hidden = true;
-          }}
-        />
-      )}
-    </span>
-  );
-}
-
-function participantInitial(name: string): string {
-  return Array.from(name.trim())[0]?.toLocaleUpperCase() ?? '?';
-}
-
-function presenceColor(
-  participant: WorkOfficeCollaborationParticipant,
-): string {
-  const requested = participant.actor.color;
-  if (requested && safeCssColor(requested)) return requested;
-  let hash = 0;
-  for (const character of participant.actor.id) {
-    hash = (hash * 31 + (character.codePointAt(0) ?? 0)) >>> 0;
-  }
-  return PRESENCE_COLORS[hash % PRESENCE_COLORS.length] ?? PRESENCE_COLORS[0];
-}
-
-function safeCssColor(value: string): boolean {
-  if (/[;{}]|url\(|var\(/i.test(value)) return false;
-  if (/^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(value)) {
-    return true;
-  }
-  return typeof CSS !== 'undefined' && CSS.supports('color', value);
-}
-
-function safeAvatarUrl(value: string | undefined): string | undefined {
-  if (!value || typeof URL === 'undefined') return undefined;
-  try {
-    const url = new URL(value, 'https://a3s.invalid/');
-    if (
-      url.protocol === 'https:' ||
-      url.protocol === 'http:' ||
-      url.protocol === 'blob:' ||
-      (url.protocol === 'data:' && value.startsWith('data:image/'))
-    ) {
-      return value;
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
 }
 
 function presenceActivityOrder(

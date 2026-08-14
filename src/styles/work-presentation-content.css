@@ -422,6 +422,79 @@
   pointer-events: none;
 }
 
+.work-presentation-remote-presence-layer {
+  position: absolute;
+  z-index: 14;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-presentation-remote-element {
+  position: absolute;
+  box-sizing: border-box;
+  display: block;
+  border: 1.5px solid var(--work-office-presence-color);
+  outline: 1px solid
+    color-mix(in srgb, var(--work-office-presence-color) 18%, transparent);
+  outline-offset: 2px;
+  transform-origin: center;
+}
+
+.work-presentation-remote-element > span,
+.work-presentation-remote-slide-marker {
+  max-width: 160px;
+  padding: 3px 6px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--work-office-presence-color);
+  box-shadow: 0 3px 8px rgb(15 23 42 / 16%);
+  color: #fff;
+  font: 650 9px / 1.25 var(--a3s-ui-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-presentation-remote-element > span {
+  position: absolute;
+  bottom: 100%;
+  left: -2px;
+  border-radius: 4px 4px 4px 0;
+}
+
+.work-presentation-remote-slide-marker {
+  position: absolute;
+  right: 8px;
+}
+
+:is(
+  .work-presentation-remote-element,
+  .work-presentation-remote-slide-marker
+)[data-activity="idle"] {
+  opacity: 0.68;
+}
+
+:is(
+  .work-presentation-remote-element,
+  .work-presentation-remote-slide-marker
+)[data-activity="away"] {
+  opacity: 0.42;
+}
+
+@media (forced-colors: active) {
+  .work-presentation-remote-element {
+    border-color: Highlight;
+    outline-color: Highlight;
+  }
+
+  .work-presentation-remote-element > span,
+  .work-presentation-remote-slide-marker {
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
 .work-slide-selection-resize-handle {
   position: absolute;
   right: -8px;

@@ -79,14 +79,19 @@ Status: implemented in the browser library.
   agents, modes, activity, and typed location summaries into editable and
   preview chrome for all five editor kinds. Pairing fails closed across
   artifact, kind, Y.Doc client, actor, namespace, or mode boundaries.
+- Every browser editor publishes its local ephemeral location and projects
+  remote locations into its native editing surface. Document and Markdown use
+  text selections/carets (with explicit Markdown source/visual coordinates),
+  Spreadsheet uses Fortune Sheet cell presence, Presentation uses stable
+  object frames, and PDF uses page/annotation markers. Remote roster rows
+  navigate only on explicit activation; passive Awareness updates preserve
+  local focus, selection, and viewport.
 - React, Vue, and Web Component session and presence plumbing.
 - Convergence, offline/reconnect, transport-boundary, presence, permission,
   StrictMode, framework-parity, and ownership tests.
 
 Remaining before this phase is production complete:
 
-- Project format-specific remote selections/carets into each editing canvas
-  and support participant-to-location navigation from the shared roster.
 - Add reference WebSocket/WebTransport relay examples with provider-side
   authorization and persistent update replay.
 - Durable update persistence and compaction reference implementation.
@@ -94,8 +99,9 @@ Remaining before this phase is production complete:
 
 ### Phase 2: Document
 
-Status: browser collaboration foundation and shared participant roster
-implemented; native parity and the remaining review/cursor matrix are pending.
+Status: browser collaboration foundation, participant roster, remote
+selection/caret projection, and participant navigation implemented; native
+parity and the remaining review authorization matrix are pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
@@ -114,7 +120,6 @@ implemented; native parity and the remaining review/cursor matrix are pending.
 
 Remaining:
 
-- Add awareness-backed cursors and selections without persisting presence.
 - Add suggestion-only authorization and durable accept/reject decision audit
   records; `comment` and `suggest` remain read-only until those models exist.
 - Prove concurrent text, table, list, section, comment, and revision workflows,

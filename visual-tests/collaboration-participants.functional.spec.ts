@@ -20,6 +20,16 @@ test('projects host-owned participants across edit and preview chrome', async ({
   });
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveAttribute('data-collaboration-count', '2');
+  await expect(
+    page.locator(
+      '.work-office-remote-caret[data-participant-id="playground-agent"]',
+    ),
+  ).toBeVisible();
+  await expect(
+    page.locator(
+      '.work-office-remote-selection[data-participant-id="playground-agent"]',
+    ),
+  ).not.toHaveCount(0);
 
   await trigger.click();
   const roster = page.getByRole('dialog', { name: '协作者' });
@@ -36,6 +46,19 @@ test('projects host-owned participants across edit and preview chrome', async ({
   await page.keyboard.press('Escape');
   await expect(roster).toBeHidden();
   await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  const locateAgent = page.getByRole('button', {
+    name: '跳转到 A3S Agent 的位置，已选择 6 个位置',
+  });
+  await expect(locateAgent).toBeFocused();
+  await locateAgent.click();
+  const documentBody = page.getByRole('textbox', { name: '文档正文' });
+  await expect(roster).toBeHidden();
+  await expect(documentBody).toBeFocused();
+  expect(
+    await page.evaluate(() => window.getSelection()?.toString().length ?? 0),
+  ).toBeGreaterThan(0);
 
   await page.getByRole('button', { exact: true, name: '预览' }).click();
   const previewBar = page.getByRole('region', { name: '文字预览工具' });

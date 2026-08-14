@@ -15,11 +15,13 @@ import * as Y from 'yjs';
 import {
   createOfficeCollaborationPresence,
   createOfficeCollaborationSession,
+  type OfficeCollaborationParticipant,
 } from '../src/core';
 import { WorkOfficeCollaborationParticipants } from '../src/internal/features/work/editors/office-collaboration-participants';
 import {
   assertOfficeCollaborationPresencePairing,
   OfficeCollaborationPresenceProvider,
+  useOfficeCollaborationLocationNavigator,
 } from '../src/internal/features/work/editors/office-collaboration-presence-context';
 import { WorkOfficeStatusBar } from '../src/internal/features/work/editors/work-office-chrome';
 
@@ -86,6 +88,45 @@ test('renders the compact toolbar projection without a status bar dependency', (
     });
     expect(trigger).toHaveAttribute('data-variant', 'toolbar');
     expect(trigger).toHaveTextContent('2');
+  } finally {
+    view.unmount();
+    fixture.destroy();
+  }
+});
+
+test('navigates from a remote roster row and leaves focus in the editor', async () => {
+  const fixture = collaborationPresenceFixture();
+  const calls: OfficeCollaborationParticipant[] = [];
+  const view = render(
+    <OfficeCollaborationPresenceProvider presence={fixture.localPresence}>
+      <ParticipantNavigationProbe
+        onNavigate={(participant) => {
+          calls.push(participant);
+          screen.getByRole('textbox', { name: '文档画布' }).focus();
+          return true;
+        }}
+      />
+      <div>
+        <textarea aria-label="文档画布" />
+        <WorkOfficeStatusBar>已保存</WorkOfficeStatusBar>
+      </div>
+    </OfficeCollaborationPresenceProvider>,
+  );
+
+  try {
+    fireEvent.click(
+      screen.getByRole('button', { name: '查看协作者，2 位协作者' }),
+    );
+    const locate = await screen.findByRole('button', {
+      name: '跳转到 A3S Agent 的位置，已选择 6 个位置',
+    });
+    expect(locate).toHaveFocus();
+    fireEvent.click(locate);
+
+    await waitFor(() => expect(calls).toHaveLength(1));
+    expect(calls[0]?.actor.id).toBe('agent');
+    expect(screen.getByRole('textbox', { name: '文档画布' })).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: '协作者' })).toBeNull();
   } finally {
     view.unmount();
     fixture.destroy();
@@ -188,6 +229,15 @@ function collaborationPresenceFixture() {
       remoteDocument.destroy();
     },
   };
+}
+
+function ParticipantNavigationProbe({
+  onNavigate,
+}: {
+  onNavigate: (participant: OfficeCollaborationParticipant) => boolean;
+}) {
+  useOfficeCollaborationLocationNavigator(onNavigate);
+  return null;
 }
 
 function relayAwareness(source: Awareness, target: Awareness): void {

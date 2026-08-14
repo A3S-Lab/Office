@@ -36,8 +36,12 @@ test('selects and deletes PDF annotations through the annotation capability', as
     annotation: {
       forDocument: () => ({
         getState: () => annotationState,
+        getAnnotationById: (id: string) =>
+          id === selectedAnnotation.object.id ? selectedAnnotation : null,
         getSelectedAnnotations: () => [selectedAnnotation],
         getSelectedAnnotationIds: () => annotationState.selectedUids,
+        selectAnnotation: (pageIndex: number, id: string) =>
+          calls.push(`select:${pageIndex}:${id}`),
         setActiveTool: (toolId: string | null) =>
           calls.push(`tool:${toolId ?? 'pointer'}`),
         updateAnnotations: (
@@ -124,6 +128,12 @@ test('selects and deletes PDF annotations through the annotation capability', as
     supportsOpacity: true,
     supportsStrokeWidth: true,
   });
+  expect(result.current.getSelectionLocation()).toEqual({
+    annotationId: 'annotation-2',
+    pageIndex: 2,
+  });
+  expect(result.current.locateAnnotation(2, 'annotation-2')).toBe(true);
+  expect(result.current.locateAnnotation(1, 'annotation-2')).toBe(false);
 
   act(() => {
     result.current.selectTool('ink');
@@ -135,6 +145,7 @@ test('selects and deletes PDF annotations through the annotation capability', as
   });
 
   expect(calls).toEqual([
+    'select:2:annotation-2',
     'tool:ink',
     'defaults:highlight:{"color":"#ff0000","strokeColor":"#ff0000"}',
     'color:[{"pageIndex":2,"id":"annotation-2","patch":{"color":"#ff0000","strokeColor":"#ff0000"}}]',

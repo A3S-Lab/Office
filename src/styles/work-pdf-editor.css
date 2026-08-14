@@ -572,6 +572,71 @@
   overflow: hidden;
 }
 
+.work-pdf-embed:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--work-pdf-accent) 66%, #ffffff);
+  outline-offset: -2px;
+}
+
+.work-pdf-remote-presence-layer {
+  position: absolute;
+  z-index: 4;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: max-content;
+  max-width: min(220px, calc(100% - 24px));
+  gap: 5px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-pdf-remote-participant {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 19px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px 5px 5px;
+  border: 1px solid color-mix(in srgb, var(--a3s-line) 82%, transparent);
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+}
+
+.work-pdf-remote-participant > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.work-pdf-remote-participant strong,
+.work-pdf-remote-participant small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-pdf-remote-participant strong {
+  font: 650 9px / 1.2 var(--a3s-ui-font);
+}
+
+.work-pdf-remote-participant small {
+  color: color-mix(
+    in srgb,
+    var(--work-office-presence-color) 72%,
+    var(--a3s-ink)
+  );
+  font: 500 8px / 1.2 var(--a3s-ui-font);
+}
+
+.work-pdf-remote-participant[data-activity="idle"] {
+  opacity: 0.74;
+}
+
+.work-pdf-remote-participant[data-activity="away"] {
+  opacity: 0.5;
+}
+
 .work-pdf-loading {
   position: absolute;
   z-index: 3;
@@ -583,6 +648,18 @@
   background: color-mix(in srgb, var(--a3s-bg) 88%, transparent);
   color: var(--a3s-muted);
   font-size: 11px;
+}
+
+@media (forced-colors: active) {
+  .work-pdf-embed:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .work-pdf-remote-participant {
+    border-color: Highlight;
+    background: Canvas;
+    color: CanvasText;
+  }
 }
 
 .work-pdf-state.ds-state-view {

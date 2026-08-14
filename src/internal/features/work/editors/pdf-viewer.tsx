@@ -13,6 +13,7 @@ import {
   useState,
 } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   assertWorkOfficePdfCollaborationSource,
   readWorkOfficePdfCollaborationSource,
@@ -23,6 +24,9 @@ import { useDialogFocusScope } from '../../../design-system/primitives/overlay/d
 import { usePdfAnnotationController } from './pdf-annotation-controller';
 import { createWorkPdfCollaborationProjection } from './pdf-collaboration-projection';
 import { createPdfEditorExtensions } from './pdf-editor-extensions';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
+import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
 import { type PdfSaveState, PdfToolbar } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';
@@ -266,6 +270,44 @@ export function PdfViewer({
     pdfExtensions,
   );
   const pdfCommands = pdfEditor.commands;
+  const selectedAnnotationLocation = annotation.getSelectionLocation();
+  const pdfPresenceLocation =
+    viewerReady && controller.state.currentPage > 0
+      ? {
+          kind: 'pdf' as const,
+          pageIndex:
+            selectedAnnotationLocation?.pageIndex ??
+            controller.state.currentPage - 1,
+          ...(selectedAnnotationLocation
+            ? { annotationId: selectedAnnotationLocation.annotationId }
+            : {}),
+        }
+      : null;
+  useOfficePublishPresenceLocation(pdfPresenceLocation);
+  const navigateToPdfParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant): boolean => {
+      const location = participant.location;
+      if (
+        location?.kind !== 'pdf' ||
+        !viewerReady ||
+        location.pageIndex >= controller.state.totalPages
+      ) {
+        return false;
+      }
+      controller.goToPage(location.pageIndex + 1);
+      if (location.annotationId) {
+        annotation.locateAnnotation(location.pageIndex, location.annotationId);
+      }
+      requestAnimationFrame(() => {
+        const target =
+          pdfRootRef.current?.querySelector<HTMLElement>('.work-pdf-embed');
+        target?.focus({ preventScroll: true });
+      });
+      return true;
+    },
+    [annotation, controller, viewerReady],
+  );
+  useOfficeCollaborationLocationNavigator(navigateToPdfParticipant);
   useOfficeEditorKeyboardShortcuts(pdfEditor, {
     capture: true,
     enabled: Boolean(sourceUrl),
@@ -369,8 +411,12 @@ export function PdfViewer({
         )}
         <div
           className="work-pdf-embed"
+          role="application"
+          aria-label="PDF 页面画布"
           aria-busy={!viewerReady}
           data-ready={viewerReady || undefined}
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: EmbedPDF is a composite canvas application and this wrapper is its stable navigation focus target.
+          tabIndex={0}
         >
           <PDFViewer
             key={sourceUrl}
@@ -411,6 +457,11 @@ export function PdfViewer({
             }}
             onReady={setRegistry}
           />
+          {viewerReady && controller.state.currentPage > 0 && (
+            <PdfCollaborationPresenceLayer
+              pageIndex={controller.state.currentPage - 1}
+            />
+          )}
           {!viewerReady && (
             <div className="work-pdf-loading" role="status">
               <Loader2 className="spin" size={18} />

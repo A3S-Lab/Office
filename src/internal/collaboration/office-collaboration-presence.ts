@@ -18,12 +18,25 @@ export type WorkOfficeCollaborationPresenceActivity =
   | 'idle'
   | 'away';
 
-export interface WorkOfficeTextPresenceLocation {
-  readonly kind: 'document' | 'markdown';
-  /** Zero-based model position; Markdown positions are UTF-16 offsets. */
+export interface WorkOfficeDocumentPresenceLocation {
+  readonly kind: 'document';
+  /** Zero-based ProseMirror model position. */
   readonly anchor: number;
   readonly head: number;
 }
+
+export interface WorkOfficeMarkdownPresenceLocation {
+  readonly kind: 'markdown';
+  /** Positions are UTF-16 offsets in source mode and ProseMirror positions in visual mode. */
+  readonly anchor: number;
+  readonly head: number;
+  /** Missing values from older protocol peers are interpreted as `source`. */
+  readonly surface?: 'source' | 'visual';
+}
+
+export type WorkOfficeTextPresenceLocation =
+  | WorkOfficeDocumentPresenceLocation
+  | WorkOfficeMarkdownPresenceLocation;
 
 export interface WorkOfficeSpreadsheetPresenceCell {
   readonly row: number;
@@ -382,7 +395,22 @@ function validatedLocation(
   if (!isRecord(value) || value.kind !== kind) return null;
   if (kind === 'document' || kind === 'markdown') {
     if (!isPosition(value.anchor) || !isPosition(value.head)) return null;
-    return Object.freeze({ kind, anchor: value.anchor, head: value.head });
+    if (kind === 'document') {
+      return Object.freeze({ kind, anchor: value.anchor, head: value.head });
+    }
+    if (
+      value.surface !== undefined &&
+      value.surface !== 'source' &&
+      value.surface !== 'visual'
+    ) {
+      return null;
+    }
+    return Object.freeze({
+      kind,
+      anchor: value.anchor,
+      head: value.head,
+      ...(value.surface === undefined ? {} : { surface: value.surface }),
+    });
   }
   if (kind === 'spreadsheet') {
     if (

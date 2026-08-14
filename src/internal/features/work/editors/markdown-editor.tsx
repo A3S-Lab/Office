@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   createWorkOfficeMarkdownCollaborationBinding,
   readWorkOfficeMarkdownCollaboration,
@@ -53,6 +54,8 @@ import { MarkdownStatus } from './markdown-status';
 import { MarkdownToolbar } from './markdown-toolbar';
 import { type MarkdownViewMode, MarkdownWorkspace } from './markdown-workspace';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { mergeOfficeTiptapExtensions } from './office-tiptap-extensions';
 import { useMarkdownSourceHistory } from './use-markdown-source-history';
 import {
@@ -129,7 +132,16 @@ export function MarkdownEditor({
   >();
   const [viewMode, setViewMode] = useState<MarkdownViewMode>('split');
   const [zoom, setZoom] = useState(100);
-  const [, setSelectionVersion] = useState(0);
+  const [selectionVersion, setSelectionVersion] = useState(0);
+  const [presenceSurface, setPresenceSurface] = useState<'source' | 'visual'>(
+    preview ? 'visual' : 'source',
+  );
+  const [sourcePresenceSelection, setSourcePresenceSelection] =
+    useState<MarkdownSourceSelection>({
+      start: 0,
+      end: 0,
+      direction: 'none',
+    });
   const {
     canRedo: canRedoSource,
     canUndo: canUndoSource,
@@ -533,13 +545,18 @@ export function MarkdownEditor({
   const handleSourceSelectionChange = useCallback(
     (selection: MarkdownSourceSelection) => {
       if (!collaborative) updateSourceHistorySelection(selection);
+      setSourcePresenceSelection(selection);
       setSelectionVersion((value) => value + 1);
     },
     [collaborative, updateSourceHistorySelection],
   );
   const handleVisualIntent = useCallback(() => {
+    setPresenceSurface('visual');
     applyMarkdownToEditor(sourceMarkdownRef.current);
   }, [applyMarkdownToEditor]);
+  const handleSourceIntent = useCallback(() => {
+    setPresenceSurface('source');
+  }, []);
 
   const openSourceSelectionMenu = useCallback(
     (event: WorkspaceContextMenuEvent<HTMLTextAreaElement>): boolean => {
@@ -615,6 +632,7 @@ export function MarkdownEditor({
     (mode: MarkdownViewMode) => {
       const focusSurface: MarkdownEditingSurface =
         mode === 'visual' ? 'visual' : 'source';
+      setPresenceSurface(focusSurface);
       if (mode !== 'source') {
         applyMarkdownToEditor(sourceMarkdownRef.current);
       }
@@ -626,6 +644,83 @@ export function MarkdownEditor({
     },
     [applyMarkdownToEditor, editor],
   );
+
+  const markdownPresenceLocation = useMemo(() => {
+    void selectionVersion;
+    const surface = readOnly ? 'visual' : presenceSurface;
+    if (surface === 'source') {
+      const maximum = sourceMarkdownRef.current.length;
+      const start = Math.max(
+        0,
+        Math.min(maximum, sourcePresenceSelection.start),
+      );
+      const end = Math.max(0, Math.min(maximum, sourcePresenceSelection.end));
+      const backward = sourcePresenceSelection.direction === 'backward';
+      return {
+        kind: 'markdown' as const,
+        surface,
+        anchor: backward ? end : start,
+        head: backward ? start : end,
+      };
+    }
+    if (!editor || editor.isDestroyed) return null;
+    const { anchor, head } = editor.state.selection;
+    return { kind: 'markdown' as const, surface, anchor, head };
+  }, [
+    editor,
+    presenceSurface,
+    readOnly,
+    selectionVersion,
+    sourcePresenceSelection,
+  ]);
+  useOfficePublishPresenceLocation(markdownPresenceLocation);
+  const navigateToMarkdownParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant): boolean => {
+      const location = participant.location;
+      if (!editor || editor.isDestroyed || location?.kind !== 'markdown') {
+        return false;
+      }
+      const surface = location.surface ?? 'source';
+      if (surface === 'source') {
+        if (
+          readOnly ||
+          location.anchor > sourceMarkdownRef.current.length ||
+          location.head > sourceMarkdownRef.current.length
+        ) {
+          return false;
+        }
+        setPresenceSurface('source');
+        if (viewMode === 'visual') setViewMode('source');
+        requestSourceSelection({
+          start: Math.min(location.anchor, location.head),
+          end: Math.max(location.anchor, location.head),
+          direction: location.anchor > location.head ? 'backward' : 'forward',
+        });
+        return true;
+      }
+      const maximum = editor.state.doc.content.size;
+      if (location.anchor > maximum || location.head > maximum) return false;
+      setPresenceSurface('visual');
+      if (viewMode !== 'visual') {
+        applyMarkdownToEditor(sourceMarkdownRef.current);
+        setViewMode('visual');
+      }
+      const from = Math.min(location.anchor, location.head);
+      const to = Math.max(location.anchor, location.head);
+      requestAnimationFrame(() => {
+        if (editor.isDestroyed) return;
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from, to })
+          .scrollIntoView()
+          .run();
+      });
+      return true;
+    },
+    [applyMarkdownToEditor, editor, readOnly, requestSourceSelection, viewMode],
+  );
+  useOfficeCollaborationLocationNavigator(navigateToMarkdownParticipant);
 
   const deferredMarkdown = useDeferredValue(sourceMarkdown);
   const canUndoMarkdown = collaborative
@@ -743,6 +838,7 @@ export function MarkdownEditor({
           getSelectionMenuItems ? openSourceSelectionMenu : undefined
         }
         onSourceRedo={redoSource}
+        onSourceIntent={handleSourceIntent}
         onSourceSelectionChange={handleSourceSelectionChange}
         onSourceUndo={undoSource}
         onVisualContextMenu={

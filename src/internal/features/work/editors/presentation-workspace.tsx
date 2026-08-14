@@ -24,6 +24,7 @@ import type {
 import { presentationSelectionUnits } from '../work-presentation-groups';
 import { OfficeTextArea } from './office-controls';
 import { SlideChart } from './presentation-chart-canvas';
+import { PresentationCollaborationPresenceLayer } from './presentation-collaboration-presence';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
 import {
@@ -506,6 +507,12 @@ export function PresentationWorkspace({
               </fieldset>
             );
           })}
+          {designMode === 'slide' && (
+            <PresentationCollaborationPresenceLayer
+              elements={activeElements}
+              slideId={selectedSlide.id}
+            />
+          )}
           {designMode === 'slide' &&
             (selectedSlide.comments ?? []).map((comment, index) => (
               <button

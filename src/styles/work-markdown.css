@@ -156,6 +156,82 @@
   background: color-mix(in srgb, var(--work-office-accent) 18%, transparent);
 }
 
+.work-markdown-source-presence-layer {
+  position: absolute;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.work-markdown-source-presence-mirror {
+  position: absolute;
+  box-sizing: border-box;
+  top: 0;
+  left: 0;
+  min-height: 100%;
+  margin: 0;
+  padding: 38px clamp(28px, 5vw, 72px) 80px;
+  color: transparent;
+  font-family: var(--font-mono);
+  font-size: calc(14px * var(--work-markdown-zoom) / 100);
+  line-height: 1.8;
+  overflow-wrap: break-word;
+  tab-size: 2;
+  white-space: pre-wrap;
+}
+
+.work-markdown-workspace.split .work-markdown-source-presence-mirror {
+  padding: 32px clamp(24px, 3.5vw, 46px) 72px;
+}
+
+.work-markdown-source-remote-range {
+  position: relative;
+  border-radius: 2px;
+  background: color-mix(
+    in srgb,
+    var(--work-office-presence-color) 22%,
+    transparent
+  );
+  box-decoration-break: clone;
+  box-shadow: inset 0 -1px 0
+    color-mix(in srgb, var(--work-office-presence-color) 66%, transparent);
+  -webkit-box-decoration-break: clone;
+}
+
+.work-markdown-source-remote-range[data-collapsed="true"] {
+  border-left: 2px solid var(--work-office-presence-color);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.work-markdown-source-remote-range::after {
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: -2px;
+  max-width: 160px;
+  padding: 3px 6px;
+  overflow: hidden;
+  border-radius: 4px 4px 4px 0;
+  background: var(--work-office-presence-color);
+  box-shadow: 0 3px 8px rgb(15 23 42 / 16%);
+  color: #fff;
+  content: attr(data-participant-name);
+  font: 650 9px / 1.25 var(--a3s-ui-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-markdown-source-presence-mirror[data-activity="idle"] {
+  opacity: 0.68;
+}
+
+.work-markdown-source-presence-mirror[data-activity="away"] {
+  opacity: 0.42;
+}
+
 .work-markdown-workspace.split .work-markdown-pane.source textarea {
   min-height: calc(100% - 32px);
   padding: 32px clamp(24px, 3.5vw, 46px) 72px;
@@ -166,6 +242,7 @@
 }
 
 .work-markdown-canvas {
+  position: relative;
   width: min(880px, calc(100% - 64px));
   min-height: calc(100% - 64px);
   margin: 32px auto;
@@ -578,6 +655,10 @@
 
   .work-markdown-workspace.split .work-markdown-pane.source textarea {
     min-height: 100%;
+    padding: 28px 20px 64px;
+  }
+
+  .work-markdown-workspace.split .work-markdown-source-presence-mirror {
     padding: 28px 20px 64px;
   }
 

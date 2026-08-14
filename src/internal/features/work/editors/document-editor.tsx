@@ -11,6 +11,7 @@ import {
   useState,
 } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   createWorkOfficeDocumentCollaborationBinding,
   readWorkOfficeDocumentCollaboration,
@@ -109,6 +110,11 @@ import {
 } from './document-zoom';
 import { OfficeFileInput, useOfficeDialog } from './office-controls';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import {
+  OfficeTiptapPresenceLayer,
+  useOfficePublishPresenceLocation,
+} from './office-collaboration-presence-ui';
 import {
   useOfficeTaskPaneEscape,
   useOfficeTaskPaneModal,
@@ -295,6 +301,7 @@ function DocumentEditorSurface({
   const workspaceRef = useRef<HTMLDivElement>(null);
   const reviewSurfaceRef = useRef<HTMLDivElement>(null);
   const pageSurfaceRef = useRef<HTMLElement>(null);
+  const editableSurfaceRef = useRef<HTMLElement>(null);
   const taskPaneInvokerRef = useRef<HTMLElement | null>(null);
   const commentsDraftFocusRef = useRef<HTMLElement | null>(null);
   const citationsDraftFocusRef = useRef<HTMLElement | null>(null);
@@ -434,6 +441,33 @@ function DocumentEditorSurface({
     },
     onSelectionUpdate: () => setSelectionVersion((value) => value + 1),
   });
+  const documentPresenceLocation = useMemo(() => {
+    void selectionVersion;
+    if (!editor || editor.isDestroyed) return null;
+    const { anchor, head } = editor.state.selection;
+    return { kind: 'document' as const, anchor, head };
+  }, [editor, selectionVersion]);
+  useOfficePublishPresenceLocation(documentPresenceLocation);
+  const navigateToDocumentParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant): boolean => {
+      const location = participant.location;
+      if (!editor || editor.isDestroyed || location?.kind !== 'document') {
+        return false;
+      }
+      const maximum = editor.state.doc.content.size;
+      if (location.anchor > maximum || location.head > maximum) return false;
+      const from = Math.min(location.anchor, location.head);
+      const to = Math.max(location.anchor, location.head);
+      return editor
+        .chain()
+        .focus()
+        .setTextSelection({ from, to })
+        .scrollIntoView()
+        .run();
+    },
+    [editor],
+  );
+  useOfficeCollaborationLocationNavigator(navigateToDocumentParticipant);
   const reviewConflicts = useDocumentReviewConflicts({
     activeConflictsRef: activeReviewConflictsRef,
     appliedSourceKeyRef,
@@ -1407,6 +1441,7 @@ function DocumentEditorSurface({
                       </header>
                     )}
                   <section
+                    ref={editableSurfaceRef}
                     className={`work-document-editable ${viewMode}`}
                     aria-label="文档内容编辑区域"
                     onDoubleClick={() => {
@@ -1419,6 +1454,11 @@ function DocumentEditorSurface({
                     }}
                   >
                     <EditorContent editor={editor} />
+                    <OfficeTiptapPresenceLayer
+                      containerRef={editableSurfaceRef}
+                      editor={editor}
+                      kind="document"
+                    />
                     {!preview && (
                       <DocumentSelectionToolbar
                         editor={editor}

@@ -464,8 +464,13 @@ For collaborative surfaces, pass the host-owned typed Presence controller as
 `presence` beside its exact `collaboration` session. Every editor projects the
 same responsive participant roster across editing and preview chrome, including
 human/agent identity, mode, activity, and a format-specific location summary.
-The host continues to synchronize Awareness and own both lifecycles; remote
-caret and selection overlays remain a separate roadmap item.
+Editors publish their local location and project remote locations without
+writing them into canonical content: Document and Markdown render text
+selections/carets, Spreadsheet uses Fortune Sheet's native cell-presence layer,
+Presentation frames stable object IDs, and PDF identifies peers on the current
+page or annotation. A remote roster row explicitly navigates and focuses that
+location; passive Awareness updates never move the local selection, viewport,
+or focus. The host continues to synchronize Awareness and own both lifecycles.
 
 Document and Markdown selection menus can be replaced with host-defined typed
 actions. Each action receives an immutable selection snapshot, nearby text,
@@ -971,8 +976,9 @@ the host still owns rooms, authentication, authorization, and delivery. Browser
 Core also provides a bounded host-channel adapter for Yjs state-vector/update
 sync and a typed, ephemeral Awareness controller for participants and
 format-specific locations. React, Vue, and Web Components can project that
-controller as a shared participant roster; neither component creates an
-account or backend.
+controller as a shared participant roster, remote canvas projection, and
+participant-to-location navigation; neither component creates an account or
+backend.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published

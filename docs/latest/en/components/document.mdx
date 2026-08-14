@@ -17,7 +17,7 @@ and file semantics.
 | `content` | `DocumentContent` | Yes | — | Controlled document content. |
 | `onChange` | `(content: DocumentContent) => void` | Yes | — | Emits the complete next value. |
 | `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Document as the canonical value. |
-| `presence` | `OfficeCollaborationPresence` | No | none | Projects the host-owned participant roster; requires the exact `collaboration` session. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes local selection, projects remote carets/selections and roster navigation; requires the exact `collaboration` session. |
 | `artifactId` | `string` | No | — | Stable host ID used by live PDF export. |
 | `preview` | `boolean` | No | `false` | Read-only rendering with the same pagination surface. |
 | `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |

@@ -1,13 +1,35 @@
-import { createContext, type ReactNode, useContext } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   WorkOfficeCollaborationError,
   type WorkOfficeCollaborationSession,
 } from '../../../collaboration/office-collaboration';
-import type { WorkOfficeCollaborationPresence } from '../../../collaboration/office-collaboration-presence';
+import type {
+  WorkOfficeCollaborationParticipant,
+  WorkOfficeCollaborationPresence,
+} from '../../../collaboration/office-collaboration-presence';
 
-const OfficeCollaborationPresenceContext = createContext<
-  WorkOfficeCollaborationPresence | undefined
->(undefined);
+type OfficeCollaborationLocationNavigator = (
+  participant: WorkOfficeCollaborationParticipant,
+) => boolean;
+
+interface OfficeCollaborationPresenceContextValue {
+  presence?: WorkOfficeCollaborationPresence;
+  navigateToParticipant: OfficeCollaborationLocationNavigator;
+  registerLocationNavigator: (
+    navigator: OfficeCollaborationLocationNavigator,
+  ) => () => void;
+}
+
+const OfficeCollaborationPresenceContext =
+  createContext<OfficeCollaborationPresenceContextValue | null>(null);
 
 export function OfficeCollaborationPresenceProvider({
   children,
@@ -16,8 +38,33 @@ export function OfficeCollaborationPresenceProvider({
   children: ReactNode;
   presence?: WorkOfficeCollaborationPresence;
 }) {
+  const navigatorRef = useRef<OfficeCollaborationLocationNavigator | null>(
+    null,
+  );
+  const registerLocationNavigator = useCallback(
+    (navigator: OfficeCollaborationLocationNavigator) => {
+      navigatorRef.current = navigator;
+      return () => {
+        if (navigatorRef.current === navigator) navigatorRef.current = null;
+      };
+    },
+    [],
+  );
+  const navigateToParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant) =>
+      navigatorRef.current?.(participant) ?? false,
+    [],
+  );
+  const value = useMemo<OfficeCollaborationPresenceContextValue>(
+    () => ({
+      navigateToParticipant,
+      presence,
+      registerLocationNavigator,
+    }),
+    [navigateToParticipant, presence, registerLocationNavigator],
+  );
   return (
-    <OfficeCollaborationPresenceContext.Provider value={presence}>
+    <OfficeCollaborationPresenceContext.Provider value={value}>
       {children}
     </OfficeCollaborationPresenceContext.Provider>
   );
@@ -26,7 +73,24 @@ export function OfficeCollaborationPresenceProvider({
 export function useOfficeCollaborationPresence():
   | WorkOfficeCollaborationPresence
   | undefined {
-  return useContext(OfficeCollaborationPresenceContext);
+  return useContext(OfficeCollaborationPresenceContext)?.presence;
+}
+
+export function useOfficeCollaborationLocationNavigator(
+  navigator: OfficeCollaborationLocationNavigator,
+): void {
+  const context = useContext(OfficeCollaborationPresenceContext);
+  useEffect(() => {
+    if (!context?.presence) return;
+    return context.registerLocationNavigator(navigator);
+  }, [context, navigator]);
+}
+
+export function useOfficeCollaborationParticipantNavigation():
+  | OfficeCollaborationLocationNavigator
+  | undefined {
+  const context = useContext(OfficeCollaborationPresenceContext);
+  return context?.presence ? context.navigateToParticipant : undefined;
 }
 
 export function assertOfficeCollaborationPresencePairing({

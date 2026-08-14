@@ -122,15 +122,23 @@ Editable status bars and preview/PDF toolbars render one responsive,
 keyboard-accessible participant roster. It distinguishes local and remote
 humans, agents, and system actors and summarizes activity, mode, and typed
 format location. The host still owns the controller lifecycle and Awareness
-transport. Canvas-level remote carets and selection geometry are a separate
-projection layer and are not rendered yet.
+transport. Each mounted editor publishes its local location and renders remote
+locations in its editing surface. Document and Markdown draw text selections
+and carets, Spreadsheet uses the native Fortune Sheet cell-presence layer,
+Presentation frames stable object IDs, and PDF shows peers on the current page
+or annotation. Activating a remote roster row navigates and focuses that
+location; passive Awareness changes never move the local viewport, selection,
+or focus.
 
-Locations are format-specific: Document and Markdown use anchor/head model
-positions, Spreadsheet uses bounded zero-based ranges, Presentation uses one
-slide plus stable element IDs, and PDF uses a zero-based page plus an optional
+Locations are format-specific: Document uses ProseMirror anchor/head model
+positions; Markdown identifies `source` UTF-16 offsets or `visual`
+ProseMirror positions (a missing surface remains backward-compatible source
+mode); Spreadsheet uses bounded zero-based ranges; Presentation uses one slide
+plus stable element IDs; and PDF uses a zero-based page plus an optional
 annotation ID. Remote states with the wrong artifact identity, protocol,
-actor, mode, or location shape are ignored. Presence is advisory UI data, not
-canonical content, durable audit history, or permission enforcement.
+actor, mode, or location shape are ignored. Stale locations outside the live
+model fail closed. Presence is advisory UI data, not canonical content,
+durable audit history, or permission enforcement.
 
 ## Open a Markdown session
 
@@ -432,7 +440,7 @@ existing writable PDF field.
 | Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
 | Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
 | Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
-| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it. All editors project a shared participant roster; canvas-level remote carets and selections remain pending. |
+| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it. All editors publish local locations, project remote locations into their native canvas, expose participant navigation, and keep passive updates focus-neutral. |
 | Extensions | Collaborative Documents accept behavior-only TipTap `Extension` values. Custom Nodes, Marks, global attributes, and extension kits require a versioned Office schema migration and are rejected. |
 
 `onChange` receives complete snapshots for local and remote shared changes. Use

@@ -11,6 +11,11 @@ import {
   useState,
 } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type {
+  WorkOfficeCollaborationParticipant,
+  WorkOfficeSpreadsheetPresenceCell,
+  WorkOfficeSpreadsheetPresenceRange,
+} from '../../../collaboration/office-collaboration-presence';
 import { showToast } from '../../../state/app-state';
 import {
   isWorkspaceContextMenuKeyboardEvent,
@@ -45,6 +50,8 @@ import { spreadsheetProtectionKey } from '../work-spreadsheet-protection';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { useOfficeDialog } from './office-dialog';
 import { useOfficeEditorFocusOrigin } from './office-editor-focus-handoff';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import {
   createSpreadsheetEditorExtensions,
   type SpreadsheetCommandRange,
@@ -99,6 +106,7 @@ import {
   useSpreadsheetFormatPainter,
 } from './use-spreadsheet-format-painter';
 import { spreadsheetFreezePanesStatus } from './spreadsheet-freeze-panes';
+import { useSpreadsheetCollaborationPresenceProjection } from './spreadsheet-collaboration-presence';
 import { useSpreadsheetWorkbookSync } from './use-spreadsheet-workbook-sync';
 import {
   type SpreadsheetCollaborationHistory,
@@ -532,6 +540,38 @@ function SpreadsheetEditorSurface({
   const toolbarSelection = finiteSpreadsheetSelection(
     selectionState?.selection ?? toolbarSheet?.luckysheet_select_save?.at(-1),
   );
+  const spreadsheetPresenceLocation = useMemo(() => {
+    if (!toolbarSheetId) return null;
+    const liveSelections = workbookRef.current?.getSelection();
+    const ranges = (
+      liveSelections?.length ? liveSelections : [toolbarSelection]
+    )
+      .slice(0, 64)
+      .map((selection) => ({
+        startRow: Math.min(selection.row[0] ?? 0, selection.row[1] ?? 0),
+        startColumn: Math.min(
+          selection.column[0] ?? 0,
+          selection.column[1] ?? 0,
+        ),
+        endRow: Math.max(selection.row[0] ?? 0, selection.row[1] ?? 0),
+        endColumn: Math.max(selection.column[0] ?? 0, selection.column[1] ?? 0),
+      }));
+    const activeCell = {
+      row: toolbarSelection.row_focus ?? toolbarSelection.row[0] ?? 0,
+      column: toolbarSelection.column_focus ?? toolbarSelection.column[0] ?? 0,
+    };
+    return {
+      kind: 'spreadsheet' as const,
+      sheetId: toolbarSheetId,
+      ranges,
+      activeCell,
+    };
+  }, [selectionState, toolbarSelection, toolbarSheetId]);
+  useOfficePublishPresenceLocation(spreadsheetPresenceLocation);
+  useSpreadsheetCollaborationPresenceProjection({
+    content: materializedContent,
+    workbook: workbookInstance,
+  });
   const toolbarCell = spreadsheetCellAt(
     toolbarSheet,
     toolbarSelection.row_focus ?? toolbarSelection.row[0],
@@ -688,6 +728,49 @@ function SpreadsheetEditorSurface({
     });
   };
   const spreadsheetCan = spreadsheetEditor.can();
+  const navigateToSpreadsheetParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant): boolean => {
+      const location = participant.location;
+      const workbook = workbookRef.current;
+      if (!workbook || location?.kind !== 'spreadsheet') return false;
+      const sheet = materializedContent.sheets.find(
+        (candidate) =>
+          candidate.id === location.sheetId && candidate.hide !== 1,
+      );
+      if (!sheet) return false;
+      const ranges = location.ranges
+        .filter((range) => spreadsheetPresenceRangeExists(sheet, range))
+        .map((range) => ({
+          row: [range.startRow, range.endRow],
+          column: [range.startColumn, range.endColumn],
+        }));
+      if (!ranges.length) return false;
+      const activeCell = location.activeCell ?? {
+        row: ranges[0]?.row[0] ?? 0,
+        column: ranges[0]?.column[0] ?? 0,
+      };
+      if (!spreadsheetPresenceCellExists(sheet, activeCell)) return false;
+      try {
+        activeSheetIdRef.current = location.sheetId;
+        collaborationView?.activateSheet(location.sheetId);
+        if (previewRef.current) setPreviewActiveSheetId(location.sheetId);
+        workbook.activateSheet({ id: location.sheetId });
+        workbook.setSelection(ranges, { id: location.sheetId });
+        workbook.scroll({
+          targetRow: activeCell.row,
+          targetColumn: activeCell.column,
+        });
+      } catch {
+        return false;
+      }
+      requestAnimationFrame(() =>
+        focusSpreadsheetGrid(spreadsheetCanvasRef.current),
+      );
+      return true;
+    },
+    [collaborationView, materializedContent.sheets],
+  );
+  useOfficeCollaborationLocationNavigator(navigateToSpreadsheetParticipant);
   const restoreSpreadsheetGridFocus = useCallback(
     () => focusSpreadsheetGrid(spreadsheetCanvasRef.current),
     [],
@@ -1442,6 +1525,47 @@ function spreadsheetGridFocusTargetReady(target: HTMLElement | null): boolean {
   if (!target) return false;
   const bounds = target.getBoundingClientRect();
   return bounds.width > 0 && bounds.height > 0;
+}
+
+function spreadsheetPresenceRangeExists(
+  sheet: WorkSpreadsheetContent['sheets'][number],
+  range: WorkOfficeSpreadsheetPresenceRange,
+): boolean {
+  const { columns, rows } = spreadsheetPresenceSheetSize(sheet);
+  return (
+    range.startRow >= 0 &&
+    range.startColumn >= 0 &&
+    range.endRow < rows &&
+    range.endColumn < columns
+  );
+}
+
+function spreadsheetPresenceCellExists(
+  sheet: WorkSpreadsheetContent['sheets'][number],
+  cell: WorkOfficeSpreadsheetPresenceCell,
+): boolean {
+  const { columns, rows } = spreadsheetPresenceSheetSize(sheet);
+  return (
+    cell.row >= 0 &&
+    cell.column >= 0 &&
+    cell.row < rows &&
+    cell.column < columns
+  );
+}
+
+function spreadsheetPresenceSheetSize(
+  sheet: WorkSpreadsheetContent['sheets'][number],
+): { columns: number; rows: number } {
+  return {
+    rows: Math.max(sheet.row ?? 60, sheet.data?.length ?? 0),
+    columns: Math.max(
+      sheet.column ?? 26,
+      sheet.data?.reduce(
+        (maximum, row) => Math.max(maximum, row?.length ?? 0),
+        0,
+      ) ?? 0,
+    ),
+  };
 }
 
 function spreadsheetSelectionSummaryText(

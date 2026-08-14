@@ -102,6 +102,10 @@
   z-index: 1;
 }
 
+.work-document-editable {
+  position: relative;
+}
+
 .work-document-editable .ProseMirror[data-document-format-painter="true"] {
   cursor: copy;
 }

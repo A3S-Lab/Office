@@ -27,6 +27,8 @@ export type {
   WorkOfficeCollaborationPresenceSnapshot as OfficeCollaborationPresenceSnapshot,
   WorkOfficeCollaborationPresenceState as OfficeCollaborationPresenceState,
   WorkOfficeCollaborationPresenceUpdate as OfficeCollaborationPresenceUpdate,
+  WorkOfficeDocumentPresenceLocation as OfficeDocumentPresenceLocation,
+  WorkOfficeMarkdownPresenceLocation as OfficeMarkdownPresenceLocation,
   WorkOfficePdfPresenceLocation as OfficePdfPresenceLocation,
   WorkOfficePresentationPresenceLocation as OfficePresentationPresenceLocation,
   WorkOfficeSpreadsheetPresenceCell as OfficeSpreadsheetPresenceCell,

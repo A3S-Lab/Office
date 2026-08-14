@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkOfficeCollaborationSession } from '../../../collaboration/office-collaboration';
+import type { WorkOfficeCollaborationParticipant } from '../../../collaboration/office-collaboration-presence';
 import {
   createWorkOfficePresentationCollaborationBinding,
   readWorkOfficePresentationCollaboration,
@@ -34,6 +35,8 @@ import type {
 } from '../work-types';
 import { OfficeFileInput } from './office-controls';
 import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
+import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
+import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { useOfficeTaskPaneEscape } from './office-task-pane';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
@@ -95,6 +98,7 @@ export type { PresentationEditorProps } from './presentation-editor-types';
 
 type PresentationTaskPane = 'comments' | 'design' | null;
 type PresentationTextFormattingAttribute = 'bold' | 'italic' | 'underline';
+const EMPTY_PRESENTATION_PRESENCE_ELEMENT_IDS: readonly string[] = [];
 
 export function PresentationEditor(props: PresentationEditorProps) {
   if (props.collaboration) {
@@ -298,6 +302,55 @@ function PresentationEditingSurface({
         ? (selectedMaster?.elements ?? [])
         : (selectedSlide?.elements ?? []);
   const selection = usePresentationSelection(activeElements);
+  const presentationPresenceLocation = useMemo(
+    () => ({
+      kind: 'presentation' as const,
+      slideId: selectedSlide.id,
+      elementIds:
+        designMode === 'slide'
+          ? selection.selectedElementIds
+          : EMPTY_PRESENTATION_PRESENCE_ELEMENT_IDS,
+    }),
+    [designMode, selectedSlide.id, selection.selectedElementIds],
+  );
+  useOfficePublishPresenceLocation(presentationPresenceLocation);
+  const navigateToPresentationParticipant = useCallback(
+    (participant: WorkOfficeCollaborationParticipant): boolean => {
+      const location = participant.location;
+      if (location?.kind !== 'presentation') return false;
+      const slide = content.slides.find(
+        (candidate) => candidate.id === location.slideId,
+      );
+      if (!slide) return false;
+      const elementIds = location.elementIds.filter((elementId) =>
+        slide.elements.some((element) => element.id === elementId),
+      );
+      setDesignMode('slide');
+      setViewMode('normal');
+      setSelectedSlideId(slide.id);
+      selection.replace(elementIds);
+      requestAnimationFrame(() => {
+        const root = presentationRootRef.current;
+        if (!root) return;
+        const selectedElementId = elementIds.at(-1);
+        const target = selectedElementId
+          ? Array.from(
+              root.querySelectorAll<HTMLElement>('[data-slide-element-id]'),
+            ).find(
+              (candidate) =>
+                candidate.dataset.slideElementId === selectedElementId,
+            )
+          : Array.from(
+              root.querySelectorAll<HTMLElement>('[data-slide-thumbnail]'),
+            ).find((candidate) => candidate.dataset.slideId === slide.id);
+        target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        target?.focus({ preventScroll: true });
+      });
+      return true;
+    },
+    [content.slides, selection.replace],
+  );
+  useOfficeCollaborationLocationNavigator(navigateToPresentationParticipant);
   const selectedElements = selectedPresentationElements(
     activeElements,
     selection.selectedElementIds,

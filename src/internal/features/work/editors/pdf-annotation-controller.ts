@@ -30,6 +30,11 @@ export interface PdfAnnotationControllerState {
 export interface PdfAnnotationController {
   state: PdfAnnotationControllerState;
   deleteSelection: () => void;
+  getSelectionLocation: () => {
+    annotationId: string;
+    pageIndex: number;
+  } | null;
+  locateAnnotation: (pageIndex: number, annotationId: string) => boolean;
   setAnnotationColor: (color: string) => void;
   setAnnotationOpacity: (opacity: number) => void;
   setAnnotationStrokeWidth: (strokeWidth: number) => void;
@@ -170,6 +175,33 @@ export function usePdfAnnotationController(
     if (deletions.length > 0) scope.deleteAnnotations(deletions);
   }, []);
 
+  const getSelectionLocation = useCallback(() => {
+    const scope = activeAnnotationScope(capabilitiesRef.current);
+    const selected = safely(() => scope?.getSelectedAnnotations());
+    if (selected?.length !== 1 || !selected[0]) return null;
+    return {
+      annotationId: selected[0].object.id,
+      pageIndex: selected[0].object.pageIndex,
+    };
+  }, []);
+
+  const locateAnnotation = useCallback(
+    (pageIndex: number, annotationId: string): boolean => {
+      const scope = activeAnnotationScope(capabilitiesRef.current);
+      if (!scope) return false;
+      const annotation = safely(() => scope.getAnnotationById(annotationId));
+      if (!annotation || annotation.object.pageIndex !== pageIndex)
+        return false;
+      return Boolean(
+        safely(() => {
+          scope.selectAnnotation(pageIndex, annotationId);
+          return true;
+        }),
+      );
+    },
+    [],
+  );
+
   const setAnnotationColor = useCallback((color: string) => {
     const normalizedColor = normalizeAnnotationColor(color);
     const capabilities = capabilitiesRef.current;
@@ -239,6 +271,8 @@ export function usePdfAnnotationController(
     () => ({
       state,
       deleteSelection,
+      getSelectionLocation,
+      locateAnnotation,
       setAnnotationColor,
       setAnnotationOpacity,
       setAnnotationStrokeWidth,
@@ -246,6 +280,8 @@ export function usePdfAnnotationController(
     }),
     [
       deleteSelection,
+      getSelectionLocation,
+      locateAnnotation,
       setAnnotationColor,
       setAnnotationOpacity,
       setAnnotationStrokeWidth,

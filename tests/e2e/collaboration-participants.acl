@@ -24,6 +24,10 @@ suite "collaboration-participants" {
             visible = css("button[data-collaboration-count='2']")
         }
 
+        wait "remote-selection-projected" {
+            visible = css(".work-office-remote-caret[data-participant-id='playground-agent']")
+        }
+
         click "open-participant-roster" {
             target = css("button[data-collaboration-count='2']")
         }
@@ -42,6 +46,22 @@ suite "collaboration-participants" {
 
         wait "participant-trigger-focus-restored" {
             visible = css("button[data-collaboration-count='2']:focus")
+        }
+
+        click "reopen-participant-roster" {
+            target = css("button[data-collaboration-count='2']")
+        }
+
+        click "locate-agent-selection" {
+            target = css("button.work-office-collaboration-participant[aria-label^='跳转到 A3S Agent']")
+        }
+
+        wait "document-selection-focused" {
+            visible = css(".work-document-editable [contenteditable='true']:focus")
+        }
+
+        screenshot "participant-location" {
+            path = "screenshots/collaboration-participant-location-desktop.png"
         }
 
         accessibility "participant-accessibility" {

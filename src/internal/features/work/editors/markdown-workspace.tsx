@@ -21,6 +21,10 @@ import type {
   MarkdownSourceCommand,
   MarkdownSourceSelection,
 } from './markdown-source-commands';
+import {
+  MarkdownSourcePresenceLayer,
+  OfficeTiptapPresenceLayer,
+} from './office-collaboration-presence-ui';
 
 export type MarkdownViewMode = 'visual' | 'source' | 'split';
 type MarkdownCompactPane = 'source' | 'preview';
@@ -90,6 +94,7 @@ export function MarkdownWorkspace({
 }) {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const visualRef = useRef<HTMLElement>(null);
+  const visualCanvasRef = useRef<HTMLDivElement>(null);
   const synchronizedTargetRef = useRef<'source' | 'visual' | null>(null);
   const releaseFrameRef = useRef<number | null>(null);
   const sourceInputTypeRef = useRef<string | undefined>(undefined);
@@ -344,6 +349,10 @@ export function MarkdownWorkspace({
             }}
             onScroll={handleSourceScroll}
           />
+          <MarkdownSourcePresenceLayer
+            markdown={markdown}
+            sourceRef={sourceRef}
+          />
         </section>
       )}
       {mode === 'split' && (
@@ -387,8 +396,14 @@ export function MarkdownWorkspace({
           {mode === 'split' && (
             <header className="work-markdown-pane-label">预览</header>
           )}
-          <div className="work-markdown-canvas">
+          <div ref={visualCanvasRef} className="work-markdown-canvas">
             <EditorContent editor={editor} />
+            <OfficeTiptapPresenceLayer
+              containerRef={visualCanvasRef}
+              editor={editor}
+              kind="markdown"
+              markdownSurface="visual"
+            />
           </div>
         </section>
       )}
