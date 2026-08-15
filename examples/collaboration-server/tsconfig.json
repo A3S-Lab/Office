@@ -4,6 +4,9 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "noEmit": true,
+    "paths": {
+      "@a3s-lab/office/core": ["../../src/core.ts"]
+    },
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022"
