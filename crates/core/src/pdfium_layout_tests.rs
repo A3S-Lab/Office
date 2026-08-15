@@ -255,6 +255,31 @@ fn pdf_text_batch_contract_preserves_order_bounds_and_isolated_failures() {
 
     batch.validate_for(&inventory, &units, options).unwrap();
 
+    let mut corrupt_inventory = inventory.clone();
+    corrupt_inventory.pages[1].unit.path = "/page[99]".to_string();
+    assert_eq!(
+        batch
+            .validate_for(&corrupt_inventory, &units, options)
+            .unwrap_err()
+            .code,
+        "use.office.pdf_inventory_invalid"
+    );
+
+    let mut corrupt_layer = batch.clone();
+    let NativeOfficePdfTextBatchSlotOutcome::Completed { layer } =
+        &mut corrupt_layer.slots[0].outcome
+    else {
+        panic!("the first batch slot must contain the completed fixture layer")
+    };
+    layer.text_sha256 = "b".repeat(64);
+    assert_eq!(
+        corrupt_layer
+            .validate_for(&inventory, &units, options)
+            .unwrap_err()
+            .code,
+        "use.office.pdf_text_layer_invalid"
+    );
+
     let mut reordered = batch.clone();
     reordered.slots.swap(0, 1);
     assert_eq!(

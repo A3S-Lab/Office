@@ -143,6 +143,15 @@ impl NativeOfficePdfPageTextLayer {
     /// deterministic content identity against the admitted inventory.
     pub fn validate(&self, inventory: &NativeOfficePdfPageInventory) -> UseResult<()> {
         inventory.validate()?;
+        self.validate_for_prevalidated_inventory(inventory)
+    }
+
+    /// Validate one layer after the complete inventory envelope, order, and
+    /// page geometries were validated by the enclosing batch request.
+    pub(super) fn validate_for_prevalidated_inventory(
+        &self,
+        inventory: &NativeOfficePdfPageInventory,
+    ) -> UseResult<()> {
         if self.source_revision != inventory.source_revision {
             return Err(layout_error(
                 "use.office.pdf_text_layer_source_mismatch",

@@ -120,7 +120,7 @@ impl NativeOfficePdfPageTextBatch {
         requested_units: &[NativeOfficeUnit],
         options: NativeOfficePdfTextBatchOptions,
     ) -> UseResult<()> {
-        validate_batch_request(inventory, requested_units, options)?;
+        let validated_request = validate_batch_request(inventory, requested_units, options)?;
         if self.source_revision != inventory.source_revision
             || self.options != options
             || self.slots.len() != requested_units.len()
@@ -135,7 +135,7 @@ impl NativeOfficePdfPageTextBatch {
             }
             match &slot.outcome {
                 NativeOfficePdfTextBatchSlotOutcome::Completed { layer } => {
-                    layer.validate(inventory)?;
+                    validated_request.validate_layer(layer)?;
                     if layer.unit != slot.unit
                         || layer.max_characters != options.max_characters_per_page
                         || layer.max_text_bytes != options.max_text_bytes_per_page
@@ -171,11 +171,24 @@ impl NativeOfficePdfPageTextBatch {
     }
 }
 
-pub(super) fn validate_batch_request(
-    inventory: &NativeOfficePdfPageInventory,
+/// Proof that one batch request already validated the complete inventory.
+/// Per-layer validation can therefore remain linear in the batch cardinality
+/// without weakening whole-inventory authority.
+pub(super) struct ValidatedPdfTextBatchRequest<'a> {
+    inventory: &'a NativeOfficePdfPageInventory,
+}
+
+impl ValidatedPdfTextBatchRequest<'_> {
+    fn validate_layer(&self, layer: &NativeOfficePdfPageTextLayer) -> UseResult<()> {
+        layer.validate_for_prevalidated_inventory(self.inventory)
+    }
+}
+
+pub(super) fn validate_batch_request<'a>(
+    inventory: &'a NativeOfficePdfPageInventory,
     units: &[NativeOfficeUnit],
     options: NativeOfficePdfTextBatchOptions,
-) -> UseResult<()> {
+) -> UseResult<ValidatedPdfTextBatchRequest<'a>> {
     inventory.validate()?;
     options.validate()?;
     if units.is_empty() || units.len() > options.max_pages {
@@ -194,7 +207,7 @@ pub(super) fn validate_batch_request(
             ));
         }
     }
-    Ok(())
+    Ok(ValidatedPdfTextBatchRequest { inventory })
 }
 
 pub(super) fn total_character_limit() -> UseError {
