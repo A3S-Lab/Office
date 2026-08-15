@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { readFileSync } from 'node:fs';
 import * as Y from 'yjs';
 import {
   createOfficeCollaborationSession,
@@ -7,6 +8,16 @@ import {
   readOfficePresentationCollaboration,
 } from '../src/core';
 import { presentationCollaborationFixture as presentationFixture } from './fixtures/presentation-collaboration';
+import {
+  NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+  NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+  NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
+} from './fixtures/native-presentation-element-updates';
+
+const BROWSER_PRESENTATION_FIXTURE_BASE64 = readFileSync(
+  'tests/fixtures/browser-presentation-collaboration-update.base64',
+  'utf8',
+).trim();
 
 test('initializes typed Presentation roots and never stores one deck blob', () => {
   const session = createOfficeCollaborationSession({
@@ -482,6 +493,305 @@ test('undoes a local Presentation comment without removing remote records', asyn
   secondBinding.destroy();
 });
 
+test('fails closed when two clients create different scene objects with one identity', () => {
+  const firstDocument = new Y.Doc();
+  const first = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-claim-conflict',
+    document: firstDocument,
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(first, presentationFixture());
+  const secondDocument = cloneDocument(firstDocument);
+  const second = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-claim-conflict',
+    document: secondDocument,
+    kind: 'presentation',
+  });
+  const firstBinding = createOfficePresentationCollaborationBinding(first);
+  const secondBinding = createOfficePresentationCollaborationBinding(second);
+  const firstBefore = firstBinding.content();
+  const secondBefore = secondBinding.content();
+  const template = firstBefore.slides[0].elements[0];
+
+  firstBinding.replace(firstBefore, {
+    ...firstBefore,
+    slides: firstBefore.slides.map((slide) =>
+      slide.id === 'slide-1'
+        ? {
+            ...slide,
+            elements: [
+              ...slide.elements,
+              { ...template, id: 'element-collision', text: 'Ada object' },
+            ],
+          }
+        : slide,
+    ),
+  });
+  secondBinding.replace(secondBefore, {
+    ...secondBefore,
+    slides: secondBefore.slides.map((slide) =>
+      slide.id === 'slide-1'
+        ? {
+            ...slide,
+            elements: [
+              ...slide.elements,
+              { ...template, id: 'element-collision', text: 'Grace object' },
+            ],
+          }
+        : slide,
+    ),
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+
+  expect(() => readOfficePresentationCollaboration(first)).toThrow(
+    /concurrently assigned to different records/,
+  );
+  expect(() => readOfficePresentationCollaboration(second)).toThrow(
+    /concurrently assigned to different records/,
+  );
+
+  firstBinding.destroy();
+  secondBinding.destroy();
+});
+
+test('converges idempotent concurrent scene-object creation with one identity', () => {
+  const firstDocument = new Y.Doc();
+  const first = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-idempotent-create',
+    document: firstDocument,
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(first, presentationFixture());
+  const secondDocument = cloneDocument(firstDocument);
+  const second = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-idempotent-create',
+    document: secondDocument,
+    kind: 'presentation',
+  });
+  const firstBinding = createOfficePresentationCollaborationBinding(first);
+  const secondBinding = createOfficePresentationCollaborationBinding(second);
+  const element = {
+    ...firstBinding.content().slides[0].elements[0],
+    id: 'element-shared',
+    text: 'Shared object',
+  };
+
+  for (const binding of [firstBinding, secondBinding]) {
+    const before = binding.content();
+    binding.replace(before, {
+      ...before,
+      slides: before.slides.map((slide) =>
+        slide.id === 'slide-1'
+          ? { ...slide, elements: [...slide.elements, element] }
+          : slide,
+      ),
+    });
+  }
+  exchangeUpdates(firstDocument, secondDocument);
+
+  const converged = readOfficePresentationCollaboration(first);
+  expect(readOfficePresentationCollaboration(second)).toEqual(converged);
+  expect(
+    converged.slides[0].elements.filter(({ id }) => id === 'element-shared'),
+  ).toEqual([element]);
+
+  firstBinding.destroy();
+  secondBinding.destroy();
+});
+
+test('reads legacy Presentation sessions without record claims and adds claims lazily', () => {
+  const session = createOfficeCollaborationSession({
+    artifactId: 'presentation-legacy-claims',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, presentationFixture());
+  const claims = session.document.getArray<string>(
+    session.rootName('presentation.record-claims'),
+  );
+  claims.delete(0, claims.length);
+
+  expect(readOfficePresentationCollaboration(session)).toEqual(
+    presentationFixture(),
+  );
+
+  const binding = createOfficePresentationCollaborationBinding(session);
+  const before = binding.content();
+  const element = {
+    ...before.slides[0].elements[0],
+    id: 'element-post-upgrade',
+    text: 'Created after upgrade',
+  };
+  binding.replace(before, {
+    ...before,
+    slides: before.slides.map((slide) =>
+      slide.id === 'slide-1'
+        ? { ...slide, elements: [...slide.elements, element] }
+        : slide,
+    ),
+  });
+
+  expect(claims.length).toBe(1);
+  expect(binding.content().slides[0].elements).toContainEqual(element);
+  binding.destroy();
+});
+
+test('keeps deleted scene identities tombstoned and restores them with local undo', () => {
+  const session = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-tombstone',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, presentationFixture());
+  const binding = createOfficePresentationCollaborationBinding(session);
+  const before = binding.content();
+  const deletedElement = before.slides[0].elements[0];
+  binding.stopCapturing();
+
+  binding.replace(before, {
+    ...before,
+    slides: before.slides.map((slide) =>
+      slide.id === 'slide-1' ? { ...slide, elements: [] } : slide,
+    ),
+  });
+
+  expect(binding.content().slides[0].elements).toEqual([]);
+  const slides = session.document.getMap(
+    session.rootName('presentation.slides'),
+  );
+  const slide = slides.get('slide-1') as Y.Map<unknown>;
+  const elements = slide.get('elements') as Y.Map<unknown>;
+  const tombstone = elements.get('element-title') as Y.Map<unknown>;
+  expect(tombstone).toBeInstanceOf(Y.Map);
+  expect(tombstone.get('tombstone')).toBe(true);
+
+  const afterDelete = binding.content();
+  expect(() =>
+    binding.replace(afterDelete, {
+      ...afterDelete,
+      slides: afterDelete.slides.map((current) =>
+        current.id === 'slide-1'
+          ? { ...current, elements: [deletedElement] }
+          : current,
+      ),
+    }),
+  ).toThrow(/deleted scene element ID 'element-title' cannot be reused/);
+
+  expect(binding.undo()).toBe(true);
+  expect(binding.content().slides[0].elements).toEqual([deletedElement]);
+  expect(
+    (
+      (slides.get('slide-1') as Y.Map<unknown>).get(
+        'elements',
+      ) as Y.Map<unknown>
+    ).get('element-title'),
+  ).toBeInstanceOf(Y.Map);
+  expect(
+    (
+      (
+        (slides.get('slide-1') as Y.Map<unknown>).get(
+          'elements',
+        ) as Y.Map<unknown>
+      ).get('element-title') as Y.Map<unknown>
+    ).has('tombstone'),
+  ).toBe(false);
+
+  binding.destroy();
+});
+
+test('uses element tombstones in slide, master, and layout containers', () => {
+  const fixture = presentationFixture();
+  const template = fixture.slides[0].elements[0];
+  const content = {
+    ...fixture,
+    masters: fixture.masters?.map((master) => ({
+      ...master,
+      elements: [{ ...template, id: 'element-master' }],
+    })),
+    layouts: fixture.layouts?.map((layout) => ({
+      ...layout,
+      elements: [{ ...template, id: 'element-layout' }],
+    })),
+  };
+  const session = createOfficeCollaborationSession({
+    artifactId: 'presentation-all-element-containers',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, content);
+  const binding = createOfficePresentationCollaborationBinding(session);
+  const before = binding.content();
+
+  binding.replace(before, {
+    ...before,
+    slides: before.slides.map((slide) => ({ ...slide, elements: [] })),
+    masters: before.masters?.map((master) => ({
+      ...master,
+      elements: [],
+    })),
+    layouts: before.layouts?.map((layout) => ({
+      ...layout,
+      elements: [],
+    })),
+  });
+
+  for (const [collection, containerId, elementId] of [
+    ['slides', 'slide-1', 'element-title'],
+    ['masters', 'master-1', 'element-master'],
+    ['layouts', 'layout-1', 'element-layout'],
+  ] as const) {
+    const containers = session.document.getMap(
+      session.rootName(`presentation.${collection}`),
+    );
+    const container = containers.get(containerId) as Y.Map<unknown>;
+    const elements = container.get('elements') as Y.Map<unknown>;
+    const record = elements.get(elementId) as Y.Map<unknown>;
+    expect(record.get('tombstone')).toBe(true);
+  }
+  expect(binding.content()).toMatchObject({
+    slides: expect.arrayContaining([
+      expect.objectContaining({ id: 'slide-1', elements: [] }),
+    ]),
+    masters: [expect.objectContaining({ elements: [] })],
+    layouts: [expect.objectContaining({ elements: [] })],
+  });
+  binding.destroy();
+});
+
+test('rejects reserved tombstones and scene-element type changes', () => {
+  const session = createOfficeCollaborationSession({
+    artifactId: 'presentation-element-immutable-fields',
+    kind: 'presentation',
+  });
+  initializeOfficePresentationCollaboration(session, presentationFixture());
+  const binding = createOfficePresentationCollaborationBinding(session);
+  const before = binding.content();
+
+  expect(() =>
+    binding.replace(before, {
+      ...before,
+      slides: before.slides.map((slide) => ({
+        ...slide,
+        elements: slide.elements.map((element) => ({
+          ...element,
+          tombstone: true,
+        })),
+      })),
+    }),
+  ).toThrow(/reserved 'tombstone' field/);
+  expect(() =>
+    binding.replace(before, {
+      ...before,
+      slides: before.slides.map((slide) => ({
+        ...slide,
+        elements: slide.elements.map((element) => ({
+          ...element,
+          type: element.type === 'text' ? 'shape' : 'text',
+        })),
+      })),
+    }),
+  ).toThrow(/cannot change type/);
+
+  binding.destroy();
+});
+
 test('rejects Presentation mutation outside edit mode', () => {
   const document = new Y.Doc();
   const writable = createOfficeCollaborationSession({
@@ -507,6 +817,75 @@ test('rejects Presentation mutation outside edit mode', () => {
   binding.destroy();
 });
 
+test('applies native Presentation element updates across reordered delivery', () => {
+  const orderedDocument = new Y.Doc();
+  const reorderedDocument = new Y.Doc();
+  for (const document of [orderedDocument, reorderedDocument]) {
+    Y.applyUpdate(document, decodeBase64(BROWSER_PRESENTATION_FIXTURE_BASE64));
+    const session = createOfficeCollaborationSession({
+      artifactId: 'fixture-presentation',
+      document,
+      kind: 'presentation',
+    });
+    const binding = createOfficePresentationCollaborationBinding(session);
+    const before = binding.content();
+    binding.replace(before, {
+      ...before,
+      slides: before.slides.map((slide) =>
+        slide.id === 'slide-1'
+          ? {
+              ...slide,
+              elements: slide.elements.map((element) =>
+                element.id === 'element-title'
+                  ? { ...element, fill: '#DBEAFE' }
+                  : element,
+              ),
+            }
+          : slide,
+      ),
+    });
+    binding.destroy();
+  }
+
+  for (const encoded of [
+    NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+  ]) {
+    Y.applyUpdate(orderedDocument, decodeBase64(encoded));
+  }
+  for (const encoded of [
+    NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+  ]) {
+    Y.applyUpdate(reorderedDocument, decodeBase64(encoded));
+  }
+
+  const contents = [orderedDocument, reorderedDocument].map((document) =>
+    readOfficePresentationCollaboration(
+      createOfficeCollaborationSession({
+        artifactId: 'fixture-presentation',
+        document,
+        kind: 'presentation',
+      }),
+    ),
+  );
+  expect(contents[0]).toEqual(contents[1]);
+  expect(contents[0].slides[0].elements[0]).toMatchObject({
+    id: 'element-title',
+    text: 'Native interop title',
+    x: 16,
+    fill: '#DBEAFE',
+  });
+  expect(contents[0].slides[0].elements[1]).toMatchObject({
+    id: 'element-native',
+    text: 'Native interop object',
+  });
+  expect(contents[0].slides[1].elements).toEqual([]);
+});
+
 function exchangeUpdates(first: Y.Doc, second: Y.Doc): void {
   const firstUpdate = Y.encodeStateAsUpdate(first, Y.encodeStateVector(second));
   const secondUpdate = Y.encodeStateAsUpdate(
@@ -526,4 +905,8 @@ function cloneDocument(source: Y.Doc): Y.Doc {
 async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
+}
+
+function decodeBase64(value: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(value, 'base64'));
 }

@@ -177,7 +177,7 @@ pub(super) struct OfficeCollaborationMutationInput {
     pub(super) artifact_id: String,
     /// Expected canonical collaborative model family.
     pub(super) kind: OfficeCollaborationArtifactKind,
-    /// Closed, format-aware Markdown, Document, Spreadsheet, or PDF mutation.
+    /// Closed, format-aware Markdown, Document, Spreadsheet, Presentation, or PDF mutation.
     pub(super) mutation: OfficeCollaborationMutation,
     /// Optional exact state-vector precondition for fail-closed agent decisions.
     pub(super) if_state_vector_base64: Option<String>,
@@ -616,6 +616,19 @@ mod tests {
             "column",
             "expectedCell",
             "nextCell",
+            "presentation-create-element",
+            "presentation-update-element",
+            "presentation-delete-element",
+            "containerKind",
+            "containerId",
+            "slide",
+            "master",
+            "layout",
+            "element",
+            "afterElementId",
+            "elementId",
+            "expectedElement",
+            "nextElement",
             "pdf-set-form-value",
             "fieldId",
             "pdf-propose-redaction",
@@ -725,6 +738,24 @@ mod tests {
                 "row": 0,
                 "column": 0,
                 "expectedCell": { "v": 1 },
+                "force": true
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "presentation-create-element",
+                "containerKind": "slide",
+                "containerId": "slide-1"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "presentation-delete-element",
+                "containerKind": "slide",
+                "containerId": "slide-1",
+                "expectedElement": { "id": "element-1" },
                 "force": true
             }))
             .is_err()

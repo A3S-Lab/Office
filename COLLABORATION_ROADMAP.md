@@ -150,12 +150,17 @@ round trip preserves supported and untouched unsupported OOXML.
 
 ### Phase 3: Presentation
 
-Status: browser collaboration foundation implemented; rich-text CRDT and PPTX
+Status: browser collaboration foundation and native conflict-local scene-element
+mutations implemented; rich-text CRDT, structural native operations, and PPTX
 round-trip concurrency coverage are pending.
 
 - Stable slide/master/layout order arrays and ID-keyed record maps avoid a
   serialized whole-deck root. Scene elements and slide comments are ID-keyed
   child records.
+- Append-only element claims make identical same-ID creation idempotent and
+  reject different records assigned to one ID. Deletion writes a durable
+  tombstone, removes the element from visible order, and permanently reserves
+  the identity; element ID and type cannot drift.
 - Snapshot writes are translated into `previous -> next` record patches, so an
   unrelated stale snapshot does not remove remotely added slides or objects.
 - Typed validation rejects duplicate identities and invalid references before
@@ -166,13 +171,21 @@ round-trip concurrency coverage are pending.
 - Tests cover bootstrap, identity validation, separate-record convergence,
   stale snapshots, concurrent comments, local-only undo, permissions, mounted
   projection, and framework adapters.
+- Rust, CLI, MCP, and A3S Code can create, optimistically update, or tombstone
+  one element in a slide, master, or layout. Creation can insert after a stable
+  active element. Update compares complete expected/current/next records and
+  writes only changed top-level fields, so unrelated concurrent changes merge
+  while a stale same-field edit fails atomically. Delete requires an exact
+  complete-element match. Browser/Yrs fixtures, native restart, duplicate and
+  reordered delivery, real CLI/MCP subprocesses, and the Playground cover the
+  same lifecycle.
 
 Remaining:
 
 - Bind editable scene text to collaborative XML fragments instead of scalar
   text/run replacement.
-- Add creation claims and explicit conflict handling for concurrent same-ID
-  object creation, delete-vs-edit, z-order, grouping, and theme changes.
+- Add structural native operations and explicit conflict handling for slide
+  order, z-order, grouping, and theme changes.
 - Keep derived thumbnails and layout measurements local and prove this in UI
   tests.
 - Add offline/reordered-update property tests plus merged PPTX export/reopen.
@@ -322,9 +335,10 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
 projection, a host-injected live CLI transport session, and typed Markdown,
-Document, Spreadsheet cell, PDF annotation/form-value, and PDF
-redaction/page-operation review mutation surfaces are implemented; the
-remaining format mutations and native presence projection are pending.
+Document, Spreadsheet cell, Presentation scene-element, PDF
+annotation/form-value, and PDF redaction/page-operation review mutation
+surfaces are implemented; the remaining format mutations and native presence
+projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -375,6 +389,11 @@ remaining format mutations and native presence projection are pending.
   an exact complete-cell match. They preserve the browser's field-addressed
   representation, dense/sparse projection mode, and atomic fail-closed
   semantics without replacing a worksheet or workbook.
+- Presentation scene-element mutations create, update, or tombstone one stable
+  object inside a slide, master, or layout. Canonical creation claims prevent
+  conflicting same-ID reuse, optimistic top-level field guards merge unrelated
+  concurrent edits, and exact deletion guards prevent a stale destructive
+  write without replacing the deck or container.
 - PDF form-value mutations write the browser-compatible conflict-local record
   roots by fully-qualified field name, retain idempotent receipts and optional
   state-vector preconditions, and never synchronize source bytes.
@@ -402,20 +421,22 @@ remaining format mutations and native presence projection are pending.
   source browser operation, and source attribution is audit data rather than
   an authorization token.
 - Cross-language tests apply deterministic native UTF-16 Markdown, ProseMirror
-  Document text/options/paragraph, Spreadsheet cell, and PDF
-  annotation/form-value updates in browser Yjs, including concurrent
-  browser/native paragraph, cell-leaf, annotation-leaf, and PDF form edits, in
-  addition to importing browser Yjs fixtures in Yrs.
+  Document text/options/paragraph, Spreadsheet cell, Presentation
+  scene-element, and PDF annotation/form-value updates in browser Yjs,
+  including concurrent browser/native paragraph, cell-leaf, element-field,
+  annotation-leaf, and PDF form edits, in addition to importing browser Yjs
+  fixtures in Yrs.
 - Standard MCP exposes the durable replica lifecycle and bounded event stream;
   the same seven collaboration tools are explicitly available to the dedicated
   `a3s code` Use worker.
 
 Remaining:
 
-- Extend typed format-model mutations to Spreadsheet structural operations and
-  Presentation plus PDF signatures; deepen Document mutations to additional
-  nested structures and review operations, and add durable comment/suggest
-  operations before enabling those modes for local mutation.
+- Extend typed format-model mutations to Spreadsheet and Presentation
+  structural/rich-text operations plus PDF signatures; deepen Document
+  mutations to additional nested structures and review operations, and add
+  durable comment/suggest operations before enabling those modes for local
+  mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

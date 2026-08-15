@@ -1,0 +1,56 @@
+---
+title: SpreadsheetEditor
+description: Spreadsheet content, calculation-kernel configuration, events, and host extension points.
+---
+
+# SpreadsheetEditor
+
+`SpreadsheetEditor` is a controlled workbook surface with worksheet, formula,
+chart, conditional-format, pivot, and print-layout models.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `SpreadsheetContent` | Yes | — | Controlled workbook content. |
+| `onChange` | `(content: SpreadsheetContent) => void` | Yes | — | Emits the complete next workbook. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Spreadsheet as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes ranges, projects native remote cell presence and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only workbook rendering. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host save, export, history, and approval actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Formula and workbook-kernel resource URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends the active cell or range to the host AI flow. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'spreadsheet'` | Content discriminator. |
+| `sheets` | `WorkSpreadsheetSheet[]` | Worksheets, cells, formulas, styles, images, charts, and pivots. |
+| `calculation` | `WorkSpreadsheetCalculationSettings` | Calculation mode, iteration, precision, and load behavior. |
+| `namedRanges` | `WorkSpreadsheetNamedRange[]` | Workbook- and worksheet-scoped names. |
+| `printAreas`, `printTitles` | spreadsheet print fields | Print areas and repeated rows or columns. |
+| `pageBreaks`, `pageSetups` | spreadsheet page fields | Breaks, paper, orientation, scale, margins, headers, and footers. |
+
+The public workbook extension context is not yet stable. Use `fileActions` for
+host workflows and `onAgentRequest` for structured AI actions. Do not import
+command runtime modules from internal package paths.
+
+## Collaboration and native cell mutations
+
+Pass an initialized Spreadsheet `OfficeCollaborationSession` through
+`collaboration` to make its field-addressed Yjs model canonical. The browser
+binding keeps sheets and populated cells ID-addressed, projects remote changes,
+and limits undo to the mounted client's own transactions. Pair `presence` with
+the exact same session to publish ranges and show remote cell selections.
+
+Rust, CLI, standard MCP, and A3S Code use `spreadsheet-set-cell` to create or
+recursively patch one zero-based coordinate and `spreadsheet-delete-cell` to
+delete one exact complete cell. `expectedCell: null` is the creation guard;
+otherwise the observed cell is compared recursively so unrelated concurrent
+leaves merge while stale same-leaf changes fail closed. Dense worksheets keep
+their matrix projection, while sparse and initially empty worksheets remain
+`celldata`. See [Real-time collaboration](./collaboration.mdx) for the JSON
+contracts and lifecycle rules.

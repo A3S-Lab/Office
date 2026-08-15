@@ -102,6 +102,7 @@ fn register_format_roots(doc: &Doc, namespace: &str, kind: NativeOfficeCollabora
                 "presentation.slide-order",
                 "presentation.master-order",
                 "presentation.layout-order",
+                "presentation.record-claims",
             ] {
                 doc.get_or_insert_array(root(suffix));
             }

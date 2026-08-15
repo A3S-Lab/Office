@@ -1,10 +1,17 @@
 #![allow(dead_code)]
 
 mod pdf;
+mod presentation;
 mod spreadsheet;
 
 #[allow(unused_imports)]
 pub use pdf::{pdf_collaboration_fixture, pdf_snapshot};
+#[allow(unused_imports)]
+pub use presentation::{
+    presentation_collaboration_fixture, presentation_element, presentation_element_order,
+    presentation_element_tombstoned, presentation_scene_element, presentation_slide_body_element,
+    presentation_slide_title_element,
+};
 #[allow(unused_imports)]
 pub use spreadsheet::{spreadsheet_cell, spreadsheet_collaboration_fixture};
 

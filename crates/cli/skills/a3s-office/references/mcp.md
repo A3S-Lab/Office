@@ -102,8 +102,8 @@ changed since inspection:
 }
 ```
 
-For local canonical Markdown, Document, Spreadsheet, or PDF changes, prefer
-`office_collaboration_mutate` over constructing Yjs bytes. Markdown accepts
+For local canonical Markdown, Document, Spreadsheet, Presentation, or PDF
+changes, prefer `office_collaboration_mutate` over constructing Yjs bytes. Markdown accepts
 closed `markdown-replace` and `markdown-splice` variants; splice positions are
 UTF-16 code-unit offsets and may not split a surrogate pair:
 
@@ -219,6 +219,48 @@ complete current cell in `expectedCell`. Dense sheets retain their matrix row
 lengths, sparse sheets remain `celldata`, and an empty sheet's first write is
 sparse. Do not construct or mutate the internal presence, field, projection,
 or row-length roots directly.
+
+Presentation scene-element mutations use a stable container kind (`slide`,
+`master`, or `layout`) and ID. Create one complete element with
+`presentation-create-element`; `afterElementId` optionally places it after an
+active element in the container:
+
+```json
+{
+  "store": ".a3s/deck.replica",
+  "operationId": "agent-element-48",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "deck",
+  "kind": "presentation",
+  "mutation": {
+    "type": "presentation-create-element",
+    "containerKind": "slide",
+    "containerId": "slide-1",
+    "afterElementId": "title-1",
+    "element": {
+      "id": "summary-1",
+      "type": "shape",
+      "x": 20,
+      "y": 24,
+      "width": 40,
+      "height": 16,
+      "text": "Approved"
+    }
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Creation appends a canonical immutable claim. An identical retry is a no-op;
+different same-ID content, a tombstoned ID, or a missing anchor fails closed.
+`presentation-update-element` accepts `elementId` plus complete
+`expectedElement` and `nextElement` values. It writes only changed top-level
+fields, merges unrelated concurrent fields, and rejects a stale same-field
+edit. ID and type are immutable. `presentation-delete-element` accepts the
+exact complete current `expectedElement`, removes visible order, and writes a
+durable tombstone that prevents ID reuse. Do not construct or mutate internal
+element order, record, claim, or tombstone roots directly.
 
 Typed canonical mutations require `edit`. Raw received updates remain
 applicable in read-only modes so remote state still converges. Durable native

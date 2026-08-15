@@ -2,6 +2,7 @@ use a3s_office::{
     NativeOfficeCollaborationMutation, NativeOfficeCollaborationParagraphPosition,
     NativeOfficeCollaborationPdfAnnotationSource, NativeOfficeCollaborationPdfRect,
     NativeOfficeCollaborationPdfReviewDecision, NativeOfficeCollaborationPdfReviewTargetKind,
+    NativeOfficeCollaborationPresentationContainerKind,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,26 @@ impl From<OfficeCollaborationParagraphPosition> for NativeOfficeCollaborationPar
         match value {
             OfficeCollaborationParagraphPosition::Before => Self::Before,
             OfficeCollaborationParagraphPosition::After => Self::After,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationPresentationContainerKind {
+    Slide,
+    Master,
+    Layout,
+}
+
+impl From<OfficeCollaborationPresentationContainerKind>
+    for NativeOfficeCollaborationPresentationContainerKind
+{
+    fn from(value: OfficeCollaborationPresentationContainerKind) -> Self {
+        match value {
+            OfficeCollaborationPresentationContainerKind::Slide => Self::Slide,
+            OfficeCollaborationPresentationContainerKind::Master => Self::Master,
+            OfficeCollaborationPresentationContainerKind::Layout => Self::Layout,
         }
     }
 }
@@ -149,6 +170,27 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         row: u32,
         column: u32,
         expected_cell: JsonValue,
+    },
+    /// Create one scene element in a slide, master, or layout with a stable ID.
+    PresentationCreateElement {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element: JsonValue,
+        after_element_id: Option<String>,
+    },
+    /// Merge top-level scene-element fields using optimistic expectations.
+    PresentationUpdateElement {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        expected_element: JsonValue,
+        next_element: JsonValue,
+    },
+    /// Tombstone one scene element after matching its complete current value.
+    PresentationDeleteElement {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        expected_element: JsonValue,
     },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
@@ -290,6 +332,39 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 row,
                 column,
                 expected_cell,
+            },
+            OfficeCollaborationMutation::PresentationCreateElement {
+                container_kind,
+                container_id,
+                element,
+                after_element_id,
+            } => Self::PresentationCreateElement {
+                container_kind: container_kind.into(),
+                container_id,
+                element,
+                after_element_id,
+            },
+            OfficeCollaborationMutation::PresentationUpdateElement {
+                container_kind,
+                container_id,
+                element_id,
+                expected_element,
+                next_element,
+            } => Self::PresentationUpdateElement {
+                container_kind: container_kind.into(),
+                container_id,
+                element_id,
+                expected_element,
+                next_element,
+            },
+            OfficeCollaborationMutation::PresentationDeleteElement {
+                container_kind,
+                container_id,
+                expected_element,
+            } => Self::PresentationDeleteElement {
+                container_kind: container_kind.into(),
+                container_id,
+                expected_element,
             },
             OfficeCollaborationMutation::PdfCreateAnnotation {
                 annotation_id,

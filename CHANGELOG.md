@@ -4,6 +4,24 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.6.0 - 2026-08-15
+
+- Added native Presentation scene-element collaboration through Rust,
+  `collab mutate`, standard MCP, and A3S Code. The closed
+  `presentation-create-element`, `presentation-update-element`, and
+  `presentation-delete-element` mutations address slides, masters, or layouts
+  by stable identity. Creation writes a canonical browser-compatible claim and
+  supports deterministic placement after an existing element; top-level
+  optimistic field guards merge unrelated concurrent edits while rejecting a
+  stale same-field write; deletion requires the complete current element and
+  writes a durable tombstone that reserves the ID. Element ID and type remain
+  immutable, identical retries are idempotent, conflicting same-ID creation
+  fails closed, and legacy browser sessions without complete claims remain
+  readable. Browser/Rust interoperability, restart, duplicate and reordered
+  delivery, real CLI/MCP subprocesses, atomic conflict failures, and a
+  Playground `a3s-test` regression cover the full update/create/delete
+  lifecycle.
+
 ## 0.5.0 - 2026-08-15
 
 - Added native Spreadsheet collaboration cell mutations through Rust,

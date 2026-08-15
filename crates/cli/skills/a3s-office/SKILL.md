@@ -75,9 +75,9 @@ replica once, then poll `office_collaboration_events` with the last successfully
 consumed `cursorSequence`; use `includeUpdates=true` when the agent needs to
 apply the update locally. No OOXML session is required for collaboration.
 Use `office_collaboration_mutate` for local typed Markdown, Document,
-Spreadsheet, or PDF operations instead of generating Yjs bytes; keep the
-operation ID stable and use the last inspected state vector as a precondition
-when rebasing matters.
+Spreadsheet, Presentation, or PDF operations instead of generating Yjs bytes;
+keep the operation ID stable and use the last inspected state vector as a
+precondition when rebasing matters.
 Document exact-text replacement requires the current match count and preserves
 the first replaced character's marks while rotating the affected Word `textId`.
 Bounded section/list-item/table-cell/header/blockquote paragraph insertion uses
@@ -89,7 +89,12 @@ conflict-local option mutations. Spreadsheet set-cell recursively compares the
 observed and next cell, writes only changed leaves, and uses
 `expectedCell: null` only for a known blank coordinate. Spreadsheet delete-cell
 requires the exact complete observed cell. Both use a stable sheet ID and
-zero-based row/column coordinates.
+zero-based row/column coordinates. Presentation element operations target a
+stable slide, master, or layout. Create uses a complete object and optional
+active insertion anchor; update uses complete expected/next objects and merges
+only unrelated top-level fields; delete requires the exact complete object and
+writes a durable tombstone. Preserve immutable element ID/type and never reuse
+a tombstoned ID.
 
 In a CLI-only agent host, run the collaboration event stream in a separate
 process:
@@ -123,10 +128,10 @@ durable receipts, external agent-update polling, and echo suppression; the host
 continues to own room identity, authentication, authorization, buffering, and
 delivery.
 
-Make local typed Markdown, Document, Spreadsheet, or PDF changes from another
-CLI process with `collab mutate`; the running session observes its durable
-event and publishes the incremental update. Markdown splice offsets are UTF-16
-code units.
+Make local typed Markdown, Document, Spreadsheet, Presentation, or PDF changes
+from another CLI process with `collab mutate`; the running session observes its
+durable event and publishes the incremental update. Markdown splice offsets
+are UTF-16 code units.
 Document replacement fails closed on a stale match count and never replaces
 the shared HTML/XML tree. Paragraph insert/delete mutations are limited to
 direct children of top-level sections and use uppercase eight-digit positive
@@ -134,7 +139,10 @@ direct children of top-level sections and use uppercase eight-digit positive
 replica. Spreadsheet cells use `spreadsheet-set-cell` with an observed
 `expectedCell` and complete `nextCell`, or `spreadsheet-delete-cell` with an
 exact complete `expectedCell`; stale same-leaf edits and stale deletes fail
-before a durable update.
+before a durable update. Presentation uses
+`presentation-create/update/delete-element` with a stable `containerKind` and
+`containerId`; stale same-field updates, conflicting same-ID creation, missing
+anchors, and stale deletes fail before a durable update.
 
 ## Choose the Surface
 

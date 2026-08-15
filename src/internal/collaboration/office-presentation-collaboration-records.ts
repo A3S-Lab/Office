@@ -1,5 +1,6 @@
 import * as Y from 'yjs';
 import type { WorkSlideElement } from '../features/work/work-types';
+import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   cloneWorkOfficeCollaborationJson as cloneJsonValue,
   workOfficeCollaborationJsonEqual as jsonEqual,
@@ -11,6 +12,7 @@ export const PRESENTATION_RECORD_ELEMENT_ORDER = 'elementOrder';
 export const PRESENTATION_RECORD_COMMENTS = 'comments';
 export const PRESENTATION_RECORD_COMMENT_ORDER = 'commentOrder';
 export const PRESENTATION_RECORD_COMMENTS_PRESENT = 'commentsPresent';
+export const PRESENTATION_RECORD_TOMBSTONE = 'tombstone';
 
 export type WorkOfficePresentationRecord = {
   id: string;
@@ -67,6 +69,7 @@ export function validatedPresentationOrder(
   order: Y.Array<string>,
   records: Y.Map<unknown>,
   label: string,
+  allowTombstones = false,
 ): string[] {
   const seen = new Set<string>();
   const values: string[] = [];
@@ -79,11 +82,29 @@ export function validatedPresentationOrder(
     seen.add(value);
     values.push(value);
   }
-  if (
-    seen.size !== records.size ||
-    Array.from(records.keys()).some((id) => !seen.has(id))
-  ) {
-    invalidSharedPresentation(`${label} order and record set`);
+  for (const id of seen) {
+    const record = records.get(id);
+    if (!(record instanceof Y.Map)) {
+      invalidSharedPresentation(`${label} order and record set`);
+    }
+    if (record.get(PRESENTATION_RECORD_TOMBSTONE) !== undefined) {
+      invalidSharedPresentation(`${label} order and record set`);
+    }
+  }
+  for (const [id, value] of records.entries()) {
+    if (!(value instanceof Y.Map)) {
+      invalidSharedPresentation(`${label} order and record set`);
+    }
+    const tombstone = value.get(PRESENTATION_RECORD_TOMBSTONE);
+    if (tombstone === undefined) {
+      if (!seen.has(id)) {
+        invalidSharedPresentation(`${label} order and record set`);
+      }
+      continue;
+    }
+    if (!allowTombstones || tombstone !== true || seen.has(id)) {
+      invalidSharedPresentation(`${label} order and record set`);
+    }
   }
   return values;
 }
@@ -123,6 +144,7 @@ export function readPresentationCollection(
         `${label} element order`,
       ),
       `${label} element`,
+      true,
     );
     if (label === 'slide') readSlideComments(record, value);
     return value as WorkOfficePresentationRecord;
@@ -142,6 +164,7 @@ export function patchPresentationElements(
     previous,
     next,
     `${parentLabel} element`,
+    true,
   );
 }
 
@@ -151,11 +174,24 @@ export function patchPresentationIdRecords<T extends { id: string }>(
   previous: T[],
   next: T[],
   label: string,
+  durableTombstones = false,
 ): void {
   const previousById = new Map(previous.map((value) => [value.id, value]));
   const nextById = new Map(next.map((value) => [value.id, value]));
   for (const value of previous) {
-    if (!nextById.has(value.id)) records.delete(value.id);
+    if (nextById.has(value.id)) continue;
+    if (!durableTombstones) {
+      records.delete(value.id);
+      continue;
+    }
+    const record = records.get(value.id);
+    if (record === undefined) continue;
+    if (!(record instanceof Y.Map)) invalidSharedPresentation(label);
+    const tombstone = record.get(PRESENTATION_RECORD_TOMBSTONE);
+    if (tombstone !== undefined && tombstone !== true) {
+      invalidSharedPresentation(`${label} tombstone`);
+    }
+    record.set(PRESENTATION_RECORD_TOMBSTONE, true);
   }
   for (const value of next) {
     const before = previousById.get(value.id);
@@ -166,6 +202,28 @@ export function patchPresentationIdRecords<T extends { id: string }>(
       records.set(value.id, record);
     }
     if (!(record instanceof Y.Map)) invalidSharedPresentation(label);
+    const tombstone = record.get(PRESENTATION_RECORD_TOMBSTONE);
+    if (tombstone !== undefined) {
+      if (tombstone !== true) invalidSharedPresentation(`${label} tombstone`);
+      if (!before) {
+        throw new WorkOfficeCollaborationError(
+          'office.collaboration.content_invalid',
+          `The deleted scene element ID '${value.id}' cannot be reused.`,
+        );
+      }
+      continue;
+    }
+    if (
+      durableTombstones &&
+      before &&
+      (before as unknown as Record<string, unknown>).type !==
+        (value as unknown as Record<string, unknown>).type
+    ) {
+      throw new WorkOfficeCollaborationError(
+        'office.collaboration.content_invalid',
+        `The scene element ID '${value.id}' cannot change type.`,
+      );
+    }
     patchPresentationJsonMap(
       record as Y.Map<unknown>,
       (before ?? {}) as unknown as Record<string, unknown>,
@@ -255,8 +313,23 @@ function readIdRecords(
   records: Y.Map<unknown>,
   order: Y.Array<string>,
   label: string,
+  allowTombstones = false,
 ): Record<string, unknown>[] {
-  return validatedPresentationOrder(order, records, label).map((id) =>
+  const activeIds = validatedPresentationOrder(
+    order,
+    records,
+    label,
+    allowTombstones,
+  );
+  if (allowTombstones) {
+    for (const [id, value] of records.entries()) {
+      if (!(value instanceof Y.Map)) invalidSharedPresentation(label);
+      if (value.get(PRESENTATION_RECORD_TOMBSTONE) === true) {
+        readJsonMap(value, id, label, true);
+      }
+    }
+  }
+  return activeIds.map((id) =>
     readJsonMap(requiredPresentationMap(records, id, label), id, label),
   );
 }
@@ -265,9 +338,16 @@ function readJsonMap(
   record: Y.Map<unknown>,
   expectedId: string,
   label: string,
+  tombstoned = false,
 ): Record<string, unknown> {
   const value: Record<string, unknown> = {};
   for (const [key, item] of record.entries()) {
+    if (key === PRESENTATION_RECORD_TOMBSTONE) {
+      if (!tombstoned || item !== true) {
+        invalidSharedPresentation(`${label} tombstone`);
+      }
+      continue;
+    }
     if (item instanceof Y.AbstractType) {
       invalidSharedPresentation(`${label} field '${key}'`);
     }

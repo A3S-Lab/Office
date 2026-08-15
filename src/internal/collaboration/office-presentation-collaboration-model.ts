@@ -11,6 +11,10 @@ import {
   workOfficeCollaborationJsonEqual as jsonEqual,
 } from './office-collaboration-json';
 import {
+  appendWorkOfficePresentationRecordClaims,
+  assertWorkOfficePresentationRecordClaims,
+} from './office-presentation-collaboration-claims';
+import {
   invalidWorkOfficePresentationShared as invalidSharedPresentation,
   validateSharedWorkOfficePresentationContent,
 } from './office-presentation-collaboration-validation';
@@ -38,6 +42,7 @@ export const PRESENTATION_MASTERS_ROOT = 'presentation.masters';
 export const PRESENTATION_MASTER_ORDER_ROOT = 'presentation.master-order';
 export const PRESENTATION_LAYOUTS_ROOT = 'presentation.layouts';
 export const PRESENTATION_LAYOUT_ORDER_ROOT = 'presentation.layout-order';
+export const PRESENTATION_RECORD_CLAIMS_ROOT = 'presentation.record-claims';
 
 export interface WorkOfficePresentationRoots {
   options: Y.Map<unknown>;
@@ -47,6 +52,7 @@ export interface WorkOfficePresentationRoots {
   masterOrder: Y.Array<string>;
   layouts: Y.Map<unknown>;
   layoutOrder: Y.Array<string>;
+  recordClaims: Y.Array<string>;
 }
 
 interface PresentationCollection<T extends PresentationRecord> {
@@ -69,6 +75,7 @@ export function workOfficePresentationRoots(
     masterOrder: document.getArray(rootName(PRESENTATION_MASTER_ORDER_ROOT)),
     layouts: document.getMap(rootName(PRESENTATION_LAYOUTS_ROOT)),
     layoutOrder: document.getArray(rootName(PRESENTATION_LAYOUT_ORDER_ROOT)),
+    recordClaims: document.getArray(rootName(PRESENTATION_RECORD_CLAIMS_ROOT)),
   };
 }
 
@@ -76,6 +83,11 @@ export function initializeWorkOfficePresentationRoots(
   roots: WorkOfficePresentationRoots,
   content: WorkPresentationContent,
 ): void {
+  appendWorkOfficePresentationRecordClaims(
+    roots.recordClaims,
+    undefined,
+    content,
+  );
   patchOptionalJson(roots.options, 'width', undefined, content.width);
   patchOptionalJson(roots.options, 'height', undefined, content.height);
   patchCollection({
@@ -134,7 +146,9 @@ export function readWorkOfficePresentationRoots(
   ) as unknown as WorkPresentationLayout[];
   if (masters.length > 0) result.masters = masters;
   if (layouts.length > 0) result.layouts = layouts;
-  return validateSharedWorkOfficePresentationContent(result);
+  const validated = validateSharedWorkOfficePresentationContent(result);
+  assertWorkOfficePresentationRecordClaims(roots.recordClaims, validated);
+  return validated;
 }
 
 export function patchWorkOfficePresentationRoots(
@@ -144,6 +158,7 @@ export function patchWorkOfficePresentationRoots(
 ): void {
   const shared = readWorkOfficePresentationRoots(roots);
   assertChangedRecordsStillExist(previous, next, shared);
+  appendWorkOfficePresentationRecordClaims(roots.recordClaims, previous, next);
   patchOptionalJson(roots.options, 'width', previous.width, next.width);
   patchOptionalJson(roots.options, 'height', previous.height, next.height);
   patchCollection({
@@ -258,7 +273,8 @@ export function assertWorkOfficePresentationRootsEmpty(
     roots.masters.size > 0 ||
     roots.masterOrder.length > 0 ||
     roots.layouts.size > 0 ||
-    roots.layoutOrder.length > 0
+    roots.layoutOrder.length > 0 ||
+    roots.recordClaims.length > 0
   ) {
     throw new WorkOfficeCollaborationError(
       'office.collaboration.bootstrap_ambiguous',
@@ -278,6 +294,7 @@ export function workOfficePresentationUndoScope(
     roots.masterOrder,
     roots.layouts,
     roots.layoutOrder,
+    roots.recordClaims,
   ];
 }
 

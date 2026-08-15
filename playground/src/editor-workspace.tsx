@@ -49,6 +49,10 @@ import {
   type PlaygroundPdfAnnotationStage,
   usePlaygroundPdfCollaborationFixture,
 } from './pdf-collaboration-fixture';
+import {
+  type PlaygroundPresentationElementStage,
+  usePlaygroundPresentationCollaborationFixture,
+} from './presentation-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
 import {
   type PlaygroundSpreadsheetCellStage,
@@ -132,6 +136,13 @@ export function EditorWorkspace({
   const spreadsheetCollaborationFixture =
     usePlaygroundSpreadsheetCollaborationFixture(
       spreadsheetCollaborationFixtureEnabled,
+    );
+  const presentationCollaborationFixtureEnabled =
+    e2eFixture === 'collaboration-presentation-elements' &&
+    artifact.content.type === 'presentation';
+  const presentationCollaborationFixture =
+    usePlaygroundPresentationCollaborationFixture(
+      presentationCollaborationFixtureEnabled,
     );
 
   const handleAgentRequest = useCallback(
@@ -366,6 +377,46 @@ export function EditorWorkspace({
                   )}
                 </>
               )}
+              {presentationCollaborationFixtureEnabled && (
+                <>
+                  <output
+                    className="playground-collaboration-fixture-status"
+                    data-testid="presentation-collaboration-element-status"
+                    data-state={
+                      presentationCollaborationFixture?.elementStage ??
+                      'loading'
+                    }
+                    aria-live="polite"
+                  >
+                    {presentationCollaborationFixture
+                      ? presentationCollaborationElementStatus(
+                          presentationCollaborationFixture.elementStage,
+                        )
+                      : '正在准备 Presentation 协作'}
+                  </output>
+                  {presentationCollaborationFixture && (
+                    <button
+                      type="button"
+                      className="work-editor-ai-button"
+                      aria-label={presentationCollaborationElementAction(
+                        presentationCollaborationFixture.elementStage,
+                      )}
+                      disabled={
+                        presentationCollaborationFixture.elementStage ===
+                        'deleted'
+                      }
+                      onClick={presentationCollaborationFixture.advanceElement}
+                    >
+                      <Pencil size={15} />
+                      <span>
+                        {presentationCollaborationElementAction(
+                          presentationCollaborationFixture.elementStage,
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
               {artifact.kind !== 'pdf' && (
                 <fieldset className="playground-mode-switch">
                   <legend className="sr-only">编辑或预览</legend>
@@ -471,16 +522,24 @@ export function EditorWorkspace({
             !spreadsheetCollaborationFixture && (
               <div role="status">正在准备 Spreadsheet 协作测试夹具</div>
             )}
-          {artifact.content.type === 'presentation' && (
-            <PresentationEditor
-              content={artifact.content}
-              onAgentRequest={handleAgentRequest}
-              onChange={(content: PresentationContent) => onChange(content)}
-              preview={preview}
-              saveStatus="本次会话已保存"
-              theme="light"
-            />
-          )}
+          {artifact.content.type === 'presentation' &&
+            (!presentationCollaborationFixtureEnabled ||
+              presentationCollaborationFixture) && (
+              <PresentationEditor
+                collaboration={presentationCollaborationFixture?.collaboration}
+                content={artifact.content}
+                onAgentRequest={handleAgentRequest}
+                onChange={(content: PresentationContent) => onChange(content)}
+                preview={preview}
+                saveStatus="本次会话已保存"
+                theme="light"
+              />
+            )}
+          {artifact.content.type === 'presentation' &&
+            presentationCollaborationFixtureEnabled &&
+            !presentationCollaborationFixture && (
+              <div role="status">正在准备 Presentation 协作测试夹具</div>
+            )}
           {artifact.content.type === 'pdf' &&
             (!pdfCollaborationFixtureEnabled || pdfCollaborationFixture) && (
               <PdfViewer
@@ -587,6 +646,36 @@ function spreadsheetCollaborationCellAction(
       return '模拟原生删除稀疏单元格';
     case 'deleted':
       return '原生 Spreadsheet 单元格生命周期已完成';
+  }
+}
+
+function presentationCollaborationElementStatus(
+  stage: PlaygroundPresentationElementStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return 'Presentation 协作已连接';
+    case 'updated':
+      return '代理已更新共享标题对象';
+    case 'created':
+      return '代理已创建共享场景对象';
+    case 'deleted':
+      return '代理已删除第二页场景对象';
+  }
+}
+
+function presentationCollaborationElementAction(
+  stage: PlaygroundPresentationElementStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return '模拟原生更新 Presentation 对象';
+    case 'updated':
+      return '模拟原生创建 Presentation 对象';
+    case 'created':
+      return '模拟原生删除 Presentation 对象';
+    case 'deleted':
+      return '原生 Presentation 对象生命周期已完成';
   }
 }
 

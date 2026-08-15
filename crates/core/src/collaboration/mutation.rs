@@ -10,10 +10,12 @@ use super::{
 
 mod document;
 mod pdf;
+mod presentation;
 mod spreadsheet;
 
 use document::{apply_document_mutation, validate_document_mutation};
 use pdf::{apply_pdf_mutation, validate_pdf_mutation};
+use presentation::{apply_presentation_mutation, validate_presentation_mutation};
 use spreadsheet::{apply_spreadsheet_mutation, validate_spreadsheet_mutation};
 
 pub(super) fn validate_mutation_contract(
@@ -52,6 +54,11 @@ pub(super) fn validate_mutation_contract(
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
             NativeOfficeCollaborationArtifactKind::Spreadsheet
+        }
+        NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. } => {
+            NativeOfficeCollaborationArtifactKind::Presentation
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
         | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }
@@ -103,6 +110,8 @@ pub(super) fn validate_mutation_contract(
         validate_document_mutation(mutation)?;
     } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Spreadsheet {
         validate_spreadsheet_mutation(mutation)?;
+    } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Presentation {
+        validate_presentation_mutation(mutation)?;
     } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Pdf {
         validate_pdf_mutation(mutation)?;
     }
@@ -153,6 +162,11 @@ pub(super) fn apply_mutation(
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
         | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
             apply_spreadsheet_mutation(doc, manifest, mutation)?;
+        }
+        NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. } => {
+            apply_presentation_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
         | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }

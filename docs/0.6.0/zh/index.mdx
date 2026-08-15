@@ -1,0 +1,38 @@
+---
+title: A3S Office 0.6.0 文档
+description: A3S Office 0.6.0 的组件接入、扩展与本地文件自动化文档。
+---
+
+# A3S Office 0.6.0 文档
+
+这是 A3S Office 0.6.0 的冻结文档。它包含文档、Markdown、表格、演示文稿和
+PDF 浏览器组件在该版本发布时的接入、配置和自动化说明。
+
+## 从这里开始
+
+| 你的目标 | 推荐入口 |
+| --- | --- |
+| 先体验编辑器 | <PlaygroundLink>打开 Playground</PlaygroundLink> |
+| 在项目中接入编辑器 | [快速开始](./guide/index.mdx) |
+| 查看 React、Vue 与 Web Component 用法 | [组件接入](./components/index.mdx) |
+| 配置某一种编辑器 | [编辑器 API](./components/document.mdx) |
+| 增加自定义操作或 TipTap Extension | [扩展机制](./components/extensions.mdx) |
+| 让编码智能体读取或修改 Office 文件 | [CLI 与 Skill](./automation/index.mdx) |
+
+## 编辑器组件
+
+| 文件类型 | 组件 | 核心实现 |
+| --- | --- | --- |
+| 文档 | `DocumentEditor` | TipTap / ProseMirror 与 A3S Office 排版内核 |
+| Markdown | `MarkdownEditor` | TipTap 可视化编辑与受控 Markdown 源码 |
+| 表格 | `SpreadsheetEditor` | 表格交互与 A3S Office 计算内核 |
+| 演示文稿 | `PresentationEditor` | 场景图与按需加载的 TipTap 文本编辑 |
+| PDF | `PdfViewer` | PDFium WebAssembly 渲染与批注控制器 |
+
+npm 包名是 `@a3s-lab/office`。它提供类型化核心模型、React 组件、Vue
+绑定、Web Component 和统一样式。
+
+## 文档语言与版本
+
+页面顶部可以切换简体中文或 English，也可以在 `latest` 与已发布版本之间
+切换。搜索只返回当前版本、当前语言的结果，避免把不同版本的 API 混在一起。

@@ -10,6 +10,24 @@ pub enum NativeOfficeCollaborationParagraphPosition {
     After,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationPresentationContainerKind {
+    Slide,
+    Master,
+    Layout,
+}
+
+impl NativeOfficeCollaborationPresentationContainerKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Slide => "slide",
+            Self::Master => "master",
+            Self::Layout => "layout",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativeOfficeCollaborationPdfRect {
@@ -140,6 +158,32 @@ pub enum NativeOfficeCollaborationMutation {
         row: u32,
         column: u32,
         expected_cell: JsonValue,
+    },
+    /// Create one scene element inside a slide, master, or layout. The full
+    /// element is fingerprinted in the browser-compatible record-claims root,
+    /// preventing different records from converging under one stable ID.
+    PresentationCreateElement {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element: JsonValue,
+        after_element_id: Option<String>,
+    },
+    /// Update top-level fields of one scene element with optimistic guards.
+    /// Independent field edits merge, while stale edits to the same field
+    /// fail closed. Element IDs and types are immutable.
+    PresentationUpdateElement {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        expected_element: JsonValue,
+        next_element: JsonValue,
+    },
+    /// Tombstone one scene element after matching its complete current JSON
+    /// value. Tombstoned IDs remain reserved and cannot be reused.
+    PresentationDeleteElement {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        expected_element: JsonValue,
     },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only

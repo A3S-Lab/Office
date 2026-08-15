@@ -1,0 +1,102 @@
+suite "collaboration-presentation-elements" {
+    version = 1
+
+    scenario "project-native-presentation-element-lifecycle" {
+        name = "Project native Presentation element update, create, and delete"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-presentation-collaboration-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-presentation-elements"
+        }
+
+        wait "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-presentation" {
+            target = text("业务策略汇报", true)
+        }
+
+        wait "presentation-collaboration-ready" {
+            visible = css("[data-testid='presentation-collaboration-element-status'][data-state='ready']")
+        }
+
+        expect "browser-title-visible" {
+            text = "Shared presentation"
+        }
+
+        click "update-title-element" {
+            target = role("button", "模拟原生更新 Presentation 对象")
+        }
+
+        wait "native-title-updated" {
+            visible = css("[data-testid='presentation-collaboration-element-status'][data-state='updated']")
+        }
+
+        expect "updated-title-visible" {
+            text = "Native interop title"
+        }
+
+        screenshot "updated-title-element" {
+            path = "screenshots/presentation-native-title-updated.png"
+        }
+
+        click "create-scene-element" {
+            target = role("button", "模拟原生创建 Presentation 对象")
+        }
+
+        wait "native-scene-element-created" {
+            visible = css("[data-testid='presentation-collaboration-element-status'][data-state='created']")
+        }
+
+        expect "created-scene-element-visible" {
+            text = "Native interop object"
+        }
+
+        click "open-second-slide" {
+            target = role("button", "幻灯片 2 / 2：Details")
+        }
+
+        expect "second-slide-element-visible" {
+            text = "Body"
+        }
+
+        click "delete-second-slide-element" {
+            target = role("button", "模拟原生删除 Presentation 对象")
+        }
+
+        wait "native-scene-element-deleted" {
+            visible = css("[data-testid='presentation-collaboration-element-status'][data-state='deleted']")
+        }
+
+        expect "deleted-status-visible" {
+            text = "代理已删除第二页场景对象"
+        }
+
+        screenshot "completed-element-lifecycle" {
+            path = "screenshots/presentation-native-element-lifecycle.png"
+        }
+
+        accessibility "element-lifecycle-accessibility" {
+            path = "evidence/presentation-native-elements-accessibility.json"
+            interactive = true
+        }
+
+        console "element-lifecycle-console" {
+            path = "diagnostics/presentation-native-elements-console.json"
+            clear = false
+        }
+
+        page_errors "element-lifecycle-errors" {
+            path = "diagnostics/presentation-native-elements-errors.json"
+            clear = false
+        }
+    }
+}

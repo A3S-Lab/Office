@@ -76,6 +76,20 @@ Basic table rows, cells, and virtual columns support bounded structural edits.
 Merged cells, rich table styles, relationship-owning object copies, advanced
 charts/media, animations, transitions, and theme fidelity remain incomplete.
 
+## Shared Scene Elements
+
+The durable Yjs/Yrs collaboration replica is separate from an OOXML editing
+session. After joining a browser-initialized `presentation` replica, use
+`collab mutate` or `office_collaboration_mutate` for scene objects instead of
+editing internal Yjs roots. `presentation-create-element` accepts one complete
+element in a stable `slide`, `master`, or `layout` container and may include an
+active `afterElementId`. `presentation-update-element` requires the complete
+observed and desired objects and merges only unrelated top-level field changes.
+`presentation-delete-element` requires an exact complete observed object and
+writes a durable tombstone. Element ID and type are immutable, and a deleted ID
+cannot be reused. Read [mcp.md](mcp.md#real-time-collaboration) for the complete
+replica identity, optimistic precondition, retry, and event-cursor contract.
+
 ## Verify and Preview
 
 ```bash

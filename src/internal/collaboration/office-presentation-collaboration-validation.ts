@@ -156,6 +156,11 @@ function validateLayout(value: unknown): WorkPresentationLayout {
 
 function validateElement(value: unknown): WorkSlideElement {
   const record = requiredInputRecord(value, 'presentation element');
+  if (Object.hasOwn(record, 'tombstone')) {
+    invalidWorkOfficePresentationInput(
+      "a presentation element without the reserved 'tombstone' field",
+    );
+  }
   const element = validateJsonRecord(
     record,
     'presentation element',
