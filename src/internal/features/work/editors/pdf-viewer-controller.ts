@@ -16,6 +16,8 @@ import {
 } from '@embedpdf/react-pdf-viewer';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+const PDF_PAGE_NAVIGATION_RETRY_MS = 500;
+
 export interface PdfSearchState {
   active: boolean;
   activeResultIndex: number;
@@ -81,6 +83,11 @@ interface PdfViewerCapabilities {
   zoom: ZoomCapability | null;
 }
 
+interface PendingPdfPageNavigation {
+  page: number | null;
+  retryTimer: ReturnType<typeof setTimeout> | null;
+}
+
 const EMPTY_FEATURES: PdfViewerFeatures = {
   export: false,
   history: false,
@@ -117,7 +124,10 @@ export function usePdfViewerController(
   historyOverride?: PdfViewerHistoryOverride,
 ): PdfViewerController {
   const capabilitiesRef = useRef<PdfViewerCapabilities | null>(null);
-  const pendingPageRef = useRef<number | null>(null);
+  const pendingPageRef = useRef<PendingPdfPageNavigation>({
+    page: null,
+    retryTimer: null,
+  });
   const [state, setState] = useState<PdfViewerControllerState>(
     initialPdfViewerControllerState,
   );
@@ -128,7 +138,7 @@ export function usePdfViewerController(
     let disposed = false;
     const unsubscribe: Array<() => void> = [];
     capabilitiesRef.current = null;
-    pendingPageRef.current = null;
+    clearPendingPdfPageNavigation(pendingPageRef);
     setState(initialPdfViewerControllerState);
     if (!registry) return;
 
@@ -145,7 +155,7 @@ export function usePdfViewerController(
           }
         };
         const syncDocument = () => {
-          pendingPageRef.current = null;
+          clearPendingPdfPageNavigation(pendingPageRef);
           sync();
         };
 
@@ -169,7 +179,7 @@ export function usePdfViewerController(
         const stopPageChangeState = safely(() =>
           capabilities.scroll?.onPageChangeState((event) => {
             if (disposed || event.state.isChanging) return;
-            const pendingPage = pendingPageRef.current;
+            const pendingPage = pendingPageRef.current.page;
             if (pendingPage === null) return;
             withActiveDocument(capabilities, ({ scroll }, documentId) => {
               if (event.documentId !== documentId) return;
@@ -197,7 +207,7 @@ export function usePdfViewerController(
     return () => {
       disposed = true;
       capabilitiesRef.current = null;
-      pendingPageRef.current = null;
+      clearPendingPdfPageNavigation(pendingPageRef);
       for (const stop of unsubscribe) stop();
     };
   }, [registry]);
@@ -489,19 +499,38 @@ function withActiveDocument(
 function requestPdfPageNavigation(
   scope: ReturnType<ScrollCapability['forDocument']>,
   page: number,
-  pendingPage: { current: number | null },
+  pendingPage: { current: PendingPdfPageNavigation },
+  force = false,
 ): void {
   const totalPages = scope.getTotalPages();
   if (totalPages < 1 || !Number.isFinite(page)) return;
   const nextPage = Math.min(totalPages, Math.max(1, Math.round(page)));
   const pageChangeInProgress =
     safely(() => scope.getPageChangeState().isChanging) ?? false;
-  if (pageChangeInProgress) {
-    pendingPage.current = nextPage;
+  if (pageChangeInProgress && !force) {
+    pendingPage.current.page = nextPage;
+    pendingPage.current.retryTimer ??= setTimeout(() => {
+      const queuedPage = pendingPage.current.page;
+      if (queuedPage === null) return;
+      requestPdfPageNavigation(scope, queuedPage, pendingPage, true);
+    }, PDF_PAGE_NAVIGATION_RETRY_MS);
     return;
   }
-  pendingPage.current = null;
-  scope.scrollToPage({ pageNumber: nextPage, behavior: 'auto' });
+  clearPendingPdfPageNavigation(pendingPage);
+  scope.scrollToPage({
+    pageNumber: nextPage,
+    behavior: force ? 'instant' : 'auto',
+  });
+}
+
+function clearPendingPdfPageNavigation(pendingPage: {
+  current: PendingPdfPageNavigation;
+}): void {
+  if (pendingPage.current.retryTimer !== null) {
+    clearTimeout(pendingPage.current.retryTimer);
+  }
+  pendingPage.current.page = null;
+  pendingPage.current.retryTimer = null;
 }
 
 function subscribe<T>(

@@ -1,5 +1,5 @@
 import type { PluginRegistry } from '@embedpdf/react-pdf-viewer';
-import { expect, test } from '@rstest/core';
+import { expect, rstest, test } from '@rstest/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { usePdfViewerController } from '../src/internal/features/work/editors/pdf-viewer-controller';
 
@@ -216,6 +216,53 @@ test('serializes page jumps and preserves the latest navigation intent', async (
     }),
   );
   expect(calls).toEqual(['page:4:auto', 'page:2:auto']);
+});
+
+test('recovers the latest page jump when the viewer never finishes its prior change', async () => {
+  const calls: string[] = [];
+  const capabilities = {
+    'document-manager': {
+      getActiveDocumentId: () => 'document-1',
+    },
+    scroll: {
+      forDocument: () => ({
+        getCurrentPage: () => 1,
+        getTotalPages: () => 8,
+        getPageChangeState: () => ({ isChanging: true }),
+        scrollToPage: ({
+          behavior,
+          pageNumber,
+        }: {
+          behavior?: string;
+          pageNumber: number;
+        }) => calls.push(`page:${pageNumber}:${behavior}`),
+      }),
+    },
+  };
+  const registry = {
+    pluginsReady: () => Promise.resolve(),
+    getPlugin: (id: keyof typeof capabilities) => {
+      const capability = capabilities[id];
+      return capability ? { provides: () => capability } : undefined;
+    },
+  } as unknown as PluginRegistry;
+  const { result, unmount } = renderHook(() =>
+    usePdfViewerController(registry),
+  );
+  await waitFor(() => expect(result.current.state.ready).toBe(true));
+
+  rstest.useFakeTimers();
+  try {
+    act(() => result.current.goToPage(6));
+    expect(calls).toEqual([]);
+    act(() => rstest.advanceTimersByTime(499));
+    expect(calls).toEqual([]);
+    act(() => rstest.advanceTimersByTime(1));
+    expect(calls).toEqual(['page:6:instant']);
+  } finally {
+    unmount();
+    rstest.useRealTimers();
+  }
 });
 
 test('uses Yjs history instead of the viewer stack while collaborating', async () => {
