@@ -17,6 +17,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.7.1',
     '0.7.0',
     '0.6.0',
     '0.5.0',
@@ -41,6 +42,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.7.1',
     '0.7.0',
     '0.6.0',
     '0.5.0',
@@ -58,5 +60,32 @@ test('keeps published release homepages frozen and visibly versioned', async () 
     expect(chinese).toContain('冻结文档');
     expect(english).toContain(`# A3S Office ${version} documentation`);
     expect(english).toContain('frozen documentation');
+  }
+});
+
+test('publishes real-time collaboration as a bilingual first-class capability', async () => {
+  for (const version of ['latest', '0.7.1']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const localeRoot = path.join(documentationRoot, version, lang);
+      const [homepage, componentIndex, componentNavigation, collaboration] =
+        await Promise.all([
+          readFile(path.join(localeRoot, 'index.mdx'), 'utf8'),
+          readFile(path.join(localeRoot, 'components/index.mdx'), 'utf8'),
+          readFile(path.join(localeRoot, 'components/_meta.json'), 'utf8'),
+          readFile(
+            path.join(localeRoot, 'components/collaboration.mdx'),
+            'utf8',
+          ),
+        ]);
+
+      expect(homepage).toContain('./components/collaboration.mdx');
+      expect(componentIndex).toContain('./collaboration.mdx');
+      expect(componentNavigation).toContain('"collaboration"');
+      expect(collaboration).toContain('Yjs');
+      expect(collaboration).toContain('Awareness');
+      expect(collaboration).toContain('Spreadsheet');
+      expect(collaboration).toContain('Presentation');
+      expect(collaboration).toContain('PDF');
+    }
   }
 });

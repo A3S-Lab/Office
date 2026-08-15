@@ -23,6 +23,7 @@
   <a href="https://a3s-lab.github.io/Office/docs/">Documentation</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#five-format-native-surfaces">Editors</a> ·
+  <a href="#real-time-collaboration">Collaboration</a> ·
   <a href="#native-automation">Automation</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="ROADMAP.md">WPS gap roadmap</a> ·
@@ -43,6 +44,8 @@ workflows, and a separate Rust automation plane.
   lowest-common-denominator model.
 - **Own the product boundary**: your application controls content, storage,
   permissions, collaboration, and model providers.
+- **Collaborate across every editor** with shared Yjs/Yrs content, Awareness
+  participants and remote locations, plus browser, CLI, MCP, and A3S Code peers.
 - **Automate deterministically** through the native CLI, standard MCP server,
   or packaged Office Skill.
 
@@ -142,6 +145,21 @@ The images below are committed visual-regression baselines from the real
   Presentation scene-element and z-order, and PDF annotation, form-value, and
   review changes, retain browser/native actor attribution, and checkpoint
   without replacing a whole Office file.
+
+## Real-time collaboration
+
+Document, Markdown, Spreadsheet, Presentation, and PDF expose the same
+transport-neutral collaboration boundary. Two browser clients can edit one
+artifact live, render an accessible participant roster, and project remote
+text selections, cells, scene objects, pages, or annotations without moving
+the local user's viewport or focus. Native Yrs replicas join the same state
+through the CLI, standard MCP server, or A3S Code.
+
+The host owns rooms, authentication, authorization, network delivery, offline
+buffering, persistence, and the `Y.Doc`; A3S Office owns format-specific
+bindings, local undo, validated presence, and conflict-local typed mutations.
+See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
+for React, Vue, Web Component, reconnect, security, and native-agent setup.
 
 ## Quick start
 
@@ -1198,6 +1216,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/docs/0.7.1/)
 - [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/docs/0.7.0/)
 - [A3S Office 0.6.0 documentation](https://a3s-lab.github.io/Office/docs/0.6.0/)
 - [A3S Office 0.5.0 documentation](https://a3s-lab.github.io/Office/docs/0.5.0/)

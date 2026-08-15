@@ -5,8 +5,9 @@ description: 在应用中接入、扩展 A3S Office 编辑器，并通过 CLI �
 
 # A3S Office 文档
 
-A3S Office 提供文档、Markdown、表格、演示文稿和 PDF 的浏览器编辑组件。
-Playground 用于直接体验，本页面提供稳定的接入、配置和自动化说明。
+A3S Office 提供文档、Markdown、表格、演示文稿和 PDF 的浏览器编辑组件，以及
+宿主可控的多人实时协作与原生智能体自动化能力。Playground 用于直接体验，本页面
+提供稳定的接入、配置和自动化说明。
 
 ## 从这里开始
 
@@ -15,6 +16,7 @@ Playground 用于直接体验，本页面提供稳定的接入、配置和自动
 | 先体验编辑器 | <PlaygroundLink>打开 Playground</PlaygroundLink> |
 | 在项目中接入编辑器 | [快速开始](./guide/index.mdx) |
 | 查看 React、Vue 与 Web Component 用法 | [组件接入](./components/index.mdx) |
+| 让多人和编码智能体实时编辑同一文件 | [多人实时协作](./components/collaboration.mdx) |
 | 配置某一种编辑器 | [编辑器 API](./components/document.mdx) |
 | 增加自定义操作或 TipTap Extension | [扩展机制](./components/extensions.mdx) |
 | 让编码智能体读取或修改 Office 文件 | [CLI 与 Skill](./automation/index.mdx) |
@@ -31,6 +33,18 @@ Playground 用于直接体验，本页面提供稳定的接入、配置和自动
 
 npm 包名是 `@a3s-lab/office`。它提供类型化核心模型、React 组件、Vue
 绑定、Web Component 和统一样式。
+
+## 多人实时协作
+
+| 能力 | Document | Markdown | Spreadsheet | Presentation | PDF |
+| --- | --- | --- | --- | --- | --- |
+| 两台浏览器实时编辑 | ✓ | ✓ | ✓ | ✓ | 覆盖层与审核记录 |
+| 在线成员与远端位置 | 文本选区 | 文本选区 | 单元格区域 | 场景对象 | 页面或批注 |
+| CLI、MCP 与 A3S Code | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+协作层使用 Yjs/Yrs 标准更新，但不绑定某个后端。宿主继续控制房间、认证、权限、
+网络 Provider、离线队列和持久化；编辑器负责格式绑定、参与者列表、远端位置和
+本地撤销。完整接入流程、重连语义与限制请查看[多人实时协作](./components/collaboration.mdx)。
 
 ## 文档语言与版本
 

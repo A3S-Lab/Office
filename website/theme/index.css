@@ -71,47 +71,6 @@ body {
   }
 }
 
-.office-docs-playground-link {
-  display: inline-flex;
-  height: 30px;
-  align-items: center;
-  gap: 5px;
-  margin-left: 14px;
-  padding: 0 10px;
-  border: 1px solid var(--rp-c-divider);
-  border-radius: 7px;
-  background: var(--rp-c-bg-soft);
-  color: var(--rp-c-text-2);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition:
-    border-color 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
-}
-
-.office-docs-playground-link:hover {
-  border-color: color-mix(in srgb, var(--rp-c-brand) 40%, var(--rp-c-divider));
-  background: var(--rp-c-brand-tint);
-  color: var(--rp-c-brand);
-}
-
-.office-docs-playground-link:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--rp-c-brand) 56%, transparent);
-  outline-offset: 2px;
-}
-
-.office-docs-playground-link svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentcolor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.5;
-}
-
 .rp-doc-layout {
   background:
     radial-gradient(circle at 72% 0%, rgb(40 100 232 / 5%), transparent 34rem),
@@ -140,15 +99,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  .office-docs-playground-link {
-    margin-left: 8px;
-    padding: 0 8px;
-  }
-
-  .office-docs-playground-link svg {
-    display: none;
-  }
-
   .rp-doc table {
     display: block;
     overflow-x: auto;

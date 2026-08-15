@@ -1,7 +1,7 @@
 {
   "name": "@a3s-lab/office",
-  "version": "0.7.0",
-  "description": "Open-source browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
+  "version": "0.7.1",
+  "description": "Open-source collaborative browser editors for documents, Markdown, spreadsheets, presentations, and PDFs.",
   "keywords": [
     "office",
     "document-editor",
@@ -9,6 +9,8 @@
     "spreadsheet",
     "presentation",
     "pdf",
+    "collaboration",
+    "yjs",
     "react",
     "vue",
     "web-components"

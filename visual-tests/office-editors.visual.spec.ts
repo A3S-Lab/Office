@@ -1049,7 +1049,7 @@ test.describe('Office editor context menu contracts', () => {
   }
 });
 
-test('Playground stays at the site root and opens a standalone documentation center', async ({
+test('Playground opens a standalone documentation center with collaboration discoverable', async ({
   page,
 }) => {
   await page.goto('/');
@@ -1088,12 +1088,23 @@ test('Playground stays at the site root and opens a standalone documentation cen
   await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
     'DocumentEditor',
   );
-  const playgroundHome = page.locator('.office-docs-playground-link');
-  await expect(playgroundHome).toHaveAttribute('href', '../');
-  await playgroundHome.click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
+
+  const collaborationGuide = page
+    .locator('main')
+    .getByRole('link', { name: '多人实时协作', exact: true })
+    .first();
+  await expect(collaborationGuide).toHaveAttribute(
+    'href',
+    /components\/collaboration\.html$/,
+  );
+  await collaborationGuide.click();
+  await expect(page).toHaveURL(/\/docs\/components\/collaboration\.html$/);
   await expect(
-    page.getByRole('heading', { name: '我的文档', level: 1 }),
+    page.getByRole('heading', { name: '多人实时协作', level: 1 }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: '从两台浏览器开始', level: 2 }),
   ).toBeVisible();
 });
 
@@ -1140,11 +1151,12 @@ test('documentation keeps the current page across version and language switches'
   await latestMenu.locator(':scope > .rp-nav-menu__item__container').click();
   await latestMenu.getByRole('link', { name: 'latest', exact: true }).click();
   await expect(page).toHaveURL(/\/docs\/en\/components\/document\.html$/);
-
-  const playgroundHome = page.locator('.office-docs-playground-link');
-  await expect(playgroundHome).toHaveAttribute('href', '../../../');
-  await playgroundHome.click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.office-docs-playground-link')).toHaveCount(0);
+  await expect(
+    page
+      .locator('.rp-doc-layout__sidebar')
+      .getByRole('link', { name: 'Real-time collaboration' }),
+  ).toHaveAttribute('href', /\/en\/components\/collaboration\.html$/);
 });
 
 test('documentation pages provide searchable framework examples with syntax highlighting', async ({

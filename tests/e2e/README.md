@@ -143,8 +143,10 @@ phone Markdown source, visual, and split-mode workflow with
 unambiguous accessible controls, a source-first full-workspace phone switch,
 synchronized preview content, and touch-sized actions; and the public
 Playground-to-documentation-center navigation contract, including Simplified
-Chinese as the default language, language and release-version switching, the
-documentation tree, and the same-deployment return to the Playground homepage.
+Chinese as the default language, a prominent homepage and sidebar route to the
+five-format real-time collaboration guide, collaboration accessibility
+evidence, and language and release-version switching. The docs header
+deliberately omits the former route-dependent online Playground button.
 The responsive Office-shell workflow also crosses from a persistent desktop
 sidebar into a 390 px workspace, proves the phone drawer stays closed without
 moving search focus, and restores the prior persistent sidebar on return.

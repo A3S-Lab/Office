@@ -20,6 +20,22 @@ export async function waitForPdfFixture(page: Page): Promise<void> {
     'true',
     { timeout: 50_000 },
   );
+  await expect
+    .poll(
+      () =>
+        page
+          .locator('.work-pdf-native-viewer img')
+          .evaluateAll((images) =>
+            images.some(
+              (image) =>
+                image instanceof HTMLImageElement &&
+                image.complete &&
+                image.naturalWidth > 0,
+            ),
+          ),
+      { timeout: 50_000 },
+    )
+    .toBe(true);
 }
 
 function createPdfFixture(pageCount: number): Buffer {

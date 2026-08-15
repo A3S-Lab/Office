@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.7.1 - 2026-08-15
+
+- Made real-time collaboration a first-class, bilingual documentation path.
+  The default Simplified Chinese site now includes the complete host-owned
+  Yjs/Yrs setup for two-browser editing, Awareness participants and remote
+  locations, Document, Markdown, Spreadsheet, Presentation, and PDF bindings,
+  CLI/MCP/A3S Code peers, reconnect and offline convergence behavior,
+  authorization boundaries, and current limitations. Both documentation
+  homepages and component indexes now link directly to collaboration and show
+  the five-format capability matrix.
+- Removed the route-dependent “在线体验” / “Playground” button injected into
+  every documentation header because its generated relative destinations were
+  not reliable across localized and versioned routes. Focused source and A3S
+  Test navigation regressions cover the resulting documentation contract.
+
 ## 0.7.0 - 2026-08-15
 
 - Added conflict-local Presentation scene-element z-order moves through Rust,

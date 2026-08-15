@@ -6,8 +6,9 @@ description: Embed browser-native Office editors, extend their behavior, and aut
 # A3S Office documentation
 
 A3S Office is a modular browser editor library for documents, Markdown,
-spreadsheets, presentations, and PDFs. The Playground is the interactive home;
-this site is the stable reference for integration and automation.
+spreadsheets, presentations, and PDFs, with host-controlled real-time
+collaboration and native agent automation. The Playground is the interactive
+home; this site is the stable reference for integration and automation.
 
 ## Choose a path
 
@@ -16,6 +17,7 @@ this site is the stable reference for integration and automation.
 | Evaluate an editor in the browser | <PlaygroundLink>Open the Playground</PlaygroundLink> |
 | Embed an editor in an application | [Getting started](./guide/index.mdx) |
 | Compare React, Vue, and custom-element bindings | [Component integration](./components/index.mdx) |
+| Let people and coding agents edit one file live | [Real-time collaboration](./components/collaboration.mdx) |
 | Configure one editor in detail | [Editor API](./components/document.mdx) |
 | Add host actions or TipTap extensions | [Extension model](./components/extensions.mdx) |
 | Inspect or edit files from a coding agent | [CLI and Skill](./automation/index.mdx) |
@@ -32,6 +34,20 @@ this site is the stable reference for integration and automation.
 
 The public package is `@a3s-lab/office`. It exposes typed core models, React
 components, Vue bindings, custom elements, and one shared stylesheet.
+
+## Real-time collaboration across every surface
+
+| Capability | Document | Markdown | Spreadsheet | Presentation | PDF |
+| --- | --- | --- | --- | --- | --- |
+| Two-browser live editing | ✓ | ✓ | ✓ | ✓ | Overlays and review records |
+| Participants and remote locations | Text selection | Text selection | Cell range | Scene object | Page or annotation |
+| CLI, MCP, and A3S Code peers | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+The Yjs/Yrs boundary is backend-neutral. The host retains rooms,
+authentication, authorization, the network provider, offline buffering, and
+persistence; editors own format bindings, the participant roster, remote
+locations, and local undo. See [Real-time collaboration](./components/collaboration.mdx)
+for the complete setup, reconnect behavior, and limitations.
 
 ## Languages and versions
 

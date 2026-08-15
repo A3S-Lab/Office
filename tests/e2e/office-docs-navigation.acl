@@ -1,8 +1,8 @@
 suite "office-docs-navigation" {
     version = 1
 
-    scenario "open-docs-and-return-to-playground" {
-        name = "Open the dedicated documentation center and return to the Playground"
+    scenario "open-docs-collaboration-and-version-navigation" {
+        name = "Open the documentation center, discover collaboration, and switch language and version"
         surface = "web"
         timeout_ms = 30000
 
@@ -49,6 +49,39 @@ suite "office-docs-navigation" {
 
         screenshot "documentation-center" {
             path = "screenshots/documentation-center.png"
+        }
+
+        expect "collaboration-entry-is-prominent" {
+            visible = css("main a[href$='/components/collaboration.html']")
+        }
+
+        click "open-collaboration-guide" {
+            target = css("main a[href$='/components/collaboration.html']")
+        }
+
+        wait "latest-collaboration-route" {
+            url = "http://127.0.0.1:4175/docs/components/collaboration.html"
+        }
+
+        expect "collaboration-guide-ready" {
+            text = "从两台浏览器开始"
+        }
+
+        expect "collaboration-reconnect-is-documented" {
+            text = "断线、离线与收敛"
+        }
+
+        expect "collaboration-authorization-is-documented" {
+            text = "权限与安全边界"
+        }
+
+        screenshot "collaboration-guide" {
+            path = "screenshots/collaboration-guide.png"
+        }
+
+        accessibility "collaboration-accessibility" {
+            path = "accessibility/collaboration.json"
+            interactive = true
         }
 
         click "open-document-reference" {
@@ -166,18 +199,6 @@ suite "office-docs-navigation" {
 
         wait "latest-english-document-route" {
             url = "http://127.0.0.1:4175/docs/en/components/document.html"
-        }
-
-        click "return-to-playground" {
-            target = css(".office-docs-playground-link")
-        }
-
-        wait "playground-route-restored" {
-            url = "http://127.0.0.1:4175/"
-        }
-
-        expect "playground-restored" {
-            text = "我的文档"
         }
 
         console "browser-console" {

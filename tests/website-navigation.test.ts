@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { expect, test } from '@rstest/core';
 import {
   playgroundAssetHrefFromDocsRoute,
@@ -29,4 +31,15 @@ test('derives deployment-relative Playground assets from localized version route
     ),
   ).toBe('../../../../downloads/a3s-office-skill.tar.gz');
   expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../');
+});
+
+test('does not inject a route-dependent online Playground button into docs navigation', async () => {
+  const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
+  const [themeEntry, themeStyles] = await Promise.all([
+    readFile(path.join(themeRoot, 'index.tsx'), 'utf8'),
+    readFile(path.join(themeRoot, 'index.css'), 'utf8'),
+  ]);
+
+  expect(themeEntry).not.toContain("export { Nav } from './nav'");
+  expect(themeStyles).not.toContain('.office-docs-playground-link');
 });
