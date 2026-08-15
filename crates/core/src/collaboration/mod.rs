@@ -9,6 +9,7 @@
 mod document;
 mod mutation;
 mod persistence;
+mod projection;
 mod transport;
 mod types;
 mod validation;
@@ -32,6 +33,7 @@ use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
     write_update_entry, LoadedStore, OperationRecord, StoreLock,
 };
+use projection::project_collaboration_document;
 pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
 use validation::{
@@ -191,6 +193,15 @@ impl NativeOfficeCollaborationStore {
     pub fn inspect(&self) -> UseResult<NativeOfficeCollaborationInspection> {
         let (_lock, loaded) = self.lock_and_load()?;
         inspection_from_loaded(&self.root, &loaded)
+    }
+
+    /// Read a bounded, Office-owned projection of the current canonical
+    /// collaboration state. Callers use its state vector and stable document
+    /// identities to construct typed, fail-closed mutations; they never need
+    /// to decode the browser's Yjs schema themselves.
+    pub fn project(&self) -> UseResult<NativeOfficeCollaborationProjection> {
+        let (_lock, loaded) = self.lock_and_load()?;
+        project_collaboration_document(&loaded.doc, &loaded.manifest, loaded.current_sequence)
     }
 
     /// Read a bounded, resumable batch of durable collaboration updates.

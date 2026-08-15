@@ -80,9 +80,7 @@ function createCollaborationPresenceFixture({
   });
 
   initializeOfficeDocumentCollaboration(collaboration, content);
-  const presence = createOfficeCollaborationPresence(collaboration, {
-    location: { kind: 'document', anchor: 0, head: 0 },
-  });
+  const presence = createOfficeCollaborationPresence(collaboration);
   const remotePresence = createOfficeCollaborationPresence(remoteSession, {
     location: { kind: 'document', anchor: 3, head: 9 },
   });

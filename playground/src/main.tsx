@@ -1,3 +1,8 @@
+import type {
+  EditorAgentRequest,
+  OfficeArtifact,
+  OfficeArtifactContent,
+} from '@a3s-lab/office/core';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import {
   lazy,
@@ -9,16 +14,15 @@ import {
   useState,
 } from 'react';
 import { createRoot } from 'react-dom/client';
-import type {
-  EditorAgentRequest,
-  OfficeArtifact,
-  OfficeArtifactContent,
-} from '@a3s-lab/office/core';
 import '@a3s-lab/office/styles.css';
 import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
 import { createWorkArtifact as createArtifact } from '../../src/internal/features/work/work-templates';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
-import { documentationEntryUrl, legacyDocsPath } from './site-routes';
+import {
+  collaborationServerDocumentationUrl,
+  documentationEntryUrl,
+  legacyDocsPath,
+} from './site-routes';
 import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
@@ -41,6 +45,8 @@ function Playground() {
     createInitialArtifacts,
   );
   const [activeArtifactId, setActiveArtifactId] = useState<string | null>(null);
+  const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
+    useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantWidth, setAssistantWidth] = useState(readAssistantWidth);
   const [lastAgentRequest, setLastAgentRequest] =
@@ -52,6 +58,9 @@ function Playground() {
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
   const docsUrl = documentationEntryUrl(document.baseURI);
+  const collaborationDocsUrl = collaborationServerDocumentationUrl(
+    document.baseURI,
+  );
 
   useEffect(() => {
     const redirectLegacyDocsRoute = () => {
@@ -78,6 +87,11 @@ function Playground() {
   );
 
   const openArtifact = (artifactId: string) => {
+    setCollaborationDemoArtifactId(null);
+    activateArtifact(artifactId);
+  };
+
+  const activateArtifact = (artifactId: string) => {
     const now = Date.now();
     setArtifacts((current) =>
       current.map((artifact) =>
@@ -92,8 +106,20 @@ function Playground() {
     closeSidebarForEditor();
   };
 
+  const openCollaborationDemo = () => {
+    const artifact = artifacts.find(({ kind }) => kind === 'document');
+    if (!artifact) {
+      showNotice('请先新建一个文字文档，再打开协作演示。', 'danger');
+      return;
+    }
+    setCollaborationDemoArtifactId(artifact.id);
+    activateArtifact(artifact.id);
+    showNotice('已加入浏览器内多人协作演示', 'success');
+  };
+
   const newArtifact = (templateId: string) => {
     const artifact = createArtifact(templateId);
+    setCollaborationDemoArtifactId(null);
     setArtifacts((current) => [artifact, ...current]);
     setActiveArtifactId(artifact.id);
     setLastAgentRequest(null);
@@ -119,6 +145,7 @@ function Playground() {
       const { importOfficeFile } = await import('@a3s-lab/office/core');
       const imported = await importOfficeFile(file);
       const opened = { ...imported, lastOpenedAt: Date.now() };
+      setCollaborationDemoArtifactId(null);
       setArtifacts((current) => [
         opened,
         ...current.filter((artifact) => artifact.id !== opened.id),
@@ -204,6 +231,9 @@ function Playground() {
             <EditorWorkspace
               key={activeArtifact.id}
               artifact={activeArtifact}
+              collaborationDemo={
+                collaborationDemoArtifactId === activeArtifact.id
+              }
               assistantModal={assistantModal}
               assistantOpen={assistantOpen}
               assistantWidth={assistantWidth}
@@ -219,6 +249,7 @@ function Playground() {
               }}
               onBack={() => {
                 setActiveArtifactId(null);
+                setCollaborationDemoArtifactId(null);
                 setAssistantOpen(false);
                 setLastAgentRequest(null);
                 if (window.innerWidth >= 840) setSidebarOpen(true);
@@ -255,10 +286,12 @@ function Playground() {
         ) : (
           <WorkspaceHome
             artifacts={artifacts}
+            collaborationDocsUrl={collaborationDocsUrl}
             sidebarOpen={sidebarOpen}
             onCreate={newArtifact}
             onImport={() => fileInput.current?.click()}
             onOpen={openArtifact}
+            onOpenCollaborationDemo={openCollaborationDemo}
             onOpenPdf={() => pdfInput.current?.click()}
             onOpenSidebar={() => setSidebarOpen(true)}
           />

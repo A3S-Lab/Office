@@ -112,6 +112,15 @@ pub enum NativeOfficeCollaborationMutation {
         replacement: String,
         expected_matches: u32,
     },
+    /// Replace the complete visible text of one stable plain paragraph after
+    /// matching its current Word text identity and exact text. This is the
+    /// preferred conflict-local operation after reading a native projection.
+    DocumentReplaceParagraph {
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+        replacement: String,
+    },
     /// Set the conflict-local Document page-color option.
     DocumentSetPageColor { page_color: String },
     /// Explicitly clear the conflict-local Document page-color option.

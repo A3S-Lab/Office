@@ -4,11 +4,12 @@ members = [
   "crates/core",
   "crates/formula-parser",
   "crates/web-kernel",
+  "examples/collaboration-server",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.7.1"
+version = "0.7.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/A3S-Lab/Office"

@@ -44,6 +44,92 @@
   gap: 9px;
 }
 
+.playground-collaboration-overview {
+  display: grid;
+  width: 100%;
+  max-width: 1480px;
+  min-height: 94px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  margin: 0 auto 30px;
+  padding: 18px 20px;
+  border: 1px solid color-mix(in srgb, var(--a3s-blue) 22%, var(--a3s-line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--a3s-blue) 4%, var(--a3s-panel));
+}
+
+.playground-collaboration-participants {
+  position: relative;
+  display: flex;
+  width: 76px;
+  align-items: center;
+  padding-left: 2px;
+}
+
+.playground-collaboration-participants > span {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 2px solid var(--a3s-panel);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.playground-collaboration-participants > .human {
+  z-index: 2;
+  background: #047857;
+}
+
+.playground-collaboration-participants > .agent {
+  z-index: 1;
+  margin-left: -8px;
+  background: #6d28d9;
+}
+
+.playground-collaboration-participants > i {
+  position: absolute;
+  z-index: 3;
+  right: 2px;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--a3s-panel);
+  border-radius: 50%;
+  background: var(--a3s-green);
+}
+
+.playground-collaboration-copy {
+  min-width: 0;
+}
+
+.playground-collaboration-copy h2 {
+  margin: 0;
+  color: var(--a3s-ink);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.playground-collaboration-copy p {
+  max-width: 68ch;
+  margin: 5px 0 0;
+  color: var(--a3s-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.playground-collaboration-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .playground-search {
   display: flex;
   width: min(280px, 25vw);
@@ -1117,6 +1203,14 @@
     flex: 1;
   }
 
+  .playground-collaboration-overview {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .playground-collaboration-actions {
+    grid-column: 2;
+  }
+
   .playground-assistant {
     position: absolute;
     top: 0;
@@ -1234,6 +1328,22 @@
 
   .playground-home-actions > .playground-secondary-button {
     flex: 1;
+  }
+
+  .playground-collaboration-overview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 17px;
+  }
+
+  .playground-collaboration-participants {
+    width: 76px;
+  }
+
+  .playground-collaboration-actions {
+    grid-column: 1;
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .playground-template-grid,

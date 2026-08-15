@@ -1,0 +1,28 @@
+diff --git a/dist/y-tiptap.cjs b/dist/y-tiptap.cjs
+--- a/dist/y-tiptap.cjs
++++ b/dist/y-tiptap.cjs
+@@ -655,4 +655,9 @@ class ProsemirrorBinding {
+-        tr.setSelection(prosemirrorState.TextSelection.create(tr.doc, clampedAnchor, clampedHead));
++        tr.setSelection(
++          prosemirrorState.TextSelection.between(
++            tr.doc.resolve(clampedAnchor),
++            tr.doc.resolve(clampedHead)
++          )
++        );
+       }
+       this.prosemirrorView.dispatch(
+         tr.setMeta(ySyncPluginKey, { isChangeOrigin: true, binding: this })
+diff --git a/dist/y-tiptap.js b/dist/y-tiptap.js
+--- a/dist/y-tiptap.js
++++ b/dist/y-tiptap.js
+@@ -621,4 +621,9 @@ class ProsemirrorBinding {
+-        tr.setSelection(TextSelection.create(tr.doc, clampedAnchor, clampedHead));
++        tr.setSelection(
++          TextSelection.between(
++            tr.doc.resolve(clampedAnchor),
++            tr.doc.resolve(clampedHead)
++          )
++        );
+       }
+       this.prosemirrorView.dispatch(
+         tr.setMeta(ySyncPluginKey, { isChangeOrigin: true, binding: this })

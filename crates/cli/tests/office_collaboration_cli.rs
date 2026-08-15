@@ -87,6 +87,14 @@ fn cli_joins_yjs_replica_inspects_and_exports_state_vector_diff() {
     assert_eq!(inspected["data"]["bootstrapValid"], true);
     assert_eq!(inspected["data"]["currentSequence"], 0);
 
+    let projected = run(&["collab", "read", replica.to_str().unwrap(), "--json"]);
+    assert_eq!(projected["data"]["content"]["kind"], "markdown");
+    assert_eq!(
+        projected["data"]["content"]["source"],
+        "# Shared\n\nYjs to Yrs."
+    );
+    assert!(projected["data"]["stateVector"].is_string());
+
     let no_diff = run(&[
         "collab",
         "diff",

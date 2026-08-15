@@ -44,6 +44,9 @@ jobs:
       - name: Type-check library
         run: bun run typecheck
 
+      - name: Type-check collaboration server client
+        run: bun run collaboration-server:typecheck
+
       - name: Run tests
         run: bun run test
 

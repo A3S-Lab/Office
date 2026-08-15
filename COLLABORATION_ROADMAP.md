@@ -87,13 +87,18 @@ Status: implemented in the browser library.
   navigate only on explicit activation; passive Awareness updates preserve
   local focus, selection, and viewport.
 - React, Vue, and Web Component session and presence plumbing.
+- A runnable A3S Boot reference backend now provides signed room tickets,
+  Origin validation, permission enforcement, WebSocket rooms, durable Yrs
+  persistence, ephemeral Awareness relay, reconnect repair, and service-owned
+  durable update polling. Its browser adapter converts bounded base64 wire
+  payloads back to the package's typed `Uint8Array` transport envelope.
 - Convergence, offline/reconnect, transport-boundary, presence, permission,
-  StrictMode, framework-parity, and ownership tests.
+  StrictMode, framework-parity, ownership, backend persistence, room broadcast,
+  ticket tamper, and read-only authorization tests.
 
-Remaining before this phase is production complete:
-
-- Add reference WebSocket/WebTransport relay examples with provider-side
-  authorization and persistent update replay.
+The reference backend is complete for one service process. Multi-replica
+deployments still require host-selected sticky room routing or shared
+Redis/NATS fan-out plus a distributed writer/lock policy.
 
 ### Phase 2: Document
 
@@ -356,7 +361,7 @@ projection are pending.
   canonical replay preserves genuinely missing updates while resolving Yrs
   array items whose causal dependencies arrived out of order.
 - `a3s-office collab` exposes non-interactive `create`, `join`, `inspect`,
-  `diff`/`synchronize`, `apply`, `mutate`, `checkpoint`, `watch`, and `leave`
+  `read`, `diff`/`synchronize`, `apply`, `mutate`, `checkpoint`, `watch`, and `leave`
   commands
   with JSON output and optional no-clobber binary output. `sync-step1`,
   `encode-update`, and `handle-message` expose standard y-sync document
@@ -389,6 +394,15 @@ projection are pending.
   incremental updates through the same durable
   receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
   updates remain receivable in every mode so read-only peers still converge.
+- Rust `project`, `collab read`, and `office_collaboration_read` interpret the
+  Office-owned browser schema inside Office rather than in a product host.
+  Markdown returns its exact canonical source. Document returns bounded
+  traversal-order paragraph records, stable `paragraphId`/`textId` pairs,
+  structural ancestry, option fields, and subordinate plain text together
+  with the exact state vector. `document-replace-paragraph` uses those stable
+  identities plus complete expected text to reject a stale same-paragraph
+  browser/agent edit before writing, while unrelated changes can proceed
+  without replacing the full document.
 - Spreadsheet cell mutations create or recursively patch one zero-based
   coordinate after matching the caller's observed cell, or delete it only after
   an exact complete-cell match. They preserve the browser's field-addressed

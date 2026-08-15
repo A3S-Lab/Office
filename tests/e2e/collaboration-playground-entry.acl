@@ -1,0 +1,121 @@
+suite "collaboration-playground-entry" {
+    version = 1
+
+    scenario "desktop-collaboration-entry" {
+        name = "Open the visible real-time collaboration demo from the Playground"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "collaboration-capability-is-visible" {
+            text = "多人实时协作"
+        }
+
+        expect "backend-guide-has-a-canonical-route" {
+            visible = css("a[href$='/docs/components/collaboration-server.html']")
+        }
+
+        screenshot "desktop-collaboration-entry" {
+            path = "screenshots/collaboration-playground-entry-desktop.png"
+        }
+
+        click "open-collaboration-demo" {
+            target = role("button", "打开协作演示")
+        }
+
+        wait "two-participants-joined" {
+            visible = css("button[data-collaboration-count='2']")
+        }
+
+        wait "remote-caret-is-projected" {
+            visible = css(".work-office-remote-caret[data-participant-id='playground-agent']")
+        }
+
+        click "open-participant-roster" {
+            target = css("button[data-collaboration-count='2']")
+        }
+
+        expect "agent-is-listed" {
+            text = "A3S Agent"
+        }
+
+        screenshot "desktop-collaboration-demo" {
+            path = "screenshots/collaboration-playground-desktop.png"
+        }
+
+        accessibility "desktop-collaboration-accessibility" {
+            path = "evidence/collaboration-playground-desktop.json"
+            interactive = true
+        }
+
+        console "desktop-console" {
+            path = "diagnostics/collaboration-playground-desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-errors" {
+            path = "diagnostics/collaboration-playground-desktop-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "compact-collaboration-entry" {
+        name = "Keep the collaboration demo discoverable on a phone viewport"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-compact-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "compact-collaboration-capability-is-visible" {
+            text = "多人实时协作"
+        }
+
+        screenshot "compact-collaboration-entry" {
+            path = "screenshots/collaboration-playground-entry-compact.png"
+        }
+
+        click "open-compact-collaboration-demo" {
+            target = role("button", "打开协作演示")
+        }
+
+        wait "compact-participants-joined" {
+            visible = css("button[data-collaboration-count='2']")
+        }
+
+        screenshot "compact-collaboration-demo" {
+            path = "screenshots/collaboration-playground-compact.png"
+        }
+
+        accessibility "compact-collaboration-accessibility" {
+            path = "evidence/collaboration-playground-compact.json"
+            interactive = true
+        }
+
+        console "compact-console" {
+            path = "diagnostics/collaboration-playground-compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-errors" {
+            path = "diagnostics/collaboration-playground-compact-errors.json"
+            clear = false
+        }
+    }
+}

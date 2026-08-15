@@ -8,7 +8,7 @@ use super::{
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
 };
 
-mod document;
+pub(in crate::collaboration) mod document;
 mod pdf;
 mod presentation;
 mod spreadsheet;
@@ -43,6 +43,7 @@ pub(super) fn validate_mutation_contract(
             NativeOfficeCollaborationArtifactKind::Markdown
         }
         NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentReplaceParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
@@ -152,6 +153,7 @@ pub(super) fn apply_mutation(
             apply_markdown_splice(doc, manifest, *index_utf16, *delete_utf16, insert)?;
         }
         NativeOfficeCollaborationMutation::DocumentReplaceText { .. }
+        | NativeOfficeCollaborationMutation::DocumentReplaceParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }

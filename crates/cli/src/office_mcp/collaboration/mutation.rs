@@ -134,6 +134,13 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         replacement: String,
         expected_matches: u32,
     },
+    /// Replace one stable plain paragraph after matching its exact current identity and text.
+    DocumentReplaceParagraph {
+        paragraph_id: String,
+        expected_text_id: String,
+        expected_text: String,
+        replacement: String,
+    },
     /// Set the conflict-local Document page-color option.
     DocumentSetPageColor { page_color: String },
     /// Explicitly clear the conflict-local Document page-color option.
@@ -282,6 +289,17 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 search,
                 replacement,
                 expected_matches,
+            },
+            OfficeCollaborationMutation::DocumentReplaceParagraph {
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+                replacement,
+            } => Self::DocumentReplaceParagraph {
+                paragraph_id,
+                expected_text_id,
+                expected_text,
+                replacement,
             },
             OfficeCollaborationMutation::DocumentSetPageColor { page_color } => {
                 Self::DocumentSetPageColor { page_color }

@@ -5,7 +5,7 @@ use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
 };
 
-mod identity;
+pub(in crate::collaboration) mod identity;
 mod paragraph;
 mod structure;
 mod text;
@@ -19,6 +19,17 @@ pub(super) fn validate_document_mutation(
             expected_matches,
             ..
         } => text::validate_text_replacement(search, *expected_matches),
+        NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+            replacement,
+        } => paragraph::validate_replace_paragraph(
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+            replacement,
+        ),
         NativeOfficeCollaborationMutation::DocumentInsertParagraph {
             anchor_paragraph_id,
             paragraph_id,
@@ -53,6 +64,19 @@ pub(super) fn apply_document_mutation(
             replacement,
             expected_matches,
         } => text::replace_document_text(doc, manifest, search, replacement, *expected_matches),
+        NativeOfficeCollaborationMutation::DocumentReplaceParagraph {
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+            replacement,
+        } => paragraph::replace_paragraph(
+            doc,
+            manifest,
+            paragraph_id,
+            expected_text_id,
+            expected_text,
+            replacement,
+        ),
         NativeOfficeCollaborationMutation::DocumentInsertParagraph {
             anchor_paragraph_id,
             position,

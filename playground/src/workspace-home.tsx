@@ -1,16 +1,18 @@
-import {
-  ArrowRight,
-  FilePlus2,
-  PanelLeftOpen,
-  Search,
-  Upload,
-} from 'lucide-react';
-import { useMemo, useState } from 'react';
 import type {
   OfficeArtifact,
   OfficeArtifactKind,
   OfficeTemplate,
 } from '@a3s-lab/office/core';
+import {
+  ArrowRight,
+  FilePlus2,
+  PanelLeftOpen,
+  Search,
+  ServerCog,
+  Upload,
+  UsersRound,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { WORK_TEMPLATES as officeTemplates } from '../../src/internal/features/work/work-templates';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 
@@ -27,19 +29,23 @@ function warmOfficeEditor(kind: OfficeArtifactKind): void {
 
 export function WorkspaceHome({
   artifacts,
+  collaborationDocsUrl,
   sidebarOpen,
   onOpenSidebar,
   onCreate,
   onOpen,
   onImport,
+  onOpenCollaborationDemo,
   onOpenPdf,
 }: {
   artifacts: OfficeArtifact[];
+  collaborationDocsUrl: string;
   sidebarOpen: boolean;
   onOpenSidebar: () => void;
   onCreate: (templateId: string) => void;
   onOpen: (artifactId: string) => void;
   onImport: () => void;
+  onOpenCollaborationDemo: () => void;
   onOpenPdf: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -95,6 +101,44 @@ export function WorkspaceHome({
           </button>
         </div>
       </header>
+
+      <section
+        className="playground-collaboration-overview"
+        aria-labelledby="playground-collaboration-title"
+      >
+        <div
+          className="playground-collaboration-participants"
+          aria-hidden="true"
+        >
+          <span className="human">林</span>
+          <span className="agent">A3S</span>
+          <i />
+        </div>
+        <div className="playground-collaboration-copy">
+          <h2 id="playground-collaboration-title">多人实时协作</h2>
+          <p>
+            在浏览器内查看两位参与者、远端光标和在线状态；生产接入使用仓库中的
+            A3S Boot 服务。
+          </p>
+        </div>
+        <div className="playground-collaboration-actions">
+          <button
+            type="button"
+            className="playground-primary-button"
+            onClick={onOpenCollaborationDemo}
+          >
+            <UsersRound size={15} />
+            打开协作演示
+          </button>
+          <a
+            className="playground-secondary-button"
+            href={collaborationDocsUrl}
+          >
+            <ServerCog size={15} />
+            查看 A3S Boot 后端
+          </a>
+        </div>
+      </section>
 
       <section
         className="playground-template-section"

@@ -139,6 +139,23 @@ impl NativeOfficeMcpServer {
     }
 
     #[tool(
+        name = "office_collaboration_read",
+        description = "Read the current canonical Markdown source or an Office-owned structured Document projection with stable paragraph identities and a state-vector guard",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    async fn office_collaboration_read(
+        &self,
+        Parameters(input): Parameters<collaboration::OfficeCollaborationStoreInput>,
+    ) -> Result<CallToolResult, rmcp::ErrorData> {
+        Ok(tool_result(collaboration::read(input).await))
+    }
+
+    #[tool(
         name = "office_collaboration_diff",
         description = "Encode the complete local Yjs state or the update missing from a remote state vector",
         annotations(
@@ -191,7 +208,7 @@ impl NativeOfficeMcpServer {
 
     #[tool(
         name = "office_collaboration_mutate",
-        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits, fail-closed Document text/paragraph/options, Spreadsheet cells, Presentation scene elements and z-order, PDF form values, and append-only PDF redaction/page-operation review",
+        description = "Idempotently apply one authorized format-aware Office collaboration mutation; supports Markdown UTF-16 edits, fail-closed stable Document text/paragraph/options, Spreadsheet cells, Presentation scene elements and z-order, PDF form values, and append-only PDF redaction/page-operation review",
         annotations(
             read_only_hint = false,
             destructive_hint = false,
@@ -675,7 +692,7 @@ impl ServerHandler for NativeOfficeMcpServer {
                 website_url: Some("https://github.com/A3S-Lab/Office".to_string()),
             },
             instructions: Some(
-                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown, Document, Spreadsheet cell, Presentation scene-element/z-order, or PDF changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
+                "Use the built-in native Office tools first; they never require OfficeCLI, Microsoft Office, or LibreOffice. Local OOXML editing requires an office_create or office_open session; mutations remain in memory until office_save, and office_close refuses unsaved changes unless discard=true. Durable Yjs/Yrs collaboration replicas are separate from OOXML sessions: use office_collaboration_create, read current agent-visible content and stable identities with office_collaboration_read, poll office_collaboration_events with a persisted cursorSequence, prefer office_collaboration_mutate for typed local Markdown, Document, Spreadsheet cell, Presentation scene-element/z-order, or PDF changes, and apply externally delivered updates with stable operation identity. If a requested operation is outside the native surface, request office_install_compat through the host confirmation path and use the separately projected Office compatibility route after it becomes ready."
                     .to_string(),
             ),
             ..Default::default()

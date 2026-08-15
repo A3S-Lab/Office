@@ -17,6 +17,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.7.2',
     '0.7.1',
     '0.7.0',
     '0.6.0',
@@ -42,6 +43,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.7.2',
     '0.7.1',
     '0.7.0',
     '0.6.0',
@@ -63,8 +65,25 @@ test('keeps published release homepages frozen and visibly versioned', async () 
   }
 });
 
+test('removes broken online Playground actions from frozen homepages', async () => {
+  for (const version of DOCUMENTATION_VERSIONS.filter(
+    (candidate) => candidate !== 'latest',
+  )) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const homepage = await readFile(
+        path.join(documentationRoot, version, lang, 'index.mdx'),
+        'utf8',
+      );
+
+      expect(homepage).not.toContain('<PlaygroundLink>');
+      expect(homepage).not.toContain('在线体验');
+      expect(homepage).not.toContain('Open the Playground');
+    }
+  }
+});
+
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
-  for (const version of ['latest', '0.7.1']) {
+  for (const version of ['latest', '0.7.2', '0.7.1']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [homepage, componentIndex, componentNavigation, collaboration] =
@@ -86,6 +105,31 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
       expect(collaboration).toContain('Spreadsheet');
       expect(collaboration).toContain('Presentation');
       expect(collaboration).toContain('PDF');
+    }
+  }
+});
+
+test('publishes the runnable collaboration backend in latest and 0.7.2', async () => {
+  for (const version of ['latest', '0.7.2']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const localeRoot = path.join(documentationRoot, version, lang);
+      const [homepage, componentIndex, componentNavigation, server] =
+        await Promise.all([
+          readFile(path.join(localeRoot, 'index.mdx'), 'utf8'),
+          readFile(path.join(localeRoot, 'components/index.mdx'), 'utf8'),
+          readFile(path.join(localeRoot, 'components/_meta.json'), 'utf8'),
+          readFile(
+            path.join(localeRoot, 'components/collaboration-server.mdx'),
+            'utf8',
+          ),
+        ]);
+
+      expect(homepage).toContain('./components/collaboration-server.mdx');
+      expect(componentIndex).toContain('./collaboration-server.mdx');
+      expect(componentNavigation).toContain('"collaboration-server"');
+      expect(server).toContain('a3s-boot');
+      expect(server).toContain('WebSocket');
+      expect(server).toContain('Yrs');
     }
   }
 });

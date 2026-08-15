@@ -1,8 +1,13 @@
 const DOCUMENTATION_ENTRY_PATH = 'docs/';
 const GETTING_STARTED_PATH = 'docs/guide/';
+const COLLABORATION_SERVER_PATH = 'docs/components/collaboration-server.html';
 
 export function documentationEntryUrl(baseUri: string): string {
   return new URL(DOCUMENTATION_ENTRY_PATH, baseUri).href;
+}
+
+export function collaborationServerDocumentationUrl(baseUri: string): string {
+  return new URL(COLLABORATION_SERVER_PATH, baseUri).href;
 }
 
 export function legacyDocsPath(hash: string): string | null {

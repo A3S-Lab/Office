@@ -1,0 +1,168 @@
+---
+title: A3S Boot collaboration server
+description: Run an authenticated, persistent Yjs/Yrs collaboration backend for every A3S Office editor.
+---
+
+# A3S Boot collaboration server
+
+The repository includes a complete runnable backend under
+[`examples/collaboration-server`](https://github.com/A3S-Lab/Office/tree/main/examples/collaboration-server).
+It is not pseudocode: its Rust integration test opens two authenticated
+WebSocket clients, persists a browser-generated Yjs update through Yrs, checks
+room broadcast, and proves that a view-only client cannot write.
+
+The example combines `a3s-boot` 0.2 and the native `a3s-office` collaboration
+store:
+
+| Responsibility | Implementation |
+| --- | --- |
+| HTTP and WebSocket runtime | A3S Boot with the Axum adapter |
+| Configuration | Typed A3S ACL loaded by `ConfigModule` |
+| Room authentication | Five-minute HMAC-signed ticket scoped to artifact, actor, mode, namespace, and kind |
+| Document sync | Standard Yjs v1 `sync-step-1`, `sync-step-2`, and `update` messages |
+| Persistence | Crash-safe Yrs update log, operation receipts, and checkpoints |
+| Presence | Bounded Yjs Awareness relay; never written to document history |
+| Native agents | Agent-scoped tickets use the same room protocol; the host bridges the transport-neutral CLI/MCP JSONL session |
+| Authorization | Only `edit` tickets may publish document updates; every mode may receive state and presence |
+
+## Run the service
+
+From the Office repository root:
+
+```bash
+export A3S_OFFICE_TICKET_SECRET="$(openssl rand -hex 32)"
+export A3S_OFFICE_ADMIN_TOKEN="$(openssl rand -hex 24)"
+cargo run -p a3s-office-collaboration-server
+```
+
+The checked-in
+[`collaboration-server.acl`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/collaboration-server.acl)
+listens on `127.0.0.1:8787`, stores replicas under `./data/collaboration`, and
+permits the local Playground origins. Secrets are resolved with ACL `env(...)`
+calls and are never stored in the file.
+
+Pass a deployment ACL path as the first argument:
+
+```bash
+cargo run -p a3s-office-collaboration-server -- /etc/a3s/office-collaboration.acl
+```
+
+## Issue a room ticket
+
+The host backend calls the protected ticket endpoint only after its normal user
+authentication and document authorization have succeeded:
+
+```bash
+curl --fail http://127.0.0.1:8787/api/collaboration/tickets \
+  --header "Authorization: Bearer ${A3S_OFFICE_ADMIN_TOKEN}" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "artifactId": "quarterly-plan",
+    "artifactKind": "document",
+    "actorId": "user-42",
+    "actorKind": "human",
+    "mode": "edit"
+  }'
+```
+
+The standard API response contains `data.webSocketUrl`. That URL includes a
+short-lived, room-scoped ticket and is the only credential passed to the
+browser. Never expose `A3S_OFFICE_ADMIN_TOKEN` in frontend code.
+
+## Attach the browser client
+
+The complete
+[`client.ts`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/client.ts)
+implements `OfficeCollaborationTransport`, bounded base64 wire encoding,
+Awareness relay, stale-peer cleanup, exponential reconnect, and a fresh
+two-way state-vector handshake after reconnect.
+
+```ts
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+  initializeOfficeDocumentCollaboration,
+} from '@a3s-lab/office/core';
+import { connectA3sBootCollaborationRoom } from './client';
+
+const document = new Y.Doc();
+const awareness = new Awareness(document);
+const session = createOfficeCollaborationSession({
+  artifactId: 'quarterly-plan',
+  kind: 'document',
+  document,
+  awareness,
+  actor: { id: 'user-42', name: 'Mina', kind: 'human' },
+  mode: 'edit',
+});
+
+// Only the server or one elected bootstrap owner initializes a new room.
+if (!session.metadata()?.initialized) {
+  initializeOfficeDocumentCollaboration(session, initialContent);
+}
+
+const presence = createOfficeCollaborationPresence(session);
+const room = connectA3sBootCollaborationRoom({
+  webSocketUrl: ticketResponse.data.webSocketUrl,
+  session,
+  awareness,
+  onStatus: reportConnectionStatus,
+});
+```
+
+Pass `session` and `presence` to any React, Vue, or Web Component editor. On
+unmount, destroy `room`, `presence`, `session`, `awareness`, and the host-owned
+`Y.Doc` in that order.
+
+## Attach a native agent
+
+Issue an `actorKind: "agent"` ticket after authorizing the agent for the file.
+The WebSocket endpoint accepts the same Office envelope from browser and native
+participants. `a3s-office collab session` intentionally exposes a JSONL
+host-channel instead of opening its own network provider: relay its `outbound`
+records as `collaboration.document` events, and pass room document events back
+as `receive` records on stdin.
+
+Keep each agent's actor-scoped replica separate from the service's internal
+`data_dir`. The host owns the small JSONL/WebSocket process bridge and its
+reconnect lifecycle; the example owns the complete server-side room,
+authorization, persistence, fan-out, and protocol validation boundary.
+
+## Reconnect and persistence semantics
+
+Local offline changes stay in the browser `Y.Doc`. The adapter deliberately
+does not queue every dropped WebSocket frame. After reconnect, the browser and
+durable server replica each send a state vector, so both sides transfer exactly
+the updates the other side is missing. Repeated delivery is safe because the
+server derives a stable operation ID from room identity, sender client ID,
+message kind, and update bytes.
+
+The server persists a received `sync-step-2` or `update` before broadcasting it
+and then emits `collaboration.ack`. Awareness is kept only in memory. When a
+socket disconnects, the server publishes `collaboration.peer-left`, allowing
+every remaining browser to remove the stale Awareness client immediately.
+
+## Security and deployment boundary
+
+The sample fails closed across ticket, URL path, protocol version, artifact
+kind, namespace, Yjs client ID, Office presence actor, session mode, Origin,
+payload size, and ticket expiration. Client-supplied origin metadata is replaced
+with attribution derived from the signed ticket.
+
+The checked-in topology is complete for one service process. A multi-replica
+deployment must use sticky room routing or add A3S Boot Redis/NATS fan-out and a
+shared store with one writer/lock policy. Production deployments must also use
+`wss://`, rate-limit ticket issuance and room fan-out, and keep the ticket
+issuer behind the host application's authenticated backend.
+
+## Verify
+
+```bash
+cargo test -p a3s-office-collaboration-server
+bun run collaboration-server:typecheck
+```
+
+Continue with [Real-time collaboration](./collaboration.mdx) for each editor's
+shared data model, bootstrap rules, native mutations, and framework bindings.

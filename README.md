@@ -160,6 +160,10 @@ buffering, persistence, and the `Y.Doc`; A3S Office owns format-specific
 bindings, local undo, validated presence, and conflict-local typed mutations.
 See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
 for React, Vue, Web Component, reconnect, security, and native-agent setup.
+The repository also ships a runnable
+[A3S Boot collaboration server](examples/collaboration-server/) with signed
+room tickets, Origin validation, durable Yrs storage, Awareness relay, a typed
+browser adapter, and actor-scoped browser or native room messages.
 
 ## Quick start
 
@@ -1110,9 +1114,16 @@ controller as a shared participant roster, remote canvas projection, and
 participant-to-location navigation; neither component creates an account or
 backend. The native CLI's JSONL session bridges the same host-channel envelope,
 including reconnect handshakes, durable agent updates, and remote-echo
-suppression, without opening its own network provider. Typed Markdown
+suppression, without opening its own network provider. Native Rust `project`,
+`collab read`, and `office_collaboration_read` return the exact canonical
+Markdown source or an Office-owned bounded Document projection with stable
+paragraph/text identities, structural ancestry, option fields, subordinate
+plain text, and the current state vector. Product hosts therefore do not need
+to interpret Office's private Yjs schema. Typed Markdown
 replace/splice operations use browser UTF-16 offsets. Document mutations edit
-ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, insert a
+ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, replace one
+stable plain paragraph only after its `paragraphId`, `textId`, and complete
+text still match, insert a
 plain paragraph beside a stable identity in a bounded section, list-item,
 table-cell/header, or blockquote container, or delete one only after its
 complete text and `textId` still match. Required container blocks and each list
@@ -1216,6 +1227,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/docs/0.7.2/)
 - [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/docs/0.7.1/)
 - [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/docs/0.7.0/)
 - [A3S Office 0.6.0 documentation](https://a3s-lab.github.io/Office/docs/0.6.0/)

@@ -75,6 +75,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     for name in [
         "office_collaboration_create",
         "office_collaboration_inspect",
+        "office_collaboration_read",
         "office_collaboration_diff",
         "office_collaboration_events",
         "office_collaboration_apply",
@@ -104,6 +105,7 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "indexUtf16",
         "deleteUtf16",
         "document-replace-text",
+        "document-replace-paragraph",
         "expectedMatches",
         "document-set-page-color",
         "pageColor",
@@ -165,6 +167,26 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "fixture-markdown"
     );
     assert!(inspected["result"]["structuredContent"]["stateVectorBase64"].is_string());
+
+    let projected = call(
+        &mut stdin,
+        &mut stdout,
+        31,
+        "office_collaboration_read",
+        serde_json::json!({"store": replica_text}),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(projected["result"]["isError"], true, "{projected}");
+    assert_eq!(
+        projected["result"]["structuredContent"]["content"]["kind"],
+        "markdown"
+    );
+    assert_eq!(
+        projected["result"]["structuredContent"]["content"]["source"],
+        "# Shared\n\nYjs to Yrs."
+    );
+    assert!(projected["result"]["structuredContent"]["stateVectorBase64"].is_string());
 
     let ready = call(
         &mut stdin,

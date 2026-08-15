@@ -33,6 +33,7 @@ Use its typed tools rather than passing shell command strings:
 - `office_install_compat` prepares the optional pinned compatibility provider;
   in Code it must pass parent confirmation before network access.
 - `office_collaboration_create`, `office_collaboration_inspect`,
+  `office_collaboration_read`,
   `office_collaboration_diff`, `office_collaboration_events`,
   `office_collaboration_apply`, `office_collaboration_mutate`, and
   `office_collaboration_checkpoint` expose a durable Yjs/Yrs replica without
@@ -48,6 +49,11 @@ Collaboration tools operate on the same durable replica as `a3s-office collab`
 and are intentionally independent from in-memory OOXML sessions. They exchange
 standard Yjs v1 updates and state vectors; room transport, awareness, identity
 authentication, and authorization remain host responsibilities.
+
+Call `office_collaboration_read` before a local edit. It returns exact
+canonical Markdown source or an Office-owned Document projection with stable
+paragraph/text identities and the state vector required for a fail-closed
+mutation. Do not decode Office collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
 from a browser peer:
@@ -148,6 +154,11 @@ crosses an XML-node or inline-atom boundary:
   "ifStateVectorBase64": "..."
 }
 ```
+
+For a complete plain paragraph, prefer `document-replace-paragraph` with the
+`paragraphId`, `expectedTextId`, and complete `expectedText` returned by the
+latest projection. A concurrent user edit then fails closed instead of
+replacing unrelated document state.
 
 Insert a plain paragraph beside a stable paragraph, heading, or document
 caption in a bounded top-level section, nested list-item, table-cell/header, or

@@ -6,7 +6,8 @@ use a3s_office::{
     NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationEventBatch,
     NativeOfficeCollaborationEventsRequest, NativeOfficeCollaborationInspection,
     NativeOfficeCollaborationMode, NativeOfficeCollaborationMutationRequest,
-    NativeOfficeCollaborationStore, MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+    NativeOfficeCollaborationProjection, NativeOfficeCollaborationStore,
+    MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
     MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
 };
 use a3s_use_core::{UseError, UseResult};
@@ -244,6 +245,12 @@ pub(super) async fn inspect(input: OfficeCollaborationStoreInput) -> UseResult<s
     inspection_value(inspection)
 }
 
+pub(super) async fn read(input: OfficeCollaborationStoreInput) -> UseResult<serde_json::Value> {
+    let projection =
+        run_blocking(move || NativeOfficeCollaborationStore::open(input.store)?.project()).await?;
+    projection_value(projection)
+}
+
 pub(super) async fn diff(input: OfficeCollaborationDiffInput) -> UseResult<serde_json::Value> {
     let remote_state_vector = decode_optional_binary(
         input.state_vector_base64.as_deref(),
@@ -391,6 +398,20 @@ fn inspection_value(
 ) -> UseResult<serde_json::Value> {
     let state_vector_base64 = STANDARD.encode(&inspection.state_vector);
     let mut value = serde_json::to_value(inspection).map_err(output_encoding_error)?;
+    replace_binary_field(
+        &mut value,
+        "stateVector",
+        "stateVectorBase64",
+        state_vector_base64,
+    )?;
+    Ok(value)
+}
+
+fn projection_value(
+    projection: NativeOfficeCollaborationProjection,
+) -> UseResult<serde_json::Value> {
+    let state_vector_base64 = STANDARD.encode(&projection.state_vector);
+    let mut value = serde_json::to_value(projection).map_err(output_encoding_error)?;
     replace_binary_field(
         &mut value,
         "stateVector",
@@ -592,6 +613,7 @@ mod tests {
             "indexUtf16",
             "deleteUtf16",
             "document-replace-text",
+            "document-replace-paragraph",
             "expectedMatches",
             "document-set-page-color",
             "pageColor",

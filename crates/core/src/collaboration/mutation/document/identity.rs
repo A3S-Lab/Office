@@ -3,8 +3,8 @@ use yrs::{Any, Out, ReadTxn, Xml, XmlElementRef, XmlOut};
 
 use super::super::super::collaboration_error;
 
-pub(super) const PARAGRAPH_ID_ATTRIBUTE: &str = "paragraphId";
-pub(super) const TEXT_ID_ATTRIBUTE: &str = "textId";
+pub(in crate::collaboration) const PARAGRAPH_ID_ATTRIBUTE: &str = "paragraphId";
+pub(in crate::collaboration) const TEXT_ID_ATTRIBUTE: &str = "textId";
 pub(super) const ROW_ID_ATTRIBUTE: &str = "rowId";
 pub(super) const ROW_TEXT_ID_ATTRIBUTE: &str = "rowTextId";
 
@@ -23,7 +23,7 @@ pub(super) fn validate_paragraph_id_input(value: &str, field: &str) -> UseResult
     ))
 }
 
-pub(super) fn document_identity_attribute<T: ReadTxn>(
+pub(in crate::collaboration) fn document_identity_attribute<T: ReadTxn>(
     element: &XmlElementRef,
     transaction: &T,
     name: &str,
@@ -113,7 +113,7 @@ pub(super) fn table_row_text_id_rotations<T: ReadTxn>(
     Ok(rotations)
 }
 
-pub(super) fn is_identity_paragraph_tag(tag: &str) -> bool {
+pub(in crate::collaboration) fn is_identity_paragraph_tag(tag: &str) -> bool {
     matches!(tag, "paragraph" | "heading" | "documentCaption")
 }
 

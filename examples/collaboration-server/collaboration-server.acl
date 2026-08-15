@@ -1,0 +1,20 @@
+bind = "127.0.0.1:8787"
+public_ws_url = concat(
+  "ws://",
+  env("A3S_OFFICE_PUBLIC_HOST", "127.0.0.1:8787"),
+  "/collaboration"
+)
+data_dir = env("A3S_OFFICE_DATA_DIR", "./data/collaboration")
+namespace = "a3s.office"
+allowed_origins = [
+  "http://127.0.0.1:4175",
+  "http://localhost:4175",
+]
+ticket_ttl_seconds = 300
+poll_interval_milliseconds = 100
+max_document_payload_bytes = 67108864
+max_awareness_payload_bytes = 262144
+
+# Secrets are deliberately read from the environment and never committed.
+ticket_secret = env("A3S_OFFICE_TICKET_SECRET")
+admin_token = env("A3S_OFFICE_ADMIN_TOKEN")

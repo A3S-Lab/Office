@@ -4,6 +4,36 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.7.2 - 2026-08-15
+
+- Added an Office-owned native projection for initialized Markdown and
+  Document collaboration replicas. Rust, `collab read`, and
+  `office_collaboration_read` now expose canonical Markdown source or bounded
+  Document paragraphs with structure, stable Word identities, current option
+  fields, agent-readable text, sequence, and state vector. The new
+  `document-replace-paragraph` mutation matches `paragraphId`, current
+  `textId`, and complete text before changing one plain paragraph, so browser
+  edits invalidate stale agent decisions without replacing the document.
+  Restart, reordered delivery, browser edits, CLI, and MCP regressions cover
+  the read/mutate path.
+- Added a complete runnable A3S Boot 0.2 collaboration backend with typed ACL
+  configuration, HMAC room tickets, Origin and permission enforcement,
+  standard Yjs sync messages, crash-safe Yrs persistence, Awareness fan-out,
+  stale-peer cleanup, deterministic delivery receipts, and reconnect repair.
+  The browser adapter, service runbook, and integration tests cover two-client
+  broadcast, read-only synchronization, restart recovery, ticket tampering,
+  and the repository API envelope.
+- Made real-time collaboration visible on the Playground homepage with a
+  two-participant Document demo, remote cursor, participant roster, responsive
+  phone layout, and a canonical link to the bilingual backend guide. Removed
+  the remaining route-dependent Playground rows from every frozen
+  documentation homepage. A3S Test regressions now cover both the capability
+  entry and the complete documentation navigation path.
+- Patched the initial Yjs-to-ProseMirror selection restoration to resolve the
+  nearest valid text position inside nested Document sections. Collaboration
+  startup no longer emits a `TextSelection` warning in desktop or compact
+  browsers.
+
 ## 0.7.1 - 2026-08-15
 
 - Made real-time collaboration a first-class, bilingual documentation path.

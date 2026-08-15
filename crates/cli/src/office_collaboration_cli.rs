@@ -32,6 +32,7 @@ const HELP: &str = concat!(
     "  a3s-office collab create <store> --artifact-id <id> --kind <kind> --actor-id <id> --operation-id <id> [--actor-kind human|agent|system] [--mode view|comment|suggest|edit] [--namespace <name>] [--client-id <u53>] [--json]\n",
     "  a3s-office collab join <store> --artifact-id <id> --kind <kind> --actor-id <id> --operation-id <id> --input <update.bin> [create options] [--json]\n",
     "  a3s-office collab inspect <store> [--json]\n",
+    "  a3s-office collab read <store> [--json]\n",
     "  a3s-office collab diff <store> [--state-vector <base64>|--state-vector-input <file>] [--output <update.bin>] [--json]\n",
     "  a3s-office collab sync-step1 <store> [--output <message.bin>] [--json]\n",
     "  a3s-office collab encode-update --input <update.bin> [--output <message.bin>] [--json]\n",
@@ -43,7 +44,7 @@ const HELP: &str = concat!(
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
-    "Typed mutations: markdown-replace/splice; document-replace-text; document-insert/delete-paragraph; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
+    "Typed mutations: markdown-replace/splice; document-replace-text/paragraph; document-insert/delete-paragraph; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -64,6 +65,7 @@ pub(crate) async fn run(args: &[String]) -> UseResult<CommandOutput> {
         Some("create") => create(&filtered, false).await,
         Some("join") => create(&filtered, true).await,
         Some("inspect") => inspect(&filtered).await,
+        Some("read" | "project") => project(&filtered).await,
         Some("diff" | "synchronize" | "sync") => diff(&filtered).await,
         Some("sync-step1") => sync_step1(&filtered).await,
         Some("encode-update") => encode_update(&filtered).await,
@@ -180,6 +182,24 @@ async fn inspect(args: &[String]) -> UseResult<CommandOutput> {
             inspection.store.display(),
             inspection.current_sequence,
             inspection.update_count
+        ),
+        data,
+    ))
+}
+
+async fn project(args: &[String]) -> UseResult<CommandOutput> {
+    let parsed = ParsedOptions::parse(args)?;
+    parsed.reject_unknown(&[])?;
+    let store_path = parsed.one_positional("collaboration replica path")?;
+    let projection =
+        spawn_blocking(move || NativeOfficeCollaborationStore::open(store_path)?.project()).await?;
+    let data = value_with_base64(&projection, &projection.state_vector)?;
+    Ok(CommandOutput::success(
+        format!(
+            "Read {} collaboration artifact '{}' at sequence {}.",
+            projection.artifact_kind.as_str(),
+            projection.artifact_id,
+            projection.sequence
         ),
         data,
     ))
@@ -630,7 +650,7 @@ fn help() -> CommandOutput {
     CommandOutput::success(
         HELP,
         json!({
-            "commands": ["create", "join", "inspect", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "watch", "checkpoint", "leave"],
+            "commands": ["create", "join", "inspect", "read", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "watch", "checkpoint", "leave"],
             "encoding": "yjs-v1",
             "syncProtocol": "y-sync-v1",
             "formats": ["document", "markdown", "spreadsheet", "presentation", "pdf"],

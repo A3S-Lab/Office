@@ -1,0 +1,152 @@
+---
+title: A3S Boot 实时协作后端
+description: 为全部 A3S Office 编辑器运行带鉴权、持久化与在线成员同步的 Yjs/Yrs 后端。
+---
+
+# A3S Boot 实时协作后端
+
+仓库现在提供一个可以直接运行的完整后端，源码位于
+[`examples/collaboration-server`](https://github.com/A3S-Lab/Office/tree/main/examples/collaboration-server)。
+它不是只展示接口形状的伪代码。Rust 集成测试会真正打开两个经过鉴权的 WebSocket
+连接，把浏览器生成的 Yjs 更新通过 Yrs 持久化，检查房间广播，并验证只读用户无法写入。
+
+这个示例组合了 `a3s-boot` 0.2 与 `a3s-office` 原生协作存储：
+
+| 职责 | 实现 |
+| --- | --- |
+| HTTP 与 WebSocket | A3S Boot 和 Axum Adapter |
+| 配置 | `ConfigModule` 读取并验证 A3S ACL |
+| 房间鉴权 | 五分钟有效的 HMAC 签名票据，绑定文件、用户、模式、命名空间与类型 |
+| 文档同步 | 标准 Yjs v1 `sync-step-1`、`sync-step-2` 与 `update` |
+| 持久化 | Yrs 崩溃安全更新日志、操作回执和检查点 |
+| 在线状态 | 有大小限制的 Yjs Awareness 转发，绝不写入文档历史 |
+| 原生智能体 | 使用限定智能体身份的房间票据；宿主桥接 CLI/MCP 的传输中立 JSONL 会话 |
+| 权限 | 只有 `edit` 票据能发布文档更新，所有模式都能接收状态和在线成员 |
+
+## 启动服务
+
+在 Office 仓库根目录执行：
+
+```bash
+export A3S_OFFICE_TICKET_SECRET="$(openssl rand -hex 32)"
+export A3S_OFFICE_ADMIN_TOKEN="$(openssl rand -hex 24)"
+cargo run -p a3s-office-collaboration-server
+```
+
+仓库中的
+[`collaboration-server.acl`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/collaboration-server.acl)
+默认监听 `127.0.0.1:8787`，将副本存放在 `./data/collaboration`，并允许本地
+Playground 的两个 Origin。密钥通过 ACL 的 `env(...)` 读取，不会写进配置文件。
+
+部署时可以把另一份 ACL 路径作为第一个参数：
+
+```bash
+cargo run -p a3s-office-collaboration-server -- /etc/a3s/office-collaboration.acl
+```
+
+## 签发房间票据
+
+宿主后端应先完成现有的用户登录和文件权限检查，再调用受保护的票据接口：
+
+```bash
+curl --fail http://127.0.0.1:8787/api/collaboration/tickets \
+  --header "Authorization: Bearer ${A3S_OFFICE_ADMIN_TOKEN}" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "artifactId": "quarterly-plan",
+    "artifactKind": "document",
+    "actorId": "user-42",
+    "actorKind": "human",
+    "mode": "edit"
+  }'
+```
+
+标准 API 响应的 `data.webSocketUrl` 已包含短期、限定房间的票据。浏览器只接收这个
+URL。不要把 `A3S_OFFICE_ADMIN_TOKEN` 放进前端代码。
+
+## 接入浏览器
+
+完整的
+[`client.ts`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/client.ts)
+实现了 `OfficeCollaborationTransport`、有界 base64 编码、Awareness 转发、离线成员清理、
+指数退避重连，以及重连后的双向状态向量握手。
+
+```ts
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+  initializeOfficeDocumentCollaboration,
+} from '@a3s-lab/office/core';
+import { connectA3sBootCollaborationRoom } from './client';
+
+const document = new Y.Doc();
+const awareness = new Awareness(document);
+const session = createOfficeCollaborationSession({
+  artifactId: 'quarterly-plan',
+  kind: 'document',
+  document,
+  awareness,
+  actor: { id: 'user-42', name: 'Mina', kind: 'human' },
+  mode: 'edit',
+});
+
+// 新房间只能由服务端或一个被选中的初始化者写入初始内容。
+if (!session.metadata()?.initialized) {
+  initializeOfficeDocumentCollaboration(session, initialContent);
+}
+
+const presence = createOfficeCollaborationPresence(session);
+const room = connectA3sBootCollaborationRoom({
+  webSocketUrl: ticketResponse.data.webSocketUrl,
+  session,
+  awareness,
+  onStatus: reportConnectionStatus,
+});
+```
+
+同一个 `session` 和 `presence` 可以传给任意 React、Vue 或 Web Component 编辑器。
+组件卸载时，依次销毁 `room`、`presence`、`session`、`awareness` 与宿主持有的 `Y.Doc`。
+
+## 接入原生智能体
+
+宿主先确认智能体有权访问文件，再签发 `actorKind: "agent"` 的票据。浏览器和原生
+参与者使用同一套 Office WebSocket 消息。`a3s-office collab session` 有意只提供
+JSONL 宿主通道，不会自行选择网络 Provider。宿主把它输出的 `outbound` 记录转成
+`collaboration.document` 事件，再把房间中的文档事件以 `receive` 记录写回 stdin。
+
+每个智能体应继续持有独立、绑定参与者身份的副本，不要让它直接打开服务内部的
+`data_dir`。JSONL 与 WebSocket 之间的进程桥和重连生命周期由宿主负责；示例已经完整
+实现服务端的房间、鉴权、持久化、广播与协议校验边界。
+
+## 重连与持久化语义
+
+断网期间的本地变更继续保存在浏览器 `Y.Doc` 中。适配器不会把每个发送失败的帧再维护
+一份内存队列。重新连上后，浏览器和服务端持久副本都会发送状态向量，双方只交换对方
+缺失的增量。服务端根据房间身份、发送者 Client ID、消息类型和更新字节生成稳定操作
+ID，所以重复投递保持幂等。
+
+服务端会先持久化收到的 `sync-step-2` 或 `update`，再广播并返回
+`collaboration.ack`。Awareness 只保存在内存。连接关闭时，服务端广播
+`collaboration.peer-left`，其他浏览器会立即删除离线成员，不必等待 Awareness 超时。
+
+## 安全与部署边界
+
+示例会同时校验票据、URL 路径、协议版本、文件类型、命名空间、Yjs Client ID、
+Office Presence 用户、会话模式、Origin、载荷大小和票据有效期。客户端传来的 origin
+不会直接作为审计身份，服务端会用签名票据中的用户重新生成可信来源。
+
+当前拓扑完整支持单个服务进程。多副本部署需要使用房间粘性路由，或者增加 A3S Boot
+Redis/NATS 跨进程广播，并为共享存储建立单写者或分布式锁策略。生产环境还应使用
+`wss://`，限制票据签发和房间广播速率，并把票据接口放在宿主应用的认证后端之后。
+
+## 验证
+
+```bash
+cargo test -p a3s-office-collaboration-server
+bun run collaboration-server:typecheck
+```
+
+继续阅读[多人实时协作](./collaboration.mdx)，可以查看五种编辑器的数据模型、初始化
+规则、原生智能体变更和各框架绑定。

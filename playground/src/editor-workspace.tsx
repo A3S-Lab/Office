@@ -49,11 +49,11 @@ import {
   type PlaygroundPdfAnnotationStage,
   usePlaygroundPdfCollaborationFixture,
 } from './pdf-collaboration-fixture';
+import type { NoticeTone } from './playground-types';
 import {
   type PlaygroundPresentationElementStage,
   usePlaygroundPresentationCollaborationFixture,
 } from './presentation-collaboration-fixture';
-import type { NoticeTone } from './playground-types';
 import {
   type PlaygroundSpreadsheetCellStage,
   usePlaygroundSpreadsheetCollaborationFixture,
@@ -64,6 +64,7 @@ const assistantMaximumWidth = 680;
 
 export function EditorWorkspace({
   artifact,
+  collaborationDemo,
   sidebarOpen,
   assistantModal,
   assistantOpen,
@@ -80,6 +81,7 @@ export function EditorWorkspace({
   onNotice,
 }: {
   artifact: OfficeArtifact;
+  collaborationDemo: boolean;
   sidebarOpen: boolean;
   assistantModal: boolean;
   assistantOpen: boolean;
@@ -108,16 +110,16 @@ export function EditorWorkspace({
   const controlledReviewFixtureReady =
     artifact.content.type === 'document' &&
     artifact.content.html.includes(CONTROLLED_REVIEW_COMMENT_ID);
+  const collaborationPresenceFixtureEnabled =
+    artifact.content.type === 'document' &&
+    (collaborationDemo || e2eFixture === 'collaboration-presence');
   const collaborationPresenceFixture =
     usePlaygroundCollaborationPresenceFixture(
-      e2eFixture === 'collaboration-presence' &&
+      collaborationPresenceFixtureEnabled &&
         artifact.content.type === 'document'
         ? { artifactId: artifact.id, content: artifact.content }
         : undefined,
     );
-  const collaborationPresenceFixtureEnabled =
-    e2eFixture === 'collaboration-presence' &&
-    artifact.content.type === 'document';
   const pdfCollaborationFixtureEnabled =
     e2eFixture === 'collaboration-pdf-annotations' &&
     artifact.content.type === 'pdf';

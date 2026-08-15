@@ -79,8 +79,36 @@ suite "office-docs-navigation" {
             path = "screenshots/collaboration-guide.png"
         }
 
-        accessibility "collaboration-accessibility" {
-            path = "accessibility/collaboration.json"
+        expect "collaboration-server-entry-is-visible" {
+            visible = css("main a[href$='/components/collaboration-server.html']")
+        }
+
+        click "open-collaboration-server-guide" {
+            target = css("main a[href$='/components/collaboration-server.html']")
+        }
+
+        wait "collaboration-server-route" {
+            url = "http://127.0.0.1:4175/docs/components/collaboration-server.html"
+        }
+
+        expect "collaboration-server-runbook-is-complete" {
+            text = "启动服务"
+        }
+
+        expect "collaboration-server-ticket-flow-is-documented" {
+            text = "签发房间票据"
+        }
+
+        expect "native-agent-boundary-is-documented" {
+            text = "接入原生智能体"
+        }
+
+        screenshot "collaboration-server-guide" {
+            path = "screenshots/collaboration-server-guide.png"
+        }
+
+        accessibility "collaboration-server-accessibility" {
+            path = "accessibility/collaboration-server.json"
             interactive = true
         }
 
@@ -208,6 +236,59 @@ suite "office-docs-navigation" {
 
         page_errors "browser-errors" {
             path = "diagnostics/page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "open-frozen-collaboration-server-release" {
+        name = "Open the frozen 0.7.2 collaboration backend guide in both languages"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "release-documentation" {
+            width = 1200
+            height = 900
+        }
+
+        navigate "open-chinese-collaboration-server-release" {
+            url = "http://127.0.0.1:4175/docs/0.7.2/components/collaboration-server.html"
+        }
+
+        expect "chinese-collaboration-server-release-ready" {
+            text = "A3S Boot 实时协作后端"
+        }
+
+        expect "chinese-runbook-is-frozen" {
+            text = "启动服务"
+        }
+
+        expect "release-version-control-is-visible" {
+            visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.7.2']) > .rp-nav-menu__item__container")
+        }
+
+        screenshot "chinese-collaboration-server-release" {
+            path = "screenshots/collaboration-server-0.7.2-zh.png"
+        }
+
+        navigate "open-english-collaboration-server-release" {
+            url = "http://127.0.0.1:4175/docs/0.7.2/en/components/collaboration-server.html"
+        }
+
+        expect "english-collaboration-server-release-ready" {
+            text = "A3S Boot collaboration server"
+        }
+
+        expect "english-ticket-runbook-is-frozen" {
+            text = "Issue a room ticket"
+        }
+
+        console "release-browser-console" {
+            path = "diagnostics/release-console.json"
+            clear = false
+        }
+
+        page_errors "release-browser-errors" {
+            path = "diagnostics/release-page-errors.json"
             clear = false
         }
     }
