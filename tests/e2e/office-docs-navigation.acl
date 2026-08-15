@@ -17,7 +17,7 @@ suite "office-docs-navigation" {
         }
 
         expect "documentation-center-ready" {
-            text = "A3S Office 文档"
+            text = "从嵌入编辑器到多人实时协作"
         }
 
         expect "documentation-defaults-to-chinese" {
@@ -36,12 +36,24 @@ suite "office-docs-navigation" {
             text = "DocumentEditor"
         }
 
+        expect "workflow-navigation-is-visible" {
+            visible = css("main .docs-home-flow")
+        }
+
+        expect "collaboration-stage-is-emphasized" {
+            visible = css("main .docs-home-stage--collaborate")
+        }
+
         expect "collaboration-entry-is-prominent" {
-            visible = css("main a[href$='/components/collaboration.html']")
+            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
+        }
+
+        expect "collaboration-backend-entry-is-prominent" {
+            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
         }
 
         click "open-collaboration-guide" {
-            target = css("main a[href$='/components/collaboration.html']")
+            target = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
         }
 
         wait "latest-collaboration-route" {
@@ -100,6 +112,61 @@ suite "office-docs-navigation" {
 
         page_errors "collaboration-browser-errors" {
             path = "diagnostics/collaboration-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "scan-documentation-center-on-phone" {
+        name = "Scan the documentation workflow and collaboration path on a phone"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "phone-documentation" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-phone-documentation-center" {
+            url = "http://127.0.0.1:4175/docs/"
+        }
+
+        expect "phone-documentation-hero-is-visible" {
+            visible = css("main .docs-home-hero")
+        }
+
+        expect "phone-primary-action-is-visible" {
+            visible = css("main .docs-home-action--primary[href$='/guide/index.html']")
+        }
+
+        expect "phone-workflow-is-readable" {
+            visible = css("main .docs-home-flow")
+        }
+
+        expect "phone-collaboration-is-discoverable" {
+            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
+        }
+
+        expect "phone-backend-guide-is-discoverable" {
+            visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
+        }
+
+        screenshot "phone-documentation-center" {
+            path = "screenshots/documentation-center-phone.png"
+        }
+
+        accessibility "phone-documentation-accessibility" {
+            path = "evidence/documentation-center-phone.json"
+            interactive = true
+        }
+
+        console "phone-documentation-console" {
+            path = "diagnostics/documentation-center-phone-console.json"
+            clear = false
+        }
+
+        page_errors "phone-documentation-errors" {
+            path = "diagnostics/documentation-center-phone-errors.json"
             clear = false
         }
     }

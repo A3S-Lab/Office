@@ -54,6 +54,7 @@ export default defineConfig({
   themeConfig: {
     darkMode: false,
     search: true,
+    fallbackHeadingTitle: false,
     enableContentAnimation: true,
     editLink: {
       docRepoBaseUrl: 'https://github.com/A3S-Lab/Office/tree/main/docs',
