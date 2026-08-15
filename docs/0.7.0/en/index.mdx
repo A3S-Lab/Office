@@ -1,0 +1,40 @@
+---
+title: A3S Office 0.7.0 documentation
+description: Integrate and extend A3S Office 0.7.0, then automate local Office files.
+---
+
+# A3S Office 0.7.0 documentation
+
+This is the frozen documentation for A3S Office 0.7.0. It covers the document,
+Markdown, spreadsheet, presentation, and PDF browser components as they were
+released in that version.
+
+## Choose a path
+
+| Goal | Start here |
+| --- | --- |
+| Evaluate an editor in the browser | <PlaygroundLink>Open the Playground</PlaygroundLink> |
+| Embed an editor in an application | [Getting started](./guide/index.mdx) |
+| Compare React, Vue, and custom-element bindings | [Component integration](./components/index.mdx) |
+| Configure one editor in detail | [Editor API](./components/document.mdx) |
+| Add host actions or TipTap extensions | [Extension model](./components/extensions.mdx) |
+| Inspect or edit files from a coding agent | [CLI and Skill](./automation/index.mdx) |
+
+## Editor surfaces
+
+| Surface | Public component | Primary engine |
+| --- | --- | --- |
+| Document | `DocumentEditor` | TipTap/ProseMirror plus the A3S Office layout kernel |
+| Markdown | `MarkdownEditor` | TipTap visual editing and a controlled Markdown source model |
+| Spreadsheet | `SpreadsheetEditor` | Grid interaction plus the A3S Office calculation kernel |
+| Presentation | `PresentationEditor` | Scene graph with on-demand TipTap text editing |
+| PDF | `PdfViewer` | PDFium WebAssembly rendering and annotation controllers |
+
+The public package is `@a3s-lab/office`. It exposes typed core models, React
+components, Vue bindings, custom elements, and one shared stylesheet.
+
+## Languages and versions
+
+Use the navigation controls to switch between Simplified Chinese and English,
+or between `latest` and a published release. Search stays scoped to the current
+language and version so API results from different releases are never mixed.

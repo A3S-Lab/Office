@@ -11,6 +11,7 @@ import { presentationCollaborationFixture as presentationFixture } from './fixtu
 import {
   NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
   NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+  NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
   NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
 } from './fixtures/native-presentation-element-updates';
 
@@ -850,15 +851,18 @@ test('applies native Presentation element updates across reordered delivery', ()
   for (const encoded of [
     NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
   ]) {
     Y.applyUpdate(orderedDocument, decodeBase64(encoded));
   }
   for (const encoded of [
     NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
   ]) {
     Y.applyUpdate(reorderedDocument, decodeBase64(encoded));
   }
@@ -874,14 +878,14 @@ test('applies native Presentation element updates across reordered delivery', ()
   );
   expect(contents[0]).toEqual(contents[1]);
   expect(contents[0].slides[0].elements[0]).toMatchObject({
+    id: 'element-native',
+    text: 'Native interop object',
+  });
+  expect(contents[0].slides[0].elements[1]).toMatchObject({
     id: 'element-title',
     text: 'Native interop title',
     x: 16,
     fill: '#DBEAFE',
-  });
-  expect(contents[0].slides[0].elements[1]).toMatchObject({
-    id: 'element-native',
-    text: 'Native interop object',
   });
   expect(contents[0].slides[1].elements).toEqual([]);
 });

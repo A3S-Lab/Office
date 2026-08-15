@@ -150,9 +150,10 @@ round trip preserves supported and untouched unsupported OOXML.
 
 ### Phase 3: Presentation
 
-Status: browser collaboration foundation and native conflict-local scene-element
-mutations implemented; rich-text CRDT, structural native operations, and PPTX
-round-trip concurrency coverage are pending.
+Status: browser collaboration foundation and native conflict-local
+scene-element content and z-order mutations implemented; rich-text CRDT,
+remaining structural native operations, and PPTX round-trip concurrency
+coverage are pending.
 
 - Stable slide/master/layout order arrays and ID-keyed record maps avoid a
   serialized whole-deck root. Scene elements and slide comments are ID-keyed
@@ -171,21 +172,25 @@ round-trip concurrency coverage are pending.
 - Tests cover bootstrap, identity validation, separate-record convergence,
   stale snapshots, concurrent comments, local-only undo, permissions, mounted
   projection, and framework adapters.
-- Rust, CLI, MCP, and A3S Code can create, optimistically update, or tombstone
-  one element in a slide, master, or layout. Creation can insert after a stable
-  active element. Update compares complete expected/current/next records and
-  writes only changed top-level fields, so unrelated concurrent changes merge
-  while a stale same-field edit fails atomically. Delete requires an exact
-  complete-element match. Browser/Yrs fixtures, native restart, duplicate and
-  reordered delivery, real CLI/MCP subprocesses, and the Playground cover the
-  same lifecycle.
+- Rust, CLI, MCP, and A3S Code can create, optimistically update, move, or
+  tombstone one element in a slide, master, or layout. Creation can insert
+  after a stable active element. Update compares complete
+  expected/current/next records and writes only changed top-level fields, so
+  unrelated concurrent changes merge while a stale same-field edit fails
+  atomically. Move compares stable observed and requested predecessor IDs,
+  treats an already-satisfied destination as idempotent, and changes only the
+  moved element's order entry; `null` means the first order position. Delete
+  requires an exact complete-element match. Browser/Yrs fixtures, native
+  restart, duplicate and reordered delivery, real CLI/MCP subprocesses, and
+  the Playground cover update/create/move/delete interoperability.
 
 Remaining:
 
 - Bind editable scene text to collaborative XML fragments instead of scalar
   text/run replacement.
 - Add structural native operations and explicit conflict handling for slide
-  order, z-order, grouping, and theme changes.
+  order, grouping, and theme changes; extend z-order beyond stable scene-element
+  moves where a concrete browser workflow requires it.
 - Keep derived thumbnails and layout measurements local and prove this in UI
   tests.
 - Add offline/reordered-update property tests plus merged PPTX export/reopen.
@@ -389,10 +394,11 @@ projection are pending.
   an exact complete-cell match. They preserve the browser's field-addressed
   representation, dense/sparse projection mode, and atomic fail-closed
   semantics without replacing a worksheet or workbook.
-- Presentation scene-element mutations create, update, or tombstone one stable
-  object inside a slide, master, or layout. Canonical creation claims prevent
-  conflicting same-ID reuse, optimistic top-level field guards merge unrelated
-  concurrent edits, and exact deletion guards prevent a stale destructive
+- Presentation scene-element mutations create, update, move, or tombstone one
+  stable object inside a slide, master, or layout. Canonical creation claims
+  prevent conflicting same-ID reuse, optimistic top-level field guards merge
+  unrelated concurrent edits, stable predecessor guards move one order entry
+  without array indexes, and exact deletion guards prevent a stale destructive
   write without replacing the deck or container.
 - PDF form-value mutations write the browser-compatible conflict-local record
   roots by fully-qualified field name, retain idempotent receipts and optional
@@ -422,7 +428,7 @@ projection are pending.
   an authorization token.
 - Cross-language tests apply deterministic native UTF-16 Markdown, ProseMirror
   Document text/options/paragraph, Spreadsheet cell, Presentation
-  scene-element, and PDF annotation/form-value updates in browser Yjs,
+  scene-element content/z-order, and PDF annotation/form-value updates in browser Yjs,
   including concurrent browser/native paragraph, cell-leaf, element-field,
   annotation-leaf, and PDF form edits, in addition to importing browser Yjs
   fixtures in Yrs.
@@ -432,7 +438,7 @@ projection are pending.
 
 Remaining:
 
-- Extend typed format-model mutations to Spreadsheet and Presentation
+- Extend typed format-model mutations to Spreadsheet and remaining Presentation
   structural/rich-text operations plus PDF signatures; deepen Document
   mutations to additional nested structures and review operations, and add
   durable comment/suggest operations before enabling those modes for local

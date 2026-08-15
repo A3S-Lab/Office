@@ -185,6 +185,16 @@ pub enum NativeOfficeCollaborationMutation {
         container_id: String,
         expected_element: JsonValue,
     },
+    /// Move one active scene element in its container z-order. Stable
+    /// predecessor identities guard the observed source position and express
+    /// the requested destination; `None` means the first order-array position.
+    PresentationMoveElement {
+        container_kind: NativeOfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        expected_after_element_id: Option<String>,
+        after_element_id: Option<String>,
+    },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only
     /// annotation types supported by the browser projection.

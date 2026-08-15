@@ -2,7 +2,7 @@ suite "collaboration-presentation-elements" {
     version = 1
 
     scenario "project-native-presentation-element-lifecycle" {
-        name = "Project native Presentation element update, create, and delete"
+        name = "Project native Presentation element update, create, move, and delete"
         surface = "web"
         timeout_ms = 60000
 
@@ -58,6 +58,22 @@ suite "collaboration-presentation-elements" {
 
         expect "created-scene-element-visible" {
             text = "Native interop object"
+        }
+
+        click "move-scene-element" {
+            target = role("button", "模拟原生调整 Presentation 对象层级")
+        }
+
+        wait "native-scene-element-reordered" {
+            visible = css("[data-testid='presentation-collaboration-element-status'][data-state='reordered']")
+        }
+
+        expect "reordered-status-visible" {
+            text = "代理已调整共享对象层级"
+        }
+
+        screenshot "reordered-scene-element" {
+            path = "screenshots/presentation-native-element-reordered.png"
         }
 
         click "open-second-slide" {

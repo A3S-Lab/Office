@@ -139,9 +139,9 @@ The images below are committed visual-regression baselines from the real
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
   vectors, perform authorized typed Markdown, Document, Spreadsheet cell,
-  Presentation scene-element, and PDF annotation, form-value, and review
-  changes, retain browser/native actor attribution, and checkpoint without
-  replacing a whole Office file.
+  Presentation scene-element and z-order, and PDF annotation, form-value, and
+  review changes, retain browser/native actor attribution, and checkpoint
+  without replacing a whole Office file.
 
 ## Quick start
 
@@ -1038,6 +1038,14 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/deck.replica \
   --operation-id edit-46 \
   --mutation '{"type":"presentation-update-element","containerKind":"slide","containerId":"slide-1","elementId":"title-1","expectedElement":{"id":"title-1","type":"text","x":10,"y":10,"width":80,"height":20,"text":"Draft"},"nextElement":{"id":"title-1","type":"text","x":16,"y":10,"width":80,"height":20,"text":"Final"}}' --json
 
+# Move that element to the first order position after verifying its currently
+# observed predecessor. Destination and source positions use stable IDs, not
+# array indexes; null means no predecessor.
+cargo run -p a3s-office-cli -- collab mutate .a3s/deck.replica \
+  --artifact-id deck --kind presentation --actor-id agent-7 --mode edit \
+  --operation-id move-46 \
+  --mutation '{"type":"presentation-move-element","containerKind":"slide","containerId":"slide-1","elementId":"title-1","expectedAfterElementId":"background-1","afterElementId":null}' --json
+
 # Set one PDF form value through its stable fully-qualified field name.
 cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
   --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
@@ -1106,8 +1114,13 @@ plus a canonical immutable claim inside a slide, master, or layout and can
 place it after a stable active element. Presentation update compares complete
 expected/current/next elements and writes only changed top-level fields, so
 unrelated concurrent geometry, text, or style changes merge while a stale
-same-field edit fails. Exact deletion writes a durable tombstone, and element
-IDs and types never drift or become reusable. PDF annotation creation accepts the
+same-field edit fails. Presentation move compares the stable observed and
+requested predecessor IDs instead of array indexes; `null` means the first
+element-order position. An already-satisfied destination is idempotent, while
+a stale source position or unavailable anchor fails before a durable update.
+Only the moved element's order entry changes; no object fields, container, or
+deck are replaced. Exact deletion writes a durable tombstone, and element IDs
+and types never drift or become reusable. PDF annotation creation accepts the
 portable browser record for FreeText, Highlight, Underline, StrikeOut, or Ink,
 writes `source: created`, and commits its immutable claim atomically. An update
 supplies complete `expectedAnnotation` and `nextAnnotation` values; recursive
@@ -1185,6 +1198,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/docs/0.7.0/)
 - [A3S Office 0.6.0 documentation](https://a3s-lab.github.io/Office/docs/0.6.0/)
 - [A3S Office 0.5.0 documentation](https://a3s-lab.github.io/Office/docs/0.5.0/)
 - [A3S Office 0.4.0 documentation](https://a3s-lab.github.io/Office/docs/0.4.0/)

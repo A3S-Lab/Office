@@ -85,6 +85,14 @@ editing internal Yjs roots. `presentation-create-element` accepts one complete
 element in a stable `slide`, `master`, or `layout` container and may include an
 active `afterElementId`. `presentation-update-element` requires the complete
 observed and desired objects and merges only unrelated top-level field changes.
+`presentation-move-element` requires the stable observed predecessor in
+`expectedAfterElementId` and the requested predecessor in `afterElementId`;
+`null` means the first element-order position. An element already at the
+requested position is an idempotent no-op regardless of the observed
+predecessor. Otherwise a stale source predecessor or a missing/deleted target
+anchor fails without a durable update. The move removes and reinserts only that
+element's order entry; it does not overwrite scene-object fields or the whole
+container.
 `presentation-delete-element` requires an exact complete observed object and
 writes a durable tombstone. Element ID and type are immutable, and a deleted ID
 cannot be reused. Read [mcp.md](mcp.md#real-time-collaboration) for the complete

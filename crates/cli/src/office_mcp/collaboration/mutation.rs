@@ -192,6 +192,14 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         container_id: String,
         expected_element: JsonValue,
     },
+    /// Move one active scene element after its stable observed predecessor.
+    PresentationMoveElement {
+        container_kind: OfficeCollaborationPresentationContainerKind,
+        container_id: String,
+        element_id: String,
+        expected_after_element_id: Option<String>,
+        after_element_id: Option<String>,
+    },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
         annotation_id: String,
@@ -365,6 +373,19 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 container_kind: container_kind.into(),
                 container_id,
                 expected_element,
+            },
+            OfficeCollaborationMutation::PresentationMoveElement {
+                container_kind,
+                container_id,
+                element_id,
+                expected_after_element_id,
+                after_element_id,
+            } => Self::PresentationMoveElement {
+                container_kind: container_kind.into(),
+                container_id,
+                element_id,
+                expected_after_element_id,
+                after_element_id,
             },
             OfficeCollaborationMutation::PdfCreateAnnotation {
                 annotation_id,

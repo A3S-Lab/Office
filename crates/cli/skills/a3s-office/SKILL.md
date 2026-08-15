@@ -92,9 +92,12 @@ requires the exact complete observed cell. Both use a stable sheet ID and
 zero-based row/column coordinates. Presentation element operations target a
 stable slide, master, or layout. Create uses a complete object and optional
 active insertion anchor; update uses complete expected/next objects and merges
-only unrelated top-level fields; delete requires the exact complete object and
-writes a durable tombstone. Preserve immutable element ID/type and never reuse
-a tombstoned ID.
+only unrelated top-level fields. Move uses stable observed and requested
+predecessor IDs instead of array indexes; `null` means the first order
+position, and an already-satisfied destination is idempotent. A stale source
+position or unavailable anchor fails before a durable update. Delete requires
+the exact complete object and writes a durable tombstone. Preserve immutable
+element ID/type and never reuse a tombstoned ID.
 
 In a CLI-only agent host, run the collaboration event stream in a separate
 process:
@@ -140,9 +143,10 @@ replica. Spreadsheet cells use `spreadsheet-set-cell` with an observed
 `expectedCell` and complete `nextCell`, or `spreadsheet-delete-cell` with an
 exact complete `expectedCell`; stale same-leaf edits and stale deletes fail
 before a durable update. Presentation uses
-`presentation-create/update/delete-element` with a stable `containerKind` and
-`containerId`; stale same-field updates, conflicting same-ID creation, missing
-anchors, and stale deletes fail before a durable update.
+`presentation-create/update/move/delete-element` with a stable `containerKind`
+and `containerId`; stale same-field updates, conflicting same-ID creation,
+stale source predecessors, missing anchors, and stale deletes fail before a
+durable update.
 
 ## Choose the Surface
 

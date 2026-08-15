@@ -659,6 +659,8 @@ function presentationCollaborationElementStatus(
       return '代理已更新共享标题对象';
     case 'created':
       return '代理已创建共享场景对象';
+    case 'reordered':
+      return '代理已调整共享对象层级';
     case 'deleted':
       return '代理已删除第二页场景对象';
   }
@@ -673,6 +675,8 @@ function presentationCollaborationElementAction(
     case 'updated':
       return '模拟原生创建 Presentation 对象';
     case 'created':
+      return '模拟原生调整 Presentation 对象层级';
+    case 'reordered':
       return '模拟原生删除 Presentation 对象';
     case 'deleted':
       return '原生 Presentation 对象生命周期已完成';

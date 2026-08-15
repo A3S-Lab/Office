@@ -137,10 +137,65 @@ async fn mcp_manages_browser_compatible_presentation_scene_elements() {
         2
     );
 
-    let deleted = call(
+    let created_second_element = call(
         &mut stdin,
         &mut stdout,
         5,
+        "office_collaboration_mutate",
+        mutation_arguments(
+            &replica,
+            "presentation-create-second-element-mcp",
+            serde_json::json!({
+                "type": "presentation-create-element",
+                "containerKind": "layout",
+                "containerId": "layout-1",
+                "element": presentation_scene_element(
+                    "element-layout-second-mcp",
+                    "MCP second layout object",
+                    "shape"
+                ),
+                "afterElementId": "element-layout-mcp",
+            }),
+        ),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        created_second_element["result"]["isError"], true,
+        "{created_second_element}"
+    );
+    assert_eq!(
+        created_second_element["result"]["structuredContent"]["sequence"],
+        3
+    );
+
+    let moved = call(
+        &mut stdin,
+        &mut stdout,
+        6,
+        "office_collaboration_mutate",
+        mutation_arguments(
+            &replica,
+            "presentation-move-element-mcp",
+            serde_json::json!({
+                "type": "presentation-move-element",
+                "containerKind": "layout",
+                "containerId": "layout-1",
+                "elementId": "element-layout-second-mcp",
+                "expectedAfterElementId": "element-layout-mcp",
+                "afterElementId": null,
+            }),
+        ),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(moved["result"]["isError"], true, "{moved}");
+    assert_eq!(moved["result"]["structuredContent"]["sequence"], 4);
+
+    let deleted = call(
+        &mut stdin,
+        &mut stdout,
+        7,
         "office_collaboration_mutate",
         mutation_arguments(
             &replica,
@@ -156,12 +211,12 @@ async fn mcp_manages_browser_compatible_presentation_scene_elements() {
     )
     .await;
     assert_ne!(deleted["result"]["isError"], true, "{deleted}");
-    assert_eq!(deleted["result"]["structuredContent"]["sequence"], 3);
+    assert_eq!(deleted["result"]["structuredContent"]["sequence"], 5);
 
     let exported = call(
         &mut stdin,
         &mut stdout,
-        6,
+        8,
         "office_collaboration_diff",
         serde_json::json!({ "store": replica.to_str().unwrap() }),
         TIMEOUT,
@@ -183,7 +238,10 @@ async fn mcp_manages_browser_compatible_presentation_scene_elements() {
     );
     assert_eq!(
         presentation_element_order(&update, "layouts", "layout-1"),
-        vec!["element-layout-mcp".to_owned()]
+        vec![
+            "element-layout-second-mcp".to_owned(),
+            "element-layout-mcp".to_owned(),
+        ]
     );
     assert!(presentation_element_tombstoned(
         &update,

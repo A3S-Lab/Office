@@ -9,6 +9,7 @@ import browserPresentationFixtureBase64 from '../../tests/fixtures/browser-prese
 import {
   NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
   NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
+  NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
   NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
 } from '../../tests/fixtures/native-presentation-element-updates';
 
@@ -16,6 +17,7 @@ export type PlaygroundPresentationElementStage =
   | 'ready'
   | 'updated'
   | 'created'
+  | 'reordered'
   | 'deleted';
 
 export interface PlaygroundPresentationCollaborationFixture {
@@ -74,11 +76,13 @@ function createPresentationCollaborationFixture(): OwnedPlaygroundPresentationCo
   const updates = [
     NATIVE_PRESENTATION_UPDATE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_CREATE_ELEMENT_BASE64,
+    NATIVE_PRESENTATION_MOVE_ELEMENT_BASE64,
     NATIVE_PRESENTATION_DELETE_ELEMENT_BASE64,
   ];
   const stages: PlaygroundPresentationElementStage[] = [
     'updated',
     'created',
+    'reordered',
     'deleted',
   ];
   let updateIndex = 0;
@@ -124,6 +128,20 @@ function assertNativeUpdateApplied(
     if (created?.text !== 'Native interop object') {
       throw new Error(
         'The native Presentation scene-element creation did not project.',
+      );
+    }
+    return;
+  }
+  if (stage === 'reordered') {
+    const elementIds = content.slides
+      .find(({ id }) => id === 'slide-1')
+      ?.elements.map(({ id }) => id);
+    if (
+      elementIds?.[0] !== 'element-native' ||
+      elementIds?.[1] !== 'element-title'
+    ) {
+      throw new Error(
+        'The native Presentation scene-element z-order move did not project.',
       );
     }
     return;

@@ -57,7 +57,8 @@ pub(super) fn validate_mutation_contract(
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
-        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. } => {
+        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
             NativeOfficeCollaborationArtifactKind::Presentation
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
@@ -165,7 +166,8 @@ pub(super) fn apply_mutation(
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
         | NativeOfficeCollaborationMutation::PresentationUpdateElement { .. }
-        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. } => {
+        | NativeOfficeCollaborationMutation::PresentationDeleteElement { .. }
+        | NativeOfficeCollaborationMutation::PresentationMoveElement { .. } => {
             apply_presentation_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }

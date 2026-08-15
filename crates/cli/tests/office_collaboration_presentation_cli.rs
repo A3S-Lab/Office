@@ -98,6 +98,20 @@ fn cli_manages_browser_compatible_presentation_scene_elements() {
     );
     assert_eq!(created["data"]["sequence"], 2);
 
+    let moved = mutate(
+        &replica,
+        "presentation-move-element-cli",
+        json!({
+            "type": "presentation-move-element",
+            "containerKind": "slide",
+            "containerId": "slide-1",
+            "elementId": "element-cli",
+            "expectedAfterElementId": "element-title",
+            "afterElementId": null,
+        }),
+    );
+    assert_eq!(moved["data"]["sequence"], 3);
+
     let deleted = mutate(
         &replica,
         "presentation-delete-element-cli",
@@ -108,7 +122,7 @@ fn cli_manages_browser_compatible_presentation_scene_elements() {
             "expectedElement": presentation_slide_body_element(),
         }),
     );
-    assert_eq!(deleted["data"]["sequence"], 3);
+    assert_eq!(deleted["data"]["sequence"], 4);
 
     let mut stale_next = presentation_slide_title_element();
     stale_next["text"] = json!("Stale CLI title");
@@ -162,7 +176,7 @@ fn cli_manages_browser_compatible_presentation_scene_elements() {
     );
     assert_eq!(
         presentation_element_order(&update, "slides", "slide-1"),
-        vec!["element-title".to_owned(), "element-cli".to_owned()]
+        vec!["element-cli".to_owned(), "element-title".to_owned()]
     );
     assert_eq!(
         presentation_element(&update, "slides", "slide-2", "element-body"),

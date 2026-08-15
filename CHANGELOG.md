@@ -4,6 +4,23 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.7.0 - 2026-08-15
+
+- Added conflict-local Presentation scene-element z-order moves through Rust,
+  `collab mutate`, standard MCP, and A3S Code. The closed
+  `presentation-move-element` mutation addresses slides, masters, or layouts
+  by stable element and predecessor IDs instead of array indexes. Callers
+  provide the observed predecessor and requested predecessor, with `null`
+  meaning the first element-order position. A move already at its destination
+  is idempotent; otherwise a stale source position, missing or deleted target
+  anchor, deleted element, or self-anchor fails without a durable update. The
+  mutation removes and reinserts only the moved element's order entries,
+  preserves every scene-object field and the surrounding container, and
+  projects concurrent duplicate order entries by first active occurrence.
+  Native restart, causal reordering, concurrent field edits, real CLI/MCP
+  subprocesses, browser Yjs duplicate/reordered delivery, and the Playground
+  `a3s-test` regression cover update/create/move/delete interoperability.
+
 ## 0.6.0 - 2026-08-15
 
 - Added native Presentation scene-element collaboration through Rust,

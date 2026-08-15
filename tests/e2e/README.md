@@ -40,7 +40,7 @@ bun run test:e2e:collaboration-spreadsheet-cells:check
 bun run test:e2e:collaboration-spreadsheet-cells
 ```
 
-The native Presentation scene-element lifecycle has a focused gate:
+The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash
 bun run test:e2e:collaboration-presentation-elements:check
@@ -157,8 +157,9 @@ formula change, then covers sparse cell creation and exact deletion with
 screenshot, accessibility, console, and page-error evidence.
 The native Presentation collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser deck, verifies a visible scene-element update
-and creation, then covers exact deletion through a durable tombstone with
-screenshot, accessibility, console, and page-error evidence.
+and creation, moves that object to the first z-order-array position through a
+stable predecessor mutation, then covers exact deletion through a durable
+tombstone with screenshot, accessibility, console, and page-error evidence.
 The phone Word font workflow captures the grouped picker, traverses the full
 list with End, applies the final font with document-focus recovery, and checks
 Escape-to-combobox restoration together with clean browser diagnostics.

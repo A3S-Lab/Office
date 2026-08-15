@@ -44,6 +44,7 @@ impl PresentationClaims {
 }
 
 pub(super) struct PresentationElementState {
+    pub(super) active_order: Vec<String>,
     pub(super) claims: PresentationClaims,
     pub(super) elements: MapRef,
     pub(super) order: ArrayRef,
@@ -114,6 +115,7 @@ pub(super) fn read_element_state(
     }
 
     let mut raw_order = Vec::new();
+    let mut active_order = Vec::new();
     let mut ordered_ids = HashSet::new();
     for index in 0..order.len(&transaction) {
         let id = match order.get(&transaction, index) {
@@ -125,7 +127,9 @@ pub(super) fn read_element_state(
             }
         };
         validate_presentation_identifier(&id, "scene element", true)?;
-        ordered_ids.insert(id.clone());
+        if ordered_ids.insert(id.clone()) {
+            active_order.push(id.clone());
+        }
         raw_order.push(id);
     }
 
@@ -156,6 +160,7 @@ pub(super) fn read_element_state(
     }
     drop(transaction);
     Ok(PresentationElementState {
+        active_order,
         claims,
         elements,
         order,

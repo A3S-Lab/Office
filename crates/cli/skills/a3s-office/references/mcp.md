@@ -257,10 +257,37 @@ different same-ID content, a tombstoned ID, or a missing anchor fails closed.
 `presentation-update-element` accepts `elementId` plus complete
 `expectedElement` and `nextElement` values. It writes only changed top-level
 fields, merges unrelated concurrent fields, and rejects a stale same-field
-edit. ID and type are immutable. `presentation-delete-element` accepts the
-exact complete current `expectedElement`, removes visible order, and writes a
-durable tombstone that prevents ID reuse. Do not construct or mutate internal
-element order, record, claim, or tombstone roots directly.
+edit. ID and type are immutable. `presentation-move-element` accepts the
+caller's stable observed predecessor in `expectedAfterElementId` and the
+requested predecessor in `afterElementId`; either may be `null` for the first
+element-order position. An already-satisfied destination is idempotent even if
+the observation is stale. Otherwise a stale source predecessor or a
+missing/deleted destination anchor fails without a durable update:
+
+```json
+{
+  "store": ".a3s/deck.replica",
+  "operationId": "agent-element-move-49",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "deck",
+  "kind": "presentation",
+  "mutation": {
+    "type": "presentation-move-element",
+    "containerKind": "slide",
+    "containerId": "slide-1",
+    "elementId": "summary-1",
+    "expectedAfterElementId": "title-1",
+    "afterElementId": null
+  }
+}
+```
+
+Move removes and reinserts only that element's order entry; it does not rewrite
+the object record or container. `presentation-delete-element` accepts the exact
+complete current `expectedElement`, removes visible order, and writes a durable
+tombstone that prevents ID reuse. Do not construct or mutate internal element
+order, record, claim, or tombstone roots directly.
 
 Typed canonical mutations require `edit`. Raw received updates remain
 applicable in read-only modes so remote state still converges. Durable native

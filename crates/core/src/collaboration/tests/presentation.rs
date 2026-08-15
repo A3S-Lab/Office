@@ -8,6 +8,8 @@ use yrs::{Any, Array, Doc, Map, Out, Transact, Update};
 
 use super::*;
 
+mod order;
+
 const YJS_PRESENTATION_UPDATE_BASE64: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../tests/fixtures/browser-presentation-collaboration-update.base64"

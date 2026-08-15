@@ -17,6 +17,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.7.0',
     '0.6.0',
     '0.5.0',
     '0.4.0',
@@ -40,6 +41,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.7.0',
     '0.6.0',
     '0.5.0',
     '0.4.0',

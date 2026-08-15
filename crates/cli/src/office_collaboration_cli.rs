@@ -43,7 +43,7 @@ const HELP: &str = concat!(
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
-    "Typed mutations: markdown-replace/splice; document-replace-text; document-insert/delete-paragraph; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
+    "Typed mutations: markdown-replace/splice; document-replace-text; document-insert/delete-paragraph; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
