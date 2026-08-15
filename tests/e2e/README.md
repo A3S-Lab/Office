@@ -1,8 +1,9 @@
 # Local A3S Test E2E
 
 These deterministic browser scenarios use the separately installed
-[`a3s-test`](https://github.com/A3S-Lab/Test) CLI version 0.4.4 or newer and
-its A3S Browser adapter.
+[`a3s-test`](https://github.com/A3S-Lab/Test) CLI. CI and Pages pin version
+0.16.2 with the standalone `agent-browser` 0.26.0 adapter; local development
+may use the A3S Browser adapter.
 Evidence is written under `.a3s-test/`, which is ignored by Git.
 
 Build the Playground and start its static preview in one terminal:
@@ -50,6 +51,12 @@ bun run test:e2e:docs
 bun run test:e2e:collaboration-playground:check
 bun run test:e2e:collaboration-playground
 ```
+
+CI and Pages run those focused suites against the built static preview through
+`scripts/run-a3s-test-web-gate.sh`. The gate performs admission first, owns the
+preview lifecycle, uses Playwright's pinned Chromium, and fails when captured
+console or page-error diagnostics are non-empty. The shared installer keeps
+the A3S Test and standalone browser versions aligned across both workflows.
 
 The first-open focus regression also has a focused gate:
 
