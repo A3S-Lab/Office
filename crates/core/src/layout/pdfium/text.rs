@@ -311,19 +311,16 @@ pub(super) fn extract_page_text(
     let mut previous_end = 0_usize;
     for segment in page_text.segments().iter() {
         let segment_chars = segment.chars().map_err(|_| text_unsupported())?;
-        let mut indices = segment_chars.iter().map(|character| character.index());
-        let Some(start) = indices.next() else {
+        let Some(range) = pdfium_segment_range(
+            segment_chars.iter().map(|character| character.index()),
+            characters.len(),
+            previous_end,
+        )?
+        else {
             continue;
         };
-        let end = indices.try_fold(start + 1, |expected, actual| {
-            (actual == expected).then_some(expected + 1)
-        });
-        let Some(end) = end else {
-            return Err(text_unsupported());
-        };
-        if start < previous_end || end > characters.len() {
-            return Err(text_unsupported());
-        }
+        let start = range.start;
+        let end = range.end;
         if runs.len() >= options.max_runs {
             return Err(layout_error(
                 "use.office.pdf_text_run_limit",
@@ -369,6 +366,33 @@ pub(super) fn extract_page_text(
         runs,
     };
     Ok(layer)
+}
+
+fn pdfium_segment_range(
+    indices: impl IntoIterator<Item = usize>,
+    character_count: usize,
+    previous_end: usize,
+) -> UseResult<Option<Range<usize>>> {
+    let mut indices = indices.into_iter();
+    let Some(start) = indices.next() else {
+        return Ok(None);
+    };
+    let mut end = start;
+    for index in indices {
+        let expected = end.checked_add(1).ok_or_else(text_unsupported)?;
+        if index != expected {
+            return Err(text_unsupported());
+        }
+        end = index;
+    }
+
+    // pdfium-render 0.9.3 exposes one look-ahead character after each
+    // PdfPageTextSegment. Its index is the segment's exclusive end, and the
+    // final page segment therefore reports character_count itself.
+    if start < previous_end || start >= end || end > character_count {
+        return Err(text_unsupported());
+    }
+    Ok(Some(start..end))
 }
 
 fn pdf_rect_to_page_box(rect: PdfRect) -> Option<NativeOfficePdfPageBox> {
@@ -421,4 +445,29 @@ fn text_byte_limit(options: NativeOfficePdfTextLayerOptions) -> UseError {
             options.max_text_bytes
         ),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pdfium_segment_range;
+
+    #[test]
+    fn pdfium_segment_ranges_consume_the_exclusive_look_ahead_index() {
+        assert_eq!(pdfium_segment_range(0..=5, 9, 0).unwrap(), Some(0..5));
+        assert_eq!(pdfium_segment_range(5..=9, 9, 5).unwrap(), Some(5..9));
+        assert_eq!(
+            pdfium_segment_range(std::iter::empty(), 0, 0).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn pdfium_segment_ranges_reject_missing_or_inconsistent_sentinels() {
+        for indices in [vec![0], vec![0, 2], vec![4, 5], vec![8, 9, 10]] {
+            assert_eq!(
+                pdfium_segment_range(indices, 9, 5).unwrap_err().code,
+                "use.office.pdf_text_unsupported"
+            );
+        }
+    }
 }

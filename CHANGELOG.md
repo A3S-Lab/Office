@@ -451,7 +451,9 @@ All notable changes to A3S Office will be documented in this file.
   RGB fallback, while explicit color edits discard stale theme semantics.
 - Added bounded PDFium-native text runs with stable indices, character and
   UTF-8/UTF-16 ranges, exact PDF-space bounds, deterministic validation, and an
-  independent hard run limit to the native PDF text-layer receipt.
+  independent hard run limit to the native PDF text-layer receipt. PDFium 7881
+  segment look-ahead indices are normalized as exclusive ends so valid final
+  text runs cannot be rejected as out of range.
 - Recorded the completed native exact-unit source-layout contracts: bounded,
   content-addressed PPTX slide rasters and PDFium-backed PDF page inventory,
   geometry, rendering, typed failures, and deterministic receipts now satisfy
