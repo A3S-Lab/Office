@@ -1,29 +1,18 @@
 suite "office-docs-navigation" {
     version = 1
 
-    scenario "open-docs-collaboration-and-version-navigation" {
-        name = "Open the documentation center, discover collaboration, and switch language and version"
+    scenario "discover-collaboration-backend" {
+        name = "Discover the collaboration backend from the documentation center"
         surface = "web"
         timeout_ms = 30000
 
-        viewport "responsive-navigation" {
+        viewport "desktop-documentation" {
             width = 1200
             height = 900
+            scale = 1
         }
 
-        navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
-        }
-
-        expect "playground-is-home" {
-            text = "我的文档"
-        }
-
-        click "open-documentation" {
-            target = text("文档", true)
-        }
-
-        wait "documentation-route" {
+        navigate "open-documentation-center" {
             url = "http://127.0.0.1:4175/docs/"
         }
 
@@ -36,7 +25,7 @@ suite "office-docs-navigation" {
         }
 
         expect "documentation-search-ready" {
-            visible = css(".rp-search-button, .rp-search-button--mobile")
+            visible = css(".rp-search-button")
         }
 
         expect "documentation-tree-ready" {
@@ -45,10 +34,6 @@ suite "office-docs-navigation" {
 
         expect "editor-reference-is-managed" {
             text = "DocumentEditor"
-        }
-
-        screenshot "documentation-center" {
-            path = "screenshots/documentation-center.png"
         }
 
         expect "collaboration-entry-is-prominent" {
@@ -73,10 +58,6 @@ suite "office-docs-navigation" {
 
         expect "collaboration-authorization-is-documented" {
             text = "权限与安全边界"
-        }
-
-        screenshot "collaboration-guide" {
-            path = "screenshots/collaboration-guide.png"
         }
 
         expect "collaboration-server-entry-is-visible" {
@@ -108,23 +89,45 @@ suite "office-docs-navigation" {
         }
 
         accessibility "collaboration-server-accessibility" {
-            path = "accessibility/collaboration-server.json"
+            path = "evidence/collaboration-server.json"
             interactive = true
         }
 
-        click "open-document-reference" {
-            target = css(".rp-doc-layout__sidebar a[href$='/components/document.html']")
+        console "collaboration-browser-console" {
+            path = "diagnostics/collaboration-console.json"
+            clear = false
         }
 
-        wait "latest-document-route" {
+        page_errors "collaboration-browser-errors" {
+            path = "diagnostics/collaboration-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "switch-desktop-documentation-version" {
+        name = "Switch the desktop Document reference from latest to 0.1.0"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "desktop-version-navigation" {
+            width = 1200
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-latest-document-reference" {
             url = "http://127.0.0.1:4175/docs/components/document.html"
         }
 
-        snapshot "observe-desktop-version-navigation" {
-            interactive = true
+        wait "latest-document-reference-hydrated" {
+            load = "networkidle"
         }
 
-        expect "desktop-document-controls-visible" {
+        expect "latest-document-reference-ready" {
+            text = "DocumentEditor"
+        }
+
+        expect "desktop-version-controls-visible" {
             visible = css(".rp-nav__others")
         }
 
@@ -137,11 +140,11 @@ suite "office-docs-navigation" {
         }
 
         expect "version-0-1-0-visible" {
-            visible = css(".rp-nav__others a[aria-label='0.1.0'][href*='/0.1.0/components/document.html']")
+            visible = css(".rp-hover-group a[aria-label='0.1.0'][href='/docs/0.1.0/components/document']")
         }
 
         click "select-version-0-1-0" {
-            target = css(".rp-nav__others a[aria-label='0.1.0'][href*='/0.1.0/components/document.html']")
+            target = css(".rp-hover-group a[aria-label='0.1.0'][href='/docs/0.1.0/components/document']")
         }
 
         wait "versioned-document-route" {
@@ -152,20 +155,41 @@ suite "office-docs-navigation" {
             text = "自定义选区菜单"
         }
 
-        viewport "compact-language-navigation" {
-            width = 700
-            height = 900
+        console "desktop-version-console" {
+            path = "diagnostics/desktop-version-console.json"
+            clear = false
         }
 
-        click "reopen-responsive-navigation" {
+        page_errors "desktop-version-errors" {
+            path = "diagnostics/desktop-version-page-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "switch-compact-language-and-latest" {
+        name = "Switch a compact versioned Document reference to English and back to latest"
+        surface = "web"
+        timeout_ms = 30000
+
+        viewport "compact-documentation-navigation" {
+            width = 700
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-versioned-document-reference" {
+            url = "http://127.0.0.1:4175/docs/0.1.0/components/document.html"
+        }
+
+        expect "versioned-document-reference-ready" {
+            text = "自定义选区菜单"
+        }
+
+        click "open-responsive-navigation" {
             target = css(".rp-nav-hamburger__sm")
         }
 
-        snapshot "observe-responsive-navigation-reopened" {
-            interactive = true
-        }
-
-        expect "responsive-navigation-reopened" {
+        expect "responsive-navigation-open" {
             visible = css(".rp-nav-screen--open")
         }
 
@@ -197,12 +221,8 @@ suite "office-docs-navigation" {
             visible = css("html[lang=en]")
         }
 
-        click "reopen-responsive-navigation-for-latest" {
+        click "reopen-responsive-navigation" {
             target = css(".rp-nav-hamburger__sm")
-        }
-
-        snapshot "observe-responsive-navigation-for-latest" {
-            interactive = true
         }
 
         expect "responsive-navigation-open-for-latest" {
@@ -229,13 +249,17 @@ suite "office-docs-navigation" {
             url = "http://127.0.0.1:4175/docs/en/components/document.html"
         }
 
-        console "browser-console" {
-            path = "diagnostics/console.json"
+        expect "latest-english-document-ready" {
+            text = "DocumentEditor"
+        }
+
+        console "compact-navigation-console" {
+            path = "diagnostics/compact-navigation-console.json"
             clear = false
         }
 
-        page_errors "browser-errors" {
-            path = "diagnostics/page-errors.json"
+        page_errors "compact-navigation-errors" {
+            path = "diagnostics/compact-navigation-page-errors.json"
             clear = false
         }
     }
@@ -248,6 +272,7 @@ suite "office-docs-navigation" {
         viewport "release-documentation" {
             width = 1200
             height = 900
+            scale = 1
         }
 
         navigate "open-chinese-collaboration-server-release" {
@@ -266,10 +291,6 @@ suite "office-docs-navigation" {
             visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.7.2']) > .rp-nav-menu__item__container")
         }
 
-        screenshot "chinese-collaboration-server-release" {
-            path = "screenshots/collaboration-server-0.7.2-zh.png"
-        }
-
         navigate "open-english-collaboration-server-release" {
             url = "http://127.0.0.1:4175/docs/0.7.2/en/components/collaboration-server.html"
         }
@@ -280,6 +301,14 @@ suite "office-docs-navigation" {
 
         expect "english-ticket-runbook-is-frozen" {
             text = "Issue a room ticket"
+        }
+
+        expect "frozen-documentation-language-is-english" {
+            visible = css("html[lang=en]")
+        }
+
+        screenshot "english-collaboration-server-release" {
+            path = "screenshots/collaboration-server-0.7.2-en.png"
         }
 
         console "release-browser-console" {

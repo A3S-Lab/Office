@@ -24,16 +24,12 @@ suite "collaboration-playground-entry" {
             visible = css("a[href$='/docs/components/collaboration-server.html']")
         }
 
-        screenshot "desktop-collaboration-entry" {
-            path = "screenshots/collaboration-playground-entry-desktop.png"
-        }
-
         click "open-collaboration-demo" {
             target = role("button", "打开协作演示")
         }
 
         wait "two-participants-joined" {
-            visible = css("button[data-collaboration-count='2']")
+            visible = css("button[aria-label='查看协作者，2 位协作者']")
         }
 
         wait "remote-caret-is-projected" {
@@ -41,7 +37,7 @@ suite "collaboration-playground-entry" {
         }
 
         click "open-participant-roster" {
-            target = css("button[data-collaboration-count='2']")
+            target = role("button", "查看协作者，2 位协作者")
         }
 
         expect "agent-is-listed" {
@@ -87,8 +83,8 @@ suite "collaboration-playground-entry" {
             text = "多人实时协作"
         }
 
-        screenshot "compact-collaboration-entry" {
-            path = "screenshots/collaboration-playground-entry-compact.png"
+        expect "compact-backend-guide-is-visible" {
+            visible = css("a[href$='/docs/components/collaboration-server.html']")
         }
 
         click "open-compact-collaboration-demo" {
@@ -96,16 +92,23 @@ suite "collaboration-playground-entry" {
         }
 
         wait "compact-participants-joined" {
-            visible = css("button[data-collaboration-count='2']")
+            visible = css("button[aria-label='查看协作者，2 位协作者']")
+        }
+
+        wait "compact-remote-caret-is-projected" {
+            visible = css(".work-office-remote-caret[data-participant-id='playground-agent']")
+        }
+
+        click "open-compact-participant-roster" {
+            target = role("button", "查看协作者，2 位协作者")
+        }
+
+        expect "compact-agent-is-listed" {
+            text = "A3S Agent"
         }
 
         screenshot "compact-collaboration-demo" {
             path = "screenshots/collaboration-playground-compact.png"
-        }
-
-        accessibility "compact-collaboration-accessibility" {
-            path = "evidence/collaboration-playground-compact.json"
-            interactive = true
         }
 
         console "compact-console" {

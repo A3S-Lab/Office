@@ -19,6 +19,38 @@ bun run test:e2e:check
 bun run test:e2e
 ```
 
+## Authoring contract
+
+These files are deterministic ACL regressions for workflows that have already
+been observed. Use an A3S Test agent session first when the next action still
+depends on the current page state, then promote only the smallest stable path
+to `tests/e2e/`.
+
+- Run `a3s-test check <suite> --json` before launching the browser.
+- Prefer `role`, `label`, `testid`, and `placeholder` for actions that accept
+  semantic targets. With the current Web adapter, visibility checks require
+  `css` or a snapshot `ref`; keep those selectors tied to an accessibility or
+  route contract, and use implementation CSS only for third-party or purely
+  visual state.
+- Follow a state-changing action with a typed `wait` or `expect`; do not add
+  arbitrary sleeps. Use a snapshot only when the observed intermediate state
+  is itself required before the next action, such as an animated third-party
+  navigation layer.
+- Capture one final-state screenshot when visual proof matters, accessibility
+  only for the semantic contract under test, and console plus page errors for
+  browser failures. Keep every artifact path relative.
+- Let A3S Test own and clean up each browser surface. Do not terminate shared
+  browser processes by name.
+
+The documentation navigation and collaboration homepage have focused gates:
+
+```bash
+bun run test:e2e:docs:check
+bun run test:e2e:docs
+bun run test:e2e:collaboration-playground:check
+bun run test:e2e:collaboration-playground
+```
+
 The first-open focus regression also has a focused gate:
 
 ```bash
