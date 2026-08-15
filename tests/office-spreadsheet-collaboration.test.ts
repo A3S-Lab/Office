@@ -1,4 +1,5 @@
 import { expect, test } from '@rstest/core';
+import { readFileSync } from 'node:fs';
 import * as Y from 'yjs';
 import {
   createOfficeCollaborationSession,
@@ -7,6 +8,16 @@ import {
   readOfficeSpreadsheetCollaboration,
 } from '../src/core';
 import { spreadsheetCollaborationFixture as fixture } from './fixtures/spreadsheet-collaboration';
+import {
+  NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
+  NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
+  NATIVE_SPREADSHEET_SET_CELL_BASE64,
+} from './fixtures/native-spreadsheet-cell-updates';
+
+const BROWSER_SPREADSHEET_FIXTURE_BASE64 = readFileSync(
+  'tests/fixtures/browser-spreadsheet-collaboration-update.base64',
+  'utf8',
+).trim();
 
 test('initializes sparse typed Spreadsheet roots without a workbook blob', () => {
   const session = spreadsheetSession('spreadsheet-typed');
@@ -469,6 +480,89 @@ test('rejects Spreadsheet mutation outside edit mode', () => {
   expect(() => binding.undo()).toThrow(/cannot modify canonical content/);
 });
 
+test('applies native Spreadsheet cell updates in Yjs across reordered delivery', () => {
+  const orderedDocument = new Y.Doc();
+  const reorderedDocument = new Y.Doc();
+  for (const document of [orderedDocument, reorderedDocument]) {
+    Y.applyUpdate(document, decodeBase64(BROWSER_SPREADSHEET_FIXTURE_BASE64));
+    const binding = createOfficeSpreadsheetCollaborationBinding(
+      spreadsheetSession('fixture-spreadsheet', document),
+    );
+    const before = binding.content();
+    binding.replace(before, {
+      ...before,
+      sheets: before.sheets.map((sheet) => {
+        if (sheet.id !== 'sheet-data') return sheet;
+        const data = (sheet.data ?? []).map((row) => [...row]);
+        const cell = data[1]?.[0];
+        if (!cell) throw new Error('Expected the browser fixture data cell.');
+        data[1][0] = {
+          ...cell,
+          bg: '#DBEAFE',
+          ps: {
+            left: null,
+            top: null,
+            width: 140,
+            height: 80,
+            value: 'Browser note',
+            isShow: false,
+          },
+        };
+        return { ...sheet, data };
+      }),
+    });
+  }
+
+  for (const encoded of [
+    NATIVE_SPREADSHEET_SET_CELL_BASE64,
+    NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
+    NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
+  ]) {
+    Y.applyUpdate(orderedDocument, decodeBase64(encoded));
+  }
+  for (const encoded of [
+    NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
+    NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
+    NATIVE_SPREADSHEET_SET_CELL_BASE64,
+    NATIVE_SPREADSHEET_SET_CELL_BASE64,
+  ]) {
+    Y.applyUpdate(reorderedDocument, decodeBase64(encoded));
+  }
+
+  const contents = [orderedDocument, reorderedDocument].map((document) =>
+    readOfficeSpreadsheetCollaboration(
+      spreadsheetSession('fixture-spreadsheet', document),
+    ),
+  );
+  expect(contents[0]).toEqual(contents[1]);
+  const dataSheet = contents[0]?.sheets.find(({ id }) => id === 'sheet-data');
+  expect(dataSheet?.data?.[1]?.[0]).toMatchObject({
+    v: 12,
+    m: '12',
+    f: '=6*2',
+    bg: '#DBEAFE',
+    ct: { fa: '0.00', t: 'n' },
+    ps: { value: 'Browser note' },
+  });
+  const emptySheet = contents[0]?.sheets.find(({ id }) => id === 'sheet-empty');
+  expect(emptySheet?.data).toBeUndefined();
+  expect(emptySheet?.celldata).toEqual([
+    {
+      r: 100,
+      c: 5,
+      v: {
+        v: 'sparse native',
+        m: 'sparse native',
+        ps: { value: 'Agent note', isShow: false },
+      },
+    },
+  ]);
+  const sparseSheet = contents[0]?.sheets.find(
+    ({ id }) => id === 'sheet-sparse',
+  );
+  expect(sparseSheet?.celldata).toEqual([]);
+});
+
 function fixtureWithoutTransientViewState() {
   const content = fixture();
   return {
@@ -561,4 +655,8 @@ function applyMissingUpdate(source: Y.Doc, target: Y.Doc): void {
     Y.encodeStateAsUpdate(source, Y.encodeStateVector(target)),
     'test-network',
   );
+}
+
+function decodeBase64(value: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(value, 'base64'));
 }

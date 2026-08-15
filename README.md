@@ -138,9 +138,9 @@ The images below are committed visual-regression baselines from the real
 - **Automation outside the browser** — The native Rust CLI, standard MCP
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
-  vectors, perform authorized typed Markdown, Document, and PDF annotation,
-  form-value, and review changes, retain browser/native actor attribution, and
-  checkpoint without replacing a whole Office file.
+  vectors, perform authorized typed Markdown, Document, Spreadsheet cell, and
+  PDF annotation, form-value, and review changes, retain browser/native actor
+  attribution, and checkpoint without replacing a whole Office file.
 
 ## Quick start
 
@@ -1023,6 +1023,13 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --operation-id edit-44 \
   --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' --json
 
+# Recursively patch one Spreadsheet cell after matching the observed value.
+# Zero-based row/column coordinates follow the browser collaboration model.
+cargo run -p a3s-office-cli -- collab mutate .a3s/plan.replica \
+  --artifact-id plan --kind spreadsheet --actor-id agent-7 --mode edit \
+  --operation-id edit-45 \
+  --mutation '{"type":"spreadsheet-set-cell","sheetId":"sheet-data","row":1,"column":0,"expectedCell":{"v":10,"m":"10"},"nextCell":{"v":12,"m":"12","f":"=6*2"}}' --json
+
 # Set one PDF form value through its stable fully-qualified field name.
 cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
   --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
@@ -1080,7 +1087,13 @@ table rotate every identified ancestor row's `rowTextId`; incomplete row
 identities fail before any write. Paragraphs containing inline atoms or review
 marks remain guarded.
 Page-color/track-changes sidecars remain independent conflict-local fields. All
-mutations use the same durable event path. PDF annotation creation accepts the
+mutations use the same durable event path. Spreadsheet set-cell mutations
+recursively compare `expectedCell` with the current browser-compatible cell and
+write only changed leaves, so unrelated concurrent value, formula, style,
+hyperlink, note, and metadata edits merge. Use `expectedCell: null` only when
+creating an observed blank coordinate. Spreadsheet deletion requires the exact
+complete current cell, dense projections keep their dimensions, and sparse or
+empty sheets remain sparse. PDF annotation creation accepts the
 portable browser record for FreeText, Highlight, Underline, StrikeOut, or Ink,
 writes `source: created`, and commits its immutable claim atomically. An update
 supplies complete `expectedAnnotation` and `nextAnnotation` values; recursive
@@ -1158,6 +1171,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.5.0 documentation](https://a3s-lab.github.io/Office/docs/0.5.0/)
 - [A3S Office 0.4.0 documentation](https://a3s-lab.github.io/Office/docs/0.4.0/)
 - [A3S Office 0.3.0 documentation](https://a3s-lab.github.io/Office/docs/0.3.0/)
 - [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)

@@ -102,7 +102,7 @@ changed since inspection:
 }
 ```
 
-For local canonical Markdown or Document changes, prefer
+For local canonical Markdown, Document, Spreadsheet, or PDF changes, prefer
 `office_collaboration_mutate` over constructing Yjs bytes. Markdown accepts
 closed `markdown-replace` and `markdown-splice` variants; splice positions are
 UTF-16 code-unit offsets and may not split a surrogate pair:
@@ -186,6 +186,39 @@ Use `document-set-page-color` with `pageColor` and
 `document-set-track-changes` with `trackChanges`. Clear a value only through
 `document-clear-page-color` or `document-clear-track-changes`; the explicit
 variants prevent a missing set field from silently removing shared state.
+
+Spreadsheet cell mutations use a stable sheet identity plus zero-based
+coordinates. Create or recursively patch one cell with
+`spreadsheet-set-cell`; pass `expectedCell: null` only when the coordinate was
+observed blank:
+
+```json
+{
+  "store": ".a3s/plan.replica",
+  "operationId": "agent-cell-47",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "plan",
+  "kind": "spreadsheet",
+  "mutation": {
+    "type": "spreadsheet-set-cell",
+    "sheetId": "sheet-data",
+    "row": 1,
+    "column": 0,
+    "expectedCell": { "v": 10, "m": "10" },
+    "nextCell": { "v": 12, "m": "12", "f": "=6*2" }
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Set compares the expected, current, and next cell recursively and writes only
+changed leaves. Unrelated concurrent leaves merge; a stale same-leaf edit fails
+without a durable update. `spreadsheet-delete-cell` instead requires the exact
+complete current cell in `expectedCell`. Dense sheets retain their matrix row
+lengths, sparse sheets remain `celldata`, and an empty sheet's first write is
+sparse. Do not construct or mutate the internal presence, field, projection,
+or row-length roots directly.
 
 Typed canonical mutations require `edit`. Raw received updates remain
 applicable in read-only modes so remote state still converges. Durable native

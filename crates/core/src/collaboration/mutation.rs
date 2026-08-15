@@ -10,9 +10,11 @@ use super::{
 
 mod document;
 mod pdf;
+mod spreadsheet;
 
 use document::{apply_document_mutation, validate_document_mutation};
 use pdf::{apply_pdf_mutation, validate_pdf_mutation};
+use spreadsheet::{apply_spreadsheet_mutation, validate_spreadsheet_mutation};
 
 pub(super) fn validate_mutation_contract(
     manifest: &NativeOfficeCollaborationManifest,
@@ -46,6 +48,10 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             NativeOfficeCollaborationArtifactKind::Document
+        }
+        NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
+            NativeOfficeCollaborationArtifactKind::Spreadsheet
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
         | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }
@@ -95,6 +101,8 @@ pub(super) fn validate_mutation_contract(
     }
     if mutation_kind == NativeOfficeCollaborationArtifactKind::Document {
         validate_document_mutation(mutation)?;
+    } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Spreadsheet {
+        validate_spreadsheet_mutation(mutation)?;
     } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Pdf {
         validate_pdf_mutation(mutation)?;
     }
@@ -141,6 +149,10 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             apply_document_mutation(doc, manifest, mutation)?;
+        }
+        NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
+            apply_spreadsheet_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
         | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }

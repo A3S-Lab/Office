@@ -39,4 +39,11 @@ export default defineConfig({
       index: './src/main.tsx',
     },
   },
+  tools: {
+    rspack: {
+      module: {
+        rules: [{ test: /\.base64$/i, type: 'asset/source' }],
+      },
+    },
+  },
 });

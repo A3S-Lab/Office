@@ -113,6 +113,10 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "textId",
         "document-delete-paragraph",
         "expectedTextId",
+        "spreadsheet-set-cell",
+        "spreadsheet-delete-cell",
+        "expectedCell",
+        "nextCell",
     ] {
         assert!(mutation_schema.contains(expected), "missing {expected}");
     }

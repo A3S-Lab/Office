@@ -17,4 +17,11 @@ export default defineConfig({
   },
   setupFiles: ['./rstest.setup.ts'],
   testTimeout: 10_000,
+  tools: {
+    rspack: {
+      module: {
+        rules: [{ test: /\.base64$/i, type: 'asset/source' }],
+      },
+    },
+  },
 });

@@ -177,7 +177,7 @@ pub(super) struct OfficeCollaborationMutationInput {
     pub(super) artifact_id: String,
     /// Expected canonical collaborative model family.
     pub(super) kind: OfficeCollaborationArtifactKind,
-    /// Closed, format-aware Markdown, Document, or PDF mutation.
+    /// Closed, format-aware Markdown, Document, Spreadsheet, or PDF mutation.
     pub(super) mutation: OfficeCollaborationMutation,
     /// Optional exact state-vector precondition for fail-closed agent decisions.
     pub(super) if_state_vector_base64: Option<String>,
@@ -609,6 +609,13 @@ mod tests {
             "document-delete-paragraph",
             "expectedTextId",
             "expectedText",
+            "spreadsheet-set-cell",
+            "spreadsheet-delete-cell",
+            "sheetId",
+            "row",
+            "column",
+            "expectedCell",
+            "nextCell",
             "pdf-set-form-value",
             "fieldId",
             "pdf-propose-redaction",
@@ -697,6 +704,27 @@ mod tests {
                 "paragraphId": "00000002",
                 "expectedTextId": "00000003",
                 "expectedText": "value",
+                "force": true
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "spreadsheet-set-cell",
+                "sheetId": "sheet-1",
+                "row": 0,
+                "column": 0,
+                "expectedCell": null
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "spreadsheet-delete-cell",
+                "sheetId": "sheet-1",
+                "row": 0,
+                "column": 0,
+                "expectedCell": { "v": 1 },
                 "force": true
             }))
             .is_err()

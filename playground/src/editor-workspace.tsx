@@ -50,6 +50,10 @@ import {
   usePlaygroundPdfCollaborationFixture,
 } from './pdf-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
+import {
+  type PlaygroundSpreadsheetCellStage,
+  usePlaygroundSpreadsheetCollaborationFixture,
+} from './spreadsheet-collaboration-fixture';
 
 const assistantMinimumWidth = 340;
 const assistantMaximumWidth = 680;
@@ -122,6 +126,13 @@ export function EditorWorkspace({
         }
       : undefined,
   );
+  const spreadsheetCollaborationFixtureEnabled =
+    e2eFixture === 'collaboration-spreadsheet-cells' &&
+    artifact.content.type === 'spreadsheet';
+  const spreadsheetCollaborationFixture =
+    usePlaygroundSpreadsheetCollaborationFixture(
+      spreadsheetCollaborationFixtureEnabled,
+    );
 
   const handleAgentRequest = useCallback(
     (request: EditorAgentRequest) => {
@@ -317,6 +328,44 @@ export function EditorWorkspace({
                   )}
                 </>
               )}
+              {spreadsheetCollaborationFixtureEnabled && (
+                <>
+                  <output
+                    className="playground-collaboration-fixture-status"
+                    data-testid="spreadsheet-collaboration-cell-status"
+                    data-state={
+                      spreadsheetCollaborationFixture?.cellStage ?? 'loading'
+                    }
+                    aria-live="polite"
+                  >
+                    {spreadsheetCollaborationFixture
+                      ? spreadsheetCollaborationCellStatus(
+                          spreadsheetCollaborationFixture.cellStage,
+                        )
+                      : '正在准备 Spreadsheet 协作'}
+                  </output>
+                  {spreadsheetCollaborationFixture && (
+                    <button
+                      type="button"
+                      className="work-editor-ai-button"
+                      aria-label={spreadsheetCollaborationCellAction(
+                        spreadsheetCollaborationFixture.cellStage,
+                      )}
+                      disabled={
+                        spreadsheetCollaborationFixture.cellStage === 'deleted'
+                      }
+                      onClick={spreadsheetCollaborationFixture.advanceCell}
+                    >
+                      <Pencil size={15} />
+                      <span>
+                        {spreadsheetCollaborationCellAction(
+                          spreadsheetCollaborationFixture.cellStage,
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
               {artifact.kind !== 'pdf' && (
                 <fieldset className="playground-mode-switch">
                   <legend className="sr-only">编辑或预览</legend>
@@ -404,16 +453,24 @@ export function EditorWorkspace({
               theme="light"
             />
           )}
-          {artifact.content.type === 'spreadsheet' && (
-            <SpreadsheetEditor
-              content={artifact.content}
-              onAgentRequest={handleAgentRequest}
-              onChange={(content: SpreadsheetContent) => onChange(content)}
-              preview={preview}
-              saveStatus="本次会话已保存"
-              theme="light"
-            />
-          )}
+          {artifact.content.type === 'spreadsheet' &&
+            (!spreadsheetCollaborationFixtureEnabled ||
+              spreadsheetCollaborationFixture) && (
+              <SpreadsheetEditor
+                collaboration={spreadsheetCollaborationFixture?.collaboration}
+                content={artifact.content}
+                onAgentRequest={handleAgentRequest}
+                onChange={(content: SpreadsheetContent) => onChange(content)}
+                preview={preview}
+                saveStatus="本次会话已保存"
+                theme="light"
+              />
+            )}
+          {artifact.content.type === 'spreadsheet' &&
+            spreadsheetCollaborationFixtureEnabled &&
+            !spreadsheetCollaborationFixture && (
+              <div role="status">正在准备 Spreadsheet 协作测试夹具</div>
+            )}
           {artifact.content.type === 'presentation' && (
             <PresentationEditor
               content={artifact.content}
@@ -500,6 +557,36 @@ function pdfCollaborationAnnotationAction(
       return '模拟原生删除 PDF 批注';
     case 'deleted':
       return '原生 PDF 批注已删除';
+  }
+}
+
+function spreadsheetCollaborationCellStatus(
+  stage: PlaygroundSpreadsheetCellStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return 'Spreadsheet 协作已连接';
+    case 'updated':
+      return '代理已把 Data!A2 更新为 12';
+    case 'created':
+      return '代理已创建 Empty!F101 稀疏单元格';
+    case 'deleted':
+      return '代理已删除 Sparse!D6 稀疏单元格';
+  }
+}
+
+function spreadsheetCollaborationCellAction(
+  stage: PlaygroundSpreadsheetCellStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return '模拟原生更新 Spreadsheet 单元格';
+    case 'updated':
+      return '模拟原生创建稀疏单元格';
+    case 'created':
+      return '模拟原生删除稀疏单元格';
+    case 'deleted':
+      return '原生 Spreadsheet 单元格生命周期已完成';
   }
 }
 

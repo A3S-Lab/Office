@@ -1,0 +1,98 @@
+suite "collaboration-spreadsheet-cells" {
+    version = 1
+
+    scenario "project-native-spreadsheet-cell-lifecycle" {
+        name = "Project native Spreadsheet set, sparse create, and exact delete"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-spreadsheet-collaboration-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-spreadsheet-cells"
+        }
+
+        wait "playground-ready" {
+            text = "我的文档"
+        }
+
+        click "open-spreadsheet" {
+            target = text("季度执行计划", true)
+        }
+
+        wait "spreadsheet-collaboration-ready" {
+            visible = css("[data-testid='spreadsheet-collaboration-cell-status'][data-state='ready']")
+        }
+
+        wait "spreadsheet-grid-focused" {
+            visible = css(".fortune-sheet-overlay:focus")
+        }
+
+        press "select-input-cell" {
+            key = "ArrowDown"
+        }
+
+        click "update-existing-cell" {
+            target = role("button", "模拟原生更新 Spreadsheet 单元格")
+        }
+
+        wait "native-cell-updated" {
+            visible = css("[data-testid='spreadsheet-collaboration-cell-status'][data-state='updated']")
+        }
+
+        expect "updated-status-visible" {
+            text = "代理已把 Data!A2 更新为 12"
+        }
+
+        screenshot "updated-native-cell" {
+            path = "screenshots/spreadsheet-native-cell-updated.png"
+        }
+
+        click "create-sparse-cell" {
+            target = role("button", "模拟原生创建稀疏单元格")
+        }
+
+        wait "native-sparse-cell-created" {
+            visible = css("[data-testid='spreadsheet-collaboration-cell-status'][data-state='created']")
+        }
+
+        expect "created-status-visible" {
+            text = "代理已创建 Empty!F101 稀疏单元格"
+        }
+
+        click "delete-sparse-cell" {
+            target = role("button", "模拟原生删除稀疏单元格")
+        }
+
+        wait "native-sparse-cell-deleted" {
+            visible = css("[data-testid='spreadsheet-collaboration-cell-status'][data-state='deleted']")
+        }
+
+        expect "deleted-status-visible" {
+            text = "代理已删除 Sparse!D6 稀疏单元格"
+        }
+
+        screenshot "completed-cell-lifecycle" {
+            path = "screenshots/spreadsheet-native-cell-lifecycle.png"
+        }
+
+        accessibility "cell-lifecycle-accessibility" {
+            path = "evidence/spreadsheet-native-cells-accessibility.json"
+            interactive = true
+        }
+
+        console "cell-lifecycle-console" {
+            path = "diagnostics/spreadsheet-native-cells-console.json"
+            clear = false
+        }
+
+        page_errors "cell-lifecycle-errors" {
+            path = "diagnostics/spreadsheet-native-cells-errors.json"
+            clear = false
+        }
+    }
+}

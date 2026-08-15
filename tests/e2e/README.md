@@ -33,6 +33,13 @@ bun run test:e2e:collaboration-participants:check
 bun run test:e2e:collaboration-participants
 ```
 
+The native Spreadsheet cell lifecycle has a focused gate:
+
+```bash
+bun run test:e2e:collaboration-spreadsheet-cells:check
+bun run test:e2e:collaboration-spreadsheet-cells
+```
+
 The suites cover focused Word page-color, a desktop Writer quick-access and
 adaptive, collapsible-ribbon workflow covering comfortable, priority-compacted,
 persistent collapsed, and temporary tab states without document layout
@@ -137,6 +144,10 @@ moving search focus, and restores the prior persistent sidebar on return.
 The collaboration roster workflow projects human and agent Awareness state in
 edit and preview chrome, keeps the phone popover in view, and restores the
 exact trigger after Escape.
+The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
+updates to an initialized browser workbook, verifies the visible A2 value and
+formula change, then covers sparse cell creation and exact deletion with
+screenshot, accessibility, console, and page-error evidence.
 The phone Word font workflow captures the grouped picker, traverses the full
 list with End, applies the final font with document-focus recovery, and checks
 Escape-to-combobox restoration together with clean browser diagnostics.

@@ -1,9 +1,12 @@
 #![allow(dead_code)]
 
 mod pdf;
+mod spreadsheet;
 
 #[allow(unused_imports)]
 pub use pdf::{pdf_collaboration_fixture, pdf_snapshot};
+#[allow(unused_imports)]
+pub use spreadsheet::{spreadsheet_cell, spreadsheet_collaboration_fixture};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;

@@ -4,6 +4,21 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.5.0 - 2026-08-15
+
+- Added native Spreadsheet collaboration cell mutations through Rust,
+  `collab mutate`, standard MCP, and A3S Code. `spreadsheet-set-cell` creates
+  or recursively patches one browser-compatible cell with optimistic leaf
+  guards, while `spreadsheet-delete-cell` requires an exact complete-cell
+  match. Unrelated concurrent formula, value, style, hyperlink, note, and
+  metadata leaves merge; same-leaf conflicts fail without a durable update.
+  Dense sheets retain and safely extend their matrix projection, sparse sheets
+  remain sparse, and an empty sheet's first write uses `celldata`. Coordinates,
+  JSON depth and size, unsafe object keys, malformed shared roots, and orphaned
+  fields are bounded and validated before mutation. Native restart, real CLI
+  and MCP subprocesses, browser Yjs duplicate/reordered delivery, and a
+  Playground `a3s-test` regression cover set, create, and delete behavior.
+
 ## 0.4.0 - 2026-08-15
 
 - Added a versioned, deterministic Document Snapshot codec for lossless

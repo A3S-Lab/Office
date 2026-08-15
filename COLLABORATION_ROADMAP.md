@@ -182,8 +182,9 @@ comments, and delete-vs-edit cases converge and survive PPTX round trips.
 
 ### Phase 4: Spreadsheet
 
-Status: browser collaboration foundation implemented; structural operations,
-native recalculation parity, and XLSX concurrency coverage are pending.
+Status: browser collaboration foundation and native conflict-local cell
+mutations implemented; structural operations, native recalculation parity, and
+XLSX concurrency coverage are pending.
 
 - Stable sheet/named-range order arrays, ID-keyed records, and append-only
   creation claims avoid a serialized workbook or dense worksheet root.
@@ -208,6 +209,14 @@ native recalculation parity, and XLSX concurrency coverage are pending.
   route canonical edits plus local-only undo/redo through the same binding.
   Active-sheet status, selections, zoom, and Fortune Sheet focus remain local
   view state and are reapplied after remote canonical updates.
+- Rust, CLI, MCP, and A3S Code can create or recursively patch one cell with
+  `spreadsheet-set-cell`, or delete one exact complete cell with
+  `spreadsheet-delete-cell`. Recursive optimistic guards merge unrelated JSON
+  leaves and reject stale same-leaf edits before writing. Dense projections
+  retain and safely extend row lengths, sparse projections remain `celldata`,
+  and an empty sheet's first write stays sparse. Native restart, real CLI/MCP
+  subprocesses, and browser Yjs duplicate/reordered delivery cover the same
+  update contract.
 
 Remaining:
 
@@ -313,9 +322,9 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
 projection, a host-injected live CLI transport session, and typed Markdown,
-Document, PDF annotation/form-value, and PDF redaction/page-operation review
-mutation surfaces are implemented; the remaining format mutations and native
-presence projection are pending.
+Document, Spreadsheet cell, PDF annotation/form-value, and PDF
+redaction/page-operation review mutation surfaces are implemented; the
+remaining format mutations and native presence projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -361,6 +370,11 @@ presence projection are pending.
   incremental updates through the same durable
   receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
   updates remain receivable in every mode so read-only peers still converge.
+- Spreadsheet cell mutations create or recursively patch one zero-based
+  coordinate after matching the caller's observed cell, or delete it only after
+  an exact complete-cell match. They preserve the browser's field-addressed
+  representation, dense/sparse projection mode, and atomic fail-closed
+  semantics without replacing a worksheet or workbook.
 - PDF form-value mutations write the browser-compatible conflict-local record
   roots by fully-qualified field name, retain idempotent receipts and optional
   state-vector preconditions, and never synchronize source bytes.
@@ -388,19 +402,20 @@ presence projection are pending.
   source browser operation, and source attribution is audit data rather than
   an authorization token.
 - Cross-language tests apply deterministic native UTF-16 Markdown, ProseMirror
-  Document text/options/paragraph, and PDF annotation/form-value updates in
-  browser Yjs, including concurrent browser/native paragraph, annotation-leaf,
-  and PDF form edits, in addition to importing browser Yjs fixtures in Yrs.
+  Document text/options/paragraph, Spreadsheet cell, and PDF
+  annotation/form-value updates in browser Yjs, including concurrent
+  browser/native paragraph, cell-leaf, annotation-leaf, and PDF form edits, in
+  addition to importing browser Yjs fixtures in Yrs.
 - Standard MCP exposes the durable replica lifecycle and bounded event stream;
   the same seven collaboration tools are explicitly available to the dedicated
   `a3s code` Use worker.
 
 Remaining:
 
-- Extend typed format-model mutations to Spreadsheet and Presentation plus PDF
-  signatures; deepen Document mutations to additional nested structures and
-  review operations, and add durable comment/suggest operations before enabling
-  those modes for local mutation.
+- Extend typed format-model mutations to Spreadsheet structural operations and
+  Presentation plus PDF signatures; deepen Document mutations to additional
+  nested structures and review operations, and add durable comment/suggest
+  operations before enabling those modes for local mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

@@ -135,6 +135,21 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Create or recursively patch one conflict-local Spreadsheet cell.
+    SpreadsheetSetCell {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        expected_cell: Option<JsonValue>,
+        next_cell: JsonValue,
+    },
+    /// Delete one Spreadsheet cell after matching its complete current value.
+    SpreadsheetDeleteCell {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        expected_cell: JsonValue,
+    },
     /// Create one supported portable PDF annotation with a stable ID.
     PdfCreateAnnotation {
         annotation_id: String,
@@ -251,6 +266,30 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 paragraph_id,
                 expected_text_id,
                 expected_text,
+            },
+            OfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id,
+                row,
+                column,
+                expected_cell,
+                next_cell,
+            } => Self::SpreadsheetSetCell {
+                sheet_id,
+                row,
+                column,
+                expected_cell,
+                next_cell,
+            },
+            OfficeCollaborationMutation::SpreadsheetDeleteCell {
+                sheet_id,
+                row,
+                column,
+                expected_cell,
+            } => Self::SpreadsheetDeleteCell {
+                sheet_id,
+                row,
+                column,
+                expected_cell,
             },
             OfficeCollaborationMutation::PdfCreateAnnotation {
                 annotation_id,

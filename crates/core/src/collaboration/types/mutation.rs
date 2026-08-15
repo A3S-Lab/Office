@@ -120,6 +120,27 @@ pub enum NativeOfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Create or update one Spreadsheet cell through the browser-compatible
+    /// field-addressed cell map. `expectedCell` is absent when the caller
+    /// observed a blank coordinate. Recursive optimistic guards allow
+    /// unrelated concurrent leaf edits to merge while same-leaf conflicts
+    /// fail closed.
+    SpreadsheetSetCell {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        expected_cell: Option<JsonValue>,
+        next_cell: JsonValue,
+    },
+    /// Delete one Spreadsheet cell after matching its complete current JSON
+    /// value. Dense projection dimensions are retained; sparse and empty
+    /// sheets remain sparse.
+    SpreadsheetDeleteCell {
+        sheet_id: String,
+        row: u32,
+        column: u32,
+        expected_cell: JsonValue,
+    },
     /// Create one portable PDF annotation with a caller-owned stable ID.
     /// Native creation always records `source: "created"` and accepts only
     /// annotation types supported by the browser projection.
