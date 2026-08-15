@@ -123,8 +123,9 @@ export function WorkOfficeRibbon<T extends string>({
   const updateRibbonOverflow = useCallback(() => {
     const toolbar = toolbarRef.current;
     if (!toolbar) return;
+    const ribbonWidth = ribbonRef.current?.clientWidth || toolbar.clientWidth;
     const nextDensity = adaptive
-      ? calculateRibbonDensity(toolbar.clientWidth)
+      ? calculateRibbonDensity(ribbonWidth)
       : 'comfortable';
     setRibbonDensity((current) =>
       current === nextDensity ? current : nextDensity,

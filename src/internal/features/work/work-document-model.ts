@@ -61,7 +61,11 @@ export function resolveWorkDocumentEditorInput(
   content: WorkDocumentContent,
   fallbackHtml: string,
 ): WorkDocumentEditorInput {
-  const model = documentModelForHtml(content.model, fallbackHtml);
+  // The structured model is synchronized to the controlled `content.html`
+  // value. `fallbackHtml` may be a browser-normalized legacy projection, so
+  // validating against it would discard a valid model and turn mount-time HTML
+  // normalization into a false user edit.
+  const model = documentModelForContent(content);
   if (!model) {
     return {
       model: null,

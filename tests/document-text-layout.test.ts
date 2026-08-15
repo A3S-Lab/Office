@@ -1,11 +1,13 @@
-import { Editor } from '@tiptap/core';
 import { describe, expect, test } from '@rstest/core';
+import { Editor } from '@tiptap/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
+import type { WorkDocumentLayoutFont } from '../src/internal/features/work/work-document-fonts';
 import {
   collectDocumentTextLayoutParagraphs,
   collectDocumentTextLayoutRuns,
+  documentTextLayoutBatches,
 } from '../src/internal/features/work/work-document-pagination';
-import type { WorkDocumentLayoutFont } from '../src/internal/features/work/work-document-fonts';
+import type { OfficeKernelTextLayoutParagraph } from '../src/internal/kernel/office-kernel-protocol';
 
 const layoutFont: WorkDocumentLayoutFont = {
   id: 'layout-regular',
@@ -28,6 +30,33 @@ const boldLayoutFont: WorkDocumentLayoutFont = {
   weight: 700,
   style: 'normal',
 };
+
+test('batches a large document within the kernel paragraph limit', () => {
+  const paragraphs: OfficeKernelTextLayoutParagraph[] = Array.from(
+    { length: 2_050 },
+    (_, index) => ({
+      id: `paragraph-${index}`,
+      text: 'x',
+      runs: [
+        {
+          startUtf16: 0,
+          endUtf16: 1,
+          fontId: layoutFont.id,
+          fontSize: 14,
+          lineHeight: 21,
+        },
+      ],
+      maxWidth: 400,
+    }),
+  );
+
+  const batches = documentTextLayoutBatches(paragraphs);
+
+  expect(batches.map((batch) => batch.length)).toEqual([1_024, 1_024, 2]);
+  expect(batches.flat().map(({ id }) => id)).toEqual(
+    paragraphs.map(({ id }) => id),
+  );
+});
 
 describe('document mixed-run text layout', () => {
   test('collects contiguous UTF-16 runs with independent line metrics', () => {

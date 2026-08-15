@@ -164,6 +164,22 @@ export {
   WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT,
   workKindForFile as officeKindForFile,
 } from './internal/features/work/work-file-io';
+export {
+  decodeWorkDocumentSnapshot as decodeDocumentSnapshot,
+  encodeWorkDocumentSnapshot as encodeDocumentSnapshot,
+  WORK_DOCUMENT_SNAPSHOT_MEDIA_TYPE as DOCUMENT_SNAPSHOT_MEDIA_TYPE,
+  WORK_DOCUMENT_SNAPSHOT_SCHEMA as DOCUMENT_SNAPSHOT_SCHEMA,
+  WORK_DOCUMENT_SNAPSHOT_VERSION as DOCUMENT_SNAPSHOT_VERSION,
+  type WorkDocumentSnapshot as DocumentSnapshot,
+} from './internal/features/work/work-document-snapshot';
+export {
+  applyWorkDocumentSource as applyDocumentSource,
+  projectWorkDocumentSource as projectDocumentSource,
+  WORK_DOCUMENT_SOURCE_MEDIA_TYPE as DOCUMENT_SOURCE_MEDIA_TYPE,
+  WORK_DOCUMENT_SOURCE_SCHEMA as DOCUMENT_SOURCE_SCHEMA,
+  WORK_DOCUMENT_SOURCE_VERSION as DOCUMENT_SOURCE_VERSION,
+  type WorkDocumentSource as DocumentSource,
+} from './internal/features/work/work-document-source';
 export type {
   WorkGetMarkdownSelectionMenuItems as GetMarkdownSelectionMenuItems,
   WorkMarkdownSelectionCommandFailure as MarkdownSelectionCommandFailure,

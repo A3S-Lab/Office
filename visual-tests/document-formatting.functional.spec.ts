@@ -391,13 +391,17 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
     const body = paper.querySelector<HTMLElement>(
       ':scope > .work-document-editable',
     );
+    const bodyContent = body?.querySelector<HTMLElement>(
+      ':scope .work-document-section',
+    );
     const footer = paper.querySelector<HTMLElement>(':scope > footer');
-    if (!(header && body && footer)) {
+    if (!(header && body && bodyContent && footer)) {
       throw new Error('Document preview page chrome is incomplete.');
     }
     const paperRect = paper.getBoundingClientRect();
     const headerRect = header.getBoundingClientRect();
     const bodyRect = body.getBoundingClientRect();
+    const bodyContentRect = bodyContent.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
     const paperStyle = getComputedStyle(paper);
     return {
@@ -411,22 +415,33 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
       headerRight: headerRect.right,
       bodyTop: bodyRect.top,
       bodyBottom: bodyRect.bottom,
-      bodyLeft: bodyRect.left,
-      bodyRight: bodyRect.right,
+      bodyLeft: bodyContentRect.left,
+      bodyRight: bodyContentRect.right,
       footerTop: footerRect.top,
       footerBottom: footerRect.bottom,
       footerLeft: footerRect.left,
       footerRight: footerRect.right,
       scale: paper.offsetWidth > 0 ? paperRect.width / paper.offsetWidth : 1,
+      headerDistance: Number.parseFloat(
+        paperStyle.getPropertyValue('--work-document-page-header-distance'),
+      ),
+      footerDistance: Number.parseFloat(
+        paperStyle.getPropertyValue('--work-document-page-footer-distance'),
+      ),
       paddingTop: Number.parseFloat(paperStyle.paddingTop),
       paddingBottom: Number.parseFloat(paperStyle.paddingBottom),
     };
   });
   expect(geometry.headerPosition).toBe('absolute');
   expect(geometry.footerPosition).toBe('absolute');
-  expect(Math.abs(geometry.headerTop - geometry.pageTop)).toBeLessThanOrEqual(
-    2,
-  );
+  expect(geometry.headerDistance).toBeGreaterThan(0);
+  expect(geometry.footerDistance).toBeGreaterThan(0);
+  expect(
+    Math.abs(
+      geometry.headerTop -
+        (geometry.pageTop + geometry.headerDistance * geometry.scale),
+    ),
+  ).toBeLessThanOrEqual(2);
   expect(
     Math.abs(
       geometry.headerBottom -
@@ -450,7 +465,10 @@ test('Word preview keeps page chrome inside the physical page margins', async ({
   ).toBeLessThanOrEqual(2);
   expect(geometry.footerTop).toBeGreaterThanOrEqual(geometry.bodyBottom);
   expect(
-    Math.abs(geometry.footerBottom - geometry.pageBottom),
+    Math.abs(
+      geometry.footerBottom -
+        (geometry.pageBottom - geometry.footerDistance * geometry.scale),
+    ),
   ).toBeLessThanOrEqual(2);
   expect(Math.abs(geometry.footerLeft - geometry.bodyLeft)).toBeLessThanOrEqual(
     2,
@@ -500,6 +518,7 @@ test('Word paper starts without rulers and persists explicit page controls', asy
     const bodyRect = body.getBoundingClientRect();
     const headerRect = header.getBoundingClientRect();
     const footerRect = footer.getBoundingClientRect();
+    const paperStyle = getComputedStyle(paper);
     return {
       paperTop: paperRect.top,
       paperBottom: paperRect.bottom,
@@ -509,10 +528,23 @@ test('Word paper starts without rulers and persists explicit page controls', asy
       headerBottom: headerRect.bottom,
       footerTop: footerRect.top,
       footerBottom: footerRect.bottom,
+      scale: paper.offsetWidth > 0 ? paperRect.width / paper.offsetWidth : 1,
+      headerDistance: Number.parseFloat(
+        paperStyle.getPropertyValue('--work-document-page-header-distance'),
+      ),
+      footerDistance: Number.parseFloat(
+        paperStyle.getPropertyValue('--work-document-page-footer-distance'),
+      ),
     };
   });
+  expect(chromeGeometry.headerDistance).toBeGreaterThan(0);
+  expect(chromeGeometry.footerDistance).toBeGreaterThan(0);
   expect(
-    Math.abs(chromeGeometry.headerTop - chromeGeometry.paperTop),
+    Math.abs(
+      chromeGeometry.headerTop -
+        (chromeGeometry.paperTop +
+          chromeGeometry.headerDistance * chromeGeometry.scale),
+    ),
   ).toBeLessThanOrEqual(1);
   expect(
     Math.abs(chromeGeometry.headerBottom - chromeGeometry.bodyTop),
@@ -521,7 +553,11 @@ test('Word paper starts without rulers and persists explicit page controls', asy
     chromeGeometry.bodyBottom,
   );
   expect(
-    Math.abs(chromeGeometry.footerBottom - chromeGeometry.paperBottom),
+    Math.abs(
+      chromeGeometry.footerBottom -
+        (chromeGeometry.paperBottom -
+          chromeGeometry.footerDistance * chromeGeometry.scale),
+    ),
   ).toBeLessThanOrEqual(1);
   await header.dblclick();
   await expect(page.getByRole('textbox', { name: '页内页眉' })).toBeFocused();

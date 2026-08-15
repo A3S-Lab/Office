@@ -1,0 +1,95 @@
+suite "collaboration-pdf-annotations" {
+    version = 1
+
+    scenario "project-native-pdf-annotation-lifecycle" {
+        name = "Project native PDF annotation creation, update, and deletion"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-pdf-collaboration-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-pdf-annotations"
+        }
+
+        upload "open-source-pdf" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/fixtures/pdf-thumbnail-keyboard.pdf"]
+        }
+
+        wait "pdf-collaboration-ready" {
+            visible = css("[data-testid='pdf-collaboration-annotation-status'][data-state='ready']")
+        }
+
+        wait "pdf-viewer-ready" {
+            visible = css(".work-pdf-embed[data-ready='true']")
+        }
+
+        click "create-shared-annotation" {
+            target = role("button", "模拟原生创建 PDF 批注")
+        }
+
+        wait "shared-annotation-created" {
+            visible = css("[data-testid='pdf-collaboration-annotation-status'][data-state='created']")
+        }
+
+        expect "created-status-visible" {
+            text = "代理已创建共享批注"
+        }
+
+        screenshot "created-highlight" {
+            path = "screenshots/pdf-native-annotation-created.png"
+        }
+
+        click "update-shared-annotation" {
+            target = role("button", "模拟原生更新 PDF 批注")
+        }
+
+        wait "shared-annotation-updated" {
+            visible = css("[data-testid='pdf-collaboration-annotation-status'][data-state='updated']")
+        }
+
+        expect "updated-status-visible" {
+            text = "代理已更新共享批注"
+        }
+
+        screenshot "updated-highlight" {
+            path = "screenshots/pdf-native-annotation-updated.png"
+        }
+
+        click "delete-shared-annotation" {
+            target = role("button", "模拟原生删除 PDF 批注")
+        }
+
+        wait "shared-annotation-deleted" {
+            visible = css("[data-testid='pdf-collaboration-annotation-status'][data-state='deleted']")
+        }
+
+        expect "deleted-status-visible" {
+            text = "代理已删除共享批注"
+        }
+
+        screenshot "deleted-highlight" {
+            path = "screenshots/pdf-native-annotation-deleted.png"
+        }
+
+        accessibility "annotation-lifecycle-accessibility" {
+            path = "evidence/pdf-native-annotations-accessibility.json"
+            interactive = true
+        }
+
+        console "annotation-lifecycle-console" {
+            path = "diagnostics/pdf-native-annotations-console.json"
+            clear = false
+        }
+
+        page_errors "annotation-lifecycle-errors" {
+            path = "diagnostics/pdf-native-annotations-errors.json"
+            clear = false
+        }
+    }
+}

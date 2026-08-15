@@ -45,6 +45,10 @@ import {
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import { usePlaygroundCollaborationPresenceFixture } from './collaboration-presence-fixture';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
+import {
+  type PlaygroundPdfAnnotationStage,
+  usePlaygroundPdfCollaborationFixture,
+} from './pdf-collaboration-fixture';
 import type { NoticeTone } from './playground-types';
 
 const assistantMinimumWidth = 340;
@@ -91,6 +95,7 @@ export function EditorWorkspace({
   const e2eFixture =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('e2e');
+  const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
     artifact.content.type === 'document' &&
@@ -105,6 +110,18 @@ export function EditorWorkspace({
   const collaborationPresenceFixtureEnabled =
     e2eFixture === 'collaboration-presence' &&
     artifact.content.type === 'document';
+  const pdfCollaborationFixtureEnabled =
+    e2eFixture === 'collaboration-pdf-annotations' &&
+    artifact.content.type === 'pdf';
+  const pdfCollaborationFixture = usePlaygroundPdfCollaborationFixture(
+    pdfCollaborationFixtureEnabled
+      ? {
+          artifactId: artifact.id,
+          loadSource: loadPdf,
+          pageCount: 4,
+        }
+      : undefined,
+  );
 
   const handleAgentRequest = useCallback(
     (request: EditorAgentRequest) => {
@@ -165,7 +182,6 @@ export function EditorWorkspace({
     },
     [artifact.id, onNotice, onTouch],
   );
-  const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const getDocumentSelectionMenuItems =
     useCallback<GetDocumentSelectionMenuItems>(
       () =>
@@ -263,6 +279,44 @@ export function EditorWorkspace({
                     </span>
                   </button>
                 )}
+              {pdfCollaborationFixtureEnabled && (
+                <>
+                  <output
+                    className="playground-collaboration-fixture-status"
+                    data-testid="pdf-collaboration-annotation-status"
+                    data-state={
+                      pdfCollaborationFixture?.annotationStage ?? 'loading'
+                    }
+                    aria-live="polite"
+                  >
+                    {pdfCollaborationFixture
+                      ? pdfCollaborationAnnotationStatus(
+                          pdfCollaborationFixture.annotationStage,
+                        )
+                      : '正在准备 PDF 协作'}
+                  </output>
+                  {pdfCollaborationFixture && (
+                    <button
+                      type="button"
+                      className="work-editor-ai-button"
+                      aria-label={pdfCollaborationAnnotationAction(
+                        pdfCollaborationFixture.annotationStage,
+                      )}
+                      disabled={
+                        pdfCollaborationFixture.annotationStage === 'deleted'
+                      }
+                      onClick={pdfCollaborationFixture.advanceAnnotation}
+                    >
+                      <MessageSquareText size={15} />
+                      <span>
+                        {pdfCollaborationAnnotationAction(
+                          pdfCollaborationFixture.annotationStage,
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
               {artifact.kind !== 'pdf' && (
                 <fieldset className="playground-mode-switch">
                   <legend className="sr-only">编辑或预览</legend>
@@ -370,18 +424,25 @@ export function EditorWorkspace({
               theme="light"
             />
           )}
-          {artifact.content.type === 'pdf' && (
-            <PdfViewer
-              fileName={
-                artifact.source?.name ??
-                `${artifact.title.toLocaleLowerCase()}.pdf`
-              }
-              loadSource={loadPdf}
-              onSave={savePdf}
-              sourceKey={`${artifact.id}:${artifact.revision}`}
-              theme="light"
-            />
-          )}
+          {artifact.content.type === 'pdf' &&
+            (!pdfCollaborationFixtureEnabled || pdfCollaborationFixture) && (
+              <PdfViewer
+                collaboration={pdfCollaborationFixture?.collaboration}
+                fileName={
+                  artifact.source?.name ??
+                  `${artifact.title.toLocaleLowerCase()}.pdf`
+                }
+                loadSource={loadPdf}
+                onSave={savePdf}
+                sourceKey={`${artifact.id}:${artifact.revision}`}
+                theme="light"
+              />
+            )}
+          {artifact.content.type === 'pdf' &&
+            pdfCollaborationFixtureEnabled &&
+            !pdfCollaborationFixture && (
+              <div role="status">正在准备 PDF 协作测试夹具</div>
+            )}
         </section>
 
         {assistantOpen && (
@@ -410,6 +471,36 @@ export function EditorWorkspace({
       </div>
     </section>
   );
+}
+
+function pdfCollaborationAnnotationStatus(
+  stage: PlaygroundPdfAnnotationStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return 'PDF 协作已连接';
+    case 'created':
+      return '代理已创建共享批注';
+    case 'updated':
+      return '代理已更新共享批注';
+    case 'deleted':
+      return '代理已删除共享批注';
+  }
+}
+
+function pdfCollaborationAnnotationAction(
+  stage: PlaygroundPdfAnnotationStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return '模拟原生创建 PDF 批注';
+    case 'created':
+      return '模拟原生更新 PDF 批注';
+    case 'updated':
+      return '模拟原生删除 PDF 批注';
+    case 'deleted':
+      return '原生 PDF 批注已删除';
+  }
 }
 
 const CONTROLLED_REVIEW_COMMENT_ID = 'e2e-controlled-review-comment';

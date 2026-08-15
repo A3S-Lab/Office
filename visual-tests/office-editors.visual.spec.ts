@@ -810,7 +810,7 @@ test('compact spreadsheet ribbon advances to a complete group', async ({
   );
   expect(geometry.aligned.right).toBeLessThanOrEqual(geometry.toolbarRight - 2);
 
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await expect(backward).toBeHidden();
   await expect(forward).toBeHidden();
   await expect
@@ -941,6 +941,7 @@ test('compact spreadsheet task panels stay contained and keyboard dismissible', 
   await page.getByRole('button', { name: '根据当前选区新建' }).click();
   await verifyPanel('图表管理器', '工作簿图表内容', '关闭工作簿图表');
 
+  await page.getByRole('tab', { name: '开始', exact: true }).click();
   await page.getByRole('button', { name: '条件格式' }).click();
   await verifyPanel('条件格式管理器', '条件格式内容', '关闭条件格式');
 

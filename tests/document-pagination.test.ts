@@ -5,6 +5,7 @@ import {
   type DocumentPaginationResult,
   deriveDocumentPaginationPageDescriptors,
   documentPaginationPageDescriptors,
+  documentResizeObservationPositions,
   pageForPosition,
 } from '../src/internal/features/work/editors/use-document-pagination';
 import type { MeasuredDocumentLayoutBlock } from '../src/internal/features/work/work-document-pagination';
@@ -23,6 +24,35 @@ import {
   OFFICE_KERNEL_PROTOCOL_VERSION,
   type OfficeKernelLayoutResult,
 } from '../src/internal/kernel/office-kernel-protocol';
+
+test('indexes the earliest resize-observed block for each element', () => {
+  const layout = sectionLayout();
+  const observed = document.createElement('p');
+  const ignored = document.createElement('p');
+  const blocks = [
+    {
+      ...measuredBlock('later', 'section-a', 0, layout, observed),
+      from: 40,
+      observeResize: true,
+    },
+    {
+      ...measuredBlock('earlier', 'section-a', 0, layout, observed),
+      from: 10,
+      observeResize: true,
+    },
+    {
+      ...measuredBlock('unobserved', 'section-a', 0, layout, ignored),
+      from: 1,
+      observeResize: false,
+    },
+  ];
+
+  const positions = documentResizeObservationPositions(blocks);
+
+  expect(positions.size).toBe(1);
+  expect(positions.get(observed)).toBe(10);
+  expect(positions.has(ignored)).toBe(false);
+});
 
 test('treats page chrome as overlays and keeps complete physical pages', () => {
   const page = {

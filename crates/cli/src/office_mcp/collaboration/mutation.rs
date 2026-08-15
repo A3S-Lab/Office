@@ -1,6 +1,11 @@
-use a3s_office::{NativeOfficeCollaborationMutation, NativeOfficeCollaborationParagraphPosition};
+use a3s_office::{
+    NativeOfficeCollaborationMutation, NativeOfficeCollaborationParagraphPosition,
+    NativeOfficeCollaborationPdfAnnotationSource, NativeOfficeCollaborationPdfRect,
+    NativeOfficeCollaborationPdfReviewDecision, NativeOfficeCollaborationPdfReviewTargetKind,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
@@ -18,7 +23,75 @@ impl From<OfficeCollaborationParagraphPosition> for NativeOfficeCollaborationPar
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(in crate::office_mcp) struct OfficeCollaborationPdfRect {
+    left: f64,
+    top: f64,
+    right: f64,
+    bottom: f64,
+}
+
+impl From<OfficeCollaborationPdfRect> for NativeOfficeCollaborationPdfRect {
+    fn from(value: OfficeCollaborationPdfRect) -> Self {
+        Self {
+            left: value.left,
+            top: value.top,
+            right: value.right,
+            bottom: value.bottom,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationPdfReviewTargetKind {
+    Redaction,
+    PageOperation,
+}
+
+impl From<OfficeCollaborationPdfReviewTargetKind> for NativeOfficeCollaborationPdfReviewTargetKind {
+    fn from(value: OfficeCollaborationPdfReviewTargetKind) -> Self {
+        match value {
+            OfficeCollaborationPdfReviewTargetKind::Redaction => Self::Redaction,
+            OfficeCollaborationPdfReviewTargetKind::PageOperation => Self::PageOperation,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationPdfReviewDecision {
+    Approve,
+    Reject,
+}
+
+impl From<OfficeCollaborationPdfReviewDecision> for NativeOfficeCollaborationPdfReviewDecision {
+    fn from(value: OfficeCollaborationPdfReviewDecision) -> Self {
+        match value {
+            OfficeCollaborationPdfReviewDecision::Approve => Self::Approve,
+            OfficeCollaborationPdfReviewDecision::Reject => Self::Reject,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationPdfAnnotationSource {
+    Base,
+    Created,
+}
+
+impl From<OfficeCollaborationPdfAnnotationSource> for NativeOfficeCollaborationPdfAnnotationSource {
+    fn from(value: OfficeCollaborationPdfAnnotationSource) -> Self {
+        match value {
+            OfficeCollaborationPdfAnnotationSource::Base => Self::Base,
+            OfficeCollaborationPdfAnnotationSource::Created => Self::Created,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
 #[serde(
     tag = "type",
     rename_all = "kebab-case",
@@ -61,6 +134,63 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         paragraph_id: String,
         expected_text_id: String,
         expected_text: String,
+    },
+    /// Create one supported portable PDF annotation with a stable ID.
+    PdfCreateAnnotation {
+        annotation_id: String,
+        page_index: u32,
+        annotation: JsonValue,
+    },
+    /// Merge mutable annotation leaves using an exact recursive expectation.
+    PdfUpdateAnnotation {
+        annotation_id: String,
+        expected_annotation: JsonValue,
+        next_annotation: JsonValue,
+    },
+    /// Irreversibly tombstone one annotation after matching immutable identity.
+    PdfDeleteAnnotation {
+        annotation_id: String,
+        expected_source: OfficeCollaborationPdfAnnotationSource,
+        expected_page_index: u32,
+        expected_type: u32,
+    },
+    /// Set one PDF form value by its stable fully-qualified field name.
+    PdfSetFormValue { field_id: String, value: String },
+    /// Append one attributable PDF redaction proposal with immutable geometry.
+    PdfProposeRedaction {
+        proposal_id: String,
+        page_index: u32,
+        rects: Vec<OfficeCollaborationPdfRect>,
+        proposed_at: String,
+        reason: Option<String>,
+        text: Option<String>,
+    },
+    /// Append an attributable request to rotate selected source pages.
+    PdfProposePageRotation {
+        page_operation_id: String,
+        page_indices: Vec<u32>,
+        degrees: u16,
+        proposed_at: String,
+    },
+    /// Append an attributable request to delete a proper subset of source pages.
+    PdfProposePageDeletion {
+        page_operation_id: String,
+        page_indices: Vec<u32>,
+        proposed_at: String,
+    },
+    /// Append an attributable request containing a complete source-page permutation.
+    PdfProposePageReorder {
+        page_operation_id: String,
+        page_order: Vec<u32>,
+        proposed_at: String,
+    },
+    /// Append the single final review decision for a PDF redaction or page operation.
+    PdfDecideReview {
+        decision_id: String,
+        target_kind: OfficeCollaborationPdfReviewTargetKind,
+        target_id: String,
+        decision: OfficeCollaborationPdfReviewDecision,
+        created_at: String,
     },
 }
 
@@ -121,6 +251,95 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 paragraph_id,
                 expected_text_id,
                 expected_text,
+            },
+            OfficeCollaborationMutation::PdfCreateAnnotation {
+                annotation_id,
+                page_index,
+                annotation,
+            } => Self::PdfCreateAnnotation {
+                annotation_id,
+                page_index,
+                annotation,
+            },
+            OfficeCollaborationMutation::PdfUpdateAnnotation {
+                annotation_id,
+                expected_annotation,
+                next_annotation,
+            } => Self::PdfUpdateAnnotation {
+                annotation_id,
+                expected_annotation,
+                next_annotation,
+            },
+            OfficeCollaborationMutation::PdfDeleteAnnotation {
+                annotation_id,
+                expected_source,
+                expected_page_index,
+                expected_type,
+            } => Self::PdfDeleteAnnotation {
+                annotation_id,
+                expected_source: expected_source.into(),
+                expected_page_index,
+                expected_type,
+            },
+            OfficeCollaborationMutation::PdfSetFormValue { field_id, value } => {
+                Self::PdfSetFormValue { field_id, value }
+            }
+            OfficeCollaborationMutation::PdfProposeRedaction {
+                proposal_id,
+                page_index,
+                rects,
+                proposed_at,
+                reason,
+                text,
+            } => Self::PdfProposeRedaction {
+                proposal_id,
+                page_index,
+                rects: rects.into_iter().map(Into::into).collect(),
+                proposed_at,
+                reason,
+                text,
+            },
+            OfficeCollaborationMutation::PdfProposePageRotation {
+                page_operation_id,
+                page_indices,
+                degrees,
+                proposed_at,
+            } => Self::PdfProposePageRotation {
+                page_operation_id,
+                page_indices,
+                degrees,
+                proposed_at,
+            },
+            OfficeCollaborationMutation::PdfProposePageDeletion {
+                page_operation_id,
+                page_indices,
+                proposed_at,
+            } => Self::PdfProposePageDeletion {
+                page_operation_id,
+                page_indices,
+                proposed_at,
+            },
+            OfficeCollaborationMutation::PdfProposePageReorder {
+                page_operation_id,
+                page_order,
+                proposed_at,
+            } => Self::PdfProposePageReorder {
+                page_operation_id,
+                page_order,
+                proposed_at,
+            },
+            OfficeCollaborationMutation::PdfDecideReview {
+                decision_id,
+                target_kind,
+                target_id,
+                decision,
+                created_at,
+            } => Self::PdfDecideReview {
+                decision_id,
+                target_kind: target_kind.into(),
+                target_id,
+                decision: decision.into(),
+                created_at,
             },
         }
     }

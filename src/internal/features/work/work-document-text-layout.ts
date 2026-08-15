@@ -28,11 +28,28 @@ import {
   normalizeDocumentTabStops,
 } from './work-document-tab-stops';
 
-const MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS = 1_024;
+const MAX_DOCUMENT_TEXT_LAYOUT_PARAGRAPHS = 16_384;
 const MAX_DOCUMENT_TEXT_LAYOUT_RUNS = 16_384;
 const MAX_DOCUMENT_TEXT_LAYOUT_BYTES = 1_048_576;
 const MAX_DOCUMENT_TEXT_LAYOUT_RUNS_PER_PARAGRAPH = 4_096;
 const MAX_DOCUMENT_TEXT_LAYOUT_FONTS_PER_RUN = 8;
+export const DOCUMENT_TEXT_LAYOUT_BATCH_SIZE = 1_024;
+
+export function documentTextLayoutBatches(
+  paragraphs: readonly OfficeKernelTextLayoutParagraph[],
+): OfficeKernelTextLayoutParagraph[][] {
+  const batches: OfficeKernelTextLayoutParagraph[][] = [];
+  for (
+    let offset = 0;
+    offset < paragraphs.length;
+    offset += DOCUMENT_TEXT_LAYOUT_BATCH_SIZE
+  ) {
+    batches.push(
+      paragraphs.slice(offset, offset + DOCUMENT_TEXT_LAYOUT_BATCH_SIZE),
+    );
+  }
+  return batches;
+}
 
 export function collectDocumentTextLayoutParagraphs(
   editor: Editor,

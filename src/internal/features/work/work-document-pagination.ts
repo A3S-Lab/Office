@@ -38,6 +38,7 @@ export { createDocumentTableRowFragmentPlan } from './work-document-table-pagina
 export {
   collectDocumentTextLayoutParagraphs,
   collectDocumentTextLayoutRuns,
+  documentTextLayoutBatches,
 } from './work-document-text-layout';
 
 interface DocumentPaginationPluginState {

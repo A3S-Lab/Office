@@ -15,10 +15,76 @@ import {
   readOfficePdfCollaboration,
 } from '../src/core';
 import { createWorkPdfCollaborationProjection } from '../src/internal/features/work/editors/pdf-collaboration-projection';
+import {
+  BROWSER_PDF_FIXTURE_BASE64,
+  NATIVE_PDF_CREATE_ANNOTATION_BASE64,
+  NATIVE_PDF_DELETE_ANNOTATION_BASE64,
+  NATIVE_PDF_UPDATE_ANNOTATION_BASE64,
+} from './fixtures/native-pdf-annotation-updates';
 import { PDF_COLLABORATION_SOURCE } from './fixtures/pdf-collaboration';
 
 const DOCUMENT_ID = 'pdf-document';
 const RENDERER_DEFAULT_AUTHOR = 'A3S Office User';
+
+test('projects exact native Rust Highlight updates into the EmbedPDF annotation scope', async () => {
+  const document = new Y.Doc();
+  Y.applyUpdate(document, decodeBase64(BROWSER_PDF_FIXTURE_BASE64));
+  Y.applyUpdate(document, decodeBase64(NATIVE_PDF_CREATE_ANNOTATION_BASE64));
+  const session = createOfficeCollaborationSession({
+    artifactId: 'fixture-pdf',
+    document,
+    kind: 'pdf',
+  });
+  const viewer = createPdfViewerHarness([], { 'Applicant.Name': 'Ada' });
+  const projection = createWorkPdfCollaborationProjection(
+    viewer.registry,
+    session,
+  );
+  await projection.ready;
+  await flushMicrotasks();
+
+  expect(viewer.annotation('annotation-native-interop')).toMatchObject({
+    id: 'annotation-native-interop',
+    pageIndex: 1,
+    type: 9,
+    rect: {
+      origin: { x: 68, y: 78 },
+      size: { width: 300, height: 28 },
+    },
+    segmentRects: [
+      {
+        origin: { x: 68, y: 78 },
+        size: { width: 300, height: 28 },
+      },
+    ],
+    strokeColor: '#ffd400',
+    color: '#ffd400',
+    opacity: 0.48,
+    contents: 'Native note',
+    author: 'A3S Agent',
+    created: new Date('2026-08-15T08:00:00.000Z'),
+  });
+
+  Y.applyUpdate(document, decodeBase64(NATIVE_PDF_UPDATE_ANNOTATION_BASE64));
+  await flushMicrotasks();
+  expect(viewer.annotation('annotation-native-interop')).toMatchObject({
+    strokeColor: '#ff0000',
+    color: '#ff0000',
+  });
+
+  Y.applyUpdate(document, decodeBase64(NATIVE_PDF_DELETE_ANNOTATION_BASE64));
+  await flushMicrotasks();
+  expect(viewer.annotation('annotation-native-interop')).toBeUndefined();
+  expect(
+    readOfficePdfCollaboration(session).annotations.find(
+      ({ id }) => id === 'annotation-native-interop',
+    ),
+  ).toMatchObject({ deleted: true });
+
+  projection.destroy();
+  session.destroy();
+  document.destroy();
+});
 
 test('projects shared PDF overlays after capturing the immutable viewer baseline', async () => {
   const baseHighlight = viewerAnnotation('base-highlight', '#ffff00', 0);
@@ -533,6 +599,10 @@ function resolvedPdfTask<T>(value: T) {
     },
     toPromise: () => Promise.resolve(value),
   };
+}
+
+function decodeBase64(value: string): Uint8Array {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 
 function createEvent<T>() {

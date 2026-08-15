@@ -13,6 +13,7 @@ import {
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
+export { WORK_IMPORT_ACCEPT } from './work-file-contract';
 import { materializeWorkFile } from './work-file-data';
 import {
   createWorkPresentationBlob,
@@ -68,21 +69,6 @@ const MARKDOWN_EXTENSIONS = new Set(['md', 'markdown']);
 const SPREADSHEET_EXTENSIONS = new Set(['xlsx', 'xls', 'csv', 'ods']);
 const PRESENTATION_EXTENSIONS = new Set(['pptx']);
 const PDF_EXTENSIONS = new Set(['pdf']);
-
-export const WORK_IMPORT_ACCEPT = [
-  '.docx',
-  '.xlsx',
-  '.xls',
-  '.csv',
-  '.ods',
-  '.pptx',
-  '.pdf',
-  '.html',
-  '.htm',
-  '.txt',
-  '.md',
-  '.markdown',
-].join(',');
 
 export type WorkArtifactExportOptions = WorkPresentationExportOptions;
 

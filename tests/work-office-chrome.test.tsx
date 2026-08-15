@@ -212,11 +212,16 @@ test('adapts lower-priority groups before using ribbon overflow', async () => {
     />,
   );
 
+  const ribbon = screen.getByRole('region', { name: 'Adaptive ribbon' });
   const toolbar = screen.getByRole('toolbar', { name: 'Home工具栏' });
-  let width = 1000;
+  let ribbonWidth = 1000;
+  Object.defineProperty(ribbon, 'clientWidth', {
+    configurable: true,
+    get: () => ribbonWidth,
+  });
   Object.defineProperty(toolbar, 'clientWidth', {
     configurable: true,
-    get: () => width,
+    value: 700,
   });
 
   fireEvent(window, new Event('resize'));
@@ -232,13 +237,13 @@ test('adapts lower-priority groups before using ribbon overflow', async () => {
     'low',
   );
 
-  width = 700;
+  ribbonWidth = 700;
   fireEvent(window, new Event('resize'));
   await waitFor(() =>
     expect(toolbar).toHaveAttribute('data-density', 'compact-normal'),
   );
 
-  width = 1280;
+  ribbonWidth = 1280;
   fireEvent(window, new Event('resize'));
   await waitFor(() =>
     expect(toolbar).toHaveAttribute('data-density', 'comfortable'),

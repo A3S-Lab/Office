@@ -1,5 +1,6 @@
 import type { Extensions } from '@tiptap/core';
 import Placeholder from '@tiptap/extension-placeholder';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { EditorContent, useEditor } from '@tiptap/react';
 import {
   type CSSProperties,
@@ -77,6 +78,7 @@ import { DocumentCitationsPanel } from './document-citations-panel';
 import { DocumentCommentsPanel } from './document-comments-panel';
 import { restoreDocumentEditorFocus } from './document-editor-focus';
 import { fallbackPaginationPageDescriptor } from './document-editor-pagination';
+import { shouldPublishDocumentUpdate } from './document-external-content';
 import {
   documentCurrentPage,
   documentPageCount,
@@ -143,6 +145,7 @@ export interface DocumentEditorProps {
   content: WorkDocumentContent;
   extensions?: Extensions;
   preview: boolean;
+  defaultRibbonCollapsed?: boolean;
   saveStatus?: string;
   kernelWasmUrl?: string;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
@@ -281,6 +284,7 @@ function DocumentEditorSurface({
   content,
   extensions = EMPTY_DOCUMENT_EXTENSIONS,
   preview: requestedPreview,
+  defaultRibbonCollapsed = false,
   saveStatus = '已自动保存',
   kernelWasmUrl,
   layoutFonts = EMPTY_DOCUMENT_LAYOUT_FONTS,
@@ -321,6 +325,7 @@ function DocumentEditorSurface({
   const initialEditorSourceRef = useRef(editorInput.source);
   const appliedSourceKeyRef = useRef(editorInput.sourceKey);
   const activeReviewConflictsRef = useRef<WorkDocumentReviewConflict[]>([]);
+  const publishedDocumentRef = useRef<ProseMirrorNode | null>(null);
   const [taskPane, setTaskPane] = useState<DocumentTaskPane | null>(null);
   const [layoutPanelTab, setLayoutPanelTab] =
     useState<DocumentLayoutPanelTab>('page');
@@ -408,7 +413,20 @@ function DocumentEditorSurface({
     content: collaboration ? undefined : initialEditorSourceRef.current,
     editable: !readOnly,
     editorProps,
-    onUpdate: ({ editor: current }) => {
+    onCreate: ({ editor: current }) => {
+      publishedDocumentRef.current = current.state.doc;
+    },
+    onUpdate: ({ editor: current, transaction }) => {
+      if (!shouldPublishDocumentUpdate(transaction)) {
+        publishedDocumentRef.current = current.state.doc;
+        return;
+      }
+      if (!publishedDocumentRef.current) {
+        publishedDocumentRef.current = current.state.doc;
+        return;
+      }
+      if (publishedDocumentRef.current.eq(current.state.doc)) return;
+      publishedDocumentRef.current = current.state.doc;
       const anchors = collectDocumentCommentAnchors(current.state.doc);
       const retainedCommentIds = new Set(
         activeReviewConflictsRef.current
@@ -477,6 +495,7 @@ function DocumentEditorSurface({
     editorInput,
     normalizedContent,
     onReviewConflict,
+    publishedDocumentRef,
     reconcileControlledUpdates: !collaboration,
   });
   const documentComments = useDocumentComments({
@@ -1095,6 +1114,7 @@ function DocumentEditorSurface({
       ) : (
         <DocumentToolbar
           editor={editor}
+          defaultRibbonCollapsed={defaultRibbonCollapsed}
           history={
             collaborationBinding
               ? {

@@ -4,6 +4,67 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.4.0 - 2026-08-15
+
+- Added a versioned, deterministic Document Snapshot codec for lossless
+  controlled-value persistence and an agent-readable Markdown Source
+  projection for single-section documents. Snapshot decoding validates the
+  schema, version, size, structured model, and synchronized HTML fingerprint;
+  Source revisions retain Office-owned section layout and reattach only
+  unambiguous surviving comment anchors. Public Core exports, README guidance,
+  and focused round-trip and fail-closed tests cover both contracts.
+- Hardened controlled Document editing and pagination under concurrent host,
+  agent, observer, and font updates. External snapshots now apply the smallest
+  history-neutral ProseMirror transaction, while a single-flight pagination
+  coordinator coalesces observer churn and aborts only invalidated work. The
+  Playground now lazy-loads editors, file import, and PDF evidence support from
+  lightweight shared contracts, reducing the initial entry bundle from 716.8
+  KiB to 71.4 KiB gzip while keeping the full editor available on interaction.
+  Adaptive ribbons now derive density from the stable outer viewport so
+  overflow navigation cannot trigger a resize oscillation.
+- Added native PDF annotation create, optimistic leaf update, and irreversible
+  delete mutations through Rust, `collab mutate`, standard MCP, and A3S Code.
+  The closed surface accepts portable FreeText, Highlight, Underline,
+  StrikeOut, and Ink records; creation writes a browser-compatible `created`
+  record plus immutable claim, concurrent updates merge unrelated JSON leaves,
+  same-leaf conflicts fail without an update, and deletion writes a durable
+  tombstone. Identical retries are no-ops, immutable ID/page/type changes are
+  rejected, and created claims remain valid after later mutable edits. Native
+  restart, duplicate/reordered-delivery, real CLI/MCP subprocess, and browser
+  Yjs interoperability tests cover the lifecycle. Exact native updates now
+  project through the EmbedPDF harness with real nested Highlight geometry.
+  The stable logical document digest canonicalizes JSON object arrays across
+  Yrs restart and delivery order while raw commit detection continues to retain
+  causally pending structs. The Playground exposes a deterministic remote
+  create/update/delete fixture, with an `a3s-test` ACL regression that captures
+  screenshots, accessibility, console, and page-error evidence.
+- Added native append-only PDF redaction and page-operation review mutations through Rust,
+  `collab mutate`, standard MCP, and A3S Code. `pdf-propose-redaction` writes
+  bounded page geometry with the replica actor and a canonical UTC timestamp;
+  `pdf-propose-page-rotation`, `pdf-propose-page-deletion`, and
+  `pdf-propose-page-reorder` write validated source-page subsets or a complete
+  permutation without changing source bytes; and
+  `pdf-decide-review` writes the single attributable final decision for an
+  existing redaction or page operation. Both records and their canonical
+  creation claims are committed atomically, identical stable-ID retries are
+  no-ops, and conflicting ID reuse, missing targets, duplicate final
+  decisions, invalid geometry, unsupported rotations, page-range violations,
+  deleting every page, and incomplete reorders fail without a durable update.
+  Native restart tests, real CLI/MCP subprocesses, and browser Yjs fixtures
+  cover concurrent edits plus duplicate and reordered delivery. An exhaustive
+  native convergence test now checks all 24 delivery orders for causally
+  related rotation, deletion, reorder, and final-decision updates, including a
+  duplicate delivery and durable restart. Native replay treats the immutable
+  checkpoint and raw update log as authoritative and canonically rebuilds Yrs
+  pending structures before reporting the committed state vector.
+- Added the first typed native PDF collaboration mutation through Rust,
+  `collab mutate`, standard MCP, and A3S Code. `pdf-set-form-value` updates an
+  existing conflict-local form-value leaf or deterministically creates its
+  typed presence/fields/order record without synchronizing source bytes.
+  Browser-generated Yjs fixtures, native restart/idempotency checks, real CLI
+  and MCP subprocesses, and concurrent browser/native replay prove the update
+  remains readable and convergent across Yjs and Yrs. Invalid or oversized
+  field identities fail before any durable state changes.
 - Extended typed native collaboration mutations to Document. Coding agents can
   replace an exact, fail-closed match count inside ProseMirror `Y.XmlText`,
   rotate the affected Word `textId` plus every identified ancestor table row's

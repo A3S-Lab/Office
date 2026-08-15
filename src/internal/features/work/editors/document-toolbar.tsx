@@ -95,6 +95,7 @@ export type DocumentViewMode = 'page' | 'web';
 
 interface DocumentToolbarProps {
   editor: Editor;
+  defaultRibbonCollapsed?: boolean;
   history?: {
     canRedo: boolean;
     canUndo: boolean;
@@ -159,6 +160,7 @@ interface DocumentToolbarProps {
 
 export function DocumentToolbar({
   editor,
+  defaultRibbonCollapsed = false,
   history,
   layoutOpen,
   layout,
@@ -535,6 +537,7 @@ export function DocumentToolbar({
             },
           },
         ]}
+        defaultCollapsed={defaultRibbonCollapsed}
         className="work-document-ribbon"
         toolbarClassName="document-toolbar"
         panels={{

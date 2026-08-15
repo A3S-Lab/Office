@@ -489,10 +489,35 @@ test('disables document zoom buttons at the supported boundaries', () => {
   expect(screen.getByRole('button', { name: '放大文档' })).toBeDisabled();
 });
 
-function toolbar(currentEditor: Editor, calls: ToolbarCalls, zoom = 100) {
+test('can start with the ribbon panel collapsed without disabling editing tools', () => {
+  editor = createEditor();
+  render(toolbar(editor, createCalls(), 100, true));
+
+  const ribbon = screen.getByRole('region', { name: '文字功能区' });
+  expect(ribbon).toHaveAttribute('data-collapsed', 'true');
+  expect(screen.getByRole('button', { name: '展开功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: '展开功能区' }));
+  expect(ribbon).not.toHaveAttribute('data-collapsed');
+  expect(screen.getByRole('button', { name: '折叠功能区' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+});
+
+function toolbar(
+  currentEditor: Editor,
+  calls: ToolbarCalls,
+  zoom = 100,
+  defaultRibbonCollapsed = false,
+) {
   return (
     <DocumentToolbar
       editor={currentEditor}
+      defaultRibbonCollapsed={defaultRibbonCollapsed}
       fileActions={[
         {
           id: 'save-copy',

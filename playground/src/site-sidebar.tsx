@@ -12,15 +12,14 @@ import {
   PanelLeftClose,
   Presentation,
 } from 'lucide-react';
-import {
-  type OfficeEditorKind,
-  preloadOfficeEditor,
-} from '@a3s-lab/office/react';
+import type { OfficeEditorKind } from '@a3s-lab/office/react';
 import { useRef } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 
 function warmOfficeEditor(kind: OfficeEditorKind): void {
-  void preloadOfficeEditor(kind).catch(() => undefined);
+  void import('@a3s-lab/office/react')
+    .then(({ preloadOfficeEditor }) => preloadOfficeEditor(kind))
+    .catch(() => undefined);
 }
 
 export function SiteSidebar({

@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use yrs::updates::decoder::Decode;
 use yrs::{Doc, ReadTxn, StateVector, Transact, Update};
 
-use super::document::{canonical_state_vector, inspect_document, new_replica_document};
+use super::document::{
+    canonical_replay_document, canonical_state_vector, inspect_document, new_replica_document,
+};
 use super::{
     collaboration_error, sha256_hex, validate_client_id, NativeOfficeCollaborationActorKind,
     NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationManifest,
@@ -80,6 +82,7 @@ pub(super) struct UpdateEntry {
 pub(super) struct LoadedStore {
     pub manifest: NativeOfficeCollaborationManifest,
     pub doc: Doc,
+    pub checkpoint_update: Vec<u8>,
     pub checkpoint_sequence: u64,
     pub current_sequence: u64,
     pub next_sequence: u64,
@@ -221,17 +224,22 @@ pub(super) fn load_store(root: &Path) -> UseResult<LoadedStore> {
     validate_manifest(&manifest)?;
     let checkpoint =
         load_latest_checkpoint(root, manifest.client_id, &manifest.namespace, manifest.kind)?;
-    let doc = checkpoint.doc;
+    let LoadedCheckpoint {
+        sequence: checkpoint_sequence,
+        doc: checkpoint_doc,
+        update: checkpoint_update,
+    } = checkpoint;
+    let mut doc = checkpoint_doc;
     let mut operations = load_archived_operations(root, &manifest)?;
-    let mut current_sequence = checkpoint.sequence;
-    let mut expected_sequence = checkpoint.sequence.saturating_add(1);
+    let mut current_sequence = checkpoint_sequence;
+    let mut expected_sequence = checkpoint_sequence.saturating_add(1);
     let mut update_entries = Vec::new();
     let mut covered_update_entries = Vec::new();
     let mut update_bytes = 0_u64;
     let entries = load_update_entries(root, &manifest)?;
     for entry in entries {
         insert_operation(&mut operations, &entry.operation)?;
-        if entry.sequence <= checkpoint.sequence {
+        if entry.sequence <= checkpoint_sequence {
             covered_update_entries.push(entry);
             continue;
         }
@@ -240,7 +248,7 @@ pub(super) fn load_store(root: &Path) -> UseResult<LoadedStore> {
                 "office.collaboration.log_incomplete",
                 format!(
                     "Collaboration update sequence {} is missing after checkpoint {}.",
-                    expected_sequence, checkpoint.sequence
+                    expected_sequence, checkpoint_sequence
                 ),
             )
             .with_suggestion(
@@ -272,11 +280,15 @@ pub(super) fn load_store(root: &Path) -> UseResult<LoadedStore> {
         expected_sequence = expected_sequence.saturating_add(1);
         update_entries.push(entry);
     }
+    if doc.transact().has_missing_updates() {
+        doc = canonical_replay_document(&doc, &manifest)?;
+    }
     inspect_document(&doc, &manifest)?;
     Ok(LoadedStore {
         manifest,
         doc,
-        checkpoint_sequence: checkpoint.sequence,
+        checkpoint_update,
+        checkpoint_sequence,
         current_sequence,
         next_sequence: current_sequence.checked_add(1).ok_or_else(|| {
             collaboration_error(
@@ -415,6 +427,7 @@ pub(super) fn compact(
 struct LoadedCheckpoint {
     sequence: u64,
     doc: Doc,
+    update: Vec<u8>,
 }
 
 fn load_latest_checkpoint(
@@ -530,7 +543,11 @@ fn load_latest_checkpoint(
             ),
         ));
     }
-    Ok(LoadedCheckpoint { sequence, doc })
+    Ok(LoadedCheckpoint {
+        sequence,
+        doc,
+        update: update_bytes,
+    })
 }
 
 fn load_update_entries(

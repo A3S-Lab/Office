@@ -1,16 +1,22 @@
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
-import { StrictMode, useCallback, useEffect, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 import {
-  createArtifact,
-  importOfficeFile,
-  OFFICE_FILE_ACCEPT,
-  type EditorAgentRequest,
-  type OfficeArtifact,
-  type OfficeArtifactContent,
+  lazy,
+  StrictMode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { createRoot } from 'react-dom/client';
+import type {
+  EditorAgentRequest,
+  OfficeArtifact,
+  OfficeArtifactContent,
 } from '@a3s-lab/office/core';
 import '@a3s-lab/office/styles.css';
-import { EditorWorkspace } from './editor-workspace';
+import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
+import { createWorkArtifact as createArtifact } from '../../src/internal/features/work/work-templates';
 import type { NoticeTone, PlaygroundNotice } from './playground-types';
 import { documentationEntryUrl, legacyDocsPath } from './site-routes';
 import { SiteSidebar } from './site-sidebar';
@@ -19,6 +25,10 @@ import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
 import { WorkspaceHome } from './workspace-home';
 import './playground.css';
 import './workspace.css';
+
+const EditorWorkspace = lazy(async () => ({
+  default: (await import('./editor-workspace')).EditorWorkspace,
+}));
 
 function Playground() {
   const sidebarModal = useMediaQuery('(max-width: 839px)');
@@ -106,6 +116,7 @@ function Playground() {
 
   const importFile = async (file: File) => {
     try {
+      const { importOfficeFile } = await import('@a3s-lab/office/core');
       const imported = await importOfficeFile(file);
       const opened = { ...imported, lastOpenedAt: Date.now() };
       setArtifacts((current) => [
@@ -189,56 +200,58 @@ function Playground() {
 
       <section className="playground-main-pane">
         {activeArtifact ? (
-          <EditorWorkspace
-            key={activeArtifact.id}
-            artifact={activeArtifact}
-            assistantModal={assistantModal}
-            assistantOpen={assistantOpen}
-            assistantWidth={assistantWidth}
-            lastAgentRequest={lastAgentRequest}
-            sidebarOpen={sidebarOpen}
-            onAgentRequest={(request) => {
-              setLastAgentRequest(request);
-              setAssistantOpen(true);
-            }}
-            onAssistantWidthChange={(width) => {
-              setAssistantWidth(width);
-              persistAssistantWidth(width);
-            }}
-            onBack={() => {
-              setActiveArtifactId(null);
-              setAssistantOpen(false);
-              setLastAgentRequest(null);
-              if (window.innerWidth >= 840) setSidebarOpen(true);
-            }}
-            onChange={(content: OfficeArtifactContent) =>
-              updateActiveArtifact((artifact) => ({
-                ...artifact,
-                content,
-                kind: content.type,
-                revision: artifact.revision + 1,
-                updatedAt: Date.now(),
-              }))
-            }
-            onNotice={showNotice}
-            onOpenSidebar={() => setSidebarOpen(true)}
-            onRename={(title) =>
-              updateActiveArtifact((artifact) => ({
-                ...artifact,
-                title,
-                revision: artifact.revision + 1,
-                updatedAt: Date.now(),
-              }))
-            }
-            onToggleAssistant={() => setAssistantOpen((current) => !current)}
-            onTouch={() =>
-              updateActiveArtifact((artifact) => ({
-                ...artifact,
-                revision: artifact.revision + 1,
-                updatedAt: Date.now(),
-              }))
-            }
-          />
+          <Suspense fallback={<div role="status">正在加载编辑器</div>}>
+            <EditorWorkspace
+              key={activeArtifact.id}
+              artifact={activeArtifact}
+              assistantModal={assistantModal}
+              assistantOpen={assistantOpen}
+              assistantWidth={assistantWidth}
+              lastAgentRequest={lastAgentRequest}
+              sidebarOpen={sidebarOpen}
+              onAgentRequest={(request) => {
+                setLastAgentRequest(request);
+                setAssistantOpen(true);
+              }}
+              onAssistantWidthChange={(width) => {
+                setAssistantWidth(width);
+                persistAssistantWidth(width);
+              }}
+              onBack={() => {
+                setActiveArtifactId(null);
+                setAssistantOpen(false);
+                setLastAgentRequest(null);
+                if (window.innerWidth >= 840) setSidebarOpen(true);
+              }}
+              onChange={(content: OfficeArtifactContent) =>
+                updateActiveArtifact((artifact) => ({
+                  ...artifact,
+                  content,
+                  kind: content.type,
+                  revision: artifact.revision + 1,
+                  updatedAt: Date.now(),
+                }))
+              }
+              onNotice={showNotice}
+              onOpenSidebar={() => setSidebarOpen(true)}
+              onRename={(title) =>
+                updateActiveArtifact((artifact) => ({
+                  ...artifact,
+                  title,
+                  revision: artifact.revision + 1,
+                  updatedAt: Date.now(),
+                }))
+              }
+              onToggleAssistant={() => setAssistantOpen((current) => !current)}
+              onTouch={() =>
+                updateActiveArtifact((artifact) => ({
+                  ...artifact,
+                  revision: artifact.revision + 1,
+                  updatedAt: Date.now(),
+                }))
+              }
+            />
+          </Suspense>
         ) : (
           <WorkspaceHome
             artifacts={artifacts}

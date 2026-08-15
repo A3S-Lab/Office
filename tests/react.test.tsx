@@ -114,6 +114,49 @@ test('mounts host TipTap extensions in the document editor', async () => {
   expect(shortcutCalls).toBe(1);
 });
 
+test('does not publish a same-value editor transaction as a controlled change', async () => {
+  let changeCalls = 0;
+  const sameValueTransaction = Extension.create({
+    name: 'testDocumentSameValueTransaction',
+    addKeyboardShortcuts() {
+      return {
+        F9: () =>
+          this.editor.commands.command(({ dispatch, state, tr }) => {
+            const node = state.doc.nodeAt(0);
+            if (!node) return false;
+            dispatch?.(tr.setNodeMarkup(0, undefined, node.attrs, node.marks));
+            return true;
+          }),
+      };
+    },
+  });
+  const artifact = createArtifact('blank-document');
+
+  render(
+    <DocumentEditor
+      content={artifact.content as DocumentContent}
+      extensions={[sameValueTransaction]}
+      onChange={() => {
+        changeCalls += 1;
+      }}
+      theme="light"
+    />,
+  );
+
+  const editor = await screen.findByLabelText('文档正文');
+  await waitFor(() => {
+    expect(editor).toHaveAttribute('data-pagination-state', 'ready');
+  });
+  changeCalls = 0;
+
+  fireEvent.keyDown(editor, {
+    code: 'F9',
+    key: 'F9',
+  });
+
+  expect(changeCalls).toBe(0);
+});
+
 test('lets the host replace the selected-text menu with document-aware actions', async () => {
   const artifact = createArtifact('project-brief');
   if (artifact.content.type !== 'document') {

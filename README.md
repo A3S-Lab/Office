@@ -138,9 +138,9 @@ The images below are committed visual-regression baselines from the real
 - **Automation outside the browser** — The native Rust CLI, standard MCP
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
-  vectors, perform authorized typed Markdown and Document changes, retain
-  browser/native actor attribution, and checkpoint without replacing a whole
-  Office file.
+  vectors, perform authorized typed Markdown, Document, and PDF annotation,
+  form-value, and review changes, retain browser/native actor attribution, and
+  checkpoint without replacing a whole Office file.
 
 ## Quick start
 
@@ -199,6 +199,32 @@ export function ProjectBrief() {
 
 The editor owns editing, layout, import/export, and browser rendering. The host
 owns persistence and decides when, where, and how the emitted content is saved.
+
+### Persist a structured document snapshot
+
+Hosts that round-trip controlled document values across a process or language
+boundary should use the public versioned snapshot codec instead of converting
+the editor value to Markdown or treating HTML as the complete document:
+
+```ts
+import {
+  decodeDocumentSnapshot,
+  encodeDocumentSnapshot,
+} from '@a3s-lab/office/core';
+
+const encoded = encodeDocumentSnapshot(content);
+await storage.put(documentId, encoded);
+
+const restored = decodeDocumentSnapshot(await storage.get(documentId));
+```
+
+The v1 envelope uses the
+`application/vnd.a3s.office.document-snapshot+json;version=1` media type. It
+retains the synchronized HTML, structured ProseMirror model, page layout,
+comments, review state, and bibliography as deterministic bounded JSON. Decode
+fails closed for a different schema or version, malformed JSON, an oversized
+payload, or a model whose HTML fingerprint is stale. Optional `undefined`
+properties are omitted because they are outside the JSON data model.
 
 ### Export the live Word layout to PDF
 
@@ -996,6 +1022,40 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --artifact-id report --kind document --actor-id agent-7 --mode edit \
   --operation-id edit-44 \
   --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' --json
+
+# Set one PDF form value through its stable fully-qualified field name.
+cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
+  --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
+  --operation-id edit-45 \
+  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' --json
+
+# Create one portable highlight on source page 1. The nested rect and
+# segmentRects use EmbedPDF's browser annotation geometry.
+cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
+  --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
+  --operation-id annotation-create-1 \
+  --mutation '{"type":"pdf-create-annotation","annotationId":"annotation-1","pageIndex":0,"annotation":{"id":"annotation-1","pageIndex":0,"type":9,"rect":{"origin":{"x":68,"y":78},"size":{"width":300,"height":28}},"segmentRects":[{"origin":{"x":68,"y":78},"size":{"width":300,"height":28}}],"strokeColor":"#f59e0b","color":"#f59e0b","opacity":0.48,"contents":"Review this heading"}}' --json
+
+# Append one attributable redaction proposal. Geometry is expressed in source
+# page coordinates and the replica actor becomes proposedBy.
+cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
+  --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
+  --operation-id edit-46 \
+  --mutation '{"type":"pdf-propose-redaction","proposalId":"redaction-1","pageIndex":0,"rects":[{"left":10,"top":20,"right":80,"bottom":40}],"proposedAt":"2026-08-15T03:00:00.000Z","reason":"Personal data"}' --json
+
+# Append the one final decision for that review target. The replica actor
+# becomes actorId; it is never accepted from caller-authored JSON.
+cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
+  --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
+  --operation-id edit-47 \
+  --mutation '{"type":"pdf-decide-review","decisionId":"decision-1","targetKind":"redaction","targetId":"redaction-1","decision":"approve","createdAt":"2026-08-15T03:05:00.000Z"}' --json
+
+# Propose a clockwise rotation for selected immutable source pages. Deletion
+# and complete reorder use pdf-propose-page-deletion/page-reorder.
+cargo run -p a3s-office-cli -- collab mutate .a3s/application.replica \
+  --artifact-id application --kind pdf --actor-id agent-7 --mode edit \
+  --operation-id edit-48 \
+  --mutation '{"type":"pdf-propose-page-rotation","pageOperationId":"page-operation-1","pageIndices":[0,2],"degrees":90,"proposedAt":"2026-08-15T03:10:00.000Z"}' --json
 ```
 
 CLI, MCP, the typed Rust API, and the packaged Office Skill share the same
@@ -1020,9 +1080,20 @@ table rotate every identified ancestor row's `rowTextId`; incomplete row
 identities fail before any write. Paragraphs containing inline atoms or review
 marks remain guarded.
 Page-color/track-changes sidecars remain independent conflict-local fields. All
-mutations use the same durable event path. Validated browser source origins
-survive native persistence and are re-emitted separately from host delivery
-IDs.
+mutations use the same durable event path. PDF annotation creation accepts the
+portable browser record for FreeText, Highlight, Underline, StrikeOut, or Ink,
+writes `source: created`, and commits its immutable claim atomically. An update
+supplies complete `expectedAnnotation` and `nextAnnotation` values; recursive
+optimistic matching merges unrelated concurrent leaves and rejects a stale
+same-leaf edit. Deletion supplies expected source/page/type identity and writes
+an irreversible tombstone. PDF form mutations update the same field-addressed
+presence/fields/order roots as the browser binding. PDF redaction and
+rotate/delete/reorder page-operation proposals plus final decisions append
+immutable typed records and canonical claims in one transaction, derive actor
+attribution from the replica, and reject invalid source-page sets, missing
+targets, or a second final decision. None of these paths puts source or
+signature bytes in Yjs. Validated browser source origins survive native
+persistence and are re-emitted separately from host delivery IDs.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
@@ -1087,6 +1158,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.4.0 documentation](https://a3s-lab.github.io/Office/docs/0.4.0/)
 - [A3S Office 0.3.0 documentation](https://a3s-lab.github.io/Office/docs/0.3.0/)
 - [A3S Office 0.2.0 documentation](https://a3s-lab.github.io/Office/docs/0.2.0/)
 - [A3S Office 0.1.0 documentation](https://a3s-lab.github.io/Office/docs/0.1.0/)

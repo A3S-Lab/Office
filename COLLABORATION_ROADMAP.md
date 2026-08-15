@@ -225,8 +225,10 @@ untouched unsupported package state.
 
 ### Phase 5: PDF
 
-Status: browser Core plus PDF viewer/framework projection implemented;
-save/reopen, authenticated assets, and native parity are pending.
+Status: browser Core plus PDF viewer/framework projection, native annotation
+and form-value mutation, and native append-only redaction/page-operation
+proposal and final-decision mutations implemented; save/reopen, authenticated
+assets, and full native parity are pending.
 
 - Shared artifacts are bound to a lowercase SHA-256 fingerprint, exact byte
   length, and page count. Source bytes never enter Yjs, and a binding rejects
@@ -264,6 +266,36 @@ save/reopen, authenticated assets, and native parity are pending.
 - Projection tests cover base annotation edits/deletion, created annotations,
   forms, remote echo suppression (including renderer-added default authors),
   ISO date portability, local undo, and irreversible tombstones.
+- Rust, CLI, MCP, and A3S Code can set a PDF form value by stable field name.
+  Existing values update only their conflict-local leaf; new records use the
+  browser-compatible presence/fields/order encoding. Browser-to-Yrs fixtures,
+  native restart/idempotency tests, real subprocesses, and concurrent
+  browser/native edits prove form-value convergence without synchronizing PDF
+  source bytes.
+- Rust, CLI, MCP, and A3S Code can create, optimistically update, and
+  irreversibly tombstone portable FreeText, Highlight, Underline, StrikeOut,
+  and Ink annotations. Creation writes a complete immutable claim and always
+  uses `source: created`; updates recursively compare mutable JSON leaves so
+  unrelated concurrent edits merge while same-leaf conflicts fail closed; ID,
+  page, type, and source identity cannot drift. Native restart, idempotency,
+  real CLI/MCP subprocesses, browser Yjs delivery reordering, and a real
+  EmbedPDF Playground projection cover create/update/delete. The deterministic
+  Playground path is retained as an `a3s-test` ACL regression with visual,
+  accessibility, console, and page-error evidence.
+- Rust, CLI, MCP, and A3S Code can append a bounded redaction proposal, rotate
+  or delete a validated source-page subset, propose a complete page
+  permutation, and append the single final decision for an existing redaction
+  or page operation. Actor IDs come from the replica manifest, timestamps use
+  canonical UTC, and each typed record plus its browser-compatible canonical
+  claim commit together. Missing targets, duplicate final decisions,
+  conflicting same-ID reuse, invalid geometry, invalid rotation degrees,
+  deleting every page, incomplete reorders, and out-of-range pages fail
+  closed. Native restart/idempotency, real subprocess, and browser Yjs fixtures
+  cover concurrent browser records plus reordered and duplicate native
+  delivery. An exhaustive native property test delivers causally related
+  rotation, deletion, reorder, and final-decision updates in all 24 orders,
+  injects a duplicate, restarts the replica, and compares the final state
+  vector and document digest with the source replica.
 
 Remaining:
 
@@ -271,7 +303,8 @@ Remaining:
   port and keep asset hashes aligned with the audit record.
 - Apply approved redaction/page operations in a non-retryable host workflow,
   then save and reopen a merged PDF fixture to verify durable results.
-- Add offline/reordered-update property tests and native Yrs convergence.
+- Extend offline/reordered-update property coverage and native Yrs parity to
+  signatures and additional annotation-type payloads.
 
 Exit criterion: annotations and forms converge and reopen from a saved PDF;
 destructive actions remain attributable, reviewable, and non-retryable.
@@ -279,9 +312,10 @@ destructive actions remain attributable, reviewable, and non-retryable.
 ### Phase 6: CLI, MCP, and coding agents
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
-projection, a host-injected live CLI transport session, and the first typed
-Markdown and Document mutation surfaces are implemented; the remaining format
-mutations and native presence projection are pending.
+projection, a host-injected live CLI transport session, and typed Markdown,
+Document, PDF annotation/form-value, and PDF redaction/page-operation review
+mutation surfaces are implemented; the remaining format mutations and native
+presence projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -289,7 +323,10 @@ mutations and native presence projection are pending.
 - Native replicas persist immutable, checksummed update entries and periodic
   full-state checkpoints/state vectors. Atomic no-clobber publication,
   contiguous sequence validation, startup replay, bounded automatic/manual
-  compaction, and durable operation receipts provide crash recovery.
+  compaction, and durable operation receipts provide crash recovery. Commit
+  receipts are derived from authoritative checkpoint-plus-log replay; bounded
+  canonical replay preserves genuinely missing updates while resolving Yrs
+  array items whose causal dependencies arrived out of order.
 - `a3s-office collab` exposes non-interactive `create`, `join`, `inspect`,
   `diff`/`synchronize`, `apply`, `mutate`, `checkpoint`, `watch`, and `leave`
   commands
@@ -324,6 +361,18 @@ mutations and native presence projection are pending.
   incremental updates through the same durable
   receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
   updates remain receivable in every mode so read-only peers still converge.
+- PDF form-value mutations write the browser-compatible conflict-local record
+  roots by fully-qualified field name, retain idempotent receipts and optional
+  state-vector preconditions, and never synchronize source bytes.
+- PDF annotation mutations create browser-compatible portable records, merge
+  unrelated mutable JSON leaves under recursive optimistic guards, preserve
+  immutable creation claims, and use irreversible deletion tombstones. The
+  accepted annotation types are FreeText, Highlight, Underline, StrikeOut, and
+  Ink; record identity and source-page bounds fail closed before mutation.
+- PDF redaction and rotate/delete/reorder page-operation proposals plus final
+  review decisions write append-only typed records and canonical creation
+  claims, derive attribution from the replica, and reject stale identity,
+  range, permutation, and target conflicts before producing an update.
 - Durable operation receipts make identical retries idempotent and reject an
   operation ID reused for another payload. Artifact, kind, actor, mode,
   stale-state, invalid update, ambiguous bootstrap, corrupt log, and incomplete
@@ -338,20 +387,20 @@ mutations and native presence projection are pending.
   live transports. The host delivery operation remains distinct from the
   source browser operation, and source attribution is audit data rather than
   an authorization token.
-- Cross-language tests apply deterministic native UTF-16 Markdown and
-  ProseMirror Document text/options/paragraph updates in browser Yjs, including
-  concurrent browser/native paragraph insertion, in addition to importing
-  browser Yjs fixtures in Yrs.
+- Cross-language tests apply deterministic native UTF-16 Markdown, ProseMirror
+  Document text/options/paragraph, and PDF annotation/form-value updates in
+  browser Yjs, including concurrent browser/native paragraph, annotation-leaf,
+  and PDF form edits, in addition to importing browser Yjs fixtures in Yrs.
 - Standard MCP exposes the durable replica lifecycle and bounded event stream;
   the same seven collaboration tools are explicitly available to the dedicated
   `a3s code` Use worker.
 
 Remaining:
 
-- Extend typed format-model mutations to Spreadsheet, Presentation, and PDF;
-  deepen Document mutations to nested structures and review operations, and
-  add durable comment/suggest operations before enabling those modes for local
-  mutation.
+- Extend typed format-model mutations to Spreadsheet and Presentation plus PDF
+  signatures; deepen Document mutations to additional nested structures and
+  review operations, and add durable comment/suggest operations before enabling
+  those modes for local mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

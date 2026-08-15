@@ -74,6 +74,30 @@ describe('structured document model', () => {
     });
   });
 
+  test('keeps a synchronized model when the legacy HTML fallback normalizes differently', () => {
+    const html =
+      '<section data-page-chrome="{&quot;headerHtml&quot;:&quot;<p>Header</p>&quot;}"><p>Structured content</p></section>';
+    const model = createWorkDocumentModel(html, root);
+    const content = {
+      type: 'document',
+      pageSize: 'a4',
+      html,
+      model,
+    } satisfies WorkDocumentContent;
+
+    expect(
+      resolveWorkDocumentEditorInput(
+        content,
+        '<section data-page-chrome="{&quot;headerHtml&quot;:&quot;&lt;p&gt;Header&lt;/p&gt;&quot;}"><p>Structured content</p></section>',
+      ),
+    ).toEqual({
+      model,
+      source: root,
+      sourceKey: `model:${model.revision}:${model.htmlFingerprint}`,
+      revision: model.revision,
+    });
+  });
+
   test('drops a stale model when an HTML-only command changes the document', () => {
     const html = '<p>Original</p>';
     const content = {

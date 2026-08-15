@@ -177,7 +177,7 @@ pub(super) struct OfficeCollaborationMutationInput {
     pub(super) artifact_id: String,
     /// Expected canonical collaborative model family.
     pub(super) kind: OfficeCollaborationArtifactKind,
-    /// Closed, format-aware Markdown or Document mutation.
+    /// Closed, format-aware Markdown, Document, or PDF mutation.
     pub(super) mutation: OfficeCollaborationMutation,
     /// Optional exact state-vector precondition for fail-closed agent decisions.
     pub(super) if_state_vector_base64: Option<String>,
@@ -609,6 +609,28 @@ mod tests {
             "document-delete-paragraph",
             "expectedTextId",
             "expectedText",
+            "pdf-set-form-value",
+            "fieldId",
+            "pdf-propose-redaction",
+            "proposalId",
+            "pageIndex",
+            "rects",
+            "proposedAt",
+            "pdf-propose-page-rotation",
+            "pdf-propose-page-deletion",
+            "pdf-propose-page-reorder",
+            "pageOperationId",
+            "pageIndices",
+            "degrees",
+            "pageOrder",
+            "pdf-decide-review",
+            "decisionId",
+            "targetKind",
+            "page-operation",
+            "targetId",
+            "approve",
+            "reject",
+            "createdAt",
             "ifStateVectorBase64",
         ] {
             assert!(encoded.contains(expected), "missing {expected}");
@@ -624,6 +646,25 @@ mod tests {
         assert!(
             serde_json::from_value::<OfficeCollaborationMutation>(json!({
                 "type": "document-set-page-color"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "pdf-propose-page-rotation",
+                "pageOperationId": "page-operation-1",
+                "pageIndices": [0],
+                "proposedAt": "2026-08-15T03:00:00.000Z"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "pdf-propose-page-deletion",
+                "pageOperationId": "page-operation-1",
+                "pageIndices": [0],
+                "proposedAt": "2026-08-15T03:00:00.000Z",
+                "proposedBy": "caller-must-not-supply-this"
             }))
             .is_err()
         );
@@ -657,6 +698,36 @@ mod tests {
                 "expectedTextId": "00000003",
                 "expectedText": "value",
                 "force": true
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "pdf-set-form-value",
+                "fieldId": "Applicant.Name"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "pdf-propose-redaction",
+                "proposalId": "redaction-1",
+                "pageIndex": 0,
+                "rects": [{ "left": 1, "top": 2, "right": 3, "bottom": 4 }],
+                "proposedAt": "2026-08-15T03:00:00.000Z",
+                "proposedBy": "caller-must-not-supply-this"
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "pdf-decide-review",
+                "decisionId": "decision-1",
+                "targetKind": "redaction",
+                "targetId": "redaction-1",
+                "decision": "approve",
+                "createdAt": "2026-08-15T03:05:00.000Z",
+                "actorId": "caller-must-not-supply-this"
             }))
             .is_err()
         );

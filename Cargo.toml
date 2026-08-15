@@ -8,7 +8,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/A3S-Lab/Office"
@@ -32,6 +32,7 @@ quick-xml = "0.38"
 regex = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
 rmcp = { version = "=0.8.5", default-features = false, features = ["base64", "macros", "server", "transport-io"] }
+ryu-js = "1"
 rustybuzz = "0.20"
 schemars = "1.2"
 serde = { version = "1", features = ["derive"] }

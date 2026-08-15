@@ -15,7 +15,13 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_LANGUAGE).toBe('zh');
   expect(DOCUMENTATION_LOCALES.map(({ lang }) => lang)).toEqual(['zh', 'en']);
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
-  expect(DOCUMENTATION_VERSIONS).toEqual(['latest', '0.3.0', '0.2.0', '0.1.0']);
+  expect(DOCUMENTATION_VERSIONS).toEqual([
+    'latest',
+    '0.4.0',
+    '0.3.0',
+    '0.2.0',
+    '0.1.0',
+  ]);
 });
 
 test('keeps every public route available in every language and version', async () => {
@@ -31,7 +37,7 @@ test('keeps every public route available in every language and version', async (
 });
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
-  for (const version of ['0.3.0', '0.2.0', '0.1.0']) {
+  for (const version of ['0.4.0', '0.3.0', '0.2.0', '0.1.0']) {
     const [chinese, english] = await Promise.all([
       readFile(path.join(documentationRoot, `${version}/zh/index.mdx`), 'utf8'),
       readFile(path.join(documentationRoot, `${version}/en/index.mdx`), 'utf8'),

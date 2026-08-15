@@ -6,13 +6,12 @@ import {
   Upload,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import {
-  officeTemplates,
-  type OfficeArtifact,
-  type OfficeArtifactKind,
-  type OfficeTemplate,
+import type {
+  OfficeArtifact,
+  OfficeArtifactKind,
+  OfficeTemplate,
 } from '@a3s-lab/office/core';
-import { preloadOfficeEditor } from '@a3s-lab/office/react';
+import { WORK_TEMPLATES as officeTemplates } from '../../src/internal/features/work/work-templates';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 
 const templateCellIds = Array.from(
@@ -21,7 +20,9 @@ const templateCellIds = Array.from(
 );
 
 function warmOfficeEditor(kind: OfficeArtifactKind): void {
-  void preloadOfficeEditor(kind).catch(() => undefined);
+  void import('@a3s-lab/office/react')
+    .then(({ preloadOfficeEditor }) => preloadOfficeEditor(kind))
+    .catch(() => undefined);
 }
 
 export function WorkspaceHome({

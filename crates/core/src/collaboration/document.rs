@@ -1,8 +1,9 @@
 use a3s_use_core::UseResult;
+use yrs::types::ToJson;
 use yrs::updates::decoder::Decode;
 use yrs::{
-    Any, Array, ClientID, Doc, Map, OffsetKind, Options, Out, ReadTxn, StateVector, Transact,
-    Update,
+    Any, Array, ClientID, Doc, Map, OffsetKind, Options, Out, ReadTxn, StateVector, Text, Transact,
+    Update, Xml, XmlFragment, XmlOut,
 };
 
 use super::{
@@ -11,6 +12,8 @@ use super::{
     NativeOfficeCollaborationStateVectorEntry, NATIVE_OFFICE_COLLABORATION_PROTOCOL,
     NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
 };
+
+const MAX_CANONICAL_REPLAY_PASSES: usize = 32;
 
 pub(super) struct DocumentInspection {
     pub metadata: Option<NativeOfficeCollaborationMetadata>,
@@ -144,6 +147,78 @@ pub(super) fn validate_and_apply_update(
     Ok(())
 }
 
+/// Rebuild a replica from the complete Yjs state, including pending updates.
+///
+/// Yrs can retain causally delayed array items in a pending traversal state
+/// after otherwise complete updates arrive out of order. Encoding the full
+/// state includes those pending structs; replaying that canonical update into
+/// a fresh document integrates every dependency that is now available while
+/// preserving genuinely incomplete updates for later delivery.
+pub(super) fn canonical_replay_document(
+    doc: &Doc,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<Doc> {
+    let mut update = doc
+        .transact()
+        .encode_state_as_update_v1(&StateVector::default());
+    let mut update_sha256 = sha256_hex(&update);
+    for _ in 0..MAX_CANONICAL_REPLAY_PASSES {
+        let replayed = new_replica_document(manifest.client_id, &manifest.namespace, manifest.kind);
+        validate_and_apply_update(&replayed, &update, manifest)?;
+        let transaction = replayed.transact();
+        if !transaction.has_missing_updates() {
+            drop(transaction);
+            return Ok(replayed);
+        }
+        let next_update = transaction.encode_state_as_update_v1(&StateVector::default());
+        drop(transaction);
+        let next_update_sha256 = sha256_hex(&next_update);
+        if next_update_sha256 == update_sha256 {
+            return Ok(replayed);
+        }
+        update = next_update;
+        update_sha256 = next_update_sha256;
+    }
+    Err(collaboration_error(
+        "office.collaboration.update_invalid",
+        "The Yjs v1 update did not reach a stable causal state after bounded canonical replay.",
+    )
+    .with_detail("maximumReplayPasses", MAX_CANONICAL_REPLAY_PASSES as u64))
+}
+
+pub(super) fn replay_update_sequence<I, B>(
+    updates: I,
+    manifest: &NativeOfficeCollaborationManifest,
+) -> UseResult<Doc>
+where
+    I: IntoIterator<Item = B>,
+    B: AsRef<[u8]>,
+{
+    let mut replayed = new_replica_document(manifest.client_id, &manifest.namespace, manifest.kind);
+    for bytes in updates {
+        let update = Update::decode_v1(bytes.as_ref()).map_err(|error| {
+            collaboration_error(
+                "office.collaboration.update_invalid",
+                format!("The Yjs v1 update sequence contains invalid data: {error}"),
+            )
+        })?;
+        replayed
+            .transact_mut()
+            .apply_update(update)
+            .map_err(|error| {
+                collaboration_error(
+                    "office.collaboration.update_invalid",
+                    format!("The Yjs v1 update sequence could not be integrated: {error}"),
+                )
+            })?;
+    }
+    if replayed.transact().has_missing_updates() {
+        replayed = canonical_replay_document(&replayed, manifest)?;
+    }
+    inspect_document(&replayed, manifest)?;
+    Ok(replayed)
+}
+
 pub(super) fn inspect_document(
     doc: &Doc,
     manifest: &NativeOfficeCollaborationManifest,
@@ -233,7 +308,7 @@ pub(super) fn inspect_document(
         bootstrap_initializer_count: initializer_count,
         bootstrap_valid,
         root_names,
-        state_sha256: sha256_hex(&transaction.encode_state_as_update_v1(&StateVector::default())),
+        state_sha256: canonical_document_state_sha256(&transaction),
         pending_updates: transaction.has_missing_updates(),
     })
 }
@@ -354,7 +429,173 @@ pub(super) fn state_vector_sha256(state_vector: &StateVector) -> String {
     sha256_hex(&canonical_state_vector(state_vector))
 }
 
-pub(super) fn document_state_sha256(doc: &Doc) -> String {
+pub(super) fn document_update_sha256(doc: &Doc) -> String {
     let transaction = doc.transact();
     sha256_hex(&transaction.encode_state_as_update_v1(&StateVector::default()))
+}
+
+/// Hash the converged logical document state rather than the incidental byte
+/// order used by Yrs when it re-encodes JSON object values.
+///
+/// `Any::Map` is backed by a randomized `HashMap`. Two replicas can therefore
+/// encode byte-distinct full-state updates after applying the same Yjs structs,
+/// especially for portable PDF arrays such as `segmentRects`. The canonical
+/// digest combines the sorted state vector, sorted named roots, root types, and
+/// recursively key-sorted logical values. This keeps inspection, restart, and
+/// delivery-order comparisons stable without changing the standard Yjs v1
+/// updates exchanged with browser peers.
+fn canonical_document_state_sha256<T: ReadTxn>(transaction: &T) -> String {
+    let mut bytes = b"a3s.office.document-state.v1\0".to_vec();
+    let state_vector = canonical_state_vector(&transaction.state_vector());
+    write_length_prefixed(&mut bytes, &state_vector);
+
+    let mut roots = transaction
+        .root_refs()
+        .map(|(name, value)| (name.to_owned(), value))
+        .collect::<Vec<_>>();
+    roots.sort_by(|left, right| left.0.cmp(&right.0));
+    write_var_uint(&mut bytes, roots.len() as u64);
+    for (name, value) in roots {
+        write_length_prefixed(&mut bytes, name.as_bytes());
+        write_canonical_out(&mut bytes, transaction, &value);
+    }
+    sha256_hex(&bytes)
+}
+
+fn write_canonical_out<T: ReadTxn>(output: &mut Vec<u8>, transaction: &T, value: &Out) {
+    output.push(out_type_tag(value));
+    match value {
+        Out::YXmlElement(element) => {
+            write_length_prefixed(output, element.tag().as_bytes());
+            write_canonical_xml_attributes(output, transaction, element);
+            write_canonical_xml_children(output, transaction, element);
+        }
+        Out::YXmlFragment(fragment) => {
+            write_canonical_xml_children(output, transaction, fragment);
+        }
+        Out::YXmlText(text) => {
+            write_canonical_xml_attributes(output, transaction, text);
+            let chunks = text.diff(transaction, |_| ());
+            write_var_uint(output, chunks.len() as u64);
+            for chunk in chunks {
+                write_canonical_out(output, transaction, &chunk.insert);
+                match chunk.attributes {
+                    Some(attributes) => {
+                        output.push(1);
+                        write_canonical_attributes(output, &attributes);
+                    }
+                    None => output.push(0),
+                }
+            }
+        }
+        _ => write_canonical_any(output, &value.to_json(transaction)),
+    }
+}
+
+fn write_canonical_xml_attributes<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &impl Xml,
+) {
+    let mut attributes = value.attributes(transaction).collect::<Vec<_>>();
+    attributes.sort_by(|left, right| left.0.cmp(right.0));
+    write_var_uint(output, attributes.len() as u64);
+    for (key, value) in attributes {
+        write_length_prefixed(output, key.as_bytes());
+        write_canonical_out(output, transaction, &value);
+    }
+}
+
+fn write_canonical_xml_children<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &impl XmlFragment,
+) {
+    let children = value.children(transaction).collect::<Vec<_>>();
+    write_var_uint(output, children.len() as u64);
+    for child in children {
+        match child {
+            XmlOut::Element(element) => {
+                write_canonical_out(output, transaction, &Out::YXmlElement(element));
+            }
+            XmlOut::Fragment(fragment) => {
+                write_canonical_out(output, transaction, &Out::YXmlFragment(fragment));
+            }
+            XmlOut::Text(text) => {
+                write_canonical_out(output, transaction, &Out::YXmlText(text));
+            }
+        }
+    }
+}
+
+fn write_canonical_attributes(output: &mut Vec<u8>, attributes: &yrs::types::Attrs) {
+    let mut entries = attributes.iter().collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.0.cmp(right.0));
+    write_var_uint(output, entries.len() as u64);
+    for (key, value) in entries {
+        write_length_prefixed(output, key.as_bytes());
+        write_canonical_any(output, value);
+    }
+}
+
+fn out_type_tag(value: &Out) -> u8 {
+    match value {
+        Out::Any(_) => 0,
+        Out::YText(_) => 1,
+        Out::YArray(_) => 2,
+        Out::YMap(_) => 3,
+        Out::YXmlElement(_) => 4,
+        Out::YXmlFragment(_) => 5,
+        Out::YXmlText(_) => 6,
+        Out::YDoc(_) => 7,
+        Out::UndefinedRef(_) => 9,
+    }
+}
+
+fn write_canonical_any(output: &mut Vec<u8>, value: &Any) {
+    match value {
+        Any::Null => output.push(0),
+        Any::Undefined => output.push(1),
+        Any::Bool(false) => output.push(2),
+        Any::Bool(true) => output.push(3),
+        Any::Number(value) => {
+            output.push(4);
+            let normalized = if *value == 0.0 { 0.0 } else { *value };
+            output.extend_from_slice(&normalized.to_bits().to_le_bytes());
+        }
+        Any::BigInt(value) => {
+            output.push(5);
+            output.extend_from_slice(&value.to_le_bytes());
+        }
+        Any::String(value) => {
+            output.push(6);
+            write_length_prefixed(output, value.as_bytes());
+        }
+        Any::Buffer(value) => {
+            output.push(7);
+            write_length_prefixed(output, value);
+        }
+        Any::Array(values) => {
+            output.push(8);
+            write_var_uint(output, values.len() as u64);
+            for value in values.iter() {
+                write_canonical_any(output, value);
+            }
+        }
+        Any::Map(values) => {
+            output.push(9);
+            let mut entries = values.iter().collect::<Vec<_>>();
+            entries.sort_by(|left, right| left.0.cmp(right.0));
+            write_var_uint(output, entries.len() as u64);
+            for (key, value) in entries {
+                write_length_prefixed(output, key.as_bytes());
+                write_canonical_any(output, value);
+            }
+        }
+    }
+}
+
+fn write_length_prefixed(output: &mut Vec<u8>, value: &[u8]) {
+    write_var_uint(output, value.len() as u64);
+    output.extend_from_slice(value);
 }

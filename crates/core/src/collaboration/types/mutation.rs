@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
 use super::{NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationMode};
 
@@ -9,7 +10,64 @@ pub enum NativeOfficeCollaborationParagraphPosition {
     After,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeOfficeCollaborationPdfRect {
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationPdfAnnotationSource {
+    Base,
+    Created,
+}
+
+impl NativeOfficeCollaborationPdfAnnotationSource {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Base => "base",
+            Self::Created => "created",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationPdfReviewTargetKind {
+    Redaction,
+    PageOperation,
+}
+
+impl NativeOfficeCollaborationPdfReviewTargetKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Redaction => "redaction",
+            Self::PageOperation => "page-operation",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationPdfReviewDecision {
+    Approve,
+    Reject,
+}
+
+impl NativeOfficeCollaborationPdfReviewDecision {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Approve => "approve",
+            Self::Reject => "reject",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "type",
     rename_all = "kebab-case",
@@ -61,6 +119,76 @@ pub enum NativeOfficeCollaborationMutation {
         paragraph_id: String,
         expected_text_id: String,
         expected_text: String,
+    },
+    /// Create one portable PDF annotation with a caller-owned stable ID.
+    /// Native creation always records `source: "created"` and accepts only
+    /// annotation types supported by the browser projection.
+    PdfCreateAnnotation {
+        annotation_id: String,
+        page_index: u32,
+        annotation: JsonValue,
+    },
+    /// Update mutable leaves of one portable PDF annotation. The expected
+    /// value provides a recursive optimistic guard, so unrelated concurrent
+    /// leaf edits merge while conflicting edits fail closed.
+    PdfUpdateAnnotation {
+        annotation_id: String,
+        expected_annotation: JsonValue,
+        next_annotation: JsonValue,
+    },
+    /// Irreversibly tombstone one PDF annotation after matching its immutable
+    /// source, page, and annotation-type identity.
+    PdfDeleteAnnotation {
+        annotation_id: String,
+        expected_source: NativeOfficeCollaborationPdfAnnotationSource,
+        expected_page_index: u32,
+        expected_type: u32,
+    },
+    /// Set one PDF form value by its stable fully-qualified field name. New
+    /// fields are added to the typed presence/fields/order collection; an
+    /// existing field changes only its conflict-local value leaf.
+    PdfSetFormValue { field_id: String, value: String },
+    /// Append one attributable PDF redaction proposal. The replica actor is
+    /// recorded as `proposedBy`; callers provide stable identity, geometry,
+    /// and a deterministic UTC timestamp.
+    PdfProposeRedaction {
+        proposal_id: String,
+        page_index: u32,
+        rects: Vec<NativeOfficeCollaborationPdfRect>,
+        proposed_at: String,
+        reason: Option<String>,
+        text: Option<String>,
+    },
+    /// Append one attributable request to rotate a non-empty set of source
+    /// pages clockwise by 90, 180, or 270 degrees.
+    PdfProposePageRotation {
+        page_operation_id: String,
+        page_indices: Vec<u32>,
+        degrees: u16,
+        proposed_at: String,
+    },
+    /// Append one attributable request to delete a non-empty proper subset of
+    /// source pages. At least one source page must remain.
+    PdfProposePageDeletion {
+        page_operation_id: String,
+        page_indices: Vec<u32>,
+        proposed_at: String,
+    },
+    /// Append one attributable request to reorder every source page using a
+    /// complete zero-based permutation.
+    PdfProposePageReorder {
+        page_operation_id: String,
+        page_order: Vec<u32>,
+        proposed_at: String,
+    },
+    /// Append the single final decision for a redaction or page operation.
+    /// The replica actor is recorded as `actorId`.
+    PdfDecideReview {
+        decision_id: String,
+        target_kind: NativeOfficeCollaborationPdfReviewTargetKind,
+        target_id: String,
+        decision: NativeOfficeCollaborationPdfReviewDecision,
+        created_at: String,
     },
 }
 

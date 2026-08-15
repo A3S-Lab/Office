@@ -24,8 +24,8 @@ use yrs::updates::encoder::{Encode, Encoder, EncoderV1};
 use yrs::{ReadTxn, StateVector, Transact};
 
 use document::{
-    canonical_state_vector, document_state_sha256, inspect_document, new_replica_document,
-    state_vector_sha256, validate_and_apply_update,
+    canonical_replay_document, canonical_state_vector, document_update_sha256, inspect_document,
+    new_replica_document, replay_update_sequence, state_vector_sha256, validate_and_apply_update,
 };
 use mutation::{apply_mutation, validate_mutation_contract};
 use persistence::{
@@ -115,9 +115,12 @@ impl NativeOfficeCollaborationStore {
             mode: request.mode,
             client_id,
         };
-        let doc = new_replica_document(client_id, &manifest.namespace, manifest.kind);
+        let mut doc = new_replica_document(client_id, &manifest.namespace, manifest.kind);
         if let Some(update) = &request.initial_update {
             validate_and_apply_update(&doc, update, &manifest)?;
+            if doc.transact().has_missing_updates() {
+                doc = canonical_replay_document(&doc, &manifest)?;
+            }
         }
         let document = inspect_document(&doc, &manifest)?;
         let state_vector = canonical_state_vector(&doc.transact().state_vector());
@@ -502,7 +505,7 @@ impl NativeOfficeCollaborationStore {
         assert_state_vector_precondition(&loaded, request.if_state_vector.as_deref())?;
 
         let before_state_vector = loaded.doc.transact().state_vector();
-        let before_state_sha256 = document_state_sha256(&loaded.doc);
+        let before_state_sha256 = document_update_sha256(&loaded.doc);
         validate_and_apply_update(&loaded.doc, &request.update, &loaded.manifest)?;
         self.commit_integrated_update(
             loaded,
@@ -556,7 +559,7 @@ impl NativeOfficeCollaborationStore {
         assert_state_vector_precondition(&loaded, request.if_state_vector.as_deref())?;
 
         let before_state_vector = loaded.doc.transact().state_vector();
-        let before_state_sha256 = document_state_sha256(&loaded.doc);
+        let before_state_sha256 = document_update_sha256(&loaded.doc);
         let update = apply_mutation(
             &loaded.doc,
             &loaded.manifest,
@@ -590,9 +593,22 @@ impl NativeOfficeCollaborationStore {
         before_state_vector: StateVector,
         before_state_sha256: String,
     ) -> UseResult<NativeOfficeCollaborationApplyResult> {
+        if document_update_sha256(&loaded.doc) != before_state_sha256 {
+            loaded.doc = replay_update_sequence(
+                std::iter::once(loaded.checkpoint_update.as_slice())
+                    .chain(
+                        loaded
+                            .update_entries
+                            .iter()
+                            .map(|entry| entry.update.as_slice()),
+                    )
+                    .chain(std::iter::once(update.as_slice())),
+                &loaded.manifest,
+            )?;
+        }
         let result_operation_id = identity.operation_id.clone();
         let update_sha256 = sha256_hex(&update);
-        let after_state_sha256 = document_state_sha256(&loaded.doc);
+        let after_state_sha256 = document_update_sha256(&loaded.doc);
         let state_changed = before_state_sha256 != after_state_sha256;
         let state_vector = canonical_state_vector(&loaded.doc.transact().state_vector());
         let sequence = state_changed.then_some(loaded.next_sequence);

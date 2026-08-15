@@ -24,14 +24,14 @@ import { useDialogFocusScope } from '../../../design-system/primitives/overlay/d
 import { usePdfAnnotationController } from './pdf-annotation-controller';
 import { createWorkPdfCollaborationProjection } from './pdf-collaboration-projection';
 import { createPdfEditorExtensions } from './pdf-editor-extensions';
+import type {
+  PdfEvidenceOverlay,
+  PdfEvidenceRegion,
+} from './pdf-evidence-contract';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
 import { PdfCollaborationPresenceLayer } from './pdf-collaboration-presence';
-import {
-  PdfEvidenceOverlayLayer,
-  type PdfEvidenceOverlay,
-  type PdfEvidenceRegion,
-} from './pdf-evidence-overlay';
+import { PdfEvidenceOverlayLayer } from './pdf-evidence-overlay';
 import { PdfThumbnailRail } from './pdf-thumbnail-rail';
 import { type PdfSaveState, PdfToolbar } from './pdf-toolbar';
 import { usePdfViewerController } from './pdf-viewer-controller';

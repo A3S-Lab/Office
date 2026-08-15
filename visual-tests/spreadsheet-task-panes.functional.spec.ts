@@ -195,7 +195,7 @@ test('Spreadsheet cancels dirty conditional formatting before closing its pane',
 }) => {
   await openSpreadsheetFixture(page);
 
-  await page.getByRole('tab', { name: '插入', exact: true }).click();
+  await page.getByRole('tab', { name: '开始', exact: true }).click();
   await page.getByRole('button', { name: '条件格式' }).click();
   const conditionalPane = spreadsheetWorkbookPane(page, '条件格式管理器');
   const reference = conditionalPane.getByRole('textbox', {

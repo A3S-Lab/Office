@@ -9,8 +9,10 @@ use super::{
 };
 
 mod document;
+mod pdf;
 
 use document::{apply_document_mutation, validate_document_mutation};
+use pdf::{apply_pdf_mutation, validate_pdf_mutation};
 
 pub(super) fn validate_mutation_contract(
     manifest: &NativeOfficeCollaborationManifest,
@@ -44,6 +46,17 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             NativeOfficeCollaborationArtifactKind::Document
+        }
+        NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfDeleteAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfSetFormValue { .. }
+        | NativeOfficeCollaborationMutation::PdfProposeRedaction { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageRotation { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageDeletion { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageReorder { .. }
+        | NativeOfficeCollaborationMutation::PdfDecideReview { .. } => {
+            NativeOfficeCollaborationArtifactKind::Pdf
         }
     };
     if manifest.kind != mutation_kind {
@@ -82,6 +95,8 @@ pub(super) fn validate_mutation_contract(
     }
     if mutation_kind == NativeOfficeCollaborationArtifactKind::Document {
         validate_document_mutation(mutation)?;
+    } else if mutation_kind == NativeOfficeCollaborationArtifactKind::Pdf {
+        validate_pdf_mutation(mutation)?;
     }
     Ok(())
 }
@@ -126,6 +141,17 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
         | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
             apply_document_mutation(doc, manifest, mutation)?;
+        }
+        NativeOfficeCollaborationMutation::PdfCreateAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfUpdateAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfDeleteAnnotation { .. }
+        | NativeOfficeCollaborationMutation::PdfSetFormValue { .. }
+        | NativeOfficeCollaborationMutation::PdfProposeRedaction { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageRotation { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageDeletion { .. }
+        | NativeOfficeCollaborationMutation::PdfProposePageReorder { .. }
+        | NativeOfficeCollaborationMutation::PdfDecideReview { .. } => {
+            apply_pdf_mutation(doc, manifest, mutation)?;
         }
     }
     inspect_document(doc, manifest)?;

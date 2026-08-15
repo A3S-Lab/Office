@@ -12,6 +12,7 @@ import {
 } from '../work-document-review-conflicts';
 import { normalizeDocumentHtml } from '../work-document-section';
 import type { WorkDocumentContent } from '../work-types';
+import { applyExternalDocumentContent } from './document-external-content';
 
 interface MutableValue<T> {
   current: T;
@@ -26,6 +27,7 @@ export interface UseDocumentReviewConflictsOptions {
   editorInput: WorkDocumentEditorInput;
   normalizedContent: string;
   onReviewConflict?: (event: WorkDocumentReviewConflictEvent) => void;
+  publishedDocumentRef: MutableValue<Editor['state']['doc'] | null>;
   reconcileControlledUpdates?: boolean;
 }
 
@@ -38,6 +40,7 @@ export function useDocumentReviewConflicts({
   editorInput,
   normalizedContent,
   onReviewConflict,
+  publishedDocumentRef,
   reconcileControlledUpdates = true,
 }: UseDocumentReviewConflictsOptions) {
   const appliedArtifactIdRef = useRef(artifactId);
@@ -67,12 +70,16 @@ export function useDocumentReviewConflicts({
         currentContent === normalizedContent;
       appliedSourceKeyRef.current = editorInput.sourceKey;
       if (!canReuseCurrentDocument) {
-        editor
-          .chain()
-          .setMeta('addToHistory', false)
-          .setContent(editorInput.source, { emitUpdate: false })
-          .run();
+        const result = applyExternalDocumentContent(editor, editorInput.source);
+        if (result === 'unsupported') {
+          editor
+            .chain()
+            .setMeta('addToHistory', false)
+            .setContent(editorInput.source, { emitUpdate: false })
+            .run();
+        }
       }
+      publishedDocumentRef.current = editor.state.doc;
     }
     if (
       artifactChanged ||
@@ -108,6 +115,7 @@ export function useDocumentReviewConflicts({
     editor,
     editorInput,
     normalizedContent,
+    publishedDocumentRef,
     reconcileControlledUpdates,
   ]);
 

@@ -32,10 +32,12 @@ import {
   type DocumentPaginationSnapshot,
   type DocumentPaginationVisualPageChrome,
   documentPageMetrics,
+  documentTextLayoutBatches,
   type MeasuredDocumentLayoutBlock,
   measureDocumentLayoutBlocks,
 } from '../work-document-pagination';
 import type { WorkDocumentSectionLayout } from '../work-types';
+import { createDocumentPaginationRunCoordinator } from './document-pagination-run-coordinator';
 
 export interface DocumentPaginationResult {
   layout: OfficeKernelLayoutResult;
@@ -99,7 +101,6 @@ export function useDocumentPagination({
   const client = useOfficeKernelClient(wasmUrl, layoutFonts);
   const editorMounted = useEditorMounted(editor);
   const revision = useRef(0);
-  const activeRequest = useRef<AbortController | null>(null);
   const measurementCache = useRef<DocumentPaginationSnapshot | null>(null);
   const paginationCache = useRef<DocumentPaginationResult | null>(null);
   const measurementEditor = useRef<Editor | null>(null);
@@ -139,8 +140,6 @@ export function useDocumentPagination({
       !client
     ) {
       const nextRevision = ++revision.current;
-      activeRequest.current?.abort();
-      activeRequest.current = null;
       if (editor && editorMounted && !editor.isDestroyed) {
         const editorDom = editor.view.dom;
         editor.commands.clearDocumentPagination(nextRevision);
@@ -166,6 +165,17 @@ export function useDocumentPagination({
           delete editorDom.dataset.paginationTextEngine;
           delete editorDom.dataset.paginationTextRuns;
           delete editorDom.dataset.paginationUnsupportedText;
+          delete editorDom.dataset.paginationAborts;
+          delete editorDom.dataset.paginationActive;
+          delete editorDom.dataset.paginationAssetTriggers;
+          delete editorDom.dataset.paginationCoalescedRequests;
+          delete editorDom.dataset.paginationDocumentTriggers;
+          delete editorDom.dataset.paginationFontTriggers;
+          delete editorDom.dataset.paginationResizeTriggers;
+          delete editorDom.dataset.paginationRuns;
+          delete editorDom.dataset.paginationTextBatch;
+          delete editorDom.dataset.paginationTextBatches;
+          delete editorDom.dataset.paginationViewportTriggers;
         }
       }
       if (!enabled) {
@@ -179,13 +189,32 @@ export function useDocumentPagination({
 
     const editorDom = editor.view.dom;
     let disposed = false;
-    let frame = 0;
     let observedElements: HTMLElement[] = [];
     const observedHeights = new Map<HTMLElement, number>();
+    let observedBlockPositions: ReadonlyMap<HTMLElement, number> = new Map();
+    let observingExternalLayout = false;
+    const diagnosticCounts = {
+      aborts: 0,
+      assetTriggers: 0,
+      coalescedRequests: 0,
+      documentTriggers: 0,
+      fontTriggers: 0,
+      resizeTriggers: 0,
+      runs: 0,
+      viewportTriggers: 0,
+    };
+    const updateDiagnostic = (
+      name: keyof typeof diagnosticCounts,
+      datasetName: keyof DOMStringMap,
+    ) => {
+      diagnosticCounts[name] += 1;
+      editorDom.dataset[datasetName] = String(diagnosticCounts[name]);
+    };
     const observer =
       typeof ResizeObserver === 'undefined'
         ? null
         : new ResizeObserver((entries) => {
+            if (!observingExternalLayout) return;
             let earliestChangedBlock = Number.POSITIVE_INFINITY;
             let changed = false;
             for (const entry of entries) {
@@ -196,17 +225,17 @@ export function useDocumentPagination({
               const resized = previous !== undefined && previous !== next;
               changed ||= resized;
               if (resized) {
-                for (const block of measurementCache.current?.blocks ?? []) {
-                  if (block.element === element) {
-                    earliestChangedBlock = Math.min(
-                      earliestChangedBlock,
-                      block.from,
-                    );
-                  }
+                const blockPosition = observedBlockPositions.get(element);
+                if (blockPosition !== undefined) {
+                  earliestChangedBlock = Math.min(
+                    earliestChangedBlock,
+                    blockPosition,
+                  );
                 }
               }
             }
             if (changed) {
+              updateDiagnostic('resizeTriggers', 'paginationResizeTriggers');
               markDirty(
                 Number.isFinite(earliestChangedBlock)
                   ? earliestChangedBlock
@@ -216,28 +245,26 @@ export function useDocumentPagination({
             }
           });
 
-    const observeBlocks = (blocks: MeasuredDocumentLayoutBlock[]) => {
+    const stopObservingBlocks = () => {
+      observingExternalLayout = false;
       observer?.disconnect();
-      observedElements = Array.from(
-        new Set(
-          blocks
-            .filter((block) => block.observeResize)
-            .map((block) => block.element),
-        ),
-      );
+    };
+
+    const observeBlocks = (blocks: MeasuredDocumentLayoutBlock[]) => {
+      stopObservingBlocks();
+      observedBlockPositions = documentResizeObservationPositions(blocks);
+      observedElements = Array.from(observedBlockPositions.keys());
       observedHeights.clear();
-      for (const element of observedElements) observer?.observe(element);
       for (const element of observedElements) {
         observedHeights.set(element, element.offsetHeight);
       }
+      observingExternalLayout = true;
+      for (const element of observedElements) observer?.observe(element);
     };
 
-    const run = async () => {
-      frame = 0;
+    const run = async (signal: AbortSignal) => {
+      stopObservingBlocks();
       const nextRevision = ++revision.current;
-      activeRequest.current?.abort();
-      const controller = new AbortController();
-      activeRequest.current = controller;
       editor.commands.clearDocumentPagination(nextRevision);
       editorDom.dataset.paginationState = 'measuring';
       editorDom.dataset.paginationReusedPageChrome = '0';
@@ -269,42 +296,58 @@ export function useDocumentPagination({
       if (textLayoutCollection.paragraphs.length) {
         editorDom.dataset.paginationState = 'shaping';
         try {
-          const textLayout = await client.textLayout(
-            {
-              revision: nextRevision,
-              documentRevision,
-              paragraphs: textLayoutCollection.paragraphs,
-            },
-            controller.signal,
+          let textLayoutEngine = '';
+          let unsupportedTextLayoutCount = 0;
+          const textLayoutBatches = documentTextLayoutBatches(
+            textLayoutCollection.paragraphs,
           );
-          if (
-            disposed ||
-            controller.signal.aborted ||
-            nextRevision !== revision.current ||
-            editor.isDestroyed
-          ) {
-            return;
-          }
-          for (const layout of textLayout.layouts) {
-            if (layout.missingGlyphCount === 0) {
-              textLayouts.set(layout.id, layout);
-              fallbackGlyphCount += layout.fallbackGlyphCount;
+          editorDom.dataset.paginationTextBatches = String(
+            textLayoutBatches.length,
+          );
+          for (const [batchIndex, paragraphs] of textLayoutBatches.entries()) {
+            editorDom.dataset.paginationTextBatch = String(batchIndex + 1);
+            const textLayout = await client.textLayout(
+              {
+                revision: nextRevision,
+                documentRevision,
+                paragraphs,
+              },
+              signal,
+            );
+            if (
+              disposed ||
+              signal.aborted ||
+              nextRevision !== revision.current ||
+              editor.isDestroyed
+            ) {
+              return;
             }
-          }
-          editorDom.dataset.paginationTextEngine = textLayout.engine;
-          editorDom.dataset.paginationUnsupportedText = String(
-            textLayout.unsupportedParagraphIds.length +
+            textLayoutEngine ||= textLayout.engine;
+            unsupportedTextLayoutCount +=
+              textLayout.unsupportedParagraphIds.length +
               textLayout.layouts.filter(
                 (layout) => layout.missingGlyphCount > 0,
-              ).length,
+              ).length;
+            for (const layout of textLayout.layouts) {
+              if (layout.missingGlyphCount === 0) {
+                textLayouts.set(layout.id, layout);
+                fallbackGlyphCount += layout.fallbackGlyphCount;
+              }
+            }
+          }
+          editorDom.dataset.paginationTextEngine = textLayoutEngine;
+          editorDom.dataset.paginationUnsupportedText = String(
+            unsupportedTextLayoutCount,
           );
         } catch (error) {
           if (
-            controller.signal.aborted ||
+            signal.aborted ||
             (error instanceof DOMException && error.name === 'AbortError')
           ) {
             return;
           }
+          textLayouts.clear();
+          fallbackGlyphCount = 0;
           editorDom.dataset.paginationTextEngine = 'dom';
           editorDom.dataset.paginationUnsupportedText = String(
             textLayoutCollection.paragraphs.length,
@@ -313,6 +356,8 @@ export function useDocumentPagination({
       } else {
         editorDom.dataset.paginationTextEngine = 'dom';
         editorDom.dataset.paginationUnsupportedText = '0';
+        editorDom.dataset.paginationTextBatch = '0';
+        editorDom.dataset.paginationTextBatches = '0';
       }
       editorDom.dataset.paginationShapedParagraphs = String(textLayouts.size);
       editorDom.dataset.paginationFallbackGlyphs = String(fallbackGlyphCount);
@@ -344,8 +389,8 @@ export function useDocumentPagination({
       editorDom.dataset.paginationReusedBlocks = String(
         snapshot.reusedBlockCount,
       );
-      observeBlocks(snapshot.blocks);
       if (snapshot.unsupportedLayout || !snapshot.blocks.length) {
+        observeBlocks(snapshot.blocks);
         editorDom.dataset.paginationState = snapshot.unsupportedLayout
           ? 'unsupported'
           : 'empty';
@@ -377,11 +422,11 @@ export function useDocumentPagination({
             pageStyles: snapshot.pageStyles,
             blocks: layoutPlan.blocks,
           },
-          controller.signal,
+          signal,
         );
         if (
           disposed ||
-          controller.signal.aborted ||
+          signal.aborted ||
           nextRevision !== revision.current ||
           editor.isDestroyed
         ) {
@@ -448,6 +493,7 @@ export function useDocumentPagination({
               : [];
           }),
         );
+        observeBlocks(snapshot.blocks);
         editorDom.dataset.paginationEngine = layout.engine;
         editorDom.dataset.paginationDocumentRevision = String(
           layout.documentRevision,
@@ -472,7 +518,7 @@ export function useDocumentPagination({
       } catch (error) {
         if (
           disposed ||
-          controller.signal.aborted ||
+          signal.aborted ||
           (error instanceof DOMException && error.name === 'AbortError')
         ) {
           return;
@@ -488,11 +534,33 @@ export function useDocumentPagination({
       }
     };
 
-    const schedule = () => {
-      if (disposed || frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = requestAnimationFrame(() => void run());
-      });
+    const coordinator = createDocumentPaginationRunCoordinator({
+      cancelFrame: cancelAnimationFrame,
+      onAbort: () => updateDiagnostic('aborts', 'paginationAborts'),
+      onCoalescedRequest: () =>
+        updateDiagnostic('coalescedRequests', 'paginationCoalescedRequests'),
+      onError: (error) => {
+        if (disposed || editor.isDestroyed) return;
+        editorDom.dataset.paginationState = 'error';
+        editorDom.dataset.paginationError =
+          error instanceof Error
+            ? `${error.name}: ${error.message}`
+            : 'UnknownError';
+        paginationCache.current = null;
+        setPagination(null);
+      },
+      onRunFinish: () => {
+        if (!disposed) editorDom.dataset.paginationActive = 'false';
+      },
+      onRunStart: () => {
+        editorDom.dataset.paginationActive = 'true';
+        updateDiagnostic('runs', 'paginationRuns');
+      },
+      requestFrame: requestAnimationFrame,
+      run,
+    });
+    const schedule = (invalidateActive = false) => {
+      coordinator.request({ invalidateActive });
     };
     const markDirty = (position: number) => {
       dirtyMeasurementFrom.current = Math.min(
@@ -501,10 +569,12 @@ export function useDocumentPagination({
       );
     };
     const handleDocumentUpdate = ({ transaction }: EditorEvents['update']) => {
+      updateDiagnostic('documentTriggers', 'paginationDocumentTriggers');
       markDirty(earliestChangedPosition(transaction));
-      schedule();
+      schedule(true);
     };
     const handleLoadedAsset = (event: Event) => {
+      updateDiagnostic('assetTriggers', 'paginationAssetTriggers');
       const target = event.target;
       const block = measurementCache.current?.blocks.find(
         (candidate) =>
@@ -515,10 +585,12 @@ export function useDocumentPagination({
       schedule();
     };
     const handleFontLoading = () => {
+      updateDiagnostic('fontTriggers', 'paginationFontTriggers');
       markDirty(0);
       schedule();
     };
     const handleWindowResize = () => {
+      updateDiagnostic('viewportTriggers', 'paginationViewportTriggers');
       markDirty(0);
       schedule();
     };
@@ -531,14 +603,12 @@ export function useDocumentPagination({
 
     return () => {
       disposed = true;
-      if (frame) cancelAnimationFrame(frame);
-      observer?.disconnect();
+      stopObservingBlocks();
       editor.off('update', handleDocumentUpdate);
       editorDom.removeEventListener('load', handleLoadedAsset, true);
       fonts?.removeEventListener('loadingdone', handleFontLoading);
       window.removeEventListener('resize', handleWindowResize);
-      activeRequest.current?.abort();
-      activeRequest.current = null;
+      coordinator.dispose();
     };
   }, [
     client,
@@ -619,6 +689,21 @@ export function createDocumentFieldPaginationContextResolver(
       ),
     };
   };
+}
+
+export function documentResizeObservationPositions(
+  blocks: readonly MeasuredDocumentLayoutBlock[],
+): ReadonlyMap<HTMLElement, number> {
+  const positions = new Map<HTMLElement, number>();
+  for (const block of blocks) {
+    if (!block.observeResize) continue;
+    const previous = positions.get(block.element);
+    positions.set(
+      block.element,
+      previous === undefined ? block.from : Math.min(previous, block.from),
+    );
+  }
+  return positions;
 }
 
 export function documentPaginationPageDescriptors(

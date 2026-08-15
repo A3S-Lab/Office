@@ -17,7 +17,7 @@ export {
   type PdfEvidencePage,
   type PdfEvidenceRegion,
   type PdfEvidenceRegionLocation,
-} from './internal/features/work/editors/pdf-evidence-overlay';
+} from './internal/features/work/editors/pdf-evidence-contract';
 import type { PresentationEditorProps as InternalPresentationEditorProps } from './internal/features/work/editors/presentation-editor';
 import type { SpreadsheetEditorProps as InternalSpreadsheetEditorProps } from './internal/features/work/editors/spreadsheet-editor';
 import type { WorkOfficeFileAction } from './internal/features/work/editors/work-office-chrome';
@@ -210,15 +210,20 @@ interface OfficeCollaborationSurfaceProps {
 }
 
 export interface DocumentEditorProps
-  extends Omit<InternalDocumentEditorProps, 'layoutFonts' | 'preview'>,
+  extends Omit<
+      InternalDocumentEditorProps,
+      'defaultRibbonCollapsed' | 'layoutFonts' | 'preview'
+    >,
     OfficeSurfaceProps,
     OfficeCollaborationSurfaceProps {
   preview?: boolean;
+  defaultRibbonCollapsed?: boolean;
   layoutFonts?: readonly DocumentLayoutFont[];
 }
 
 export function DocumentEditor({
   className,
+  defaultRibbonCollapsed = false,
   kernelWasmUrl = defaultOfficeKernelWasmUrl,
   layoutFonts = defaultDocumentLayoutFonts,
   presence,
@@ -240,6 +245,7 @@ export function DocumentEditor({
           kernelWasmUrl={kernelWasmUrl}
           layoutFonts={layoutFonts}
           preview={preview}
+          defaultRibbonCollapsed={defaultRibbonCollapsed}
         />
       </OfficeEditorLoader>
     </OfficeSurface>

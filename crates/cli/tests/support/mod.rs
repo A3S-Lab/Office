@@ -1,3 +1,10 @@
+#![allow(dead_code)]
+
+mod pdf;
+
+#[allow(unused_imports)]
+pub use pdf::{pdf_collaboration_fixture, pdf_snapshot};
+
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 use yrs::updates::decoder::Decode;
