@@ -624,9 +624,10 @@ and richer PPTX slides return `use.office.layout_unsupported`.
 With the Rust `pdfium` feature, `NativeOfficePdfiumLayoutRenderer` provides a
 second browser-neutral implementation for PDF. Construction requires an
 explicit PDFium Chromium/7881 dynamic-library path and a SHA-256 host font
-manifest; the provider copies and rehashes that binary in private staging and
-never downloads it. `source_revision` admits a regular source under an explicit
-byte/deadline bound. `inventory_pages` returns every page or fails instead of
+manifest. On Windows, the provider canonicalizes and mutation-locks that file
+while binding it directly; other platforms copy and rehash it in private
+staging. The provider never downloads a runtime. `source_revision` admits a
+regular source under an explicit byte/deadline bound. `inventory_pages` returns every page or fails instead of
 truncating, using strict one-based `/page[N]` identities and integer media/crop
 boxes in millipoints. Each page records effective rotation, physical micrometers,
 and DPI-derived pixels. `inspect_page` remains the convenience path that

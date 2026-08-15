@@ -1041,9 +1041,10 @@ Spreadsheet print layout remain follow-up providers.
 The optional native-core `pdfium` feature now provides the PDF follow-up
 without sharing the browser editor's Worker/WASM runtime. A host must inject a
 PDFium Chromium/7881 dynamic library plus its own font-manifest SHA-256. Office
-privately stages and rehashes the library, binds one binary identity
-process-wide, and performs no runtime fetch. The provider hashes a bounded PDF
-source, inventories every page without truncation, and emits one-based
+canonicalizes and mutation-locks the explicit library while binding it directly
+on Windows; other platforms retain private copy-and-rehash staging. It binds
+one binary identity process-wide and performs no runtime fetch. The provider
+hashes a bounded PDF source, inventories every page without truncation, and emits one-based
 `/page[N]` locators with media box, crop box, 0/90/180/270-degree rotation,
 physical surface, DPI, and pixel dimensions. Exact-page rendering happens on
 bounded blocking workers and publishes a revalidated PNG only after the source,

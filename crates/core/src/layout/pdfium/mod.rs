@@ -1,5 +1,6 @@
 mod batch;
 mod engine;
+mod library;
 mod outline;
 mod renderer;
 mod text;

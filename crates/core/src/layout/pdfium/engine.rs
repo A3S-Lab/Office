@@ -1,14 +1,7 @@
-use std::io::Write as _;
 use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
 
-use a3s_use_core::UseResult;
-use pdfium_render::prelude::{
-    PdfPageBoundaryBox, PdfPageRenderRotation, PdfRenderConfig, Pdfium, PdfiumError,
-    PdfiumInternalError,
-};
-use sha2::{Digest, Sha256};
-
+use super::library::{bind_library, pdfium_library_invalid, read_library, BoundPdfiumLibrary};
 use super::{
     invalid_page_geometry, millipoints_to_micrometers, millipoints_to_pixels,
     NativeOfficePdfOutline, NativeOfficePdfOutlineOptions, NativeOfficePdfPageBox,
@@ -18,9 +11,13 @@ use super::{
 };
 use crate::layout::layout_error;
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator};
+use a3s_use_core::UseResult;
+use pdfium_render::prelude::{
+    PdfPageBoundaryBox, PdfPageRenderRotation, PdfRenderConfig, Pdfium, PdfiumError,
+    PdfiumInternalError,
+};
 
 pub(super) const PDFIUM_ENGINE_VERSION: &str = "chromium/7881";
-const MAX_PDFIUM_LIBRARY_BYTES: u64 = 256 * 1024 * 1024;
 const MAX_PDF_BITMAP_BYTES: u64 = 256 * 1024 * 1024;
 
 static PDFIUM_ENGINE: OnceLock<Arc<PdfiumEngine>> = OnceLock::new();
@@ -30,18 +27,21 @@ pub(super) struct PdfiumEngine {
     pdfium: Pdfium,
     binary_sha256: String,
     operation_lock: Mutex<()>,
+    #[cfg(windows)]
+    _source_guard: std::fs::File,
+    #[cfg(not(windows))]
     _staged_library: tempfile::TempDir,
 }
 
 impl PdfiumEngine {
     pub(super) async fn from_library(path: &Path) -> UseResult<Arc<Self>> {
-        let bytes = read_library(path).await?;
-        let binary_sha256 = format!("{:x}", Sha256::digest(&bytes));
+        let library = read_library(path).await?;
+        let binary_sha256 = library.sha256();
         if let Some(engine) = PDFIUM_ENGINE.get() {
             return engine_for_identity(engine, &binary_sha256);
         }
 
-        tokio::task::spawn_blocking(move || initialize_engine(bytes, binary_sha256))
+        tokio::task::spawn_blocking(move || initialize_engine(library, binary_sha256))
             .await
             .map_err(|_| pdfium_library_invalid())?
     }
@@ -307,27 +307,10 @@ fn validate_inventory_page_count(
     }
 }
 
-async fn read_library(path: &Path) -> UseResult<Vec<u8>> {
-    let metadata = tokio::fs::symlink_metadata(path)
-        .await
-        .map_err(|_| pdfium_library_invalid())?;
-    if !metadata.is_file()
-        || metadata.file_type().is_symlink()
-        || metadata.len() == 0
-        || metadata.len() > MAX_PDFIUM_LIBRARY_BYTES
-    {
-        return Err(pdfium_library_invalid());
-    }
-    let bytes = tokio::fs::read(path)
-        .await
-        .map_err(|_| pdfium_library_invalid())?;
-    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) != metadata.len() {
-        return Err(pdfium_library_invalid());
-    }
-    Ok(bytes)
-}
-
-fn initialize_engine(bytes: Vec<u8>, binary_sha256: String) -> UseResult<Arc<PdfiumEngine>> {
+fn initialize_engine(
+    library: super::library::PdfiumLibraryInput,
+    binary_sha256: String,
+) -> UseResult<Arc<PdfiumEngine>> {
     let _guard = PDFIUM_INIT_LOCK
         .lock()
         .map_err(|_| pdfium_library_invalid())?;
@@ -335,34 +318,22 @@ fn initialize_engine(bytes: Vec<u8>, binary_sha256: String) -> UseResult<Arc<Pdf
         return engine_for_identity(engine, &binary_sha256);
     }
 
-    let staged_library = tempfile::Builder::new()
-        .prefix("a3s-office-pdfium-")
-        .tempdir()
-        .map_err(|_| pdfium_library_invalid())?;
-    let staged_path = staged_library
-        .path()
-        .join(Pdfium::pdfium_platform_library_name());
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&staged_path)
-        .map_err(|_| pdfium_library_invalid())?;
-    file.write_all(&bytes)
-        .and_then(|()| file.sync_all())
-        .map_err(|_| pdfium_library_invalid())?;
-    drop(file);
-    let staged_bytes = std::fs::read(&staged_path).map_err(|_| pdfium_library_invalid())?;
-    if format!("{:x}", Sha256::digest(&staged_bytes)) != binary_sha256 {
-        return Err(pdfium_library_invalid());
-    }
-
-    let bindings = Pdfium::bind_to_library(&staged_path).map_err(|_| pdfium_library_invalid())?;
+    let BoundPdfiumLibrary {
+        bindings,
+        #[cfg(windows)]
+        source_guard,
+        #[cfg(not(windows))]
+        staged_library,
+    } = bind_library(library, &binary_sha256)?;
     let pdfium = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| Pdfium::new(bindings)))
         .map_err(|_| pdfium_library_invalid())?;
     let engine = Arc::new(PdfiumEngine {
         pdfium,
         binary_sha256,
         operation_lock: Mutex::new(()),
+        #[cfg(windows)]
+        _source_guard: source_guard,
+        #[cfg(not(windows))]
         _staged_library: staged_library,
     });
     PDFIUM_ENGINE
@@ -538,13 +509,6 @@ fn map_page_error(_error: PdfiumError) -> a3s_use_core::UseError {
     layout_error(
         "use.office.pdf_unsupported",
         "PDFium could not inspect or render the requested PDF feature.",
-    )
-}
-
-fn pdfium_library_invalid() -> a3s_use_core::UseError {
-    layout_error(
-        "use.office.pdfium_library_invalid",
-        "The explicit PDFium library is missing, unsafe, oversized, or incompatible with build 7881.",
     )
 }
 
