@@ -1075,7 +1075,7 @@ test('Playground opens a standalone documentation center with collaboration disc
   await expect(page).toHaveURL(/\/docs\/$/);
   await expect(
     page.getByRole('heading', {
-      name: 'A3S Office 文档',
+      name: '从嵌入编辑器到多人实时协作',
       level: 1,
     }),
   ).toBeVisible();
