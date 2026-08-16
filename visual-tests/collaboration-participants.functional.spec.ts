@@ -9,6 +9,7 @@ test('projects host-owned participants across edit and preview chrome', async ({
 }) => {
   const browserErrors: string[] = [];
   page.on('pageerror', (error) => browserErrors.push(error.message));
+  await page.clock.install();
 
   await page.goto('/?e2e=collaboration-presence');
   await openDocumentFixture(page);
@@ -30,6 +31,14 @@ test('projects host-owned participants across edit and preview chrome', async ({
       '.work-office-remote-selection[data-participant-id="playground-agent"]',
     ),
   ).not.toHaveCount(0);
+
+  await page.clock.fastForward(31_000);
+  await expect(trigger).toHaveAttribute('data-collaboration-count', '2');
+  await expect(
+    page.locator(
+      '.work-office-remote-caret[data-participant-id="playground-agent"]',
+    ),
+  ).toBeVisible();
 
   await trigger.click();
   const roster = page.getByRole('dialog', { name: '协作者' });

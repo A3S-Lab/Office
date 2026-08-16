@@ -89,11 +89,26 @@ function createCollaborationPresenceFixture({
     encodeAwarenessUpdate(remoteAwareness, [remoteAwareness.clientID]),
     'playground-e2e',
   );
+  const relayRemoteAwareness = ({
+    added,
+    updated,
+    removed,
+  }: AwarenessClientChanges) => {
+    const changedClients = [...added, ...updated, ...removed];
+    if (changedClients.length === 0) return;
+    applyAwarenessUpdate(
+      localAwareness,
+      encodeAwarenessUpdate(remoteAwareness, changedClients),
+      'playground-e2e',
+    );
+  };
+  remoteAwareness.on('update', relayRemoteAwareness);
 
   return {
     collaboration,
     presence,
     destroy() {
+      remoteAwareness.off('update', relayRemoteAwareness);
       presence.destroy();
       remotePresence.destroy();
       collaboration.destroy();
@@ -104,4 +119,10 @@ function createCollaborationPresenceFixture({
       remoteDocument.destroy();
     },
   };
+}
+
+interface AwarenessClientChanges {
+  readonly added: readonly number[];
+  readonly updated: readonly number[];
+  readonly removed: readonly number[];
 }
