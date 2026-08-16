@@ -431,6 +431,11 @@ html
   overflow-x: auto;
 }
 
+.rp-codeblock__content:focus-within .rp-code-button-group__button {
+  opacity: 1;
+  transition-duration: 0s;
+}
+
 .rp-codeblock__content .shiki code .line {
   min-width: max-content;
   white-space: pre;

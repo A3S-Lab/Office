@@ -80,6 +80,7 @@ test('matches the A3S UI documentation rendering contract', async () => {
   expect(themeStyles).toMatch(/["']Geist Variable["']/);
   expect(themeStyles).toMatch(/["']Geist Mono Variable["']/);
   expect(themeStyles).toContain('.rp-codeblock__content__scroll-container');
+  expect(themeStyles).toContain('.rp-codeblock__content:focus-within');
   expect(themeStyles).toMatch(/:not\(pre\)\s*> code/);
   expect(themeStyles).toContain('border-collapse: separate');
   expect(themeStyles).toContain('--shiki-token-keyword');

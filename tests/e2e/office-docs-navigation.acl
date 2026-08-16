@@ -108,12 +108,16 @@ suite "office-docs-navigation" {
             visible = css("main .rp-codeblock.language-ts .shiki [style*='--shiki-token-keyword']")
         }
 
+        focus "focus-typescript-code-control" {
+            target = css("main .rp-codeblock.language-ts .rp-code-wrap-button")
+        }
+
         expect "code-wrap-control-is-available" {
-            visible = css("main .rp-codeblock .rp-code-wrap-button[aria-label='切换代码换行']")
+            visible = css("main .rp-codeblock.language-ts .rp-code-wrap-button[aria-label='切换代码换行']")
         }
 
         expect "code-copy-control-is-available" {
-            visible = css("main .rp-codeblock .rp-code-copy-button[title='复制代码']")
+            visible = css("main .rp-codeblock.language-ts .rp-code-copy-button[title='复制代码']")
         }
 
         screenshot "collaboration-server-guide" {
