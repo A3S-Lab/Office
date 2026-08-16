@@ -12,9 +12,9 @@ use super::{
     collaboration_error, NativeOfficeCollaborationActorKind, NativeOfficeCollaborationApplyRequest,
     NativeOfficeCollaborationManifest, NativeOfficeCollaborationOperationKind,
     NativeOfficeCollaborationOrigin, NativeOfficeCollaborationOriginKind,
-    NativeOfficeCollaborationStore, NativeOfficeCollaborationTransportMessage,
-    NativeOfficeCollaborationTransportMessageType, NativeOfficeCollaborationTransportPollResult,
-    NativeOfficeCollaborationTransportReceiveRequest,
+    NativeOfficeCollaborationStore, NativeOfficeCollaborationTransportAuthorization,
+    NativeOfficeCollaborationTransportMessage, NativeOfficeCollaborationTransportMessageType,
+    NativeOfficeCollaborationTransportPollResult, NativeOfficeCollaborationTransportReceiveRequest,
     NativeOfficeCollaborationTransportReceiveResult, NativeOfficeCollaborationUpdateEvent,
     NATIVE_OFFICE_COLLABORATION_PROTOCOL, NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
 };
@@ -73,6 +73,25 @@ impl NativeOfficeCollaborationTransportSession {
         &mut self,
         request: NativeOfficeCollaborationTransportReceiveRequest,
     ) -> UseResult<NativeOfficeCollaborationTransportReceiveResult> {
+        self.receive_inner(request, None)
+    }
+
+    /// Handle a browser envelope using participant identity established by a
+    /// trusted host ticket or session. Mutating messages enforce the supplied
+    /// mode atomically with durable persistence.
+    pub fn receive_authorized(
+        &mut self,
+        request: NativeOfficeCollaborationTransportReceiveRequest,
+        authorization: NativeOfficeCollaborationTransportAuthorization,
+    ) -> UseResult<NativeOfficeCollaborationTransportReceiveResult> {
+        self.receive_inner(request, Some(authorization))
+    }
+
+    fn receive_inner(
+        &mut self,
+        request: NativeOfficeCollaborationTransportReceiveRequest,
+        authorization: Option<NativeOfficeCollaborationTransportAuthorization>,
+    ) -> UseResult<NativeOfficeCollaborationTransportReceiveResult> {
         let message = self.validate_message(request.message)?;
         let kind = message.message_type;
         let source_origin = message.origin.clone();
@@ -121,26 +140,39 @@ impl NativeOfficeCollaborationTransportSession {
                 "Applying a transport SyncStep2 or Update requires a stable host delivery operation ID.",
             )
         })?;
-        let encoded = encode_y_sync_message(kind, &message.payload)?;
-        let handled = self.store.handle_sync_message(
-            &encoded,
-            Some(NativeOfficeCollaborationApplyRequest {
-                operation_id,
-                actor_id: self.manifest.actor_id.clone(),
-                mode: self.manifest.mode,
-                expected_artifact_id: self.manifest.artifact_id.clone(),
-                expected_kind: self.manifest.kind,
-                update: Vec::new(),
-                if_state_vector: request.if_state_vector,
-                origin: source_origin,
-            }),
-        )?;
-        let apply = handled.apply.ok_or_else(|| {
-            collaboration_error(
-                "office.collaboration.transport_message_invalid",
-                "A mutating transport message completed without a durable apply receipt.",
-            )
-        })?;
+        let apply_request = NativeOfficeCollaborationApplyRequest {
+            operation_id,
+            actor_id: authorization.as_ref().map_or_else(
+                || self.manifest.actor_id.clone(),
+                |value| value.actor_id.clone(),
+            ),
+            mode: authorization
+                .as_ref()
+                .map_or(self.manifest.mode, |value| value.mode),
+            expected_artifact_id: self.manifest.artifact_id.clone(),
+            expected_kind: self.manifest.kind,
+            update: message.payload.clone(),
+            if_state_vector: request.if_state_vector,
+            origin: source_origin,
+        };
+        let apply = if let Some(authorization) = authorization {
+            self.store.apply_authorized(apply_request, authorization)?
+        } else {
+            let encoded = encode_y_sync_message(kind, &message.payload)?;
+            let handled = self.store.handle_sync_message(
+                &encoded,
+                Some(NativeOfficeCollaborationApplyRequest {
+                    update: Vec::new(),
+                    ..apply_request
+                }),
+            )?;
+            handled.apply.ok_or_else(|| {
+                collaboration_error(
+                    "office.collaboration.transport_message_invalid",
+                    "A mutating transport message completed without a durable apply receipt.",
+                )
+            })?
+        };
         if let Some(sequence) = apply.sequence {
             if sequence > self.cursor_sequence {
                 self.suppressed_sequences.insert(sequence);

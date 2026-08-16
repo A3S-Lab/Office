@@ -30,7 +30,7 @@ test('submits a focused comment draft without a modal backdrop', () => {
   const input = screen.getByRole('textbox', { name: '批注内容' });
   expect(composer).toHaveStyle({ top: '48px' });
   expect(input).toHaveFocus();
-  expect(screen.getByText('Alpha')).toBeVisible();
+  expect(screen.getByText('我 · Alpha')).toBeVisible();
   expect(document.querySelector('.ds-dialog-backdrop')).toBeNull();
   expect(screen.getByRole('button', { name: '添加批注' })).toHaveClass(
     'ds-button',

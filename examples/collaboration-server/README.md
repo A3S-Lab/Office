@@ -28,9 +28,22 @@ native replica ── host JSONL bridge ─────>       │      │
 
 Every document update is validated against the ticket room and Yjs client ID,
 persisted before broadcast, and assigned a deterministic delivery operation ID.
-Duplicate delivery is idempotent. Only `edit` tickets may send `sync-step-2` or
-`update`; `view`, `comment`, and `suggest` tickets can synchronize down and
-publish presence but cannot mutate canonical content.
+Duplicate delivery is idempotent. Authorization is mode and artifact specific:
+
+| Ticket mode | Publish authorization |
+| --- | --- |
+| `edit` | Canonical content and review updates for every initialized format |
+| Document `comment` | Selection comments, replies, resolution/reopen, and ownership-restricted deletion only |
+| `view` / `suggest` | Receive document state and publish ephemeral presence only |
+| Non-Document `comment` | Receive document state and publish ephemeral presence only |
+
+The server does not trust a raw Yjs update because its ticket says `comment`.
+Under the durable room lock it applies the update to a candidate Yrs document,
+compares that document with the committed state, and permits only comment
+records/order/immutable claims, `commentsPresent`, and `documentComment` marks.
+Forged text, structure, roots, other options, authorship, order, claims,
+anchors, or another actor's deletion returns `FORBIDDEN` before persistence or
+broadcast.
 
 ## Run locally
 
@@ -68,8 +81,9 @@ curl --fail http://127.0.0.1:8787/api/collaboration/tickets \
     "artifactId": "quarterly-plan",
     "artifactKind": "document",
     "actorId": "user-42",
+    "actorName": "Ada Reviewer",
     "actorKind": "human",
-    "mode": "edit"
+    "mode": "comment"
   }'
 ```
 
@@ -91,7 +105,6 @@ import { Awareness } from 'y-protocols/awareness';
 import {
   createOfficeCollaborationPresence,
   createOfficeCollaborationSession,
-  initializeOfficeDocumentCollaboration,
 } from '@a3s-lab/office/core';
 import { DocumentEditor } from '@a3s-lab/office/react';
 import { connectA3sBootCollaborationRoom } from './client';
@@ -103,13 +116,12 @@ const session = createOfficeCollaborationSession({
   kind: 'document',
   document,
   awareness,
-  actor: { id: 'user-42', name: 'Mina', kind: 'human' },
-  mode: 'edit',
+  actor: { id: 'user-42', name: 'Ada Reviewer', kind: 'human' },
+  mode: 'comment',
 });
 
-if (!session.metadata()?.initialized) {
-  initializeOfficeDocumentCollaboration(session, initialContent);
-}
+// A server or separately authorized edit-mode bootstrap owner must have
+// initialized this room before a comment-mode reviewer mounts.
 
 const presence = createOfficeCollaborationPresence(session);
 const room = connectA3sBootCollaborationRoom({
@@ -135,6 +147,13 @@ session.destroy();
 awareness.destroy();
 document.destroy();
 ```
+
+The signed ticket uses schema version 2 and binds `actorName` in addition to
+the room, artifact kind, namespace, actor ID/kind, mode, and expiry. The
+browser adapter verifies every field in `collaboration.ready` against the
+local Office session. For Document comment writes, the ticket `actorName` must
+equal `session.actor.name` and every newly persisted comment/reply `author`;
+the server writes and validates the authenticated actor ID separately.
 
 ## Wire events
 
@@ -176,7 +195,10 @@ cross-process broadcast and a shared durable store with one writer/lock policy.
 Keep the following boundaries unchanged:
 
 - mint tickets only after application authentication and document authorization;
-- bind actor, artifact, kind, namespace, mode, expiration, and Origin;
+- bind actor ID, actor display name, actor kind, artifact, kind, namespace,
+  mode, expiration, and Origin;
+- authorize the semantic candidate state under the same durable store lock used
+  for persistence; never authorize `comment` by frame type alone;
 - persist document updates before acknowledging or broadcasting them;
 - never persist Awareness as document state;
 - retain the deterministic operation ID during retries;
@@ -192,4 +214,5 @@ bun run collaboration-server:typecheck
 
 The Rust integration test opens two authenticated Boot gateway connections,
 persists a browser-generated Yjs update, verifies room broadcast and restart-safe
-Yrs state, and confirms a view-only ticket cannot publish content.
+Yrs state, creates a durable selection comment with a comment-mode ticket, and
+confirms both forged content and view-only publishing are rejected.

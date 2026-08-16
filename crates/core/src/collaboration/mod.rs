@@ -28,19 +28,20 @@ use document::{
     canonical_replay_document, canonical_state_vector, document_update_sha256, inspect_document,
     new_replica_document, replay_update_sequence, state_vector_sha256, validate_and_apply_update,
 };
+use mutation::document::comment::validate_authorized_comment_update;
 use mutation::{apply_mutation, validate_mutation_contract};
 use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
-    write_update_entry, LoadedStore, OperationRecord, StoreLock,
+    write_update_entry, HostAuthorizationRecord, LoadedStore, OperationRecord, StoreLock,
 };
 use projection::project_collaboration_document;
 pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
 use validation::{
-    assert_operation_replay, assert_state_vector_precondition, creation_payload_sha256,
-    decode_state_vector, mutation_payload_sha256, normalized_identifier, normalized_namespace,
-    normalized_origin, operation_payload_sha256, validate_client_id, validate_expected_replica,
-    validate_update_size,
+    assert_operation_replay, assert_state_vector_precondition, authorized_operation_payload_sha256,
+    creation_payload_sha256, decode_state_vector, mutation_payload_sha256, normalized_identifier,
+    normalized_namespace, normalized_origin, operation_payload_sha256, validate_client_id,
+    validate_expected_artifact, validate_expected_replica, validate_update_size,
 };
 pub(crate) use validation::{collaboration_error, sha256_hex};
 
@@ -50,12 +51,14 @@ const AUTO_CHECKPOINT_UPDATE_BYTES: u64 = 64 * 1024 * 1024;
 struct UpdateOperationIdentity {
     operation_id: String,
     actor_id: String,
+    actor_kind: NativeOfficeCollaborationActorKind,
     mode: NativeOfficeCollaborationMode,
     kind: NativeOfficeCollaborationOperationKind,
     artifact_id: String,
     artifact_kind: NativeOfficeCollaborationArtifactKind,
     payload_sha256: String,
     origin: Option<NativeOfficeCollaborationOrigin>,
+    authorized_actor_name: Option<String>,
 }
 
 /// A local native replica. Every method reopens and locks the durable state so
@@ -149,6 +152,7 @@ impl NativeOfficeCollaborationStore {
             sequence: Some(0),
             state_changed: request.initial_update.is_some(),
             origin: None,
+            host_authorization: None,
         };
         let root = match create_store(&request.store, &manifest, &doc, &operation) {
             Ok(root) => root,
@@ -517,18 +521,152 @@ impl NativeOfficeCollaborationStore {
 
         let before_state_vector = loaded.doc.transact().state_vector();
         let before_state_sha256 = document_update_sha256(&loaded.doc);
+        let actor_kind = loaded.manifest.actor_kind;
         validate_and_apply_update(&loaded.doc, &request.update, &loaded.manifest)?;
         self.commit_integrated_update(
             loaded,
             UpdateOperationIdentity {
                 operation_id,
                 actor_id,
+                actor_kind,
                 mode: request.mode,
                 kind: NativeOfficeCollaborationOperationKind::Synchronize,
                 artifact_id: expected_artifact_id,
                 artifact_kind: request.expected_kind,
                 payload_sha256,
                 origin,
+                authorized_actor_name: None,
+            },
+            request.update,
+            before_state_vector,
+            before_state_sha256,
+        )
+    }
+
+    /// Apply a remote update after a host has authenticated its participant.
+    /// Unlike `apply`, this path treats the supplied mode as an authorization
+    /// boundary. Comment updates are checked against a candidate Document
+    /// state while the durable store lock remains held.
+    pub(super) fn apply_authorized(
+        &self,
+        request: NativeOfficeCollaborationApplyRequest,
+        authorization: NativeOfficeCollaborationTransportAuthorization,
+    ) -> UseResult<NativeOfficeCollaborationApplyResult> {
+        validate_update_size(&request.update)?;
+        let operation_id = normalized_identifier(&request.operation_id, "operation ID")?;
+        let actor_id = normalized_identifier(&authorization.actor_id, "actor ID")?;
+        let actor_name = normalized_identifier(&authorization.actor_name, "actor name")?;
+        let expected_artifact_id =
+            normalized_identifier(&request.expected_artifact_id, "expected artifact ID")?;
+        if request.actor_id != authorization.actor_id || request.mode != authorization.mode {
+            return Err(collaboration_error(
+                "office.collaboration.authorization_mismatch",
+                "The durable apply identity does not match the host-authenticated participant.",
+            ));
+        }
+        if matches!(
+            authorization.mode,
+            NativeOfficeCollaborationMode::View | NativeOfficeCollaborationMode::Suggest
+        ) {
+            return Err(collaboration_error(
+                "office.collaboration.permission_denied",
+                format!(
+                    "The '{}' collaboration mode cannot publish Yjs document updates.",
+                    authorization.mode.as_str()
+                ),
+            )
+            .with_detail("mode", authorization.mode.as_str()));
+        }
+        let origin = normalized_origin(request.origin)?;
+        if let Some(origin) = &origin {
+            let expected_origin_kind = match authorization.actor_kind {
+                NativeOfficeCollaborationActorKind::Human => {
+                    NativeOfficeCollaborationOriginKind::Editor
+                }
+                NativeOfficeCollaborationActorKind::Agent => {
+                    NativeOfficeCollaborationOriginKind::Agent
+                }
+                NativeOfficeCollaborationActorKind::System => {
+                    NativeOfficeCollaborationOriginKind::System
+                }
+            };
+            if origin.actor_id.as_deref() != Some(actor_id.as_str())
+                || origin.operation_id.as_deref() != Some(operation_id.as_str())
+                || origin.kind != expected_origin_kind
+            {
+                return Err(collaboration_error(
+                    "office.collaboration.origin_invalid",
+                    "The update origin does not match the host-authenticated participant and delivery operation.",
+                ));
+            }
+        }
+
+        let (_lock, mut loaded) = self.lock_and_load()?;
+        validate_expected_artifact(
+            &loaded.manifest,
+            &expected_artifact_id,
+            request.expected_kind,
+        )?;
+        let mut effective_manifest = loaded.manifest.clone();
+        effective_manifest.actor_id = actor_id.clone();
+        effective_manifest.actor_kind = authorization.actor_kind;
+        effective_manifest.mode = authorization.mode;
+        let update_sha256 = sha256_hex(&request.update);
+        let payload_sha256 = authorized_operation_payload_sha256(
+            NativeOfficeCollaborationOperationKind::Synchronize,
+            &effective_manifest,
+            &actor_name,
+            &operation_id,
+            Some(&update_sha256),
+            origin.as_ref(),
+            request.if_state_vector.as_deref(),
+        )?;
+        if let Some(existing) = loaded.find_operation(&operation_id)? {
+            assert_operation_replay(&existing, &payload_sha256)?;
+            return duplicate_update_result(operation_id, &existing, &loaded);
+        }
+        assert_state_vector_precondition(&loaded, request.if_state_vector.as_deref())?;
+
+        let before_state_vector = loaded.doc.transact().state_vector();
+        let before_state_sha256 = document_update_sha256(&loaded.doc);
+        match authorization.mode {
+            NativeOfficeCollaborationMode::Edit => {
+                validate_and_apply_update(&loaded.doc, &request.update, &loaded.manifest)?;
+            }
+            NativeOfficeCollaborationMode::Comment => {
+                let current = loaded
+                    .doc
+                    .transact()
+                    .encode_state_as_update_v1(&StateVector::default());
+                let candidate = replay_update_sequence(
+                    [current.as_slice(), request.update.as_slice()],
+                    &loaded.manifest,
+                )?;
+                validate_authorized_comment_update(
+                    &loaded.doc,
+                    &candidate,
+                    &effective_manifest,
+                    &actor_name,
+                )?;
+                loaded.doc = candidate;
+            }
+            NativeOfficeCollaborationMode::View | NativeOfficeCollaborationMode::Suggest => {
+                unreachable!("read-only modes returned before the store lock")
+            }
+        }
+        self.commit_integrated_update(
+            loaded,
+            UpdateOperationIdentity {
+                operation_id,
+                actor_id,
+                actor_kind: authorization.actor_kind,
+                mode: authorization.mode,
+                kind: NativeOfficeCollaborationOperationKind::Synchronize,
+                artifact_id: expected_artifact_id,
+                artifact_kind: request.expected_kind,
+                payload_sha256,
+                origin,
+                authorized_actor_name: Some(actor_name),
             },
             request.update,
             before_state_vector,
@@ -571,6 +709,7 @@ impl NativeOfficeCollaborationStore {
 
         let before_state_vector = loaded.doc.transact().state_vector();
         let before_state_sha256 = document_update_sha256(&loaded.doc);
+        let actor_kind = loaded.manifest.actor_kind;
         let update = apply_mutation(
             &loaded.doc,
             &loaded.manifest,
@@ -583,12 +722,14 @@ impl NativeOfficeCollaborationStore {
             UpdateOperationIdentity {
                 operation_id,
                 actor_id,
+                actor_kind,
                 mode: request.mode,
                 kind: NativeOfficeCollaborationOperationKind::Mutate,
                 artifact_id: expected_artifact_id,
                 artifact_kind: request.expected_kind,
                 payload_sha256,
                 origin: None,
+                authorized_actor_name: None,
             },
             update,
             before_state_vector,
@@ -628,7 +769,7 @@ impl NativeOfficeCollaborationStore {
             protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
             operation_id: identity.operation_id.clone(),
             actor_id: identity.actor_id,
-            actor_kind: loaded.manifest.actor_kind,
+            actor_kind: identity.actor_kind,
             mode: identity.mode,
             kind: identity.kind,
             artifact_id: identity.artifact_id,
@@ -640,6 +781,12 @@ impl NativeOfficeCollaborationStore {
             sequence,
             state_changed,
             origin: identity.origin,
+            host_authorization: identity.authorized_actor_name.map(|actor_name| {
+                HostAuthorizationRecord {
+                    version: 1,
+                    actor_name,
+                }
+            }),
         };
         if state_changed {
             write_update_entry(&self.root, loaded.next_sequence, &update, &operation)?;
@@ -744,6 +891,7 @@ impl NativeOfficeCollaborationStore {
             sequence: Some(sequence),
             state_changed: false,
             origin: None,
+            host_authorization: None,
         };
         write_archived_operation(&self.root, &operation)?;
         Ok(NativeOfficeCollaborationCheckpointResult {

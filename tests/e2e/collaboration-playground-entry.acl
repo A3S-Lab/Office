@@ -25,7 +25,11 @@ suite "collaboration-playground-entry" {
         }
 
         click "open-collaboration-demo" {
-            target = role("button", "打开协作演示")
+            target = role("button", "体验实时评论")
+        }
+
+        expect "comment-mode-is-explicit" {
+            text = "实时评论 · 2 人在线"
         }
 
         wait "two-participants-joined" {
@@ -88,7 +92,11 @@ suite "collaboration-playground-entry" {
         }
 
         click "open-compact-collaboration-demo" {
-            target = role("button", "打开协作演示")
+            target = role("button", "体验实时评论")
+        }
+
+        wait "compact-comment-mode-is-explicit" {
+            visible = css("button[aria-label^='查看批注']")
         }
 
         wait "compact-participants-joined" {

@@ -201,6 +201,18 @@ pub struct NativeOfficeCollaborationTransportReceiveRequest {
     pub if_state_vector: Option<Vec<u8>>,
 }
 
+/// Trusted participant identity supplied by a host after it authenticates a
+/// collaboration connection. Browser envelopes never populate this value.
+/// Hosts use it with `receive_authorized` to enforce ticket modes before a
+/// remote Yjs update reaches durable state.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeOfficeCollaborationTransportAuthorization {
+    pub actor_id: String,
+    pub actor_kind: NativeOfficeCollaborationActorKind,
+    pub actor_name: String,
+    pub mode: NativeOfficeCollaborationMode,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeOfficeCollaborationTransportReceiveResult {

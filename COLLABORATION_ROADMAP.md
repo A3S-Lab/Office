@@ -22,8 +22,9 @@ which tracks editor capability parity with WPS.
   the local binding origin, so one participant cannot undo another
   participant's operation.
 - `view`, `comment`, `suggest`, and `edit` are explicit session modes. A format
-  enables a mode only after its durable model exists; until then, unsupported
-  non-edit modes remain read-only.
+  enables a mode only after its durable model exists. Document now enables
+  durable review-only `comment`; unsupported mode/format pairs remain
+  read-only.
 - Editors never collaborate by repeatedly replacing one serialized OOXML file
   or one universal JSON blob. Each format gets a typed, conflict-local model.
 
@@ -90,8 +91,12 @@ Status: implemented in the browser library.
 - A runnable A3S Boot reference backend now provides signed room tickets,
   Origin validation, permission enforcement, WebSocket rooms, durable Yrs
   persistence, ephemeral Awareness relay, reconnect repair, and service-owned
-  durable update polling. Its browser adapter converts bounded base64 wire
-  payloads back to the package's typed `Uint8Array` transport envelope.
+  durable update polling. Version-2 tickets bind actor display name and the
+  durable store semantically authorizes Document comment-mode updates under
+  the room lock before persistence or broadcast. Its browser adapter converts
+  bounded base64 wire payloads back to the package's typed `Uint8Array`
+  transport envelope and verifies the ready identity against the local
+  session.
 - Convergence, offline/reconnect, transport-boundary, presence, permission,
   StrictMode, framework-parity, ownership, backend persistence, room broadcast,
   ticket tamper, and read-only authorization tests.
@@ -103,9 +108,10 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 ### Phase 2: Document
 
 Status: browser collaboration foundation, participant roster, remote
-selection/caret projection, participant navigation, and native
-text/options/bounded structural paragraph mutations implemented; rich native
-parity and the remaining review authorization matrix are pending.
+selection/caret projection, participant navigation, durable review-only
+comment mode, and native text/options/bounded structural paragraph/comment
+mutations implemented; rich native parity and suggestion authorization are
+pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
@@ -139,11 +145,30 @@ parity and the remaining review authorization matrix are pending.
   after durable restart and replay, including concurrent native and browser
   paragraph insertion across nested lists and nested tables. Real CLI and MCP
   subprocess tests exercise the same bounded structural mutations.
+- Document `comment` sessions now create selection-anchored threads, append
+  replies, resolve or reopen threads, and delete only their actor's own comment
+  or reply records while canonical text, structure, options, bibliography, and
+  non-comment formatting stay read-only. Records persist by stable ID and
+  immutable creation claim; removing an anchor through an authorized content
+  edit retains a detached thread. Remote review changes do not enter local undo
+  history.
+- Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
+  `document-comment-reply`, `document-comment-set-resolved`, and
+  `document-comment-delete`. Projection schema v2 returns attributable threads,
+  replies, anchor text, paragraph/text identities, browser-compatible UTF-16
+  offsets, resolution, and detached state. Native and browser fixtures cover
+  restart, reordered delivery, stale anchor guards, idempotent retries,
+  ownership failures, and cross-language convergence.
+- The A3S Boot backend permits `edit` content/review updates and semantically
+  validated Document `comment` review-only updates. Signed actor display name
+  must match the session actor and every new record author. Forged roots,
+  content, structure, options, authorship, order, claims, anchors, or foreign
+  deletion fail before the durable store changes.
 
 Remaining:
 
 - Add suggestion-only authorization and durable accept/reject decision audit
-  records; `comment` and `suggest` remain read-only until those models exist.
+  records; `suggest` remains read-only until that model exists.
 - Prove concurrent full-table, list-restructure, section, comment, and revision
   workflows, plus DOCX import/export after merged edits.
 - Expand native convergence from bounded paragraph edits to complete table,
@@ -345,7 +370,7 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
 projection, a host-injected live CLI transport session, and typed Markdown,
-Document, Spreadsheet cell, Presentation scene-element, PDF
+Document content/comment, Spreadsheet cell, Presentation scene-element, PDF
 annotation/form-value, and PDF redaction/page-operation review mutation
 surfaces are implemented; the remaining format mutations and native presence
 projection are pending.
@@ -390,16 +415,20 @@ projection are pending.
   if the declared match count is stale. Bounded section/list/table/blockquote
   paragraph insert/delete uses explicit stable identities and exact deletion
   guards, while table-contained edits rotate all ancestor row text identities;
-  page color and track-changes write their typed option fields. All emit minimal
-  incremental updates through the same durable
-  receipt/checkpoint path. Canonical typed mutations require `edit`; raw remote
-  updates remain receivable in every mode so read-only peers still converge.
+  page color and track-changes write their typed option fields. Document comment
+  create/reply/resolve/delete writes attributable browser-compatible review
+  records and exact selection marks. All emit minimal incremental updates
+  through the same durable receipt/checkpoint path. Canonical content mutations
+  require `edit`; Document review mutations accept `edit` or `comment`, with
+  ownership-restricted deletion in `comment`. Raw remote updates remain
+  receivable in every mode so read-only peers still converge.
 - Rust `project`, `collab read`, and `office_collaboration_read` interpret the
   Office-owned browser schema inside Office rather than in a product host.
   Markdown returns its exact canonical source. Document returns bounded
   traversal-order paragraph records, stable `paragraphId`/`textId` pairs,
-  structural ancestry, option fields, and subordinate plain text together
-  with the exact state vector. `document-replace-paragraph` uses those stable
+  structural ancestry, option fields, subordinate plain text, and projection-v2
+  comment/reply/anchor/detached records together with the exact state vector.
+  `document-replace-paragraph` uses those stable
   identities plus complete expected text to reject a stale same-paragraph
   browser/agent edit before writing, while unrelated changes can proceed
   without replacing the full document.
@@ -441,7 +470,7 @@ projection are pending.
   source browser operation, and source attribution is audit data rather than
   an authorization token.
 - Cross-language tests apply deterministic native UTF-16 Markdown, ProseMirror
-  Document text/options/paragraph, Spreadsheet cell, Presentation
+  Document text/options/paragraph/comment, Spreadsheet cell, Presentation
   scene-element content/z-order, and PDF annotation/form-value updates in browser Yjs,
   including concurrent browser/native paragraph, cell-leaf, element-field,
   annotation-leaf, and PDF form edits, in addition to importing browser Yjs
@@ -454,9 +483,8 @@ Remaining:
 
 - Extend typed format-model mutations to Spreadsheet and remaining Presentation
   structural/rich-text operations plus PDF signatures; deepen Document
-  mutations to additional nested structures and review operations, and add
-  durable comment/suggest operations before enabling those modes for local
-  mutation.
+  mutations to additional nested structures and tracked suggestion decisions
+  before enabling `suggest` for local mutation.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

@@ -20,6 +20,7 @@ export interface DocumentCommentDraft {
 export const DocumentCommentComposer = forwardRef<
   HTMLElement,
   {
+    author?: string;
     draft: DocumentCommentDraft;
     top: number;
     onCancel: () => void;
@@ -27,7 +28,7 @@ export const DocumentCommentComposer = forwardRef<
     onSubmit: (text: string) => string | null;
   }
 >(function DocumentCommentComposer(
-  { draft, top, onCancel, onDirtyChange, onSubmit },
+  { author = '我', draft, top, onCancel, onDirtyChange, onSubmit },
   forwardedRef,
 ) {
   const titleId = useId();
@@ -83,10 +84,14 @@ export const DocumentCommentComposer = forwardRef<
       onKeyDown={handleKeyDown}
     >
       <header>
-        <span className="work-document-comment-avatar">我</span>
+        <span className="work-document-comment-avatar" title={author}>
+          {commentAuthorInitials(author)}
+        </span>
         <span className="work-document-comment-composer-heading">
           <strong id={titleId}>添加批注</strong>
-          <span title={draft.anchorText}>{draft.anchorText}</span>
+          <span title={draft.anchorText}>
+            {author} · {draft.anchorText}
+          </span>
         </span>
       </header>
       <OfficeTextArea
@@ -117,3 +122,14 @@ export const DocumentCommentComposer = forwardRef<
     </article>
   );
 });
+
+function commentAuthorInitials(author: string): string {
+  const words = author.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '审';
+  if (words.length === 1) return Array.from(words[0]).slice(0, 1).join('');
+  return words
+    .slice(0, 2)
+    .map((word) => Array.from(word)[0])
+    .join('')
+    .toLocaleUpperCase();
+}

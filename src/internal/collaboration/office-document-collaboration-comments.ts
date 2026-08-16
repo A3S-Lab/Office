@@ -11,6 +11,7 @@ import {
   invalidSharedSidecars,
   isRecord,
   jsonEqual,
+  patchOptionalScalar,
   patchRequiredScalar,
   removeFromOrder,
   requiredBoolean,
@@ -146,6 +147,9 @@ function validatedComment(value: unknown): WorkDocumentComment {
     text: requiredString(value.text, 'comment text'),
     resolved: requiredBoolean(value.resolved, 'comment resolution'),
   };
+  if (value.actorId !== undefined) {
+    comment.actorId = requiredIdentifier(value.actorId, 'comment actor');
+  }
   if (value.replies !== undefined) {
     if (!Array.isArray(value.replies)) {
       invalidInputSidecars('an array of comment replies');
@@ -167,12 +171,16 @@ function validatedComment(value: unknown): WorkDocumentComment {
 
 function validatedReply(value: unknown): WorkDocumentCommentReply {
   if (!isRecord(value)) invalidInputSidecars('valid comment reply records');
-  return {
+  const reply: WorkDocumentCommentReply = {
     id: requiredIdentifier(value.id, 'comment reply'),
     author: requiredString(value.author, 'comment reply author'),
     date: requiredString(value.date, 'comment reply date'),
     text: requiredString(value.text, 'comment reply text'),
   };
+  if (value.actorId !== undefined) {
+    reply.actorId = requiredIdentifier(value.actorId, 'comment reply actor');
+  }
+  return reply;
 }
 
 function createCommentRecord(
@@ -182,6 +190,7 @@ function createCommentRecord(
   const record = new Y.Map<unknown>();
   records.set(comment.id, record);
   record.set('id', comment.id);
+  if (comment.actorId !== undefined) record.set('actorId', comment.actorId);
   record.set('author', comment.author);
   record.set('date', comment.date);
   record.set('text', comment.text);
@@ -203,6 +212,7 @@ function createReplyRecord(
   const record = new Y.Map<unknown>();
   records.set(reply.id, record);
   record.set('id', reply.id);
+  if (reply.actorId !== undefined) record.set('actorId', reply.actorId);
   record.set('author', reply.author);
   record.set('date', reply.date);
   record.set('text', reply.text);
@@ -240,6 +250,11 @@ function readCommentRecord(
       'comment resolution',
     ),
   };
+  const actorId = optionalSharedIdentifier(
+    record.get('actorId'),
+    'comment actor',
+  );
+  if (actorId !== undefined) comment.actorId = actorId;
   if (orderedReplies.length > 0) comment.replies = orderedReplies;
   return comment;
 }
@@ -250,12 +265,18 @@ function readReplyRecord(
 ): WorkDocumentCommentReply {
   const id = requiredSharedIdentifier(record.get('id'), 'comment reply');
   if (id !== expectedId) invalidSharedSidecars('comment reply identity');
-  return {
+  const reply: WorkDocumentCommentReply = {
     id,
     author: requiredSharedString(record.get('author'), 'comment reply author'),
     date: requiredSharedString(record.get('date'), 'comment reply date'),
     text: requiredSharedString(record.get('text'), 'comment reply text'),
   };
+  const actorId = optionalSharedIdentifier(
+    record.get('actorId'),
+    'comment reply actor',
+  );
+  if (actorId !== undefined) reply.actorId = actorId;
+  return reply;
 }
 
 function patchCommentRecord(
@@ -263,6 +284,7 @@ function patchCommentRecord(
   previous: WorkDocumentComment,
   next: WorkDocumentComment,
 ): void {
+  patchOptionalScalar(record, 'actorId', previous.actorId, next.actorId);
   patchRequiredScalar(record, 'author', previous.author, next.author);
   patchRequiredScalar(record, 'date', previous.date, next.date);
   patchRequiredScalar(record, 'text', previous.text, next.text);
@@ -301,8 +323,18 @@ function patchReplies(
     }
     if (jsonEqual(before, reply)) continue;
     const record = requiredSharedMap(records, reply.id, 'comment reply');
+    patchOptionalScalar(record, 'actorId', before.actorId, reply.actorId);
     patchRequiredScalar(record, 'author', before.author, reply.author);
     patchRequiredScalar(record, 'date', before.date, reply.date);
     patchRequiredScalar(record, 'text', before.text, reply.text);
   }
+}
+
+function optionalSharedIdentifier(
+  value: unknown,
+  label: string,
+): string | undefined {
+  return value === undefined
+    ? undefined
+    : requiredSharedIdentifier(value, label);
 }

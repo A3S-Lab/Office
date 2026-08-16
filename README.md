@@ -143,8 +143,9 @@ The images below are committed visual-regression baselines from the real
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
   vectors, perform authorized typed Markdown, Document, Spreadsheet cell,
   Presentation scene-element and z-order, and PDF annotation, form-value, and
-  review changes, retain browser/native actor attribution, and checkpoint
-  without replacing a whole Office file.
+  review changes, including attributable Document selection comments and
+  replies, retain browser/native actor attribution, and checkpoint without
+  replacing a whole Office file.
 
 ## Real-time collaboration
 
@@ -158,6 +159,10 @@ through the CLI, standard MCP server, or A3S Code.
 The host owns rooms, authentication, authorization, network delivery, offline
 buffering, persistence, and the `Y.Doc`; A3S Office owns format-specific
 bindings, local undo, validated presence, and conflict-local typed mutations.
+An authenticated Document `comment` session can select text, create a durable
+thread, reply, resolve or reopen it, and delete only review records owned by
+its actor while canonical content remains read-only. The server independently
+validates that review-only boundary before persistence and broadcast.
 See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
 for React, Vue, Web Component, reconnect, security, and native-agent setup.
 The repository also ships a runnable
@@ -1046,6 +1051,19 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report.replica \
   --operation-id edit-44 \
   --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' --json
 
+# Add a durable selection comment from a comment-mode native replica. Read the
+# projection first and use its exact paragraph/text IDs, anchor text, and UTF-16
+# offsets. The author must match the authenticated actor display name.
+cargo run -p a3s-office-cli -- collab join .a3s/report-review.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode comment --operation-id comment-join-1 \
+  --input browser.update --json
+cargo run -p a3s-office-cli -- collab read .a3s/report-review.replica --json
+cargo run -p a3s-office-cli -- collab mutate .a3s/report-review.replica \
+  --artifact-id report --kind document --actor-id agent-7 --mode comment \
+  --operation-id comment-45 \
+  --mutation '{"type":"document-comment-create","commentId":"comment-1","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":12,"expectedText":"review","author":"Ada Reviewer","createdAt":"2026-08-17T00:00:00.000Z","text":"Clarify this review point."}' --json
+
 # Recursively patch one Spreadsheet cell after matching the observed value.
 # Zero-based row/column coordinates follow the browser collaboration model.
 cargo run -p a3s-office-cli -- collab mutate .a3s/plan.replica \
@@ -1118,8 +1136,10 @@ suppression, without opening its own network provider. Native Rust `project`,
 `collab read`, and `office_collaboration_read` return the exact canonical
 Markdown source or an Office-owned bounded Document projection with stable
 paragraph/text identities, structural ancestry, option fields, subordinate
-plain text, and the current state vector. Product hosts therefore do not need
-to interpret Office's private Yjs schema. Typed Markdown
+plain text, durable comments, replies, resolution and detached state, exact
+paragraph-local UTF-16 anchors, and the current state vector. Projection schema
+version 2 is the contract for these review fields. Product hosts therefore do
+not need to interpret Office's private Yjs schema. Typed Markdown
 replace/splice operations use browser UTF-16 offsets. Document mutations edit
 ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, replace one
 stable plain paragraph only after its `paragraphId`, `textId`, and complete
@@ -1163,6 +1183,17 @@ attribution from the replica, and reject invalid source-page sets, missing
 targets, or a second final decision. None of these paths puts source or
 signature bytes in Yjs. Validated browser source origins survive native
 persistence and are re-emitted separately from host delivery IDs.
+
+Document review mutations use `document-comment-create`,
+`document-comment-reply`, `document-comment-set-resolved`, and
+`document-comment-delete`. Create validates an exact paragraph/text identity,
+UTF-16 range, and selected text before writing both the thread and its
+`documentComment` mark. Replies append to the stable thread; resolution can be
+set or cleared; and `comment` mode can delete only records attributed to its
+own actor. Removing selected text through a separately authorized edit keeps
+the thread as a detached review record. Browser and native comment changes
+share immutable claims and remain isolated from another participant's undo
+history.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
@@ -1227,6 +1258,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/docs/0.7.3/)
 - [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/docs/0.7.2/)
 - [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/docs/0.7.1/)
 - [A3S Office 0.7.0 documentation](https://a3s-lab.github.io/Office/docs/0.7.0/)

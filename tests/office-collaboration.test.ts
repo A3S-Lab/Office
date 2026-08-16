@@ -6,6 +6,7 @@ import {
   createOfficePdfCollaborationBinding,
   initializeOfficeMarkdownCollaboration,
   OfficeCollaborationError,
+  type OfficeCollaborationMutationScope,
   type OfficeCollaborationOrigin,
   readOfficeCollaborationMetadata,
   readOfficeDocumentCollaboration,
@@ -500,6 +501,13 @@ test('rejects forged transaction and binding origins at runtime', () => {
   expect(() => session.transact(() => undefined, invalidOrigin)).toThrow(
     /origin kind 'untrusted' is invalid/,
   );
+  expect(() =>
+    session.transact(
+      () => undefined,
+      undefined,
+      'untrusted' as OfficeCollaborationMutationScope,
+    ),
+  ).toThrow(/mutation scope 'untrusted' is invalid/);
   expect(() =>
     createOfficeMarkdownCollaborationBinding(session, {
       origin: invalidOrigin,

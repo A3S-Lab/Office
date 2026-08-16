@@ -37,11 +37,13 @@ export function DocumentSelectionToolbar({
   canInsertComment,
   layoutFonts = [],
   onInsertComment,
+  reviewOnly = false,
 }: {
   editor: Editor;
   canInsertComment: boolean;
   layoutFonts?: readonly WorkDocumentLayoutFont[];
   onInsertComment: () => void;
+  reviewOnly?: boolean;
 }) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const fontFamilyValue = documentFontFamilyValue(editor, layoutFonts);
@@ -103,83 +105,96 @@ export function DocumentSelectionToolbar({
         if (event.nativeEvent.pointerType !== 'touch') event.preventDefault();
       }}
     >
-      <OfficeSelect
-        ariaLabel="快捷字体"
-        className="work-document-selection-font-family"
-        value={fontFamilyValue}
-        options={documentFontFamilyOptionsForValue(
-          fontFamilyValue,
-          layoutFonts,
-        )}
-        onValueChange={(value) => {
-          if (value === 'default')
-            editor.chain().focus().unsetFontFamily().run();
-          else editor.chain().focus().setFontFamily(value).run();
-        }}
-      />
-      <OfficeSelect
-        ariaLabel="快捷字号"
-        className="work-document-selection-font-size"
-        value={fontSizeValue}
-        options={documentFontSizeOptionsForValue(fontSizeValue)}
-        onValueChange={(value) => {
-          if (value === 'default') editor.chain().focus().unsetFontSize().run();
-          else editor.chain().focus().setFontSize(value).run();
-        }}
-      />
-      <span className="work-document-selection-divider" aria-hidden="true" />
-      <SelectionToolbarButton
-        label="加粗"
-        active={editor.isActive('bold')}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-      >
-        <Bold size={15} />
-      </SelectionToolbarButton>
-      <SelectionToolbarButton
-        label="斜体"
-        active={editor.isActive('italic')}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      >
-        <Italic size={15} />
-      </SelectionToolbarButton>
-      <SelectionToolbarButton
-        label="下划线"
-        active={editor.isActive('underline')}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      >
-        <UnderlineIcon size={15} />
-      </SelectionToolbarButton>
-      <SelectionToolbarButton
-        label="删除线"
-        active={editor.isActive('strike')}
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-      >
-        <Strikethrough size={15} />
-      </SelectionToolbarButton>
-      <OfficeColorPicker
-        compact
-        className="work-document-selection-color"
-        value={editor.getAttributes('textStyle').color ?? '#172033'}
-        ariaLabel="快捷文字颜色"
-        onValueChange={(color) => editor.chain().focus().setColor(color).run()}
-      />
-      <SelectionToolbarButton
-        label="突出显示"
-        active={editor.isActive('highlight')}
-        onClick={() =>
-          editor.chain().focus().toggleHighlight({ color: '#fff0a6' }).run()
-        }
-      >
-        <Highlighter size={15} />
-      </SelectionToolbarButton>
-      <SelectionToolbarButton
-        className="secondary"
-        label="清除格式"
-        onClick={() => editor.commands.clearDocumentFormatting()}
-      >
-        <Eraser size={15} />
-      </SelectionToolbarButton>
-      <span className="work-document-selection-divider" aria-hidden="true" />
+      {!reviewOnly && (
+        <>
+          <OfficeSelect
+            ariaLabel="快捷字体"
+            className="work-document-selection-font-family"
+            value={fontFamilyValue}
+            options={documentFontFamilyOptionsForValue(
+              fontFamilyValue,
+              layoutFonts,
+            )}
+            onValueChange={(value) => {
+              if (value === 'default')
+                editor.chain().focus().unsetFontFamily().run();
+              else editor.chain().focus().setFontFamily(value).run();
+            }}
+          />
+          <OfficeSelect
+            ariaLabel="快捷字号"
+            className="work-document-selection-font-size"
+            value={fontSizeValue}
+            options={documentFontSizeOptionsForValue(fontSizeValue)}
+            onValueChange={(value) => {
+              if (value === 'default')
+                editor.chain().focus().unsetFontSize().run();
+              else editor.chain().focus().setFontSize(value).run();
+            }}
+          />
+          <span
+            className="work-document-selection-divider"
+            aria-hidden="true"
+          />
+          <SelectionToolbarButton
+            label="加粗"
+            active={editor.isActive('bold')}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <Bold size={15} />
+          </SelectionToolbarButton>
+          <SelectionToolbarButton
+            label="斜体"
+            active={editor.isActive('italic')}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <Italic size={15} />
+          </SelectionToolbarButton>
+          <SelectionToolbarButton
+            label="下划线"
+            active={editor.isActive('underline')}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <UnderlineIcon size={15} />
+          </SelectionToolbarButton>
+          <SelectionToolbarButton
+            label="删除线"
+            active={editor.isActive('strike')}
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+          >
+            <Strikethrough size={15} />
+          </SelectionToolbarButton>
+          <OfficeColorPicker
+            compact
+            className="work-document-selection-color"
+            value={editor.getAttributes('textStyle').color ?? '#172033'}
+            ariaLabel="快捷文字颜色"
+            onValueChange={(color) =>
+              editor.chain().focus().setColor(color).run()
+            }
+          />
+          <SelectionToolbarButton
+            label="突出显示"
+            active={editor.isActive('highlight')}
+            onClick={() =>
+              editor.chain().focus().toggleHighlight({ color: '#fff0a6' }).run()
+            }
+          >
+            <Highlighter size={15} />
+          </SelectionToolbarButton>
+          <SelectionToolbarButton
+            className="secondary"
+            label="清除格式"
+            onClick={() => editor.commands.clearDocumentFormatting()}
+          >
+            <Eraser size={15} />
+          </SelectionToolbarButton>
+          <span
+            className="work-document-selection-divider"
+            aria-hidden="true"
+          />
+        </>
+      )}
       <SelectionToolbarButton
         label="添加批注"
         disabled={!canInsertComment}

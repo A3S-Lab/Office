@@ -85,7 +85,13 @@ explicit stable IDs; deletion requires the current `textId` plus complete text
 and preserves required container blocks and list-leading paragraphs. It refuses
 inline/review content. Table-contained edits rotate every identified ancestor
 row's `rowTextId` atomically. Page color and track-changes are separate
-conflict-local option mutations. Spreadsheet set-cell recursively compares the
+conflict-local option mutations. For Document review, read projection schema
+version 2 and use `document-comment-create` with the exact `paragraphId`,
+`textId`, UTF-16 range, and selected text; use `document-comment-reply`,
+`document-comment-set-resolved`, and `document-comment-delete` for the thread
+lifecycle. A new record's `author` must match the authenticated actor display
+name. Comment-mode deletion is limited to the actor's own comment or reply,
+while resolution/reopen is shared. Spreadsheet set-cell recursively compares the
 observed and next cell, writes only changed leaves, and uses
 `expectedCell: null` only for a known blank coordinate. Spreadsheet delete-cell
 requires the exact complete observed cell. Both use a stable sheet ID and
@@ -138,8 +144,11 @@ are UTF-16 code units.
 Document replacement fails closed on a stale match count and never replaces
 the shared HTML/XML tree. Paragraph insert/delete mutations are limited to
 direct children of top-level sections and use uppercase eight-digit positive
-31-bit hexadecimal Word IDs. Canonical typed mutations require an `edit`-mode
-replica. Spreadsheet cells use `spreadsheet-set-cell` with an observed
+31-bit hexadecimal Word IDs. Canonical content mutations require an `edit`-mode
+replica. Document comment create/reply/resolve/delete accepts an `edit` or
+`comment` replica; use a separately joined actor-scoped comment replica when
+the participant must not edit content. Spreadsheet cells use
+`spreadsheet-set-cell` with an observed
 `expectedCell` and complete `nextCell`, or `spreadsheet-delete-cell` with an
 exact complete `expectedCell`; stale same-leaf edits and stale deletes fail
 before a durable update. Presentation uses
@@ -297,6 +306,10 @@ paths, add/set/remove, and exact replay. It also
 owns template merge, constrained XML access,
 deterministic all-format HTML/SVG, Browser-injected semantic screenshots, and
 authenticated loopback live watch for saved files.
+The collaboration replica separately supports durable Document selection
+comments, replies, resolution/reopen, detached anchors, and ownership-restricted
+deletion through browser-compatible Yjs/Yrs records. This does not imply native
+OOXML package support for modern Word threaded-comment parts.
 Hyperlinks cover Word body/header/footer paragraphs and bookmarks, Spreadsheet
 cells or bounded ranges and internal locations, and external Presentation shape
 clicks or internal jumps to existing slides. Remaining boundaries include

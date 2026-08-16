@@ -71,6 +71,7 @@ pub struct TicketRequest {
     pub artifact_id: String,
     pub artifact_kind: NativeOfficeCollaborationArtifactKind,
     pub actor_id: String,
+    pub actor_name: String,
     #[serde(default = "default_actor_kind")]
     pub actor_kind: NativeOfficeCollaborationActorKind,
     pub mode: NativeOfficeCollaborationMode,
@@ -80,6 +81,7 @@ impl TicketRequest {
     pub fn validate(&self) -> Result<()> {
         validated_identifier(self.artifact_id.clone(), "artifact ID")?;
         validated_identifier(self.actor_id.clone(), "actor ID")?;
+        validated_actor_name(&self.actor_name)?;
         if self.actor_kind == NativeOfficeCollaborationActorKind::System {
             return Err(BootError::BadRequest(
                 "system actors cannot receive browser collaboration tickets".to_string(),
@@ -111,6 +113,7 @@ pub struct TicketClaims {
     pub artifact_kind: NativeOfficeCollaborationArtifactKind,
     pub namespace: String,
     pub actor_id: String,
+    pub actor_name: String,
     pub actor_kind: NativeOfficeCollaborationActorKind,
     pub mode: NativeOfficeCollaborationMode,
     pub issued_at: u64,
@@ -126,8 +129,11 @@ impl TicketClaims {
         )
     }
 
-    pub fn can_edit(&self) -> bool {
-        self.mode == NativeOfficeCollaborationMode::Edit
+    pub fn can_publish_document_updates(&self) -> bool {
+        matches!(
+            self.mode,
+            NativeOfficeCollaborationMode::Edit | NativeOfficeCollaborationMode::Comment
+        )
     }
 }
 
@@ -328,6 +334,15 @@ fn validated_namespace(value: String) -> Result<String> {
         ));
     }
     Ok(value)
+}
+
+fn validated_actor_name(value: &str) -> Result<()> {
+    if !value.is_empty() && value == value.trim() && value.chars().count() <= 256 {
+        return Ok(());
+    }
+    Err(BootError::BadRequest(
+        "actor name must contain 1 to 256 non-padded characters".to_string(),
+    ))
 }
 
 fn decode_bounded_base64(value: &str, maximum_bytes: usize) -> Result<Vec<u8>> {

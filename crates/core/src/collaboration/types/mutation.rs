@@ -147,6 +147,36 @@ pub enum NativeOfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Append one attributable Document comment and its browser-compatible
+    /// ProseMirror mark after matching a stable paragraph identity, exact
+    /// UTF-16 selection, and selected text.
+    DocumentCommentCreate {
+        comment_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        start_utf16: u32,
+        end_utf16: u32,
+        expected_text: String,
+        author: String,
+        created_at: String,
+        text: String,
+    },
+    /// Append one attributable reply to an existing Document comment.
+    DocumentCommentReply {
+        comment_id: String,
+        reply_id: String,
+        author: String,
+        created_at: String,
+        text: String,
+    },
+    /// Set the current resolution state of an existing Document comment.
+    DocumentCommentSetResolved { comment_id: String, resolved: bool },
+    /// Delete one Document comment, or one reply when `replyId` is supplied.
+    /// Comment-mode replicas may delete only records owned by their actor.
+    DocumentCommentDelete {
+        comment_id: String,
+        reply_id: Option<String>,
+    },
     /// Create or update one Spreadsheet cell through the browser-compatible
     /// field-addressed cell map. `expectedCell` is absent when the caller
     /// observed a blank coordinate. Recursive optimistic guards allow

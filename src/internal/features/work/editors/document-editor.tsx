@@ -294,8 +294,19 @@ function DocumentEditorSurface({
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
-  const collaborationEditable = !collaboration || collaboration.mode === 'edit';
-  const preview = requestedPreview || !collaborationEditable;
+  const reviewOnly = collaboration?.mode === 'comment' && !requestedPreview;
+  const collaborationInteractive =
+    !collaboration ||
+    collaboration.mode === 'edit' ||
+    collaboration.mode === 'comment';
+  const preview = requestedPreview || !collaborationInteractive;
+  const canEditDocument =
+    !preview && (!collaboration || collaboration.mode === 'edit');
+  const canCommentDocument =
+    !preview &&
+    (!collaboration ||
+      collaboration.mode === 'edit' ||
+      (collaboration.mode === 'comment' && Boolean(collaboration.actor)));
   const readOnly = preview;
   const initialContentRef = useRef(collaborationInitialContent ?? content);
   const effectiveContent = collaboration ? initialContentRef.current : content;
@@ -402,11 +413,12 @@ function DocumentEditorSurface({
       attributes: {
         'aria-label': '文档正文',
         'aria-multiline': 'true',
+        'aria-readonly': reviewOnly ? 'true' : 'false',
         role: 'textbox',
         spellcheck: 'true',
       },
     }),
-    [],
+    [reviewOnly],
   );
   const editor = useEditor({
     extensions: editorExtensions,
@@ -499,8 +511,11 @@ function DocumentEditorSurface({
     reconcileControlledUpdates: !collaboration,
   });
   const documentComments = useDocumentComments({
+    actor: collaboration?.actor,
     contentRef,
+    deleteOwnOnly: reviewOnly,
     editor,
+    enabled: canCommentDocument,
     onBeforeDraft: () => setTaskPane(null),
   });
   const [collaborationVersion, setCollaborationVersion] = useState(0);
@@ -802,6 +817,7 @@ function DocumentEditorSurface({
       editor.setEditable(!readOnly);
       const editorDom = editor.view.dom;
       editorDom.setAttribute('role', preview ? 'document' : 'textbox');
+      editorDom.setAttribute('aria-readonly', String(reviewOnly || preview));
       if (preview) {
         editorDom.removeAttribute('aria-multiline');
       } else {
@@ -813,7 +829,7 @@ function DocumentEditorSurface({
     return () => {
       editor.off('mount', applyEditableState);
     };
-  }, [editor, preview, readOnly]);
+  }, [editor, preview, readOnly, reviewOnly]);
 
   useEffect(() => {
     if (!editor) return;
@@ -939,7 +955,7 @@ function DocumentEditorSurface({
     visibleChrome,
   } = useDocumentPageChrome({
     editor,
-    enabled: !preview && viewMode === 'page',
+    enabled: canEditDocument && viewMode === 'page',
     firstPage: firstPageDescriptor,
     footerRef: pageFooterRef,
     headerRef: pageHeaderRef,
@@ -1056,7 +1072,8 @@ function DocumentEditorSurface({
   const openSelectionContextMenu = (
     event: WorkspaceContextMenuEvent,
   ): boolean => {
-    if (preview || (!getSelectionMenuItems && !onAgentRequest)) return false;
+    if (!canEditDocument || (!getSelectionMenuItems && !onAgentRequest))
+      return false;
     const snapshot = createWorkDocumentSelectionSnapshot(
       editor,
       contentRef.current,
@@ -1092,10 +1109,11 @@ function DocumentEditorSurface({
   return (
     <section
       className={`work-document-editor${preview ? ' preview' : ''}`}
+      data-collaboration-mode={collaboration?.mode}
       data-work-pdf-artifact={artifactId}
       data-work-pdf-surface={artifactId ? 'live' : undefined}
     >
-      {!preview && (
+      {canEditDocument && (
         <OfficeFileInput
           ref={imageInputRef}
           accept="image/bmp,image/gif,image/jpeg,image/png,image/webp"
@@ -1115,8 +1133,9 @@ function DocumentEditorSurface({
         <DocumentToolbar
           editor={editor}
           defaultRibbonCollapsed={defaultRibbonCollapsed}
+          reviewOnly={reviewOnly}
           history={
-            collaborationBinding
+            collaborationBinding && !reviewOnly
               ? {
                   canRedo: collaborationBinding.canRedo(),
                   canUndo: collaborationBinding.canUndo(),
@@ -1290,7 +1309,7 @@ function DocumentEditorSurface({
                 )}
                 <article
                   ref={pageSurfaceRef}
-                  className={`work-document-page${preview ? ' work-document-preview-page' : ''} ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${!preview && pageChromeEditing ? ' page-chrome-editing' : ''}`}
+                  className={`work-document-page${preview ? ' work-document-preview-page' : ''} ${layout.pageSize} ${layout.orientation}${pagination.pageCount ? ' paginated' : ''}${canEditDocument && pageChromeEditing ? ' page-chrome-editing' : ''}`}
                   data-work-pdf-live-document={
                     artifactId && pagination.pageCount ? '' : undefined
                   }
@@ -1403,7 +1422,7 @@ function DocumentEditorSurface({
                       // biome-ignore lint/a11y/noStaticElementInteractions: Double-click mirrors desktop Office; keyboard users use the Insert-ribbon commands.
                       <header
                         ref={pageHeaderRef}
-                        className={`work-document-page-header${!preview && pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
+                        className={`work-document-page-header${canEditDocument && pageChromeEditing?.part === 'header' ? ' editing' : ''}`}
                         data-document-page-chrome={
                           firstPageDescriptor.pageChrome.variant
                         }
@@ -1426,7 +1445,7 @@ function DocumentEditorSurface({
                             : undefined
                         }
                         onDoubleClick={
-                          preview
+                          !canEditDocument
                             ? undefined
                             : (event) => {
                                 if (pageChromeEditing?.part === 'header')
@@ -1436,7 +1455,8 @@ function DocumentEditorSurface({
                               }
                         }
                       >
-                        {!preview && pageChromeEditing?.part === 'header' ? (
+                        {canEditDocument &&
+                        pageChromeEditing?.part === 'header' ? (
                           <DocumentPageChromeRichTextEditor
                             key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-header`}
                             autoFocus
@@ -1465,7 +1485,8 @@ function DocumentEditorSurface({
                     className={`work-document-editable ${viewMode}`}
                     aria-label="文档内容编辑区域"
                     onDoubleClick={() => {
-                      if (!preview && pageChromeEditing) closePageChrome();
+                      if (canEditDocument && pageChromeEditing)
+                        closePageChrome();
                     }}
                     onContextMenu={openSelectionContextMenu}
                     onKeyDownCapture={(event) => {
@@ -1485,6 +1506,7 @@ function DocumentEditorSurface({
                         canInsertComment={documentComments.canInsert}
                         layoutFonts={layoutFonts}
                         onInsertComment={() => void startCommentDraft()}
+                        reviewOnly={reviewOnly}
                       />
                     )}
                   </section>
@@ -1495,7 +1517,7 @@ function DocumentEditorSurface({
                       // biome-ignore lint/a11y/noStaticElementInteractions: Double-click mirrors desktop Office; keyboard users use the Insert-ribbon commands.
                       <footer
                         ref={pageFooterRef}
-                        className={`work-document-page-footer${!preview && pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
+                        className={`work-document-page-footer${canEditDocument && pageChromeEditing?.part === 'footer' ? ' editing' : ''}`}
                         data-document-page-chrome={
                           lastPageDescriptor.pageChrome.variant
                         }
@@ -1518,7 +1540,7 @@ function DocumentEditorSurface({
                             : undefined
                         }
                         onDoubleClick={
-                          preview
+                          !canEditDocument
                             ? undefined
                             : (event) => {
                                 if (pageChromeEditing?.part === 'footer')
@@ -1529,7 +1551,8 @@ function DocumentEditorSurface({
                         }
                       >
                         <div className="work-document-page-footer-content">
-                          {!preview && pageChromeEditing?.part === 'footer' ? (
+                          {canEditDocument &&
+                          pageChromeEditing?.part === 'footer' ? (
                             <DocumentPageChromeRichTextEditor
                               key={`${pageChromeEditing.sectionId}-${pageChromeEditing.variant}-footer`}
                               autoFocus
@@ -1566,7 +1589,9 @@ function DocumentEditorSurface({
               <DocumentCommentsPanel
                 editor={editor}
                 comments={documentComments.comments}
+                canDelete={documentComments.canDeleteComment}
                 draft={documentComments.draft}
+                draftAuthor={collaboration?.actor?.name}
                 surfaceRef={reviewSurfaceRef}
                 onReply={documentComments.reply}
                 onToggleResolved={documentComments.toggleResolved}
@@ -1579,7 +1604,7 @@ function DocumentEditorSurface({
             )}
           </div>
         </div>
-        {!preview && citationsOpen && (
+        {canEditDocument && citationsOpen && (
           <DocumentCitationsPanel
             editor={editor}
             content={currentContent}
@@ -1587,7 +1612,7 @@ function DocumentEditorSurface({
             onDirtyChange={setCitationsDirty}
           />
         )}
-        {!preview && changesOpen && (
+        {canEditDocument && changesOpen && (
           <DocumentChangesPanel
             editor={editor}
             changes={changes}
@@ -1598,7 +1623,7 @@ function DocumentEditorSurface({
             onClose={closeTaskPane}
           />
         )}
-        {!preview && layoutOpen && section && (
+        {canEditDocument && layoutOpen && section && (
           <DocumentLayoutPanel
             layout={layout}
             activeTab={layoutPanelTab}
@@ -1613,7 +1638,7 @@ function DocumentEditorSurface({
             onClose={closeTaskPane}
           />
         )}
-        {!preview && findReplaceMode && (
+        {canEditDocument && findReplaceMode && (
           <DocumentFindReplacePanel
             editor={editor}
             mode={findReplaceMode}
@@ -1648,7 +1673,7 @@ function DocumentEditorSurface({
           onZoomChange={setZoom}
         />
       )}
-      {!preview && selectionMenu && (
+      {canEditDocument && selectionMenu && (
         <DocumentSelectionContextMenu
           editor={editor}
           menu={selectionMenu}
@@ -1657,7 +1682,7 @@ function DocumentEditorSurface({
           onClose={() => setSelectionMenu(null)}
         />
       )}
-      {!preview && documentInsert.dialog}
+      {canEditDocument && documentInsert.dialog}
       {!preview && taskPaneDialog.dialog}
       {!preview && statisticsOpen && (
         <DocumentStatisticsDialog

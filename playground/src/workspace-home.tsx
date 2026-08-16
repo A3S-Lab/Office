@@ -117,9 +117,12 @@ export function WorkspaceHome({
         <div className="playground-collaboration-copy">
           <h2 id="playground-collaboration-title">多人实时协作</h2>
           <p>
-            在浏览器内查看两位参与者、远端光标和在线状态；生产接入使用仓库中的
-            A3S Boot 服务。
+            进入评论权限会话，选择正文即可发起持久评论、回复与解决线程；同时查看
+            两位参与者、远端选区和在线状态。
           </p>
+          <span className="playground-collaboration-backend-note">
+            生产后端示例基于 A3S Boot，并在服务端校验每次评论更新。
+          </span>
         </div>
         <div className="playground-collaboration-actions">
           <button
@@ -128,7 +131,7 @@ export function WorkspaceHome({
             onClick={onOpenCollaborationDemo}
           >
             <UsersRound size={15} />
-            打开协作演示
+            体验实时评论
           </button>
           <a
             className="playground-secondary-button"

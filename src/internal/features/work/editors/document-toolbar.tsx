@@ -96,6 +96,7 @@ export type DocumentViewMode = 'page' | 'web';
 interface DocumentToolbarProps {
   editor: Editor;
   defaultRibbonCollapsed?: boolean;
+  reviewOnly?: boolean;
   history?: {
     canRedo: boolean;
     canUndo: boolean;
@@ -161,6 +162,7 @@ interface DocumentToolbarProps {
 export function DocumentToolbar({
   editor,
   defaultRibbonCollapsed = false,
+  reviewOnly = false,
   history,
   layoutOpen,
   layout,
@@ -215,7 +217,9 @@ export function DocumentToolbar({
   onOpenWordCount,
   onOpenFindReplace,
 }: DocumentToolbarProps) {
-  const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>('home');
+  const [activeTab, setActiveTab] = useState<DocumentRibbonTabId>(
+    reviewOnly ? 'review' : 'home',
+  );
   const officeDialog = useOfficeDialog();
   const prompt = officeDialog.prompt;
   const imageSelected = editor.isActive('image');
@@ -243,13 +247,15 @@ export function DocumentToolbar({
   const spellingCommand = getDocumentCommandDefinition('spelling');
   const insertCommentCommand = getDocumentCommandDefinition('insertComment');
   const trackChangesCommand = getDocumentCommandDefinition('trackChanges');
-  const ribbonTabs = pageChromeEditor
-    ? [...documentRibbonTabs, documentPageChromeRibbonTab]
-    : imageSelected
-      ? [...documentRibbonTabs, documentPictureRibbonTab]
-      : tableSelected
-        ? [...documentRibbonTabs, ...documentTableRibbonTabs]
-        : documentRibbonTabs;
+  const ribbonTabs = reviewOnly
+    ? documentRibbonTabs.filter(({ id }) => id === 'review' || id === 'view')
+    : pageChromeEditor
+      ? [...documentRibbonTabs, documentPageChromeRibbonTab]
+      : imageSelected
+        ? [...documentRibbonTabs, documentPictureRibbonTab]
+        : tableSelected
+          ? [...documentRibbonTabs, ...documentTableRibbonTabs]
+          : documentRibbonTabs;
   const toggleLink = useCallback(async () => {
     if (editor.isActive('link')) {
       editor.chain().focus().unsetLink().run();
@@ -297,6 +303,7 @@ export function DocumentToolbar({
   }, [activeBookmark, editor, prompt]);
   useEffect(() => {
     setActiveTab((current) => {
+      if (reviewOnly) return current === 'view' ? 'view' : 'review';
       if (pageChromeEditor) return 'pageChrome';
       if (imageSelected) return 'picture';
       if (tableSelected) {
@@ -311,7 +318,7 @@ export function DocumentToolbar({
         ? 'home'
         : current;
     });
-  }, [imageSelected, pageChromeEditor, tableSelected]);
+  }, [imageSelected, pageChromeEditor, reviewOnly, tableSelected]);
 
   useEffect(() => {
     let editorDom: HTMLElement | null = null;
@@ -328,6 +335,19 @@ export function DocumentToolbar({
       const insideEditor =
         event.target instanceof Node &&
         Boolean(editorDom?.contains(event.target));
+      if (reviewOnly) {
+        if (
+          insideEditor &&
+          (event.metaKey || event.ctrlKey) &&
+          event.altKey &&
+          !event.shiftKey &&
+          key === 'm'
+        ) {
+          event.preventDefault();
+          if (canInsertComment) onInsertComment();
+        }
+        return;
+      }
       if (
         insideEditor &&
         runDocumentWpsShortcut(editor, event, {
@@ -424,6 +444,7 @@ export function DocumentToolbar({
     onOpenFindReplace,
     onOpenWordCount,
     onRefreshFields,
+    reviewOnly,
     onToggleSpellcheck,
     onToggleTrackChanges,
     toggleLink,
@@ -486,7 +507,7 @@ export function DocumentToolbar({
       <WorkOfficeRibbon
         ariaLabel="文字功能区"
         tabs={ribbonTabs}
-        defaultTab="home"
+        defaultTab={reviewOnly ? 'review' : 'home'}
         activeTab={activeTab}
         onTabChange={(tab) => {
           const accepted = onRibbonTabChange?.(tab);
@@ -501,47 +522,55 @@ export function DocumentToolbar({
         adaptive
         collapsible
         fileActions={fileActions}
-        quickAccessActions={[
-          {
-            id: undoCommand.id,
-            label: undoCommand.label,
-            icon: <Undo2 size={15} />,
-            shortcut: undoCommand.shortcut?.label,
-            ariaKeyShortcuts: undoCommand.shortcut?.aria,
-            disabled:
-              editor.isDestroyed ||
-              (history ? !history.canUndo : !editor.can().chain().undo().run()),
-            onSelect: () => {
-              if (history) {
-                history.undo();
-                return;
-              }
-              editor.chain().focus().undo().run();
-            },
-          },
-          {
-            id: redoCommand.id,
-            label: redoCommand.label,
-            icon: <Redo2 size={15} />,
-            shortcut: redoCommand.shortcut?.label,
-            ariaKeyShortcuts: redoCommand.shortcut?.aria,
-            disabled:
-              editor.isDestroyed ||
-              (history ? !history.canRedo : !editor.can().chain().redo().run()),
-            onSelect: () => {
-              if (history) {
-                history.redo();
-                return;
-              }
-              editor.chain().focus().redo().run();
-            },
-          },
-        ]}
+        quickAccessActions={
+          reviewOnly
+            ? []
+            : [
+                {
+                  id: undoCommand.id,
+                  label: undoCommand.label,
+                  icon: <Undo2 size={15} />,
+                  shortcut: undoCommand.shortcut?.label,
+                  ariaKeyShortcuts: undoCommand.shortcut?.aria,
+                  disabled:
+                    editor.isDestroyed ||
+                    (history
+                      ? !history.canUndo
+                      : !editor.can().chain().undo().run()),
+                  onSelect: () => {
+                    if (history) {
+                      history.undo();
+                      return;
+                    }
+                    editor.chain().focus().undo().run();
+                  },
+                },
+                {
+                  id: redoCommand.id,
+                  label: redoCommand.label,
+                  icon: <Redo2 size={15} />,
+                  shortcut: redoCommand.shortcut?.label,
+                  ariaKeyShortcuts: redoCommand.shortcut?.aria,
+                  disabled:
+                    editor.isDestroyed ||
+                    (history
+                      ? !history.canRedo
+                      : !editor.can().chain().redo().run()),
+                  onSelect: () => {
+                    if (history) {
+                      history.redo();
+                      return;
+                    }
+                    editor.chain().focus().redo().run();
+                  },
+                },
+              ]
+        }
         defaultCollapsed={defaultRibbonCollapsed}
         className="work-document-ribbon"
         toolbarClassName="document-toolbar"
         panels={{
-          home: (
+          home: reviewOnly ? null : (
             <DocumentHomeRibbon
               editor={editor}
               findReplaceMode={findReplaceMode}
@@ -551,7 +580,7 @@ export function DocumentToolbar({
               }
             />
           ),
-          insert: (
+          insert: reviewOnly ? null : (
             <>
               <RibbonGroup label="页面" priority="high">
                 <ToolbarButton
@@ -631,7 +660,7 @@ export function DocumentToolbar({
               </RibbonGroup>
             </>
           ),
-          page: (
+          page: reviewOnly ? null : (
             <DocumentPageLayoutRibbon
               editor={editor}
               layout={layout}
@@ -644,7 +673,7 @@ export function DocumentToolbar({
               onInsertSection={onInsertSection}
             />
           ),
-          references: (
+          references: reviewOnly ? null : (
             <>
               <RibbonGroup label="脚注" priority="high">
                 <ToolbarButton
@@ -716,18 +745,20 @@ export function DocumentToolbar({
           ),
           review: (
             <>
-              <RibbonGroup label="校对" priority="high">
-                <ToolbarButton
-                  label="拼写检查"
-                  displayLabel
-                  shortcut={spellingCommand.shortcut?.label}
-                  ariaKeyShortcuts={spellingCommand.shortcut?.aria}
-                  active={spellcheckEnabled}
-                  onClick={onToggleSpellcheck}
-                >
-                  <CheckCheck size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
+              {!reviewOnly && (
+                <RibbonGroup label="校对" priority="high">
+                  <ToolbarButton
+                    label="拼写检查"
+                    displayLabel
+                    shortcut={spellingCommand.shortcut?.label}
+                    ariaKeyShortcuts={spellingCommand.shortcut?.aria}
+                    active={spellcheckEnabled}
+                    onClick={onToggleSpellcheck}
+                  >
+                    <CheckCheck size={19} />
+                  </ToolbarButton>
+                </RibbonGroup>
+              )}
               <RibbonGroup label="批注" priority="high">
                 <ToolbarButton
                   label="添加批注"
@@ -753,62 +784,66 @@ export function DocumentToolbar({
                   <MessagesSquare size={19} />
                 </ToolbarButton>
               </RibbonGroup>
-              <RibbonGroup label="修订" priority="high">
-                <ToolbarButton
-                  label="修订模式"
-                  displayLabel
-                  shortcut={trackChangesCommand.shortcut?.label}
-                  ariaKeyShortcuts={trackChangesCommand.shortcut?.aria}
-                  active={trackChanges}
-                  onClick={onToggleTrackChanges}
-                >
-                  <FileDiff size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label={`查看修订${changeCount ? `（${changeCount}）` : ''}`}
-                  displayLabel
-                  active={changesOpen}
-                  onClick={onToggleChanges}
-                >
-                  <ListChecks size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              <RibbonGroup label="更改" priority="high">
-                <ToolbarButton
-                  label="接受修订"
-                  displayLabel
-                  disabled={actionableChangeIndex === null}
-                  title="接受当前修订并转到下一处"
-                  onClick={() => decideDocumentChange('accept')}
-                >
-                  <Check size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="拒绝修订"
-                  displayLabel
-                  disabled={actionableChangeIndex === null}
-                  title="拒绝当前修订并转到下一处"
-                  onClick={() => decideDocumentChange('reject')}
-                >
-                  <XCircle size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="上一处修订"
-                  displayLabel
-                  disabled={previousChangeIndex === null}
-                  onClick={() => navigateDocumentChange(-1)}
-                >
-                  <ChevronUp size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label="下一处修订"
-                  displayLabel
-                  disabled={nextChangeIndex === null}
-                  onClick={() => navigateDocumentChange(1)}
-                >
-                  <ChevronDown size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
+              {!reviewOnly && (
+                <>
+                  <RibbonGroup label="修订" priority="high">
+                    <ToolbarButton
+                      label="修订模式"
+                      displayLabel
+                      shortcut={trackChangesCommand.shortcut?.label}
+                      ariaKeyShortcuts={trackChangesCommand.shortcut?.aria}
+                      active={trackChanges}
+                      onClick={onToggleTrackChanges}
+                    >
+                      <FileDiff size={19} />
+                    </ToolbarButton>
+                    <ToolbarButton
+                      label={`查看修订${changeCount ? `（${changeCount}）` : ''}`}
+                      displayLabel
+                      active={changesOpen}
+                      onClick={onToggleChanges}
+                    >
+                      <ListChecks size={19} />
+                    </ToolbarButton>
+                  </RibbonGroup>
+                  <RibbonGroup label="更改" priority="high">
+                    <ToolbarButton
+                      label="接受修订"
+                      displayLabel
+                      disabled={actionableChangeIndex === null}
+                      title="接受当前修订并转到下一处"
+                      onClick={() => decideDocumentChange('accept')}
+                    >
+                      <Check size={19} />
+                    </ToolbarButton>
+                    <ToolbarButton
+                      label="拒绝修订"
+                      displayLabel
+                      disabled={actionableChangeIndex === null}
+                      title="拒绝当前修订并转到下一处"
+                      onClick={() => decideDocumentChange('reject')}
+                    >
+                      <XCircle size={19} />
+                    </ToolbarButton>
+                    <ToolbarButton
+                      label="上一处修订"
+                      displayLabel
+                      disabled={previousChangeIndex === null}
+                      onClick={() => navigateDocumentChange(-1)}
+                    >
+                      <ChevronUp size={19} />
+                    </ToolbarButton>
+                    <ToolbarButton
+                      label="下一处修订"
+                      displayLabel
+                      disabled={nextChangeIndex === null}
+                      onClick={() => navigateDocumentChange(1)}
+                    >
+                      <ChevronDown size={19} />
+                    </ToolbarButton>
+                  </RibbonGroup>
+                </>
+              )}
             </>
           ),
           view: (

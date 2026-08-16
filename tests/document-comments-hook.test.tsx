@@ -68,4 +68,68 @@ describe('document comment module', () => {
     unmount();
     editor.destroy();
   });
+
+  test('attributes collaborative comments and replies to the session actor', () => {
+    const initial = {
+      type: 'document',
+      html: '<p>Alpha beta</p>',
+      comments: [],
+    } satisfies WorkDocumentContent;
+    const contentRef = { current: initial as WorkDocumentContent };
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        getContent: () => contentRef.current,
+        onContentChange: (next) => {
+          contentRef.current = next;
+        },
+      }),
+      content: '<p>Alpha beta</p>',
+    });
+    editor.commands.setTextSelection({ from: 1, to: 6 });
+    const { result, rerender, unmount } = renderHook(() =>
+      useDocumentComments({
+        actor: { id: 'ada', name: 'Ada' },
+        contentRef,
+        deleteOwnOnly: true,
+        editor,
+      }),
+    );
+
+    act(() => result.current.startDraft());
+    act(() => expect(result.current.submitDraft('Review this')).toBeNull());
+    rerender();
+    const comment = contentRef.current.comments?.[0];
+    expect(comment).toMatchObject({ actorId: 'ada', author: 'Ada' });
+
+    act(() => result.current.reply(comment?.id ?? '', 'Ada reply'));
+    expect(contentRef.current.comments?.[0]?.replies?.[0]).toMatchObject({
+      actorId: 'ada',
+      author: 'Ada',
+    });
+    expect(result.current.canDeleteComment(comment?.id ?? '')).toBe(true);
+
+    contentRef.current = {
+      ...contentRef.current,
+      comments: [
+        ...(contentRef.current.comments ?? []),
+        {
+          id: 'comment-grace',
+          actorId: 'grace',
+          author: 'Grace',
+          date: '2026-08-17T00:00:00.000Z',
+          text: 'Foreign thread',
+          resolved: false,
+        },
+      ],
+    };
+    rerender();
+    expect(result.current.canDeleteComment('comment-grace')).toBe(false);
+    act(() => result.current.deleteComment('comment-grace'));
+    expect(
+      contentRef.current.comments?.some(({ id }) => id === 'comment-grace'),
+    ).toBe(true);
+
+    unmount();
+    editor.destroy();
+  });
 });

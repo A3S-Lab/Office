@@ -47,6 +47,14 @@ pub(super) fn validate_expected_replica(
         .with_detail("expectedMode", mode.as_str())
         .with_detail("actualMode", manifest.mode.as_str()));
     }
+    validate_expected_artifact(manifest, artifact_id, kind)
+}
+
+pub(super) fn validate_expected_artifact(
+    manifest: &NativeOfficeCollaborationManifest,
+    artifact_id: &str,
+    kind: NativeOfficeCollaborationArtifactKind,
+) -> UseResult<()> {
     if manifest.artifact_id != artifact_id {
         return Err(collaboration_error(
             "office.collaboration.artifact_mismatch",
@@ -272,6 +280,37 @@ pub(super) fn operation_payload_sha256(
             )
         })?;
     }
+    json_sha256(&payload)
+}
+
+pub(super) fn authorized_operation_payload_sha256(
+    kind: NativeOfficeCollaborationOperationKind,
+    manifest: &NativeOfficeCollaborationManifest,
+    actor_name: &str,
+    operation_id: &str,
+    update_sha256: Option<&str>,
+    origin: Option<&NativeOfficeCollaborationOrigin>,
+    precondition: Option<&[u8]>,
+) -> UseResult<String> {
+    let precondition_sha256 = precondition
+        .map(decode_state_vector)
+        .transpose()?
+        .as_ref()
+        .map(state_vector_sha256);
+    let payload = serde_json::json!({
+        "authorizationVersion": 1,
+        "actorId": manifest.actor_id,
+        "actorKind": manifest.actor_kind,
+        "actorName": actor_name,
+        "artifactId": manifest.artifact_id,
+        "artifactKind": manifest.kind,
+        "kind": kind,
+        "mode": manifest.mode,
+        "operationId": operation_id,
+        "origin": origin,
+        "preconditionStateVectorSha256": precondition_sha256,
+        "updateSha256": update_sha256,
+    });
     json_sha256(&payload)
 }
 

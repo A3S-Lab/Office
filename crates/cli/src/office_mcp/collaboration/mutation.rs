@@ -163,6 +163,33 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         expected_text_id: String,
         expected_text: String,
     },
+    /// Append one attributable comment and exact UTF-16 selection anchor.
+    DocumentCommentCreate {
+        comment_id: String,
+        paragraph_id: String,
+        expected_text_id: String,
+        start_utf16: u32,
+        end_utf16: u32,
+        expected_text: String,
+        author: String,
+        created_at: String,
+        text: String,
+    },
+    /// Append one attributable reply to an existing Document comment.
+    DocumentCommentReply {
+        comment_id: String,
+        reply_id: String,
+        author: String,
+        created_at: String,
+        text: String,
+    },
+    /// Set the current resolution state of one Document comment.
+    DocumentCommentSetResolved { comment_id: String, resolved: bool },
+    /// Delete one comment, or one reply when replyId is supplied.
+    DocumentCommentDelete {
+        comment_id: String,
+        reply_id: Option<String>,
+    },
     /// Create or recursively patch one conflict-local Spreadsheet cell.
     SpreadsheetSetCell {
         sheet_id: String,
@@ -334,6 +361,54 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 paragraph_id,
                 expected_text_id,
                 expected_text,
+            },
+            OfficeCollaborationMutation::DocumentCommentCreate {
+                comment_id,
+                paragraph_id,
+                expected_text_id,
+                start_utf16,
+                end_utf16,
+                expected_text,
+                author,
+                created_at,
+                text,
+            } => Self::DocumentCommentCreate {
+                comment_id,
+                paragraph_id,
+                expected_text_id,
+                start_utf16,
+                end_utf16,
+                expected_text,
+                author,
+                created_at,
+                text,
+            },
+            OfficeCollaborationMutation::DocumentCommentReply {
+                comment_id,
+                reply_id,
+                author,
+                created_at,
+                text,
+            } => Self::DocumentCommentReply {
+                comment_id,
+                reply_id,
+                author,
+                created_at,
+                text,
+            },
+            OfficeCollaborationMutation::DocumentCommentSetResolved {
+                comment_id,
+                resolved,
+            } => Self::DocumentCommentSetResolved {
+                comment_id,
+                resolved,
+            },
+            OfficeCollaborationMutation::DocumentCommentDelete {
+                comment_id,
+                reply_id,
+            } => Self::DocumentCommentDelete {
+                comment_id,
+                reply_id,
             },
             OfficeCollaborationMutation::SpreadsheetSetCell {
                 sheet_id,

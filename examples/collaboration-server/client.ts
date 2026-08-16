@@ -217,18 +217,31 @@ class A3sBootCollaborationRoomImpl implements A3sBootCollaborationRoom {
   }
 
   private receiveReady(value: unknown): void {
+    const actor = this.#session.actor;
     if (
       !isRecord(value) ||
       value.protocol !== PROTOCOL ||
-      value.version !== VERSION
+      value.version !== VERSION ||
+      value.artifactId !== this.#session.artifactId ||
+      value.artifactKind !== this.#session.kind ||
+      value.namespace !== this.#session.namespace ||
+      !actor ||
+      value.actorId !== actor.id ||
+      value.actorName !== actor.name ||
+      value.actorKind !== actor.kind ||
+      value.mode !== this.#session.mode ||
+      typeof value.senderClientId !== 'number'
     ) {
-      throw new TypeError('Invalid collaboration.ready message.');
+      throw new TypeError(
+        'The collaboration.ready identity does not match the local Office session.',
+      );
     }
     this.#ready = true;
     this.#reconnectAttempt = 0;
     this.#options.onStatus?.('connected');
-    // The server also sends its SyncStep1 to editable clients. Together these
-    // handshakes repair both download and upload gaps after an offline period.
+    // The server also sends its SyncStep1 to edit/comment clients. Together
+    // these handshakes repair both download and upload gaps after an offline
+    // period.
     this.#binding.synchronize();
     this.sendLocalAwareness();
   }

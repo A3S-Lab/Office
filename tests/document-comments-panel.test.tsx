@@ -23,6 +23,7 @@ const comment: WorkDocumentCommentView = {
   from: 1,
   to: 6,
   anchorText: 'Alpha',
+  detached: false,
   replies: [
     {
       id: 'reply-1',
@@ -240,6 +241,44 @@ test('moves focus to the adjacent mounted comment after deletion', async () => {
   }
 });
 
+test('keeps a detached thread visible without moving the editor selection', () => {
+  const editor = new Editor({
+    extensions: [StarterKit],
+    content: '<p>Alpha</p>',
+  });
+  editor.commands.setTextSelection(3);
+  const selection = {
+    from: editor.state.selection.from,
+    to: editor.state.selection.to,
+  };
+  const detached: WorkDocumentCommentView = {
+    ...comment,
+    from: null,
+    to: null,
+    anchorText: '',
+    detached: true,
+  };
+
+  try {
+    const view = render(
+      <CommentsPanelHarness
+        editor={editor}
+        comments={[detached]}
+        onDelete={() => undefined}
+      />,
+    );
+    const card = view.container.querySelector('[data-comment-id="comment-1"]');
+    expect(card).toHaveAttribute('data-document-comment-detached', 'true');
+    expect(card).toHaveTextContent('原文锚点已删除');
+    fireEvent.click(
+      screen.getByRole('button', { name: '查看已脱离正文的批注 1' }),
+    );
+    expect(editor.state.selection).toMatchObject(selection);
+  } finally {
+    editor.destroy();
+  }
+});
+
 function CommentsPanelHarness({
   editor,
   comments = [comment],
@@ -284,6 +323,7 @@ function longComments(count: number): WorkDocumentCommentView[] {
       from: number * 2 - 1,
       to: number * 2,
       anchorText: `Marker ${number}`,
+      detached: false,
     };
   });
 }

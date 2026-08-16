@@ -1741,6 +1741,10 @@
   opacity: 0.64;
 }
 
+.work-document-comment-track > .work-document-comment-card.detached {
+  border-left-color: var(--a3s-faint);
+}
+
 .work-document-comment-draft-item,
 .work-document-comment-empty-item {
   display: contents;
@@ -1865,11 +1869,18 @@
 }
 
 .work-document-comment-quote {
+  display: flex;
   overflow: hidden;
+  align-items: center;
+  gap: 4px;
   color: var(--a3s-faint);
   font-size: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.work-document-comment-card.detached .work-document-comment-quote {
+  color: var(--a3s-amber, #9a6700);
 }
 
 .work-document-comment-thread {

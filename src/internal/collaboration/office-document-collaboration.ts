@@ -6,6 +6,7 @@ import {
 } from '@tiptap/core';
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration';
 import { Plugin } from '@tiptap/pm/state';
+import { AddMarkStep, RemoveMarkStep } from '@tiptap/pm/transform';
 import {
   defaultDeleteFilter,
   defaultProtectedNodes,
@@ -26,12 +27,14 @@ import {
 } from '../features/work/work-document-model-codec';
 import { syncDocumentContentFromHtml } from '../features/work/work-document-section';
 import type {
+  WorkDocumentComment,
   WorkDocumentContent,
   WorkDocumentNode,
 } from '../features/work/work-types';
 import {
   assertWorkOfficeCollaborationEditable,
   assertWorkOfficeCollaborationOrigin,
+  assertWorkOfficeCollaborationWritable,
   initializeWorkOfficeCollaborationMetadata,
   markWorkOfficeCollaborationInitialized,
   readWorkOfficeCollaborationMetadata,
@@ -50,8 +53,16 @@ import {
   workOfficeDocumentSidecarsChanged,
   workOfficeDocumentSidecarUndoScope,
 } from './office-document-collaboration-sidecars';
+import { jsonEqual } from './office-document-collaboration-sidecar-utils';
 
 const DOCUMENT_CONTENT_ROOT = 'document.content';
+const MAX_DOCUMENT_COMMENT_HISTORY = 100;
+
+interface WorkOfficeDocumentCommentHistoryEntry {
+  before: WorkDocumentComment[] | undefined;
+  after: WorkDocumentComment[] | undefined;
+  commentMembershipChanged: boolean;
+}
 
 export interface WorkOfficeDocumentCollaborationBindingOptions {
   /**
@@ -197,6 +208,9 @@ class WorkOfficeDocumentCollaborationBindingImpl
   >();
   readonly #errorListeners = new Set<(error: unknown) => void>();
   readonly #historyListeners = new Set<() => void>();
+  readonly #commentUndoStack: WorkOfficeDocumentCommentHistoryEntry[] = [];
+  readonly #commentRedoStack: WorkOfficeDocumentCommentHistoryEntry[] = [];
+  #applyingCommentHistory = false;
   #destroyed = false;
   #destroyRequested = false;
   #observersAttached = false;
@@ -238,17 +252,17 @@ class WorkOfficeDocumentCollaborationBindingImpl
         'Only one Document collaboration binding may use a local Y.Doc at a time. Give each editor client its own synchronized Y.Doc.',
       );
     }
-    this.#undoManager = new Y.UndoManager(
-      [this.fragment, ...workOfficeDocumentSidecarUndoScope(session)],
-      {
-        captureTimeout: options.captureTimeoutMs ?? 500,
-        captureTransaction: (transaction) =>
-          transaction.meta.get('addToHistory') !== false,
-        deleteFilter: (item) =>
-          defaultDeleteFilter(item, defaultProtectedNodes),
-        trackedOrigins: new Set([this.origin]),
-      },
-    );
+    const undoScope =
+      session.mode === 'comment'
+        ? [this.fragment]
+        : [this.fragment, ...workOfficeDocumentSidecarUndoScope(session)];
+    this.#undoManager = new Y.UndoManager(undoScope, {
+      captureTimeout: options.captureTimeoutMs ?? 500,
+      captureTransaction: (transaction) =>
+        transaction.meta.get('addToHistory') !== false,
+      deleteFilter: (item) => defaultDeleteFilter(item, defaultProtectedNodes),
+      trackedOrigins: new Set([this.origin]),
+    });
     // TipTap's collaboration plugin owns this manager while mounted, so keep
     // the shared sidecar scopes and this binding's origin after a StrictMode
     // unmount/remount restores the manager.
@@ -257,10 +271,14 @@ class WorkOfficeDocumentCollaborationBindingImpl
     if (restore) {
       restorable.restore = () => {
         restore();
-        this.#undoManager.addToScope([
-          this.fragment,
-          ...workOfficeDocumentSidecarUndoScope(this.#session),
-        ]);
+        this.#undoManager.addToScope(
+          this.#session.mode === 'comment'
+            ? this.fragment
+            : [
+                this.fragment,
+                ...workOfficeDocumentSidecarUndoScope(this.#session),
+              ],
+        );
         this.#undoManager.addTrackedOrigin(this.origin);
       };
     }
@@ -294,32 +312,59 @@ class WorkOfficeDocumentCollaborationBindingImpl
     next: WorkDocumentContent,
   ): boolean {
     this.ensureActive();
-    return updateWorkOfficeDocumentSidecars(
+    const historyEntry =
+      this.#session.mode === 'comment' && !this.#applyingCommentHistory
+        ? createDocumentCommentHistoryEntry(previous, next)
+        : null;
+    if (historyEntry?.commentMembershipChanged) {
+      this.#undoManager.stopCapturing();
+    }
+    const changed = updateWorkOfficeDocumentSidecars(
       this.#session,
       previous,
       next,
       this.origin,
     );
+    if (changed && historyEntry) {
+      appendBoundedCommentHistory(this.#commentUndoStack, historyEntry);
+      this.#commentRedoStack.length = 0;
+      this.#onHistoryChange();
+    }
+    return changed;
   }
 
   canUndo(): boolean {
     this.ensureActive();
+    if (this.#session.mode === 'comment') {
+      return this.#commentUndoStack.length > 0 || this.#undoManager.canUndo();
+    }
     return this.#undoManager.canUndo();
   }
 
   canRedo(): boolean {
     this.ensureActive();
+    if (this.#session.mode === 'comment') {
+      return this.#commentRedoStack.length > 0 || this.#undoManager.canRedo();
+    }
     return this.#undoManager.canRedo();
   }
 
   undo(): boolean {
     this.ensureActive();
+    if (this.#session.mode === 'comment') {
+      assertWorkOfficeCollaborationWritable(this.#session, 'document-comment');
+      return this.applyCommentHistory('undo');
+    }
     assertWorkOfficeCollaborationEditable(this.#session);
     return this.#undoManager.undo() !== null;
   }
 
   redo(): boolean {
     this.ensureActive();
+    if (this.#session.mode === 'comment') {
+      assertWorkOfficeCollaborationWritable(this.#session, 'document-comment');
+      return this.applyCommentHistory('redo');
+    }
     assertWorkOfficeCollaborationEditable(this.#session);
     return this.#undoManager.redo() !== null;
   }
@@ -428,6 +473,47 @@ class WorkOfficeDocumentCollaborationBindingImpl
     for (const listener of this.#historyListeners) listener();
   };
 
+  private applyCommentHistory(direction: 'undo' | 'redo'): boolean {
+    const sourceStack =
+      direction === 'undo' ? this.#commentUndoStack : this.#commentRedoStack;
+    const targetStack =
+      direction === 'undo' ? this.#commentRedoStack : this.#commentUndoStack;
+    const entry = sourceStack.pop();
+    if (!entry) {
+      return direction === 'undo'
+        ? this.#undoManager.undo() !== null
+        : this.#undoManager.redo() !== null;
+    }
+    const from = direction === 'undo' ? entry.after : entry.before;
+    const to = direction === 'undo' ? entry.before : entry.after;
+    const current = this.content();
+    const comments = reconcileDocumentCommentHistory(
+      current.comments,
+      from,
+      to,
+    );
+    let sidecarsChanged = false;
+    this.#applyingCommentHistory = true;
+    try {
+      if (!jsonEqual(current.comments, comments)) {
+        sidecarsChanged = this.updateSidecars(current, {
+          ...current,
+          comments,
+        });
+      }
+    } finally {
+      this.#applyingCommentHistory = false;
+    }
+    const anchorChanged = entry.commentMembershipChanged
+      ? direction === 'undo'
+        ? this.#undoManager.undo() !== null
+        : this.#undoManager.redo() !== null
+      : false;
+    appendBoundedCommentHistory(targetStack, entry);
+    this.#onHistoryChange();
+    return sidecarsChanged || anchorChanged;
+  }
+
   private finishDestroy(destroyUndoManager: boolean): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
@@ -443,6 +529,8 @@ class WorkOfficeDocumentCollaborationBindingImpl
     this.#listeners.clear();
     this.#errorListeners.clear();
     this.#historyListeners.clear();
+    this.#commentUndoStack.length = 0;
+    this.#commentRedoStack.length = 0;
   }
 
   private detachObservers(): void {
@@ -462,6 +550,138 @@ class WorkOfficeDocumentCollaborationBindingImpl
       'The Document collaboration binding has been destroyed.',
     );
   }
+}
+
+function createDocumentCommentHistoryEntry(
+  previous: WorkDocumentContent,
+  next: WorkDocumentContent,
+): WorkOfficeDocumentCommentHistoryEntry | null {
+  if (jsonEqual(previous.comments, next.comments)) return null;
+  const before = cloneDocumentComments(previous.comments);
+  const after = cloneDocumentComments(next.comments);
+  return {
+    before,
+    after,
+    commentMembershipChanged: !sameDocumentCommentMembership(before, after),
+  };
+}
+
+function appendBoundedCommentHistory(
+  stack: WorkOfficeDocumentCommentHistoryEntry[],
+  entry: WorkOfficeDocumentCommentHistoryEntry,
+): void {
+  stack.push(entry);
+  if (stack.length > MAX_DOCUMENT_COMMENT_HISTORY) stack.shift();
+}
+
+function sameDocumentCommentMembership(
+  left: readonly WorkDocumentComment[] | undefined,
+  right: readonly WorkDocumentComment[] | undefined,
+): boolean {
+  return jsonEqual(
+    (left ?? []).map(({ id }) => id),
+    (right ?? []).map(({ id }) => id),
+  );
+}
+
+function reconcileDocumentCommentHistory(
+  current: readonly WorkDocumentComment[] | undefined,
+  from: readonly WorkDocumentComment[] | undefined,
+  to: readonly WorkDocumentComment[] | undefined,
+): WorkDocumentComment[] | undefined {
+  const fromById = new Map(
+    (from ?? []).map((comment) => [comment.id, comment]),
+  );
+  const toById = new Map((to ?? []).map((comment) => [comment.id, comment]));
+  const result = cloneDocumentComments(current) ?? [];
+  const resultById = () =>
+    new Map(result.map((comment) => [comment.id, comment]));
+  const orderedIds = [
+    ...(from ?? []).map(({ id }) => id),
+    ...(to ?? []).map(({ id }) => id),
+  ].filter((id, index, ids) => ids.indexOf(id) === index);
+
+  for (const id of orderedIds) {
+    const source = fromById.get(id);
+    const target = toById.get(id);
+    const currentById = resultById();
+    const existing = currentById.get(id);
+    if (!source && target) {
+      if (!existing) result.push(cloneDocumentComment(target));
+      continue;
+    }
+    if (source && !target) {
+      if (existing && jsonEqual(existing, source)) {
+        result.splice(
+          result.findIndex((comment) => comment.id === id),
+          1,
+        );
+      }
+      continue;
+    }
+    if (!source || !target || !existing) continue;
+    const next = reconcileExistingDocumentComment(existing, source, target);
+    const index = result.findIndex((comment) => comment.id === id);
+    if (index >= 0) result[index] = next;
+  }
+
+  if (result.length > 0) return result;
+  return to === undefined ? undefined : [];
+}
+
+function reconcileExistingDocumentComment(
+  current: WorkDocumentComment,
+  from: WorkDocumentComment,
+  to: WorkDocumentComment,
+): WorkDocumentComment {
+  const next = cloneDocumentComment(current);
+  if (from.resolved !== to.resolved && current.resolved === from.resolved) {
+    next.resolved = to.resolved;
+  }
+  const fromReplies = new Map(
+    (from.replies ?? []).map((reply) => [reply.id, reply]),
+  );
+  const toReplies = new Map(
+    (to.replies ?? []).map((reply) => [reply.id, reply]),
+  );
+  const replies = (next.replies ?? []).map((reply) => ({ ...reply }));
+  const replyIds = [
+    ...(from.replies ?? []).map(({ id }) => id),
+    ...(to.replies ?? []).map(({ id }) => id),
+  ].filter((id, index, ids) => ids.indexOf(id) === index);
+  for (const id of replyIds) {
+    const source = fromReplies.get(id);
+    const target = toReplies.get(id);
+    const index = replies.findIndex((reply) => reply.id === id);
+    if (!source && target && index < 0) {
+      replies.push({ ...target });
+    } else if (
+      source &&
+      !target &&
+      index >= 0 &&
+      jsonEqual(replies[index], source)
+    ) {
+      replies.splice(index, 1);
+    }
+  }
+  if (replies.length > 0 || to.replies !== undefined) next.replies = replies;
+  else delete next.replies;
+  return next;
+}
+
+function cloneDocumentComments(
+  comments: readonly WorkDocumentComment[] | undefined,
+): WorkDocumentComment[] | undefined {
+  return comments?.map(cloneDocumentComment);
+}
+
+function cloneDocumentComment(
+  comment: WorkDocumentComment,
+): WorkDocumentComment {
+  return {
+    ...comment,
+    replies: comment.replies?.map((reply) => ({ ...reply })),
+  };
 }
 
 export function workOfficeDocumentCollaborationFragment(
@@ -640,7 +860,15 @@ function documentCollaborationPermissionExtension(
             return (
               session.mode === 'edit' ||
               !transaction.docChanged ||
-              isChangeOrigin(transaction)
+              isChangeOrigin(transaction) ||
+              (session.mode === 'comment' &&
+                transaction.steps.length > 0 &&
+                transaction.steps.every(
+                  (step) =>
+                    (step instanceof AddMarkStep ||
+                      step instanceof RemoveMarkStep) &&
+                    step.mark.type.name === 'documentComment',
+                ))
             );
           },
         }),

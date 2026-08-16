@@ -68,6 +68,15 @@ pub(super) struct OperationRecord {
     pub state_changed: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<NativeOfficeCollaborationOrigin>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host_authorization: Option<HostAuthorizationRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(super) struct HostAuthorizationRecord {
+    pub version: u32,
+    pub actor_name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -724,12 +733,47 @@ fn validate_operation(
     operation: &OperationRecord,
     manifest: &NativeOfficeCollaborationManifest,
 ) -> UseResult<()> {
+    let identity_valid = match &operation.host_authorization {
+        None => {
+            operation.actor_id == manifest.actor_id
+                && operation.actor_kind == manifest.actor_kind
+                && operation.mode == manifest.mode
+        }
+        Some(authorization) => {
+            let expected_origin_kind = match operation.actor_kind {
+                NativeOfficeCollaborationActorKind::Human => {
+                    super::NativeOfficeCollaborationOriginKind::Editor
+                }
+                NativeOfficeCollaborationActorKind::Agent => {
+                    super::NativeOfficeCollaborationOriginKind::Agent
+                }
+                NativeOfficeCollaborationActorKind::System => {
+                    super::NativeOfficeCollaborationOriginKind::System
+                }
+            };
+            authorization.version == 1
+                && !authorization.actor_name.trim().is_empty()
+                && authorization.actor_name == authorization.actor_name.trim()
+                && authorization.actor_name.chars().count() <= 256
+                && !operation.actor_id.trim().is_empty()
+                && operation.actor_id == operation.actor_id.trim()
+                && operation.actor_id.chars().count() <= 256
+                && operation.kind == NativeOfficeCollaborationOperationKind::Synchronize
+                && matches!(
+                    operation.mode,
+                    NativeOfficeCollaborationMode::Edit | NativeOfficeCollaborationMode::Comment
+                )
+                && operation.origin.as_ref().is_none_or(|origin| {
+                    origin.actor_id.as_deref() == Some(operation.actor_id.as_str())
+                        && origin.operation_id.as_deref() == Some(operation.operation_id.as_str())
+                        && origin.kind == expected_origin_kind
+                })
+        }
+    };
     if operation.schema_version != 1
         || operation.protocol != NATIVE_OFFICE_COLLABORATION_PROTOCOL
         || operation.operation_id.trim().is_empty()
-        || operation.actor_id != manifest.actor_id
-        || operation.actor_kind != manifest.actor_kind
-        || operation.mode != manifest.mode
+        || !identity_valid
         || operation.artifact_id != manifest.artifact_id
         || operation.artifact_kind != manifest.kind
         || operation.payload_sha256.len() != 64

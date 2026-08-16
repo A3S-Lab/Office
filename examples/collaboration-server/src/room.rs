@@ -6,8 +6,8 @@ use a3s_boot::{BootError, Result};
 use a3s_office::{
     NativeOfficeCollaborationActorKind, NativeOfficeCollaborationCreateRequest,
     NativeOfficeCollaborationMode, NativeOfficeCollaborationStore,
-    NativeOfficeCollaborationTransportMessage, NativeOfficeCollaborationTransportPollResult,
-    NativeOfficeCollaborationTransportReceiveRequest,
+    NativeOfficeCollaborationTransportAuthorization, NativeOfficeCollaborationTransportMessage,
+    NativeOfficeCollaborationTransportPollResult, NativeOfficeCollaborationTransportReceiveRequest,
     NativeOfficeCollaborationTransportReceiveResult, NativeOfficeCollaborationTransportSession,
     MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
 };
@@ -82,13 +82,16 @@ impl CollaborationRoom {
     pub async fn receive(
         &self,
         request: NativeOfficeCollaborationTransportReceiveRequest,
+        authorization: NativeOfficeCollaborationTransportAuthorization,
     ) -> Result<NativeOfficeCollaborationTransportReceiveResult> {
         let transport = Arc::clone(&self.transport);
         tokio::task::spawn_blocking(move || {
             let mut transport = transport
                 .lock()
                 .map_err(|_| BootError::Internal("room transport lock is poisoned".to_string()))?;
-            transport.receive(request).map_err(map_office_error)
+            transport
+                .receive_authorized(request, authorization)
+                .map_err(map_office_error)
         })
         .await
         .map_err(map_join_error)?
@@ -140,7 +143,12 @@ fn hex_digest(value: &[u8]) -> String {
 
 fn map_office_error(error: a3s_use_core::UseError) -> BootError {
     let message = format!("{}: {}", error.code, error.message);
-    if error.code.contains("conflict") {
+    if error.code.contains("permission_denied")
+        || error.code.contains("authorization_mismatch")
+        || error.code.contains("origin_invalid")
+    {
+        BootError::Forbidden(message)
+    } else if error.code.contains("conflict") {
         BootError::Conflict(message)
     } else if error.code.contains("too_large") || error.code.contains("size") {
         BootError::PayloadTooLarge(message)

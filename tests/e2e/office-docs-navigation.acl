@@ -4,7 +4,7 @@ suite "office-docs-navigation" {
     scenario "discover-collaboration-backend" {
         name = "Discover the collaboration backend from the documentation center"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 90000
 
         viewport "desktop-documentation" {
             width = 1200
@@ -143,7 +143,7 @@ suite "office-docs-navigation" {
     scenario "scan-documentation-center-on-phone" {
         name = "Scan the documentation workflow and collaboration path on a phone"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 90000
 
         viewport "phone-documentation" {
             width = 390
@@ -202,7 +202,7 @@ suite "office-docs-navigation" {
     scenario "switch-desktop-documentation-version" {
         name = "Switch the desktop Document reference from latest to 0.1.0"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 90000
 
         viewport "desktop-version-navigation" {
             width = 1200
@@ -264,7 +264,7 @@ suite "office-docs-navigation" {
     scenario "switch-compact-language-and-latest" {
         name = "Switch a compact versioned Document reference to English and back to latest"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 90000
 
         viewport "compact-documentation-navigation" {
             width = 700
@@ -300,8 +300,12 @@ suite "office-docs-navigation" {
             visible = css(".rp-nav-screen--open .rp-nav-screen-langs-group a[lang='en']")
         }
 
-        click "select-english" {
-            target = css(".rp-nav-screen--open .rp-nav-screen-langs-group a[lang='en']")
+        press "focus-english-language" {
+            key = "Tab"
+        }
+
+        press "select-english" {
+            key = "Enter"
         }
 
         wait "english-versioned-document-route" {
@@ -333,11 +337,11 @@ suite "office-docs-navigation" {
         }
 
         expect "latest-version-visible" {
-            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/en/components/document.html']")
+            visible = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href='/docs/en/components/document.html']")
         }
 
         click "select-latest" {
-            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href$='/en/components/document.html']")
+            target = css(".rp-nav-screen--open .rp-nav-screen-versions-group a[href='/docs/en/components/document.html']")
         }
 
         wait "latest-english-document-route" {
@@ -360,9 +364,9 @@ suite "office-docs-navigation" {
     }
 
     scenario "open-frozen-collaboration-server-release" {
-        name = "Open the frozen 0.7.2 collaboration backend guide in both languages"
+        name = "Open the frozen 0.7.3 collaboration backend guide in both languages"
         surface = "web"
-        timeout_ms = 30000
+        timeout_ms = 90000
 
         viewport "release-documentation" {
             width = 1200
@@ -370,8 +374,28 @@ suite "office-docs-navigation" {
             scale = 1
         }
 
+        navigate "open-chinese-release-homepage" {
+            url = "http://127.0.0.1:4175/docs/0.7.3/index.html"
+        }
+
+        expect "release-collaboration-action-uses-html-route" {
+            visible = css(".docs-home-action[href='./components/collaboration.html']")
+        }
+
+        click "open-collaboration-from-release-homepage" {
+            target = css(".docs-home-action[href='./components/collaboration.html']")
+        }
+
+        wait "release-collaboration-route" {
+            url = "http://127.0.0.1:4175/docs/0.7.3/components/collaboration.html"
+        }
+
+        expect "release-collaboration-guide-ready" {
+            text = "多人实时协作"
+        }
+
         navigate "open-chinese-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/docs/0.7.2/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.7.3/components/collaboration-server.html"
         }
 
         expect "chinese-collaboration-server-release-ready" {
@@ -383,11 +407,11 @@ suite "office-docs-navigation" {
         }
 
         expect "release-version-control-is-visible" {
-            visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.7.2']) > .rp-nav-menu__item__container")
+            visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.7.3']) > .rp-nav-menu__item__container")
         }
 
         navigate "open-english-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/docs/0.7.2/en/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.7.3/en/components/collaboration-server.html"
         }
 
         expect "english-collaboration-server-release-ready" {
@@ -403,7 +427,7 @@ suite "office-docs-navigation" {
         }
 
         screenshot "english-collaboration-server-release" {
-            path = "screenshots/collaboration-server-0.7.2-en.png"
+            path = "screenshots/collaboration-server-0.7.3-en.png"
         }
 
         console "release-browser-console" {

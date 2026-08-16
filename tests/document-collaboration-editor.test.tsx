@@ -1,5 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { StrictMode } from 'react';
 import * as Y from 'yjs';
 import {
@@ -129,6 +135,87 @@ test('keeps view-mode Document collaboration read-only', async () => {
   ).toHaveAttribute('contenteditable', 'false');
 });
 
+test('lets comment-mode reviewers create actor-attributed threads without edit chrome', async () => {
+  const document = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-editor-comment',
+    document,
+    kind: 'document',
+  });
+  const initial = documentFixture();
+  initializeOfficeDocumentCollaboration(writable, initial);
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-editor-comment',
+    document,
+    kind: 'document',
+    mode: 'comment',
+  });
+
+  render(
+    <DocumentEditor
+      collaboration={reviewer}
+      content={initial}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'true');
+  expect(screen.queryByRole('tab', { name: '开始' })).not.toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: '审阅' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: '视图' })).toBeInTheDocument();
+
+  selectDomText(editor, 'Shared');
+  const addComment = screen.getByRole('button', { name: '添加批注' });
+  await waitFor(() => expect(addComment).toBeEnabled());
+  fireEvent.click(addComment);
+  const composer = await screen.findByRole('dialog', { name: '添加批注' });
+  expect(composer).toHaveTextContent('Ada · Shared');
+  fireEvent.change(
+    within(composer).getByRole('textbox', { name: '批注内容' }),
+    {
+      target: { value: 'Please keep this wording.' },
+    },
+  );
+  fireEvent.click(within(composer).getByRole('button', { name: '添加批注' }));
+
+  await waitFor(() => {
+    expect(readOfficeDocumentCollaboration(writable).comments).toEqual([
+      expect.objectContaining({
+        actorId: 'ada',
+        author: 'Ada',
+        text: 'Please keep this wording.',
+      }),
+    ]);
+    expect(readOfficeDocumentCollaboration(writable).html).toContain(
+      'data-comment-id',
+    );
+  });
+
+  const reply = screen.getByRole('textbox', { name: '回复批注 1' });
+  fireEvent.change(reply, { target: { value: 'Follow-up from Ada.' } });
+  fireEvent.click(screen.getByRole('button', { name: '发送回复 1' }));
+  fireEvent.click(screen.getByRole('button', { name: '解决批注 1' }));
+
+  await waitFor(() => {
+    expect(
+      readOfficeDocumentCollaboration(writable).comments?.[0],
+    ).toMatchObject({
+      resolved: true,
+      replies: [
+        expect.objectContaining({
+          actorId: 'ada',
+          author: 'Ada',
+          text: 'Follow-up from Ada.',
+        }),
+      ],
+    });
+  });
+});
+
 function documentFixture(): DocumentContent {
   const artifact = createArtifact('blank-document');
   if (artifact.content.type !== 'document') {
@@ -151,4 +238,26 @@ function exchangeUpdates(first: Y.Doc, second: Y.Doc): void {
   );
   Y.applyUpdate(first, secondUpdate, 'test-network');
   Y.applyUpdate(second, firstUpdate, 'test-network');
+}
+
+function selectDomText(root: HTMLElement, text: string): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const value = node.textContent ?? '';
+    const offset = value.indexOf(text);
+    if (offset >= 0) {
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.setEnd(node, offset + text.length);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      root.focus();
+      document.dispatchEvent(new Event('selectionchange', { bubbles: true }));
+      return;
+    }
+    node = walker.nextNode();
+  }
+  throw new Error(`Unable to select "${text}" in the editor.`);
 }

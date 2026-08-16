@@ -481,6 +481,469 @@ test('keeps Document sidecar undo local to one client', async () => {
   secondBinding.destroy();
 });
 
+test('allows actor-attributed comment-mode review mutations only', () => {
+  const document = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-comment-mode-sidecars',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, documentFixture());
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-comment-mode-sidecars',
+    document,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(reviewer);
+  const before = binding.content();
+  const comment = {
+    id: 'comment-by-ada',
+    actorId: 'ada',
+    author: 'Ada',
+    date: '2026-08-17T00:00:00.000Z',
+    text: 'Please keep this wording.',
+    resolved: false,
+  };
+
+  expect(
+    binding.updateSidecars(before, {
+      ...before,
+      comments: [...(before.comments ?? []), comment],
+    }),
+  ).toBe(true);
+  expect(binding.content().comments).toContainEqual(comment);
+
+  const withComment = binding.content();
+  expect(
+    binding.updateSidecars(withComment, {
+      ...withComment,
+      comments: withComment.comments?.map((candidate) =>
+        candidate.id === comment.id
+          ? {
+              ...candidate,
+              resolved: true,
+              replies: [
+                {
+                  id: 'reply-by-ada',
+                  actorId: 'ada',
+                  author: 'Ada',
+                  date: '2026-08-17T00:01:00.000Z',
+                  text: 'Resolved after review.',
+                },
+              ],
+            }
+          : candidate,
+      ),
+    }),
+  ).toBe(true);
+  expect(
+    binding
+      .content()
+      .comments?.find((candidate) => candidate.id === comment.id),
+  ).toMatchObject({
+    actorId: 'ada',
+    resolved: true,
+    replies: [expect.objectContaining({ actorId: 'ada' })],
+  });
+
+  const current = binding.content();
+  expect(() =>
+    binding.updateSidecars(current, {
+      ...current,
+      pageColor: '#000000',
+    }),
+  ).toThrow(/comment.*mode|review records/i);
+  expect(() =>
+    binding.updateSidecars(current, {
+      ...current,
+      comments: current.comments?.map((candidate) =>
+        candidate.id === comment.id
+          ? { ...candidate, text: 'Rewritten after creation.' }
+          : candidate,
+      ),
+    }),
+  ).toThrow(/comment.*mode|review records/i);
+  expect(() =>
+    binding.updateSidecars(current, {
+      ...current,
+      comments: [
+        ...(current.comments ?? []),
+        {
+          ...comment,
+          id: 'comment-forged-actor',
+          actorId: 'grace',
+        },
+      ],
+    }),
+  ).toThrow(/actor/i);
+  expect(() =>
+    binding.updateSidecars(current, {
+      ...current,
+      comments: current.comments?.filter(
+        (candidate) => candidate.id !== 'comment-1',
+      ),
+    }),
+  ).toThrow(/own comment|actor/i);
+
+  expect(
+    binding.updateSidecars(current, {
+      ...current,
+      comments: current.comments?.filter(
+        (candidate) => candidate.id !== comment.id,
+      ),
+    }),
+  ).toBe(true);
+  expect(
+    binding
+      .content()
+      .comments?.some((candidate) => candidate.id === comment.id),
+  ).toBe(false);
+
+  binding.destroy();
+});
+
+test('allows comment anchors but rejects text edits in comment mode', () => {
+  const document = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-comment-mode-anchor',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, documentFixture());
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-comment-mode-anchor',
+    document,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(reviewer);
+  const before = binding.content();
+  binding.updateSidecars(before, {
+    ...before,
+    comments: [
+      ...(before.comments ?? []),
+      {
+        id: 'comment-anchor-by-ada',
+        actorId: 'ada',
+        author: 'Ada',
+        date: '2026-08-17T00:00:00.000Z',
+        text: 'Anchor this selection.',
+        resolved: false,
+      },
+    ],
+  });
+  const editor = new Editor({ extensions: binding.extensions });
+
+  expect(
+    editor.commands.insertDocumentComment({
+      id: 'comment-anchor-by-ada',
+      range: { from: 1, to: 7 },
+    }),
+  ).toBe(true);
+  expect(editor.getHTML()).toContain('data-comment-id="comment-anchor-by-ada"');
+
+  const textBefore = editor.getText();
+  editor.chain().setTextSelection(2).insertContent('forbidden').run();
+  expect(editor.getText()).toBe(textBefore);
+  editor.chain().setTextSelection({ from: 1, to: 7 }).toggleBold().run();
+  expect(editor.getHTML()).not.toContain('<strong>');
+
+  expect(editor.commands.removeDocumentComment('comment-anchor-by-ada')).toBe(
+    true,
+  );
+  expect(editor.getHTML()).not.toContain(
+    'data-comment-id="comment-anchor-by-ada"',
+  );
+
+  editor.destroy();
+  binding.destroy();
+});
+
+test('converges comment-mode review across disconnected Document peers', async () => {
+  const authorDocument = new Y.Doc();
+  const author = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-comment-peer-convergence',
+    document: authorDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(author, documentFixture());
+  const reviewerDocument = cloneDocument(authorDocument);
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace' },
+    artifactId: 'document-comment-peer-convergence',
+    document: reviewerDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const authorBinding = createOfficeDocumentCollaborationBinding(author);
+  const reviewerBinding = createOfficeDocumentCollaborationBinding(reviewer);
+  const authorEditor = new Editor({ extensions: authorBinding.extensions });
+  const reviewerEditor = new Editor({ extensions: reviewerBinding.extensions });
+  reviewerEditor.commands.setTextSelection(
+    reviewerEditor.state.doc.content.size - 1,
+  );
+  const reviewerSelection = {
+    from: reviewerEditor.state.selection.from,
+    to: reviewerEditor.state.selection.to,
+  };
+  const comment = {
+    id: 'comment-live-ada',
+    actorId: 'ada',
+    author: 'Ada',
+    date: '2026-08-17T01:00:00.000Z',
+    text: 'Review this exact range.',
+    resolved: false,
+  };
+  const authorBefore = authorBinding.content();
+
+  authorBinding.updateSidecars(authorBefore, {
+    ...authorBefore,
+    comments: [...(authorBefore.comments ?? []), comment],
+  });
+  expect(
+    authorEditor.commands.insertDocumentComment({
+      id: comment.id,
+      range: { from: 1, to: 7 },
+    }),
+  ).toBe(true);
+  exchangeUpdates(authorDocument, reviewerDocument);
+  await flushMicrotasks();
+
+  expect(reviewerBinding.content().comments).toContainEqual(comment);
+  expect(reviewerEditor.getHTML()).toContain(`data-comment-id="${comment.id}"`);
+  expect(reviewerEditor.state.selection).toMatchObject({
+    from: reviewerSelection.from,
+    to: reviewerSelection.to,
+  });
+
+  const reviewerBefore = reviewerBinding.content();
+  reviewerBinding.updateSidecars(reviewerBefore, {
+    ...reviewerBefore,
+    comments: reviewerBefore.comments?.map((candidate) =>
+      candidate.id === comment.id
+        ? {
+            ...candidate,
+            resolved: true,
+            replies: [
+              {
+                id: 'reply-live-grace',
+                actorId: 'grace',
+                author: 'Grace',
+                date: '2026-08-17T01:01:00.000Z',
+                text: 'Reviewed and resolved.',
+              },
+            ],
+          }
+        : candidate,
+    ),
+  });
+  const reviewerText = reviewerEditor.getText();
+  reviewerEditor.chain().setTextSelection(2).insertContent('forbidden').run();
+  expect(reviewerEditor.getText()).toBe(reviewerText);
+  exchangeUpdates(authorDocument, reviewerDocument);
+  await flushMicrotasks();
+
+  expect(authorBinding.content().comments?.[1]).toMatchObject({
+    id: comment.id,
+    resolved: true,
+    replies: [expect.objectContaining({ actorId: 'grace' })],
+  });
+
+  const viewDocument = cloneDocument(authorDocument);
+  const viewer = createOfficeCollaborationSession({
+    actor: { id: 'lin', name: 'Lin' },
+    artifactId: 'document-comment-peer-convergence',
+    document: viewDocument,
+    kind: 'document',
+    mode: 'view',
+  });
+  const viewBinding = createOfficeDocumentCollaborationBinding(viewer);
+  const viewEditor = new Editor({ extensions: viewBinding.extensions });
+  const viewBefore = viewBinding.content();
+  expect(() =>
+    viewBinding.updateSidecars(viewBefore, {
+      ...viewBefore,
+      comments: viewBefore.comments?.map((candidate) => ({
+        ...candidate,
+        resolved: false,
+      })),
+    }),
+  ).toThrow(/cannot modify canonical content|review records/);
+  const viewText = viewEditor.getText();
+  viewEditor.chain().setTextSelection(2).insertContent('forbidden').run();
+  expect(viewEditor.getText()).toBe(viewText);
+
+  viewEditor.destroy();
+  viewBinding.destroy();
+  authorEditor.destroy();
+  reviewerEditor.destroy();
+  authorBinding.destroy();
+  reviewerBinding.destroy();
+});
+
+test('undoes a local comment anchor without deleting a remote reply', async () => {
+  const firstDocument = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-comment-undo',
+    document: firstDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, documentFixture());
+  const first = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-comment-undo',
+    document: firstDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const secondDocument = cloneDocument(firstDocument);
+  const second = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace' },
+    artifactId: 'document-comment-undo',
+    document: secondDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const firstBinding = createOfficeDocumentCollaborationBinding(first);
+  const secondBinding = createOfficeDocumentCollaborationBinding(second);
+  const firstEditor = new Editor({ extensions: firstBinding.extensions });
+  const secondEditor = new Editor({ extensions: secondBinding.extensions });
+  const comment = {
+    id: 'comment-undo-ada',
+    actorId: 'ada',
+    author: 'Ada',
+    date: '2026-08-17T02:00:00.000Z',
+    text: 'Local comment with a future remote reply.',
+    resolved: false,
+  };
+  const firstBefore = firstBinding.content();
+  firstBinding.updateSidecars(firstBefore, {
+    ...firstBefore,
+    comments: [...(firstBefore.comments ?? []), comment],
+  });
+  firstEditor.commands.insertDocumentComment({
+    id: comment.id,
+    range: { from: 1, to: 7 },
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+
+  const secondBefore = secondBinding.content();
+  secondBinding.updateSidecars(secondBefore, {
+    ...secondBefore,
+    comments: secondBefore.comments?.map((candidate) =>
+      candidate.id === comment.id
+        ? {
+            ...candidate,
+            replies: [
+              ...(candidate.replies ?? []),
+              {
+                id: 'reply-undo-grace',
+                actorId: 'grace',
+                author: 'Grace',
+                date: '2026-08-17T02:01:00.000Z',
+                text: 'This remote reply must survive.',
+              },
+            ],
+          }
+        : candidate,
+    ),
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+
+  expect(firstBinding.undo()).toBe(true);
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+
+  const retained = firstBinding
+    .content()
+    .comments?.find(({ id }) => id === comment.id);
+  expect(retained?.replies).toContainEqual(
+    expect.objectContaining({
+      id: 'reply-undo-grace',
+      actorId: 'grace',
+    }),
+  );
+  expect(firstEditor.getHTML()).not.toContain(
+    `data-comment-id="${comment.id}"`,
+  );
+  expect(secondBinding.content()).toEqual(firstBinding.content());
+
+  firstEditor.destroy();
+  secondEditor.destroy();
+  firstBinding.destroy();
+  secondBinding.destroy();
+});
+
+test('undoes a local text edit without removing a remote comment', async () => {
+  const firstDocument = new Y.Doc();
+  const first = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-edit-undo-remote-comment',
+    document: firstDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(first, documentFixture());
+  const secondDocument = cloneDocument(firstDocument);
+  const second = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace' },
+    artifactId: 'document-edit-undo-remote-comment',
+    document: secondDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const firstBinding = createOfficeDocumentCollaborationBinding(first);
+  const secondBinding = createOfficeDocumentCollaborationBinding(second);
+  const firstEditor = new Editor({ extensions: firstBinding.extensions });
+  const secondEditor = new Editor({ extensions: secondBinding.extensions });
+
+  firstEditor
+    .chain()
+    .setTextSelection(firstEditor.state.doc.content.size - 1)
+    .insertContent(' local edit')
+    .run();
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+  const comment = {
+    id: 'comment-remote-grace',
+    actorId: 'grace',
+    author: 'Grace',
+    date: '2026-08-17T03:00:00.000Z',
+    text: 'Remote review must survive edit undo.',
+    resolved: false,
+  };
+  const secondBefore = secondBinding.content();
+  secondBinding.updateSidecars(secondBefore, {
+    ...secondBefore,
+    comments: [...(secondBefore.comments ?? []), comment],
+  });
+  secondEditor.commands.insertDocumentComment({
+    id: comment.id,
+    range: { from: 1, to: 7 },
+  });
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+
+  expect(firstBinding.undo()).toBe(true);
+  exchangeUpdates(firstDocument, secondDocument);
+  await flushMicrotasks();
+
+  expect(firstEditor.getText()).not.toContain('local edit');
+  expect(firstBinding.content().comments).toContainEqual(comment);
+  expect(firstEditor.getHTML()).toContain(`data-comment-id="${comment.id}"`);
+  expect(secondBinding.content()).toEqual(firstBinding.content());
+
+  firstEditor.destroy();
+  secondEditor.destroy();
+  firstBinding.destroy();
+  secondBinding.destroy();
+});
+
 test('synchronizes TipTap edits and only undoes the local client', async () => {
   const firstDocument = new Y.Doc();
   const first = createOfficeCollaborationSession({

@@ -60,6 +60,132 @@ fn join(replica: &Path, update: &Path) -> serde_json::Value {
 }
 
 #[test]
+fn cli_comment_mode_mutations_round_trip_through_the_native_projection() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("reviewer.replica");
+    let input = temp.path().join("document.update");
+    fs::write(&input, STANDARD.decode(YJS_DOCUMENT_UPDATE_BASE64).unwrap()).unwrap();
+
+    let joined = run(&[
+        "collab",
+        "join",
+        replica.to_str().unwrap(),
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--actor-id",
+        "review-agent",
+        "--actor-kind",
+        "agent",
+        "--mode",
+        "comment",
+        "--operation-id",
+        "join-comment-document-1",
+        "--input",
+        input.to_str().unwrap(),
+        "--client-id",
+        "900108",
+        "--json",
+    ]);
+    assert_eq!(joined["data"]["replica"]["manifest"]["mode"], "comment");
+
+    let created = run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-comment-create","commentId":"comment-cli-1","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":8,"expectedText":"😀","author":"Review Agent","createdAt":"2026-08-17T00:00:00.000Z","text":"Check this symbol."}"#,
+        "--actor-id",
+        "review-agent",
+        "--operation-id",
+        "comment-cli-create-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "comment",
+        "--json",
+    ]);
+    assert_eq!(
+        created["data"]["mutation"]["type"],
+        "document-comment-create"
+    );
+    assert_eq!(created["data"]["sequence"], 1);
+
+    run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-comment-reply","commentId":"comment-cli-1","replyId":"reply-cli-1","author":"Review Agent","createdAt":"2026-08-17T00:01:00.000Z","text":"Confirmed."}"#,
+        "--actor-id",
+        "review-agent",
+        "--operation-id",
+        "comment-cli-reply-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "comment",
+        "--json",
+    ]);
+    run(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-comment-set-resolved","commentId":"comment-cli-1","resolved":true}"#,
+        "--actor-id",
+        "review-agent",
+        "--operation-id",
+        "comment-cli-resolve-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "comment",
+        "--json",
+    ]);
+
+    let projected = run(&["collab", "read", replica.to_str().unwrap(), "--json"]);
+    let comment = &projected["data"]["content"]["comments"][0];
+    assert_eq!(comment["id"], "comment-cli-1");
+    assert_eq!(comment["actorId"], "review-agent");
+    assert_eq!(comment["resolved"], true);
+    assert_eq!(comment["replies"][0]["id"], "reply-cli-1");
+    assert_eq!(comment["anchors"][0]["startUtf16"], 6);
+    assert_eq!(comment["anchors"][0]["endUtf16"], 8);
+    assert_eq!(comment["anchors"][0]["text"], "😀");
+
+    let forbidden = run_failure(&[
+        "collab",
+        "mutate",
+        replica.to_str().unwrap(),
+        "--mutation",
+        r#"{"type":"document-replace-text","search":"Hello","replacement":"Changed","expectedMatches":1}"#,
+        "--actor-id",
+        "review-agent",
+        "--operation-id",
+        "comment-cli-forbidden-1",
+        "--artifact-id",
+        "fixture-document",
+        "--kind",
+        "document",
+        "--mode",
+        "comment",
+        "--json",
+    ]);
+    assert_eq!(
+        forbidden["error"]["code"],
+        "office.collaboration.mutation_forbidden"
+    );
+}
+
+#[test]
 fn cli_joins_yjs_replica_inspects_and_exports_state_vector_diff() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("agent.replica");

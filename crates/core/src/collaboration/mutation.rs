@@ -23,16 +23,25 @@ pub(super) fn validate_mutation_contract(
     mode: NativeOfficeCollaborationMode,
     mutation: &NativeOfficeCollaborationMutation,
 ) -> UseResult<()> {
-    if mode != NativeOfficeCollaborationMode::Edit {
+    let document_comment_mutation = matches!(
+        mutation,
+        NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
+            | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
+            | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
+            | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. }
+    );
+    if mode != NativeOfficeCollaborationMode::Edit
+        && !(mode == NativeOfficeCollaborationMode::Comment && document_comment_mutation)
+    {
         return Err(collaboration_error(
             "office.collaboration.mutation_forbidden",
             format!(
-                "The '{}' collaboration mode cannot change canonical Office content.",
+                "The '{}' collaboration mode cannot apply this Office mutation.",
                 mode.as_str()
             ),
         )
         .with_suggestion(
-            "Use an edit-mode replica. Comment and suggestion mutations remain unavailable until their durable review models are implemented.",
+            "Use an edit-mode replica for canonical content, or a comment-mode replica for Document comment mutations.",
         )
         .with_detail("mode", mode.as_str()));
     }
@@ -49,7 +58,11 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
-        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
             NativeOfficeCollaborationArtifactKind::Document
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
@@ -159,7 +172,11 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentClearTrackChanges { .. }
         | NativeOfficeCollaborationMutation::DocumentInsertParagraph { .. }
-        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentDeleteParagraph { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
             apply_document_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }

@@ -5,10 +5,12 @@ import type {
   WorkDocumentContent,
 } from '../features/work/work-types';
 import {
+  assertWorkOfficeCollaborationEditable,
   WorkOfficeCollaborationError,
   type WorkOfficeCollaborationOrigin,
   type WorkOfficeCollaborationSession,
 } from './office-collaboration';
+import { assertWorkOfficeDocumentCommentMutationAllowed } from './office-document-collaboration-comment-permissions';
 import {
   assertWorkOfficeDocumentBibliographyConflicts,
   initializeWorkOfficeDocumentBibliography,
@@ -172,6 +174,7 @@ export function updateWorkOfficeDocumentSidecars(
   const before = validatedWorkOfficeDocumentSidecars(previous);
   const after = validatedWorkOfficeDocumentSidecars(next);
   if (jsonEqual(before, after)) return false;
+  assertDocumentSidecarMutationAllowed(session, before, after);
 
   const roots = documentSidecarRoots(session);
   const shared = readWorkOfficeDocumentSidecars(session);
@@ -185,51 +188,55 @@ export function updateWorkOfficeDocumentSidecars(
     after.bibliography,
     shared.bibliography,
   );
-  session.transact(() => {
-    appendWorkOfficeDocumentRecordClaims(roots.recordClaims, before, after);
-    patchOptionalScalar(
-      roots.options,
-      'pageColor',
-      before.pageColor,
-      after.pageColor,
-    );
-    patchOptionalScalar(
-      roots.options,
-      'trackChanges',
-      before.trackChanges,
-      after.trackChanges,
-    );
-    if (!jsonEqual(before.comments, after.comments)) {
-      patchPresence(
+  session.transact(
+    () => {
+      appendWorkOfficeDocumentRecordClaims(roots.recordClaims, before, after);
+      patchOptionalScalar(
         roots.options,
-        'commentsPresent',
-        before.comments,
-        after.comments,
+        'pageColor',
+        before.pageColor,
+        after.pageColor,
       );
-      patchWorkOfficeDocumentComments(
-        roots.comments,
-        roots.commentOrder,
-        before.comments ?? [],
-        after.comments ?? [],
-      );
-    }
-    if (!jsonEqual(before.bibliography, after.bibliography)) {
-      patchPresence(
+      patchOptionalScalar(
         roots.options,
-        'bibliographyPresent',
-        before.bibliography,
-        after.bibliography,
-        false,
+        'trackChanges',
+        before.trackChanges,
+        after.trackChanges,
       );
-      patchWorkOfficeDocumentBibliography(
-        roots.bibliography,
-        roots.bibliographySources,
-        roots.bibliographySourceOrder,
-        before.bibliography,
-        after.bibliography,
-      );
-    }
-  }, origin);
+      if (!jsonEqual(before.comments, after.comments)) {
+        patchPresence(
+          roots.options,
+          'commentsPresent',
+          before.comments,
+          after.comments,
+        );
+        patchWorkOfficeDocumentComments(
+          roots.comments,
+          roots.commentOrder,
+          before.comments ?? [],
+          after.comments ?? [],
+        );
+      }
+      if (!jsonEqual(before.bibliography, after.bibliography)) {
+        patchPresence(
+          roots.options,
+          'bibliographyPresent',
+          before.bibliography,
+          after.bibliography,
+          false,
+        );
+        patchWorkOfficeDocumentBibliography(
+          roots.bibliography,
+          roots.bibliographySources,
+          roots.bibliographySourceOrder,
+          before.bibliography,
+          after.bibliography,
+        );
+      }
+    },
+    origin,
+    session.mode === 'comment' ? 'document-comment' : 'content',
+  );
   return true;
 }
 
@@ -286,6 +293,33 @@ export function validatedWorkOfficeDocumentSidecars(
     );
   }
   return result;
+}
+
+function assertDocumentSidecarMutationAllowed(
+  session: WorkOfficeCollaborationSession,
+  previous: WorkOfficeDocumentSidecars,
+  next: WorkOfficeDocumentSidecars,
+): void {
+  if (session.mode === 'edit') return;
+  if (session.mode !== 'comment') {
+    assertWorkOfficeCollaborationEditable(session);
+    return;
+  }
+  if (
+    !jsonEqual(previous.pageColor, next.pageColor) ||
+    !jsonEqual(previous.trackChanges, next.trackChanges) ||
+    !jsonEqual(previous.bibliography, next.bibliography)
+  ) {
+    throw new WorkOfficeCollaborationError(
+      'office.collaboration.permission_denied',
+      'The comment collaboration mode can modify only Document review records.',
+    );
+  }
+  assertWorkOfficeDocumentCommentMutationAllowed(
+    session,
+    previous.comments ?? [],
+    next.comments ?? [],
+  );
 }
 
 function documentSidecarRoots(

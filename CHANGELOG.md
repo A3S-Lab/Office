@@ -4,6 +4,41 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.7.3 - 2026-08-17
+
+- Added durable Feishu-style Document selection comments for authenticated
+  `comment` sessions. Browser participants can select text, create attributable
+  threads, reply, resolve or reopen a thread, and delete only comments or
+  replies owned by their collaboration actor. Canonical text and every other
+  Document option remain read-only; remote review updates stay outside local
+  undo history, and detached threads remain available when their marked text is
+  removed by an authorized editor.
+- Added native Document comment mutations through Rust, `collab mutate`, MCP,
+  and the packaged Office Skill. `document-comment-create`,
+  `document-comment-reply`, `document-comment-set-resolved`, and
+  `document-comment-delete` share browser-compatible stable records, immutable
+  claims, ProseMirror selection marks, UTF-16 offsets, actor attribution,
+  ownership checks, durable receipts, and idempotent retry behavior. Document
+  projection schema v2 now returns comment threads, replies, resolution state,
+  detached state, and exact paragraph/text identities plus anchor text and
+  offsets.
+- Hardened the runnable A3S Boot collaboration backend for review-only
+  publishing. Version-2 signed tickets bind the actor display name as well as
+  actor ID, kind, room, namespace, mode, and expiration. Under the durable room
+  lock, the Yrs store semantically validates every Document `comment` update
+  against the previous canonical state and rejects forged content, structure,
+  options, roots, authorship, ordering, claims, anchors, or foreign deletion
+  before persistence or broadcast. `edit` may publish canonical and review
+  updates; Document `comment` may publish validated review updates;
+  `view` and `suggest` remain receive-only.
+- Reworked the Playground collaboration entry into a two-participant real-time
+  review workflow and added A3S Test coverage for selection-comment creation,
+  attribution, highlight, reply, resolve/reopen, blocked text editing,
+  responsive UI, accessibility, console, and page errors. Updated the
+  bilingual guides, CLI/MCP references, backend runbook, and frozen 0.7.3
+  documentation while retaining the A3S Test-aligned navigation and the A3S UI
+  content/code-highlighting treatment.
+
 ## 0.7.2 - 2026-08-15
 
 - Added an Office-owned native projection for initialized Markdown and

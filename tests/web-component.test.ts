@@ -2,6 +2,7 @@ import { expect, test } from '@rstest/core';
 import { fireEvent, waitFor } from '@testing-library/dom';
 import { Extension } from '@tiptap/core';
 import type { ReactElement } from 'react';
+import * as Y from 'yjs';
 import {
   createOfficeCollaborationSession,
   createPdfCollaborationContent,
@@ -250,6 +251,50 @@ test('passes a synchronized Document session through the custom element property
   expect(element.collaboration).toBe(session);
 
   element.remove();
+});
+
+test('preserves Document comment-mode review behavior through the custom element', async () => {
+  defineA3SOfficeElements();
+  const content: DocumentContent = {
+    type: 'document',
+    html: '<p>Shared comment surface</p>',
+    pageSize: 'a4',
+  };
+  const sharedDocument = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'element-comment-document',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, content);
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'element-reviewer', name: 'Element reviewer' },
+    artifactId: 'element-comment-document',
+    document: sharedDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.document,
+  ) as A3SDocumentEditorElement;
+  element.collaboration = reviewer;
+  element.content = content;
+  document.body.append(element);
+
+  await waitFor(() => {
+    expect(element.querySelector('[aria-label="文档正文"]')).not.toBeNull();
+  });
+  const editor = element.querySelector('[aria-label="文档正文"]');
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'true');
+  const tabs = [...element.querySelectorAll('[role="tab"]')].map((tab) =>
+    tab.textContent?.trim(),
+  );
+  expect(tabs).not.toContain('开始');
+  expect(tabs).toContain('审阅');
+
+  element.remove();
+  sharedDocument.destroy();
 });
 
 test('passes a synchronized Markdown session through the custom element property', async () => {

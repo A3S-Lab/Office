@@ -2,6 +2,7 @@ use a3s_use_core::UseResult;
 use yrs::{Any, GetString, Map, Out, ReadTxn, Text, Transact, Xml, XmlFragment, XmlOut};
 
 use super::document::{canonical_state_vector, inspect_document};
+use super::mutation::document::comment::project_document_comments;
 use super::mutation::document::identity::{
     document_identity_attribute, is_identity_paragraph_tag, PARAGRAPH_ID_ATTRIBUTE,
     TEXT_ID_ATTRIBUTE,
@@ -132,9 +133,11 @@ fn project_document_content<T: ReadTxn>(
     };
     let page_color = optional_string(&options, transaction, "pageColor")?;
     let track_changes = optional_bool(&options, transaction, "trackChanges")?;
+    let comments = project_document_comments(transaction, manifest, &fragment)?;
     Ok(NativeOfficeCollaborationProjectedContent::Document {
         plain_text,
         paragraphs,
+        comments,
         page_color,
         track_changes,
     })

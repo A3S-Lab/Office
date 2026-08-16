@@ -1,0 +1,157 @@
+suite "collaboration-document-comments" {
+    version = 1
+
+    scenario "review-document-with-selection-comments" {
+        name = "Create, reply to, resolve, and reopen an attributed Document comment"
+        surface = "web"
+        timeout_ms = 180000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        expect "collaboration-capability-is-visible" {
+            text = "多人实时协作"
+        }
+
+        click "open-comment-mode-demo" {
+            target = role("button", "体验实时评论")
+        }
+
+        expect "comment-mode-is-explicit" {
+            text = "实时评论 · 2 人在线"
+        }
+
+        wait "comment-review-editor-is-ready" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true'][aria-readonly='true']")
+        }
+
+        focus "focus-document-body" {
+            target = css(".work-document-editable .ProseMirror[contenteditable='true'][aria-readonly='true']")
+        }
+
+        press "move-to-document-start" {
+            key = "Control+Home"
+        }
+
+        press "select-first-line" {
+            key = "Shift+End"
+        }
+
+        wait "selection-comment-control-is-ready" {
+            visible = css(".work-document-selection-toolbar button[aria-label='添加批注']:not(:disabled)")
+        }
+
+        click "add-selection-comment" {
+            target = css(".work-document-selection-toolbar button[aria-label='添加批注']")
+        }
+
+        expect "actor-and-selection-are-explicit" {
+            text = "林澄 · 新项目方案"
+        }
+
+        fill "write-comment" {
+            target = css(".work-document-comment-composer textarea[aria-label='批注内容']")
+            value = "请明确项目目标的可衡量结果。"
+        }
+
+        click "submit-comment" {
+            target = css(".work-document-comment-composer footer button:last-child")
+        }
+
+        wait "comment-card-is-persisted" {
+            visible = css(".work-document-comment-card[data-comment-id]")
+        }
+
+        expect "comment-text-is-visible" {
+            text = "请明确项目目标的可衡量结果。"
+        }
+
+        expect "comment-author-is-visible" {
+            text = "林澄"
+        }
+
+        expect "comment-selection-is-highlighted" {
+            visible = css(".work-document-editable [data-document-comment='true'][data-comment-id]")
+        }
+
+        fill "write-reply" {
+            target = css(".work-document-comment-reply textarea[aria-label='回复批注 1']")
+            value = "已补充建议措辞。"
+        }
+
+        click "submit-reply" {
+            target = role("button", "发送回复 1")
+        }
+
+        expect "reply-is-visible" {
+            text = "已补充建议措辞。"
+        }
+
+        click "resolve-comment" {
+            target = role("button", "解决批注 1")
+        }
+
+        wait "resolved-state-is-visible" {
+            visible = css(".work-document-comment-card.resolved button[aria-label='重新打开批注 1']")
+        }
+
+        click "reopen-comment" {
+            target = role("button", "重新打开批注 1")
+        }
+
+        wait "reopened-state-is-visible" {
+            visible = css(".work-document-comment-card:not(.resolved) button[aria-label='解决批注 1']")
+        }
+
+        focus "focus-read-only-document" {
+            target = css(".work-document-editable .ProseMirror[contenteditable='true'][aria-readonly='true']")
+        }
+
+        type "attempt-document-edit" {
+            target = css(".work-document-editable .ProseMirror[contenteditable='true'][aria-readonly='true']")
+            value = "A3S_COMMENT_READONLY_SENTINEL"
+        }
+
+        expect "document-text-remains-unchanged" {
+            text = "记录尚未解决的问题、依赖和决策负责人。"
+        }
+
+        expect "document-word-count-remains-unchanged" {
+            visible = css("button[aria-label='字数统计：132']")
+        }
+
+        expect "document-remains-read-only" {
+            visible = css(".work-document-editable .ProseMirror[contenteditable='true'][aria-readonly='true']")
+        }
+
+        focus "settle-comment-panel-focus" {
+            target = css(".work-document-comment-reply textarea[aria-label='回复批注 1']")
+        }
+
+        screenshot "document-comments" {
+            path = "screenshots/document-comments.png"
+        }
+
+        accessibility "document-comments-accessibility" {
+            path = "evidence/document-comments.json"
+            interactive = true
+        }
+
+        console "document-comments-console" {
+            path = "diagnostics/document-comments-console.json"
+            clear = false
+        }
+
+        page_errors "document-comments-errors" {
+            path = "diagnostics/document-comments-page-errors.json"
+            clear = false
+        }
+    }
+}

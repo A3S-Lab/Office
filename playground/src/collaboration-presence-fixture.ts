@@ -58,12 +58,25 @@ function createCollaborationPresenceFixture({
   const remoteDocument = new Y.Doc();
   const localAwareness = new Awareness(localDocument);
   const remoteAwareness = new Awareness(remoteDocument);
+  const initializer = createOfficeCollaborationSession({
+    actor: {
+      id: 'playground-bootstrap',
+      name: 'Playground bootstrap',
+      kind: 'system',
+    },
+    artifactId,
+    document: localDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(initializer, content);
+  initializer.destroy();
   const collaboration = createOfficeCollaborationSession({
     actor: { id: 'playground-user', name: '林澄', color: '#047857' },
     artifactId,
     awareness: localAwareness,
     document: localDocument,
     kind: 'document',
+    mode: 'comment',
   });
   const remoteSession = createOfficeCollaborationSession({
     actor: {
@@ -79,7 +92,6 @@ function createCollaborationPresenceFixture({
     mode: 'suggest',
   });
 
-  initializeOfficeDocumentCollaboration(collaboration, content);
   const presence = createOfficeCollaborationPresence(collaboration);
   const remotePresence = createOfficeCollaborationPresence(remoteSession, {
     location: { kind: 'document', anchor: 3, head: 9 },

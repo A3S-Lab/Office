@@ -279,6 +279,16 @@ export function EditorWorkspace({
               </div>
             </div>
             <div className="work-editor-header-actions">
+              {collaborationDemo && (
+                <output
+                  className="playground-collaboration-mode-status"
+                  data-testid="collaboration-comment-mode"
+                  aria-live="polite"
+                >
+                  <MessageSquareText size={14} />
+                  <span>实时评论 · 2 人在线</span>
+                </output>
+              )}
               {controlledReviewFixture &&
                 artifact.content.type === 'document' && (
                   <button

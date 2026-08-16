@@ -52,8 +52,9 @@ authentication, and authorization remain host responsibilities.
 
 Call `office_collaboration_read` before a local edit. It returns exact
 canonical Markdown source or an Office-owned Document projection with stable
-paragraph/text identities and the state vector required for a fail-closed
-mutation. Do not decode Office collaboration roots in the host.
+paragraph/text identities, projection-v2 comments/replies/anchors, and the
+state vector required for a fail-closed mutation. Do not decode Office
+collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
 from a browser peer:
@@ -198,6 +199,76 @@ Use `document-set-page-color` with `pageColor` and
 `document-clear-page-color` or `document-clear-track-changes`; the explicit
 variants prevent a missing set field from silently removing shared state.
 
+For review-only participation, create or join a separate Document replica with
+`mode: "comment"`, then read it immediately before choosing an anchor. Create
+one stable selection thread with the exact paragraph/text identity, UTF-16
+range, and selected text returned by projection version 2:
+
+```json
+{
+  "store": ".a3s/report-review.replica",
+  "operationId": "agent-comment-create-1",
+  "actorId": "agent-7",
+  "mode": "comment",
+  "artifactId": "report",
+  "kind": "document",
+  "mutation": {
+    "type": "document-comment-create",
+    "commentId": "comment-1",
+    "paragraphId": "00000001",
+    "expectedTextId": "00000002",
+    "startUtf16": 6,
+    "endUtf16": 12,
+    "expectedText": "review",
+    "author": "Ada Reviewer",
+    "createdAt": "2026-08-17T00:00:00.000Z",
+    "text": "Clarify this review point."
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+The `author` must equal the display name authenticated by the room ticket; the
+replica manifest supplies `actorId`. Append a reply, resolve or reopen, and
+delete an owned reply or whole thread with the remaining closed variants:
+
+```json
+{
+  "type": "document-comment-reply",
+  "commentId": "comment-1",
+  "replyId": "reply-1",
+  "author": "Ada Reviewer",
+  "createdAt": "2026-08-17T00:01:00.000Z",
+  "text": "Suggested wording is ready."
+}
+```
+
+```json
+{
+  "type": "document-comment-set-resolved",
+  "commentId": "comment-1",
+  "resolved": true
+}
+```
+
+```json
+{
+  "type": "document-comment-delete",
+  "commentId": "comment-1",
+  "replyId": "reply-1"
+}
+```
+
+Send `resolved: false` to reopen. Omit `replyId` to delete the whole thread.
+In comment mode, deletion is allowed only when the stored record actor matches
+the replica actor. Creation writes the thread, order entry, immutable claim,
+and exact browser `documentComment` mark atomically; identical stable-ID retries
+are no-ops, while conflicting IDs, stale text/ranges, and malformed anchors fail
+without a durable event. Projection v2 returns comments, replies, resolution,
+`detached`, and every anchor's `paragraphId`, `textId`, `startUtf16`,
+`endUtf16`, and current `text`. If a later authorized content edit removes the
+anchor, the thread remains readable with `detached: true`.
+
 Spreadsheet cell mutations use a stable sheet identity plus zero-based
 coordinates. Create or recursively patch one cell with
 `spreadsheet-set-cell`; pass `expectedCell: null` only when the coordinate was
@@ -300,9 +371,11 @@ complete current `expectedElement`, removes visible order, and writes a durable
 tombstone that prevents ID reuse. Do not construct or mutate internal element
 order, record, claim, or tombstone roots directly.
 
-Typed canonical mutations require `edit`. Raw received updates remain
-applicable in read-only modes so remote state still converges. Durable native
-comment/suggest mutations are not yet enabled.
+Typed canonical content mutations require `edit`. Document comment mutations
+accept `edit` or `comment`; comment-mode deletion is ownership restricted. Raw
+received updates remain applicable in every mode so receive-only replicas still
+converge. `suggest` and comment mode on non-Document formats do not expose local
+mutations.
 
 The MCP JSON transport accepts update inputs up to 4 MiB and all structured
 results remain under the server's 8 MiB bound. Reduce the event `limit` when a

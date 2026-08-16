@@ -5,6 +5,7 @@ export type {
   WorkOfficeCollaborationErrorCode as OfficeCollaborationErrorCode,
   WorkOfficeCollaborationMetadata as OfficeCollaborationMetadata,
   WorkOfficeCollaborationMode as OfficeCollaborationMode,
+  WorkOfficeCollaborationMutationScope as OfficeCollaborationMutationScope,
   WorkOfficeCollaborationOrigin as OfficeCollaborationOrigin,
   WorkOfficeCollaborationOriginKind as OfficeCollaborationOriginKind,
   WorkOfficeCollaborationSession as OfficeCollaborationSession,

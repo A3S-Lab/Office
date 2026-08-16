@@ -14,7 +14,7 @@ use crate::protocol::{TicketClaims, TicketRequest, TicketResponse};
 
 type HmacSha256 = Hmac<Sha256>;
 
-const TICKET_VERSION: u32 = 1;
+const TICKET_VERSION: u32 = 2;
 const CLOCK_SKEW_SECONDS: u64 = 5;
 
 #[derive(Clone)]
@@ -54,6 +54,7 @@ impl TicketService {
             artifact_kind: request.artifact_kind,
             namespace: self.namespace.clone(),
             actor_id: request.actor_id,
+            actor_name: request.actor_name,
             actor_kind: request.actor_kind,
             mode: request.mode,
             issued_at,
@@ -147,6 +148,14 @@ impl TicketService {
                 "the collaboration ticket actor is invalid".to_string(),
             ));
         }
+        if claims.actor_name.is_empty()
+            || claims.actor_name != claims.actor_name.trim()
+            || claims.actor_name.chars().count() > 256
+        {
+            return Err(BootError::Unauthorized(
+                "the collaboration ticket actor name is invalid".to_string(),
+            ));
+        }
         let now = unix_timestamp()?;
         if claims.issued_at > now.saturating_add(CLOCK_SKEW_SECONDS)
             || claims.expires_at <= now
@@ -200,6 +209,7 @@ mod tests {
                     artifact_id: "quarterly-plan".to_string(),
                     artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
                     actor_id: "user-42".to_string(),
+                    actor_name: "Ada Reviewer".to_string(),
                     actor_kind: NativeOfficeCollaborationActorKind::Human,
                     mode: NativeOfficeCollaborationMode::Edit,
                 },
@@ -208,7 +218,8 @@ mod tests {
         let claims = service.verify(&response.ticket).unwrap();
         assert_eq!(claims.artifact_id, "quarterly-plan");
         assert_eq!(claims.actor_id, "user-42");
-        assert!(claims.can_edit());
+        assert_eq!(claims.actor_name, "Ada Reviewer");
+        assert_eq!(claims.mode, NativeOfficeCollaborationMode::Edit);
 
         let mut tampered = response.ticket.into_bytes();
         let last = tampered.last_mut().unwrap();
@@ -227,6 +238,7 @@ mod tests {
             artifact_id: "quarterly-plan".to_string(),
             artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
             actor_id: "user-42".to_string(),
+            actor_name: "Ada Reviewer".to_string(),
             actor_kind: NativeOfficeCollaborationActorKind::Human,
             mode: NativeOfficeCollaborationMode::View,
         };

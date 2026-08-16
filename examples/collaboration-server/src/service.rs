@@ -7,7 +7,7 @@ use a3s_boot::{
     BootError, Result, WebSocketGatewayConnection, WebSocketGatewayServer, WebSocketMessage,
 };
 use a3s_office::{
-    NativeOfficeCollaborationTransportMessageType,
+    NativeOfficeCollaborationTransportAuthorization, NativeOfficeCollaborationTransportMessageType,
     NativeOfficeCollaborationTransportReceiveRequest, NATIVE_OFFICE_COLLABORATION_PROTOCOL,
     NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
 };
@@ -182,6 +182,7 @@ impl CollaborationService {
                     "artifactKind": state.claims.artifact_kind,
                     "namespace": state.claims.namespace,
                     "actorId": state.claims.actor_id,
+                    "actorName": state.claims.actor_name,
                     "actorKind": state.claims.actor_kind,
                     "mode": state.claims.mode,
                     "senderClientId": state.room.server_client_id(),
@@ -189,7 +190,7 @@ impl CollaborationService {
             ))
             .await?;
 
-        if state.claims.can_edit() {
+        if state.claims.can_publish_document_updates() {
             let handshake = state.room.synchronize().await?;
             connection
                 .emit(websocket_document_message(&handshake)?)
@@ -215,10 +216,9 @@ impl CollaborationService {
         self.require_sender(&state, native.sender_client_id)?;
         let mutating =
             native.message_type != NativeOfficeCollaborationTransportMessageType::SyncStep1;
-        if mutating && !state.claims.can_edit() {
+        if mutating && !state.claims.can_publish_document_updates() {
             return Err(BootError::Forbidden(
-                "view, comment, and suggest tickets cannot publish Yjs document updates"
-                    .to_string(),
+                "view and suggest tickets cannot publish Yjs document updates".to_string(),
             ));
         }
         let operation_id = mutating.then(|| {
@@ -237,11 +237,19 @@ impl CollaborationService {
         let broadcast = native.clone();
         let result = state
             .room
-            .receive(NativeOfficeCollaborationTransportReceiveRequest {
-                message: native,
-                operation_id: operation_id.clone(),
-                if_state_vector: None,
-            })
+            .receive(
+                NativeOfficeCollaborationTransportReceiveRequest {
+                    message: native,
+                    operation_id: operation_id.clone(),
+                    if_state_vector: None,
+                },
+                NativeOfficeCollaborationTransportAuthorization {
+                    actor_id: state.claims.actor_id.clone(),
+                    actor_kind: state.claims.actor_kind,
+                    actor_name: state.claims.actor_name.clone(),
+                    mode: state.claims.mode,
+                },
+            )
             .await?;
 
         if let Some(response) = result.response {
@@ -465,7 +473,11 @@ fn validate_awareness_payload(
         && actor
             .and_then(|actor| actor.get("kind"))
             .and_then(Value::as_str)
-            == Some(state.claims.actor_kind.as_str());
+            == Some(state.claims.actor_kind.as_str())
+        && actor
+            .and_then(|actor| actor.get("name"))
+            .and_then(Value::as_str)
+            == Some(state.claims.actor_name.as_str());
     if valid {
         Ok(())
     } else {

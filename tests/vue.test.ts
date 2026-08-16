@@ -118,6 +118,53 @@ test('passes a synchronized Document session through the Vue adapter', async () 
   target.remove();
 });
 
+test('preserves Document comment-mode review behavior through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a Document artifact.');
+  }
+  const sharedDocument = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'vue-comment-document',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, artifact.content);
+  const reviewer = createOfficeCollaborationSession({
+    actor: { id: 'vue-reviewer', name: 'Vue reviewer' },
+    artifactId: 'vue-comment-document',
+    document: sharedDocument,
+    kind: 'document',
+    mode: 'comment',
+  });
+  const app = createApp({
+    render: () =>
+      h(DocumentEditor, {
+        collaboration: reviewer,
+        content: artifact.content as DocumentContent,
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.querySelector('[aria-label="文档正文"]')).not.toBeNull();
+  });
+  const editor = target.querySelector('[aria-label="文档正文"]');
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'true');
+  const tabs = [...target.querySelectorAll('[role="tab"]')].map((tab) =>
+    tab.textContent?.trim(),
+  );
+  expect(tabs).not.toContain('开始');
+  expect(tabs).toContain('审阅');
+
+  app.unmount();
+  sharedDocument.destroy();
+  target.remove();
+});
+
 test('emits controlled document review conflicts through the Vue adapter', async () => {
   const target = document.createElement('div');
   document.body.append(target);

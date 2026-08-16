@@ -12,6 +12,7 @@ use yrs::{
 
 use super::*;
 
+mod document_comments;
 mod document_structure;
 mod pdf;
 mod presentation;

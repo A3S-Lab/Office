@@ -27,6 +27,8 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
     let replica_text = replica.to_str().unwrap();
     let document_replica = temp.path().join("document-coding-agent.replica");
     let document_replica_text = document_replica.to_str().unwrap();
+    let comment_replica = temp.path().join("document-review-agent.replica");
+    let comment_replica_text = comment_replica.to_str().unwrap();
     let mut child = tokio::process::Command::new(binary())
         .args(["mcp"])
         .env("A3S_OFFICECLI_EXECUTABLE", &provider)
@@ -115,6 +117,14 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "textId",
         "document-delete-paragraph",
         "expectedTextId",
+        "document-comment-create",
+        "document-comment-reply",
+        "document-comment-set-resolved",
+        "document-comment-delete",
+        "commentId",
+        "replyId",
+        "startUtf16",
+        "endUtf16",
         "spreadsheet-set-cell",
         "spreadsheet-delete-cell",
         "expectedCell",
@@ -535,6 +545,108 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         Some(Out::Any(Any::String(value))) if value.as_ref() == "#101828"
     ));
     drop(document_transaction);
+
+    let comment_created = call(
+        &mut stdin,
+        &mut stdout,
+        98,
+        "office_collaboration_create",
+        serde_json::json!({
+            "store": comment_replica_text,
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "actorId": "review-agent-10",
+            "actorKind": "agent",
+            "mode": "comment",
+            "operationId": "join-review-document-1",
+            "clientId": 900110,
+            "initialUpdateBase64": YJS_DOCUMENT_UPDATE_BASE64
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        comment_created["result"]["isError"], true,
+        "{comment_created}"
+    );
+    let comment_mutated = call(
+        &mut stdin,
+        &mut stdout,
+        99,
+        "office_collaboration_mutate",
+        serde_json::json!({
+            "store": comment_replica_text,
+            "operationId": "mcp-comment-create-1",
+            "actorId": "review-agent-10",
+            "mode": "comment",
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "mutation": {
+                "type": "document-comment-create",
+                "commentId": "comment-mcp-1",
+                "paragraphId": "00000001",
+                "expectedTextId": "00000002",
+                "startUtf16": 6,
+                "endUtf16": 8,
+                "expectedText": "😀",
+                "author": "Review Agent",
+                "createdAt": "2026-08-17T00:00:00.000Z",
+                "text": "Review this symbol."
+            }
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(
+        comment_mutated["result"]["isError"], true,
+        "{comment_mutated}"
+    );
+    assert_eq!(
+        comment_mutated["result"]["structuredContent"]["sequence"],
+        1
+    );
+    let comment_reply = call(
+        &mut stdin,
+        &mut stdout,
+        100,
+        "office_collaboration_mutate",
+        serde_json::json!({
+            "store": comment_replica_text,
+            "operationId": "mcp-comment-reply-1",
+            "actorId": "review-agent-10",
+            "mode": "comment",
+            "artifactId": "fixture-document",
+            "kind": "document",
+            "mutation": {
+                "type": "document-comment-reply",
+                "commentId": "comment-mcp-1",
+                "replyId": "reply-mcp-1",
+                "author": "Review Agent",
+                "createdAt": "2026-08-17T00:01:00.000Z",
+                "text": "Confirmed."
+            }
+        }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(comment_reply["result"]["isError"], true, "{comment_reply}");
+    let comment_read = call(
+        &mut stdin,
+        &mut stdout,
+        101,
+        "office_collaboration_read",
+        serde_json::json!({ "store": comment_replica_text }),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(comment_read["result"]["isError"], true, "{comment_read}");
+    let comment = &comment_read["result"]["structuredContent"]["content"]["comments"][0];
+    assert_eq!(comment["id"], "comment-mcp-1");
+    assert_eq!(comment["actorId"], "review-agent-10");
+    assert_eq!(comment["replies"][0]["id"], "reply-mcp-1");
+    assert_eq!(comment["anchors"][0]["startUtf16"], 6);
+    assert_eq!(comment["anchors"][0]["endUtf16"], 8);
+    assert_eq!(comment["detached"], false);
 
     let checkpoint = call(
         &mut stdin,

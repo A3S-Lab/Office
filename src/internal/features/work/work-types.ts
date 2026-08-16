@@ -214,6 +214,7 @@ export interface WorkDocumentBibliography {
 
 export interface WorkDocumentCommentReply {
   id: string;
+  actorId?: string;
   author: string;
   date: string;
   text: string;
@@ -221,6 +222,7 @@ export interface WorkDocumentCommentReply {
 
 export interface WorkDocumentComment {
   id: string;
+  actorId?: string;
   author: string;
   date: string;
   text: string;

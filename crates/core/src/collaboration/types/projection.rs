@@ -4,7 +4,7 @@ use super::NativeOfficeCollaborationArtifactKind;
 
 pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_SCHEMA: &str =
     "a3s.office.collaboration.projection";
-pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION: u32 = 1;
+pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION: u32 = 2;
 
 /// A bounded, Office-owned view of the current collaborative document.
 ///
@@ -39,6 +39,7 @@ pub enum NativeOfficeCollaborationProjectedContent {
     Document {
         plain_text: String,
         paragraphs: Vec<NativeOfficeCollaborationDocumentParagraph>,
+        comments: Vec<NativeOfficeCollaborationDocumentComment>,
         page_color: Option<String>,
         track_changes: Option<bool>,
     },
@@ -66,4 +67,45 @@ pub struct NativeOfficeCollaborationDocumentParagraph {
     pub replaceable: bool,
     pub has_inline_objects: bool,
     pub has_review_marks: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentComment {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    pub author: String,
+    pub date: String,
+    pub text: String,
+    pub resolved: bool,
+    pub replies: Vec<NativeOfficeCollaborationDocumentCommentReply>,
+    pub anchors: Vec<NativeOfficeCollaborationDocumentCommentAnchor>,
+    pub detached: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentCommentReply {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    pub author: String,
+    pub date: String,
+    pub text: String,
+}
+
+/// One exact paragraph-local span carrying a Document comment mark. Offsets
+/// use browser-compatible UTF-16 code units and `text` is the current anchor
+/// text for optimistic agent decisions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentCommentAnchor {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paragraph_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_id: Option<String>,
+    pub start_utf16: u32,
+    pub end_utf16: u32,
+    pub text: String,
 }

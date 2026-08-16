@@ -54,6 +54,7 @@ fn document_projection_exposes_stable_identity_for_guarded_replacement() {
     let NativeOfficeCollaborationProjectedContent::Document {
         plain_text,
         paragraphs,
+        comments,
         page_color,
         track_changes,
     } = before.content
@@ -63,6 +64,7 @@ fn document_projection_exposes_stable_identity_for_guarded_replacement() {
     assert_eq!(plain_text, "Hello 😀 world");
     assert_eq!(page_color.as_deref(), Some("#F8FAFC"));
     assert_eq!(track_changes, Some(true));
+    assert!(comments.is_empty());
     assert_eq!(paragraphs.len(), 1);
     assert_eq!(paragraphs[0].paragraph_id.as_deref(), Some("00000001"));
     assert_eq!(paragraphs[0].text_id.as_deref(), Some("00000002"));

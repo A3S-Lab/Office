@@ -20,9 +20,12 @@ export interface WorkDocumentCommentAnchor {
   anchorText: string;
 }
 
-export interface WorkDocumentCommentView
-  extends WorkDocumentComment,
-    WorkDocumentCommentAnchor {}
+export interface WorkDocumentCommentView extends WorkDocumentComment {
+  from: number | null;
+  to: number | null;
+  anchorText: string;
+  detached: boolean;
+}
 
 export interface WorkDocumentCommentRange {
   from: number;
@@ -391,21 +394,33 @@ export function documentCommentViews(
   comments: readonly WorkDocumentComment[],
   anchors: readonly WorkDocumentCommentAnchor[],
 ): WorkDocumentCommentView[] {
-  const byId = new Map(
-    comments.map(
-      (comment) => [comment.id, normalizeDocumentComment(comment)] as const,
-    ),
-  );
-  return anchors.map((anchor) => ({
-    ...(byId.get(anchor.id) ?? {
-      id: anchor.id,
+  const anchorsById = new Map(anchors.map((anchor) => [anchor.id, anchor]));
+  const commentIds = new Set(comments.map((comment) => comment.id));
+  const views = comments.map((comment): WorkDocumentCommentView => {
+    const normalized = normalizeDocumentComment(comment);
+    const anchor = anchorsById.get(comment.id);
+    return anchor
+      ? { ...normalized, ...anchor, detached: false }
+      : {
+          ...normalized,
+          from: null,
+          to: null,
+          anchorText: '',
+          detached: true,
+        };
+  });
+  for (const anchor of anchors) {
+    if (commentIds.has(anchor.id)) continue;
+    views.push({
       author: '未知审阅者',
       date: '',
       text: '此批注的内容不可用。',
       resolved: false,
-    }),
-    ...anchor,
-  }));
+      ...anchor,
+      detached: false,
+    });
+  }
+  return views;
 }
 
 export function retainAnchoredDocumentComments(
@@ -540,19 +555,27 @@ function documentCommentMark(
 function normalizeDocumentComment(
   comment: WorkDocumentComment,
 ): WorkDocumentComment {
-  return {
+  const normalized: WorkDocumentComment = {
     id: comment.id,
     author: comment.author || '未知审阅者',
     date: comment.date || '',
     text: comment.text || '（空批注）',
     resolved: Boolean(comment.resolved),
-    replies: comment.replies?.map((reply) => ({
-      id: reply.id,
-      author: reply.author || '未知审阅者',
-      date: reply.date || '',
-      text: reply.text || '（空回复）',
-    })),
   };
+  if (comment.actorId !== undefined) normalized.actorId = comment.actorId;
+  if (comment.replies !== undefined) {
+    normalized.replies = comment.replies.map((reply) => {
+      const normalizedReply: WorkDocumentCommentReply = {
+        id: reply.id,
+        author: reply.author || '未知审阅者',
+        date: reply.date || '',
+        text: reply.text || '（空回复）',
+      };
+      if (reply.actorId !== undefined) normalizedReply.actorId = reply.actorId;
+      return normalizedReply;
+    });
+  }
+  return normalized;
 }
 
 function stringAttribute(value: unknown): string {

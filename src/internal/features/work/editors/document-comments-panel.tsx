@@ -4,6 +4,7 @@ import {
   MessageSquareReply,
   RotateCcw,
   Trash2,
+  Unlink2,
   X,
 } from 'lucide-react';
 import {
@@ -50,6 +51,7 @@ interface CommentTrackItem {
   startY: number;
   endX: number;
   endY: number;
+  detached?: boolean;
 }
 
 interface CommentTrackLayout {
@@ -73,7 +75,9 @@ interface PendingCommentFocus {
 export function DocumentCommentsPanel({
   editor,
   comments,
+  canDelete = canDeleteAnyComment,
   draft,
+  draftAuthor = '我',
   surfaceRef,
   onReply,
   onToggleResolved,
@@ -85,7 +89,9 @@ export function DocumentCommentsPanel({
 }: {
   editor: Editor;
   comments: WorkDocumentCommentView[];
+  canDelete?: (id: string) => boolean;
   draft: DocumentCommentDraft | null;
+  draftAuthor?: string;
   surfaceRef: RefObject<HTMLDivElement | null>;
   onReply: (id: string, text: string) => void;
   onToggleResolved: (id: string) => void;
@@ -175,7 +181,9 @@ export function DocumentCommentsPanel({
   const visibleConnectorItems = useMemo(
     () =>
       layout.items.filter(
-        (item) => item.kind === 'draft' || mountedCommentIds.has(item.id),
+        (item) =>
+          item.kind === 'draft' ||
+          (mountedCommentIds.has(item.id) && !item.detached),
       ),
     [layout.items, mountedCommentIds],
   );
@@ -228,6 +236,7 @@ export function DocumentCommentsPanel({
     onClose();
   };
   const deleteComment = async (commentId: string, index: number) => {
+    if (!canDelete(commentId)) return;
     const replyDirty = Boolean(drafts[commentId]?.trim());
     const confirmed = await officeDialog.confirm({
       title: '删除批注？',
@@ -336,12 +345,14 @@ export function DocumentCommentsPanel({
       kind: CommentTrackItem['kind'];
       commentId?: string;
       from: number;
+      detached?: boolean;
       anchorRect?: CommentAnchorRect;
     }> = comments.map((comment) => ({
       id: comment.id,
       kind: 'comment',
       commentId: comment.id,
-      from: comment.from,
+      from: comment.from ?? Number.MAX_SAFE_INTEGER,
+      detached: comment.detached,
       anchorRect: anchorRectsById.get(comment.id),
     }));
     if (draft) {
@@ -424,6 +435,7 @@ export function DocumentCommentsPanel({
         startY,
         endX,
         endY,
+        detached: entry.detached,
       };
     });
     const nextLayout = {
@@ -695,6 +707,7 @@ export function DocumentCommentsPanel({
           {draft && (
             <li className="work-document-comment-draft-item" key={draft.id}>
               <DocumentCommentComposer
+                author={draftAuthor}
                 ref={(element) => {
                   const id = `draft:${draft.id}`;
                   if (element) cardRefs.current.set(id, element);
@@ -721,8 +734,11 @@ export function DocumentCommentsPanel({
                   if (element) cardRefs.current.set(comment.id, element);
                   else cardRefs.current.delete(comment.id);
                 }}
-                className={`work-document-comment-card${comment.resolved ? ' resolved' : ''}${active ? ' active' : ''}`}
+                className={`work-document-comment-card${comment.resolved ? ' resolved' : ''}${comment.detached ? ' detached' : ''}${active ? ' active' : ''}`}
                 data-comment-id={comment.id}
+                data-document-comment-detached={
+                  comment.detached ? 'true' : 'false'
+                }
                 data-document-comment-card-top={Math.round(item?.cardTop ?? 8)}
                 data-document-comment-item={index + 1}
                 key={comment.id}
@@ -737,7 +753,7 @@ export function DocumentCommentsPanel({
                   }}
                   type="button"
                   className="work-document-comment-anchor"
-                  aria-label={`定位批注 ${index + 1}`}
+                  aria-label={`${comment.detached ? '查看已脱离正文的' : '定位'}批注 ${index + 1}`}
                   aria-current={active ? 'location' : undefined}
                   tabIndex={commentWindow.rovingIndex === index ? 0 : -1}
                   onKeyDown={(event) =>
@@ -745,13 +761,10 @@ export function DocumentCommentsPanel({
                   }
                   onClick={() => {
                     setActiveCommentId(comment.id);
-                    editor
-                      .chain()
-                      .focus()
-                      .setTextSelection(
-                        documentCommentSelection(editor, comment),
-                      )
-                      .run();
+                    const selection = documentCommentSelection(editor, comment);
+                    if (selection) {
+                      editor.chain().focus().setTextSelection(selection).run();
+                    }
                   }}
                 >
                   <span className="work-document-comment-avatar">
@@ -764,7 +777,14 @@ export function DocumentCommentsPanel({
                     </time>
                   </span>
                   <span className="work-document-comment-quote">
-                    {comment.anchorText.trim() || '（空白字符）'}
+                    {comment.detached ? (
+                      <>
+                        <Unlink2 size={10} aria-hidden="true" />
+                        原文锚点已删除
+                      </>
+                    ) : (
+                      comment.anchorText.trim() || '（空白字符）'
+                    )}
                   </span>
                 </button>
                 <section className="work-document-comment-thread">
@@ -831,6 +851,12 @@ export function DocumentCommentsPanel({
                     size="compact"
                     tone="danger"
                     aria-label={`删除批注 ${index + 1}`}
+                    disabled={!canDelete(comment.id)}
+                    title={
+                      canDelete(comment.id)
+                        ? '删除批注'
+                        : '批注模式只能删除自己创建的批注'
+                    }
                     onClick={() => void deleteComment(comment.id, index)}
                   >
                     <Trash2 size={13} />
@@ -855,6 +881,10 @@ export function DocumentCommentsPanel({
       {officeDialog.dialog}
     </Fragment>
   );
+}
+
+function canDeleteAnyComment(): boolean {
+  return true;
 }
 
 interface CommentAnchorRect {
@@ -900,6 +930,7 @@ function sameCommentTrackLayout(
       candidate?.id === item.id &&
       candidate.kind === item.kind &&
       candidate.commentId === item.commentId &&
+      candidate.detached === item.detached &&
       Math.abs(candidate.cardTop - item.cardTop) <= 0.5 &&
       Math.abs(candidate.startX - item.startX) <= 0.5 &&
       Math.abs(candidate.startY - item.startY) <= 0.5 &&
@@ -936,13 +967,17 @@ function selectDocumentComment(
   comment: WorkDocumentCommentView,
 ): void {
   if (editor.isDestroyed) return;
-  editor.commands.setTextSelection(documentCommentSelection(editor, comment));
+  const selection = documentCommentSelection(editor, comment);
+  if (selection) editor.commands.setTextSelection(selection);
 }
 
 function documentCommentSelection(
   editor: Editor,
   comment: WorkDocumentCommentView,
-): { from: number; to: number } {
+): { from: number; to: number } | null {
+  if (comment.detached || comment.from === null || comment.to === null) {
+    return null;
+  }
   const maximum = Math.max(1, editor.state.doc.content.size - 1);
   return {
     from: Math.min(comment.from, maximum),

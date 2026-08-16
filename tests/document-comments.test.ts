@@ -5,6 +5,7 @@ import {
   appendDocumentCommentReply,
   canInsertDocumentComment,
   documentCommentDraftRange,
+  documentCommentViews,
   removeDocumentCommentRecord,
   retainAnchoredDocumentComments,
   toggleDocumentCommentResolved,
@@ -75,6 +76,37 @@ test('retains an explicitly conflicted comment whose anchor is temporarily missi
   );
 
   expect(retained.map((item) => item.id)).toEqual(['comment-1', 'comment-2']);
+});
+
+test('keeps detached comment records visible in canonical presentation order', () => {
+  const views = documentCommentViews(
+    [comment, { ...comment, id: 'comment-2', text: 'Anchored second.' }],
+    [
+      {
+        id: 'comment-2',
+        from: 1,
+        to: 6,
+        anchorText: 'Alpha',
+      },
+    ],
+  );
+
+  expect(views).toEqual([
+    expect.objectContaining({
+      id: 'comment-1',
+      detached: true,
+      from: null,
+      to: null,
+      anchorText: '',
+    }),
+    expect.objectContaining({
+      id: 'comment-2',
+      detached: false,
+      from: 1,
+      to: 6,
+      anchorText: 'Alpha',
+    }),
+  ]);
 });
 
 test('keeps a comment draft anchored to its original text range', () => {

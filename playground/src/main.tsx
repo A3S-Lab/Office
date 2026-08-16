@@ -114,7 +114,7 @@ function Playground() {
     }
     setCollaborationDemoArtifactId(artifact.id);
     activateArtifact(artifact.id);
-    showNotice('已加入浏览器内多人协作演示', 'success');
+    showNotice('已以评论权限加入多人实时协作', 'success');
   };
 
   const newArtifact = (templateId: string) => {

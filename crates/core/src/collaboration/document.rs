@@ -463,6 +463,40 @@ fn canonical_document_state_sha256<T: ReadTxn>(transaction: &T) -> String {
     sha256_hex(&bytes)
 }
 
+pub(super) fn canonical_visible_root_sha256<T: ReadTxn>(transaction: &T, value: &Out) -> String {
+    let mut bytes = b"a3s.office.visible-root.v1\0".to_vec();
+    write_canonical_out(&mut bytes, transaction, value);
+    sha256_hex(&bytes)
+}
+
+pub(super) fn canonical_map_without_key_sha256<T: ReadTxn>(
+    transaction: &T,
+    map: &yrs::MapRef,
+    omitted_key: &str,
+) -> String {
+    let mut bytes = b"a3s.office.filtered-map.v1\0".to_vec();
+    let mut entries = map
+        .iter(transaction)
+        .filter(|(key, _)| *key != omitted_key)
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.0.cmp(&right.0));
+    write_var_uint(&mut bytes, entries.len() as u64);
+    for (key, value) in entries {
+        write_length_prefixed(&mut bytes, key.as_bytes());
+        write_canonical_out(&mut bytes, transaction, &value);
+    }
+    sha256_hex(&bytes)
+}
+
+pub(super) fn canonical_content_without_comment_marks_sha256<T: ReadTxn>(
+    transaction: &T,
+    value: &Out,
+) -> String {
+    let mut bytes = b"a3s.office.document-content-without-comments.v1\0".to_vec();
+    write_canonical_out_without_comment_marks(&mut bytes, transaction, value);
+    sha256_hex(&bytes)
+}
+
 fn write_canonical_out<T: ReadTxn>(output: &mut Vec<u8>, transaction: &T, value: &Out) {
     output.push(out_type_tag(value));
     match value {
@@ -491,6 +525,117 @@ fn write_canonical_out<T: ReadTxn>(output: &mut Vec<u8>, transaction: &T, value:
         }
         _ => write_canonical_any(output, &value.to_json(transaction)),
     }
+}
+
+fn write_canonical_out_without_comment_marks<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &Out,
+) {
+    output.push(out_type_tag(value));
+    match value {
+        Out::YXmlElement(element) => {
+            write_length_prefixed(output, element.tag().as_bytes());
+            write_canonical_xml_attributes(output, transaction, element);
+            write_canonical_xml_children_without_comment_marks(output, transaction, element);
+        }
+        Out::YXmlFragment(fragment) => {
+            write_canonical_xml_children_without_comment_marks(output, transaction, fragment);
+        }
+        Out::YXmlText(text) => {
+            write_canonical_xml_attributes(output, transaction, text);
+            let mut chunks = Vec::<FilteredXmlTextChunk>::new();
+            for chunk in text.diff(transaction, |_| ()) {
+                let attributes =
+                    filtered_text_attributes(chunk.attributes.as_ref().map(|value| &**value));
+                match chunk.insert {
+                    Out::Any(Any::String(value)) => {
+                        if let Some(FilteredXmlTextChunk {
+                            insert: FilteredXmlTextInsert::Text(previous),
+                            attributes: previous_attributes,
+                        }) = chunks.last_mut()
+                        {
+                            if *previous_attributes == attributes {
+                                previous.push_str(&value);
+                                continue;
+                            }
+                        }
+                        chunks.push(FilteredXmlTextChunk {
+                            insert: FilteredXmlTextInsert::Text(value.to_string()),
+                            attributes,
+                        });
+                    }
+                    value => chunks.push(FilteredXmlTextChunk {
+                        insert: FilteredXmlTextInsert::Other(value),
+                        attributes,
+                    }),
+                }
+            }
+            write_var_uint(output, chunks.len() as u64);
+            for chunk in chunks {
+                match chunk.insert {
+                    FilteredXmlTextInsert::Text(value) => write_canonical_out(
+                        output,
+                        transaction,
+                        &Out::Any(Any::String(value.into())),
+                    ),
+                    FilteredXmlTextInsert::Other(value) => {
+                        write_canonical_out(output, transaction, &value)
+                    }
+                }
+                match chunk.attributes {
+                    Some(attributes) => {
+                        output.push(1);
+                        output.extend_from_slice(&attributes);
+                    }
+                    None => output.push(0),
+                }
+            }
+        }
+        _ => write_canonical_any(output, &value.to_json(transaction)),
+    }
+}
+
+enum FilteredXmlTextInsert {
+    Text(String),
+    Other(Out),
+}
+
+struct FilteredXmlTextChunk {
+    insert: FilteredXmlTextInsert,
+    attributes: Option<Vec<u8>>,
+}
+
+fn filtered_text_attributes(attributes: Option<&yrs::types::Attrs>) -> Option<Vec<u8>> {
+    let mut entries = attributes?
+        .iter()
+        .filter(|(key, _)| !is_document_comment_attribute(key))
+        .collect::<Vec<_>>();
+    if entries.is_empty() {
+        return None;
+    }
+    entries.sort_by(|left, right| left.0.cmp(right.0));
+    let mut output = Vec::new();
+    write_var_uint(&mut output, entries.len() as u64);
+    for (key, value) in entries {
+        write_length_prefixed(&mut output, key.as_bytes());
+        write_canonical_any(&mut output, value);
+    }
+    Some(output)
+}
+
+fn is_document_comment_attribute(value: &str) -> bool {
+    if value == "documentComment" {
+        return true;
+    }
+    value
+        .strip_prefix("documentComment--")
+        .is_some_and(|suffix| {
+            suffix.len() == 8
+                && suffix.bytes().all(|value| {
+                    value.is_ascii_alphanumeric() || matches!(value, b'+' | b'/' | b'=')
+                })
+        })
 }
 
 fn write_canonical_xml_attributes<T: ReadTxn>(
@@ -524,6 +669,32 @@ fn write_canonical_xml_children<T: ReadTxn>(
             }
             XmlOut::Text(text) => {
                 write_canonical_out(output, transaction, &Out::YXmlText(text));
+            }
+        }
+    }
+}
+
+fn write_canonical_xml_children_without_comment_marks<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &impl XmlFragment,
+) {
+    let children = value.children(transaction).collect::<Vec<_>>();
+    write_var_uint(output, children.len() as u64);
+    for child in children {
+        match child {
+            XmlOut::Element(element) => write_canonical_out_without_comment_marks(
+                output,
+                transaction,
+                &Out::YXmlElement(element),
+            ),
+            XmlOut::Fragment(fragment) => write_canonical_out_without_comment_marks(
+                output,
+                transaction,
+                &Out::YXmlFragment(fragment),
+            ),
+            XmlOut::Text(text) => {
+                write_canonical_out_without_comment_marks(output, transaction, &Out::YXmlText(text))
             }
         }
     }

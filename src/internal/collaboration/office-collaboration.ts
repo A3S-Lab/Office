@@ -29,6 +29,10 @@ export type WorkOfficeCollaborationOriginKind =
   | 'import'
   | 'system';
 
+export type WorkOfficeCollaborationMutationScope =
+  | 'content'
+  | 'document-comment';
+
 export interface WorkOfficeCollaborationOrigin {
   readonly protocol: typeof WORK_OFFICE_COLLABORATION_PROTOCOL;
   readonly kind: WorkOfficeCollaborationOriginKind;
@@ -100,6 +104,7 @@ export interface WorkOfficeCollaborationSession {
   transact<T>(
     operation: (transaction: Y.Transaction) => T,
     origin?: WorkOfficeCollaborationOrigin,
+    scope?: WorkOfficeCollaborationMutationScope,
   ): T;
   destroy(): void;
 }
@@ -117,6 +122,7 @@ export type WorkOfficeCollaborationErrorCode =
   | 'office.collaboration.metadata_invalid'
   | 'office.collaboration.metadata_missing'
   | 'office.collaboration.mode_invalid'
+  | 'office.collaboration.mutation_scope_invalid'
   | 'office.collaboration.namespace_invalid'
   | 'office.collaboration.not_initialized'
   | 'office.collaboration.origin_invalid'
@@ -207,9 +213,10 @@ class WorkOfficeCollaborationSessionImpl
   transact<T>(
     operation: (transaction: Y.Transaction) => T,
     origin: WorkOfficeCollaborationOrigin = this.localOrigin,
+    scope: WorkOfficeCollaborationMutationScope = 'content',
   ): T {
     this.ensureActive();
-    assertWorkOfficeCollaborationEditable(this);
+    assertWorkOfficeCollaborationWritable(this, scope);
     assertWorkOfficeCollaborationOrigin(origin);
     let result: T | undefined;
     this.document.transact((transaction) => {
@@ -336,10 +343,37 @@ export function registerWorkOfficeCollaborationInitializer(
 export function assertWorkOfficeCollaborationEditable(
   session: WorkOfficeCollaborationSession,
 ): void {
+  assertWorkOfficeCollaborationWritable(session, 'content');
+}
+
+export function assertWorkOfficeCollaborationWritable(
+  session: WorkOfficeCollaborationSession,
+  scope: WorkOfficeCollaborationMutationScope,
+): void {
+  const normalizedScope = normalizedMutationScope(scope);
   if (session.mode === 'edit') return;
+  if (
+    session.mode === 'comment' &&
+    session.kind === 'document' &&
+    normalizedScope === 'document-comment'
+  ) {
+    return;
+  }
   throw new WorkOfficeCollaborationError(
     'office.collaboration.permission_denied',
-    `The '${session.mode}' collaboration mode cannot modify canonical content.`,
+    normalizedScope === 'document-comment'
+      ? `The '${session.mode}' collaboration mode cannot modify Document review records.`
+      : `The '${session.mode}' collaboration mode cannot modify canonical content.`,
+  );
+}
+
+function normalizedMutationScope(
+  value: WorkOfficeCollaborationMutationScope,
+): WorkOfficeCollaborationMutationScope {
+  if (value === 'content' || value === 'document-comment') return value;
+  throw new WorkOfficeCollaborationError(
+    'office.collaboration.mutation_scope_invalid',
+    `The collaboration mutation scope '${String(value)}' is invalid.`,
   );
 }
 

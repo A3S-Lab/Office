@@ -5,6 +5,7 @@ use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
 };
 
+pub(in crate::collaboration) mod comment;
 pub(in crate::collaboration) mod identity;
 mod paragraph;
 mod structure;
@@ -42,6 +43,12 @@ pub(super) fn validate_document_mutation(
             expected_text_id,
             expected_text,
         } => paragraph::validate_delete_paragraph(paragraph_id, expected_text_id, expected_text),
+        NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
+            comment::validate_comment_mutation(mutation)
+        }
         NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
@@ -103,6 +110,12 @@ pub(super) fn apply_document_mutation(
             expected_text_id,
             expected_text,
         ),
+        NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
+            comment::apply_comment_mutation(doc, manifest, mutation)
+        }
         NativeOfficeCollaborationMutation::DocumentSetPageColor { page_color } => {
             set_page_color(doc, manifest, Some(page_color))
         }
