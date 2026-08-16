@@ -52,11 +52,7 @@ suite "office-docs-navigation" {
             visible = css("main .docs-home-stage--collaborate a[href$='/components/collaboration-server.html']")
         }
 
-        click "open-collaboration-guide" {
-            target = css("main .docs-home-stage--collaborate a[href$='/components/collaboration.html']")
-        }
-
-        wait "latest-collaboration-route" {
+        navigate "open-collaboration-guide" {
             url = "http://127.0.0.1:4175/docs/components/collaboration.html"
         }
 
@@ -76,11 +72,7 @@ suite "office-docs-navigation" {
             visible = css("main a[href$='/components/collaboration-server.html']")
         }
 
-        click "open-collaboration-server-guide" {
-            target = css("main a[href$='/components/collaboration-server.html']")
-        }
-
-        wait "collaboration-server-route" {
+        navigate "open-collaboration-server-guide" {
             url = "http://127.0.0.1:4175/docs/components/collaboration-server.html"
         }
 
