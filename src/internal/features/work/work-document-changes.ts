@@ -11,11 +11,13 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
+import type { WorkDocumentChangeKind } from './work-types';
 
-export type WorkDocumentChangeKind = 'insertion' | 'deletion';
+export type { WorkDocumentChangeKind } from './work-types';
 
 export interface WorkDocumentChangeIdentity {
   id: string;
+  actorId?: string;
   author: string;
   date: string;
 }
@@ -45,8 +47,10 @@ declare module '@tiptap/core' {
     documentChange: {
       acceptAllDocumentChanges: () => ReturnType;
       acceptDocumentChange: (id: string) => ReturnType;
+      acceptDocumentChanges: (ids: readonly string[]) => ReturnType;
       rejectAllDocumentChanges: () => ReturnType;
       rejectDocumentChange: (id: string) => ReturnType;
+      rejectDocumentChanges: (ids: readonly string[]) => ReturnType;
       replaceDocumentTextWithTrackedChange: (
         from: number,
         to: number,
@@ -92,6 +96,15 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
         parseHTML: (element) => element.getAttribute('data-change-id') ?? '',
         renderHTML: (attributes) => ({ 'data-change-id': attributes.id }),
       },
+      actorId: {
+        default: '',
+        parseHTML: (element) =>
+          element.getAttribute('data-change-actor-id') ?? '',
+        renderHTML: (attributes) =>
+          attributes.actorId
+            ? { 'data-change-actor-id': attributes.actorId }
+            : {},
+      },
       author: {
         default: '',
         parseHTML: (element) =>
@@ -134,6 +147,13 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
           'accept',
           new Set([id]),
         ) > 0,
+      acceptDocumentChanges: (ids) => (props) =>
+        resolveDocumentChangesCommand(
+          props,
+          this.type,
+          'accept',
+          new Set(ids),
+        ) > 0,
       rejectAllDocumentChanges: () => (props) =>
         resolveDocumentChangesCommand(props, this.type, 'reject') > 0,
       rejectDocumentChange: (id) => (props) =>
@@ -142,6 +162,13 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
           this.type,
           'reject',
           new Set([id]),
+        ) > 0,
+      rejectDocumentChanges: (ids) => (props) =>
+        resolveDocumentChangesCommand(
+          props,
+          this.type,
+          'reject',
+          new Set(ids),
         ) > 0,
       replaceDocumentTextWithTrackedChange:
         (from, to, text) =>
@@ -296,6 +323,9 @@ export function collectDocumentChanges(
     changes.set(key, {
       id,
       kind,
+      ...(stringAttribute(mark.attrs.actorId)
+        ? { actorId: stringAttribute(mark.attrs.actorId) }
+        : {}),
       author: stringAttribute(mark.attrs.author) || '未知审阅者',
       date: stringAttribute(mark.attrs.date),
       from: position,
@@ -486,6 +516,7 @@ function changeMark(
   return type.create({
     kind,
     id: identity.id || createDocumentChangeId(),
+    actorId: identity.actorId ?? '',
     author: identity.author || 'A3S Work',
     date: identity.date || new Date().toISOString(),
   });

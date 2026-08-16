@@ -68,6 +68,7 @@ export interface WorkDocumentExtensionOptions {
   createChange?: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity;
   onContentChange?: (content: WorkDocumentContent) => void;
   onTrackingChange?: (enabled: boolean) => void;
+  rotateTrackedTextIdentities?: () => boolean;
 }
 
 export function createWorkDocumentExtensions(
@@ -143,7 +144,9 @@ export function createWorkDocumentExtensions(
     DocumentTableCell,
     DocumentTableHeader,
     DocumentTableRow,
-    DocumentTableRowIdentity,
+    DocumentTableRowIdentity.configure({
+      rotateTextId: options.rotateTrackedTextIdentities ?? (() => true),
+    }),
     DocumentTableCommands,
     DocumentTableFormatting,
     DocumentTableSizing,
@@ -153,7 +156,9 @@ export function createWorkDocumentExtensions(
     Color,
     DocumentHighlight.configure({ multicolor: true }),
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    DocumentParagraphIdentity,
+    DocumentParagraphIdentity.configure({
+      rotateTextId: options.rotateTrackedTextIdentities ?? (() => true),
+    }),
     DocumentParagraphFormatting,
     DocumentParagraphTabStops,
     DocumentTab,

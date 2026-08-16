@@ -165,6 +165,50 @@ test('preserves Document comment-mode review behavior through the Vue adapter', 
   target.remove();
 });
 
+test('preserves Document suggestion-mode behavior through the Vue adapter', async () => {
+  const target = document.createElement('div');
+  document.body.append(target);
+  const artifact = createArtifact('blank-document');
+  if (artifact.content.type !== 'document') {
+    throw new Error('Expected a Document artifact.');
+  }
+  const sharedDocument = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'vue-suggestion-document',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, artifact.content);
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'vue-suggester', name: 'Vue suggester' },
+    artifactId: 'vue-suggestion-document',
+    document: sharedDocument,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const app = createApp({
+    render: () =>
+      h(DocumentEditor, {
+        collaboration: suggester,
+        content: artifact.content as DocumentContent,
+      }),
+  });
+
+  app.mount(target);
+  await waitFor(() => {
+    expect(target.querySelector('[aria-label="文档正文"]')).not.toBeNull();
+  });
+  const editor = target.querySelector('[aria-label="文档正文"]');
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'false');
+  expect(target.querySelector('[aria-label="建议模式"]')).toBeDisabled();
+  expect(target.querySelector('[aria-label="添加批注"]')).toBeNull();
+
+  app.unmount();
+  sharedDocument.destroy();
+  target.remove();
+});
+
 test('emits controlled document review conflicts through the Vue adapter', async () => {
   const target = document.createElement('div');
   document.body.append(target);

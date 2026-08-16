@@ -31,7 +31,8 @@ export type WorkOfficeCollaborationOriginKind =
 
 export type WorkOfficeCollaborationMutationScope =
   | 'content'
-  | 'document-comment';
+  | 'document-comment'
+  | 'document-suggestion';
 
 export interface WorkOfficeCollaborationOrigin {
   readonly protocol: typeof WORK_OFFICE_COLLABORATION_PROTOCOL;
@@ -359,18 +360,34 @@ export function assertWorkOfficeCollaborationWritable(
   ) {
     return;
   }
+  if (
+    session.mode === 'suggest' &&
+    session.kind === 'document' &&
+    session.actor &&
+    normalizedScope === 'document-suggestion'
+  ) {
+    return;
+  }
   throw new WorkOfficeCollaborationError(
     'office.collaboration.permission_denied',
     normalizedScope === 'document-comment'
       ? `The '${session.mode}' collaboration mode cannot modify Document review records.`
-      : `The '${session.mode}' collaboration mode cannot modify canonical content.`,
+      : normalizedScope === 'document-suggestion'
+        ? `The '${session.mode}' collaboration mode cannot create Document suggestions.`
+        : `The '${session.mode}' collaboration mode cannot modify canonical content.`,
   );
 }
 
 function normalizedMutationScope(
   value: WorkOfficeCollaborationMutationScope,
 ): WorkOfficeCollaborationMutationScope {
-  if (value === 'content' || value === 'document-comment') return value;
+  if (
+    value === 'content' ||
+    value === 'document-comment' ||
+    value === 'document-suggestion'
+  ) {
+    return value;
+  }
   throw new WorkOfficeCollaborationError(
     'office.collaboration.mutation_scope_invalid',
     `The collaboration mutation scope '${String(value)}' is invalid.`,

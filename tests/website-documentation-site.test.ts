@@ -13,7 +13,9 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 
 function homepageComponentHref(version: string, component: string): string {
   const extension =
-    version === 'latest' || version === '0.7.3' ? 'html' : 'mdx';
+    version === 'latest' || version === '0.8.0' || version === '0.7.3'
+      ? 'html'
+      : 'mdx';
   return `./components/${component}.${extension}`;
 }
 
@@ -23,6 +25,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.8.0',
     '0.7.3',
     '0.7.2',
     '0.7.1',
@@ -50,6 +53,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.8.0',
     '0.7.3',
     '0.7.2',
     '0.7.1',
@@ -90,22 +94,26 @@ test('removes broken online Playground actions from frozen homepages', async () 
   }
 });
 
-test('uses deployable HTML targets in the 0.7.3 homepage action links', async () => {
-  for (const { lang } of DOCUMENTATION_LOCALES) {
-    const homepage = await readFile(
-      path.join(documentationRoot, '0.7.3', lang, 'index.mdx'),
-      'utf8',
-    );
+test('uses deployable HTML targets in current release homepage actions', async () => {
+  for (const version of ['0.8.0', '0.7.3']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const homepage = await readFile(
+        path.join(documentationRoot, version, lang, 'index.mdx'),
+        'utf8',
+      );
 
-    expect(homepage).not.toMatch(/href="[^"]+\.mdx(?:[?#][^"]*)?"/);
-    expect(homepage).toContain('href="./guide/index.html"');
-    expect(homepage).toContain('href="./components/collaboration.html"');
-    expect(homepage).toContain('href="./components/collaboration-server.html"');
+      expect(homepage).not.toMatch(/href="[^"]+\.mdx(?:[?#][^"]*)?"/);
+      expect(homepage).toContain('href="./guide/index.html"');
+      expect(homepage).toContain('href="./components/collaboration.html"');
+      expect(homepage).toContain(
+        'href="./components/collaboration-server.html"',
+      );
+    }
   }
 });
 
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
-  for (const version of ['latest', '0.7.3', '0.7.2', '0.7.1']) {
+  for (const version of ['latest', '0.8.0', '0.7.3', '0.7.2', '0.7.1']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [homepage, componentIndex, componentNavigation, collaboration] =
@@ -134,7 +142,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 });
 
 test('publishes the runnable collaboration backend in latest releases', async () => {
-  for (const version of ['latest', '0.7.3', '0.7.2']) {
+  for (const version of ['latest', '0.8.0', '0.7.3', '0.7.2']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [homepage, componentIndex, componentNavigation, server] =
@@ -160,8 +168,8 @@ test('publishes the runnable collaboration backend in latest releases', async ()
   }
 });
 
-test('documents durable Document comments in latest and 0.7.3', async () => {
-  for (const version of ['latest', '0.7.3']) {
+test('documents durable Document comments in current releases', async () => {
+  for (const version of ['latest', '0.8.0', '0.7.3']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, cli] = await Promise.all([
@@ -184,6 +192,32 @@ test('documents durable Document comments in latest and 0.7.3', async () => {
       expect(server).toContain('actorName');
       expect(server).toContain('comment');
       expect(server).toContain('FORBIDDEN');
+    }
+  }
+});
+
+test('documents attributed Document suggestions and the native typed limit', async () => {
+  for (const version of ['latest', '0.8.0']) {
+    for (const { lang } of DOCUMENTATION_LOCALES) {
+      const localeRoot = path.join(documentationRoot, version, lang);
+      const [collaboration, server, document, cli] = await Promise.all([
+        readFile(path.join(localeRoot, 'components/collaboration.mdx'), 'utf8'),
+        readFile(
+          path.join(localeRoot, 'components/collaboration-server.mdx'),
+          'utf8',
+        ),
+        readFile(path.join(localeRoot, 'components/document.mdx'), 'utf8'),
+        readFile(path.join(localeRoot, 'cli-reference.md'), 'utf8'),
+      ]);
+
+      for (const source of [collaboration, document]) {
+        expect(source).toContain("mode: 'suggest'");
+      }
+      expect(collaboration).toContain('document.change-decisions');
+      expect(server).toContain('FORBIDDEN');
+      expect(server).toContain('Document `suggest`');
+      expect(cli).toContain('document-suggestion-*');
+      expect(cli).toContain('document-change-decision-*');
     }
   }
 });

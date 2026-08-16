@@ -57,6 +57,12 @@ CI and Pages run those focused suites against the built static preview through
 preview lifecycle, uses Playwright's pinned Chromium, and fails when captured
 console or page-error diagnostics are non-empty. The shared installer keeps
 the A3S Test and standalone browser versions aligned across both workflows.
+Local environments with the A3S Browser integration can run the identical gate
+without the standalone adapter:
+
+```bash
+A3S_TEST_BROWSER_DRIVER=a3s bash scripts/run-a3s-test-web-gate.sh
+```
 
 The first-open focus regression also has a focused gate:
 
@@ -70,6 +76,13 @@ The collaboration participant roster has a focused desktop/phone gate:
 ```bash
 bun run test:e2e:collaboration-participants:check
 bun run test:e2e:collaboration-participants
+```
+
+The Document suggestion workflow has a focused desktop/phone gate:
+
+```bash
+bun run test:e2e:collaboration-document-suggestions:check
+bun run test:e2e:collaboration-document-suggestions
 ```
 
 The native Spreadsheet cell lifecycle has a focused gate:
@@ -192,6 +205,12 @@ moving search focus, and restores the prior persistent sidebar on return.
 The collaboration roster workflow projects human and agent Awareness state in
 edit and preview chrome, keeps the phone popover in view, and restores the
 exact trigger after Escape.
+The Document suggestion workflow uses two independent Yjs documents, proves
+attributed insertion synchronization, keeps accept and reject controls out of
+the suggester surface, records the editor's final decision, and verifies the
+converged audit trail on desktop together with phone reachability. It captures
+the pending visual state, final accessibility state, and clean browser
+diagnostics.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

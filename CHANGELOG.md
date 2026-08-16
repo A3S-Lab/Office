@@ -4,6 +4,41 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.8.0 - 2026-08-17
+
+- Added authenticated Document suggestion mode across the Core API, React,
+  Vue, and Web Components. Suggesters can type attributed insertions, mark
+  deletions, and create replacements while canonical text, structure,
+  formatting, options, comments, and other actors' proposals remain protected.
+  Suggesters can withdraw their own insertion proposals but never accept,
+  reject, rewrite, or remove another actor's suggestion.
+- Added immutable shared accept/reject audit records under
+  `document.change-decisions` and `document.change-decision-order`. Edit-mode
+  reviewers apply each final decision atomically with the corresponding tracked
+  change, retain proposer and decider actor attribution, deduplicate identical
+  disconnected retries, reject stale conflicting decisions, clear unsafe local
+  history after a decision, and continue to read protocol-v1 Documents created
+  before the additive roots existed.
+- Extended the native Yrs authorization boundary and runnable A3S Boot backend
+  to admit only semantically valid authenticated Document `suggest` updates
+  before persistence or room broadcast. Candidate-state validation permits
+  actor-attributed insertion, deletion, and replacement marks while rejecting
+  canonical content, structure, non-suggestion formatting, roots, sidecars,
+  forged identity/timestamps, foreign proposal changes, and unresolved Yjs
+  dependencies. Fixed the canonical projection to merge adjacent equal-format
+  text after removing revision marks, so valid deletion and replacement
+  proposals are no longer rejected.
+- Reworked the Playground suggestion entry into two independent synchronized
+  Yjs clients with separate editor and suggester identities, live proposal
+  delivery, editor-only decisions, and a visible final audit trail. Added a
+  deterministic A3S Test desktop/phone suite covering proposal creation,
+  convergence, control separation, acceptance, audit output, responsive
+  reachability, accessibility, screenshots, console, and page errors. Updated
+  the bilingual collaboration, backend, Document, CLI/MCP, roadmap, and example
+  documentation and froze the resulting 0.8.0 documentation set. The CLI/MCP
+  reference now explicitly records that native typed suggestion creation and
+  decision mutations are not yet exposed.
+
 ## 0.7.3 - 2026-08-17
 
 - Added durable Feishu-style Document selection comments for authenticated

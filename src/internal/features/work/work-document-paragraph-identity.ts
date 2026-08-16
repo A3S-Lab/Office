@@ -19,6 +19,7 @@ export interface WorkDocumentParagraphIdentityRegistry {
 }
 
 interface DocumentParagraphIdentityOptions {
+  rotateTextId: () => boolean;
   types: string[];
 }
 
@@ -41,6 +42,7 @@ export const DocumentParagraphIdentity =
 
     addOptions() {
       return {
+        rotateTextId: () => true,
         types: ['paragraph', 'heading', 'documentCaption'],
       };
     },
@@ -84,7 +86,12 @@ export const DocumentParagraphIdentity =
     },
 
     addProseMirrorPlugins() {
-      return [createDocumentParagraphIdentityPlugin(this.options.types)];
+      return [
+        createDocumentParagraphIdentityPlugin(
+          this.options.types,
+          this.options.rotateTextId,
+        ),
+      ];
     },
   });
 
@@ -134,6 +141,7 @@ export function applyDocumentParagraphIdentityToElement(
 
 function createDocumentParagraphIdentityPlugin(
   types: readonly string[],
+  rotateTextId: () => boolean,
 ): Plugin {
   const trackedTypes = new Set(types);
   return new Plugin({
@@ -141,6 +149,7 @@ function createDocumentParagraphIdentityPlugin(
       const transaction = normalizeDocumentParagraphIdentities(
         view.state,
         trackedTypes,
+        rotateTextId,
       );
       if (transaction) {
         transaction.setMeta('addToHistory', false);
@@ -155,6 +164,7 @@ function createDocumentParagraphIdentityPlugin(
       return normalizeDocumentParagraphIdentities(
         newState,
         trackedTypes,
+        rotateTextId,
         oldState,
         transactions,
       );
@@ -165,6 +175,7 @@ function createDocumentParagraphIdentityPlugin(
 function normalizeDocumentParagraphIdentities(
   state: EditorState,
   trackedTypes: ReadonlySet<string>,
+  rotateTextId: () => boolean,
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
@@ -182,7 +193,7 @@ function normalizeDocumentParagraphIdentities(
       )
     : new Set<number>();
   const editedPositions =
-    oldState && !transactions.some(isHistoryTransaction)
+    oldState && rotateTextId() && !transactions.some(isHistoryTransaction)
       ? editedDocumentParagraphPositions(
           oldState,
           state,

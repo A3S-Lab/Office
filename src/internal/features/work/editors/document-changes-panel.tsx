@@ -16,6 +16,7 @@ import {
 } from './document-navigation-window';
 import { DocumentTaskPane } from './document-task-pane';
 import { useOfficeDialog } from './office-controls';
+import type { WorkDocumentChangeDecision } from '../work-types';
 
 type DocumentChangeDecision = 'accept' | 'reject';
 
@@ -31,13 +32,22 @@ interface PendingDocumentChangeFocus {
 export function DocumentChangesPanel({
   editor,
   changes,
+  decisions = [],
   trackChanges,
+  suggestionOnly = false,
+  onDecideChanges,
   onTrackChangesChange,
   onClose,
 }: {
   editor: Editor;
   changes: WorkDocumentChange[];
+  decisions?: WorkDocumentChangeDecision[];
   trackChanges: boolean;
+  suggestionOnly?: boolean;
+  onDecideChanges?: (
+    changes: readonly WorkDocumentChange[],
+    decision: DocumentChangeDecision,
+  ) => boolean;
   onTrackChangesChange: (enabled: boolean) => void;
   onClose: () => void;
 }) {
@@ -97,8 +107,9 @@ export function DocumentChangesPanel({
       decision,
     };
     setRovingChangeKey(nextChangeKey);
-    const handled =
-      decision === 'accept'
+    const handled = onDecideChanges
+      ? onDecideChanges([change], decision)
+      : decision === 'accept'
         ? editor.commands.acceptDocumentChange(change.id)
         : editor.commands.rejectDocumentChange(change.id);
     if (!handled) {
@@ -126,7 +137,8 @@ export function DocumentChangesPanel({
       confirmLabel: '全部接受',
     });
     if (confirmed && !editor.isDestroyed) {
-      editor.commands.acceptAllDocumentChanges();
+      if (onDecideChanges) onDecideChanges(changes, 'accept');
+      else editor.commands.acceptAllDocumentChanges();
       requestAnimationFrame(() => {
         if (!editor.isDestroyed) editor.view.dom.focus();
       });
@@ -140,7 +152,8 @@ export function DocumentChangesPanel({
       confirmTone: 'danger',
     });
     if (confirmed && !editor.isDestroyed) {
-      editor.commands.rejectAllDocumentChanges();
+      if (onDecideChanges) onDecideChanges(changes, 'reject');
+      else editor.commands.rejectAllDocumentChanges();
       requestAnimationFrame(() => {
         if (!editor.isDestroyed) editor.view.dom.focus();
       });
@@ -153,12 +166,16 @@ export function DocumentChangesPanel({
         className="work-document-changes-panel"
         title="修订审阅"
         description={
-          changes.length ? `${changes.length} 项待处理` : '没有待处理的修订'
+          changes.length
+            ? `${changes.length} 项待处理 · ${decisions.length} 项已决定`
+            : decisions.length
+              ? `没有待处理的修订 · ${decisions.length} 项已决定`
+              : '没有待处理的修订'
         }
         closeLabel="关闭修订审阅"
         onClose={onClose}
       >
-        {changes.length > 0 && (
+        {changes.length > 0 && !suggestionOnly && (
           <div className="work-document-changes-bulk-actions">
             <Button tone="quiet" onClick={() => void acceptAll()}>
               <CheckCheck size={13} />
@@ -243,46 +260,48 @@ export function DocumentChangesPanel({
                       {change.date ? ` · ${formatChangeDate(change.date)}` : ''}
                     </small>
                   </button>
-                  <div>
-                    <Button
-                      ref={(element) => {
-                        const key = documentChangeDecisionKey(
-                          changeKey,
-                          'accept',
-                        );
-                        if (element)
-                          decisionButtonRefs.current.set(key, element);
-                        else decisionButtonRefs.current.delete(key);
-                      }}
-                      tone="quiet"
-                      aria-label={`接受修订 ${entry.index + 1}`}
-                      onClick={() =>
-                        decideChange(change, entry.index, 'accept')
-                      }
-                    >
-                      <Check size={13} />
-                      接受
-                    </Button>
-                    <Button
-                      ref={(element) => {
-                        const key = documentChangeDecisionKey(
-                          changeKey,
-                          'reject',
-                        );
-                        if (element)
-                          decisionButtonRefs.current.set(key, element);
-                        else decisionButtonRefs.current.delete(key);
-                      }}
-                      tone="quiet"
-                      aria-label={`拒绝修订 ${entry.index + 1}`}
-                      onClick={() =>
-                        decideChange(change, entry.index, 'reject')
-                      }
-                    >
-                      <XCircle size={13} />
-                      拒绝
-                    </Button>
-                  </div>
+                  {!suggestionOnly && (
+                    <div>
+                      <Button
+                        ref={(element) => {
+                          const key = documentChangeDecisionKey(
+                            changeKey,
+                            'accept',
+                          );
+                          if (element)
+                            decisionButtonRefs.current.set(key, element);
+                          else decisionButtonRefs.current.delete(key);
+                        }}
+                        tone="quiet"
+                        aria-label={`接受修订 ${entry.index + 1}`}
+                        onClick={() =>
+                          decideChange(change, entry.index, 'accept')
+                        }
+                      >
+                        <Check size={13} />
+                        接受
+                      </Button>
+                      <Button
+                        ref={(element) => {
+                          const key = documentChangeDecisionKey(
+                            changeKey,
+                            'reject',
+                          );
+                          if (element)
+                            decisionButtonRefs.current.set(key, element);
+                          else decisionButtonRefs.current.delete(key);
+                        }}
+                        tone="quiet"
+                        aria-label={`拒绝修订 ${entry.index + 1}`}
+                        onClick={() =>
+                          decideChange(change, entry.index, 'reject')
+                        }
+                      >
+                        <XCircle size={13} />
+                        拒绝
+                      </Button>
+                    </div>
+                  )}
                 </li>
               );
             })}
@@ -293,24 +312,69 @@ export function DocumentChangesPanel({
               className="work-document-changes-empty"
               icon={<FileDiff />}
               actions={
-                <Button
-                  size="compact"
-                  tone={trackChanges ? 'quiet' : 'primary'}
-                  onClick={() => onTrackChangesChange(!trackChanges)}
-                >
-                  {trackChanges ? '停止记录' : '开启修订'}
-                </Button>
+                suggestionOnly ? undefined : (
+                  <Button
+                    size="compact"
+                    tone={trackChanges ? 'quiet' : 'primary'}
+                    onClick={() => onTrackChangesChange(!trackChanges)}
+                  >
+                    {trackChanges ? '停止记录' : '开启修订'}
+                  </Button>
+                )
               }
               tone={trackChanges ? 'info' : 'neutral'}
               role="status"
             >
-              {trackChanges ? '正在记录新的改动。' : '当前没有记录新的改动。'}
+              {suggestionOnly
+                ? '建议模式会自动记录带身份的新改动。'
+                : trackChanges
+                  ? '正在记录新的改动。'
+                  : '当前没有记录新的改动。'}
             </CollectionState>
           </div>
+        )}
+        {decisions.length > 0 && (
+          <DocumentChangeDecisionHistory decisions={decisions} />
         )}
       </DocumentTaskPane>
       {officeDialog.dialog}
     </>
+  );
+}
+
+function DocumentChangeDecisionHistory({
+  decisions,
+}: {
+  decisions: readonly WorkDocumentChangeDecision[];
+}) {
+  const visible = decisions.slice(-20).reverse();
+  return (
+    <section
+      className="work-document-change-decisions"
+      aria-label="修订决定记录"
+    >
+      <header>
+        <strong>决定记录</strong>
+        <span>{decisions.length} 项</span>
+      </header>
+      <ol>
+        {visible.map((decision) => (
+          <li
+            data-document-change-decision={decision.decision}
+            key={decision.id}
+          >
+            <span>{decision.decision === 'accept' ? '已接受' : '已拒绝'}</span>
+            <strong>{decision.text.trim() || '（空白字符）'}</strong>
+            <small>
+              {decision.suggestedBy} → {decision.decidedBy}
+              {decision.decidedAt
+                ? ` · ${formatChangeDate(decision.decidedAt)}`
+                : ''}
+            </small>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 

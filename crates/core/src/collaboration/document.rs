@@ -56,6 +56,7 @@ fn register_format_roots(doc: &Doc, namespace: &str, kind: NativeOfficeCollabora
             for suffix in [
                 "document.options",
                 "document.comments",
+                "document.change-decisions",
                 "document.bibliography",
                 "document.bibliography.sources",
             ] {
@@ -63,6 +64,7 @@ fn register_format_roots(doc: &Doc, namespace: &str, kind: NativeOfficeCollabora
             }
             for suffix in [
                 "document.comment-order",
+                "document.change-decision-order",
                 "document.bibliography.source-order",
                 "document.record-claims",
             ] {
@@ -497,6 +499,15 @@ pub(super) fn canonical_content_without_comment_marks_sha256<T: ReadTxn>(
     sha256_hex(&bytes)
 }
 
+pub(super) fn canonical_content_without_suggestion_effects_sha256<T: ReadTxn>(
+    transaction: &T,
+    value: &Out,
+) -> String {
+    let mut bytes = b"a3s.office.document-content-without-suggestions.v1\0".to_vec();
+    write_canonical_out_without_suggestion_effects(&mut bytes, transaction, value);
+    sha256_hex(&bytes)
+}
+
 fn write_canonical_out<T: ReadTxn>(output: &mut Vec<u8>, transaction: &T, value: &Out) {
     output.push(out_type_tag(value));
     match value {
@@ -546,8 +557,85 @@ fn write_canonical_out_without_comment_marks<T: ReadTxn>(
             write_canonical_xml_attributes(output, transaction, text);
             let mut chunks = Vec::<FilteredXmlTextChunk>::new();
             for chunk in text.diff(transaction, |_| ()) {
+                let attributes = filtered_text_attributes(
+                    chunk.attributes.as_ref().map(|value| &**value),
+                    is_document_comment_attribute,
+                );
+                match chunk.insert {
+                    Out::Any(Any::String(value)) => {
+                        if let Some(FilteredXmlTextChunk {
+                            insert: FilteredXmlTextInsert::Text(previous),
+                            attributes: previous_attributes,
+                        }) = chunks.last_mut()
+                        {
+                            if *previous_attributes == attributes {
+                                previous.push_str(&value);
+                                continue;
+                            }
+                        }
+                        chunks.push(FilteredXmlTextChunk {
+                            insert: FilteredXmlTextInsert::Text(value.to_string()),
+                            attributes,
+                        });
+                    }
+                    value => chunks.push(FilteredXmlTextChunk {
+                        insert: FilteredXmlTextInsert::Other(value),
+                        attributes,
+                    }),
+                }
+            }
+            write_var_uint(output, chunks.len() as u64);
+            for chunk in chunks {
+                match chunk.insert {
+                    FilteredXmlTextInsert::Text(value) => write_canonical_out(
+                        output,
+                        transaction,
+                        &Out::Any(Any::String(value.into())),
+                    ),
+                    FilteredXmlTextInsert::Other(value) => {
+                        write_canonical_out(output, transaction, &value)
+                    }
+                }
+                match chunk.attributes {
+                    Some(attributes) => {
+                        output.push(1);
+                        output.extend_from_slice(&attributes);
+                    }
+                    None => output.push(0),
+                }
+            }
+        }
+        _ => write_canonical_any(output, &value.to_json(transaction)),
+    }
+}
+
+fn write_canonical_out_without_suggestion_effects<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &Out,
+) {
+    output.push(out_type_tag(value));
+    match value {
+        Out::YXmlElement(element) => {
+            write_length_prefixed(output, element.tag().as_bytes());
+            write_canonical_xml_attributes(output, transaction, element);
+            write_canonical_xml_children_without_suggestion_effects(output, transaction, element);
+        }
+        Out::YXmlFragment(fragment) => {
+            write_canonical_xml_children_without_suggestion_effects(output, transaction, fragment);
+        }
+        Out::YXmlText(text) => {
+            write_canonical_xml_attributes(output, transaction, text);
+            let mut chunks = Vec::<FilteredXmlTextChunk>::new();
+            for chunk in text.diff(transaction, |_| ()) {
+                let source_attributes = chunk.attributes.as_ref().map(|value| &**value);
+                if document_change_chunk_kind(source_attributes)
+                    == Some(DocumentChangeChunkKind::Insertion)
+                {
+                    continue;
+                }
                 let attributes =
-                    filtered_text_attributes(chunk.attributes.as_ref().map(|value| &**value));
+                    filtered_text_attributes(source_attributes, is_document_change_attribute);
                 match chunk.insert {
                     Out::Any(Any::String(value)) => {
                         if let Some(FilteredXmlTextChunk {
@@ -606,10 +694,13 @@ struct FilteredXmlTextChunk {
     attributes: Option<Vec<u8>>,
 }
 
-fn filtered_text_attributes(attributes: Option<&yrs::types::Attrs>) -> Option<Vec<u8>> {
+fn filtered_text_attributes(
+    attributes: Option<&yrs::types::Attrs>,
+    omitted: fn(&str) -> bool,
+) -> Option<Vec<u8>> {
     let mut entries = attributes?
         .iter()
-        .filter(|(key, _)| !is_document_comment_attribute(key))
+        .filter(|(key, _)| !omitted(key))
         .collect::<Vec<_>>();
     if entries.is_empty() {
         return None;
@@ -624,12 +715,54 @@ fn filtered_text_attributes(attributes: Option<&yrs::types::Attrs>) -> Option<Ve
     Some(output)
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DocumentChangeChunkKind {
+    Insertion,
+    Deletion,
+}
+
+fn document_change_chunk_kind(
+    attributes: Option<&yrs::types::Attrs>,
+) -> Option<DocumentChangeChunkKind> {
+    attributes?.iter().find_map(|(key, value)| {
+        if !is_document_change_attribute(key) {
+            return None;
+        }
+        let Any::Map(fields) = value else {
+            return None;
+        };
+        match fields.get("kind") {
+            Some(Any::String(value)) if value.as_ref() == "insertion" => {
+                Some(DocumentChangeChunkKind::Insertion)
+            }
+            Some(Any::String(value)) if value.as_ref() == "deletion" => {
+                Some(DocumentChangeChunkKind::Deletion)
+            }
+            _ => None,
+        }
+    })
+}
+
 fn is_document_comment_attribute(value: &str) -> bool {
     if value == "documentComment" {
         return true;
     }
     value
         .strip_prefix("documentComment--")
+        .is_some_and(|suffix| {
+            suffix.len() == 8
+                && suffix.bytes().all(|value| {
+                    value.is_ascii_alphanumeric() || matches!(value, b'+' | b'/' | b'=')
+                })
+        })
+}
+
+pub(super) fn is_document_change_attribute(value: &str) -> bool {
+    if value == "documentChange" {
+        return true;
+    }
+    value
+        .strip_prefix("documentChange--")
         .is_some_and(|suffix| {
             suffix.len() == 8
                 && suffix.bytes().all(|value| {
@@ -696,6 +829,34 @@ fn write_canonical_xml_children_without_comment_marks<T: ReadTxn>(
             XmlOut::Text(text) => {
                 write_canonical_out_without_comment_marks(output, transaction, &Out::YXmlText(text))
             }
+        }
+    }
+}
+
+fn write_canonical_xml_children_without_suggestion_effects<T: ReadTxn>(
+    output: &mut Vec<u8>,
+    transaction: &T,
+    value: &impl XmlFragment,
+) {
+    let children = value.children(transaction).collect::<Vec<_>>();
+    write_var_uint(output, children.len() as u64);
+    for child in children {
+        match child {
+            XmlOut::Element(element) => write_canonical_out_without_suggestion_effects(
+                output,
+                transaction,
+                &Out::YXmlElement(element),
+            ),
+            XmlOut::Fragment(fragment) => write_canonical_out_without_suggestion_effects(
+                output,
+                transaction,
+                &Out::YXmlFragment(fragment),
+            ),
+            XmlOut::Text(text) => write_canonical_out_without_suggestion_effects(
+                output,
+                transaction,
+                &Out::YXmlText(text),
+            ),
         }
     }
 }

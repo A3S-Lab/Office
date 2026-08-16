@@ -1,6 +1,7 @@
 import type * as Y from 'yjs';
 import type {
   WorkDocumentBibliography,
+  WorkDocumentChangeDecision,
   WorkDocumentComment,
   WorkDocumentContent,
 } from '../features/work/work-types';
@@ -11,6 +12,13 @@ import {
   type WorkOfficeCollaborationSession,
 } from './office-collaboration';
 import { assertWorkOfficeDocumentCommentMutationAllowed } from './office-document-collaboration-comment-permissions';
+import {
+  assertWorkOfficeDocumentChangeDecisionConflicts,
+  initializeWorkOfficeDocumentChangeDecisions,
+  patchWorkOfficeDocumentChangeDecisions,
+  readWorkOfficeDocumentChangeDecisions,
+  validatedWorkOfficeDocumentChangeDecisions,
+} from './office-document-collaboration-change-decisions';
 import {
   assertWorkOfficeDocumentBibliographyConflicts,
   initializeWorkOfficeDocumentBibliography,
@@ -39,6 +47,8 @@ import {
 const DOCUMENT_OPTIONS_ROOT = 'document.options';
 const DOCUMENT_COMMENTS_ROOT = 'document.comments';
 const DOCUMENT_COMMENT_ORDER_ROOT = 'document.comment-order';
+const DOCUMENT_CHANGE_DECISIONS_ROOT = 'document.change-decisions';
+const DOCUMENT_CHANGE_DECISION_ORDER_ROOT = 'document.change-decision-order';
 const DOCUMENT_BIBLIOGRAPHY_ROOT = 'document.bibliography';
 const DOCUMENT_BIBLIOGRAPHY_SOURCES_ROOT = 'document.bibliography.sources';
 const DOCUMENT_BIBLIOGRAPHY_SOURCE_ORDER_ROOT =
@@ -48,6 +58,7 @@ const DOCUMENT_RECORD_CLAIMS_ROOT = 'document.record-claims';
 export interface WorkOfficeDocumentSidecars {
   pageColor?: string;
   trackChanges?: boolean;
+  changeDecisions?: WorkDocumentChangeDecision[];
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;
 }
@@ -56,6 +67,8 @@ interface DocumentSidecarRoots {
   options: Y.Map<unknown>;
   comments: Y.Map<unknown>;
   commentOrder: Y.Array<string>;
+  changeDecisions: Y.Map<unknown>;
+  changeDecisionOrder: Y.Array<string>;
   bibliography: Y.Map<unknown>;
   bibliographySources: Y.Map<unknown>;
   bibliographySourceOrder: Y.Array<string>;
@@ -70,6 +83,8 @@ export function assertWorkOfficeDocumentSidecarsEmpty(
     roots.options.size > 0 ||
     roots.comments.size > 0 ||
     roots.commentOrder.length > 0 ||
+    roots.changeDecisions.size > 0 ||
+    roots.changeDecisionOrder.length > 0 ||
     roots.bibliography.size > 0 ||
     roots.bibliographySources.size > 0 ||
     roots.bibliographySourceOrder.length > 0 ||
@@ -94,6 +109,13 @@ export function initializeWorkOfficeDocumentSidecars(
   }
   if (sidecars.trackChanges !== undefined) {
     roots.options.set('trackChanges', sidecars.trackChanges);
+  }
+  if (sidecars.changeDecisions !== undefined) {
+    initializeWorkOfficeDocumentChangeDecisions(
+      roots.changeDecisions,
+      roots.changeDecisionOrder,
+      sidecars.changeDecisions,
+    );
   }
   if (sidecars.comments !== undefined) {
     roots.options.set('commentsPresent', true);
@@ -130,6 +152,14 @@ export function readWorkOfficeDocumentSidecars(
       invalidSharedSidecars('track-changes setting');
     }
     result.trackChanges = trackChanges as boolean;
+  }
+  if (roots.changeDecisionOrder.length > 0) {
+    result.changeDecisions = readWorkOfficeDocumentChangeDecisions(
+      roots.changeDecisions,
+      roots.changeDecisionOrder,
+    );
+  } else if (roots.changeDecisions.size > 0) {
+    invalidSharedSidecars('tracked-change decision order and record set');
   }
   const commentsPresent = optionalPresence(
     roots.options.get('commentsPresent'),
@@ -183,6 +213,11 @@ export function updateWorkOfficeDocumentSidecars(
     after.comments ?? [],
     shared.comments ?? [],
   );
+  assertWorkOfficeDocumentChangeDecisionConflicts(
+    before.changeDecisions ?? [],
+    after.changeDecisions ?? [],
+    shared.changeDecisions ?? [],
+  );
   assertWorkOfficeDocumentBibliographyConflicts(
     before.bibliography,
     after.bibliography,
@@ -203,6 +238,14 @@ export function updateWorkOfficeDocumentSidecars(
         before.trackChanges,
         after.trackChanges,
       );
+      if (!jsonEqual(before.changeDecisions, after.changeDecisions)) {
+        patchWorkOfficeDocumentChangeDecisions(
+          roots.changeDecisions,
+          roots.changeDecisionOrder,
+          before.changeDecisions ?? [],
+          after.changeDecisions ?? [],
+        );
+      }
       if (!jsonEqual(before.comments, after.comments)) {
         patchPresence(
           roots.options,
@@ -255,14 +298,28 @@ export function workOfficeDocumentSidecarUndoScope(
   ];
 }
 
+export function workOfficeDocumentDecisionRootsChanged(
+  session: WorkOfficeCollaborationSession,
+  transaction: Y.Transaction,
+): boolean {
+  const roots = documentSidecarRoots(session);
+  const changed = new Set<unknown>(transaction.changedParentTypes.keys());
+  return (
+    changed.has(roots.changeDecisions) || changed.has(roots.changeDecisionOrder)
+  );
+}
+
 export function workOfficeDocumentSidecarsChanged(
   session: WorkOfficeCollaborationSession,
   transaction: Y.Transaction,
 ): boolean {
   const changed = new Set<unknown>(transaction.changedParentTypes.keys());
-  return workOfficeDocumentSidecarUndoScope(session).some((root) =>
-    changed.has(root),
-  );
+  const roots = documentSidecarRoots(session);
+  return [
+    ...workOfficeDocumentSidecarUndoScope(session),
+    roots.changeDecisions,
+    roots.changeDecisionOrder,
+  ].some((root) => changed.has(root));
 }
 
 export function validatedWorkOfficeDocumentSidecars(
@@ -283,6 +340,11 @@ export function validatedWorkOfficeDocumentSidecars(
       invalidInputSidecars('a boolean track-changes setting');
     }
     result.trackChanges = content.trackChanges;
+  }
+  if (content.changeDecisions !== undefined) {
+    result.changeDecisions = validatedWorkOfficeDocumentChangeDecisions(
+      content.changeDecisions,
+    );
   }
   if (content.comments !== undefined) {
     result.comments = validatedWorkOfficeDocumentComments(content.comments);
@@ -308,6 +370,7 @@ function assertDocumentSidecarMutationAllowed(
   if (
     !jsonEqual(previous.pageColor, next.pageColor) ||
     !jsonEqual(previous.trackChanges, next.trackChanges) ||
+    !jsonEqual(previous.changeDecisions, next.changeDecisions) ||
     !jsonEqual(previous.bibliography, next.bibliography)
   ) {
     throw new WorkOfficeCollaborationError(
@@ -330,6 +393,12 @@ function documentSidecarRoots(
     comments: session.document.getMap(session.rootName(DOCUMENT_COMMENTS_ROOT)),
     commentOrder: session.document.getArray(
       session.rootName(DOCUMENT_COMMENT_ORDER_ROOT),
+    ),
+    changeDecisions: session.document.getMap(
+      session.rootName(DOCUMENT_CHANGE_DECISIONS_ROOT),
+    ),
+    changeDecisionOrder: session.document.getArray(
+      session.rootName(DOCUMENT_CHANGE_DECISION_ORDER_ROOT),
     ),
     bibliography: session.document.getMap(
       session.rootName(DOCUMENT_BIBLIOGRAPHY_ROOT),

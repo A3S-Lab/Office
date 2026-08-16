@@ -97,6 +97,7 @@ interface DocumentToolbarProps {
   editor: Editor;
   defaultRibbonCollapsed?: boolean;
   reviewOnly?: boolean;
+  suggestionOnly?: boolean;
   history?: {
     canRedo: boolean;
     canUndo: boolean;
@@ -155,6 +156,10 @@ interface DocumentToolbarProps {
   ) => boolean | undefined | Promise<boolean | undefined>;
   onToggleTrackChanges: () => void;
   onToggleChanges: () => void;
+  onDecideChange?: (
+    change: WorkDocumentChange,
+    decision: 'accept' | 'reject',
+  ) => boolean;
   onOpenWordCount: () => void;
   onOpenFindReplace: (mode: DocumentFindReplaceMode) => void;
 }
@@ -163,6 +168,7 @@ export function DocumentToolbar({
   editor,
   defaultRibbonCollapsed = false,
   reviewOnly = false,
+  suggestionOnly = false,
   history,
   layoutOpen,
   layout,
@@ -214,6 +220,7 @@ export function DocumentToolbar({
   onRibbonTabChange,
   onToggleTrackChanges,
   onToggleChanges,
+  onDecideChange,
   onOpenWordCount,
   onOpenFindReplace,
 }: DocumentToolbarProps) {
@@ -482,8 +489,9 @@ export function DocumentToolbar({
     const nextIds = [changes[index + 1]?.id, changes[index - 1]?.id].filter(
       (id): id is string => Boolean(id),
     );
-    const handled =
-      decision === 'accept'
+    const handled = onDecideChange
+      ? onDecideChange(change, decision)
+      : decision === 'accept'
         ? editor.commands.acceptDocumentChange(change.id)
         : editor.commands.rejectDocumentChange(change.id);
     if (!handled) return;
@@ -523,7 +531,7 @@ export function DocumentToolbar({
         collapsible
         fileActions={fileActions}
         quickAccessActions={
-          reviewOnly
+          reviewOnly && !suggestionOnly
             ? []
             : [
                 {
@@ -759,40 +767,48 @@ export function DocumentToolbar({
                   </ToolbarButton>
                 </RibbonGroup>
               )}
-              <RibbonGroup label="批注" priority="high">
-                <ToolbarButton
-                  label="添加批注"
-                  displayLabel
-                  shortcut={insertCommentCommand.shortcut?.label}
-                  ariaKeyShortcuts={insertCommentCommand.shortcut?.aria}
-                  disabled={!canInsertComment}
-                  title={
-                    canInsertComment
-                      ? `添加批注（${insertCommentCommand.shortcut?.label}）`
-                      : '请先选择未批注的文字'
-                  }
-                  onClick={onInsertComment}
-                >
-                  <MessageSquarePlus size={19} />
-                </ToolbarButton>
-                <ToolbarButton
-                  label={`查看批注${commentCount ? `（${commentCount}）` : ''}`}
-                  displayLabel
-                  active={commentsOpen}
-                  onClick={onToggleComments}
-                >
-                  <MessagesSquare size={19} />
-                </ToolbarButton>
-              </RibbonGroup>
-              {!reviewOnly && (
+              {!suggestionOnly && (
+                <RibbonGroup label="批注" priority="high">
+                  <ToolbarButton
+                    label="添加批注"
+                    displayLabel
+                    shortcut={insertCommentCommand.shortcut?.label}
+                    ariaKeyShortcuts={insertCommentCommand.shortcut?.aria}
+                    disabled={!canInsertComment}
+                    title={
+                      canInsertComment
+                        ? `添加批注（${insertCommentCommand.shortcut?.label}）`
+                        : '请先选择未批注的文字'
+                    }
+                    onClick={onInsertComment}
+                  >
+                    <MessageSquarePlus size={19} />
+                  </ToolbarButton>
+                  <ToolbarButton
+                    label={`查看批注${commentCount ? `（${commentCount}）` : ''}`}
+                    displayLabel
+                    active={commentsOpen}
+                    onClick={onToggleComments}
+                  >
+                    <MessagesSquare size={19} />
+                  </ToolbarButton>
+                </RibbonGroup>
+              )}
+              {(!reviewOnly || suggestionOnly) && (
                 <>
                   <RibbonGroup label="修订" priority="high">
                     <ToolbarButton
-                      label="修订模式"
+                      label={suggestionOnly ? '建议模式' : '修订模式'}
                       displayLabel
                       shortcut={trackChangesCommand.shortcut?.label}
                       ariaKeyShortcuts={trackChangesCommand.shortcut?.aria}
-                      active={trackChanges}
+                      active={suggestionOnly || trackChanges}
+                      disabled={suggestionOnly}
+                      title={
+                        suggestionOnly
+                          ? '建议模式始终记录带身份的文字修订'
+                          : undefined
+                      }
                       onClick={onToggleTrackChanges}
                     >
                       <FileDiff size={19} />
@@ -806,42 +822,44 @@ export function DocumentToolbar({
                       <ListChecks size={19} />
                     </ToolbarButton>
                   </RibbonGroup>
-                  <RibbonGroup label="更改" priority="high">
-                    <ToolbarButton
-                      label="接受修订"
-                      displayLabel
-                      disabled={actionableChangeIndex === null}
-                      title="接受当前修订并转到下一处"
-                      onClick={() => decideDocumentChange('accept')}
-                    >
-                      <Check size={19} />
-                    </ToolbarButton>
-                    <ToolbarButton
-                      label="拒绝修订"
-                      displayLabel
-                      disabled={actionableChangeIndex === null}
-                      title="拒绝当前修订并转到下一处"
-                      onClick={() => decideDocumentChange('reject')}
-                    >
-                      <XCircle size={19} />
-                    </ToolbarButton>
-                    <ToolbarButton
-                      label="上一处修订"
-                      displayLabel
-                      disabled={previousChangeIndex === null}
-                      onClick={() => navigateDocumentChange(-1)}
-                    >
-                      <ChevronUp size={19} />
-                    </ToolbarButton>
-                    <ToolbarButton
-                      label="下一处修订"
-                      displayLabel
-                      disabled={nextChangeIndex === null}
-                      onClick={() => navigateDocumentChange(1)}
-                    >
-                      <ChevronDown size={19} />
-                    </ToolbarButton>
-                  </RibbonGroup>
+                  {!suggestionOnly && (
+                    <RibbonGroup label="更改" priority="high">
+                      <ToolbarButton
+                        label="接受修订"
+                        displayLabel
+                        disabled={actionableChangeIndex === null}
+                        title="接受当前修订并转到下一处"
+                        onClick={() => decideDocumentChange('accept')}
+                      >
+                        <Check size={19} />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        label="拒绝修订"
+                        displayLabel
+                        disabled={actionableChangeIndex === null}
+                        title="拒绝当前修订并转到下一处"
+                        onClick={() => decideDocumentChange('reject')}
+                      >
+                        <XCircle size={19} />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        label="上一处修订"
+                        displayLabel
+                        disabled={previousChangeIndex === null}
+                        onClick={() => navigateDocumentChange(-1)}
+                      >
+                        <ChevronUp size={19} />
+                      </ToolbarButton>
+                      <ToolbarButton
+                        label="下一处修订"
+                        displayLabel
+                        disabled={nextChangeIndex === null}
+                        onClick={() => navigateDocumentChange(1)}
+                      >
+                        <ChevronDown size={19} />
+                      </ToolbarButton>
+                    </RibbonGroup>
+                  )}
                 </>
               )}
             </>

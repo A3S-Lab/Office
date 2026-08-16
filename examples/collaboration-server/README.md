@@ -34,16 +34,21 @@ Duplicate delivery is idempotent. Authorization is mode and artifact specific:
 | --- | --- |
 | `edit` | Canonical content and review updates for every initialized format |
 | Document `comment` | Selection comments, replies, resolution/reopen, and ownership-restricted deletion only |
-| `view` / `suggest` | Receive document state and publish ephemeral presence only |
-| Non-Document `comment` | Receive document state and publish ephemeral presence only |
+| Document `suggest` | Attributed insertion, deletion, and replacement proposals that preserve canonical content and every non-suggestion root |
+| `view` | Receive document state and publish ephemeral presence only |
+| Non-Document `comment` / `suggest` | Receive document state and publish ephemeral presence only |
 
-The server does not trust a raw Yjs update because its ticket says `comment`.
-Under the durable room lock it applies the update to a candidate Yrs document,
-compares that document with the committed state, and permits only comment
-records/order/immutable claims, `commentsPresent`, and `documentComment` marks.
-Forged text, structure, roots, other options, authorship, order, claims,
-anchors, or another actor's deletion returns `FORBIDDEN` before persistence or
-broadcast.
+The server does not trust a raw Yjs update because its ticket says `comment` or
+`suggest`. Under the durable room lock it applies the update to a candidate Yrs
+document and compares that document with the committed state. Comment mode
+permits only comment records/order/immutable claims, `commentsPresent`, and
+`documentComment` marks. Suggest mode requires the canonical Document
+projection and every non-content root to remain unchanged, then permits only
+authenticated insertion/deletion marks, safe edits or withdrawal of the
+actor's own proposals, and replacements expressed as a deletion plus an
+insertion. Forged text, structure, roots, options, authorship, timestamps,
+order, claims, anchors, foreign suggestions, or another actor's deletion
+returns `FORBIDDEN` before persistence or broadcast.
 
 ## Run locally
 
@@ -151,9 +156,10 @@ document.destroy();
 The signed ticket uses schema version 2 and binds `actorName` in addition to
 the room, artifact kind, namespace, actor ID/kind, mode, and expiry. The
 browser adapter verifies every field in `collaboration.ready` against the
-local Office session. For Document comment writes, the ticket `actorName` must
-equal `session.actor.name` and every newly persisted comment/reply `author`;
-the server writes and validates the authenticated actor ID separately.
+local Office session. For Document comment or suggestion writes, the ticket
+`actorName` must equal `session.actor.name` and every newly persisted
+comment/reply/suggestion `author`; the server writes and validates the
+authenticated actor ID separately.
 
 ## Wire events
 
@@ -187,6 +193,12 @@ agent directly at the server's internal `data_dir`: each native participant
 keeps its own actor-scoped replica, while the service keeps the durable room
 replica. This preserves actor attribution and independent Yjs client IDs.
 
+The current native `collab mutate` and `office_collaboration_mutate` contracts
+do not expose typed Document suggestion-create or suggestion-decision
+operations. Native replicas synchronize browser-created proposals and final
+decision roots as Yjs state, but agents should not construct private
+ProseMirror marks to bypass the closed mutation enum.
+
 ## Production boundary
 
 The reference implementation is complete for one service process. For multiple
@@ -198,7 +210,7 @@ Keep the following boundaries unchanged:
 - bind actor ID, actor display name, actor kind, artifact, kind, namespace,
   mode, expiration, and Origin;
 - authorize the semantic candidate state under the same durable store lock used
-  for persistence; never authorize `comment` by frame type alone;
+  for persistence; never authorize `comment` or `suggest` by frame type alone;
 - persist document updates before acknowledging or broadcasting them;
 - never persist Awareness as document state;
 - retain the deterministic operation ID during retries;
@@ -212,7 +224,8 @@ cargo test -p a3s-office-collaboration-server
 bun run collaboration-server:typecheck
 ```
 
-The Rust integration test opens two authenticated Boot gateway connections,
-persists a browser-generated Yjs update, verifies room broadcast and restart-safe
-Yrs state, creates a durable selection comment with a comment-mode ticket, and
-confirms both forged content and view-only publishing are rejected.
+The Rust integration tests open authenticated Boot gateway connections,
+persist browser-generated Yjs updates, verify room broadcast and restart-safe
+Yrs state, create a durable selection comment with a comment-mode ticket,
+persist an attributed text proposal with a suggestion-mode ticket, and confirm
+forged canonical content plus view-only publishing are rejected.

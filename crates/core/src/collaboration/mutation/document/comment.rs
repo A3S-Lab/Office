@@ -717,7 +717,7 @@ fn validate_timestamp(value: &str, field: &str, label: &str) -> UseResult<()> {
     .with_detail(field, value.to_owned()))
 }
 
-fn valid_canonical_utc_timestamp(value: &str) -> bool {
+pub(super) fn valid_canonical_utc_timestamp(value: &str) -> bool {
     let bytes = value.as_bytes();
     bytes.len() == 24
         && bytes[10] == b'T'

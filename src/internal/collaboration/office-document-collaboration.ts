@@ -16,6 +16,7 @@ import {
 } from '@tiptap/y-tiptap';
 import * as Y from 'yjs';
 import { createWorkDocumentExtensions } from '../features/work/work-document-extensions';
+import { collectDocumentChanges } from '../features/work/work-document-changes';
 import {
   createWorkDocumentModel,
   documentModelForContent,
@@ -28,6 +29,7 @@ import {
 import { syncDocumentContentFromHtml } from '../features/work/work-document-section';
 import type {
   WorkDocumentComment,
+  WorkDocumentChangeDecisionAction,
   WorkDocumentContent,
   WorkDocumentNode,
 } from '../features/work/work-types';
@@ -52,7 +54,12 @@ import {
   type WorkOfficeDocumentSidecars,
   workOfficeDocumentSidecarsChanged,
   workOfficeDocumentSidecarUndoScope,
+  workOfficeDocumentDecisionRootsChanged,
 } from './office-document-collaboration-sidecars';
+import {
+  createWorkOfficeDocumentChangeDecisions,
+  workOfficeDocumentSuggestionTransactionAllowed,
+} from './office-document-collaboration-suggestions';
 import { jsonEqual } from './office-document-collaboration-sidecar-utils';
 
 const DOCUMENT_CONTENT_ROOT = 'document.content';
@@ -85,6 +92,10 @@ export interface WorkOfficeDocumentCollaborationChange {
   origin: unknown;
 }
 
+export interface WorkOfficeDocumentChangeDecisionOptions {
+  decidedAt?: string;
+}
+
 export interface WorkOfficeDocumentCollaborationBinding {
   readonly extensions: Extensions;
   readonly fragment: Y.XmlFragment;
@@ -93,6 +104,12 @@ export interface WorkOfficeDocumentCollaborationBinding {
   updateSidecars(
     previous: WorkDocumentContent,
     next: WorkDocumentContent,
+  ): boolean;
+  decideChanges(
+    editor: Editor,
+    changeIds: readonly string[],
+    decision: WorkDocumentChangeDecisionAction,
+    options?: WorkOfficeDocumentChangeDecisionOptions,
   ): boolean;
   canUndo(): boolean;
   canRedo(): boolean;
@@ -231,6 +248,7 @@ class WorkOfficeDocumentCollaborationBindingImpl
     const builtIns = createWorkDocumentExtensions({
       ...options.workExtensions,
       collaborative: true,
+      rotateTrackedTextIdentities: () => session.mode !== 'suggest',
     });
     const additional = options.additionalExtensions ?? [];
     assertBehaviorOnlyExtensions(additional);
@@ -253,7 +271,7 @@ class WorkOfficeDocumentCollaborationBindingImpl
       );
     }
     const undoScope =
-      session.mode === 'comment'
+      session.mode === 'comment' || session.mode === 'suggest'
         ? [this.fragment]
         : [this.fragment, ...workOfficeDocumentSidecarUndoScope(session)];
     this.#undoManager = new Y.UndoManager(undoScope, {
@@ -272,7 +290,7 @@ class WorkOfficeDocumentCollaborationBindingImpl
       restorable.restore = () => {
         restore();
         this.#undoManager.addToScope(
-          this.#session.mode === 'comment'
+          this.#session.mode === 'comment' || this.#session.mode === 'suggest'
             ? this.fragment
             : [
                 this.fragment,
@@ -333,6 +351,64 @@ class WorkOfficeDocumentCollaborationBindingImpl
     return changed;
   }
 
+  decideChanges(
+    editor: Editor,
+    changeIds: readonly string[],
+    decision: WorkDocumentChangeDecisionAction,
+    options: WorkOfficeDocumentChangeDecisionOptions = {},
+  ): boolean {
+    this.ensureActive();
+    assertWorkOfficeCollaborationEditable(this.#session);
+    if (editor.isDestroyed || changeIds.length === 0) return false;
+    const requested = new Set(changeIds);
+    const changes = collectDocumentChanges(editor.state.doc).filter((change) =>
+      requested.has(change.id),
+    );
+    if (changes.length !== requested.size) return false;
+    const before = this.content();
+    const decisions = createWorkOfficeDocumentChangeDecisions(
+      this.#session,
+      changes,
+      decision,
+      options.decidedAt,
+    );
+    const existing = new Set(
+      (before.changeDecisions ?? []).map(({ id }) => id),
+    );
+    if (decisions.some(({ id }) => existing.has(id))) {
+      throw new WorkOfficeCollaborationError(
+        'office.collaboration.permission_denied',
+        'A tracked change with a final decision cannot be decided again.',
+      );
+    }
+    const origin = this.#session.createOrigin(this.#session.localOrigin.kind);
+    let handled = false;
+    this.#session.transact(() => {
+      handled =
+        decision === 'accept'
+          ? editor.commands.acceptDocumentChanges(changeIds)
+          : editor.commands.rejectDocumentChanges(changeIds);
+      if (!handled) return;
+      updateWorkOfficeDocumentSidecars(
+        this.#session,
+        before,
+        {
+          ...before,
+          changeDecisions: [...(before.changeDecisions ?? []), ...decisions],
+        },
+        origin,
+      );
+    }, origin);
+    if (handled) {
+      // A shared accept/reject decision is final. Clear older local history so
+      // undo cannot resurrect a decided mark or remove accepted content while
+      // leaving its append-only audit record behind.
+      this.#undoManager.clear();
+      this.#onHistoryChange();
+    }
+    return handled;
+  }
+
   canUndo(): boolean {
     this.ensureActive();
     if (this.#session.mode === 'comment') {
@@ -355,6 +431,13 @@ class WorkOfficeDocumentCollaborationBindingImpl
       assertWorkOfficeCollaborationWritable(this.#session, 'document-comment');
       return this.applyCommentHistory('undo');
     }
+    if (this.#session.mode === 'suggest') {
+      assertWorkOfficeCollaborationWritable(
+        this.#session,
+        'document-suggestion',
+      );
+      return this.#undoManager.undo() !== null;
+    }
     assertWorkOfficeCollaborationEditable(this.#session);
     return this.#undoManager.undo() !== null;
   }
@@ -364,6 +447,13 @@ class WorkOfficeDocumentCollaborationBindingImpl
     if (this.#session.mode === 'comment') {
       assertWorkOfficeCollaborationWritable(this.#session, 'document-comment');
       return this.applyCommentHistory('redo');
+    }
+    if (this.#session.mode === 'suggest') {
+      assertWorkOfficeCollaborationWritable(
+        this.#session,
+        'document-suggestion',
+      );
+      return this.#undoManager.redo() !== null;
     }
     assertWorkOfficeCollaborationEditable(this.#session);
     return this.#undoManager.redo() !== null;
@@ -424,6 +514,13 @@ class WorkOfficeDocumentCollaborationBindingImpl
   };
 
   readonly #onTransaction = (transaction: Y.Transaction): void => {
+    if (
+      this.#session.mode === 'suggest' &&
+      workOfficeDocumentDecisionRootsChanged(this.#session, transaction)
+    ) {
+      this.#undoManager.clear();
+      this.#onHistoryChange();
+    }
     if (
       this.#destroyed ||
       this.#destroyRequested ||
@@ -868,6 +965,11 @@ function documentCollaborationPermissionExtension(
                     (step instanceof AddMarkStep ||
                       step instanceof RemoveMarkStep) &&
                     step.mark.type.name === 'documentComment',
+                )) ||
+              (session.mode === 'suggest' &&
+                workOfficeDocumentSuggestionTransactionAllowed(
+                  session,
+                  transaction,
                 ))
             );
           },

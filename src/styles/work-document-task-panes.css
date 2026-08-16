@@ -328,6 +328,73 @@
   grid-column: 2;
 }
 
+.work-document-change-decisions {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 7px;
+  padding: 9px 10px 10px;
+  border-top: 1px solid var(--a3s-line);
+  background: var(--a3s-panel-soft);
+}
+
+.work-document-change-decisions > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--a3s-muted);
+  font-size: 10px;
+}
+
+.work-document-change-decisions > header strong {
+  color: var(--a3s-ink);
+  font-size: 11px;
+}
+
+.work-document-change-decisions > ol {
+  display: grid;
+  max-height: 168px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.work-document-change-decisions li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 8px;
+  padding: 7px 8px;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-bg);
+}
+
+.work-document-change-decisions li > span {
+  color: #267048;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.work-document-change-decisions
+  li[data-document-change-decision="reject"]
+  > span {
+  color: var(--a3s-red);
+}
+
+.work-document-change-decisions li > strong {
+  overflow: hidden;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-document-change-decisions li > small {
+  grid-column: 2;
+  color: var(--a3s-faint);
+  font-size: 8px;
+}
+
 .work-document-citations-panel.work-document-task-pane {
   max-height: none;
 }

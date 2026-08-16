@@ -44,6 +44,7 @@ import {
 } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import { usePlaygroundCollaborationPresenceFixture } from './collaboration-presence-fixture';
+import { usePlaygroundDocumentSuggestionFixture } from './collaboration-suggestion-fixture';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 import {
   type PlaygroundPdfAnnotationStage,
@@ -65,6 +66,7 @@ const assistantMaximumWidth = 680;
 export function EditorWorkspace({
   artifact,
   collaborationDemo,
+  suggestionDemo,
   sidebarOpen,
   assistantModal,
   assistantOpen,
@@ -82,6 +84,7 @@ export function EditorWorkspace({
 }: {
   artifact: OfficeArtifact;
   collaborationDemo: boolean;
+  suggestionDemo: boolean;
   sidebarOpen: boolean;
   assistantModal: boolean;
   assistantOpen: boolean;
@@ -120,6 +123,19 @@ export function EditorWorkspace({
         ? { artifactId: artifact.id, content: artifact.content }
         : undefined,
     );
+  const documentSuggestionFixtureEnabled =
+    artifact.content.type === 'document' &&
+    (suggestionDemo || e2eFixture === 'collaboration-document-suggestions');
+  const documentSuggestionFixture = usePlaygroundDocumentSuggestionFixture(
+    documentSuggestionFixtureEnabled && artifact.content.type === 'document'
+      ? { artifactId: artifact.id, content: artifact.content }
+      : undefined,
+  );
+  const pendingSuggestion = Boolean(
+    documentSuggestionFixture?.content.html.includes('data-document-change'),
+  );
+  const suggestionDecisionCount =
+    documentSuggestionFixture?.content.changeDecisions?.length ?? 0;
   const pdfCollaborationFixtureEnabled =
     e2eFixture === 'collaboration-pdf-annotations' &&
     artifact.content.type === 'pdf';
@@ -289,6 +305,16 @@ export function EditorWorkspace({
                   <span>实时评论 · 2 人在线</span>
                 </output>
               )}
+              {documentSuggestionFixtureEnabled && (
+                <output
+                  className="playground-collaboration-mode-status"
+                  data-testid="collaboration-suggestion-mode"
+                  aria-live="polite"
+                >
+                  <Pencil size={14} />
+                  <span>建议协作 · 2 人在线</span>
+                </output>
+              )}
               {controlledReviewFixture &&
                 artifact.content.type === 'document' && (
                   <button
@@ -429,7 +455,7 @@ export function EditorWorkspace({
                   )}
                 </>
               )}
-              {artifact.kind !== 'pdf' && (
+              {artifact.kind !== 'pdf' && !documentSuggestionFixtureEnabled && (
                 <fieldset className="playground-mode-switch">
                   <legend className="sr-only">编辑或预览</legend>
                   <button
@@ -480,6 +506,7 @@ export function EditorWorkspace({
             </div>
           </header>
           {artifact.content.type === 'document' &&
+            !documentSuggestionFixtureEnabled &&
             (!collaborationPresenceFixtureEnabled ||
               collaborationPresenceFixture) && (
               <DocumentEditor
@@ -502,9 +529,80 @@ export function EditorWorkspace({
               />
             )}
           {artifact.content.type === 'document' &&
+            !documentSuggestionFixtureEnabled &&
             collaborationPresenceFixtureEnabled &&
             !collaborationPresenceFixture && (
               <div role="status">正在准备协作测试夹具</div>
+            )}
+          {artifact.content.type === 'document' &&
+            documentSuggestionFixtureEnabled &&
+            documentSuggestionFixture && (
+              <section
+                className="playground-suggestion-demo"
+                aria-label="双人建议协作"
+              >
+                <section
+                  className="playground-suggestion-peer suggester"
+                  data-testid="suggestion-peer"
+                  aria-label="建议者 林澄"
+                >
+                  <header>
+                    <div>
+                      <span>建议者</span>
+                      <strong>林澄</strong>
+                    </div>
+                    <small>只能提交或撤回自己的文字建议</small>
+                  </header>
+                  <DocumentEditor
+                    artifactId={artifact.id}
+                    collaboration={documentSuggestionFixture.suggester}
+                    content={documentSuggestionFixture.content}
+                    onChange={documentSuggestionFixture.updateContent}
+                    preview={false}
+                    saveStatus="建议已同步"
+                    theme="light"
+                  />
+                </section>
+                <section
+                  className="playground-suggestion-peer editor"
+                  data-testid="editor-peer"
+                  aria-label="编辑者 周宁"
+                >
+                  <header>
+                    <div>
+                      <span>编辑者</span>
+                      <strong>周宁</strong>
+                    </div>
+                    <small data-testid="suggestion-decision-status">
+                      {pendingSuggestion
+                        ? '有待处理建议'
+                        : suggestionDecisionCount > 0
+                          ? `已记录 ${suggestionDecisionCount} 项决定`
+                          : '可接受或拒绝建议'}
+                    </small>
+                  </header>
+                  <DocumentEditor
+                    artifactId={artifact.id}
+                    collaboration={documentSuggestionFixture.editor}
+                    content={documentSuggestionFixture.content}
+                    onChange={documentSuggestionFixture.updateContent}
+                    onReviewConflict={(event) =>
+                      onNotice(
+                        `检测到 ${event.conflicts.length} 个建议决定冲突`,
+                        'neutral',
+                      )
+                    }
+                    preview={false}
+                    saveStatus="决定已同步"
+                    theme="light"
+                  />
+                </section>
+              </section>
+            )}
+          {artifact.content.type === 'document' &&
+            documentSuggestionFixtureEnabled &&
+            !documentSuggestionFixture && (
+              <div role="status">正在准备双人建议协作</div>
             )}
           {artifact.content.type === 'markdown' && (
             <MarkdownEditor

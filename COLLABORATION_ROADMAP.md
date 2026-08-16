@@ -22,9 +22,9 @@ which tracks editor capability parity with WPS.
   the local binding origin, so one participant cannot undo another
   participant's operation.
 - `view`, `comment`, `suggest`, and `edit` are explicit session modes. A format
-  enables a mode only after its durable model exists. Document now enables
-  durable review-only `comment`; unsupported mode/format pairs remain
-  read-only.
+  enables a mode only after its durable model exists. Document enables durable
+  review-only `comment` plus actor-attributed `suggest`; unsupported
+  mode/format pairs remain read-only.
 - Editors never collaborate by repeatedly replacing one serialized OOXML file
   or one universal JSON blob. Each format gets a typed, conflict-local model.
 
@@ -44,6 +44,7 @@ Protocol v1 reserves the `a3s.office` namespace.
 | `document.content` | `Y.XmlFragment` | ProseMirror document, including section layout, comment anchors, and tracked-change marks. |
 | `document.options` | `Y.Map` | Document-level editable options such as page color and tracking mode. |
 | `document.comments` / `document.comment-order` | `Y.Map` / `Y.Array` | ID-keyed durable comment/reply records and deterministic presentation order. |
+| `document.change-decisions` / `document.change-decision-order` | `Y.Map` / `Y.Array` | Immutable accept/reject audit records and deterministic decision order. |
 | `document.bibliography*` | Typed maps/arrays | Bibliography settings and ID-keyed citation sources. |
 | `spreadsheet.*` | Typed maps/arrays | Sheet order, field-addressed sparse cells, formulas, styles, objects, names, and print state. |
 | `presentation.*` | Typed maps/arrays | Slide/master/layout order, ID-keyed scene objects, notes, transitions, and comments. |
@@ -92,11 +93,11 @@ Status: implemented in the browser library.
   Origin validation, permission enforcement, WebSocket rooms, durable Yrs
   persistence, ephemeral Awareness relay, reconnect repair, and service-owned
   durable update polling. Version-2 tickets bind actor display name and the
-  durable store semantically authorizes Document comment-mode updates under
-  the room lock before persistence or broadcast. Its browser adapter converts
-  bounded base64 wire payloads back to the package's typed `Uint8Array`
-  transport envelope and verifies the ready identity against the local
-  session.
+  durable store semantically authorizes Document comment- and suggestion-mode
+  updates under the room lock before persistence or broadcast. Its browser
+  adapter converts bounded base64 wire payloads back to the package's typed
+  `Uint8Array` transport envelope and verifies the ready identity against the
+  local session.
 - Convergence, offline/reconnect, transport-boundary, presence, permission,
   StrictMode, framework-parity, ownership, backend persistence, room broadcast,
   ticket tamper, and read-only authorization tests.
@@ -109,9 +110,9 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, durable review-only
-comment mode, and native text/options/bounded structural paragraph/comment
-mutations implemented; rich native parity and suggestion authorization are
-pending.
+comment and suggestion modes, immutable suggestion-decision audit, and native
+text/options/bounded structural paragraph/comment mutations implemented; rich
+native mutation parity remains pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
@@ -152,6 +153,19 @@ pending.
   immutable creation claim; removing an anchor through an authorized content
   edit retains a detached thread. Remote review changes do not enter local undo
   history.
+- Authenticated Document `suggest` sessions create attributed insertion,
+  deletion, and replacement proposals as `documentChange` marks. Their
+  canonical projection is unchanged until an `edit` participant decides the
+  proposal. Suggesters may withdraw their own insertion proposals, but cannot
+  change canonical text, structure, non-suggestion formatting, options,
+  comments, bibliography, another actor's proposal, or a deletion proposal's
+  targeted canonical text.
+- Accepting or rejecting a suggestion applies the tracked change and appends
+  one immutable actor-attributed record to `document.change-decisions` plus its
+  deterministic order root in the same transaction. Identical offline retries
+  converge, a second conflicting final decision fails closed, old Documents
+  without the additive roots remain readable, and a final decision clears
+  local history that could otherwise resurrect the decided mark.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
   `document-comment-reply`, `document-comment-set-resolved`, and
   `document-comment-delete`. Projection schema v2 returns attributable threads,
@@ -159,16 +173,20 @@ pending.
   offsets, resolution, and detached state. Native and browser fixtures cover
   restart, reordered delivery, stale anchor guards, idempotent retries,
   ownership failures, and cross-language convergence.
-- The A3S Boot backend permits `edit` content/review updates and semantically
-  validated Document `comment` review-only updates. Signed actor display name
-  must match the session actor and every new record author. Forged roots,
-  content, structure, options, authorship, order, claims, anchors, or foreign
-  deletion fail before the durable store changes.
+- The A3S Boot backend permits `edit` content/review updates, semantically
+  validated Document `comment` review-only updates, and semantically validated
+  Document `suggest` proposal updates. Signed actor identity and display name
+  must match every new comment, reply, or suggestion. Forged roots, canonical
+  content, structure, options, non-suggestion formatting, authorship, order,
+  claims, anchors, foreign deletion, or foreign suggestion changes fail before
+  the durable store changes.
 
 Remaining:
 
-- Add suggestion-only authorization and durable accept/reject decision audit
-  records; `suggest` remains read-only until that model exists.
+- Add closed typed native projection and mutation variants for creating
+  Document suggestions and deciding them through CLI/MCP/A3S Code. The current
+  typed native mutation set can synchronize the resulting Yjs state but does
+  not originate these two workflows.
 - Prove concurrent full-table, list-restructure, section, comment, and revision
   workflows, plus DOCX import/export after merged edits.
 - Expand native convergence from bounded paragraph edits to complete table,
@@ -369,11 +387,12 @@ destructive actions remain attributable, reviewable, and non-retryable.
 ### Phase 6: CLI, MCP, and coding agents
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
-projection, a host-injected live CLI transport session, and typed Markdown,
-Document content/comment, Spreadsheet cell, Presentation scene-element, PDF
-annotation/form-value, and PDF redaction/page-operation review mutation
-surfaces are implemented; the remaining format mutations and native presence
-projection are pending.
+projection, a host-injected live CLI transport session, authenticated browser
+suggestion-update authorization, and typed Markdown, Document content/comment,
+Spreadsheet cell, Presentation scene-element, PDF annotation/form-value, and
+PDF redaction/page-operation review mutation surfaces are implemented; typed
+native Document suggestion/decision mutations, the remaining format mutations,
+and native presence projection are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -422,6 +441,13 @@ projection are pending.
   require `edit`; Document review mutations accept `edit` or `comment`, with
   ownership-restricted deletion in `comment`. Raw remote updates remain
   receivable in every mode so read-only peers still converge.
+- Host-authenticated Document `suggest` transport updates are semantically
+  checked in Yrs before commit: only attributed insertion/deletion/replacement
+  proposals owned by the authenticated actor may be added or withdrawn, while
+  canonical state and every non-suggestion root remain protected. This is a
+  transport authorization path, not a `NativeOfficeCollaborationMutation`;
+  `collab mutate`, `office_collaboration_mutate`, and projection v2 do not yet
+  expose native typed suggestion creation or final-decision operations.
 - Rust `project`, `collab read`, and `office_collaboration_read` interpret the
   Office-owned browser schema inside Office rather than in a product host.
   Markdown returns its exact canonical source. Document returns bounded
@@ -483,8 +509,9 @@ Remaining:
 
 - Extend typed format-model mutations to Spreadsheet and remaining Presentation
   structural/rich-text operations plus PDF signatures; deepen Document
-  mutations to additional nested structures and tracked suggestion decisions
-  before enabling `suggest` for local mutation.
+  mutations to additional nested structures and add typed suggestion creation,
+  suggestion projection, and tracked final-decision operations for native
+  clients.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 
@@ -506,5 +533,5 @@ valid update delivery orders.
 - Shipping a hosted collaboration backend inside the component package.
 - Treating awareness as authorization or durable audit history.
 - Hiding provider synchronization behind editor mount.
-- Claiming comments or suggestions are supported by a format until its durable
-  review schema and accept/reject semantics are implemented.
+- Claiming comments or suggestions are supported by a format that lacks a
+  durable review schema and, for suggestions, explicit accept/reject semantics.

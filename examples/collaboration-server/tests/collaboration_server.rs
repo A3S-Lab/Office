@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::future::{ready, Ready};
 use std::sync::{Arc, Mutex};
 
@@ -16,10 +16,11 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
 use serde_json::{json, Value};
 use yrs::sync::Awareness;
+use yrs::types::Attrs;
 use yrs::updates::decoder::Decode;
 use yrs::updates::encoder::Encode;
 use yrs::{
-    Array, Doc, GetString, Map, ReadTxn, StateVector, Text, Transact, Update, Xml,
+    Any, Array, Doc, GetString, Map, ReadTxn, StateVector, Text, Transact, Update, Xml,
     XmlElementPrelim, XmlFragment, XmlOut, XmlTextPrelim,
 };
 
@@ -371,6 +372,178 @@ async fn comment_ticket_persists_selection_review_but_cannot_edit_document_text(
     commenter.close().await.unwrap();
 }
 
+#[tokio::test]
+async fn suggest_ticket_persists_attributed_text_proposals_but_cannot_edit_canonical_content() {
+    let temp = tempfile::tempdir().unwrap();
+    let config = test_config(temp.path().to_path_buf());
+    let app = build_application(config.clone()).unwrap();
+    let path = "/collaboration/document/fixture-document";
+    let editor_ticket = issue_ticket_for(
+        &app,
+        "fixture-document",
+        "document",
+        "editor-3",
+        "Evan Editor",
+        "edit",
+    )
+    .await;
+    let suggester_ticket = issue_ticket_for(
+        &app,
+        "fixture-document",
+        "document",
+        "suggester-3",
+        "Ada Suggester",
+        "suggest",
+    )
+    .await;
+    let gateway = app.gateway_for(path).unwrap().clone();
+    let editor_outbound = Arc::new(Mutex::new(Vec::new()));
+    let editor = gateway
+        .connect_async_with_outbound(
+            authenticated_request(path, &editor_ticket),
+            capture(Arc::clone(&editor_outbound)),
+        )
+        .await
+        .unwrap();
+    let suggester_outbound = Arc::new(Mutex::new(Vec::new()));
+    let suggester = gateway
+        .connect_async_with_outbound(
+            authenticated_request(path, &suggester_ticket),
+            capture(Arc::clone(&suggester_outbound)),
+        )
+        .await
+        .unwrap();
+    editor.dispatch(hello_message(717_171)).await.unwrap();
+    suggester.dispatch(hello_message(727_272)).await.unwrap();
+    editor_outbound.lock().unwrap().clear();
+    suggester_outbound.lock().unwrap().clear();
+
+    let bootstrap = document_bootstrap_update();
+    editor
+        .dispatch(document_message_for(
+            "fixture-document",
+            "document",
+            717_171,
+            "sync-step-2",
+            &STANDARD.encode(&bootstrap),
+        ))
+        .await
+        .unwrap();
+
+    let producer = Doc::with_client_id(727_272);
+    producer
+        .transact_mut()
+        .apply_update(Update::decode_v1(&bootstrap).unwrap())
+        .unwrap();
+    let before_suggestion = producer.transact().state_vector();
+    let fragment = producer.get_or_insert_xml_fragment("a3s.office.document.content");
+    let text = fragment
+        .successors(&producer.transact())
+        .find_map(|node| match node {
+            XmlOut::Text(text) => Some(text),
+            _ => None,
+        })
+        .unwrap();
+    let position = text.len(&producer.transact());
+    text.insert_with_attributes(
+        &mut producer.transact_mut(),
+        position,
+        " proposed",
+        document_suggestion_attributes(),
+    );
+    let suggestion = producer
+        .transact()
+        .encode_state_as_update_v1(&before_suggestion);
+    suggester
+        .dispatch(document_message_for(
+            "fixture-document",
+            "document",
+            727_272,
+            "update",
+            &STANDARD.encode(suggestion),
+        ))
+        .await
+        .unwrap();
+    assert!(suggester_outbound
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|message| message.event == "collaboration.ack"));
+    assert!(editor_outbound
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|message| message.event == "collaboration.document"));
+
+    let store_path = std::fs::read_dir(&config.data_dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| path.is_dir())
+        .unwrap();
+    let store = NativeOfficeCollaborationStore::open(store_path).unwrap();
+    let NativeOfficeCollaborationProjectedContent::Document { plain_text, .. } =
+        store.project().unwrap().content
+    else {
+        panic!("expected Document projection");
+    };
+    assert_eq!(plain_text, "Hello review world. proposed");
+    let suggestion_event = store
+        .events(NativeOfficeCollaborationEventsRequest {
+            after_sequence: Some(1),
+            limit: 1,
+        })
+        .unwrap()
+        .updates
+        .pop()
+        .unwrap();
+    assert_eq!(suggestion_event.actor_id, "suggester-3");
+    assert_eq!(
+        suggestion_event.mode,
+        NativeOfficeCollaborationMode::Suggest
+    );
+
+    let attacker = Doc::with_client_id(727_272);
+    attacker
+        .transact_mut()
+        .apply_update(Update::decode_v1(&store.synchronize(None).unwrap().update).unwrap())
+        .unwrap();
+    let before_attack = attacker.transact().state_vector();
+    let text = attacker
+        .get_or_insert_xml_fragment("a3s.office.document.content")
+        .successors(&attacker.transact())
+        .find_map(|node| match node {
+            XmlOut::Text(text) => Some(text),
+            _ => None,
+        })
+        .unwrap();
+    text.insert_with_attributes(&mut attacker.transact_mut(), 0, "FORGED ", Attrs::new());
+    let forged = attacker
+        .transact()
+        .encode_state_as_update_v1(&before_attack);
+    let before_rejection = store.inspect().unwrap().document_state_sha256;
+    suggester_outbound.lock().unwrap().clear();
+    let rejected = suggester
+        .dispatch(document_message_for(
+            "fixture-document",
+            "document",
+            727_272,
+            "update",
+            &STANDARD.encode(forged),
+        ))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(rejected.event, "collaboration.error");
+    assert_eq!(rejected.data["code"], "FORBIDDEN");
+    assert_eq!(
+        store.inspect().unwrap().document_state_sha256,
+        before_rejection
+    );
+
+    editor.close().await.unwrap();
+    suggester.close().await.unwrap();
+}
+
 async fn issue_ticket(app: &a3s_boot::BootApplication, actor_id: &str, mode: &str) -> String {
     issue_ticket_for(
         app,
@@ -419,6 +592,8 @@ fn document_bootstrap_update() -> Vec<u8> {
     document.get_or_insert_map("a3s.office.document.options");
     document.get_or_insert_map("a3s.office.document.comments");
     document.get_or_insert_array("a3s.office.document.comment-order");
+    document.get_or_insert_map("a3s.office.document.change-decisions");
+    document.get_or_insert_array("a3s.office.document.change-decision-order");
     document.get_or_insert_map("a3s.office.document.bibliography");
     document.get_or_insert_map("a3s.office.document.bibliography.sources");
     document.get_or_insert_array("a3s.office.document.bibliography.source-order");
@@ -449,6 +624,22 @@ fn document_bootstrap_update() -> Vec<u8> {
         .transact()
         .encode_state_as_update_v1(&StateVector::default());
     update
+}
+
+fn document_suggestion_attributes() -> Attrs {
+    Attrs::from([(
+        "documentChange".into(),
+        Any::Map(Arc::new(HashMap::from([
+            ("actorId".to_owned(), Any::String("suggester-3".into())),
+            ("author".to_owned(), Any::String("Ada Suggester".into())),
+            (
+                "date".to_owned(),
+                Any::String("2026-08-17T08:00:00.000Z".into()),
+            ),
+            ("id".to_owned(), Any::String("suggestion-server-1".into())),
+            ("kind".to_owned(), Any::String("insertion".into())),
+        ]))),
+    )])
 }
 
 fn ticket_body(actor_id: &str, mode: &str) -> Value {

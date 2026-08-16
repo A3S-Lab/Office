@@ -28,25 +28,34 @@ interface DocumentTableRowAtPosition {
 export const DOCUMENT_TABLE_ROW_ID_ATTRIBUTE = 'data-office-row-id';
 export const DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE = 'data-office-row-text-id';
 
-export const DocumentTableRowIdentity = Extension.create({
-  name: 'documentTableRowIdentity',
+interface DocumentTableRowIdentityOptions {
+  rotateTextId: () => boolean;
+}
 
-  addGlobalAttributes() {
-    return [
-      {
-        types: ['tableRow'],
-        attributes: {
-          rowId: identityAttribute(DOCUMENT_TABLE_ROW_ID_ATTRIBUTE),
-          rowTextId: identityAttribute(DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE),
+export const DocumentTableRowIdentity =
+  Extension.create<DocumentTableRowIdentityOptions>({
+    name: 'documentTableRowIdentity',
+
+    addOptions() {
+      return { rotateTextId: () => true };
+    },
+
+    addGlobalAttributes() {
+      return [
+        {
+          types: ['tableRow'],
+          attributes: {
+            rowId: identityAttribute(DOCUMENT_TABLE_ROW_ID_ATTRIBUTE),
+            rowTextId: identityAttribute(DOCUMENT_TABLE_ROW_TEXT_ID_ATTRIBUTE),
+          },
         },
-      },
-    ];
-  },
+      ];
+    },
 
-  addProseMirrorPlugins() {
-    return [createDocumentTableRowIdentityPlugin()];
-  },
-});
+    addProseMirrorPlugins() {
+      return [createDocumentTableRowIdentityPlugin(this.options.rotateTextId)];
+    },
+  });
 
 export function normalizeDocumentTableRowIdentity(
   source: WorkDocumentTableRowIdentitySource,
@@ -97,10 +106,15 @@ function identityAttribute(htmlName: string) {
   };
 }
 
-function createDocumentTableRowIdentityPlugin(): Plugin {
+function createDocumentTableRowIdentityPlugin(
+  rotateTextId: () => boolean,
+): Plugin {
   return new Plugin({
     view(view) {
-      const transaction = normalizeDocumentTableRowIdentities(view.state);
+      const transaction = normalizeDocumentTableRowIdentities(
+        view.state,
+        rotateTextId,
+      );
       if (transaction) {
         transaction.setMeta('addToHistory', false);
         view.dispatch(transaction);
@@ -113,6 +127,7 @@ function createDocumentTableRowIdentityPlugin(): Plugin {
       }
       return normalizeDocumentTableRowIdentities(
         newState,
+        rotateTextId,
         oldState,
         transactions,
       );
@@ -122,6 +137,7 @@ function createDocumentTableRowIdentityPlugin(): Plugin {
 
 function normalizeDocumentTableRowIdentities(
   state: EditorState,
+  rotateTextId: () => boolean,
   oldState?: EditorState,
   transactions: readonly Transaction[] = [],
 ): Transaction | null {
@@ -134,7 +150,7 @@ function normalizeDocumentTableRowIdentities(
     ? retainedDocumentTableRowPositions(oldState, state, transactions)
     : new Set<number>();
   const editedPositions =
-    oldState && !transactions.some(isHistoryTransaction)
+    oldState && rotateTextId() && !transactions.some(isHistoryTransaction)
       ? editedDocumentTableRowPositions(oldState, state, transactions)
       : new Set<number>();
   const ordered = [

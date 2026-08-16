@@ -944,6 +944,176 @@ test('undoes a local text edit without removing a remote comment', async () => {
   secondBinding.destroy();
 });
 
+test('allows actor-attributed suggestion-mode text revisions only', () => {
+  const document = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-suggestion-permissions',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, {
+    ...documentFixture(),
+    trackChanges: false,
+  });
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada Reviewer' },
+    artifactId: 'document-suggestion-permissions',
+    document,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(suggester, {
+    workExtensions: {
+      createChange: () => ({
+        actorId: 'ada',
+        author: 'Ada Reviewer',
+        date: '2026-08-17T08:00:00.000Z',
+        id: 'suggestion-ada-1',
+      }),
+      isTracking: () => true,
+    },
+  });
+  const editor = new Editor({ extensions: binding.extensions });
+  const insertionPoint = lastDocumentTextPosition(editor);
+
+  expect(
+    editor.commands.replaceDocumentTextWithTrackedChange(
+      insertionPoint,
+      insertionPoint,
+      ' proposed',
+    ),
+  ).toBe(true);
+  expect(editor.getHTML()).toContain('data-change-actor-id="ada"');
+  expect(editor.getHTML()).toContain('data-change-id="suggestion-ada-1"');
+  expect(editor.getHTML()).toContain('> proposed</ins>');
+
+  const beforeForgedEdit = editor.getHTML();
+  editor
+    .chain()
+    .setTextSelection(2)
+    .insertContent('FORGED CANONICAL EDIT')
+    .run();
+  expect(editor.getHTML()).toBe(beforeForgedEdit);
+  expect(editor.commands.acceptDocumentChange('suggestion-ada-1')).toBe(true);
+  expect(editor.getHTML()).toBe(beforeForgedEdit);
+
+  const before = binding.content();
+  expect(() =>
+    binding.updateSidecars(before, { ...before, trackChanges: true }),
+  ).toThrow(/suggest.*mode|canonical content/i);
+  expect(() =>
+    binding.decideChanges(editor, ['suggestion-ada-1'], 'accept'),
+  ).toThrow(/suggest.*mode|decision/i);
+
+  editor.destroy();
+  binding.destroy();
+});
+
+test('converges final edit-mode suggestion decisions and clears stale suggester undo', async () => {
+  const suggestionDocument = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-suggestion-decisions',
+    document: suggestionDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    trackChanges: false,
+  });
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada Reviewer' },
+    artifactId: 'document-suggestion-decisions',
+    document: suggestionDocument,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const suggestionBinding = createOfficeDocumentCollaborationBinding(
+    suggester,
+    {
+      workExtensions: {
+        createChange: () => ({
+          actorId: 'ada',
+          author: 'Ada Reviewer',
+          date: '2026-08-17T08:10:00.000Z',
+          id: 'suggestion-final-1',
+        }),
+        isTracking: () => true,
+      },
+    },
+  );
+  const suggestionEditor = new Editor({
+    extensions: suggestionBinding.extensions,
+  });
+  const insertionPoint = lastDocumentTextPosition(suggestionEditor);
+  suggestionEditor.commands.replaceDocumentTextWithTrackedChange(
+    insertionPoint,
+    insertionPoint,
+    ' accepted proposal',
+  );
+  expect(suggestionBinding.canUndo()).toBe(true);
+
+  const editorDocument = cloneDocument(suggestionDocument);
+  const editorSession = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace Editor' },
+    artifactId: 'document-suggestion-decisions',
+    document: editorDocument,
+    kind: 'document',
+    mode: 'edit',
+  });
+  const editorBinding = createOfficeDocumentCollaborationBinding(editorSession);
+  const editor = new Editor({ extensions: editorBinding.extensions });
+
+  expect(
+    editorBinding.decideChanges(editor, ['suggestion-final-1'], 'accept', {
+      decidedAt: '2026-08-17T08:11:00.000Z',
+    }),
+  ).toBe(true);
+  expect(editor.getText()).toContain('accepted proposal');
+  expect(editor.getHTML()).not.toContain('suggestion-final-1');
+  expect(editorBinding.content().changeDecisions).toEqual([
+    {
+      id: 'insertion:suggestion-final-1',
+      changeId: 'suggestion-final-1',
+      changeKind: 'insertion',
+      suggestedByActorId: 'ada',
+      suggestedBy: 'Ada Reviewer',
+      suggestedAt: '2026-08-17T08:10:00.000Z',
+      text: ' accepted proposal',
+      decision: 'accept',
+      decidedByActorId: 'grace',
+      decidedBy: 'Grace Editor',
+      decidedAt: '2026-08-17T08:11:00.000Z',
+    },
+  ]);
+  expect(editorBinding.canUndo()).toBe(false);
+
+  exchangeUpdates(suggestionDocument, editorDocument);
+  await flushMicrotasks();
+  expect(suggestionEditor.getText()).toContain('accepted proposal');
+  expect(suggestionEditor.getHTML()).not.toContain('suggestion-final-1');
+  expect(suggestionBinding.content().changeDecisions).toEqual(
+    editorBinding.content().changeDecisions,
+  );
+  expect(suggestionBinding.canUndo()).toBe(false);
+  expect(suggestionBinding.undo()).toBe(false);
+
+  const decision = editorBinding.content();
+  expect(() =>
+    editorBinding.updateSidecars(decision, {
+      ...decision,
+      changeDecisions: decision.changeDecisions?.map((record) => ({
+        ...record,
+        decision: 'reject',
+      })),
+    }),
+  ).toThrow(/decision.*immutable|cannot rewrite/i);
+
+  suggestionEditor.destroy();
+  editor.destroy();
+  suggestionBinding.destroy();
+  editorBinding.destroy();
+});
+
 test('synchronizes TipTap edits and only undoes the local client', async () => {
   const firstDocument = new Y.Doc();
   const first = createOfficeCollaborationSession({
@@ -1165,6 +1335,14 @@ function documentFixture(): DocumentContent {
       ],
     },
   };
+}
+
+function lastDocumentTextPosition(editor: Editor): number {
+  let position = 1;
+  editor.state.doc.descendants((node, offset) => {
+    if (node.isText) position = offset + node.nodeSize;
+  });
+  return position;
 }
 
 function exchangeUpdates(first: Y.Doc, second: Y.Doc): void {

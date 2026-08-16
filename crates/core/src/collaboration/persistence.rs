@@ -761,7 +761,9 @@ fn validate_operation(
                 && operation.kind == NativeOfficeCollaborationOperationKind::Synchronize
                 && matches!(
                     operation.mode,
-                    NativeOfficeCollaborationMode::Edit | NativeOfficeCollaborationMode::Comment
+                    NativeOfficeCollaborationMode::Edit
+                        | NativeOfficeCollaborationMode::Comment
+                        | NativeOfficeCollaborationMode::Suggest
                 )
                 && operation.origin.as_ref().is_none_or(|origin| {
                     origin.actor_id.as_deref() == Some(operation.actor_id.as_str())

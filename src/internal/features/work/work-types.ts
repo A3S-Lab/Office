@@ -161,8 +161,31 @@ export interface WorkDocumentContent {
   pageGeometry?: WorkDocumentPageGeometry;
   paperSource?: WorkDocumentPaperSource;
   trackChanges?: boolean;
+  changeDecisions?: WorkDocumentChangeDecision[];
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;
+}
+
+export type WorkDocumentChangeKind = 'insertion' | 'deletion';
+
+export type WorkDocumentChangeDecisionAction = 'accept' | 'reject';
+
+/**
+ * Immutable audit record created when an editor accepts or rejects one
+ * collaborative tracked change.
+ */
+export interface WorkDocumentChangeDecision {
+  id: string;
+  changeId: string;
+  changeKind: WorkDocumentChangeKind;
+  suggestedByActorId?: string;
+  suggestedBy: string;
+  suggestedAt: string;
+  text: string;
+  decision: WorkDocumentChangeDecisionAction;
+  decidedByActorId?: string;
+  decidedBy: string;
+  decidedAt: string;
 }
 
 export interface WorkMarkdownContent {

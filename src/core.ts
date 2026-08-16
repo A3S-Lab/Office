@@ -57,6 +57,7 @@ export type {
   WorkOfficeDocumentCollaborationBinding as OfficeDocumentCollaborationBinding,
   WorkOfficeDocumentCollaborationBindingOptions as OfficeDocumentCollaborationBindingOptions,
   WorkOfficeDocumentCollaborationChange as OfficeDocumentCollaborationChange,
+  WorkOfficeDocumentChangeDecisionOptions as OfficeDocumentChangeDecisionOptions,
 } from './internal/collaboration/office-document-collaboration';
 export {
   createWorkOfficeDocumentCollaborationBinding as createOfficeDocumentCollaborationBinding,

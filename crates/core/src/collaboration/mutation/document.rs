@@ -9,6 +9,7 @@ pub(in crate::collaboration) mod comment;
 pub(in crate::collaboration) mod identity;
 mod paragraph;
 mod structure;
+pub(in crate::collaboration) mod suggestion;
 mod text;
 
 pub(super) fn validate_document_mutation(

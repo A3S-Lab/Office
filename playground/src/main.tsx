@@ -47,6 +47,9 @@ function Playground() {
   const [activeArtifactId, setActiveArtifactId] = useState<string | null>(null);
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
+  const [suggestionDemoArtifactId, setSuggestionDemoArtifactId] = useState<
+    string | null
+  >(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantWidth, setAssistantWidth] = useState(readAssistantWidth);
   const [lastAgentRequest, setLastAgentRequest] =
@@ -88,6 +91,7 @@ function Playground() {
 
   const openArtifact = (artifactId: string) => {
     setCollaborationDemoArtifactId(null);
+    setSuggestionDemoArtifactId(null);
     activateArtifact(artifactId);
   };
 
@@ -113,13 +117,27 @@ function Playground() {
       return;
     }
     setCollaborationDemoArtifactId(artifact.id);
+    setSuggestionDemoArtifactId(null);
     activateArtifact(artifact.id);
     showNotice('已以评论权限加入多人实时协作', 'success');
+  };
+
+  const openSuggestionDemo = () => {
+    const artifact = artifacts.find(({ kind }) => kind === 'document');
+    if (!artifact) {
+      showNotice('请先新建一个文字文档，再打开建议协作演示。', 'danger');
+      return;
+    }
+    setCollaborationDemoArtifactId(null);
+    setSuggestionDemoArtifactId(artifact.id);
+    activateArtifact(artifact.id);
+    showNotice('已打开建议者与编辑者的实时协作', 'success');
   };
 
   const newArtifact = (templateId: string) => {
     const artifact = createArtifact(templateId);
     setCollaborationDemoArtifactId(null);
+    setSuggestionDemoArtifactId(null);
     setArtifacts((current) => [artifact, ...current]);
     setActiveArtifactId(artifact.id);
     setLastAgentRequest(null);
@@ -146,6 +164,7 @@ function Playground() {
       const imported = await importOfficeFile(file);
       const opened = { ...imported, lastOpenedAt: Date.now() };
       setCollaborationDemoArtifactId(null);
+      setSuggestionDemoArtifactId(null);
       setArtifacts((current) => [
         opened,
         ...current.filter((artifact) => artifact.id !== opened.id),
@@ -234,6 +253,7 @@ function Playground() {
               collaborationDemo={
                 collaborationDemoArtifactId === activeArtifact.id
               }
+              suggestionDemo={suggestionDemoArtifactId === activeArtifact.id}
               assistantModal={assistantModal}
               assistantOpen={assistantOpen}
               assistantWidth={assistantWidth}
@@ -250,6 +270,7 @@ function Playground() {
               onBack={() => {
                 setActiveArtifactId(null);
                 setCollaborationDemoArtifactId(null);
+                setSuggestionDemoArtifactId(null);
                 setAssistantOpen(false);
                 setLastAgentRequest(null);
                 if (window.innerWidth >= 840) setSidebarOpen(true);
@@ -292,6 +313,7 @@ function Playground() {
             onImport={() => fileInput.current?.click()}
             onOpen={openArtifact}
             onOpenCollaborationDemo={openCollaborationDemo}
+            onOpenSuggestionDemo={openSuggestionDemo}
             onOpenPdf={() => pdfInput.current?.click()}
             onOpenSidebar={() => setSidebarOpen(true)}
           />

@@ -29,6 +29,7 @@ use document::{
     new_replica_document, replay_update_sequence, state_vector_sha256, validate_and_apply_update,
 };
 use mutation::document::comment::validate_authorized_comment_update;
+use mutation::document::suggestion::validate_authorized_suggestion_update;
 use mutation::{apply_mutation, validate_mutation_contract};
 use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
@@ -545,8 +546,8 @@ impl NativeOfficeCollaborationStore {
 
     /// Apply a remote update after a host has authenticated its participant.
     /// Unlike `apply`, this path treats the supplied mode as an authorization
-    /// boundary. Comment updates are checked against a candidate Document
-    /// state while the durable store lock remains held.
+    /// boundary. Comment and suggestion updates are checked against a
+    /// candidate Document state while the durable store lock remains held.
     pub(super) fn apply_authorized(
         &self,
         request: NativeOfficeCollaborationApplyRequest,
@@ -564,10 +565,7 @@ impl NativeOfficeCollaborationStore {
                 "The durable apply identity does not match the host-authenticated participant.",
             ));
         }
-        if matches!(
-            authorization.mode,
-            NativeOfficeCollaborationMode::View | NativeOfficeCollaborationMode::Suggest
-        ) {
+        if authorization.mode == NativeOfficeCollaborationMode::View {
             return Err(collaboration_error(
                 "office.collaboration.permission_denied",
                 format!(
@@ -650,8 +648,25 @@ impl NativeOfficeCollaborationStore {
                 )?;
                 loaded.doc = candidate;
             }
-            NativeOfficeCollaborationMode::View | NativeOfficeCollaborationMode::Suggest => {
-                unreachable!("read-only modes returned before the store lock")
+            NativeOfficeCollaborationMode::Suggest => {
+                let current = loaded
+                    .doc
+                    .transact()
+                    .encode_state_as_update_v1(&StateVector::default());
+                let candidate = replay_update_sequence(
+                    [current.as_slice(), request.update.as_slice()],
+                    &loaded.manifest,
+                )?;
+                validate_authorized_suggestion_update(
+                    &loaded.doc,
+                    &candidate,
+                    &effective_manifest,
+                    &actor_name,
+                )?;
+                loaded.doc = candidate;
+            }
+            NativeOfficeCollaborationMode::View => {
+                unreachable!("view mode returned before the store lock")
             }
         }
         self.commit_integrated_update(

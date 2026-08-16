@@ -7,6 +7,7 @@ import {
   ArrowRight,
   FilePlus2,
   PanelLeftOpen,
+  Pencil,
   Search,
   ServerCog,
   Upload,
@@ -36,6 +37,7 @@ export function WorkspaceHome({
   onOpen,
   onImport,
   onOpenCollaborationDemo,
+  onOpenSuggestionDemo,
   onOpenPdf,
 }: {
   artifacts: OfficeArtifact[];
@@ -46,6 +48,7 @@ export function WorkspaceHome({
   onOpen: (artifactId: string) => void;
   onImport: () => void;
   onOpenCollaborationDemo: () => void;
+  onOpenSuggestionDemo: () => void;
   onOpenPdf: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -117,11 +120,11 @@ export function WorkspaceHome({
         <div className="playground-collaboration-copy">
           <h2 id="playground-collaboration-title">多人实时协作</h2>
           <p>
-            进入评论权限会话，选择正文即可发起持久评论、回复与解决线程；同时查看
-            两位参与者、远端选区和在线状态。
+            体验评论线程，或在建议者与编辑者两个实时视图中提交、接受和审计文字
+            建议；同时查看参与者、远端选区和在线状态。
           </p>
           <span className="playground-collaboration-backend-note">
-            生产后端示例基于 A3S Boot，并在服务端校验每次评论更新。
+            生产后端示例基于 A3S Boot，并在持久化前校验评论与建议权限。
           </span>
         </div>
         <div className="playground-collaboration-actions">
@@ -132,6 +135,14 @@ export function WorkspaceHome({
           >
             <UsersRound size={15} />
             体验实时评论
+          </button>
+          <button
+            type="button"
+            className="playground-secondary-button"
+            onClick={onOpenSuggestionDemo}
+          >
+            <Pencil size={15} />
+            体验建议协作
           </button>
           <a
             className="playground-secondary-button"

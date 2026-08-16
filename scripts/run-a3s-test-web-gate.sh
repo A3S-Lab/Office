@@ -21,34 +21,49 @@ require_executable() {
 }
 
 a3s_test="${A3S_TEST_BIN:-$(require_executable a3s-test)}"
-agent_browser="${A3S_TEST_AGENT_BROWSER:-$(require_executable agent-browser)}"
+browser_driver="${A3S_TEST_BROWSER_DRIVER:-standalone}"
+browser_arguments=(--browser-driver "$browser_driver")
 require_executable bun >/dev/null
 require_executable curl >/dev/null
 require_executable jq >/dev/null
-require_executable node >/dev/null
 
 if [[ ! -x "$a3s_test" ]]; then
   echo "A3S Test executable is missing: $a3s_test" >&2
   exit 1
 fi
 
-if [[ ! -x "$agent_browser" ]]; then
-  echo "Standalone browser executable is missing: $agent_browser" >&2
-  exit 1
-fi
+case "$browser_driver" in
+  a3s)
+    ;;
+  standalone)
+    agent_browser="${A3S_TEST_AGENT_BROWSER:-$(require_executable agent-browser)}"
+    require_executable node >/dev/null
 
-if [[ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ]]; then
-  AGENT_BROWSER_EXECUTABLE_PATH="$(
-    node -e \
-      "const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())"
-  )"
-  export AGENT_BROWSER_EXECUTABLE_PATH
-fi
+    if [[ ! -x "$agent_browser" ]]; then
+      echo "Standalone browser executable is missing: $agent_browser" >&2
+      exit 1
+    fi
 
-if [[ ! -x "$AGENT_BROWSER_EXECUTABLE_PATH" ]]; then
-  echo "Playwright Chromium executable is missing: $AGENT_BROWSER_EXECUTABLE_PATH" >&2
-  exit 1
-fi
+    if [[ -z "${AGENT_BROWSER_EXECUTABLE_PATH:-}" ]]; then
+      AGENT_BROWSER_EXECUTABLE_PATH="$(
+        node -e \
+          "const { chromium } = require('playwright'); process.stdout.write(chromium.executablePath())"
+      )"
+      export AGENT_BROWSER_EXECUTABLE_PATH
+    fi
+
+    if [[ ! -x "$AGENT_BROWSER_EXECUTABLE_PATH" ]]; then
+      echo "Playwright Chromium executable is missing: $AGENT_BROWSER_EXECUTABLE_PATH" >&2
+      exit 1
+    fi
+
+    browser_arguments+=(--browser-executable "$agent_browser")
+    ;;
+  *)
+    echo "Unsupported A3S Test browser driver: $browser_driver" >&2
+    exit 1
+    ;;
+esac
 
 cleanup() {
   if [[ -n "$preview_pid" ]] && kill -0 "$preview_pid" 2>/dev/null; then
@@ -64,6 +79,7 @@ trap 'exit 143' TERM
 suites=(
   "tests/e2e/office-docs-navigation.acl"
   "tests/e2e/collaboration-playground-entry.acl"
+  "tests/e2e/collaboration-document-suggestions.acl"
 )
 
 for suite in "${suites[@]}"; do
@@ -114,8 +130,11 @@ run_suite() {
 
   run_status=0
   "$a3s_test" run "$suite" \
-    --browser-driver standalone \
-    --browser-executable "$agent_browser" \
+    "${browser_arguments[@]}" \
+    --command-timeout-ms 120000 \
+    --max-parallel-scenarios 1 \
+    --infrastructure-retries 2 \
+    --retry-backoff-ms 500 \
     --json >"$result_path" || run_status=$?
 
   jq '{run_id, suite, status, scenarios: [.scenarios[] | {id, status}]}' \

@@ -763,6 +763,68 @@
   white-space: nowrap;
 }
 
+.playground-suggestion-demo {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding-top: 42px;
+  overflow: hidden;
+  background: var(--a3s-line);
+}
+
+.playground-suggestion-peer {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--a3s-panel);
+}
+
+.playground-suggestion-peer > header {
+  display: flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--a3s-line);
+  background: var(--a3s-bg);
+}
+
+.playground-suggestion-peer > header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.playground-suggestion-peer > header span,
+.playground-suggestion-peer > header small {
+  color: var(--a3s-faint);
+  font-size: 10px;
+}
+
+.playground-suggestion-peer > header strong {
+  color: var(--a3s-ink);
+  font-size: 12px;
+}
+
+.playground-suggestion-peer > .a3s-office {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+}
+
+.playground-suggestion-peer .work-office-ribbon-tabs-row,
+.playground-suggestion-peer .work-office-preview-bar {
+  padding-right: 0;
+  padding-left: 0;
+}
+
 .playground-collaboration-fixture-status[data-state="deleted"] {
   border-color: var(--a3s-line);
   background: var(--a3s-panel-soft);
@@ -1314,6 +1376,25 @@
 
   .work-editor-shell.pdf .work-pdf-zoom-controls {
     display: flex;
+  }
+}
+
+@media (max-width: 760px) {
+  .playground-suggestion-demo {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .playground-suggestion-peer {
+    min-height: 690px;
+    flex: 0 0 auto;
+  }
+
+  .playground-suggestion-peer > header {
+    position: sticky;
+    z-index: 2;
+    top: 0;
   }
 }
 

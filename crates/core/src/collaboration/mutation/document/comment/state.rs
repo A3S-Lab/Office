@@ -494,7 +494,10 @@ fn read_claims<T: ReadTxn>(transaction: &T, claims: &ArrayRef) -> UseResult<Docu
             .get("kind")
             .and_then(JsonValue::as_str)
             .ok_or_else(|| invalid_shared_comments("A Document record claim kind is invalid."))?;
-        if !matches!(kind, "bibliography-source" | "comment" | "comment-reply") {
+        if !matches!(
+            kind,
+            "bibliography-source" | "change-decision" | "comment" | "comment-reply"
+        ) {
             return Err(invalid_shared_comments(
                 "A Document record claim kind is unsupported.",
             ));

@@ -297,6 +297,47 @@ test('preserves Document comment-mode review behavior through the custom element
   sharedDocument.destroy();
 });
 
+test('preserves Document suggestion-mode behavior through the custom element', async () => {
+  defineA3SOfficeElements();
+  const content: DocumentContent = {
+    type: 'document',
+    html: '<p>Shared suggestion surface</p>',
+    pageSize: 'a4',
+  };
+  const sharedDocument = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'element-suggestion-document',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(writable, content);
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'element-suggester', name: 'Element suggester' },
+    artifactId: 'element-suggestion-document',
+    document: sharedDocument,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const element = document.createElement(
+    A3S_OFFICE_ELEMENT_NAMES.document,
+  ) as A3SDocumentEditorElement;
+  element.collaboration = suggester;
+  element.content = content;
+  document.body.append(element);
+
+  await waitFor(() => {
+    expect(element.querySelector('[aria-label="文档正文"]')).not.toBeNull();
+  });
+  const editor = element.querySelector('[aria-label="文档正文"]');
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'false');
+  expect(element.querySelector('[aria-label="建议模式"]')).toBeDisabled();
+  expect(element.querySelector('[aria-label="添加批注"]')).toBeNull();
+
+  element.remove();
+  sharedDocument.destroy();
+});
+
 test('passes a synchronized Markdown session through the custom element property', async () => {
   defineA3SOfficeElements();
   const session = createOfficeCollaborationSession({

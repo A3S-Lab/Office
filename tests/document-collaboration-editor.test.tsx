@@ -216,6 +216,118 @@ test('lets comment-mode reviewers create actor-attributed threads without edit c
   });
 });
 
+test('mounts suggestion mode as an attributed tracked-text surface without decision controls', async () => {
+  const document = new Y.Doc();
+  const writable = createOfficeCollaborationSession({
+    artifactId: 'document-editor-suggest',
+    document,
+    kind: 'document',
+  });
+  const initial: DocumentContent = {
+    ...documentFixture(),
+    html: '<p>Shared <ins data-document-change="true" data-change-kind="insertion" data-change-id="existing-suggestion" data-change-actor-id="grace" data-change-author="Grace" data-change-date="2026-08-17T08:00:00.000Z">proposal</ins></p>',
+    trackChanges: false,
+  };
+  initializeOfficeDocumentCollaboration(writable, initial);
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-editor-suggest',
+    document,
+    kind: 'document',
+    mode: 'suggest',
+  });
+
+  render(
+    <DocumentEditor
+      collaboration={suggester}
+      content={initial}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  const editor = await screen.findByRole('textbox', { name: '文档正文' });
+  expect(editor).toHaveAttribute('contenteditable', 'true');
+  expect(editor).toHaveAttribute('aria-readonly', 'false');
+  expect(screen.queryByRole('tab', { name: '开始' })).not.toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: '审阅' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: '视图' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '建议模式' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '查看修订（1）' })).toBeEnabled();
+  expect(
+    screen.queryByRole('button', { name: '添加批注' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '接受修订' }),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: '查看修订（1）' }));
+  await waitFor(() => expect(screen.getAllByText('proposal')).toHaveLength(2));
+  expect(screen.getByText(/Grace/)).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '接受修订 1' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: '拒绝修订 1' }),
+  ).not.toBeInTheDocument();
+});
+
+test('records an attributable final audit when an edit peer accepts a suggestion', async () => {
+  const document = new Y.Doc();
+  const editorSession = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace Editor' },
+    artifactId: 'document-editor-suggestion-decision',
+    document,
+    kind: 'document',
+  });
+  const initial: DocumentContent = {
+    ...documentFixture(),
+    html: '<p>Shared <ins data-document-change="true" data-change-kind="insertion" data-change-id="suggestion-to-accept" data-change-actor-id="ada" data-change-author="Ada Reviewer" data-change-date="2026-08-17T08:00:00.000Z">proposal</ins></p>',
+  };
+  initializeOfficeDocumentCollaboration(editorSession, initial);
+
+  render(
+    <DocumentEditor
+      collaboration={editorSession}
+      content={initial}
+      onChange={() => undefined}
+      theme="light"
+    />,
+  );
+
+  await screen.findByRole('textbox', { name: '文档正文' });
+  fireEvent.click(screen.getByRole('tab', { name: '审阅' }));
+  fireEvent.click(await screen.findByRole('button', { name: '查看修订（1）' }));
+  fireEvent.click(await screen.findByRole('button', { name: '接受修订 1' }));
+
+  await waitFor(() => {
+    expect(
+      readOfficeDocumentCollaboration(editorSession).changeDecisions,
+    ).toEqual([
+      expect.objectContaining({
+        id: 'insertion:suggestion-to-accept',
+        changeId: 'suggestion-to-accept',
+        changeKind: 'insertion',
+        suggestedByActorId: 'ada',
+        suggestedBy: 'Ada Reviewer',
+        decision: 'accept',
+        decidedByActorId: 'grace',
+        decidedBy: 'Grace Editor',
+        text: 'proposal',
+      }),
+    ]);
+  });
+  expect(
+    screen.getByRole('region', { name: '修订决定记录' }),
+  ).toHaveTextContent('已接受');
+  expect(
+    screen.getByRole('region', { name: '修订决定记录' }),
+  ).toHaveTextContent('Ada Reviewer → Grace Editor');
+  expect(screen.getByRole('textbox', { name: '文档正文' })).toHaveTextContent(
+    'Shared proposal',
+  );
+});
+
 function documentFixture(): DocumentContent {
   const artifact = createArtifact('blank-document');
   if (artifact.content.type !== 'document') {

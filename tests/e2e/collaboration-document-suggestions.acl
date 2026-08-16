@@ -1,0 +1,231 @@
+suite "collaboration-document-suggestions" {
+    version = 1
+
+    scenario "desktop-suggestion-decision" {
+        name = "Create, synchronize, accept, and audit a Document suggestion"
+        surface = "web"
+        timeout_ms = 180000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-suggestion-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+        }
+
+        click "open-document" {
+            target = text("新项目方案", true)
+        }
+
+        wait "suggestion-demo-is-ready" {
+            visible = css("[data-testid='collaboration-suggestion-mode']")
+        }
+
+        expect "two-participant-mode-is-explicit" {
+            text = "建议协作 · 2 人在线"
+        }
+
+        expect "suggester-is-attributed" {
+            visible = css(".playground-suggestion-peer.suggester[aria-label='建议者 林澄']")
+        }
+
+        expect "editor-is-attributed" {
+            visible = css(".playground-suggestion-peer.editor[aria-label='编辑者 周宁']")
+        }
+
+        wait "suggester-editor-is-ready" {
+            visible = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+        }
+
+        expect "suggester-has-no-decision-controls" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(button[aria-label^='接受修订'])):not(:has(button[aria-label^='拒绝修订']))")
+        }
+
+        focus "focus-suggester-document" {
+            target = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+        }
+
+        press "move-to-document-start" {
+            key = "Control+Home"
+        }
+
+        type "create-suggestion" {
+            target = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+            value = "建议补充验收标准 "
+        }
+
+        wait "suggestion-synchronized-to-editor" {
+            visible = css(".playground-suggestion-peer.editor ins[data-document-change='true'][data-change-author='林澄']")
+        }
+
+        wait "suggester-retains-attributed-suggestion" {
+            visible = css(".playground-suggestion-peer.suggester ins[data-document-change='true'][data-change-author='林澄']")
+        }
+
+        expect "pending-decision-is-explicit" {
+            text = "有待处理建议"
+        }
+
+        screenshot "pending-suggestion" {
+            path = "screenshots/document-suggestion-pending.png"
+        }
+
+        focus "focus-editor-review-tab" {
+            target = css(".playground-suggestion-peer.editor [role='tab'][data-tab-id='review']")
+        }
+
+        press "open-editor-review-tab" {
+            key = "Enter"
+        }
+
+        wait "editor-review-toolbar-is-ready" {
+            visible = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
+        click "open-editor-changes" {
+            target = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
+        wait "suggestion-decision-is-ready" {
+            visible = css(".playground-suggestion-peer.editor button[aria-label='接受修订 1']")
+        }
+
+        click "accept-suggestion" {
+            target = css(".playground-suggestion-peer.editor button[aria-label='接受修订 1']")
+        }
+
+        expect "decision-count-is-visible" {
+            text = "已记录 1 项决定"
+        }
+
+        wait "accepted-audit-record-is-visible" {
+            visible = css(".playground-suggestion-peer.editor [data-document-change-decision='accept']")
+        }
+
+        expect "accepted-state-is-visible" {
+            text = "已接受"
+        }
+
+        expect "decision-attribution-is-visible" {
+            text = "林澄 → 周宁"
+        }
+
+        expect "editor-converged-without-pending-change" {
+            visible = css(".playground-suggestion-peer.editor:not(:has(ins[data-document-change])):not(:has(del[data-document-change]))")
+        }
+
+        expect "suggester-converged-without-pending-change" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(ins[data-document-change])):not(:has(del[data-document-change]))")
+        }
+
+        expect "suggester-still-has-no-decision-controls" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(button[aria-label^='接受修订'])):not(:has(button[aria-label^='拒绝修订']))")
+        }
+
+        focus "settle-final-focus" {
+            target = css("input[aria-label='文件名']")
+        }
+
+        accessibility "accepted-suggestion-accessibility" {
+            path = "evidence/document-suggestion-accepted.json"
+            interactive = false
+        }
+
+        console "desktop-console" {
+            path = "diagnostics/document-suggestion-desktop-console.json"
+            clear = false
+        }
+
+        page_errors "desktop-errors" {
+            path = "diagnostics/document-suggestion-desktop-errors.json"
+            clear = false
+        }
+    }
+
+    scenario "compact-suggestion-permissions" {
+        name = "Keep suggestion collaboration and decision permissions usable on a phone"
+        surface = "web"
+        timeout_ms = 180000
+
+        viewport "phone" {
+            width = 390
+            height = 844
+            scale = 1
+        }
+
+        navigate "open-compact-suggestion-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+        }
+
+        click "open-compact-document" {
+            target = text("新项目方案", true)
+        }
+
+        wait "compact-suggestion-demo-is-ready" {
+            visible = css(".playground-suggestion-demo[aria-label='双人建议协作']")
+        }
+
+        wait "compact-suggester-is-ready" {
+            visible = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+        }
+
+        wait "compact-editor-is-ready" {
+            visible = css(".playground-suggestion-peer.editor .ProseMirror[contenteditable='true']")
+        }
+
+        expect "compact-suggester-has-no-decision-controls" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(button[aria-label^='接受修订'])):not(:has(button[aria-label^='拒绝修订']))")
+        }
+
+        screenshot "compact-suggestion-peers" {
+            path = "screenshots/document-suggestion-compact.png"
+        }
+
+        focus "focus-compact-suggester-document" {
+            target = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+        }
+
+        press "move-compact-document-to-start" {
+            key = "Control+Home"
+        }
+
+        type "create-compact-suggestion" {
+            target = css(".playground-suggestion-peer.suggester .ProseMirror[contenteditable='true']")
+            value = "移动端建议 "
+        }
+
+        wait "compact-suggestion-synchronized" {
+            visible = css(".playground-suggestion-peer.editor ins[data-document-change='true'][data-change-author='林澄']")
+        }
+
+        click "open-compact-editor-review-tab" {
+            target = css(".playground-suggestion-peer.editor [role='tab'][data-tab-id='review']")
+        }
+
+        wait "compact-editor-decision-control-is-reachable" {
+            visible = css(".playground-suggestion-peer.editor button[aria-label='接受修订']")
+        }
+
+        expect "compact-suggester-remains-restricted" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(button[aria-label^='接受修订'])):not(:has(button[aria-label^='拒绝修订']))")
+        }
+
+        accessibility "compact-suggestion-accessibility" {
+            path = "evidence/document-suggestion-compact.json"
+            interactive = false
+        }
+
+        console "compact-console" {
+            path = "diagnostics/document-suggestion-compact-console.json"
+            clear = false
+        }
+
+        page_errors "compact-errors" {
+            path = "diagnostics/document-suggestion-compact-errors.json"
+            clear = false
+        }
+    }
+}

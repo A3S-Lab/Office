@@ -46,6 +46,9 @@ workflows, and a separate Rust automation plane.
   permissions, collaboration, and model providers.
 - **Collaborate across every editor** with shared Yjs/Yrs content, Awareness
   participants and remote locations, plus browser, CLI, MCP, and A3S Code peers.
+  Document reviewers can submit attributed insertions, deletions, and
+  replacements without directly changing canonical text; editors accept or
+  reject each proposal with an immutable shared decision record.
 - **Automate deterministically** through the native CLI, standard MCP server,
   or packaged Office Skill.
 
@@ -162,7 +165,15 @@ bindings, local undo, validated presence, and conflict-local typed mutations.
 An authenticated Document `comment` session can select text, create a durable
 thread, reply, resolve or reopen it, and delete only review records owned by
 its actor while canonical content remains read-only. The server independently
-validates that review-only boundary before persistence and broadcast.
+validates that review-only boundary before persistence and broadcast. An
+authenticated Document `suggest` session can submit attributed insertions,
+deletions, and replacements while canonical text, structure, formatting,
+options, comments, and other actors' suggestions remain protected. An `edit`
+participant accepts or rejects a proposal and appends the final actor-attributed
+decision to the immutable `document.change-decisions` audit trail. The A3S Boot
+service validates both comment and suggestion semantics under the durable room
+lock before it persists or broadcasts caller-supplied Yjs bytes. `suggest` on
+non-Document formats remains receive-only.
 See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
 for React, Vue, Web Component, reconnect, security, and native-agent setup.
 The repository also ships a runnable
@@ -1258,6 +1269,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/docs/0.8.0/)
 - [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/docs/0.7.3/)
 - [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/docs/0.7.2/)
 - [A3S Office 0.7.1 documentation](https://a3s-lab.github.io/Office/docs/0.7.1/)

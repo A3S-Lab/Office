@@ -133,7 +133,36 @@ impl TicketClaims {
         matches!(
             self.mode,
             NativeOfficeCollaborationMode::Edit | NativeOfficeCollaborationMode::Comment
-        )
+        ) || (self.mode == NativeOfficeCollaborationMode::Suggest
+            && self.artifact_kind == NativeOfficeCollaborationArtifactKind::Document)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suggest_publish_permission_is_limited_to_document_artifacts() {
+        let mut claims = TicketClaims {
+            ticket_version: 1,
+            artifact_id: "fixture-document".to_owned(),
+            artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
+            namespace: "a3s.office".to_owned(),
+            actor_id: "reviewer-1".to_owned(),
+            actor_name: "Ada Reviewer".to_owned(),
+            actor_kind: NativeOfficeCollaborationActorKind::Human,
+            mode: NativeOfficeCollaborationMode::Suggest,
+            issued_at: 1,
+            expires_at: 2,
+        };
+        assert!(claims.can_publish_document_updates());
+
+        claims.artifact_kind = NativeOfficeCollaborationArtifactKind::Markdown;
+        assert!(!claims.can_publish_document_updates());
+
+        claims.mode = NativeOfficeCollaborationMode::Edit;
+        assert!(claims.can_publish_document_updates());
     }
 }
 

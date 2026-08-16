@@ -166,10 +166,14 @@ type DocumentTaskPane =
   | 'layout'
   | 'navigation';
 
-function createTrackedDocumentChange(_kind: WorkDocumentChangeKind) {
+function createTrackedDocumentChange(
+  _kind: WorkDocumentChangeKind,
+  actor?: WorkOfficeCollaborationSession['actor'],
+) {
   return {
     id: createWorkId('change'),
-    author: 'A3S Work 用户',
+    ...(actor ? { actorId: actor.id } : {}),
+    author: actor?.name ?? 'A3S Work 用户',
     date: new Date().toISOString(),
   };
 }
@@ -221,7 +225,9 @@ function CollaborativeDocumentEditor(
   }
   const bridge = useRef<DocumentCollaborationBridge>({
     getContent: () => initial.current,
-    isTracking: () => Boolean(initial.current?.trackChanges),
+    isTracking: () =>
+      collaboration.mode === 'suggest' ||
+      Boolean(initial.current?.trackChanges),
     onContentChange: () => undefined,
     onTrackingChange: () => undefined,
   });
@@ -241,7 +247,8 @@ function CollaborativeDocumentEditor(
         workExtensions: {
           getContent: () => bridge.current.getContent(),
           isTracking: () => bridge.current.isTracking(),
-          createChange: createTrackedDocumentChange,
+          createChange: (kind: WorkDocumentChangeKind) =>
+            createTrackedDocumentChange(kind, collaboration.actor),
           onContentChange: (content: WorkDocumentContent) =>
             bridge.current.onContentChange(content),
           onTrackingChange: (enabled: boolean) =>
@@ -294,11 +301,16 @@ function DocumentEditorSurface({
   onAgentRequest,
   onReviewConflict,
 }: DocumentEditorSurfaceProps) {
-  const reviewOnly = collaboration?.mode === 'comment' && !requestedPreview;
+  const commentOnly = collaboration?.mode === 'comment' && !requestedPreview;
+  const suggestionOnly =
+    collaboration?.mode === 'suggest' &&
+    Boolean(collaboration.actor) &&
+    !requestedPreview;
   const collaborationInteractive =
     !collaboration ||
     collaboration.mode === 'edit' ||
-    collaboration.mode === 'comment';
+    collaboration.mode === 'comment' ||
+    (collaboration.mode === 'suggest' && Boolean(collaboration.actor));
   const preview = requestedPreview || !collaborationInteractive;
   const canEditDocument =
     !preview && (!collaboration || collaboration.mode === 'edit');
@@ -307,6 +319,7 @@ function DocumentEditorSurface({
     (!collaboration ||
       collaboration.mode === 'edit' ||
       (collaboration.mode === 'comment' && Boolean(collaboration.actor)));
+  const canReviewDocumentChanges = canEditDocument || suggestionOnly;
   const readOnly = preview;
   const initialContentRef = useRef(collaborationInitialContent ?? content);
   const effectiveContent = collaboration ? initialContentRef.current : content;
@@ -323,7 +336,9 @@ function DocumentEditorSurface({
   const statisticsInvokerRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef(effectiveContent);
   const onChangeRef = useRef(onChange);
-  const trackChangesRef = useRef(Boolean(effectiveContent.trackChanges));
+  const trackChangesRef = useRef(
+    suggestionOnly || Boolean(effectiveContent.trackChanges),
+  );
   const collaborationBindingRef = useRef(collaborationBinding);
   const normalizedContent = useMemo(
     () => normalizeDocumentHtml(effectiveContent),
@@ -362,7 +377,8 @@ function DocumentEditorSurface({
   const loadedLayoutFontIds = useDocumentLayoutFonts(layoutFonts);
   if (!collaboration) contentRef.current = content;
   onChangeRef.current = onChange;
-  trackChangesRef.current = Boolean(contentRef.current.trackChanges);
+  trackChangesRef.current =
+    suggestionOnly || Boolean(contentRef.current.trackChanges);
   const commitContentChange = useCallback((next: WorkDocumentContent) => {
     const previous = contentRef.current;
     const binding = collaborationBindingRef.current;
@@ -374,9 +390,10 @@ function DocumentEditorSurface({
   if (collaborationBridge) {
     collaborationBridge.current = {
       getContent: () => contentRef.current,
-      isTracking: () => trackChangesRef.current,
+      isTracking: () => suggestionOnly || trackChangesRef.current,
       onContentChange: (next) => commitContentChange(next),
       onTrackingChange: (trackChanges) => {
+        if (suggestionOnly) return;
         trackChangesRef.current = trackChanges;
         commitContentChange({ ...contentRef.current, trackChanges });
       },
@@ -391,11 +408,13 @@ function DocumentEditorSurface({
             createWorkDocumentExtensions({
               getContent: () => contentRef.current,
               isTracking: () => trackChangesRef.current,
-              createChange: createTrackedDocumentChange,
+              createChange: (kind) =>
+                createTrackedDocumentChange(kind, collaboration?.actor),
               onContentChange: (next) => {
                 commitContentChange(next);
               },
               onTrackingChange: (trackChanges) => {
+                if (suggestionOnly) return;
                 trackChangesRef.current = trackChanges;
                 const next = { ...contentRef.current, trackChanges };
                 commitContentChange(next);
@@ -413,12 +432,12 @@ function DocumentEditorSurface({
       attributes: {
         'aria-label': '文档正文',
         'aria-multiline': 'true',
-        'aria-readonly': reviewOnly ? 'true' : 'false',
+        'aria-readonly': commentOnly ? 'true' : 'false',
         role: 'textbox',
         spellcheck: 'true',
       },
     }),
-    [reviewOnly],
+    [commentOnly],
   );
   const editor = useEditor({
     extensions: editorExtensions,
@@ -513,7 +532,7 @@ function DocumentEditorSurface({
   const documentComments = useDocumentComments({
     actor: collaboration?.actor,
     contentRef,
-    deleteOwnOnly: reviewOnly,
+    deleteOwnOnly: commentOnly,
     editor,
     enabled: canCommentDocument,
     onBeforeDraft: () => setTaskPane(null),
@@ -528,7 +547,8 @@ function DocumentEditorSurface({
     const unsubscribeChange = collaborationBinding.subscribe((change) => {
       pendingCollaborationContentRef.current = change.content;
       contentRef.current = change.content;
-      trackChangesRef.current = Boolean(change.content.trackChanges);
+      trackChangesRef.current =
+        suggestionOnly || Boolean(change.content.trackChanges);
       setCollaborationVersion((value) => value + 1);
     });
     const unsubscribeError = collaborationBinding.subscribeError((error) => {
@@ -556,7 +576,7 @@ function DocumentEditorSurface({
     const next = pendingCollaborationContentRef.current;
     pendingCollaborationContentRef.current = undefined;
     contentRef.current = next;
-    trackChangesRef.current = Boolean(next.trackChanges);
+    trackChangesRef.current = suggestionOnly || Boolean(next.trackChanges);
     onChangeRef.current(next);
   }, [collaborationVersion]);
   const rememberTaskPaneInvoker = useCallback(() => {
@@ -817,7 +837,7 @@ function DocumentEditorSurface({
       editor.setEditable(!readOnly);
       const editorDom = editor.view.dom;
       editorDom.setAttribute('role', preview ? 'document' : 'textbox');
-      editorDom.setAttribute('aria-readonly', String(reviewOnly || preview));
+      editorDom.setAttribute('aria-readonly', String(commentOnly || preview));
       if (preview) {
         editorDom.removeAttribute('aria-multiline');
       } else {
@@ -829,7 +849,7 @@ function DocumentEditorSurface({
     return () => {
       editor.off('mount', applyEditableState);
     };
-  }, [editor, preview, readOnly, reviewOnly]);
+  }, [commentOnly, editor, preview, readOnly]);
 
   useEffect(() => {
     if (!editor) return;
@@ -979,6 +999,22 @@ function DocumentEditorSurface({
     pagination.pages.at(-1)?.pageNumber ??
     Math.max(1, layout.pageNumberStart ?? 1) + pageCount - 1;
   const changes = collectDocumentChanges(editor.state.doc);
+  const decideDocumentChanges = (
+    selectedChanges: readonly (typeof changes)[number][],
+    decision: 'accept' | 'reject',
+  ): boolean => {
+    if (collaborationBinding) {
+      return collaborationBinding.decideChanges(
+        editor,
+        selectedChanges.map(({ id }) => id),
+        decision,
+      );
+    }
+    const ids = selectedChanges.map(({ id }) => id);
+    return decision === 'accept'
+      ? editor.commands.acceptDocumentChanges(ids)
+      : editor.commands.rejectDocumentChanges(ids);
+  };
   const citationCount = documentCitationCount(editor);
   const textStatistics = documentTextStatistics(editor);
   const paragraphIndent = documentParagraphIndent(editor);
@@ -1133,9 +1169,10 @@ function DocumentEditorSurface({
         <DocumentToolbar
           editor={editor}
           defaultRibbonCollapsed={defaultRibbonCollapsed}
-          reviewOnly={reviewOnly}
+          reviewOnly={commentOnly || suggestionOnly}
+          suggestionOnly={suggestionOnly}
           history={
-            collaborationBinding && !reviewOnly
+            collaborationBinding && !commentOnly
               ? {
                   canRedo: collaborationBinding.canRedo(),
                   canUndo: collaborationBinding.canUndo(),
@@ -1190,7 +1227,7 @@ function DocumentEditorSurface({
           commentsOpen={documentComments.open}
           commentCount={documentComments.comments.length}
           onToggleComments={() => void toggleCommentsPanel()}
-          trackChanges={Boolean(currentContent.trackChanges)}
+          trackChanges={suggestionOnly || Boolean(currentContent.trackChanges)}
           changesOpen={changesOpen}
           changeCount={changes.length}
           findReplaceMode={findReplaceMode}
@@ -1208,10 +1245,14 @@ function DocumentEditorSurface({
             );
           }}
           onToggleTrackChanges={() => {
+            if (suggestionOnly) return;
             editor.commands.toggleDocumentTrackChanges();
             restoreDocumentBodyFocus();
           }}
           onToggleChanges={() => void toggleTaskPane('changes')}
+          onDecideChange={(change, decision) =>
+            decideDocumentChanges([change], decision)
+          }
           onOpenWordCount={openDocumentStatistics}
           onOpenFindReplace={openFindReplace}
         />
@@ -1500,13 +1541,13 @@ function DocumentEditorSurface({
                       editor={editor}
                       kind="document"
                     />
-                    {!preview && (
+                    {!preview && (canEditDocument || canCommentDocument) && (
                       <DocumentSelectionToolbar
                         editor={editor}
                         canInsertComment={documentComments.canInsert}
                         layoutFonts={layoutFonts}
                         onInsertComment={() => void startCommentDraft()}
-                        reviewOnly={reviewOnly}
+                        reviewOnly={commentOnly}
                       />
                     )}
                   </section>
@@ -1612,13 +1653,22 @@ function DocumentEditorSurface({
             onDirtyChange={setCitationsDirty}
           />
         )}
-        {canEditDocument && changesOpen && (
+        {canReviewDocumentChanges && changesOpen && (
           <DocumentChangesPanel
             editor={editor}
             changes={changes}
-            trackChanges={Boolean(currentContent.trackChanges)}
+            decisions={currentContent.changeDecisions}
+            trackChanges={
+              suggestionOnly || Boolean(currentContent.trackChanges)
+            }
+            suggestionOnly={suggestionOnly}
+            onDecideChanges={
+              canEditDocument ? decideDocumentChanges : undefined
+            }
             onTrackChangesChange={(enabled) =>
-              editor.commands.setDocumentTrackChanges(enabled)
+              suggestionOnly
+                ? false
+                : editor.commands.setDocumentTrackChanges(enabled)
             }
             onClose={closeTaskPane}
           />

@@ -1,6 +1,7 @@
 import type * as Y from 'yjs';
 import type {
   WorkDocumentBibliography,
+  WorkDocumentChangeDecision,
   WorkDocumentCitationSource,
   WorkDocumentComment,
   WorkDocumentCommentReply,
@@ -16,10 +17,12 @@ import {
 
 type DocumentRecordClaimKind =
   | 'bibliography-source'
+  | 'change-decision'
   | 'comment'
   | 'comment-reply';
 
 interface ClaimableDocumentSidecars {
+  changeDecisions?: WorkDocumentChangeDecision[];
   comments?: WorkDocumentComment[];
   bibliography?: WorkDocumentBibliography;
 }
@@ -36,6 +39,15 @@ export function appendWorkOfficeDocumentRecordClaims(
   previous: ClaimableDocumentSidecars,
   next: ClaimableDocumentSidecars,
 ): void {
+  const previousDecisions = new Set(
+    (previous.changeDecisions ?? []).map((decision) => decision.id),
+  );
+  for (const decision of next.changeDecisions ?? []) {
+    if (!previousDecisions.has(decision.id)) {
+      appendClaim(claims, 'change-decision', decision.id, decision);
+    }
+  }
+
   const previousComments = new Map(
     (previous.comments ?? []).map((comment) => [comment.id, comment]),
   );
@@ -80,6 +92,9 @@ export function assertWorkOfficeDocumentRecordClaims(
     fingerprints.set(identity, claim.fingerprint);
   }
 
+  for (const decision of sidecars.changeDecisions ?? []) {
+    assertClaimExists(fingerprints, 'change-decision', decision.id);
+  }
   for (const comment of sidecars.comments ?? []) {
     assertClaimExists(fingerprints, 'comment', comment.id);
     for (const reply of comment.replies ?? []) {
@@ -96,6 +111,7 @@ function appendClaim(
   kind: DocumentRecordClaimKind,
   id: string,
   value:
+    | WorkDocumentChangeDecision
     | WorkDocumentCitationSource
     | WorkDocumentComment
     | WorkDocumentCommentReply,
@@ -136,6 +152,7 @@ function parsedClaim(rawClaim: unknown): DocumentRecordClaim {
   const kind = value.kind;
   if (
     kind !== 'bibliography-source' &&
+    kind !== 'change-decision' &&
     kind !== 'comment' &&
     kind !== 'comment-reply'
   ) {
@@ -188,6 +205,7 @@ function claimIdentity(
 function claimLabel(
   claim: Pick<DocumentRecordClaim, 'kind' | 'parentId'>,
 ): string {
+  if (claim.kind === 'change-decision') return 'tracked-change decision';
   if (claim.kind === 'comment') return 'comment';
   if (claim.kind === 'bibliography-source') return 'bibliography source';
   return `reply in comment '${claim.parentId}'`;

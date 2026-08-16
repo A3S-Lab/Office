@@ -218,7 +218,8 @@ impl CollaborationService {
             native.message_type != NativeOfficeCollaborationTransportMessageType::SyncStep1;
         if mutating && !state.claims.can_publish_document_updates() {
             return Err(BootError::Forbidden(
-                "view and suggest tickets cannot publish Yjs document updates".to_string(),
+                "view tickets and non-Document suggest tickets cannot publish Yjs document updates"
+                    .to_string(),
             ));
         }
         let operation_id = mutating.then(|| {
