@@ -11,6 +11,11 @@ import {
 
 const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 
+function homepageComponentHref(version: string, component: string): string {
+  const extension = version === 'latest' ? 'html' : 'mdx';
+  return `./components/${component}.${extension}`;
+}
+
 test('uses Simplified Chinese and latest as stable documentation defaults', () => {
   expect(DOCUMENTATION_DEFAULT_LANGUAGE).toBe('zh');
   expect(DOCUMENTATION_LOCALES.map(({ lang }) => lang)).toEqual(['zh', 'en']);
@@ -97,7 +102,9 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
           ),
         ]);
 
-      expect(homepage).toContain('./components/collaboration.mdx');
+      expect(homepage).toContain(
+        homepageComponentHref(version, 'collaboration'),
+      );
       expect(componentIndex).toContain('./collaboration.mdx');
       expect(componentNavigation).toContain('"collaboration"');
       expect(collaboration).toContain('Yjs');
@@ -124,7 +131,9 @@ test('publishes the runnable collaboration backend in latest and 0.7.2', async (
           ),
         ]);
 
-      expect(homepage).toContain('./components/collaboration-server.mdx');
+      expect(homepage).toContain(
+        homepageComponentHref(version, 'collaboration-server'),
+      );
       expect(componentIndex).toContain('./collaboration-server.mdx');
       expect(componentNavigation).toContain('"collaboration-server"');
       expect(server).toContain('a3s-boot');
