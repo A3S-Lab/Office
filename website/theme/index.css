@@ -1,161 +1,3 @@
-:root {
-  --rp-c-brand: #2463e8;
-  --rp-c-brand-dark: #1d53c7;
-  --rp-c-brand-darker: #1946a7;
-  --rp-c-brand-light: #4d7df0;
-  --rp-c-brand-lighter: #87a7f5;
-  --rp-c-brand-tint: rgb(36 99 232 / 9%);
-  --rp-c-bg: #f6f7f9;
-  --rp-c-bg-soft: #ffffff;
-  --rp-c-bg-mute: #eef1f5;
-  --rp-c-divider: #d8dde6;
-  --rp-c-divider-light: #e6e9ef;
-  --rp-c-text-1: #151922;
-  --rp-c-text-2: #565e6d;
-  --rp-c-text-3: #7c8492;
-  --rp-content-max-width: 920px;
-  --rp-nav-height: 64px;
-  --a3s-docs-ink: #111827;
-  --a3s-docs-muted: #586174;
-  --a3s-docs-line: #dce2ea;
-  --a3s-docs-blue: #2463e8;
-  --a3s-docs-blue-dark: #1747ad;
-  --a3s-docs-blue-soft: #edf3ff;
-  --a3s-docs-canvas: #f6f7f9;
-}
-
-html {
-  color-scheme: light;
-  scroll-behavior: smooth;
-}
-
-body {
-  background: var(--a3s-docs-canvas);
-  font-family:
-    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  text-rendering: optimizeLegibility;
-}
-
-::selection {
-  background: rgb(36 99 232 / 18%);
-}
-
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid rgb(36 99 232 / 40%);
-  outline-offset: 3px;
-}
-
-.rp-nav {
-  border-bottom: 1px solid rgb(216 221 230 / 88%);
-  background: rgb(246 247 249 / 92%);
-  backdrop-filter: blur(18px);
-}
-
-.rp-nav__title__link {
-  gap: 8px;
-}
-
-.rp-nav__title__link > span {
-  color: var(--a3s-docs-ink);
-  font-size: 16px;
-  font-weight: 720;
-  letter-spacing: -0.02em;
-}
-
-.rp-search-button {
-  background: rgb(255 255 255 / 82%);
-  border-color: var(--a3s-docs-line);
-  box-shadow: 0 7px 18px -16px rgb(17 24 39 / 45%);
-}
-
-/* Keep language and version controls visible at ordinary laptop widths. */
-@media (min-width: 1120px) and (max-width: 1280px) {
-  .rp-nav .rp-nav__right {
-    gap: 16px;
-  }
-
-  .rp-nav .rp-nav__others {
-    display: flex;
-    gap: 12px;
-  }
-
-  .rp-nav .rp-nav-hamburger__md {
-    display: none;
-  }
-}
-
-.rp-doc-layout {
-  background: var(--a3s-docs-canvas);
-}
-
-.rp-doc-layout__sidebar {
-  background: color-mix(in srgb, var(--a3s-docs-canvas) 86%, white);
-  border-right-color: var(--a3s-docs-line);
-}
-
-.rp-sidebar-item {
-  border-radius: 8px;
-}
-
-.rp-sidebar-item--active {
-  background: rgb(36 99 232 / 10%);
-}
-
-.rp-doc {
-  color: var(--a3s-docs-ink);
-  line-height: 1.72;
-}
-
-.rp-doc h1,
-.rp-doc h2,
-.rp-doc h3 {
-  color: var(--a3s-docs-ink);
-  letter-spacing: -0.028em;
-}
-
-.rp-doc > p,
-.rp-doc > ul,
-.rp-doc > ol,
-.rp-doc > blockquote {
-  max-width: 72ch;
-}
-
-.rp-doc a:not([class]) {
-  text-decoration-color: rgb(36 99 232 / 38%);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-}
-
-.rp-doc a:not([class]):hover {
-  text-decoration-color: currentColor;
-}
-
-.rp-doc table {
-  display: table;
-  width: 100%;
-  border-color: var(--a3s-docs-line);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.rp-doc thead {
-  background: #eef2f7;
-}
-
-.rp-doc div[class*="language-"] {
-  border: 1px solid #2a303a;
-  border-radius: 12px;
-  box-shadow: 0 16px 34px -25px rgb(17 24 39 / 50%);
-}
-
-.rp-doc-layout__outline {
-  box-shadow: none;
-}
-
-.rp-outline {
-  border-left: 1px solid var(--a3s-docs-line);
-}
-
 .rp-doc:has(.docs-home) {
   max-width: none;
 }
@@ -181,7 +23,7 @@ body {
   padding: clamp(34px, 5vw, 58px);
   border: 1px solid var(--a3s-docs-line);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--a3s-docs-paper);
   box-shadow: 0 24px 56px -42px rgb(17 24 39 / 55%);
 }
 
@@ -249,13 +91,13 @@ body {
 
 .docs-home-action--secondary {
   border: 1px solid var(--a3s-docs-line);
-  background: #ffffff;
+  background: var(--a3s-docs-paper);
   color: var(--a3s-docs-ink);
 }
 
 .docs-home-action--secondary:hover {
-  border-color: #aeb8c8;
-  background: #f7f9fc;
+  border-color: var(--ui-line-strong);
+  background: var(--ui-panel);
 }
 
 .docs-home-install {
@@ -383,10 +225,10 @@ body {
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid #cbd3df;
+  border: 1px solid var(--ui-line-strong);
   border-radius: 50%;
   background: var(--a3s-docs-canvas);
-  color: #657084;
+  color: var(--ui-muted);
   font-family: var(--rp-font-family-mono);
   font-size: 0.7rem;
   font-weight: 700;
@@ -617,12 +459,12 @@ body {
   text-decoration: none;
   transition:
     background-color 180ms ease,
-    padding-inline 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .docs-home-surface-list a:hover {
-  padding-inline: 18px 6px;
-  background: #ffffff;
+  background: var(--a3s-docs-paper);
+  transform: translateX(6px);
 }
 
 .docs-home-surface-list strong {
@@ -638,7 +480,7 @@ body {
 
 .docs-home-surface-list code {
   justify-self: end;
-  color: #3c4b61;
+  color: var(--ui-muted);
   font-family: var(--rp-font-family-mono);
   font-size: 0.75rem;
   text-align: right;
@@ -681,6 +523,25 @@ body {
 }
 
 @media (max-width: 768px) {
+  .rp-nav {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .rp-search-button--mobile,
+  .rp-nav-hamburger,
+  html .rp-switch-appearance {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .rp-doc-layout__sidebar:not(.rp-doc-layout__sidebar--open) {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .rp-doc table {
     display: block;
     overflow-x: auto;
@@ -806,7 +667,7 @@ body {
   }
 
   .docs-home-surface-list a:hover {
-    padding-inline: 10px 0;
+    transform: translateX(4px);
   }
 
   .docs-home-surface-list code {
@@ -818,6 +679,29 @@ body {
   .docs-home-version-note {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rp-nav {
+    background: var(--ui-paper);
+    backdrop-filter: none;
+  }
+
+  .rp-doc:not(:has(.docs-home))
+    :not(:where(.rp-not-doc, .rp-not-doc *)):where(h1) {
+    font-size: 38px;
+    line-height: 1.08;
+  }
+
+  .rp-doc:not(:has(.docs-home))
+    :not(:where(.rp-not-doc, .rp-not-doc *)):where(h2) {
+    margin-top: 44px;
+    font-size: 24px;
+  }
+
+  .rp-doc:not(:has(.docs-home)) > p:first-of-type {
+    font-size: 15px;
   }
 }
 

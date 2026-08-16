@@ -28,6 +28,14 @@ suite "office-docs-navigation" {
             visible = css(".rp-search-button")
         }
 
+        expect "shared-a3s-brand-is-visible" {
+            visible = css(".rp-nav__title__logo img[src$='/a3s-logo.png']")
+        }
+
+        expect "documentation-theme-control-is-visible" {
+            visible = css(".rp-nav__others .rp-switch-appearance[role='button'][aria-label='切换主题']")
+        }
+
         expect "documentation-tree-ready" {
             visible = css(".rp-doc-layout__sidebar")
         }
@@ -88,6 +96,26 @@ suite "office-docs-navigation" {
             text = "接入原生智能体"
         }
 
+        expect "reference-table-uses-document-renderer" {
+            visible = css("main .rp-doc table")
+        }
+
+        expect "inline-code-uses-document-renderer" {
+            visible = css("main .rp-doc p code")
+        }
+
+        expect "typescript-code-is-highlighted" {
+            visible = css("main .rp-codeblock.language-ts .shiki [style*='--shiki-token-keyword']")
+        }
+
+        expect "code-wrap-control-is-available" {
+            visible = css("main .rp-codeblock .rp-code-wrap-button[aria-label='切换代码换行']")
+        }
+
+        expect "code-copy-control-is-available" {
+            visible = css("main .rp-codeblock .rp-code-copy-button[title='复制代码']")
+        }
+
         screenshot "collaboration-server-guide" {
             path = "screenshots/collaboration-server-guide.png"
         }
@@ -125,6 +153,10 @@ suite "office-docs-navigation" {
 
         expect "phone-documentation-hero-is-visible" {
             visible = css("main .docs-home-hero")
+        }
+
+        expect "phone-navigation-has-an-accessible-trigger" {
+            visible = css("button.rp-nav-hamburger[aria-label='打开导航']")
         }
 
         expect "phone-primary-action-is-visible" {

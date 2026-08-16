@@ -35,7 +35,7 @@ export default defineConfig({
     versioned: true,
   },
   icon: '/favicon.svg',
-  logo: '/a3s-office-mark.svg',
+  logo: '/a3s-logo.png',
   logoText: 'A3S Office',
   outDir: path.resolve(import.meta.dirname, '../playground-dist/docs'),
   llms: true,
@@ -52,7 +52,6 @@ export default defineConfig({
     ],
   ],
   themeConfig: {
-    darkMode: false,
     search: true,
     fallbackHeadingTitle: false,
     enableContentAnimation: true,

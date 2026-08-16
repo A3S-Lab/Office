@@ -1178,6 +1178,15 @@ test('documentation pages provide searchable framework examples with syntax high
   ).toBeVisible();
 
   const sidebar = page.locator('.rp-doc-layout__sidebar');
+  if (!(await sidebar.isVisible())) {
+    const sidebarTrigger = page.getByRole('button', {
+      name: '菜单',
+      exact: true,
+    });
+    await expect(sidebarTrigger).toBeVisible();
+    await sidebarTrigger.click();
+    await expect(sidebar).toBeVisible();
+  }
   await expect(sidebar.getByRole('link', { name: 'Vue' })).toHaveAttribute(
     'href',
     /components\/vue\.html$/,

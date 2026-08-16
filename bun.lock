@@ -46,11 +46,14 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.15",
+        "@fontsource-variable/geist": "^5.3.0",
+        "@fontsource-variable/geist-mono": "^5.3.0",
         "@playwright/test": "1.61.1",
         "@rsbuild/core": "^2.1.5",
         "@rsbuild/plugin-react": "^2.1.0",
         "@rslib/core": "^0.23.2",
         "@rspress/core": "^2.0.17",
+        "@rspress/shared": "2.0.19",
         "@rstest/adapter-rslib": "^0.10.6",
         "@rstest/core": "^0.10.6",
         "@rstest/coverage-v8": "0.10.6",
@@ -78,8 +81,8 @@
   },
   "patchedDependencies": {
     "html2canvas@1.4.1": "patches/html2canvas@1.4.1.patch",
-    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet%2Freact@1.0.4.patch",
     "@tiptap/y-tiptap@3.0.8": "patches/@tiptap%2Fy-tiptap@3.0.8.patch",
+    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet%2Freact@1.0.4.patch",
   },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.5.0", "https://mirrors.tencent.com/npm/@adobe/css-tools/-/css-tools-4.5.0.tgz", {}, "sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q=="],
@@ -230,6 +233,10 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "https://mirrors.tencent.com/npm/@floating-ui/utils/-/utils-0.2.12.tgz", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
+    "@fontsource-variable/geist": ["@fontsource-variable/geist@5.3.0", "https://mirrors.tencent.com/npm/@fontsource-variable/geist/-/geist-5.3.0.tgz", {}, "sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA=="],
+
+    "@fontsource-variable/geist-mono": ["@fontsource-variable/geist-mono@5.3.0", "https://mirrors.tencent.com/npm/@fontsource-variable/geist-mono/-/geist-mono-5.3.0.tgz", {}, "sha512-vBbuwDEo9AkrqADMXOrlAR3DFcJi4/JxeuU43FoiQERnNwsfXNnvxvReZG02cQKmyk4DZkZdBZX3oTDvy2zBAw=="],
+
     "@formulajs/formulajs": ["@formulajs/formulajs@2.9.3", "https://mirrors.tencent.com/npm/@formulajs/formulajs/-/formulajs-2.9.3.tgz", { "dependencies": { "bessel": "^1.0.2", "jstat": "^1.9.2" }, "bin": { "implementation-stats": "bin/implementation-stats" } }, "sha512-WpgiuJaBl/Hcda9Ti8a7mlnw/vUZkJrtjABvojz6P6mo6d8EscudyA7iAt/kTLsgi0c8zfmzQd/Yjb4ASFkw+g=="],
 
     "@fortune-sheet/core": ["@fortune-sheet/core@1.0.4", "https://mirrors.tencent.com/npm/@fortune-sheet/core/-/core-1.0.4.tgz", { "dependencies": { "@fortune-sheet/formula-parser": "^0.2.13", "dayjs": "^1.11.0", "immer": "^9.0.12", "lodash": "^4.17.21", "numeral": "^2.0.6", "uuid": "^8.3.2" } }, "sha512-CDnUVebfvtT++CymNRw0qnY4sz6zYO3KZazlH+nG6otkRkZ05Bvt7NXqVhmKKSSxIvJR4R6h50abu/dVGBpjpw=="],
@@ -344,9 +351,9 @@
 
     "@tiptap/extension-code-block": ["@tiptap/extension-code-block@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-code-block/-/extension-code-block-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0" } }, "sha512-bHITDzT0umTLh+SiEVQzIXkCMt/TzbPM1+HQy9ZxgQDHAJj/vdmfNAnP3RCOrz4lETXyhNQ2b6kxeu3lWckxyA=="],
 
-    "@tiptap/extension-collaboration": ["@tiptap/extension-collaboration@3.28.0", "", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0", "@tiptap/y-tiptap": "^3.0.7", "yjs": "^13" } }, "sha512-4RUyRPhieqPD7fvCeniIE0QBSwb1exOWJlYvF8s8wWTwc5uywa95gUhRbnHwgTReeG0WW+177eFSEr9xZaUseg=="],
+    "@tiptap/extension-collaboration": ["@tiptap/extension-collaboration@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-collaboration/-/extension-collaboration-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0", "@tiptap/y-tiptap": "^3.0.7", "yjs": "^13" } }, "sha512-4RUyRPhieqPD7fvCeniIE0QBSwb1exOWJlYvF8s8wWTwc5uywa95gUhRbnHwgTReeG0WW+177eFSEr9xZaUseg=="],
 
-    "@tiptap/extension-collaboration-caret": ["@tiptap/extension-collaboration-caret@3.28.0", "", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0", "@tiptap/y-tiptap": "^3.0.7" } }, "sha512-n8QsBexKjhXCjpreYdOo4XFl/DBKP+3RKzwTNjHv9g8Wic/ir0Eep07joJp2343ZDtK5GDCFNZQu3PA4bHEgCA=="],
+    "@tiptap/extension-collaboration-caret": ["@tiptap/extension-collaboration-caret@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-collaboration-caret/-/extension-collaboration-caret-3.28.0.tgz", { "peerDependencies": { "@tiptap/core": "3.28.0", "@tiptap/pm": "3.28.0", "@tiptap/y-tiptap": "^3.0.7" } }, "sha512-n8QsBexKjhXCjpreYdOo4XFl/DBKP+3RKzwTNjHv9g8Wic/ir0Eep07joJp2343ZDtK5GDCFNZQu3PA4bHEgCA=="],
 
     "@tiptap/extension-color": ["@tiptap/extension-color@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/extension-color/-/extension-color-3.28.0.tgz", { "peerDependencies": { "@tiptap/extension-text-style": "3.28.0" } }, "sha512-YbUMUdrgU04GDYoii1wuFVkiTSQoaEQh04kwgQayEQ46aUBEnnaJitWdp39aGMWYTIXD/c9K9cr5Vg8GSKcVxA=="],
 
@@ -410,7 +417,7 @@
 
     "@tiptap/starter-kit": ["@tiptap/starter-kit@3.28.0", "https://mirrors.tencent.com/npm/@tiptap/starter-kit/-/starter-kit-3.28.0.tgz", { "dependencies": { "@tiptap/core": "^3.28.0", "@tiptap/extension-blockquote": "^3.28.0", "@tiptap/extension-bold": "^3.28.0", "@tiptap/extension-bullet-list": "^3.28.0", "@tiptap/extension-code": "^3.28.0", "@tiptap/extension-code-block": "^3.28.0", "@tiptap/extension-document": "^3.28.0", "@tiptap/extension-dropcursor": "^3.28.0", "@tiptap/extension-gapcursor": "^3.28.0", "@tiptap/extension-hard-break": "^3.28.0", "@tiptap/extension-heading": "^3.28.0", "@tiptap/extension-horizontal-rule": "^3.28.0", "@tiptap/extension-italic": "^3.28.0", "@tiptap/extension-link": "^3.28.0", "@tiptap/extension-list": "^3.28.0", "@tiptap/extension-list-item": "^3.28.0", "@tiptap/extension-list-keymap": "^3.28.0", "@tiptap/extension-ordered-list": "^3.28.0", "@tiptap/extension-paragraph": "^3.28.0", "@tiptap/extension-strike": "^3.28.0", "@tiptap/extension-text": "^3.28.0", "@tiptap/extension-underline": "^3.28.0", "@tiptap/extensions": "^3.28.0", "@tiptap/pm": "^3.28.0" } }, "sha512-pqvFpValV+ONtlu3l4s73ROm/tEjoGMmt6uHmSJaLbqTcMHkdWuR3flJ/5brr4IDHe1foxmNicMbRxlje7yBYw=="],
 
-    "@tiptap/y-tiptap": ["@tiptap/y-tiptap@3.0.8", "", { "dependencies": { "lib0": "^0.2.100" }, "peerDependencies": { "prosemirror-model": "^1.7.1", "prosemirror-state": "^1.2.3", "prosemirror-view": "^1.9.10", "y-protocols": "^1.0.1", "yjs": "^13.5.38" } }, "sha512-+kndlSuoUK9sKVRuxbAHXNrbDvyydnG/Y0NFU9XXqaSkI9IRcrjpOf1RGd7NrC9jJXquDqZS96wOQf6eUpP9Dg=="],
+    "@tiptap/y-tiptap": ["@tiptap/y-tiptap@3.0.8", "https://mirrors.tencent.com/npm/@tiptap/y-tiptap/-/y-tiptap-3.0.8.tgz", { "dependencies": { "lib0": "^0.2.100" }, "peerDependencies": { "prosemirror-model": "^1.7.1", "prosemirror-state": "^1.2.3", "prosemirror-view": "^1.9.10", "y-protocols": "^1.0.1", "yjs": "^13.5.38" } }, "sha512-+kndlSuoUK9sKVRuxbAHXNrbDvyydnG/Y0NFU9XXqaSkI9IRcrjpOf1RGd7NrC9jJXquDqZS96wOQf6eUpP9Dg=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.3", "https://mirrors.tencent.com/npm/@tybys/wasm-util/-/wasm-util-0.10.3.tgz", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg=="],
 
@@ -696,7 +703,7 @@
 
     "isarray": ["isarray@1.0.0", "https://mirrors.tencent.com/npm/isarray/-/isarray-1.0.0.tgz", {}, "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ=="],
 
-    "isomorphic.js": ["isomorphic.js@0.2.5", "", {}, "sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw=="],
+    "isomorphic.js": ["isomorphic.js@0.2.5", "https://mirrors.tencent.com/npm/isomorphic.js/-/isomorphic.js-0.2.5.tgz", {}, "sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw=="],
 
     "istanbul-lib-coverage": ["istanbul-lib-coverage@3.2.2", "https://mirrors.tencent.com/npm/istanbul-lib-coverage/-/istanbul-lib-coverage-3.2.2.tgz", {}, "sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg=="],
 
@@ -712,7 +719,7 @@
 
     "jszip": ["jszip@3.10.1", "https://mirrors.tencent.com/npm/jszip/-/jszip-3.10.1.tgz", { "dependencies": { "lie": "~3.3.0", "pako": "~1.0.2", "readable-stream": "~2.3.6", "setimmediate": "^1.0.5" } }, "sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g=="],
 
-    "lib0": ["lib0@0.2.117", "", { "dependencies": { "isomorphic.js": "^0.2.4" }, "bin": { "0serve": "bin/0serve.js", "0gentesthtml": "bin/gentesthtml.js", "0ecdsa-generate-keypair": "bin/0ecdsa-generate-keypair.js" } }, "sha512-DeXj9X5xDCjgKLU/7RR+/HQEVzuuEUiwldwOGsHK/sfAfELGWEyTcf0x+uOvCvK3O2zPmZePXWL85vtia6GyZw=="],
+    "lib0": ["lib0@0.2.117", "https://mirrors.tencent.com/npm/lib0/-/lib0-0.2.117.tgz", { "dependencies": { "isomorphic.js": "^0.2.4" }, "bin": { "0serve": "bin/0serve.js", "0gentesthtml": "bin/gentesthtml.js", "0ecdsa-generate-keypair": "bin/0ecdsa-generate-keypair.js" } }, "sha512-DeXj9X5xDCjgKLU/7RR+/HQEVzuuEUiwldwOGsHK/sfAfELGWEyTcf0x+uOvCvK3O2zPmZePXWL85vtia6GyZw=="],
 
     "lie": ["lie@3.3.0", "https://mirrors.tencent.com/npm/lie/-/lie-3.3.0.tgz", { "dependencies": { "immediate": "~3.0.5" } }, "sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ=="],
 
@@ -1122,9 +1129,9 @@
 
     "xmlbuilder": ["xmlbuilder@10.1.1", "https://mirrors.tencent.com/npm/xmlbuilder/-/xmlbuilder-10.1.1.tgz", {}, "sha512-OyzrcFLL/nb6fMGHbiRDuPup9ljBycsdCypwuyg5AAHvyWzGfChJpCXMG88AGTIMFhGZ9RccFN1e6lhg3hkwKg=="],
 
-    "y-protocols": ["y-protocols@1.0.7", "", { "dependencies": { "lib0": "^0.2.85" }, "peerDependencies": { "yjs": "^13.0.0" } }, "sha512-YSVsLoXxO67J6eE/nV4AtFtT3QEotZf5sK5BHxFBXso7VDUT3Tx07IfA6hsu5Q5OmBdMkQVmFZ9QOA7fikWvnw=="],
+    "y-protocols": ["y-protocols@1.0.7", "https://mirrors.tencent.com/npm/y-protocols/-/y-protocols-1.0.7.tgz", { "dependencies": { "lib0": "^0.2.85" }, "peerDependencies": { "yjs": "^13.0.0" } }, "sha512-YSVsLoXxO67J6eE/nV4AtFtT3QEotZf5sK5BHxFBXso7VDUT3Tx07IfA6hsu5Q5OmBdMkQVmFZ9QOA7fikWvnw=="],
 
-    "yjs": ["yjs@13.6.32", "", { "dependencies": { "lib0": "^0.2.99" } }, "sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ=="],
+    "yjs": ["yjs@13.6.32", "https://mirrors.tencent.com/npm/yjs/-/yjs-13.6.32.tgz", { "dependencies": { "lib0": "^0.2.99" } }, "sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ=="],
 
     "zimmerframe": ["zimmerframe@1.1.4", "https://mirrors.tencent.com/npm/zimmerframe/-/zimmerframe-1.1.4.tgz", {}, "sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ=="],
 

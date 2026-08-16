@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@rstest/core';
@@ -33,13 +34,53 @@ test('derives deployment-relative Playground assets from localized version route
   expect(playgroundAssetHrefFromDocsRoute('/', '')).toBe('../');
 });
 
-test('does not inject a route-dependent online Playground button into docs navigation', async () => {
+test('uses the shared A3S navigation without an online Playground button', async () => {
+  const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
+  const websiteRoot = path.resolve(import.meta.dirname, '../website');
+  const [config, themeEntry, contentStyles, homeStyles, navSource, logo] =
+    await Promise.all([
+      readFile(path.join(websiteRoot, 'rspress.config.ts'), 'utf8'),
+      readFile(path.join(themeRoot, 'index.tsx'), 'utf8'),
+      readFile(path.join(themeRoot, 'docs-content.css'), 'utf8'),
+      readFile(path.join(themeRoot, 'index.css'), 'utf8'),
+      readFile(path.join(themeRoot, 'components/Nav.tsx'), 'utf8'),
+      readFile(
+        path.resolve(import.meta.dirname, '../docs/public/a3s-logo.png'),
+      ),
+    ]);
+  const themeStyles = `${contentStyles}\n${homeStyles}`;
+
+  expect(config).toContain("logo: '/a3s-logo.png'");
+  expect(themeEntry).toContain("export { Nav } from './components/Nav'");
+  expect(navSource).toContain('aria-controls="office-mobile-navigation"');
+  expect(navSource).toContain(
+    "language === 'zh' ? '打开导航' : 'Open navigation'",
+  );
+  expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
+  expect(themeStyles).toMatch(/width:\s*31px/);
+  expect(createHash('sha256').update(logo).digest('hex')).toBe(
+    'ecfcf5c9f783c2c49bf7623cab825a81f500ca7313cd33540d948f276e59e46d',
+  );
+  expect(themeStyles).not.toContain('.office-docs-playground-link');
+});
+
+test('matches the A3S UI documentation rendering contract', async () => {
   const themeRoot = path.resolve(import.meta.dirname, '../website/theme');
   const [themeEntry, themeStyles] = await Promise.all([
     readFile(path.join(themeRoot, 'index.tsx'), 'utf8'),
-    readFile(path.join(themeRoot, 'index.css'), 'utf8'),
+    Promise.all([
+      readFile(path.join(themeRoot, 'docs-content.css'), 'utf8'),
+      readFile(path.join(themeRoot, 'index.css'), 'utf8'),
+    ]).then((styles) => styles.join('\n')),
   ]);
 
-  expect(themeEntry).not.toContain("export { Nav } from './nav'");
-  expect(themeStyles).not.toContain('.office-docs-playground-link');
+  expect(themeEntry).toContain("import '@fontsource-variable/geist'");
+  expect(themeEntry).toContain("import '@fontsource-variable/geist-mono'");
+  expect(themeStyles).toMatch(/--rp-content-max-width:\s*920px/);
+  expect(themeStyles).toMatch(/["']Geist Variable["']/);
+  expect(themeStyles).toMatch(/["']Geist Mono Variable["']/);
+  expect(themeStyles).toContain('.rp-codeblock__content__scroll-container');
+  expect(themeStyles).toMatch(/:not\(pre\)\s*> code/);
+  expect(themeStyles).toContain('border-collapse: separate');
+  expect(themeStyles).toContain('--shiki-token-keyword');
 });
