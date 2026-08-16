@@ -101,6 +101,7 @@ jobs:
         with:
           name: office-a3s-test-diagnostics
           path: .a3s-test
+          include-hidden-files: true
           if-no-files-found: ignore
 
       - name: Check Rust formatting

@@ -97,6 +97,7 @@ jobs:
         with:
           name: office-pages-a3s-test-diagnostics
           path: .a3s-test
+          include-hidden-files: true
           if-no-files-found: ignore
 
       - name: Build GitHub Pages website

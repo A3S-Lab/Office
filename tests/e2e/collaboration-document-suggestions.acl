@@ -16,8 +16,8 @@ suite "collaboration-document-suggestions" {
             url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
         }
 
-        click "open-document" {
-            target = text("新项目方案", true)
+        click "open-suggestion-demo" {
+            target = role("button", "体验建议协作")
         }
 
         wait "suggestion-demo-is-ready" {
@@ -160,8 +160,8 @@ suite "collaboration-document-suggestions" {
             url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
         }
 
-        click "open-compact-document" {
-            target = text("新项目方案", true)
+        click "open-compact-suggestion-demo" {
+            target = role("button", "体验建议协作")
         }
 
         wait "compact-suggestion-demo-is-ready" {
@@ -201,12 +201,24 @@ suite "collaboration-document-suggestions" {
             visible = css(".playground-suggestion-peer.editor ins[data-document-change='true'][data-change-author='林澄']")
         }
 
-        click "open-compact-editor-review-tab" {
+        focus "focus-compact-editor-review-tab" {
             target = css(".playground-suggestion-peer.editor [role='tab'][data-tab-id='review']")
         }
 
+        press "open-compact-editor-review-tab" {
+            key = "Enter"
+        }
+
+        wait "compact-editor-review-toolbar-is-ready" {
+            visible = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
+        click "open-compact-editor-changes" {
+            target = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
         wait "compact-editor-decision-control-is-reachable" {
-            visible = css(".playground-suggestion-peer.editor button[aria-label='接受修订']")
+            visible = css(".playground-suggestion-peer.editor button[aria-label='接受修订 1']")
         }
 
         expect "compact-suggester-remains-restricted" {
