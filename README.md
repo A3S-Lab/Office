@@ -424,7 +424,15 @@ canonicalizes and mutation-locks that explicit library while binding it
 directly; other platforms retain private copy-and-rehash staging. Consumers
 can inspect selected pages from one previously validated complete inventory without
 rescanning the full document; render still revalidates the immutable source and
-actual page profile before publication. The same retained inventory now
+actual page profile before publication. Native PDF rendering also accepts an
+ordered batch of at most 64 unique pages from one source. Its default 16-page
+window captures the bounded source and opens the PDFium document once, stages
+each successful PNG before a batch-wide prepublication source check, publishes
+without clobbering existing outputs, revalidates the source after publication,
+isolates page failures in their exact input slots, and enforces aggregate output
+and deadline bounds. Batch receipts retain the
+same source, unit, render-profile, raster hash, and geometry validation as the
+single-page API. The same retained inventory now
 authorizes bounded native PDF text-layer extraction with source-order Unicode,
 exact UTF-8/UTF-16 ranges, optional glyph boxes in PDF coordinates, and bounded
 document outlines with exact page targets. Text and outline calls revalidate

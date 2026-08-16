@@ -2,6 +2,7 @@ mod batch;
 mod engine;
 mod library;
 mod outline;
+mod render_batch;
 mod renderer;
 mod text;
 
@@ -23,6 +24,12 @@ pub use outline::{
     DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_DEPTH, DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES,
     DEFAULT_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES, MAX_NATIVE_OFFICE_PDF_OUTLINE_DEPTH,
     MAX_NATIVE_OFFICE_PDF_OUTLINE_ENTRIES, MAX_NATIVE_OFFICE_PDF_OUTLINE_TITLE_BYTES,
+};
+pub use render_batch::{
+    NativeOfficePdfPageRenderBatch, NativeOfficePdfRenderBatchOptions,
+    NativeOfficePdfRenderBatchSlot, NativeOfficePdfRenderBatchSlotOutcome,
+    DEFAULT_NATIVE_OFFICE_PDF_RENDER_BATCH_BYTES, DEFAULT_NATIVE_OFFICE_PDF_RENDER_BATCH_PAGES,
+    MAX_NATIVE_OFFICE_PDF_RENDER_BATCH_BYTES, MAX_NATIVE_OFFICE_PDF_RENDER_BATCH_PAGES,
 };
 pub use renderer::NativeOfficePdfiumLayoutRenderer;
 pub use text::{

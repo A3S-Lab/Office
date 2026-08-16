@@ -3,10 +3,12 @@ use crate::{
     NativeOfficePdfOutline, NativeOfficePdfOutlineEntry, NativeOfficePdfOutlineOptions,
     NativeOfficePdfPageBox, NativeOfficePdfPageGeometry, NativeOfficePdfPageInventory,
     NativeOfficePdfPageInventoryOptions, NativeOfficePdfPageTextBatch,
-    NativeOfficePdfPageTextLayer, NativeOfficePdfTextBatchOptions, NativeOfficePdfTextBatchSlot,
-    NativeOfficePdfTextBatchSlotOutcome, NativeOfficePdfTextCharacter,
-    NativeOfficePdfTextLayerOptions, NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit,
-    NativeOfficeUnitLocator, PackageRevision, NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
+    NativeOfficePdfPageTextLayer, NativeOfficePdfRenderBatchOptions,
+    NativeOfficePdfRenderBatchSlotOutcome, NativeOfficePdfTextBatchOptions,
+    NativeOfficePdfTextBatchSlot, NativeOfficePdfTextBatchSlotOutcome,
+    NativeOfficePdfTextCharacter, NativeOfficePdfTextLayerOptions,
+    NativeOfficePdfiumLayoutRenderer, NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision,
+    NATIVE_OFFICE_PDF_TEXT_SCHEMA_VERSION,
 };
 use sha2::Digest as _;
 
@@ -603,6 +605,104 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
     );
     assert_ne!(first.raster.sha256, second.raster.sha256);
 
+    let batch_first_output = directory.path().join("batch-page-1.png");
+    let batch_second_output = directory.path().join("batch-page-2.png");
+    let batch_requests = [
+        renderer
+            .inspect_inventoried_page(
+                &source,
+                &inventory,
+                inventory.pages[0].unit.clone(),
+                NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+            )
+            .unwrap()
+            .into_render_request(&batch_first_output, TEST_MAX_OUTPUT_BYTES, TEST_TIMEOUT_MS),
+        renderer
+            .inspect_inventoried_page(
+                &source,
+                &inventory,
+                inventory.pages[1].unit.clone(),
+                NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+            )
+            .unwrap()
+            .into_render_request(&batch_second_output, TEST_MAX_OUTPUT_BYTES, TEST_TIMEOUT_MS),
+    ];
+    let render_batch_options = NativeOfficePdfRenderBatchOptions {
+        max_pages: 2,
+        max_total_output_bytes: 2 * TEST_MAX_OUTPUT_BYTES,
+        timeout_ms: TEST_TIMEOUT_MS,
+    };
+    let render_batch = renderer
+        .render_batch(batch_requests.to_vec(), render_batch_options)
+        .await
+        .unwrap();
+    render_batch
+        .validate_for(&batch_requests, render_batch_options)
+        .unwrap();
+    let batch_receipts = render_batch
+        .slots
+        .iter()
+        .map(|slot| match &slot.outcome {
+            NativeOfficePdfRenderBatchSlotOutcome::Completed { receipt } => receipt.as_ref(),
+            NativeOfficePdfRenderBatchSlotOutcome::Failed { error } => panic!("{error}"),
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(batch_receipts[0].raster.sha256, first.raster.sha256);
+    assert_eq!(batch_receipts[1].raster.sha256, second.raster.sha256);
+    assert_eq!(
+        std::fs::read(&batch_first_output).unwrap(),
+        std::fs::read(&first_output).unwrap()
+    );
+    assert_eq!(
+        std::fs::read(&batch_second_output).unwrap(),
+        std::fs::read(&second_output).unwrap()
+    );
+
+    let mut duplicate_unit = batch_requests.to_vec();
+    duplicate_unit[1].unit = duplicate_unit[0].unit.clone();
+    let duplicate_error = renderer
+        .render_batch(duplicate_unit, render_batch_options)
+        .await
+        .unwrap_err();
+    assert_eq!(duplicate_error.code, "use.office.pdf_render_batch_invalid");
+
+    let aggregate_error = renderer
+        .render_batch(
+            batch_requests.to_vec(),
+            NativeOfficePdfRenderBatchOptions {
+                max_total_output_bytes: 2 * TEST_MAX_OUTPUT_BYTES - 1,
+                ..render_batch_options
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(aggregate_error.code, "use.office.pdf_render_batch_invalid");
+
+    let isolated_first_output = directory.path().join("batch-isolated-page-1.png");
+    let isolated_second_output = directory.path().join("batch-isolated-page-2.png");
+    let mut isolated_requests = batch_requests.to_vec();
+    isolated_requests[0].output = isolated_first_output.clone();
+    isolated_requests[1].output = isolated_second_output.clone();
+    isolated_requests[1].max_output_bytes = 1;
+    let isolated_batch = renderer
+        .render_batch(isolated_requests.clone(), render_batch_options)
+        .await
+        .unwrap();
+    isolated_batch
+        .validate_for(&isolated_requests, render_batch_options)
+        .unwrap();
+    assert!(matches!(
+        isolated_batch.slots[0].outcome,
+        NativeOfficePdfRenderBatchSlotOutcome::Completed { .. }
+    ));
+    assert!(matches!(
+        &isolated_batch.slots[1].outcome,
+        NativeOfficePdfRenderBatchSlotOutcome::Failed { error }
+            if error.code == "use.office.layout_output_too_large"
+    ));
+    assert!(isolated_first_output.exists());
+    assert!(!isolated_second_output.exists());
+
     let mut tampered_inventory = inventory.clone();
     tampered_inventory.pages[0].output_width_px += 1;
     let tampered_page = renderer
@@ -773,6 +873,56 @@ async fn explicit_pdfium_library_inventories_and_renders_exact_pages() {
         .unwrap_err();
     assert_eq!(mutation.code, "use.office.layout_source_mutated");
     assert!(!mutation_output.exists());
+
+    let batch_mutation_source = directory.path().join("batch-mutation.pdf");
+    std::fs::write(&batch_mutation_source, two_page_pdf()).unwrap();
+    let batch_mutation_revision = renderer
+        .source_revision(&batch_mutation_source, 1024 * 1024, TEST_TIMEOUT_MS)
+        .await
+        .unwrap();
+    let batch_mutation_inventory = renderer
+        .inventory_pages(&batch_mutation_source, batch_mutation_revision, options)
+        .await
+        .unwrap();
+    let batch_mutation_outputs = [
+        directory.path().join("batch-mutation-page-1.png"),
+        directory.path().join("batch-mutation-page-2.png"),
+    ];
+    let batch_mutation_requests = batch_mutation_inventory
+        .pages
+        .iter()
+        .zip(&batch_mutation_outputs)
+        .map(|(page, output)| {
+            renderer
+                .inspect_inventoried_page(
+                    &batch_mutation_source,
+                    &batch_mutation_inventory,
+                    page.unit.clone(),
+                    NativeOfficeLayoutEnvironment::new("en-US", "UTC"),
+                )
+                .unwrap()
+                .into_render_request(output, TEST_MAX_OUTPUT_BYTES, TEST_TIMEOUT_MS)
+        })
+        .collect::<Vec<_>>();
+    let source_for_batch_hook = batch_mutation_source.clone();
+    let batch_mutation = renderer
+        .render_batch_with_before_publish_source_check(
+            batch_mutation_requests,
+            render_batch_options,
+            move || {
+                use std::io::Write as _;
+                std::fs::OpenOptions::new()
+                    .append(true)
+                    .open(source_for_batch_hook)
+                    .unwrap()
+                    .write_all(b"mutated")
+                    .unwrap();
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(batch_mutation.code, "use.office.layout_source_mutated");
+    assert!(batch_mutation_outputs.iter().all(|output| !output.exists()));
 
     let blank_source = directory.path().join("blank.pdf");
     std::fs::write(&blank_source, blank_page_pdf()).unwrap();

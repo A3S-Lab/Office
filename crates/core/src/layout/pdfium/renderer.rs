@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use a3s_use_core::UseResult;
 use async_trait::async_trait;
 use sha2::{Digest, Sha256};
+use tokio::io::AsyncReadExt as _;
 
 use super::engine::{PdfiumEngine, PDFIUM_ENGINE_VERSION};
 use super::{
@@ -18,8 +19,7 @@ use super::{
     NativeOfficePdfTextLayerOptions, MAX_NATIVE_OFFICE_PDF_SOURCE_BYTES,
 };
 use crate::layout::pptx_image::io::{
-    ensure_output_available, hash_regular_file, publish_output, stage_output,
-    validate_published_output, verify_source_revision,
+    ensure_output_available, hash_regular_file, source_mutated, verify_source_revision,
 };
 use crate::layout::{
     is_sha256, layout_error, validate_revision, validate_unit, NativeOfficeLayoutAuthority,
@@ -29,6 +29,9 @@ use crate::layout::{
     MAX_LAYOUT_TIMEOUT_MS, NATIVE_OFFICE_LAYOUT_PROFILE_SCHEMA_VERSION,
 };
 use crate::{NativeOfficeUnit, NativeOfficeUnitLocator, PackageRevision};
+
+mod batch;
+mod publication;
 
 const RENDERER_ID: &str = "a3s-office-native-pdfium";
 const ENGINE_NAME: &str = "pdfium";
@@ -397,47 +400,8 @@ impl NativeOfficePdfiumLayoutRenderer {
         })
         .await
         .map_err(|_| pdfium_task_failed())??;
-        let expected_profile = self.profile(
-            &page,
-            NativeOfficeLayoutEnvironment::new(
-                request.profile.locale.clone(),
-                request.profile.timezone.clone(),
-            ),
-            request.profile.dpi_x_milli,
-        );
-        if request.profile != expected_profile {
-            return Err(layout_error(
-                "use.office.layout_profile_invalid",
-                "The requested layout profile does not match the exact PDF page and renderer.",
-            ));
-        }
-        let png_sha256 = format!("{:x}", Sha256::digest(&png));
-        let staged = stage_output(&request.output, png).await?;
-        before_final_source_check();
-        verify_source_revision(&request.source_path, &request.source_revision).await?;
-        publish_output(staged, &request.output).await?;
-        let raster = validate_published_output(
-            &request.output,
-            request.max_output_bytes,
-            page.output_width_px,
-            page.output_height_px,
-            &png_sha256,
-            page.rotation_degrees,
-        )
-        .await?;
-        verify_source_revision(&request.source_path, &request.source_revision).await?;
-
-        let profile_sha256 = request.profile.sha256()?;
-        let receipt = NativeOfficeLayoutReceipt {
-            source_revision: request.source_revision.clone(),
-            render_input_sha256: request.source_revision.sha256,
-            unit: request.unit,
-            profile: request.profile,
-            profile_sha256,
-            raster,
-        };
-        receipt.validate()?;
-        Ok(receipt)
+        self.publish_rendered_page_with_hook(request, page, png, before_final_source_check)
+            .await
     }
 
     #[cfg(test)]
@@ -571,20 +535,50 @@ async fn read_source_bytes(
     max_source_bytes: u64,
 ) -> UseResult<Vec<u8>> {
     validate_pdf_revision(revision, max_source_bytes)?;
-    verify_source_revision(path, revision).await?;
-    let bytes = tokio::fs::read(path)
+    let path_metadata = tokio::fs::symlink_metadata(path)
         .await
-        .map_err(|_| pdf_source_invalid())?;
-    if u64::try_from(bytes.len()).unwrap_or(u64::MAX) != revision.archive_bytes
+        .map_err(|_| source_mutated())?;
+    if !source_metadata_matches(&path_metadata, revision) {
+        return Err(source_mutated());
+    }
+
+    let mut source = tokio::fs::File::open(path)
+        .await
+        .map_err(|_| source_mutated())?;
+    let open_metadata = source.metadata().await.map_err(|_| source_mutated())?;
+    if !open_metadata.is_file() || open_metadata.len() != revision.archive_bytes {
+        return Err(source_mutated());
+    }
+
+    let capacity = usize::try_from(revision.archive_bytes).map_err(|_| source_mutated())?;
+    let mut bytes = Vec::with_capacity(capacity);
+    let capture_limit = max_source_bytes.checked_add(1).ok_or_else(source_mutated)?;
+    {
+        let mut bounded = (&mut source).take(capture_limit);
+        bounded
+            .read_to_end(&mut bytes)
+            .await
+            .map_err(|_| source_mutated())?;
+    }
+    let final_open_metadata = source.metadata().await.map_err(|_| source_mutated())?;
+    let final_path_metadata = tokio::fs::symlink_metadata(path)
+        .await
+        .map_err(|_| source_mutated())?;
+    if !final_open_metadata.is_file()
+        || final_open_metadata.len() != revision.archive_bytes
+        || !source_metadata_matches(&final_path_metadata, revision)
+        || u64::try_from(bytes.len()).unwrap_or(u64::MAX) != revision.archive_bytes
         || format!("{:x}", Sha256::digest(&bytes)) != revision.sha256
     {
-        return Err(layout_error(
-            "use.office.layout_source_mutated",
-            "The PDF layout source changed while its immutable bytes were being captured.",
-        ));
+        return Err(source_mutated());
     }
-    verify_source_revision(path, revision).await?;
     Ok(bytes)
+}
+
+fn source_metadata_matches(metadata: &std::fs::Metadata, revision: &PackageRevision) -> bool {
+    metadata.is_file()
+        && !metadata.file_type().is_symlink()
+        && metadata.len() == revision.archive_bytes
 }
 
 fn renderer_config_sha256() -> String {
