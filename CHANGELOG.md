@@ -4,6 +4,24 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.9.1 - 2026-08-17
+
+- Made live Document pagination measure the canonical editor DOM cooperatively
+  in bounded 32 ms slices. Measurement yields only between top-level blocks,
+  preserves the synchronous block, section, page-style, and reuse contracts,
+  and keeps input, media, and animation work schedulable while large documents
+  are repaginated.
+- Connected cooperative measurement to the existing single-flight pagination
+  coordinator. A document edit aborts the stale pass before it can publish its
+  snapshot, then coalesces follow-up work without replacing the controlled
+  TipTap model or weakening Worker/WASM layout authority.
+- Canonicalized sub-micro-pixel page metrics across the JavaScript and WASM
+  boundary so an incrementally reused page prefix also retains its resolved
+  headers, footers, page numbers, previews, and navigation descriptors.
+- Added multi-section parity and abort regressions, retained the 120-page
+  deterministic A3S Test navigation/edit flow, updated the bilingual Document
+  and architecture guidance, and froze the 0.9.1 documentation set.
+
 ## 0.9.0 - 2026-08-17
 
 - Added `spreadsheet-batch-cells` across Rust, `collab mutate`, standard MCP,

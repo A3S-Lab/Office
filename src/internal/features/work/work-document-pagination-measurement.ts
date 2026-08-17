@@ -36,6 +36,13 @@ import {
 import { measureDocumentTableRows } from './work-document-table-pagination';
 import type { WorkDocumentSectionLayout } from './work-types';
 
+export interface IncrementalDocumentLayoutMeasurementOptions {
+  checkpoint?: (signal?: AbortSignal) => Promise<void>;
+  signal?: AbortSignal;
+}
+
+const DOCUMENT_LAYOUT_MEASUREMENT_SLICE_MS = 32;
+
 export function measureDocumentLayoutBlocks(
   editor: Editor,
   previous: DocumentPaginationSnapshot | null = null,
@@ -84,6 +91,83 @@ export function measureDocumentLayoutBlocks(
       blocks,
     );
   });
+  return {
+    blocks,
+    pageStyles: [...pageStyleByMetrics.values()],
+    measuredBlockCount: counts.measured,
+    reusedBlockCount: counts.reused,
+    unsupportedLayout,
+  };
+}
+
+/**
+ * Measures the same canonical editor DOM as `measureDocumentLayoutBlocks`
+ * while yielding between top-level blocks. The browser keeps input, media,
+ * and animation tasks schedulable during large-document pagination without
+ * weakening the layout result or replacing the controlled editor model.
+ */
+export async function measureDocumentLayoutBlocksIncrementally(
+  editor: Editor,
+  previous: DocumentPaginationSnapshot | null = null,
+  dirtyFrom = 0,
+  textLayouts: ReadonlyMap<
+    string,
+    OfficeKernelTextLayoutParagraphResult
+  > = new Map(),
+  maximumFragmentedTableRowHeight = 1_000_000,
+  options: IncrementalDocumentLayoutMeasurementOptions = {},
+): Promise<DocumentPaginationSnapshot> {
+  const blocks: MeasuredDocumentLayoutBlock[] = [];
+  const pageStyleByMetrics = new Map<string, OfficeKernelPageStyle>();
+  const counts = { measured: 0, reused: 0 };
+  const checkpoint =
+    options.checkpoint ?? createDocumentLayoutMeasurementCheckpoint();
+  throwIfDocumentMeasurementAborted(options.signal);
+  let unsupportedLayout = false;
+  let sectionPosition = 0;
+  for (
+    let sectionIndex = 0;
+    sectionIndex < editor.state.doc.childCount;
+    sectionIndex += 1
+  ) {
+    const section = editor.state.doc.child(sectionIndex);
+    if (section.type.name === 'documentSection') {
+      const layout = documentSectionLayoutFromNodeAttributes(
+        section.attrs as Partial<DocumentSectionNodeAttributes>,
+      );
+      if (layout.columns.count > 1) unsupportedLayout = true;
+      const page = documentPageMetrics(layout);
+      const metricsKey = documentPageMetricsKey(page);
+      let pageStyle = pageStyleByMetrics.get(metricsKey);
+      if (!pageStyle) {
+        pageStyle = {
+          id: `document-page-style-${pageStyleByMetrics.size + 1}`,
+          page,
+        };
+        pageStyleByMetrics.set(metricsKey, pageStyle);
+      }
+      await measureSectionBlocksIncrementally(
+        editor,
+        section,
+        sectionPosition,
+        sectionIndex,
+        layout,
+        pageStyle,
+        previous?.blocks ?? [],
+        dirtyFrom,
+        textLayouts,
+        Math.min(
+          maximumFragmentedTableRowHeight,
+          documentPageBodyHeight(pageStyle.page),
+        ),
+        counts,
+        blocks,
+        checkpoint,
+        options.signal,
+      );
+    }
+    sectionPosition += section.nodeSize;
+  }
   return {
     blocks,
     pageStyles: [...pageStyleByMetrics.values()],
@@ -149,42 +233,103 @@ function measureSectionBlocks(
 ): void {
   const sectionBlocks: MeasuredDocumentLayoutBlock[] = [];
   section.forEach((node, offset, index) => {
-    const position = sectionPosition + offset + 1;
-    const element = elementForNode(editor, position);
-    if (!element) return;
-    const id = documentBlockId(sectionPosition, index, position);
-    const paragraphPagination = documentNodeParagraphPagination(node);
-    if (isDocumentListNode(node)) {
-      const reused = reusableDocumentListLayoutBlocks(
-        previous,
-        id,
-        position + node.nodeSize,
-        dirtyFrom,
-      );
-      if (reused.length) {
-        counts.reused += reused.length;
-        sectionBlocks.push(...reused);
-        return;
-      }
-      const listBlocks = measureDocumentListBlocks(
-        editor,
-        node,
-        element,
-        id,
-        position,
-        textLayouts,
-        maximumFragmentedTableRowHeight,
-      );
-      if (listBlocks.length) {
-        counts.measured += listBlocks.length;
-        sectionBlocks.push(...listBlocks);
-        return;
-      }
-    }
-    const reused = reusableDocumentLayoutBlocks(
+    measureSectionBlock(
+      editor,
+      node,
+      offset,
+      index,
+      sectionPosition,
+      previous,
+      dirtyFrom,
+      textLayouts,
+      maximumFragmentedTableRowHeight,
+      counts,
+      sectionBlocks,
+    );
+  });
+
+  finishMeasuredSection(
+    section,
+    sectionPosition,
+    sectionIndex,
+    layout,
+    pageStyle,
+    sectionBlocks,
+    result,
+  );
+}
+
+async function measureSectionBlocksIncrementally(
+  editor: Editor,
+  section: ProseMirrorNode,
+  sectionPosition: number,
+  sectionIndex: number,
+  layout: WorkDocumentSectionLayout,
+  pageStyle: OfficeKernelPageStyle,
+  previous: readonly MeasuredDocumentLayoutBlock[],
+  dirtyFrom: number,
+  textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
+  maximumFragmentedTableRowHeight: number,
+  counts: { measured: number; reused: number },
+  result: MeasuredDocumentLayoutBlock[],
+  checkpoint: (signal?: AbortSignal) => Promise<void>,
+  signal?: AbortSignal,
+): Promise<void> {
+  const sectionBlocks: MeasuredDocumentLayoutBlock[] = [];
+  let offset = 0;
+  for (let index = 0; index < section.childCount; index += 1) {
+    await checkpoint(signal);
+    throwIfDocumentMeasurementAborted(signal);
+    const node = section.child(index);
+    measureSectionBlock(
+      editor,
+      node,
+      offset,
+      index,
+      sectionPosition,
+      previous,
+      dirtyFrom,
+      textLayouts,
+      maximumFragmentedTableRowHeight,
+      counts,
+      sectionBlocks,
+    );
+    offset += node.nodeSize;
+  }
+
+  finishMeasuredSection(
+    section,
+    sectionPosition,
+    sectionIndex,
+    layout,
+    pageStyle,
+    sectionBlocks,
+    result,
+  );
+}
+
+function measureSectionBlock(
+  editor: Editor,
+  node: ProseMirrorNode,
+  offset: number,
+  index: number,
+  sectionPosition: number,
+  previous: readonly MeasuredDocumentLayoutBlock[],
+  dirtyFrom: number,
+  textLayouts: ReadonlyMap<string, OfficeKernelTextLayoutParagraphResult>,
+  maximumFragmentedTableRowHeight: number,
+  counts: { measured: number; reused: number },
+  sectionBlocks: MeasuredDocumentLayoutBlock[],
+): void {
+  const position = sectionPosition + offset + 1;
+  const element = elementForNode(editor, position);
+  if (!element) return;
+  const id = documentBlockId(sectionPosition, index, position);
+  const paragraphPagination = documentNodeParagraphPagination(node);
+  if (isDocumentListNode(node)) {
+    const reused = reusableDocumentListLayoutBlocks(
       previous,
       id,
-      element,
       position + node.nodeSize,
       dirtyFrom,
     );
@@ -193,56 +338,92 @@ function measureSectionBlocks(
       sectionBlocks.push(...reused);
       return;
     }
-    if (node.type.name === 'table') {
-      const tableRows = measureDocumentTableRows(
-        editor,
-        node,
-        element,
-        id,
-        position,
-        maximumFragmentedTableRowHeight,
-      );
-      if (tableRows.length) {
-        counts.measured += tableRows.length;
-        sectionBlocks.push(...tableRows);
-        return;
-      }
-    }
-    const lineFragments = measureParagraphLineFragments(
+    const listBlocks = measureDocumentListBlocks(
       editor,
       node,
       element,
       id,
       position,
-      position + node.nodeSize,
-      paragraphPagination,
-      textLayouts.get(id),
+      textLayouts,
+      maximumFragmentedTableRowHeight,
     );
-    if (lineFragments.length > 1) {
-      counts.measured += lineFragments.length;
-      sectionBlocks.push(...lineFragments);
+    if (listBlocks.length) {
+      counts.measured += listBlocks.length;
+      sectionBlocks.push(...listBlocks);
       return;
     }
-    counts.measured += 1;
-    sectionBlocks.push(
-      measuredDocumentBlock({
-        block: {
-          id,
-          height: documentBlockFlowHeight(node, element),
-          breakBefore: paragraphPagination.pageBreakBefore,
-          breakAfter: node.type.name === 'pageBreak',
-          keepTogether:
-            paragraphPagination.keepLines ||
-            shouldKeepDocumentBlockTogether(node),
-          keepWithNext: paragraphPagination.keepWithNext,
-        },
-        element,
-        from: position,
-        to: position + node.nodeSize,
-      }),
+  }
+  const reused = reusableDocumentLayoutBlocks(
+    previous,
+    id,
+    element,
+    position + node.nodeSize,
+    dirtyFrom,
+  );
+  if (reused.length) {
+    counts.reused += reused.length;
+    sectionBlocks.push(...reused);
+    return;
+  }
+  if (node.type.name === 'table') {
+    const tableRows = measureDocumentTableRows(
+      editor,
+      node,
+      element,
+      id,
+      position,
+      maximumFragmentedTableRowHeight,
     );
-  });
+    if (tableRows.length) {
+      counts.measured += tableRows.length;
+      sectionBlocks.push(...tableRows);
+      return;
+    }
+  }
+  const lineFragments = measureParagraphLineFragments(
+    editor,
+    node,
+    element,
+    id,
+    position,
+    position + node.nodeSize,
+    paragraphPagination,
+    textLayouts.get(id),
+  );
+  if (lineFragments.length > 1) {
+    counts.measured += lineFragments.length;
+    sectionBlocks.push(...lineFragments);
+    return;
+  }
+  counts.measured += 1;
+  sectionBlocks.push(
+    measuredDocumentBlock({
+      block: {
+        id,
+        height: documentBlockFlowHeight(node, element),
+        breakBefore: paragraphPagination.pageBreakBefore,
+        breakAfter: node.type.name === 'pageBreak',
+        keepTogether:
+          paragraphPagination.keepLines ||
+          shouldKeepDocumentBlockTogether(node),
+        keepWithNext: paragraphPagination.keepWithNext,
+      },
+      element,
+      from: position,
+      to: position + node.nodeSize,
+    }),
+  );
+}
 
+function finishMeasuredSection(
+  section: ProseMirrorNode,
+  sectionPosition: number,
+  sectionIndex: number,
+  layout: WorkDocumentSectionLayout,
+  pageStyle: OfficeKernelPageStyle,
+  sectionBlocks: MeasuredDocumentLayoutBlock[],
+  result: MeasuredDocumentLayoutBlock[],
+): void {
   const last = sectionBlocks.at(-1);
   if (
     last &&
@@ -267,6 +448,52 @@ function measureSectionBlocks(
     block.section = sectionMetadata;
   }
   result.push(...sectionBlocks);
+}
+
+function createDocumentLayoutMeasurementCheckpoint(): (
+  signal?: AbortSignal,
+) => Promise<void> {
+  let deadline =
+    documentMeasurementNow() + DOCUMENT_LAYOUT_MEASUREMENT_SLICE_MS;
+  return async (signal) => {
+    throwIfDocumentMeasurementAborted(signal);
+    if (documentMeasurementNow() < deadline) return;
+    await yieldDocumentMeasurement();
+    throwIfDocumentMeasurementAborted(signal);
+    deadline = documentMeasurementNow() + DOCUMENT_LAYOUT_MEASUREMENT_SLICE_MS;
+  };
+}
+
+function documentMeasurementNow(): number {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
+function yieldDocumentMeasurement(): Promise<void> {
+  if (typeof MessageChannel !== 'undefined') {
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      channel.port1.addEventListener(
+        'message',
+        () => {
+          channel.port1.close();
+          channel.port2.close();
+          resolve();
+        },
+        { once: true },
+      );
+      channel.port1.start();
+      channel.port2.postMessage(undefined);
+    });
+  }
+  return new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+}
+
+function throwIfDocumentMeasurementAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  const error = new Error('Document layout measurement was aborted');
+  error.name = 'AbortError';
+  throw error;
 }
 
 function documentPageMetricsKey(page: OfficeKernelPageMetrics): string {

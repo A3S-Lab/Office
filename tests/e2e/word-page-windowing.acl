@@ -53,16 +53,24 @@ suite "office-word-page-windowing" {
             visible = css(".work-document-page-navigation[data-document-page-count='120'][data-document-page-windowed='true']:not([data-document-page-mounted-count='120'])")
         }
 
-        expect "far-page-is-not-mounted-in-the-initial-window" {
-            visible = css(".work-document-page-navigation:not(:has([data-document-page-thumbnail='1']))")
+        expect "last-page-is-not-mounted-in-the-initial-window" {
+            visible = css(".work-document-page-navigation:not(:has([data-document-page-thumbnail='120']))")
         }
 
         expect "virtual-scroll-geometry-ready" {
-            visible = css("[data-document-page-spacer='before']")
+            visible = css("[data-document-page-spacer='after']")
         }
 
-        focus "focus-last-page" {
-            target = css("[data-document-page-thumbnail='120']")
+        focus "focus-first-page-in-initial-window" {
+            target = css("[data-document-page-thumbnail='1']")
+        }
+
+        press "focus-last-page-from-initial-window" {
+            key = "End"
+        }
+
+        expect "last-page-mounted-from-initial-window" {
+            visible = css("[data-document-page-thumbnail='120']:focus")
         }
 
         press "focus-first-page" {
@@ -105,12 +113,12 @@ suite "office-word-page-windowing" {
             visible = css("[data-document-page-thumbnail='120'][aria-current='page']")
         }
 
-        focus "focus-document-tail" {
-            target = css(".work-document-editable .ProseMirror")
+        click "place-caret-in-document-tail" {
+            target = css(".work-document-editable .ProseMirror p:last-child")
         }
 
-        press "move-to-document-end" {
-            key = "Control+End"
+        press "move-to-end-of-tail-paragraph" {
+            key = "End"
         }
 
         press "edit-document-tail" {

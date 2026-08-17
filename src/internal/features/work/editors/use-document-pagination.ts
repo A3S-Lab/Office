@@ -34,9 +34,10 @@ import {
   documentPageMetrics,
   documentTextLayoutBatches,
   type MeasuredDocumentLayoutBlock,
-  measureDocumentLayoutBlocks,
+  measureDocumentLayoutBlocksIncrementally,
 } from '../work-document-pagination';
 import type { WorkDocumentSectionLayout } from '../work-types';
+import { createDocumentPaginationMeasurementRange } from './document-pagination-measurement-range';
 import { createDocumentPaginationRunCoordinator } from './document-pagination-run-coordinator';
 
 export interface DocumentPaginationResult {
@@ -105,7 +106,11 @@ export function useDocumentPagination({
   const paginationCache = useRef<DocumentPaginationResult | null>(null);
   const measurementEditor = useRef<Editor | null>(null);
   const measurementLayoutKey = useRef('');
-  const dirtyMeasurementFrom = useRef(0);
+  const measurementRangeRef = useRef<ReturnType<
+    typeof createDocumentPaginationMeasurementRange
+  > | null>(null);
+  measurementRangeRef.current ??= createDocumentPaginationMeasurementRange();
+  const measurementRange = measurementRangeRef.current;
   const observedDocumentRevision = useRef(documentRevision);
   const [pagination, setPagination] = useState<DocumentPaginationResult | null>(
     null,
@@ -124,12 +129,10 @@ export function useDocumentPagination({
       paginationCache.current = null;
       measurementEditor.current = editor;
       measurementLayoutKey.current = measurementKey;
-      dirtyMeasurementFrom.current = 0;
+      measurementRange.reset();
     }
     if (observedDocumentRevision.current !== documentRevision) {
-      if (!Number.isFinite(dirtyMeasurementFrom.current)) {
-        dirtyMeasurementFrom.current = 0;
-      }
+      measurementRange.ensureDirty();
       observedDocumentRevision.current = documentRevision;
     }
     if (
@@ -181,7 +184,7 @@ export function useDocumentPagination({
       if (!enabled) {
         measurementCache.current = null;
         paginationCache.current = null;
-        dirtyMeasurementFrom.current = 0;
+        measurementRange.reset();
       }
       setPagination(null);
       return;
@@ -270,276 +273,292 @@ export function useDocumentPagination({
       editorDom.dataset.paginationReusedPageChrome = '0';
       editorDom.dataset.paginationDerivedPageChrome = '0';
       delete editorDom.dataset.paginationError;
-      const measurementStart = dirtyMeasurementFrom.current;
-      dirtyMeasurementFrom.current = Number.POSITIVE_INFINITY;
-      const textLayoutCollection = collectDocumentTextLayoutParagraphs(
-        editor,
-        layoutFonts,
-        loadedLayoutFontIds,
-        measurementCache.current,
-        measurementStart,
-      );
-      editorDom.dataset.paginationTextCandidates = String(
-        textLayoutCollection.paragraphs.length,
-      );
-      editorDom.dataset.paginationTextRuns = String(
-        textLayoutCollection.paragraphs.reduce(
-          (count, paragraph) => count + paragraph.runs.length,
-          0,
-        ),
-      );
-      const textLayouts = new Map<
-        string,
-        OfficeKernelTextLayoutParagraphResult
-      >();
-      let fallbackGlyphCount = 0;
-      if (textLayoutCollection.paragraphs.length) {
-        editorDom.dataset.paginationState = 'shaping';
-        try {
-          let textLayoutEngine = '';
-          let unsupportedTextLayoutCount = 0;
-          const textLayoutBatches = documentTextLayoutBatches(
-            textLayoutCollection.paragraphs,
-          );
-          editorDom.dataset.paginationTextBatches = String(
-            textLayoutBatches.length,
-          );
-          for (const [batchIndex, paragraphs] of textLayoutBatches.entries()) {
-            editorDom.dataset.paginationTextBatch = String(batchIndex + 1);
-            const textLayout = await client.textLayout(
-              {
-                revision: nextRevision,
-                documentRevision,
-                paragraphs,
-              },
-              signal,
+      const measurementPass = measurementRange.begin();
+      const measurementStart = measurementPass.from;
+      try {
+        const textLayoutCollection = collectDocumentTextLayoutParagraphs(
+          editor,
+          layoutFonts,
+          loadedLayoutFontIds,
+          measurementCache.current,
+          measurementStart,
+        );
+        editorDom.dataset.paginationTextCandidates = String(
+          textLayoutCollection.paragraphs.length,
+        );
+        editorDom.dataset.paginationTextRuns = String(
+          textLayoutCollection.paragraphs.reduce(
+            (count, paragraph) => count + paragraph.runs.length,
+            0,
+          ),
+        );
+        const textLayouts = new Map<
+          string,
+          OfficeKernelTextLayoutParagraphResult
+        >();
+        let fallbackGlyphCount = 0;
+        if (textLayoutCollection.paragraphs.length) {
+          editorDom.dataset.paginationState = 'shaping';
+          try {
+            let textLayoutEngine = '';
+            let unsupportedTextLayoutCount = 0;
+            const textLayoutBatches = documentTextLayoutBatches(
+              textLayoutCollection.paragraphs,
             );
+            editorDom.dataset.paginationTextBatches = String(
+              textLayoutBatches.length,
+            );
+            for (const [
+              batchIndex,
+              paragraphs,
+            ] of textLayoutBatches.entries()) {
+              editorDom.dataset.paginationTextBatch = String(batchIndex + 1);
+              const textLayout = await client.textLayout(
+                {
+                  revision: nextRevision,
+                  documentRevision,
+                  paragraphs,
+                },
+                signal,
+              );
+              if (
+                disposed ||
+                signal.aborted ||
+                nextRevision !== revision.current ||
+                editor.isDestroyed
+              ) {
+                return;
+              }
+              textLayoutEngine ||= textLayout.engine;
+              unsupportedTextLayoutCount +=
+                textLayout.unsupportedParagraphIds.length +
+                textLayout.layouts.filter(
+                  (layout) => layout.missingGlyphCount > 0,
+                ).length;
+              for (const layout of textLayout.layouts) {
+                if (layout.missingGlyphCount === 0) {
+                  textLayouts.set(layout.id, layout);
+                  fallbackGlyphCount += layout.fallbackGlyphCount;
+                }
+              }
+            }
+            editorDom.dataset.paginationTextEngine = textLayoutEngine;
+            editorDom.dataset.paginationUnsupportedText = String(
+              unsupportedTextLayoutCount,
+            );
+          } catch (error) {
             if (
-              disposed ||
               signal.aborted ||
-              nextRevision !== revision.current ||
-              editor.isDestroyed
+              (error instanceof DOMException && error.name === 'AbortError')
             ) {
               return;
             }
-            textLayoutEngine ||= textLayout.engine;
-            unsupportedTextLayoutCount +=
-              textLayout.unsupportedParagraphIds.length +
-              textLayout.layouts.filter(
-                (layout) => layout.missingGlyphCount > 0,
-              ).length;
-            for (const layout of textLayout.layouts) {
-              if (layout.missingGlyphCount === 0) {
-                textLayouts.set(layout.id, layout);
-                fallbackGlyphCount += layout.fallbackGlyphCount;
-              }
-            }
+            textLayouts.clear();
+            fallbackGlyphCount = 0;
+            editorDom.dataset.paginationTextEngine = 'dom';
+            editorDom.dataset.paginationUnsupportedText = String(
+              textLayoutCollection.paragraphs.length,
+            );
           }
-          editorDom.dataset.paginationTextEngine = textLayoutEngine;
-          editorDom.dataset.paginationUnsupportedText = String(
-            unsupportedTextLayoutCount,
+        } else {
+          editorDom.dataset.paginationTextEngine = 'dom';
+          editorDom.dataset.paginationUnsupportedText = '0';
+          editorDom.dataset.paginationTextBatch = '0';
+          editorDom.dataset.paginationTextBatches = '0';
+        }
+        editorDom.dataset.paginationShapedParagraphs = String(textLayouts.size);
+        editorDom.dataset.paginationFallbackGlyphs = String(fallbackGlyphCount);
+        editorDom.dataset.paginationShapedRuns = String(
+          textLayoutCollection.paragraphs.reduce(
+            (count, paragraph) =>
+              count +
+              (textLayouts.has(paragraph.id) ? paragraph.runs.length : 0),
+            0,
+          ),
+        );
+        const snapshot = await measureDocumentLayoutBlocksIncrementally(
+          editor,
+          measurementCache.current,
+          measurementStart,
+          textLayouts,
+          1_000_000,
+          { signal },
+        );
+        measurementCache.current = snapshot;
+        editorDom.dataset.paginationBlocks = String(snapshot.blocks.length);
+        editorDom.dataset.paginationFlows = String(
+          new Set(
+            snapshot.blocks.flatMap((block) =>
+              block.block.flowId ? [block.block.flowId] : [],
+            ),
+          ).size,
+        );
+        editorDom.dataset.paginationMeasuredBlocks = String(
+          snapshot.measuredBlockCount,
+        );
+        editorDom.dataset.paginationReusedBlocks = String(
+          snapshot.reusedBlockCount,
+        );
+        if (snapshot.unsupportedLayout || !snapshot.blocks.length) {
+          observeBlocks(snapshot.blocks);
+          editorDom.dataset.paginationState = snapshot.unsupportedLayout
+            ? 'unsupported'
+            : 'empty';
+          setPagination(null);
+          paginationCache.current = null;
+          measurementRange.commit(measurementPass);
+          return;
+        }
+
+        const previousPagination = paginationCache.current;
+        const layoutPlan = planIncrementalDocumentLayout(
+          previousPagination,
+          snapshot.blocks,
+          measurementStart,
+        );
+        editorDom.dataset.paginationLaidOutBlocks = String(
+          layoutPlan.blocks.length,
+        );
+        editorDom.dataset.paginationReusedPages = String(
+          layoutPlan.reusedPageCount,
+        );
+        try {
+          editorDom.dataset.paginationState = 'layout';
+          const partialLayout = await client.layout(
+            {
+              revision: nextRevision,
+              documentRevision,
+              startPageIndex: layoutPlan.startPageIndex,
+              page,
+              pageStyles: snapshot.pageStyles,
+              blocks: layoutPlan.blocks,
+            },
+            signal,
           );
+          if (
+            disposed ||
+            signal.aborted ||
+            nextRevision !== revision.current ||
+            editor.isDestroyed
+          ) {
+            return;
+          }
+          const layout =
+            previousPagination && layoutPlan.startPageIndex > 0
+              ? mergeIncrementalDocumentLayout(
+                  previousPagination.layout,
+                  partialLayout,
+                )
+              : partialLayout;
+          const blockById = new Map(
+            snapshot.blocks.map((block) => [block.block.id, block] as const),
+          );
+          const pageDescriptorDerivation =
+            deriveDocumentPaginationPageDescriptors(
+              layout,
+              snapshot.blocks,
+              editor.state.doc,
+              previousPagination?.pages,
+              layoutPlan.reusedPageCount,
+            );
+          const pages = pageDescriptorDerivation.pages;
+          editorDom.dataset.paginationReusedPageChrome = String(
+            pageDescriptorDerivation.reusedPageCount,
+          );
+          editorDom.dataset.paginationDerivedPageChrome = String(
+            pageDescriptorDerivation.derivedPageCount,
+          );
+          const pageByIndex = new Map(
+            pages.map(
+              (descriptor) => [descriptor.pageIndex, descriptor] as const,
+            ),
+          );
+          editor.commands.applyDocumentPagination(
+            nextRevision,
+            layout.breaks.flatMap((pageBreak) => {
+              const block = blockById.get(pageBreak.beforeBlockId);
+              return block
+                ? [
+                    {
+                      ...pageBreak,
+                      previousPage:
+                        pageByIndex.get(pageBreak.pageIndex - 1)?.page ??
+                        layout.pages[pageBreak.pageIndex - 1]?.page ??
+                        page,
+                      nextPage:
+                        pageByIndex.get(pageBreak.pageIndex)?.page ??
+                        layout.pages[pageBreak.pageIndex]?.page ??
+                        page,
+                      position: block.from,
+                      inlineOffsetLeft: block.inlineOffsetLeft,
+                      inlineOffsetRight: block.inlineOffsetRight,
+                      previousPageChrome: visualPageChrome(
+                        pageByIndex.get(pageBreak.pageIndex - 1),
+                      ),
+                      nextPageChrome: visualPageChrome(
+                        pageByIndex.get(pageBreak.pageIndex),
+                      ),
+                      tableBreak: block.tableBreak,
+                    },
+                  ]
+                : [];
+            }),
+          );
+          observeBlocks(snapshot.blocks);
+          editorDom.dataset.paginationEngine = layout.engine;
+          editorDom.dataset.paginationDocumentRevision = String(
+            layout.documentRevision,
+          );
+          editorDom.dataset.paginationPages = String(layout.pages.length);
+          editorDom.dataset.paginationState = 'ready';
+          delete editorDom.dataset.paginationError;
+          const nextPagination = {
+            layout,
+            blocks: snapshot.blocks,
+            pages,
+            pageByBlockId: new Map(
+              layout.pages.flatMap((page) =>
+                page.placements.map(
+                  (placement) => [placement.blockId, page.index + 1] as const,
+                ),
+              ),
+            ),
+          };
+          paginationCache.current = nextPagination;
+          measurementRange.commit(measurementPass);
+          setPagination(nextPagination);
         } catch (error) {
           if (
+            disposed ||
             signal.aborted ||
             (error instanceof DOMException && error.name === 'AbortError')
           ) {
             return;
           }
-          textLayouts.clear();
-          fallbackGlyphCount = 0;
-          editorDom.dataset.paginationTextEngine = 'dom';
-          editorDom.dataset.paginationUnsupportedText = String(
-            textLayoutCollection.paragraphs.length,
-          );
+          editorDom.dataset.paginationState = 'error';
+          editorDom.dataset.paginationError =
+            error instanceof Error
+              ? `${error.name}: ${error.message}`
+              : 'UnknownError';
+          editor.commands.clearDocumentPagination(nextRevision);
+          paginationCache.current = null;
+          setPagination(null);
         }
-      } else {
-        editorDom.dataset.paginationTextEngine = 'dom';
-        editorDom.dataset.paginationUnsupportedText = '0';
-        editorDom.dataset.paginationTextBatch = '0';
-        editorDom.dataset.paginationTextBatches = '0';
-      }
-      editorDom.dataset.paginationShapedParagraphs = String(textLayouts.size);
-      editorDom.dataset.paginationFallbackGlyphs = String(fallbackGlyphCount);
-      editorDom.dataset.paginationShapedRuns = String(
-        textLayoutCollection.paragraphs.reduce(
-          (count, paragraph) =>
-            count + (textLayouts.has(paragraph.id) ? paragraph.runs.length : 0),
-          0,
-        ),
-      );
-      const snapshot = measureDocumentLayoutBlocks(
-        editor,
-        measurementCache.current,
-        measurementStart,
-        textLayouts,
-      );
-      measurementCache.current = snapshot;
-      editorDom.dataset.paginationBlocks = String(snapshot.blocks.length);
-      editorDom.dataset.paginationFlows = String(
-        new Set(
-          snapshot.blocks.flatMap((block) =>
-            block.block.flowId ? [block.block.flowId] : [],
-          ),
-        ).size,
-      );
-      editorDom.dataset.paginationMeasuredBlocks = String(
-        snapshot.measuredBlockCount,
-      );
-      editorDom.dataset.paginationReusedBlocks = String(
-        snapshot.reusedBlockCount,
-      );
-      if (snapshot.unsupportedLayout || !snapshot.blocks.length) {
-        observeBlocks(snapshot.blocks);
-        editorDom.dataset.paginationState = snapshot.unsupportedLayout
-          ? 'unsupported'
-          : 'empty';
-        setPagination(null);
-        paginationCache.current = null;
-        return;
-      }
-
-      const previousPagination = paginationCache.current;
-      const layoutPlan = planIncrementalDocumentLayout(
-        previousPagination,
-        snapshot.blocks,
-        measurementStart,
-      );
-      editorDom.dataset.paginationLaidOutBlocks = String(
-        layoutPlan.blocks.length,
-      );
-      editorDom.dataset.paginationReusedPages = String(
-        layoutPlan.reusedPageCount,
-      );
-      try {
-        editorDom.dataset.paginationState = 'layout';
-        const partialLayout = await client.layout(
-          {
-            revision: nextRevision,
-            documentRevision,
-            startPageIndex: layoutPlan.startPageIndex,
-            page,
-            pageStyles: snapshot.pageStyles,
-            blocks: layoutPlan.blocks,
-          },
-          signal,
-        );
-        if (
-          disposed ||
-          signal.aborted ||
-          nextRevision !== revision.current ||
-          editor.isDestroyed
-        ) {
-          return;
-        }
-        const layout =
-          previousPagination && layoutPlan.startPageIndex > 0
-            ? mergeIncrementalDocumentLayout(
-                previousPagination.layout,
-                partialLayout,
-              )
-            : partialLayout;
-        const blockById = new Map(
-          snapshot.blocks.map((block) => [block.block.id, block] as const),
-        );
-        const pageDescriptorDerivation =
-          deriveDocumentPaginationPageDescriptors(
-            layout,
-            snapshot.blocks,
-            editor.state.doc,
-            previousPagination?.pages,
-            layoutPlan.reusedPageCount,
-          );
-        const pages = pageDescriptorDerivation.pages;
-        editorDom.dataset.paginationReusedPageChrome = String(
-          pageDescriptorDerivation.reusedPageCount,
-        );
-        editorDom.dataset.paginationDerivedPageChrome = String(
-          pageDescriptorDerivation.derivedPageCount,
-        );
-        const pageByIndex = new Map(
-          pages.map(
-            (descriptor) => [descriptor.pageIndex, descriptor] as const,
-          ),
-        );
-        editor.commands.applyDocumentPagination(
-          nextRevision,
-          layout.breaks.flatMap((pageBreak) => {
-            const block = blockById.get(pageBreak.beforeBlockId);
-            return block
-              ? [
-                  {
-                    ...pageBreak,
-                    previousPage:
-                      pageByIndex.get(pageBreak.pageIndex - 1)?.page ??
-                      layout.pages[pageBreak.pageIndex - 1]?.page ??
-                      page,
-                    nextPage:
-                      pageByIndex.get(pageBreak.pageIndex)?.page ??
-                      layout.pages[pageBreak.pageIndex]?.page ??
-                      page,
-                    position: block.from,
-                    inlineOffsetLeft: block.inlineOffsetLeft,
-                    inlineOffsetRight: block.inlineOffsetRight,
-                    previousPageChrome: visualPageChrome(
-                      pageByIndex.get(pageBreak.pageIndex - 1),
-                    ),
-                    nextPageChrome: visualPageChrome(
-                      pageByIndex.get(pageBreak.pageIndex),
-                    ),
-                    tableBreak: block.tableBreak,
-                  },
-                ]
-              : [];
-          }),
-        );
-        observeBlocks(snapshot.blocks);
-        editorDom.dataset.paginationEngine = layout.engine;
-        editorDom.dataset.paginationDocumentRevision = String(
-          layout.documentRevision,
-        );
-        editorDom.dataset.paginationPages = String(layout.pages.length);
-        editorDom.dataset.paginationState = 'ready';
-        delete editorDom.dataset.paginationError;
-        const nextPagination = {
-          layout,
-          blocks: snapshot.blocks,
-          pages,
-          pageByBlockId: new Map(
-            layout.pages.flatMap((page) =>
-              page.placements.map(
-                (placement) => [placement.blockId, page.index + 1] as const,
-              ),
-            ),
-          ),
-        };
-        paginationCache.current = nextPagination;
-        setPagination(nextPagination);
-      } catch (error) {
-        if (
-          disposed ||
-          signal.aborted ||
-          (error instanceof DOMException && error.name === 'AbortError')
-        ) {
-          return;
-        }
-        editorDom.dataset.paginationState = 'error';
-        editorDom.dataset.paginationError =
-          error instanceof Error
-            ? `${error.name}: ${error.message}`
-            : 'UnknownError';
-        editor.commands.clearDocumentPagination(nextRevision);
-        paginationCache.current = null;
-        setPagination(null);
+      } finally {
+        measurementRange.restore(measurementPass);
       }
     };
 
     const coordinator = createDocumentPaginationRunCoordinator({
       cancelFrame: cancelAnimationFrame,
-      onAbort: () => updateDiagnostic('aborts', 'paginationAborts'),
+      onAbort: () => {
+        measurementRange.restoreActive();
+        updateDiagnostic('aborts', 'paginationAborts');
+      },
       onCoalescedRequest: () =>
         updateDiagnostic('coalescedRequests', 'paginationCoalescedRequests'),
       onError: (error) => {
+        measurementRange.restoreActive();
         if (disposed || editor.isDestroyed) return;
         editorDom.dataset.paginationState = 'error';
         editorDom.dataset.paginationError =
@@ -563,10 +582,7 @@ export function useDocumentPagination({
       coordinator.request({ invalidateActive });
     };
     const markDirty = (position: number) => {
-      dirtyMeasurementFrom.current = Math.min(
-        dirtyMeasurementFrom.current,
-        Math.max(0, position),
-      );
+      measurementRange.invalidate(position);
     };
     const handleDocumentUpdate = ({ transaction }: EditorEvents['update']) => {
       updateDiagnostic('documentTriggers', 'paginationDocumentTriggers');
@@ -1000,7 +1016,13 @@ function pageMetricsKey(page: OfficeKernelPageMetrics): string {
     page.headerHeight,
     page.footerHeight,
     page.pageGap,
-  ].join(':');
+  ]
+    .map(canonicalPageMetric)
+    .join(':');
+}
+
+function canonicalPageMetric(value: number): number {
+  return Math.round(value * 1_000_000) / 1_000_000;
 }
 
 function earliestChangedPosition(transaction: Transaction): number {

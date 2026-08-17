@@ -1,0 +1,191 @@
+---
+title: A3S Boot 实时协作后端
+description: 为全部 A3S Office 编辑器运行带鉴权、持久化与在线成员同步的 Yjs/Yrs 后端。
+---
+
+# A3S Boot 实时协作后端
+
+仓库现在提供一个可以直接运行的完整后端，源码位于
+[`examples/collaboration-server`](https://github.com/A3S-Lab/Office/tree/main/examples/collaboration-server)。
+它不是只展示接口形状的伪代码。Rust 集成测试会真正打开两个经过鉴权的 WebSocket
+连接，把浏览器生成的 Yjs 更新通过 Yrs 持久化，检查房间广播，创建持久 Document
+选区评论和署名文字建议，并验证评论、建议或只读用户都无法伪造正文。
+
+这个示例组合了 `a3s-boot` 0.2 与 `a3s-office` 原生协作存储：
+
+| 职责 | 实现 |
+| --- | --- |
+| HTTP 与 WebSocket | A3S Boot 和 Axum Adapter |
+| 配置 | `ConfigModule` 读取并验证 A3S ACL |
+| 房间鉴权 | 五分钟有效的 HMAC 签名票据，绑定文件、Actor ID/名称/类型、模式、命名空间与文件类型 |
+| 文档同步 | 标准 Yjs v1 `sync-step-1`、`sync-step-2` 与 `update` |
+| 持久化 | Yrs 崩溃安全更新日志、操作回执和检查点 |
+| 在线状态 | 有大小限制的 Yjs Awareness 转发，绝不写入文档历史 |
+| 原生智能体 | 使用限定智能体身份的房间票据；宿主桥接 CLI/MCP 的传输中立 JSONL 会话 |
+| 权限 | `edit` 可发布内容与审核更新；Document `comment` 可发布通过语义校验的评论记录；经过认证的 Document `suggest` 可发布通过语义校验的文字建议；其他非编辑组合只能接收 |
+
+## 启动服务
+
+在 Office 仓库根目录执行：
+
+```bash
+export A3S_OFFICE_TICKET_SECRET="$(openssl rand -hex 32)"
+export A3S_OFFICE_ADMIN_TOKEN="$(openssl rand -hex 24)"
+cargo run -p a3s-office-collaboration-server
+```
+
+仓库中的
+[`collaboration-server.acl`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/collaboration-server.acl)
+默认监听 `127.0.0.1:8787`，将副本存放在 `./data/collaboration`，并允许本地
+Playground 的两个 Origin。密钥通过 ACL 的 `env(...)` 读取，不会写进配置文件。
+
+部署时可以把另一份 ACL 路径作为第一个参数：
+
+```bash
+cargo run -p a3s-office-collaboration-server -- /etc/a3s/office-collaboration.acl
+```
+
+## 签发房间票据
+
+宿主后端应先完成现有的用户登录和文件权限检查，再调用受保护的票据接口：
+
+```bash
+curl --fail http://127.0.0.1:8787/api/collaboration/tickets \
+  --header "Authorization: Bearer ${A3S_OFFICE_ADMIN_TOKEN}" \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "artifactId": "quarterly-plan",
+    "artifactKind": "document",
+    "actorId": "user-42",
+    "actorName": "Ada Reviewer",
+    "actorKind": "human",
+    "mode": "comment"
+  }'
+```
+
+标准 API 响应的 `data.webSocketUrl` 已包含短期、限定房间的票据。浏览器只接收这个
+URL。不要把 `A3S_OFFICE_ADMIN_TOKEN` 放进前端代码。
+
+## 接入浏览器
+
+完整的
+[`client.ts`](https://github.com/A3S-Lab/Office/blob/main/examples/collaboration-server/client.ts)
+实现了 `OfficeCollaborationTransport`、有界 base64 编码、Awareness 转发、离线成员清理、
+指数退避重连，以及重连后的双向状态向量握手。
+
+```ts
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { connectA3sBootCollaborationRoom } from './client';
+
+const document = new Y.Doc();
+const awareness = new Awareness(document);
+const session = createOfficeCollaborationSession({
+  artifactId: 'quarterly-plan',
+  kind: 'document',
+  document,
+  awareness,
+  actor: { id: 'user-42', name: 'Ada Reviewer', kind: 'human' },
+  mode: 'comment',
+});
+
+// 这个 comment 会话挂载前，必须由服务端或另一个获得授权的 edit 初始化者
+// 完成房间初始化。
+
+const presence = createOfficeCollaborationPresence(session);
+const room = connectA3sBootCollaborationRoom({
+  webSocketUrl: ticketResponse.data.webSocketUrl,
+  session,
+  awareness,
+  onStatus: reportConnectionStatus,
+});
+```
+
+同一个 `session` 和 `presence` 可以传给任意 React、Vue 或 Web Component 编辑器。
+组件卸载时，依次销毁 `room`、`presence`、`session`、`awareness` 与宿主持有的 `Y.Doc`。
+
+签名票据使用版本 2。`actorName` 必须与本地会话的 Actor 名称及每条新评论、回复或
+Document 建议的 `author` 一致。适配器会把 `collaboration.ready` 中的文件 ID/类型、命名空间、
+Actor ID/名称/类型、模式和服务端 Yjs Client ID 与本地会话逐项核对；任何不匹配都会
+关闭连接，而不是接入错误身份的房间。
+
+## 更新授权
+
+| 票据 | 服务端行为 |
+| --- | --- |
+| `edit` | 完成常规协议校验后，接受规范内容和审核更新。 |
+| Document `comment` | 只接受评论/回复创建、解决/重开、本人记录删除以及准确的选区 Mark。 |
+| Document `suggest` | 只接受经过认证、带身份的插入、删除和替换建议，并要求规范 Document 投影与所有非建议 Root 保持不变。 |
+| `view` | 响应同步并转发 Presence，但拒绝发布文档更新。 |
+| 非 Document `comment` / `suggest` | 在该格式具备持久审核模型前只能接收。 |
+
+收到 Document `comment` 更新时，服务端会持有持久存储锁，复制当前 Yrs 状态，把更新
+应用到候选文档，再比较两者的语义。只允许 `document.comments`、保留既有顺序且只能
+追加的评论顺序和不可变声明、`commentsPresent` 与 `documentComment` Mark 发生变化。
+正文或结构、其他 Root 或选项、伪造的作者/Actor、既有记录重排、无效锚点、修改他人
+记录以及删除他人记录都会返回 `FORBIDDEN`。只有校验通过的候选状态才会持久化并
+广播，授权不依赖客户端提交的原始 Yjs 字节或 origin 元数据。
+
+收到 Document `suggest` 更新时，服务端使用同一把锁和候选状态边界。它从已提交和候选
+ProseMirror 树中移除建议效果，要求得到的规范文字、结构和格式完全一致，并要求所有非
+内容 Root 保持语义等价。新插入或删除 Mark 必须携带稳定 ID、规范 UTC 时间，以及票据
+认证的准确 Actor ID 和显示名称。当前 Actor 可以安全扩展或撤回自己的插入建议，但不能
+改写他人的建议，也不能改写删除建议指向的规范文字。替换按一条删除建议加一条插入建议
+授权。选项、评论、参考文献、决定审计、Root、结构、非建议格式、他人建议或存在未满足
+Yjs 依赖的修改，都会在持久状态改变前返回 `FORBIDDEN`。
+
+## 接入原生智能体
+
+宿主先确认智能体有权访问文件，再签发 `actorKind: "agent"` 的票据。浏览器和原生
+参与者使用同一套 Office WebSocket 消息。`a3s-office collab session` 有意只提供
+JSONL 宿主通道，不会自行选择网络 Provider。宿主把它输出的 `outbound` 记录转成
+`collaboration.document` 事件，再把房间中的文档事件以 `receive` 记录写回 stdin。
+
+每个智能体应继续持有独立、绑定参与者身份的副本，不要让它直接打开服务内部的
+`data_dir`。JSONL 与 WebSocket 之间的进程桥和重连生命周期由宿主负责；示例已经完整
+实现服务端的房间、鉴权、持久化、广播与协议校验边界。
+
+原生智能体使用与浏览器编辑器相同的封闭审阅契约。`document-suggestion-create` 要求
+绑定 Actor 的 `suggest` 副本，并从 Manifest 注入 `actorId`；
+`document-suggestion-decide` 要求 `edit` 副本、投影 v3 返回的精确建议身份与文字，并能
+原子接受或拒绝一组替换插入/删除。生成的标准 Yjs 更新会经过同一个认证 WebSocket
+房间、语义授权、持久存储、确认和广播路径。完整 CLI 与 MCP Payload 见
+[使用 suggest 模式提出修订](./collaboration.mdx#使用-suggest-模式提出修订)；智能体不应
+构造私有 ProseMirror/Yjs Mark。
+
+## 重连与持久化语义
+
+断网期间的本地变更继续保存在浏览器 `Y.Doc` 中。适配器不会把每个发送失败的帧再维护
+一份内存队列。重新连上后，浏览器和服务端持久副本都会发送状态向量，双方只交换对方
+缺失的增量。服务端根据房间身份、发送者 Client ID、消息类型和更新字节生成稳定操作
+ID，所以重复投递保持幂等。
+
+服务端会先持久化收到的 `sync-step-2` 或 `update`，再广播并返回
+`collaboration.ack`。Awareness 只保存在内存。连接关闭时，服务端广播
+`collaboration.peer-left`，其他浏览器会立即删除离线成员，不必等待 Awareness 超时。
+
+## 安全与部署边界
+
+示例会同时校验票据、URL 路径、协议版本、文件类型、命名空间、Yjs Client ID、
+Office Presence 用户及显示名、会话模式、Origin、载荷大小和票据有效期。评论与建议
+修改还必须在持久化所用的同一把锁下通过候选状态语义授权。客户端传来的 origin 不会
+直接作为审计身份，服务端会用签名票据中的用户重新生成可信来源，并在持久回执中保留
+宿主授权元数据。
+
+当前拓扑完整支持单个服务进程。多副本部署需要使用房间粘性路由，或者增加 A3S Boot
+Redis/NATS 跨进程广播，并为共享存储建立单写者或分布式锁策略。生产环境还应使用
+`wss://`，限制票据签发和房间广播速率，并把票据接口放在宿主应用的认证后端之后。
+
+## 验证
+
+```bash
+cargo test -p a3s-office-collaboration-server
+bun run collaboration-server:typecheck
+```
+
+继续阅读[多人实时协作](./collaboration.mdx)，可以查看五种编辑器的数据模型、初始化
+规则、原生智能体变更和各框架绑定。

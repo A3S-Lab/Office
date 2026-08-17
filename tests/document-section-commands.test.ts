@@ -2,7 +2,10 @@ import { Editor } from '@tiptap/core';
 import { describe, expect, test } from '@rstest/core';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 import { updateDocumentMirrorMargins } from '../src/internal/features/work/work-document-page-margins';
-import { measureDocumentLayoutBlocks } from '../src/internal/features/work/work-document-pagination';
+import {
+  measureDocumentLayoutBlocks,
+  measureDocumentLayoutBlocksIncrementally,
+} from '../src/internal/features/work/work-document-pagination';
 import {
   activeDocumentSection,
   documentSectionById,
@@ -11,6 +14,91 @@ import { layoutOfficeDocumentInJavaScript } from '../src/internal/kernel/office-
 import { OFFICE_KERNEL_PROTOCOL_VERSION } from '../src/internal/kernel/office-kernel-protocol';
 
 describe('document section commands', () => {
+  test('yields between large-document measurement blocks without changing layout input', async () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1">',
+        '<p>First paragraph</p><p>Second paragraph</p><p>Third paragraph</p>',
+        '</section>',
+        '<section data-document-section="true" data-section-id="section-2" data-section-page-size="legal">',
+        '<p>Fourth paragraph</p>',
+        '</section>',
+      ].join(''),
+    });
+    let checkpoints = 0;
+
+    const incremental = await measureDocumentLayoutBlocksIncrementally(
+      editor,
+      null,
+      0,
+      new Map(),
+      1_000_000,
+      {
+        checkpoint: async () => {
+          checkpoints += 1;
+        },
+      },
+    );
+    const synchronous = measureDocumentLayoutBlocks(editor);
+
+    expect(checkpoints).toBe(4);
+    expect(
+      incremental.blocks.map(({ block, from, section, to }) => ({
+        block,
+        from,
+        section,
+        to,
+      })),
+    ).toEqual(
+      synchronous.blocks.map(({ block, from, section, to }) => ({
+        block,
+        from,
+        section,
+        to,
+      })),
+    );
+    expect(incremental.pageStyles).toEqual(synchronous.pageStyles);
+    expect(incremental.measuredBlockCount).toBe(synchronous.measuredBlockCount);
+    expect(incremental.reusedBlockCount).toBe(synchronous.reusedBlockCount);
+    expect(incremental.unsupportedLayout).toBe(synchronous.unsupportedLayout);
+
+    editor.destroy();
+  });
+
+  test('stops incremental measurement when the active pagination run is aborted', async () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true" data-section-id="section-1">',
+        '<p>First paragraph</p><p>Second paragraph</p><p>Third paragraph</p>',
+        '</section>',
+      ].join(''),
+    });
+    const controller = new AbortController();
+    let checkpoints = 0;
+
+    await expect(
+      measureDocumentLayoutBlocksIncrementally(
+        editor,
+        null,
+        0,
+        new Map(),
+        1_000_000,
+        {
+          checkpoint: async () => {
+            checkpoints += 1;
+            if (checkpoints === 2) controller.abort();
+          },
+          signal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(checkpoints).toBe(2);
+
+    editor.destroy();
+  });
+
   test('paginates mixed section page geometry instead of rejecting it', () => {
     const editor = new Editor({
       extensions: createWorkDocumentExtensions(),

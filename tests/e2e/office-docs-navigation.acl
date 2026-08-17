@@ -372,7 +372,7 @@ suite "office-docs-navigation" {
     }
 
     scenario "open-frozen-collaboration-server-release" {
-        name = "Open the frozen 0.9.0 collaboration backend guide in both languages"
+        name = "Open the frozen 0.9.1 collaboration backend guide in both languages"
         surface = "web"
         timeout_ms = 90000
 
@@ -383,7 +383,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-chinese-release-homepage" {
-            url = "http://127.0.0.1:4175/docs/0.9.0/index.html"
+            url = "http://127.0.0.1:4175/docs/0.9.1/index.html"
         }
 
         expect "release-collaboration-action-uses-html-route" {
@@ -395,7 +395,7 @@ suite "office-docs-navigation" {
         }
 
         wait "release-collaboration-route" {
-            url = "http://127.0.0.1:4175/docs/0.9.0/components/collaboration.html"
+            url = "http://127.0.0.1:4175/docs/0.9.1/components/collaboration.html"
         }
 
         expect "release-collaboration-guide-ready" {
@@ -403,7 +403,7 @@ suite "office-docs-navigation" {
         }
 
         navigate "open-chinese-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/docs/0.9.0/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.9.1/components/collaboration-server.html"
         }
 
         expect "chinese-collaboration-server-release-ready" {
@@ -415,11 +415,11 @@ suite "office-docs-navigation" {
         }
 
         expect "release-version-control-is-visible" {
-            visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.9.0']) > .rp-nav-menu__item__container")
+            visible = css(".rp-nav__others .rp-nav-menu__item:has(a[aria-label='0.9.1']) > .rp-nav-menu__item__container")
         }
 
         navigate "open-english-collaboration-server-release" {
-            url = "http://127.0.0.1:4175/docs/0.9.0/en/components/collaboration-server.html"
+            url = "http://127.0.0.1:4175/docs/0.9.1/en/components/collaboration-server.html"
         }
 
         expect "english-collaboration-server-release-ready" {
@@ -435,7 +435,7 @@ suite "office-docs-navigation" {
         }
 
         screenshot "english-collaboration-server-release" {
-            path = "screenshots/collaboration-server-0.9.0-en.png"
+            path = "screenshots/collaboration-server-0.9.1-en.png"
         }
 
         console "release-browser-console" {

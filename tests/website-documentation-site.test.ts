@@ -14,6 +14,7 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 function homepageComponentHref(version: string, component: string): string {
   const extension =
     version === 'latest' ||
+    version === '0.9.1' ||
     version === '0.9.0' ||
     version === '0.8.1' ||
     version === '0.8.0' ||
@@ -29,6 +30,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.9.1',
     '0.9.0',
     '0.8.1',
     '0.8.0',
@@ -59,6 +61,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.9.1',
     '0.9.0',
     '0.8.1',
     '0.8.0',
@@ -103,7 +106,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 });
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
-  for (const version of ['0.9.0', '0.8.1', '0.8.0', '0.7.3']) {
+  for (const version of ['0.9.1', '0.9.0', '0.8.1', '0.8.0', '0.7.3']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const homepage = await readFile(
         path.join(documentationRoot, version, lang, 'index.mdx'),
@@ -123,6 +126,7 @@ test('uses deployable HTML targets in current release homepage actions', async (
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
   for (const version of [
     'latest',
+    '0.9.1',
     '0.9.0',
     '0.8.1',
     '0.8.0',
@@ -160,6 +164,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 test('publishes the runnable collaboration backend in latest releases', async () => {
   for (const version of [
     'latest',
+    '0.9.1',
     '0.9.0',
     '0.8.1',
     '0.8.0',
@@ -192,7 +197,14 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 });
 
 test('documents durable Document comments in current releases', async () => {
-  for (const version of ['latest', '0.9.0', '0.8.1', '0.8.0', '0.7.3']) {
+  for (const version of [
+    'latest',
+    '0.9.1',
+    '0.9.0',
+    '0.8.1',
+    '0.8.0',
+    '0.7.3',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, cli] = await Promise.all([
@@ -220,7 +232,7 @@ test('documents durable Document comments in current releases', async () => {
 });
 
 test('documents attributed Document suggestions and native typed mutations', async () => {
-  for (const version of ['latest', '0.9.0', '0.8.1']) {
+  for (const version of ['latest', '0.9.1', '0.9.0', '0.8.1']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, document, cli] = await Promise.all([
@@ -248,7 +260,7 @@ test('documents attributed Document suggestions and native typed mutations', asy
 });
 
 test('documents atomic native Spreadsheet cell batches', async () => {
-  for (const version of ['latest', '0.9.0']) {
+  for (const version of ['latest', '0.9.1', '0.9.0']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, spreadsheet, cli] = await Promise.all([

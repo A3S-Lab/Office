@@ -20,7 +20,9 @@ export {
   documentPageMetrics,
   documentPaginationSurfaceHeight,
   measureDocumentLayoutBlocks,
+  measureDocumentLayoutBlocksIncrementally,
 } from './work-document-pagination-measurement';
+export type { IncrementalDocumentLayoutMeasurementOptions } from './work-document-pagination-measurement';
 export type {
   DocumentPaginationSection,
   DocumentPaginationSnapshot,

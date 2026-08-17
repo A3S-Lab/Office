@@ -415,7 +415,10 @@ interaction model.
   edit/preview/PDF typography and page-chrome placement. Editing, read-only
   preview, and browser PDF export share one live pagination result. Tail edits
   reuse the stable physical-page prefix, including resolved first/odd/even
-  headers, footers, page numbers, and navigation descriptors.
+  headers, footers, page numbers, and navigation descriptors. Browser DOM
+  measurement runs in bounded 32 ms slices and yields only between top-level
+  blocks; document edits abort stale passes before a snapshot is committed, so
+  long repagination work does not monopolize the browser event loop.
   Real DOCX fixtures provide deterministic A3S Test evidence for inherited
   table styling across edit and preview, a centered 62.5% table with table and
   cell margin overrides, all four Table Properties tabs at 390 px, exact
@@ -1320,6 +1323,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.9.1 documentation](https://a3s-lab.github.io/Office/docs/0.9.1/)
 - [A3S Office 0.9.0 documentation](https://a3s-lab.github.io/Office/docs/0.9.0/)
 - [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/docs/0.8.1/)
 - [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/docs/0.8.0/)

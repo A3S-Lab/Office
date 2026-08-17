@@ -1,0 +1,1049 @@
+---
+title: Real-time collaboration
+description: Attach a synchronized Yjs document to A3S Office editors.
+---
+
+# Real-time collaboration
+
+A3S Office exposes a transport-neutral Yjs collaboration boundary. The host
+owns rooms, authentication, authorization, network providers, persistence, and
+the `Y.Doc`; the editor owns the format-specific binding and interaction.
+
+Two browser clients can edit the same artifact in real time, publish a shared
+participant roster, and project remote cursors, selections, cells, scene
+objects, pages, or annotations. A native Yrs replica can join that same state
+through the CLI, MCP, or A3S Code without replacing the complete Office file.
+
+Markdown, Document, Presentation, Spreadsheet, and PDF have browser editor
+bindings. Native Yrs replicas expose the same Yjs v1 state-vector and update
+protocol through the CLI and MCP.
+
+For a complete authenticated and persistent service, run the
+[A3S Boot collaboration server](./collaboration-server.mdx). It includes the
+Rust backend, browser transport adapter, ACL configuration, and integration
+tests described below as host responsibilities.
+
+| Surface | Shared content | Remote location | Native mutations |
+| --- | --- | --- | --- |
+| Document | ProseMirror structure, options, comments, attributed suggestions, final decisions, and sources | Text caret and selection | Text, paragraphs, page color, track changes, selection comments, attributed suggestions, and atomic final decisions |
+| Markdown | Markdown source | Source or visual caret and selection | UTF-16-safe replace and splice |
+| Spreadsheet | Sheets, names, and conflict-local cells | Sheet, ranges, and active cell | Cell create, update, and delete |
+| Presentation | Slides, design records, scene objects, and comments | Slide and stable element IDs | Element create, update, move, and delete |
+| PDF | Form, annotation, and append-only review overlays | Page and optional annotation | Forms, annotations, redaction, and page proposals |
+
+## Attach a host transport
+
+`createOfficeCollaborationTransportBinding` is a small reference adapter for a
+host-owned room channel. Its envelope binds every message to the protocol
+version, artifact ID, artifact kind, namespace, and Yjs client ID. Payloads are
+bounded standard Yjs v1 state vectors or updates; incremental updates retain a
+validated Office actor/operation origin when one exists.
+
+```ts title="host-room.ts"
+import {
+  createOfficeCollaborationTransportBinding,
+  type OfficeCollaborationTransport,
+} from '@a3s-lab/office/core';
+
+const channel: OfficeCollaborationTransport = {
+  publish(message) {
+    room.publish(message); // Preserve Uint8Array payloads when encoding.
+  },
+  subscribe(listener) {
+    return room.subscribe(listener);
+  },
+};
+
+const transport = createOfficeCollaborationTransportBinding(session, channel, {
+  // Wait until the authenticated room subscription is ready.
+  autoSynchronize: false,
+});
+
+room.onConnected(() => transport.synchronize());
+room.onReconnected(() => transport.synchronize());
+
+// Unsubscribe without destroying the host-owned room or Y.Doc.
+transport.destroy();
+```
+
+Every peer sends a fresh state vector after its subscription becomes active and
+after each reconnect. A peer answers with only the missing update. Repeating
+the handshake is safe, and inbound updates are not echoed back into the same
+channel. The host still owns delivery guarantees, offline buffering,
+authorization, persistence, and room membership. A transport message is not an
+authorization token.
+
+## Drive a native coding agent
+
+Native replicas use Yrs with the same protocol roots and standard Yjs v1
+updates. A host can run `collab session` as a JSONL live peer while another
+agent process makes a typed local change:
+
+```bash
+a3s-office collab join .a3s/notes.replica \
+  --artifact-id notes --kind markdown --actor-id agent-7 \
+  --actor-kind agent --mode edit --operation-id join-1 \
+  --input browser-bootstrap.update --json
+
+a3s-office collab session .a3s/notes.replica --poll-ms 100 --json
+
+a3s-office collab read .a3s/notes.replica --json
+
+a3s-office collab mutate .a3s/notes.replica \
+  --actor-id agent-7 --artifact-id notes --kind markdown --mode edit \
+  --operation-id edit-42 \
+  --mutation '{"type":"markdown-splice","indexUtf16":4,"deleteUtf16":0,"insert":" shared"}' \
+  --json
+
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode edit \
+  --operation-id edit-43 \
+  --mutation '{"type":"document-replace-text","search":"Draft","replacement":"Final","expectedMatches":1}' \
+  --json
+
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode edit \
+  --operation-id edit-43b \
+  --mutation '{"type":"document-replace-paragraph","paragraphId":"00000001","expectedTextId":"00000002","expectedText":"Draft paragraph","replacement":"Final paragraph"}' \
+  --json
+
+a3s-office collab mutate .a3s/report.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode edit \
+  --operation-id edit-44 \
+  --mutation '{"type":"document-insert-paragraph","anchorParagraphId":"00000001","position":"after","paragraphId":"00000012","textId":"00000013","text":"Native paragraph"}' \
+  --json
+
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
+  --operation-id edit-45 \
+  --mutation '{"type":"pdf-set-form-value","fieldId":"Applicant.Name","value":"Grace Hopper"}' \
+  --json
+
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
+  --operation-id annotation-create-1 \
+  --mutation '{"type":"pdf-create-annotation","annotationId":"annotation-1","pageIndex":0,"annotation":{"id":"annotation-1","pageIndex":0,"type":9,"rect":{"origin":{"x":68,"y":78},"size":{"width":300,"height":28}},"segmentRects":[{"origin":{"x":68,"y":78},"size":{"width":300,"height":28}}],"strokeColor":"#f59e0b","color":"#f59e0b","opacity":0.48,"contents":"Review this heading"}}' \
+  --json
+
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
+  --operation-id edit-46 \
+  --mutation '{"type":"pdf-propose-redaction","proposalId":"redaction-1","pageIndex":0,"rects":[{"left":10,"top":20,"right":80,"bottom":40}],"proposedAt":"2026-08-15T03:00:00.000Z","reason":"Personal data"}' \
+  --json
+
+a3s-office collab mutate .a3s/application.replica \
+  --actor-id agent-7 --artifact-id application --kind pdf --mode edit \
+  --operation-id edit-47 \
+  --mutation '{"type":"pdf-decide-review","decisionId":"decision-1","targetKind":"redaction","targetId":"redaction-1","decision":"approve","createdAt":"2026-08-15T03:05:00.000Z"}' \
+  --json
+```
+
+The host forwards `session` outbound envelopes to its authenticated room and
+delivers room envelopes back with stable host delivery IDs. `mutate` emits a
+minimal incremental update through the durable event log, so the running
+session publishes changes made by separate CLI or MCP processes. Markdown
+offsets are UTF-16 code units, matching browser Yjs; ranges that split a
+surrogate pair fail closed. Document replacement edits ProseMirror
+`Y.XmlText` directly, may span formatting runs inside that text node, preserves
+the first replaced character's marks, and fails unless `expectedMatches`
+matches current state; each changed paragraph rotates its Word `textId` once.
+`document-insert-paragraph` creates a plain paragraph before or after a stable
+paragraph identity in a bounded top-level section, nested list item, table
+cell/header, or blockquote path. `document-delete-paragraph` additionally
+requires the current `textId` and complete text, preserves required container
+blocks and list-leading paragraphs, and refuses inline-atom, comment-mark, and
+tracked-change cases. Table-contained edits rotate every identified ancestor
+row's `rowTextId` atomically; partial row identities fail before writing. Word
+identities are uppercase eight-digit positive 31-bit hexadecimal values.
+`document-set-page-color`/`document-clear-page-color` and
+`document-set-track-changes`/`document-clear-track-changes` update their
+independent typed option fields. Explicit clear variants keep missing set
+fields fail-closed. `pdf-set-form-value` updates an existing conflict-local
+form `value` leaf or creates the same typed presence/fields/order record used
+by browser Yjs. The fully-qualified `fieldId` is bounded to 512 UTF-16 code
+units without trimmed whitespace. PDF source bytes remain host-owned, so the
+authenticated viewer/save workflow must still verify that the field exists and
+is writable. `pdf-create-annotation` accepts a complete portable EmbedPDF
+FreeText, Highlight, Underline, StrikeOut, or Ink object and writes a
+browser-compatible `source: created` record plus an immutable creation claim.
+`pdf-update-annotation` recursively guards changed JSON leaves, so unrelated
+browser/native edits merge while a stale edit to the same leaf fails without
+an update. ID, source page, and annotation type remain immutable.
+`pdf-delete-annotation` verifies those identities and writes an irreversible
+tombstone. Use `--mutation-input <file>` for larger or multiline JSON.
+`pdf-propose-redaction` appends bounded, positive source-page rectangles and
+`pdf-decide-review` appends the only final decision for an existing redaction
+or page operation. Both are irreversible audit records with canonical creation
+claims. The replica manifest supplies `proposedBy`/`actorId`; caller JSON cannot
+forge them. Native timestamps must use canonical UTC, and conflicting ID reuse,
+missing targets, or a second final decision fail before any durable update.
+`pdf-propose-page-rotation` accepts unique page indices and 90, 180, or 270
+clockwise degrees; `pdf-propose-page-deletion` requires a non-empty proper
+subset; and `pdf-propose-page-reorder` requires a complete source-page
+permutation. These page-operation proposals use the same append-only claim and
+replica-attribution rules and never change or synchronize source bytes.
+
+The equivalent MCP tool is `office_collaboration_mutate`; coding agents should
+poll `office_collaboration_events` with a persisted `cursorSequence` for
+resumable delivery. Typed canonical content mutations require `edit` mode.
+Document comment mutations accept `edit` or `comment`; deletion in `comment`
+is limited to the replica actor's own records. Raw remote updates remain
+receivable by every mode so receive-only peers still converge. Document
+suggestion creation requires `suggest`; final suggestion decisions require
+`edit`. Projection schema v3 returns both live proposals and immutable final
+decisions through `collab read` and `office_collaboration_read`. Do not
+construct private ProseMirror/Yjs marks in an agent; use the closed mutation
+variants described below. `suggest` on non-Document formats and comment mode
+on non-Document formats remain receive-only.
+
+An authenticated host may attach a typed source origin to a browser Update.
+Native receipts and events preserve that source actor/operation separately
+from the host delivery operation ID and re-emit it on live transport. Origin is
+audit attribution, not proof of authorization; the host must authenticate it
+before delivery.
+
+## Publish ephemeral presence
+
+Pass provider-owned Yjs Awareness to the session, then create one typed
+presence controller for that local client. The provider remains responsible
+for synchronizing Awareness; the document transport adapter above deliberately
+does not persist or relay ephemeral state.
+
+```ts title="shared-presence.ts"
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+
+const awareness = new Awareness(document);
+provider.attachAwareness(awareness);
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', color: '#7c3aed' },
+  artifactId,
+  awareness,
+  document,
+  kind: 'spreadsheet',
+  mode: 'edit',
+});
+
+const presence = createOfficeCollaborationPresence(session);
+const unsubscribe = presence.subscribe(({ participants }) => {
+  renderParticipants(participants);
+});
+
+presence.update({
+  activity: 'active',
+  location: {
+    kind: 'spreadsheet',
+    sheetId: 'sheet-1',
+    ranges: [
+      { startRow: 4, startColumn: 1, endRow: 6, endColumn: 3 },
+    ],
+    activeCell: { row: 4, column: 1 },
+  },
+});
+
+unsubscribe();
+presence.destroy();
+```
+
+Pass that same host-owned controller beside its exact session to any React,
+Vue, or Web Component editor. A mismatched artifact, kind, Y.Doc client,
+actor, namespace, or mode fails closed instead of showing another room's
+participants.
+
+```tsx title="SharedSpreadsheet.tsx"
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+<SpreadsheetEditor
+  collaboration={session}
+  content={initialSnapshot}
+  onChange={setSnapshot}
+  presence={presence}
+/>;
+```
+
+Editable status bars and preview/PDF toolbars render one responsive,
+keyboard-accessible participant roster. It distinguishes local and remote
+humans, agents, and system actors and summarizes activity, mode, and typed
+format location. The host still owns the controller lifecycle and Awareness
+transport. Each mounted editor publishes its local location and renders remote
+locations in its editing surface. Document and Markdown draw text selections
+and carets, Spreadsheet uses the native Fortune Sheet cell-presence layer,
+Presentation frames stable object IDs, and PDF shows peers on the current page
+or annotation. Activating a remote roster row navigates and focuses that
+location; passive Awareness changes never move the local viewport, selection,
+or focus.
+
+Locations are format-specific: Document uses ProseMirror anchor/head model
+positions; Markdown identifies `source` UTF-16 offsets or `visual`
+ProseMirror positions (a missing surface remains backward-compatible source
+mode); Spreadsheet uses bounded zero-based ranges; Presentation uses one slide
+plus stable element IDs; and PDF uses a zero-based page plus an optional
+annotation ID. Remote states with the wrong artifact identity, protocol,
+actor, mode, or location shape are ignored. Stale locations outside the live
+model fail closed. Presence is advisory UI data, not canonical content,
+durable audit history, or permission enforcement.
+
+## Open a Markdown session
+
+Initialize only after the provider has completed its initial synchronization.
+For a new room, exactly one server or elected bootstrap owner seeds the
+artifact. Other clients wait until initialized metadata arrives before mounting
+the editor.
+
+```tsx title="SharedMarkdown.tsx"
+import * as Y from 'yjs';
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeMarkdownCollaboration,
+  type MarkdownContent,
+  type OfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { MarkdownEditor } from '@a3s-lab/office/react';
+
+interface OpenMarkdownOptions {
+  artifactId: string;
+  document: Y.Doc;
+  initialContent: MarkdownContent;
+  bootstrapOwner: boolean;
+}
+
+interface SharedMarkdownProps {
+  session: OfficeCollaborationSession;
+  initialContent: MarkdownContent;
+}
+
+// Call this in the host's provider/session layer after initial sync completes.
+export function openMarkdownSession({
+  artifactId,
+  document,
+  initialContent,
+  bootstrapOwner,
+}: OpenMarkdownOptions) {
+  const session = createOfficeCollaborationSession({
+    actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+    artifactId,
+    document,
+    kind: 'markdown',
+    mode: 'edit',
+  });
+  if (bootstrapOwner) {
+    initializeOfficeMarkdownCollaboration(session, initialContent);
+  }
+  return session;
+}
+
+export function SharedMarkdown({
+  session,
+  initialContent,
+}: SharedMarkdownProps) {
+  return (
+    <MarkdownEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The example assumes the component renders only after the session has
+initialized metadata. `initializeOfficeMarkdownCollaboration` is idempotent
+after a synchronized initialization, but intentionally reports concurrent
+independent seeds as an error.
+
+## Open a Document session
+
+Document uses a ProseMirror `Y.XmlFragment` for structured content and
+conflict-local maps for document options, comment threads, immutable tracked-
+change decisions, and bibliography sources. Initialize after provider sync
+just like Markdown:
+
+```tsx title="SharedDocument.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeDocumentCollaboration,
+  type DocumentContent,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'document',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficeDocumentCollaboration(session, initialContent);
+}
+
+export function SharedDocument({
+  initialContent,
+}: {
+  initialContent: DocumentContent;
+}) {
+  return (
+    <DocumentEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The fragment includes the structured section layout, comment anchors, and
+tracked-change marks. Comment thread bodies/replies, final tracked-change
+decisions, and bibliography sources are stored by stable ID, so independent
+records can merge without replacing a document-sized JSON value. Append-only
+creation claims make identical offline retries idempotent and reject
+conflicting assignments of the same stable ID after synchronization.
+Unsupported OOXML package parts remain the host's import/export responsibility
+and must not be projected into Yjs as a full ZIP replacement.
+
+### Review a Document in comment mode
+
+Open an already initialized Document with an authenticated actor and
+`mode: 'comment'` when a participant should review without editing canonical
+content. Initialization must have been completed by the server or a separate
+authorized `edit` bootstrap session before this reviewer mounts:
+
+```tsx title="SharedDocumentReview.tsx"
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const document = provider.doc as Y.Doc;
+const awareness = new Awareness(document);
+const reviewSession = createOfficeCollaborationSession({
+  actor: {
+    id: 'user-42',
+    name: 'Ada Reviewer',
+    kind: 'human',
+    color: '#7c3aed',
+  },
+  artifactId: 'quarterly-plan',
+  awareness,
+  document,
+  kind: 'document',
+  mode: 'comment',
+});
+const presence = createOfficeCollaborationPresence(reviewSession);
+
+export function SharedDocumentReview() {
+  return (
+    <DocumentEditor
+      key={`${reviewSession.artifactId}:${reviewSession.document.clientID}`}
+      collaboration={reviewSession}
+      content={initialContent}
+      presence={presence}
+      onChange={reportSnapshot}
+    />
+  );
+}
+```
+
+The reviewer selects real Document text and uses **Add comment**. The editor
+writes one stable thread to `document.comments`, appends its ID to
+`document.comment-order`, appends an immutable record claim, and applies the
+matching `documentComment` mark to the exact ProseMirror text range. Replies
+append under that thread. Any commenter can resolve or reopen an existing
+thread; a comment-mode actor can delete only its own comment or reply. The
+thread remains durable and reports `detached: true` if a later authorized edit
+removes every anchor mark.
+
+Comment mode keeps the Document body selectable so review anchors can be
+created, but normal typing, formatting, page options, bibliography changes,
+and structural edits fail closed. Its undo/redo history contains only that
+local actor's review transactions; remotely received comments and replies are
+never added to the local undo stack.
+
+Native agents use the same records through the projection-v3 read/mutate
+contract. Read immediately before deciding so `paragraphId`, `textId`, anchor
+text, UTF-16 offsets, and the optional state-vector precondition describe the
+same current paragraph:
+
+```bash title="document-review.sh"
+a3s-office collab join .a3s/report-review.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode comment --operation-id comment-join-1 \
+  --input browser.update --json
+a3s-office collab read .a3s/report-review.replica --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-create-1 \
+  --mutation '{"type":"document-comment-create","commentId":"comment-1","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":12,"expectedText":"review","author":"Ada Reviewer","createdAt":"2026-08-17T00:00:00.000Z","text":"Clarify this review point."}' \
+  --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-reply-1 \
+  --mutation '{"type":"document-comment-reply","commentId":"comment-1","replyId":"reply-1","author":"Ada Reviewer","createdAt":"2026-08-17T00:01:00.000Z","text":"Suggested wording is ready."}' \
+  --json
+
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-resolve-1 \
+  --mutation '{"type":"document-comment-set-resolved","commentId":"comment-1","resolved":true}' \
+  --json
+
+# Use resolved:false to reopen. Omit replyId to delete the actor's whole thread.
+a3s-office collab mutate .a3s/report-review.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode comment \
+  --operation-id comment-delete-reply-1 \
+  --mutation '{"type":"document-comment-delete","commentId":"comment-1","replyId":"reply-1"}' \
+  --json
+```
+
+The `author` on a new native comment or reply must match the display name
+authenticated by the room ticket. The replica actor ID is written to
+`actorId`; caller JSON cannot replace it. Identical stable-ID retries are
+idempotent, conflicting ID reuse and stale anchors fail without an update, and
+comment-mode deletion is ownership restricted. `collab read` and
+`office_collaboration_read` return projection schema version `3`, including
+comments, replies, resolution and detached state, live `suggestions`, immutable
+`changeDecisions`, and every comment or suggestion placement's exact identity,
+UTF-16 offsets, and current text.
+
+### Suggest changes to a Document
+
+Open an initialized Document with an authenticated actor and `mode: 'suggest'`
+when a participant may propose text changes but must not edit canonical content
+or make final review decisions:
+
+```tsx title="SharedDocumentSuggestion.tsx"
+import * as Y from 'yjs';
+import { Awareness } from 'y-protocols/awareness';
+import {
+  createOfficeCollaborationPresence,
+  createOfficeCollaborationSession,
+} from '@a3s-lab/office/core';
+import { DocumentEditor } from '@a3s-lab/office/react';
+
+const document = provider.doc as Y.Doc;
+const awareness = new Awareness(document);
+const suggestionSession = createOfficeCollaborationSession({
+  actor: {
+    id: 'reviewer-7',
+    name: 'Ada Suggester',
+    kind: 'human',
+    color: '#2563eb',
+  },
+  artifactId: 'quarterly-plan',
+  awareness,
+  document,
+  kind: 'document',
+  mode: 'suggest',
+});
+const presence = createOfficeCollaborationPresence(suggestionSession);
+
+export function SharedDocumentSuggestion() {
+  return (
+    <DocumentEditor
+      key={`${suggestionSession.artifactId}:${suggestionSession.document.clientID}`}
+      collaboration={suggestionSession}
+      content={initialContent}
+      presence={presence}
+      onChange={reportSnapshot}
+    />
+  );
+}
+```
+
+The editor forces tracked text proposals on for this surface. Typing creates an
+insertion; deleting existing text creates a deletion; replacing text creates a
+paired deletion and insertion. Each `documentChange` mark carries a stable ID,
+kind, authenticated `actorId`, display-name `author`, and canonical UTC date.
+The suggester does not receive canonical formatting, structure, page-option,
+comment, accept, or reject controls. Undo and redo may withdraw or restore that
+actor's own insertion proposals, but cannot rewrite another actor's proposal or
+change the canonical text targeted by a deletion.
+
+An `edit` participant reviews the same marks in the tracked-changes panel. An
+accept or reject operation applies the visible result and appends one immutable
+record to `document.change-decisions`, with its ID in
+`document.change-decision-order`, in the same Yjs transaction. The record keeps
+the suggestion ID/kind/text, proposer actor/name/time, final decision, and
+decider actor/name/time. A proposal can have only one final decision; identical
+offline retries converge, while a different stale decision fails closed. The
+editor clears older local history after the decision so undo cannot resurrect a
+decided mark while leaving its audit record behind.
+
+The A3S Boot backend does not trust the ticket mode or caller-authored Yjs bytes
+alone. While holding the durable room lock, it applies the update to a candidate
+Yrs document and verifies that the canonical Document projection and every
+non-content root are unchanged. It then admits only new attributed insertion or
+deletion marks, safe changes to the authenticated actor's existing proposals,
+or withdrawal of that actor's own proposal. Forged identity, non-canonical
+timestamps, structure/format/options/comments changes, another actor's proposal
+change, and unresolved Yjs dependencies are rejected before persistence and
+broadcast. A replacement follows the same rule as one deletion plus one
+insertion.
+
+Native agents use the same review model without constructing private Yjs marks.
+Projection v3 lists each suggestion's stable ID, kind, actor, author, timestamp,
+text, and exact paragraph/text placement. Join an actor-scoped `suggest` replica,
+read that projection immediately before proposing, and create an insertion,
+deletion, or atomic replacement with one closed mutation:
+
+```bash title="native-document-suggestions.sh"
+a3s-office collab join .a3s/report-suggest.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode suggest --operation-id suggest-join-1 \
+  --input browser.update --json
+a3s-office collab read .a3s/report-suggest.replica --json
+
+# UTF-16 offsets 6..8 select one astral emoji. A replacement requires distinct
+# insertion and deletion IDs; the manifest supplies actorId.
+a3s-office collab mutate .a3s/report-suggest.replica \
+  --actor-id agent-7 --artifact-id report --kind document --mode suggest \
+  --operation-id suggestion-create-1 \
+  --mutation '{"type":"document-suggestion-create","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":8,"expectedText":"😀","replacement":"reviewed","insertionId":"agent-7-insertion-1","deletionId":"agent-7-deletion-1","author":"A3S Agent","createdAt":"2026-08-17T11:00:00.000Z"}' \
+  --json
+
+# After the proposal update reaches the edit replica, read projection v3 again
+# and copy every exact identity into one atomic decision batch.
+a3s-office collab read .a3s/report-editor.replica --json
+a3s-office collab mutate .a3s/report-editor.replica \
+  --actor-id editor-2 --artifact-id report --kind document --mode edit \
+  --operation-id suggestion-accept-1 \
+  --mutation '{"type":"document-suggestion-decide","suggestions":[{"id":"agent-7-deletion-1","kind":"deletion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"😀"},{"id":"agent-7-insertion-1","kind":"insertion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"reviewed"}],"decision":"accept","decidedBy":"Grace Editor","decidedAt":"2026-08-17T11:01:00.000Z"}' \
+  --json
+```
+
+Use `decision: "reject"` to reject. Suggestion creation is allowed only in
+`suggest`; final decisions are allowed only in `edit`. Exact stable-ID retries
+are idempotent. Stale paragraph/text identity, split UTF-16 boundaries,
+overlapping proposals, reused suggestion IDs, mismatched reviewed identity or
+text, and a conflicting final decision fail the whole operation before a
+durable log entry. A successful decision removes the live marks, rotates the
+affected paragraph and ancestor table-row text identities, and appends one
+immutable browser-compatible `changeDecisions` record per suggestion.
+
+## Open a Presentation session
+
+Presentation stores slide/master/layout order separately from ID-keyed records.
+Each slide and design record owns ID-keyed scene objects; comments also merge by
+stable ID. Scalar geometry, styles, notes, transitions, charts, and other
+JSON-compatible object fields update independently instead of replacing one
+serialized deck:
+
+```tsx title="SharedPresentation.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficePresentationCollaboration,
+  type PresentationContent,
+} from '@a3s-lab/office/core';
+import { PresentationEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'presentation',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePresentationCollaboration(session, initialContent);
+}
+
+export function SharedPresentation({
+  initialContent,
+}: {
+  initialContent: PresentationContent;
+}) {
+  return (
+    <PresentationEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+The binding applies `previous -> next` differences to shared records. A stale
+host snapshot therefore cannot delete a slide or object that arrived remotely
+unless the local operation explicitly removed that stable ID. Local undo/redo
+tracks only the mounted binding's origin.
+
+### Mutate or reorder one Presentation element from Rust, CLI, or MCP
+
+Native clients use the closed `presentation-create-element`,
+`presentation-update-element`, `presentation-move-element`, and
+`presentation-delete-element` variants. Every operation names a stable
+`containerKind` (`slide`, `master`, or `layout`) and `containerId`; callers
+never construct internal Yjs roots. Creation accepts one complete element and
+can place it after an active stable element:
+
+```json
+{
+  "type": "presentation-create-element",
+  "containerKind": "slide",
+  "containerId": "slide-1",
+  "afterElementId": "title-1",
+  "element": {
+    "id": "summary-1",
+    "type": "shape",
+    "x": 20,
+    "y": 24,
+    "width": 40,
+    "height": 16,
+    "text": "Approved"
+  }
+}
+```
+
+Creation writes a canonical immutable claim. An identical retry is a no-op;
+assigning different content to the same ID, reusing a tombstoned ID, or naming
+a missing insertion anchor fails without a durable update. Update supplies the
+complete observed element plus the complete desired element:
+
+```json
+{
+  "type": "presentation-update-element",
+  "containerKind": "slide",
+  "containerId": "slide-1",
+  "elementId": "title-1",
+  "expectedElement": {
+    "id": "title-1",
+    "type": "text",
+    "x": 10,
+    "y": 10,
+    "width": 80,
+    "height": 20,
+    "text": "Draft"
+  },
+  "nextElement": {
+    "id": "title-1",
+    "type": "text",
+    "x": 16,
+    "y": 10,
+    "width": 80,
+    "height": 20,
+    "text": "Final"
+  }
+}
+```
+
+Only changed top-level fields are written. Unrelated concurrent fields merge;
+a stale change to the same field returns
+`office.collaboration.mutation_match_conflict` atomically. Element `id` and
+`type` are immutable. Reordering uses predecessor IDs rather than array
+indexes:
+
+```json
+{
+  "type": "presentation-move-element",
+  "containerKind": "slide",
+  "containerId": "slide-1",
+  "elementId": "summary-1",
+  "expectedAfterElementId": "title-1",
+  "afterElementId": null
+}
+```
+
+`expectedAfterElementId` is the predecessor observed by the caller;
+`afterElementId` is the requested predecessor, and `null` means the first
+position in the element-order array. A move already at its destination is an
+idempotent no-op. Otherwise a stale observed predecessor, missing or deleted
+destination anchor, deleted element, or self-anchor fails without a durable
+update. Only the moved element's order entries are removed and reinserted; its
+record fields and the surrounding container remain untouched. Delete passes
+the exact complete current element as
+`expectedElement`; success removes it from visible order and writes a durable
+tombstone, so its ID cannot be reused. The same browser-compatible claims and
+tombstones apply to slides, masters, and layouts.
+
+## Open a Spreadsheet session
+
+Spreadsheet uses ordered, ID-keyed records for sheets and named ranges plus
+sparse, recursively field-addressed cells. Formula, style, number-format,
+hyperlink, and note fields can therefore merge without replacing a dense
+worksheet or serialized workbook:
+
+```tsx title="SharedSpreadsheet.tsx"
+import {
+  createOfficeCollaborationSession,
+  initializeOfficeSpreadsheetCollaboration,
+  type SpreadsheetContent,
+} from '@a3s-lab/office/core';
+import { SpreadsheetEditor } from '@a3s-lab/office/react';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'user-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'spreadsheet',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficeSpreadsheetCollaboration(session, initialContent);
+}
+
+export function SharedSpreadsheet({
+  initialContent,
+}: {
+  initialContent: SpreadsheetContent;
+}) {
+  return (
+    <SpreadsheetEditor
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      content={initialContent}
+      onChange={(snapshot) => reportSnapshot(snapshot)}
+    />
+  );
+}
+```
+
+Sheet activation, cell selection, zoom, calculation caches, and derived chart
+previews are local view state. They are not persisted in canonical Yjs content
+and remain stable when a remote workbook update is projected into the editor.
+Canonical edits and undo/redo use the collaboration binding; one client cannot
+undo another client's transaction.
+
+### Mutate Spreadsheet cells from Rust, CLI, or MCP
+
+Native clients should use the closed `spreadsheet-set-cell` and
+`spreadsheet-delete-cell` mutations for one coordinate, or
+`spreadsheet-batch-cells` for one bounded multi-cell gesture, instead of
+constructing Yjs fields. Rows and columns are zero-based, and `sheetId` is the
+stable sheet identity rather than its display name:
+
+```json
+{
+  "type": "spreadsheet-set-cell",
+  "sheetId": "sheet-data",
+  "row": 1,
+  "column": 0,
+  "expectedCell": { "v": 10, "m": "10", "ct": { "fa": "0.00", "t": "n" } },
+  "nextCell": { "v": 12, "m": "12", "f": "=6*2", "ct": { "fa": "0.00", "t": "n" } }
+}
+```
+
+The set mutation recursively compares the observed and next cells with the
+current shared cell. It writes only changed leaves, so a concurrent note or
+style can merge with a value/formula edit; a stale change to the same leaf
+fails before any durable update. Pass `expectedCell: null` only to create a
+coordinate that was observed blank. Delete supplies the exact complete current
+cell:
+
+```json
+{
+  "type": "spreadsheet-delete-cell",
+  "sheetId": "sheet-data",
+  "row": 1,
+  "column": 0,
+  "expectedCell": { "v": 12, "m": "12", "f": "=6*2", "ct": { "fa": "0.00", "t": "n" } }
+}
+```
+
+One batch accepts 1 to 4,096 distinct coordinates in the same sheet. A present
+`nextCell` uses the same recursive set/create guard; `nextCell: null` requires
+an exact complete `expectedCell` and deletes that coordinate:
+
+```json
+{
+  "type": "spreadsheet-batch-cells",
+  "sheetId": "sheet-data",
+  "changes": [
+    {
+      "row": 1,
+      "column": 0,
+      "expectedCell": { "v": 12, "m": "12", "f": "=6*2" },
+      "nextCell": { "v": 14, "m": "14", "f": "=7*2" }
+    },
+    {
+      "row": 1,
+      "column": 1,
+      "expectedCell": null,
+      "nextCell": { "v": 20, "m": "20" }
+    },
+    {
+      "row": 2,
+      "column": 0,
+      "expectedCell": { "v": "obsolete", "m": "obsolete" },
+      "nextCell": null
+    }
+  ]
+}
+```
+
+Every change is preflighted against one shared sheet snapshot. If any guard is
+invalid or stale, no cell, presence marker, dense row length, or durable event
+changes. A successful gesture commits all changes in one Yjs transaction.
+
+Dense worksheets retain their matrix dimensions and safely extend row lengths
+when needed. Sparse worksheets stay in `celldata` mode, and the first write to
+an empty worksheet also uses the sparse projection. The native boundary checks
+Excel coordinate limits, sheet identity, projection consistency, cell JSON
+depth and size, unsafe object keys, malformed fields, and orphaned cell state
+before writing.
+
+## Open a PDF session
+
+PDF collaboration never places the source PDF bytes in Yjs. The bootstrap
+owner supplies an immutable lowercase SHA-256 digest, exact byte length, and
+page count, then initializes typed overlay and audit records:
+
+```ts title="shared-pdf.ts"
+import {
+  createOfficeCollaborationSession,
+  createPdfCollaborationContent,
+  initializeOfficePdfCollaboration,
+} from '@a3s-lab/office/core';
+
+const session = createOfficeCollaborationSession({
+  actor: { id: 'reviewer-42', name: 'Ada', kind: 'human' },
+  artifactId,
+  document: provider.doc,
+  kind: 'pdf',
+  mode: 'edit',
+});
+
+if (bootstrapOwner) {
+  initializeOfficePdfCollaboration(
+    session,
+    createPdfCollaborationContent({
+      sha256: sourceSha256,
+      byteLength: sourceBytes.byteLength,
+      pageCount,
+    }),
+  );
+}
+```
+
+Mount the initialized session with the exact source bytes. The viewer verifies
+the SHA-256 digest, byte length, and PDFium page count before accepting edits:
+
+```tsx title="SharedPdf.tsx"
+import { PdfViewer } from '@a3s-lab/office/react';
+
+export function SharedPdf() {
+  return (
+    <PdfViewer
+      key={`${session.artifactId}:${session.document.clientID}`}
+      collaboration={session}
+      loadSource={() => Promise.resolve(sourceBlob)}
+      onCollaborationChange={(snapshot) => reportSnapshot(snapshot)}
+      onSave={async (pdf) => persistMergedPdf(pdf)}
+    />
+  );
+}
+```
+
+Annotations and form values are locally undoable. Annotation deletion is a
+durable tombstone. Signature placements, redaction proposals, reviewed page
+operations, and final decisions are append-only audit records and are never
+put on the undo stack. Signature records refer to a host-owned asset ID and
+hash rather than synchronizing private appearance bytes. Rendered bitmaps,
+search indexes, current page, zoom, and selection remain local. The viewer
+captures source annotations and form values as an immutable baseline, then
+projects only shared overlays. Local history is Yjs-owned, so the embedded
+viewer cannot undo a remote transaction or create a duplicate undo step.
+`onSave` still persists the complete PDF `Blob`; collaboration does not
+synchronize source bytes or replace the host's save/versioning contract.
+
+The browser projection supports the five annotation tools exposed by the
+editor: free text, highlight, underline, strikeout, and ink. Stamp, signature,
+and other annotation kinds that require binary creation context fail closed
+until the host asset port is implemented. Shared form records must name an
+existing writable PDF field.
+
+## Contract
+
+| Concern | Behavior |
+| --- | --- |
+| Authority | While `collaboration` is present, the shared document is canonical. The required `content` prop is a host snapshot and does not overwrite it. |
+| Initial sync | The host finishes provider sync and initialization before mounting. The editor does not guess whether an empty document is new or still downloading. |
+| Session identity | A mounted editor accepts one session object. Remount it when the artifact or `Y.Doc` changes. |
+| Undo/redo | Tracks only transactions created by this local binding; remote edits remain intact. |
+| Modes | `edit` can change canonical content, decide tracked proposals, and update review data. Document `comment` can create selection comments, reply, resolve/reopen, and delete only its actor's own review records while canonical content stays read-only. Authenticated Document `suggest` can create attributed insertion/deletion/replacement proposals and withdraw only its own proposals; it cannot make final decisions or mutate canonical content, structure, formatting, options, comments, or another actor's proposal. `view`, non-Document `suggest`, and non-Document `comment` are receive-only. |
+| Lifecycle | Destroying a session destroys only a `Y.Doc` created by that session. Provider/host-owned documents remain alive. |
+| Transport | Any provider that synchronizes standard Yjs v1 updates can own the document. Office does not depend on a specific provider. |
+| Authorization | Session modes guard client capabilities but are not a security boundary. The synchronization service must authorize updates. |
+| Awareness | One controller owns the `a3sOffice` field and exposes validated actor, mode, activity, and format-specific location snapshots. Providers synchronize it. All editors publish local locations, project remote locations into their native canvas, expose participant navigation, and keep passive updates focus-neutral. |
+| Extensions | Collaborative Documents accept behavior-only TipTap `Extension` values. Custom Nodes, Marks, global attributes, and extension kits require a versioned Office schema migration and are rejected. |
+
+`onChange` receives complete snapshots for local and remote shared changes. Use
+Yjs updates for durable collaboration persistence; do not turn every snapshot
+back into a full-document write.
+
+## Vue and Web Components
+
+Vue exposes the same session as the `collaboration` prop:
+
+```vue
+<MarkdownEditor
+  :collaboration="session"
+  :content="content"
+  @change="handleSnapshot"
+/>
+
+<DocumentEditor
+  :collaboration="documentSession"
+  :content="documentContent"
+  @change="handleDocumentSnapshot"
+/>
+
+<PresentationEditor
+  :collaboration="presentationSession"
+  :content="presentationContent"
+  @change="handlePresentationSnapshot"
+/>
+
+<SpreadsheetEditor
+  :collaboration="spreadsheetSession"
+  :content="spreadsheetContent"
+  @change="handleSpreadsheetSnapshot"
+/>
+
+<PdfViewer
+  :collaboration="pdfSession"
+  :load-source="loadPdfSource"
+  @collaboration-change="handlePdfSnapshot"
+/>
+```
+
+Custom elements accept complex values through JavaScript properties:
+
+```ts
+const editor = document.querySelector('a3s-markdown-editor');
+editor.collaboration = session;
+editor.content = content;
+
+const documentEditor = document.querySelector('a3s-document-editor');
+documentEditor.collaboration = documentSession;
+documentEditor.content = documentContent;
+
+const presentationEditor = document.querySelector('a3s-presentation-editor');
+presentationEditor.collaboration = presentationSession;
+presentationEditor.content = presentationContent;
+
+const spreadsheetEditor = document.querySelector('a3s-spreadsheet-editor');
+spreadsheetEditor.collaboration = spreadsheetSession;
+spreadsheetEditor.content = spreadsheetContent;
+
+const pdfViewer = document.querySelector('a3s-pdf-viewer');
+pdfViewer.collaboration = pdfSession;
+pdfViewer.loadSource = loadPdfSource;
+pdfViewer.addEventListener('collaboration-change', handlePdfSnapshot);
+```
+
+Do not serialize the session or a `Y.Doc` into an HTML attribute.

@@ -577,6 +577,69 @@ test('reuses stable page chrome before an incrementally laid-out tail', () => {
   expect(invalidated.pages[0]?.pageChrome.headerHtml).toBe('<p>Changed</p>');
 });
 
+test('reuses page chrome across insignificant kernel metric rounding', () => {
+  const layout = sectionLayout({
+    margins: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
+  });
+  const element = document.createElement('p');
+  const blocks = ['a', 'b', 'c'].map((id, index) => ({
+    ...measuredBlock(id, 'section-a', 0, layout, element),
+    from: index * 20 + 1,
+    to: index * 20 + 20,
+  }));
+  const page = documentPageMetrics(layout);
+  const baseLayout = paginationLayout(['a', 'b', 'c']);
+  const firstLayout = {
+    ...baseLayout,
+    pages: baseLayout.pages.map((entry) => ({
+      ...entry,
+      page,
+    })),
+  };
+  const previous = documentPaginationPageDescriptors(firstLayout, blocks);
+  const roundedLayout = {
+    ...firstLayout,
+    documentRevision: firstLayout.documentRevision + 1,
+    pages: firstLayout.pages.map((entry) => ({
+      ...entry,
+      page: {
+        ...entry.page,
+        marginTop: Math.round(entry.page.marginTop),
+        marginRight: Math.round(entry.page.marginRight),
+        marginBottom: Math.round(entry.page.marginBottom),
+        marginLeft: Math.round(entry.page.marginLeft),
+      },
+    })),
+  };
+
+  const derived = deriveDocumentPaginationPageDescriptors(
+    roundedLayout,
+    blocks,
+    undefined,
+    previous,
+    2,
+  );
+
+  expect(derived.reusedPageCount).toBe(2);
+  expect(derived.derivedPageCount).toBe(1);
+
+  const changed = deriveDocumentPaginationPageDescriptors(
+    {
+      ...roundedLayout,
+      pages: roundedLayout.pages.map((entry) => ({
+        ...entry,
+        page: { ...entry.page, marginTop: entry.page.marginTop + 0.01 },
+      })),
+    },
+    blocks,
+    undefined,
+    previous,
+    2,
+  );
+
+  expect(changed.reusedPageCount).toBe(0);
+});
+
 test('derives each page preview and jump target from its measured text range', () => {
   const firstPageText = 'First page summary.';
   const secondPageText = 'Second page details.';
