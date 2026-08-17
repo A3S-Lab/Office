@@ -116,6 +116,45 @@ test('labels character-formatting revisions as formatting instead of deletion', 
   }
 });
 
+test('labels and navigates paragraph-formatting revisions as a paragraph range', () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const range = textRange(editor, 'Alpha');
+  const paragraphChange: WorkDocumentChange = {
+    id: 'paragraph-formatting-1',
+    kind: 'paragraph-formatting',
+    author: 'Ada Reviewer',
+    date: '2026-08-18T10:05:00.000Z',
+    from: range.from,
+    to: range.to,
+    text: 'Alpha',
+  };
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[paragraphChange]}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('段落格式')).toBeVisible();
+    expect(
+      view.container.querySelector(
+        '.work-document-change-item.paragraph-formatting',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '定位修订 1' }));
+    expect(editor.state.selection.from).toBe(range.from);
+    expect(editor.state.selection.to).toBe(range.to);
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
 test('observes the revision viewport when changes arrive after the empty state', () => {
   const editor = createEditor();
   document.body.append(editor.view.dom);

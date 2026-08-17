@@ -123,8 +123,8 @@ export function WorkspaceHome({
         <div className="playground-collaboration-copy">
           <h2 id="playground-collaboration-title">多人实时协作</h2>
           <p>
-            体验评论线程、文字建议与字符格式修订；在实时视图中提交、接受、拒绝和
-            审计改动，同时查看参与者、远端选区和在线状态。
+            体验评论线程、文字建议、字符与段落格式修订；在实时视图中提交、接受、
+            拒绝和审计改动，同时查看参与者、远端选区和在线状态。
           </p>
           <span className="playground-collaboration-backend-note">
             生产后端示例基于 A3S Boot，并在持久化前校验评论与建议权限。

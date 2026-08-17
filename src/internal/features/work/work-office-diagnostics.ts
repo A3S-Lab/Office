@@ -11,6 +11,7 @@ import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
+import { isSupportedDocxParagraphFormattingChange } from './work-docx-paragraph-format-change-import';
 import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import {
   attribute,
@@ -247,9 +248,14 @@ export async function analyzeDocxCompatibility(
         ...descendants(document, 'del'),
       ];
       const runFormattingRevisions = descendants(document, 'rPrChange');
+      const paragraphFormattingRevisions = descendants(document, 'pPrChange');
       const supportedRunFormattingRevisionCount = runFormattingRevisions.filter(
         isSupportedDocxRunFormattingChange,
       ).length;
+      const supportedParagraphFormattingRevisionCount =
+        paragraphFormattingRevisions.filter(
+          isSupportedDocxParagraphFormattingChange,
+        ).length;
       if (
         textRevisions.some(
           (revision) =>
@@ -276,6 +282,16 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedParagraphFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.paragraph-formatting',
+            'Paragraph-formatting revisions',
+            `${supportedParagraphFormattingRevisionCount} bounded paragraph-formatting revision(s) preserve author, date, current formatting, and prior alignment, direction, indentation, spacing, pagination, outline, tab-stop, border, shading, and collapsed state. They remain reviewable in Work and round-trip as native w:pPrChange records.`,
+            'info',
+          ),
+        );
+      }
       if (
         textRevisions.some(
           (revision) =>
@@ -283,10 +299,11 @@ export async function analyzeDocxCompatibility(
             !descendants(revision, 'delText').length,
         ) ||
         supportedRunFormattingRevisionCount !== runFormattingRevisions.length ||
+        supportedParagraphFormattingRevisionCount !==
+          paragraphFormattingRevisions.length ||
         [
           'moveFrom',
           'moveTo',
-          'pPrChange',
           'tblPrChange',
           'trPrChange',
           'tcPrChange',
@@ -298,7 +315,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and the bounded character-formatting subset.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and bounded character- and paragraph-formatting subsets.',
           ),
         );
       }

@@ -48,9 +48,9 @@ workflows, and a separate Rust automation plane.
   participants and remote locations, plus browser, CLI, MCP, and A3S Code peers.
   Document reviewers can submit attributed insertions, deletions, and
   replacements without directly changing canonical text. Editors can also
-  track character-formatting revisions, accept the new formatting or restore
-  the exact prior marks, and retain either result in the immutable shared
-  decision audit.
+  track character- and paragraph-formatting revisions, accept the new
+  formatting or restore the exact prior marks/properties, and retain either
+  result in the immutable shared decision audit.
 - **Automate deterministically** through the native CLI, standard MCP server,
   or packaged Office Skill.
 
@@ -150,8 +150,9 @@ The images below are committed visual-regression baselines from the real
   Presentation scene-element and z-order, and PDF annotation, form-value, and
   review changes, including attributable Document selection comments, replies,
   text suggestions, and atomic final decisions, retain browser/native actor
-  attribution, validate browser-created formatting revisions and their audit
-  records, and checkpoint without replacing a whole Office file.
+  attribution, validate browser-created character- and paragraph-formatting
+  revisions and their audit records, and checkpoint without replacing a whole
+  Office file.
 
 ## Real-time collaboration
 
@@ -174,13 +175,13 @@ deletions, and replacements while canonical text, structure, formatting,
 options, comments, and other actors' suggestions remain protected. An `edit`
 participant accepts or rejects a proposal and appends the final actor-attributed
 decision to the immutable `document.change-decisions` audit trail. The A3S Boot
-service also persists `edit`-mode character-formatting revisions and validates
-their bounded prior-format snapshot before broadcast. Accept keeps the new
-bold, italic, underline, strike, vertical position, font, size, color, or
-highlight; reject restores the prior direct marks without deleting the text.
-Authenticated `suggest` updates must preserve those formatting revisions and
-cannot rewrite their identity or snapshot. `suggest` on non-Document formats
-remains receive-only.
+service also persists `edit`-mode character- and paragraph-formatting revisions
+and validates their bounded prior-format snapshots before broadcast. Character
+decisions keep or restore direct marks. Paragraph decisions keep or restore
+alignment, direction, indentation, spacing, pagination, outline, tab stops,
+borders, shading, and collapsed state without deleting text. Authenticated
+`suggest` updates must preserve both revision kinds and cannot rewrite their
+identity or snapshot. `suggest` on non-Document formats remains receive-only.
 See the bilingual [real-time collaboration guide](https://a3s-lab.github.io/Office/docs/components/collaboration.html)
 for React, Vue, Web Component, reconnect, security, and native-agent setup.
 The repository also ships a runnable
@@ -203,8 +204,9 @@ bun run playground
 
 Then open the local URL printed by the development server. For a zero-install
 tour, use the [live Playground](https://a3s-lab.github.io/Office/).
-Choose **体验格式修订**, open **审阅**, then **查看修订（1）** to inspect the
-Formatting card and exercise accept or reject semantics.
+Choose **体验格式修订**, open **审阅**, then **查看修订（2）** to inspect the
+independent Formatting and Paragraph Formatting cards and exercise accept or
+reject semantics.
 
 ### Embed a controlled React editor
 
@@ -1336,6 +1338,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.11.0 documentation](https://a3s-lab.github.io/Office/docs/0.11.0/)
 - [A3S Office 0.10.0 documentation](https://a3s-lab.github.io/Office/docs/0.10.0/)
 - [A3S Office 0.9.2 documentation](https://a3s-lab.github.io/Office/docs/0.9.2/)
 - [A3S Office 0.9.1 documentation](https://a3s-lab.github.io/Office/docs/0.9.1/)

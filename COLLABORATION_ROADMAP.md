@@ -110,17 +110,17 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, durable review-only
-comment and suggestion modes, character-formatting revisions, immutable
-decision audit, and native text/options/bounded structural
+comment and suggestion modes, character- and paragraph-formatting revisions,
+immutable decision audit, and native text/options/bounded structural
 paragraph/comment/suggestion mutations implemented; rich native mutation
 parity remains pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
   collaboration binding owns local history.
-- Section/page OOXML state, comment anchors, and text or character-formatting
-  tracked-change marks converge in the ProseMirror fragment. Document-level
-  page color, tracking mode,
+- Section/page OOXML state, comment anchors, text tracked-change marks, and
+  character-formatting marks or paragraph-formatting node revisions converge
+  in the ProseMirror fragment. Document-level page color, tracking mode,
   comment threads/replies, and bibliography sources use conflict-local typed
   roots instead of a serialized document blob.
 - React, Vue, and Web Component adapters accept the same initialized session.
@@ -174,6 +174,14 @@ parity remains pending.
   bold, italic, underline, strike, sub/superscript, font, size, color,
   highlight, and grid marks without changing text. Supported DOCX
   `w:rPrChange` records import into the same model and export natively.
+- Paragraph-formatting commands create one shared `paragraph-formatting`
+  identity across every affected paragraph or heading and retain the complete
+  canonical old-property snapshot on each node. Accept keeps current paragraph
+  properties; reject atomically restores alignment, direction, indentation,
+  spacing and line rules, pagination controls, contextual spacing, outline
+  level, tab stops, borders, shading, and collapsed state without changing
+  text. Supported strict or transitional DOCX `w:pPrChange` records use the
+  same model and export natively.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
   `document-comment-reply`, `document-comment-set-resolved`,
   `document-comment-delete`, `document-suggestion-create`, and
@@ -191,19 +199,21 @@ parity remains pending.
   content, structure, options, non-suggestion formatting, authorship, order,
   claims, anchors, foreign deletion, or foreign suggestion changes fail before
   the durable store changes.
-- Native Yrs validation admits only the bounded formatting-change schema,
-  preserves it across restart and duplicate/reordered delivery, exposes
-  `formatting` in immutable decision projections, and makes `suggest` updates
-  retain existing formatting revisions byte-semantically. Formatting is a
-  Document change kind, not a native insertion/deletion suggestion kind; the
-  current closed `document-suggestion-*` mutations remain text-only.
+- Native Yrs validation admits only the bounded character- and
+  paragraph-formatting schemas, preserves them across restart and
+  duplicate/reordered delivery, exposes `formatting` and
+  `paragraph-formatting` in immutable decision projections, and makes
+  `suggest` updates retain existing formatting revisions byte-semantically.
+  Formatting revisions are Document change kinds, not native
+  insertion/deletion suggestion kinds; the current closed
+  `document-suggestion-*` mutations remain text-only.
 
 Remaining:
 
 - Prove concurrent full-table, list-restructure, section, comment, and revision
   workflows, plus DOCX import/export after merged edits.
 - Expand native convergence from bounded paragraph edits to complete table,
-  list, and section operations, comments, and tracked revisions.
+  list, and section operations, comments, and the remaining tracked revisions.
 
 Exit criterion: two browsers and one native client converge on document
 content and review state; local undo never removes a remote change; a DOCX

@@ -32,7 +32,7 @@ Duplicate delivery is idempotent. Authorization is mode and artifact specific:
 
 | Ticket mode | Publish authorization |
 | --- | --- |
-| `edit` | Canonical content and review updates for every initialized format, including bounded Document character-formatting revisions and decisions |
+| `edit` | Canonical content and review updates for every initialized format, including bounded Document character- and paragraph-formatting revisions and decisions |
 | Document `comment` | Selection comments, replies, resolution/reopen, and ownership-restricted deletion only |
 | Document `suggest` | Attributed insertion, deletion, and replacement proposals that preserve canonical content and every non-suggestion root |
 | `view` | Receive document state and publish ephemeral presence only |
@@ -51,13 +51,16 @@ order, claims, anchors, foreign suggestions, or another actor's deletion
 returns `FORBIDDEN` before persistence or broadcast.
 
 Document formatting revisions stay on the `edit` path and use the standard
-`document.content` fragment. The Office Yrs validator accepts only a bounded
-`formatting` mark and prior-direct-mark snapshot. Accept/reject removes the live
-mark and writes an immutable `changeKind: "formatting"` audit record in the same
-update. Suggest authorization retains those marks during its canonical
-comparison, so a `suggest` ticket cannot add, remove, or rewrite one. The
-browser may import and export the same revision as native DOCX `w:rPrChange`;
-the server persists and broadcasts Yjs updates and does not parse OOXML.
+`document.content` fragment. Character revisions use a bounded `formatting`
+mark and prior-direct-mark snapshot; paragraph revisions use bounded node
+attributes and a canonical prior-property snapshot. Accept/reject removes the
+live review metadata, optionally restores the prior formatting, and writes an
+immutable `changeKind: "formatting"` or `changeKind: "paragraph-formatting"`
+audit record in the same update. Suggest authorization retains both revision
+forms during its canonical comparison, so a `suggest` ticket cannot add,
+remove, or rewrite one. The browser may import and export the same revisions as
+native DOCX `w:rPrChange` and `w:pPrChange`; the server persists and broadcasts
+Yjs updates and does not parse OOXML.
 
 ## Run locally
 
@@ -230,7 +233,8 @@ identity to accept or reject a batch atomically. Actor IDs come from replica
 manifests, live proposals and immutable final decisions are readable in
 projection v3, and the standard Yjs updates travel through this server's normal
 authenticated authorization, persistence, acknowledgement, and broadcast
-path. Projection also recognizes immutable formatting decisions, but the
+path. Projection also recognizes immutable character- and paragraph-formatting
+decisions, but the
 closed `document-suggestion-*` mutations remain insertion/deletion-only. Agents
 must not construct private ProseMirror marks.
 
@@ -264,6 +268,7 @@ persist browser-generated Yjs updates, verify room broadcast and restart-safe
 Yrs state, create a durable selection comment with a comment-mode ticket,
 persist an attributed text proposal with a suggestion-mode ticket, and confirm
 forged canonical content plus view-only publishing are rejected.
-Core browser/Yrs interoperability tests additionally deliver a browser-created
-formatting revision through restart, duplicate and reordered updates, then
-prove that suggestion-mode tampering is rejected before persistence.
+Core browser/Yrs interoperability tests additionally deliver browser-created
+character- and paragraph-formatting revisions through restart, duplicate and
+reordered updates, then prove that suggestion-mode tampering is rejected before
+persistence.

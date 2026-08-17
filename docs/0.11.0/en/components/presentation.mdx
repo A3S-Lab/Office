@@ -1,0 +1,79 @@
+---
+title: PresentationEditor
+description: Presentation content, collaboration, slideshow events, geometry kernel, and host extension points.
+---
+
+# PresentationEditor
+
+`PresentationEditor` uses a typed scene graph for slides and mounts TipTap only
+while a text box is being edited.
+
+## Properties
+
+| Property | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `content` | `PresentationContent` | Yes | — | Controlled presentation content. |
+| `onChange` | `(content: PresentationContent) => void` | Yes | — | Emits the complete next presentation. |
+| `collaboration` | `OfficeCollaborationSession` | No | none | Uses an initialized Yjs Presentation as the canonical value. |
+| `presence` | `OfficeCollaborationPresence` | No | none | Publishes slide/object selection, projects remote object frames and roster navigation; requires the exact `collaboration` session. |
+| `preview` | `boolean` | No | `false` | Read-only presentation surface. |
+| `saveStatus` | `string` | No | `'Saved automatically'` | Host-owned save status. |
+| `fileActions` | `readonly OfficeFileAction[]` | No | `[]` | Host file actions. |
+| `kernelWasmUrl` | `string` | No | packaged kernel | Snapping, alignment, and geometry-kernel URL. |
+| `onAgentRequest` | `(request: EditorAgentRequest) => void \| Promise<void>` | No | — | Sends slide or object context to the host AI flow. |
+| `onStartSlideshow` | `() => void` | No | — | Notifies the host after built-in playback starts. |
+| `theme` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color mode. |
+
+## Content contract
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `type` | `'presentation'` | Content discriminator. |
+| `slides` | `WorkSlide[]` | Slides, elements, notes, comments, and transitions. |
+| `width`, `height` | `number` | Presentation canvas dimensions. |
+| `masters` | `WorkPresentationMaster[]` | Master backgrounds and elements. |
+| `layouts` | `WorkPresentationLayout[]` | Master-linked layouts, placeholders, and inherited elements. |
+
+Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
+integration. The internal scene-command runtime is not a public extension API.
+
+## Real-time collaboration
+
+Pass an initialized `presentation` collaboration session to make its Yjs scene
+graph canonical. Slide, master, and layout order live separately from ID-keyed
+records; each container owns ordered, ID-keyed scene elements. Append-only
+creation claims reject conflicting same-ID records, and deletion writes a
+durable tombstone that reserves the ID. Local undo tracks only the mounted
+binding's origin, while `presence` publishes slide/object selection and renders
+remote object frames.
+
+Rust, CLI, MCP, and A3S Code use the closed
+`presentation-create-element`, `presentation-update-element`,
+`presentation-move-element`, and `presentation-delete-element` mutations.
+Creation may place a complete element after one active stable ID. Update
+compares complete expected/current/next elements and writes only changed
+top-level fields, so unrelated concurrent geometry, text, or style edits merge
+while a stale same-field edit fails without a durable update. Move compares the
+stable observed and requested predecessor IDs instead of array indexes;
+`null` means the first element-order position. It is idempotent at the requested
+destination and otherwise fails atomically on a stale source position or an
+unavailable anchor. Only the moved element's order entry changes. Delete
+requires the exact complete current element and tombstones it. Element `id` and
+`type` are immutable across all four operations. See
+[Real-time collaboration](./collaboration.mdx) for session setup and mutation
+examples.
+
+## Built-in slideshow
+
+The slideshow keeps one shared navigation strip in audience and presenter
+modes. Arrow keys and Page Up/Page Down move between slides, Space advances,
+Home and End jump to the deck boundaries, and Escape exits playback. These
+commands remain active when a slideshow control has focus, while text inputs
+and editable content retain their normal keyboard behavior.
+
+Presenter mode shows the current slide, next-slide cue, speaker notes, and a
+pauseable timer. The timer belongs to the playback session, so switching
+between audience and presenter modes does not reset elapsed time. At phone
+widths, the current slide stays full-width, the next-slide preview compacts to
+its title cue, notes remain scrollable, and the same navigation strip remains
+available.

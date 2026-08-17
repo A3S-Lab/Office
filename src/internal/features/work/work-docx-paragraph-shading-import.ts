@@ -187,6 +187,16 @@ export function parseDirectDocxParagraphShading(
     : undefined;
 }
 
+export function resolveDocxParagraphShadingFromSources(
+  propertySources: readonly Element[],
+  themeSource?: DocxThemeSource,
+): DocumentParagraphShading | null {
+  return resolveParagraphShading(
+    propertySources,
+    resolveDocxThemeResolver(themeSource),
+  ).shading;
+}
+
 function resolveParagraphShading(
   propertySources: readonly Element[],
   theme: DocxThemeResolver,

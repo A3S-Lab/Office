@@ -92,6 +92,13 @@ bun run test:e2e:writer-formatting-revision:check
 bun run test:e2e:writer-formatting-revision
 ```
 
+The Writer paragraph-formatting revision workflow has a focused gate:
+
+```bash
+bun run test:e2e:writer-paragraph-formatting-revision:check
+bun run test:e2e:writer-paragraph-formatting-revision
+```
+
 The native Spreadsheet cell lifecycle has a focused gate:
 
 ```bash
@@ -221,9 +228,13 @@ diagnostics.
 The Writer character-formatting revision workflow enters through the public
 Playground demo, verifies the dedicated Formatting card and native revision
 mark, rejects that revision, and proves that the document text remains while
-both the applied bold style and revision wrapper are removed. It captures the
-pending and rejected visual states, final accessibility, and clean browser
-diagnostics.
+both the applied bold style and revision wrapper are removed while the separate
+paragraph revision remains pending. The paragraph-formatting workflow opens the
+same public fixture, verifies the Paragraph Formatting card, rejects the
+paragraph revision, and proves that the original alignment, indentation,
+spacing, and line height return without changing text or the character
+revision. Both capture pending and rejected visual states, final accessibility,
+and clean browser diagnostics.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and
 formula change, then covers sparse cell creation and exact deletion with

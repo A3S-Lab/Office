@@ -166,7 +166,11 @@ export interface WorkDocumentContent {
   bibliography?: WorkDocumentBibliography;
 }
 
-export type WorkDocumentChangeKind = 'insertion' | 'deletion' | 'formatting';
+export type WorkDocumentChangeKind =
+  | 'insertion'
+  | 'deletion'
+  | 'formatting'
+  | 'paragraph-formatting';
 
 export type WorkDocumentChangeDecisionAction = 'accept' | 'reject';
 

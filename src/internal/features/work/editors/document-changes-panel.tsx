@@ -389,6 +389,7 @@ function documentChangeDecisionKey(
 function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
   if (kind === 'insertion') return '插入';
   if (kind === 'formatting') return '格式';
+  if (kind === 'paragraph-formatting') return '段落格式';
   return '删除';
 }
 

@@ -4,6 +4,30 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.11.0 - 2026-08-18
+
+- Added node-level `paragraph-formatting` revisions for alignment, direction,
+  indentation, spacing and line rules, pagination controls, contextual
+  spacing, outline level, tab stops, borders, shading, and collapsed state.
+  Multi-paragraph commands share one stable identity and original canonical
+  snapshot; accept keeps current properties, reject restores the complete old
+  properties, and both preserve text with independent undo boundaries.
+- Imported the supported strict and transitional DOCX `w:pPrChange` subset as
+  Paragraph Formatting cards and exported it back to native OOXML. Validation
+  rejects duplicate, malformed, namespace-spoofed, non-canonical, or unsupported
+  revisions, keeps them on the structural diagnostic path, and removes private
+  transport markers from final DOCX packages.
+- Extended browser/Yrs collaboration with immutable
+  `changeKind: "paragraph-formatting"` decisions, browser-client convergence,
+  restart-safe Rust projection, and suggestion-mode protection that permits
+  normal text proposals while rejecting paragraph-revision metadata tampering.
+- Expanded the public Playground to show independent character and paragraph
+  formatting revisions. Added deterministic A3S Test gates for both rejection
+  paths, including text and sibling-revision preservation, paragraph-property
+  restoration, screenshots, accessibility, console, and page-error evidence.
+  Updated the bilingual Document, collaboration, architecture, roadmap, and
+  complete A3S Boot backend guides.
+
 ## 0.10.0 - 2026-08-17
 
 - Added character-formatting revisions for bold, italic, underline, strike,

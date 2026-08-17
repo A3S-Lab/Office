@@ -29,11 +29,11 @@ suite "word-formatting-revision" {
         }
 
         wait "review-toolbar-is-ready" {
-            visible = css("button[aria-label='查看修订（1）']")
+            visible = css("button[aria-label='查看修订（2）']")
         }
 
         click "open-revision-pane" {
-            target = role("button", "查看修订（1）")
+            target = role("button", "查看修订（2）")
         }
 
         wait "formatting-card-is-ready" {
@@ -56,8 +56,8 @@ suite "word-formatting-revision" {
             target = role("button", "拒绝修订 1")
         }
 
-        wait "revision-pane-is-empty" {
-            text = "没有待处理的修订"
+        wait "paragraph-formatting-card-remains" {
+            visible = css(".work-document-change-item.paragraph-formatting")
         }
 
         expect "document-text-is-preserved" {
@@ -65,7 +65,11 @@ suite "word-formatting-revision" {
         }
 
         expect "formatting-and-revision-mark-are-removed" {
-            visible = css(".ProseMirror p:last-child:not(:has(strong)):not(:has([data-document-change]))")
+            visible = css(".ProseMirror p:nth-of-type(2):not(:has(strong)):not(:has([data-document-change]))")
+        }
+
+        expect "paragraph-formatting-revision-is-preserved" {
+            visible = css(".ProseMirror p[data-document-change='true'][data-change-kind='paragraph-formatting']")
         }
 
         screenshot "rejected-formatting-revision" {

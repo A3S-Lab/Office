@@ -248,12 +248,17 @@ function changeIdentity(
 }
 
 function changeKind(value: unknown, shared: boolean): WorkDocumentChangeKind {
-  if (value === 'insertion' || value === 'deletion' || value === 'formatting') {
+  if (
+    value === 'insertion' ||
+    value === 'deletion' ||
+    value === 'formatting' ||
+    value === 'paragraph-formatting'
+  ) {
     return value;
   }
   if (shared) invalidSharedSidecars('tracked-change decision kind');
   invalidInputSidecars(
-    'an insertion, deletion, or formatting tracked-change kind',
+    'an insertion, deletion, formatting, or paragraph-formatting tracked-change kind',
   );
 }
 

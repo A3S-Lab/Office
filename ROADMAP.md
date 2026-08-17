@@ -1,6 +1,6 @@
 # A3S Office / WPS Capability Gap Roadmap
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-18
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of WPS Office. It is a prioritization tool, not a claim that
@@ -76,7 +76,7 @@ collaboration transport, and AI providers.
 | Inline and floating pictures, crop, wrap contour, layer, identity, alt text | **Partial**, with strong DrawingML picture support | Broad shapes, connectors, text boxes, WordArt, SmartArt, charts, and unsupported drawings normalize | P0 safe preservation; P1 editable drawings |
 | OMML equations | **Partial**, with a large bounded structured model and strict/transitional import/export | Unbounded or unsupported OMML branches remain atomic/unsupported rather than fully editable | P0 no-clobber; P2 coverage |
 | Comments, replies, resolved state, anchors, modern IDs | **Supported** for editable review records and safe source preservation | Reactions, people sidecars, live presence, and server synchronization are absent/host-owned | P1 protocol |
-| Track changes review | **Partial**: body-text insertions/deletions plus bounded character-formatting revisions, native `w:rPrChange` round trips, navigation, accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus paragraph, numbering, section, table, row, and cell property revisions are not fully editable | P0 |
+| Track changes review | **Partial**: body-text insertions/deletions plus bounded character- and paragraph-formatting revisions, native `w:rPrChange` and `w:pPrChange` round trips, navigation, accept/reject, immutable collaboration audit, and long-list virtualization | Moves plus numbering, section, table, row, and cell property revisions are not fully editable | P0 |
 | Bookmarks, links, captions, cross-references, citations, bibliography, footnotes/endnotes | **Partial**, with native identity and editable common paths | Wider field instructions, indexes, tables of authorities/figures, citation styles, and reference dialogs remain incomplete | P1 |
 | Table of contents and outline authoring | **Partial**: heading outline navigation exists | No WPS-like insert/update TOC workflow with page-number refresh and style controls | P1 |
 | Fields | **Partial**: PAGE, NUMPAGES, SECTION, SECTIONPAGES, DATE, TIME, and safe REF paths | Broader Word field grammar, nested fields, switches, mail fields, and document properties are incomplete | P1/P2 |
@@ -174,11 +174,12 @@ a phase exits only when its evidence is complete.
   mixed custom-size and orientation transitions now paginate in the shared
   JS/Rust kernel, render as variable-size live sheets, and retain exact
   per-page geometry in thumbnails and PDF capture.
-- Treat bounded character formatting as a completed revision slice: retain
-  accept/reject inversion, strict/transitional `w:rPrChange`, browser/Yrs
-  convergence, malformed-input diagnostics, and Playground A3S Test coverage
-  as permanent gates. Expand next to paragraph, numbering, section, table, row,
-  cell, and move revisions.
+- Treat bounded character and paragraph formatting as completed revision slices:
+  retain accept/reject inversion, exact old-property snapshots, atomic
+  multi-paragraph decisions, strict/transitional `w:rPrChange` and
+  `w:pPrChange`, browser/Yrs convergence, malformed-input diagnostics, and
+  Playground A3S Test coverage as permanent gates. Expand next to numbering,
+  section, table, row, cell, and move revisions.
 - Make unsupported semantics explicit in compatibility reports; never attach
   relationship-bound or namespace-spoofed data to a regenerated identity.
 - Move browser document PDF output toward searchable text, vector content, and

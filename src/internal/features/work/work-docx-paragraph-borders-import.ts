@@ -157,6 +157,21 @@ export function resolveDocxParagraphBordersForParagraph(
   };
 }
 
+export function resolveDocxParagraphBordersFromSources(
+  propertySources: readonly Element[],
+  themeSource?: DocxThemeSource,
+): ResolvedDocxParagraphBorders {
+  const resolved = resolveParagraphBorderSources(
+    propertySources,
+    resolveDocxThemeResolver(themeSource),
+  );
+  return {
+    borders: normalizeDocumentParagraphBorders(resolved.borders),
+    invalidCount: resolved.invalidCount,
+    spoofedCount: resolved.spoofedCount,
+  };
+}
+
 export function applyImportedDocxParagraphBorderMarkers(
   document: Document,
   markers: ImportedDocxParagraphBorderMarkers,

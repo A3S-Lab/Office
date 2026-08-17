@@ -45,7 +45,7 @@ export function markDocxParagraphIndents(
       docxTableParagraphPropertySources(paragraph, tableStyles),
     );
     if (sources.some((source) => directChild(source, 'numPr'))) continue;
-    const indent = paragraphIndent(sources);
+    const indent = resolveDocxParagraphIndent(sources);
     if (!indent.left && !indent.right && !indent.firstLine) continue;
     properties ??= insertParagraphProperties(document, paragraph);
     const marker = `__A3S_WORK_PARAGRAPH_INDENT_${paragraphs.length + 1}__`;
@@ -80,7 +80,7 @@ export function hasImportedDocxParagraphIndentMarkers(
   return markers.paragraphs.length > 0;
 }
 
-function paragraphIndent(
+export function resolveDocxParagraphIndent(
   propertySources: readonly Element[],
 ): DocumentParagraphIndent {
   let left: number | undefined;

@@ -1,0 +1,94 @@
+suite "word-paragraph-formatting-revision" {
+    version = 1
+
+    scenario "reject-paragraph-formatting" {
+        name = "Review and reject a paragraph-formatting revision"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-formatting-revision-demo" {
+            target = role("button", "体验格式修订")
+        }
+
+        wait "paragraph-formatting-revision-is-ready" {
+            visible = css(".ProseMirror p[data-document-change='true'][data-change-kind='paragraph-formatting'][data-office-indent-level='2']")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        wait "review-toolbar-is-ready" {
+            visible = css("button[aria-label='查看修订（2）']")
+        }
+
+        click "open-revision-pane" {
+            target = role("button", "查看修订（2）")
+        }
+
+        wait "paragraph-formatting-card-is-ready" {
+            visible = css(".work-document-change-item.paragraph-formatting")
+        }
+
+        expect "paragraph-formatting-card-is-labeled" {
+            text = "段落格式"
+        }
+
+        expect "pending-paragraph-formatting-is-visible" {
+            visible = css(".ProseMirror p[data-document-change='true'][data-change-kind='paragraph-formatting'][style*='text-align: right'][style*='margin-left: 48px'][style*='line-height: 1.5']")
+        }
+
+        screenshot "pending-paragraph-formatting-revision" {
+            path = "screenshots/paragraph-formatting-revision-pending.png"
+        }
+
+        click "reject-paragraph-formatting-revision" {
+            target = role("button", "拒绝修订 2")
+        }
+
+        wait "character-formatting-card-remains" {
+            visible = css(".work-document-change-item.formatting")
+        }
+
+        expect "paragraph-text-is-preserved" {
+            text = "这段文字调整为右对齐、两级缩进和 1.5 倍行距，正文内容本身没有变化。"
+        }
+
+        expect "old-paragraph-formatting-is-restored" {
+            visible = css(".ProseMirror p:nth-of-type(3):not([data-document-change]):not([data-office-indent-level]):not([data-office-space-after]):not([style*='text-align']):not([style*='margin-left']):not([style*='line-height'])")
+        }
+
+        expect "character-formatting-revision-is-preserved" {
+            visible = css(".ProseMirror span[data-document-change='true'][data-change-kind='formatting'] strong")
+        }
+
+        screenshot "rejected-paragraph-formatting-revision" {
+            path = "screenshots/paragraph-formatting-revision-rejected.png"
+        }
+
+        accessibility "rejected-paragraph-formatting-accessibility" {
+            path = "evidence/paragraph-formatting-revision-rejected.json"
+            interactive = false
+        }
+
+        console "paragraph-formatting-revision-console" {
+            path = "diagnostics/paragraph-formatting-revision-console.json"
+            clear = false
+        }
+
+        page_errors "paragraph-formatting-revision-errors" {
+            path = "diagnostics/paragraph-formatting-revision-page-errors.json"
+            clear = false
+        }
+    }
+}

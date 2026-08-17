@@ -3,12 +3,105 @@ use std::sync::Arc;
 
 use base64::Engine as _;
 use yrs::types::Attrs;
-use yrs::{Any, Doc, Map, Text, Transact, Update, XmlFragment, XmlOut};
+use yrs::{Any, Doc, Map, Text, Transact, Update, Xml, XmlFragment, XmlOut};
 
 use super::*;
 
 const BROWSER_DOCUMENT_FORMATTING_UPDATE_BASE64: &str =
     include_str!("../../../../../tests/fixtures/browser-document-formatting-change-update.base64");
+const BROWSER_DOCUMENT_PARAGRAPH_FORMATTING_UPDATE_BASE64: &str = include_str!(
+    "../../../../../tests/fixtures/browser-document-paragraph-formatting-change-update.base64"
+);
+
+#[test]
+fn browser_paragraph_formatting_revisions_survive_restart_and_suggest_mode() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp
+        .path()
+        .join("browser-paragraph-formatting-revision-server");
+    let store = NativeOfficeCollaborationStore::create(NativeOfficeCollaborationCreateRequest {
+        store: root.clone(),
+        artifact_id: "fixture-document-paragraph-formatting".to_owned(),
+        kind: NativeOfficeCollaborationArtifactKind::Document,
+        actor_id: "collaboration-server".to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::System,
+        mode: NativeOfficeCollaborationMode::Edit,
+        operation_id: "create-browser-paragraph-formatting-server".to_owned(),
+        namespace: None,
+        client_id: Some(900_304),
+        initial_update: Some(
+            STANDARD
+                .decode(BROWSER_DOCUMENT_PARAGRAPH_FORMATTING_UPDATE_BASE64.trim())
+                .unwrap(),
+        ),
+    })
+    .unwrap();
+    assert_paragraph_formatting_projection(&store);
+    drop(store);
+
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    assert_paragraph_formatting_projection(&reopened);
+    let authorization = NativeOfficeCollaborationTransportAuthorization {
+        actor_id: "suggester-1".to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::Human,
+        actor_name: "Ada Suggester".to_owned(),
+        mode: NativeOfficeCollaborationMode::Suggest,
+    };
+    let mut transport =
+        NativeOfficeCollaborationTransportSession::attach(reopened.clone()).unwrap();
+    let accepted = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: paragraph_formatting_fixture_suggestion_message(
+                    suggestion_update(&reopened, suggestion_attributes("Ada Suggester"), true),
+                    "paragraph-formatting-safe-suggestion",
+                ),
+                operation_id: Some("paragraph-formatting-safe-suggestion".to_owned()),
+                if_state_vector: None,
+            },
+            authorization.clone(),
+        )
+        .unwrap();
+    assert!(accepted.apply.unwrap().state_changed);
+    assert_paragraph_formatting_projection(&reopened);
+
+    let before_tamper = reopened.inspect().unwrap().document_state_sha256;
+    let rejected = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: paragraph_formatting_fixture_suggestion_message(
+                    remove_paragraph_formatting_revision_update(&reopened),
+                    "remove-paragraph-formatting-revision",
+                ),
+                operation_id: Some("remove-paragraph-formatting-revision".to_owned()),
+                if_state_vector: None,
+            },
+            authorization,
+        )
+        .unwrap_err();
+    assert_eq!(rejected.code, "office.collaboration.permission_denied");
+    assert_eq!(
+        reopened.inspect().unwrap().document_state_sha256,
+        before_tamper
+    );
+}
+
+fn assert_paragraph_formatting_projection(store: &NativeOfficeCollaborationStore) {
+    let NativeOfficeCollaborationProjectedContent::Document {
+        plain_text,
+        change_decisions,
+        ..
+    } = store.project().unwrap().content
+    else {
+        panic!("expected Document projection");
+    };
+    assert!(plain_text.starts_with("Paragraph format"));
+    assert_eq!(change_decisions.len(), 1);
+    assert_eq!(
+        change_decisions[0].change_kind,
+        NativeOfficeCollaborationDocumentChangeKind::ParagraphFormatting
+    );
+}
 
 #[test]
 fn browser_formatting_revisions_survive_restart_and_bound_suggestion_delivery() {
@@ -551,6 +644,22 @@ fn remove_formatting_revision_update(server: &NativeOfficeCollaborationStore) ->
     update
 }
 
+fn remove_paragraph_formatting_revision_update(server: &NativeOfficeCollaborationStore) -> Vec<u8> {
+    let producer = synchronized_producer(server, 818_592);
+    let before = producer.transact().state_vector();
+    let paragraph = producer
+        .get_or_insert_xml_fragment("a3s.office.document.content")
+        .successors(&producer.transact())
+        .find_map(|node| match node {
+            XmlOut::Element(element) if element.tag().as_ref() == "paragraph" => Some(element),
+            _ => None,
+        })
+        .unwrap();
+    paragraph.remove_attribute(&mut producer.transact_mut(), &"paragraphChangeKind");
+    let update = producer.transact().encode_state_as_update_v1(&before);
+    update
+}
+
 fn synchronized_producer(server: &NativeOfficeCollaborationStore, client_id: u64) -> Doc {
     let producer = Doc::with_client_id(client_id);
     producer
@@ -626,6 +735,28 @@ fn formatting_fixture_suggestion_message(
         artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
         namespace: NATIVE_OFFICE_COLLABORATION_NAMESPACE.to_owned(),
         sender_client_id: 818_590,
+        message_type: NativeOfficeCollaborationTransportMessageType::Update,
+        payload: update,
+        origin: Some(NativeOfficeCollaborationOrigin {
+            protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+            kind: NativeOfficeCollaborationOriginKind::Editor,
+            actor_id: Some("suggester-1".to_owned()),
+            operation_id: Some(operation_id.to_owned()),
+        }),
+    }
+}
+
+fn paragraph_formatting_fixture_suggestion_message(
+    update: Vec<u8>,
+    operation_id: &str,
+) -> NativeOfficeCollaborationTransportMessage {
+    NativeOfficeCollaborationTransportMessage {
+        protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+        version: NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
+        artifact_id: "fixture-document-paragraph-formatting".to_owned(),
+        artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
+        namespace: NATIVE_OFFICE_COLLABORATION_NAMESPACE.to_owned(),
+        sender_client_id: 818_592,
         message_type: NativeOfficeCollaborationTransportMessageType::Update,
         payload: update,
         origin: Some(NativeOfficeCollaborationOrigin {

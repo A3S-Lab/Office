@@ -6,6 +6,7 @@ import {
 } from '../src/core';
 import browserDocumentFixtureBase64 from './fixtures/browser-document-suggestion-update.base64';
 import browserDocumentFormattingFixtureBase64 from './fixtures/browser-document-formatting-change-update.base64';
+import browserDocumentParagraphFormattingFixtureBase64 from './fixtures/browser-document-paragraph-formatting-change-update.base64';
 import {
   NATIVE_DOCUMENT_SUGGESTION_DECISION_BASE64,
   NATIVE_DOCUMENT_SUGGESTION_PROPOSAL_BASE64,
@@ -97,6 +98,40 @@ test('projects browser formatting revisions and decisions from the shared Yjs sc
       decidedBy: 'Browser Editor',
       suggestedBy: 'Browser Reviewer',
       text: 'Reviewed',
+    }),
+  ]);
+
+  session.destroy();
+  document.destroy();
+});
+
+test('projects browser paragraph-formatting revisions and decisions from the shared Yjs schema', () => {
+  const document = new Y.Doc();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'fixture-document-paragraph-formatting',
+    document,
+    kind: 'document',
+    mode: 'edit',
+  });
+  Y.applyUpdate(
+    document,
+    decodeBase64(browserDocumentParagraphFormattingFixtureBase64.trim()),
+  );
+
+  const content = readOfficeDocumentCollaboration(session);
+  expect(content.html).toContain('data-change-kind="paragraph-formatting"');
+  expect(content.html).toContain(
+    'data-change-id="browser-paragraph-formatting-live"',
+  );
+  expect(content.html).toContain('text-align: center');
+  expect(content.changeDecisions).toEqual([
+    expect.objectContaining({
+      changeId: 'browser-paragraph-formatting-decided',
+      changeKind: 'paragraph-formatting',
+      decision: 'accept',
+      decidedBy: 'Browser Editor',
+      suggestedBy: 'Browser Reviewer',
+      text: 'Reviewed paragraph',
     }),
   ]);
 

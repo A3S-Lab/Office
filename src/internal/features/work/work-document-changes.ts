@@ -11,11 +11,17 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
+import { closeHistory } from '@tiptap/pm/history';
 import {
   parseDocumentCharacterFormatting,
   restoreDocumentCharacterFormatting,
 } from './work-document-format-changes';
 import { trackDocumentFormattingTransaction } from './work-document-format-change-tracking';
+import {
+  clearDocumentParagraphChangeAttributes,
+  parseDocumentParagraphFormatting,
+  restoredDocumentParagraphAttributes,
+} from './work-document-paragraph-format-changes';
 import type { WorkDocumentChangeKind } from './work-types';
 
 export type { WorkDocumentChangeKind } from './work-types';
@@ -43,6 +49,15 @@ interface DocumentChangeOptions {
 interface ChangeSegment {
   id: string;
   kind: WorkDocumentChangeKind;
+  from: number;
+  to: number;
+  before: string;
+}
+
+interface ParagraphChangeSegment {
+  id: string;
+  kind: 'paragraph-formatting';
+  position: number;
   from: number;
   to: number;
   before: string;
@@ -137,6 +152,37 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
           attributes.before ? { 'data-change-before': attributes.before } : {},
       },
     };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading'],
+        attributes: {
+          paragraphChangeKind: paragraphChangeAttribute(
+            'kind',
+            'data-change-kind',
+          ),
+          paragraphChangeId: paragraphChangeAttribute('id', 'data-change-id'),
+          paragraphChangeActorId: paragraphChangeAttribute(
+            'actorId',
+            'data-change-actor-id',
+          ),
+          paragraphChangeAuthor: paragraphChangeAttribute(
+            'author',
+            'data-change-author',
+          ),
+          paragraphChangeDate: paragraphChangeAttribute(
+            'date',
+            'data-change-date',
+          ),
+          paragraphChangeBefore: paragraphChangeAttribute(
+            'before',
+            'data-change-before',
+          ),
+        },
+      },
+    ];
   },
 
   parseHTML() {
@@ -239,8 +285,8 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
             changeType,
             {
               isTracking: options.isTracking,
-              createChange: () => {
-                const identity = options.createChange('formatting');
+              createChange: (kind) => {
+                const identity = options.createChange(kind);
                 return {
                   ...identity,
                   id: identity.id || createDocumentChangeId(),
@@ -353,6 +399,37 @@ export function collectDocumentChanges(
 ): WorkDocumentChange[] {
   const changes = new Map<string, WorkDocumentChange>();
   document.descendants((node, position) => {
+    if (
+      (node.type.name === 'paragraph' || node.type.name === 'heading') &&
+      node.attrs.paragraphChangeKind === 'paragraph-formatting'
+    ) {
+      const id =
+        stringAttribute(node.attrs.paragraphChangeId) ||
+        `paragraph-change-at-${position}`;
+      const key = `paragraph-formatting:${id}`;
+      const from = position + 1;
+      const to = from + node.content.size;
+      const current = changes.get(key);
+      if (current) {
+        current.from = Math.min(current.from, from);
+        current.to = Math.max(current.to, to);
+        current.text = `${current.text}\n${node.textContent}`;
+      } else {
+        changes.set(key, {
+          id,
+          kind: 'paragraph-formatting',
+          ...(stringAttribute(node.attrs.paragraphChangeActorId)
+            ? { actorId: stringAttribute(node.attrs.paragraphChangeActorId) }
+            : {}),
+          author:
+            stringAttribute(node.attrs.paragraphChangeAuthor) || '未知审阅者',
+          date: stringAttribute(node.attrs.paragraphChangeDate),
+          from,
+          to,
+          text: node.textContent,
+        });
+      }
+    }
     if (!node.isText || !node.text) return;
     const mark = documentChangeMark(node.marks);
     if (!mark) return;
@@ -393,17 +470,24 @@ function resolveDocumentChangesCommand(
   const segments = documentChangeSegments(state.doc, type).filter(
     (segment) => !ids || ids.has(segment.id),
   );
-  if (!segments.length) return 0;
+  const paragraphSegments = paragraphChangeSegments(state.doc).filter(
+    (segment) => !ids || ids.has(segment.id),
+  );
+  if (!segments.length && !paragraphSegments.length) return 0;
   if (
-    decision === 'reject' &&
-    segments.some(
-      (segment) =>
-        segment.kind === 'formatting' &&
-        !parseDocumentCharacterFormatting(segment.before),
-    )
+    paragraphSegments.some(
+      (segment) => !parseDocumentParagraphFormatting(segment.before),
+    ) ||
+    (decision === 'reject' &&
+      segments.some(
+        (segment) =>
+          segment.kind === 'formatting' &&
+          !parseDocumentCharacterFormatting(segment.before),
+      ))
   ) {
     return 0;
   }
+  closeHistory(tr);
   tr.setMeta(documentChangePluginKey, { decision });
   const markRemovals: ChangeSegment[] = [];
   const contentDeletions: ChangeSegment[] = [];
@@ -428,6 +512,20 @@ function resolveDocumentChangesCommand(
       segment.before,
     );
   }
+  for (const segment of paragraphSegments) {
+    const node = tr.doc.nodeAt(segment.position);
+    if (
+      !node ||
+      (node.type.name !== 'paragraph' && node.type.name !== 'heading')
+    )
+      return 0;
+    const attributes =
+      decision === 'reject'
+        ? restoredDocumentParagraphAttributes(node.attrs, segment.before)
+        : clearDocumentParagraphChangeAttributes(node.attrs);
+    if (!attributes) return 0;
+    tr.setNodeMarkup(segment.position, undefined, attributes);
+  }
   for (const segment of markRemovals) {
     tr.removeMark(segment.from, segment.to, type);
   }
@@ -437,7 +535,8 @@ function resolveDocumentChangesCommand(
     tr.delete(segment.from, segment.to);
   }
   return tr.docChanged
-    ? new Set(segments.map((segment) => segment.id)).size
+    ? new Set([...segments, ...paragraphSegments].map((segment) => segment.id))
+        .size
     : 0;
 }
 
@@ -541,6 +640,31 @@ function documentChangeSegments(
   return segments;
 }
 
+function paragraphChangeSegments(
+  document: ProseMirrorNode,
+): ParagraphChangeSegment[] {
+  const segments: ParagraphChangeSegment[] = [];
+  document.descendants((node, position) => {
+    if (
+      (node.type.name !== 'paragraph' && node.type.name !== 'heading') ||
+      node.attrs.paragraphChangeKind !== 'paragraph-formatting'
+    ) {
+      return;
+    }
+    segments.push({
+      id:
+        stringAttribute(node.attrs.paragraphChangeId) ||
+        `paragraph-change-at-${position}`,
+      kind: 'paragraph-formatting',
+      position,
+      from: position + 1,
+      to: position + 1 + node.content.size,
+      before: stringAttribute(node.attrs.paragraphChangeBefore),
+    });
+  });
+  return segments;
+}
+
 function markFragment(
   fragment: Fragment,
   insertion: ProseMirrorMark,
@@ -635,6 +759,46 @@ function documentChangeMark(
 function changeKind(value: unknown): WorkDocumentChangeKind {
   if (value === 'deletion' || value === 'formatting') return value;
   return 'insertion';
+}
+
+function paragraphChangeAttribute(
+  field: 'kind' | 'id' | 'actorId' | 'author' | 'date' | 'before',
+  htmlName:
+    | 'data-change-kind'
+    | 'data-change-id'
+    | 'data-change-actor-id'
+    | 'data-change-author'
+    | 'data-change-date'
+    | 'data-change-before',
+) {
+  const modelName = `paragraphChange${field[0]?.toUpperCase() ?? ''}${field.slice(
+    1,
+  )}`;
+  return {
+    default: field === 'kind' ? null : '',
+    parseHTML: (element: HTMLElement) => {
+      if (
+        element.getAttribute('data-document-change') !== 'true' ||
+        element.getAttribute('data-change-kind') !== 'paragraph-formatting'
+      ) {
+        return field === 'kind' ? null : '';
+      }
+      return field === 'kind'
+        ? 'paragraph-formatting'
+        : (element.getAttribute(htmlName) ?? '');
+    },
+    renderHTML: (attributes: Record<string, unknown>) => {
+      if (attributes.paragraphChangeKind !== 'paragraph-formatting') return {};
+      if (field === 'kind') {
+        return {
+          'data-document-change': 'true',
+          'data-change-kind': 'paragraph-formatting',
+        };
+      }
+      const value = stringAttribute(attributes[modelName]);
+      return value ? { [htmlName]: value } : {};
+    },
+  };
 }
 
 function stringAttribute(value: unknown): string {

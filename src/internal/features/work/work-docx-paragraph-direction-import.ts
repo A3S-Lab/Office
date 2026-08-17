@@ -41,7 +41,7 @@ export function markDocxParagraphDirections(
       styles,
       docxTableParagraphPropertySources(paragraph, tableStyles),
     );
-    const direction = paragraphDirection(sources);
+    const direction = resolveDocxParagraphDirection(sources);
     if (!direction) continue;
     properties ??= insertParagraphProperties(document, paragraph);
     const marker = `__A3S_WORK_PARAGRAPH_DIRECTION_${paragraphs.length + 1}__`;
@@ -79,7 +79,7 @@ export function hasImportedDocxParagraphDirectionMarkers(
   return markers.paragraphs.length > 0;
 }
 
-function paragraphDirection(
+export function resolveDocxParagraphDirection(
   propertySources: readonly Element[],
 ): DocumentParagraphDirection | null {
   let direction: DocumentParagraphDirection | null = null;

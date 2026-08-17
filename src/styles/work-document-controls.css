@@ -2103,3 +2103,26 @@
   color: inherit;
   text-decoration: none;
 }
+
+.work-document-editor
+  :is(
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6
+  )[data-document-change][data-change-kind="paragraph-formatting"],
+.work-pdf-export-page.document
+  :is(
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6
+  )[data-document-change][data-change-kind="paragraph-formatting"] {
+  box-shadow: inset 3px 0 #8b5cf6;
+}

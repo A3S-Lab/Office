@@ -45,7 +45,7 @@ export function markDocxParagraphPagination(
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
     if (properties && directChild(properties, 'numPr')) continue;
-    const pagination = paragraphPagination(
+    const pagination = resolveDocxParagraphPagination(
       docxParagraphPropertySources(
         properties,
         styles,
@@ -89,7 +89,7 @@ export function hasImportedDocxParagraphPaginationMarkers(
   return markers.paragraphs.length > 0;
 }
 
-function paragraphPagination(
+export function resolveDocxParagraphPagination(
   sources: readonly Element[],
 ): ImportedDocxParagraphPagination {
   const pagination: ImportedDocxParagraphPagination = {};

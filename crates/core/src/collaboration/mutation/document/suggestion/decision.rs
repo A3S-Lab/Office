@@ -258,6 +258,9 @@ fn parse_kind(value: Option<Out>) -> UseResult<NativeOfficeCollaborationDocument
         "insertion" => Ok(NativeOfficeCollaborationDocumentChangeKind::Insertion),
         "deletion" => Ok(NativeOfficeCollaborationDocumentChangeKind::Deletion),
         "formatting" => Ok(NativeOfficeCollaborationDocumentChangeKind::Formatting),
+        "paragraph-formatting" => {
+            Ok(NativeOfficeCollaborationDocumentChangeKind::ParagraphFormatting)
+        }
         _ => Err(invalid_decisions("change kind")),
     }
 }

@@ -46,7 +46,7 @@ export function markDocxParagraphAlignments(
       styles,
       docxTableParagraphPropertySources(paragraph, tableStyles),
     );
-    const alignment = paragraphAlignment(sources);
+    const alignment = resolveDocxParagraphAlignment(sources);
     if (!alignment) continue;
     properties ??= insertParagraphProperties(document, paragraph);
     const marker = `__A3S_WORK_PARAGRAPH_ALIGNMENT_${paragraphs.length + 1}__`;
@@ -86,7 +86,7 @@ export function hasImportedDocxParagraphAlignmentMarkers(
   return markers.paragraphs.length > 0;
 }
 
-function paragraphAlignment(
+export function resolveDocxParagraphAlignment(
   propertySources: readonly Element[],
 ): ImportedDocxParagraphAlignment | null {
   let direction: 'ltr' | 'rtl' = 'ltr';

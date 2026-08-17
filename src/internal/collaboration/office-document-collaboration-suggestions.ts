@@ -11,6 +11,7 @@ import type {
   WorkDocumentChangeKind,
 } from '../features/work/work-types';
 import { parseDocumentCharacterFormatting } from '../features/work/work-document-format-changes';
+import { parseDocumentParagraphFormatting } from '../features/work/work-document-paragraph-format-changes';
 import type { WorkOfficeCollaborationSession } from './office-collaboration';
 
 interface StrictDocumentChange extends WorkDocumentChangeIdentity {
@@ -109,7 +110,14 @@ function strictDocumentChanges(
   const changes = new Map<string, StrictDocumentChange>();
   let valid = true;
   document.descendants((node) => {
-    if (!valid || !node.isText || !node.text) return;
+    if (!valid) return;
+    if (node.type.name === 'paragraph' || node.type.name === 'heading') {
+      if (!strictParagraphFormattingChange(node)) {
+        valid = false;
+        return false;
+      }
+    }
+    if (!node.isText || !node.text) return;
     const marks = node.marks.filter(
       (mark) => mark.type.name === 'documentChange',
     );
@@ -243,4 +251,30 @@ function strictChangeKind(value: unknown): WorkDocumentChangeKind | null {
   return value === 'insertion' || value === 'deletion' || value === 'formatting'
     ? value
     : null;
+}
+
+function strictParagraphFormattingChange(node: ProseMirrorNode): boolean {
+  const kind = node.attrs.paragraphChangeKind;
+  const fields = [
+    node.attrs.paragraphChangeId,
+    node.attrs.paragraphChangeActorId,
+    node.attrs.paragraphChangeAuthor,
+    node.attrs.paragraphChangeDate,
+    node.attrs.paragraphChangeBefore,
+  ];
+  if (kind !== 'paragraph-formatting') {
+    return (
+      (kind === null || kind === undefined || kind === '') &&
+      fields.every(
+        (field) => field === null || field === undefined || field === '',
+      )
+    );
+  }
+  return Boolean(
+    strictString(node.attrs.paragraphChangeId) &&
+      optionalStrictString(node.attrs.paragraphChangeActorId) !== null &&
+      strictString(node.attrs.paragraphChangeAuthor) &&
+      strictString(node.attrs.paragraphChangeDate) &&
+      parseDocumentParagraphFormatting(node.attrs.paragraphChangeBefore),
+  );
 }

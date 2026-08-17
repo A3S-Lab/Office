@@ -91,6 +91,10 @@ import {
   patchDocxParagraphDefaultCollapsed,
 } from './work-docx-paragraph-default-collapsed';
 import {
+  DocxParagraphFormattingChangePatchCollector,
+  patchDocxParagraphFormattingChanges,
+} from './work-docx-paragraph-format-change-export';
+import {
   DocxParagraphIdentityPatchCollector,
   patchDocxParagraphIdentities,
 } from './work-docx-paragraph-identity';
@@ -137,6 +141,7 @@ interface DocxNoteContext extends DocxListExportContext {
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
   formattingChangePatches: DocxRunFormattingChangePatchCollector;
+  paragraphFormattingChangePatches: DocxParagraphFormattingChangePatchCollector;
 }
 
 interface DocxTextRevision {
@@ -194,6 +199,8 @@ export async function createDocxBlob(
       JSON.stringify(normalizedContent),
     ),
     formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
+    paragraphFormattingChangePatches:
+      new DocxParagraphFormattingChangePatchCollector(),
   };
   const commentRecords = createDocxCommentRecords(
     commentThreads,
@@ -319,8 +326,13 @@ export async function createDocxBlob(
     paragraphDefaultCollapsedPatched,
     noteContext.paragraphIdentityPatches.patches,
   );
+  const paragraphFormattingChangesPatched =
+    await patchDocxParagraphFormattingChanges(
+      paragraphIdentityPatched,
+      noteContext.paragraphFormattingChangePatches.patches,
+    );
   const equationPatched = await patchDocxEquations(
-    paragraphIdentityPatched,
+    paragraphFormattingChangesPatched,
     noteContext.equationPatches.patches,
   );
   const patched = await patchDocxPageColor(
@@ -601,8 +613,19 @@ async function paragraphRuns(
     identityMarker,
     element,
   );
+  const paragraphFormattingChangeMarker =
+    element.hasAttribute('data-document-change') &&
+    element.dataset.changeKind === 'paragraph-formatting'
+      ? noteContext.paragraphFormattingChangePatches.register(
+          element,
+          docxRevisionId(element, noteContext),
+        )
+      : null;
   return [
     new docx.TextRun(identityMarker),
+    ...(paragraphFormattingChangeMarker
+      ? [new docx.TextRun(paragraphFormattingChangeMarker)]
+      : []),
     ...(await inlineRuns(element, docx, noteContext)),
   ];
 }
@@ -820,7 +843,7 @@ function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"], [data-document-change][data-change-kind="paragraph-formatting"]',
     ),
   );
 }

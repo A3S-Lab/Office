@@ -110,6 +110,12 @@ import {
   markDocxParagraphIdentities,
 } from './work-docx-paragraph-identity-import';
 import {
+  applyImportedDocxParagraphFormattingChangeMarkers,
+  hasImportedDocxParagraphFormattingChangeMarkers,
+  type ImportedDocxParagraphFormattingChangeMarkers,
+  markDocxParagraphFormattingChanges,
+} from './work-docx-paragraph-format-change-import';
+import {
   applyImportedDocxParagraphIndentMarkers,
   hasImportedDocxParagraphIndentMarkers,
   type ImportedDocxParagraphIndentMarkers,
@@ -206,6 +212,7 @@ export interface PreparedDocxImport {
   listMarkers: ImportedDocxListMarkers;
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers;
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers;
+  paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers;
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers;
   paragraphDirectionMarkers: ImportedDocxParagraphDirectionMarkers;
   paragraphIndentMarkers: ImportedDocxParagraphIndentMarkers;
@@ -250,6 +257,7 @@ export async function prepareDocxImport(
       listMarkers: { lists: [] },
       imageLayoutMarkers: { images: [] },
       paragraphIdentityMarkers: { paragraphs: [] },
+      paragraphFormattingChangeMarkers: { paragraphs: [] },
       paragraphAlignmentMarkers: { paragraphs: [] },
       paragraphDirectionMarkers: { paragraphs: [] },
       paragraphIndentMarkers: { paragraphs: [] },
@@ -362,6 +370,12 @@ export async function prepareDocxImport(
     theme,
     tableStyles,
   );
+  const paragraphFormattingChangeMarkers = markDocxParagraphFormattingChanges(
+    document,
+    paragraphStyles,
+    theme,
+    tableStyles,
+  );
   const tabStopMarkers = markDocxParagraphTabStops(
     document,
     paragraphStyles,
@@ -372,7 +386,9 @@ export async function prepareDocxImport(
   const tableSizingMarkers = markDocxTableSizing(document, tableStyles);
   const trackChanges =
     Boolean(settings && firstDescendant(settings, 'trackRevisions')) ||
-    changeMarkers.changes.length > 0;
+    changeMarkers.changes.length > 0 ||
+    paragraphFormattingChangeMarkers.paragraphs.length > 0 ||
+    runFormattingMarkers.runs.some((run) => Boolean(run.change));
   const sectionElements = effectiveSectionProperties(document);
   if (!sectionElements.length) {
     return {
@@ -387,6 +403,9 @@ export async function prepareDocxImport(
         hasImportedDocxListMarkers(listMarkers) ||
         hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
         hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
+        hasImportedDocxParagraphFormattingChangeMarkers(
+          paragraphFormattingChangeMarkers,
+        ) ||
         hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
         hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
         hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -413,6 +432,7 @@ export async function prepareDocxImport(
       listMarkers,
       imageLayoutMarkers,
       paragraphIdentityMarkers,
+      paragraphFormattingChangeMarkers,
       paragraphAlignmentMarkers,
       paragraphDirectionMarkers,
       paragraphIndentMarkers,
@@ -460,6 +480,9 @@ export async function prepareDocxImport(
       hasImportedDocxListMarkers(listMarkers) ||
       hasImportedDocxImageLayoutMarkers(imageLayoutMarkers) ||
       hasImportedDocxParagraphIdentityMarkers(paragraphIdentityMarkers) ||
+      hasImportedDocxParagraphFormattingChangeMarkers(
+        paragraphFormattingChangeMarkers,
+      ) ||
       hasImportedDocxParagraphAlignmentMarkers(paragraphAlignmentMarkers) ||
       hasImportedDocxParagraphDirectionMarkers(paragraphDirectionMarkers) ||
       hasImportedDocxParagraphIndentMarkers(paragraphIndentMarkers) ||
@@ -486,6 +509,7 @@ export async function prepareDocxImport(
     listMarkers,
     imageLayoutMarkers,
     paragraphIdentityMarkers,
+    paragraphFormattingChangeMarkers,
     paragraphAlignmentMarkers,
     paragraphDirectionMarkers,
     paragraphIndentMarkers,
@@ -522,6 +546,9 @@ export function applyDocxSectionsToHtml(
   listMarkers: ImportedDocxListMarkers = { lists: [] },
   imageLayoutMarkers: ImportedDocxImageLayoutMarkers = { images: [] },
   paragraphIdentityMarkers: ImportedDocxParagraphIdentityMarkers = {
+    paragraphs: [],
+  },
+  paragraphFormattingChangeMarkers: ImportedDocxParagraphFormattingChangeMarkers = {
     paragraphs: [],
   },
   paragraphAlignmentMarkers: ImportedDocxParagraphAlignmentMarkers = {
@@ -586,6 +613,10 @@ export function applyDocxSectionsToHtml(
   applyImportedDocxParagraphAlignmentMarkers(
     document,
     paragraphAlignmentMarkers,
+  );
+  applyImportedDocxParagraphFormattingChangeMarkers(
+    document,
+    paragraphFormattingChangeMarkers,
   );
   applyImportedDocxTableCellMarkers(document, tableCellMarkers);
   applyImportedDocxTableSizingMarkers(document, tableSizingMarkers);

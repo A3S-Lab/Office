@@ -12,6 +12,7 @@ import {
   readOfficeDocumentCollaboration,
 } from '../src/core';
 import { createWorkDocumentModelFromContent } from '../src/internal/features/work/work-document-model-codec';
+import { serializeDocumentParagraphFormatting } from '../src/internal/features/work/work-document-paragraph-format-changes';
 
 test('initializes a structured Document collaboration document', () => {
   const source = documentFixture();
@@ -1112,6 +1113,106 @@ test('converges final edit-mode suggestion decisions and clears stale suggester 
   editor.destroy();
   suggestionBinding.destroy();
   editorBinding.destroy();
+});
+
+test('preserves paragraph-formatting revisions in suggest mode and converges immutable edit decisions', async () => {
+  const before = serializeDocumentParagraphFormatting({
+    textAlign: 'right',
+    paragraphDirection: null,
+    indentLevel: 0,
+    rightIndent: 0,
+    firstLineIndent: 0,
+    spaceBefore: 6,
+    spaceAfter: null,
+    lineHeight: null,
+    lineRule: null,
+    autoLineHeight: null,
+    keepLines: null,
+    keepWithNext: null,
+    pageBreakBefore: null,
+    widowControl: null,
+    contextualSpacing: null,
+    outlineLevel: null,
+    tabStops: null,
+    paragraphBorders: null,
+    paragraphShading: null,
+    defaultCollapsed: null,
+  });
+  const sharedDocument = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-paragraph-formatting-decision',
+    document: sharedDocument,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    html: `<section data-document-section="true"><p data-document-change="true" data-change-kind="paragraph-formatting" data-change-id="paragraph-review-1" data-change-actor-id="ada" data-change-author="Ada Reviewer" data-change-date="2026-08-18T10:00:00.000Z" data-change-before='${before}' style="text-align: center">Shared paragraph</p></section>`,
+  });
+
+  const suggestSession = createOfficeCollaborationSession({
+    actor: { id: 'lin', name: 'Lin Suggester' },
+    artifactId: 'document-paragraph-formatting-decision',
+    document: sharedDocument,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const suggestBinding =
+    createOfficeDocumentCollaborationBinding(suggestSession);
+  const suggestEditor = new Editor({ extensions: suggestBinding.extensions });
+  const beforeForbiddenFormatting = suggestEditor.getHTML();
+  const paragraphText = lastDocumentTextPosition(suggestEditor);
+  suggestEditor
+    .chain()
+    .setTextSelection(paragraphText)
+    .setTextAlign('justify')
+    .run();
+  expect(suggestEditor.getHTML()).toBe(beforeForbiddenFormatting);
+
+  const editorDocument = cloneDocument(sharedDocument);
+  const editSession = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace Editor' },
+    artifactId: 'document-paragraph-formatting-decision',
+    document: editorDocument,
+    kind: 'document',
+    mode: 'edit',
+  });
+  const editBinding = createOfficeDocumentCollaborationBinding(editSession);
+  const editEditor = new Editor({ extensions: editBinding.extensions });
+  expect(
+    editBinding.decideChanges(editEditor, ['paragraph-review-1'], 'reject', {
+      decidedAt: '2026-08-18T10:01:00.000Z',
+    }),
+  ).toBe(true);
+  expect(editEditor.getHTML()).toContain('text-align: right');
+  expect(editEditor.getHTML()).not.toContain('paragraph-review-1');
+  expect(editBinding.content().changeDecisions).toEqual([
+    {
+      id: 'paragraph-formatting:paragraph-review-1',
+      changeId: 'paragraph-review-1',
+      changeKind: 'paragraph-formatting',
+      suggestedByActorId: 'ada',
+      suggestedBy: 'Ada Reviewer',
+      suggestedAt: '2026-08-18T10:00:00.000Z',
+      text: 'Shared paragraph',
+      decision: 'reject',
+      decidedByActorId: 'grace',
+      decidedBy: 'Grace Editor',
+      decidedAt: '2026-08-18T10:01:00.000Z',
+    },
+  ]);
+
+  exchangeUpdates(sharedDocument, editorDocument);
+  await flushMicrotasks();
+  expect(suggestEditor.getHTML()).toContain('text-align: right');
+  expect(suggestEditor.getHTML()).not.toContain('paragraph-review-1');
+  expect(suggestBinding.content().changeDecisions).toEqual(
+    editBinding.content().changeDecisions,
+  );
+
+  suggestEditor.destroy();
+  editEditor.destroy();
+  suggestBinding.destroy();
+  editBinding.destroy();
 });
 
 test('synchronizes TipTap edits and only undoes the local client', async () => {

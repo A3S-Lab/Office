@@ -4,22 +4,20 @@ import type {
   Node as ProseMirrorNode,
 } from '@tiptap/pm/model';
 import type { EditorState, PluginKey, Transaction } from '@tiptap/pm/state';
-import {
-  AddMarkStep,
-  RemoveMarkStep,
-  ReplaceAroundStep,
-  ReplaceStep,
-} from '@tiptap/pm/transform';
+import { AddMarkStep, RemoveMarkStep, ReplaceStep } from '@tiptap/pm/transform';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
 import type { WorkDocumentChangeIdentity } from './work-document-changes';
 import {
   isDocumentCharacterFormatMark,
   serializeDocumentCharacterFormatting,
 } from './work-document-format-changes';
+import { trackDocumentParagraphFormattingTransaction } from './work-document-paragraph-format-change-tracking';
 
 interface DocumentFormattingChangeTrackingOptions {
   isTracking: () => boolean;
-  createChange: () => WorkDocumentChangeIdentity;
+  createChange: (
+    kind: 'formatting' | 'paragraph-formatting',
+  ) => WorkDocumentChangeIdentity;
 }
 
 export function trackDocumentFormattingTransaction(
@@ -41,7 +39,6 @@ export function trackDocumentFormattingTransaction(
     return;
   }
   const ranges = formattingStepRanges(transaction);
-  if (!ranges.length) return;
   const formattedDocument = transaction.doc;
   let identity: WorkDocumentChangeIdentity | null = null;
   for (const range of ranges) {
@@ -66,7 +63,7 @@ export function trackDocumentFormattingTransaction(
       const before = serializeDocumentCharacterFormatting(beforeMarks);
       const after = serializeDocumentCharacterFormatting(afterMarks);
       if (before === after || documentChangeMark(afterMarks)) continue;
-      identity ??= options.createChange();
+      identity ??= options.createChange('formatting');
       transaction.addMark(
         segment.from,
         segment.to,
@@ -81,18 +78,25 @@ export function trackDocumentFormattingTransaction(
       );
     }
   }
-  if (identity) transaction.setMeta(pluginKey, { formatting: true });
+  const paragraphFormatting = trackDocumentParagraphFormattingTransaction(
+    transaction,
+    state,
+    {
+      createChange: () => options.createChange('paragraph-formatting'),
+    },
+  );
+  if (identity || paragraphFormatting) {
+    transaction.setMeta(pluginKey, {
+      ...(identity ? { formatting: true } : {}),
+      ...(paragraphFormatting ? { paragraphFormatting: true } : {}),
+    });
+  }
 }
 
 function formattingStepRanges(
   transaction: Transaction,
 ): Array<{ from: number; to: number }> {
-  if (
-    transaction.steps.some(
-      (step) =>
-        step instanceof ReplaceStep || step instanceof ReplaceAroundStep,
-    )
-  ) {
+  if (transaction.steps.some((step) => step instanceof ReplaceStep)) {
     return [];
   }
   const ranges: Array<{ from: number; to: number }> = [];

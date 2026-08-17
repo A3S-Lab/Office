@@ -81,6 +81,7 @@ suites=(
   "tests/e2e/collaboration-playground-entry.acl"
   "tests/e2e/collaboration-document-suggestions.acl"
   "tests/e2e/word-formatting-revision.acl"
+  "tests/e2e/word-paragraph-formatting-revision.acl"
 )
 
 for suite in "${suites[@]}"; do

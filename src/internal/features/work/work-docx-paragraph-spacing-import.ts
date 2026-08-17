@@ -46,7 +46,7 @@ export function markDocxParagraphSpacing(
       docxTableParagraphPropertySources(paragraph, tableStyles),
     );
     if (sources.some((source) => directChild(source, 'numPr'))) continue;
-    const spacing = paragraphSpacing(sources);
+    const spacing = resolveDocxParagraphSpacing(sources);
     if (!Object.keys(spacing).length) continue;
     properties ??= insertParagraphProperties(document, paragraph);
     const marker = `__A3S_WORK_PARAGRAPH_SPACING_${paragraphs.length + 1}__`;
@@ -84,7 +84,7 @@ export function hasImportedDocxParagraphSpacingMarkers(
   return markers.paragraphs.length > 0;
 }
 
-function paragraphSpacing(
+export function resolveDocxParagraphSpacing(
   propertySources: readonly Element[],
 ): Partial<DocumentParagraphSpacing> {
   let before: number | undefined;

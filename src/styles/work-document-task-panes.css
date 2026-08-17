@@ -386,6 +386,11 @@
   border-left: 3px solid #6d5bd0;
 }
 
+.work-document-change-decisions
+  li[data-document-change-kind="paragraph-formatting"] {
+  border-left: 3px solid #8b5cf6;
+}
+
 .work-document-change-decisions li > strong {
   overflow: hidden;
   font-size: 9px;

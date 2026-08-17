@@ -52,7 +52,7 @@ export function markDocxParagraphTabStops(
 
   for (const paragraph of descendants(document, 'p')) {
     let properties = directChild(paragraph, 'pPr');
-    const tabStops = resolvedParagraphTabStops(
+    const tabStops = resolveDocxParagraphTabStops(
       docxParagraphPropertySources(
         properties,
         styles,
@@ -114,7 +114,7 @@ export function hasImportedDocxParagraphTabStopMarkers(
   return markers.paragraphs.length > 0 || markers.inlineTabs.length > 0;
 }
 
-function resolvedParagraphTabStops(
+export function resolveDocxParagraphTabStops(
   sources: readonly Element[],
 ): DocumentTabStop[] {
   const byPosition = new Map<number, DocumentTabStop>();
