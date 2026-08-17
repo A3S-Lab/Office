@@ -44,7 +44,10 @@ import {
 } from 'react';
 import { useDialogFocusScope } from '../../src/internal/design-system/primitives/overlay/dialog-focus-scope';
 import { usePlaygroundCollaborationPresenceFixture } from './collaboration-presence-fixture';
-import { usePlaygroundDocumentSuggestionFixture } from './collaboration-suggestion-fixture';
+import {
+  type PlaygroundNativeDocumentSuggestionStage,
+  usePlaygroundDocumentSuggestionFixture,
+} from './collaboration-suggestion-fixture';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
 import {
   type PlaygroundPdfAnnotationStage,
@@ -127,9 +130,7 @@ export function EditorWorkspace({
     artifact.content.type === 'document' &&
     (suggestionDemo || e2eFixture === 'collaboration-document-suggestions');
   const documentSuggestionFixture = usePlaygroundDocumentSuggestionFixture(
-    documentSuggestionFixtureEnabled && artifact.content.type === 'document'
-      ? { artifactId: artifact.id, content: artifact.content }
-      : undefined,
+    documentSuggestionFixtureEnabled,
   );
   const pendingSuggestion = Boolean(
     documentSuggestionFixture?.content.html.includes('data-document-change'),
@@ -314,6 +315,38 @@ export function EditorWorkspace({
                   <Pencil size={14} />
                   <span>建议协作 · 2 人在线</span>
                 </output>
+              )}
+              {documentSuggestionFixture && (
+                <>
+                  <output
+                    className="playground-collaboration-fixture-status"
+                    data-testid="native-document-suggestion-status"
+                    data-state={documentSuggestionFixture.nativeStage}
+                    aria-live="polite"
+                  >
+                    {nativeDocumentSuggestionStatus(
+                      documentSuggestionFixture.nativeStage,
+                    )}
+                  </output>
+                  <button
+                    type="button"
+                    className="work-editor-ai-button"
+                    aria-label={nativeDocumentSuggestionAction(
+                      documentSuggestionFixture.nativeStage,
+                    )}
+                    disabled={
+                      documentSuggestionFixture.nativeStage === 'accepted'
+                    }
+                    onClick={documentSuggestionFixture.advanceNativeSuggestion}
+                  >
+                    <Sparkles size={15} />
+                    <span>
+                      {nativeDocumentSuggestionAction(
+                        documentSuggestionFixture.nativeStage,
+                      )}
+                    </span>
+                  </button>
+                </>
               )}
               {controlledReviewFixture &&
                 artifact.content.type === 'document' && (
@@ -554,7 +587,7 @@ export function EditorWorkspace({
                     <small>只能提交或撤回自己的文字建议</small>
                   </header>
                   <DocumentEditor
-                    artifactId={artifact.id}
+                    artifactId={documentSuggestionFixture.artifactId}
                     collaboration={documentSuggestionFixture.suggester}
                     content={documentSuggestionFixture.content}
                     onChange={documentSuggestionFixture.updateContent}
@@ -582,7 +615,7 @@ export function EditorWorkspace({
                     </small>
                   </header>
                   <DocumentEditor
-                    artifactId={artifact.id}
+                    artifactId={documentSuggestionFixture.artifactId}
                     collaboration={documentSuggestionFixture.editor}
                     content={documentSuggestionFixture.content}
                     onChange={documentSuggestionFixture.updateContent}
@@ -697,6 +730,32 @@ export function EditorWorkspace({
       </div>
     </section>
   );
+}
+
+function nativeDocumentSuggestionStatus(
+  stage: PlaygroundNativeDocumentSuggestionStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return '原生建议夹具已就绪';
+    case 'proposed':
+      return 'A3S Agent 已提议把 😀 替换为 reviewed';
+    case 'accepted':
+      return 'Native Editor 已接受 2 项建议';
+  }
+}
+
+function nativeDocumentSuggestionAction(
+  stage: PlaygroundNativeDocumentSuggestionStage,
+): string {
+  switch (stage) {
+    case 'ready':
+      return '运行原生 Agent 提议';
+    case 'proposed':
+      return '运行原生编辑者接受';
+    case 'accepted':
+      return '原生建议流程已完成';
+  }
 }
 
 function pdfCollaborationAnnotationStatus(

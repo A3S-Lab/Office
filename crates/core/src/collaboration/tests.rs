@@ -14,6 +14,7 @@ use super::*;
 
 mod document_comments;
 mod document_structure;
+mod document_suggestion_mutations;
 mod document_suggestions;
 mod pdf;
 mod presentation;

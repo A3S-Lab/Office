@@ -1,10 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use super::NativeOfficeCollaborationArtifactKind;
+use super::{
+    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationDocumentSuggestionDecision,
+    NativeOfficeCollaborationDocumentSuggestionKind,
+};
 
 pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_SCHEMA: &str =
     "a3s.office.collaboration.projection";
-pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION: u32 = 2;
+pub const NATIVE_OFFICE_COLLABORATION_PROJECTION_VERSION: u32 = 3;
 
 /// A bounded, Office-owned view of the current collaborative document.
 ///
@@ -40,6 +43,8 @@ pub enum NativeOfficeCollaborationProjectedContent {
         plain_text: String,
         paragraphs: Vec<NativeOfficeCollaborationDocumentParagraph>,
         comments: Vec<NativeOfficeCollaborationDocumentComment>,
+        suggestions: Vec<NativeOfficeCollaborationDocumentSuggestion>,
+        change_decisions: Vec<NativeOfficeCollaborationDocumentChangeDecision>,
         page_color: Option<String>,
         track_changes: Option<bool>,
     },
@@ -108,4 +113,49 @@ pub struct NativeOfficeCollaborationDocumentCommentAnchor {
     pub start_utf16: u32,
     pub end_utf16: u32,
     pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentSuggestion {
+    pub id: String,
+    pub kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    pub author: String,
+    pub created_at: String,
+    pub text: String,
+    pub placements: Vec<NativeOfficeCollaborationDocumentSuggestionPlacement>,
+}
+
+/// One exact Y.XmlText span carrying a tracked-change mark. Offsets use the
+/// current paragraph text in browser-compatible UTF-16 code units.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentSuggestionPlacement {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paragraph_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_id: Option<String>,
+    pub start_utf16: u32,
+    pub end_utf16: u32,
+    pub text: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NativeOfficeCollaborationDocumentChangeDecision {
+    pub id: String,
+    pub change_id: String,
+    pub change_kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggested_by_actor_id: Option<String>,
+    pub suggested_by: String,
+    pub suggested_at: String,
+    pub text: String,
+    pub decision: NativeOfficeCollaborationDocumentSuggestionDecision,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decided_by_actor_id: Option<String>,
+    pub decided_by: String,
+    pub decided_at: String,
 }

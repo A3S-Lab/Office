@@ -7,7 +7,7 @@ use super::invalid_shared_comments;
 
 const MAX_JSON_DEPTH: usize = 128;
 
-pub(super) fn canonical_json(value: &JsonValue) -> UseResult<String> {
+pub(in crate::collaboration) fn canonical_json(value: &JsonValue) -> UseResult<String> {
     let mut output = String::new();
     write_canonical_json(value, &mut output, 0)?;
     Ok(output)

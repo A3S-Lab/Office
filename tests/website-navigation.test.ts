@@ -56,7 +56,7 @@ test('uses the shared A3S navigation without an online Playground button', async
   expect(navSource).toContain(
     "language === 'zh' ? '打开导航' : 'Open navigation'",
   );
-  expect(themeStyles).toMatch(/--rp-nav-height:\s*64px/);
+  expect(themeStyles).toMatch(/--rp-nav-height:\s*72px/);
   expect(themeStyles).toMatch(/width:\s*31px/);
   expect(createHash('sha256').update(logo).digest('hex')).toBe(
     'ecfcf5c9f783c2c49bf7623cab825a81f500ca7313cd33540d948f276e59e46d',

@@ -172,7 +172,7 @@ pub(super) struct OfficeCollaborationMutationInput {
     pub(super) operation_id: String,
     /// Actor identity, which must match the replica manifest.
     pub(super) actor_id: String,
-    /// Authorized collaboration mode. Canonical mutations require `edit`.
+    /// Authorized mode: edit for canonical changes/decisions, comment for comments, or suggest for proposals.
     pub(super) mode: OfficeCollaborationMode,
     /// Expected host-owned artifact identity.
     pub(super) artifact_id: String,
@@ -642,6 +642,20 @@ mod tests {
             "author",
             "createdAt",
             "resolved",
+            "document-suggestion-create",
+            "document-suggestion-decide",
+            "insertionId",
+            "deletionId",
+            "suggestions",
+            "insertion",
+            "deletion",
+            "expectedActorId",
+            "expectedAuthor",
+            "expectedCreatedAt",
+            "decision",
+            "accept",
+            "decidedBy",
+            "decidedAt",
             "spreadsheet-set-cell",
             "spreadsheet-delete-cell",
             "sheetId",
@@ -822,6 +836,75 @@ mod tests {
                 "decision": "approve",
                 "createdAt": "2026-08-15T03:05:00.000Z",
                 "actorId": "caller-must-not-supply-this"
+            }))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn collaboration_mcp_maps_document_suggestion_mutations_without_actor_spoofing() {
+        let create = serde_json::from_value::<OfficeCollaborationMutation>(json!({
+            "type": "document-suggestion-create",
+            "paragraphId": "00000001",
+            "expectedTextId": "00000002",
+            "startUtf16": 6,
+            "endUtf16": 8,
+            "expectedText": "😀",
+            "replacement": "collaborative",
+            "insertionId": "mcp-insertion",
+            "deletionId": "mcp-deletion",
+            "author": "A3S Agent",
+            "createdAt": "2026-08-17T10:00:00.000Z"
+        }))
+        .unwrap();
+        assert!(matches!(
+            a3s_office::NativeOfficeCollaborationMutation::from(create),
+            a3s_office::NativeOfficeCollaborationMutation::DocumentSuggestionCreate {
+                insertion_id: Some(id),
+                deletion_id: Some(deletion_id),
+                ..
+            } if id == "mcp-insertion" && deletion_id == "mcp-deletion"
+        ));
+
+        let decide = serde_json::from_value::<OfficeCollaborationMutation>(json!({
+            "type": "document-suggestion-decide",
+            "suggestions": [{
+                "id": "mcp-insertion",
+                "kind": "insertion",
+                "expectedActorId": "agent-1",
+                "expectedAuthor": "A3S Agent",
+                "expectedCreatedAt": "2026-08-17T10:00:00.000Z",
+                "expectedText": "collaborative"
+            }],
+            "decision": "accept",
+            "decidedBy": "Grace Editor",
+            "decidedAt": "2026-08-17T10:01:00.000Z"
+        }))
+        .unwrap();
+        assert!(matches!(
+            a3s_office::NativeOfficeCollaborationMutation::from(decide),
+            a3s_office::NativeOfficeCollaborationMutation::DocumentSuggestionDecide {
+                suggestions,
+                decision: a3s_office::NativeOfficeCollaborationDocumentSuggestionDecision::Accept,
+                ..
+            } if suggestions.len() == 1
+                && suggestions[0].expected_actor_id.as_deref() == Some("agent-1")
+        ));
+
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "document-suggestion-create",
+                "paragraphId": "00000001",
+                "expectedTextId": "00000002",
+                "startUtf16": 0,
+                "endUtf16": 0,
+                "expectedText": "",
+                "replacement": "text",
+                "insertionId": "mcp-insertion",
+                "deletionId": null,
+                "author": "A3S Agent",
+                "createdAt": "2026-08-17T10:00:00.000Z",
+                "actorId": "caller-cannot-inject-this"
             }))
             .is_err()
         );

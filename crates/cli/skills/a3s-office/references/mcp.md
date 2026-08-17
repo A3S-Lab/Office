@@ -52,8 +52,9 @@ authentication, and authorization remain host responsibilities.
 
 Call `office_collaboration_read` before a local edit. It returns exact
 canonical Markdown source or an Office-owned Document projection with stable
-paragraph/text identities, projection-v2 comments/replies/anchors, and the
-state vector required for a fail-closed mutation. Do not decode Office
+paragraph/text identities, projection-v3 comments/replies/anchors, live
+suggestions, immutable change decisions, and the state vector required for a
+fail-closed mutation. Do not decode Office
 collaboration roots in the host.
 
 Create an empty replica, or include `initialUpdateBase64` to join state received
@@ -202,7 +203,7 @@ variants prevent a missing set field from silently removing shared state.
 For review-only participation, create or join a separate Document replica with
 `mode: "comment"`, then read it immediately before choosing an anchor. Create
 one stable selection thread with the exact paragraph/text identity, UTF-16
-range, and selected text returned by projection version 2:
+range, and selected text returned by projection version 3:
 
 ```json
 {
@@ -264,10 +265,95 @@ In comment mode, deletion is allowed only when the stored record actor matches
 the replica actor. Creation writes the thread, order entry, immutable claim,
 and exact browser `documentComment` mark atomically; identical stable-ID retries
 are no-ops, while conflicting IDs, stale text/ranges, and malformed anchors fail
-without a durable event. Projection v2 returns comments, replies, resolution,
+without a durable event. Projection v3 returns comments, replies, resolution,
 `detached`, and every anchor's `paragraphId`, `textId`, `startUtf16`,
 `endUtf16`, and current `text`. If a later authorized content edit removes the
 anchor, the thread remains readable with `detached: true`.
+
+For an attributed text proposal, create or join a separate actor-scoped
+Document replica with `mode: "suggest"`. Read projection v3 immediately before
+the proposal, then call `office_collaboration_mutate` with the exact stable
+paragraph/text identity, browser-compatible UTF-16 range, and selected text.
+An empty range creates an insertion, an empty replacement creates a deletion,
+and non-empty values on both sides create one atomic replacement pair:
+
+```json
+{
+  "store": ".a3s/report-suggest.replica",
+  "operationId": "agent-suggestion-create-1",
+  "actorId": "agent-7",
+  "mode": "suggest",
+  "artifactId": "report",
+  "kind": "document",
+  "mutation": {
+    "type": "document-suggestion-create",
+    "paragraphId": "00000001",
+    "expectedTextId": "00000002",
+    "startUtf16": 6,
+    "endUtf16": 8,
+    "expectedText": "😀",
+    "replacement": "reviewed",
+    "insertionId": "agent-7-replacement-insertion-1",
+    "deletionId": "agent-7-replacement-deletion-1",
+    "author": "A3S Agent",
+    "createdAt": "2026-08-17T11:00:00.000Z"
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+The replica manifest supplies the authenticated suggestion actor ID; caller
+JSON cannot inject it. Stable-ID exact retries are no-ops. Reuse with different
+identity or content, stale text IDs, ranges that split surrogate pairs,
+overlapping suggestions, and rich paragraph structures outside the supported
+plain-paragraph boundary fail before a durable event.
+
+After synchronizing the proposal, read projection v3 from an `edit` replica.
+Copy each complete suggestion identity and text into one decision batch. A
+replacement should include both its deletion and insertion so the visible
+result and both immutable audit records commit atomically:
+
+```json
+{
+  "store": ".a3s/report.replica",
+  "operationId": "editor-suggestion-accept-1",
+  "actorId": "editor-2",
+  "mode": "edit",
+  "artifactId": "report",
+  "kind": "document",
+  "mutation": {
+    "type": "document-suggestion-decide",
+    "suggestions": [
+      {
+        "id": "agent-7-replacement-deletion-1",
+        "kind": "deletion",
+        "expectedActorId": "agent-7",
+        "expectedAuthor": "A3S Agent",
+        "expectedCreatedAt": "2026-08-17T11:00:00.000Z",
+        "expectedText": "😀"
+      },
+      {
+        "id": "agent-7-replacement-insertion-1",
+        "kind": "insertion",
+        "expectedActorId": "agent-7",
+        "expectedAuthor": "A3S Agent",
+        "expectedCreatedAt": "2026-08-17T11:00:00.000Z",
+        "expectedText": "reviewed"
+      }
+    ],
+    "decision": "accept",
+    "decidedBy": "Grace Editor",
+    "decidedAt": "2026-08-17T11:01:00.000Z"
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
+Use `"decision": "reject"` for rejection. The manifest supplies the decider
+actor ID. A decision rotates affected paragraph and ancestor-row text IDs,
+removes the live marks according to accept/reject semantics, and appends
+browser-compatible immutable `changeDecisions`. Exact retries are idempotent;
+a mismatched or already-differently-decided suggestion fails the whole batch.
 
 Spreadsheet cell mutations use a stable sheet identity plus zero-based
 coordinates. Create or recursively patch one cell with
@@ -374,8 +460,9 @@ order, record, claim, or tombstone roots directly.
 Typed canonical content mutations require `edit`. Document comment mutations
 accept `edit` or `comment`; comment-mode deletion is ownership restricted. Raw
 received updates remain applicable in every mode so receive-only replicas still
-converge. `suggest` and comment mode on non-Document formats do not expose local
-mutations.
+converge. Document `document-suggestion-create` requires `suggest`, while
+`document-suggestion-decide` requires `edit`. Suggest and comment modes on
+non-Document formats do not expose local mutations.
 
 The MCP JSON transport accepts update inputs up to 4 MiB and all structured
 results remain under the server's 8 MiB bound. Reduce the event `limit` when a

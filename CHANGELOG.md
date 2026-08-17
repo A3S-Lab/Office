@@ -4,6 +4,32 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.8.1 - 2026-08-17
+
+- Added closed native Document suggestion mutations across Rust, `collab
+  mutate`, standard MCP, A3S Code, and the packaged Office Skill.
+  `document-suggestion-create` lets an actor-scoped `suggest` replica propose
+  an insertion, deletion, or atomic replacement after matching a stable plain
+  paragraph, its current text identity, exact UTF-16 range, and selected text.
+  `document-suggestion-decide` lets an `edit` replica accept or reject a batch
+  of complete projected identities atomically, apply the tracked changes, and
+  append immutable browser-compatible actor-attributed decisions. Stale guards,
+  overlapping proposals, reused IDs, forged attribution, incomplete replacement
+  identities, and conflicting final decisions fail without a durable log entry.
+- Promoted the native collaboration projection to schema v3 with live
+  suggestions, exact placements, and immutable final decisions. Native restart,
+  mode/identity enforcement, idempotent retry, rejection, atomic replacement,
+  real CLI/MCP subprocess, and browser Yjs compatibility regressions cover the
+  complete propose/accept workflow.
+- Extended the Playground with deterministic native Agent proposal and native
+  editor acceptance controls over the same browser-readable Yjs fixture, visible
+  ready/proposed/accepted state, final text, and decision audit. Updated the
+  A3S Test workflow, bilingual collaboration and A3S Boot backend guides, CLI
+  reference, Skill, README, and roadmap; froze the 0.8.1 documentation set.
+  The documentation shell now matches the current A3S Test navigation height
+  and exact logo asset while retaining the A3S UI-aligned Shiki code rendering,
+  responsive code scrolling, inline code, and table treatment.
+
 ## 0.8.0 - 2026-08-17
 
 - Added authenticated Document suggestion mode across the Core API, React,

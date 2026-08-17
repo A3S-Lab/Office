@@ -146,9 +146,9 @@ The images below are committed visual-regression baselines from the real
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
   vectors, perform authorized typed Markdown, Document, Spreadsheet cell,
   Presentation scene-element and z-order, and PDF annotation, form-value, and
-  review changes, including attributable Document selection comments and
-  replies, retain browser/native actor attribution, and checkpoint without
-  replacing a whole Office file.
+  review changes, including attributable Document selection comments, replies,
+  text suggestions, and atomic final decisions, retain browser/native actor
+  attribution, and checkpoint without replacing a whole Office file.
 
 ## Real-time collaboration
 
@@ -1075,6 +1075,33 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/report-review.replica \
   --operation-id comment-45 \
   --mutation '{"type":"document-comment-create","commentId":"comment-1","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":12,"expectedText":"review","author":"Ada Reviewer","createdAt":"2026-08-17T00:00:00.000Z","text":"Clarify this review point."}' --json
 
+# Propose an atomic replacement from an actor-scoped suggest replica. Read
+# projection v3 immediately before writing and copy its exact paragraph/text
+# identity, UTF-16 selection, and selected text.
+cargo run -p a3s-office-cli -- collab join .a3s/report-suggest.replica \
+  --artifact-id report --kind document --actor-id agent-7 \
+  --actor-kind agent --mode suggest --operation-id suggestion-join-1 \
+  --input browser.update --json
+cargo run -p a3s-office-cli -- collab read .a3s/report-suggest.replica --json
+cargo run -p a3s-office-cli -- collab mutate .a3s/report-suggest.replica \
+  --artifact-id report --kind document --actor-id agent-7 --mode suggest \
+  --operation-id suggestion-create-1 \
+  --mutation '{"type":"document-suggestion-create","paragraphId":"00000001","expectedTextId":"00000002","startUtf16":6,"endUtf16":8,"expectedText":"😀","replacement":"reviewed","insertionId":"agent-7-insertion-1","deletionId":"agent-7-deletion-1","author":"A3S Agent","createdAt":"2026-08-17T11:00:00.000Z"}' --json
+cargo run -p a3s-office-cli -- collab diff .a3s/report-suggest.replica \
+  --output agent-suggestion.update --json
+
+# An edit replica accepts or rejects one or more complete projected suggestion
+# identities atomically and appends immutable actor-attributed decisions.
+cargo run -p a3s-office-cli -- collab join .a3s/report-editor.replica \
+  --artifact-id report --kind document --actor-id editor-1 \
+  --actor-kind human --mode edit --operation-id editor-join-1 \
+  --input agent-suggestion.update --json
+cargo run -p a3s-office-cli -- collab read .a3s/report-editor.replica --json
+cargo run -p a3s-office-cli -- collab mutate .a3s/report-editor.replica \
+  --artifact-id report --kind document --actor-id editor-1 --mode edit \
+  --operation-id suggestion-accept-1 \
+  --mutation '{"type":"document-suggestion-decide","suggestions":[{"id":"agent-7-deletion-1","kind":"deletion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"😀"},{"id":"agent-7-insertion-1","kind":"insertion","expectedActorId":"agent-7","expectedAuthor":"A3S Agent","expectedCreatedAt":"2026-08-17T11:00:00.000Z","expectedText":"reviewed"}],"decision":"accept","decidedBy":"Grace Editor","decidedAt":"2026-08-17T11:01:00.000Z"}' --json
+
 # Recursively patch one Spreadsheet cell after matching the observed value.
 # Zero-based row/column coordinates follow the browser collaboration model.
 cargo run -p a3s-office-cli -- collab mutate .a3s/plan.replica \
@@ -1148,8 +1175,9 @@ suppression, without opening its own network provider. Native Rust `project`,
 Markdown source or an Office-owned bounded Document projection with stable
 paragraph/text identities, structural ancestry, option fields, subordinate
 plain text, durable comments, replies, resolution and detached state, exact
-paragraph-local UTF-16 anchors, and the current state vector. Projection schema
-version 2 is the contract for these review fields. Product hosts therefore do
+paragraph-local UTF-16 anchors, live suggestions with exact placements,
+immutable final decisions, and the current state vector. Projection schema
+version 3 is the contract for these review fields. Product hosts therefore do
 not need to interpret Office's private Yjs schema. Typed Markdown
 replace/splice operations use browser UTF-16 offsets. Document mutations edit
 ProseMirror `Y.XmlText` in place, rotate the affected Word `textId`, replace one
@@ -1205,6 +1233,18 @@ own actor. Removing selected text through a separately authorized edit keeps
 the thread as a detached review record. Browser and native comment changes
 share immutable claims and remain isolated from another participant's undo
 history.
+
+Document suggestion mutations use `document-suggestion-create` in an
+actor-scoped `suggest` replica and `document-suggestion-decide` in an `edit`
+replica. Creation matches a stable plain paragraph, its current text identity,
+an exact UTF-16 range, and selected text before writing an insertion, deletion,
+or atomic replacement proposal. Decisions match every projected suggestion
+identity and text in the batch, then accept or reject all of them in one
+transaction and append immutable browser-compatible audit records. Actor IDs
+come from replica manifests; authors and decision names must match the
+authenticated display names. Stable-ID retries are idempotent, while stale
+identities, overlapping proposals, incomplete replacement IDs, forged
+attribution, or conflicting final decisions fail without a durable update.
 
 Read the [native engine design](docs/latest/en/native-office-engine.md), the
 complete [CLI reference](docs/latest/en/cli-reference.md), or the published
@@ -1269,6 +1309,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/docs/0.8.1/)
 - [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/docs/0.8.0/)
 - [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/docs/0.7.3/)
 - [A3S Office 0.7.2 documentation](https://a3s-lab.github.io/Office/docs/0.7.2/)

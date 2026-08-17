@@ -44,7 +44,7 @@ const HELP: &str = concat!(
     "  a3s-office collab checkpoint <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab leave <store> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n\n",
     "Kinds: document, markdown, spreadsheet, presentation, pdf.\n",
-    "Typed mutations: markdown-replace/splice; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
+    "Typed mutations: markdown-replace/splice; document-replace-text/paragraph; document-insert/delete-paragraph; document-comment-create/reply/set-resolved/delete; document-suggestion-create/decide; document-set/clear-page-color; document-set/clear-track-changes; spreadsheet-set/delete-cell; presentation-create/update/move/delete-element; pdf-create/update/delete-annotation; pdf-set-form-value/propose-redaction/propose-page-rotation/deletion/reorder/decide-review.\n",
     "Binary updates and state vectors use the standard Yjs v1 encoding. Output paths are no-clobber."
 );
 
@@ -345,7 +345,7 @@ async fn mutate(args: &[String]) -> UseResult<CommandOutput> {
                 format!("The typed collaboration mutation JSON is invalid: {error}"),
             )
             .with_suggestion(
-                "Use a closed mutation object such as {\"type\":\"document-replace-text\",\"search\":\"old\",\"replacement\":\"new\",\"expectedMatches\":1}.",
+                "Use a closed mutation object such as {\"type\":\"document-replace-text\",\"search\":\"old\",\"replacement\":\"new\",\"expectedMatches\":1}; use document-suggestion-create in suggest mode and document-suggestion-decide in edit mode.",
             )
         })?;
     let output_mutation = mutation.clone();
@@ -650,7 +650,7 @@ fn help() -> CommandOutput {
     CommandOutput::success(
         HELP,
         json!({
-            "commands": ["create", "join", "inspect", "read", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "watch", "checkpoint", "leave"],
+            "commands": ["create", "join", "inspect", "read", "diff", "sync-step1", "encode-update", "handle-message", "session", "apply", "mutate", "watch", "checkpoint", "leave"],
             "encoding": "yjs-v1",
             "syncProtocol": "y-sync-v1",
             "formats": ["document", "markdown", "spreadsheet", "presentation", "pdf"],

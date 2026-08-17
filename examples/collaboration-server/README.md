@@ -193,11 +193,16 @@ agent directly at the server's internal `data_dir`: each native participant
 keeps its own actor-scoped replica, while the service keeps the durable room
 replica. This preserves actor attribution and independent Yjs client IDs.
 
-The current native `collab mutate` and `office_collaboration_mutate` contracts
-do not expose typed Document suggestion-create or suggestion-decision
-operations. Native replicas synchronize browser-created proposals and final
-decision roots as Yjs state, but agents should not construct private
-ProseMirror marks to bypass the closed mutation enum.
+Native `collab mutate` and `office_collaboration_mutate` expose the same closed
+Document review workflow as browser editors. Join an actor-scoped `suggest`
+replica and use `document-suggestion-create` with the exact projection-v3
+paragraph/text identity, UTF-16 range, and selected text. Join or synchronize
+an `edit` replica and use `document-suggestion-decide` with every exact proposal
+identity to accept or reject a batch atomically. Actor IDs come from replica
+manifests, live proposals and immutable final decisions are readable in
+projection v3, and the standard Yjs updates travel through this server's normal
+authenticated authorization, persistence, acknowledgement, and broadcast
+path. Agents must not construct private ProseMirror marks.
 
 ## Production boundary
 

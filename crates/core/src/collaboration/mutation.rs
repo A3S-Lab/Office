@@ -30,9 +30,17 @@ pub(super) fn validate_mutation_contract(
             | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
             | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. }
     );
-    if mode != NativeOfficeCollaborationMode::Edit
-        && !(mode == NativeOfficeCollaborationMode::Comment && document_comment_mutation)
-    {
+    let document_suggestion_create = matches!(
+        mutation,
+        NativeOfficeCollaborationMutation::DocumentSuggestionCreate { .. }
+    );
+    let mutation_allowed = match mode {
+        NativeOfficeCollaborationMode::Edit => !document_suggestion_create,
+        NativeOfficeCollaborationMode::Comment => document_comment_mutation,
+        NativeOfficeCollaborationMode::Suggest => document_suggestion_create,
+        NativeOfficeCollaborationMode::View => false,
+    };
+    if !mutation_allowed {
         return Err(collaboration_error(
             "office.collaboration.mutation_forbidden",
             format!(
@@ -41,7 +49,7 @@ pub(super) fn validate_mutation_contract(
             ),
         )
         .with_suggestion(
-            "Use an edit-mode replica for canonical content, or a comment-mode replica for Document comment mutations.",
+            "Use edit mode for canonical content and tracked-change decisions, comment mode for Document comments, or suggest mode for Document suggestion creation.",
         )
         .with_detail("mode", mode.as_str()));
     }
@@ -62,7 +70,9 @@ pub(super) fn validate_mutation_contract(
         | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
-        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionDecide { .. } => {
             NativeOfficeCollaborationArtifactKind::Document
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
@@ -176,7 +186,9 @@ pub(super) fn apply_mutation(
         | NativeOfficeCollaborationMutation::DocumentCommentCreate { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentReply { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
-        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
+        | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionDecide { .. } => {
             apply_document_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }

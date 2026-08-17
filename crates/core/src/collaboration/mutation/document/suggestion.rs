@@ -2,45 +2,56 @@ use std::collections::{BTreeSet, HashMap};
 
 use a3s_use_core::UseResult;
 use yrs::types::Attrs;
-use yrs::{Any, Out, ReadTxn, Text, Transact, XmlFragment, XmlOut};
+use yrs::{Any, Out, ReadTxn, Text, Transact, Xml, XmlFragment, XmlOut};
 
 use super::comment::valid_canonical_utc_timestamp;
+use super::identity::{
+    document_identity_attribute, is_identity_paragraph_tag, PARAGRAPH_ID_ATTRIBUTE,
+    TEXT_ID_ATTRIBUTE,
+};
 use crate::collaboration::document::{
     canonical_content_without_suggestion_effects_sha256, canonical_visible_root_sha256,
     is_document_change_attribute,
 };
 use crate::collaboration::{
-    collaboration_error, NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationManifest,
+    collaboration_error, NativeOfficeCollaborationArtifactKind,
+    NativeOfficeCollaborationDocumentSuggestionKind, NativeOfficeCollaborationManifest,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum DocumentSuggestionKind {
-    Insertion,
-    Deletion,
+mod decision;
+mod mutation;
+mod projection;
+
+pub(in crate::collaboration) use decision::project_document_change_decisions;
+pub(super) use mutation::{apply_suggestion_mutation, validate_suggestion_mutation};
+pub(in crate::collaboration) use projection::project_document_suggestions;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct DocumentSuggestionIdentity {
+    pub id: String,
+    pub kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    pub actor_id: Option<String>,
+    pub author: String,
+    pub date: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct DocumentSuggestionIdentity {
-    id: String,
-    kind: DocumentSuggestionKind,
-    actor_id: Option<String>,
-    author: String,
-    date: String,
+pub(super) struct DocumentSuggestionPlacement {
+    pub text_node: u32,
+    pub paragraph_id: Option<String>,
+    pub text_id: Option<String>,
+    pub start_utf16: u32,
+    pub end_utf16: u32,
+    pub baseline_start_utf16: u32,
+    pub baseline_end_utf16: u32,
+    pub text: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct DocumentSuggestionPlacement {
-    text_node: u32,
-    baseline_start_utf16: u32,
-    baseline_end_utf16: u32,
-    text: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct DocumentSuggestion {
-    identity: DocumentSuggestionIdentity,
-    text: String,
-    placements: Vec<DocumentSuggestionPlacement>,
+pub(super) struct DocumentSuggestion {
+    pub identity: DocumentSuggestionIdentity,
+    pub text: String,
+    pub placements: Vec<DocumentSuggestionPlacement>,
 }
 
 pub(in crate::collaboration) fn validate_authorized_suggestion_update(
@@ -126,7 +137,7 @@ fn assert_root_boundaries<T: ReadTxn, U: ReadTxn>(
     Ok(())
 }
 
-fn collect_suggestions<T: ReadTxn>(
+pub(super) fn collect_suggestions<T: ReadTxn>(
     transaction: &T,
     fragment: &yrs::XmlFragmentRef,
 ) -> UseResult<HashMap<String, DocumentSuggestion>> {
@@ -140,6 +151,8 @@ fn collect_suggestions<T: ReadTxn>(
         text_node = text_node.checked_add(1).ok_or_else(|| {
             permission_denied("The Document suggestion tree contains too many text nodes.")
         })?;
+        let (paragraph_id, text_id) = suggestion_paragraph_identity(&text, transaction)?;
+        let mut current_offset = 0_u32;
         let mut baseline_offset = 0_u32;
         for chunk in text.diff(transaction, |_| ()) {
             let identity = suggestion_identity(chunk.attributes.as_deref())?;
@@ -152,9 +165,9 @@ fn collect_suggestions<T: ReadTxn>(
                 }
                 _ => (None, 1),
             };
-            let is_insertion = identity
-                .as_ref()
-                .is_some_and(|value| value.kind == DocumentSuggestionKind::Insertion);
+            let is_insertion = identity.as_ref().is_some_and(|value| {
+                value.kind == NativeOfficeCollaborationDocumentSuggestionKind::Insertion
+            });
             let baseline_end = if is_insertion {
                 baseline_offset
             } else {
@@ -178,12 +191,21 @@ fn collect_suggestions<T: ReadTxn>(
                     identity,
                     DocumentSuggestionPlacement {
                         text_node: current_text_node,
+                        paragraph_id: paragraph_id.clone(),
+                        text_id: text_id.clone(),
+                        start_utf16: current_offset,
+                        end_utf16: current_offset.checked_add(chunk_length).ok_or_else(|| {
+                            permission_denied("A Document suggestion offset is too large.")
+                        })?,
                         baseline_start_utf16: baseline_offset,
                         baseline_end_utf16: baseline_end,
                         text: chunk_text,
                     },
                 )?;
             }
+            current_offset = current_offset
+                .checked_add(chunk_length)
+                .ok_or_else(|| permission_denied("A Document suggestion offset is too large."))?;
             baseline_offset = baseline_end;
         }
     }
@@ -211,17 +233,20 @@ fn append_suggestion(
     suggestion.text.push_str(&placement.text);
     if let Some(previous) = suggestion.placements.last_mut() {
         let adjacent = match identity.kind {
-            DocumentSuggestionKind::Insertion => {
+            NativeOfficeCollaborationDocumentSuggestionKind::Insertion => {
                 previous.text_node == placement.text_node
+                    && previous.end_utf16 == placement.start_utf16
                     && previous.baseline_start_utf16 == placement.baseline_start_utf16
                     && previous.baseline_end_utf16 == placement.baseline_end_utf16
             }
-            DocumentSuggestionKind::Deletion => {
+            NativeOfficeCollaborationDocumentSuggestionKind::Deletion => {
                 previous.text_node == placement.text_node
+                    && previous.end_utf16 == placement.start_utf16
                     && previous.baseline_end_utf16 == placement.baseline_start_utf16
             }
         };
         if adjacent {
+            previous.end_utf16 = placement.end_utf16;
             previous.baseline_end_utf16 = placement.baseline_end_utf16;
             previous.text.push_str(&placement.text);
             return Ok(());
@@ -274,8 +299,8 @@ fn parse_suggestion_identity(value: &Any) -> UseResult<DocumentSuggestionIdentit
     let author = required_string(fields.get("author"), "suggestion author")?;
     let date = required_string(fields.get("date"), "suggestion date")?;
     let kind = match required_string(fields.get("kind"), "suggestion kind")?.as_str() {
-        "insertion" => DocumentSuggestionKind::Insertion,
-        "deletion" => DocumentSuggestionKind::Deletion,
+        "insertion" => NativeOfficeCollaborationDocumentSuggestionKind::Insertion,
+        "deletion" => NativeOfficeCollaborationDocumentSuggestionKind::Deletion,
         _ => {
             return Err(permission_denied(
                 "A shared Document suggestion kind must be 'insertion' or 'deletion'.",
@@ -320,7 +345,8 @@ fn assert_suggestion_changes(
                     "Suggest mode cannot rewrite another actor's Document suggestion '{id}'."
                 )));
             }
-        } else if previous.identity.kind == DocumentSuggestionKind::Deletion
+        } else if previous.identity.kind
+            == NativeOfficeCollaborationDocumentSuggestionKind::Deletion
             && (previous.text != current.text || previous.placements != current.placements)
         {
             return Err(permission_denied(format!(
@@ -348,6 +374,27 @@ fn assert_suggestion_changes(
         }
     }
     Ok(())
+}
+
+fn suggestion_paragraph_identity<T: ReadTxn>(
+    text: &yrs::XmlTextRef,
+    transaction: &T,
+) -> UseResult<(Option<String>, Option<String>)> {
+    let Some(XmlOut::Element(paragraph)) = text.parent() else {
+        return Ok((None, None));
+    };
+    if !is_identity_paragraph_tag(paragraph.tag()) {
+        return Ok((None, None));
+    }
+    let paragraph_id =
+        document_identity_attribute(&paragraph, transaction, PARAGRAPH_ID_ATTRIBUTE)?;
+    let text_id = document_identity_attribute(&paragraph, transaction, TEXT_ID_ATTRIBUTE)?;
+    if paragraph_id.is_some() != text_id.is_some() {
+        return Err(permission_denied(
+            "A Document suggestion paragraph has an incomplete Word identity.",
+        ));
+    }
+    Ok((paragraph_id, text_id))
 }
 
 fn required_root<T: ReadTxn>(transaction: &T, name: &str) -> UseResult<Out> {

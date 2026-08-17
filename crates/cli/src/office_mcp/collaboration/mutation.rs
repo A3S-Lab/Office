@@ -1,7 +1,10 @@
 use a3s_office::{
-    NativeOfficeCollaborationMutation, NativeOfficeCollaborationParagraphPosition,
-    NativeOfficeCollaborationPdfAnnotationSource, NativeOfficeCollaborationPdfRect,
-    NativeOfficeCollaborationPdfReviewDecision, NativeOfficeCollaborationPdfReviewTargetKind,
+    NativeOfficeCollaborationDocumentSuggestionDecision,
+    NativeOfficeCollaborationDocumentSuggestionKind,
+    NativeOfficeCollaborationDocumentSuggestionMatch, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationParagraphPosition, NativeOfficeCollaborationPdfAnnotationSource,
+    NativeOfficeCollaborationPdfRect, NativeOfficeCollaborationPdfReviewDecision,
+    NativeOfficeCollaborationPdfReviewTargetKind,
     NativeOfficeCollaborationPresentationContainerKind,
 };
 use schemars::JsonSchema;
@@ -20,6 +23,68 @@ impl From<OfficeCollaborationParagraphPosition> for NativeOfficeCollaborationPar
         match value {
             OfficeCollaborationParagraphPosition::Before => Self::Before,
             OfficeCollaborationParagraphPosition::After => Self::After,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationDocumentSuggestionKind {
+    Insertion,
+    Deletion,
+}
+
+impl From<OfficeCollaborationDocumentSuggestionKind>
+    for NativeOfficeCollaborationDocumentSuggestionKind
+{
+    fn from(value: OfficeCollaborationDocumentSuggestionKind) -> Self {
+        match value {
+            OfficeCollaborationDocumentSuggestionKind::Insertion => Self::Insertion,
+            OfficeCollaborationDocumentSuggestionKind::Deletion => Self::Deletion,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "kebab-case")]
+pub(in crate::office_mcp) enum OfficeCollaborationDocumentSuggestionDecision {
+    Accept,
+    Reject,
+}
+
+impl From<OfficeCollaborationDocumentSuggestionDecision>
+    for NativeOfficeCollaborationDocumentSuggestionDecision
+{
+    fn from(value: OfficeCollaborationDocumentSuggestionDecision) -> Self {
+        match value {
+            OfficeCollaborationDocumentSuggestionDecision::Accept => Self::Accept,
+            OfficeCollaborationDocumentSuggestionDecision::Reject => Self::Reject,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(in crate::office_mcp) struct OfficeCollaborationDocumentSuggestionMatch {
+    id: String,
+    kind: OfficeCollaborationDocumentSuggestionKind,
+    expected_actor_id: Option<String>,
+    expected_author: String,
+    expected_created_at: String,
+    expected_text: String,
+}
+
+impl From<OfficeCollaborationDocumentSuggestionMatch>
+    for NativeOfficeCollaborationDocumentSuggestionMatch
+{
+    fn from(value: OfficeCollaborationDocumentSuggestionMatch) -> Self {
+        Self {
+            id: value.id,
+            kind: value.kind.into(),
+            expected_actor_id: value.expected_actor_id,
+            expected_author: value.expected_author,
+            expected_created_at: value.expected_created_at,
+            expected_text: value.expected_text,
         }
     }
 }
@@ -189,6 +254,26 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
     DocumentCommentDelete {
         comment_id: String,
         reply_id: Option<String>,
+    },
+    /// Propose one insertion, deletion, or atomic replacement in suggest mode.
+    DocumentSuggestionCreate {
+        paragraph_id: String,
+        expected_text_id: String,
+        start_utf16: u32,
+        end_utf16: u32,
+        expected_text: String,
+        replacement: String,
+        insertion_id: Option<String>,
+        deletion_id: Option<String>,
+        author: String,
+        created_at: String,
+    },
+    /// Accept or reject exact tracked changes atomically in edit mode.
+    DocumentSuggestionDecide {
+        suggestions: Vec<OfficeCollaborationDocumentSuggestionMatch>,
+        decision: OfficeCollaborationDocumentSuggestionDecision,
+        decided_by: String,
+        decided_at: String,
     },
     /// Create or recursively patch one conflict-local Spreadsheet cell.
     SpreadsheetSetCell {
@@ -409,6 +494,40 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
             } => Self::DocumentCommentDelete {
                 comment_id,
                 reply_id,
+            },
+            OfficeCollaborationMutation::DocumentSuggestionCreate {
+                paragraph_id,
+                expected_text_id,
+                start_utf16,
+                end_utf16,
+                expected_text,
+                replacement,
+                insertion_id,
+                deletion_id,
+                author,
+                created_at,
+            } => Self::DocumentSuggestionCreate {
+                paragraph_id,
+                expected_text_id,
+                start_utf16,
+                end_utf16,
+                expected_text,
+                replacement,
+                insertion_id,
+                deletion_id,
+                author,
+                created_at,
+            },
+            OfficeCollaborationMutation::DocumentSuggestionDecide {
+                suggestions,
+                decision,
+                decided_by,
+                decided_at,
+            } => Self::DocumentSuggestionDecide {
+                suggestions: suggestions.into_iter().map(Into::into).collect(),
+                decision: decision.into(),
+                decided_by,
+                decided_at,
             },
             OfficeCollaborationMutation::SpreadsheetSetCell {
                 sheet_id,

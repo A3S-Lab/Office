@@ -50,6 +50,10 @@ pub(super) fn validate_document_mutation(
         | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
             comment::validate_comment_mutation(mutation)
         }
+        NativeOfficeCollaborationMutation::DocumentSuggestionCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionDecide { .. } => {
+            suggestion::validate_suggestion_mutation(mutation)
+        }
         NativeOfficeCollaborationMutation::DocumentSetPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentClearPageColor { .. }
         | NativeOfficeCollaborationMutation::DocumentSetTrackChanges { .. }
@@ -116,6 +120,10 @@ pub(super) fn apply_document_mutation(
         | NativeOfficeCollaborationMutation::DocumentCommentSetResolved { .. }
         | NativeOfficeCollaborationMutation::DocumentCommentDelete { .. } => {
             comment::apply_comment_mutation(doc, manifest, mutation)
+        }
+        NativeOfficeCollaborationMutation::DocumentSuggestionCreate { .. }
+        | NativeOfficeCollaborationMutation::DocumentSuggestionDecide { .. } => {
+            suggestion::apply_suggestion_mutation(doc, manifest, mutation)
         }
         NativeOfficeCollaborationMutation::DocumentSetPageColor { page_color } => {
             set_page_color(doc, manifest, Some(page_color))

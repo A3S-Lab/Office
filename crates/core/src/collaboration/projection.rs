@@ -7,6 +7,9 @@ use super::mutation::document::identity::{
     document_identity_attribute, is_identity_paragraph_tag, PARAGRAPH_ID_ATTRIBUTE,
     TEXT_ID_ATTRIBUTE,
 };
+use super::mutation::document::suggestion::{
+    project_document_change_decisions, project_document_suggestions,
+};
 use super::{
     collaboration_error, sha256_hex, NativeOfficeCollaborationArtifactKind,
     NativeOfficeCollaborationDocumentParagraph, NativeOfficeCollaborationManifest,
@@ -134,10 +137,14 @@ fn project_document_content<T: ReadTxn>(
     let page_color = optional_string(&options, transaction, "pageColor")?;
     let track_changes = optional_bool(&options, transaction, "trackChanges")?;
     let comments = project_document_comments(transaction, manifest, &fragment)?;
+    let suggestions = project_document_suggestions(transaction, &fragment)?;
+    let change_decisions = project_document_change_decisions(transaction, manifest)?;
     Ok(NativeOfficeCollaborationProjectedContent::Document {
         plain_text,
         paragraphs,
         comments,
+        suggestions,
+        change_decisions,
         page_color,
         track_changes,
     })

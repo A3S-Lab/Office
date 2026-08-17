@@ -1,6 +1,129 @@
 suite "collaboration-document-suggestions" {
     version = 1
 
+    scenario "native-suggestion-mutations" {
+        name = "Apply native Document suggestion and decision updates in the browser Playground"
+        surface = "web"
+        timeout_ms = 180000
+
+        viewport "native-desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-native-suggestion-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=collaboration-document-suggestions"
+        }
+
+        click "open-native-suggestion-demo" {
+            target = role("button", "体验建议协作")
+        }
+
+        wait "native-suggestion-fixture-is-ready" {
+            text = "原生建议夹具已就绪"
+        }
+
+        expect "native-agent-control-is-ready" {
+            visible = css("[data-testid='native-document-suggestion-status'][data-state='ready']")
+        }
+
+        click "run-native-agent-proposal" {
+            target = role("button", "运行原生 Agent 提议")
+        }
+
+        wait "native-agent-proposal-is-projected" {
+            text = "A3S Agent 已提议把 😀 替换为 reviewed"
+        }
+
+        expect "native-deletion-is-visible-to-editor" {
+            visible = css(".playground-suggestion-peer.editor del[data-document-change='true'][data-change-id='native-playground-deletion'][data-change-actor-id='native-agent']")
+        }
+
+        expect "native-insertion-is-visible-to-editor" {
+            visible = css(".playground-suggestion-peer.editor ins[data-document-change='true'][data-change-id='native-playground-insertion'][data-change-actor-id='native-agent']")
+        }
+
+        expect "native-proposal-converges-to-suggester" {
+            visible = css(".playground-suggestion-peer.suggester:has(del[data-change-id='native-playground-deletion']):has(ins[data-change-id='native-playground-insertion'])")
+        }
+
+        click "run-native-editor-acceptance" {
+            target = role("button", "运行原生编辑者接受")
+        }
+
+        wait "native-editor-decision-is-projected" {
+            text = "Native Editor 已接受 2 项建议"
+        }
+
+        expect "native-final-text-is-visible" {
+            text = "Hello reviewed world"
+        }
+
+        expect "native-editor-has-no-pending-marks" {
+            visible = css(".playground-suggestion-peer.editor:not(:has(ins[data-document-change])):not(:has(del[data-document-change]))")
+        }
+
+        expect "native-suggester-has-no-pending-marks" {
+            visible = css(".playground-suggestion-peer.suggester:not(:has(ins[data-document-change])):not(:has(del[data-document-change]))")
+        }
+
+        expect "native-decision-count-is-visible" {
+            text = "已记录 2 项决定"
+        }
+
+        focus "focus-native-editor-review-tab" {
+            target = css(".playground-suggestion-peer.editor [role='tab'][data-tab-id='review']")
+        }
+
+        press "open-native-editor-review-tab" {
+            key = "Enter"
+        }
+
+        wait "native-editor-review-toolbar-is-ready" {
+            visible = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
+        click "open-native-decision-history" {
+            target = css(".playground-suggestion-peer.editor button[aria-label^='查看修订']")
+        }
+
+        wait "native-decision-history-is-ready" {
+            text = "没有待处理的修订 · 2 项已决定"
+        }
+
+        expect "native-first-decision-is-visible" {
+            visible = css(".playground-suggestion-peer.editor .work-document-change-decisions li[data-document-change-decision='accept']:nth-child(1)")
+        }
+
+        expect "native-second-decision-is-visible" {
+            visible = css(".playground-suggestion-peer.editor .work-document-change-decisions li[data-document-change-decision='accept']:nth-child(2)")
+        }
+
+        expect "native-decision-attribution-is-visible" {
+            text = "A3S Agent → Native Editor"
+        }
+
+        screenshot "native-suggestion-accepted" {
+            path = "screenshots/native-document-suggestion-accepted.png"
+        }
+
+        accessibility "native-suggestion-accessibility" {
+            path = "evidence/native-document-suggestion-accepted.json"
+            interactive = false
+        }
+
+        console "native-suggestion-console" {
+            path = "diagnostics/native-document-suggestion-console.json"
+            clear = false
+        }
+
+        page_errors "native-suggestion-errors" {
+            path = "diagnostics/native-document-suggestion-page-errors.json"
+            clear = false
+        }
+    }
+
     scenario "desktop-suggestion-decision" {
         name = "Create, synchronize, accept, and audit a Document suggestion"
         surface = "web"
@@ -178,6 +301,10 @@ suite "collaboration-document-suggestions" {
 
         expect "compact-suggester-has-no-decision-controls" {
             visible = css(".playground-suggestion-peer.suggester:not(:has(button[aria-label^='接受修订'])):not(:has(button[aria-label^='拒绝修订']))")
+        }
+
+        expect "compact-native-agent-control-is-reachable" {
+            visible = css("button[aria-label='运行原生 Agent 提议']")
         }
 
         screenshot "compact-suggestion-peers" {

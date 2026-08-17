@@ -1,11 +1,13 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
 use std::future::{ready, Ready};
 use std::sync::{Arc, Mutex};
 
 use a3s_boot::{BootRequest, HttpMethod, Result, WebSocketMessage};
 use a3s_office::{
     NativeOfficeCollaborationActorKind, NativeOfficeCollaborationArtifactKind,
-    NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationEventsRequest,
+    NativeOfficeCollaborationCreateRequest, NativeOfficeCollaborationDocumentSuggestionDecision,
+    NativeOfficeCollaborationDocumentSuggestionKind,
+    NativeOfficeCollaborationDocumentSuggestionMatch, NativeOfficeCollaborationEventsRequest,
     NativeOfficeCollaborationMode, NativeOfficeCollaborationMutation,
     NativeOfficeCollaborationMutationRequest, NativeOfficeCollaborationProjectedContent,
     NativeOfficeCollaborationStore, MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
@@ -20,7 +22,7 @@ use yrs::types::Attrs;
 use yrs::updates::decoder::Decode;
 use yrs::updates::encoder::Encode;
 use yrs::{
-    Any, Array, Doc, GetString, Map, ReadTxn, StateVector, Text, Transact, Update, Xml,
+    Array, Doc, GetString, Map, ReadTxn, StateVector, Text, Transact, Update, Xml,
     XmlElementPrelim, XmlFragment, XmlOut, XmlTextPrelim,
 };
 
@@ -373,7 +375,8 @@ async fn comment_ticket_persists_selection_review_but_cannot_edit_document_text(
 }
 
 #[tokio::test]
-async fn suggest_ticket_persists_attributed_text_proposals_but_cannot_edit_canonical_content() {
+async fn suggest_ticket_persists_native_proposals_and_editor_decisions_but_rejects_canonical_edits()
+{
     let temp = tempfile::tempdir().unwrap();
     let config = test_config(temp.path().to_path_buf());
     let app = build_application(config.clone()).unwrap();
@@ -430,30 +433,48 @@ async fn suggest_ticket_persists_attributed_text_proposals_but_cannot_edit_canon
         .await
         .unwrap();
 
-    let producer = Doc::with_client_id(727_272);
-    producer
-        .transact_mut()
-        .apply_update(Update::decode_v1(&bootstrap).unwrap())
-        .unwrap();
-    let before_suggestion = producer.transact().state_vector();
-    let fragment = producer.get_or_insert_xml_fragment("a3s.office.document.content");
-    let text = fragment
-        .successors(&producer.transact())
-        .find_map(|node| match node {
-            XmlOut::Text(text) => Some(text),
-            _ => None,
+    let native_temp = tempfile::tempdir().unwrap();
+    let native_suggester =
+        NativeOfficeCollaborationStore::create(NativeOfficeCollaborationCreateRequest {
+            store: native_temp.path().join("native-suggester"),
+            artifact_id: "fixture-document".to_string(),
+            kind: NativeOfficeCollaborationArtifactKind::Document,
+            actor_id: "suggester-3".to_string(),
+            actor_kind: NativeOfficeCollaborationActorKind::Human,
+            mode: NativeOfficeCollaborationMode::Suggest,
+            operation_id: "join-native-suggester".to_string(),
+            namespace: None,
+            client_id: Some(727_272),
+            initial_update: Some(bootstrap.clone()),
         })
         .unwrap();
-    let position = text.len(&producer.transact());
-    text.insert_with_attributes(
-        &mut producer.transact_mut(),
-        position,
-        " proposed",
-        document_suggestion_attributes(),
-    );
-    let suggestion = producer
-        .transact()
-        .encode_state_as_update_v1(&before_suggestion);
+    let before_suggestion = native_suggester.synchronize(None).unwrap().state_vector;
+    native_suggester
+        .mutate(NativeOfficeCollaborationMutationRequest {
+            operation_id: "create-native-suggestion".to_string(),
+            actor_id: "suggester-3".to_string(),
+            mode: NativeOfficeCollaborationMode::Suggest,
+            expected_artifact_id: "fixture-document".to_string(),
+            expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+            mutation: NativeOfficeCollaborationMutation::DocumentSuggestionCreate {
+                paragraph_id: "00000001".to_string(),
+                expected_text_id: "00000002".to_string(),
+                start_utf16: 19,
+                end_utf16: 19,
+                expected_text: String::new(),
+                replacement: " proposed".to_string(),
+                insertion_id: Some("suggestion-server-1".to_string()),
+                deletion_id: None,
+                author: "Ada Suggester".to_string(),
+                created_at: "2026-08-17T08:00:00.000Z".to_string(),
+            },
+            if_state_vector: None,
+        })
+        .unwrap();
+    let suggestion = native_suggester
+        .synchronize(Some(&before_suggestion))
+        .unwrap()
+        .update;
     suggester
         .dispatch(document_message_for(
             "fixture-document",
@@ -481,12 +502,26 @@ async fn suggest_ticket_persists_attributed_text_proposals_but_cannot_edit_canon
         .find(|path| path.is_dir())
         .unwrap();
     let store = NativeOfficeCollaborationStore::open(store_path).unwrap();
-    let NativeOfficeCollaborationProjectedContent::Document { plain_text, .. } =
-        store.project().unwrap().content
+    let NativeOfficeCollaborationProjectedContent::Document {
+        plain_text,
+        suggestions,
+        change_decisions,
+        ..
+    } = store.project().unwrap().content
     else {
         panic!("expected Document projection");
     };
     assert_eq!(plain_text, "Hello review world. proposed");
+    assert!(change_decisions.is_empty());
+    assert!(matches!(
+        suggestions.as_slice(),
+        [suggestion]
+            if suggestion.id == "suggestion-server-1"
+                && suggestion.kind == NativeOfficeCollaborationDocumentSuggestionKind::Insertion
+                && suggestion.actor_id.as_deref() == Some("suggester-3")
+                && suggestion.author == "Ada Suggester"
+                && suggestion.text == " proposed"
+    ));
     let suggestion_event = store
         .events(NativeOfficeCollaborationEventsRequest {
             after_sequence: Some(1),
@@ -501,6 +536,91 @@ async fn suggest_ticket_persists_attributed_text_proposals_but_cannot_edit_canon
         suggestion_event.mode,
         NativeOfficeCollaborationMode::Suggest
     );
+
+    let native_editor =
+        NativeOfficeCollaborationStore::create(NativeOfficeCollaborationCreateRequest {
+            store: native_temp.path().join("native-editor"),
+            artifact_id: "fixture-document".to_string(),
+            kind: NativeOfficeCollaborationArtifactKind::Document,
+            actor_id: "editor-3".to_string(),
+            actor_kind: NativeOfficeCollaborationActorKind::Human,
+            mode: NativeOfficeCollaborationMode::Edit,
+            operation_id: "join-native-editor".to_string(),
+            namespace: None,
+            client_id: Some(717_171),
+            initial_update: Some(store.synchronize(None).unwrap().update),
+        })
+        .unwrap();
+    let before_decision = native_editor.synchronize(None).unwrap().state_vector;
+    native_editor
+        .mutate(NativeOfficeCollaborationMutationRequest {
+            operation_id: "accept-native-suggestion".to_string(),
+            actor_id: "editor-3".to_string(),
+            mode: NativeOfficeCollaborationMode::Edit,
+            expected_artifact_id: "fixture-document".to_string(),
+            expected_kind: NativeOfficeCollaborationArtifactKind::Document,
+            mutation: NativeOfficeCollaborationMutation::DocumentSuggestionDecide {
+                suggestions: vec![NativeOfficeCollaborationDocumentSuggestionMatch {
+                    id: "suggestion-server-1".to_string(),
+                    kind: NativeOfficeCollaborationDocumentSuggestionKind::Insertion,
+                    expected_actor_id: Some("suggester-3".to_string()),
+                    expected_author: "Ada Suggester".to_string(),
+                    expected_created_at: "2026-08-17T08:00:00.000Z".to_string(),
+                    expected_text: " proposed".to_string(),
+                }],
+                decision: NativeOfficeCollaborationDocumentSuggestionDecision::Accept,
+                decided_by: "Evan Editor".to_string(),
+                decided_at: "2026-08-17T08:01:00.000Z".to_string(),
+            },
+            if_state_vector: None,
+        })
+        .unwrap();
+    let decision = native_editor
+        .synchronize(Some(&before_decision))
+        .unwrap()
+        .update;
+    editor_outbound.lock().unwrap().clear();
+    suggester_outbound.lock().unwrap().clear();
+    editor
+        .dispatch(document_message_for(
+            "fixture-document",
+            "document",
+            717_171,
+            "update",
+            &STANDARD.encode(decision),
+        ))
+        .await
+        .unwrap();
+    assert!(editor_outbound
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|message| message.event == "collaboration.ack"));
+    assert!(suggester_outbound
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|message| message.event == "collaboration.document"));
+    let NativeOfficeCollaborationProjectedContent::Document {
+        plain_text,
+        suggestions,
+        change_decisions,
+        ..
+    } = store.project().unwrap().content
+    else {
+        panic!("expected Document projection");
+    };
+    assert_eq!(plain_text, "Hello review world. proposed");
+    assert!(suggestions.is_empty());
+    assert!(matches!(
+        change_decisions.as_slice(),
+        [decision]
+            if decision.change_id == "suggestion-server-1"
+                && decision.decision
+                    == NativeOfficeCollaborationDocumentSuggestionDecision::Accept
+                && decision.decided_by_actor_id.as_deref() == Some("editor-3")
+                && decision.decided_by == "Evan Editor"
+    ));
 
     let attacker = Doc::with_client_id(727_272);
     attacker
@@ -624,22 +744,6 @@ fn document_bootstrap_update() -> Vec<u8> {
         .transact()
         .encode_state_as_update_v1(&StateVector::default());
     update
-}
-
-fn document_suggestion_attributes() -> Attrs {
-    Attrs::from([(
-        "documentChange".into(),
-        Any::Map(Arc::new(HashMap::from([
-            ("actorId".to_owned(), Any::String("suggester-3".into())),
-            ("author".to_owned(), Any::String("Ada Suggester".into())),
-            (
-                "date".to_owned(),
-                Any::String("2026-08-17T08:00:00.000Z".into()),
-            ),
-            ("id".to_owned(), Any::String("suggestion-server-1".into())),
-            ("kind".to_owned(), Any::String("insertion".into())),
-        ]))),
-    )])
 }
 
 fn ticket_body(actor_id: &str, mode: &str) -> Value {

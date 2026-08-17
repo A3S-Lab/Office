@@ -14,7 +14,7 @@
   --rp-c-text-2: #62666f;
   --rp-c-text-3: #6d727b;
   --rp-content-max-width: 920px;
-  --rp-nav-height: 64px;
+  --rp-nav-height: 72px;
   --rp-font-family-base: var(--office-font);
   --rp-font-family-mono: var(--office-mono);
   --office-nav-width: 1440px;
@@ -179,10 +179,10 @@ textarea {
 .rp-nav__title__logo img,
 img.rspress-logo {
   display: block;
-  width: 31px;
-  height: 31px;
-  max-height: none;
-  object-fit: contain;
+  width: 31px !important;
+  height: 31px !important;
+  max-height: none !important;
+  object-fit: contain !important;
 }
 
 .rp-nav__title__link > span {

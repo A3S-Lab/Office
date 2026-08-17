@@ -86,12 +86,20 @@ and preserves required container blocks and list-leading paragraphs. It refuses
 inline/review content. Table-contained edits rotate every identified ancestor
 row's `rowTextId` atomically. Page color and track-changes are separate
 conflict-local option mutations. For Document review, read projection schema
-version 2 and use `document-comment-create` with the exact `paragraphId`,
+version 3 and use `document-comment-create` with the exact `paragraphId`,
 `textId`, UTF-16 range, and selected text; use `document-comment-reply`,
 `document-comment-set-resolved`, and `document-comment-delete` for the thread
 lifecycle. A new record's `author` must match the authenticated actor display
 name. Comment-mode deletion is limited to the actor's own comment or reply,
-while resolution/reopen is shared. Spreadsheet set-cell recursively compares the
+while resolution/reopen is shared. Projection v3 also returns live
+`suggestions` with exact placements and immutable `changeDecisions`. Use an
+actor-scoped `suggest` replica plus `document-suggestion-create` to propose an
+insertion, deletion, or paired replacement. Match the current `paragraphId`,
+`textId`, UTF-16 range, and selected text, and never supply an actor ID inside
+the mutation. Use an `edit` replica plus `document-suggestion-decide` to accept
+or reject one or more exact suggestion identities atomically; include both
+members of a replacement pair and copy every expected actor, author, timestamp,
+kind, and text field from the latest projection. Spreadsheet set-cell recursively compares the
 observed and next cell, writes only changed leaves, and uses
 `expectedCell: null` only for a known blank coordinate. Spreadsheet delete-cell
 requires the exact complete observed cell. Both use a stable sheet ID and
@@ -147,7 +155,9 @@ direct children of top-level sections and use uppercase eight-digit positive
 31-bit hexadecimal Word IDs. Canonical content mutations require an `edit`-mode
 replica. Document comment create/reply/resolve/delete accepts an `edit` or
 `comment` replica; use a separately joined actor-scoped comment replica when
-the participant must not edit content. Spreadsheet cells use
+the participant must not edit content. Document suggestion creation requires
+an actor-scoped `suggest` replica; final suggestion decisions require `edit`.
+Spreadsheet cells use
 `spreadsheet-set-cell` with an observed
 `expectedCell` and complete `nextCell`, or `spreadsheet-delete-cell` with an
 exact complete `expectedCell`; stale same-leaf edits and stale deletes fail
@@ -307,9 +317,10 @@ owns template merge, constrained XML access,
 deterministic all-format HTML/SVG, Browser-injected semantic screenshots, and
 authenticated loopback live watch for saved files.
 The collaboration replica separately supports durable Document selection
-comments, replies, resolution/reopen, detached anchors, and ownership-restricted
-deletion through browser-compatible Yjs/Yrs records. This does not imply native
-OOXML package support for modern Word threaded-comment parts.
+comments, replies, resolution/reopen, detached anchors, attributed text
+suggestions, and immutable accept/reject decisions through browser-compatible
+Yjs/Yrs records. This does not imply native OOXML package support for modern
+Word threaded-comment or tracked-revision parts.
 Hyperlinks cover Word body/header/footer paragraphs and bookmarks, Spreadsheet
 cells or bounded ranges and internal locations, and external Presentation shape
 clicks or internal jumps to existing slides. Remaining boundaries include

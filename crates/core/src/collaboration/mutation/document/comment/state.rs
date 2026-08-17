@@ -27,7 +27,7 @@ pub(super) struct DocumentCommentsState {
     pub(super) claims_root: ArrayRef,
     pub(super) order: Vec<String>,
     pub(super) records: HashMap<String, DocumentCommentRecord>,
-    pub(super) claims: DocumentCommentClaims,
+    pub(super) claims: DocumentRecordClaims,
 }
 
 pub(super) struct DocumentCommentRecord {
@@ -52,12 +52,17 @@ pub(super) struct DocumentCommentReplyRecord {
     pub(super) text: String,
 }
 
-pub(super) struct DocumentCommentClaims {
+pub(in crate::collaboration) struct DocumentRecordClaims {
     by_identity: HashMap<(String, Option<String>, String), String>,
 }
 
-impl DocumentCommentClaims {
-    pub(super) fn claim_for(&self, kind: &str, parent_id: Option<&str>, id: &str) -> Option<&str> {
+impl DocumentRecordClaims {
+    pub(in crate::collaboration) fn claim_for(
+        &self,
+        kind: &str,
+        parent_id: Option<&str>,
+        id: &str,
+    ) -> Option<&str> {
         self.by_identity
             .get(&(kind.to_owned(), parent_id.map(str::to_owned), id.to_owned()))
             .map(String::as_str)
@@ -115,7 +120,7 @@ pub(super) fn read_comment_state<T: ReadTxn>(
         "comment",
         MAX_DOCUMENT_COMMENTS,
     )?;
-    let claims = read_claims(transaction, &claims_root)?;
+    let claims = read_document_record_claims(transaction, &claims_root)?;
     let mut total_text_bytes = 0_usize;
     let mut total_replies = 0_usize;
     let mut records = HashMap::with_capacity(order.len());
@@ -464,7 +469,10 @@ fn read_comment_record<T: ReadTxn>(
     })
 }
 
-fn read_claims<T: ReadTxn>(transaction: &T, claims: &ArrayRef) -> UseResult<DocumentCommentClaims> {
+pub(in crate::collaboration) fn read_document_record_claims<T: ReadTxn>(
+    transaction: &T,
+    claims: &ArrayRef,
+) -> UseResult<DocumentRecordClaims> {
     if claims.len(transaction) as usize > MAX_DOCUMENT_COMMENT_CLAIMS {
         return Err(invalid_shared_comments(
             "The shared Document contains too many immutable record claims.",
@@ -554,7 +562,7 @@ fn read_claims<T: ReadTxn>(transaction: &T, claims: &ArrayRef) -> UseResult<Docu
             }
         }
     }
-    Ok(DocumentCommentClaims { by_identity })
+    Ok(DocumentRecordClaims { by_identity })
 }
 
 fn validated_order<T: ReadTxn>(

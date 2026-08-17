@@ -111,8 +111,8 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, durable review-only
 comment and suggestion modes, immutable suggestion-decision audit, and native
-text/options/bounded structural paragraph/comment mutations implemented; rich
-native mutation parity remains pending.
+text/options/bounded structural paragraph/comment/suggestion mutations
+implemented; rich native mutation parity remains pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
@@ -167,12 +167,15 @@ native mutation parity remains pending.
   without the additive roots remain readable, and a final decision clears
   local history that could otherwise resurrect the decided mark.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
-  `document-comment-reply`, `document-comment-set-resolved`, and
-  `document-comment-delete`. Projection schema v2 returns attributable threads,
-  replies, anchor text, paragraph/text identities, browser-compatible UTF-16
-  offsets, resolution, and detached state. Native and browser fixtures cover
-  restart, reordered delivery, stale anchor guards, idempotent retries,
-  ownership failures, and cross-language convergence.
+  `document-comment-reply`, `document-comment-set-resolved`,
+  `document-comment-delete`, `document-suggestion-create`, and
+  `document-suggestion-decide`. Projection schema v3 returns attributable
+  comment threads, replies, anchor text, live suggestion identities and exact
+  placements, immutable final decisions, paragraph/text identities,
+  browser-compatible UTF-16 offsets, resolution, and detached state. Native and
+  browser fixtures cover restart, reordered delivery, stale guards, idempotent
+  retries, ownership/mode failures, atomic replacement decisions, and
+  cross-language convergence.
 - The A3S Boot backend permits `edit` content/review updates, semantically
   validated Document `comment` review-only updates, and semantically validated
   Document `suggest` proposal updates. Signed actor identity and display name
@@ -183,10 +186,6 @@ native mutation parity remains pending.
 
 Remaining:
 
-- Add closed typed native projection and mutation variants for creating
-  Document suggestions and deciding them through CLI/MCP/A3S Code. The current
-  typed native mutation set can synchronize the resulting Yjs state but does
-  not originate these two workflows.
 - Prove concurrent full-table, list-restructure, section, comment, and revision
   workflows, plus DOCX import/export after merged edits.
 - Expand native convergence from bounded paragraph edits to complete table,
@@ -388,11 +387,11 @@ destructive actions remain attributable, reviewable, and non-retryable.
 
 Status: native Yrs replica store, resumable CLI/MCP event streams, `a3s code`
 projection, a host-injected live CLI transport session, authenticated browser
-suggestion-update authorization, and typed Markdown, Document content/comment,
-Spreadsheet cell, Presentation scene-element, PDF annotation/form-value, and
-PDF redaction/page-operation review mutation surfaces are implemented; typed
-native Document suggestion/decision mutations, the remaining format mutations,
-and native presence projection are pending.
+suggestion-update authorization, and typed Markdown, Document
+content/comment/suggestion, Spreadsheet cell, Presentation scene-element, PDF
+annotation/form-value, and PDF redaction/page-operation review mutation surfaces
+are implemented; the remaining format mutations and native presence projection
+are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -444,16 +443,18 @@ and native presence projection are pending.
 - Host-authenticated Document `suggest` transport updates are semantically
   checked in Yrs before commit: only attributed insertion/deletion/replacement
   proposals owned by the authenticated actor may be added or withdrawn, while
-  canonical state and every non-suggestion root remain protected. This is a
-  transport authorization path, not a `NativeOfficeCollaborationMutation`;
-  `collab mutate`, `office_collaboration_mutate`, and projection v2 do not yet
-  expose native typed suggestion creation or final-decision operations.
+  canonical state and every non-suggestion root remain protected.
+  `document-suggestion-create` exposes the same closed proposal contract to an
+  actor-scoped native `suggest` replica; `document-suggestion-decide` lets an
+  `edit` replica match and accept or reject one or more complete projected
+  identities atomically, then appends immutable browser-compatible decisions.
 - Rust `project`, `collab read`, and `office_collaboration_read` interpret the
   Office-owned browser schema inside Office rather than in a product host.
   Markdown returns its exact canonical source. Document returns bounded
   traversal-order paragraph records, stable `paragraphId`/`textId` pairs,
-  structural ancestry, option fields, subordinate plain text, and projection-v2
-  comment/reply/anchor/detached records together with the exact state vector.
+  structural ancestry, option fields, subordinate plain text, and projection-v3
+  comment/reply/anchor/detached records, live suggestions with exact placements,
+  and immutable final decisions together with the exact state vector.
   `document-replace-paragraph` uses those stable
   identities plus complete expected text to reject a stale same-paragraph
   browser/agent edit before writing, while unrelated changes can proceed
@@ -509,9 +510,8 @@ Remaining:
 
 - Extend typed format-model mutations to Spreadsheet and remaining Presentation
   structural/rich-text operations plus PDF signatures; deepen Document
-  mutations to additional nested structures and add typed suggestion creation,
-  suggestion projection, and tracked final-decision operations for native
-  clients.
+  mutations to additional nested structures and complete table/list/section
+  revision workflows.
 - Project editor-visible presence and selection state while keeping Awareness
   ephemeral and outside native replica persistence.
 

@@ -85,6 +85,53 @@ impl NativeOfficeCollaborationPdfReviewDecision {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationDocumentSuggestionKind {
+    Insertion,
+    Deletion,
+}
+
+impl NativeOfficeCollaborationDocumentSuggestionKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Insertion => "insertion",
+            Self::Deletion => "deletion",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationDocumentSuggestionDecision {
+    Accept,
+    Reject,
+}
+
+impl NativeOfficeCollaborationDocumentSuggestionDecision {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Accept => "accept",
+            Self::Reject => "reject",
+        }
+    }
+}
+
+/// Exact suggestion identity observed in a native Document projection.
+///
+/// Decisions match every field instead of trusting the stable ID alone, so a
+/// stale or colliding review request fails without changing shared state.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeOfficeCollaborationDocumentSuggestionMatch {
+    pub id: String,
+    pub kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    pub expected_actor_id: Option<String>,
+    pub expected_author: String,
+    pub expected_created_at: String,
+    pub expected_text: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(
     tag = "type",
@@ -176,6 +223,32 @@ pub enum NativeOfficeCollaborationMutation {
     DocumentCommentDelete {
         comment_id: String,
         reply_id: Option<String>,
+    },
+    /// Propose one insertion, deletion, or atomic replacement in a stable
+    /// plain Document paragraph. An insertion ID is required when
+    /// `replacement` is non-empty; a deletion ID is required when the guarded
+    /// range is non-empty. Replacement proposals therefore carry both IDs.
+    DocumentSuggestionCreate {
+        paragraph_id: String,
+        expected_text_id: String,
+        start_utf16: u32,
+        end_utf16: u32,
+        expected_text: String,
+        replacement: String,
+        insertion_id: Option<String>,
+        deletion_id: Option<String>,
+        author: String,
+        created_at: String,
+    },
+    /// Accept or reject one or more exact tracked changes atomically and
+    /// append immutable browser-compatible audit records. A replacement can
+    /// be decided as one operation by supplying its insertion and deletion
+    /// identities together.
+    DocumentSuggestionDecide {
+        suggestions: Vec<NativeOfficeCollaborationDocumentSuggestionMatch>,
+        decision: NativeOfficeCollaborationDocumentSuggestionDecision,
+        decided_by: String,
+        decided_at: String,
     },
     /// Create or update one Spreadsheet cell through the browser-compatible
     /// field-addressed cell map. `expectedCell` is absent when the caller

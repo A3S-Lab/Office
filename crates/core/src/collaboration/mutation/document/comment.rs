@@ -13,12 +13,13 @@ use yrs::{
     XmlOut, XmlTextRef,
 };
 
-use self::json::canonical_json;
+pub(in crate::collaboration) use self::json::canonical_json;
 pub(in crate::collaboration) use self::state::project_document_comments;
 use self::state::{
     collect_comment_anchors, collect_comment_mark_segments, comment_attributes, read_comment_state,
     CommentAnchor,
 };
+pub(in crate::collaboration) use self::state::{read_document_record_claims, DocumentRecordClaims};
 use super::super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMode,
     NativeOfficeCollaborationMutation,

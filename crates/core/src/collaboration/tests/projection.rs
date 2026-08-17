@@ -57,6 +57,7 @@ fn document_projection_exposes_stable_identity_for_guarded_replacement() {
         comments,
         page_color,
         track_changes,
+        ..
     } = before.content
     else {
         panic!("expected Document projection");

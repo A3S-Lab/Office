@@ -13,7 +13,10 @@ const documentationRoot = path.resolve(import.meta.dirname, '../docs');
 
 function homepageComponentHref(version: string, component: string): string {
   const extension =
-    version === 'latest' || version === '0.8.0' || version === '0.7.3'
+    version === 'latest' ||
+    version === '0.8.1' ||
+    version === '0.8.0' ||
+    version === '0.7.3'
       ? 'html'
       : 'mdx';
   return `./components/${component}.${extension}`;
@@ -25,6 +28,7 @@ test('uses Simplified Chinese and latest as stable documentation defaults', () =
   expect(DOCUMENTATION_DEFAULT_VERSION).toBe('latest');
   expect(DOCUMENTATION_VERSIONS).toEqual([
     'latest',
+    '0.8.1',
     '0.8.0',
     '0.7.3',
     '0.7.2',
@@ -53,6 +57,7 @@ test('keeps every public route available in every language and version', async (
 
 test('keeps published release homepages frozen and visibly versioned', async () => {
   for (const version of [
+    '0.8.1',
     '0.8.0',
     '0.7.3',
     '0.7.2',
@@ -95,7 +100,7 @@ test('removes broken online Playground actions from frozen homepages', async () 
 });
 
 test('uses deployable HTML targets in current release homepage actions', async () => {
-  for (const version of ['0.8.0', '0.7.3']) {
+  for (const version of ['0.8.1', '0.8.0', '0.7.3']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const homepage = await readFile(
         path.join(documentationRoot, version, lang, 'index.mdx'),
@@ -113,7 +118,14 @@ test('uses deployable HTML targets in current release homepage actions', async (
 });
 
 test('publishes real-time collaboration as a bilingual first-class capability', async () => {
-  for (const version of ['latest', '0.8.0', '0.7.3', '0.7.2', '0.7.1']) {
+  for (const version of [
+    'latest',
+    '0.8.1',
+    '0.8.0',
+    '0.7.3',
+    '0.7.2',
+    '0.7.1',
+  ]) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [homepage, componentIndex, componentNavigation, collaboration] =
@@ -142,7 +154,7 @@ test('publishes real-time collaboration as a bilingual first-class capability', 
 });
 
 test('publishes the runnable collaboration backend in latest releases', async () => {
-  for (const version of ['latest', '0.8.0', '0.7.3', '0.7.2']) {
+  for (const version of ['latest', '0.8.1', '0.8.0', '0.7.3', '0.7.2']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [homepage, componentIndex, componentNavigation, server] =
@@ -169,7 +181,7 @@ test('publishes the runnable collaboration backend in latest releases', async ()
 });
 
 test('documents durable Document comments in current releases', async () => {
-  for (const version of ['latest', '0.8.0', '0.7.3']) {
+  for (const version of ['latest', '0.8.1', '0.8.0', '0.7.3']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, cli] = await Promise.all([
@@ -196,8 +208,8 @@ test('documents durable Document comments in current releases', async () => {
   }
 });
 
-test('documents attributed Document suggestions and the native typed limit', async () => {
-  for (const version of ['latest', '0.8.0']) {
+test('documents attributed Document suggestions and native typed mutations', async () => {
+  for (const version of ['latest', '0.8.1']) {
     for (const { lang } of DOCUMENTATION_LOCALES) {
       const localeRoot = path.join(documentationRoot, version, lang);
       const [collaboration, server, document, cli] = await Promise.all([
@@ -216,8 +228,22 @@ test('documents attributed Document suggestions and the native typed limit', asy
       expect(collaboration).toContain('document.change-decisions');
       expect(server).toContain('FORBIDDEN');
       expect(server).toContain('Document `suggest`');
-      expect(cli).toContain('document-suggestion-*');
-      expect(cli).toContain('document-change-decision-*');
+      expect(cli).toContain('document-suggestion-create');
+      expect(cli).toContain('document-suggestion-decide');
+      expect(cli).toContain('v3');
+      expect(cli).toContain('changeDecisions');
     }
+  }
+});
+
+test('keeps the 0.8.0 native suggestion limitation frozen', async () => {
+  for (const { lang } of DOCUMENTATION_LOCALES) {
+    const cli = await readFile(
+      path.join(documentationRoot, '0.8.0', lang, 'cli-reference.md'),
+      'utf8',
+    );
+
+    expect(cli).toContain('document-suggestion-*');
+    expect(cli).toContain('document-change-decision-*');
   }
 });
