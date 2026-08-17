@@ -331,6 +331,8 @@ export function EditorWorkspace({
                   <button
                     type="button"
                     className="work-editor-ai-button"
+                    data-testid="native-document-suggestion-action"
+                    data-state={documentSuggestionFixture.nativeStage}
                     aria-label={nativeDocumentSuggestionAction(
                       documentSuggestionFixture.nativeStage,
                     )}

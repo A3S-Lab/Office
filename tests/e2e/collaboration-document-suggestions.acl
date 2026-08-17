@@ -29,7 +29,7 @@ suite "collaboration-document-suggestions" {
         }
 
         click "run-native-agent-proposal" {
-            target = role("button", "运行原生 Agent 提议")
+            target = css("[data-testid='native-document-suggestion-action'][data-state='ready']")
         }
 
         wait "native-agent-proposal-is-projected" {
@@ -49,7 +49,7 @@ suite "collaboration-document-suggestions" {
         }
 
         click "run-native-editor-acceptance" {
-            target = role("button", "运行原生编辑者接受")
+            target = css("[data-testid='native-document-suggestion-action'][data-state='proposed']")
         }
 
         wait "native-editor-decision-is-projected" {
