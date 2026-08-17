@@ -246,6 +246,29 @@ describe('document formatting', () => {
     editor.destroy();
   });
 
+  test('clears character formatting without removing comment or revision marks', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions(),
+      content: [
+        '<section data-document-section="true"><p>',
+        '<ins data-document-change="true" data-change-kind="insertion" data-change-id="change-1" data-change-author="Ada" data-change-date="2026-08-17T14:30:00.000Z">',
+        '<span data-document-comment="true" data-comment-id="comment-1"><strong>A3S Office</strong></span>',
+        '</ins></p></section>',
+      ].join(''),
+    });
+    editor.commands.setTextSelection(textRange(editor, 'A3S Office'));
+
+    clearDocumentFormatting(editor);
+
+    const html = editor.getHTML();
+    expect(html).not.toContain('<strong>');
+    expect(html).toContain('data-document-comment="true"');
+    expect(html).toContain('data-comment-id="comment-1"');
+    expect(html).toContain('data-document-change="true"');
+    expect(html).toContain('data-change-id="change-1"');
+    editor.destroy();
+  });
+
   test('reads and directly updates all active paragraph indents', () => {
     const editor = createEditor('<p>First</p><p>Second paragraph</p>');
     editor.commands.setTextSelection(10);

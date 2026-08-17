@@ -135,7 +135,7 @@ pub(super) fn apply_create_mutation(
         .any(|candidate| suggestions.contains_key(candidate.id));
     let has_existing_decision = expected.iter().any(|candidate| {
         decisions.records.values().any(|decision| {
-            decision.change_id == candidate.id && decision.change_kind == candidate.kind
+            decision.change_id == candidate.id && decision.change_kind == candidate.kind.into()
         })
     });
     if has_existing_suggestion || has_existing_decision {

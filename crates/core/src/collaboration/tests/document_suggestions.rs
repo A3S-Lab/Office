@@ -7,6 +7,173 @@ use yrs::{Any, Doc, Map, Text, Transact, Update, XmlFragment, XmlOut};
 
 use super::*;
 
+const BROWSER_DOCUMENT_FORMATTING_UPDATE_BASE64: &str =
+    include_str!("../../../../../tests/fixtures/browser-document-formatting-change-update.base64");
+
+#[test]
+fn browser_formatting_revisions_survive_restart_and_bound_suggestion_delivery() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("browser-formatting-revision-server");
+    let store = NativeOfficeCollaborationStore::create(NativeOfficeCollaborationCreateRequest {
+        store: root.clone(),
+        artifact_id: "fixture-document-formatting".to_owned(),
+        kind: NativeOfficeCollaborationArtifactKind::Document,
+        actor_id: "collaboration-server".to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::System,
+        mode: NativeOfficeCollaborationMode::Edit,
+        operation_id: "create-browser-formatting-revision-server".to_owned(),
+        namespace: None,
+        client_id: Some(900_303),
+        initial_update: Some(
+            STANDARD
+                .decode(BROWSER_DOCUMENT_FORMATTING_UPDATE_BASE64.trim())
+                .unwrap(),
+        ),
+    })
+    .unwrap();
+
+    assert_formatting_projection(&store);
+    drop(store);
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    assert_formatting_projection(&reopened);
+
+    let authorization = NativeOfficeCollaborationTransportAuthorization {
+        actor_id: "suggester-1".to_owned(),
+        actor_kind: NativeOfficeCollaborationActorKind::Human,
+        actor_name: "Ada Suggester".to_owned(),
+        mode: NativeOfficeCollaborationMode::Suggest,
+    };
+    let mut transport =
+        NativeOfficeCollaborationTransportSession::attach(reopened.clone()).unwrap();
+    let (first, second) = sequential_suggestion_updates(&reopened);
+    let before_out_of_order = reopened.inspect().unwrap().document_state_sha256;
+    let rejected = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: formatting_fixture_suggestion_message(
+                    second.clone(),
+                    "formatting-suggestion-out-of-order",
+                ),
+                operation_id: Some("formatting-suggestion-out-of-order".to_owned()),
+                if_state_vector: None,
+            },
+            authorization.clone(),
+        )
+        .unwrap_err();
+    assert!(matches!(
+        rejected.code.as_str(),
+        "office.collaboration.permission_denied" | "office.collaboration.update_invalid"
+    ));
+    assert_eq!(
+        reopened.inspect().unwrap().document_state_sha256,
+        before_out_of_order
+    );
+
+    let first_result = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: formatting_fixture_suggestion_message(
+                    first.clone(),
+                    "formatting-suggestion-first",
+                ),
+                operation_id: Some("formatting-suggestion-first".to_owned()),
+                if_state_vector: None,
+            },
+            authorization.clone(),
+        )
+        .unwrap();
+    assert!(first_result.apply.unwrap().state_changed);
+    let second_result = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: formatting_fixture_suggestion_message(
+                    second.clone(),
+                    "formatting-suggestion-second",
+                ),
+                operation_id: Some("formatting-suggestion-second".to_owned()),
+                if_state_vector: None,
+            },
+            authorization.clone(),
+        )
+        .unwrap();
+    assert!(second_result.apply.unwrap().state_changed);
+    let before_duplicate = reopened.inspect().unwrap().document_state_sha256;
+    transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: formatting_fixture_suggestion_message(
+                    second,
+                    "formatting-suggestion-duplicate",
+                ),
+                operation_id: Some("formatting-suggestion-duplicate".to_owned()),
+                if_state_vector: None,
+            },
+            authorization.clone(),
+        )
+        .unwrap();
+    assert_eq!(
+        reopened.inspect().unwrap().document_state_sha256,
+        before_duplicate
+    );
+
+    let NativeOfficeCollaborationProjectedContent::Document {
+        suggestions,
+        change_decisions,
+        ..
+    } = reopened.project().unwrap().content
+    else {
+        panic!("expected Document projection");
+    };
+    assert_eq!(suggestions.len(), 1);
+    assert_eq!(suggestions[0].text, " proposed safely");
+    assert_eq!(change_decisions.len(), 1);
+    assert_eq!(
+        change_decisions[0].change_kind,
+        NativeOfficeCollaborationDocumentChangeKind::Formatting
+    );
+
+    let before_tamper = reopened.inspect().unwrap().document_state_sha256;
+    let rejected = transport
+        .receive_authorized(
+            NativeOfficeCollaborationTransportReceiveRequest {
+                message: formatting_fixture_suggestion_message(
+                    remove_formatting_revision_update(&reopened),
+                    "remove-formatting-revision",
+                ),
+                operation_id: Some("remove-formatting-revision".to_owned()),
+                if_state_vector: None,
+            },
+            authorization,
+        )
+        .unwrap_err();
+    assert_eq!(rejected.code, "office.collaboration.permission_denied");
+    assert_eq!(
+        reopened.inspect().unwrap().document_state_sha256,
+        before_tamper
+    );
+}
+
+fn assert_formatting_projection(store: &NativeOfficeCollaborationStore) {
+    let NativeOfficeCollaborationProjectedContent::Document {
+        plain_text,
+        paragraphs,
+        suggestions,
+        change_decisions,
+        ..
+    } = store.project().unwrap().content
+    else {
+        panic!("expected Document projection");
+    };
+    assert_eq!(plain_text, "Format baseline");
+    assert!(paragraphs[0].has_review_marks);
+    assert!(suggestions.is_empty());
+    assert_eq!(change_decisions.len(), 1);
+    assert_eq!(
+        change_decisions[0].change_kind,
+        NativeOfficeCollaborationDocumentChangeKind::Formatting
+    );
+}
+
 #[test]
 fn authenticated_transport_accepts_attributed_suggestions_and_rejects_canonical_edits() {
     let temp = tempfile::tempdir().unwrap();
@@ -339,6 +506,51 @@ fn document_option_update(server: &NativeOfficeCollaborationStore) -> Vec<u8> {
     update
 }
 
+fn sequential_suggestion_updates(server: &NativeOfficeCollaborationStore) -> (Vec<u8>, Vec<u8>) {
+    let producer = synchronized_producer(server, 818_590);
+    let text = first_document_text(&producer);
+    let before_first = producer.transact().state_vector();
+    let mut transaction = producer.transact_mut();
+    let position = text.len(&transaction);
+    text.insert_with_attributes(
+        &mut transaction,
+        position,
+        " proposed",
+        suggestion_attributes("Ada Suggester"),
+    );
+    drop(transaction);
+    let first = producer.transact().encode_state_as_update_v1(&before_first);
+
+    let before_second = producer.transact().state_vector();
+    let mut transaction = producer.transact_mut();
+    let position = text.len(&transaction);
+    text.insert_with_attributes(
+        &mut transaction,
+        position,
+        " safely",
+        suggestion_attributes("Ada Suggester"),
+    );
+    drop(transaction);
+    let second = producer
+        .transact()
+        .encode_state_as_update_v1(&before_second);
+    (first, second)
+}
+
+fn remove_formatting_revision_update(server: &NativeOfficeCollaborationStore) -> Vec<u8> {
+    let producer = synchronized_producer(server, 818_591);
+    let before = producer.transact().state_vector();
+    let text = first_document_text(&producer);
+    text.format(
+        &mut producer.transact_mut(),
+        0,
+        6,
+        Attrs::from([("documentChange".into(), Any::Null)]),
+    );
+    let update = producer.transact().encode_state_as_update_v1(&before);
+    update
+}
+
 fn synchronized_producer(server: &NativeOfficeCollaborationStore, client_id: u64) -> Doc {
     let producer = Doc::with_client_id(client_id);
     producer
@@ -398,6 +610,28 @@ fn suggestion_message_for_actor(
             protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
             kind: NativeOfficeCollaborationOriginKind::Editor,
             actor_id: Some(actor_id.to_owned()),
+            operation_id: Some(operation_id.to_owned()),
+        }),
+    }
+}
+
+fn formatting_fixture_suggestion_message(
+    update: Vec<u8>,
+    operation_id: &str,
+) -> NativeOfficeCollaborationTransportMessage {
+    NativeOfficeCollaborationTransportMessage {
+        protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+        version: NATIVE_OFFICE_COLLABORATION_PROTOCOL_VERSION,
+        artifact_id: "fixture-document-formatting".to_owned(),
+        artifact_kind: NativeOfficeCollaborationArtifactKind::Document,
+        namespace: NATIVE_OFFICE_COLLABORATION_NAMESPACE.to_owned(),
+        sender_client_id: 818_590,
+        message_type: NativeOfficeCollaborationTransportMessageType::Update,
+        payload: update,
+        origin: Some(NativeOfficeCollaborationOrigin {
+            protocol: NATIVE_OFFICE_COLLABORATION_PROTOCOL.to_owned(),
+            kind: NativeOfficeCollaborationOriginKind::Editor,
+            actor_id: Some("suggester-1".to_owned()),
             operation_id: Some(operation_id.to_owned()),
         }),
     }

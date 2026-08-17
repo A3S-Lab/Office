@@ -1,5 +1,6 @@
 import {
   type DocxParagraphStyleSource,
+  type DocxParagraphStyleResolver,
   docxRunPropertySources,
   resolveDocxParagraphStyleResolver,
 } from './work-docx-paragraph-styles';
@@ -21,12 +22,16 @@ import {
   type DocxThemeColorReference,
   serializeDocxThemeReference,
 } from './work-docx-theme-reference';
+import { importedDocumentCharacterFormatting } from './work-document-format-changes';
+import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
 
 export interface ImportedDocxRunFormatting {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
   strike?: boolean;
+  subscript?: boolean;
+  superscript?: boolean;
   fontFamily?: string;
   wordLineHeightFactor?: number;
   wordSnapToGrid?: boolean;
@@ -41,6 +46,14 @@ export interface ImportedDocxRunFormattingMarker {
   startMarker: string;
   endMarker: string;
   formatting: ImportedDocxRunFormatting;
+  change?: ImportedDocxRunFormattingChange;
+}
+
+export interface ImportedDocxRunFormattingChange {
+  id: string;
+  author: string;
+  date: string;
+  before: string;
 }
 
 export interface ImportedDocxRunFormattingMarkers {
@@ -51,6 +64,25 @@ const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 const RUN_FORMATTING_MARKER_PATTERN = /__A3S_WORK_RUN_(?:START|END)_\d+__/g;
+const SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN = new Set([
+  'b',
+  'bCs',
+  'i',
+  'iCs',
+  'u',
+  'strike',
+  'dstrike',
+  'rFonts',
+  'sz',
+  'szCs',
+  'color',
+  'highlight',
+  'shd',
+  'snapToGrid',
+  'cs',
+  'rtl',
+  'vertAlign',
+]);
 
 type DocxFontSlot = 'ascii' | 'hAnsi' | 'eastAsia' | 'complex';
 
@@ -88,12 +120,25 @@ export function markDocxRunFormatting(
       theme,
       runText,
     );
-    if (!Object.keys(formatting).length) continue;
+    const change = importedRunFormattingChange(
+      runProperties,
+      paragraphProperties,
+      styles,
+      docxTableRunPropertySources(run, tableStyles),
+      theme,
+      runText,
+    );
+    if (!Object.keys(formatting).length && !change) continue;
     const index = runs.length + 1;
     const startMarker = `__A3S_WORK_RUN_START_${index}__`;
     const endMarker = `__A3S_WORK_RUN_END_${index}__`;
     insertRunMarkers(document, run, runProperties, startMarker, endMarker);
-    runs.push({ startMarker, endMarker, formatting });
+    runs.push({
+      startMarker,
+      endMarker,
+      formatting,
+      ...(change ? { change } : {}),
+    });
   }
   return { runs };
 }
@@ -105,8 +150,11 @@ export function applyImportedDocxRunFormattingMarkers(
   const replacements = new Map<string, string>();
   for (const marker of markers.runs) {
     const markup = formattingMarkup(document, marker.formatting);
-    replacements.set(marker.startMarker, markup.start);
-    replacements.set(marker.endMarker, markup.end);
+    const change = marker.change
+      ? formattingChangeMarkup(document, marker.change)
+      : { start: '', end: '' };
+    replacements.set(marker.startMarker, `${change.start}${markup.start}`);
+    replacements.set(marker.endMarker, `${markup.end}${change.end}`);
   }
   document.body.innerHTML = document.body.innerHTML.replace(
     RUN_FORMATTING_MARKER_PATTERN,
@@ -138,6 +186,8 @@ function resolvedRunFormatting(
   let complexItalic: boolean | undefined;
   let underline: boolean | undefined;
   let strike: boolean | undefined;
+  let subscript: boolean | undefined;
+  let superscript: boolean | undefined;
   let snapToGrid: boolean | undefined;
   let complexScriptFormatting: boolean | undefined;
   let rightToLeft: boolean | undefined;
@@ -157,6 +207,16 @@ function resolvedRunFormatting(
     underline = overriddenBoolean(underline, underlineProperty(properties));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'strike'));
     strike = overriddenBoolean(strike, onOffProperty(properties, 'dstrike'));
+    const verticalAlign = directChild(properties, 'vertAlign');
+    if (verticalAlign) {
+      const value = wordAttribute(verticalAlign, 'val')?.trim().toLowerCase();
+      subscript = value === 'subscript';
+      superscript = value === 'superscript';
+      if (value === 'baseline') {
+        subscript = false;
+        superscript = false;
+      }
+    }
     snapToGrid = overriddenBoolean(
       snapToGrid,
       onOffProperty(properties, 'snapToGrid'),
@@ -309,6 +369,8 @@ function resolvedRunFormatting(
     ...(strike !== undefined || hasRunPropertySource
       ? { strike: strike ?? false }
       : {}),
+    ...(subscript !== undefined ? { subscript } : {}),
+    ...(superscript !== undefined ? { superscript } : {}),
     ...(fontFamily
       ? {
           fontFamily,
@@ -382,6 +444,8 @@ function formattingMarkup(
     ...(formatting.italic ? ['em'] : []),
     ...(formatting.underline ? ['u'] : []),
     ...(formatting.strike ? ['s'] : []),
+    ...(formatting.subscript ? ['sub'] : []),
+    ...(formatting.superscript ? ['sup'] : []),
   ];
   return {
     start: `${html.slice(0, html.indexOf('>') + 1)}${tags
@@ -392,6 +456,123 @@ function formattingMarkup(
       .map((tag) => `</${tag}>`)
       .join('')}</span>`,
   };
+}
+
+function importedRunFormattingChange(
+  runProperties: Element | undefined,
+  paragraphProperties: Element | undefined,
+  styles: DocxParagraphStyleResolver,
+  contextualProperties: readonly Element[],
+  theme: DocxThemeResolver,
+  runText: string,
+): ImportedDocxRunFormattingChange | undefined {
+  const parsed = supportedRunFormattingChange(runProperties);
+  if (!parsed) return undefined;
+  const beforeFormatting = resolvedRunFormatting(
+    docxRunPropertySources(
+      paragraphProperties,
+      parsed.properties,
+      styles,
+      contextualProperties,
+    ),
+    theme,
+    runText,
+  );
+  return {
+    id: `docx-format-change-${parsed.id}`,
+    author: parsed.author,
+    date: normalizeRevisionDate(parsed.date),
+    before: importedDocumentCharacterFormatting({
+      ...beforeFormatting,
+      themeColor: serializeDocxThemeReference(
+        beforeFormatting.themeColor ?? null,
+      ),
+      themeFill: serializeDocxThemeReference(
+        beforeFormatting.themeFill ?? null,
+      ),
+    }),
+  };
+}
+
+export function isSupportedDocxRunFormattingChange(change: Element): boolean {
+  return Boolean(supportedRunFormattingChangeElement(change));
+}
+
+function supportedRunFormattingChange(runProperties: Element | undefined): {
+  id: string;
+  author: string;
+  date: string | null;
+  properties: Element;
+} | null {
+  if (!runProperties) return null;
+  const changes = Array.from(runProperties.children).filter(
+    (child) => child.localName === 'rPrChange',
+  );
+  return changes.length === 1
+    ? supportedRunFormattingChangeElement(changes[0])
+    : null;
+}
+
+function supportedRunFormattingChangeElement(change: Element): {
+  id: string;
+  author: string;
+  date: string | null;
+  properties: Element;
+} | null {
+  if (
+    change.localName !== 'rPrChange' ||
+    !DOCX_WORDPROCESSING_NAMESPACES.has(change.namespaceURI ?? '')
+  ) {
+    return null;
+  }
+  const properties = Array.from(change.children).filter(
+    (child) =>
+      child.localName === 'rPr' &&
+      DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? ''),
+  );
+  if (properties.length !== 1 || change.children.length !== 1) return null;
+  const source = properties[0];
+  const names = new Set<string>();
+  for (const child of Array.from(source.children)) {
+    if (
+      !DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '') ||
+      !SUPPORTED_RUN_PROPERTY_CHANGE_CHILDREN.has(child.localName) ||
+      names.has(child.localName)
+    ) {
+      return null;
+    }
+    names.add(child.localName);
+  }
+  const id = attribute(change, 'id')?.trim() ?? '';
+  const author = attribute(change, 'author')?.trim() ?? '';
+  const date = attribute(change, 'date');
+  if (!/^\+?\d{1,10}$/.test(id) || !author || author.length > 255) return null;
+  if (date && !Number.isFinite(Date.parse(date))) return null;
+  return { id, author, date, properties: source };
+}
+
+function formattingChangeMarkup(
+  document: Document,
+  change: ImportedDocxRunFormattingChange,
+): { start: string; end: string } {
+  const span = document.createElement('span');
+  span.dataset.documentChange = 'true';
+  span.dataset.changeKind = 'formatting';
+  span.dataset.changeId = change.id;
+  span.dataset.changeAuthor = change.author;
+  span.dataset.changeDate = change.date;
+  span.dataset.changeBefore = change.before;
+  const html = span.outerHTML;
+  return {
+    start: html.slice(0, html.indexOf('>') + 1),
+    end: '</span>',
+  };
+}
+
+function normalizeRevisionDate(value: string | null): string {
+  if (!value) return '';
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toISOString() : '';
 }
 
 function themeReference(

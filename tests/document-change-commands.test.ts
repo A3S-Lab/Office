@@ -62,6 +62,98 @@ describe('document change commands', () => {
 
     editor.destroy();
   });
+
+  test('records one character-formatting revision and restores mixed formatting on reject', () => {
+    let sequence = 0;
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+        createChange: (kind: WorkDocumentChangeKind) => ({
+          id: `${kind}-${++sequence}`,
+          author: 'Reviewer',
+          date: '2026-08-17T14:00:00.000Z',
+        }),
+      }),
+      content:
+        '<section data-document-section="true"><p><em>Alpha</em> beta</p></section>',
+    });
+    const alpha = textRange(editor, 'Alpha');
+    const beta = textRange(editor, 'beta');
+    const range = { from: alpha.from, to: beta.to };
+
+    expect(editor.chain().setTextSelection(range).toggleBold().run()).toBe(
+      true,
+    );
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([
+      expect.objectContaining({
+        author: 'Reviewer',
+        kind: 'formatting',
+        text: 'Alpha beta',
+      }),
+    ]);
+    expect(editor.getHTML()).toContain('data-change-kind="formatting"');
+    expect(editor.getHTML()).toContain('<strong>');
+
+    const change = collectDocumentChanges(editor.state.doc)[0];
+    if (!change) throw new Error('Expected a formatting revision.');
+    expect(editor.commands.rejectDocumentChange(change.id)).toBe(true);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+    expect(editor.getHTML()).toContain('<em>Alpha</em> beta');
+    expect(editor.getHTML()).not.toContain('<strong>');
+
+    editor.destroy();
+  });
+
+  test('keeps accepted formatting and groups revision metadata into one undo step', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({
+        isTracking: () => true,
+        createChange: () => ({
+          id: 'formatting-bold',
+          author: 'Reviewer',
+          date: '2026-08-17T14:05:00.000Z',
+        }),
+      }),
+      content:
+        '<section data-document-section="true"><p>Tracked text</p></section>',
+    });
+    const range = textRange(editor, 'Tracked');
+
+    expect(editor.chain().setTextSelection(range).toggleBold().run()).toBe(
+      true,
+    );
+    expect(collectDocumentChanges(editor.state.doc)).toHaveLength(1);
+    expect(editor.commands.undo()).toBe(true);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+    expect(editor.getHTML()).not.toContain('<strong>');
+    expect(editor.commands.redo()).toBe(true);
+    expect(collectDocumentChanges(editor.state.doc)).toHaveLength(1);
+
+    expect(editor.commands.acceptDocumentChange('formatting-bold')).toBe(true);
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([]);
+    expect(editor.getHTML()).toContain('<strong>Tracked</strong>');
+
+    editor.destroy();
+  });
+
+  test('treats formatting on inserted text as part of the insertion revision', () => {
+    const editor = new Editor({
+      extensions: createWorkDocumentExtensions({ isTracking: () => true }),
+      content:
+        '<section data-document-section="true"><p><ins data-document-change="true" data-change-kind="insertion" data-change-id="inserted" data-change-author="Reviewer" data-change-date="2026-08-17T14:10:00.000Z">Draft</ins></p></section>',
+    });
+    const range = textRange(editor, 'Draft');
+
+    expect(editor.chain().setTextSelection(range).toggleItalic().run()).toBe(
+      true,
+    );
+    expect(collectDocumentChanges(editor.state.doc)).toEqual([
+      expect.objectContaining({ id: 'inserted', kind: 'insertion' }),
+    ]);
+    expect(editor.getHTML()).toContain('<em>Draft</em>');
+
+    editor.destroy();
+  });
 });
 
 function textRange(editor: Editor, text: string): { from: number; to: number } {

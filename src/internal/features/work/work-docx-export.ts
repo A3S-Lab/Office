@@ -56,6 +56,10 @@ import {
 import { imageToDocx } from './work-docx-export-image';
 import { docxDocumentFieldRun } from './work-docx-field-export';
 import {
+  DocxRunFormattingChangePatchCollector,
+  patchDocxRunFormattingChanges,
+} from './work-docx-format-change-export';
+import {
   DocxImageCropPatchCollector,
   patchDocxImageCrops,
 } from './work-docx-image-crop';
@@ -132,6 +136,7 @@ interface DocxNoteContext extends DocxListExportContext {
   paragraphDefaultCollapsedPatches: DocxParagraphDefaultCollapsedPatchCollector;
   paragraphIdentityPatches: DocxParagraphIdentityPatchCollector;
   equationPatches: DocxEquationPatchCollector;
+  formattingChangePatches: DocxRunFormattingChangePatchCollector;
 }
 
 interface DocxTextRevision {
@@ -188,6 +193,7 @@ export async function createDocxBlob(
     equationPatches: new DocxEquationPatchCollector(
       JSON.stringify(normalizedContent),
     ),
+    formattingChangePatches: new DocxRunFormattingChangePatchCollector(),
   };
   const commentRecords = createDocxCommentRecords(
     commentThreads,
@@ -253,8 +259,12 @@ export async function createDocxBlob(
     },
   });
   const packed = await docx.Packer.toBlob(document);
-  const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
+  const formattingChangesPatched = await patchDocxRunFormattingChanges(
     await packed.arrayBuffer(),
+    noteContext.formattingChangePatches.patches,
+  );
+  const noteImageRelationshipsPatched = await patchDocxNoteImageRelationships(
+    formattingChangesPatched,
   );
   const commentMetadataPatched = await patchDocxCommentMetadata(
     noteImageRelationshipsPatched,
@@ -659,13 +669,20 @@ async function inlineRuns(
           : (new docx.EndnoteReferenceRun(noteId) as ParagraphChild),
       ];
     }
-    const change = node.hasAttribute('data-document-change')
-      ? docxTextRevision(
-          node,
-          tag === 'del' ? 'deletion' : 'insertion',
-          noteContext,
-        )
-      : revision;
+    const textRevisionKind =
+      tag === 'del' ? 'deletion' : tag === 'ins' ? 'insertion' : null;
+    const change =
+      node.hasAttribute('data-document-change') && textRevisionKind
+        ? docxTextRevision(node, textRevisionKind, noteContext)
+        : revision;
+    const formattingChange =
+      node.hasAttribute('data-document-change') &&
+      node.dataset.changeKind === 'formatting'
+        ? noteContext.formattingChangePatches.register(
+            node,
+            docxRevisionId(node, noteContext),
+          )
+        : null;
     const commentBoundary = node.hasAttribute('data-document-comment')
       ? nextDocxCommentBoundary(node.dataset.commentId, noteContext)
       : null;
@@ -727,7 +744,7 @@ async function inlineRuns(
       tag === 'a'
         ? normalizeDocumentHref(node.getAttribute('href') ?? '')
         : null;
-    const result = href
+    const linked = href
       ? [
           href.startsWith('#')
             ? new docx.InternalHyperlink({
@@ -737,6 +754,13 @@ async function inlineRuns(
             : new docx.ExternalHyperlink({ link: href, children }),
         ]
       : children;
+    const result = formattingChange
+      ? [
+          new docx.TextRun(formattingChange.start),
+          ...linked,
+          new docx.TextRun(formattingChange.end),
+        ]
+      : linked;
     if (!commentBoundary) return result;
     return [
       ...(commentBoundary.start
@@ -764,14 +788,7 @@ function docxTextRevision(
   kind: DocxTextRevision['kind'],
   context: DocxNoteContext,
 ): DocxTextRevision {
-  const key =
-    element.dataset.changeId?.trim() || `change-${context.nextChangeId}`;
-  let id = context.changeIds.get(key);
-  if (!id) {
-    id = context.nextChangeId;
-    context.nextChangeId += 1;
-    context.changeIds.set(key, id);
-  }
+  const id = docxRevisionId(element, context);
   const sourceDate = element.dataset.changeDate?.trim() ?? '';
   const time = Date.parse(sourceDate);
   return {
@@ -784,11 +801,26 @@ function docxTextRevision(
   };
 }
 
+function docxRevisionId(
+  element: HTMLElement,
+  context: DocxNoteContext,
+): number {
+  const key =
+    element.dataset.changeId?.trim() || `change-${context.nextChangeId}`;
+  let id = context.changeIds.get(key);
+  if (!id) {
+    id = context.nextChangeId;
+    context.nextChangeId += 1;
+    context.changeIds.set(key, id);
+  }
+  return id;
+}
+
 function documentHasTrackedChanges(html: string): boolean {
   const document = new DOMParser().parseFromString(html, 'text/html');
   return Boolean(
     document.body.querySelector(
-      'ins[data-document-change], del[data-document-change]',
+      'ins[data-document-change], del[data-document-change], span[data-document-change][data-change-kind="formatting"]',
     ),
   );
 }

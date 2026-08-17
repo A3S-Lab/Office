@@ -5,6 +5,7 @@ import {
   readOfficeDocumentCollaboration,
 } from '../src/core';
 import browserDocumentFixtureBase64 from './fixtures/browser-document-suggestion-update.base64';
+import browserDocumentFormattingFixtureBase64 from './fixtures/browser-document-formatting-change-update.base64';
 import {
   NATIVE_DOCUMENT_SUGGESTION_DECISION_BASE64,
   NATIVE_DOCUMENT_SUGGESTION_PROPOSAL_BASE64,
@@ -64,6 +65,38 @@ test('projects native Document suggestion creation and decisions in browser Yjs'
       suggestedBy: 'A3S Agent',
       suggestedByActorId: 'native-agent',
       text: 'reviewed',
+    }),
+  ]);
+
+  session.destroy();
+  document.destroy();
+});
+
+test('projects browser formatting revisions and decisions from the shared Yjs schema', () => {
+  const document = new Y.Doc();
+  const session = createOfficeCollaborationSession({
+    artifactId: 'fixture-document-formatting',
+    document,
+    kind: 'document',
+    mode: 'edit',
+  });
+  Y.applyUpdate(
+    document,
+    decodeBase64(browserDocumentFormattingFixtureBase64.trim()),
+  );
+
+  const content = readOfficeDocumentCollaboration(session);
+  expect(content.html).toContain('data-change-kind="formatting"');
+  expect(content.html).toContain('data-change-id="browser-formatting-live"');
+  expect(content.html).toContain('<strong>Format</strong>');
+  expect(content.changeDecisions).toEqual([
+    expect.objectContaining({
+      changeId: 'browser-formatting-decided',
+      changeKind: 'formatting',
+      decision: 'accept',
+      decidedBy: 'Browser Editor',
+      suggestedBy: 'Browser Reviewer',
+      text: 'Reviewed',
     }),
   ]);
 

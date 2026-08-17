@@ -66,6 +66,56 @@ test('keeps the empty review pane aligned with the tracking state', () => {
   }
 });
 
+test('labels character-formatting revisions as formatting instead of deletion', () => {
+  const editor = createEditor();
+  document.body.append(editor.view.dom);
+  const formattingChange: WorkDocumentChange = {
+    id: 'formatting-1',
+    kind: 'formatting',
+    author: 'Ada Reviewer',
+    date: '2026-08-17T14:30:00.000Z',
+    from: 1,
+    to: 6,
+    text: 'Alpha',
+  };
+  try {
+    const view = render(
+      <DocumentChangesPanel
+        editor={editor}
+        changes={[formattingChange]}
+        decisions={[
+          {
+            id: 'formatting:formatting-decided',
+            changeId: 'formatting-decided',
+            changeKind: 'formatting',
+            suggestedBy: 'Ada Reviewer',
+            suggestedAt: '2026-08-17T14:00:00.000Z',
+            text: 'Beta',
+            decision: 'accept',
+            decidedBy: 'Grace Editor',
+            decidedAt: '2026-08-17T14:31:00.000Z',
+          },
+        ]}
+        trackChanges
+        onTrackChangesChange={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText('格式')).toBeVisible();
+    expect(screen.queryByText('删除')).toBeNull();
+    expect(
+      view.container.querySelector('.work-document-change-item.formatting'),
+    ).toBeInTheDocument();
+    expect(
+      view.container.querySelector('[data-document-change-kind="formatting"]'),
+    ).toBeInTheDocument();
+  } finally {
+    editor.view.dom.remove();
+    editor.destroy();
+  }
+});
+
 test('observes the revision viewport when changes arrive after the empty state', () => {
   const editor = createEditor();
   document.body.append(editor.view.dom);

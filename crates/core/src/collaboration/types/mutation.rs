@@ -87,9 +87,38 @@ impl NativeOfficeCollaborationPdfReviewDecision {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+pub enum NativeOfficeCollaborationDocumentChangeKind {
+    Insertion,
+    Deletion,
+    Formatting,
+}
+
+impl NativeOfficeCollaborationDocumentChangeKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Insertion => "insertion",
+            Self::Deletion => "deletion",
+            Self::Formatting => "formatting",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum NativeOfficeCollaborationDocumentSuggestionKind {
     Insertion,
     Deletion,
+}
+
+impl From<NativeOfficeCollaborationDocumentSuggestionKind>
+    for NativeOfficeCollaborationDocumentChangeKind
+{
+    fn from(value: NativeOfficeCollaborationDocumentSuggestionKind) -> Self {
+        match value {
+            NativeOfficeCollaborationDocumentSuggestionKind::Insertion => Self::Insertion,
+            NativeOfficeCollaborationDocumentSuggestionKind::Deletion => Self::Deletion,
+        }
+    }
 }
 
 impl NativeOfficeCollaborationDocumentSuggestionKind {

@@ -1,16 +1,23 @@
 import { describe, expect, test } from '@rstest/core';
 import { Editor } from '@tiptap/core';
 import JSZip from 'jszip';
-import { createArtifact, createArtifactBlob } from '../src/core';
+import {
+  createArtifact,
+  createArtifactBlob,
+  importOfficeFile,
+} from '../src/core';
 import {
   applyImportedDocxRunFormattingMarkers,
   markDocxRunFormatting,
 } from '../src/internal/features/work/work-docx-run-formatting-import';
+import { analyzeDocxCompatibility } from '../src/internal/features/work/work-office-diagnostics';
 import { parseXml } from '../src/internal/features/work/work-ooxml-package';
 import { createWorkDocumentExtensions } from '../src/internal/features/work/work-document-extensions';
 
 const WORD_NAMESPACE =
   'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const STRICT_WORD_NAMESPACE =
+  'http://purl.oclc.org/ooxml/wordprocessingml/main';
 const DRAWING_NAMESPACE =
   'http://schemas.openxmlformats.org/drawingml/2006/main';
 
@@ -116,6 +123,181 @@ describe('DOCX run formatting', () => {
     expect(span?.getAttribute('style')).toContain('font-size: 12pt');
     expect(span?.getAttribute('style')).toContain('color: #336699');
     expect(html.body.textContent).not.toContain('__A3S_');
+  });
+
+  test('imports a bounded native run-property revision as reviewable formatting', () => {
+    const document = wordXml(`
+      <w:p><w:r>
+        <w:rPr>
+          <w:b/>
+          <w:rPrChange w:id="7" w:author="Ada Reviewer" w:date="2026-08-17T14:30:00Z">
+            <w:rPr>
+              <w:i/>
+              <w:sz w:val="24"/>
+              <w:color w:val="336699"/>
+            </w:rPr>
+          </w:rPrChange>
+        </w:rPr>
+        <w:t>Changed format</w:t>
+      </w:r></w:p>
+    `);
+
+    const markers = markDocxRunFormatting(document);
+    const marker = markers.runs[0];
+    if (!marker) throw new Error('Expected a formatting-change run marker.');
+    expect(marker.change).toEqual({
+      id: 'docx-format-change-7',
+      author: 'Ada Reviewer',
+      date: '2026-08-17T14:30:00.000Z',
+      before:
+        '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt"}}]',
+    });
+    const html = new DOMParser().parseFromString(
+      `<p>${marker.startMarker}Changed format${marker.endMarker}</p>`,
+      'text/html',
+    );
+
+    applyImportedDocxRunFormattingMarkers(html, markers);
+
+    const change = html.querySelector<HTMLElement>(
+      '[data-document-change][data-change-kind="formatting"]',
+    );
+    expect(change?.dataset.changeId).toBe('docx-format-change-7');
+    expect(change?.dataset.changeAuthor).toBe('Ada Reviewer');
+    expect(change?.dataset.changeBefore).toBe(marker.change.before);
+    expect(change?.querySelector('strong')?.textContent).toBe('Changed format');
+  });
+
+  test('reports supported character-formatting revisions without a structural warning', async () => {
+    const compatibility = await formattingRevisionCompatibility(`
+      <w:p><w:r><w:rPr>
+        <w:b/>
+        <w:rPrChange w:id="7" w:author="Ada Reviewer" w:date="2026-08-17T14:30:00Z">
+          <w:rPr><w:i/><w:color w:val="336699"/></w:rPr>
+        </w:rPrChange>
+      </w:rPr><w:t>Supported change</w:t></w:r></w:p>
+    `);
+
+    expect(compatibility.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.formatting',
+        severity: 'info',
+      }),
+    );
+    expect(
+      compatibility.issues.some(
+        ({ code }) => code === 'docx.revisions.structural',
+      ),
+    ).toBe(false);
+  });
+
+  test('keeps malformed character-formatting revisions on the structural warning path', async () => {
+    const compatibility = await formattingRevisionCompatibility(`
+      <w:p><w:r><w:rPr>
+        <w:rPrChange w:id="7">
+          <w:rPr><w:i/></w:rPr>
+        </w:rPrChange>
+        <w:rPrChange xmlns:evil="https://example.test/evil" w:id="8" w:author="Spoofed Reviewer">
+          <evil:rPr/>
+        </w:rPrChange>
+      </w:rPr><w:t>Malformed change</w:t></w:r></w:p>
+    `);
+
+    expect(
+      compatibility.issues.some(
+        ({ code }) => code === 'docx.revisions.formatting',
+      ),
+    ).toBe(false);
+    expect(compatibility.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.structural',
+        severity: 'warning',
+      }),
+    );
+  });
+
+  test('recognizes strict-namespace character-formatting revisions', async () => {
+    const archive = new JSZip();
+    archive.file(
+      'word/document.xml',
+      `<s:document xmlns:s="${STRICT_WORD_NAMESPACE}"><s:body>
+        <s:p><s:r><s:rPr>
+          <s:rPrChange s:id="12" s:author="Strict Reviewer">
+            <s:rPr><s:u s:val="single"/></s:rPr>
+          </s:rPrChange>
+        </s:rPr><s:t>Strict change</s:t></s:r></s:p>
+      </s:body></s:document>`,
+    );
+    const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+
+    const compatibility = await analyzeDocxCompatibility(
+      new File([bytes], 'strict-formatting-revision.docx'),
+      [],
+    );
+
+    expect(compatibility.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'docx.revisions.formatting',
+        severity: 'info',
+      }),
+    );
+    expect(
+      compatibility.issues.some(
+        ({ code }) => code === 'docx.revisions.structural',
+      ),
+    ).toBe(false);
+  });
+
+  test('exports and reopens native run-property revisions without marker leakage', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    const before =
+      '[{"type":"italic"},{"type":"textStyle","attrs":{"color":"#336699","fontSize":"12pt"}}]';
+    artifact.content.html = `<section data-document-section="true"><p><span data-document-change="true" data-change-kind="formatting" data-change-before='${before}' data-change-id="formatting-7" data-change-author="Ada Reviewer" data-change-date="2026-08-17T14:30:00.000Z"><strong>Changed format</strong></span></p></section>`;
+    artifact.content.trackChanges = true;
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+    expect(xml).not.toContain('__A3S_WORK_FORMAT_CHANGE_');
+    expect(xml).toMatch(
+      /<w:rPrChange\b[^>]*w:id="1"[^>]*w:author="Ada Reviewer"[^>]*w:date="2026-08-17T14:30:00.000Z"/,
+    );
+    expect(xml).toMatch(
+      /<w:rPrChange\b[^>]*>[\s\S]*?<w:rPr>[\s\S]*?<w:i\/>[\s\S]*?<w:color\b[^>]*w:val="336699"[\s\S]*?<w:sz\b[^>]*w:val="24"[\s\S]*?<\/w:rPr>[\s\S]*?<\/w:rPrChange>/,
+    );
+
+    const reopened = await importOfficeFile(
+      new File([blob], 'formatting-revision.docx', { type: blob.type }),
+    );
+    if (reopened.content.type !== 'document') {
+      throw new Error('Expected a reopened document artifact.');
+    }
+    expect(reopened.content.html).toContain('data-change-kind="formatting"');
+    expect(reopened.content.html).toContain(
+      'data-change-author="Ada Reviewer"',
+    );
+    expect(reopened.content.html).toContain('Changed format');
+  });
+
+  test('exports imported formatting revisions that did not declare a date', async () => {
+    const artifact = createArtifact('blank-document');
+    if (artifact.content.type !== 'document') {
+      throw new Error('Expected a document artifact.');
+    }
+    artifact.content.html =
+      '<section data-document-section="true"><p><span data-document-change="true" data-change-kind="formatting" data-change-before="[]" data-change-id="formatting-without-date" data-change-author="Ada Reviewer" data-change-date=""><strong>Undated format</strong></span></p></section>';
+
+    const blob = await createArtifactBlob(artifact);
+    const archive = await JSZip.loadAsync(await blob.arrayBuffer());
+    const xml = (await archive.file('word/document.xml')?.async('text')) ?? '';
+
+    expect(xml).toMatch(
+      /<w:rPrChange\b[^>]*w:author="Ada Reviewer"[^>]*w:date="[^"]+"/,
+    );
+    expect(xml).toContain('<w:b/>');
   });
 
   test('preserves semantic run theme colors and drops them after an edit', async () => {
@@ -350,3 +532,18 @@ describe('DOCX run formatting', () => {
     expect(span?.style.fontStyle).toBe('normal');
   });
 });
+
+async function formattingRevisionCompatibility(
+  body: string,
+): ReturnType<typeof analyzeDocxCompatibility> {
+  const archive = new JSZip();
+  archive.file(
+    'word/document.xml',
+    `<w:document xmlns:w="${WORD_NAMESPACE}"><w:body>${body}</w:body></w:document>`,
+  );
+  const bytes = await archive.generateAsync({ type: 'arraybuffer' });
+  return analyzeDocxCompatibility(
+    new File([bytes], 'formatting-revision.docx'),
+    [],
+  );
+}

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::{
-    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationDocumentSuggestionDecision,
+    NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationDocumentChangeKind,
+    NativeOfficeCollaborationDocumentSuggestionDecision,
     NativeOfficeCollaborationDocumentSuggestionKind,
 };
 
@@ -147,7 +148,7 @@ pub struct NativeOfficeCollaborationDocumentSuggestionPlacement {
 pub struct NativeOfficeCollaborationDocumentChangeDecision {
     pub id: String,
     pub change_id: String,
-    pub change_kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    pub change_kind: NativeOfficeCollaborationDocumentChangeKind,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggested_by_actor_id: Option<String>,
     pub suggested_by: String,

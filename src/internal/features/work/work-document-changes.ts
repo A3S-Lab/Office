@@ -11,6 +11,11 @@ import {
   TextSelection,
   type Transaction,
 } from '@tiptap/pm/state';
+import {
+  parseDocumentCharacterFormatting,
+  restoreDocumentCharacterFormatting,
+} from './work-document-format-changes';
+import { trackDocumentFormattingTransaction } from './work-document-format-change-tracking';
 import type { WorkDocumentChangeKind } from './work-types';
 
 export type { WorkDocumentChangeKind } from './work-types';
@@ -40,6 +45,7 @@ interface ChangeSegment {
   kind: WorkDocumentChangeKind;
   from: number;
   to: number;
+  before: string;
 }
 
 declare module '@tiptap/core' {
@@ -87,8 +93,13 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
     return {
       kind: {
         default: 'insertion',
-        parseHTML: (element) =>
-          element.tagName.toLowerCase() === 'del' ? 'deletion' : 'insertion',
+        parseHTML: (element) => {
+          const declared = element.getAttribute('data-change-kind');
+          if (declared === 'formatting') return 'formatting';
+          return element.tagName.toLowerCase() === 'del'
+            ? 'deletion'
+            : 'insertion';
+        },
         renderHTML: (attributes) => ({ 'data-change-kind': attributes.kind }),
       },
       id: {
@@ -118,6 +129,13 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
         parseHTML: (element) => element.getAttribute('data-change-date') ?? '',
         renderHTML: (attributes) => ({ 'data-change-date': attributes.date }),
       },
+      before: {
+        default: '',
+        parseHTML: (element) =>
+          element.getAttribute('data-change-before') ?? '',
+        renderHTML: (attributes) =>
+          attributes.before ? { 'data-change-before': attributes.before } : {},
+      },
     };
   },
 
@@ -125,12 +143,21 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
     return [
       { tag: 'ins[data-document-change]' },
       { tag: 'del[data-document-change]' },
+      {
+        tag: 'span[data-document-change][data-change-kind="formatting"]',
+      },
     ];
   },
 
   renderHTML({ mark, HTMLAttributes }) {
+    const tag =
+      mark.attrs.kind === 'deletion'
+        ? 'del'
+        : mark.attrs.kind === 'formatting'
+          ? 'span'
+          : 'ins';
     return [
-      mark.attrs.kind === 'deletion' ? 'del' : 'ins',
+      tag,
       mergeAttributes(HTMLAttributes, { 'data-document-change': 'true' }),
       0,
     ];
@@ -205,6 +232,25 @@ export const DocumentChange = Mark.create<DocumentChangeOptions>({
     return [
       new Plugin({
         key: documentChangePluginKey,
+        filterTransaction: (transaction, state) => {
+          trackDocumentFormattingTransaction(
+            transaction,
+            state,
+            changeType,
+            {
+              isTracking: options.isTracking,
+              createChange: () => {
+                const identity = options.createChange('formatting');
+                return {
+                  ...identity,
+                  id: identity.id || createDocumentChangeId(),
+                };
+              },
+            },
+            documentChangePluginKey,
+          );
+          return true;
+        },
         props: {
           handleTextInput: (view, from, to, text) => {
             if (!options.isTracking()) return false;
@@ -348,18 +394,44 @@ function resolveDocumentChangesCommand(
     (segment) => !ids || ids.has(segment.id),
   );
   if (!segments.length) return 0;
-  const removals: ChangeSegment[] = [];
-  const deletions: ChangeSegment[] = [];
+  if (
+    decision === 'reject' &&
+    segments.some(
+      (segment) =>
+        segment.kind === 'formatting' &&
+        !parseDocumentCharacterFormatting(segment.before),
+    )
+  ) {
+    return 0;
+  }
+  tr.setMeta(documentChangePluginKey, { decision });
+  const markRemovals: ChangeSegment[] = [];
+  const contentDeletions: ChangeSegment[] = [];
+  const formattingRejections: ChangeSegment[] = [];
   for (const segment of segments) {
-    const remove =
+    if (segment.kind === 'formatting') {
+      markRemovals.push(segment);
+      if (decision === 'reject') formattingRejections.push(segment);
+      continue;
+    }
+    const removeMark =
       (decision === 'accept' && segment.kind === 'insertion') ||
       (decision === 'reject' && segment.kind === 'deletion');
-    (remove ? removals : deletions).push(segment);
+    (removeMark ? markRemovals : contentDeletions).push(segment);
   }
-  for (const segment of removals) {
+  for (const segment of formattingRejections) {
+    restoreDocumentCharacterFormatting(
+      tr,
+      state.schema,
+      segment.from,
+      segment.to,
+      segment.before,
+    );
+  }
+  for (const segment of markRemovals) {
     tr.removeMark(segment.from, segment.to, type);
   }
-  for (const segment of deletions.sort(
+  for (const segment of contentDeletions.sort(
     (left, right) => right.from - left.from,
   )) {
     tr.delete(segment.from, segment.to);
@@ -463,6 +535,7 @@ function documentChangeSegments(
       kind: changeKind(mark.attrs.kind),
       from: position,
       to: position + node.nodeSize,
+      before: stringAttribute(mark.attrs.before),
     });
   });
   return segments;
@@ -511,6 +584,7 @@ function changeMark(
   type: ProseMirrorMark['type'],
   kind: WorkDocumentChangeKind,
   createChange: (kind: WorkDocumentChangeKind) => WorkDocumentChangeIdentity,
+  before = '',
 ): ProseMirrorMark {
   const identity = createChange(kind);
   return type.create({
@@ -519,6 +593,7 @@ function changeMark(
     actorId: identity.actorId ?? '',
     author: identity.author || 'A3S Work',
     date: identity.date || new Date().toISOString(),
+    before,
   });
 }
 
@@ -558,7 +633,8 @@ function documentChangeMark(
 }
 
 function changeKind(value: unknown): WorkDocumentChangeKind {
-  return value === 'deletion' ? 'deletion' : 'insertion';
+  if (value === 'deletion' || value === 'formatting') return value;
+  return 'insertion';
 }
 
 function stringAttribute(value: unknown): string {

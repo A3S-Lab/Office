@@ -4,6 +4,28 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.10.0 - 2026-08-17
+
+- Added character-formatting revisions for bold, italic, underline, strike,
+  subscript, superscript, font family, font size, text color, highlight, and
+  Word grid state. Accepting keeps the new formatting, rejecting restores the
+  exact prior direct marks, and either decision preserves text and remains one
+  undoable transaction.
+- Imported the supported native DOCX `w:rPrChange` subset as reviewable
+  Formatting cards and exported it back as native run-property changes,
+  including strict namespaces, missing dates, malformed-input diagnostics, and
+  source-backed round trips without private marker leakage.
+- Extended browser/Yrs collaboration validation and immutable decision audit
+  records with the separate `formatting` change kind. Formatting revisions
+  survive restart plus duplicate or reordered delivery; authenticated
+  `suggest` sessions preserve existing formatting revisions but cannot forge or
+  rewrite them before A3S Boot persistence and broadcast.
+- Added a public Playground formatting-revision demo and deterministic A3S Test
+  regression covering the Review pane, Formatting label, rejection semantics,
+  accessibility, screenshots, console, and page errors. Updated the bilingual
+  Document, collaboration, and complete A3S Boot backend guides and froze the
+  0.10.0 documentation set.
+
 ## 0.9.2 - 2026-08-17
 
 - Added an ephemeral native Yrs Awareness controller for CLI and Rust

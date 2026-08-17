@@ -19,6 +19,7 @@ use crate::collaboration::{
 };
 
 mod decision;
+mod formatting;
 mod mutation;
 mod projection;
 
@@ -265,6 +266,9 @@ fn suggestion_identity(
     let mut result: Option<DocumentSuggestionIdentity> = None;
     for (attribute, value) in attributes {
         if !is_document_change_attribute(attribute) {
+            continue;
+        }
+        if formatting::validate_document_formatting_change(value)? {
             continue;
         }
         let parsed = parse_suggestion_identity(value)?;

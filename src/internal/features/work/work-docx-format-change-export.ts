@@ -1,0 +1,576 @@
+import JSZip from 'jszip';
+import {
+  parseDocumentCharacterFormatting,
+  type DocumentCharacterFormatMark,
+} from './work-document-format-changes';
+import { DOCX_WORDPROCESSING_NAMESPACES } from './work-docx-ignorable-extension-preservation';
+import { parseDocxThemeReference } from './work-docx-theme-reference';
+import { descendants, directChildren, parseXml } from './work-ooxml-package';
+import { decodeXmlBytes, serializeUtf8Xml } from './work-ooxml-xml';
+
+interface DocxRunFormattingChangePatch {
+  start: string;
+  end: string;
+  id: number;
+  author: string;
+  date: string;
+  before: string;
+}
+
+const MAX_RUN_FORMATTING_CHANGE_PATCHES = 65_536;
+const RUN_FORMATTING_PART_PATTERN =
+  /^word\/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$/i;
+
+export class DocxRunFormattingChangePatchCollector {
+  readonly patches: DocxRunFormattingChangePatch[] = [];
+
+  register(
+    element: HTMLElement,
+    id: number,
+  ): { start: string; end: string } | null {
+    if (
+      element.dataset.changeKind !== 'formatting' ||
+      !element.hasAttribute('data-document-change')
+    ) {
+      return null;
+    }
+    const key = element.dataset.changeId?.trim() ?? '';
+    const author = element.dataset.changeAuthor?.trim() ?? '';
+    const date = normalizedRevisionDate(element.dataset.changeDate);
+    const before = element.dataset.changeBefore ?? '';
+    if (
+      !key ||
+      !author ||
+      author.length > 255 ||
+      !parseDocumentCharacterFormatting(before)
+    ) {
+      throw new Error(
+        'Document contains an invalid character-formatting revision.',
+      );
+    }
+    if (this.patches.length >= MAX_RUN_FORMATTING_CHANGE_PATCHES) {
+      throw new Error(
+        'Document exceeds the character-formatting revision limit.',
+      );
+    }
+    const sequence = this.patches.length + 1;
+    const start = `__A3S_WORK_FORMAT_CHANGE_START_${sequence}__`;
+    const end = `__A3S_WORK_FORMAT_CHANGE_END_${sequence}__`;
+    this.patches.push({ start, end, id, author, date, before });
+    return { start, end };
+  }
+}
+
+export async function patchDocxRunFormattingChanges(
+  buffer: ArrayBuffer,
+  patches: readonly DocxRunFormattingChangePatch[],
+): Promise<ArrayBuffer> {
+  if (!patches.length) return buffer;
+  if (patches.length > MAX_RUN_FORMATTING_CHANGE_PATCHES) {
+    throw new Error(
+      'Document exceeds the character-formatting revision limit.',
+    );
+  }
+  const archive = await JSZip.loadAsync(buffer);
+  const byMarker = new Map<string, DocxRunFormattingChangePatch>();
+  for (const patch of patches) {
+    byMarker.set(patch.start, patch);
+    byMarker.set(patch.end, patch);
+  }
+  const applied = new Set<DocxRunFormattingChangePatch>();
+  for (const entry of Object.values(archive.files)) {
+    if (entry.dir || !RUN_FORMATTING_PART_PATTERN.test(entry.name)) continue;
+    const document = parseXml(
+      decodeXmlBytes(
+        await entry.async('uint8array'),
+        `generated DOCX ${entry.name}`,
+      ),
+      `generated DOCX ${entry.name}`,
+    );
+    const runs = descendants(document, 'r').filter((run) =>
+      DOCX_WORDPROCESSING_NAMESPACES.has(run.namespaceURI ?? ''),
+    );
+    const markerRuns = new Map<
+      DocxRunFormattingChangePatch,
+      { start?: Element; end?: Element }
+    >();
+    for (const run of runs) {
+      const marker = runMarker(run, byMarker);
+      if (!marker) continue;
+      const current = markerRuns.get(marker.patch) ?? {};
+      if (marker.kind === 'start') {
+        if (current.start) throw duplicateMarker(marker.patch.start);
+        current.start = run;
+      } else {
+        if (current.end) throw duplicateMarker(marker.patch.end);
+        current.end = run;
+      }
+      markerRuns.set(marker.patch, current);
+    }
+    let changed = false;
+    for (const [patch, markers] of markerRuns) {
+      if (!markers.start || !markers.end) continue;
+      const start = runs.indexOf(markers.start);
+      const end = runs.indexOf(markers.end);
+      if (start < 0 || end <= start + 1) {
+        throw new Error(
+          'Generated DOCX character-formatting markers are invalid.',
+        );
+      }
+      const targets = runs
+        .slice(start + 1, end)
+        .filter((run) => directChildren(run, 't').length > 0);
+      if (!targets.length) {
+        throw new Error('A character-formatting revision must mark text.');
+      }
+      for (const run of targets) setRunFormattingChange(document, run, patch);
+      markers.start.remove();
+      markers.end.remove();
+      applied.add(patch);
+      changed = true;
+    }
+    if (changed) archive.file(entry.name, serializeUtf8Xml(document));
+  }
+  const missing = patches.filter((patch) => !applied.has(patch));
+  if (missing.length) {
+    throw new Error(
+      `DOCX character-formatting revision markers were not emitted: ${missing
+        .map((patch) => patch.start)
+        .join(', ')}.`,
+    );
+  }
+  return archive.generateAsync({ type: 'arraybuffer' });
+}
+
+function runMarker(
+  run: Element,
+  patches: ReadonlyMap<string, DocxRunFormattingChangePatch>,
+): {
+  patch: DocxRunFormattingChangePatch;
+  kind: 'start' | 'end';
+} | null {
+  const texts = directChildren(run, 't').filter((text) =>
+    DOCX_WORDPROCESSING_NAMESPACES.has(text.namespaceURI ?? ''),
+  );
+  if (texts.length !== 1 || !runHasOnlyMarkerText(run, texts[0])) return null;
+  const value = texts[0].textContent ?? '';
+  const patch = patches.get(value);
+  if (!patch) return null;
+  return { patch, kind: value === patch.start ? 'start' : 'end' };
+}
+
+function runHasOnlyMarkerText(run: Element, text: Element): boolean {
+  return directChildren(run).every(
+    (child) =>
+      child === text ||
+      (child.localName === 'rPr' &&
+        DOCX_WORDPROCESSING_NAMESPACES.has(child.namespaceURI ?? '')),
+  );
+}
+
+function setRunFormattingChange(
+  document: Document,
+  run: Element,
+  patch: DocxRunFormattingChangePatch,
+): void {
+  const wordNamespace = run.namespaceURI ?? '';
+  const prefix = run.prefix || 'w';
+  const existing = directChildren(run, 'rPr').filter(
+    (element) => element.namespaceURI === wordNamespace,
+  );
+  if (existing.length > 1) {
+    throw new Error('Generated DOCX run contains duplicate properties.');
+  }
+  const properties =
+    existing[0] ?? insertRunProperties(document, run, wordNamespace, prefix);
+  if (
+    directChildren(properties, 'rPrChange').some(
+      (element) => element.namespaceURI === wordNamespace,
+    )
+  ) {
+    throw new Error(
+      'Generated DOCX run already contains a formatting revision.',
+    );
+  }
+  const change = wordElement(document, wordNamespace, prefix, 'rPrChange');
+  setWordAttribute(change, wordNamespace, prefix, 'id', String(patch.id));
+  setWordAttribute(change, wordNamespace, prefix, 'author', patch.author);
+  setWordAttribute(change, wordNamespace, prefix, 'date', patch.date);
+  const before = wordElement(document, wordNamespace, prefix, 'rPr');
+  appendFormattingProperties(
+    document,
+    before,
+    wordNamespace,
+    prefix,
+    patch.before,
+  );
+  change.append(before);
+  properties.append(change);
+}
+
+function insertRunProperties(
+  document: Document,
+  run: Element,
+  namespace: string,
+  prefix: string,
+): Element {
+  const properties = wordElement(document, namespace, prefix, 'rPr');
+  run.insertBefore(properties, run.firstChild);
+  return properties;
+}
+
+function appendFormattingProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  serialized: string,
+): void {
+  const formatting = parseDocumentCharacterFormatting(serialized);
+  if (!formatting) {
+    throw new Error(
+      'Document contains an invalid character-formatting revision.',
+    );
+  }
+  const byType = new Map(formatting.map((mark) => [mark.type, mark]));
+  appendFontProperties(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendBooleanProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType,
+    'bold',
+    'b',
+  );
+  appendBooleanProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType,
+    'bold',
+    'bCs',
+  );
+  appendBooleanProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType,
+    'italic',
+    'i',
+  );
+  appendBooleanProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType,
+    'italic',
+    'iCs',
+  );
+  if (byType.has('underline')) {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'u',
+      'single',
+    );
+  }
+  appendBooleanProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType,
+    'strike',
+    'strike',
+  );
+  appendColorProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendFontSizeProperties(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendHighlightProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('highlight'),
+  );
+  appendSnapToGridProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    byType.get('textStyle'),
+  );
+  appendVerticalAlignProperty(document, properties, namespace, prefix, byType);
+}
+
+function appendFontProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const family = firstFontFamily(mark?.attrs?.fontFamily);
+  if (!family) return;
+  const fonts = wordElement(document, namespace, prefix, 'rFonts');
+  for (const name of ['ascii', 'hAnsi', 'eastAsia', 'cs']) {
+    setWordAttribute(fonts, namespace, prefix, name, family);
+  }
+  properties.append(fonts);
+}
+
+function appendBooleanProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  marks: ReadonlyMap<string, DocumentCharacterFormatMark>,
+  mark: string,
+  property: string,
+): void {
+  if (marks.has(mark)) {
+    properties.append(wordElement(document, namespace, prefix, property));
+  }
+}
+
+function appendValuedProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  property: string,
+  value: string,
+): void {
+  const element = wordElement(document, namespace, prefix, property);
+  setWordAttribute(element, namespace, prefix, 'val', value);
+  properties.append(element);
+}
+
+function appendColorProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const color = normalizedHex(mark?.attrs?.color);
+  const theme = themeReference(mark?.attrs?.themeColor);
+  if (!color && !theme) return;
+  const element = wordElement(document, namespace, prefix, 'color');
+  setWordAttribute(
+    element,
+    namespace,
+    prefix,
+    'val',
+    color ?? normalizedHex(theme?.resolved) ?? '000000',
+  );
+  if (theme)
+    setThemeAttributes(element, namespace, prefix, theme, 'themeColor');
+  properties.append(element);
+}
+
+function appendFontSizeProperties(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const halfPoints = fontSizeHalfPoints(mark?.attrs?.fontSize);
+  if (halfPoints === null) return;
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'sz',
+    String(halfPoints),
+  );
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'szCs',
+    String(halfPoints),
+  );
+}
+
+function appendHighlightProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const fill = normalizedHex(mark?.attrs?.color);
+  const theme = themeReference(mark?.attrs?.themeFill);
+  if (!fill && !theme) return;
+  const shading = wordElement(document, namespace, prefix, 'shd');
+  setWordAttribute(shading, namespace, prefix, 'val', 'clear');
+  setWordAttribute(shading, namespace, prefix, 'color', 'auto');
+  setWordAttribute(
+    shading,
+    namespace,
+    prefix,
+    'fill',
+    fill ?? normalizedHex(theme?.resolved) ?? 'FFFFFF',
+  );
+  if (theme) setThemeAttributes(shading, namespace, prefix, theme, 'themeFill');
+  properties.append(shading);
+}
+
+function appendSnapToGridProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  mark: DocumentCharacterFormatMark | undefined,
+): void {
+  const value = mark?.attrs?.wordSnapToGrid;
+  if (typeof value !== 'boolean') return;
+  appendValuedProperty(
+    document,
+    properties,
+    namespace,
+    prefix,
+    'snapToGrid',
+    value ? '1' : '0',
+  );
+}
+
+function appendVerticalAlignProperty(
+  document: Document,
+  properties: Element,
+  namespace: string,
+  prefix: string,
+  marks: ReadonlyMap<string, DocumentCharacterFormatMark>,
+): void {
+  if (marks.has('subscript')) {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'vertAlign',
+      'subscript',
+    );
+  } else if (marks.has('superscript')) {
+    appendValuedProperty(
+      document,
+      properties,
+      namespace,
+      prefix,
+      'vertAlign',
+      'superscript',
+    );
+  }
+}
+
+function setThemeAttributes(
+  element: Element,
+  namespace: string,
+  prefix: string,
+  theme: NonNullable<ReturnType<typeof parseDocxThemeReference>>,
+  name: 'themeColor' | 'themeFill',
+): void {
+  setWordAttribute(element, namespace, prefix, name, theme.theme);
+  if (theme.tint) {
+    setWordAttribute(element, namespace, prefix, `${name}Tint`, theme.tint);
+  }
+  if (theme.shade) {
+    setWordAttribute(element, namespace, prefix, `${name}Shade`, theme.shade);
+  }
+}
+
+function themeReference(
+  value: boolean | number | string | undefined,
+): ReturnType<typeof parseDocxThemeReference> {
+  return typeof value === 'string' ? parseDocxThemeReference(value) : null;
+}
+
+function firstFontFamily(
+  value: boolean | number | string | undefined,
+): string | null {
+  if (typeof value !== 'string') return null;
+  const source = value.trim();
+  if (!source || source.length > 255) return null;
+  const quote = source[0];
+  if (quote === '"' || quote === "'") {
+    const end = source.indexOf(quote, 1);
+    if (end > 1) return source.slice(1, end).trim() || null;
+  }
+  return source.split(',')[0]?.trim() || null;
+}
+
+function fontSizeHalfPoints(
+  value: boolean | number | string | undefined,
+): number | null {
+  if (typeof value !== 'string') return null;
+  const match = /^(\d+(?:\.\d+)?)pt$/i.exec(value.trim());
+  if (!match) return null;
+  const points = Number(match[1]);
+  if (!Number.isFinite(points) || points <= 0 || points > 512) return null;
+  return Math.round(points * 2);
+}
+
+function normalizedHex(
+  value: boolean | number | string | undefined,
+): string | null {
+  if (typeof value !== 'string') return null;
+  const match = /^#?([0-9a-f]{6})$/i.exec(value.trim());
+  return match?.[1]?.toUpperCase() ?? null;
+}
+
+function wordElement(
+  document: Document,
+  namespace: string,
+  prefix: string,
+  name: string,
+): Element {
+  return document.createElementNS(namespace, `${prefix}:${name}`);
+}
+
+function setWordAttribute(
+  element: Element,
+  namespace: string,
+  prefix: string,
+  name: string,
+  value: string,
+): void {
+  element.setAttributeNS(namespace, `${prefix}:${name}`, value);
+}
+
+function normalizedRevisionDate(value: string | undefined): string {
+  const time = Date.parse(value ?? '');
+  return Number.isFinite(time)
+    ? new Date(time).toISOString()
+    : new Date().toISOString();
+}
+
+function duplicateMarker(marker: string): Error {
+  return new Error(`Generated DOCX marker '${marker}' is duplicated.`);
+}

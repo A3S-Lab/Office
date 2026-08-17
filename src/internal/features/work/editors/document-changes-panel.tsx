@@ -253,7 +253,7 @@ export function DocumentChangesPanel({
                         .run()
                     }
                   >
-                    <span>{change.kind === 'insertion' ? '插入' : '删除'}</span>
+                    <span>{documentChangeKindLabel(change.kind)}</span>
                     <strong>{change.text.trim() || '（空白字符）'}</strong>
                     <small>
                       {change.author}
@@ -361,6 +361,7 @@ function DocumentChangeDecisionHistory({
         {visible.map((decision) => (
           <li
             data-document-change-decision={decision.decision}
+            data-document-change-kind={decision.changeKind}
             key={decision.id}
           >
             <span>{decision.decision === 'accept' ? '已接受' : '已拒绝'}</span>
@@ -383,6 +384,12 @@ function documentChangeDecisionKey(
   decision: DocumentChangeDecision,
 ): string {
   return `${changeKey}:${decision}`;
+}
+
+function documentChangeKindLabel(kind: WorkDocumentChange['kind']): string {
+  if (kind === 'insertion') return '插入';
+  if (kind === 'formatting') return '格式';
+  return '删除';
 }
 
 function documentChangeWindowKey(change: WorkDocumentChange): string {

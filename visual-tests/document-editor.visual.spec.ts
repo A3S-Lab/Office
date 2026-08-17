@@ -1146,6 +1146,7 @@ test('document review views remain usable at phone width', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(layoutPane).toBeHidden();
 
+  await page.getByRole('textbox', { name: '文档正文' }).focus();
   await selectDocumentParagraphText(page, 1, 12);
   const selectionToolbar = page.getByRole('toolbar', {
     name: '文本快捷工具栏',

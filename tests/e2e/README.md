@@ -85,6 +85,13 @@ bun run test:e2e:collaboration-document-suggestions:check
 bun run test:e2e:collaboration-document-suggestions
 ```
 
+The Writer character-formatting revision workflow has a focused gate:
+
+```bash
+bun run test:e2e:writer-formatting-revision:check
+bun run test:e2e:writer-formatting-revision
+```
+
 The native Spreadsheet cell lifecycle has a focused gate:
 
 ```bash
@@ -210,6 +217,12 @@ attributed insertion synchronization, keeps accept and reject controls out of
 the suggester surface, records the editor's final decision, and verifies the
 converged audit trail on desktop together with phone reachability. It captures
 the pending visual state, final accessibility state, and clean browser
+diagnostics.
+The Writer character-formatting revision workflow enters through the public
+Playground demo, verifies the dedicated Formatting card and native revision
+mark, rejects that revision, and proves that the document text remains while
+both the applied bold style and revision wrapper are removed. It captures the
+pending and rejected visual states, final accessibility, and clean browser
 diagnostics.
 The native Spreadsheet collaboration workflow applies the Rust CLI's real Yjs
 updates to an initialized browser workbook, verifies the visible A2 value and

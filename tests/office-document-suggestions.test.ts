@@ -159,6 +159,110 @@ test('prevents a suggester from withdrawing or rewriting another actor suggestio
   binding.destroy();
 });
 
+test('keeps existing formatting revisions immutable while admitting text suggestions', () => {
+  const document = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-formatting-suggestion-boundary',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    html: [
+      '<p>',
+      '<span data-document-change="true" data-change-kind="formatting" data-change-before="[]" data-change-id="editor-formatting" data-change-actor-id="grace" data-change-author="Grace" data-change-date="2026-08-17T09:15:00.000Z"><strong>Shared</strong></span>',
+      ' document',
+      '</p>',
+    ].join(''),
+    model: undefined,
+  });
+  const suggester = createOfficeCollaborationSession({
+    actor: { id: 'ada', name: 'Ada' },
+    artifactId: 'document-formatting-suggestion-boundary',
+    document,
+    kind: 'document',
+    mode: 'suggest',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(suggester, {
+    workExtensions: {
+      createChange: (kind) => ({
+        actorId: 'ada',
+        author: 'Ada',
+        date: '2026-08-17T09:16:00.000Z',
+        id: `ada-${kind}`,
+      }),
+      isTracking: () => true,
+    },
+  });
+  const editor = new Editor({ extensions: binding.extensions });
+  const originalFormatting = editor.getHTML();
+  const shared = documentTextRange(editor, 'Shared');
+
+  expect(editor.chain().setTextSelection(shared).toggleBold().run()).toBe(true);
+  expect(editor.getHTML()).toBe(originalFormatting);
+
+  const target = documentTextRange(editor, 'document');
+  expect(
+    editor.commands.replaceDocumentTextWithTrackedChange(
+      target.from,
+      target.to,
+      'proposal',
+    ),
+  ).toBe(true);
+  expect(collectDocumentChanges(editor.state.doc)).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: 'editor-formatting',
+        kind: 'formatting',
+      }),
+      expect.objectContaining({ kind: 'deletion', text: 'document' }),
+      expect.objectContaining({ kind: 'insertion', text: 'proposal' }),
+    ]),
+  );
+
+  editor.destroy();
+  binding.destroy();
+});
+
+test('persists a formatting decision without deleting canonical text', () => {
+  const document = new Y.Doc();
+  const bootstrap = createOfficeCollaborationSession({
+    artifactId: 'document-formatting-decision',
+    document,
+    kind: 'document',
+  });
+  initializeOfficeDocumentCollaboration(bootstrap, {
+    ...documentFixture(),
+    html: '<p><span data-document-change="true" data-change-kind="formatting" data-change-before="[]" data-change-id="formatting-bold" data-change-actor-id="ada" data-change-author="Ada" data-change-date="2026-08-17T09:17:00.000Z"><strong>Shared</strong></span> document</p>',
+    model: undefined,
+  });
+  const editorSession = createOfficeCollaborationSession({
+    actor: { id: 'grace', name: 'Grace Editor' },
+    artifactId: 'document-formatting-decision',
+    document,
+    kind: 'document',
+  });
+  const binding = createOfficeDocumentCollaborationBinding(editorSession);
+  const editor = new Editor({ extensions: binding.extensions });
+
+  expect(binding.decideChanges(editor, ['formatting-bold'], 'reject')).toBe(
+    true,
+  );
+  expect(editor.getText()).toContain('Shared document');
+  expect(editor.getHTML()).not.toContain('<strong>');
+  expect(binding.content().changeDecisions).toEqual([
+    expect.objectContaining({
+      changeId: 'formatting-bold',
+      changeKind: 'formatting',
+      decision: 'reject',
+      text: 'Shared',
+    }),
+  ]);
+
+  editor.destroy();
+  binding.destroy();
+});
+
 test('deduplicates an identical final-decision retry from disconnected editors', async () => {
   const firstDocument = new Y.Doc();
   const first = createOfficeCollaborationSession({

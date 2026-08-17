@@ -20,6 +20,7 @@ use super::shared::{
 };
 use crate::collaboration::{
     collaboration_error, NativeOfficeCollaborationDocumentChangeDecision,
+    NativeOfficeCollaborationDocumentChangeKind,
     NativeOfficeCollaborationDocumentSuggestionDecision,
     NativeOfficeCollaborationDocumentSuggestionKind,
     NativeOfficeCollaborationDocumentSuggestionMatch, NativeOfficeCollaborationManifest,
@@ -100,10 +101,11 @@ pub(super) fn apply_decide_mutation(
     let mut pending = Vec::new();
     for expected in suggestions {
         let candidate = decision_record(manifest, expected, *decision, decided_by, decided_at);
-        let existing = decision_state
-            .records
-            .values()
-            .find(|record| record.change_id == expected.id && record.change_kind == expected.kind);
+        let existing = decision_state.records.values().find(|record| {
+            record.change_id == expected.id
+                && record.change_kind
+                    == NativeOfficeCollaborationDocumentChangeKind::from(expected.kind)
+        });
         if let Some(existing) = existing {
             if existing != &candidate {
                 return Err(identity_conflict(format!(
@@ -247,10 +249,10 @@ pub(super) fn apply_decide_mutation(
     let remaining = collect_suggestions(&transaction, &fragment)?;
     let written = read_document_change_decisions(&transaction, manifest)?;
     if records.iter().any(|record| {
-        remaining
-            .get(&record.change_id)
-            .is_some_and(|suggestion| suggestion.identity.kind == record.change_kind)
-            || written.records.get(&record.id) != Some(record)
+        remaining.get(&record.change_id).is_some_and(|suggestion| {
+            NativeOfficeCollaborationDocumentChangeKind::from(suggestion.identity.kind)
+                == record.change_kind
+        }) || written.records.get(&record.id) != Some(record)
     }) {
         return Err(content_invalid(
             "A native Document tracked-change decision did not round-trip through the browser-compatible Yjs schema."
@@ -280,9 +282,9 @@ fn decision_record(
     decided_at: &str,
 ) -> NativeOfficeCollaborationDocumentChangeDecision {
     NativeOfficeCollaborationDocumentChangeDecision {
-        id: decision_record_id(suggestion.kind, &suggestion.id),
+        id: decision_record_id(suggestion.kind.into(), &suggestion.id),
         change_id: suggestion.id.clone(),
-        change_kind: suggestion.kind,
+        change_kind: suggestion.kind.into(),
         suggested_by_actor_id: suggestion.expected_actor_id.clone(),
         suggested_by: suggestion.expected_author.clone(),
         suggested_at: suggestion.expected_created_at.clone(),

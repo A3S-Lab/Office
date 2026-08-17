@@ -134,6 +134,42 @@ function Playground() {
     showNotice('已打开建议者与编辑者的实时协作', 'success');
   };
 
+  const openFormattingReviewDemo = () => {
+    const artifact = artifacts.find(({ kind }) => kind === 'document');
+    if (!artifact || artifact.content.type !== 'document') {
+      showNotice('请先新建一个文字文档，再打开格式修订演示。', 'danger');
+      return;
+    }
+    const content: OfficeArtifactContent = {
+      ...artifact.content,
+      html: [
+        '<section data-document-section="true">',
+        '<h1>字符格式修订</h1>',
+        '<p>审阅者可以单独接受或拒绝字体、字号、颜色和强调格式。</p>',
+        '<p><span data-document-change="true" data-change-kind="formatting" data-change-id="playground-formatting-review" data-change-author="Ada Reviewer" data-change-date="2026-08-17T14:30:00.000Z" data-change-before="[]"><strong>这段文字新增了粗体格式</strong></span>，正文内容本身没有变化。</p>',
+        '</section>',
+      ].join(''),
+      model: undefined,
+      trackChanges: true,
+    };
+    setArtifacts((current) =>
+      current.map((candidate) =>
+        candidate.id === artifact.id
+          ? {
+              ...candidate,
+              content,
+              revision: candidate.revision + 1,
+              updatedAt: Date.now(),
+            }
+          : candidate,
+      ),
+    );
+    setCollaborationDemoArtifactId(null);
+    setSuggestionDemoArtifactId(null);
+    activateArtifact(artifact.id);
+    showNotice('已打开可接受或拒绝的字符格式修订', 'success');
+  };
+
   const newArtifact = (templateId: string) => {
     const artifact = createArtifact(templateId);
     setCollaborationDemoArtifactId(null);
@@ -313,6 +349,7 @@ function Playground() {
             onImport={() => fileInput.current?.click()}
             onOpen={openArtifact}
             onOpenCollaborationDemo={openCollaborationDemo}
+            onOpenFormattingReviewDemo={openFormattingReviewDemo}
             onOpenSuggestionDemo={openSuggestionDemo}
             onOpenPdf={() => pdfInput.current?.click()}
             onOpenSidebar={() => setSidebarOpen(true)}

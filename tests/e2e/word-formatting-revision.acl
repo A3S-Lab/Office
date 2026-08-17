@@ -1,0 +1,90 @@
+suite "word-formatting-revision" {
+    version = 1
+
+    scenario "reject-character-formatting" {
+        name = "Review and reject a character-formatting revision"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/"
+        }
+
+        click "open-formatting-revision-demo" {
+            target = role("button", "体验格式修订")
+        }
+
+        wait "formatting-revision-is-ready" {
+            visible = css(".ProseMirror span[data-document-change='true'][data-change-kind='formatting'] strong")
+        }
+
+        click "open-review-tab" {
+            target = role("tab", "审阅")
+        }
+
+        wait "review-toolbar-is-ready" {
+            visible = css("button[aria-label='查看修订（1）']")
+        }
+
+        click "open-revision-pane" {
+            target = role("button", "查看修订（1）")
+        }
+
+        wait "formatting-card-is-ready" {
+            visible = css(".work-document-change-item.formatting")
+        }
+
+        expect "formatting-card-is-labeled" {
+            text = "格式"
+        }
+
+        expect "pending-formatting-is-visible" {
+            visible = css(".ProseMirror span[data-document-change='true'][data-change-kind='formatting'] strong")
+        }
+
+        screenshot "pending-formatting-revision" {
+            path = "screenshots/formatting-revision-pending.png"
+        }
+
+        click "reject-formatting-revision" {
+            target = role("button", "拒绝修订 1")
+        }
+
+        wait "revision-pane-is-empty" {
+            text = "没有待处理的修订"
+        }
+
+        expect "document-text-is-preserved" {
+            text = "这段文字新增了粗体格式，正文内容本身没有变化。"
+        }
+
+        expect "formatting-and-revision-mark-are-removed" {
+            visible = css(".ProseMirror p:last-child:not(:has(strong)):not(:has([data-document-change]))")
+        }
+
+        screenshot "rejected-formatting-revision" {
+            path = "screenshots/formatting-revision-rejected.png"
+        }
+
+        accessibility "rejected-formatting-accessibility" {
+            path = "evidence/formatting-revision-rejected.json"
+            interactive = false
+        }
+
+        console "formatting-revision-console" {
+            path = "diagnostics/formatting-revision-console.json"
+            clear = false
+        }
+
+        page_errors "formatting-revision-errors" {
+            path = "diagnostics/formatting-revision-page-errors.json"
+            clear = false
+        }
+    }
+}

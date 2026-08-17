@@ -10,6 +10,7 @@ import type {
   WorkDocumentChangeDecisionAction,
   WorkDocumentChangeKind,
 } from '../features/work/work-types';
+import { parseDocumentCharacterFormatting } from '../features/work/work-document-format-changes';
 import type { WorkOfficeCollaborationSession } from './office-collaboration';
 
 interface StrictDocumentChange extends WorkDocumentChangeIdentity {
@@ -123,10 +124,19 @@ function strictDocumentChanges(
     const author = strictString(mark.attrs.author);
     const date = strictString(mark.attrs.date);
     const actorId = optionalStrictString(mark.attrs.actorId);
-    if (!id || !kind || author === null || date === null || actorId === null) {
+    if (
+      !id ||
+      !kind ||
+      author === null ||
+      date === null ||
+      actorId === null ||
+      (kind === 'formatting' &&
+        !parseDocumentCharacterFormatting(mark.attrs.before))
+    ) {
       valid = false;
       return false;
     }
+    if (kind === 'formatting') return;
     const current = changes.get(id);
     const candidate: StrictDocumentChange = {
       id,
@@ -157,7 +167,11 @@ function documentSuggestionBaseline(node: ProseMirrorNode): unknown {
     );
     if (change?.attrs.kind === 'insertion') return null;
     const marks = node.marks
-      .filter((mark) => mark.type.name !== 'documentChange')
+      .filter(
+        (mark) =>
+          mark.type.name !== 'documentChange' ||
+          mark.attrs.kind === 'formatting',
+      )
       .map((mark) => mark.toJSON());
     if (marks.length > 0) return { ...json, marks };
     const { marks: _marks, ...withoutMarks } = json;
@@ -226,5 +240,7 @@ function optionalStrictString(value: unknown): string | undefined | null {
 }
 
 function strictChangeKind(value: unknown): WorkDocumentChangeKind | null {
-  return value === 'insertion' || value === 'deletion' ? value : null;
+  return value === 'insertion' || value === 'deletion' || value === 'formatting'
+    ? value
+    : null;
 }

@@ -559,7 +559,7 @@ fn write_canonical_out_without_comment_marks<T: ReadTxn>(
             for chunk in text.diff(transaction, |_| ()) {
                 let attributes = filtered_text_attributes(
                     chunk.attributes.as_ref().map(|value| &**value),
-                    is_document_comment_attribute,
+                    |key, _| is_document_comment_attribute(key),
                 );
                 match chunk.insert {
                     Out::Any(Any::String(value)) => {
@@ -635,7 +635,7 @@ fn write_canonical_out_without_suggestion_effects<T: ReadTxn>(
                     continue;
                 }
                 let attributes =
-                    filtered_text_attributes(source_attributes, is_document_change_attribute);
+                    filtered_text_attributes(source_attributes, is_document_suggestion_attribute);
                 match chunk.insert {
                     Out::Any(Any::String(value)) => {
                         if let Some(FilteredXmlTextChunk {
@@ -696,11 +696,11 @@ struct FilteredXmlTextChunk {
 
 fn filtered_text_attributes(
     attributes: Option<&yrs::types::Attrs>,
-    omitted: fn(&str) -> bool,
+    omitted: impl Fn(&str, &Any) -> bool,
 ) -> Option<Vec<u8>> {
     let mut entries = attributes?
         .iter()
-        .filter(|(key, _)| !omitted(key))
+        .filter(|(key, value)| !omitted(key, value))
         .collect::<Vec<_>>();
     if entries.is_empty() {
         return None;
@@ -741,6 +741,19 @@ fn document_change_chunk_kind(
             _ => None,
         }
     })
+}
+
+fn is_document_suggestion_attribute(key: &str, value: &Any) -> bool {
+    if !is_document_change_attribute(key) {
+        return false;
+    }
+    let Any::Map(fields) = value else {
+        return false;
+    };
+    matches!(
+        fields.get("kind"),
+        Some(Any::String(value)) if matches!(value.as_ref(), "insertion" | "deletion")
+    )
 }
 
 fn is_document_comment_attribute(value: &str) -> bool {

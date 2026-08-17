@@ -11,6 +11,7 @@ import { diagnoseDocxPageSize } from './work-docx-page-size-diagnostics';
 import { diagnoseDocxParagraphBorders } from './work-docx-paragraph-borders-diagnostics';
 import { diagnoseDocxParagraphShading } from './work-docx-paragraph-shading-diagnostics';
 import { parseDocxParagraphDefaultCollapsed } from './work-docx-paragraph-default-collapsed';
+import { isSupportedDocxRunFormattingChange } from './work-docx-run-formatting-import';
 import {
   attribute,
   contentTypeForPart,
@@ -245,6 +246,10 @@ export async function analyzeDocxCompatibility(
         ...descendants(document, 'ins'),
         ...descendants(document, 'del'),
       ];
+      const runFormattingRevisions = descendants(document, 'rPrChange');
+      const supportedRunFormattingRevisionCount = runFormattingRevisions.filter(
+        isSupportedDocxRunFormattingChange,
+      ).length;
       if (
         textRevisions.some(
           (revision) =>
@@ -261,16 +266,26 @@ export async function analyzeDocxCompatibility(
           ),
         );
       }
+      if (supportedRunFormattingRevisionCount) {
+        issues.push(
+          issue(
+            'docx.revisions.formatting',
+            'Character-formatting revisions',
+            `${supportedRunFormattingRevisionCount} bounded character-formatting revision(s) preserve author, date, current formatting, and prior bold, italic, underline, strike, subscript, superscript, font, size, color, highlight, and grid state. They remain reviewable in Work and round-trip as native w:rPrChange records.`,
+            'info',
+          ),
+        );
+      }
       if (
         textRevisions.some(
           (revision) =>
             !descendants(revision, 't').length &&
             !descendants(revision, 'delText').length,
         ) ||
+        supportedRunFormattingRevisionCount !== runFormattingRevisions.length ||
         [
           'moveFrom',
           'moveTo',
-          'rPrChange',
           'pPrChange',
           'tblPrChange',
           'trPrChange',
@@ -283,7 +298,7 @@ export async function analyzeDocxCompatibility(
           issue(
             'docx.revisions.structural',
             'Structural revisions',
-            'Moved content plus formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions and deletions.',
+            'Moved content plus unsupported character formatting, paragraph formatting, numbering, section, row, cell, and table-property revisions may be normalized; Work currently reviews body-text insertions/deletions and the bounded character-formatting subset.',
           ),
         );
       }

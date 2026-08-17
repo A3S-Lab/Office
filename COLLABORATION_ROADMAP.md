@@ -110,15 +110,17 @@ Redis/NATS fan-out plus a distributed writer/lock policy.
 
 Status: browser collaboration foundation, participant roster, remote
 selection/caret projection, participant navigation, durable review-only
-comment and suggestion modes, immutable suggestion-decision audit, and native
-text/options/bounded structural paragraph/comment/suggestion mutations
-implemented; rich native mutation parity remains pending.
+comment and suggestion modes, character-formatting revisions, immutable
+decision audit, and native text/options/bounded structural
+paragraph/comment/suggestion mutations implemented; rich native mutation
+parity remains pending.
 
 - TipTap is bound to `document.content` through
   `@tiptap/extension-collaboration`; StarterKit undo/redo is disabled and the
   collaboration binding owns local history.
-- Section/page OOXML state, comment anchors, and tracked-change marks converge
-  in the ProseMirror fragment. Document-level page color, tracking mode,
+- Section/page OOXML state, comment anchors, and text or character-formatting
+  tracked-change marks converge in the ProseMirror fragment. Document-level
+  page color, tracking mode,
   comment threads/replies, and bibliography sources use conflict-local typed
   roots instead of a serialized document blob.
 - React, Vue, and Web Component adapters accept the same initialized session.
@@ -166,6 +168,12 @@ implemented; rich native mutation parity remains pending.
   converge, a second conflicting final decision fails closed, old Documents
   without the additive roots remain readable, and a final decision clears
   local history that could otherwise resurrect the decided mark.
+- Character-formatting commands over existing text create one `formatting`
+  change mark with a bounded prior-direct-mark snapshot. Accept removes only
+  the revision wrapper and keeps the new formatting; reject restores the prior
+  bold, italic, underline, strike, sub/superscript, font, size, color,
+  highlight, and grid marks without changing text. Supported DOCX
+  `w:rPrChange` records import into the same model and export natively.
 - Rust, CLI, MCP, and A3S Code expose `document-comment-create`,
   `document-comment-reply`, `document-comment-set-resolved`,
   `document-comment-delete`, `document-suggestion-create`, and
@@ -183,6 +191,12 @@ implemented; rich native mutation parity remains pending.
   content, structure, options, non-suggestion formatting, authorship, order,
   claims, anchors, foreign deletion, or foreign suggestion changes fail before
   the durable store changes.
+- Native Yrs validation admits only the bounded formatting-change schema,
+  preserves it across restart and duplicate/reordered delivery, exposes
+  `formatting` in immutable decision projections, and makes `suggest` updates
+  retain existing formatting revisions byte-semantically. Formatting is a
+  Document change kind, not a native insertion/deletion suggestion kind; the
+  current closed `document-suggestion-*` mutations remain text-only.
 
 Remaining:
 

@@ -248,9 +248,13 @@ function changeIdentity(
 }
 
 function changeKind(value: unknown, shared: boolean): WorkDocumentChangeKind {
-  if (value === 'insertion' || value === 'deletion') return value;
+  if (value === 'insertion' || value === 'deletion' || value === 'formatting') {
+    return value;
+  }
   if (shared) invalidSharedSidecars('tracked-change decision kind');
-  invalidInputSidecars('an insertion or deletion tracked-change kind');
+  invalidInputSidecars(
+    'an insertion, deletion, or formatting tracked-change kind',
+  );
 }
 
 function decisionAction(

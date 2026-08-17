@@ -11,8 +11,8 @@ use super::super::comment::{
 
 use crate::collaboration::{
     collaboration_error, NativeOfficeCollaborationDocumentChangeDecision,
-    NativeOfficeCollaborationDocumentSuggestionDecision,
-    NativeOfficeCollaborationDocumentSuggestionKind, NativeOfficeCollaborationManifest,
+    NativeOfficeCollaborationDocumentChangeKind,
+    NativeOfficeCollaborationDocumentSuggestionDecision, NativeOfficeCollaborationManifest,
 };
 
 const DECISION_FIELDS: &[&str] = &[
@@ -168,7 +168,7 @@ pub(super) fn insert_decision_record(
 }
 
 pub(super) fn decision_record_id(
-    kind: NativeOfficeCollaborationDocumentSuggestionKind,
+    kind: NativeOfficeCollaborationDocumentChangeKind,
     change_id: &str,
 ) -> String {
     format!("{}:{change_id}", kind.as_str())
@@ -253,10 +253,11 @@ fn read_decision_record<T: ReadTxn>(
     })
 }
 
-fn parse_kind(value: Option<Out>) -> UseResult<NativeOfficeCollaborationDocumentSuggestionKind> {
+fn parse_kind(value: Option<Out>) -> UseResult<NativeOfficeCollaborationDocumentChangeKind> {
     match required_string(value, "change kind")?.as_str() {
-        "insertion" => Ok(NativeOfficeCollaborationDocumentSuggestionKind::Insertion),
-        "deletion" => Ok(NativeOfficeCollaborationDocumentSuggestionKind::Deletion),
+        "insertion" => Ok(NativeOfficeCollaborationDocumentChangeKind::Insertion),
+        "deletion" => Ok(NativeOfficeCollaborationDocumentChangeKind::Deletion),
+        "formatting" => Ok(NativeOfficeCollaborationDocumentChangeKind::Formatting),
         _ => Err(invalid_decisions("change kind")),
     }
 }

@@ -10,6 +10,7 @@ import {
   parseDocumentParagraphShadingElement,
 } from './work-document-paragraph-shading';
 import { DOCUMENT_WORD_DEFAULT_SINGLE_LINE_HEIGHT } from './work-document-word-line-metrics';
+import { DOCUMENT_CHARACTER_FORMAT_MARKS } from './work-document-format-changes';
 
 export const DOCUMENT_INDENT_STEP_PX = 24;
 export const MAX_DOCUMENT_INDENT_LEVEL = 8;
@@ -621,7 +622,12 @@ function clearDocumentFormattingCommand({
   chain,
   editor,
 }: CommandProps): boolean {
-  let commandChain = chain().focus().unsetAllMarks();
+  let commandChain = chain().focus();
+  for (const mark of DOCUMENT_CHARACTER_FORMAT_MARKS) {
+    if (editor.schema.marks[mark]) {
+      commandChain = commandChain.unsetMark(mark);
+    }
+  }
   if (!editor.isActive('listItem')) commandChain = commandChain.setParagraph();
   return commandChain
     .unsetTextAlign()

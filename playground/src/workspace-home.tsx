@@ -5,6 +5,7 @@ import type {
 } from '@a3s-lab/office/core';
 import {
   ArrowRight,
+  FileDiff,
   FilePlus2,
   PanelLeftOpen,
   Pencil,
@@ -38,6 +39,7 @@ export function WorkspaceHome({
   onImport,
   onOpenCollaborationDemo,
   onOpenSuggestionDemo,
+  onOpenFormattingReviewDemo,
   onOpenPdf,
 }: {
   artifacts: OfficeArtifact[];
@@ -49,6 +51,7 @@ export function WorkspaceHome({
   onImport: () => void;
   onOpenCollaborationDemo: () => void;
   onOpenSuggestionDemo: () => void;
+  onOpenFormattingReviewDemo: () => void;
   onOpenPdf: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -120,8 +123,8 @@ export function WorkspaceHome({
         <div className="playground-collaboration-copy">
           <h2 id="playground-collaboration-title">多人实时协作</h2>
           <p>
-            体验评论线程，或在建议者与编辑者两个实时视图中提交、接受和审计文字
-            建议；同时查看参与者、远端选区和在线状态。
+            体验评论线程、文字建议与字符格式修订；在实时视图中提交、接受、拒绝和
+            审计改动，同时查看参与者、远端选区和在线状态。
           </p>
           <span className="playground-collaboration-backend-note">
             生产后端示例基于 A3S Boot，并在持久化前校验评论与建议权限。
@@ -143,6 +146,14 @@ export function WorkspaceHome({
           >
             <Pencil size={15} />
             体验建议协作
+          </button>
+          <button
+            type="button"
+            className="playground-secondary-button"
+            onClick={onOpenFormattingReviewDemo}
+          >
+            <FileDiff size={15} />
+            体验格式修订
           </button>
           <a
             className="playground-secondary-button"
