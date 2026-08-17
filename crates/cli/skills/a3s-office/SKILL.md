@@ -136,17 +136,25 @@ When the CLI-only host supplies an authenticated room transport, attach the
 replica as a live peer instead:
 
 ```bash
-a3s use office collab session "$REPLICA" --poll-ms 100 --json
+a3s use office collab session "$REPLICA" --poll-ms 100 \
+  --actor-name "A3S Agent" --json
 ```
 
 Treat stdin and stdout as JSONL. Forward each stdout `outbound.message` after
 decoding `payloadBase64`; send room messages back as `receive` records and use
 a stable host delivery `operationId` for every `sync-step-2` or `update`.
+When `--actor-name` is present, also forward each
+`outbound-awareness.message` as the room Awareness event. Publish the agent's
+typed activity and format location with `set-presence`, send remote Awareness
+as `receive-awareness`, and translate peer disconnects to `peer-left`.
 Send `{"type":"reconnect"}` after every transport reconnect and
 `{"type":"close"}` for an orderly stop. The session owns Yjs/Yrs handshakes,
-durable receipts, external agent-update polling, and echo suppression; the host
-continues to own room identity, authentication, authorization, buffering, and
-delivery.
+durable receipts, external agent-update polling, echo suppression, and an
+optional in-memory Awareness peer; the host continues to own room identity,
+authentication, authorization, buffering, and delivery. Never treat Presence
+as authorization or copy it into the durable replica. Use `ready.clientId` for
+the connection hello and room envelopes; `ready.replicaClientId` is the stable
+Yrs author ID and must not replace the ephemeral Presence sender ID.
 
 Make local typed Markdown, Document, Spreadsheet, Presentation, or PDF changes
 from another CLI process with `collab mutate`; the running session observes its

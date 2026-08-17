@@ -5,10 +5,12 @@ use std::process::{Command, Output, Stdio};
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
+use yrs::sync::{Awareness, AwarenessUpdate};
 use yrs::updates::decoder::Decode;
+use yrs::updates::encoder::Encode;
 use yrs::{
-    Any, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, Xml, XmlFragment,
-    XmlOut,
+    Any, ClientID, Doc, GetString, Map, Out, ReadTxn, StateVector, Text, Transact, Update, Xml,
+    XmlFragment, XmlOut,
 };
 
 const YJS_MARKDOWN_UPDATE_BASE64: &str = "AQey8hkAKAETYTNzLm9mZmljZS5tZXRhZGF0YQhwcm90b2NvbAF3GGEzcy5vZmZpY2UuY29sbGFib3JhdGlvbigBE2Ezcy5vZmZpY2UubWV0YWRhdGEHdmVyc2lvbgF9ASgBE2Ezcy5vZmZpY2UubWV0YWRhdGEKYXJ0aWZhY3RJZAF3EGZpeHR1cmUtbWFya2Rvd24oARNhM3Mub2ZmaWNlLm1ldGFkYXRhBGtpbmQBdwhtYXJrZG93bigBE2Ezcy5vZmZpY2UubWV0YWRhdGELaW5pdGlhbGl6ZWQBeAgBIWEzcy5vZmZpY2UuYm9vdHN0cmFwLmluaXRpYWxpemVycwF3FjQyNDI0Mjpicm93c2VyLWZpeHR1cmUEARphM3Mub2ZmaWNlLm1hcmtkb3duLnNvdXJjZRUjIFNoYXJlZAoKWWpzIHRvIFlycy4A";
@@ -815,6 +817,227 @@ fn cli_session_bridges_live_browser_envelopes_and_external_agent_updates() {
 
     let inspected = run(&["collab", "inspect", replica.to_str().unwrap(), "--json"]);
     assert_eq!(inspected["data"]["currentSequence"], 2);
+}
+
+#[test]
+fn cli_session_bridges_ephemeral_native_presence_without_touching_the_replica() {
+    let temp = tempfile::tempdir().unwrap();
+    let replica = temp.path().join("agent.replica");
+    let initial = temp.path().join("browser.update");
+    fs::write(
+        &initial,
+        STANDARD.decode(YJS_MARKDOWN_UPDATE_BASE64).unwrap(),
+    )
+    .unwrap();
+    join(&replica, &initial);
+    let before = run(&["collab", "inspect", replica.to_str().unwrap(), "--json"]);
+
+    let mut child = Command::new(binary())
+        .args([
+            "collab",
+            "session",
+            replica.to_str().unwrap(),
+            "--poll-ms",
+            "50",
+            "--timeout-ms",
+            "30000",
+            "--actor-name",
+            "A3S Agent",
+            "--actor-color",
+            "#2563eb",
+            "--json",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = BufReader::new(child.stdout.take().unwrap());
+    let mut stderr = child.stderr.take().unwrap();
+
+    let ready = read_jsonl(&mut stdout);
+    assert_eq!(ready["type"], "ready");
+    assert_eq!(ready["presenceEnabled"], true);
+    assert_eq!(ready["actorName"], "A3S Agent");
+    assert_eq!(ready["replicaClientId"], 900_007);
+    let presence_client_id = ready["clientId"].as_u64().unwrap();
+    assert_ne!(presence_client_id, 900_007);
+    assert_eq!(read_jsonl(&mut stdout)["type"], "outbound");
+    let initial_presence = read_jsonl(&mut stdout);
+    assert_eq!(initial_presence["type"], "outbound-awareness");
+    assert_eq!(initial_presence["reason"], "initial-connect");
+    let decoded = AwarenessUpdate::decode_v1(
+        &STANDARD
+            .decode(
+                initial_presence["message"]["payloadBase64"]
+                    .as_str()
+                    .unwrap(),
+            )
+            .unwrap(),
+    )
+    .unwrap();
+    let local = decoded
+        .clients
+        .get(&ClientID::new(presence_client_id))
+        .unwrap();
+    let local: serde_json::Value = serde_json::from_str(local.json.as_ref()).unwrap();
+    assert_eq!(local["a3sOffice"]["actor"]["id"], "coding-agent-7");
+    assert_eq!(local["a3sOffice"]["actor"]["name"], "A3S Agent");
+    assert_eq!(local["a3sOffice"]["actor"]["kind"], "agent");
+
+    write_jsonl(
+        &mut stdin,
+        &serde_json::json!({
+            "type": "set-presence",
+            "activity": "idle",
+            "location": {
+                "kind": "markdown",
+                "anchor": 2,
+                "head": 8,
+                "surface": "source"
+            }
+        }),
+    );
+    let local_update = read_jsonl(&mut stdout);
+    assert_eq!(local_update["type"], "outbound-awareness");
+    assert_eq!(local_update["reason"], "local-presence");
+    let local_snapshot = read_jsonl(&mut stdout);
+    assert_eq!(local_snapshot["type"], "presence");
+    assert_eq!(
+        local_snapshot["snapshot"]["participants"][0]["activity"],
+        "idle"
+    );
+    assert_eq!(
+        local_snapshot["snapshot"]["participants"][0]["location"]["head"],
+        8
+    );
+
+    let remote_client_id = 424_242;
+    let mut remote = Awareness::new(Doc::with_client_id(remote_client_id));
+    remote
+        .set_local_state(serde_json::json!({
+            "a3sOffice": {
+                "protocol": "a3s.office.collaboration",
+                "version": 1,
+                "artifactId": "fixture-markdown",
+                "artifactKind": "markdown",
+                "namespace": "a3s.office",
+                "presenceId": "browser-user:1",
+                "actor": {
+                    "id": "browser-user",
+                    "name": "Browser User",
+                    "kind": "human"
+                },
+                "mode": "comment",
+                "activity": "active",
+                "location": {
+                    "kind": "markdown",
+                    "anchor": 1,
+                    "head": 4,
+                    "surface": "visual"
+                }
+            }
+        }))
+        .unwrap();
+    let remote_payload = remote.update().unwrap().encode_v1();
+    write_jsonl(
+        &mut stdin,
+        &serde_json::json!({
+            "type": "receive-awareness",
+            "message": {
+                "protocol": "a3s.office.collaboration",
+                "version": 1,
+                "artifactId": "fixture-markdown",
+                "artifactKind": "markdown",
+                "namespace": "a3s.office",
+                "senderClientId": remote_client_id,
+                "payloadBase64": STANDARD.encode(&remote_payload)
+            }
+        }),
+    );
+    let remote_snapshot = read_jsonl(&mut stdout);
+    assert_eq!(remote_snapshot["type"], "presence");
+    assert_eq!(remote_snapshot["changed"], true);
+    assert_eq!(
+        remote_snapshot["snapshot"]["participants"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+    assert!(remote_snapshot["snapshot"]["participants"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|participant| participant["actor"]["name"] == "Browser User"));
+
+    write_jsonl(
+        &mut stdin,
+        &serde_json::json!({
+            "type": "peer-left",
+            "senderClientId": remote_client_id
+        }),
+    );
+    let peer_left = read_jsonl(&mut stdout);
+    assert_eq!(peer_left["type"], "presence");
+    assert_eq!(peer_left["reason"], "peer-left");
+    assert_eq!(
+        peer_left["snapshot"]["participants"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+
+    write_jsonl(&mut stdin, &serde_json::json!({ "type": "reconnect" }));
+    assert_eq!(read_jsonl(&mut stdout)["type"], "outbound");
+    let reconnect_presence = read_jsonl(&mut stdout);
+    assert_eq!(reconnect_presence["type"], "outbound-awareness");
+    assert_eq!(reconnect_presence["reason"], "reconnect");
+
+    write_jsonl(&mut stdin, &serde_json::json!({ "type": "close" }));
+    let removal = read_jsonl(&mut stdout);
+    assert_eq!(removal["type"], "outbound-awareness");
+    assert_eq!(removal["reason"], "disconnect");
+    let decoded = AwarenessUpdate::decode_v1(
+        &STANDARD
+            .decode(removal["message"]["payloadBase64"].as_str().unwrap())
+            .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        decoded
+            .clients
+            .get(&ClientID::new(presence_client_id))
+            .unwrap()
+            .json
+            .as_ref(),
+        "null"
+    );
+    let complete = read_jsonl(&mut stdout);
+    assert_eq!(complete["type"], "complete");
+    assert_eq!(complete["reason"], "host-close");
+    drop(stdin);
+
+    let status = child.wait().unwrap();
+    let mut error_text = String::new();
+    stderr.read_to_string(&mut error_text).unwrap();
+    assert!(status.success(), "presence session failed: {error_text}");
+
+    let after = run(&["collab", "inspect", replica.to_str().unwrap(), "--json"]);
+    assert_eq!(
+        after["data"]["currentSequence"],
+        before["data"]["currentSequence"]
+    );
+    assert_eq!(
+        after["data"]["operationCount"],
+        before["data"]["operationCount"]
+    );
+    assert_eq!(
+        after["data"]["documentStateSha256"],
+        before["data"]["documentStateSha256"]
+    );
 }
 
 #[test]

@@ -4,6 +4,27 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.9.2 - 2026-08-17
+
+- Added an ephemeral native Yrs Awareness controller for CLI and Rust
+  collaboration peers. It publishes active, idle, or away state plus typed
+  Document, Markdown, Spreadsheet, Presentation, and PDF locations, projects
+  validated remote participants, handles peer departure and reconnect cleanup,
+  and emits an orderly disconnect tombstone.
+- Separated each Presence-enabled process connection ID from the durable
+  replica's stable Yrs author ID. Host envelopes and Awareness use the fresh
+  connection identity while canonical CRDT updates retain the replica identity;
+  Presence state, clocks, snapshots, and delivery never enter checkpoints,
+  update logs, or operation receipts.
+- Extended `collab session` with bounded actor profile options and typed
+  `set-presence`, `receive-awareness`, and `peer-left` JSONL input alongside
+  `outbound-awareness` and sorted `presence` output. Core and real CLI process
+  regressions cover browser-compatible Awareness, clock ordering, identity
+  rejection, all five location schemas, and persistence isolation.
+- Updated the README, roadmap, packaged Office Skill, CLI reference, and
+  bilingual A3S Boot collaboration runbook; added deterministic A3S Test
+  coverage for the published protocol and froze the 0.9.2 documentation set.
+
 ## 0.9.1 - 2026-08-17
 
 - Made live Document pagination measure the canonical editor DOM cooperatively

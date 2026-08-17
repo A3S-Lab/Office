@@ -7,9 +7,11 @@ use serde::{Deserialize, Serialize};
 use super::collaboration_error;
 
 mod mutation;
+mod presence;
 mod projection;
 
 pub use mutation::*;
+pub use presence::*;
 pub use projection::*;
 
 pub const NATIVE_OFFICE_COLLABORATION_PROTOCOL: &str = "a3s.office.collaboration";

@@ -37,7 +37,7 @@ const HELP: &str = concat!(
     "  a3s-office collab sync-step1 <store> [--output <message.bin>] [--json]\n",
     "  a3s-office collab encode-update --input <update.bin> [--output <message.bin>] [--json]\n",
     "  a3s-office collab handle-message <store> --input <message.bin> [--output <response.bin>|mutation identity options] [--json]\n",
-    "  a3s-office collab session <store> [--poll-ms <50..10000>] [--timeout-ms <u64>] --json\n",
+    "  a3s-office collab session <store> [--poll-ms <50..10000>] [--timeout-ms <u64>] [--actor-name <name> [--actor-color <css>] [--actor-avatar-url <url>]] --json\n",
     "  a3s-office collab apply <store> --input <update.bin> --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab mutate <store> (--mutation <json>|--mutation-input <file>) --actor-id <id> --operation-id <id> --artifact-id <id> --kind <kind> --mode <mode> [--if-state-vector <base64>|--if-state-vector-input <file>] [--json]\n",
     "  a3s-office collab watch <store> [--after-sequence <u64>] [--poll-ms <50..10000>] [--timeout-ms <u64>] [--max-events <u64>] [--include-updates] [--json]\n",

@@ -1042,7 +1042,7 @@ cargo run -p a3s-office-cli -- collab diff .a3s/report.replica \
 
 # Bridge that replica to a host-owned room over machine-readable JSONL.
 cargo run -p a3s-office-cli -- collab session .a3s/report.replica \
-  --poll-ms 100 --json
+  --poll-ms 100 --actor-name "A3S Agent" --json
 
 # Make a typed local change in an initialized Markdown replica. A running
 # session publishes the resulting incremental Yjs update automatically.
@@ -1180,7 +1180,11 @@ controller as a shared participant roster, remote canvas projection, and
 participant-to-location navigation; neither component creates an account or
 backend. The native CLI's JSONL session bridges the same host-channel envelope,
 including reconnect handshakes, durable agent updates, and remote-echo
-suppression, without opening its own network provider. Native Rust `project`,
+suppression, without opening its own network provider. With `--actor-name`, it
+also emits standard, bounded `outbound-awareness` records for ephemeral agent
+activity and format-specific locations, accepts remote Awareness and peer-left
+records, and publishes participant snapshots without changing the durable
+replica. Native Rust `project`,
 `collab read`, and `office_collaboration_read` return the exact canonical
 Markdown source or an Office-owned bounded Document projection with stable
 paragraph/text identities, structural ancestry, option fields, subordinate
@@ -1323,6 +1327,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.9.2 documentation](https://a3s-lab.github.io/Office/docs/0.9.2/)
 - [A3S Office 0.9.1 documentation](https://a3s-lab.github.io/Office/docs/0.9.1/)
 - [A3S Office 0.9.0 documentation](https://a3s-lab.github.io/Office/docs/0.9.0/)
 - [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/docs/0.8.1/)

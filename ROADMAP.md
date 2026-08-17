@@ -1,6 +1,6 @@
 # A3S Office / WPS Capability Gap Roadmap
 
-Last reviewed: 2026-08-14
+Last reviewed: 2026-08-17
 
 This roadmap compares the current `main` branch of A3S Office with the public
 capability surface of WPS Office. It is a prioritization tool, not a claim that
@@ -51,7 +51,7 @@ collaboration transport, and AI providers.
 | Browser embedding | WPS offers web and native applications | **Supported**, with React, Vue, Web Components, and Core entry points | A3S differentiator |
 | Native Windows/macOS/Linux/iOS/Android applications | Product-owned native applications | **Host-owned**; A3S ships a browser component and native automation engine, not app shells | No core editor work |
 | Cloud storage and multi-device sync | Integrated cloud documents and sync | **Host-owned** through controlled values, file actions, and repository ports | Publish reference adapters, not a storage service |
-| Real-time co-editing, presence, reactions, sharing, permissions | Integrated collaboration workspace | **Partial**: browser/native Yjs replicas, a bounded host-channel sync adapter, typed Awareness presence, a shared five-editor participant roster, and resumable CLI/MCP coding-agent event loops are supported; relay services, remote caret/selection overlays, reactions, sharing, and ACL enforcement remain incomplete or host-owned | P1 remote location projection, native transport adapter, and typed collaboration mutations |
+| Real-time co-editing, presence, reactions, sharing, permissions | Integrated collaboration workspace | **Partial**: browser/native Yjs replicas, a bounded host-channel sync adapter, typed browser and native Awareness presence, remote caret/selection overlays, a shared five-editor participant roster, and resumable CLI/MCP coding-agent event loops are supported; production relay topology, reactions, sharing, and ACL enforcement remain incomplete or host-owned | P1 richer native mutations and host integration adapters |
 | Version history and recovery | Integrated cloud workflow | **Host-owned**; controlled revisions and repository contracts exist | Keep persistence outside the package |
 | AI writing, document analysis, slide creation, formulas, and PDF chat | Integrated WPS AI features on supported plans | **Host-owned** typed agent ports and immutable selection context; no bundled model/provider | Maintain provider-neutral boundary |
 | Templates and asset marketplace | Large WPS template catalog | **Partial**: small built-in starter templates, no marketplace | P3; host-extensible template catalog |
@@ -250,8 +250,9 @@ independent parser; redaction and signatures meet byte-level safety rules.
   Typed incremental origins survive live transport without entering canonical
   document state. All five editors now project one accessible participant
   roster across edit and preview chrome.
-- Connect that contract to a native host transport and project format-specific
-  selections and cursors into each editing canvas without embedding accounts,
+- The native JSONL host transport now carries bounded, typed, ephemeral
+  Awareness state for agents and projects format-specific selections and
+  locations into the existing editor canvases without embedding accounts,
   storage, or authorization.
 - Map comments, revisions, selections, cursors, permissions, and conflict
   handling onto the existing controlled editor model.

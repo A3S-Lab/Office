@@ -188,6 +188,25 @@ Issue the agent an `actorKind: "agent"` ticket and relay the same
 accepts inbound `receive` records on stdin, so the product host can bridge it
 to this room without giving the CLI an application credential.
 
+Pass the ticket's exact display name to enable the native agent's ephemeral
+Presence peer:
+
+```bash
+a3s-office collab session .a3s/report-agent.replica \
+  --poll-ms 100 --actor-name "A3S Agent" --json
+```
+
+Relay `outbound-awareness.message` as `collaboration.awareness`, write received
+room Awareness as `receive-awareness`, and translate
+`collaboration.peer-left` to `peer-left`. The agent publishes activity and a
+format-specific location through `set-presence`; the session emits sorted
+participant snapshots. Its in-memory Awareness state and clocks never enter
+the actor replica or this service's durable room store.
+Use `ready.clientId` for `collaboration.hello` and every outbound room envelope.
+When Presence is enabled it is an ephemeral connection ID;
+`ready.replicaClientId` remains the stable author ID inside durable Yrs
+updates.
+
 The host owns that process bridge and reconnect lifecycle. Do not point an
 agent directly at the server's internal `data_dir`: each native participant
 keeps its own actor-scoped replica, while the service keeps the durable room

@@ -29,6 +29,7 @@ const MAX_YJS_CLIENT_ID: u64 = (1_u64 << 53) - 1;
 pub struct NativeOfficeCollaborationTransportSession {
     store: NativeOfficeCollaborationStore,
     manifest: NativeOfficeCollaborationManifest,
+    sender_client_id: u64,
     cursor_sequence: u64,
     suppressed_sequences: BTreeSet<u64>,
 }
@@ -36,10 +37,42 @@ pub struct NativeOfficeCollaborationTransportSession {
 impl NativeOfficeCollaborationTransportSession {
     pub fn attach(store: NativeOfficeCollaborationStore) -> UseResult<Self> {
         let inspection = store.inspect()?;
+        Self::attach_inspection(
+            store,
+            inspection.manifest.client_id,
+            inspection.manifest,
+            inspection.current_sequence,
+        )
+    }
+
+    /// Attach a durable replica to one ephemeral host connection identity.
+    /// The sender ID labels transport envelopes and may differ from the stable
+    /// Yrs client ID stored in the replica manifest.
+    pub fn attach_with_sender_client_id(
+        store: NativeOfficeCollaborationStore,
+        sender_client_id: u64,
+    ) -> UseResult<Self> {
+        super::validation::validate_client_id(sender_client_id)?;
+        let inspection = store.inspect()?;
+        Self::attach_inspection(
+            store,
+            sender_client_id,
+            inspection.manifest,
+            inspection.current_sequence,
+        )
+    }
+
+    fn attach_inspection(
+        store: NativeOfficeCollaborationStore,
+        sender_client_id: u64,
+        manifest: NativeOfficeCollaborationManifest,
+        cursor_sequence: u64,
+    ) -> UseResult<Self> {
         Ok(Self {
             store,
-            manifest: inspection.manifest,
-            cursor_sequence: inspection.current_sequence,
+            manifest,
+            sender_client_id,
+            cursor_sequence,
             suppressed_sequences: BTreeSet::new(),
         })
     }
@@ -48,12 +81,26 @@ impl NativeOfficeCollaborationTransportSession {
         Self::attach(NativeOfficeCollaborationStore::open(path)?)
     }
 
+    pub fn open_with_sender_client_id(
+        path: impl AsRef<std::path::Path>,
+        sender_client_id: u64,
+    ) -> UseResult<Self> {
+        Self::attach_with_sender_client_id(
+            NativeOfficeCollaborationStore::open(path)?,
+            sender_client_id,
+        )
+    }
+
     pub fn manifest(&self) -> &NativeOfficeCollaborationManifest {
         &self.manifest
     }
 
     pub fn cursor_sequence(&self) -> u64 {
         self.cursor_sequence
+    }
+
+    pub fn sender_client_id(&self) -> u64 {
+        self.sender_client_id
     }
 
     /// Produce a fresh browser-compatible SyncStep1 envelope. Call this after
@@ -95,7 +142,7 @@ impl NativeOfficeCollaborationTransportSession {
         let message = self.validate_message(request.message)?;
         let kind = message.message_type;
         let source_origin = message.origin.clone();
-        if message.sender_client_id == self.manifest.client_id {
+        if message.sender_client_id == self.sender_client_id {
             return Ok(NativeOfficeCollaborationTransportReceiveResult {
                 kind,
                 ignored: true,
@@ -351,7 +398,7 @@ impl NativeOfficeCollaborationTransportSession {
             artifact_id: self.manifest.artifact_id.clone(),
             artifact_kind: self.manifest.kind,
             namespace: self.manifest.namespace.clone(),
-            sender_client_id: self.manifest.client_id,
+            sender_client_id: self.sender_client_id,
             message_type,
             payload,
             origin,

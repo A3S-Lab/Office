@@ -3,11 +3,15 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use a3s_office::{
-    NativeOfficeCollaborationOrigin, NativeOfficeCollaborationTransportMessage,
+    NativeOfficeCollaborationAwarenessMessage, NativeOfficeCollaborationOrigin,
+    NativeOfficeCollaborationPresenceActivity, NativeOfficeCollaborationPresenceLocation,
+    NativeOfficeCollaborationPresenceProfile, NativeOfficeCollaborationPresenceSession,
+    NativeOfficeCollaborationPresenceSnapshot, NativeOfficeCollaborationPresenceUpdate,
+    NativeOfficeCollaborationStore, NativeOfficeCollaborationTransportMessage,
     NativeOfficeCollaborationTransportMessageType, NativeOfficeCollaborationTransportPollResult,
     NativeOfficeCollaborationTransportReceiveRequest,
     NativeOfficeCollaborationTransportReceiveResult, NativeOfficeCollaborationTransportSession,
-    MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
+    MAX_NATIVE_OFFICE_COLLABORATION_AWARENESS_BYTES, MAX_NATIVE_OFFICE_COLLABORATION_EVENT_BATCH,
     MAX_NATIVE_OFFICE_COLLABORATION_STATE_VECTOR_BYTES,
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES,
 };
@@ -27,6 +31,7 @@ const DEFAULT_POLL_MS: u64 = 100;
 const MIN_POLL_MS: u64 = 50;
 const MAX_POLL_MS: u64 = 10_000;
 const MAX_TIMEOUT_MS: u64 = 24 * 60 * 60 * 1_000;
+const MAX_YJS_CLIENT_ID: u64 = (1_u64 << 53) - 1;
 const MAX_SESSION_JSONL_BYTES: usize =
     MAX_NATIVE_OFFICE_COLLABORATION_UPDATE_BYTES.div_ceil(3) * 4 + 64 * 1024;
 
@@ -35,11 +40,36 @@ type SharedSession = Arc<Mutex<NativeOfficeCollaborationTransportSession>>;
 pub(super) async fn run(args: &[String]) -> UseResult<CommandOutput> {
     let arguments = SessionArguments::parse(args)?;
     let store = arguments.store.clone();
-    let session =
-        spawn_blocking(move || NativeOfficeCollaborationTransportSession::open(store)).await?;
+    let presence_enabled = arguments.presence_profile.is_some();
+    let session = spawn_blocking(move || {
+        let store = NativeOfficeCollaborationStore::open(store)?;
+        if presence_enabled {
+            let replica_client_id = store.inspect()?.manifest.client_id;
+            let sender_client_id = random_client_id(replica_client_id)?;
+            NativeOfficeCollaborationTransportSession::attach_with_sender_client_id(
+                store,
+                sender_client_id,
+            )
+        } else {
+            NativeOfficeCollaborationTransportSession::attach(store)
+        }
+    })
+    .await?;
     let manifest = session.manifest().clone();
     let starting_sequence = session.cursor_sequence();
+    let sender_client_id = session.sender_client_id();
     let session = Arc::new(Mutex::new(session));
+    let mut presence = arguments
+        .presence_profile
+        .clone()
+        .map(|profile| {
+            NativeOfficeCollaborationPresenceSession::new_with_sender_client_id(
+                manifest.clone(),
+                sender_client_id,
+                profile,
+            )
+        })
+        .transpose()?;
     let mut output = SessionOutput::new();
 
     output
@@ -55,7 +85,10 @@ pub(super) async fn run(args: &[String]) -> UseResult<CommandOutput> {
             "actorId": manifest.actor_id,
             "actorKind": manifest.actor_kind,
             "mode": manifest.mode,
-            "clientId": manifest.client_id,
+            "clientId": sender_client_id,
+            "replicaClientId": manifest.client_id,
+            "presenceEnabled": presence.is_some(),
+            "actorName": arguments.presence_profile.as_ref().map(|profile| &profile.name),
             "startingSequence": starting_sequence,
             "cursorSequence": starting_sequence,
             "pollMs": arguments.poll_ms,
@@ -63,7 +96,7 @@ pub(super) async fn run(args: &[String]) -> UseResult<CommandOutput> {
         }))
         .await?;
 
-    let result = run_loop(&session, &arguments, &mut output).await;
+    let result = run_loop(&session, &arguments, &mut presence, &mut output).await;
     match result {
         Ok(()) => Ok(CommandOutput::silent()),
         Err(error) => {
@@ -73,13 +106,35 @@ pub(super) async fn run(args: &[String]) -> UseResult<CommandOutput> {
     }
 }
 
+fn random_client_id(replica_client_id: u64) -> UseResult<u64> {
+    loop {
+        let mut bytes = [0_u8; 8];
+        getrandom::fill(&mut bytes).map_err(|error| {
+            collaboration_cli_error(
+                "office.collaboration.session_failed",
+                format!("Failed to create an ephemeral Presence client ID: {error}"),
+            )
+        })?;
+        let client_id = u64::from_le_bytes(bytes) & MAX_YJS_CLIENT_ID;
+        if client_id != 0 && client_id != replica_client_id {
+            return Ok(client_id);
+        }
+    }
+}
+
 async fn run_loop(
     session: &SharedSession,
     arguments: &SessionArguments,
+    presence: &mut Option<NativeOfficeCollaborationPresenceSession>,
     output: &mut SessionOutput,
 ) -> UseResult<()> {
     let initial = session_call(session, |session| session.synchronize()).await?;
     output.outbound("initial-connect", &initial).await?;
+    if let Some(presence) = presence.as_ref() {
+        output
+            .outbound_awareness("initial-connect", &presence.local_message()?)
+            .await?;
+    }
 
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut input = Vec::new();
@@ -94,13 +149,22 @@ async fn run_loop(
         tokio::select! {
             line = read_bounded_jsonl(&mut stdin, &mut input) => {
                 let Some(line) = line? else {
-                    output.complete("stdin-eof", session_cursor(session).await?).await?;
+                    complete_session("stdin-eof", session, presence, output).await?;
                     return Ok(());
                 };
                 match parse_input(&line)? {
                     SessionInput::Reconnect => {
                         let message = session_call(session, |session| session.synchronize()).await?;
                         output.outbound("reconnect", &message).await?;
+                        if let Some(presence) = presence.as_mut() {
+                            let cleared = presence.clear_remote()?;
+                            if cleared.changed {
+                                output.presence("reconnect-clear", cleared.changed, &cleared.snapshot).await?;
+                            }
+                            output
+                                .outbound_awareness("reconnect", &presence.local_message()?)
+                                .await?;
+                        }
                     }
                     SessionInput::Receive {
                         message,
@@ -118,9 +182,35 @@ async fn run_loop(
                             output.outbound("peer-sync-step1", response).await?;
                         }
                     }
+                    SessionInput::SetPresence { activity, location } => {
+                        let presence = required_presence(presence)?;
+                        let message = presence.update(NativeOfficeCollaborationPresenceUpdate {
+                            activity,
+                            location,
+                        })?;
+                        output.outbound_awareness("local-presence", &message).await?;
+                        output
+                            .presence("local-presence", true, &presence.snapshot()?)
+                            .await?;
+                    }
+                    SessionInput::ReceiveAwareness { message } => {
+                        let presence = required_presence(presence)?;
+                        let message = awareness_message(*message)?;
+                        let received = presence.receive(message)?;
+                        output
+                            .presence("remote-awareness", received.changed, &received.snapshot)
+                            .await?;
+                    }
+                    SessionInput::PeerLeft { sender_client_id } => {
+                        let presence = required_presence(presence)?;
+                        let received = presence.peer_left(sender_client_id)?;
+                        output
+                            .presence("peer-left", received.changed, &received.snapshot)
+                            .await?;
+                    }
                     SessionInput::Close => {
                         drain_backlog(session, output).await?;
-                        output.complete("host-close", session_cursor(session).await?).await?;
+                        complete_session("host-close", session, presence, output).await?;
                         return Ok(());
                     }
                 }
@@ -135,15 +225,41 @@ async fn run_loop(
                 }
             }
             _ = &mut timeout => {
-                output.complete("timeout", session_cursor(session).await?).await?;
+                complete_session("timeout", session, presence, output).await?;
                 return Ok(());
             }
             _ = &mut termination => {
-                output.complete("signal", session_cursor(session).await?).await?;
+                complete_session("signal", session, presence, output).await?;
                 return Ok(());
             }
         }
     }
+}
+
+async fn complete_session(
+    reason: &str,
+    session: &SharedSession,
+    presence: &mut Option<NativeOfficeCollaborationPresenceSession>,
+    output: &mut SessionOutput,
+) -> UseResult<()> {
+    if let Some(presence) = presence.as_mut() {
+        let removal = presence.disconnect()?;
+        output.outbound_awareness("disconnect", &removal).await?;
+    }
+    output
+        .complete(reason, session_cursor(session).await?)
+        .await
+}
+
+fn required_presence(
+    presence: &mut Option<NativeOfficeCollaborationPresenceSession>,
+) -> UseResult<&mut NativeOfficeCollaborationPresenceSession> {
+    presence.as_mut().ok_or_else(|| {
+        collaboration_cli_error(
+            "office.collaboration.presence_unavailable",
+            "Native Presence requires collab session --actor-name <display-name>.",
+        )
+    })
 }
 
 async fn drain_backlog(session: &SharedSession, output: &mut SessionOutput) -> UseResult<()> {
@@ -192,6 +308,17 @@ enum SessionInput {
         #[serde(default, rename = "ifStateVectorBase64")]
         if_state_vector_base64: Option<String>,
     },
+    SetPresence {
+        activity: NativeOfficeCollaborationPresenceActivity,
+        location: Option<NativeOfficeCollaborationPresenceLocation>,
+    },
+    ReceiveAwareness {
+        message: Box<SessionAwarenessMessageInput>,
+    },
+    PeerLeft {
+        #[serde(rename = "senderClientId")]
+        sender_client_id: u64,
+    },
     Close,
 }
 
@@ -209,6 +336,18 @@ struct SessionMessageInput {
     payload_base64: String,
     #[serde(default)]
     origin: Option<NativeOfficeCollaborationOrigin>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct SessionAwarenessMessageInput {
+    protocol: String,
+    version: u32,
+    artifact_id: String,
+    artifact_kind: a3s_office::NativeOfficeCollaborationArtifactKind,
+    namespace: String,
+    sender_client_id: u64,
+    payload_base64: String,
 }
 
 fn parse_input(line: &[u8]) -> UseResult<SessionInput> {
@@ -258,6 +397,24 @@ fn receive_request(
         },
         operation_id,
         if_state_vector,
+    })
+}
+
+fn awareness_message(
+    input: SessionAwarenessMessageInput,
+) -> UseResult<NativeOfficeCollaborationAwarenessMessage> {
+    Ok(NativeOfficeCollaborationAwarenessMessage {
+        protocol: input.protocol,
+        version: input.version,
+        artifact_id: input.artifact_id,
+        artifact_kind: input.artifact_kind,
+        namespace: input.namespace,
+        sender_client_id: input.sender_client_id,
+        payload: decode_bounded_base64(
+            &input.payload_base64,
+            MAX_NATIVE_OFFICE_COLLABORATION_AWARENESS_BYTES,
+            "Awareness payload",
+        )?,
     })
 }
 
@@ -359,6 +516,36 @@ impl SessionOutput {
         .await
     }
 
+    async fn outbound_awareness(
+        &mut self,
+        reason: &str,
+        message: &NativeOfficeCollaborationAwarenessMessage,
+    ) -> UseResult<()> {
+        self.write(json!({
+            "schemaVersion": 1,
+            "type": "outbound-awareness",
+            "reason": reason,
+            "message": awareness_message_json(message),
+        }))
+        .await
+    }
+
+    async fn presence(
+        &mut self,
+        reason: &str,
+        changed: bool,
+        snapshot: &NativeOfficeCollaborationPresenceSnapshot,
+    ) -> UseResult<()> {
+        self.write(json!({
+            "schemaVersion": 1,
+            "type": "presence",
+            "reason": reason,
+            "changed": changed,
+            "snapshot": snapshot,
+        }))
+        .await
+    }
+
     async fn received(
         &mut self,
         operation_id: Option<&str>,
@@ -453,6 +640,18 @@ fn message_json(message: &NativeOfficeCollaborationTransportMessage) -> Value {
     value
 }
 
+fn awareness_message_json(message: &NativeOfficeCollaborationAwarenessMessage) -> Value {
+    json!({
+        "protocol": message.protocol,
+        "version": message.version,
+        "artifactId": message.artifact_id,
+        "artifactKind": message.artifact_kind,
+        "namespace": message.namespace,
+        "senderClientId": message.sender_client_id,
+        "payloadBase64": STANDARD.encode(&message.payload),
+    })
+}
+
 fn output_error(message: impl Into<String>) -> UseError {
     collaboration_cli_error("office.collaboration.session_output_failed", message)
 }
@@ -485,6 +684,7 @@ struct SessionArguments {
     store: PathBuf,
     poll_ms: u64,
     timeout_ms: Option<u64>,
+    presence_profile: Option<NativeOfficeCollaborationPresenceProfile>,
 }
 
 impl SessionArguments {
@@ -492,6 +692,9 @@ impl SessionArguments {
         let mut positionals = Vec::new();
         let mut poll_ms = None;
         let mut timeout_ms = None;
+        let mut actor_name = None;
+        let mut actor_color = None;
+        let mut actor_avatar_url = None;
         let mut json = false;
         let mut index = 1;
         while index < args.len() {
@@ -502,6 +705,18 @@ impl SessionArguments {
                 }
                 "--timeout-ms" => {
                     set_option(&mut timeout_ms, args, index, "--timeout-ms")?;
+                    index += 2;
+                }
+                "--actor-name" => {
+                    set_option(&mut actor_name, args, index, "--actor-name")?;
+                    index += 2;
+                }
+                "--actor-color" => {
+                    set_option(&mut actor_color, args, index, "--actor-color")?;
+                    index += 2;
+                }
+                "--actor-avatar-url" => {
+                    set_option(&mut actor_avatar_url, args, index, "--actor-avatar-url")?;
                     index += 2;
                 }
                 "--json" => {
@@ -548,10 +763,21 @@ impl SessionArguments {
                 "--timeout-ms must be between 1 and {MAX_TIMEOUT_MS}"
             )));
         }
+        if actor_name.is_none() && (actor_color.is_some() || actor_avatar_url.is_some()) {
+            return Err(usage_error(
+                "--actor-color and --actor-avatar-url require --actor-name",
+            ));
+        }
+        let presence_profile = actor_name.map(|name| NativeOfficeCollaborationPresenceProfile {
+            name,
+            color: actor_color,
+            avatar_url: actor_avatar_url,
+        });
         Ok(Self {
             store: PathBuf::from(positionals.remove(0)),
             poll_ms,
             timeout_ms,
+            presence_profile,
         })
     }
 }
@@ -608,6 +834,26 @@ mod tests {
         assert_eq!(parsed.store, PathBuf::from("agent.replica"));
         assert_eq!(parsed.poll_ms, 125);
         assert_eq!(parsed.timeout_ms, Some(5_000));
+        assert_eq!(parsed.presence_profile, None);
+
+        let parsed = SessionArguments::parse(&values(&[
+            "session",
+            "agent.replica",
+            "--actor-name",
+            "A3S Agent",
+            "--actor-color",
+            "#2563eb",
+            "--json",
+        ]))
+        .unwrap();
+        assert_eq!(
+            parsed.presence_profile,
+            Some(NativeOfficeCollaborationPresenceProfile {
+                name: "A3S Agent".to_owned(),
+                color: Some("#2563eb".to_owned()),
+                avatar_url: None,
+            })
+        );
 
         for invalid in [
             values(&["session", "agent.replica"]),
@@ -615,6 +861,7 @@ mod tests {
             values(&["session", "one", "--poll-ms", "49", "--json"]),
             values(&["session", "one", "--timeout-ms", "0", "--json"]),
             values(&["session", "one", "--unknown", "--json"]),
+            values(&["session", "one", "--actor-color", "#fff", "--json"]),
         ] {
             assert!(SessionArguments::parse(&invalid).is_err(), "{invalid:?}");
         }

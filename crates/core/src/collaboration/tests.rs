@@ -17,6 +17,7 @@ mod document_structure;
 mod document_suggestion_mutations;
 mod document_suggestions;
 mod pdf;
+mod presence;
 mod presentation;
 mod projection;
 mod spreadsheet;
@@ -674,6 +675,23 @@ fn y_sync_update_handler_requires_identity_and_persists_idempotently() {
     assert!(first.apply.as_ref().unwrap().state_changed);
     let replay = store.handle_sync_message(&message, Some(mutation)).unwrap();
     assert!(replay.apply.unwrap().duplicate);
+}
+
+#[test]
+fn live_transport_can_use_an_ephemeral_sender_without_changing_replica_identity() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("replica");
+    let store = NativeOfficeCollaborationStore::create(create_request(&root)).unwrap();
+    let session = NativeOfficeCollaborationTransportSession::attach_with_sender_client_id(
+        store.clone(),
+        800_008,
+    )
+    .unwrap();
+
+    assert_eq!(session.manifest().client_id, 900_001);
+    assert_eq!(session.sender_client_id(), 800_008);
+    assert_eq!(session.synchronize().unwrap().sender_client_id, 800_008);
+    assert_eq!(store.inspect().unwrap().manifest.client_id, 900_001);
 }
 
 #[test]

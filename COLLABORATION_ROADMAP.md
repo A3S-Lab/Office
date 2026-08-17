@@ -395,8 +395,9 @@ projection, a host-injected live CLI transport session, authenticated browser
 suggestion-update authorization, and typed Markdown, Document
 content/comment/suggestion, Spreadsheet cell, Presentation scene-element, PDF
 annotation/form-value, and PDF redaction/page-operation review mutation surfaces
-are implemented; the remaining format mutations and native presence projection
-are pending.
+are implemented. The live CLI session also projects ephemeral native Presence
+and format-specific locations through standard Yjs Awareness; remaining typed
+format mutations are pending.
 
 - Yrs `0.27.3` now uses 53-bit Yjs-compatible client IDs and exchanges standard
   Yjs v1 updates, state vectors, and y-sync `SyncStep1`/`Update` messages with
@@ -426,6 +427,14 @@ are pending.
   stdin/stdout for a coding-agent or product host. The host still owns the
   WebSocket or IPC channel, room selection, authentication, authorization,
   buffering, and delivery identities; the CLI never opens a provider itself.
+- Supplying `--actor-name` gives the live session a separate in-memory Yrs
+  Awareness peer. Typed active/idle/away state and Document, Markdown,
+  Spreadsheet, Presentation, or PDF locations are emitted as bounded
+  `outbound-awareness` records, while validated remote updates and peer-left
+  events become sorted participant snapshots. Reconnect clears stale remote
+  state and republishes the local participant; orderly close emits an
+  Awareness tombstone. No Presence state or clock enters the replica,
+  checkpoint, durable update log, or operation receipts.
 - Each replica binds one stable actor ID, actor kind, permission mode, artifact
   identity/kind, namespace, and client ID. Apply/checkpoint/leave require the
   same identity plus a stable operation ID and accept an optional state-vector
@@ -518,8 +527,6 @@ Remaining:
   structural/rich-text operations plus PDF signatures; deepen Document
   mutations to additional nested structures and complete table/list/section
   revision workflows.
-- Project editor-visible presence and selection state while keeping Awareness
-  ephemeral and outside native replica persistence.
 
 Exit criterion: a browser, `office` CLI, MCP client, and `a3s code` agent edit
 the same artifact concurrently, converge at the shared-model level, reconnect

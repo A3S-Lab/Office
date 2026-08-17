@@ -9,6 +9,7 @@
 mod document;
 mod mutation;
 mod persistence;
+mod presence;
 mod projection;
 mod transport;
 mod types;
@@ -35,6 +36,7 @@ use persistence::{
     compact, create_store, load_store, open_store, write_archived_operation, write_checkpoint,
     write_update_entry, HostAuthorizationRecord, LoadedStore, OperationRecord, StoreLock,
 };
+pub use presence::NativeOfficeCollaborationPresenceSession;
 use projection::project_collaboration_document;
 pub use transport::NativeOfficeCollaborationTransportSession;
 pub use types::*;
