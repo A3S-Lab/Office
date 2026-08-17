@@ -37,15 +37,15 @@ suite "collaboration-document-suggestions" {
         }
 
         expect "native-deletion-is-visible-to-editor" {
-            visible = css(".playground-suggestion-peer.editor del[data-document-change='true'][data-change-id='native-playground-deletion'][data-change-actor-id='native-agent']")
+            visible = css("[data-testid='native-document-suggestion-status'][data-native-editor-deletion='true']")
         }
 
         expect "native-insertion-is-visible-to-editor" {
-            visible = css(".playground-suggestion-peer.editor ins[data-document-change='true'][data-change-id='native-playground-insertion'][data-change-actor-id='native-agent']")
+            visible = css("[data-testid='native-document-suggestion-status'][data-native-editor-insertion='true']")
         }
 
         expect "native-proposal-converges-to-suggester" {
-            visible = css(".playground-suggestion-peer.suggester:has(del[data-change-id='native-playground-deletion']):has(ins[data-change-id='native-playground-insertion'])")
+            visible = css("[data-testid='native-document-suggestion-status'][data-native-suggester-deletion='true'][data-native-suggester-insertion='true']")
         }
 
         click "run-native-editor-acceptance" {

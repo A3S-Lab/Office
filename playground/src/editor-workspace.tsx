@@ -322,6 +322,22 @@ export function EditorWorkspace({
                     className="playground-collaboration-fixture-status"
                     data-testid="native-document-suggestion-status"
                     data-state={documentSuggestionFixture.nativeStage}
+                    data-native-editor-deletion={String(
+                      documentSuggestionFixture.nativeProjection
+                        .editorHasDeletion,
+                    )}
+                    data-native-editor-insertion={String(
+                      documentSuggestionFixture.nativeProjection
+                        .editorHasInsertion,
+                    )}
+                    data-native-suggester-deletion={String(
+                      documentSuggestionFixture.nativeProjection
+                        .suggesterHasDeletion,
+                    )}
+                    data-native-suggester-insertion={String(
+                      documentSuggestionFixture.nativeProjection
+                        .suggesterHasInsertion,
+                    )}
                     aria-live="polite"
                   >
                     {nativeDocumentSuggestionStatus(
@@ -573,6 +589,7 @@ export function EditorWorkspace({
             documentSuggestionFixtureEnabled &&
             documentSuggestionFixture && (
               <section
+                key={documentSuggestionFixture.nativeStage}
                 className="playground-suggestion-demo"
                 aria-label="双人建议协作"
               >

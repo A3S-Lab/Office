@@ -22,9 +22,17 @@ export interface PlaygroundDocumentSuggestionFixture {
   readonly content: DocumentContent;
   readonly editor: OfficeCollaborationSession;
   readonly suggester: OfficeCollaborationSession;
+  readonly nativeProjection: PlaygroundNativeDocumentSuggestionProjection;
   readonly nativeStage: PlaygroundNativeDocumentSuggestionStage;
   readonly advanceNativeSuggestion: () => void;
   readonly updateContent: (content: DocumentContent) => void;
+}
+
+export interface PlaygroundNativeDocumentSuggestionProjection {
+  readonly editorHasDeletion: boolean;
+  readonly editorHasInsertion: boolean;
+  readonly suggesterHasDeletion: boolean;
+  readonly suggesterHasInsertion: boolean;
 }
 
 export function usePlaygroundDocumentSuggestionFixture(
@@ -42,19 +50,22 @@ export function usePlaygroundDocumentSuggestionFixture(
       setNativeStage('ready');
       return;
     }
-    const fixture = createDocumentSuggestionFixture();
+    const fixture = createDocumentSuggestionFixture('ready');
     setOwned(fixture);
     setContent(fixture.content());
     setNativeStage('ready');
-    return () => fixture.destroy();
   }, [enabled]);
 
+  useEffect(() => () => owned?.destroy(), [owned]);
+
   const advanceNativeSuggestion = useCallback(() => {
-    if (!owned) return;
-    const next = owned.advanceNativeSuggestion();
-    setNativeStage(next.stage);
-    setContent(next.content);
-  }, [owned]);
+    const nextStage = nextNativeDocumentSuggestionStage(nativeStage);
+    if (nextStage === nativeStage) return;
+    const fixture = createDocumentSuggestionFixture(nextStage);
+    setOwned(fixture);
+    setContent(fixture.content());
+    setNativeStage(nextStage);
+  }, [nativeStage]);
 
   return enabled && owned && content
     ? {
@@ -62,6 +73,7 @@ export function usePlaygroundDocumentSuggestionFixture(
         content,
         editor: owned.editor,
         suggester: owned.suggester,
+        nativeProjection: owned.nativeProjection(),
         nativeStage,
         advanceNativeSuggestion,
         updateContent: setContent,
@@ -72,22 +84,37 @@ export function usePlaygroundDocumentSuggestionFixture(
 interface OwnedDocumentSuggestionFixture {
   readonly editor: OfficeCollaborationSession;
   readonly suggester: OfficeCollaborationSession;
-  advanceNativeSuggestion(): {
-    content: DocumentContent;
-    stage: PlaygroundNativeDocumentSuggestionStage;
-  };
   content(): DocumentContent;
+  nativeProjection(): PlaygroundNativeDocumentSuggestionProjection;
   destroy(): void;
 }
 
 const PLAYGROUND_DOCUMENT_SUGGESTION_ARTIFACT_ID = 'fixture-document';
+const NATIVE_DOCUMENT_SUGGESTION_DELETION_ID = 'native-playground-deletion';
+const NATIVE_DOCUMENT_SUGGESTION_INSERTION_ID = 'native-playground-insertion';
 
-function createDocumentSuggestionFixture(): OwnedDocumentSuggestionFixture {
+function createDocumentSuggestionFixture(
+  stage: PlaygroundNativeDocumentSuggestionStage,
+): OwnedDocumentSuggestionFixture {
   const suggestionDocument = new Y.Doc();
   Y.applyUpdate(
     suggestionDocument,
     decodeBase64(browserDocumentFixtureBase64.trim()),
   );
+  if (stage !== 'ready') {
+    Y.applyUpdate(
+      suggestionDocument,
+      decodeBase64(NATIVE_DOCUMENT_SUGGESTION_PROPOSAL_BASE64),
+      'playground-native-agent',
+    );
+  }
+  if (stage === 'accepted') {
+    Y.applyUpdate(
+      suggestionDocument,
+      decodeBase64(NATIVE_DOCUMENT_SUGGESTION_DECISION_BASE64),
+      'playground-native-agent',
+    );
+  }
 
   const editorDocument = new Y.Doc();
   Y.applyUpdate(editorDocument, Y.encodeStateAsUpdate(suggestionDocument));
@@ -120,40 +147,36 @@ function createDocumentSuggestionFixture(): OwnedDocumentSuggestionFixture {
     kind: 'document',
     mode: 'edit',
   });
-  const updates = [
-    NATIVE_DOCUMENT_SUGGESTION_PROPOSAL_BASE64,
-    NATIVE_DOCUMENT_SUGGESTION_DECISION_BASE64,
-  ];
-  const stages: PlaygroundNativeDocumentSuggestionStage[] = [
-    'proposed',
-    'accepted',
-  ];
-  let updateIndex = 0;
+  const content = readOfficeDocumentCollaboration(editor);
+  assertNativeUpdateApplied(content, stage);
 
   return {
     editor,
     suggester,
-    advanceNativeSuggestion() {
-      const encoded = updates[updateIndex];
-      const stage = stages[updateIndex];
-      if (!encoded || !stage) {
-        return {
-          content: readOfficeDocumentCollaboration(editor),
-          stage: 'accepted',
-        };
-      }
-      Y.applyUpdate(
-        updateIndex === 0 ? suggestionDocument : editorDocument,
-        decodeBase64(encoded),
-        'playground-native-agent',
-      );
-      const content = readOfficeDocumentCollaboration(editor);
-      assertNativeUpdateApplied(content, stage);
-      updateIndex += 1;
-      return { content, stage };
-    },
     content() {
       return readOfficeDocumentCollaboration(editor);
+    },
+    nativeProjection() {
+      const editorContent = readOfficeDocumentCollaboration(editor);
+      const suggesterContent = readOfficeDocumentCollaboration(suggester);
+      return {
+        editorHasDeletion: hasNativeDocumentSuggestion(
+          editorContent,
+          NATIVE_DOCUMENT_SUGGESTION_DELETION_ID,
+        ),
+        editorHasInsertion: hasNativeDocumentSuggestion(
+          editorContent,
+          NATIVE_DOCUMENT_SUGGESTION_INSERTION_ID,
+        ),
+        suggesterHasDeletion: hasNativeDocumentSuggestion(
+          suggesterContent,
+          NATIVE_DOCUMENT_SUGGESTION_DELETION_ID,
+        ),
+        suggesterHasInsertion: hasNativeDocumentSuggestion(
+          suggesterContent,
+          NATIVE_DOCUMENT_SUGGESTION_INSERTION_ID,
+        ),
+      };
     },
     destroy() {
       suggestionDocument.off('update', relaySuggestionUpdate);
@@ -164,6 +187,26 @@ function createDocumentSuggestionFixture(): OwnedDocumentSuggestionFixture {
       editorDocument.destroy();
     },
   };
+}
+
+function nextNativeDocumentSuggestionStage(
+  stage: PlaygroundNativeDocumentSuggestionStage,
+): PlaygroundNativeDocumentSuggestionStage {
+  switch (stage) {
+    case 'ready':
+      return 'proposed';
+    case 'proposed':
+      return 'accepted';
+    case 'accepted':
+      return 'accepted';
+  }
+}
+
+function hasNativeDocumentSuggestion(
+  content: DocumentContent,
+  changeId: string,
+): boolean {
+  return content.html.includes(`data-change-id="${changeId}"`);
 }
 
 function assertNativeUpdateApplied(
