@@ -230,6 +230,243 @@ fn typed_spreadsheet_cells_merge_leaves_preserve_projection_and_survive_restart(
 }
 
 #[test]
+fn typed_spreadsheet_batch_cells_commit_one_dense_gesture_and_survive_restart() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("spreadsheet-replica");
+    let store = initialized_spreadsheet_store(&root);
+    let original = json!({
+        "v": 10,
+        "m": "10",
+        "ct": { "fa": "0.00", "t": "n" },
+    });
+
+    store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-concurrent-number-format",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-data".to_owned(),
+                row: 1,
+                column: 0,
+                expected_cell: Some(original.clone()),
+                next_cell: json!({
+                    "v": 10,
+                    "m": "10",
+                    "ct": { "fa": "0.000", "t": "n" },
+                }),
+            },
+        ))
+        .unwrap();
+    let disposable = json!({ "v": "remove", "m": "remove" });
+    store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-create-disposable-dense-cell",
+            NativeOfficeCollaborationMutation::SpreadsheetSetCell {
+                sheet_id: "sheet-data".to_owned(),
+                row: 0,
+                column: 1,
+                expected_cell: None,
+                next_cell: disposable.clone(),
+            },
+        ))
+        .unwrap();
+
+    let request = spreadsheet_mutation_request(
+        "spreadsheet-batch-dense-gesture",
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-data".to_owned(),
+            changes: vec![
+                spreadsheet_cell_change(
+                    1,
+                    0,
+                    Some(original),
+                    Some(json!({
+                        "v": 12,
+                        "m": "12",
+                        "f": "=6*2",
+                        "ct": { "fa": "0.00", "t": "s" },
+                    })),
+                ),
+                spreadsheet_cell_change(3, 4, None, Some(json!({ "v": "far", "m": "far" }))),
+                spreadsheet_cell_change(0, 1, Some(disposable), None),
+            ],
+        },
+    );
+    let result = store.mutate(request.clone()).unwrap();
+    assert!(result.state_changed);
+    assert_eq!(result.sequence, Some(4));
+    assert_eq!(cell_number(&store, "sheet-data", 1, 0, &["v"]), Some(12.0));
+    assert_eq!(
+        cell_string(&store, "sheet-data", 1, 0, &["ct", "fa"]),
+        Some("0.000".to_owned())
+    );
+    assert_eq!(
+        cell_string(&store, "sheet-data", 1, 0, &["ct", "t"]),
+        Some("s".to_owned())
+    );
+    assert_eq!(
+        cell_string(&store, "sheet-data", 3, 4, &["v"]),
+        Some("far".to_owned())
+    );
+    assert!(!spreadsheet_cell_present(&store, "sheet-data", 0, 1));
+    assert_eq!(
+        spreadsheet_row_lengths(&store, "sheet-data"),
+        vec![2, 2, 0, 5]
+    );
+    drop(store);
+
+    let reopened = NativeOfficeCollaborationStore::open(&root).unwrap();
+    assert_eq!(
+        cell_string(&reopened, "sheet-data", 1, 0, &["ct", "fa"]),
+        Some("0.000".to_owned())
+    );
+    assert_eq!(
+        spreadsheet_row_lengths(&reopened, "sheet-data"),
+        vec![2, 2, 0, 5]
+    );
+    let replay = reopened.mutate(request).unwrap();
+    assert!(replay.duplicate);
+    assert_eq!(replay.sequence, Some(4));
+}
+
+#[test]
+fn typed_spreadsheet_batch_cells_preserve_sparse_mode_and_fail_atomically() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("spreadsheet-replica");
+    let store = initialized_spreadsheet_store(&root);
+    let sparse = store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-batch-sparse-create",
+            NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+                sheet_id: "sheet-empty".to_owned(),
+                changes: vec![
+                    spreadsheet_cell_change(
+                        100,
+                        5,
+                        None,
+                        Some(json!({ "v": "first", "m": "first" })),
+                    ),
+                    spreadsheet_cell_change(
+                        200,
+                        7,
+                        None,
+                        Some(json!({ "v": "second", "m": "second" })),
+                    ),
+                ],
+            },
+        ))
+        .unwrap();
+    assert!(sparse.state_changed);
+    assert_eq!(
+        spreadsheet_mode(&store, "sheet-empty"),
+        Some("celldata".to_owned())
+    );
+    assert!(spreadsheet_row_lengths(&store, "sheet-empty").is_empty());
+
+    let before = store.inspect().unwrap();
+    let conflict = store
+        .mutate(spreadsheet_mutation_request(
+            "spreadsheet-batch-atomic-conflict",
+            NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+                sheet_id: "sheet-empty".to_owned(),
+                changes: vec![
+                    spreadsheet_cell_change(300, 9, None, Some(json!({ "v": "must-not-appear" }))),
+                    spreadsheet_cell_change(
+                        100,
+                        5,
+                        Some(json!({ "v": "stale", "m": "stale" })),
+                        Some(json!({ "v": "conflict", "m": "conflict" })),
+                    ),
+                ],
+            },
+        ))
+        .unwrap_err();
+    assert_eq!(
+        conflict.code,
+        "office.collaboration.mutation_match_conflict"
+    );
+    let after = store.inspect().unwrap();
+    assert_eq!(after.current_sequence, before.current_sequence);
+    assert_eq!(after.document_state_sha256, before.document_state_sha256);
+    assert!(!spreadsheet_cell_present(&store, "sheet-empty", 300, 9));
+    assert_eq!(
+        cell_string(&store, "sheet-empty", 100, 5, &["v"]),
+        Some("first".to_owned())
+    );
+}
+
+#[test]
+fn typed_spreadsheet_batch_cell_contract_rejects_ambiguous_or_unbounded_changes() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("spreadsheet-replica");
+    let store = initialized_spreadsheet_store(&root);
+    let too_many = (0..4_097)
+        .map(|row| spreadsheet_cell_change(row, 0, None, Some(json!({ "v": row }))))
+        .collect();
+    let invalid_values = vec![
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-empty".to_owned(),
+            changes: vec![],
+        },
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-empty".to_owned(),
+            changes: vec![
+                spreadsheet_cell_change(0, 0, None, Some(json!({ "v": 1 }))),
+                spreadsheet_cell_change(0, 0, None, Some(json!({ "v": 2 }))),
+            ],
+        },
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-empty".to_owned(),
+            changes: vec![spreadsheet_cell_change(0, 0, None, None)],
+        },
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-empty".to_owned(),
+            changes: vec![spreadsheet_cell_change(
+                1_048_576,
+                0,
+                None,
+                Some(json!({ "v": 1 })),
+            )],
+        },
+        NativeOfficeCollaborationMutation::SpreadsheetBatchCells {
+            sheet_id: "sheet-empty".to_owned(),
+            changes: too_many,
+        },
+    ];
+    let before = store.inspect().unwrap();
+    assert!(
+        serde_json::from_value::<NativeOfficeCollaborationMutation>(json!({
+            "type": "spreadsheet-batch-cells",
+            "sheetId": "sheet-empty",
+            "changes": [{
+                "row": 0,
+                "column": 0,
+                "expectedCell": { "v": "must-not-delete" }
+            }]
+        }))
+        .is_err()
+    );
+    for (index, mutation) in invalid_values.into_iter().enumerate() {
+        let error = store
+            .mutate(spreadsheet_mutation_request(
+                &format!("spreadsheet-invalid-batch-{index}"),
+                mutation,
+            ))
+            .unwrap_err();
+        assert!(
+            matches!(
+                error.code.as_str(),
+                "office.collaboration.mutation_invalid"
+                    | "office.collaboration.mutation_range_invalid"
+            ),
+            "unexpected error: {error:?}"
+        );
+    }
+    let after = store.inspect().unwrap();
+    assert_eq!(after.current_sequence, before.current_sequence);
+    assert_eq!(after.document_state_sha256, before.document_state_sha256);
+}
+
+#[test]
 fn typed_spreadsheet_cell_contract_is_bounded_kind_safe_and_atomic() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("spreadsheet-replica");
@@ -411,6 +648,20 @@ fn spreadsheet_mutation_request(
         expected_kind: NativeOfficeCollaborationArtifactKind::Spreadsheet,
         mutation,
         if_state_vector: None,
+    }
+}
+
+fn spreadsheet_cell_change(
+    row: u32,
+    column: u32,
+    expected_cell: Option<JsonValue>,
+    next_cell: Option<JsonValue>,
+) -> NativeOfficeCollaborationSpreadsheetCellChange {
+    NativeOfficeCollaborationSpreadsheetCellChange {
+        row,
+        column,
+        expected_cell,
+        next_cell,
     }
 }
 

@@ -6,6 +6,7 @@ Use stable worksheet and A1 paths such as `/Sheet1`, `/Sheet1/A1`, and
 ## Contents
 
 - [Inspect](#inspect)
+- [Collaborative Cell Gestures](#collaborative-cell-gestures)
 - [Values and Formulas](#values-and-formulas)
 - [Delimited Import and Frozen Panes](#delimited-import-and-frozen-panes)
 - [Cell Text Formatting](#cell-text-formatting)
@@ -29,6 +30,19 @@ a3s use office native view workbook.xlsx stats --json
 a3s use office native view workbook.xlsx annotated --limit 200 --json
 a3s use office native view workbook.xlsx issues --type content --json
 ```
+
+## Collaborative Cell Gestures
+
+For a durable Yjs/Yrs Spreadsheet replica, use `spreadsheet-set-cell` or
+`spreadsheet-delete-cell` for one guarded coordinate. Use
+`spreadsheet-batch-cells` for one paste, fill, or other bounded gesture over 1
+to 4,096 distinct coordinates in the same stable sheet ID. A present
+`nextCell` recursively sets or creates the cell; `nextCell: null` requires the
+complete observed `expectedCell` and deletes it. The collaboration boundary
+checks all guards against one sheet snapshot before one transaction, so one
+conflict leaves every cell and the durable event cursor unchanged. See
+[MCP: Real-time Collaboration](mcp.md#real-time-collaboration) for the complete
+request envelope and JSON example.
 
 ## Values and Formulas
 

@@ -380,13 +380,56 @@ observed blank:
 }
 ```
 
+Use `spreadsheet-batch-cells` for one paste, fill, or other bounded gesture.
+Every coordinate must be distinct; `nextCell: null` is an exact guarded
+deletion:
+
+```json
+{
+  "store": ".a3s/plan.replica",
+  "operationId": "agent-cell-batch-48",
+  "actorId": "agent-7",
+  "mode": "edit",
+  "artifactId": "plan",
+  "kind": "spreadsheet",
+  "mutation": {
+    "type": "spreadsheet-batch-cells",
+    "sheetId": "sheet-data",
+    "changes": [
+      {
+        "row": 1,
+        "column": 0,
+        "expectedCell": { "v": 12, "m": "12", "f": "=6*2" },
+        "nextCell": { "v": 14, "m": "14", "f": "=7*2" }
+      },
+      {
+        "row": 1,
+        "column": 1,
+        "expectedCell": null,
+        "nextCell": { "v": 20, "m": "20" }
+      },
+      {
+        "row": 2,
+        "column": 0,
+        "expectedCell": { "v": "obsolete", "m": "obsolete" },
+        "nextCell": null
+      }
+    ]
+  },
+  "ifStateVectorBase64": "..."
+}
+```
+
 Set compares the expected, current, and next cell recursively and writes only
 changed leaves. Unrelated concurrent leaves merge; a stale same-leaf edit fails
 without a durable update. `spreadsheet-delete-cell` instead requires the exact
 complete current cell in `expectedCell`. Dense sheets retain their matrix row
 lengths, sparse sheets remain `celldata`, and an empty sheet's first write is
-sparse. Do not construct or mutate the internal presence, field, projection,
-or row-length roots directly.
+sparse. Batch accepts 1 to 4,096 changes, evaluates every guard against one
+shared snapshot, and commits fields, presence, and dense dimensions in one Yjs
+transaction. One invalid or conflicting change produces no partial result or
+durable event. Do not construct or mutate the internal presence, field,
+projection, or row-length roots directly.
 
 Presentation scene-element mutations use a stable container kind (`slide`,
 `master`, or `layout`) and ID. Create one complete element with

@@ -29,6 +29,8 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     let mut stdin = child.stdin.take().unwrap();
     let mut stdout = BufReader::new(child.stdout.take().unwrap());
     let mut stderr = child.stderr.take().unwrap();
+    let fixture_update = spreadsheet_collaboration_fixture();
+    let header = spreadsheet_cell(&fixture_update, "sheet-data", 0, 0).unwrap();
     request(
         &mut stdin,
         &mut stdout,
@@ -67,7 +69,7 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
             "mode": "edit",
             "operationId": "join-spreadsheet-mcp",
             "clientId": 900015,
-            "initialUpdateBase64": STANDARD.encode(spreadsheet_collaboration_fixture())
+            "initialUpdateBase64": STANDARD.encode(&fixture_update)
         }),
         TIMEOUT,
     )
@@ -106,10 +108,59 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     assert_ne!(set["result"]["isError"], true, "{set}");
     assert_eq!(set["result"]["structuredContent"]["sequence"], 1);
 
-    let create = call(
+    let batch = call(
         &mut stdin,
         &mut stdout,
         4,
+        "office_collaboration_mutate",
+        mutation_arguments(
+            &replica,
+            "spreadsheet-batch-cells-mcp",
+            serde_json::json!({
+                "type": "spreadsheet-batch-cells",
+                "sheetId": "sheet-data",
+                "changes": [
+                    {
+                        "row": 1,
+                        "column": 0,
+                        "expectedCell": {
+                            "v": 14,
+                            "m": "14",
+                            "f": "=7*2",
+                            "ct": { "fa": "0.00", "t": "n" }
+                        },
+                        "nextCell": {
+                            "v": 18,
+                            "m": "18",
+                            "f": "=9*2",
+                            "ct": { "fa": "0.00", "t": "n" }
+                        }
+                    },
+                    {
+                        "row": 3,
+                        "column": 4,
+                        "expectedCell": null,
+                        "nextCell": { "v": "MCP batch", "m": "MCP batch" }
+                    },
+                    {
+                        "row": 0,
+                        "column": 0,
+                        "expectedCell": header,
+                        "nextCell": null
+                    }
+                ]
+            }),
+        ),
+        TIMEOUT,
+    )
+    .await;
+    assert_ne!(batch["result"]["isError"], true, "{batch}");
+    assert_eq!(batch["result"]["structuredContent"]["sequence"], 2);
+
+    let create = call(
+        &mut stdin,
+        &mut stdout,
+        5,
         "office_collaboration_mutate",
         mutation_arguments(
             &replica,
@@ -127,12 +178,12 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     )
     .await;
     assert_ne!(create["result"]["isError"], true, "{create}");
-    assert_eq!(create["result"]["structuredContent"]["sequence"], 2);
+    assert_eq!(create["result"]["structuredContent"]["sequence"], 3);
 
     let delete = call(
         &mut stdin,
         &mut stdout,
-        5,
+        6,
         "office_collaboration_mutate",
         mutation_arguments(
             &replica,
@@ -149,12 +200,12 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     )
     .await;
     assert_ne!(delete["result"]["isError"], true, "{delete}");
-    assert_eq!(delete["result"]["structuredContent"]["sequence"], 3);
+    assert_eq!(delete["result"]["structuredContent"]["sequence"], 4);
 
     let exported = call(
         &mut stdin,
         &mut stdout,
-        6,
+        7,
         "office_collaboration_diff",
         serde_json::json!({ "store": replica.to_str().unwrap() }),
         TIMEOUT,
@@ -170,12 +221,17 @@ async fn mcp_sets_creates_and_deletes_browser_compatible_spreadsheet_cells() {
     assert_eq!(
         spreadsheet_cell(&update, "sheet-data", 1, 0),
         Some(serde_json::json!({
-            "v": 14,
-            "m": "14",
-            "f": "=7*2",
+            "v": 18,
+            "m": "18",
+            "f": "=9*2",
             "ct": { "fa": "0.00", "t": "n" },
         }))
     );
+    assert_eq!(
+        spreadsheet_cell(&update, "sheet-data", 3, 4),
+        Some(serde_json::json!({ "v": "MCP batch", "m": "MCP batch" }))
+    );
+    assert_eq!(spreadsheet_cell(&update, "sheet-data", 0, 0), None);
     assert_eq!(
         spreadsheet_cell(&update, "sheet-empty", 8, 2),
         Some(serde_json::json!({ "v": "MCP sparse", "m": "MCP sparse" }))

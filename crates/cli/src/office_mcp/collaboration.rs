@@ -658,6 +658,8 @@ mod tests {
             "decidedAt",
             "spreadsheet-set-cell",
             "spreadsheet-delete-cell",
+            "spreadsheet-batch-cells",
+            "changes",
             "sheetId",
             "row",
             "column",
@@ -788,6 +790,18 @@ mod tests {
                 "column": 0,
                 "expectedCell": { "v": 1 },
                 "force": true
+            }))
+            .is_err()
+        );
+        assert!(
+            serde_json::from_value::<OfficeCollaborationMutation>(json!({
+                "type": "spreadsheet-batch-cells",
+                "sheetId": "sheet-1",
+                "changes": [{
+                    "row": 0,
+                    "column": 0,
+                    "expectedCell": { "v": "must-not-delete" }
+                }]
             }))
             .is_err()
         );

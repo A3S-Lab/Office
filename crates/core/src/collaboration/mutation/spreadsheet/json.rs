@@ -129,6 +129,49 @@ pub(super) fn assert_compatible_cell(
     Ok(())
 }
 
+/// Project an already validated optimistic change onto the current shared
+/// value. Fields untouched between `previous` and `next` retain their shared
+/// value, including recursively nested concurrent edits.
+pub(super) fn merged_compatible_cell(
+    previous: &JsonValue,
+    next: &JsonValue,
+    shared: &JsonValue,
+) -> JsonValue {
+    if json_equal(previous, next) || json_equal(shared, next) {
+        return shared.clone();
+    }
+    let (Some(previous), Some(next), Some(shared)) =
+        (previous.as_object(), next.as_object(), shared.as_object())
+    else {
+        return next.clone();
+    };
+    let mut result = shared.clone();
+    let keys = previous
+        .keys()
+        .chain(next.keys())
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    for key in keys {
+        let before = previous.get(&key);
+        let after = next.get(&key);
+        if optional_json_equal(before, after) {
+            continue;
+        }
+        match (before, after, shared.get(&key)) {
+            (_, None, _) => {
+                result.remove(&key);
+            }
+            (Some(before), Some(after), Some(current)) => {
+                result.insert(key, merged_compatible_cell(before, after, current));
+            }
+            (_, Some(after), _) => {
+                result.insert(key, after.clone());
+            }
+        }
+    }
+    JsonValue::Object(result)
+}
+
 pub(super) fn cell_field_patches(
     previous: &JsonValue,
     shared: &JsonValue,

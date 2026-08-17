@@ -794,6 +794,8 @@ function spreadsheetCollaborationCellStatus(
   switch (stage) {
     case 'ready':
       return 'Spreadsheet 协作已连接';
+    case 'batched':
+      return '代理已原子更新、创建并删除 Data 单元格';
     case 'updated':
       return '代理已把 Data!A2 更新为 12';
     case 'created':
@@ -808,6 +810,8 @@ function spreadsheetCollaborationCellAction(
 ): string {
   switch (stage) {
     case 'ready':
+      return '模拟原子批量修改 Spreadsheet';
+    case 'batched':
       return '模拟原生更新 Spreadsheet 单元格';
     case 'updated':
       return '模拟原生创建稀疏单元格';

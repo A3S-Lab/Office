@@ -99,11 +99,14 @@ insertion, deletion, or paired replacement. Match the current `paragraphId`,
 the mutation. Use an `edit` replica plus `document-suggestion-decide` to accept
 or reject one or more exact suggestion identities atomically; include both
 members of a replacement pair and copy every expected actor, author, timestamp,
-kind, and text field from the latest projection. Spreadsheet set-cell recursively compares the
-observed and next cell, writes only changed leaves, and uses
-`expectedCell: null` only for a known blank coordinate. Spreadsheet delete-cell
-requires the exact complete observed cell. Both use a stable sheet ID and
-zero-based row/column coordinates. Presentation element operations target a
+kind, and text field from the latest projection. Spreadsheet set-cell
+recursively compares the observed and next cell, writes only changed leaves,
+and uses `expectedCell: null` only for a known blank coordinate. Spreadsheet
+delete-cell requires the exact complete observed cell. Use
+`spreadsheet-batch-cells` for 1 to 4,096 distinct coordinates from one sheet
+snapshot and one user gesture; any stale change rejects the complete batch.
+All variants use a stable sheet ID and zero-based row/column coordinates.
+Presentation element operations target a
 stable slide, master, or layout. Create uses a complete object and optional
 active insertion anchor; update uses complete expected/next objects and merges
 only unrelated top-level fields. Move uses stable observed and requested
@@ -161,7 +164,10 @@ Spreadsheet cells use
 `spreadsheet-set-cell` with an observed
 `expectedCell` and complete `nextCell`, or `spreadsheet-delete-cell` with an
 exact complete `expectedCell`; stale same-leaf edits and stale deletes fail
-before a durable update. Presentation uses
+before a durable update. Use `spreadsheet-batch-cells` for a multi-cell gesture:
+every coordinate must be distinct, `nextCell: null` is an exact guarded
+delete, and one invalid or conflicting change aborts the entire transaction.
+Presentation uses
 `presentation-create/update/move/delete-element` with a stable `containerKind`
 and `containerId`; stale same-field updates, conflicting same-ID creation,
 stale source predecessors, missing anchors, and stale deletes fail before a

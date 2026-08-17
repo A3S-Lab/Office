@@ -33,7 +33,9 @@ fn cli_manages_browser_compatible_spreadsheet_cells_with_conflict_guards() {
     let temp = tempfile::tempdir().unwrap();
     let replica = temp.path().join("spreadsheet.replica");
     let fixture = temp.path().join("browser-spreadsheet.update");
-    fs::write(&fixture, spreadsheet_collaboration_fixture()).unwrap();
+    let fixture_update = spreadsheet_collaboration_fixture();
+    let header = spreadsheet_cell(&fixture_update, "sheet-data", 0, 0).unwrap();
+    fs::write(&fixture, &fixture_update).unwrap();
     run(&[
         "collab",
         "join",
@@ -64,18 +66,56 @@ fn cli_manages_browser_compatible_spreadsheet_cells_with_conflict_guards() {
     );
     assert_eq!(set["data"]["sequence"], 1);
     assert_eq!(set["data"]["mutation"]["type"], "spreadsheet-set-cell");
+    let batch_mutation = serde_json::json!({
+        "type": "spreadsheet-batch-cells",
+        "sheetId": "sheet-data",
+        "changes": [
+            {
+                "row": 1,
+                "column": 0,
+                "expectedCell": {
+                    "v": 12,
+                    "m": "12",
+                    "f": "=6*2",
+                    "ct": { "fa": "0.00", "t": "n" }
+                },
+                "nextCell": {
+                    "v": 16,
+                    "m": "16",
+                    "f": "=8*2",
+                    "ct": { "fa": "0.00", "t": "n" }
+                }
+            },
+            {
+                "row": 3,
+                "column": 4,
+                "expectedCell": null,
+                "nextCell": { "v": "CLI batch", "m": "CLI batch" }
+            },
+            {
+                "row": 0,
+                "column": 0,
+                "expectedCell": header,
+                "nextCell": null
+            }
+        ]
+    })
+    .to_string();
+    let batch = mutate(&replica, "spreadsheet-batch-cells-cli", &batch_mutation);
+    assert_eq!(batch["data"]["sequence"], 2);
+    assert_eq!(batch["data"]["mutation"]["type"], "spreadsheet-batch-cells");
     let create = mutate(
         &replica,
         "spreadsheet-create-cell-cli",
         r#"{"type":"spreadsheet-set-cell","sheetId":"sheet-empty","row":100,"column":5,"expectedCell":null,"nextCell":{"v":"CLI sparse","m":"CLI sparse","ps":{"value":"CLI note","isShow":false}}}"#,
     );
-    assert_eq!(create["data"]["sequence"], 2);
+    assert_eq!(create["data"]["sequence"], 3);
     let delete = mutate(
         &replica,
         "spreadsheet-delete-cell-cli",
         r#"{"type":"spreadsheet-delete-cell","sheetId":"sheet-sparse","row":5,"column":3,"expectedCell":{"v":"edge","m":"edge"}}"#,
     );
-    assert_eq!(delete["data"]["sequence"], 3);
+    assert_eq!(delete["data"]["sequence"], 4);
 
     let conflict = run_failure(&[
         "collab",
@@ -107,12 +147,17 @@ fn cli_manages_browser_compatible_spreadsheet_cells_with_conflict_guards() {
     assert_eq!(
         spreadsheet_cell(&update, "sheet-data", 1, 0),
         Some(serde_json::json!({
-            "v": 12,
-            "m": "12",
-            "f": "=6*2",
+            "v": 16,
+            "m": "16",
+            "f": "=8*2",
             "ct": { "fa": "0.00", "t": "n" },
         }))
     );
+    assert_eq!(
+        spreadsheet_cell(&update, "sheet-data", 3, 4),
+        Some(serde_json::json!({ "v": "CLI batch", "m": "CLI batch" }))
+    );
+    assert_eq!(spreadsheet_cell(&update, "sheet-data", 0, 0), None);
     assert_eq!(
         spreadsheet_cell(&update, "sheet-empty", 100, 5),
         Some(serde_json::json!({
@@ -124,7 +169,7 @@ fn cli_manages_browser_compatible_spreadsheet_cells_with_conflict_guards() {
     assert_eq!(spreadsheet_cell(&update, "sheet-sparse", 5, 3), None);
     assert_eq!(
         run(&["collab", "inspect", replica.to_str().unwrap(), "--json"])["data"]["currentSequence"],
-        3
+        4
     );
 }
 

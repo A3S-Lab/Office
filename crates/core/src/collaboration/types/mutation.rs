@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value as JsonValue;
 
 use super::{NativeOfficeCollaborationArtifactKind, NativeOfficeCollaborationMode};
@@ -130,6 +130,28 @@ pub struct NativeOfficeCollaborationDocumentSuggestionMatch {
     pub expected_author: String,
     pub expected_created_at: String,
     pub expected_text: String,
+}
+
+/// One guarded cell transition inside an atomic Spreadsheet batch.
+///
+/// A missing `expectedCell` represents a coordinate observed as blank. The
+/// `nextCell` field must be present; `nextCell: null` deletes the coordinate
+/// and therefore requires a present `expectedCell`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NativeOfficeCollaborationSpreadsheetCellChange {
+    pub row: u32,
+    pub column: u32,
+    pub expected_cell: Option<JsonValue>,
+    #[serde(deserialize_with = "deserialize_present_optional_json")]
+    pub next_cell: Option<JsonValue>,
+}
+
+fn deserialize_present_optional_json<'de, D>(deserializer: D) -> Result<Option<JsonValue>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<JsonValue>::deserialize(deserializer)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -270,6 +292,13 @@ pub enum NativeOfficeCollaborationMutation {
         row: u32,
         column: u32,
         expected_cell: JsonValue,
+    },
+    /// Apply one user gesture to distinct cells in a single sheet and Yjs
+    /// transaction. Every optimistic guard is checked against the same shared
+    /// snapshot before any field, presence marker, or dense dimension changes.
+    SpreadsheetBatchCells {
+        sheet_id: String,
+        changes: Vec<NativeOfficeCollaborationSpreadsheetCellChange>,
     },
     /// Create one scene element inside a slide, master, or layout. The full
     /// element is fingerprinted in the browser-compatible record-claims root,

@@ -2,7 +2,7 @@ suite "collaboration-spreadsheet-cells" {
     version = 1
 
     scenario "project-native-spreadsheet-cell-lifecycle" {
-        name = "Project native Spreadsheet set, sparse create, and exact delete"
+        name = "Project atomic Spreadsheet batch, set, sparse create, and exact delete"
         surface = "web"
         timeout_ms = 60000
 
@@ -34,6 +34,22 @@ suite "collaboration-spreadsheet-cells" {
 
         press "select-input-cell" {
             key = "ArrowDown"
+        }
+
+        click "apply-atomic-cell-batch" {
+            target = role("button", "模拟原子批量修改 Spreadsheet")
+        }
+
+        wait "native-cell-batch-applied" {
+            visible = css("[data-testid='spreadsheet-collaboration-cell-status'][data-state='batched']")
+        }
+
+        expect "batch-status-visible" {
+            text = "代理已原子更新、创建并删除 Data 单元格"
+        }
+
+        screenshot "atomic-native-cell-batch" {
+            path = "screenshots/spreadsheet-native-cell-batch.png"
         }
 
         click "update-existing-cell" {

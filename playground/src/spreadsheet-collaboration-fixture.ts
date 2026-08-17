@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import * as Y from 'yjs';
 import browserSpreadsheetFixtureBase64 from '../../tests/fixtures/browser-spreadsheet-collaboration-update.base64';
 import {
+  NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
   NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
   NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
   NATIVE_SPREADSHEET_SET_CELL_BASE64,
@@ -14,6 +15,7 @@ import {
 
 export type PlaygroundSpreadsheetCellStage =
   | 'ready'
+  | 'batched'
   | 'updated'
   | 'created'
   | 'deleted';
@@ -69,11 +71,13 @@ function createSpreadsheetCollaborationFixture(): OwnedPlaygroundSpreadsheetColl
     kind: 'spreadsheet',
   });
   const updates = [
+    NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
     NATIVE_SPREADSHEET_SET_CELL_BASE64,
     NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
     NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
   ];
   const stages: PlaygroundSpreadsheetCellStage[] = [
+    'batched',
     'updated',
     'created',
     'deleted',
@@ -103,6 +107,19 @@ function assertNativeUpdateApplied(
   stage: PlaygroundSpreadsheetCellStage,
 ): void {
   const content = readOfficeSpreadsheetCollaboration(collaboration);
+  if (stage === 'batched') {
+    const data = content.sheets.find(({ id }) => id === 'sheet-data')?.data;
+    if (
+      data?.[0]?.[0] !== null ||
+      data?.[1]?.[0]?.bl !== 1 ||
+      data?.[3]?.[4]?.v !== 'Batched'
+    ) {
+      throw new Error(
+        'The native Spreadsheet batch-cell update did not project atomically.',
+      );
+    }
+    return;
+  }
   if (stage === 'updated') {
     const data = content.sheets.find(({ id }) => id === 'sheet-data')?.data;
     const cell = data?.[1]?.[0];

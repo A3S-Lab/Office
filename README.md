@@ -144,7 +144,7 @@ The images below are committed visual-regression baselines from the real
 - **Automation outside the browser** — The native Rust CLI, standard MCP
   server, and Office Skill share bounded mutation contracts. Coding agents can
   also keep a durable Yrs replica, exchange standard Yjs v1 updates and state
-  vectors, perform authorized typed Markdown, Document, Spreadsheet cell,
+  vectors, perform authorized typed Markdown, Document, Spreadsheet cell/batch,
   Presentation scene-element and z-order, and PDF annotation, form-value, and
   review changes, including attributable Document selection comments, replies,
   text suggestions, and atomic final decisions, retain browser/native actor
@@ -1109,6 +1109,13 @@ cargo run -p a3s-office-cli -- collab mutate .a3s/plan.replica \
   --operation-id edit-45 \
   --mutation '{"type":"spreadsheet-set-cell","sheetId":"sheet-data","row":1,"column":0,"expectedCell":{"v":10,"m":"10"},"nextCell":{"v":12,"m":"12","f":"=6*2"}}' --json
 
+# Apply one bounded Spreadsheet gesture atomically. Coordinates must be unique;
+# nextCell:null is an exact guarded delete.
+cargo run -p a3s-office-cli -- collab mutate .a3s/plan.replica \
+  --artifact-id plan --kind spreadsheet --actor-id agent-7 --mode edit \
+  --operation-id paste-46 \
+  --mutation '{"type":"spreadsheet-batch-cells","sheetId":"sheet-data","changes":[{"row":1,"column":0,"expectedCell":{"v":12,"m":"12","f":"=6*2"},"nextCell":{"v":14,"m":"14","f":"=7*2"}},{"row":1,"column":1,"expectedCell":null,"nextCell":{"v":20,"m":"20"}},{"row":2,"column":0,"expectedCell":{"v":"obsolete","m":"obsolete"},"nextCell":null}]}' --json
+
 # Update one Presentation scene element after matching the complete observed
 # record. Create/delete use presentation-create/delete-element.
 cargo run -p a3s-office-cli -- collab mutate .a3s/deck.replica \
@@ -1197,7 +1204,11 @@ write only changed leaves, so unrelated concurrent value, formula, style,
 hyperlink, note, and metadata edits merge. Use `expectedCell: null` only when
 creating an observed blank coordinate. Spreadsheet deletion requires the exact
 complete current cell, dense projections keep their dimensions, and sparse or
-empty sheets remain sparse. Presentation creation writes one complete element
+empty sheets remain sparse. `spreadsheet-batch-cells` applies 1 to 4,096
+distinct coordinates in one sheet after checking every guard against the same
+snapshot, then writes fields, presence markers, and dense dimensions in one
+Yjs transaction. One conflict rejects the complete gesture without a durable
+event. Presentation creation writes one complete element
 plus a canonical immutable claim inside a slide, master, or layout and can
 place it after a stable active element. Presentation update compares complete
 expected/current/next elements and writes only changed top-level fields, so
@@ -1309,6 +1320,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.9.0 documentation](https://a3s-lab.github.io/Office/docs/0.9.0/)
 - [A3S Office 0.8.1 documentation](https://a3s-lab.github.io/Office/docs/0.8.1/)
 - [A3S Office 0.8.0 documentation](https://a3s-lab.github.io/Office/docs/0.8.0/)
 - [A3S Office 0.7.3 documentation](https://a3s-lab.github.io/Office/docs/0.7.3/)

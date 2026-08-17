@@ -247,9 +247,9 @@ comments, and delete-vs-edit cases converge and survive PPTX round trips.
 
 ### Phase 4: Spreadsheet
 
-Status: browser collaboration foundation and native conflict-local cell
-mutations implemented; structural operations, native recalculation parity, and
-XLSX concurrency coverage are pending.
+Status: browser collaboration foundation plus native conflict-local single-cell
+and atomic batch-cell mutations implemented; structural operations, native
+recalculation parity, and XLSX concurrency coverage are pending.
 
 - Stable sheet/named-range order arrays, ID-keyed records, and append-only
   creation claims avoid a serialized workbook or dense worksheet root.
@@ -282,11 +282,16 @@ XLSX concurrency coverage are pending.
   and an empty sheet's first write stays sparse. Native restart, real CLI/MCP
   subprocesses, and browser Yjs duplicate/reordered delivery cover the same
   update contract.
+- `spreadsheet-batch-cells` translates one paste, fill, or other bounded user
+  gesture into 1 to 4,096 distinct coordinates in one sheet and one Yjs
+  transaction. Set/create changes retain recursive optimistic guards; delete
+  changes require an exact complete observed cell. Every change is preflighted
+  against one shared sheet snapshot, so one conflict rejects the entire batch
+  without partial fields, presence markers, dense dimensions, or durable log
+  growth. Single-cell mutations use this same kernel.
 
 Remaining:
 
-- Translate one user gesture into one transaction; batch paste/fill/sort/filter
-  without emitting a document-sized replacement.
 - Add stable structural operations and reference transforms for row/column
   insertion/deletion, merged ranges, tables, sort, and named references.
 - Treat calculated values as derived once browser and native recalculation are
@@ -461,9 +466,10 @@ are pending.
   without replacing the full document.
 - Spreadsheet cell mutations create or recursively patch one zero-based
   coordinate after matching the caller's observed cell, or delete it only after
-  an exact complete-cell match. They preserve the browser's field-addressed
-  representation, dense/sparse projection mode, and atomic fail-closed
-  semantics without replacing a worksheet or workbook.
+  an exact complete-cell match. `spreadsheet-batch-cells` applies 1 to 4,096
+  distinct changes from one sheet snapshot in one transaction. They preserve
+  the browser's field-addressed representation, dense/sparse projection mode,
+  and atomic fail-closed semantics without replacing a worksheet or workbook.
 - Presentation scene-element mutations create, update, move, or tombstone one
   stable object inside a slide, master, or layout. Canonical creation claims
   prevent conflicting same-ID reuse, optimistic top-level field guards merge

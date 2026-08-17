@@ -76,7 +76,8 @@ pub(super) fn validate_mutation_contract(
             NativeOfficeCollaborationArtifactKind::Document
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. } => {
             NativeOfficeCollaborationArtifactKind::Spreadsheet
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }
@@ -192,7 +193,8 @@ pub(super) fn apply_mutation(
             apply_document_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::SpreadsheetSetCell { .. }
-        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. } => {
+        | NativeOfficeCollaborationMutation::SpreadsheetDeleteCell { .. }
+        | NativeOfficeCollaborationMutation::SpreadsheetBatchCells { .. } => {
             apply_spreadsheet_mutation(doc, manifest, mutation)?;
         }
         NativeOfficeCollaborationMutation::PresentationCreateElement { .. }

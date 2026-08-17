@@ -2,6 +2,7 @@ use a3s_use_core::UseResult;
 
 use super::super::{
     collaboration_error, NativeOfficeCollaborationManifest, NativeOfficeCollaborationMutation,
+    NativeOfficeCollaborationSpreadsheetCellChange,
 };
 
 mod cell;

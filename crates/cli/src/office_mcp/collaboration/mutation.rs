@@ -6,9 +6,10 @@ use a3s_office::{
     NativeOfficeCollaborationPdfRect, NativeOfficeCollaborationPdfReviewDecision,
     NativeOfficeCollaborationPdfReviewTargetKind,
     NativeOfficeCollaborationPresentationContainerKind,
+    NativeOfficeCollaborationSpreadsheetCellChange,
 };
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value as JsonValue;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, JsonSchema)]
@@ -85,6 +86,37 @@ impl From<OfficeCollaborationDocumentSuggestionMatch>
             expected_author: value.expected_author,
             expected_created_at: value.expected_created_at,
             expected_text: value.expected_text,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(in crate::office_mcp) struct OfficeCollaborationSpreadsheetCellChange {
+    row: u32,
+    column: u32,
+    expected_cell: Option<JsonValue>,
+    #[serde(deserialize_with = "deserialize_present_optional_json")]
+    #[schemars(required)]
+    next_cell: Option<JsonValue>,
+}
+
+fn deserialize_present_optional_json<'de, D>(deserializer: D) -> Result<Option<JsonValue>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<JsonValue>::deserialize(deserializer)
+}
+
+impl From<OfficeCollaborationSpreadsheetCellChange>
+    for NativeOfficeCollaborationSpreadsheetCellChange
+{
+    fn from(value: OfficeCollaborationSpreadsheetCellChange) -> Self {
+        Self {
+            row: value.row,
+            column: value.column,
+            expected_cell: value.expected_cell,
+            next_cell: value.next_cell,
         }
     }
 }
@@ -289,6 +321,11 @@ pub(in crate::office_mcp) enum OfficeCollaborationMutation {
         row: u32,
         column: u32,
         expected_cell: JsonValue,
+    },
+    /// Apply distinct cell changes in one sheet and one atomic transaction.
+    SpreadsheetBatchCells {
+        sheet_id: String,
+        changes: Vec<OfficeCollaborationSpreadsheetCellChange>,
     },
     /// Create one scene element in a slide, master, or layout with a stable ID.
     PresentationCreateElement {
@@ -553,6 +590,12 @@ impl From<OfficeCollaborationMutation> for NativeOfficeCollaborationMutation {
                 column,
                 expected_cell,
             },
+            OfficeCollaborationMutation::SpreadsheetBatchCells { sheet_id, changes } => {
+                Self::SpreadsheetBatchCells {
+                    sheet_id,
+                    changes: changes.into_iter().map(Into::into).collect(),
+                }
+            }
             OfficeCollaborationMutation::PresentationCreateElement {
                 container_kind,
                 container_id,

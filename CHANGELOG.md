@@ -4,6 +4,27 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.9.0 - 2026-08-17
+
+- Added `spreadsheet-batch-cells` across Rust, `collab mutate`, standard MCP,
+  A3S Code, and the packaged Office Skill. One mutation applies 1 to 4,096
+  distinct guarded coordinates in one sheet, mixing recursive set/create and
+  exact delete operations while retaining unrelated concurrent JSON leaves.
+  Every guard is evaluated against one shared snapshot; a duplicate
+  coordinate, invalid delete, stale leaf, or stale exact deletion rejects the
+  complete gesture without a Yjs update or durable log entry.
+- Refactored Spreadsheet cell mutation state into one validated sheet snapshot
+  and one Yrs transaction. Existing `spreadsheet-set-cell` and
+  `spreadsheet-delete-cell` now use the same batch kernel, dense dimensions are
+  extended once from the final coordinate set, and sparse or initially empty
+  sheets remain `celldata`. Core restart/idempotency, atomic-conflict, bounded
+  contract, real CLI/MCP subprocess, and browser Yjs duplicate/reordered
+  delivery regressions cover the shared path.
+- Extended the Playground and deterministic A3S Test flow with a visible
+  native atomic batch that updates, creates, and deletes cells in one action,
+  followed by the existing single-cell lifecycle. Updated the bilingual
+  collaboration, Spreadsheet, CLI/MCP, Skill, README, and roadmap guidance.
+
 ## 0.8.1 - 2026-08-17
 
 - Added closed native Document suggestion mutations across Rust, `collab

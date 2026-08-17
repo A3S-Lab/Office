@@ -135,6 +135,8 @@ async fn native_standard_mcp_runs_a_resumable_collaboration_event_loop() {
         "endUtf16",
         "spreadsheet-set-cell",
         "spreadsheet-delete-cell",
+        "spreadsheet-batch-cells",
+        "changes",
         "expectedCell",
         "nextCell",
     ] {

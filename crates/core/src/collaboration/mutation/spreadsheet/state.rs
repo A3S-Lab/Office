@@ -27,8 +27,8 @@ pub(super) enum SpreadsheetCellMode {
     CellData,
 }
 
-pub(super) struct SpreadsheetCellState {
-    pub(super) cell: Option<JsonValue>,
+pub(super) struct SpreadsheetSheetState {
+    pub(super) cells: HashMap<(u32, u32), JsonValue>,
     pub(super) fields: MapRef,
     pub(super) mode: Option<SpreadsheetCellMode>,
     pub(super) presence: MapRef,
@@ -37,13 +37,11 @@ pub(super) struct SpreadsheetCellState {
     pub(super) row_lengths_ref: ArrayRef,
 }
 
-pub(super) fn read_cell_state(
+pub(super) fn read_sheet_state(
     doc: &yrs::Doc,
     manifest: &NativeOfficeCollaborationManifest,
     sheet_id: &str,
-    target_row: u32,
-    target_column: u32,
-) -> UseResult<SpreadsheetCellState> {
+) -> UseResult<SpreadsheetSheetState> {
     let sheets = doc.get_or_insert_map(format!("{}.{}", manifest.namespace, SHEETS_ROOT));
     let transaction = doc.transact();
     let record = match sheets.get(&transaction, sheet_id) {
@@ -131,15 +129,15 @@ pub(super) fn read_cell_state(
             .push(DecodedFlatJsonEntry { kind, path, value });
     }
 
-    let target = (target_row, target_column);
-    let target_present = coordinates.contains(&target);
-    let mut target_cell = target_present.then(|| JsonValue::Object(Default::default()));
+    let mut cells = coordinates
+        .iter()
+        .copied()
+        .map(|coordinate| (coordinate, JsonValue::Object(Default::default())))
+        .collect::<HashMap<_, _>>();
     for (coordinate, entries) in grouped {
         let cell = reconstruct_cell(entries)?;
         validate_shared_cell_json(&cell)?;
-        if coordinate == target {
-            target_cell = Some(cell);
-        }
+        cells.insert(coordinate, cell);
     }
 
     let mode = match record.get(&transaction, CELL_MODE_KEY) {
@@ -181,8 +179,8 @@ pub(super) fn read_cell_state(
     }
     drop(transaction);
 
-    Ok(SpreadsheetCellState {
-        cell: target_cell,
+    Ok(SpreadsheetSheetState {
+        cells,
         fields,
         mode,
         presence,
@@ -192,42 +190,90 @@ pub(super) fn read_cell_state(
     })
 }
 
-pub(super) fn write_set_cell(
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum SpreadsheetCellPresenceChange {
+    Keep,
+    Insert,
+    Remove,
+}
+
+pub(super) struct SpreadsheetCellWrite {
+    pub(super) row: u32,
+    pub(super) column: u32,
+    pub(super) patches: Vec<FlatJsonPatch>,
+    pub(super) presence: SpreadsheetCellPresenceChange,
+}
+
+enum EncodedFieldPatch {
+    Remove(String),
+    Set(String, Any),
+}
+
+pub(super) fn write_cell_changes(
     doc: &yrs::Doc,
-    state: &SpreadsheetCellState,
-    row: u32,
-    column: u32,
-    patches: Vec<FlatJsonPatch>,
+    state: &SpreadsheetSheetState,
+    changes: Vec<SpreadsheetCellWrite>,
+    initialize_sparse_mode: bool,
     next_row_lengths: Option<Vec<u32>>,
 ) -> UseResult<()> {
-    let creates_cell = state.cell.is_none();
-    let initializes_mode = state.mode.is_none();
     let changes_row_lengths = next_row_lengths
         .as_ref()
         .is_some_and(|lengths| lengths != &state.row_lengths);
-    if patches.is_empty() && !creates_cell && !initializes_mode && !changes_row_lengths {
+    let changes_content = changes.iter().any(|change| {
+        !change.patches.is_empty() || change.presence != SpreadsheetCellPresenceChange::Keep
+    });
+    if !changes_content && !initialize_sparse_mode && !changes_row_lengths {
         return Ok(());
     }
 
+    let encoded = changes
+        .into_iter()
+        .map(|change| {
+            let patches = change
+                .patches
+                .into_iter()
+                .map(|patch| match patch {
+                    FlatJsonPatch::Remove(flat_key) => {
+                        encode_cell_field_key(change.row, change.column, &flat_key)
+                            .map(EncodedFieldPatch::Remove)
+                    }
+                    FlatJsonPatch::Set(flat_key, value) => {
+                        encode_cell_field_key(change.row, change.column, &flat_key)
+                            .map(|key| EncodedFieldPatch::Set(key, value))
+                    }
+                })
+                .collect::<UseResult<Vec<_>>>()?;
+            Ok((
+                patches,
+                encode_coordinate(change.row, change.column),
+                change.presence,
+            ))
+        })
+        .collect::<UseResult<Vec<_>>>()?;
+
     let mut transaction = doc.transact_mut();
-    for patch in patches {
-        match patch {
-            FlatJsonPatch::Remove(flat_key) => {
-                let key = encode_cell_field_key(row, column, &flat_key)?;
-                state.fields.remove(&mut transaction, key.as_str());
+    for (patches, coordinate, presence) in encoded {
+        for patch in patches {
+            match patch {
+                EncodedFieldPatch::Remove(key) => {
+                    state.fields.remove(&mut transaction, key.as_str());
+                }
+                EncodedFieldPatch::Set(key, value) => {
+                    state.fields.insert(&mut transaction, key, value);
+                }
             }
-            FlatJsonPatch::Set(flat_key, value) => {
-                let key = encode_cell_field_key(row, column, &flat_key)?;
-                state.fields.insert(&mut transaction, key, value);
+        }
+        match presence {
+            SpreadsheetCellPresenceChange::Keep => {}
+            SpreadsheetCellPresenceChange::Insert => {
+                state.presence.insert(&mut transaction, coordinate, true);
+            }
+            SpreadsheetCellPresenceChange::Remove => {
+                state.presence.remove(&mut transaction, coordinate.as_str());
             }
         }
     }
-    if creates_cell {
-        state
-            .presence
-            .insert(&mut transaction, encode_coordinate(row, column), true);
-    }
-    if initializes_mode {
+    if initialize_sparse_mode {
         state
             .record
             .insert(&mut transaction, CELL_MODE_KEY, "celldata");
@@ -246,33 +292,15 @@ pub(super) fn write_set_cell(
     Ok(())
 }
 
-pub(super) fn write_delete_cell(
-    doc: &yrs::Doc,
-    state: &SpreadsheetCellState,
-    row: u32,
-    column: u32,
-    current: &JsonValue,
-) -> UseResult<()> {
-    let fields = super::json::flattened_cell(current)?;
-    let mut transaction = doc.transact_mut();
-    for flat_key in fields.keys() {
-        let key = encode_cell_field_key(row, column, flat_key)?;
-        state.fields.remove(&mut transaction, key.as_str());
-    }
-    state
-        .presence
-        .remove(&mut transaction, encode_coordinate(row, column).as_str());
-    Ok(())
-}
-
 pub(super) fn extended_dense_row_lengths(
     current: &[u32],
-    row: u32,
-    column: u32,
+    coordinates: impl IntoIterator<Item = (u32, u32)>,
 ) -> UseResult<Vec<u32>> {
     let mut result = current.to_vec();
-    result.resize(row as usize + 1, 0);
-    result[row as usize] = result[row as usize].max(column + 1);
+    for (row, column) in coordinates {
+        result.resize(result.len().max(row as usize + 1), 0);
+        result[row as usize] = result[row as usize].max(column + 1);
+    }
     let materialized = result.iter().map(|value| u64::from(*value)).sum::<u64>();
     if materialized > MAX_SPREADSHEET_DENSE_CELLS {
         return Err(super::invalid_spreadsheet_mutation(format!(

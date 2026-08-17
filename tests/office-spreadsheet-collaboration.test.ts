@@ -9,6 +9,7 @@ import {
 } from '../src/core';
 import { spreadsheetCollaborationFixture as fixture } from './fixtures/spreadsheet-collaboration';
 import {
+  NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
   NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
   NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
   NATIVE_SPREADSHEET_SET_CELL_BASE64,
@@ -514,6 +515,7 @@ test('applies native Spreadsheet cell updates in Yjs across reordered delivery',
   }
 
   for (const encoded of [
+    NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
     NATIVE_SPREADSHEET_SET_CELL_BASE64,
     NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
     NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
@@ -524,7 +526,9 @@ test('applies native Spreadsheet cell updates in Yjs across reordered delivery',
     NATIVE_SPREADSHEET_DELETE_CELL_BASE64,
     NATIVE_SPREADSHEET_CREATE_CELL_BASE64,
     NATIVE_SPREADSHEET_SET_CELL_BASE64,
+    NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
     NATIVE_SPREADSHEET_SET_CELL_BASE64,
+    NATIVE_SPREADSHEET_BATCH_CELLS_BASE64,
   ]) {
     Y.applyUpdate(reorderedDocument, decodeBase64(encoded));
   }
@@ -540,9 +544,15 @@ test('applies native Spreadsheet cell updates in Yjs across reordered delivery',
     v: 12,
     m: '12',
     f: '=6*2',
+    bl: 1,
     bg: '#DBEAFE',
     ct: { fa: '0.00', t: 'n' },
     ps: { value: 'Browser note' },
+  });
+  expect(dataSheet?.data?.[0]?.[0]).toBeNull();
+  expect(dataSheet?.data?.[3]?.[4]).toEqual({
+    v: 'Batched',
+    m: 'Batched',
   });
   const emptySheet = contents[0]?.sheets.find(({ id }) => id === 'sheet-empty');
   expect(emptySheet?.data).toBeUndefined();
