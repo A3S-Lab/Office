@@ -49,6 +49,7 @@ import {
   usePlaygroundDocumentSuggestionFixture,
 } from './collaboration-suggestion-fixture';
 import { FileKindIcon, fileKindExtension, fileKindLabel } from './file-kind';
+import { MAXIMUM_SPARSE_SPREADSHEET_FIXTURE } from './maximum-sparse-spreadsheet-fixture';
 import {
   type PlaygroundPdfAnnotationStage,
   usePlaygroundPdfCollaborationFixture,
@@ -111,6 +112,14 @@ export function EditorWorkspace({
   const e2eFixture =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('e2e');
+  const maximumSparseSheet =
+    e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE &&
+    artifact.content.type === 'spreadsheet'
+      ? artifact.content.sheets[0]
+      : undefined;
+  const maximumSparseMaterializedRows = Object.keys(
+    maximumSparseSheet?.data ?? [],
+  ).length;
   const loadPdf = useCallback(() => readSourceBlob(artifact), [artifact]);
   const controlledReviewFixture = e2eFixture === 'word-review-conflict';
   const controlledReviewFixtureReady =
@@ -296,6 +305,18 @@ export function EditorWorkspace({
               </div>
             </div>
             <div className="work-editor-header-actions">
+              {maximumSparseSheet && (
+                <output
+                  className="playground-sparse-fixture-status"
+                  data-testid="maximum-sparse-sheet-status"
+                  data-materialized-rows={maximumSparseMaterializedRows}
+                  data-revision={artifact.revision}
+                  aria-live="polite"
+                >
+                  1,048,576 行 × 16,384 列 · {maximumSparseMaterializedRows}{' '}
+                  个实体行 · 修订 {artifact.revision}
+                </output>
+              )}
               {collaborationDemo && (
                 <output
                   className="playground-collaboration-mode-status"

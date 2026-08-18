@@ -834,6 +834,28 @@ describe('spreadsheet command controller', () => {
     expect(fixture.changes).toEqual([]);
   });
 
+  test('keeps worksheet activation local when an editable view owns it', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets.push({
+      id: 'sheet-2',
+      name: 'Sheet 2',
+      order: 1,
+      status: 0,
+    });
+    const activated: string[] = [];
+    fixture.context.view = {
+      activateSheet: (sheetId) => {
+        activated.push(sheetId);
+        return true;
+      },
+    };
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.commands.activateSheet('sheet-2')).toBe(true);
+    expect(activated).toEqual(['sheet-2']);
+    expect(fixture.changes).toEqual([]);
+  });
+
   test('owns deterministic cell movement instead of relying on vendor key handlers', () => {
     const fixture = commandFixture();
     fixture.context.content.sheets[0] = {

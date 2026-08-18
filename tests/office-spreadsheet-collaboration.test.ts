@@ -6,6 +6,7 @@ import {
   createOfficeSpreadsheetCollaborationBinding,
   initializeOfficeSpreadsheetCollaboration,
   readOfficeSpreadsheetCollaboration,
+  type SpreadsheetContent,
 } from '../src/core';
 import { spreadsheetCollaborationFixture as fixture } from './fixtures/spreadsheet-collaboration';
 import {
@@ -92,6 +93,47 @@ test('bounds dense matrices while retaining sparse Excel coordinates', () => {
   expect(
     readOfficeSpreadsheetCollaboration(sparseSession).sheets[0].celldata,
   ).toEqual([{ r: 1_048_575, c: 16_383, v: { v: 'edge' } }]);
+});
+
+test('patches sparse data matrices without treating holes as cells', () => {
+  const session = spreadsheetSession('spreadsheet-sparse-data-patch');
+  const data: NonNullable<SpreadsheetContent['sheets'][number]['data']> = [];
+  data.length = 8;
+  data[0] = [{ v: 'Anchor', m: 'Anchor' }];
+  data[7] = [];
+  data[7].length = 4;
+  data[7][3] = { v: 'Tail', m: 'Tail' };
+  const initial: SpreadsheetContent = {
+    type: 'spreadsheet',
+    sheets: [{ id: 'sheet-sparse-data', name: 'Sparse data', data }],
+  };
+  initializeOfficeSpreadsheetCollaboration(session, initial);
+
+  const nextData: NonNullable<SpreadsheetContent['sheets'][number]['data']> =
+    [];
+  nextData.length = data.length;
+  nextData[0] = data[0];
+  nextData[7] = [];
+  nextData[7].length = 4;
+  nextData[7][3] = { v: 'Updated tail', m: 'Updated tail' };
+  const binding = createOfficeSpreadsheetCollaborationBinding(session);
+
+  expect(
+    binding.replace(initial, {
+      ...initial,
+      sheets: [{ ...initial.sheets[0], data: nextData }],
+    }),
+  ).toBe(true);
+  expect(binding.content().sheets[0]?.data?.[7]?.[3]).toEqual({
+    v: 'Updated tail',
+    m: 'Updated tail',
+  });
+  const sheets = session.document.getMap(
+    session.rootName('spreadsheet.sheets'),
+  );
+  const sheet = sheets.get('sheet-sparse-data') as Y.Map<unknown>;
+  expect((sheet.get('cellPresence') as Y.Map<unknown>).size).toBe(2);
+  binding.destroy();
 });
 
 test('rejects malformed Spreadsheet roots without writes during read', () => {

@@ -104,8 +104,11 @@ export interface PptxImportResult {
 
 export async function importPptxPresentation(
   file: File,
+  sourceBytes?: ArrayBuffer,
 ): Promise<PptxImportResult> {
-  const archive = await OoxmlPackage.load(await file.arrayBuffer());
+  const archive = await OoxmlPackage.load(
+    sourceBytes ?? (await file.arrayBuffer()),
+  );
   if (!archive.has('ppt/presentation.xml'))
     throw new Error('The selected file is not a valid PPTX presentation.');
 

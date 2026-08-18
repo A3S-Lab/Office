@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { sparseArrayEntries } from './spreadsheet-sparse';
 import {
   effectiveSpreadsheetCalculationSettings,
   formulaHasExternalReference,
@@ -247,8 +248,8 @@ function scanSpreadsheetFormulas(content: WorkSpreadsheetContent): FormulaScan {
       sheet.formulaMetadata?.normalizedSharedFormulaGroups ?? 0;
     summary.normalizedSharedFormulaCells +=
       sheet.formulaMetadata?.normalizedSharedFormulaCells ?? 0;
-    for (const [row, cells] of (sheet.data ?? []).entries()) {
-      for (const [column, cell] of cells.entries()) {
+    for (const [row, cells] of sparseArrayEntries(sheet.data)) {
+      for (const [column, cell] of sparseArrayEntries(cells)) {
         if (!cell?.f) continue;
         const address = spreadsheetCellAddress(row, column);
         const location = `${sheet.name}!${address}`;

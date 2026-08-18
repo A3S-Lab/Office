@@ -235,8 +235,9 @@ const XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace';
 
 export async function prepareDocxImport(
   buffer: ArrayBuffer,
+  sourcePackage?: OoxmlPackage,
 ): Promise<PreparedDocxImport> {
-  const archive = await OoxmlPackage.load(buffer);
+  const archive = sourcePackage ?? (await OoxmlPackage.load(buffer));
   const bibliography = (await readDocxBibliography(archive)).bibliography;
   const fallback = documentInitialSectionLayout({
     type: 'document',

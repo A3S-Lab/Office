@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
 import type {
   SpreadsheetCommandRange,
@@ -246,10 +247,7 @@ function spreadsheetFormatPainterSheetBounds(
       Math.max(sheet.data?.length ?? 0, requestedRowCount),
     columnCount:
       positiveInteger(sheet.column) ??
-      Math.max(
-        ...(sheet.data?.map((row) => row?.length ?? 0) ?? [0]),
-        requestedColumnCount,
-      ),
+      Math.max(sparseMatrixColumnCount(sheet.data), requestedColumnCount),
   };
 }
 

@@ -9,6 +9,9 @@ export default defineConfig({
   environment: 'happy-dom',
   exclude: ['visual-tests/**'],
   extends: withRslibConfig({ libId: 'library' }),
+  pool: {
+    maxWorkers: 2,
+  },
   resolve: {
     alias: {
       '@a3s-lab/office/core': resolve(import.meta.dirname, 'src/core.ts'),

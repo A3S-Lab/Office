@@ -1,4 +1,5 @@
 import type { Sheet } from '@fortune-sheet/core';
+import { sparseArrayEntries } from './spreadsheet-sparse';
 import {
   attribute,
   descendants,
@@ -97,7 +98,10 @@ export function writeXlsxProtection(
     ]);
   }
 
-  writeProtectedRanges(worksheet, authority.allowRangeList);
+  writeProtectedRanges(worksheet, [
+    ...authority.allowRangeList,
+    ...generatedEditableProtectionRanges(authority),
+  ]);
   if (styles) writeCellProtectionStyles(worksheet, sheet, styles);
 }
 
@@ -375,19 +379,20 @@ function writeProtectedRanges(
     root.namespaceURI,
     'protectedRanges',
   );
+  const written = new Set<string>();
   for (const range of ranges) {
     const parsed = parseSpreadsheetCellRanges(range.sqref);
     if (!range.name.trim() || !parsed?.length) continue;
+    const reference = formatSpreadsheetCellRanges(parsed).replaceAll(',', ' ');
+    if (written.has(reference)) continue;
+    written.add(reference);
     const element = document.createElementNS(
       root.namespaceURI,
       'protectedRange',
     );
     copyAttributes(element, range.xlsxAttributes);
     element.setAttribute('name', range.name.trim());
-    element.setAttribute(
-      'sqref',
-      formatSpreadsheetCellRanges(parsed).replaceAll(',', ' '),
-    );
+    element.setAttribute('sqref', reference);
     container.append(element);
   }
   if (!container.children.length) return;
@@ -418,17 +423,109 @@ function writeCellProtectionStyles(
   sheet: Sheet,
   styles: XlsxCellProtectionWriter,
 ): void {
-  for (const [row, values] of (sheet.data ?? []).entries()) {
-    for (const [column, source] of values.entries()) {
+  const authority = normalizeSheetProtectionAuthority(sheet.config?.authority);
+  for (const [row, values] of sparseArrayEntries(sheet.data)) {
+    for (const [column, source] of sparseArrayEntries(values)) {
       const cell = source as (typeof source & { hi?: number }) | null;
-      if (!cell || (cell.lo === undefined && cell.hi === undefined)) continue;
+      if (!cell) continue;
+      const compact = compactProtectionAt(authority, row, column);
+      if (
+        cell.lo === undefined &&
+        cell.hi === undefined &&
+        compact === undefined
+      ) {
+        continue;
+      }
       const element = ensureCellElement(worksheet, row, column);
       const baseStyle = nonNegativeInteger(attribute(element, 's')) ?? 0;
-      const styleId = styles.styleId(baseStyle, cell.lo !== 0, cell.hi === 1);
+      const styleId = styles.styleId(
+        baseStyle,
+        cell.lo === undefined ? (compact?.locked ?? true) : cell.lo !== 0,
+        cell.hi === undefined ? (compact?.hidden ?? false) : cell.hi === 1,
+      );
       if (styleId) element.setAttribute('s', String(styleId));
       else element.removeAttribute('s');
     }
   }
+}
+
+function generatedEditableProtectionRanges(
+  authority: FortuneSheetProtectionAuthority,
+): FortuneSheetEditableRange[] {
+  let editable: SpreadsheetCellRange[] = [];
+  for (const item of authority.cellProtectionRanges) {
+    if (item.locked) {
+      editable = editable.flatMap((range) =>
+        subtractSpreadsheetRange(range, item.range),
+      );
+    } else {
+      editable.push(item.range);
+    }
+  }
+  return editable.map((range, index) => ({
+    name: `Work editable range ${index + 1}`,
+    sqref: formatSpreadsheetCellRanges([range]),
+  }));
+}
+
+function compactProtectionAt(
+  authority: FortuneSheetProtectionAuthority,
+  row: number,
+  column: number,
+): { locked: boolean; hidden: boolean } | undefined {
+  for (
+    let index = authority.cellProtectionRanges.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const item = authority.cellProtectionRanges[index];
+    if (
+      row >= item.range.row[0] &&
+      row <= item.range.row[1] &&
+      column >= item.range.column[0] &&
+      column <= item.range.column[1]
+    ) {
+      return { locked: item.locked, hidden: item.hidden };
+    }
+  }
+  return undefined;
+}
+
+function subtractSpreadsheetRange(
+  source: SpreadsheetCellRange,
+  removed: SpreadsheetCellRange,
+): SpreadsheetCellRange[] {
+  const top = Math.max(source.row[0], removed.row[0]);
+  const bottom = Math.min(source.row[1], removed.row[1]);
+  const left = Math.max(source.column[0], removed.column[0]);
+  const right = Math.min(source.column[1], removed.column[1]);
+  if (top > bottom || left > right) return [source];
+  const remaining: SpreadsheetCellRange[] = [];
+  if (source.row[0] < top) {
+    remaining.push({
+      row: [source.row[0], top - 1],
+      column: [...source.column],
+    });
+  }
+  if (bottom < source.row[1]) {
+    remaining.push({
+      row: [bottom + 1, source.row[1]],
+      column: [...source.column],
+    });
+  }
+  if (source.column[0] < left) {
+    remaining.push({
+      row: [top, bottom],
+      column: [source.column[0], left - 1],
+    });
+  }
+  if (right < source.column[1]) {
+    remaining.push({
+      row: [top, bottom],
+      column: [right + 1, source.column[1]],
+    });
+  }
+  return remaining;
 }
 
 function ensureCellElement(

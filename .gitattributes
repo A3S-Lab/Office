@@ -8,3 +8,6 @@
 *.ts linguist-detectable=false
 *.tsx linguist-detectable=false
 *.gleam linguist-detectable=true
+
+# Unified diffs preserve upstream whitespace as part of their context.
+patches/*.patch -whitespace

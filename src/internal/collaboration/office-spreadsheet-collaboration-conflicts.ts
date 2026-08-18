@@ -3,6 +3,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../features/work/work-types';
+import { sparseArrayEntries } from '../features/work/spreadsheet-sparse';
 import { WorkOfficeCollaborationError } from './office-collaboration';
 import {
   isWorkOfficeCollaborationRecord as isRecord,
@@ -232,8 +233,8 @@ function assertCompatibleValue<T>(
 function spreadsheetCells(sheet: WorkSpreadsheetSheet): Map<string, Cell> {
   const result = new Map<string, Cell>();
   if (sheet.data !== undefined) {
-    for (const [row, values] of sheet.data.entries()) {
-      for (const [column, cell] of values.entries()) {
+    for (const [row, values] of sparseArrayEntries(sheet.data)) {
+      for (const [column, cell] of sparseArrayEntries(values)) {
         if (cell !== null) result.set(`${row}:${column}`, cell);
       }
     }

@@ -1,0 +1,91 @@
+suite "spreadsheet-maximum-sparse" {
+    version = 1
+
+    scenario "navigate-and-materialize-one-far-row" {
+        name = "Keep a maximum-size worksheet sparse during far-range navigation and editing"
+        surface = "web"
+        timeout_ms = 60000
+
+        viewport "desktop" {
+            width = 1280
+            height = 800
+            scale = 1
+        }
+
+        navigate "open-maximum-sparse-fixture" {
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-sparse-maximum"
+        }
+
+        wait "initial-sparse-state" {
+            text = "2 个实体行 · 修订 1"
+        }
+
+        expect "spreadsheet-grid-ready" {
+            visible = css(".fortune-sheet-overlay")
+        }
+
+        focus "spreadsheet-grid" {
+            target = css(".fortune-sheet-overlay")
+        }
+
+        press "select-maximum-cell" {
+            key = "Control+End"
+        }
+
+        expect "maximum-cell-selected" {
+            text = "XFD1048576"
+        }
+
+        expect "navigation-does-not-materialize-rows" {
+            text = "2 个实体行 · 修订 1"
+        }
+
+        press "select-blank-far-row" {
+            key = "ArrowUp"
+        }
+
+        expect "blank-far-row-selected" {
+            text = "XFD1048575"
+        }
+
+        expect "blank-navigation-stays-read-only" {
+            text = "2 个实体行 · 修订 1"
+        }
+
+        fill "write-far-cell-through-formula-bar" {
+            target = css("[aria-label='当前单元格输入']")
+            value = "SPARSE_FAR_EDIT"
+        }
+
+        press "commit-far-cell" {
+            key = "Enter"
+        }
+
+        wait "one-row-materialized" {
+            text = "3 个实体行 · 修订 2"
+        }
+
+        press "return-to-edited-far-cell" {
+            key = "ArrowUp"
+        }
+
+        expect "far-cell-value-persisted" {
+            text = "SPARSE_FAR_EDIT"
+        }
+
+        accessibility "maximum-sparse-accessibility" {
+            path = "evidence/maximum-sparse-accessibility.json"
+            interactive = true
+        }
+
+        console "maximum-sparse-console" {
+            path = "diagnostics/maximum-sparse-console.json"
+            clear = false
+        }
+
+        page_errors "maximum-sparse-errors" {
+            path = "diagnostics/maximum-sparse-page-errors.json"
+            clear = false
+        }
+    }
+}

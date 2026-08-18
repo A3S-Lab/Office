@@ -28,6 +28,35 @@ describe('spreadsheet AutoFilter model', () => {
     });
   });
 
+  test('reads maximum sparse worksheet bounds without spreading logical rows', () => {
+    const data: NonNullable<WorkSpreadsheetSheet['data']> = [];
+    data.length = 1_048_576;
+    data[0] = [];
+    data[0].length = 16_384;
+    data[0][0] = { v: 'Header', m: 'Header' };
+    data[1] = [];
+    data[1].length = 16_384;
+    data[1][0] = { v: 'Value', m: 'Value' };
+    data[1_048_575] = [];
+    data[1_048_575].length = 16_384;
+    data[1_048_575][16_383] = { v: 'Tail', m: 'Tail' };
+
+    expect(
+      spreadsheetAutoFilterRange(
+        {
+          id: 'maximum-sparse',
+          name: 'Maximum sparse',
+          data,
+          row: 1_048_576,
+          column: 16_384,
+          config: {},
+        },
+        selection(0, 0),
+      ),
+    ).toEqual({ row: [0, 1], column: [0, 0] });
+    expect(Object.keys(data)).toEqual(['0', '1', '1048575']);
+  });
+
   test('keeps an explicit multi-row selection as the filter range', () => {
     const sheet = quarterlySheet();
     expect(

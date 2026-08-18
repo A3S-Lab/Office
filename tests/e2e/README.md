@@ -106,6 +106,13 @@ bun run test:e2e:collaboration-spreadsheet-cells:check
 bun run test:e2e:collaboration-spreadsheet-cells
 ```
 
+The maximum-size sparse Spreadsheet workflow has a focused gate:
+
+```bash
+bun run test:e2e:spreadsheet-maximum-sparse:check
+bun run test:e2e:spreadsheet-maximum-sparse
+```
+
 The native Presentation scene-element and z-order lifecycle has a focused gate:
 
 ```bash
@@ -192,7 +199,10 @@ exact-result navigation, and grid-focus restoration, a safe-area-aware bottom
 context menu with 44 px actions, bounded scrolling, screenshot and
 accessibility evidence, together with modal
 workbook task panes that isolate the ribbon, grid, and worksheet footer,
-contain forward and reverse focus, and restore the exact ribbon invoker;
+contain forward and reverse focus, and restore the exact ribbon invoker; a
+maximum-size Spreadsheet workflow that keeps 1,048,576 rows by 16,384 columns
+sparse through `Control+End` navigation and materializes exactly one far row
+after a formula-bar edit, with accessibility and browser-diagnostic evidence;
 Presentation focus
 recovery across object cut and paste, presenter-view keyboard navigation and
 phone layout, plus a phone chart-inspector workflow covering responsive modal

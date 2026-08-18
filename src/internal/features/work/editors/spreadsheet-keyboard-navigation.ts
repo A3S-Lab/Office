@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetSheet } from '../work-types';
 import { isOfficeShortcutBlocked } from './office-shortcuts';
 import { isSpreadsheetNativeTextUndoTarget } from './spreadsheet-editor-support';
@@ -219,10 +220,7 @@ function spreadsheetSheetBounds(sheet: WorkSpreadsheetSheet): {
   lastRow: number;
 } {
   const dataRows = sheet.data?.length ?? 0;
-  const dataColumns = Math.max(
-    0,
-    ...(sheet.data?.map((row) => row?.length ?? 0) ?? []),
-  );
+  const dataColumns = sparseMatrixColumnCount(sheet.data);
   return {
     lastRow:
       positiveSpreadsheetDimension(

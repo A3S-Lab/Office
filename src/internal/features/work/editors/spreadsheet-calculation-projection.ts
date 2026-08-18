@@ -1,4 +1,5 @@
 import type { Cell, Op, Sheet } from '@fortune-sheet/core';
+import { sparseArrayEntries } from '../spreadsheet-sparse';
 import type {
   OfficeKernelSpreadsheetCoordinate,
   OfficeKernelSpreadsheetInputCell,
@@ -709,12 +710,10 @@ function sparseSpreadsheetCells(
   };
   if (sheet.data) {
     if (sheet.data.length > OFFICE_KERNEL_SPREADSHEET_MAX_ROWS) return null;
-    for (let row = 0; row < sheet.data.length; row += 1) {
-      const values = sheet.data[row];
-      if (!values) continue;
+    for (const [row, values] of sparseArrayEntries(sheet.data)) {
       if (values.length > OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS) return null;
-      for (let column = 0; column < values.length; column += 1) {
-        if (!appendCell(values[column], row, column)) return null;
+      for (const [column, cell] of sparseArrayEntries(values)) {
+        if (!appendCell(cell, row, column)) return null;
       }
     }
   } else {

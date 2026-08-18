@@ -78,6 +78,7 @@ trap 'exit 143' TERM
 
 suites=(
   "tests/e2e/office-docs-navigation.acl"
+  "tests/e2e/spreadsheet-maximum-sparse.acl"
   "tests/e2e/collaboration-playground-entry.acl"
   "tests/e2e/collaboration-document-suggestions.acl"
   "tests/e2e/word-formatting-revision.acl"

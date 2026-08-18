@@ -159,6 +159,11 @@ export type {
   WorkGetDocumentSelectionMenuItems as GetDocumentSelectionMenuItems,
 } from './internal/features/work/work-document-selection-menu';
 export type { WorkArtifactExportOptions as ArtifactExportOptions } from './internal/features/work/work-file-io';
+export type {
+  WorkFileImportOptions as OfficeFileImportOptions,
+  WorkFileImportProgress as OfficeFileImportProgress,
+  WorkFileImportStage as OfficeFileImportStage,
+} from './internal/features/work/work-file-import';
 export {
   createWorkArtifactBlob as createArtifactBlob,
   exportWorkArtifact as downloadArtifact,

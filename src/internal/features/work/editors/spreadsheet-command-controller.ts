@@ -1,4 +1,5 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
+import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
 import {
   createOfficeEditorExtension,
@@ -368,13 +369,14 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
             );
           },
           execute: (context, sheetId) => {
-            if (!context.editable) {
-              const sheet = context.content.sheets.find(
-                (candidate) => candidate.id === sheetId,
-              );
-              if (!sheet || sheet.hide === 1) return false;
+            const sheet = context.content.sheets.find(
+              (candidate) => candidate.id === sheetId,
+            );
+            if (!sheet) return false;
+            if (context.view && sheet.hide !== 1) {
               return context.view?.activateSheet(sheetId) ?? false;
             }
+            if (!context.editable) return false;
             return applySpreadsheetSheetChange(
               context,
               activateSpreadsheetSheet(context.content, sheetId),
@@ -1104,7 +1106,7 @@ function spreadsheetStructureExtent(
   if (axis === 'row') {
     return Math.max(sheet.row ?? 0, sheet.data?.length ?? 0, range[1] + 1);
   }
-  const dataWidth = Math.max(0, ...(sheet.data ?? []).map((row) => row.length));
+  const dataWidth = sparseMatrixColumnCount(sheet.data);
   return Math.max(sheet.column ?? 0, dataWidth, range[1] + 1);
 }
 

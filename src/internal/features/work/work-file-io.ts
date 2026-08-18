@@ -1,6 +1,10 @@
 import type { Cell, CellMatrix, Sheet } from '@fortune-sheet/core';
 import type { CellObject, WorkSheet } from 'xlsx';
 import {
+  sparseArrayEntries,
+  sparseMatrixColumnCount,
+} from './spreadsheet-sparse';
+import {
   createWorkDocumentBlob,
   importWorkDocumentFile,
 } from './work-document-file-io';
@@ -14,7 +18,13 @@ import {
   safeFileName,
 } from './work-file-download';
 export { WORK_IMPORT_ACCEPT } from './work-file-contract';
-import { materializeWorkFile } from './work-file-data';
+import { materializeWorkFileSource } from './work-file-data';
+import {
+  WorkFileImportController,
+  type WorkFileImportContext,
+  type WorkFileImportOptions,
+} from './work-file-import';
+import { OoxmlPackage } from './work-ooxml-package';
 import {
   createWorkPresentationBlob,
   importWorkPresentationFile,
@@ -25,16 +35,15 @@ import { createWorkArtifact, createWorkId } from './work-templates';
 import {
   type WorkArtifact,
   type WorkArtifactKind,
+  type WorkSpreadsheetContent,
+  type WorkSpreadsheetDataValidationRange,
   workArtifactExtension,
 } from './work-types';
 import {
   exportXlsxCellComment,
   importXlsxCellComment,
 } from './work-spreadsheet-comments';
-import {
-  applyPasswordlessEditableRanges,
-  applySpreadsheetCellProtectionRanges,
-} from './work-spreadsheet-protection';
+import { importedSheetProtectionAuthority } from './work-spreadsheet-protection';
 import { refreshSpreadsheetPivotTables } from './work-spreadsheet-pivots';
 import { xlsxWorksheetChartsToSheet } from './work-xlsx-charts';
 import {
@@ -46,7 +55,7 @@ import {
   createXlsxErrorCell,
   createXlsxFormulaCell,
   patchXlsxFormulaFeatures,
-  readXlsxFormulaFeatures,
+  readXlsxFormulaFeaturesFromPackage,
 } from './work-xlsx-formulas';
 import {
   patchXlsxWorksheetDrawings,
@@ -54,13 +63,13 @@ import {
 } from './work-xlsx-images';
 import {
   patchXlsxSheetFeatures,
-  readXlsxSheetFeatures,
+  readXlsxSheetFeaturesFromPackage,
   type XlsxDataValidation,
 } from './work-xlsx-interop';
 import {
   applyImportedXlsxPivotTables,
+  inspectXlsxPivotTables,
   patchXlsxPivotTables,
-  readXlsxPivotTables,
 } from './work-xlsx-pivots';
 import { editableSpreadsheetFormula } from './work-spreadsheet-formulas';
 
@@ -69,10 +78,14 @@ const MARKDOWN_EXTENSIONS = new Set(['md', 'markdown']);
 const SPREADSHEET_EXTENSIONS = new Set(['xlsx', 'xls', 'csv', 'ods']);
 const PRESENTATION_EXTENSIONS = new Set(['pptx']);
 const PDF_EXTENSIONS = new Set(['pdf']);
+const MAX_INLINE_DATA_VALIDATION_CELLS = 10_000;
 
 export type WorkArtifactExportOptions = WorkPresentationExportOptions;
 
-export async function importWorkFile(file: File): Promise<WorkArtifact> {
+export async function importWorkFile(
+  file: File,
+  options: WorkFileImportOptions = {},
+): Promise<WorkArtifact> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (
     !MARKDOWN_EXTENSIONS.has(extension) &&
@@ -85,15 +98,29 @@ export async function importWorkFile(file: File): Promise<WorkArtifact> {
       '目前可导入 DOCX、XLSX、XLS、ODS、CSV、PPTX、PDF、HTML、Markdown 和文本文件。',
     );
   }
-  const source = await materializeWorkFile(file);
-  if (MARKDOWN_EXTENSIONS.has(extension)) return importWorkMarkdownFile(source);
-  if (DOCUMENT_EXTENSIONS.has(extension))
-    return importWorkDocumentFile(source, extension);
-  if (SPREADSHEET_EXTENSIONS.has(extension))
-    return importSpreadsheet(source, extension);
-  if (PRESENTATION_EXTENSIONS.has(extension))
-    return importWorkPresentationFile(source);
-  return importPdf(source);
+  const controller = new WorkFileImportController(options, file.size);
+  const source = await materializeWorkFileSource(file, controller);
+  const context: WorkFileImportContext = {
+    bytes: source.bytes,
+    controller,
+  };
+  controller.report('parsing', 0);
+  let artifact: WorkArtifact;
+  if (MARKDOWN_EXTENSIONS.has(extension)) {
+    artifact = await importWorkMarkdownFile(source.file, context);
+  } else if (DOCUMENT_EXTENSIONS.has(extension)) {
+    artifact = await importWorkDocumentFile(source.file, extension, context);
+  } else if (SPREADSHEET_EXTENSIONS.has(extension)) {
+    artifact = await importSpreadsheet(source.file, extension, context);
+  } else if (PRESENTATION_EXTENSIONS.has(extension)) {
+    artifact = await importWorkPresentationFile(source.file, context);
+  } else {
+    artifact = await importPdf(source.file);
+  }
+  controller.report('analyzing', 1);
+  controller.report('finalizing', 0);
+  controller.complete();
+  return artifact;
 }
 
 export async function exportWorkArtifact(
@@ -122,9 +149,11 @@ export async function createWorkArtifactBlob(
 async function importSpreadsheet(
   file: File,
   extension: string,
+  context: WorkFileImportContext,
 ): Promise<WorkArtifact> {
   const XLSX = await import('xlsx');
-  const arrayBuffer = await file.arrayBuffer();
+  context.controller.report('parsing', 0.05);
+  const arrayBuffer = context.bytes;
   const workbook = XLSX.read(arrayBuffer, {
     type: 'array',
     cellDates: true,
@@ -132,66 +161,83 @@ async function importSpreadsheet(
     cellStyles: true,
     xlfn: true,
   });
-  const sheetFeatures =
+  await context.controller.checkpoint('parsing', 0.2);
+  const archive =
     extension === 'xlsx'
-      ? await readXlsxSheetFeatures(arrayBuffer).catch(() => new Map())
-      : new Map();
-  const formulaFeatures =
-    extension === 'xlsx'
-      ? await readXlsxFormulaFeatures(arrayBuffer).catch(() => null)
+      ? await OoxmlPackage.load(arrayBuffer).catch(() => null)
       : null;
-  const pivotFeatures =
-    extension === 'xlsx'
-      ? await readXlsxPivotTables(arrayBuffer).catch(() => null)
-      : null;
-  const sheets = workbook.SheetNames.map((name, index) => {
+  const sheetFeatures = archive
+    ? await readXlsxSheetFeaturesFromPackage(archive).catch(() => new Map())
+    : new Map();
+  const formulaFeatures = archive
+    ? await readXlsxFormulaFeaturesFromPackage(archive).catch(() => null)
+    : null;
+  const pivotFeatures = archive
+    ? await inspectXlsxPivotTables(archive).catch(() => null)
+    : null;
+  await context.controller.checkpoint('parsing', 0.4);
+  const sheets: WorkSpreadsheetContent['sheets'] = [];
+  for (const [index, name] of workbook.SheetNames.entries()) {
     const worksheet = workbook.Sheets[name];
+    if (!worksheet) continue;
     const features = sheetFeatures.get(name);
-    const range = worksheet['!ref']
-      ? XLSX.utils.decode_range(worksheet['!ref'])
-      : { s: { r: 0, c: 0 }, e: { r: 39, c: 11 } };
-    const rowCount = Math.max(range.e.r + 1, 40);
-    const columnCount = Math.max(range.e.c + 1, 12);
+    const range = safeSpreadsheetRange(worksheet, XLSX);
+    let rowCount = Math.max(range.e.r + 1, 40);
+    let columnCount = Math.max(range.e.c + 1, 12);
     const id = createWorkId('sheet');
     const hyperlinks: NonNullable<Sheet['hyperlink']> = {};
-    const data: CellMatrix = Array.from({ length: rowCount }, () =>
-      Array<Cell | null>(columnCount).fill(null),
+    const data: CellMatrix = [];
+    const entries = Object.entries(worksheet).filter(
+      ([address, value]) =>
+        !address.startsWith('!') && Boolean(value) && typeof value === 'object',
     );
-    for (let row = range.s.r; row <= range.e.r; row += 1) {
-      for (let column = range.s.c; column <= range.e.c; column += 1) {
-        const source = worksheet[XLSX.utils.encode_cell({ r: row, c: column })];
-        if (!source) continue;
-        const hyperlink = fortuneSheetHyperlink(source.l?.Target);
-        const comment = importXlsxCellComment(source.c);
-        const style = fortuneCellStyle(source);
-        if (hyperlink) hyperlinks[`${row}_${column}`] = hyperlink;
-        data[row][column] = {
-          v: source.v as Cell['v'],
-          m: source.w ?? String(source.v ?? ''),
-          f: source.f ? `=${editableSpreadsheetFormula(source.f)}` : undefined,
-          ps: comment,
-          hl: hyperlink ? { r: row, c: column, id } : undefined,
-          ...style,
-          fc: hyperlink ? (style.fc ?? '#0563c1') : style.fc,
-          un: hyperlink ? (style.un ?? 1) : style.un,
-        };
+    const sheetProgressStart =
+      0.4 + (index / Math.max(1, workbook.SheetNames.length)) * 0.45;
+    const sheetProgressSize = 0.45 / Math.max(1, workbook.SheetNames.length);
+    for (const [entryIndex, [address, value]] of entries.entries()) {
+      let position: { r: number; c: number };
+      try {
+        position = XLSX.utils.decode_cell(address);
+      } catch {
+        continue;
+      }
+      if (position.r < 0 || position.c < 0) continue;
+      const source = value as CellObject;
+      const row = position.r;
+      const column = position.c;
+      rowCount = Math.max(rowCount, row + 1);
+      columnCount = Math.max(columnCount, column + 1);
+      const hyperlink = fortuneSheetHyperlink(source.l?.Target);
+      const comment = importXlsxCellComment(source.c);
+      const style = fortuneCellStyle(source);
+      if (hyperlink) hyperlinks[`${row}_${column}`] = hyperlink;
+      data[row] ??= [];
+      data[row][column] = {
+        v: source.v as Cell['v'],
+        m: source.w ?? String(source.v ?? ''),
+        f: source.f ? `=${editableSpreadsheetFormula(source.f)}` : undefined,
+        ps: comment,
+        hl: hyperlink ? { r: row, c: column, id } : undefined,
+        ...style,
+        fc: hyperlink ? (style.fc ?? '#0563c1') : style.fc,
+        un: hyperlink ? (style.un ?? 1) : style.un,
+      };
+      if ((entryIndex + 1) % 2_048 === 0) {
+        await context.controller.checkpoint(
+          'parsing',
+          sheetProgressStart +
+            sheetProgressSize *
+              ((entryIndex + 1) / Math.max(1, entries.length)),
+        );
       }
     }
-    applySpreadsheetCellProtectionRanges(
-      data,
-      features?.protection.cellProtectionRanges ?? [],
-      rowCount,
-      columnCount,
-    );
-    applyPasswordlessEditableRanges(
-      data,
-      features?.protection.authority?.allowRangeList ?? [],
-      rowCount,
-      columnCount,
-    );
+    data.length = Math.max(data.length, rowCount);
     const config = fortuneSheetConfig(worksheet);
-    if (features?.protection.authority)
-      config.authority = features.protection.authority;
+    const protectionAuthority = importedSheetProtectionAuthority(
+      features?.protection.authority,
+      features?.protection.cellProtectionRanges ?? [],
+    );
+    if (protectionAuthority) config.authority = protectionAuthority;
     const filterSelect = fortuneSheetFilter(worksheet, XLSX);
     const dataVerification = fortuneSheetDataVerification(
       features?.validations ?? [],
@@ -199,7 +245,13 @@ async function importSpreadsheet(
       columnCount,
       XLSX,
     );
-    return {
+    const dataValidationRanges = fortuneSheetDataValidationRanges(
+      features?.validations ?? [],
+      rowCount,
+      columnCount,
+      XLSX,
+    );
+    sheets.push({
       id,
       name,
       order: index,
@@ -216,6 +268,9 @@ async function importSpreadsheet(
       dataVerification: Object.keys(dataVerification).length
         ? dataVerification
         : undefined,
+      dataValidationRanges: dataValidationRanges.length
+        ? dataValidationRanges
+        : undefined,
       luckysheet_conditionformat_save: features?.conditionalFormats.length
         ? features.conditionalFormats
         : undefined,
@@ -229,8 +284,12 @@ async function importSpreadsheet(
         worksheet,
         formulaFeatures?.sheets.get(name),
       ),
-    };
-  });
+    });
+    await context.controller.checkpoint(
+      'parsing',
+      sheetProgressStart + sheetProgressSize,
+    );
+  }
   const workbookMetadata = importXlsxDefinedNames(workbook, sheets);
   const pageBreaks = sheets.flatMap((sheet) => {
     const imported = sheetFeatures.get(sheet.name)?.pageBreaks;
@@ -264,11 +323,14 @@ async function importSpreadsheet(
   const { analyzeSpreadsheetCompatibility } = await import(
     './work-office-diagnostics'
   );
+  context.controller.report('analyzing', 0);
   artifact.compatibility = await analyzeSpreadsheetCompatibility(
     file,
     extension,
     workbook,
+    archive,
   );
+  context.controller.report('analyzing', 1);
   return artifact;
 }
 
@@ -287,6 +349,20 @@ async function importPdf(file: File): Promise<WorkArtifact> {
   };
   rememberWorkSourceBlob(artifact.id, source);
   return artifact;
+}
+
+function safeSpreadsheetRange(
+  worksheet: WorkSheet,
+  XLSX: typeof import('xlsx'),
+): ReturnType<typeof XLSX.utils.decode_range> {
+  if (worksheet['!ref']) {
+    try {
+      return XLSX.utils.decode_range(worksheet['!ref']);
+    } catch {
+      // Fall back to the minimum editable worksheet dimensions below.
+    }
+  }
+  return { s: { r: 0, c: 0 }, e: { r: 39, c: 11 } };
 }
 
 function fortuneSheetConfig(
@@ -391,36 +467,8 @@ async function createSpreadsheetBlob(artifact: WorkArtifact): Promise<Blob> {
   const XLSX = await import('xlsx');
   const workbook = XLSX.utils.book_new();
   for (const sheet of content.sheets) {
-    const data = sheet.data ?? [];
-    const worksheet = XLSX.utils.aoa_to_sheet(
-      data.map((row, rowIndex) =>
-        row.map((cell, columnIndex) => {
-          if (!cell) return null;
-          if (cell.f)
-            return createXlsxFormulaCell(cell, rowIndex, columnIndex, sheet);
-          if (cell.ct?.t === 'e') return createXlsxErrorCell(cell);
-          if (cell.ps && cell.v === undefined && cell.m === undefined)
-            return { t: 's', v: '' };
-          return cell.v ?? cell.m ?? null;
-        }),
-      ),
-    );
+    const worksheet = createSparseXlsxWorksheet(sheet, XLSX);
     applySpreadsheetLayout(worksheet, sheet);
-    for (const [rowIndex, row] of data.entries()) {
-      for (const [columnIndex, cell] of row.entries()) {
-        if (!cell) continue;
-        const address = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
-        const target = worksheet[address];
-        if (!target) continue;
-        if (cell.ct?.fa) target.z = cell.ct.fa;
-        const style = xlsxCellStyle(cell);
-        if (style) target.s = style;
-        const comment = exportXlsxCellComment(cell.ps);
-        if (comment) target.c = comment;
-        const hyperlink = sheet.hyperlink?.[`${rowIndex}_${columnIndex}`];
-        if (hyperlink) target.l = { Target: xlsxHyperlinkTarget(hyperlink) };
-      }
-    }
     XLSX.utils.book_append_sheet(
       workbook,
       worksheet,
@@ -447,6 +495,65 @@ async function createSpreadsheetBlob(artifact: WorkArtifact): Promise<Blob> {
   return new Blob([output], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
+}
+
+type SparseXlsxWorksheet = WorkSheet & { '!a3sSparse'?: true };
+
+function createSparseXlsxWorksheet(
+  sheet: WorkSpreadsheetContent['sheets'][number],
+  XLSX: typeof import('xlsx'),
+): SparseXlsxWorksheet {
+  const data = sheet.data ?? [];
+  const worksheet: SparseXlsxWorksheet = { '!a3sSparse': true };
+  let rowCount = Math.max(1, sheet.row ?? 0, data.length);
+  let columnCount = Math.max(
+    1,
+    sheet.column ?? 0,
+    sparseMatrixColumnCount(data),
+  );
+  for (const [rowIndex, row] of sparseArrayEntries(data)) {
+    rowCount = Math.max(rowCount, rowIndex + 1);
+    for (const [columnIndex, cell] of sparseArrayEntries(row)) {
+      if (!cell) continue;
+      columnCount = Math.max(columnCount, columnIndex + 1);
+      const address = XLSX.utils.encode_cell({ r: rowIndex, c: columnIndex });
+      const style = xlsxCellStyle(cell);
+      const comment = exportXlsxCellComment(cell.ps);
+      const hyperlink = sheet.hyperlink?.[`${rowIndex}_${columnIndex}`];
+      const target =
+        xlsxCellObject(cell, rowIndex, columnIndex, sheet) ??
+        (style || comment || hyperlink ? { t: 's', v: '' } : null);
+      if (!target) continue;
+      if (cell.ct?.fa) target.z = cell.ct.fa;
+      if (style) target.s = style;
+      if (comment) target.c = comment;
+      if (hyperlink) target.l = { Target: xlsxHyperlinkTarget(hyperlink) };
+      worksheet[address] = target;
+    }
+  }
+  worksheet['!ref'] = XLSX.utils.encode_range({
+    s: { r: 0, c: 0 },
+    e: { r: rowCount - 1, c: columnCount - 1 },
+  });
+  return worksheet;
+}
+
+function xlsxCellObject(
+  cell: Cell,
+  row: number,
+  column: number,
+  sheet: WorkSpreadsheetContent['sheets'][number],
+): CellObject | null {
+  if (cell.f)
+    return createXlsxFormulaCell(cell, row, column, sheet) as CellObject;
+  if (cell.ct?.t === 'e') return createXlsxErrorCell(cell) as CellObject;
+  const value = cell.v ?? cell.m;
+  if (value === undefined || value === null) {
+    return cell.ps ? { t: 's', v: '' } : null;
+  }
+  if (typeof value === 'boolean') return { t: 'b', v: value };
+  if (typeof value === 'number') return { t: 'n', v: value };
+  return { t: 's', v: String(value) };
 }
 
 function applySpreadsheetLayout(worksheet: WorkSheet, sheet: Sheet) {
@@ -545,12 +652,18 @@ function fortuneSheetDataVerification(
   XLSX: typeof import('xlsx'),
 ): Record<string, XlsxDataValidation['item']> {
   const result: Record<string, XlsxDataValidation['item']> = {};
+  let remaining = MAX_INLINE_DATA_VALIDATION_CELLS;
   for (const validation of validations) {
     for (const reference of validation.references) {
       try {
         const range = XLSX.utils.decode_range(reference);
         const lastRow = Math.min(range.e.r, rowCount - 1);
         const lastColumn = Math.min(range.e.c, columnCount - 1);
+        const cells =
+          (lastRow - Math.max(0, range.s.r) + 1) *
+          (lastColumn - Math.max(0, range.s.c) + 1);
+        if (cells <= 0 || cells > remaining) continue;
+        remaining -= cells;
         for (let row = Math.max(0, range.s.r); row <= lastRow; row += 1) {
           for (
             let column = Math.max(0, range.s.c);
@@ -569,6 +682,43 @@ function fortuneSheetDataVerification(
     }
   }
   return result;
+}
+
+function fortuneSheetDataValidationRanges(
+  validations: XlsxDataValidation[],
+  rowCount: number,
+  columnCount: number,
+  XLSX: typeof import('xlsx'),
+): WorkSpreadsheetDataValidationRange[] {
+  return validations.flatMap((validation) => {
+    const ranges = validation.references.flatMap((reference) => {
+      try {
+        const range = XLSX.utils.decode_range(reference);
+        const startRow = Math.max(0, range.s.r);
+        const endRow = Math.min(rowCount - 1, range.e.r);
+        const startColumn = Math.max(0, range.s.c);
+        const endColumn = Math.min(columnCount - 1, range.e.c);
+        return startRow <= endRow && startColumn <= endColumn
+          ? [
+              {
+                row: [startRow, endRow] as [number, number],
+                column: [startColumn, endColumn] as [number, number],
+              },
+            ]
+          : [];
+      } catch {
+        return [];
+      }
+    });
+    return ranges.length
+      ? [
+          {
+            ranges,
+            item: { ...validation.item },
+          },
+        ]
+      : [];
+  });
 }
 
 function encodeSpreadsheetRange(

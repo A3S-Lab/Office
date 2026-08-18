@@ -268,11 +268,36 @@ export interface WorkSpreadsheetContent {
   pageSetups?: WorkSpreadsheetPageSetup[];
 }
 
+export interface WorkSpreadsheetCellRange {
+  row: [number, number];
+  column: [number, number];
+}
+
+export interface WorkSpreadsheetDataValidationItem {
+  type: string;
+  type2: string;
+  rangeTxt: string;
+  value1: string;
+  value2: string;
+  validity: string;
+  remote: boolean;
+  prohibitInput: boolean;
+  hintShow: boolean;
+  hintValue: string;
+  checked?: boolean;
+}
+
+export interface WorkSpreadsheetDataValidationRange {
+  ranges: WorkSpreadsheetCellRange[];
+  item: WorkSpreadsheetDataValidationItem;
+}
+
 export type WorkSpreadsheetSheet = Omit<Sheet, 'images'> & {
   images?: WorkSpreadsheetImage[];
   charts?: WorkSpreadsheetChart[];
   pivotTables?: WorkSpreadsheetPivotTable[];
   formulaMetadata?: WorkSpreadsheetFormulaMetadata;
+  dataValidationRanges?: WorkSpreadsheetDataValidationRange[];
 };
 
 export type WorkSpreadsheetPivotAggregation =

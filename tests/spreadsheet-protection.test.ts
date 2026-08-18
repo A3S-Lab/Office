@@ -1,21 +1,41 @@
+import { checkCellIsLocked, type Context } from '@fortune-sheet/core';
 import { expect, test } from '@rstest/core';
-import { withEditableRange } from '../src/internal/features/work/work-spreadsheet-protection';
+import {
+  sheetProtectionAuthority,
+  withEditableRange,
+  withSheetProtection,
+} from '../src/internal/features/work/work-spreadsheet-protection';
 
-test('fills sparse worksheet rows when an editable range starts below row one', () => {
-  const sheet = withEditableRange(
-    {
-      id: 'sheet-1',
-      name: '工作表 1',
-      row: 30,
-      column: 10,
-      data: [],
-    },
-    null,
-    { name: 'InputCells', sqref: 'B2:B10' },
+test('keeps editable ranges compact on sparse worksheets', () => {
+  const sheet = withSheetProtection(
+    withEditableRange(
+      {
+        id: 'sheet-1',
+        name: 'Sheet 1',
+        row: 1_048_576,
+        column: 16_384,
+        data: [],
+      },
+      null,
+      { name: 'InputCells', sqref: 'B2:B1048576' },
+    ),
+    true,
   );
+  const authority = sheetProtectionAuthority(sheet);
+  const context = {
+    currentSheetId: 'sheet-1',
+    luckysheetfile: [sheet],
+  } as unknown as Context;
 
-  expect(sheet.data).toHaveLength(30);
-  expect(sheet.data?.every((row) => Array.isArray(row))).toBe(true);
-  expect(sheet.data?.every((row) => row.length === 10)).toBe(true);
-  expect(sheet.data?.[1]?.[1]).toMatchObject({ lo: 0 });
+  expect(sheet.data).toHaveLength(1_048_576);
+  expect(Object.keys(sheet.data ?? [])).toEqual([]);
+  expect(authority.cellProtectionRanges).toEqual([
+    {
+      range: { row: [1, 1_048_575], column: [1, 1] },
+      locked: false,
+      hidden: false,
+    },
+  ]);
+  expect(checkCellIsLocked(context, 700_000, 1, 'sheet-1')).toBe(false);
+  expect(checkCellIsLocked(context, 700_000, 2, 'sheet-1')).toBe(true);
 });

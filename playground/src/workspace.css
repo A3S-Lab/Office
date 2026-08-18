@@ -749,6 +749,23 @@
   white-space: nowrap;
 }
 
+.playground-sparse-fixture-status {
+  display: inline-flex;
+  height: 24px;
+  max-width: min(440px, 40vw);
+  align-items: center;
+  overflow: hidden;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, #159469 24%, var(--a3s-line));
+  border-radius: 6px;
+  background: color-mix(in srgb, #159469 7%, var(--a3s-panel));
+  color: #087152;
+  font-size: 10px;
+  font-weight: 620;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .playground-collaboration-mode-status {
   display: inline-flex;
   height: 26px;
@@ -1329,7 +1346,8 @@
   }
 
   .playground-collaboration-fixture-status,
-  .playground-collaboration-mode-status {
+  .playground-collaboration-mode-status,
+  .playground-sparse-fixture-status {
     display: none;
   }
 

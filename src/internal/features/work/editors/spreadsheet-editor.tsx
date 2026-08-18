@@ -82,6 +82,7 @@ import {
   spreadsheetSelectionReference,
   spreadsheetSelectionSummary,
   spreadsheetSheetsForFortune,
+  spreadsheetSheetsFromFortune,
   spreadsheetSheetsWithFiniteSelections,
   spreadsheetSingleRange,
 } from './spreadsheet-editor-support';
@@ -179,6 +180,7 @@ function CollaborativeSpreadsheetEditor(
       collaborationHistory={shared.history}
       collaborationView={shared.view}
       onChange={shared.onChange}
+      onDerivedChange={shared.onDerivedChange}
       preview={props.preview || shared.readOnly}
     />
   );
@@ -187,6 +189,7 @@ function CollaborativeSpreadsheetEditor(
 interface SpreadsheetEditorSurfaceProps extends SpreadsheetEditorProps {
   collaborationHistory?: SpreadsheetCollaborationHistory;
   collaborationView?: SpreadsheetCollaborationViewController;
+  onDerivedChange?: (content: WorkSpreadsheetContent) => void;
 }
 
 function SpreadsheetEditorSurface({
@@ -199,6 +202,7 @@ function SpreadsheetEditorSurface({
   saveStatus = '已自动保存',
   fileActions,
   onChange,
+  onDerivedChange,
   onAgentRequest,
 }: SpreadsheetEditorSurfaceProps) {
   const materializedContent = useMemo(
@@ -468,25 +472,28 @@ function SpreadsheetEditorSurface({
   workbookSheetsRef.current = displayedWorkbookSheets;
   const handleWorkbookChange = useCallback(
     (sheets: WorkSpreadsheetContent['sheets']) => {
-      if (
-        ignoreChangeDuringExternalSync(
-          sameSpreadsheetWorkbookState(sheets, workbookSheetsRef.current),
-        )
-      ) {
+      const controlledSheets = spreadsheetSheetsFromFortune(
+        sheets,
+        contentRef.current.sheets,
+      );
+      const matchesRenderedWorkbook = sameSpreadsheetWorkbookState(
+        controlledSheets,
+        workbookSheetsRef.current,
+      );
+      if (ignoreChangeDuringExternalSync(matchesRenderedWorkbook)) {
         takeWorkbookOperations();
         return;
       }
       const operations = takeWorkbookOperations();
+      const hasPendingResultPatches = calculation.hasPendingResultPatches();
       if (
         previewRef.current ||
-        (!operations.length &&
-          !calculation.hasPendingResultPatches() &&
-          sameSpreadsheetWorkbookState(sheets, workbookSheetsRef.current))
+        (matchesRenderedWorkbook && !hasPendingResultPatches)
       )
         return;
       const withCharts = reconcileSpreadsheetChartPreviews(
         contentRef.current,
-        sheets,
+        controlledSheets,
       );
       const next = reconcileSpreadsheetPivots(
         contentRef.current,
@@ -495,12 +502,14 @@ function SpreadsheetEditorSurface({
       contentRef.current = next;
       acceptWorkbookContent(next);
       calculation.synchronizeWorkbook(next, operations);
-      spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
+      if (matchesRenderedWorkbook && onDerivedChange) onDerivedChange(next);
+      else spreadsheetCommandsRef.current?.setSpreadsheetContent(next);
     },
     [
       acceptWorkbookContent,
       calculation,
       ignoreChangeDuringExternalSync,
+      onDerivedChange,
       takeWorkbookOperations,
     ],
   );
@@ -655,17 +664,19 @@ function SpreadsheetEditorSurface({
     );
     return true;
   };
-  const activateReadOnlySpreadsheetSheet = useCallback(
+  const activateLocalSpreadsheetSheet = useCallback(
     (sheetId: string) => {
-      if (!previewRef.current) return false;
+      if (!previewRef.current && !collaborationView) return false;
       const sheet = contentRef.current.sheets.find(
         (candidate) => candidate.id === sheetId && candidate.hide !== 1,
       );
       if (!sheet) return false;
       activeSheetIdRef.current = sheetId;
-      collaborationView?.activateSheet(sheetId);
+      if (collaborationView && !collaborationView.activateSheet(sheetId)) {
+        return false;
+      }
       setSelectionState(null);
-      setPreviewActiveSheetId(sheetId);
+      if (previewRef.current) setPreviewActiveSheetId(sheetId);
       try {
         workbookRef.current?.activateSheet({ id: sheetId });
       } catch {
@@ -712,9 +723,10 @@ function SpreadsheetEditorSurface({
       selection: selectionState,
       targetSheetId: toolbarSheetId,
       toolbarCell,
-      view: preview
-        ? { activateSheet: activateReadOnlySpreadsheetSheet }
-        : null,
+      view:
+        preview || collaborationView
+          ? { activateSheet: activateLocalSpreadsheetSheet }
+          : null,
       workbook: workbookInstance,
     },
     spreadsheetExtensions,

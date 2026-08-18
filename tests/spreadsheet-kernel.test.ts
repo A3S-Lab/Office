@@ -70,6 +70,36 @@ describe('Spreadsheet calculation kernel', () => {
     ]);
   });
 
+  test('recalculates formulas at the maximum worksheet row without dense allocation', async () => {
+    const input = request();
+    input.sheets[0].cells = [
+      {
+        row: 1_048_575,
+        column: 0,
+        value: { kind: 'number', value: 21 },
+      },
+      {
+        row: 1_048_575,
+        column: 1,
+        formula: '=A1048576*2',
+        value: { kind: 'blank' },
+      },
+    ];
+    input.targets = [{ sheetId: 'sheet-1', row: 1_048_575, column: 1 }];
+
+    const result = await calculateSpreadsheetInJavaScript(input);
+
+    expect(result.cells).toEqual([
+      {
+        sheetId: 'sheet-1',
+        row: 1_048_575,
+        column: 1,
+        value: { kind: 'number', value: 42 },
+      },
+    ]);
+    expect(result.issues).toEqual([]);
+  });
+
   test('isolates unsupported formulas without discarding valid results', async () => {
     const input = request();
     input.sheets[0]?.cells.push({

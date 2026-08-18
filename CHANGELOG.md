@@ -4,6 +4,31 @@ All notable changes to A3S Office will be documented in this file.
 
 ## Unreleased
 
+## 0.12.0 - 2026-08-18
+
+- Added cancellable browser file imports with monotonic `reading`, `parsing`,
+  `analyzing`, and `finalizing` progress. Bounded reads and parser checkpoints
+  yield to the host UI, `AbortSignal` cancellation fails with `AbortError`, and
+  the Playground now exposes live progress plus an explicit Cancel action.
+- Added maximum-dimension XLSX worksheets with 1,048,576 rows and 16,384
+  columns while keeping empty ranges sparse. Navigation, search, selection,
+  formulas, filters, formatting, statistics, host projection, import, and
+  export visit only materialized cells; editing a far blank row creates only
+  that row and preserves the complete logical scroll range.
+- Preserved large data-validation, protection, passwordless editable, and
+  conditional-formatting regions as compact ranges through browser editing and
+  native XLSX round trips instead of expanding them into per-cell records.
+- Hardened Spreadsheet collaboration and Fortune Sheet projection so derived
+  formula metadata and visible-row caches do not create false controlled
+  changes, sheet activation remains local view state, system calculations stay
+  outside user undo history, and cross-sheet results update their owning sheet.
+- Added focused sparse-workbook, import-performance, collaboration, controlled
+  projection, vendor-patch, and cross-sheet calculation regressions. The
+  deterministic A3S Test workflow proves maximum-cell navigation, one-row
+  materialization, persisted editing, accessibility, and clean browser
+  diagnostics; bilingual documentation and the Playground expose the complete
+  workflow.
+
 ## 0.11.0 - 2026-08-18
 
 - Added node-level `paragraph-formatting` revisions for alignment, direction,

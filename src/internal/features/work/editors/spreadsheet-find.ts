@@ -1,4 +1,5 @@
 import type { Cell } from '@fortune-sheet/core';
+import { sparseArrayEntries } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { spreadsheetSelectionReference } from './spreadsheet-editor-support';
 
@@ -51,11 +52,8 @@ function indexedSpreadsheetCells(
   sheet: WorkSpreadsheetContent['sheets'][number],
 ): IndexedSpreadsheetCell[] {
   const indexed = new Map<string, IndexedSpreadsheetCell>();
-  for (let row = 0; row < (sheet.data?.length ?? 0); row += 1) {
-    const cells = sheet.data?.[row];
-    if (!cells) continue;
-    for (let column = 0; column < cells.length; column += 1) {
-      const cell = cells[column];
+  for (const [row, cells] of sparseArrayEntries(sheet.data)) {
+    for (const [column, cell] of sparseArrayEntries(cells)) {
       if (!cell) continue;
       indexed.set(`${row}:${column}`, { row, column, cell });
     }

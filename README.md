@@ -578,10 +578,31 @@ import {
   importOfficeFile,
 } from '@a3s-lab/office/core';
 
-const imported = await importOfficeFile(file);
+const controller = new AbortController();
+const imported = await importOfficeFile(file, {
+  signal: controller.signal,
+  onProgress: ({ stage, progress }) => {
+    console.info(stage, `${Math.round(progress * 100)}%`);
+  },
+});
 const output = await createArtifactBlob(imported);
 const blankDeck = createArtifact('blank-presentation');
 ```
+
+Import progress advances monotonically through `reading`, `parsing`,
+`analyzing`, and `finalizing`. Calling `controller.abort()` rejects with an
+`AbortError`; large reads and parser checkpoints yield so a host can keep the
+progress and Cancel controls responsive.
+
+Spreadsheet import and export preserve sparse worksheets up to the XLSX limit
+of 1,048,576 rows by 16,384 columns. The logical `data.length`, `row`, and
+`column` dimensions can be large while only populated indexes are materialized.
+Virtual scrolling never emits `onChange`, and editing a far blank row creates
+only that row. Data-validation regions remain compact in
+`dataValidationRanges`; direct `dataVerification` entries take precedence.
+Protection ranges, passwordless editable ranges, and conditional formatting
+also remain compact and round-trip through native XLSX records without
+allocating every covered cell.
 
 Use `downloadArtifact` to start a browser download or
 `createArtifactBlob` when your application owns upload and persistence.
@@ -1338,6 +1359,7 @@ without hard-coded return URLs.
 
 - [Live Playground](https://a3s-lab.github.io/Office/)
 - [Documentation center](https://a3s-lab.github.io/Office/docs/)
+- [A3S Office 0.12.0 documentation](https://a3s-lab.github.io/Office/docs/0.12.0/)
 - [A3S Office 0.11.0 documentation](https://a3s-lab.github.io/Office/docs/0.11.0/)
 - [A3S Office 0.10.0 documentation](https://a3s-lab.github.io/Office/docs/0.10.0/)
 - [A3S Office 0.9.2 documentation](https://a3s-lab.github.io/Office/docs/0.9.2/)

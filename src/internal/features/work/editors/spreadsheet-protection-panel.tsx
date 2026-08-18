@@ -1,6 +1,7 @@
 import type { Sheet } from '@fortune-sheet/core';
 import { KeyRound, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import {
   Button,
   CollectionState,
@@ -158,11 +159,7 @@ export function SpreadsheetProtectionPanel({
     }
     const maximumRow = Math.max(1, sheet.row ?? sheet.data?.length ?? 1) - 1;
     const maximumColumn =
-      Math.max(
-        1,
-        sheet.column ??
-          Math.max(0, ...(sheet.data ?? []).map((row) => row.length)),
-      ) - 1;
+      Math.max(1, sheet.column ?? sparseMatrixColumnCount(sheet.data)) - 1;
     if (
       parsed.some(
         (range) => range.row[1] > maximumRow || range.column[1] > maximumColumn,

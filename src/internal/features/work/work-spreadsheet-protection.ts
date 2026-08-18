@@ -1,5 +1,10 @@
 import type { Cell, CellMatrix, Sheet } from '@fortune-sheet/core';
 import {
+  cloneSparseMatrix,
+  sparseArrayEntries,
+  sparseMatrixColumnCount,
+} from './spreadsheet-sparse';
+import {
   formatSpreadsheetCellRanges,
   parseSpreadsheetCellRanges,
   type SpreadsheetCellRange,
@@ -35,6 +40,7 @@ export interface FortuneSheetProtectionAuthority {
   hintText: string;
   defaultSheetHintText: string;
   allowRangeList: FortuneSheetEditableRange[];
+  cellProtectionRanges: SpreadsheetCellProtectionRange[];
   xlsxAttributes?: Record<string, string>;
 }
 
@@ -69,6 +75,7 @@ export function defaultSheetProtectionAuthority(
     hintText: '',
     defaultSheetHintText: DEFAULT_PROTECTION_HINT,
     allowRangeList: [],
+    cellProtectionRanges: [],
   };
 }
 
@@ -117,8 +124,27 @@ export function normalizeSheetProtectionAuthority(
     defaultSheetHintText:
       stringValue(authority.defaultSheetHintText) || DEFAULT_PROTECTION_HINT,
     allowRangeList: editableRangeList(authority.allowRangeList),
+    cellProtectionRanges: cellProtectionRangeList(
+      authority.cellProtectionRanges,
+    ),
     xlsxAttributes: stringRecord(authority.xlsxAttributes),
   };
+}
+
+export function importedSheetProtectionAuthority(
+  authority: FortuneSheetProtectionAuthority | undefined,
+  cellProtectionRanges: SpreadsheetCellProtectionRange[],
+): FortuneSheetProtectionAuthority | undefined {
+  if (!authority && !cellProtectionRanges.length) return undefined;
+  const normalized = normalizeSheetProtectionAuthority(authority);
+  normalized.cellProtectionRanges = [
+    ...cellProtectionRanges,
+    ...normalized.allowRangeList
+      .filter((range) => !editableRangeRequiresCredentials(range))
+      .flatMap((range) => parseSpreadsheetCellRanges(range.sqref) ?? [])
+      .map((range) => ({ range, locked: false, hidden: false })),
+  ];
+  return normalized;
 }
 
 export function withSheetProtection(sheet: Sheet, enabled: boolean): Sheet {
@@ -157,7 +183,10 @@ export function withEditableRange(
     authority.allowRangeList[index] = nextRange;
   else authority.allowRangeList.push(nextRange);
   const ranges = parseSpreadsheetCellRanges(nextRange.sqref) ?? [];
-  return withAuthority(withCellProtection(sheet, ranges, false), authority);
+  const next = withCellProtection(sheet, ranges, false);
+  const nextAuthority = sheetProtectionAuthority(next);
+  nextAuthority.allowRangeList = authority.allowRangeList;
+  return withAuthority(next, nextAuthority);
 }
 
 export function withoutEditableRange(sheet: Sheet, index: number): Sheet {
@@ -175,7 +204,9 @@ export function withoutEditableRange(sheet: Sheet, index: number): Sheet {
       false,
     );
   }
-  return withAuthority(next, authority);
+  const nextAuthority = sheetProtectionAuthority(next);
+  nextAuthority.allowRangeList = authority.allowRangeList;
+  return withAuthority(next, nextAuthority);
 }
 
 export function withCellProtection(
@@ -185,23 +216,17 @@ export function withCellProtection(
   hidden = false,
 ): Sheet {
   if (!ranges.length) return sheet;
-  const data = cloneMatrix(sheet.data);
+  const data = cloneSparseMatrix(sheet.data);
   let rowCount = Math.max(sheet.row ?? 0, data.length);
-  let columnCount = Math.max(
-    sheet.column ?? 0,
-    ...data.map((row) => row.length),
-  );
+  let columnCount = Math.max(sheet.column ?? 0, sparseMatrixColumnCount(data));
   for (const range of ranges) {
     rowCount = Math.max(rowCount, range.row[1] + 1);
     columnCount = Math.max(columnCount, range.column[1] + 1);
-    for (let row = range.row[0]; row <= range.row[1]; row += 1) {
-      data[row] ??= [];
-      for (
-        let column = range.column[0];
-        column <= range.column[1];
-        column += 1
-      ) {
-        const cell = { ...(data[row][column] ?? {}) } as ProtectionCell;
+    for (const [row, values] of sparseArrayEntries(data)) {
+      if (row < range.row[0] || row > range.row[1]) continue;
+      for (const [column, source] of sparseArrayEntries(values)) {
+        if (column < range.column[0] || column > range.column[1]) continue;
+        const cell = { ...(source ?? {}) } as ProtectionCell;
         cell.lo = locked ? 1 : 0;
         if (hidden) cell.hi = 1;
         else if (cell.hi !== undefined) delete cell.hi;
@@ -210,7 +235,14 @@ export function withCellProtection(
     }
   }
   normalizeMatrix(data, rowCount, columnCount);
-  return { ...sheet, row: rowCount, column: columnCount, data };
+  const authority = sheetProtectionAuthority(sheet);
+  authority.cellProtectionRanges.push(
+    ...ranges.map((range) => ({ range, locked, hidden })),
+  );
+  return withAuthority(
+    { ...sheet, row: rowCount, column: columnCount, data },
+    authority,
+  );
 }
 
 export function applySpreadsheetCellProtectionRanges(
@@ -219,17 +251,17 @@ export function applySpreadsheetCellProtectionRanges(
   rowCount: number,
   columnCount: number,
 ): void {
+  data.length = Math.max(data.length, rowCount);
   for (const item of ranges) {
     const lastRow = Math.min(item.range.row[1], rowCount - 1);
     const lastColumn = Math.min(item.range.column[1], columnCount - 1);
-    for (let row = Math.max(0, item.range.row[0]); row <= lastRow; row += 1) {
-      data[row] ??= [];
-      for (
-        let column = Math.max(0, item.range.column[0]);
-        column <= lastColumn;
-        column += 1
-      ) {
-        const cell = { ...(data[row][column] ?? {}) } as ProtectionCell;
+    for (const [row, values] of sparseArrayEntries(data)) {
+      if (row < Math.max(0, item.range.row[0]) || row > lastRow) continue;
+      values.length = Math.max(values.length, columnCount);
+      for (const [column, source] of sparseArrayEntries(values)) {
+        if (column < Math.max(0, item.range.column[0]) || column > lastColumn)
+          continue;
+        const cell = { ...(source ?? {}) } as ProtectionCell;
         cell.lo = item.locked ? 1 : 0;
         if (item.hidden) cell.hi = 1;
         else if (cell.hi !== undefined) delete cell.hi;
@@ -307,8 +339,8 @@ export function spreadsheetProtectionKey(sheets: Sheet[]): string {
     .map((sheet) => {
       const authority = sheetProtectionAuthority(sheet);
       const cells: string[] = [];
-      for (const [row, values] of (sheet.data ?? []).entries()) {
-        for (const [column, cell] of values.entries()) {
+      for (const [row, values] of sparseArrayEntries(sheet.data)) {
+        for (const [column, cell] of sparseArrayEntries(values)) {
           const hidden = (cell as ProtectionCell | null)?.hi;
           if (cell?.lo !== undefined || hidden !== undefined) {
             cells.push(`${row}_${column}:${cell?.lo ?? ''}:${hidden ?? ''}`);
@@ -366,21 +398,53 @@ function canonicalRangeReference(value: string): string {
   return ranges ? formatSpreadsheetCellRanges(ranges) : value.trim();
 }
 
-function cloneMatrix(source: CellMatrix | undefined): CellMatrix {
-  return (source ?? []).map((row) => [...row]);
-}
-
 function normalizeMatrix(
   data: CellMatrix,
   rows: number,
   columns: number,
 ): void {
-  while (data.length < rows) data.push([]);
-  for (let index = 0; index < data.length; index += 1) {
-    const row = data[index] ?? [];
-    data[index] = row;
-    while (row.length < columns) row.push(null);
-  }
+  data.length = Math.max(data.length, rows);
+  for (const [, row] of sparseArrayEntries(data))
+    row.length = Math.max(row.length, columns);
+}
+
+function cellProtectionRangeList(
+  value: unknown,
+): SpreadsheetCellProtectionRange[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return [];
+    const candidate = item as Partial<SpreadsheetCellProtectionRange>;
+    const range = candidate.range;
+    if (
+      !range ||
+      !Array.isArray(range.row) ||
+      !Array.isArray(range.column) ||
+      range.row.length < 2 ||
+      range.column.length < 2 ||
+      ![...range.row, ...range.column].every(
+        (index) => Number.isSafeInteger(index) && index >= 0,
+      )
+    ) {
+      return [];
+    }
+    return [
+      {
+        range: {
+          row: [
+            Math.min(range.row[0], range.row[1]),
+            Math.max(range.row[0], range.row[1]),
+          ],
+          column: [
+            Math.min(range.column[0], range.column[1]),
+            Math.max(range.column[0], range.column[1]),
+          ],
+        },
+        locked: candidate.locked !== false,
+        hidden: candidate.hidden === true,
+      },
+    ];
+  });
 }
 
 function flag(value: unknown, fallback: 0 | 1): 0 | 1 {

@@ -1,0 +1,1522 @@
+diff --git a/dist/index.esm.js b/dist/index.esm.js
+index 5c9820b1a261305d500e69eeaf350821872beaf4..5a508c14a7428d33eda617d9fe8bd474a33ecc02 100644
+--- a/dist/index.esm.js
++++ b/dist/index.esm.js
+@@ -58277,6 +58277,19 @@ function functionCopy(ctx, txt, mode, step) {
+   return function_str;
+ }
+ 
++function compactCellProtectionState(authority, r, c) {
++  var ranges = authority === null || authority === void 0 ? void 0 : authority.cellProtectionRanges;
++  if (!Array.isArray(ranges)) return undefined;
++  for (var index = ranges.length - 1; index >= 0; index -= 1) {
++    var item = ranges[index];
++    var range = item === null || item === void 0 ? void 0 : item.range;
++    if (!range || !range.row || !range.column) continue;
++    if (r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1]) {
++      return item.locked !== false;
++    }
++  }
++  return undefined;
++}
+ function checkCellIsLocked(ctx, r, c, sheetId) {
+   var _data$r, _sheetFile$config;
+   var sheetFile = getSheetByIndex(ctx, sheetId);
+@@ -58289,6 +58302,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
+     return !!(cell === null || cell === void 0 ? void 0 : cell.lo);
+   }
+   var aut = (_sheetFile$config = sheetFile.config) === null || _sheetFile$config === void 0 ? void 0 : _sheetFile$config.authority;
++  var compactState = compactCellProtectionState(aut, r, c);
++  if (compactState !== undefined) return compactState;
+   var sheetInEditable = _.isNil(aut) || _.isNil(aut.sheet) || aut.sheet === 0;
+   return !sheetInEditable;
+ }
+@@ -58305,9 +58320,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
+   if (_.isNil(aut) || _.isNil(aut.sheet) || aut.sheet === 0) {
+     return true;
+   }
+-  var data = sheetFile.data;
+-  var cell = data === null || data === void 0 ? void 0 : (_data$r2 = data[r]) === null || _data$r2 === void 0 ? void 0 : _data$r2[c];
+-  if (cell && cell.lo === 0) {
++  if (!checkCellIsLocked(ctx, r, c, sheetId)) {
+     if (aut.selectunLockedCells === 1 || _.isNil(aut.selectunLockedCells)) {
+       return true;
+     }
+@@ -58547,10 +58560,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
+   var b = Math.round(b1 - (b1 - b2) / v12 * v10);
+   return "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
+ }
++function conditionalRangeContains(range, r, c) {
++  return range && range.row && range.column && r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1];
++}
++function sparseConditionalCells(data, ranges) {
++  var result = [];
++  var seen = {};
++  Object.keys(data).forEach(function (rowKey) {
++    var r = Number(rowKey);
++    var row = data[r];
++    if (!row) return;
++    Object.keys(row).forEach(function (columnKey) {
++      var c = Number(columnKey);
++      var cell = row[c];
++      if (_.isNil(cell) || !ranges.some(function (range) {
++        return conditionalRangeContains(range, r, c);
++      })) return;
++      var key = "".concat(r, "_").concat(c);
++      if (seen[key]) return;
++      seen[key] = true;
++      result.push({
++        r: r,
++        c: c,
++        cell: cell
++      });
++    });
++  });
++  return result;
++}
++function conditionalNumericValue(cell) {
++  var value = cell === null || cell === void 0 ? void 0 : cell.v;
++  if (typeof value === "number" && Number.isFinite(value)) return value;
++  if ((cell === null || cell === void 0 ? void 0 : cell.ct) && cell.ct.t === "n") {
++    var numeric = Number(value);
++    if (Number.isFinite(numeric)) return numeric;
++  }
++  return undefined;
++}
++function setConditionalCompute(computeMap, r, c, value) {
++  var key = "".concat(r, "_").concat(c);
++  var current = computeMap[key] || {};
++  Object.keys(value).forEach(function (property) {
++    current[property] = value[property];
++  });
++  computeMap[key] = current;
++}
++function sparseDefaultConditionMatches(name, value, conditionValue0, conditionValue1) {
++  if (_.isNil(value) || isRealNull(value)) return false;
++  if (name === "greaterThan") return value > conditionValue0;
++  if (name === "lessThan") return value < conditionValue0;
++  if (name === "equal") return value.toString() === conditionValue0.toString();
++  if (name === "textContains") return value.toString().indexOf(conditionValue0) !== -1;
++  if (name === "between") {
++    var smaller = Math.min(Number(conditionValue0), Number(conditionValue1));
++    var larger = Math.max(Number(conditionValue0), Number(conditionValue1));
++    return typeof value === "number" && value >= smaller && value <= larger;
++  }
++  return false;
++}
++function computeSparseConditionRules(ctx, ruleArr, data) {
++  var computeMap = {};
++  var lazyFormulaRules = [];
++  for (var ruleIndex = 0; ruleIndex < ruleArr.length; ruleIndex += 1) {
++    var rule = ruleArr[ruleIndex];
++    var ranges = Array.isArray(rule.cellrange) ? rule.cellrange : [];
++    var cells = sparseConditionalCells(data, ranges);
++    var format = rule.format || {};
++    if (rule.type === "dataBar") {
++      var numericCells = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      if (!numericCells.length) continue;
++      var values = numericCells.map(function (entry) {
++        return entry.value;
++      });
++      var maximum = Math.max.apply(Math, _toConsumableArray(values));
++      var minimum = Math.min.apply(Math, _toConsumableArray(values));
++      var plusLen = minimum < 0 ? maximum / (maximum - minimum || 1) : 1;
++      var minusLen = minimum < 0 ? Math.abs(minimum) / (maximum - minimum || 1) : 0;
++      numericCells.forEach(function (entry) {
++        var negative = entry.value < 0;
++        var scale = negative ? Math.abs(minimum) : maximum;
++        setConditionalCompute(computeMap, entry.r, entry.c, {
++          dataBar: {
++            valueType: negative ? "minus" : "plus",
++            plusLen: plusLen,
++            minusLen: minusLen,
++            valueLen: scale === 0 ? 1 : Math.abs(entry.value) / Math.abs(scale),
++            format: format
++          }
++        });
++      });
++      continue;
++    }
++    if (rule.type === "colorGradation") {
++      var _numericCells = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      var colors = Array.isArray(format) ? format : [format.cellColor, format.textColor].filter(Boolean);
++      if (!_numericCells.length || colors.length < 2) continue;
++      var _values = _numericCells.map(function (entry) {
++        return entry.value;
++      });
++      var _maximum = Math.max.apply(Math, _toConsumableArray(_values));
++      var _minimum = Math.min.apply(Math, _toConsumableArray(_values));
++      var middle = _values.reduce(function (sum, value) {
++        return sum + value;
++      }, 0) / _values.length;
++      _numericCells.forEach(function (entry) {
++        var color;
++        if (colors.length >= 3 && entry.value <= middle) {
++          color = entry.value === _minimum ? colors[2] : getColorGradation(colors[2], colors[1], _minimum, middle, entry.value);
++        } else if (colors.length >= 3) {
++          color = entry.value === _maximum ? colors[0] : getColorGradation(colors[1], colors[0], middle, _maximum, entry.value);
++        } else {
++          color = entry.value === _minimum ? colors[1] : entry.value === _maximum ? colors[0] : getColorGradation(colors[1], colors[0], _minimum, _maximum, entry.value);
++        }
++        setConditionalCompute(computeMap, entry.r, entry.c, {
++          cellColor: color
++        });
++      });
++      continue;
++    }
++    if (rule.type === "icons") continue;
++    var conditionName = rule.conditionName;
++    var conditionValues = Array.isArray(rule.conditionValue) ? rule.conditionValue : [];
++    var conditionValue0 = conditionValues[0];
++    var conditionValue1 = conditionValues[1];
++    var style = {
++      textColor: format.textColor,
++      cellColor: format.cellColor
++    };
++    if (conditionName === "formula") {
++      ranges.forEach(function (range) {
++        lazyFormulaRules.push({
++          ctx: ctx,
++          range: range,
++          formula: conditionValue0,
++          style: style
++        });
++      });
++      continue;
++    }
++    if (conditionName === "duplicateValue") {
++      var groups = {};
++      cells.forEach(function (entry) {
++        var value = entry.cell.v;
++        if (_.isNil(value) || isRealNull(value)) return;
++        var key = "".concat(typeof value, ":").concat(value);
++        (groups[key] || (groups[key] = [])).push(entry);
++      });
++      Object.keys(groups).forEach(function (key) {
++        var entries = groups[key];
++        var matches = conditionValue0 === "0" ? entries.length > 1 : entries.length === 1;
++        if (matches) entries.forEach(function (entry) {
++          return setConditionalCompute(computeMap, entry.r, entry.c, style);
++        });
++      });
++      continue;
++    }
++    if (["top10", "top10_percent", "last10", "last10_percent", "aboveAverage", "belowAverage"].includes(conditionName)) {
++      var _numericCells2 = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      if (!_numericCells2.length) continue;
++      var average = _numericCells2.reduce(function (sum, entry) {
++        return sum + entry.value;
++      }, 0) / _numericCells2.length;
++      var sorted = _numericCells2.slice().sort(function (left, right) {
++        return right.value - left.value;
++      });
++      var count = Number(conditionValue0) || 10;
++      if (conditionName === "top10_percent" || conditionName === "last10_percent") count = Math.floor(count * sorted.length / 100);
++      var selected = conditionName === "top10" || conditionName === "top10_percent" ? sorted.slice(0, count) : conditionName === "last10" || conditionName === "last10_percent" ? sorted.slice(Math.max(0, sorted.length - count)) : _numericCells2.filter(function (entry) {
++        return conditionName === "aboveAverage" ? entry.value > average : entry.value < average;
++      });
++      selected.forEach(function (entry) {
++        return setConditionalCompute(computeMap, entry.r, entry.c, style);
++      });
++      continue;
++    }
++    cells.forEach(function (entry) {
++      var value = entry.cell.v;
++      var matches = conditionName === "occurrenceDate" ? !_.isNil(value) && value >= conditionValue0 && value <= (conditionValue1 !== null && conditionValue1 !== void 0 ? conditionValue1 : conditionValue0) : sparseDefaultConditionMatches(conditionName, value, conditionValue0, conditionValue1);
++      if (matches) setConditionalCompute(computeMap, entry.r, entry.c, style);
++    });
++  }
++  Object.defineProperty(computeMap, "__a3sLazyFormulaRules", {
++    value: lazyFormulaRules,
++    enumerable: false
++  });
++  Object.defineProperty(computeMap, "__a3sLazyFormulaEvaluated", {
++    value: {},
++    enumerable: false
++  });
++  return computeMap;
++}
++function evaluateSparseConditionalFormula(descriptor, r, c) {
++  var formula = descriptor.formula;
++  if (_.isNil(formula)) return false;
++  formula = formula.toString();
++  if (formula.slice(0, 1) !== "=") formula = "=".concat(formula);
++  var offsetRow = r - descriptor.range.row[0];
++  var offsetColumn = c - descriptor.range.column[0];
++  if (offsetRow > 0) formula = "=".concat(functionCopy(descriptor.ctx, formula, "down", offsetRow));
++  if (offsetColumn > 0) formula = "=".concat(functionCopy(descriptor.ctx, formula, "right", offsetColumn));
++  var value = execfunction(descriptor.ctx, formula, r, c)[1];
++  return typeof value === "boolean" ? value : !!Number(value);
++}
+ function compute(ctx, ruleArr, d) {
+   if (_.isNil(ruleArr)) {
+     ruleArr = [];
+   }
++  if (Object.keys(d).length < d.length) {
++    return computeSparseConditionRules(ctx, ruleArr, d);
++  }
+   var computeMap = {};
+   if (ruleArr.length > 0) {
+     var _loop = function _loop() {
+@@ -59123,8 +59356,19 @@ function getComputeMap(ctx) {
+   return computeMap;
+ }
+ function checkCF(r, c, computeMap) {
+-  if (!_.isNil(computeMap) && "".concat(r, "_").concat(c) in computeMap) {
+-    return computeMap["".concat(r, "_").concat(c)];
++  var key = "".concat(r, "_").concat(c);
++  var lazyRules = computeMap === null || computeMap === void 0 ? void 0 : computeMap.__a3sLazyFormulaRules;
++  var evaluated = computeMap === null || computeMap === void 0 ? void 0 : computeMap.__a3sLazyFormulaEvaluated;
++  if (Array.isArray(lazyRules) && evaluated && !evaluated[key]) {
++    evaluated[key] = true;
++    lazyRules.forEach(function (descriptor) {
++      if (conditionalRangeContains(descriptor.range, r, c) && evaluateSparseConditionalFormula(descriptor, r, c)) {
++        setConditionalCompute(computeMap, r, c, descriptor.style);
++      }
++    });
++  }
++  if (!_.isNil(computeMap) && key in computeMap) {
++    return computeMap[key];
+   }
+   return null;
+ }
+@@ -59822,11 +60066,40 @@ function validateCellData(ctx, item, cellValue) {
+   }
+   return true;
+ }
++function getDataVerificationItem(ctx, r, c, sheetId) {
++  var index = getSheetIndex(ctx, sheetId !== null && sheetId !== void 0 ? sheetId : ctx.currentSheetId);
++  var sheet = ctx.luckysheetfile[index];
++  if (!sheet) return undefined;
++  var key = "".concat(r, "_").concat(c);
++  var direct = sheet.dataVerification;
++  if (direct && Object.prototype.hasOwnProperty.call(direct, key)) {
++    return direct[key];
++  }
++  var compact = sheet.dataValidationRanges;
++  if (!Array.isArray(compact)) return undefined;
++  for (var entryIndex = compact.length - 1; entryIndex >= 0; entryIndex -= 1) {
++    var entry = compact[entryIndex];
++    var ranges = entry === null || entry === void 0 ? void 0 : entry.ranges;
++    if (!Array.isArray(ranges)) continue;
++    for (var rangeIndex = ranges.length - 1; rangeIndex >= 0; rangeIndex -= 1) {
++      var range = ranges[rangeIndex];
++      if (!range || !range.row || !range.column) continue;
++      if (r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1]) {
++        return entry.item || undefined;
++      }
++    }
++  }
++  return undefined;
++}
+ function checkboxChange(ctx, r, c) {
+-  var _ctx$luckysheetfile$i;
+   var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var currentDataVerification = (_ctx$luckysheetfile$i = ctx.luckysheetfile[index].dataVerification) !== null && _ctx$luckysheetfile$i !== void 0 ? _ctx$luckysheetfile$i : {};
+-  var item = currentDataVerification["".concat(r, "_").concat(c)];
++  var sheet = ctx.luckysheetfile[index];
++  var item = getDataVerificationItem(ctx, r, c);
++  if (!item) return;
++  item = _objectSpread2({}, item);
++  var currentDataVerification = sheet.dataVerification || {};
++  currentDataVerification["".concat(r, "_").concat(c)] = item;
++  sheet.dataVerification = currentDataVerification;
+   item.checked = !item.checked;
+   var value = item.value2;
+   if (item.checked) {
+@@ -60149,10 +60422,7 @@ function cellFocus(ctx, r, c, clickMode) {
+   if (!showHintBox || !dropDownBtn) return;
+   showHintBox.style.display = "none";
+   dropDownBtn.style.display = "none";
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+   ctx.dataVerificationDropDownList = false;
+-  if (!dataVerification) return;
+   var row = ctx.visibledatarow[r];
+   var row_pre = r === 0 ? 0 : ctx.visibledatarow[r - 1];
+   var col = ctx.visibledatacolumn[c];
+@@ -60168,7 +60438,7 @@ function cellFocus(ctx, r, c, clickMode) {
+     col_pre = _margeSet$column[0];
+     col = _margeSet$column[1];
+   }
+-  var item = dataVerification["".concat(r, "_").concat(c)];
++  var item = getDataVerificationItem(ctx, r, c);
+   if (!item) return;
+   if (clickMode && item.type === "checkbox") {
+     checkboxChange(ctx, r, c);
+@@ -60238,8 +60508,8 @@ function setDropcownValue(ctx, value, arr) {
+   var rowIndex = last.row_focus;
+   var colIndex = last.column_focus;
+   if (rowIndex == null || colIndex == null) return;
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var item = ctx.luckysheetfile[index].dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++  var item = getDataVerificationItem(ctx, rowIndex, colIndex);
++  if (!item) return;
+   if (item.type2 === "true") {
+     value = item.value1.split(",").filter(function (v) {
+       return arr.indexOf(v) >= 0;
+@@ -60389,7 +60659,6 @@ function normalizedCellAttr(cell, attr) {
+ }
+ function normalizedAttr(data, r, c, attr) {
+   if (!data || !data[r]) {
+-    console.warn("cell (%d, %d) is null", r, c);
+     return null;
+   }
+   var cell = data[r][c];
+@@ -60402,7 +60671,7 @@ function getCellValue(r, c, data, attr) {
+   }
+   var d_value;
+   if (!_.isNil(r) && !_.isNil(c)) {
+-    d_value = data[r][c];
++    d_value = data[r] ? data[r][c] : undefined;
+   } else if (!_.isNil(r)) {
+     d_value = data[r];
+   } else if (!_.isNil(c)) {
+@@ -60438,6 +60707,11 @@ function setCellValue(ctx, r, c, d, v) {
+     d = getFlowdata(ctx);
+   }
+   if (!d) return;
++  var logicalColumnCount = d[0] ? d[0].length : ctx.defaultcolumnNum;
++  if (!d[r]) {
++    d[r] = [];
++  }
++  d[r].length = Math.max(d[r].length, logicalColumnCount, c + 1);
+   var cell = d[r][c];
+   var vupdate;
+   if (_.isPlainObject(v)) {
+@@ -60641,7 +60915,6 @@ function getRealCellValue(r, c, data, attr) {
+ }
+ function mergeBorder(ctx, d, row_index, col_index) {
+   if (!d || !d[row_index]) {
+-    console.warn("Merge info is null", row_index, col_index);
+     return null;
+   }
+   var value = d[row_index][col_index];
+@@ -60824,16 +61097,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+   var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
+   var flowdata = getFlowdata(ctx);
+   if (!flowdata) return;
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+-  if (!_.isNil(dataVerification)) {
+-    var dvItem = dataVerification["".concat(r, "_").concat(c)];
+-    if (!_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
+-      var failureText = getFailureText(ctx, dvItem);
+-      cancelNormalSelected(ctx);
+-      ctx.warnDialog = failureText;
+-      return;
+-    }
++  var logicalColumnCount = flowdata[0] ? flowdata[0].length : ctx.defaultcolumnNum;
++  if (!flowdata[r]) {
++    flowdata[r] = [];
++  }
++  flowdata[r].length = Math.max(flowdata[r].length, logicalColumnCount, c + 1);
++  var dvItem = getDataVerificationItem(ctx, r, c);
++  if (!_.isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
++    var failureText = getFailureText(ctx, dvItem);
++    cancelNormalSelected(ctx);
++    ctx.warnDialog = failureText;
++    return;
+   }
+   var curv = flowdata[r][c];
+   var oldValue = _.cloneDeep(curv);
+@@ -61075,7 +61349,7 @@ function getcellFormula(ctx, r, c, i, data) {
+   if (_.isNil(data)) {
+     cell = getOrigincell(ctx, r, c, i);
+   } else {
+-    cell = data[r][c];
++    cell = data[r] ? data[r][c] : undefined;
+   }
+   if (_.isNil(cell)) {
+     return null;
+@@ -66976,12 +67250,17 @@ function initSheetData(draftCtx, index, newData) {
+     lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
+   }
+   if (lastRowNum && lastColNum) {
+-    var expandedData = _.times(lastRowNum, function () {
+-      return _.times(lastColNum, function () {
+-        return null;
+-      });
+-    });
++    var expandedData = [];
++    expandedData.length = lastRowNum;
++    for (var rowIndex = 0; rowIndex < Math.min(lastRowNum, 100); rowIndex += 1) {
++      expandedData[rowIndex] = [];
++      expandedData[rowIndex].length = lastColNum;
++    }
+     celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
++      if (!expandedData[d.r]) {
++        expandedData[d.r] = [];
++        expandedData[d.r].length = lastColNum;
++      }
+       expandedData[d.r][d.c] = d.v;
+     });
+     if (draftCtx.luckysheetfile[index] == null) {
+@@ -67067,24 +67346,25 @@ function copySheet(ctx, sheetId) {
+ function calculateSheetFromula(ctx, id, range) {
+   var index$1 = getSheetIndex(ctx, id);
+   if (!ctx.luckysheetfile[index$1].data) return;
+-  if (!range) {
+-    range = {
+-      row: [0, ctx.luckysheetfile[index$1].data.length - 1],
+-      column: [0, ctx.luckysheetfile[index$1].data[0].length - 1]
+-    };
+-  }
+-  var rowCount = range.row[1] - range.row[0] + 1;
+-  var columnCount = range.column[1] - range.column[0] + 1;
+-  for (var _r = 0; _r < rowCount; _r += 1) {
+-    for (var _c = 0; _c < columnCount; _c += 1) {
++  var data = ctx.luckysheetfile[index$1].data;
++  var populatedRows = Object.keys(data);
++  for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++    var r = Number(populatedRows[rowIndex]);
++    if (range && (r < range.row[0] || r > range.row[1])) continue;
++    var cells = data[r];
++    if (!cells) continue;
++    var populatedColumns = Object.keys(cells);
++    for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+       var _ctx$luckysheetfile$i, _ctx$luckysheetfile$i2;
+-      var r = range.row[0] + _r;
+-      var c = range.column[0] + _c;
++      var c = Number(populatedColumns[columnIndex]);
++      if (range && (c < range.column[0] || c > range.column[1])) continue;
+       if (!((_ctx$luckysheetfile$i = ctx.luckysheetfile[index$1].data[r][c]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.f)) {
+         continue;
+       }
+       var result = execfunction(ctx, (_ctx$luckysheetfile$i2 = ctx.luckysheetfile[index$1].data[r][c]) === null || _ctx$luckysheetfile$i2 === void 0 ? void 0 : _ctx$luckysheetfile$i2.f, r, c, id);
+-      setCellValue$1(ctx, r, c, result[1], null);
++      setCellValue$1(ctx, r, c, result[1], null, {
++        id: id
++      });
+       insertUpdateFunctionGroup(ctx, r, c, id);
+     }
+   }
+@@ -67226,7 +67506,11 @@ function updateSheet(ctx, newData) {
+     var index = getSheetIndex(ctx, newDatum.id);
+     if (data != null) {
+       var lastRowNum = data.length;
+-      var lastColNum = data[0].length;
++      var populatedRows = Object.keys(data);
++      var lastColNum = populatedRows.reduce(function (maximum, rowKey) {
++        var sourceRow = data[Number(rowKey)];
++        return Math.max(maximum, sourceRow ? sourceRow.length : 0);
++      }, 0);
+       if (row != null && column != null && row > 0 && column > 0) {
+         lastRowNum = Math.max(lastRowNum, row);
+         lastColNum = Math.max(lastColNum, column);
+@@ -67234,19 +67518,28 @@ function updateSheet(ctx, newData) {
+         lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
+         lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
+       }
+-      var expandedData = _.times(lastRowNum, function () {
+-        return _.times(lastColNum, function () {
+-          return null;
+-        });
+-      });
+-      for (var i = 0; i < data.length; i += 1) {
+-        for (var j = 0; j < data[i].length; j += 1) {
+-          expandedData[i][j] = data[i][j];
++      var expandedData = [];
++      expandedData.length = lastRowNum;
++      for (var initialRow = 0; initialRow < Math.min(lastRowNum, 100); initialRow += 1) {
++        expandedData[initialRow] = [];
++        expandedData[initialRow].length = lastColNum;
++      }
++      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++        var i = Number(populatedRows[rowIndex]);
++        var sourceRow = data[i];
++        if (!sourceRow) continue;
++        if (!expandedData[i]) expandedData[i] = [];
++        expandedData[i].length = lastColNum;
++        var populatedColumns = Object.keys(sourceRow);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
++          var j = Number(populatedColumns[columnIndex]);
++          if (sourceRow[j] == null) continue;
++          expandedData[i][j] = sourceRow[j];
+           setFormulaCellInfo(ctx, {
+             r: i,
+             c: j,
+             id: newDatum.id
+-          }, data);
++          }, expandedData);
+         }
+       }
+       newDatum.data = expandedData;
+@@ -72990,10 +73283,7 @@ var Canvas = /*#__PURE__*/function () {
+         var _startX = item.startX;
+         var _endY = item.endY;
+         var _endX = item.endX;
+-        if (_.isNil(flowdata[_r])) {
+-          continue;
+-        }
+-        if (_.isNil(flowdata[_r][_c])) {
++        if (_.isNil(flowdata[_r]) || _.isNil(flowdata[_r][_c])) {
+           this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
+         } else {
+           var cell = flowdata[_r][_c];
+@@ -73191,8 +73481,10 @@ var Canvas = /*#__PURE__*/function () {
+           continue;
+         }
+         var hasCellOver = false;
+-        for (var c = 0; c < data[r].length; c += 1) {
++        var populatedColumns = Object.keys(data[r]);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+           var _this$sheetCtx$config16, _this$sheetCtx$config17;
++          var c = Number(populatedColumns[columnIndex]);
+           var cell = data[r][c];
+           if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
+             continue;
+@@ -73274,6 +73566,7 @@ var Canvas = /*#__PURE__*/function () {
+       var checksCF = checkCF(r, c, cfCompute);
+       var flowdata = getFlowdata(this.sheetCtx);
+       if (!flowdata) return;
++      var cell = flowdata[r] ? flowdata[r][c] : undefined;
+       var borderfix = getBorderFix();
+       var fillStyle = normalizedAttr(flowdata, r, c, "bg");
+       if (!_.isNil(checksCF) && !_.isNil(checksCF.cellColor)) {
+@@ -73285,7 +73578,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.fillStyle = fillStyle;
+       }
+       var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
+-      if (((_this$sheetCtx$hooks$6 = (_this$sheetCtx$hooks6 = this.sheetCtx.hooks).beforeRenderCell) === null || _this$sheetCtx$hooks$6 === void 0 ? void 0 : _this$sheetCtx$hooks$6.call(_this$sheetCtx$hooks6, flowdata[r][c], {
++      if (((_this$sheetCtx$hooks$6 = (_this$sheetCtx$hooks6 = this.sheetCtx.hooks).beforeRenderCell) === null || _this$sheetCtx$hooks$6 === void 0 ? void 0 : _this$sheetCtx$hooks$6.call(_this$sheetCtx$hooks6, cell, {
+         row: r,
+         column: c,
+         startX: cellsize[0],
+@@ -73341,7 +73634,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.stroke();
+         renderCtx.closePath();
+       }
+-      (_this$sheetCtx$hooks$7 = (_this$sheetCtx$hooks7 = this.sheetCtx.hooks).afterRenderCell) === null || _this$sheetCtx$hooks$7 === void 0 ? void 0 : _this$sheetCtx$hooks$7.call(_this$sheetCtx$hooks7, flowdata[r][c], {
++      (_this$sheetCtx$hooks$7 = (_this$sheetCtx$hooks7 = this.sheetCtx.hooks).afterRenderCell) === null || _this$sheetCtx$hooks$7 === void 0 ? void 0 : _this$sheetCtx$hooks$7.call(_this$sheetCtx$hooks7, cell, {
+         row: r,
+         column: c,
+         startY: cellsize[1],
+@@ -73353,7 +73646,7 @@ var Canvas = /*#__PURE__*/function () {
+   }, {
+     key: "cellRender",
+     value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
+-      var _this$sheetCtx$hooks$8, _this$sheetCtx$hooks8, _dataVerification, _this$sheetCtx$hooks$9, _this$sheetCtx$hooks9, _flowdata$r3;
++      var _this$sheetCtx$hooks$8, _this$sheetCtx$hooks8, _this$sheetCtx$hooks$9, _this$sheetCtx$hooks9, _flowdata$r3;
+       var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
+       var flowdata = getFlowdata(this.sheetCtx);
+       if (!flowdata) {
+@@ -73390,9 +73683,8 @@ var Canvas = /*#__PURE__*/function () {
+         return;
+       }
+       renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
+-      var index = getSheetIndex(this.sheetCtx, this.sheetCtx.currentSheetId);
+-      var dataVerification = this.sheetCtx.luckysheetfile[index].dataVerification;
+-      if ((dataVerification === null || dataVerification === void 0 ? void 0 : dataVerification["".concat(r, "_").concat(c)]) && !validateCellData(this.sheetCtx, dataVerification["".concat(r, "_").concat(c)], value)) {
++      var dataVerificationItem = getDataVerificationItem(this.sheetCtx, r, c);
++      if (dataVerificationItem && !validateCellData(this.sheetCtx, dataVerificationItem, value)) {
+         var dv_w = 5 * this.sheetCtx.zoomRatio;
+         var dv_h = 5 * this.sheetCtx.zoomRatio;
+         renderCtx.beginPath();
+@@ -73433,7 +73725,7 @@ var Canvas = /*#__PURE__*/function () {
+         } else {
+           cellOverflow_bd_r_render = false;
+         }
+-      } else if ((dataVerification === null || dataVerification === void 0 ? void 0 : (_dataVerification = dataVerification["".concat(r, "_").concat(c)]) === null || _dataVerification === void 0 ? void 0 : _dataVerification.type) === "checkbox") {
++      } else if ((dataVerificationItem === null || dataVerificationItem === void 0 ? void 0 : dataVerificationItem.type) === "checkbox") {
+         var pos_x = startX + offsetLeft;
+         var pos_y = startY + offsetTop + 1;
+         renderCtx.save();
+@@ -73469,7 +73761,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.lineWidth = 1;
+         renderCtx.strokeStyle = "#000";
+         renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
+-        if (dataVerification["".concat(r, "_").concat(c)].checked) {
++        if (dataVerificationItem.checked) {
+           renderCtx.beginPath();
+           renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
+           renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
+@@ -76066,8 +76358,12 @@ var dataToCelldata = function dataToCelldata(data) {
+   if (data == null) {
+     return celldata;
+   }
+-  for (var r = 0; r < data.length; r += 1) {
+-    for (var c = 0; c < data[r].length; c += 1) {
++  Object.keys(data).forEach(function (rowKey) {
++    var r = Number(rowKey);
++    var row = data[r];
++    if (!row) return;
++    Object.keys(row).forEach(function (columnKey) {
++      var c = Number(columnKey);
+       var v = data[r][c];
+       if (v != null) {
+         celldata.push({
+@@ -76076,8 +76372,8 @@ var dataToCelldata = function dataToCelldata(data) {
+           v: v
+         });
+       }
+-    }
+-  }
++    });
++  });
+   return celldata;
+ };
+ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76091,13 +76387,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+     lastColNum = Math.max(lastColNum, colCount);
+   }
+   if (lastRowNum && lastColNum) {
+-    var expandedData = _.times(lastRowNum, function () {
+-      return _.times(lastColNum, function () {
+-        return null;
+-      });
+-    });
++    var expandedData = [];
++    expandedData.length = lastRowNum;
++    expandedData[0] = [];
++    expandedData[0].length = lastColNum;
+     celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
+-      expandedData[d.r][d.c] = d.v;
++      var row = expandedData[d.r];
++      if (!row) {
++        row = [];
++        row.length = lastColNum;
++        expandedData[d.r] = row;
++      }
++      row[d.c] = d.v;
+     });
+     return expandedData;
+   }
+@@ -76136,7 +76437,8 @@ function getCellValue$1(ctx, row, column) {
+   if (!targetSheetData) {
+     throw SHEET_NOT_FOUND;
+   }
+-  var cellData = targetSheetData[row][column];
++  var targetRowData = targetSheetData[row];
++  var cellData = targetRowData === null || targetRowData === void 0 ? void 0 : targetRowData[column];
+   var ret;
+   if (cellData && _.isPlainObject(cellData)) {
+     var _cellData$ct;
+@@ -76166,6 +76468,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+   }
+   var sheet = getSheet(ctx, options);
+   var data = sheet.data;
++  if (!data) {
++    throw SHEET_NOT_FOUND;
++  }
++  var logicalColumnCount = data[0] ? data[0].length : sheet.column || ctx.defaultcolumnNum;
++  if (!data[row]) {
++    data[row] = [];
++  }
++  data[row].length = Math.max(data[row].length, logicalColumnCount, column + 1);
+   var formatList = {
+     bg: 1,
+     ff: 1,
+@@ -77702,12 +78012,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+   var row_index = row_location[2];
+   var col_location = colLocation(x, ctx.visibledatacolumn);
+   var col_index = col_location[2];
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+-  if (dataVerification) {
+-    var item = dataVerification["".concat(row_index, "_").concat(col_index)];
+-    if (item && item.type === "checkbox") return;
+-  }
++  var item = getDataVerificationItem(ctx, row_index, col_index);
++  if (item && item.type === "checkbox") return;
+   var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
+   if (margeset) {
+     var _margeset$row2 = _slicedToArray(margeset.row, 3);
+@@ -80366,4 +80672,4 @@ function handlePasteByClick(ctx, clipboardData, triggerType) {
+   } else ;
+ }
+ 
+-export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
++export { CFSplitRange, Canvas, FormulaCache, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, index as api, applyLocation, attrToCssName, autoSelectionFormula, calcSelectionInfo, cancelActiveImgItem, cancelFunctionrangeSelected, cancelNormalSelected, cancelPaintModel, cellFocus, cfSplitRange, changeSheet, chatatABC, checkCF, checkCellIsLocked, checkProtectionAllSelected, checkProtectionFormatCells, checkProtectionSelectLockedOrUnLockedCells, checkboxChange, clearFilter, clearMeasureTextCache, colHasMerged, colLocation, colLocationByIndex, colors, columnCharToIndex, commentBoxProps, compute, computeRowlenArr, confirmMessage, convertCssToStyleList, convertSpanToShareString, copy, createDropCellRange, createFilter, createFilterOptions, createFormulaRangeSelect, createRangeHightlight, dataRangeSelection, datenum_local, defaultContext, defaultFont, defaultSettings, defaultStyle, delFunctionGroup, deleteCellInSave, deleteComment, deleteRowCol, deleteSelectedCellText, deleteSheet, diff, drawArrow, drawLineInfo, dropCellCache, editComment, editSheetName, ensureSheetIndex, error, escapeHTMLTag, escapeScriptTag, execFunctionGroup, execfunction, expandRowsAndColumns, extractFormulaCellOps, filterPatch, fixColumnStyleOverflowInFreeze, fixPositionOnFrozenCells, fixRowStyleOverflowInFreeze, functionCopy, functionHTMLGenerate, functionStrChange, genarate, generateRandomId, generateRandomSheetName, getAllFunctionGroup, getArrowCanvasSize, getBorderInfoCompute, getBorderInfoComputeRange, getCellHyperlink, getCellRowColumn, getCellTextInfo, getCellTopRightPostion, getCellValue, getColMerge, getColorGradation, getCommentBoxByRC, getCommentBoxPosition, getComputeMap, getCurrentRules, getDataArr, getDataBySelectionNoCopy, getDataVerificationItem, getDropdownList, getFailureText, getFilterColumnColors, getFilterColumnValues, getFlattenedRange, getFlowdata, getFontSet, getFontStyleByCell, getFrozenHandleLeft, getFrozenHandleTop, getHintText, getHistoryRules, getInlineStringHTML, getInlineStringNoStyle, getMeasureText, getNowDateTime, getNullData, getOptionValue, getOrigincell, getQKBorder, getRange, getRangeArr, getRangeByTxt, getRangetxt, getRealCellValue, getRegExpStr, getRegStr, getRowMerge, getSearchIndexArr, getSelectRange, getSheetByIndex, getSheetIdByName, getSheetIndex, getStyleByCell, getTypeItemHide, getcellFormula, getcellrange, getdatabyselection, getrangeseleciton, goToLink, groupValuesRefresh, handleArrowKey, handleBold, handleBorder, handleCellAreaDoubleClick, handleCellAreaMouseDown, handleClearFormat, handleColFreezeHandleMouseDown, handleColSizeHandleMouseDown, handleColumnHeaderMouseDown, handleContextMenu, handleCopy, handleCurrencyFormat, handleFormatPainter, handleFormulaInput, handleFreeze, handleGlobalEnter, handleGlobalKeyDown, handleGlobalWheel, handleHorizontalAlign, handleItalic, handleKeydownForZoom, handleLink, handleMerge, handleNumberDecrease, handleNumberIncrease, handleOverlayMouseMove, handleOverlayMouseUp, handleOverlayTouchEnd, handleOverlayTouchMove, handleOverlayTouchStart, handlePaste, handlePasteByClick, handlePercentageFormat, handleRowFreezeHandleMouseDown, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleScreenShot, handleSort, handleStrikeThrough, handleSum, handleTextBackground, handleTextColor, handleTextSize, handleUnderline, handleVerticalAlign, handleWithCtrlOrMetaKey, hasChinaword, hasPartMC, hideCRCount, hideDropCellSelection, hideSelected, imageProps, indexToColumnChar, initFreeze, initSheetIndex, inlineStyleAffectAttribute, inlineStyleAffectCssName, insertImage, insertRowCol, insertUpdateFunctionGroup, inverseRowColOptions, isAllSelectedCellsInStatus, isAllowEdit, isFormula, isFunctionRange, isInlineStringCT, isInlineStringCell, isLinkValid, isRealNull, isRealNum, isShowHidenCR, isSupportBoundingBox, is_date, iscelldata, isdatatype, isdatatypemulti, isdatetime, israngeseleciton, jfrefreshgrid, labelFilterOptionState, locale, luckysheetUpdateCell, mergeBorder, mergeCells, mergeMoveMain, mousePosition, moveHighlightCell, moveHighlightRange, moveToEnd, newComment, normalizeSelection, normalizedAttr, normalizedCellAttr, onCellsMove, onCellsMoveEnd, onCellsMoveStart, onCommentBoxMove, onCommentBoxMoveEnd, onCommentBoxMoveStart, onCommentBoxResize, onCommentBoxResizeEnd, onCommentBoxResizeStart, onDropCellSelect, onDropCellSelectEnd, onFormulaRangeDragEnd, onImageMove, onImageMoveEnd, onImageMoveStart, onImageResize, onImageResizeEnd, onImageResizeStart, onRangeSelectionModalMove, onRangeSelectionModalMoveEnd, onRangeSelectionModalMoveStart, onSearchDialogMove, onSearchDialogMoveEnd, onSearchDialogMoveStart, opToPatch, orderbydata, orderbydatafiler, overShowComment, pasteHandlerOfPaintModel, patchToOp, rangeDrag, rangeDragColumn, rangeDragRow, rangeHightlightselected, rangeSetValue, rangeValueToHtml, removeActiveImage, removeEditingComment, removeHyperlink, replace, replaceAll, replaceHtml, rgbToHex, rowHasMerged, rowLocation, rowLocationByIndex, saveFilter, saveHyperlink, saveImage, scrollToFrozenRowCol, scrollToHighlightCell, searchAll, searchNext, selectAll, selectIsOverlap, selectTextContent, selectTextContentCross, selectTitlesMap, selectTitlesRange, selectionCache, selectionCopyShow, seletedHighlistByindex, setCaretPosition, setCellValue, setConditionRules, setDropcownValue, setEditingComment, setFormulaCellInfoMap, showComments, showDropCellSelection, showHideAllComments, showHideComment, showImgChooser, showLinkCard, showSelected, sortDataRange, sortSelection, storeSheetParamALL, toolbarItemClickHandler, toolbarItemSelectedFunc, update, updateCell, updateContextWithCanvas, updateContextWithSheetData, updateDropCell, updateFormat, updateFormatCell, updateInlineStringFormat, updateInlineStringFormatOutside, updateItem, updateMoreCell, updateSheet, validateCellData, validateIdCard, valueIsError, valueShowEs };
+diff --git a/dist/index.js b/dist/index.js
+index 04113a18dee9feee28e9434ee3023626c800e7d3..8186f6f080ffd0ffe13df782a61cedb871f6bd77 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -58287,6 +58287,19 @@ function functionCopy(ctx, txt, mode, step) {
+   return function_str;
+ }
+ 
++function compactCellProtectionState(authority, r, c) {
++  var ranges = authority === null || authority === void 0 ? void 0 : authority.cellProtectionRanges;
++  if (!Array.isArray(ranges)) return undefined;
++  for (var index = ranges.length - 1; index >= 0; index -= 1) {
++    var item = ranges[index];
++    var range = item === null || item === void 0 ? void 0 : item.range;
++    if (!range || !range.row || !range.column) continue;
++    if (r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1]) {
++      return item.locked !== false;
++    }
++  }
++  return undefined;
++}
+ function checkCellIsLocked(ctx, r, c, sheetId) {
+   var _data$r, _sheetFile$config;
+   var sheetFile = getSheetByIndex(ctx, sheetId);
+@@ -58299,6 +58312,8 @@ function checkCellIsLocked(ctx, r, c, sheetId) {
+     return !!(cell === null || cell === void 0 ? void 0 : cell.lo);
+   }
+   var aut = (_sheetFile$config = sheetFile.config) === null || _sheetFile$config === void 0 ? void 0 : _sheetFile$config.authority;
++  var compactState = compactCellProtectionState(aut, r, c);
++  if (compactState !== undefined) return compactState;
+   var sheetInEditable = ___default['default'].isNil(aut) || ___default['default'].isNil(aut.sheet) || aut.sheet === 0;
+   return !sheetInEditable;
+ }
+@@ -58315,9 +58330,7 @@ function checkProtectionSelectLockedOrUnLockedCells(ctx, r, c, sheetId) {
+   if (___default['default'].isNil(aut) || ___default['default'].isNil(aut.sheet) || aut.sheet === 0) {
+     return true;
+   }
+-  var data = sheetFile.data;
+-  var cell = data === null || data === void 0 ? void 0 : (_data$r2 = data[r]) === null || _data$r2 === void 0 ? void 0 : _data$r2[c];
+-  if (cell && cell.lo === 0) {
++  if (!checkCellIsLocked(ctx, r, c, sheetId)) {
+     if (aut.selectunLockedCells === 1 || ___default['default'].isNil(aut.selectunLockedCells)) {
+       return true;
+     }
+@@ -58557,10 +58570,230 @@ function getColorGradation(color1, color2, value1, value2, value) {
+   var b = Math.round(b1 - (b1 - b2) / v12 * v10);
+   return "rgb(".concat(r, ", ").concat(g, ", ").concat(b, ")");
+ }
++function conditionalRangeContains(range, r, c) {
++  return range && range.row && range.column && r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1];
++}
++function sparseConditionalCells(data, ranges) {
++  var result = [];
++  var seen = {};
++  Object.keys(data).forEach(function (rowKey) {
++    var r = Number(rowKey);
++    var row = data[r];
++    if (!row) return;
++    Object.keys(row).forEach(function (columnKey) {
++      var c = Number(columnKey);
++      var cell = row[c];
++      if (_.isNil(cell) || !ranges.some(function (range) {
++        return conditionalRangeContains(range, r, c);
++      })) return;
++      var key = "".concat(r, "_").concat(c);
++      if (seen[key]) return;
++      seen[key] = true;
++      result.push({
++        r: r,
++        c: c,
++        cell: cell
++      });
++    });
++  });
++  return result;
++}
++function conditionalNumericValue(cell) {
++  var value = cell === null || cell === void 0 ? void 0 : cell.v;
++  if (typeof value === "number" && Number.isFinite(value)) return value;
++  if ((cell === null || cell === void 0 ? void 0 : cell.ct) && cell.ct.t === "n") {
++    var numeric = Number(value);
++    if (Number.isFinite(numeric)) return numeric;
++  }
++  return undefined;
++}
++function setConditionalCompute(computeMap, r, c, value) {
++  var key = "".concat(r, "_").concat(c);
++  var current = computeMap[key] || {};
++  Object.keys(value).forEach(function (property) {
++    current[property] = value[property];
++  });
++  computeMap[key] = current;
++}
++function sparseDefaultConditionMatches(name, value, conditionValue0, conditionValue1) {
++  if (_.isNil(value) || isRealNull(value)) return false;
++  if (name === "greaterThan") return value > conditionValue0;
++  if (name === "lessThan") return value < conditionValue0;
++  if (name === "equal") return value.toString() === conditionValue0.toString();
++  if (name === "textContains") return value.toString().indexOf(conditionValue0) !== -1;
++  if (name === "between") {
++    var smaller = Math.min(Number(conditionValue0), Number(conditionValue1));
++    var larger = Math.max(Number(conditionValue0), Number(conditionValue1));
++    return typeof value === "number" && value >= smaller && value <= larger;
++  }
++  return false;
++}
++function computeSparseConditionRules(ctx, ruleArr, data) {
++  var computeMap = {};
++  var lazyFormulaRules = [];
++  for (var ruleIndex = 0; ruleIndex < ruleArr.length; ruleIndex += 1) {
++    var rule = ruleArr[ruleIndex];
++    var ranges = Array.isArray(rule.cellrange) ? rule.cellrange : [];
++    var cells = sparseConditionalCells(data, ranges);
++    var format = rule.format || {};
++    if (rule.type === "dataBar") {
++      var numericCells = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      if (!numericCells.length) continue;
++      var values = numericCells.map(function (entry) {
++        return entry.value;
++      });
++      var maximum = Math.max.apply(Math, _toConsumableArray(values));
++      var minimum = Math.min.apply(Math, _toConsumableArray(values));
++      var plusLen = minimum < 0 ? maximum / (maximum - minimum || 1) : 1;
++      var minusLen = minimum < 0 ? Math.abs(minimum) / (maximum - minimum || 1) : 0;
++      numericCells.forEach(function (entry) {
++        var negative = entry.value < 0;
++        var scale = negative ? Math.abs(minimum) : maximum;
++        setConditionalCompute(computeMap, entry.r, entry.c, {
++          dataBar: {
++            valueType: negative ? "minus" : "plus",
++            plusLen: plusLen,
++            minusLen: minusLen,
++            valueLen: scale === 0 ? 1 : Math.abs(entry.value) / Math.abs(scale),
++            format: format
++          }
++        });
++      });
++      continue;
++    }
++    if (rule.type === "colorGradation") {
++      var _numericCells = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      var colors = Array.isArray(format) ? format : [format.cellColor, format.textColor].filter(Boolean);
++      if (!_numericCells.length || colors.length < 2) continue;
++      var _values = _numericCells.map(function (entry) {
++        return entry.value;
++      });
++      var _maximum = Math.max.apply(Math, _toConsumableArray(_values));
++      var _minimum = Math.min.apply(Math, _toConsumableArray(_values));
++      var middle = _values.reduce(function (sum, value) {
++        return sum + value;
++      }, 0) / _values.length;
++      _numericCells.forEach(function (entry) {
++        var color;
++        if (colors.length >= 3 && entry.value <= middle) {
++          color = entry.value === _minimum ? colors[2] : getColorGradation(colors[2], colors[1], _minimum, middle, entry.value);
++        } else if (colors.length >= 3) {
++          color = entry.value === _maximum ? colors[0] : getColorGradation(colors[1], colors[0], middle, _maximum, entry.value);
++        } else {
++          color = entry.value === _minimum ? colors[1] : entry.value === _maximum ? colors[0] : getColorGradation(colors[1], colors[0], _minimum, _maximum, entry.value);
++        }
++        setConditionalCompute(computeMap, entry.r, entry.c, {
++          cellColor: color
++        });
++      });
++      continue;
++    }
++    if (rule.type === "icons") continue;
++    var conditionName = rule.conditionName;
++    var conditionValues = Array.isArray(rule.conditionValue) ? rule.conditionValue : [];
++    var conditionValue0 = conditionValues[0];
++    var conditionValue1 = conditionValues[1];
++    var style = {
++      textColor: format.textColor,
++      cellColor: format.cellColor
++    };
++    if (conditionName === "formula") {
++      ranges.forEach(function (range) {
++        lazyFormulaRules.push({
++          ctx: ctx,
++          range: range,
++          formula: conditionValue0,
++          style: style
++        });
++      });
++      continue;
++    }
++    if (conditionName === "duplicateValue") {
++      var groups = {};
++      cells.forEach(function (entry) {
++        var value = entry.cell.v;
++        if (_.isNil(value) || isRealNull(value)) return;
++        var key = "".concat(typeof value, ":").concat(value);
++        (groups[key] || (groups[key] = [])).push(entry);
++      });
++      Object.keys(groups).forEach(function (key) {
++        var entries = groups[key];
++        var matches = conditionValue0 === "0" ? entries.length > 1 : entries.length === 1;
++        if (matches) entries.forEach(function (entry) {
++          return setConditionalCompute(computeMap, entry.r, entry.c, style);
++        });
++      });
++      continue;
++    }
++    if (["top10", "top10_percent", "last10", "last10_percent", "aboveAverage", "belowAverage"].includes(conditionName)) {
++      var _numericCells2 = cells.flatMap(function (entry) {
++        var value = conditionalNumericValue(entry.cell);
++        return value === undefined ? [] : [_objectSpread2(_objectSpread2({}, entry), {}, {
++          value: value
++        })];
++      });
++      if (!_numericCells2.length) continue;
++      var average = _numericCells2.reduce(function (sum, entry) {
++        return sum + entry.value;
++      }, 0) / _numericCells2.length;
++      var sorted = _numericCells2.slice().sort(function (left, right) {
++        return right.value - left.value;
++      });
++      var count = Number(conditionValue0) || 10;
++      if (conditionName === "top10_percent" || conditionName === "last10_percent") count = Math.floor(count * sorted.length / 100);
++      var selected = conditionName === "top10" || conditionName === "top10_percent" ? sorted.slice(0, count) : conditionName === "last10" || conditionName === "last10_percent" ? sorted.slice(Math.max(0, sorted.length - count)) : _numericCells2.filter(function (entry) {
++        return conditionName === "aboveAverage" ? entry.value > average : entry.value < average;
++      });
++      selected.forEach(function (entry) {
++        return setConditionalCompute(computeMap, entry.r, entry.c, style);
++      });
++      continue;
++    }
++    cells.forEach(function (entry) {
++      var value = entry.cell.v;
++      var matches = conditionName === "occurrenceDate" ? !_.isNil(value) && value >= conditionValue0 && value <= (conditionValue1 !== null && conditionValue1 !== void 0 ? conditionValue1 : conditionValue0) : sparseDefaultConditionMatches(conditionName, value, conditionValue0, conditionValue1);
++      if (matches) setConditionalCompute(computeMap, entry.r, entry.c, style);
++    });
++  }
++  Object.defineProperty(computeMap, "__a3sLazyFormulaRules", {
++    value: lazyFormulaRules,
++    enumerable: false
++  });
++  Object.defineProperty(computeMap, "__a3sLazyFormulaEvaluated", {
++    value: {},
++    enumerable: false
++  });
++  return computeMap;
++}
++function evaluateSparseConditionalFormula(descriptor, r, c) {
++  var formula = descriptor.formula;
++  if (_.isNil(formula)) return false;
++  formula = formula.toString();
++  if (formula.slice(0, 1) !== "=") formula = "=".concat(formula);
++  var offsetRow = r - descriptor.range.row[0];
++  var offsetColumn = c - descriptor.range.column[0];
++  if (offsetRow > 0) formula = "=".concat(functionCopy(descriptor.ctx, formula, "down", offsetRow));
++  if (offsetColumn > 0) formula = "=".concat(functionCopy(descriptor.ctx, formula, "right", offsetColumn));
++  var value = execfunction(descriptor.ctx, formula, r, c)[1];
++  return typeof value === "boolean" ? value : !!Number(value);
++}
+ function compute(ctx, ruleArr, d) {
+   if (___default['default'].isNil(ruleArr)) {
+     ruleArr = [];
+   }
++  if (Object.keys(d).length < d.length) {
++    return computeSparseConditionRules(ctx, ruleArr, d);
++  }
+   var computeMap = {};
+   if (ruleArr.length > 0) {
+     var _loop = function _loop() {
+@@ -59133,8 +59366,19 @@ function getComputeMap(ctx) {
+   return computeMap;
+ }
+ function checkCF(r, c, computeMap) {
+-  if (!___default['default'].isNil(computeMap) && "".concat(r, "_").concat(c) in computeMap) {
+-    return computeMap["".concat(r, "_").concat(c)];
++  var key = "".concat(r, "_").concat(c);
++  var lazyRules = computeMap === null || computeMap === void 0 ? void 0 : computeMap.__a3sLazyFormulaRules;
++  var evaluated = computeMap === null || computeMap === void 0 ? void 0 : computeMap.__a3sLazyFormulaEvaluated;
++  if (Array.isArray(lazyRules) && evaluated && !evaluated[key]) {
++    evaluated[key] = true;
++    lazyRules.forEach(function (descriptor) {
++      if (conditionalRangeContains(descriptor.range, r, c) && evaluateSparseConditionalFormula(descriptor, r, c)) {
++        setConditionalCompute(computeMap, r, c, descriptor.style);
++      }
++    });
++  }
++  if (!___default['default'].isNil(computeMap) && key in computeMap) {
++    return computeMap[key];
+   }
+   return null;
+ }
+@@ -59832,11 +60076,40 @@ function validateCellData(ctx, item, cellValue) {
+   }
+   return true;
+ }
++function getDataVerificationItem(ctx, r, c, sheetId) {
++  var index = getSheetIndex(ctx, sheetId !== null && sheetId !== void 0 ? sheetId : ctx.currentSheetId);
++  var sheet = ctx.luckysheetfile[index];
++  if (!sheet) return undefined;
++  var key = "".concat(r, "_").concat(c);
++  var direct = sheet.dataVerification;
++  if (direct && Object.prototype.hasOwnProperty.call(direct, key)) {
++    return direct[key];
++  }
++  var compact = sheet.dataValidationRanges;
++  if (!Array.isArray(compact)) return undefined;
++  for (var entryIndex = compact.length - 1; entryIndex >= 0; entryIndex -= 1) {
++    var entry = compact[entryIndex];
++    var ranges = entry === null || entry === void 0 ? void 0 : entry.ranges;
++    if (!Array.isArray(ranges)) continue;
++    for (var rangeIndex = ranges.length - 1; rangeIndex >= 0; rangeIndex -= 1) {
++      var range = ranges[rangeIndex];
++      if (!range || !range.row || !range.column) continue;
++      if (r >= range.row[0] && r <= range.row[1] && c >= range.column[0] && c <= range.column[1]) {
++        return entry.item || undefined;
++      }
++    }
++  }
++  return undefined;
++}
+ function checkboxChange(ctx, r, c) {
+-  var _ctx$luckysheetfile$i;
+   var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var currentDataVerification = (_ctx$luckysheetfile$i = ctx.luckysheetfile[index].dataVerification) !== null && _ctx$luckysheetfile$i !== void 0 ? _ctx$luckysheetfile$i : {};
+-  var item = currentDataVerification["".concat(r, "_").concat(c)];
++  var sheet = ctx.luckysheetfile[index];
++  var item = getDataVerificationItem(ctx, r, c);
++  if (!item) return;
++  item = _objectSpread2({}, item);
++  var currentDataVerification = sheet.dataVerification || {};
++  currentDataVerification["".concat(r, "_").concat(c)] = item;
++  sheet.dataVerification = currentDataVerification;
+   item.checked = !item.checked;
+   var value = item.value2;
+   if (item.checked) {
+@@ -60159,10 +60432,7 @@ function cellFocus(ctx, r, c, clickMode) {
+   if (!showHintBox || !dropDownBtn) return;
+   showHintBox.style.display = "none";
+   dropDownBtn.style.display = "none";
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+   ctx.dataVerificationDropDownList = false;
+-  if (!dataVerification) return;
+   var row = ctx.visibledatarow[r];
+   var row_pre = r === 0 ? 0 : ctx.visibledatarow[r - 1];
+   var col = ctx.visibledatacolumn[c];
+@@ -60178,7 +60448,7 @@ function cellFocus(ctx, r, c, clickMode) {
+     col_pre = _margeSet$column[0];
+     col = _margeSet$column[1];
+   }
+-  var item = dataVerification["".concat(r, "_").concat(c)];
++  var item = getDataVerificationItem(ctx, r, c);
+   if (!item) return;
+   if (clickMode && item.type === "checkbox") {
+     checkboxChange(ctx, r, c);
+@@ -60248,8 +60518,8 @@ function setDropcownValue(ctx, value, arr) {
+   var rowIndex = last.row_focus;
+   var colIndex = last.column_focus;
+   if (rowIndex == null || colIndex == null) return;
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var item = ctx.luckysheetfile[index].dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++  var item = getDataVerificationItem(ctx, rowIndex, colIndex);
++  if (!item) return;
+   if (item.type2 === "true") {
+     value = item.value1.split(",").filter(function (v) {
+       return arr.indexOf(v) >= 0;
+@@ -60399,7 +60669,6 @@ function normalizedCellAttr(cell, attr) {
+ }
+ function normalizedAttr(data, r, c, attr) {
+   if (!data || !data[r]) {
+-    console.warn("cell (%d, %d) is null", r, c);
+     return null;
+   }
+   var cell = data[r][c];
+@@ -60412,7 +60681,7 @@ function getCellValue(r, c, data, attr) {
+   }
+   var d_value;
+   if (!___default['default'].isNil(r) && !___default['default'].isNil(c)) {
+-    d_value = data[r][c];
++    d_value = data[r] ? data[r][c] : undefined;
+   } else if (!___default['default'].isNil(r)) {
+     d_value = data[r];
+   } else if (!___default['default'].isNil(c)) {
+@@ -60448,6 +60717,11 @@ function setCellValue(ctx, r, c, d, v) {
+     d = getFlowdata(ctx);
+   }
+   if (!d) return;
++  var logicalColumnCount = d[0] ? d[0].length : ctx.defaultcolumnNum;
++  if (!d[r]) {
++    d[r] = [];
++  }
++  d[r].length = Math.max(d[r].length, logicalColumnCount, c + 1);
+   var cell = d[r][c];
+   var vupdate;
+   if (___default['default'].isPlainObject(v)) {
+@@ -60651,7 +60925,6 @@ function getRealCellValue(r, c, data, attr) {
+ }
+ function mergeBorder(ctx, d, row_index, col_index) {
+   if (!d || !d[row_index]) {
+-    console.warn("Merge info is null", row_index, col_index);
+     return null;
+   }
+   var value = d[row_index][col_index];
+@@ -60834,16 +61107,17 @@ function updateCell(ctx, r, c, $input, value, canvas) {
+   var inputHtml = $input === null || $input === void 0 ? void 0 : $input.innerHTML;
+   var flowdata = getFlowdata(ctx);
+   if (!flowdata) return;
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+-  if (!___default['default'].isNil(dataVerification)) {
+-    var dvItem = dataVerification["".concat(r, "_").concat(c)];
+-    if (!___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
+-      var failureText = getFailureText(ctx, dvItem);
+-      cancelNormalSelected(ctx);
+-      ctx.warnDialog = failureText;
+-      return;
+-    }
++  var logicalColumnCount = flowdata[0] ? flowdata[0].length : ctx.defaultcolumnNum;
++  if (!flowdata[r]) {
++    flowdata[r] = [];
++  }
++  flowdata[r].length = Math.max(flowdata[r].length, logicalColumnCount, c + 1);
++  var dvItem = getDataVerificationItem(ctx, r, c);
++  if (!___default['default'].isNil(dvItem) && dvItem.prohibitInput && !validateCellData(ctx, dvItem, inputText)) {
++    var failureText = getFailureText(ctx, dvItem);
++    cancelNormalSelected(ctx);
++    ctx.warnDialog = failureText;
++    return;
+   }
+   var curv = flowdata[r][c];
+   var oldValue = ___default['default'].cloneDeep(curv);
+@@ -61085,7 +61359,7 @@ function getcellFormula(ctx, r, c, i, data) {
+   if (___default['default'].isNil(data)) {
+     cell = getOrigincell(ctx, r, c, i);
+   } else {
+-    cell = data[r][c];
++    cell = data[r] ? data[r][c] : undefined;
+   }
+   if (___default['default'].isNil(cell)) {
+     return null;
+@@ -66986,12 +67260,17 @@ function initSheetData(draftCtx, index, newData) {
+     lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
+   }
+   if (lastRowNum && lastColNum) {
+-    var expandedData = ___default['default'].times(lastRowNum, function () {
+-      return ___default['default'].times(lastColNum, function () {
+-        return null;
+-      });
+-    });
++    var expandedData = [];
++    expandedData.length = lastRowNum;
++    for (var rowIndex = 0; rowIndex < Math.min(lastRowNum, 100); rowIndex += 1) {
++      expandedData[rowIndex] = [];
++      expandedData[rowIndex].length = lastColNum;
++    }
+     celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
++      if (!expandedData[d.r]) {
++        expandedData[d.r] = [];
++        expandedData[d.r].length = lastColNum;
++      }
+       expandedData[d.r][d.c] = d.v;
+     });
+     if (draftCtx.luckysheetfile[index] == null) {
+@@ -67077,24 +67356,25 @@ function copySheet(ctx, sheetId) {
+ function calculateSheetFromula(ctx, id, range) {
+   var index$1 = getSheetIndex(ctx, id);
+   if (!ctx.luckysheetfile[index$1].data) return;
+-  if (!range) {
+-    range = {
+-      row: [0, ctx.luckysheetfile[index$1].data.length - 1],
+-      column: [0, ctx.luckysheetfile[index$1].data[0].length - 1]
+-    };
+-  }
+-  var rowCount = range.row[1] - range.row[0] + 1;
+-  var columnCount = range.column[1] - range.column[0] + 1;
+-  for (var _r = 0; _r < rowCount; _r += 1) {
+-    for (var _c = 0; _c < columnCount; _c += 1) {
++  var data = ctx.luckysheetfile[index$1].data;
++  var populatedRows = Object.keys(data);
++  for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++    var r = Number(populatedRows[rowIndex]);
++    if (range && (r < range.row[0] || r > range.row[1])) continue;
++    var cells = data[r];
++    if (!cells) continue;
++    var populatedColumns = Object.keys(cells);
++    for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+       var _ctx$luckysheetfile$i, _ctx$luckysheetfile$i2;
+-      var r = range.row[0] + _r;
+-      var c = range.column[0] + _c;
++      var c = Number(populatedColumns[columnIndex]);
++      if (range && (c < range.column[0] || c > range.column[1])) continue;
+       if (!((_ctx$luckysheetfile$i = ctx.luckysheetfile[index$1].data[r][c]) === null || _ctx$luckysheetfile$i === void 0 ? void 0 : _ctx$luckysheetfile$i.f)) {
+         continue;
+       }
+       var result = execfunction(ctx, (_ctx$luckysheetfile$i2 = ctx.luckysheetfile[index$1].data[r][c]) === null || _ctx$luckysheetfile$i2 === void 0 ? void 0 : _ctx$luckysheetfile$i2.f, r, c, id);
+-      setCellValue$1(ctx, r, c, result[1], null);
++      setCellValue$1(ctx, r, c, result[1], null, {
++        id: id
++      });
+       insertUpdateFunctionGroup(ctx, r, c, id);
+     }
+   }
+@@ -67236,7 +67516,11 @@ function updateSheet(ctx, newData) {
+     var index = getSheetIndex(ctx, newDatum.id);
+     if (data != null) {
+       var lastRowNum = data.length;
+-      var lastColNum = data[0].length;
++      var populatedRows = Object.keys(data);
++      var lastColNum = populatedRows.reduce(function (maximum, rowKey) {
++        var sourceRow = data[Number(rowKey)];
++        return Math.max(maximum, sourceRow ? sourceRow.length : 0);
++      }, 0);
+       if (row != null && column != null && row > 0 && column > 0) {
+         lastRowNum = Math.max(lastRowNum, row);
+         lastColNum = Math.max(lastColNum, column);
+@@ -67244,19 +67528,28 @@ function updateSheet(ctx, newData) {
+         lastRowNum = Math.max(lastRowNum, ctx.defaultrowNum);
+         lastColNum = Math.max(lastColNum, ctx.defaultcolumnNum);
+       }
+-      var expandedData = ___default['default'].times(lastRowNum, function () {
+-        return ___default['default'].times(lastColNum, function () {
+-          return null;
+-        });
+-      });
+-      for (var i = 0; i < data.length; i += 1) {
+-        for (var j = 0; j < data[i].length; j += 1) {
+-          expandedData[i][j] = data[i][j];
++      var expandedData = [];
++      expandedData.length = lastRowNum;
++      for (var initialRow = 0; initialRow < Math.min(lastRowNum, 100); initialRow += 1) {
++        expandedData[initialRow] = [];
++        expandedData[initialRow].length = lastColNum;
++      }
++      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++        var i = Number(populatedRows[rowIndex]);
++        var sourceRow = data[i];
++        if (!sourceRow) continue;
++        if (!expandedData[i]) expandedData[i] = [];
++        expandedData[i].length = lastColNum;
++        var populatedColumns = Object.keys(sourceRow);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
++          var j = Number(populatedColumns[columnIndex]);
++          if (sourceRow[j] == null) continue;
++          expandedData[i][j] = sourceRow[j];
+           setFormulaCellInfo(ctx, {
+             r: i,
+             c: j,
+             id: newDatum.id
+-          }, data);
++          }, expandedData);
+         }
+       }
+       newDatum.data = expandedData;
+@@ -73000,10 +73293,7 @@ var Canvas = /*#__PURE__*/function () {
+         var _startX = item.startX;
+         var _endY = item.endY;
+         var _endX = item.endX;
+-        if (___default['default'].isNil(flowdata[_r])) {
+-          continue;
+-        }
+-        if (___default['default'].isNil(flowdata[_r][_c])) {
++        if (___default['default'].isNil(flowdata[_r]) || ___default['default'].isNil(flowdata[_r][_c])) {
+           this.nullCellRender(_r, _c, _startY, _startX, _endY, _endX, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05);
+         } else {
+           var cell = flowdata[_r][_c];
+@@ -73201,8 +73491,10 @@ var Canvas = /*#__PURE__*/function () {
+           continue;
+         }
+         var hasCellOver = false;
+-        for (var c = 0; c < data[r].length; c += 1) {
++        var populatedColumns = Object.keys(data[r]);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+           var _this$sheetCtx$config16, _this$sheetCtx$config17;
++          var c = Number(populatedColumns[columnIndex]);
+           var cell = data[r][c];
+           if (((_this$sheetCtx$config16 = this.sheetCtx.config) === null || _this$sheetCtx$config16 === void 0 ? void 0 : (_this$sheetCtx$config17 = _this$sheetCtx$config16.colhidden) === null || _this$sheetCtx$config17 === void 0 ? void 0 : _this$sheetCtx$config17[c]) != null) {
+             continue;
+@@ -73284,6 +73576,7 @@ var Canvas = /*#__PURE__*/function () {
+       var checksCF = checkCF(r, c, cfCompute);
+       var flowdata = getFlowdata(this.sheetCtx);
+       if (!flowdata) return;
++      var cell = flowdata[r] ? flowdata[r][c] : undefined;
+       var borderfix = getBorderFix();
+       var fillStyle = normalizedAttr(flowdata, r, c, "bg");
+       if (!___default['default'].isNil(checksCF) && !___default['default'].isNil(checksCF.cellColor)) {
+@@ -73295,7 +73588,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.fillStyle = fillStyle;
+       }
+       var cellsize = [startX + offsetLeft + borderfix[0], startY + offsetTop + borderfix[1], endX - startX + borderfix[2] - (isMerge ? 1 : 0), endY - startY + borderfix[3]];
+-      if (((_this$sheetCtx$hooks$6 = (_this$sheetCtx$hooks6 = this.sheetCtx.hooks).beforeRenderCell) === null || _this$sheetCtx$hooks$6 === void 0 ? void 0 : _this$sheetCtx$hooks$6.call(_this$sheetCtx$hooks6, flowdata[r][c], {
++      if (((_this$sheetCtx$hooks$6 = (_this$sheetCtx$hooks6 = this.sheetCtx.hooks).beforeRenderCell) === null || _this$sheetCtx$hooks$6 === void 0 ? void 0 : _this$sheetCtx$hooks$6.call(_this$sheetCtx$hooks6, cell, {
+         row: r,
+         column: c,
+         startX: cellsize[0],
+@@ -73351,7 +73644,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.stroke();
+         renderCtx.closePath();
+       }
+-      (_this$sheetCtx$hooks$7 = (_this$sheetCtx$hooks7 = this.sheetCtx.hooks).afterRenderCell) === null || _this$sheetCtx$hooks$7 === void 0 ? void 0 : _this$sheetCtx$hooks$7.call(_this$sheetCtx$hooks7, flowdata[r][c], {
++      (_this$sheetCtx$hooks$7 = (_this$sheetCtx$hooks7 = this.sheetCtx.hooks).afterRenderCell) === null || _this$sheetCtx$hooks$7 === void 0 ? void 0 : _this$sheetCtx$hooks$7.call(_this$sheetCtx$hooks7, cell, {
+         row: r,
+         column: c,
+         startY: cellsize[1],
+@@ -73363,7 +73656,7 @@ var Canvas = /*#__PURE__*/function () {
+   }, {
+     key: "cellRender",
+     value: function cellRender(r, c, startY, startX, endY, endX, value, renderCtx, afCompute, cfCompute, offsetLeft, offsetTop, dynamicArrayCompute, cellOverflowMap, colStart, colEnd, scrollHeight, scrollWidth, bodrder05) {
+-      var _this$sheetCtx$hooks$8, _this$sheetCtx$hooks8, _dataVerification, _this$sheetCtx$hooks$9, _this$sheetCtx$hooks9, _flowdata$r3;
++      var _this$sheetCtx$hooks$8, _this$sheetCtx$hooks8, _this$sheetCtx$hooks$9, _this$sheetCtx$hooks9, _flowdata$r3;
+       var isMerge = arguments.length > 19 && arguments[19] !== undefined ? arguments[19] : false;
+       var flowdata = getFlowdata(this.sheetCtx);
+       if (!flowdata) {
+@@ -73400,9 +73693,8 @@ var Canvas = /*#__PURE__*/function () {
+         return;
+       }
+       renderCtx.fillRect(cellsize[0], cellsize[1], cellsize[2], cellsize[3]);
+-      var index = getSheetIndex(this.sheetCtx, this.sheetCtx.currentSheetId);
+-      var dataVerification = this.sheetCtx.luckysheetfile[index].dataVerification;
+-      if ((dataVerification === null || dataVerification === void 0 ? void 0 : dataVerification["".concat(r, "_").concat(c)]) && !validateCellData(this.sheetCtx, dataVerification["".concat(r, "_").concat(c)], value)) {
++      var dataVerificationItem = getDataVerificationItem(this.sheetCtx, r, c);
++      if (dataVerificationItem && !validateCellData(this.sheetCtx, dataVerificationItem, value)) {
+         var dv_w = 5 * this.sheetCtx.zoomRatio;
+         var dv_h = 5 * this.sheetCtx.zoomRatio;
+         renderCtx.beginPath();
+@@ -73443,7 +73735,7 @@ var Canvas = /*#__PURE__*/function () {
+         } else {
+           cellOverflow_bd_r_render = false;
+         }
+-      } else if ((dataVerification === null || dataVerification === void 0 ? void 0 : (_dataVerification = dataVerification["".concat(r, "_").concat(c)]) === null || _dataVerification === void 0 ? void 0 : _dataVerification.type) === "checkbox") {
++      } else if ((dataVerificationItem === null || dataVerificationItem === void 0 ? void 0 : dataVerificationItem.type) === "checkbox") {
+         var pos_x = startX + offsetLeft;
+         var pos_y = startY + offsetTop + 1;
+         renderCtx.save();
+@@ -73479,7 +73771,7 @@ var Canvas = /*#__PURE__*/function () {
+         renderCtx.lineWidth = 1;
+         renderCtx.strokeStyle = "#000";
+         renderCtx.strokeRect(horizonAlignPos, verticalAlignPos_checkbox, 10, 10);
+-        if (dataVerification["".concat(r, "_").concat(c)].checked) {
++        if (dataVerificationItem.checked) {
+           renderCtx.beginPath();
+           renderCtx.lineTo(horizonAlignPos + 1, verticalAlignPos_checkbox + 6);
+           renderCtx.lineTo(horizonAlignPos + 4, verticalAlignPos_checkbox + 9);
+@@ -76076,8 +76368,12 @@ var dataToCelldata = function dataToCelldata(data) {
+   if (data == null) {
+     return celldata;
+   }
+-  for (var r = 0; r < data.length; r += 1) {
+-    for (var c = 0; c < data[r].length; c += 1) {
++  Object.keys(data).forEach(function (rowKey) {
++    var r = Number(rowKey);
++    var row = data[r];
++    if (!row) return;
++    Object.keys(row).forEach(function (columnKey) {
++      var c = Number(columnKey);
+       var v = data[r][c];
+       if (v != null) {
+         celldata.push({
+@@ -76086,8 +76382,8 @@ var dataToCelldata = function dataToCelldata(data) {
+           v: v
+         });
+       }
+-    }
+-  }
++    });
++  });
+   return celldata;
+ };
+ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+@@ -76101,13 +76397,18 @@ var celldataToData = function celldataToData(celldata, rowCount, colCount) {
+     lastColNum = Math.max(lastColNum, colCount);
+   }
+   if (lastRowNum && lastColNum) {
+-    var expandedData = ___default['default'].times(lastRowNum, function () {
+-      return ___default['default'].times(lastColNum, function () {
+-        return null;
+-      });
+-    });
++    var expandedData = [];
++    expandedData.length = lastRowNum;
++    expandedData[0] = [];
++    expandedData[0].length = lastColNum;
+     celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
+-      expandedData[d.r][d.c] = d.v;
++      var row = expandedData[d.r];
++      if (!row) {
++        row = [];
++        row.length = lastColNum;
++        expandedData[d.r] = row;
++      }
++      row[d.c] = d.v;
+     });
+     return expandedData;
+   }
+@@ -76146,7 +76447,8 @@ function getCellValue$1(ctx, row, column) {
+   if (!targetSheetData) {
+     throw SHEET_NOT_FOUND;
+   }
+-  var cellData = targetSheetData[row][column];
++  var targetRowData = targetSheetData[row];
++  var cellData = targetRowData === null || targetRowData === void 0 ? void 0 : targetRowData[column];
+   var ret;
+   if (cellData && ___default['default'].isPlainObject(cellData)) {
+     var _cellData$ct;
+@@ -76176,6 +76478,14 @@ function setCellValue$1(ctx, row, column, value, cellInput) {
+   }
+   var sheet = getSheet(ctx, options);
+   var data = sheet.data;
++  if (!data) {
++    throw SHEET_NOT_FOUND;
++  }
++  var logicalColumnCount = data[0] ? data[0].length : sheet.column || ctx.defaultcolumnNum;
++  if (!data[row]) {
++    data[row] = [];
++  }
++  data[row].length = Math.max(data[row].length, logicalColumnCount, column + 1);
+   var formatList = {
+     bg: 1,
+     ff: 1,
+@@ -77712,12 +78022,8 @@ function handleCellAreaDoubleClick(ctx, globalCache, settings, e, container) {
+   var row_index = row_location[2];
+   var col_location = colLocation(x, ctx.visibledatacolumn);
+   var col_index = col_location[2];
+-  var index = getSheetIndex(ctx, ctx.currentSheetId);
+-  var dataVerification = ctx.luckysheetfile[index].dataVerification;
+-  if (dataVerification) {
+-    var item = dataVerification["".concat(row_index, "_").concat(col_index)];
+-    if (item && item.type === "checkbox") return;
+-  }
++  var item = getDataVerificationItem(ctx, row_index, col_index);
++  if (item && item.type === "checkbox") return;
+   var margeset = mergeBorder(ctx, flowdata, row_index, col_index);
+   if (margeset) {
+     var _margeset$row2 = _slicedToArray(margeset.row, 3);
+@@ -80473,6 +80779,7 @@ exports.getComputeMap = getComputeMap;
+ exports.getCurrentRules = getCurrentRules;
+ exports.getDataArr = getDataArr;
+ exports.getDataBySelectionNoCopy = getDataBySelectionNoCopy;
++exports.getDataVerificationItem = getDataVerificationItem;
+ exports.getDropdownList = getDropdownList;
+ exports.getFailureText = getFailureText;
+ exports.getFilterColumnColors = getFilterColumnColors;
+diff --git a/dist/modules/dataVerification.d.ts b/dist/modules/dataVerification.d.ts
+index 08f8fb2d6ec2ab798cef57543a4037609ef66f18..f13de947131c300ace6a4a3b0b7327e37da2aac2 100644
+--- a/dist/modules/dataVerification.d.ts
++++ b/dist/modules/dataVerification.d.ts
+@@ -3,6 +3,7 @@ export declare function dataRangeSelection(ctx: Context, cache: GlobalCache, ran
+ export declare function getDropdownList(ctx: Context, txt: string): (string | number | boolean)[];
+ export declare function validateIdCard(ctx: Context, idCard: string): boolean;
+ export declare function validateCellData(ctx: Context, item: any, cellValue: any): any;
++export declare function getDataVerificationItem(ctx: Context, r: number, c: number, sheetId?: string): any;
+ export declare function checkboxChange(ctx: Context, r: number, c: number): void;
+ export declare function getFailureText(ctx: Context, item: any): string;
+ export declare function getHintText(ctx: Context, item: any): any;
+diff --git a/dist/types.d.ts b/dist/types.d.ts
+index bb5111f305ce9783fff44e0f03432cd8d0d264fb..505c6e87bb4eea079186918d31bc957279c35e46 100644
+--- a/dist/types.d.ts
++++ b/dist/types.d.ts
+@@ -155,6 +155,13 @@ export type Sheet = {
+     luckysheet_conditionformat_save?: any[];
+     luckysheet_alternateformat_save?: any[];
+     dataVerification?: any;
++    dataValidationRanges?: Array<{
++        ranges: Array<{
++            row: [number, number];
++            column: [number, number];
++        }>;
++        item: any;
++    }>;
+     hyperlink?: Record<string, {
+         linkType: string;
+         linkAddress: string;

@@ -2,6 +2,7 @@ import type {
   EditorAgentRequest,
   OfficeArtifact,
   OfficeArtifactContent,
+  OfficeFileImportProgress,
 } from '@a3s-lab/office/core';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import {
@@ -28,6 +29,15 @@ import { SiteSidebar } from './site-sidebar';
 import { useMediaQuery } from './use-media-query';
 import { usePlaygroundSidebarState } from './use-playground-sidebar-state';
 import { WorkspaceHome } from './workspace-home';
+import {
+  createMaximumSparseSpreadsheetArtifact,
+  MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID,
+  MAXIMUM_SPARSE_SPREADSHEET_FIXTURE,
+} from './maximum-sparse-spreadsheet-fixture';
+import {
+  PlaygroundImportProgress,
+  type PlaygroundImportState,
+} from './playground-import-progress';
 import './playground.css';
 import './workspace.css';
 
@@ -36,16 +46,21 @@ const EditorWorkspace = lazy(async () => ({
 }));
 
 function Playground() {
+  const [e2eFixture] = useState(readPlaygroundE2eFixture);
   const sidebarModal = useMediaQuery('(max-width: 839px)');
   const {
     closeAll: closeSidebarForEditor,
     open: sidebarOpen,
     setOpen: setSidebarOpen,
   } = usePlaygroundSidebarState(sidebarModal);
-  const [artifacts, setArtifacts] = useState<OfficeArtifact[]>(
-    createInitialArtifacts,
+  const [artifacts, setArtifacts] = useState<OfficeArtifact[]>(() =>
+    createInitialArtifacts(e2eFixture),
   );
-  const [activeArtifactId, setActiveArtifactId] = useState<string | null>(null);
+  const [activeArtifactId, setActiveArtifactId] = useState<string | null>(
+    e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE
+      ? MAXIMUM_SPARSE_SPREADSHEET_ARTIFACT_ID
+      : null,
+  );
   const [collaborationDemoArtifactId, setCollaborationDemoArtifactId] =
     useState<string | null>(null);
   const [suggestionDemoArtifactId, setSuggestionDemoArtifactId] = useState<
@@ -56,9 +71,16 @@ function Playground() {
   const [lastAgentRequest, setLastAgentRequest] =
     useState<EditorAgentRequest | null>(null);
   const [notice, setNotice] = useState<PlaygroundNotice | null>(null);
+  const [activeImport, setActiveImport] =
+    useState<PlaygroundImportState | null>(null);
   const assistantModal = useMediaQuery('(max-width: 1040px)');
   const fileInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
+  const importCounter = useRef(0);
+  const importController = useRef<{
+    controller: AbortController;
+    id: number;
+  } | null>(null);
   const activeArtifact =
     artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
   const docsUrl = documentationEntryUrl(document.baseURI);
@@ -76,6 +98,15 @@ function Playground() {
     return () =>
       window.removeEventListener('hashchange', redirectLegacyDocsRoute);
   }, []);
+
+  useEffect(
+    () => () => {
+      const pending = importController.current;
+      importController.current = null;
+      pending?.controller.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!notice) return;
@@ -200,9 +231,29 @@ function Playground() {
   );
 
   const importFile = async (file: File) => {
+    importController.current?.controller.abort();
+    const id = importCounter.current + 1;
+    importCounter.current = id;
+    const controller = new AbortController();
+    importController.current = { controller, id };
+    const initialProgress: OfficeFileImportProgress = {
+      stage: 'reading',
+      stageProgress: 0,
+      progress: 0,
+      bytesRead: 0,
+      totalBytes: file.size,
+    };
+    setActiveImport({ fileName: file.name, id, progress: initialProgress });
     try {
       const { importOfficeFile } = await import('@a3s-lab/office/core');
-      const imported = await importOfficeFile(file);
+      const imported = await importOfficeFile(file, {
+        signal: controller.signal,
+        onProgress: (progress) => {
+          if (importController.current?.id !== id) return;
+          setActiveImport({ fileName: file.name, id, progress });
+        },
+      });
+      if (importController.current?.id !== id) return;
       const opened = { ...imported, lastOpenedAt: Date.now() };
       setCollaborationDemoArtifactId(null);
       setSuggestionDemoArtifactId(null);
@@ -216,10 +267,20 @@ function Playground() {
       closeSidebarForEditor();
       showNotice(`${file.name} 已打开`, 'success');
     } catch (error) {
+      if (importController.current?.id !== id) return;
+      if (error instanceof Error && error.name === 'AbortError') {
+        showNotice(`已取消导入 ${file.name}`, 'neutral');
+        return;
+      }
       showNotice(
         error instanceof Error ? error.message : '无法打开这个文件',
         'danger',
       );
+    } finally {
+      if (importController.current?.id === id) {
+        importController.current = null;
+        setActiveImport(null);
+      }
     }
   };
 
@@ -362,6 +423,13 @@ function Playground() {
         )}
       </section>
 
+      {activeImport && (
+        <PlaygroundImportProgress
+          state={activeImport}
+          onCancel={() => importController.current?.controller.abort()}
+        />
+      )}
+
       {notice && <PlaygroundToast key={notice.id} notice={notice} />}
     </main>
   );
@@ -382,7 +450,7 @@ function PlaygroundToast({ notice }: { notice: PlaygroundNotice }) {
   );
 }
 
-function createInitialArtifacts(): OfficeArtifact[] {
+function createInitialArtifacts(e2eFixture: string | null): OfficeArtifact[] {
   const project = createArtifact('project-brief');
   const plan = createArtifact('quarterly-plan');
   const deck = createArtifact('strategy-deck');
@@ -411,12 +479,21 @@ function createInitialArtifacts(): OfficeArtifact[] {
     ].join('\n'),
   };
   const now = Date.now();
-  return [
+  const artifacts = [
     { ...project, lastOpenedAt: now - 1_000 },
     { ...plan, lastOpenedAt: now - 2_000 },
     { ...deck, lastOpenedAt: now - 3_000 },
     { ...markdown, lastOpenedAt: now - 4_000 },
   ];
+  return e2eFixture === MAXIMUM_SPARSE_SPREADSHEET_FIXTURE
+    ? [createMaximumSparseSpreadsheetArtifact(), ...artifacts]
+    : artifacts;
+}
+
+function readPlaygroundE2eFixture(): string | null {
+  return typeof window === 'undefined'
+    ? null
+    : new URLSearchParams(window.location.search).get('e2e');
 }
 
 function escapeHtmlAttribute(value: string): string {

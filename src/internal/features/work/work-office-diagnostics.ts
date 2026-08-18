@@ -49,6 +49,7 @@ interface ConversionMessage {
 export async function analyzeDocxCompatibility(
   file: File,
   messages: ConversionMessage[],
+  sourcePackage?: OoxmlPackage | null,
 ): Promise<WorkCompatibilityReport> {
   const issues: WorkCompatibilityIssue[] = [
     issue(
@@ -75,7 +76,11 @@ export async function analyzeDocxCompatibility(
   }
 
   try {
-    const archive = await OoxmlPackage.load(await file.arrayBuffer());
+    const archive =
+      sourcePackage === undefined
+        ? await OoxmlPackage.load(await file.arrayBuffer())
+        : sourcePackage;
+    if (!archive) throw new Error('The DOCX package could not be loaded.');
     const packagePaths = archive.paths('');
     const normalizedPackagePaths = packagePaths.map((path) =>
       path.toLowerCase(),
@@ -398,6 +403,7 @@ export async function analyzeSpreadsheetCompatibility(
   file: File,
   extension: string,
   workbook: WorkBook,
+  sourcePackage?: OoxmlPackage | null,
 ): Promise<WorkCompatibilityReport | null> {
   if (extension === 'csv') return null;
   const sourceFormat = extension.toUpperCase();
@@ -496,7 +502,11 @@ export async function analyzeSpreadsheetCompatibility(
 
   if (extension === 'xlsx') {
     try {
-      const archive = await OoxmlPackage.load(await file.arrayBuffer());
+      const archive =
+        sourcePackage === undefined
+          ? await OoxmlPackage.load(await file.arrayBuffer())
+          : sourcePackage;
+      if (!archive) throw new Error('The XLSX package could not be loaded.');
       await inspectXlsxPackage(archive, issues);
     } catch {
       issues.push(

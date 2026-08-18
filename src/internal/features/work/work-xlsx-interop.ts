@@ -40,7 +40,11 @@ import {
   writeXlsxPageSetup,
   type XlsxPageSetup,
 } from './work-xlsx-page-setup';
-import type { WorkSpreadsheetContent } from './work-types';
+import type {
+  WorkSpreadsheetContent,
+  WorkSpreadsheetDataValidationItem,
+  WorkSpreadsheetDataValidationRange,
+} from './work-types';
 
 type FrozenPane = NonNullable<Sheet['frozen']>;
 
@@ -60,24 +64,17 @@ export interface XlsxSheetFeatures {
   charts: XlsxWorksheetChart[];
 }
 
-export interface FortuneDataValidationItem {
-  type: string;
-  type2: string;
-  rangeTxt: string;
-  value1: string;
-  value2: string;
-  validity: string;
-  remote: boolean;
-  prohibitInput: boolean;
-  hintShow: boolean;
-  hintValue: string;
-  checked?: boolean;
-}
+export type FortuneDataValidationItem = WorkSpreadsheetDataValidationItem;
 
 export async function readXlsxSheetFeatures(
   buffer: ArrayBuffer,
 ): Promise<Map<string, XlsxSheetFeatures>> {
-  const archive = await OoxmlPackage.load(buffer);
+  return readXlsxSheetFeaturesFromPackage(await OoxmlPackage.load(buffer));
+}
+
+export async function readXlsxSheetFeaturesFromPackage(
+  archive: OoxmlPackage,
+): Promise<Map<string, XlsxSheetFeatures>> {
   const worksheetParts = await readWorksheetParts(archive);
   const styles = archive.has('xl/styles.xml')
     ? await archive.xml('xl/styles.xml')
@@ -132,6 +129,7 @@ export async function patchXlsxSheetFeatures(
       (sheet) =>
         sheet.frozen ||
         Object.keys(sheet.dataVerification ?? {}).length ||
+        sheet.dataValidationRanges?.length ||
         sheet.luckysheet_conditionformat_save?.length ||
         sheetHasProtectionState(sheet) ||
         Boolean(
@@ -163,6 +161,7 @@ export async function patchXlsxSheetFeatures(
     if (
       !sheet.frozen &&
       !Object.keys(sheet.dataVerification ?? {}).length &&
+      !sheet.dataValidationRanges?.length &&
       !sheet.luckysheet_conditionformat_save?.length &&
       !sheetHasProtectionState(sheet) &&
       !(pageBreaks?.rows?.length || pageBreaks?.columns?.length) &&
@@ -176,7 +175,11 @@ export async function patchXlsxSheetFeatures(
     if (!partPath || !entry) continue;
     const document = parseXml(await entry.async('text'), partPath);
     if (sheet.frozen) writeFrozenPane(document, sheet.frozen);
-    writeDataValidations(document, sheet.dataVerification);
+    writeDataValidations(
+      document,
+      sheet.dataVerification,
+      sheet.dataValidationRanges,
+    );
     writeXlsxConditionalFormats(
       document,
       sheet.luckysheet_conditionformat_save,
@@ -264,11 +267,15 @@ function parseDataValidations(document: Document): XlsxDataValidation[] {
   });
 }
 
-function writeDataValidations(document: Document, source: unknown): void {
+function writeDataValidations(
+  document: Document,
+  source: unknown,
+  compact: WorkSpreadsheetDataValidationRange[] | undefined,
+): void {
   const root = document.documentElement;
   for (const existing of directChildren(root, 'dataValidations'))
     existing.remove();
-  const grouped = groupDataValidations(source);
+  const grouped = groupDataValidations(source, compact);
   if (!grouped.length) return;
 
   const namespace = root.namespaceURI;
@@ -312,30 +319,55 @@ function writeDataValidations(document: Document, source: unknown): void {
 
 function groupDataValidations(
   source: unknown,
+  compact: WorkSpreadsheetDataValidationRange[] | undefined,
 ): Array<{ item: FortuneDataValidationItem; references: string[] }> {
-  if (!source || typeof source !== 'object') return [];
   const groups = new Map<
     string,
     { item: FortuneDataValidationItem; references: string[] }
   >();
+  const append = (item: FortuneDataValidationItem, references: string[]) => {
+    const signature = validationSignature(item);
+    const group = groups.get(signature) ?? { item, references: [] };
+    for (const reference of references) {
+      if (!group.references.includes(reference))
+        group.references.push(reference);
+    }
+    groups.set(signature, group);
+  };
+  for (const entry of compact ?? []) {
+    const item = fortuneDataValidationItem(entry.item);
+    if (!item || !xlsxValidationType(item.type)) continue;
+    append(
+      item,
+      entry.ranges.map(
+        (range) =>
+          `${encodeCell(range.row[0], range.column[0])}:${encodeCell(
+            range.row[1],
+            range.column[1],
+          )}`,
+      ),
+    );
+  }
+  if (!source || typeof source !== 'object') return Array.from(groups.values());
   for (const [key, value] of Object.entries(source)) {
     const match = /^(\d+)_(\d+)$/.exec(key);
     const item = fortuneDataValidationItem(value);
     if (!match || !item || !xlsxValidationType(item.type)) continue;
-    const signature = JSON.stringify({
-      type: item.type,
-      type2: item.type2,
-      value1: item.value1,
-      value2: item.value2,
-      prohibitInput: item.prohibitInput,
-      hintShow: item.hintShow,
-      hintValue: item.hintValue,
-    });
-    const group = groups.get(signature) ?? { item, references: [] };
-    group.references.push(encodeCell(Number(match[1]), Number(match[2])));
-    groups.set(signature, group);
+    append(item, [encodeCell(Number(match[1]), Number(match[2]))]);
   }
   return Array.from(groups.values());
+}
+
+function validationSignature(item: FortuneDataValidationItem): string {
+  return JSON.stringify({
+    type: item.type,
+    type2: item.type2,
+    value1: item.value1,
+    value2: item.value2,
+    prohibitInput: item.prohibitInput,
+    hintShow: item.hintShow,
+    hintValue: item.hintValue,
+  });
 }
 
 function fortuneDataValidationItem(

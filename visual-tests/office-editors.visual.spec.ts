@@ -1080,11 +1080,11 @@ test('Playground opens a standalone documentation center with collaboration disc
     }),
   ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh');
-  await expect(
-    page.locator(
-      '.rp-search-button:visible, .rp-search-button--mobile:visible',
-    ),
-  ).toBeVisible();
+  const visibleSearch = page.locator(
+    '.rp-search-button:visible, .rp-search-button--mobile:visible',
+  );
+  await expect(visibleSearch).toHaveCount(1);
+  await expect(visibleSearch.first()).toBeVisible();
   await expect(page.locator('.rp-doc-layout__sidebar')).toContainText(
     'DocumentEditor',
   );

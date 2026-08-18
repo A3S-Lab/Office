@@ -1,4 +1,5 @@
 import type { CellMatrix, Sheet } from '@fortune-sheet/core';
+import { sparseArrayEntries } from './spreadsheet-sparse';
 import {
   interpolateSpreadsheetConditionalColor,
   parseSpreadsheetConditionalColor,
@@ -546,16 +547,19 @@ function forEachCell(
   ranges: FortuneConditionalFormatRange[],
   visit: (position: CellPosition) => void,
 ) {
-  const maximumRow = data.length - 1;
-  const maximumColumn = Math.max(0, ...data.map((cells) => cells.length - 1));
-  for (const range of ranges) {
-    const startRow = Math.max(0, Math.min(maximumRow, range.row[0]));
-    const endRow = Math.max(0, Math.min(maximumRow, range.row[1]));
-    const startColumn = Math.max(0, Math.min(maximumColumn, range.column[0]));
-    const endColumn = Math.max(0, Math.min(maximumColumn, range.column[1]));
-    for (let row = startRow; row <= endRow; row += 1) {
-      for (let column = startColumn; column <= endColumn; column += 1)
+  for (const [row, cells] of sparseArrayEntries(data)) {
+    for (const [column] of sparseArrayEntries(cells)) {
+      if (
+        ranges.some(
+          (range) =>
+            row >= range.row[0] &&
+            row <= range.row[1] &&
+            column >= range.column[0] &&
+            column <= range.column[1],
+        )
+      ) {
         visit({ row, column });
+      }
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   fileNameWithoutExtension,
   safeFileName,
 } from './work-file-download';
+import type { WorkFileImportContext } from './work-file-import';
 import { createWorkArtifact } from './work-templates';
 import type { WorkArtifact } from './work-types';
 
@@ -27,9 +28,13 @@ export const defaultPptxRuntimeUrl = new URL(
 
 export async function importWorkPresentationFile(
   file: File,
+  context?: WorkFileImportContext,
 ): Promise<WorkArtifact> {
   const { importPptxPresentation } = await import('./work-pptx-import');
-  const imported = await importPptxPresentation(file);
+  context?.controller.report('parsing', 0.1);
+  const imported = await importPptxPresentation(file, context?.bytes);
+  context?.controller.report('parsing', 1);
+  context?.controller.report('analyzing', 1);
   const artifact = createWorkArtifact('blank-presentation');
   artifact.title = fileNameWithoutExtension(file.name);
   artifact.content = imported.content;

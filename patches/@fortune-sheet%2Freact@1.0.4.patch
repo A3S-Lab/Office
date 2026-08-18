@@ -1,8 +1,325 @@
 diff --git a/dist/index.esm.js b/dist/index.esm.js
-index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..dc62088f576bbe4ddf0dc864a39942ae449a837c 100644
+index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..2d94613ac5541110ceb222ef2d11e1488fcf4a9d 100644
 --- a/dist/index.esm.js
 +++ b/dist/index.esm.js
-@@ -9919,7 +9919,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -1,4 +1,4 @@
+-import { defaultContext, defaultSettings, getSheetIndex, colLocationByIndex, fixPositionOnFrozenCells, colLocation, getFlowdata, isAllowEdit, handleColumnHeaderMouseDown, handleColSizeHandleMouseDown, handleColFreezeHandleMouseDown, handleContextMenu, selectTitlesMap, selectTitlesRange, fixColumnStyleOverflowInFreeze, rowLocationByIndex, rowLocation, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleRowFreezeHandleMouseDown, fixRowStyleOverflowInFreeze, locale, getStyleByCell, getCellValue, createRangeHightlight, isInlineStringCell, getInlineStringHTML, valueShowEs, escapeHTMLTag, escapeScriptTag, moveToEnd, isShowHidenCR, getrangeseleciton, cancelNormalSelected, moveHighlightCell, israngeseleciton, handleFormulaInput, onSearchDialogMoveStart, replaceAll, replace, searchAll, searchNext, normalizeSelection, scrollToHighlightCell, isLinkValid, getRangetxt, goToLink, replaceHtml, removeHyperlink, onRangeSelectionModalMoveStart, saveHyperlink, createFilterOptions, onImageMoveStart, onImageResizeStart, showComments, setEditingComment, onCommentBoxMoveStart, onCommentBoxResizeStart, confirmMessage, getRangeByTxt, getDropdownList, setCellValue, setConditionRules, mergeBorder, setDropcownValue, handleCellAreaMouseDown, handleCellAreaDoubleClick, selectAll, showLinkCard, getCellRowColumn, getCellHyperlink, handleOverlayMouseMove, handleOverlayMouseUp, handleKeydownForZoom, handleOverlayTouchStart, handleOverlayTouchMove, handleOverlayTouchEnd, insertRowCol, api, drawArrow, onCellsMoveStart, createDropCellRange, updateContextWithSheetData, updateContextWithCanvas, initFreeze, Canvas, handleGlobalWheel, setCaretPosition, getDataArr, updateMoreCell, getRegStr, getOptionValue, getSelectRange, applyLocation, updateItem, update, normalizedCellAttr, updateFormat, handleTextSize, handleHorizontalAlign, handleVerticalAlign, handleScreenShot, showImgChooser, insertImage, editComment, deleteComment, showHideComment, showHideAllComments, newComment, handleSum, autoSelectionFormula, handleMerge, handleBorder, handleFreeze, handleSort, createFilter, clearFilter, toolbarItemSelectedFunc, toolbarItemClickHandler, handleTextColor, handleTextBackground, getInlineStringNoStyle, rangeHightlightselected, updateCell, editSheetName, cancelActiveImgItem, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, indexToColumnChar, sortSelection, handleCopy, deleteRowCol, hideSelected, showSelected, removeActiveImage, deleteSelectedCellText, jfrefreshgrid, handleLink, handlePasteByClick, deleteSheet, opToPatch, orderbydatafiler, getFilterColumnValues, getFilterColumnColors, saveFilter, calcSelectionInfo, patchToOp, filterPatch, inverseRowColOptions, ensureSheetIndex, setFormulaCellInfoMap, initSheetIndex, handleGlobalKeyDown, handlePaste, groupValuesRefresh } from '@fortune-sheet/core';
++import { defaultContext, defaultSettings, getSheetIndex, colLocationByIndex, fixPositionOnFrozenCells, colLocation, getFlowdata, isAllowEdit, handleColumnHeaderMouseDown, handleColSizeHandleMouseDown, handleColFreezeHandleMouseDown, handleContextMenu, selectTitlesMap, selectTitlesRange, fixColumnStyleOverflowInFreeze, rowLocationByIndex, rowLocation, handleRowHeaderMouseDown, handleRowSizeHandleMouseDown, handleRowFreezeHandleMouseDown, fixRowStyleOverflowInFreeze, locale, getStyleByCell, getCellValue, createRangeHightlight, isInlineStringCell, getInlineStringHTML, valueShowEs, escapeHTMLTag, escapeScriptTag, moveToEnd, isShowHidenCR, getrangeseleciton, cancelNormalSelected, moveHighlightCell, israngeseleciton, handleFormulaInput, onSearchDialogMoveStart, replaceAll, replace, searchAll, searchNext, normalizeSelection, scrollToHighlightCell, isLinkValid, getRangetxt, goToLink, replaceHtml, removeHyperlink, onRangeSelectionModalMoveStart, saveHyperlink, createFilterOptions, onImageMoveStart, onImageResizeStart, showComments, setEditingComment, onCommentBoxMoveStart, onCommentBoxResizeStart, confirmMessage, getRangeByTxt, getDataVerificationItem, getDropdownList, setCellValue, setConditionRules, mergeBorder, setDropcownValue, handleCellAreaMouseDown, handleCellAreaDoubleClick, selectAll, showLinkCard, getCellRowColumn, getCellHyperlink, handleOverlayMouseMove, handleOverlayMouseUp, handleKeydownForZoom, handleOverlayTouchStart, handleOverlayTouchMove, handleOverlayTouchEnd, insertRowCol, api, drawArrow, onCellsMoveStart, createDropCellRange, updateContextWithSheetData, updateContextWithCanvas, initFreeze, Canvas, handleGlobalWheel, setCaretPosition, getDataArr, updateMoreCell, getRegStr, getOptionValue, getSelectRange, applyLocation, updateItem, update, normalizedCellAttr, updateFormat, handleTextSize, handleHorizontalAlign, handleVerticalAlign, handleScreenShot, showImgChooser, insertImage, editComment, deleteComment, showHideComment, showHideAllComments, newComment, handleSum, autoSelectionFormula, handleMerge, handleBorder, handleFreeze, handleSort, createFilter, clearFilter, toolbarItemSelectedFunc, toolbarItemClickHandler, handleTextColor, handleTextBackground, getInlineStringNoStyle, rangeHightlightselected, updateCell, editSheetName, cancelActiveImgItem, MAX_ZOOM_RATIO, MIN_ZOOM_RATIO, addSheet, indexToColumnChar, sortSelection, handleCopy, deleteRowCol, hideSelected, showSelected, removeActiveImage, deleteSelectedCellText, jfrefreshgrid, handleLink, handlePasteByClick, deleteSheet, opToPatch, orderbydatafiler, getFilterColumnValues, getFilterColumnColors, saveFilter, calcSelectionInfo, patchToOp, filterPatch, inverseRowColOptions, ensureSheetIndex, setFormulaCellInfoMap, initSheetIndex, handleGlobalKeyDown, handlePaste, groupValuesRefresh } from '@fortune-sheet/core';
+ import React, { useContext, useRef, useState, useMemo, useCallback, useEffect, useLayoutEffect, useImperativeHandle } from 'react';
+ import produce, { applyPatches, enablePatches, produceWithPatches } from 'immer';
+ import _ from 'lodash';
+@@ -1161,6 +1161,8 @@ var ScrollBar = function ScrollBar(_ref) {
+     context = _useContext.context,
+     refs = _useContext.refs,
+     setContext = _useContext.setContext;
++  var frameRef = useRef();
++  var pendingScrollRef = useRef(0);
+   useEffect(function () {
+     if (axis === "x") {
+       refs.scrollbarX.current.scrollLeft = context.scrollLeft;
+@@ -1168,6 +1170,11 @@ var ScrollBar = function ScrollBar(_ref) {
+       refs.scrollbarY.current.scrollTop = context.scrollTop;
+     }
+   }, [axis === "x" ? context.scrollLeft : context.scrollTop]);
++  useEffect(function () {
++    return function () {
++      if (frameRef.current !== undefined) cancelAnimationFrame(frameRef.current);
++    };
++  }, []);
+   return /*#__PURE__*/React.createElement("div", {
+     ref: axis === "x" ? refs.scrollbarX : refs.scrollbarY,
+     style: axis === "x" ? {
+@@ -1178,15 +1185,15 @@ var ScrollBar = function ScrollBar(_ref) {
+     },
+     className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
+     onScroll: function onScroll() {
+-      if (axis === "x") {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-        });
+-      } else {
++      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
++      if (frameRef.current !== undefined) return;
++      frameRef.current = requestAnimationFrame(function () {
++        frameRef.current = undefined;
++        var scroll = pendingScrollRef.current;
+         setContext(function (draftCtx) {
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
++          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
+         });
+-      }
++      });
+     }
+   }, /*#__PURE__*/React.createElement("div", {
+     style: axis === "x" ? {
+@@ -2205,9 +2212,15 @@ var NotationBoxes = function NotationBoxes() {
+   useEffect(function () {
+     if (flowdata) {
+       var psShownCells = [];
+-      for (var i = 0; i < flowdata.length; i += 1) {
+-        for (var j = 0; j < flowdata[i].length; j += 1) {
++      var populatedRows = Object.keys(flowdata);
++      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++        var i = Number(populatedRows[rowIndex]);
++        var row = flowdata[i];
++        if (!row) continue;
++        var populatedColumns = Object.keys(row);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+           var _cell$ps;
++          var j = Number(populatedColumns[columnIndex]);
+           var cell = flowdata[i][j];
+           if (!cell) continue;
+           if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
+@@ -2376,6 +2389,86 @@ function useDialog() {
+   };
+ }
+
++var DATA_VALIDATION_EXPANSION_LIMIT = 10000;
++function normalizedDataValidationRanges(source) {
++  if (!Array.isArray(source)) return [];
++  return source.flatMap(function (range) {
++    if (!range || !Array.isArray(range.row) || !Array.isArray(range.column)) return [];
++    var startRow = Math.min(range.row[0], range.row[1]);
++    var endRow = Math.max(range.row[0], range.row[1]);
++    var startColumn = Math.min(range.column[0], range.column[1]);
++    var endColumn = Math.max(range.column[0], range.column[1]);
++    if (![startRow, endRow, startColumn, endColumn].every(Number.isSafeInteger)) return [];
++    return [{
++      row: [startRow, endRow],
++      column: [startColumn, endColumn]
++    }];
++  });
++}
++function dataValidationRangeContains(range, row, column) {
++  return row >= range.row[0] && row <= range.row[1] && column >= range.column[0] && column <= range.column[1];
++}
++function deleteDirectDataValidations(source, ranges) {
++  Object.keys(source).forEach(function (key) {
++    var parts = key.split("_");
++    var row = Number(parts[0]);
++    var column = Number(parts[1]);
++    if (ranges.some(function (range) {
++      return dataValidationRangeContains(range, row, column);
++    })) {
++      delete source[key];
++    }
++  });
++}
++function dataValidationRangeCellCount(ranges) {
++  var total = 0;
++  for (var index = 0; index < ranges.length; index += 1) {
++    var range = ranges[index];
++    total += (range.row[1] - range.row[0] + 1) * (range.column[1] - range.column[0] + 1);
++    if (total > DATA_VALIDATION_EXPANSION_LIMIT) return total;
++  }
++  return total;
++}
++function subtractDataValidationRange(source, cut) {
++  var startRow = Math.max(source.row[0], cut.row[0]);
++  var endRow = Math.min(source.row[1], cut.row[1]);
++  var startColumn = Math.max(source.column[0], cut.column[0]);
++  var endColumn = Math.min(source.column[1], cut.column[1]);
++  if (startRow > endRow || startColumn > endColumn) return [source];
++  var remaining = [];
++  if (source.row[0] < startRow) remaining.push({
++    row: [source.row[0], startRow - 1],
++    column: [source.column[0], source.column[1]]
++  });
++  if (endRow < source.row[1]) remaining.push({
++    row: [endRow + 1, source.row[1]],
++    column: [source.column[0], source.column[1]]
++  });
++  if (source.column[0] < startColumn) remaining.push({
++    row: [startRow, endRow],
++    column: [source.column[0], startColumn - 1]
++  });
++  if (endColumn < source.column[1]) remaining.push({
++    row: [startRow, endRow],
++    column: [endColumn + 1, source.column[1]]
++  });
++  return remaining;
++}
++function deleteCompactDataValidations(source, cuts) {
++  if (!Array.isArray(source)) return [];
++  return source.flatMap(function (entry) {
++    var remaining = normalizedDataValidationRanges(entry === null || entry === void 0 ? void 0 : entry.ranges);
++    cuts.forEach(function (cut) {
++      remaining = remaining.flatMap(function (range) {
++        return subtractDataValidationRange(range, cut);
++      });
++    });
++    return remaining.length ? [_objectSpread2(_objectSpread2({}, entry), {}, {
++      ranges: remaining
++    })] : [];
++  });
++}
++
+ var DataVerification = function DataVerification() {
+   var _context$dataVerifica, _context$dataVerifica2, _context$dataVerifica3, _context$dataVerifica4, _context$dataVerifica5, _context$dataVerifica6, _context$dataVerifica7, _context$dataVerifica8, _context$dataVerifica9, _context$dataVerifica0, _context$dataVerifica1, _context$dataVerifica10, _context$dataVerifica11, _context$dataVerifica12, _context$dataVerifica13, _context$dataVerifica14, _context$dataVerifica15, _context$dataVerifica16, _context$dataVerifica17, _context$dataVerifica18, _context$dataVerifica19, _context$dataVerifica20, _context$dataVerifica21, _context$dataVerifica22, _context$dataVerifica23;
+   var _useContext = useContext(WorkbookContext),
+@@ -2408,7 +2501,7 @@ var DataVerification = function DataVerification() {
+       setContext(function (ctx) {
+         var isPass = confirmMessage(ctx, generalDialog, dataVerification);
+         if (isPass) {
+-          var _ctx$dataVerification, _ctx$dataVerification2, _ctx$luckysheetfile$g, _range, _range2, _range3, _range4;
++          var _ctx$dataVerification, _ctx$dataVerification2;
+           var range = getRangeByTxt(ctx, (_ctx$dataVerification = ctx.dataVerification) === null || _ctx$dataVerification === void 0 ? void 0 : (_ctx$dataVerification2 = _ctx$dataVerification.dataRegulation) === null || _ctx$dataVerification2 === void 0 ? void 0 : _ctx$dataVerification2.rangeTxt);
+           if (range.length === 0) {
+             return;
+@@ -2423,44 +2516,47 @@ var DataVerification = function DataVerification() {
+             var list = getDropdownList(ctx, value1);
+             item.value1 = list.join(",");
+           }
+-          var currentDataVerification = (_ctx$luckysheetfile$g = ctx.luckysheetfile[getSheetIndex(ctx, ctx.currentSheetId)].dataVerification) !== null && _ctx$luckysheetfile$g !== void 0 ? _ctx$luckysheetfile$g : {};
+-          var str = (_range = range[range.length - 1]) === null || _range === void 0 ? void 0 : _range.row[0];
+-          var edr = (_range2 = range[range.length - 1]) === null || _range2 === void 0 ? void 0 : _range2.row[1];
+-          var stc = (_range3 = range[range.length - 1]) === null || _range3 === void 0 ? void 0 : _range3.column[0];
+-          var edc = (_range4 = range[range.length - 1]) === null || _range4 === void 0 ? void 0 : _range4.column[1];
++          var sheet = ctx.luckysheetfile[getSheetIndex(ctx, ctx.currentSheetId)];
++          var currentDataVerification = sheet.dataVerification || {};
++          var compactRanges = normalizedDataValidationRanges(range);
+           var d = getFlowdata(ctx);
+-          if (!d || _.isNil(str) || _.isNil(stc) || _.isNil(edr) || _.isNil(edc)) return;
+-          for (var r = str; r <= edr; r += 1) {
+-            for (var c = stc; c <= edc; c += 1) {
+-              var key = "".concat(r, "_").concat(c);
+-              currentDataVerification[key] = item;
+-              if (regulation.type === "checkbox") {
+-                setCellValue(ctx, r, c, d, item.value2);
++          if (!d || !compactRanges.length) return;
++          deleteDirectDataValidations(currentDataVerification, compactRanges);
++          sheet.dataValidationRanges = (sheet.dataValidationRanges || []).concat([{
++            ranges: compactRanges,
++            item: item
++          }]);
++          if (dataValidationRangeCellCount(compactRanges) <= DATA_VALIDATION_EXPANSION_LIMIT) {
++            compactRanges.forEach(function (compactRange) {
++              for (var r = compactRange.row[0]; r <= compactRange.row[1]; r += 1) {
++                for (var c = compactRange.column[0]; c <= compactRange.column[1]; c += 1) {
++                  var key = "".concat(r, "_").concat(c);
++                  currentDataVerification[key] = item;
++                  if (regulation.type === "checkbox") {
++                    setCellValue(ctx, r, c, d, item.value2);
++                  }
++                }
+               }
+-            }
++            });
+           }
+-          ctx.luckysheetfile[getSheetIndex(ctx, ctx.currentSheetId)].dataVerification = currentDataVerification;
++          sheet.dataVerification = currentDataVerification;
+         }
+       });
+     } else if (type === "delete") {
+       setContext(function (ctx) {
+-        var _ctx$dataVerification3, _ctx$dataVerification4, _ctx$luckysheetfile$g2, _range5, _range6, _range7, _range8;
++        var _ctx$dataVerification3, _ctx$dataVerification4;
+         var range = getRangeByTxt(ctx, (_ctx$dataVerification3 = ctx.dataVerification) === null || _ctx$dataVerification3 === void 0 ? void 0 : (_ctx$dataVerification4 = _ctx$dataVerification3.dataRegulation) === null || _ctx$dataVerification4 === void 0 ? void 0 : _ctx$dataVerification4.rangeTxt);
+         if (range.length === 0) {
+           showDialog(generalDialog.noSeletionError, "ok");
+           return;
+         }
+-        var currentDataVerification = (_ctx$luckysheetfile$g2 = ctx.luckysheetfile[getSheetIndex(ctx, ctx.currentSheetId)].dataVerification) !== null && _ctx$luckysheetfile$g2 !== void 0 ? _ctx$luckysheetfile$g2 : {};
+-        var str = (_range5 = range[range.length - 1]) === null || _range5 === void 0 ? void 0 : _range5.row[0];
+-        var edr = (_range6 = range[range.length - 1]) === null || _range6 === void 0 ? void 0 : _range6.row[1];
+-        var stc = (_range7 = range[range.length - 1]) === null || _range7 === void 0 ? void 0 : _range7.column[0];
+-        var edc = (_range8 = range[range.length - 1]) === null || _range8 === void 0 ? void 0 : _range8.column[1];
+-        if (_.isNil(str) || _.isNil(stc) || _.isNil(edr) || _.isNil(edc)) return;
+-        for (var r = str; r <= edr; r += 1) {
+-          for (var c = stc; c <= edc; c += 1) {
+-            delete currentDataVerification["".concat(r, "_").concat(c)];
+-          }
+-        }
++        var sheet = ctx.luckysheetfile[getSheetIndex(ctx, ctx.currentSheetId)];
++        var currentDataVerification = sheet.dataVerification || {};
++        var compactRanges = normalizedDataValidationRanges(range);
++        if (!compactRanges.length) return;
++        deleteDirectDataValidations(currentDataVerification, compactRanges);
++        sheet.dataVerification = currentDataVerification;
++        sheet.dataValidationRanges = deleteCompactDataValidations(sheet.dataValidationRanges, compactRanges);
+       });
+     }
+     hideDialog();
+@@ -2473,14 +2569,12 @@ var DataVerification = function DataVerification() {
+         var range = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
+         rangeT = getRangetxt(context, context.currentSheetId, range, context.currentSheetId);
+       }
+-      var index = getSheetIndex(ctx, ctx.currentSheetId);
+-      var ctxDataVerification = ctx.luckysheetfile[index].dataVerification || {};
+       if (!ctx.luckysheet_select_save) return;
+       var last = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
+       var rowIndex = last.row_focus;
+       var colIndex = last.column_focus;
+       if (rowIndex == null || colIndex == null) return;
+-      var item = ctxDataVerification["".concat(rowIndex, "_").concat(colIndex)];
++      var item = getDataVerificationItem(ctx, rowIndex, colIndex);
+       var defaultItem = item !== null && item !== void 0 ? item : {};
+       var rangValue = (_defaultItem$value = defaultItem.value1) !== null && _defaultItem$value !== void 0 ? _defaultItem$value : "";
+       if (((_ctx$rangeDialog = ctx.rangeDialog) === null || _ctx$rangeDialog === void 0 ? void 0 : _ctx$rangeDialog.type) === "dropDown" && ctx.dataVerification && ctx.dataVerification.dataRegulation && ctx.dataVerification.dataRegulation.rangeTxt) {
+@@ -3262,9 +3356,8 @@ var DropDownList = function DropDownList() {
+       var _margeSet$column = _slicedToArray(margeSet.column, 2);
+       col_pre = _margeSet$column[0];
+     }
+-    var index = getSheetIndex(context, context.currentSheetId);
+-    var dataVerification = context.luckysheetfile[index].dataVerification;
+-    var item = dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++    var item = getDataVerificationItem(context, rowIndex, colIndex);
++    if (!item) return;
+     var dropdownList = getDropdownList(context, item.value1);
+     var cellValue = getCellValue(rowIndex, colIndex, d);
+     if (cellValue) {
+@@ -3283,9 +3376,8 @@ var DropDownList = function DropDownList() {
+     var rowIndex = last.row_focus;
+     var colIndex = last.column_focus;
+     if (rowIndex == null || colIndex == null) return;
+-    var index = getSheetIndex(context, context.currentSheetId);
+-    var dataVerification = context.luckysheetfile[index].dataVerification;
+-    var item = dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++    var item = getDataVerificationItem(context, rowIndex, colIndex);
++    if (!item) return;
+     if (item.type2 !== "true") return;
+     var d = getFlowdata(context);
+     if (!d) return;
+@@ -3957,8 +4049,12 @@ var Sheet = function Sheet(_ref) {
+   var _context$config, _context$config2, _context$config3;
+   var sheet = _ref.sheet;
+   var data = sheet.data;
++  var dataRowCount = data ? data.length : 0;
++  var dataColumnCount = data && data[0] ? data[0].length : 0;
+   var containerRef = useRef(null);
+   var placeholderRef = useRef(null);
++  var tableCanvasRef = useRef(null);
++  var tableCanvasDataRef = useRef(data);
+   var _useContext = useContext(WorkbookContext),
+     context = _useContext.context,
+     setContext = _useContext.setContext,
+@@ -3985,7 +4081,7 @@ var Sheet = function Sheet(_ref) {
+     setContext(function (draftCtx) {
+       return updateContextWithSheetData(draftCtx, data);
+     });
+-  }, [(_context$config = context.config) === null || _context$config === void 0 ? void 0 : _context$config.rowlen, (_context$config2 = context.config) === null || _context$config2 === void 0 ? void 0 : _context$config2.columnlen, (_context$config3 = context.config) === null || _context$config3 === void 0 ? void 0 : _context$config3.rowhidden, context.config.colhidden, data, context.zoomRatio, setContext]);
++  }, [(_context$config = context.config) === null || _context$config === void 0 ? void 0 : _context$config.rowlen, (_context$config2 = context.config) === null || _context$config2 === void 0 ? void 0 : _context$config2.columnlen, (_context$config3 = context.config) === null || _context$config3 === void 0 ? void 0 : _context$config3.rowhidden, context.config.colhidden, dataRowCount, dataColumnCount, context.zoomRatio, setContext]);
+   useEffect(function () {
+     setContext(function (draftCtx) {
+       return updateContextWithCanvas(draftCtx, refs.canvas.current, placeholderRef.current);
+@@ -3999,7 +4095,15 @@ var Sheet = function Sheet(_ref) {
+     if (context.groupValuesRefreshData.length > 0) {
+       return;
+     }
+-    var tableCanvas = new Canvas(refs.canvas.current, context);
++    var tableCanvas = tableCanvasRef.current;
++    if (tableCanvas == null || tableCanvas.canvasElement !== refs.canvas.current) {
++      tableCanvas = new Canvas(refs.canvas.current, context);
++      tableCanvasRef.current = tableCanvas;
++    } else {
++      tableCanvas.sheetCtx = context;
++      if (tableCanvasDataRef.current !== data) tableCanvas.cellOverflowMapCache = {};
++    }
++    tableCanvasDataRef.current = data;
+     if (tableCanvas == null) return;
+     var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
+     if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
+@@ -9919,7 +10023,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -11,11 +328,373 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..dc62088f576bbe4ddf0dc864a39942ae
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
+@@ -10862,12 +10966,17 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+       lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
+     }
+     if (lastRowNum && lastColNum) {
+-      var expandedData = _.times(lastRowNum, function () {
+-        return _.times(lastColNum, function () {
+-          return null;
+-        });
+-      });
++      var expandedData = [];
++      expandedData.length = lastRowNum;
++      for (var rowIndex = 0; rowIndex < Math.min(lastRowNum, 100); rowIndex += 1) {
++        expandedData[rowIndex] = [];
++        expandedData[rowIndex].length = lastColNum;
++      }
+       celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
++        if (!expandedData[d.r]) {
++          expandedData[d.r] = [];
++          expandedData[d.r].length = lastColNum;
++        }
+         expandedData[d.r][d.c] = d.v;
+       });
+       draftCtx.luckysheetfile = produce(draftCtx.luckysheetfile, function (d) {
+@@ -10928,18 +11037,21 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+   }
+   function dataToCelldata(data) {
+     var cellData = [];
+-    for (var row = 0; row < (data === null || data === void 0 ? void 0 : data.length); row += 1) {
+-      for (var col = 0; col < ((_data$row = data[row]) === null || _data$row === void 0 ? void 0 : _data$row.length); col += 1) {
+-        var _data$row;
+-        if (data[row][col] !== null) {
++    Object.keys(data !== null && data !== void 0 ? data : []).forEach(function (rowKey) {
++      var row = Number(rowKey);
++      var cells = data[row];
++      if (!cells) return;
++      Object.keys(cells).forEach(function (columnKey) {
++        var col = Number(columnKey);
++        if (data[row][col] != null) {
+           cellData.push({
+             r: row,
+             c: col,
+             v: data[row][col]
+           });
+         }
+-      }
+-    }
++      });
++    });
+     return cellData;
+   }
+   var setContextWithProduce = useCallback(function (recipe) {
 diff --git a/dist/index.js b/dist/index.js
-index e4045518773578e3faaa3a58985a5585f9683088..b2e2218380891e31f7cfe156c9b4e77a252c2480 100644
+index e4045518773578e3faaa3a58985a5585f9683088..21f6e8e6cffad28b338170f589e7eb664d7bc366 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -9930,7 +9930,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -1172,6 +1172,8 @@ var ScrollBar = function ScrollBar(_ref) {
+     context = _useContext.context,
+     refs = _useContext.refs,
+     setContext = _useContext.setContext;
++  var frameRef = React.useRef();
++  var pendingScrollRef = React.useRef(0);
+   React.useEffect(function () {
+     if (axis === "x") {
+       refs.scrollbarX.current.scrollLeft = context.scrollLeft;
+@@ -1179,6 +1181,11 @@ var ScrollBar = function ScrollBar(_ref) {
+       refs.scrollbarY.current.scrollTop = context.scrollTop;
+     }
+   }, [axis === "x" ? context.scrollLeft : context.scrollTop]);
++  React.useEffect(function () {
++    return function () {
++      if (frameRef.current !== undefined) cancelAnimationFrame(frameRef.current);
++    };
++  }, []);
+   return /*#__PURE__*/React__default['default'].createElement("div", {
+     ref: axis === "x" ? refs.scrollbarX : refs.scrollbarY,
+     style: axis === "x" ? {
+@@ -1189,15 +1196,15 @@ var ScrollBar = function ScrollBar(_ref) {
+     },
+     className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
+     onScroll: function onScroll() {
+-      if (axis === "x") {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-        });
+-      } else {
++      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
++      if (frameRef.current !== undefined) return;
++      frameRef.current = requestAnimationFrame(function () {
++        frameRef.current = undefined;
++        var scroll = pendingScrollRef.current;
+         setContext(function (draftCtx) {
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
++          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
+         });
+-      }
++      });
+     }
+   }, /*#__PURE__*/React__default['default'].createElement("div", {
+     style: axis === "x" ? {
+@@ -2216,9 +2223,15 @@ var NotationBoxes = function NotationBoxes() {
+   React.useEffect(function () {
+     if (flowdata) {
+       var psShownCells = [];
+-      for (var i = 0; i < flowdata.length; i += 1) {
+-        for (var j = 0; j < flowdata[i].length; j += 1) {
++      var populatedRows = Object.keys(flowdata);
++      for (var rowIndex = 0; rowIndex < populatedRows.length; rowIndex += 1) {
++        var i = Number(populatedRows[rowIndex]);
++        var row = flowdata[i];
++        if (!row) continue;
++        var populatedColumns = Object.keys(row);
++        for (var columnIndex = 0; columnIndex < populatedColumns.length; columnIndex += 1) {
+           var _cell$ps;
++          var j = Number(populatedColumns[columnIndex]);
+           var cell = flowdata[i][j];
+           if (!cell) continue;
+           if ((_cell$ps = cell.ps) === null || _cell$ps === void 0 ? void 0 : _cell$ps.isShow) {
+@@ -2387,6 +2400,86 @@ function useDialog() {
+   };
+ }
+
++var DATA_VALIDATION_EXPANSION_LIMIT = 10000;
++function normalizedDataValidationRanges(source) {
++  if (!Array.isArray(source)) return [];
++  return source.flatMap(function (range) {
++    if (!range || !Array.isArray(range.row) || !Array.isArray(range.column)) return [];
++    var startRow = Math.min(range.row[0], range.row[1]);
++    var endRow = Math.max(range.row[0], range.row[1]);
++    var startColumn = Math.min(range.column[0], range.column[1]);
++    var endColumn = Math.max(range.column[0], range.column[1]);
++    if (![startRow, endRow, startColumn, endColumn].every(Number.isSafeInteger)) return [];
++    return [{
++      row: [startRow, endRow],
++      column: [startColumn, endColumn]
++    }];
++  });
++}
++function dataValidationRangeContains(range, row, column) {
++  return row >= range.row[0] && row <= range.row[1] && column >= range.column[0] && column <= range.column[1];
++}
++function deleteDirectDataValidations(source, ranges) {
++  Object.keys(source).forEach(function (key) {
++    var parts = key.split("_");
++    var row = Number(parts[0]);
++    var column = Number(parts[1]);
++    if (ranges.some(function (range) {
++      return dataValidationRangeContains(range, row, column);
++    })) {
++      delete source[key];
++    }
++  });
++}
++function dataValidationRangeCellCount(ranges) {
++  var total = 0;
++  for (var index = 0; index < ranges.length; index += 1) {
++    var range = ranges[index];
++    total += (range.row[1] - range.row[0] + 1) * (range.column[1] - range.column[0] + 1);
++    if (total > DATA_VALIDATION_EXPANSION_LIMIT) return total;
++  }
++  return total;
++}
++function subtractDataValidationRange(source, cut) {
++  var startRow = Math.max(source.row[0], cut.row[0]);
++  var endRow = Math.min(source.row[1], cut.row[1]);
++  var startColumn = Math.max(source.column[0], cut.column[0]);
++  var endColumn = Math.min(source.column[1], cut.column[1]);
++  if (startRow > endRow || startColumn > endColumn) return [source];
++  var remaining = [];
++  if (source.row[0] < startRow) remaining.push({
++    row: [source.row[0], startRow - 1],
++    column: [source.column[0], source.column[1]]
++  });
++  if (endRow < source.row[1]) remaining.push({
++    row: [endRow + 1, source.row[1]],
++    column: [source.column[0], source.column[1]]
++  });
++  if (source.column[0] < startColumn) remaining.push({
++    row: [startRow, endRow],
++    column: [source.column[0], startColumn - 1]
++  });
++  if (endColumn < source.column[1]) remaining.push({
++    row: [startRow, endRow],
++    column: [endColumn + 1, source.column[1]]
++  });
++  return remaining;
++}
++function deleteCompactDataValidations(source, cuts) {
++  if (!Array.isArray(source)) return [];
++  return source.flatMap(function (entry) {
++    var remaining = normalizedDataValidationRanges(entry === null || entry === void 0 ? void 0 : entry.ranges);
++    cuts.forEach(function (cut) {
++      remaining = remaining.flatMap(function (range) {
++        return subtractDataValidationRange(range, cut);
++      });
++    });
++    return remaining.length ? [_objectSpread2(_objectSpread2({}, entry), {}, {
++      ranges: remaining
++    })] : [];
++  });
++}
++
+ var DataVerification = function DataVerification() {
+   var _context$dataVerifica, _context$dataVerifica2, _context$dataVerifica3, _context$dataVerifica4, _context$dataVerifica5, _context$dataVerifica6, _context$dataVerifica7, _context$dataVerifica8, _context$dataVerifica9, _context$dataVerifica0, _context$dataVerifica1, _context$dataVerifica10, _context$dataVerifica11, _context$dataVerifica12, _context$dataVerifica13, _context$dataVerifica14, _context$dataVerifica15, _context$dataVerifica16, _context$dataVerifica17, _context$dataVerifica18, _context$dataVerifica19, _context$dataVerifica20, _context$dataVerifica21, _context$dataVerifica22, _context$dataVerifica23;
+   var _useContext = React.useContext(WorkbookContext),
+@@ -2419,7 +2512,7 @@ var DataVerification = function DataVerification() {
+       setContext(function (ctx) {
+         var isPass = core.confirmMessage(ctx, generalDialog, dataVerification);
+         if (isPass) {
+-          var _ctx$dataVerification, _ctx$dataVerification2, _ctx$luckysheetfile$g, _range, _range2, _range3, _range4;
++          var _ctx$dataVerification, _ctx$dataVerification2;
+           var range = core.getRangeByTxt(ctx, (_ctx$dataVerification = ctx.dataVerification) === null || _ctx$dataVerification === void 0 ? void 0 : (_ctx$dataVerification2 = _ctx$dataVerification.dataRegulation) === null || _ctx$dataVerification2 === void 0 ? void 0 : _ctx$dataVerification2.rangeTxt);
+           if (range.length === 0) {
+             return;
+@@ -2434,44 +2527,47 @@ var DataVerification = function DataVerification() {
+             var list = core.getDropdownList(ctx, value1);
+             item.value1 = list.join(",");
+           }
+-          var currentDataVerification = (_ctx$luckysheetfile$g = ctx.luckysheetfile[core.getSheetIndex(ctx, ctx.currentSheetId)].dataVerification) !== null && _ctx$luckysheetfile$g !== void 0 ? _ctx$luckysheetfile$g : {};
+-          var str = (_range = range[range.length - 1]) === null || _range === void 0 ? void 0 : _range.row[0];
+-          var edr = (_range2 = range[range.length - 1]) === null || _range2 === void 0 ? void 0 : _range2.row[1];
+-          var stc = (_range3 = range[range.length - 1]) === null || _range3 === void 0 ? void 0 : _range3.column[0];
+-          var edc = (_range4 = range[range.length - 1]) === null || _range4 === void 0 ? void 0 : _range4.column[1];
++          var sheet = ctx.luckysheetfile[core.getSheetIndex(ctx, ctx.currentSheetId)];
++          var currentDataVerification = sheet.dataVerification || {};
++          var compactRanges = normalizedDataValidationRanges(range);
+           var d = core.getFlowdata(ctx);
+-          if (!d || ___default['default'].isNil(str) || ___default['default'].isNil(stc) || ___default['default'].isNil(edr) || ___default['default'].isNil(edc)) return;
+-          for (var r = str; r <= edr; r += 1) {
+-            for (var c = stc; c <= edc; c += 1) {
+-              var key = "".concat(r, "_").concat(c);
+-              currentDataVerification[key] = item;
+-              if (regulation.type === "checkbox") {
+-                core.setCellValue(ctx, r, c, d, item.value2);
++          if (!d || !compactRanges.length) return;
++          deleteDirectDataValidations(currentDataVerification, compactRanges);
++          sheet.dataValidationRanges = (sheet.dataValidationRanges || []).concat([{
++            ranges: compactRanges,
++            item: item
++          }]);
++          if (dataValidationRangeCellCount(compactRanges) <= DATA_VALIDATION_EXPANSION_LIMIT) {
++            compactRanges.forEach(function (compactRange) {
++              for (var r = compactRange.row[0]; r <= compactRange.row[1]; r += 1) {
++                for (var c = compactRange.column[0]; c <= compactRange.column[1]; c += 1) {
++                  var key = "".concat(r, "_").concat(c);
++                  currentDataVerification[key] = item;
++                  if (regulation.type === "checkbox") {
++                    core.setCellValue(ctx, r, c, d, item.value2);
++                  }
++                }
+               }
+-            }
++            });
+           }
+-          ctx.luckysheetfile[core.getSheetIndex(ctx, ctx.currentSheetId)].dataVerification = currentDataVerification;
++          sheet.dataVerification = currentDataVerification;
+         }
+       });
+     } else if (type === "delete") {
+       setContext(function (ctx) {
+-        var _ctx$dataVerification3, _ctx$dataVerification4, _ctx$luckysheetfile$g2, _range5, _range6, _range7, _range8;
++        var _ctx$dataVerification3, _ctx$dataVerification4;
+         var range = core.getRangeByTxt(ctx, (_ctx$dataVerification3 = ctx.dataVerification) === null || _ctx$dataVerification3 === void 0 ? void 0 : (_ctx$dataVerification4 = _ctx$dataVerification3.dataRegulation) === null || _ctx$dataVerification4 === void 0 ? void 0 : _ctx$dataVerification4.rangeTxt);
+         if (range.length === 0) {
+           showDialog(generalDialog.noSeletionError, "ok");
+           return;
+         }
+-        var currentDataVerification = (_ctx$luckysheetfile$g2 = ctx.luckysheetfile[core.getSheetIndex(ctx, ctx.currentSheetId)].dataVerification) !== null && _ctx$luckysheetfile$g2 !== void 0 ? _ctx$luckysheetfile$g2 : {};
+-        var str = (_range5 = range[range.length - 1]) === null || _range5 === void 0 ? void 0 : _range5.row[0];
+-        var edr = (_range6 = range[range.length - 1]) === null || _range6 === void 0 ? void 0 : _range6.row[1];
+-        var stc = (_range7 = range[range.length - 1]) === null || _range7 === void 0 ? void 0 : _range7.column[0];
+-        var edc = (_range8 = range[range.length - 1]) === null || _range8 === void 0 ? void 0 : _range8.column[1];
+-        if (___default['default'].isNil(str) || ___default['default'].isNil(stc) || ___default['default'].isNil(edr) || ___default['default'].isNil(edc)) return;
+-        for (var r = str; r <= edr; r += 1) {
+-          for (var c = stc; c <= edc; c += 1) {
+-            delete currentDataVerification["".concat(r, "_").concat(c)];
+-          }
+-        }
++        var sheet = ctx.luckysheetfile[core.getSheetIndex(ctx, ctx.currentSheetId)];
++        var currentDataVerification = sheet.dataVerification || {};
++        var compactRanges = normalizedDataValidationRanges(range);
++        if (!compactRanges.length) return;
++        deleteDirectDataValidations(currentDataVerification, compactRanges);
++        sheet.dataVerification = currentDataVerification;
++        sheet.dataValidationRanges = deleteCompactDataValidations(sheet.dataValidationRanges, compactRanges);
+       });
+     }
+     hideDialog();
+@@ -2484,14 +2580,12 @@ var DataVerification = function DataVerification() {
+         var range = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
+         rangeT = core.getRangetxt(context, context.currentSheetId, range, context.currentSheetId);
+       }
+-      var index = core.getSheetIndex(ctx, ctx.currentSheetId);
+-      var ctxDataVerification = ctx.luckysheetfile[index].dataVerification || {};
+       if (!ctx.luckysheet_select_save) return;
+       var last = ctx.luckysheet_select_save[ctx.luckysheet_select_save.length - 1];
+       var rowIndex = last.row_focus;
+       var colIndex = last.column_focus;
+       if (rowIndex == null || colIndex == null) return;
+-      var item = ctxDataVerification["".concat(rowIndex, "_").concat(colIndex)];
++      var item = core.getDataVerificationItem(ctx, rowIndex, colIndex);
+       var defaultItem = item !== null && item !== void 0 ? item : {};
+       var rangValue = (_defaultItem$value = defaultItem.value1) !== null && _defaultItem$value !== void 0 ? _defaultItem$value : "";
+       if (((_ctx$rangeDialog = ctx.rangeDialog) === null || _ctx$rangeDialog === void 0 ? void 0 : _ctx$rangeDialog.type) === "dropDown" && ctx.dataVerification && ctx.dataVerification.dataRegulation && ctx.dataVerification.dataRegulation.rangeTxt) {
+@@ -3273,9 +3367,8 @@ var DropDownList = function DropDownList() {
+       var _margeSet$column = _slicedToArray(margeSet.column, 2);
+       col_pre = _margeSet$column[0];
+     }
+-    var index = core.getSheetIndex(context, context.currentSheetId);
+-    var dataVerification = context.luckysheetfile[index].dataVerification;
+-    var item = dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++    var item = core.getDataVerificationItem(context, rowIndex, colIndex);
++    if (!item) return;
+     var dropdownList = core.getDropdownList(context, item.value1);
+     var cellValue = core.getCellValue(rowIndex, colIndex, d);
+     if (cellValue) {
+@@ -3294,9 +3387,8 @@ var DropDownList = function DropDownList() {
+     var rowIndex = last.row_focus;
+     var colIndex = last.column_focus;
+     if (rowIndex == null || colIndex == null) return;
+-    var index = core.getSheetIndex(context, context.currentSheetId);
+-    var dataVerification = context.luckysheetfile[index].dataVerification;
+-    var item = dataVerification["".concat(rowIndex, "_").concat(colIndex)];
++    var item = core.getDataVerificationItem(context, rowIndex, colIndex);
++    if (!item) return;
+     if (item.type2 !== "true") return;
+     var d = core.getFlowdata(context);
+     if (!d) return;
+@@ -3968,8 +4060,12 @@ var Sheet = function Sheet(_ref) {
+   var _context$config, _context$config2, _context$config3;
+   var sheet = _ref.sheet;
+   var data = sheet.data;
++  var dataRowCount = data ? data.length : 0;
++  var dataColumnCount = data && data[0] ? data[0].length : 0;
+   var containerRef = React.useRef(null);
+   var placeholderRef = React.useRef(null);
++  var tableCanvasRef = React.useRef(null);
++  var tableCanvasDataRef = React.useRef(data);
+   var _useContext = React.useContext(WorkbookContext),
+     context = _useContext.context,
+     setContext = _useContext.setContext,
+@@ -3996,7 +4092,7 @@ var Sheet = function Sheet(_ref) {
+     setContext(function (draftCtx) {
+       return core.updateContextWithSheetData(draftCtx, data);
+     });
+-  }, [(_context$config = context.config) === null || _context$config === void 0 ? void 0 : _context$config.rowlen, (_context$config2 = context.config) === null || _context$config2 === void 0 ? void 0 : _context$config2.columnlen, (_context$config3 = context.config) === null || _context$config3 === void 0 ? void 0 : _context$config3.rowhidden, context.config.colhidden, data, context.zoomRatio, setContext]);
++  }, [(_context$config = context.config) === null || _context$config === void 0 ? void 0 : _context$config.rowlen, (_context$config2 = context.config) === null || _context$config2 === void 0 ? void 0 : _context$config2.columnlen, (_context$config3 = context.config) === null || _context$config3 === void 0 ? void 0 : _context$config3.rowhidden, context.config.colhidden, dataRowCount, dataColumnCount, context.zoomRatio, setContext]);
+   React.useEffect(function () {
+     setContext(function (draftCtx) {
+       return core.updateContextWithCanvas(draftCtx, refs.canvas.current, placeholderRef.current);
+@@ -4010,7 +4106,15 @@ var Sheet = function Sheet(_ref) {
+     if (context.groupValuesRefreshData.length > 0) {
+       return;
+     }
+-    var tableCanvas = new core.Canvas(refs.canvas.current, context);
++    var tableCanvas = tableCanvasRef.current;
++    if (tableCanvas == null || tableCanvas.canvasElement !== refs.canvas.current) {
++      tableCanvas = new core.Canvas(refs.canvas.current, context);
++      tableCanvasRef.current = tableCanvas;
++    } else {
++      tableCanvas.sheetCtx = context;
++      if (tableCanvasDataRef.current !== data) tableCanvas.cellOverflowMapCache = {};
++    }
++    tableCanvasDataRef.current = data;
+     if (tableCanvas == null) return;
+     var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
+     if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
+@@ -9930,7 +10034,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -28,6 +707,57 @@ index e4045518773578e3faaa3a58985a5585f9683088..b2e2218380891e31f7cfe156c9b4e77a
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
+@@ -10873,12 +10981,17 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+       lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
+     }
+     if (lastRowNum && lastColNum) {
+-      var expandedData = ___default['default'].times(lastRowNum, function () {
+-        return ___default['default'].times(lastColNum, function () {
+-          return null;
+-        });
+-      });
++      var expandedData = [];
++      expandedData.length = lastRowNum;
++      for (var rowIndex = 0; rowIndex < Math.min(lastRowNum, 100); rowIndex += 1) {
++        expandedData[rowIndex] = [];
++        expandedData[rowIndex].length = lastColNum;
++      }
+       celldata === null || celldata === void 0 ? void 0 : celldata.forEach(function (d) {
++        if (!expandedData[d.r]) {
++          expandedData[d.r] = [];
++          expandedData[d.r].length = lastColNum;
++        }
+         expandedData[d.r][d.c] = d.v;
+       });
+       draftCtx.luckysheetfile = produce__default['default'](draftCtx.luckysheetfile, function (d) {
+@@ -10939,18 +11052,21 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+   }
+   function dataToCelldata(data) {
+     var cellData = [];
+-    for (var row = 0; row < (data === null || data === void 0 ? void 0 : data.length); row += 1) {
+-      for (var col = 0; col < ((_data$row = data[row]) === null || _data$row === void 0 ? void 0 : _data$row.length); col += 1) {
+-        var _data$row;
+-        if (data[row][col] !== null) {
++    Object.keys(data !== null && data !== void 0 ? data : []).forEach(function (rowKey) {
++      var row = Number(rowKey);
++      var cells = data[row];
++      if (!cells) return;
++      Object.keys(cells).forEach(function (columnKey) {
++        var col = Number(columnKey);
++        if (data[row][col] != null) {
+           cellData.push({
+             r: row,
+             c: col,
+             v: data[row][col]
+           });
+         }
+-      }
+-    }
++      });
++    });
+     return cellData;
+   }
+   var setContextWithProduce = React.useCallback(function (recipe) {
 diff --git a/dist/index.umd.js b/dist/index.umd.js
 index e1c484068e24e3dc31a2831de32b58e898edde85..14baf7e17fd2d03692c80443404ea9a0720e0dd7 100644
 --- a/dist/index.umd.js

@@ -1,4 +1,5 @@
-import type { Cell, Selection } from '@fortune-sheet/core';
+import type { Cell, CellMatrix, Selection } from '@fortune-sheet/core';
+import { sparseArrayIndexes } from '../spreadsheet-sparse';
 import type { WorkSpreadsheetContent } from '../work-types';
 import { officeFontFamilies } from './office-font-families';
 import type { OfficeSelectOption } from './office-select';
@@ -94,15 +95,12 @@ export function spreadsheetSelectionSummary(
     const rowEnd = Math.min(range.row[1] ?? rowStart, sheet.data.length - 1);
     const columnStart = range.column[0] ?? 0;
     const columnEnd = range.column[1] ?? columnStart;
-    for (let rowIndex = rowStart; rowIndex <= rowEnd; rowIndex += 1) {
+    for (const rowIndex of sparseArrayIndexes(sheet.data)) {
+      if (rowIndex < rowStart || rowIndex > rowEnd) continue;
       const row = sheet.data[rowIndex];
       if (!row) continue;
-      const populatedColumnEnd = Math.min(columnEnd, row.length - 1);
-      for (
-        let columnIndex = columnStart;
-        columnIndex <= populatedColumnEnd;
-        columnIndex += 1
-      ) {
+      for (const columnIndex of sparseArrayIndexes(row)) {
+        if (columnIndex < columnStart || columnIndex > columnEnd) continue;
         collect(row[columnIndex]);
       }
     }
@@ -184,40 +182,102 @@ export function spreadsheetSheetsWithFiniteSelections(
 export function spreadsheetSheetsForFortune(
   sheets: WorkSpreadsheetContent['sheets'],
 ): WorkSpreadsheetContent['sheets'] {
-  return structuredClone(sheets).map((sheet) => {
-    for (const merge of Object.values(sheet.config?.merge ?? {})) {
+  return sheets.map((sheet) => {
+    const { celldata: sourceCellData, data, ...sourceMetadata } = sheet;
+    const projected = structuredClone(sourceMetadata);
+    const cells = new Map<
+      string,
+      NonNullable<WorkSpreadsheetContent['sheets'][number]['celldata']>[number]
+    >();
+    if (data) {
+      for (const rowIndex of sparseArrayIndexes(data)) {
+        const row = data[rowIndex];
+        if (!row) continue;
+        for (const columnIndex of sparseArrayIndexes(row)) {
+          const cell = row[columnIndex];
+          if (cell == null) continue;
+          cells.set(`${rowIndex}_${columnIndex}`, {
+            r: rowIndex,
+            c: columnIndex,
+            v: structuredClone(cell),
+          });
+        }
+      }
+    } else {
+      for (const entry of sourceCellData ?? []) {
+        cells.set(`${entry.r}_${entry.c}`, structuredClone(entry));
+      }
+    }
+    for (const merge of Object.values(projected.config?.merge ?? {})) {
       for (
         let rowIndex = merge.r;
         rowIndex < merge.r + merge.rs;
         rowIndex += 1
       ) {
-        const row = sheet.data?.[rowIndex];
-        if (!row) continue;
         for (
           let columnIndex = merge.c;
           columnIndex < merge.c + merge.cs;
           columnIndex += 1
         ) {
-          row[columnIndex] = {
-            ...(row[columnIndex] ?? {}),
-            mc:
-              rowIndex === merge.r && columnIndex === merge.c
-                ? { ...merge }
-                : { r: merge.r, c: merge.c },
-          };
+          const key = `${rowIndex}_${columnIndex}`;
+          const current = cells.get(key);
+          cells.set(key, {
+            r: rowIndex,
+            c: columnIndex,
+            v: {
+              ...(current?.v ?? {}),
+              mc:
+                rowIndex === merge.r && columnIndex === merge.c
+                  ? { ...merge }
+                  : { r: merge.r, c: merge.c },
+            },
+          });
         }
       }
     }
     return {
-      ...sheet,
-      celldata: sheet.data
-        ? sheet.data.flatMap((row, rowIndex) =>
-            row.flatMap((cell, columnIndex) =>
-              cell == null ? [] : [{ r: rowIndex, c: columnIndex, v: cell }],
-            ),
-          )
-        : (sheet.celldata ?? []),
+      ...projected,
+      celldata: Array.from(cells.values()).sort(
+        (left, right) => left.r - right.r || left.c - right.c,
+      ),
     };
+  });
+}
+
+export function spreadsheetSheetsFromFortune(
+  sheets: WorkSpreadsheetContent['sheets'],
+  sourceSheets: WorkSpreadsheetContent['sheets'],
+): WorkSpreadsheetContent['sheets'] {
+  return sheets.map((sheet, index) => {
+    const source =
+      (sheet.id
+        ? sourceSheets.find((candidate) => candidate.id === sheet.id)
+        : undefined) ?? sourceSheets[index];
+    const cells = spreadsheetPopulatedCellData(sheet);
+    const { celldata: _cellData, data: _data, ...metadata } = sheet;
+    const useMatrix = source
+      ? source.data !== undefined
+      : sheet.data !== undefined;
+    if (!useMatrix) return { ...metadata, celldata: cells };
+
+    const data: CellMatrix = [];
+    data.length = Math.max(
+      sheet.data?.length ?? 0,
+      source?.data?.length ?? 0,
+      positiveSpreadsheetDimension(sheet.row),
+    );
+    for (const { r: rowIndex, c: columnIndex, v: cell } of cells) {
+      const row = data[rowIndex] ?? [];
+      data[rowIndex] = row;
+      row.length = Math.max(
+        row.length,
+        sheet.data?.[rowIndex]?.length ?? 0,
+        source?.data?.[rowIndex]?.length ?? 0,
+        positiveSpreadsheetDimension(sheet.column),
+      );
+      row[columnIndex] = cell;
+    }
+    return { ...metadata, data };
   });
 }
 
@@ -239,10 +299,9 @@ export function sameSpreadsheetWorkbookState(
   changed: WorkSpreadsheetContent['sheets'],
   rendered: WorkSpreadsheetContent['sheets'],
 ): boolean {
-  return (
-    JSON.stringify(changed.map(spreadsheetSheetWithoutTransientSelection)) ===
-    JSON.stringify(rendered.map(spreadsheetSheetWithoutTransientSelection))
-  );
+  const left = changed.map(spreadsheetSheetWithoutTransientSelection);
+  const right = rendered.map(spreadsheetSheetWithoutTransientSelection);
+  return sameSpreadsheetHistoryValue(left, right);
 }
 
 export function sameSpreadsheetHistoryContent(
@@ -379,11 +438,49 @@ function spreadsheetSheetWithoutTransientSelection(
 ) {
   const {
     celldata: _cellData,
+    calcChain: _calculationChain,
+    data: _data,
+    dynamicArray_compute: _dynamicArrayComputation,
     luckysheet_select_save: _selection,
     luckysheet_selection_range: _range,
+    zoomRatio,
     ...content
   } = sheet;
-  return content;
+  return {
+    ...content,
+    ...(zoomRatio === undefined || zoomRatio === 1 ? {} : { zoomRatio }),
+    celldata: spreadsheetPopulatedCellData(sheet),
+  };
+}
+
+function spreadsheetPopulatedCellData(
+  sheet: WorkSpreadsheetContent['sheets'][number],
+): NonNullable<WorkSpreadsheetContent['sheets'][number]['celldata']> {
+  const cells: NonNullable<
+    WorkSpreadsheetContent['sheets'][number]['celldata']
+  > = [];
+  if (sheet.data !== undefined) {
+    for (const rowIndex of sparseArrayIndexes(sheet.data)) {
+      const row = sheet.data[rowIndex];
+      if (!row) continue;
+      for (const columnIndex of sparseArrayIndexes(row)) {
+        const cell = row[columnIndex];
+        if (cell == null) continue;
+        cells.push({ r: rowIndex, c: columnIndex, v: cell });
+      }
+    }
+  } else {
+    for (const cell of sheet.celldata ?? []) {
+      if (cell.v != null) cells.push(cell);
+    }
+  }
+  return cells.sort((left, right) => left.r - right.r || left.c - right.c);
+}
+
+function positiveSpreadsheetDimension(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : 0;
 }
 
 function sameSpreadsheetHistoryValue(left: unknown, right: unknown): boolean {
@@ -407,8 +504,19 @@ function sameSpreadsheetHistoryValue(left: unknown, right: unknown): boolean {
     ) {
       return false;
     }
-    return left.every((value, index) =>
-      sameSpreadsheetHistoryValue(value, right[index]),
+    const leftKeys = Object.keys(left).filter(
+      (key) => left[Number(key)] !== undefined,
+    );
+    const rightKeys = Object.keys(right).filter(
+      (key) => right[Number(key)] !== undefined,
+    );
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every(
+        (key) =>
+          Object.hasOwn(right, key) &&
+          sameSpreadsheetHistoryValue(left[Number(key)], right[Number(key)]),
+      )
     );
   }
   if (typeof left !== 'object' || typeof right !== 'object') return false;

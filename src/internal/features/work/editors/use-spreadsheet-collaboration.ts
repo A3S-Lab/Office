@@ -4,6 +4,7 @@ import type { WorkOfficeCollaborationSession } from '../../../collaboration/offi
 import {
   createWorkOfficeSpreadsheetCollaborationBinding,
   readWorkOfficeSpreadsheetCollaboration,
+  replaceWorkOfficeSpreadsheetCollaboration,
   type WorkOfficeSpreadsheetCollaborationBinding,
 } from '../../../collaboration/office-spreadsheet-collaboration';
 import type { WorkSpreadsheetContent } from '../work-types';
@@ -17,7 +18,7 @@ export interface SpreadsheetCollaborationHistory {
 }
 
 export interface SpreadsheetCollaborationViewController {
-  activateSheet: (sheetId: string) => void;
+  activateSheet: (sheetId: string) => boolean;
   select: (sheetId: string, selection: Selection) => void;
   setZoom: (sheetId: string, zoomRatio: number) => void;
 }
@@ -48,6 +49,9 @@ export function useSpreadsheetCollaboration({
   const viewStateRef = useRef<SpreadsheetCollaborationViewState>(
     spreadsheetCollaborationViewState(initialContent),
   );
+  const [derivedOrigin] = useState(() =>
+    session.createOrigin('system', 'spreadsheet-calculation'),
+  );
   const [content, setContent] = useState(() =>
     spreadsheetContentWithCollaborationViewState(
       readWorkOfficeSpreadsheetCollaboration(session),
@@ -63,18 +67,19 @@ export function useSpreadsheetCollaboration({
   onChangeRef.current = onChange;
   contentRef.current = content;
 
+  const project = useCallback((sharedContent: WorkSpreadsheetContent) => {
+    const projected = spreadsheetContentWithCollaborationViewState(
+      sharedContent,
+      viewStateRef.current,
+    );
+    contentRef.current = projected;
+    setContent(projected);
+    return projected;
+  }, []);
+
   useEffect(() => {
     const binding = createWorkOfficeSpreadsheetCollaborationBinding(session);
     bindingRef.current = binding;
-    const project = (sharedContent: WorkSpreadsheetContent) => {
-      const projected = spreadsheetContentWithCollaborationViewState(
-        sharedContent,
-        viewStateRef.current,
-      );
-      contentRef.current = projected;
-      setContent(projected);
-      return projected;
-    };
     const unsubscribeContent = binding.subscribe(({ content: next }) => {
       onChangeRef.current(project(next));
     });
@@ -94,11 +99,15 @@ export function useSpreadsheetCollaboration({
       if (bindingRef.current === binding) bindingRef.current = undefined;
       binding.destroy();
     };
-  }, [session]);
+  }, [project, session]);
 
   const commit = useCallback((next: WorkSpreadsheetContent) => {
-    updateSpreadsheetCollaborationViewState(viewStateRef.current, next);
     const previous = contentRef.current;
+    updateSpreadsheetCollaborationViewStateForContentChange(
+      viewStateRef.current,
+      previous,
+      next,
+    );
     const binding = bindingRef.current;
     if (binding?.replace(previous, next)) {
       contentRef.current = spreadsheetContentWithCollaborationViewState(
@@ -114,10 +123,42 @@ export function useSpreadsheetCollaboration({
     contentRef.current = projected;
     setContent(projected);
   }, []);
+  const commitDerived = useCallback(
+    (next: WorkSpreadsheetContent) => {
+      const previous = contentRef.current;
+      const binding = bindingRef.current;
+      if (
+        binding &&
+        replaceWorkOfficeSpreadsheetCollaboration(
+          session,
+          previous,
+          next,
+          derivedOrigin,
+        )
+      ) {
+        contentRef.current = spreadsheetContentWithCollaborationViewState(
+          binding.content(),
+          viewStateRef.current,
+        );
+        return;
+      }
+      project(binding?.content() ?? previous);
+    },
+    [derivedOrigin, project, session],
+  );
   const view = useMemo<SpreadsheetCollaborationViewController>(
     () => ({
       activateSheet: (sheetId) => {
+        const sharedContent =
+          bindingRef.current?.content() ?? contentRef.current;
+        const sheet = sharedContent.sheets.find(
+          (candidate) => candidate.id === sheetId && candidate.hide !== 1,
+        );
+        if (!sheet) return false;
+        if (viewStateRef.current.activeSheetId === sheetId) return true;
         viewStateRef.current.activeSheetId = sheetId;
+        project(sharedContent);
+        return true;
       },
       select: (sheetId, selection) => {
         viewStateRef.current.selections.set(
@@ -126,10 +167,15 @@ export function useSpreadsheetCollaboration({
         );
       },
       setZoom: (sheetId, zoomRatio) => {
+        const sharedContent =
+          bindingRef.current?.content() ?? contentRef.current;
+        if (!sharedContent.sheets.some((sheet) => sheet.id === sheetId)) return;
+        if (viewStateRef.current.zoomBySheet.get(sheetId) === zoomRatio) return;
         viewStateRef.current.zoomBySheet.set(sheetId, zoomRatio);
+        project(sharedContent);
       },
     }),
-    [],
+    [project],
   );
   const history = useMemo<SpreadsheetCollaborationHistory>(
     () => ({
@@ -145,6 +191,7 @@ export function useSpreadsheetCollaboration({
     content,
     history,
     onChange: commit,
+    onDerivedChange: commitDerived,
     readOnly: session.mode !== 'edit',
     view,
   };
@@ -172,21 +219,35 @@ function spreadsheetCollaborationViewState(
   };
 }
 
-function updateSpreadsheetCollaborationViewState(
+function updateSpreadsheetCollaborationViewStateForContentChange(
   view: SpreadsheetCollaborationViewState,
-  content: WorkSpreadsheetContent,
+  previous: WorkSpreadsheetContent,
+  next: WorkSpreadsheetContent,
 ): void {
-  pruneSpreadsheetCollaborationViewState(view, content);
-  const active = content.sheets.find((sheet) => sheet.status === 1);
+  pruneSpreadsheetCollaborationViewState(view, next);
+  if (!spreadsheetSheetVisibilityChanged(previous, next)) return;
+  const active = next.sheets.find(
+    (sheet) => sheet.status === 1 && sheet.hide !== 1,
+  );
   if (active?.id) view.activeSheetId = active.id;
-  for (const sheet of content.sheets) {
-    if (!sheet.id) continue;
-    const selection = sheet.luckysheet_select_save?.at(-1);
-    if (selection)
-      view.selections.set(sheet.id, finiteSpreadsheetSelection(selection));
-    if (sheet.zoomRatio !== undefined)
-      view.zoomBySheet.set(sheet.id, sheet.zoomRatio);
-  }
+}
+
+function spreadsheetSheetVisibilityChanged(
+  previous: WorkSpreadsheetContent,
+  next: WorkSpreadsheetContent,
+): boolean {
+  if (previous.sheets.length !== next.sheets.length) return true;
+  const previousById = new Map(
+    previous.sheets.flatMap((sheet) =>
+      sheet.id ? [[sheet.id, sheet.hide] as const] : [],
+    ),
+  );
+  return next.sheets.some(
+    (sheet) =>
+      !sheet.id ||
+      !previousById.has(sheet.id) ||
+      previousById.get(sheet.id) !== sheet.hide,
+  );
 }
 
 function spreadsheetContentWithCollaborationViewState(

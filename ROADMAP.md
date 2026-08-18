@@ -92,7 +92,7 @@ collaboration transport, and AI providers.
 
 | Capability | A3S Office status | Main gap or boundary | Priority |
 | --- | --- | --- | --- |
-| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, undo/redo | **Supported** | Continue large/sparse workbook performance and interoperability testing | P0 |
+| Cell editing, multiple sheets, selection, keyboard navigation, search, clipboard, format painter, undo/redo | **Supported**, including maximum-dimension XLSX sheets with sparse virtual editing | Continue large-workbook interoperability and formula-performance matrices | P0 |
 | Formula entry and dependency-aware recalculation | **Partial** | WPS/Excel function breadth, array/dynamic formulas, volatile/external semantics, and calculation parity are broader | P0 |
 | Calculation settings and cached results | **Supported** for explicit modes and bounded calculation metadata | Complex data tables and compatibility calculation paths need broader parity | P0 |
 | Cell formatting, number formats, alignment, wrapping, borders, merge/center | **Partial** | Advanced number formats, border cases, rich text, themes, and locale behavior can normalize | P0/P1 |
@@ -100,13 +100,13 @@ collaboration transport, and AI providers.
 | Native spreadsheet tables | **Gap/partial preservation** | Values survive, but table names, structured references, styles, totals, and table behavior normalize | P0/P1 |
 | Pivot tables | **Partial**: rows, columns, report filters, common aggregations, and native XML paths | Calculated fields/items, grouping, slicers, timelines, pivot charts, style controls, and broader cache semantics are incomplete | P1 |
 | Charts | **Partial**: common, combination, scatter, bubble, radar, axes, labels, trendlines, and error bars | 3D/specialized charts, full formatting, drawing interactions, and every Excel chart extension are incomplete | P1/P2 |
-| Conditional formatting | **Partial**: common comparisons, scales, data bars, icon sets, and editable rules | Formula rules, priority/stop-if-true edge cases, advanced visuals, and very large ranges need more coverage | P1 |
-| Data validation | **Partial**: common list, numeric, date, and text-length rules | Custom formulas, dependent lists, input/error UI, and very large ranges can normalize | P1 |
+| Conditional formatting | **Partial**: common comparisons, scales, data bars, icon sets, editable rules, and compact maximum-sheet ranges | Formula rules, priority/stop-if-true edge cases, and advanced visuals need more coverage | P1 |
+| Data validation | **Partial**: common list, numeric, date, and text-length rules plus compact maximum-sheet ranges | Custom formulas, dependent lists, and complete input/error UI remain incomplete | P1 |
 | Named ranges, print areas/titles, page setup, breaks, headers/footers | **Supported** for common workbook print workflows | Advanced print scaling, repeating content, and device-specific output need deeper parity | P1 |
 | Freeze panes, row/column structure, clear modes, sheet lifecycle | **Supported** for common WPS workflows | Grouping/outlining and advanced view state remain incomplete | P1 |
 | Comments | **Partial**: legacy comments are editable | Rich comment formatting, threaded conversations, mentions, and live collaboration are incomplete/host-owned | P1 |
 | Images and drawings | **Partial**: worksheet images round-trip under bounded geometry | Crop/rotation/flip can normalize; shapes, connectors, SmartArt, and unsupported drawing frames are gaps | P1/P2 |
-| Protection | **Partial**: workbook/worksheet protection semantics | Encryption, enterprise permissions, and every protection option are incomplete | P1/P2 |
+| Protection | **Partial**: workbook/worksheet protection plus compact locked and passwordless editable ranges | Encryption, enterprise permissions, and every protection option are incomplete | P1/P2 |
 | External data, connections, queries, macros, add-ins | **Gap** | No Power Query-like pipeline, data connections, VBA execution, or add-in runtime | P2; macro execution not planned |
 | Advanced analysis | **Gap** for solver, scenarios, goal seek, consolidation, and equivalent specialist tools | Requires explicit bounded models rather than opaque workbook mutation | P2 |
 | XLS/XLSX/ODS/CSV interoperability and PDF output | **Partial** | XLSX is authoritative; ODS/legacy conversion and exact print fidelity can normalize | P0/P1 |

@@ -3,6 +3,7 @@ import type {
   WorkSpreadsheetFormulaRange,
   WorkSpreadsheetSheet,
 } from './work-types';
+import { sparseArrayEntries } from './spreadsheet-sparse';
 
 export const DEFAULT_SPREADSHEET_CALCULATION_SETTINGS: WorkSpreadsheetCalculationSettings =
   {
@@ -159,9 +160,9 @@ export function spreadsheetFormulaRangeConflict(
       rangesOverlap(bounds, parseSpreadsheetFormulaRange(candidate.reference)),
   );
   if (overlaps.length) return '与其他公式范围重叠';
-  for (const [row, cells] of (sheet.data ?? []).entries()) {
+  for (const [row, cells] of sparseArrayEntries(sheet.data)) {
     if (row < bounds.startRow || row > bounds.endRow) continue;
-    for (const [column, cell] of cells.entries()) {
+    for (const [column, cell] of sparseArrayEntries(cells)) {
       if (column < bounds.startColumn || column > bounds.endColumn) continue;
       if (row === anchor.row && column === anchor.column) continue;
       if (cell?.f) return `${spreadsheetCellAddress(row, column)} 包含独立公式`;

@@ -3,6 +3,7 @@ import type {
   WorkSpreadsheetContent,
   WorkSpreadsheetSheet,
 } from '../work-types';
+import { sparseMatrixColumnCount } from '../spreadsheet-sparse';
 import { finiteSpreadsheetSelection } from './spreadsheet-editor-support';
 
 export interface SpreadsheetAutoFilterRange {
@@ -256,9 +257,7 @@ function spreadsheetUsedBounds(sheet: WorkSpreadsheetSheet): {
   lastRow: number;
 } {
   let lastRow = Math.max((sheet.data?.length ?? 1) - 1, 0);
-  let lastColumn = Math.max(
-    ...(sheet.data?.map((row) => Math.max((row?.length ?? 1) - 1, 0)) ?? [0]),
-  );
+  let lastColumn = Math.max(sparseMatrixColumnCount(sheet.data) - 1, 0);
   for (const cell of sheet.celldata ?? []) {
     lastRow = Math.max(lastRow, cell.r);
     lastColumn = Math.max(lastColumn, cell.c);

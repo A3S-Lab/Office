@@ -1,5 +1,6 @@
 import type { Cell } from '@fortune-sheet/core';
 import * as Y from 'yjs';
+import { sparseArrayEntries } from '../features/work/spreadsheet-sparse';
 import type { WorkSpreadsheetSheet } from '../features/work/work-types';
 import {
   OFFICE_KERNEL_SPREADSHEET_MAX_COLUMNS,
@@ -184,8 +185,8 @@ function spreadsheetCellEntries(
   if (!sheet) return [];
   const entries: SpreadsheetCellEntry[] = [];
   if (sheet.data !== undefined) {
-    for (const [row, values] of sheet.data.entries()) {
-      for (const [column, cell] of values.entries()) {
+    for (const [row, values] of sparseArrayEntries(sheet.data)) {
+      for (const [column, cell] of sparseArrayEntries(values)) {
         if (cell !== null) {
           entries.push({
             cell,

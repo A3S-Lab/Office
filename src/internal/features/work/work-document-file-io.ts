@@ -9,6 +9,7 @@ import {
   rememberWorkSourceBlob,
   workSourceFingerprint,
 } from './work-repository';
+import type { WorkFileImportContext } from './work-file-import';
 import { createWorkArtifact } from './work-templates';
 import type { WorkArtifact, WorkDocumentContent } from './work-types';
 
@@ -18,14 +19,24 @@ const DOCX_CONTENT_TYPE =
 export async function importWorkDocumentFile(
   file: File,
   extension: string,
+  context?: WorkFileImportContext,
 ): Promise<WorkArtifact> {
   let html: string;
   if (extension === 'docx') {
     const mammoth = await import('mammoth');
-    const arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = context?.bytes ?? (await file.arrayBuffer());
+    context?.controller.report('parsing', 0.1);
     const { applyDocxSectionsToHtml, prepareDocxImport, readDocxLayout } =
       await import('./work-docx-import');
-    const prepared = await prepareDocxImport(arrayBuffer).catch(() => null);
+    const { OoxmlPackage } = await import('./work-ooxml-package');
+    const sourcePackage = await OoxmlPackage.load(arrayBuffer).catch(
+      () => null,
+    );
+    const prepared = await prepareDocxImport(
+      arrayBuffer,
+      sourcePackage ?? undefined,
+    ).catch(() => null);
+    context?.controller.report('parsing', 0.45);
     const conversionBuffer = prepared?.conversionBuffer ?? arrayBuffer;
     const input = {
       arrayBuffer: conversionBuffer,
@@ -36,6 +47,7 @@ export async function importWorkDocumentFile(
         "br[type='page'] => hr.work-page-break[data-page-break='true']:fresh",
       ],
     });
+    context?.controller.report('parsing', 0.8);
     html = prepared
       ? applyDocxSectionsToHtml(
           result.value,
@@ -91,10 +103,13 @@ export async function importWorkDocumentFile(
         ? { bibliography: prepared.bibliography }
         : {}),
     });
+    context?.controller.report('analyzing', 0);
     artifact.compatibility = await analyzeDocxCompatibility(
       file,
       result.messages,
+      sourcePackage,
     );
+    context?.controller.report('analyzing', 1);
     artifact.source = {
       name: file.name,
       contentType: file.type || DOCX_CONTENT_TYPE,
@@ -106,7 +121,9 @@ export async function importWorkDocumentFile(
     return artifact;
   }
 
-  const source = await file.text();
+  const source = context
+    ? new TextDecoder().decode(context.bytes)
+    : await file.text();
   html =
     extension === 'html' || extension === 'htm' ? source : textToHtml(source);
   const artifact = createWorkArtifact('blank-document');
@@ -116,6 +133,7 @@ export async function importWorkDocumentFile(
     html,
     pageSize: 'a4',
   });
+  context?.controller.report('parsing', 1);
   return artifact;
 }
 
