@@ -1,4 +1,11 @@
 import type { Cell, Selection, Sheet } from '@fortune-sheet/core';
+import {
+  parseSpreadsheetCellRange,
+  type SpreadsheetCellRange,
+  spreadsheetCellRangeContains,
+  spreadsheetCellRangesIntersect,
+  subtractSpreadsheetCellRange,
+} from './spreadsheet-cell-range';
 
 export type SpreadsheetCellClearMode =
   | 'all'
@@ -7,10 +14,7 @@ export type SpreadsheetCellClearMode =
   | 'comments'
   | 'hyperlinks';
 
-type SpreadsheetCellClearRange = {
-  row: [number, number];
-  column: [number, number];
-};
+type SpreadsheetCellClearRange = SpreadsheetCellRange;
 
 type ClearableCell = Cell & { hi?: number };
 type UnknownRecord = Record<string, unknown>;
@@ -199,7 +203,7 @@ function clearSpreadsheetBorderFormats(
       const column = finiteIndex(value?.col_index);
       return row !== null &&
         column !== null &&
-        clearRangeContains(range, row, column)
+        spreadsheetCellRangeContains(range, row, column)
         ? []
         : [format];
     }
@@ -207,12 +211,12 @@ function clearSpreadsheetBorderFormats(
       return [format];
     }
     const remaining = format.range.flatMap((candidate) => {
-      const parsed = parseClearRange(candidate);
+      const parsed = parseSpreadsheetCellRange(candidate);
       if (!parsed) return [candidate];
       if (format.borderType === 'border-slash') {
-        return clearRangesIntersect(parsed, range) ? [] : [parsed];
+        return spreadsheetCellRangesIntersect(parsed, range) ? [] : [parsed];
       }
-      return subtractSpreadsheetRange(parsed, range);
+      return subtractSpreadsheetCellRange(parsed, range);
     });
     return remaining.length ? [{ ...format, range: remaining }] : [];
   });
@@ -226,8 +230,8 @@ function clearSpreadsheetConditionalFormats(
   return formats.flatMap((format) => {
     if (!isRecord(format) || !Array.isArray(format.cellrange)) return [format];
     const remaining = format.cellrange.flatMap((candidate) => {
-      const parsed = parseClearRange(candidate);
-      return parsed ? subtractSpreadsheetRange(parsed, range) : [candidate];
+      const parsed = parseSpreadsheetCellRange(candidate);
+      return parsed ? subtractSpreadsheetCellRange(parsed, range) : [candidate];
     });
     return remaining.length ? [{ ...format, cellrange: remaining }] : [];
   });
@@ -240,9 +244,9 @@ function clearSpreadsheetAlternateFormats(
   if (!Array.isArray(formats)) return [];
   return formats.flatMap((format) => {
     if (!isRecord(format)) return [format];
-    const source = parseClearRange(format.cellrange);
+    const source = parseSpreadsheetCellRange(format.cellrange);
     if (!source) return [format];
-    return subtractSpreadsheetRange(source, range).map((cellrange) => ({
+    return subtractSpreadsheetCellRange(source, range).map((cellrange) => ({
       ...format,
       cellrange,
     }));
@@ -258,7 +262,8 @@ function clearSpreadsheetSheetHyperlinks(
     Object.entries(sheet.hyperlink).filter(([key]) => {
       const position = spreadsheetHyperlinkPosition(key);
       return (
-        !position || !clearRangeContains(range, position.row, position.column)
+        !position ||
+        !spreadsheetCellRangeContains(range, position.row, position.column)
       );
     }),
   );
@@ -273,56 +278,6 @@ function spreadsheetHyperlinkPosition(
   const match = /^(\d+)_(\d+)$/.exec(value);
   if (!match) return null;
   return { row: Number(match[1]), column: Number(match[2]) };
-}
-
-function subtractSpreadsheetRange(
-  source: SpreadsheetCellClearRange,
-  removed: SpreadsheetCellClearRange,
-): SpreadsheetCellClearRange[] {
-  const top = Math.max(source.row[0], removed.row[0]);
-  const bottom = Math.min(source.row[1], removed.row[1]);
-  const left = Math.max(source.column[0], removed.column[0]);
-  const right = Math.min(source.column[1], removed.column[1]);
-  if (top > bottom || left > right) return [source];
-
-  const remaining: SpreadsheetCellClearRange[] = [];
-  if (source.row[0] < top) {
-    remaining.push({
-      row: [source.row[0], top - 1],
-      column: [...source.column],
-    });
-  }
-  if (bottom < source.row[1]) {
-    remaining.push({
-      row: [bottom + 1, source.row[1]],
-      column: [...source.column],
-    });
-  }
-  if (source.column[0] < left) {
-    remaining.push({
-      row: [top, bottom],
-      column: [source.column[0], left - 1],
-    });
-  }
-  if (right < source.column[1]) {
-    remaining.push({
-      row: [top, bottom],
-      column: [right + 1, source.column[1]],
-    });
-  }
-  return remaining;
-}
-
-function clearRangesIntersect(
-  left: SpreadsheetCellClearRange,
-  right: SpreadsheetCellClearRange,
-): boolean {
-  return !(
-    left.row[1] < right.row[0] ||
-    right.row[1] < left.row[0] ||
-    left.column[1] < right.column[0] ||
-    right.column[1] < left.column[0]
-  );
 }
 
 function clearRangeContains(
@@ -347,24 +302,9 @@ function normalizeClearRange(
   };
 }
 
-function parseClearRange(value: unknown): SpreadsheetCellClearRange | null {
-  if (!isRecord(value)) return null;
-  const row = parseClearAxis(value.row);
-  const column = parseClearAxis(value.column);
-  return row && column ? { row, column } : null;
-}
-
 function normalizeClearAxis(value: number[]): [number, number] {
   const first = finiteIndex(value[0]) ?? 0;
   const second = finiteIndex(value[1]) ?? first;
-  return [Math.min(first, second), Math.max(first, second)];
-}
-
-function parseClearAxis(value: unknown): [number, number] | null {
-  if (!Array.isArray(value)) return null;
-  const first = finiteIndex(value[0]);
-  const second = finiteIndex(value[1]);
-  if (first === null || second === null) return null;
   return [Math.min(first, second), Math.max(first, second)];
 }
 

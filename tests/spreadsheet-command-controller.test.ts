@@ -69,6 +69,39 @@ describe('spreadsheet command controller', () => {
     ]);
   });
 
+  test('commits cell borders through one immutable controlled update', () => {
+    const fixture = commandFixture();
+    fixture.workbook.selection = [{ row: [4, 2], column: [3, 1] }];
+    const editor = spreadsheetEditor(fixture.context);
+    const format = {
+      target: 'outside',
+      color: '#2463eb',
+      style: 'medium',
+    } as const;
+
+    expect(editor.extensionNames).toContain('spreadsheetCellBorders');
+    expect(editor.can().setSelectedCellBorders(format)).toBe(true);
+    expect(editor.commands.setSelectedCellBorders(format)).toBe(true);
+    expect(fixture.changes).toHaveLength(1);
+    expect(fixture.context.content.sheets[0]?.config).toBeUndefined();
+    expect(fixture.changes[0]?.sheets[0]?.config?.borderInfo).toEqual([
+      {
+        rangeType: 'range',
+        borderType: 'border-outside',
+        color: '#2463eb',
+        style: '8',
+        range: [{ row: [2, 4], column: [1, 3] }],
+      },
+    ]);
+    expect(fixture.workbook.clearBatches).toEqual([]);
+    expect(fixture.workbook.formats).toEqual([]);
+
+    editor.updateContext({ ...fixture.context, editable: false });
+    expect(editor.can().setSelectedCellBorders(format)).toBe(false);
+    expect(editor.commands.setSelectedCellBorders(format)).toBe(false);
+    expect(fixture.changes).toHaveLength(1);
+  });
+
   test('runs WPS merge commands as one workbook batch', () => {
     const fixture = commandFixture();
     fixture.workbook.selection = [{ row: [0, 1], column: [0, 2] }];

@@ -214,6 +214,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     setCellFormat: record('setCellFormat'),
     setFreezePanes: record('setFreezePanes'),
     setGridLines: record('setGridLines'),
+    setSelectedCellBorders: record('setSelectedCellBorders'),
     setZoom: record('setZoom'),
     toggleAutoFilter: record('toggleAutoFilter'),
     undo: record('undo', false),
@@ -226,6 +227,13 @@ test('returns grid focus after successful ribbon commands only', () => {
   expect(ribbon.setCellFormat('bl', 1)).toBe(true);
   expect(ribbon.clearSelectedCells('formats')).toBe(true);
   expect(ribbon.setGridLines(false)).toBe(true);
+  expect(
+    ribbon.setSelectedCellBorders({
+      target: 'all',
+      color: '#000000',
+      style: 'thin',
+    }),
+  ).toBe(true);
   expect(ribbon.setFreezePanes('topRow')).toBe(true);
   expect(ribbon.insertSelectedStructure('row', 'before')).toBe(true);
   expect(ribbon.deleteSelectedStructure('column')).toBe(true);
@@ -244,6 +252,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setCellFormat:bl,1',
     'clearSelectedCells:formats',
     'setGridLines:false',
+    'setSelectedCellBorders:[object Object]',
     'setFreezePanes:topRow',
     'insertSelectedStructure:row,before',
     'deleteSelectedStructure:column',
@@ -259,6 +268,7 @@ test('returns grid focus after successful ribbon commands only', () => {
     'setZoom:125',
   ]);
   expect(focused).toEqual([
+    'grid',
     'grid',
     'grid',
     'grid',

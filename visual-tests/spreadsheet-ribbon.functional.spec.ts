@@ -149,6 +149,93 @@ test('Spreadsheet renders WPS strikethrough from the ribbon and Ctrl+5', async (
   expect(browserErrors).toEqual([]);
 });
 
+test('Spreadsheet renders and undoes native WPS cell borders', async ({
+  page,
+}, testInfo) => {
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  await openSpreadsheetFixture(page);
+
+  const grid = page.locator('.fortune-sheet-overlay');
+  const nameBox = page.locator('.fortune-name-box');
+  const ribbon = page.locator('.work-spreadsheet-ribbon');
+  await grid.focus();
+  await page.keyboard.press('Control+Home');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowRight');
+  await page.keyboard.press('Shift+ArrowDown');
+  await expect(nameBox).toHaveText('A1:C2');
+
+  const borderGeometry = await spreadsheetSelectionCanvasGeometry(page);
+  const moreBorders = ribbon.getByRole('button', { name: '更多框线' });
+  await expect(moreBorders).toHaveAttribute('aria-haspopup', 'dialog');
+  await moreBorders.click();
+  const dialog = page.getByRole('dialog', { name: '框线设置' });
+  await expect(dialog).toBeVisible();
+  const borderMenu = dialog.getByRole('menu', { name: '框线位置' });
+  await expect(
+    borderMenu.getByRole('menuitemradio', { name: '上框线' }),
+  ).toBeFocused();
+
+  const dialogBounds = await dialog.boundingBox();
+  const viewport = page.viewportSize();
+  expect(dialogBounds).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(
+    (dialogBounds?.x ?? 0) + (dialogBounds?.width ?? 0),
+  ).toBeLessThanOrEqual(viewport?.width ?? 0);
+  expect(
+    (dialogBounds?.y ?? 0) + (dialogBounds?.height ?? 0),
+  ).toBeLessThanOrEqual(viewport?.height ?? 0);
+
+  await dialog
+    .getByRole('combobox', { name: '框线样式' })
+    .selectOption('thick');
+  const borderColor = dialog.getByLabel('框线颜色');
+  await borderColor.fill('#b42318');
+  await expect(borderColor).toHaveValue('#b42318');
+  await expect(borderColor).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    dialog.getByRole('combobox', { name: '框线样式' }),
+  ).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    borderMenu.getByRole('menuitemradio', { name: '上框线' }),
+  ).toBeFocused();
+  for (let index = 0; index < 6; index += 1) {
+    await page.keyboard.press('ArrowDown');
+  }
+  await expect(
+    borderMenu.getByRole('menuitemradio', { name: '外侧框线' }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(dialog).toHaveCount(0);
+  await expect(grid).toBeFocused();
+
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  await expect(nameBox).toHaveText('C3');
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#b42318'))
+    .toBeGreaterThan(8);
+  await page.screenshot({
+    path: testInfo.outputPath('spreadsheet-cell-borders.png'),
+    animations: 'disabled',
+  });
+
+  const undo = ribbon.getByRole('button', { name: '撤销' });
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(grid).toBeFocused();
+  await expect
+    .poll(() => spreadsheetCanvasColorCount(page, borderGeometry, '#b42318'))
+    .toBe(0);
+  expect(browserErrors).toEqual([]);
+});
+
 test('Spreadsheet inserts and deletes rows from the WPS Home cells group', async ({
   page,
 }, testInfo) => {
@@ -628,4 +715,87 @@ async function openSpreadsheetFixture(page: Page): Promise<void> {
     })
     .click();
   await page.locator('.work-spreadsheet-canvas > .fortune-container').waitFor();
+}
+
+interface SpreadsheetCanvasGeometry {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
+async function spreadsheetSelectionCanvasGeometry(
+  page: Page,
+): Promise<SpreadsheetCanvasGeometry> {
+  return page
+    .locator('.luckysheet-cell-selected')
+    .last()
+    .evaluate((selection) => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '.fortune-sheet-canvas',
+      );
+      if (!canvas) throw new Error('Spreadsheet canvas is unavailable.');
+      const selectionBounds = selection.getBoundingClientRect();
+      const canvasBounds = canvas.getBoundingClientRect();
+      return {
+        bottom: selectionBounds.bottom - canvasBounds.top,
+        left: selectionBounds.left - canvasBounds.left,
+        right: selectionBounds.right - canvasBounds.left,
+        top: selectionBounds.top - canvasBounds.top,
+      };
+    });
+}
+
+async function spreadsheetCanvasColorCount(
+  page: Page,
+  geometry: SpreadsheetCanvasGeometry,
+  color: string,
+): Promise<number> {
+  return page.evaluate(
+    ({ bounds, expected }) => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '.fortune-sheet-canvas',
+      );
+      if (!canvas) return 0;
+      const context = canvas.getContext('2d');
+      const canvasBounds = canvas.getBoundingClientRect();
+      if (!context || !canvasBounds.width || !canvasBounds.height) return 0;
+      const scaleX = canvas.width / canvasBounds.width;
+      const scaleY = canvas.height / canvasBounds.height;
+      const red = Number.parseInt(expected.slice(1, 3), 16);
+      const green = Number.parseInt(expected.slice(3, 5), 16);
+      const blue = Number.parseInt(expected.slice(5, 7), 16);
+      const points: Array<[number, number]> = [];
+      for (let x = bounds.left; x <= bounds.right; x += 2) {
+        points.push([x, bounds.top], [x, bounds.bottom]);
+      }
+      for (let y = bounds.top; y <= bounds.bottom; y += 2) {
+        points.push([bounds.left, y], [bounds.right, y]);
+      }
+      let matches = 0;
+      for (const [x, y] of points) {
+        for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
+          for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
+            const pixel = context.getImageData(
+              Math.max(0, Math.round((x + offsetX) * scaleX)),
+              Math.max(0, Math.round((y + offsetY) * scaleY)),
+              1,
+              1,
+            ).data;
+            if (
+              Math.abs(pixel[0] - red) <= 8 &&
+              Math.abs(pixel[1] - green) <= 8 &&
+              Math.abs(pixel[2] - blue) <= 8 &&
+              pixel[3] > 200
+            ) {
+              matches += 1;
+              break;
+            }
+          }
+        }
+      }
+      return matches;
+    },
+    { bounds: geometry, expected: color },
+  );
 }

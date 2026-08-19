@@ -9,6 +9,7 @@ import {
   Underline,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SpreadsheetBorderRibbon } from './spreadsheet-border-ribbon';
 import { OfficeColorPicker, OfficeSelect } from './office-controls';
 import { spreadsheetCommandCatalog } from './spreadsheet-command-catalog';
 import type {
@@ -132,6 +133,7 @@ export function SpreadsheetFontRibbonGroup({
         disabled={!can.setCellFormat('bg', fillColor)}
         onValueChange={(value) => commands.setCellFormat('bg', value)}
       />
+      <SpreadsheetBorderRibbon can={can} commands={commands} />
     </WorkOfficeRibbonGroup>
   );
 }

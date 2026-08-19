@@ -777,6 +777,18 @@ surfaces, and continue through Clear Formats and Format Painter without a
 parallel style model. Focused catalog, controller, component, desktop browser,
 and schema-validated local A3S Test coverage protect the workflow.
 
+The eleventh slice adds cell borders to Home and Font through a WPS-familiar
+split control. Top, bottom, left, right, no, all, outside, inside, horizontal,
+vertical, and diagonal targets share ten native line styles and an exact color
+input. The A3S-owned immutable command normalizes the live range, compacts
+overlapping native records, preserves malformed vendor state, emits one
+controlled update, and restores grid focus without calling Fortune's mutable
+border command. Diagonal formatting is capped at 4,096 cells because the
+native renderer requires one record per cell. Focused model, controller,
+component, focus, desktop and compact Canvas rendering, undo, and
+schema-validated local A3S Test coverage protect the complete workflow. GitHub
+Actions keeps A3S Test excluded and runs the Playwright rendering contract.
+
 - Continue replacing remaining vendor-specific dense paths with the A3S-owned
   sparse traversal contract and virtualized viewport.
 - Expand Worker/WASM formula parity, dependency tracking, number formats,

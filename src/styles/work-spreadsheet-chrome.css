@@ -721,6 +721,268 @@
   color: currentcolor;
 }
 
+.work-spreadsheet-border-split-root {
+  display: inline-flex;
+  height: 29px;
+  flex: 0 0 auto;
+  align-items: stretch;
+  border-radius: 6px;
+}
+
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-border-primary,
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-border-disclosure {
+  height: 29px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-border-primary {
+  width: 29px;
+  min-width: 29px;
+  border-radius: 6px 0 0 6px;
+}
+
+.work-office-ribbon .work-office-toolbar .work-spreadsheet-border-disclosure {
+  width: 16px;
+  min-width: 16px;
+  border-left: 1px solid color-mix(in srgb, var(--a3s-line) 72%, transparent);
+  border-radius: 0 6px 6px 0;
+}
+
+.work-spreadsheet-border-disclosure svg {
+  transition: transform 120ms ease;
+}
+
+.work-spreadsheet-border-disclosure[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.work-spreadsheet-border-primary:focus-visible,
+.work-spreadsheet-border-disclosure:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--work-spreadsheet-accent);
+}
+
+.work-spreadsheet-border-panel {
+  --work-office-menu-accent: var(--work-office-control-accent, #159469);
+
+  width: min(292px, calc(100vw - 32px));
+  padding: 8px;
+}
+
+.work-spreadsheet-border-section-label {
+  padding: 2px 6px 7px;
+  color: var(--a3s-faint);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.work-spreadsheet-border-targets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.work-spreadsheet-border-targets > button {
+  display: grid;
+  min-width: 0;
+  min-height: 32px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a3s-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-spreadsheet-border-targets > button:hover:not(:disabled),
+.work-spreadsheet-border-targets > button:focus-visible,
+.work-spreadsheet-border-targets > button[aria-checked="true"] {
+  outline: 0;
+  background: color-mix(
+    in srgb,
+    var(--work-office-menu-accent) 10%,
+    var(--a3s-panel)
+  );
+  color: var(--a3s-ink);
+}
+
+.work-spreadsheet-border-targets > button:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--work-office-menu-accent);
+}
+
+.work-spreadsheet-border-targets > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.work-spreadsheet-border-targets > button > span:last-child {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-spreadsheet-border-glyph {
+  position: relative;
+  display: block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 1px solid color-mix(in srgb, currentcolor 34%, transparent);
+  color: var(--work-office-menu-accent, var(--work-spreadsheet-accent));
+}
+
+.work-spreadsheet-border-glyph::before,
+.work-spreadsheet-border-glyph::after {
+  position: absolute;
+  content: "";
+}
+
+.work-spreadsheet-border-glyph[data-border-target="top"] {
+  border-top: 2px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="bottom"] {
+  border-bottom: 2px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="left"] {
+  border-left: 2px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="right"] {
+  border-right: 2px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="outside"],
+.work-spreadsheet-border-glyph[data-border-target="all"] {
+  border: 2px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="inside"]::before,
+.work-spreadsheet-border-glyph[data-border-target="all"]::before,
+.work-spreadsheet-border-glyph[data-border-target="vertical"]::before {
+  top: 1px;
+  bottom: 1px;
+  left: 7px;
+  border-left: 1px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="inside"]::after,
+.work-spreadsheet-border-glyph[data-border-target="all"]::after,
+.work-spreadsheet-border-glyph[data-border-target="horizontal"]::after {
+  top: 7px;
+  right: 1px;
+  left: 1px;
+  border-top: 1px solid currentcolor;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="none"] {
+  border-style: dashed;
+}
+
+.work-spreadsheet-border-glyph[data-border-target="none"]::before,
+.work-spreadsheet-border-glyph[data-border-target="diagonal"]::before {
+  top: 7px;
+  right: -1px;
+  left: -1px;
+  border-top: 1px solid currentcolor;
+  transform: rotate(-45deg);
+}
+
+.work-spreadsheet-border-glyph[data-border-target="none"]::after {
+  top: 7px;
+  right: -1px;
+  left: -1px;
+  border-top: 1px solid currentcolor;
+  transform: rotate(45deg);
+}
+
+.work-spreadsheet-border-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  padding: 9px 6px 2px;
+  border-top: 1px solid var(--a3s-line);
+}
+
+.work-spreadsheet-border-settings > label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+  color: var(--a3s-faint);
+  font-size: 10px;
+}
+
+.work-spreadsheet-border-settings select,
+.work-spreadsheet-border-color-control {
+  width: 100%;
+  height: 30px;
+  min-width: 0;
+  border: 1px solid var(--a3s-line);
+  border-radius: 6px;
+  background: var(--a3s-panel);
+  color: var(--a3s-ink);
+  font: inherit;
+}
+
+.work-spreadsheet-border-settings select {
+  padding-inline: 7px;
+}
+
+.work-spreadsheet-border-color-control {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  padding: 0 6px;
+}
+
+.work-spreadsheet-border-color-control input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.work-spreadsheet-border-color-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--a3s-line-strong);
+  border-radius: 4px;
+}
+
+.work-spreadsheet-border-color-control output {
+  overflow: hidden;
+  color: var(--a3s-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) {
+  .work-spreadsheet-border-panel {
+    width: min(276px, calc(100vw - 24px));
+  }
+
+  .work-spreadsheet-border-targets > button {
+    min-height: 44px;
+  }
+
+  .work-spreadsheet-border-settings {
+    grid-template-columns: 1fr;
+  }
+}
+
 .work-spreadsheet-sheet-list {
   min-width: 220px;
 }

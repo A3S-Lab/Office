@@ -129,6 +129,61 @@ export const spreadsheetCommandCatalog = {
       editor: ['Mod-5'],
     },
   },
+  borderTop: {
+    id: 'font.borderTop',
+    label: '上框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderBottom: {
+    id: 'font.borderBottom',
+    label: '下框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderLeft: {
+    id: 'font.borderLeft',
+    label: '左框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderRight: {
+    id: 'font.borderRight',
+    label: '右框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderNone: {
+    id: 'font.borderNone',
+    label: '无框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderAll: {
+    id: 'font.borderAll',
+    label: '所有框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderOutside: {
+    id: 'font.borderOutside',
+    label: '外侧框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderInside: {
+    id: 'font.borderInside',
+    label: '内部框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderHorizontal: {
+    id: 'font.borderHorizontal',
+    label: '内部横框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderVertical: {
+    id: 'font.borderVertical',
+    label: '内部竖框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
+  borderDiagonal: {
+    id: 'font.borderDiagonal',
+    label: '斜线框线',
+    location: { area: 'ribbon', tab: 'home', group: 'font' },
+  },
   mergeAndCenter: {
     id: 'alignment.mergeAndCenter',
     label: '合并居中',

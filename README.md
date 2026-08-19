@@ -528,7 +528,11 @@ interaction model.
   commands share the permission-resilient local fallback with their WPS
   shortcuts, a WPS-style Format Painter with single-use and double-click locked
   sessions, cross-sheet range-pattern tiling, Escape cancellation, and native
-  style-only writes, Conditional Formatting under Home and Styles, executable
+  style-only writes, a Home and Font cell-border split control with side, all,
+  outside, inside, horizontal, vertical, clear, and diagonal targets, ten
+  native line styles, exact color selection, compact overlapping range writes,
+  single-update undo, and grid-focus restoration, Conditional Formatting under
+  Home and Styles, executable
   sorting plus WPS-style AutoFilter under Data, finite current-region discovery,
   `Cmd/Ctrl+Shift+L` toggling, an `Alt+ArrowDown` keyboard filter menu,
   a Home and Cells Rows and Columns menu for inserting above, below, left, or

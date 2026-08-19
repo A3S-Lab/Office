@@ -104,6 +104,23 @@ The public workbook extension context is not yet stable. Use `fileActions` for
 host workflows and `onAgentRequest` for structured AI actions. Do not import
 command runtime modules from internal package paths.
 
+## Cell borders
+
+Home and Font exposes a split border control for top, bottom, left, right, no,
+all, outside, inside, horizontal, vertical, and diagonal borders. The dialog
+keeps the chosen target, exact color, and one of ten native line styles for the
+next primary-button command. Successful commands close the dialog, return
+focus to the workbook grid, emit one controlled `onChange`, and create one
+undoable workbook operation.
+
+Non-diagonal borders remain compact native range records. Reapplying a border
+subtracts the edited rectangle from overlapping records before adding the new
+record, so repeated formatting does not accumulate stale duplicate ranges.
+Unknown or malformed vendor records are preserved. Diagonal borders require a
+native record per cell and therefore accept at most 4,096 selected cells per
+command. Clear Formats and Clear All remove the selected border ranges without
+changing merge geometry.
+
 ## Collaboration and native cell mutations
 
 Pass an initialized Spreadsheet `OfficeCollaborationSession` through

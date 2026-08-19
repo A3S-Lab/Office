@@ -56,6 +56,25 @@ test('keeps the WPS spreadsheet information architecture stable', () => {
     editor: ['Mod-5'],
     label: 'Cmd/Ctrl+5',
   });
+  for (const command of [
+    spreadsheetCommandCatalog.borderTop,
+    spreadsheetCommandCatalog.borderBottom,
+    spreadsheetCommandCatalog.borderLeft,
+    spreadsheetCommandCatalog.borderRight,
+    spreadsheetCommandCatalog.borderNone,
+    spreadsheetCommandCatalog.borderAll,
+    spreadsheetCommandCatalog.borderOutside,
+    spreadsheetCommandCatalog.borderInside,
+    spreadsheetCommandCatalog.borderHorizontal,
+    spreadsheetCommandCatalog.borderVertical,
+    spreadsheetCommandCatalog.borderDiagonal,
+  ]) {
+    expect(command.location).toEqual({
+      area: 'ribbon',
+      group: 'font',
+      tab: 'home',
+    });
+  }
   expect(spreadsheetCommandCatalog.conditionalFormatting.location).toEqual({
     area: 'ribbon',
     group: 'styles',

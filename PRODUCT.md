@@ -83,6 +83,13 @@ placing Strikethrough in Home and Font. The ribbon button and `Cmd/Ctrl+5`
 share the existing typed cell-format command, preserve grid focus, produce one
 undoable controlled update, and expose the active native `cl` style without a
 second formatting model.
+The eleventh milestone adds a WPS-familiar cell-border split control to Home
+and Font. It supports top, bottom, left, right, no, all, outside, inside,
+horizontal, vertical, and diagonal borders with ten native line styles and an
+exact color input. One immutable A3S-owned command compacts overlapping native
+range records, preserves malformed vendor records, emits one controlled update,
+and returns focus to the grid. Diagonal writes stay bounded to 4,096 cells and
+undo through the shared workbook history.
 
 ## Product Rules
 
@@ -101,7 +108,8 @@ second formatting model.
 ## Release Evidence
 
 Every aligned slice requires focused command/controller tests, component tests,
-TypeScript and formatting checks, a production build, desktop and compact Web
-browser coverage, and a deterministic A3S Test ACL. A browser-driver outage may
-block local ACL execution, but the manifest must still validate and equivalent
-browser coverage must pass before the change is submitted.
+TypeScript and formatting checks, a production build, and desktop and compact
+Web browser coverage. A deterministic A3S Test ACL is a local-only release gate;
+GitHub Actions neither installs nor runs A3S Test. A local browser-driver outage
+may block ACL execution, but the manifest must still validate and equivalent
+Playwright coverage must pass before the change is submitted.

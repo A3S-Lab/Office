@@ -14,6 +14,8 @@ import {
   clearSpreadsheetSheetSelection,
   type SpreadsheetCellClearMode,
 } from './spreadsheet-cell-clear';
+import type { SpreadsheetCellBorderFormat } from './spreadsheet-cell-border';
+import { createSpreadsheetCellBorderExtension } from './spreadsheet-cell-border-command';
 import {
   canApplySpreadsheetCellMerge,
   type SpreadsheetCellMergeCommand,
@@ -203,6 +205,7 @@ export interface SpreadsheetEditorCommands {
   renameSheet: (sheetId: string, name: string) => boolean;
   redo: () => boolean;
   setCellFormat: (attribute: keyof Cell, value: unknown) => boolean;
+  setSelectedCellBorders: (format: SpreadsheetCellBorderFormat) => boolean;
   setFreezePanes: (preset: SpreadsheetFreezePanePreset) => boolean;
   setGridLines: (visible: boolean) => boolean;
   selectCellRange: (scope: SpreadsheetSelectionScope) => boolean;
@@ -270,6 +273,7 @@ export function createSpreadsheetEditorExtensions(): readonly OfficeEditorExtens
         },
       }),
     }),
+    createSpreadsheetCellBorderExtension(),
     createOfficeEditorExtension<
       SpreadsheetCommandContext,
       SpreadsheetEditorCommands

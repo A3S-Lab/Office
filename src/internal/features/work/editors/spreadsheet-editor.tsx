@@ -1510,6 +1510,9 @@ export function spreadsheetCommandsWithGridFocus(
     setCellFormat: afterSuccessfulCommand(commands.setCellFormat),
     setFreezePanes: afterSuccessfulCommand(commands.setFreezePanes),
     setGridLines: afterSuccessfulCommand(commands.setGridLines),
+    setSelectedCellBorders: afterSuccessfulCommand(
+      commands.setSelectedCellBorders,
+    ),
     toggleAutoFilter: afterSuccessfulCommand(commands.toggleAutoFilter),
     undo: afterSuccessfulCommand(commands.undo),
   };
