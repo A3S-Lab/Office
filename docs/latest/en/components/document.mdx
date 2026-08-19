@@ -15,6 +15,93 @@ top-level blocks in bounded 32 ms slices, yields between blocks, and aborts a
 stale pass when the controlled document changes. Only a complete pass updates
 the reusable pagination snapshot; Worker/WASM layout remains authoritative.
 
+## Large-document performance
+
+A3S Office keeps the canonical TipTap document and model positions intact while
+windowing the live ProseMirror tree, physical page sheets, and pagination
+widgets for eligible structurally plain DOCX imports. It does not replace the
+document with a presentation-only virtual list. Search, selection, editing,
+undo, export, and `Ctrl+Home` / `Ctrl+End` therefore continue to address the
+complete model even when most document DOM is not mounted.
+
+The reference measurements below were captured on 2026-08-19 on an Apple M2
+Pro with 16 GB of memory, Playwright 1.61.1, headless Chrome 149, and a
+1,440 × 1,000 viewport. Cold-open and scroll values are the median and complete
+range of three fresh browser processes. Controlled-edit values use five fresh
+processes. These figures describe the measured reference environment; they are
+not a cross-device service-level guarantee.
+
+### Cold open and pagination
+
+| Fixture | Editor visible | Pagination ready | Longest task before visible |
+| --- | ---: | ---: | ---: |
+| 100,000 text paragraphs, 4.50 million characters | 0.397 s (0.396–0.480) | 1.460 s (1.381–1.525), 3,125 pages | 131 ms (128–140) |
+| 100,000 table rows × 3 columns | 0.813 s (0.810–0.814) | 1.747 s (1.739–1.749), 2,381 pages | 96 ms (88–144) |
+
+`Editor visible` is the first frame containing editable document content.
+`Pagination ready` means the complete physical-page map is available; it does
+not mean every page sheet has been mounted. A Long Task is a browser main-thread
+task of at least 50 ms.
+
+### Scroll, retained state, and mounted work
+
+| Fixture | Continuous scroll | p95 frame interval | Scroll Long Tasks | Retained browser state |
+| --- | ---: | ---: | ---: | ---: |
+| 100,000 text paragraphs | 120.0 FPS in every run | 10.7 ms (10.2–10.8) | 0 in every run | 70.4 MiB; 2,867 median DOM nodes |
+| 100,000 table rows | 120.6 FPS (120.5–120.9) | 10.1 ms (9.9–10.4) | 0 in every run | 145.8 MiB; 3,106 DOM nodes |
+
+The scroll profile advances through the complete scroll range over 120
+`requestAnimationFrame` samples. FPS reflects the 120 Hz reference display, so
+p95 frame interval and Long Tasks are the more portable responsiveness
+indicators. Retained state is collected after an explicit diagnostic V8 garbage
+collection and includes the complete canonical model, not only mounted DOM.
+
+At readiness, the text fixture mounted 1 of 782 content chunks and 4 of 3,125
+page sheets. End navigation mounted 2 content chunks. The table fixture mounted
+4 of 6,250 row leaves and 4 of 2,381 page sheets at readiness; end navigation
+left 1 row leaf mounted. The complete table model remained available through
+196 outer geometry containers.
+
+### Controlled tail edits
+
+| Fixture | First edit wall / publish CPU | Second edit wall / publish CPU |
+| --- | ---: | ---: |
+| 100,000 text paragraphs | 70.3 ms (69.0–115.4) / 21.8 ms (20.0–54.7) | 53.9 ms (22.5–56.4) / 10.0 ms (9.4–16.8) |
+| 100,000 table rows × 3 columns | 102.3 ms (93.8–121.0) / 57.8 ms (53.5–70.1) | 85.1 ms (78.2–93.3) / 41.2 ms (36.9–45.7) |
+
+`Wall` starts at the browser `beforeinput` event and ends when the host-facing
+controlled publication count changes. `Publish CPU` covers construction of the
+complete `html` and `model` values. All 20 measured publications used the
+indexed `lazy-chunk` path, retained both edit markers at the exact final
+paragraph or row, and produced no browser, page, or console error.
+
+### Reproduce the measurements
+
+Build and start the production Playground in one terminal:
+
+```bash
+bun run playground:build
+bun run playground:preview
+```
+
+Run the benchmarks and deterministic a3s-test windowing gate in another:
+
+```bash
+bun run performance:large-documents
+bun run performance:large-document-edits
+bun run test:e2e:large-documents:check
+bun run test:e2e:large-documents
+```
+
+Each benchmark writes its raw JSON report under
+`.a3s-test/performance/results/`; fixtures and results are intentionally ignored
+by Git. See the
+[complete methodology and current boundaries](../browser-editor-architecture.md#current-100000-unit-evidence)
+for Worker phases, measurement definitions, spreadsheet comparison, and the
+rich-DOCX fallback. Documents with unsupported tags, relationships, tracked
+structures, drawings, or other rich features deliberately use the complete
+compatibility importer and are not covered by these 100,000-unit figures.
+
 ## Properties
 
 | Property | Type | Required | Default | Description |

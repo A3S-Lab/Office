@@ -438,6 +438,41 @@ test('documents maximum sparse spreadsheets and cancellable imports in 0.12.0', 
   }
 });
 
+test('publishes reproducible 100k Document performance evidence', async () => {
+  const [document, architecture] = await Promise.all([
+    readFile(
+      path.join(documentationRoot, 'latest/en/components/document.mdx'),
+      'utf8',
+    ),
+    readFile(
+      path.join(documentationRoot, 'latest/en/browser-editor-architecture.md'),
+      'utf8',
+    ),
+  ]);
+
+  for (const evidence of [
+    '100,000 text paragraphs',
+    '100,000 table rows',
+    '0.397 s',
+    '120.0 FPS',
+    '70.4 MiB',
+    '53.9 ms',
+  ]) {
+    expect(document).toContain(evidence);
+    expect(architecture).toContain(evidence);
+  }
+  for (const command of [
+    'bun run performance:large-documents',
+    'bun run performance:large-document-edits',
+    'bun run test:e2e:large-documents',
+  ]) {
+    expect(document).toContain(command);
+  }
+  expect(document).toContain(
+    '../browser-editor-architecture.md#current-100000-unit-evidence',
+  );
+});
+
 test('keeps the 0.8.0 native suggestion limitation frozen', async () => {
   for (const { lang } of DOCUMENTATION_LOCALES) {
     const cli = await readFile(

@@ -2,6 +2,10 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import {
+  installPerformanceObserver,
+  waitForStableDocumentPagination,
+} from './benchmark-browser';
 
 const targetUrl = process.argv[2] ?? 'http://127.0.0.1:4175/';
 const runs = Number.parseInt(process.argv[3] ?? '3', 10);
@@ -31,6 +35,7 @@ for (const scenario of scenarios) {
         if (message.type() === 'error') errors.push(message.text());
       });
       page.on('pageerror', (error) => errors.push(error.message));
+      await installPerformanceObserver(page);
       await page.goto(targetUrl, {
         timeout: 120_000,
         waitUntil: 'domcontentloaded',
@@ -46,14 +51,13 @@ for (const scenario of scenarios) {
         .setInputFiles(fixture, { timeout: 180_000 });
       const editor = page.locator('.work-document-editable .ProseMirror');
       await editor.waitFor({ state: 'visible', timeout: 180_000 });
-      await page.waitForFunction(
-        () =>
-          document.querySelector<HTMLElement>(
-            '.work-document-editable .ProseMirror',
-          )?.dataset.paginationState === 'ready',
-        undefined,
-        { timeout: 180_000 },
+      const paginationState = await waitForStableDocumentPagination(
+        page,
+        180_000,
       );
+      if (paginationState !== 'ready') {
+        throw new Error('Document pagination entered the error state.');
+      }
       await editor.focus();
       await page.keyboard.press('Control+End');
       await page

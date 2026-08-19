@@ -190,6 +190,56 @@ suite "office-docs-navigation" {
         }
     }
 
+    scenario "verify-large-document-performance-evidence" {
+        name = "Verify the reproducible 100k Document performance reference"
+        surface = "web"
+        timeout_ms = 90000
+
+        viewport "desktop-performance-reference" {
+            width = 1440
+            height = 900
+            scale = 1
+        }
+
+        navigate "open-document-performance-reference" {
+            url = "http://127.0.0.1:4175/docs/en/components/document.html"
+        }
+
+        expect "performance-reference-ready" {
+            text = "Large-document performance"
+        }
+
+        expect "text-fixture-is-quantified" {
+            text = "100,000 text paragraphs"
+        }
+
+        expect "table-fixture-is-quantified" {
+            text = "100,000 table rows"
+        }
+
+        expect "scroll-result-is-quantified" {
+            text = "120.0 FPS"
+        }
+
+        expect "benchmark-command-is-published" {
+            text = "bun run performance:large-documents"
+        }
+
+        expect "full-methodology-is-linked" {
+            visible = css("main a[href$='/en/browser-editor-architecture.html#current-100000-unit-evidence']")
+        }
+
+        console "performance-reference-console" {
+            path = "diagnostics/performance-reference-console.json"
+            clear = false
+        }
+
+        page_errors "performance-reference-errors" {
+            path = "diagnostics/performance-reference-page-errors.json"
+            clear = false
+        }
+    }
+
     scenario "scan-documentation-center-on-phone" {
         name = "Scan the documentation workflow and collaboration path on a phone"
         surface = "web"
