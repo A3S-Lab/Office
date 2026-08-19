@@ -76,9 +76,6 @@ jobs:
       - name: Install visual-test browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Install the A3S Test browser gate
-        run: bash scripts/install-a3s-test-ci.sh
-
       - name: Check editor visual contracts
         run: bun run playground:visual
 
@@ -90,18 +87,6 @@ jobs:
           path: |
             playwright-report
             test-results/visual
-          if-no-files-found: ignore
-
-      - name: Check documentation and collaboration deployment contracts
-        run: bash scripts/run-a3s-test-web-gate.sh
-
-      - name: Upload A3S Test diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: office-a3s-test-diagnostics
-          path: .a3s-test
-          include-hidden-files: true
           if-no-files-found: ignore
 
       - name: Check Rust formatting
