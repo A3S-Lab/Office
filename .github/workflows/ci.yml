@@ -74,7 +74,18 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
       - name: Install visual-test browser
-        run: bunx playwright install chromium
+        run: |
+          for ubuntu_source in \
+            /etc/apt/apt-mirrors.txt \
+            /etc/apt/sources.list \
+            /etc/apt/sources.list.d/ubuntu.sources; do
+            if [[ -f "${ubuntu_source}" ]]; then
+              sudo sed -i \
+                's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
+                "${ubuntu_source}"
+            fi
+          done
+          bunx playwright install --with-deps chromium
 
       - name: Check editor visual contracts
         run: bun run playground:visual
