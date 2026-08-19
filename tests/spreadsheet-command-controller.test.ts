@@ -518,6 +518,12 @@ describe('spreadsheet command controller', () => {
         start: 3,
       },
     ]);
+    expect(fixture.workbook.selections).toEqual([
+      {
+        range: [{ row: [3, 3], column: [2, 3] }],
+        sheetId: 'sheet-1',
+      },
+    ]);
     expect(fixture.workbook.visibilityChanges).toEqual([
       { axis: 'column', hidden: true, indices: ['2', '3'] },
       { axis: 'column', hidden: false, indices: ['2', '3'] },
@@ -527,7 +533,7 @@ describe('spreadsheet command controller', () => {
         axis: 'row',
         custom: true,
         sheetId: 'sheet-1',
-        sizes: { 3: 36, 4: 36 },
+        sizes: { 3: 36 },
       },
       {
         axis: 'column',
@@ -535,6 +541,26 @@ describe('spreadsheet command controller', () => {
         sheetId: 'sheet-1',
         sizes: { 2: 128, 3: 128 },
       },
+    ]);
+  });
+
+  test('clamps the selection after deleting terminal rows and columns', () => {
+    const fixture = commandFixture();
+    fixture.context.content.sheets[0] = {
+      ...fixture.context.content.sheets[0],
+      row: 12,
+      column: 8,
+    };
+    fixture.workbook.selection = [{ row: [11, 11], column: [7, 7] }];
+    const editor = spreadsheetEditor(fixture.context);
+
+    expect(editor.commands.deleteSelectedStructure('row')).toBe(true);
+    expect(fixture.workbook.selection).toEqual([
+      { row: [10, 10], column: [7, 7] },
+    ]);
+    expect(editor.commands.deleteSelectedStructure('column')).toBe(true);
+    expect(fixture.workbook.selection).toEqual([
+      { row: [10, 10], column: [6, 6] },
     ]);
   });
 
@@ -1282,6 +1308,30 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
 
   batchCallApis(apiCalls: Array<{ name: string; args: unknown[] }>): void {
     this.clearBatches.push(apiCalls);
+    for (const apiCall of apiCalls) {
+      if (apiCall.name === 'deleteRowOrColumn') {
+        const axis = apiCall.args[0] as 'column' | 'row';
+        const start = apiCall.args[1] as number;
+        const end = apiCall.args[2] as number;
+        const options = apiCall.args[3] as { id?: string } | undefined;
+        this.structureChanges.push({
+          action: 'delete',
+          axis,
+          count: undefined,
+          direction: undefined,
+          end,
+          index: undefined,
+          sheetId: options?.id,
+          start,
+        });
+      }
+      if (apiCall.name === 'setSelection') {
+        this.setSelection(
+          apiCall.args[0] as SpreadsheetCommandRange[],
+          apiCall.args[1] as { id?: string } | undefined,
+        );
+      }
+    }
   }
 
   getSelection(): SpreadsheetCommandRange[] | undefined {
@@ -1312,24 +1362,6 @@ class RecordingSpreadsheetWorkbook implements SpreadsheetWorkbookCommandPort {
       index,
       sheetId: options?.id,
       start: undefined,
-    });
-  }
-
-  deleteRowOrColumn(
-    axis: 'row' | 'column',
-    start: number,
-    end: number,
-    options?: { id?: string },
-  ): void {
-    this.structureChanges.push({
-      action: 'delete',
-      axis,
-      count: undefined,
-      direction: undefined,
-      end,
-      index: undefined,
-      sheetId: options?.id,
-      start,
     });
   }
 

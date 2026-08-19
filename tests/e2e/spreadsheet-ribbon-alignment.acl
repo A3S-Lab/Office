@@ -13,7 +13,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -21,7 +21,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -188,7 +188,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -196,7 +196,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -327,7 +327,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -335,7 +335,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -375,7 +375,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "custom-freeze-boundary-visible" {
-            visible = role("menuitem", "冻结至第 2 行、A 列")
+            visible = css("[role='menu'][aria-label='冻结窗格选项'] button[role='menuitem']:first-child")
         }
 
         screenshot "spreadsheet-freeze-panes-compact" {
@@ -395,7 +395,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "unfreeze-command-visible" {
-            visible = role("menuitem", "取消冻结窗格")
+            visible = css("[role='menu'][aria-label='冻结窗格选项'] button[role='menuitem']:first-child")
         }
 
         press "focus-last-freeze-command" {
@@ -446,7 +446,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -454,7 +454,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -495,6 +495,10 @@ suite "office-spreadsheet-ribbon-alignment" {
 
         expect "rows-and-columns-menu-visible" {
             visible = css("[role='menu'][aria-label='行和列选项']")
+        }
+
+        focus "focus-first-row-command" {
+            target = css("[role='menu'][aria-label='行和列选项'] button[role='menuitem']:first-child")
         }
 
         expect "insert-above-focused" {
@@ -565,7 +569,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -573,7 +577,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -588,8 +592,8 @@ suite "office-spreadsheet-ribbon-alignment" {
             key = "Shift+F11"
         }
 
-        type "enter-merge-content" {
-            target = css(".fortune-sheet-overlay")
+        fill "enter-merge-content" {
+            target = label("当前单元格输入")
             value = "North"
         }
 
@@ -705,7 +709,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         navigate "open-playground" {
-            url = "http://127.0.0.1:4175/"
+            url = "http://127.0.0.1:4175/?e2e=spreadsheet-ribbon-alignment"
         }
 
         wait "spreadsheet-artifact-ready" {
@@ -713,7 +717,7 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         click "open-spreadsheet" {
-            target = css(".playground-artifact-card.spreadsheet")
+            target = text("季度执行计划", true)
         }
 
         wait "spreadsheet-ready" {
@@ -728,8 +732,8 @@ suite "office-spreadsheet-ribbon-alignment" {
             key = "Shift+F11"
         }
 
-        type "enter-content" {
-            target = css(".fortune-sheet-overlay")
+        fill "enter-content" {
+            target = label("当前单元格输入")
             value = "Keep style"
         }
 
@@ -754,23 +758,27 @@ suite "office-spreadsheet-ribbon-alignment" {
         }
 
         expect "clear-all-visible" {
-            visible = role("menuitem", "清除全部")
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:nth-of-type(1)")
         }
 
         expect "clear-formats-visible" {
-            visible = role("menuitem", "清除格式")
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:nth-of-type(2)")
         }
 
         expect "clear-contents-visible" {
-            visible = role("menuitem", "清除内容")
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:nth-of-type(3)")
         }
 
         expect "clear-comments-visible" {
-            visible = role("menuitem", "清除批注")
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:nth-of-type(4)")
         }
 
         expect "clear-hyperlinks-visible" {
-            visible = role("menuitem", "清除超链接")
+            visible = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:nth-of-type(5)")
+        }
+
+        focus "focus-first-clear-command" {
+            target = css("[role='menu'][aria-label='清除选项'] button[role='menuitem']:first-child")
         }
 
         expect "clear-all-focused" {
@@ -805,8 +813,8 @@ suite "office-spreadsheet-ribbon-alignment" {
             visible = css(".work-spreadsheet-ribbon button[aria-label='加粗'][aria-pressed='true']")
         }
 
-        type "enter-retained-content" {
-            target = css(".fortune-sheet-overlay")
+        fill "enter-retained-content" {
+            target = label("当前单元格输入")
             value = "Keep value"
         }
 

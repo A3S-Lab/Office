@@ -254,6 +254,89 @@ test('materializes only the edited far row for direct and API cell writes', () =
   expect(data[900_001]?.[12_001]).toMatchObject({ v: 'API' });
 });
 
+test('materializes only rows touched by sparse range formatting', () => {
+  const data: CellMatrix = [];
+  data.length = 1_048_576;
+  data[0] = [];
+  data[0].length = 16_384;
+  const context = {
+    currentSheetId: 'sheet-1',
+    defaultcolumnNum: 16_384,
+    luckysheetfile: [
+      {
+        id: 'sheet-1',
+        name: 'Sparse',
+        row: 1_048_576,
+        column: 16_384,
+        data,
+      },
+    ],
+  } as unknown as Context;
+
+  api.setCellFormatByRange(
+    context,
+    'bl',
+    1,
+    { row: [900_000, 900_001], column: [12_000, 12_001] },
+    { id: 'sheet-1' },
+  );
+
+  expect(Object.keys(data)).toEqual(['0', '900000', '900001']);
+  expect(data[900_000]?.[12_000]).toMatchObject({ bl: 1 });
+  expect(data[900_000]?.[12_001]).toMatchObject({ bl: 1 });
+  expect(data[900_001]?.[12_000]).toMatchObject({ bl: 1 });
+  expect(data[900_001]?.[12_001]).toMatchObject({ bl: 1 });
+});
+
+test('materializes only rows touched by sparse merging', () => {
+  const data: CellMatrix = [];
+  data.length = 1_048_576;
+  data[0] = [];
+  data[0].length = 16_384;
+  const context = {
+    config: {},
+    currentSheetId: 'sheet-1',
+    defaultcolumnNum: 16_384,
+    luckysheetfile: [
+      {
+        id: 'sheet-1',
+        name: 'Sparse',
+        row: 1_048_576,
+        column: 16_384,
+        config: {},
+        data,
+      },
+    ],
+  } as unknown as Context;
+
+  api.mergeCells(
+    context,
+    [{ row: [900_002, 900_003], column: [12_002, 12_003] }],
+    'merge-all',
+    { id: 'sheet-1' },
+  );
+
+  expect(Object.keys(data)).toEqual(['0', '900002', '900003']);
+  expect(data[900_002]?.[12_002]?.mc).toEqual({
+    r: 900_002,
+    c: 12_002,
+    rs: 2,
+    cs: 2,
+  });
+  expect(data[900_002]?.[12_003]?.mc).toEqual({
+    r: 900_002,
+    c: 12_002,
+  });
+  expect(data[900_003]?.[12_002]?.mc).toEqual({
+    r: 900_002,
+    c: 12_002,
+  });
+  expect(data[900_003]?.[12_003]?.mc).toEqual({
+    r: 900_002,
+    c: 12_002,
+  });
+});
+
 test('writes cross-sheet formula results to the formula sheet', () => {
   const emptyRef = { current: null };
   const context = defaultContext({

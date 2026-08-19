@@ -1,5 +1,5 @@
 diff --git a/dist/index.esm.js b/dist/index.esm.js
-index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e073248fe 100644
+index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..c49c3bc621bac2e1b7f26c79138a385fdcd3b254 100644
 --- a/dist/index.esm.js
 +++ b/dist/index.esm.js
 @@ -1,6 +1,6 @@
@@ -37,19 +37,19 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
      className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
      onScroll: function onScroll() {
 -      if (axis === "x") {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-        });
+-      } else {
 +      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
 +      if (frameRef.current !== undefined) return;
 +      frameRef.current = requestAnimationFrame(function () {
 +        frameRef.current = undefined;
 +        var scroll = pendingScrollRef.current;
          setContext(function (draftCtx) {
--          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
 +          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
          });
--      } else {
--        setContext(function (draftCtx) {
--          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
--        });
 -      }
 +      });
      }
@@ -346,7 +346,59 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
      if (tableCanvas == null) return;
      var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
      if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
-@@ -9919,7 +10028,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -6713,12 +6822,22 @@ var FxEditor = function FxEditor() {
+   var firstSelection = (_context$luckysheet_s = context.luckysheet_select_save) === null || _context$luckysheet_s === void 0 ? void 0 : _context$luckysheet_s[0];
+   var prevFirstSelection = usePrevious(firstSelection);
+   var prevSheetId = usePrevious(context.currentSheetId);
++  var selectedCell = function () {
++    var _flowdata$row;
++    if (!firstSelection) return undefined;
++    var row = firstSelection.row_focus;
++    var column = firstSelection.column_focus;
++    if (_.isNil(row) || _.isNil(column)) return undefined;
++    var flowdata = getFlowdata(context);
++    return flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$row = flowdata[row]) === null || _flowdata$row === void 0 ? void 0 : _flowdata$row[column];
++  }();
++  var prevSelectedCell = usePrevious(selectedCell);
+   var recentText = useRef("");
+   var _locale = locale(context),
+     info = _locale.info;
+   useEffect(function () {
+     setIsHidenRC(isShowHidenCR(context));
+-    if (_.isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId) {
++    if (_.isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId && Object.is(prevSelectedCell, selectedCell)) {
+       return;
+     }
+     var d = getFlowdata(context);
+@@ -6763,8 +6882,13 @@ var FxEditor = function FxEditor() {
+     if (context.allowEdit === false) {
+       return;
+     }
+-    lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+     var key = e.key;
++    var returnsFocusToGrid = key === "Enter" || key === "Escape";
++    if (returnsFocusToGrid) {
++      e.preventDefault();
++      e.stopPropagation();
++    }
++    lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+     recentText.current = refs.fxInput.current.innerText;
+     if (key === "ArrowLeft" || key === "ArrowRight") {
+       e.stopPropagation();
+@@ -6808,6 +6932,12 @@ var FxEditor = function FxEditor() {
+         }
+       }
+     });
++    if (returnsFocusToGrid) {
++      setTimeout(function () {
++        var _refs$cellInput$curre;
++        (_refs$cellInput$curre = refs.cellInput.current) === null || _refs$cellInput$curre === void 0 ? void 0 : _refs$cellInput$curre.focus();
++      });
++    }
+   }, [context.allowEdit, context.luckysheetCellUpdate.length, refs.fxInput, setContext]);
+   var onChange = useCallback(function () {
+     var e = lastKeyDownEventRef.current;
+@@ -9919,7 +10049,7 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -355,7 +407,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
-@@ -10768,6 +10877,69 @@ var SheetList = function SheetList() {
+@@ -10768,6 +10898,69 @@ var SheetList = function SheetList() {
  
  var _excluded = ["onChange", "onOp", "data"];
  enablePatches();
@@ -425,7 +477,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
  var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
    if (ctx.groupValuesRefreshData.length > 0) {
      groupValuesRefresh(ctx);
-@@ -10847,9 +11019,14 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10847,9 +11040,14 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
    }, [context.luckysheet_select_save]);
    var initSheetData = useCallback(function (draftCtx, newData, index) {
      var _lastRow$r, _lastCol$c;
@@ -441,7 +493,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
      var lastRow = _.maxBy(celldata, "r");
      var lastCol = _.maxBy(celldata, "c");
      var lastRowNum = ((_lastRow$r = lastRow === null || lastRow === void 0 ? void 0 : lastRow.r) !== null && _lastRow$r !== void 0 ? _lastRow$r : 0) + 1;
-@@ -10862,12 +11039,17 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10862,12 +11060,17 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
        lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
      }
      if (lastRowNum && lastColNum) {
@@ -464,7 +516,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
          expandedData[d.r][d.c] = d.v;
        });
        draftCtx.luckysheetfile = produce(draftCtx.luckysheetfile, function (d) {
-@@ -10928,18 +11110,21 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10928,18 +11131,21 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
    }
    function dataToCelldata(data) {
      var cellData = [];
@@ -492,7 +544,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
      return cellData;
    }
    var setContextWithProduce = useCallback(function (recipe) {
-@@ -10950,6 +11135,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -10950,6 +11156,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
          result = _produceWithPatches2[0],
          patches = _produceWithPatches2[1],
          inversePatches = _produceWithPatches2[2];
@@ -500,7 +552,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
        if (patches.length > 0 && !options.noHistory) {
          if (options.logPatch) {
            console.info("patch", patches);
-@@ -11021,7 +11207,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -11021,7 +11228,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
              });
            });
          }
@@ -509,7 +561,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
          globalCache.current.redoList.push(history);
          var inversedOptions = inverseRowColOptions(history.options);
          if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
-@@ -11049,7 +11235,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
+@@ -11049,7 +11256,7 @@ var Workbook = /*#__PURE__*/React.forwardRef(function (_ref, ref) {
      if (history) {
        setContext(function (ctx_) {
          var _history$options7, _history$options8, _history$options9;
@@ -519,7 +571,7 @@ index c4486a2b38bec4eff10cdfda4d3748d40bfb71ba..9ad0fbdeb28faa5733edb88fdae3270e
          emitOp(newContext, history.patches, history.options);
          if (((_history$options7 = history.options) === null || _history$options7 === void 0 ? void 0 : _history$options7.deleteRowColOp) || ((_history$options8 = history.options) === null || _history$options8 === void 0 ? void 0 : _history$options8.insertRowColOp) || ((_history$options9 = history.options) === null || _history$options9 === void 0 ? void 0 : _history$options9.restoreDeletedCells)) newContext.formulaCache.formulaCellInfoMap = null;else newContext.formulaCache.updateFormulaCache(newContext, history, "redo");
 diff --git a/dist/index.js b/dist/index.js
-index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d595b8c409f 100644
+index e4045518773578e3faaa3a58985a5585f9683088..6f8195be472bbd76c4d78acf42b5b5c0081ec12f 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -1172,6 +1172,8 @@ var ScrollBar = function ScrollBar(_ref) {
@@ -548,19 +600,19 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
      className: "luckysheet-scrollbars luckysheet-scrollbar-ltr luckysheet-scrollbar-".concat(axis),
      onScroll: function onScroll() {
 -      if (axis === "x") {
+-        setContext(function (draftCtx) {
+-          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-        });
+-      } else {
 +      pendingScrollRef.current = axis === "x" ? refs.scrollbarX.current.scrollLeft : refs.scrollbarY.current.scrollTop;
 +      if (frameRef.current !== undefined) return;
 +      frameRef.current = requestAnimationFrame(function () {
 +        frameRef.current = undefined;
 +        var scroll = pendingScrollRef.current;
          setContext(function (draftCtx) {
--          draftCtx.scrollLeft = refs.scrollbarX.current.scrollLeft;
+-          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
 +          if (axis === "x") draftCtx.scrollLeft = scroll;else draftCtx.scrollTop = scroll;
          });
--      } else {
--        setContext(function (draftCtx) {
--          draftCtx.scrollTop = refs.scrollbarY.current.scrollTop;
--        });
 -      }
 +      });
      }
@@ -857,7 +909,59 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
      if (tableCanvas == null) return;
      var freeze = (_refs$globalCache$fre = refs.globalCache.freezen) === null || _refs$globalCache$fre === void 0 ? void 0 : _refs$globalCache$fre[sheet.id];
      if ((freeze === null || freeze === void 0 ? void 0 : (_freeze$horizontal = freeze.horizontal) === null || _freeze$horizontal === void 0 ? void 0 : _freeze$horizontal.freezenhorizontaldata) || (freeze === null || freeze === void 0 ? void 0 : (_freeze$vertical = freeze.vertical) === null || _freeze$vertical === void 0 ? void 0 : _freeze$vertical.freezenverticaldata)) {
-@@ -9930,7 +10039,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
+@@ -6724,12 +6833,22 @@ var FxEditor = function FxEditor() {
+   var firstSelection = (_context$luckysheet_s = context.luckysheet_select_save) === null || _context$luckysheet_s === void 0 ? void 0 : _context$luckysheet_s[0];
+   var prevFirstSelection = usePrevious(firstSelection);
+   var prevSheetId = usePrevious(context.currentSheetId);
++  var selectedCell = function () {
++    var _flowdata$row;
++    if (!firstSelection) return undefined;
++    var row = firstSelection.row_focus;
++    var column = firstSelection.column_focus;
++    if (___default['default'].isNil(row) || ___default['default'].isNil(column)) return undefined;
++    var flowdata = core.getFlowdata(context);
++    return flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$row = flowdata[row]) === null || _flowdata$row === void 0 ? void 0 : _flowdata$row[column];
++  }();
++  var prevSelectedCell = usePrevious(selectedCell);
+   var recentText = React.useRef("");
+   var _locale = core.locale(context),
+     info = _locale.info;
+   React.useEffect(function () {
+     setIsHidenRC(core.isShowHidenCR(context));
+-    if (___default['default'].isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId) {
++    if (___default['default'].isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId && Object.is(prevSelectedCell, selectedCell)) {
+       return;
+     }
+     var d = core.getFlowdata(context);
+@@ -6774,8 +6893,13 @@ var FxEditor = function FxEditor() {
+     if (context.allowEdit === false) {
+       return;
+     }
+-    lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+     var key = e.key;
++    var returnsFocusToGrid = key === "Enter" || key === "Escape";
++    if (returnsFocusToGrid) {
++      e.preventDefault();
++      e.stopPropagation();
++    }
++    lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+     recentText.current = refs.fxInput.current.innerText;
+     if (key === "ArrowLeft" || key === "ArrowRight") {
+       e.stopPropagation();
+@@ -6819,6 +6943,12 @@ var FxEditor = function FxEditor() {
+         }
+       }
+     });
++    if (returnsFocusToGrid) {
++      setTimeout(function () {
++        var _refs$cellInput$curre;
++        (_refs$cellInput$curre = refs.cellInput.current) === null || _refs$cellInput$curre === void 0 ? void 0 : _refs$cellInput$curre.focus();
++      });
++    }
+   }, [context.allowEdit, context.luckysheetCellUpdate.length, refs.fxInput, setContext]);
+   var onChange = React.useCallback(function () {
+     var e = lastKeyDownEventRef.current;
+@@ -9930,7 +10060,11 @@ function generateAPIs(context, setContext, handleUndo, handleRedo, settings, cel
      setSelection: function setSelection(range) {
        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
        return setContext(function (draftCtx) {
@@ -870,7 +974,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
        });
      },
      setCellValuesByRange: function setCellValuesByRange(data, range) {
-@@ -10779,6 +10892,69 @@ var SheetList = function SheetList() {
+@@ -10779,6 +10913,69 @@ var SheetList = function SheetList() {
  
  var _excluded = ["onChange", "onOp", "data"];
  produce.enablePatches();
@@ -940,7 +1044,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
  var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
    if (ctx.groupValuesRefreshData.length > 0) {
      core.groupValuesRefresh(ctx);
-@@ -10858,9 +11034,14 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10858,9 +11055,14 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
    }, [context.luckysheet_select_save]);
    var initSheetData = React.useCallback(function (draftCtx, newData, index) {
      var _lastRow$r, _lastCol$c;
@@ -956,7 +1060,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
      var lastRow = ___default['default'].maxBy(celldata, "r");
      var lastCol = ___default['default'].maxBy(celldata, "c");
      var lastRowNum = ((_lastRow$r = lastRow === null || lastRow === void 0 ? void 0 : lastRow.r) !== null && _lastRow$r !== void 0 ? _lastRow$r : 0) + 1;
-@@ -10873,12 +11054,17 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10873,12 +11075,17 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
        lastColNum = Math.max(lastColNum, draftCtx.defaultcolumnNum);
      }
      if (lastRowNum && lastColNum) {
@@ -979,7 +1083,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
          expandedData[d.r][d.c] = d.v;
        });
        draftCtx.luckysheetfile = produce__default['default'](draftCtx.luckysheetfile, function (d) {
-@@ -10939,18 +11125,21 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10939,18 +11146,21 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
    }
    function dataToCelldata(data) {
      var cellData = [];
@@ -1007,7 +1111,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
      return cellData;
    }
    var setContextWithProduce = React.useCallback(function (recipe) {
-@@ -10961,6 +11150,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -10961,6 +11171,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
          result = _produceWithPatches2[0],
          patches = _produceWithPatches2[1],
          inversePatches = _produceWithPatches2[2];
@@ -1015,7 +1119,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
        if (patches.length > 0 && !options.noHistory) {
          if (options.logPatch) {
            console.info("patch", patches);
-@@ -11032,7 +11222,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -11032,7 +11243,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
              });
            });
          }
@@ -1024,7 +1128,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
          globalCache.current.redoList.push(history);
          var inversedOptions = core.inverseRowColOptions(history.options);
          if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
-@@ -11060,7 +11250,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
+@@ -11060,7 +11271,7 @@ var Workbook = /*#__PURE__*/React__default['default'].forwardRef(function (_ref,
      if (history) {
        setContext(function (ctx_) {
          var _history$options7, _history$options8, _history$options9;
@@ -1034,7 +1138,7 @@ index e4045518773578e3faaa3a58985a5585f9683088..94ab97c3b9336517a769b0142f429d59
          emitOp(newContext, history.patches, history.options);
          if (((_history$options7 = history.options) === null || _history$options7 === void 0 ? void 0 : _history$options7.deleteRowColOp) || ((_history$options8 = history.options) === null || _history$options8 === void 0 ? void 0 : _history$options8.insertRowColOp) || ((_history$options9 = history.options) === null || _history$options9 === void 0 ? void 0 : _history$options9.restoreDeletedCells)) newContext.formulaCache.formulaCellInfoMap = null;else newContext.formulaCache.updateFormulaCache(newContext, history, "redo");
 diff --git a/dist/index.umd.js b/dist/index.umd.js
-index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b16157248406c 100644
+index e1c484068e24e3dc31a2831de32b58e898edde85..8d12280a35afd540a433ebdc260f7e7c0969f6cf 100644
 --- a/dist/index.umd.js
 +++ b/dist/index.umd.js
 @@ -36771,19 +36771,30 @@
@@ -1079,7 +1183,59 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b1615
          }
          setContext(function (ctx) {
            return showComments(ctx, psShownCells);
-@@ -45249,7 +45260,7 @@
+@@ -41280,12 +41291,22 @@
+     var firstSelection = (_context$luckysheet_s = context.luckysheet_select_save) === null || _context$luckysheet_s === void 0 ? void 0 : _context$luckysheet_s[0];
+     var prevFirstSelection = usePrevious(firstSelection);
+     var prevSheetId = usePrevious(context.currentSheetId);
++    var selectedCell = function () {
++      var _flowdata$row;
++      if (!firstSelection) return undefined;
++      var row = firstSelection.row_focus;
++      var column = firstSelection.column_focus;
++      if (lodash.isNil(row) || lodash.isNil(column)) return undefined;
++      var flowdata = getFlowdata(context);
++      return flowdata === null || flowdata === void 0 ? void 0 : (_flowdata$row = flowdata[row]) === null || _flowdata$row === void 0 ? void 0 : _flowdata$row[column];
++    }();
++    var prevSelectedCell = usePrevious(selectedCell);
+     var recentText = React.useRef("");
+     var _locale = locale(context),
+       info = _locale.info;
+     React.useEffect(function () {
+       setIsHidenRC(isShowHidenCR(context));
+-      if (lodash.isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId) {
++      if (lodash.isEqual(prevFirstSelection, firstSelection) && context.currentSheetId === prevSheetId && Object.is(prevSelectedCell, selectedCell)) {
+         return;
+       }
+       var d = getFlowdata(context);
+@@ -41330,8 +41351,13 @@
+       if (context.allowEdit === false) {
+         return;
+       }
+-      lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+       var key = e.key;
++      var returnsFocusToGrid = key === "Enter" || key === "Escape";
++      if (returnsFocusToGrid) {
++        e.preventDefault();
++        e.stopPropagation();
++      }
++      lastKeyDownEventRef.current = new KeyboardEvent(e.type, e.nativeEvent);
+       recentText.current = refs.fxInput.current.innerText;
+       if (key === "ArrowLeft" || key === "ArrowRight") {
+         e.stopPropagation();
+@@ -41375,6 +41401,12 @@
+           }
+         }
+       });
++      if (returnsFocusToGrid) {
++        setTimeout(function () {
++          var _refs$cellInput$curre;
++          (_refs$cellInput$curre = refs.cellInput.current) === null || _refs$cellInput$curre === void 0 ? void 0 : _refs$cellInput$curre.focus();
++        });
++      }
+     }, [context.allowEdit, context.luckysheetCellUpdate.length, refs.fxInput, setContext]);
+     var onChange = React.useCallback(function () {
+       var e = lastKeyDownEventRef.current;
+@@ -45249,7 +45281,7 @@
        setSelection: function setSelection(range) {
          var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
          return setContext(function (draftCtx) {
@@ -1088,7 +1244,7 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b1615
          });
        },
        setCellValuesByRange: function setCellValuesByRange(data, range) {
-@@ -46098,6 +46109,69 @@
+@@ -46098,6 +46130,69 @@
  
    var _excluded = ["onChange", "onOp", "data"];
    T();
@@ -1158,7 +1314,7 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b1615
    var triggerGroupValuesRefresh = function triggerGroupValuesRefresh(ctx) {
      if (ctx.groupValuesRefreshData.length > 0) {
        groupValuesRefresh(ctx);
-@@ -46280,6 +46354,7 @@
+@@ -46280,6 +46375,7 @@
            result = _produceWithPatches2[0],
            patches = _produceWithPatches2[1],
            inversePatches = _produceWithPatches2[2];
@@ -1166,7 +1322,7 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b1615
          if (patches.length > 0 && !options.noHistory) {
            if (options.logPatch) {
              console.info("patch", patches);
-@@ -46351,7 +46426,7 @@
+@@ -46351,7 +46447,7 @@
                });
              });
            }
@@ -1175,7 +1331,7 @@ index e1c484068e24e3dc31a2831de32b58e898edde85..1dc1ccaa7b6cf4bee6a9f92db95b1615
            globalCache.current.redoList.push(history);
            var inversedOptions = inverseRowColOptions(history.options);
            if (inversedOptions === null || inversedOptions === void 0 ? void 0 : inversedOptions.insertRowColOp) {
-@@ -46379,7 +46454,7 @@
+@@ -46379,7 +46475,7 @@
        if (history) {
          setContext(function (ctx_) {
            var _history$options7, _history$options8, _history$options9;

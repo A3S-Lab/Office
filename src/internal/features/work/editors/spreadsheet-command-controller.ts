@@ -54,6 +54,7 @@ import {
   type SpreadsheetSheetMoveDirection,
   setSpreadsheetSheetColor,
 } from './spreadsheet-sheet-model';
+import { spreadsheetSelectionAfterStructureDeletion } from './spreadsheet-structure-selection';
 
 export interface SpreadsheetWorkbookCommandPort {
   batchCallApis: (apiCalls: Array<{ name: string; args: unknown[] }>) => void;
@@ -68,12 +69,6 @@ export interface SpreadsheetWorkbookCommandPort {
     index: number,
     count: number,
     direction: 'lefttop' | 'rightbottom',
-    options?: { id?: string },
-  ) => void;
-  deleteRowOrColumn: (
-    type: SpreadsheetStructureAxis,
-    start: number,
-    end: number,
     options?: { id?: string },
   ) => void;
   hideRowOrColumn: (
@@ -934,11 +929,26 @@ function deleteSelectedStructure(
   axis: SpreadsheetStructureAxis,
 ): boolean {
   if (!context.workbook || !context.targetSheetId) return false;
-  const [start, end] = spreadsheetStructureRange(liveRange(context), axis);
+  const range = liveRange(context);
+  const [start, end] = spreadsheetStructureRange(range, axis);
+  const selection = spreadsheetSelectionAfterStructureDeletion(
+    range,
+    axis,
+    spreadsheetStructureExtent(context, axis),
+    start,
+    end,
+  );
   try {
-    context.workbook.deleteRowOrColumn(axis, start, end, {
-      id: context.targetSheetId,
-    });
+    context.workbook.batchCallApis([
+      {
+        name: 'deleteRowOrColumn',
+        args: [axis, start, end, { id: context.targetSheetId }],
+      },
+      {
+        name: 'setSelection',
+        args: [[selection], { id: context.targetSheetId }],
+      },
+    ]);
     return true;
   } catch {
     return false;
