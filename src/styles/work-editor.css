@@ -434,16 +434,190 @@
 }
 
 .work-editor-loading.ds-state-view {
+  position: relative;
   width: 100%;
+  max-width: none;
+  height: 100%;
   min-width: 0;
-  min-height: 0;
+  min-height: 100%;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
   margin: 0;
-  flex: 1;
+  padding: clamp(24px, 5vw, 56px);
+  overflow: hidden;
+  flex: 1 1 0;
   background: var(--a3s-bg);
 }
 
+.work-editor-loading.ds-state-view .ds-state-view-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  border-radius: 22px;
+  background: transparent;
+}
+
+.work-editor-loading-visual {
+  position: relative;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.work-editor-loading-focus {
+  position: absolute;
+  z-index: -1;
+  inset: 5px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--a3s-blue) 10%, var(--a3s-panel));
+  opacity: 0.44;
+  animation: work-editor-loading-focus 1.8s ease-in-out infinite;
+}
+
+.work-editor-loading-page {
+  position: relative;
+  display: flex;
+  width: 32px;
+  height: 42px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--a3s-blue) 24%, var(--a3s-line));
+  border-radius: 7px;
+  background: var(--a3s-panel);
+  box-shadow: 0 10px 24px -16px color-mix(in srgb, var(--a3s-blue) 70%, black);
+  animation: work-editor-loading-page 1.8s cubic-bezier(0.16, 1, 0.3, 1)
+    infinite;
+}
+
+.work-editor-loading-page::after {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 5px;
+  height: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--a3s-blue) 48%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--a3s-blue) 48%, transparent);
+  border-radius: 0 2px 0 0;
+  content: "";
+}
+
+.work-editor-loading-line {
+  display: block;
+  width: 100%;
+  height: 2px;
+  flex: 0 0 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--a3s-ink) 36%, transparent);
+  transform-origin: left center;
+  animation: work-editor-loading-line 1.8s cubic-bezier(0.16, 1, 0.3, 1)
+    infinite;
+}
+
+.work-editor-loading-line--accent {
+  width: 68%;
+  background: var(--a3s-blue);
+  animation-delay: -120ms;
+}
+
+.work-editor-loading-line--short {
+  width: 76%;
+  animation-delay: 120ms;
+}
+
 .work-editor-loading.ds-state-view h2 {
+  max-width: min(360px, 100%);
   font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+@keyframes work-editor-loading-focus {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: scale(0.88);
+  }
+
+  48% {
+    opacity: 0.72;
+    transform: scale(1);
+  }
+}
+
+@keyframes work-editor-loading-page {
+  0%,
+  100% {
+    transform: translateY(1px);
+    box-shadow: 0 8px 20px -16px color-mix(in srgb, var(--a3s-blue) 56%, black);
+  }
+
+  48% {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px -14px color-mix(in srgb, var(--a3s-blue) 72%, black);
+  }
+}
+
+@keyframes work-editor-loading-line {
+  0%,
+  12% {
+    opacity: 0.38;
+    transform: scaleX(0.28);
+  }
+
+  44%,
+  72% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  100% {
+    opacity: 0.62;
+    transform: scaleX(0.78);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work-editor-loading-focus,
+  .work-editor-loading-page,
+  .work-editor-loading-line {
+    animation: none;
+  }
+
+  .work-editor-loading-focus {
+    opacity: 0.56;
+    transform: none;
+  }
+
+  .work-editor-loading-line {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .work-editor-loading-focus {
+    outline: 1px solid Highlight;
+    background: Canvas;
+  }
+
+  .work-editor-loading-page {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .work-editor-loading-line {
+    background: CanvasText;
+  }
+
+  .work-editor-loading-line--accent {
+    background: Highlight;
+  }
 }
 
 .work-version-history {

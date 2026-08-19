@@ -18,6 +18,7 @@ import {
 import { createRoot } from 'react-dom/client';
 import '@a3s-lab/office/styles.css';
 import { serializeDocumentParagraphFormatting } from '../../src/internal/features/work/work-document-paragraph-format-changes';
+import { WorkEditorLoadingState } from '../../src/internal/features/work/components/work-editor-loading-state';
 import { WORK_IMPORT_ACCEPT as OFFICE_FILE_ACCEPT } from '../../src/internal/features/work/work-file-contract';
 import { workKindForFile } from '../../src/internal/features/work/work-file-kind';
 import { createWorkArtifact as createArtifact } from '../../src/internal/features/work/work-templates';
@@ -416,7 +417,9 @@ function Playground() {
 
       <section className="playground-main-pane">
         {activeArtifact ? (
-          <Suspense fallback={<div role="status">正在加载编辑器</div>}>
+          <Suspense
+            fallback={<WorkEditorLoadingState title="正在加载编辑器" />}
+          >
             <EditorWorkspace
               key={activeArtifact.id}
               artifact={activeArtifact}
