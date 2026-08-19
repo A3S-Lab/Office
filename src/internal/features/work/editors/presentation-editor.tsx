@@ -25,18 +25,18 @@ import {
   presentationSelectionUnits,
 } from '../work-presentation-groups';
 import {
-  presentationSlideView,
-  withPresentationDesign,
+  presentationSlideViewFromDesign,
+  withPresentationDesignMetadata,
 } from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import { OfficeFileInput } from './office-controls';
-import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import { useOfficeCollaborationLocationNavigator } from './office-collaboration-presence-context';
 import { useOfficePublishPresenceLocation } from './office-collaboration-presence-ui';
+import { OfficeFileInput } from './office-controls';
+import { useOfficeEditorInitialFocus } from './office-editor-focus-handoff';
 import { useOfficeTaskPaneEscape } from './office-task-pane';
 import { createPresentationArrangementController } from './presentation-arrangement-controller';
 import { PresentationChartPanel } from './presentation-chart-panel';
@@ -282,7 +282,10 @@ function PresentationEditingSurface({
   );
   const imageInputRef = useRef<HTMLInputElement>(null);
   const geometry = usePresentationGeometry(kernelWasmUrl, !preview);
-  const designContent = withPresentationDesign(content);
+  const designContent = useMemo(
+    () => withPresentationDesignMetadata(content),
+    [content],
+  );
   const selectedSlide =
     designContent.slides.find((slide) => slide.id === selectedSlideId) ??
     designContent.slides[0] ??
@@ -403,7 +406,7 @@ function PresentationEditingSurface({
       : presentationElementToolbarState(selectedElement)
     : null;
   const slideView = selectedSlide
-    ? presentationSlideView(designContent, selectedSlide)
+    ? presentationSlideViewFromDesign(designContent, selectedSlide)
     : undefined;
   const activeBackground =
     designMode === 'layout'

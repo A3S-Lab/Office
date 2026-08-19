@@ -1286,6 +1286,26 @@ change. Environments without `IntersectionObserver` render complete scenes for
 the bounded mounted window. Kernel-owned thumbnail layout remains a separate
 performance gate.
 
+Presentation design metadata is memoized per controlled content identity.
+Thumbnail scenes consume that prepared master/layout catalog directly, and the
+editor does not copy the complete slide array merely to resolve one visible
+scene. The deterministic performance fixture contains 1,000 slides and 9,000
+scene elements. In five fresh headless Chrome 149 processes on the recorded
+10-logical-core host, normal mode mounted 18 thumbnail buttons, rendered 13
+full thumbnail scenes, retained 1,006 DOM nodes and a median 10.9 MiB
+JavaScript heap, reached the final slide in 6.1–13.4 ms, and recorded zero Long
+Tasks during import, final-slide navigation, and ten object nudges. The median
+keydown-to-object-commit time was 4.5 ms.
+
+`content-visibility: auto` remains a benchmark mode rather than a production
+rail rule. The interleaved five-process comparison reduced median editor-ready
+time only from 1,637.6 ms to 1,600.3 ms, while increasing median object-commit
+time from 4.5 ms to 5.9 ms and median nudge script time from 8.0 ms to 11.5 ms,
+with no retained-heap improvement. The rail therefore uses actual DOM and
+scene virtualization; CSS skipped rendering cannot replace the JavaScript and
+data-processing bounds and can add invalidation cost to the already bounded
+window.
+
 Exit criteria: object drag and resize stay interactive on complex slides;
 partial rich-text formatting survives PPTX round trips; masters, layouts,
 themes, tables, charts, links, and notes have compatibility fixtures for
@@ -1577,7 +1597,10 @@ Presentation thumbnail tests use a controlled intersection observer to prove
 that long decks retain absolute keyboard reachability while bounding mounted
 buttons and full scenes, releasing scenes that leave the window, preserving
 focus after deletion, and reconnecting the observer when switching between
-normal and sorter views.
+normal and sorter views. A deterministic A3S Test suite imports the 1,000-slide
+fixture, proves the 18-button first and final windows, reaches slide 1,000 with
+`End`, performs two object nudges, and captures final focus, accessibility,
+console, and page-error evidence.
 
 Run the focused kernel checks with:
 
@@ -1603,4 +1626,7 @@ bun run performance:large-spreadsheet-edits
 bun run test:e2e:large-pdf:check
 bun run test:e2e:large-pdf
 bun run performance:pdf
+bun run test:e2e:large-presentation:check
+bun run test:e2e:large-presentation
+bun run performance:presentation
 ```

@@ -1,4 +1,8 @@
-import { presentationSlideView } from '../work-presentation-layouts';
+import {
+  presentationSlideView,
+  presentationSlideViewFromDesign,
+  type WorkPresentationDesignContent,
+} from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -9,18 +13,24 @@ import { SlideChart } from './presentation-chart-canvas';
 
 export function SlideCanvas({
   content,
+  designContent,
   slide,
   interactive,
   aspectRatio,
   showPlaceholders = false,
 }: {
   content?: WorkPresentationContent;
+  designContent?: WorkPresentationDesignContent;
   slide: WorkSlide;
   interactive: boolean;
   aspectRatio: string;
   showPlaceholders?: boolean;
 }) {
-  const view = content ? presentationSlideView(content, slide) : undefined;
+  const view = designContent
+    ? presentationSlideViewFromDesign(designContent, slide)
+    : content
+      ? presentationSlideView(content, slide)
+      : undefined;
   const elements = [
     ...(view?.inheritedElements.map((element) => ({
       element,

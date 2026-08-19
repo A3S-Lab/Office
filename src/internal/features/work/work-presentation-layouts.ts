@@ -18,9 +18,33 @@ export interface WorkPresentationSlideView {
   layout?: WorkPresentationLayout;
 }
 
+export type WorkPresentationDesignContent = WorkPresentationContent & {
+  layouts: WorkPresentationLayout[];
+  masters: WorkPresentationMaster[];
+};
+
 export function withPresentationDesign(
   content: WorkPresentationContent,
-): WorkPresentationContent {
+): WorkPresentationDesignContent {
+  const designContent = withPresentationDesignMetadata(content);
+  const layoutIds = new Set(designContent.layouts.map((layout) => layout.id));
+  const firstLayoutId = designContent.layouts[0].id;
+  return {
+    ...designContent,
+    slides: designContent.slides.map((slide) => ({
+      ...slide,
+      layoutId:
+        slide.layoutId && layoutIds.has(slide.layoutId)
+          ? slide.layoutId
+          : firstLayoutId,
+      useLayoutBackground: slide.useLayoutBackground ?? false,
+    })),
+  };
+}
+
+export function withPresentationDesignMetadata(
+  content: WorkPresentationContent,
+): WorkPresentationDesignContent {
   const masters = content.masters?.length
     ? content.masters
     : [
@@ -48,20 +72,10 @@ export function withPresentationDesign(
           elements: [],
         },
       ];
-  const layoutIds = new Set(layouts.map((layout) => layout.id));
-  const firstLayoutId = layouts[0].id;
   return {
     ...content,
     masters,
     layouts,
-    slides: content.slides.map((slide) => ({
-      ...slide,
-      layoutId:
-        slide.layoutId && layoutIds.has(slide.layoutId)
-          ? slide.layoutId
-          : firstLayoutId,
-      useLayoutBackground: slide.useLayoutBackground ?? false,
-    })),
   };
 }
 
@@ -69,14 +83,24 @@ export function presentationSlideView(
   content: WorkPresentationContent,
   slide: WorkSlide,
 ): WorkPresentationSlideView {
-  const normalized = withPresentationDesign(content);
+  return presentationSlideViewFromDesign(
+    withPresentationDesign(content),
+    slide,
+  );
+}
+
+export function presentationSlideViewFromDesign(
+  designContent: WorkPresentationDesignContent,
+  slide: WorkSlide,
+): WorkPresentationSlideView {
   const layout =
-    normalized.layouts?.find((candidate) => candidate.id === slide.layoutId) ??
-    normalized.layouts?.[0];
+    designContent.layouts.find(
+      (candidate) => candidate.id === slide.layoutId,
+    ) ?? designContent.layouts[0];
   const master =
-    normalized.masters?.find(
+    designContent.masters.find(
       (candidate) => candidate.id === layout?.masterId,
-    ) ?? normalized.masters?.[0];
+    ) ?? designContent.masters[0];
   const showMasterElements =
     slide.showMasterElements !== false && layout?.showMasterElements !== false;
   const masterElements = showMasterElements ? (master?.elements ?? []) : [];

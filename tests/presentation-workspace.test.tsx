@@ -1,10 +1,11 @@
 import { expect, test } from '@rstest/core';
-import { createRef } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createRef } from 'react';
 import {
   PresentationWorkspace,
   type PresentationWorkspaceCommands,
 } from '../src/internal/features/work/editors/presentation-workspace';
+import { withPresentationDesign } from '../src/internal/features/work/work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlideElement,
@@ -44,7 +45,7 @@ test('separates additive object selection from content editing', () => {
           selections.push({ id, additive }),
       })}
       content={content}
-      designContent={content}
+      designContent={withPresentationDesign(content)}
       designMode="slide"
       editingElementId={null}
       inheritedElements={[]}
@@ -92,7 +93,7 @@ test('separates additive object selection from content editing', () => {
       canvasRef={createRef<HTMLElement>()}
       commands={workspaceCommands()}
       content={content}
-      designContent={content}
+      designContent={withPresentationDesign(content)}
       designMode="slide"
       editingElementId={null}
       inheritedElements={[]}
@@ -155,7 +156,7 @@ test('keeps phone slide navigation dismissible and restores focus', async () => 
         selectSlide: (slideId) => selections.push(slideId),
       })}
       content={content}
-      designContent={content}
+      designContent={withPresentationDesign(content)}
       designMode="slide"
       editingElementId={null}
       inheritedElements={[]}

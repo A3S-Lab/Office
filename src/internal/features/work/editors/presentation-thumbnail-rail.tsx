@@ -1,6 +1,7 @@
 import { Plus, X } from 'lucide-react';
-import { useMemo, type CSSProperties, type RefObject } from 'react';
+import { type CSSProperties, type RefObject, useMemo } from 'react';
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
+import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -29,7 +30,7 @@ export function PresentationThumbnailRail({
 }: {
   aspectRatio: string;
   content: WorkPresentationContent;
-  designContent: WorkPresentationContent;
+  designContent: WorkPresentationDesignContent;
   selectedSlide: WorkSlide;
   viewMode: 'normal' | 'sorter';
   zoom: number;

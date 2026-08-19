@@ -5,6 +5,7 @@ import {
   PresentationWorkspace,
   type PresentationWorkspaceCommands,
 } from '../src/internal/features/work/editors/presentation-workspace';
+import { withPresentationDesign } from '../src/internal/features/work/work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkSlide,
@@ -221,7 +222,7 @@ function presentationWorkspace(
         selectSlide: (slideId) => options.onSelectSlide?.(slideId),
       })}
       content={content}
-      designContent={content}
+      designContent={withPresentationDesign(content)}
       designMode="slide"
       editingElementId={null}
       inheritedElements={[]}

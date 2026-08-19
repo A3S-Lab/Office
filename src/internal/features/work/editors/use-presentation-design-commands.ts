@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
-import { applyPresentationLayout } from '../work-presentation-layouts';
 import { remapPresentationGroupPaths } from '../work-presentation-groups';
+import {
+  applyPresentationLayout,
+  type WorkPresentationDesignContent,
+} from '../work-presentation-layouts';
 import { createWorkId } from '../work-templates';
 import type {
   WorkPresentationContent,
@@ -9,12 +12,12 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import type { PresentationDesignMode } from './presentation-editor-types';
 import {
   structuredCopy,
   updatePresentationElements,
   updateSlide,
 } from './presentation-editor-operations';
+import type { PresentationDesignMode } from './presentation-editor-types';
 
 export interface PresentationDesignCommands {
   addPlaceholder: (type: 'body' | 'title') => void;
@@ -50,7 +53,7 @@ export function usePresentationDesignCommands({
 }: {
   activeElements: readonly WorkSlideElement[];
   activeTargetId: string | undefined;
-  designContent: WorkPresentationContent;
+  designContent: WorkPresentationDesignContent;
   designMode: PresentationDesignMode;
   designOpen: boolean;
   onChange: (content: WorkPresentationContent) => void;

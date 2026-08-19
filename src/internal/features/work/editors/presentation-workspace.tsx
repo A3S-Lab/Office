@@ -1,12 +1,12 @@
 import type { Editor } from '@tiptap/core';
 import { GalleryVerticalEnd } from 'lucide-react';
 import {
+  type PointerEvent,
+  type RefObject,
   useEffect,
   useId,
   useRef,
   useState,
-  type PointerEvent,
-  type RefObject,
 } from 'react';
 import { useDialogFocusScope } from '../../../design-system/primitives/overlay/dialog-focus-scope';
 import type { OfficeKernelPresentationSnapGuide } from '../../../kernel/office-kernel-protocol';
@@ -14,6 +14,8 @@ import {
   isWorkspaceContextMenuKeyboardEvent,
   type WorkspaceContextMenuEvent,
 } from '../../workspace/components/workspace-context-menu';
+import { presentationSelectionUnits } from '../work-presentation-groups';
+import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
 import type {
   WorkPresentationContent,
   WorkPresentationLayout,
@@ -21,12 +23,16 @@ import type {
   WorkSlide,
   WorkSlideElement,
 } from '../work-types';
-import { presentationSelectionUnits } from '../work-presentation-groups';
 import { OfficeTextArea } from './office-controls';
 import { SlideChart } from './presentation-chart-canvas';
 import { PresentationCollaborationPresenceLayer } from './presentation-collaboration-presence';
 import type { PresentationEditorCommands } from './presentation-command-types';
 import type { PresentationDesignMode } from './presentation-editor-types';
+import {
+  presentationElementCanEditContent,
+  presentationSelectionBounds,
+  selectedPresentationElements,
+} from './presentation-selection';
 import {
   EditableSlideTable,
   SlideElementPreview,
@@ -34,13 +40,8 @@ import {
   SlideTablePreview,
   slideElementStyle,
 } from './presentation-slide-canvas';
-import {
-  presentationElementCanEditContent,
-  presentationSelectionBounds,
-  selectedPresentationElements,
-} from './presentation-selection';
-import { PresentationThumbnailRail } from './presentation-thumbnail-rail';
 import { PresentationTextEditor } from './presentation-text-editor';
+import { PresentationThumbnailRail } from './presentation-thumbnail-rail';
 
 const presentationMobileNavigationQuery = '(max-width: 640px)';
 
@@ -69,7 +70,7 @@ export interface PresentationWorkspaceProps {
   canvasRef: RefObject<HTMLElement | null>;
   commands: PresentationWorkspaceCommands;
   content: WorkPresentationContent;
-  designContent: WorkPresentationContent;
+  designContent: WorkPresentationDesignContent;
   designMode: PresentationDesignMode;
   inheritedElements: WorkSlideElement[];
   placeholderGuides: WorkSlideElement[];

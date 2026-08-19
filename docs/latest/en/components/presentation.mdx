@@ -37,6 +37,23 @@ while a text box is being edited.
 Use `fileActions`, `onAgentRequest`, and `onStartSlideshow` for stable host
 integration. The internal scene-command runtime is not a public extension API.
 
+## Large decks
+
+Decks above 60 slides window thumbnail buttons in both normal and sorter
+views. A separate intersection window mounts full slide scenes only for the
+selected slide and the viewport overscan. `Home`, `End`, arrows, deletion, and
+external selection use absolute slide positions, so every slide remains
+keyboard reachable even when its thumbnail is not mounted.
+
+The deterministic 1,000-slide fixture mounts 18 buttons and 13 complete
+thumbnail scenes at a 1440 × 1000 viewport. Master and layout metadata is
+prepared once per controlled value, while each thumbnail resolves only its own
+slide. `content-visibility: auto` is intentionally not enabled on the rail: an
+interleaved five-process benchmark showed no retained-memory benefit and made
+median object commits 31% slower. Reproduce the product and diagnostic modes
+with `bun run test:e2e:large-presentation` and
+`bun run performance:presentation`.
+
 ## Real-time collaboration
 
 Pass an initialized `presentation` collaboration session to make its Yjs scene

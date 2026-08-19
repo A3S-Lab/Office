@@ -1,6 +1,7 @@
 import type { WorkspaceContextMenuEvent } from '../../workspace/components/workspace-context-menu';
 import { isWorkspaceContextMenuKeyboardEvent } from '../../workspace/components/workspace-context-menu';
-import type { WorkPresentationContent, WorkSlide } from '../work-types';
+import type { WorkPresentationDesignContent } from '../work-presentation-layouts';
+import type { WorkSlide } from '../work-types';
 import { SlideCanvas } from './presentation-slide-canvas';
 
 export function PresentationSlideThumbnail({
@@ -19,7 +20,7 @@ export function PresentationSlideThumbnail({
   onContextMenu,
   onDoubleClick,
 }: {
-  content: WorkPresentationContent;
+  content: WorkPresentationDesignContent;
   slide: WorkSlide;
   index: number;
   selected: boolean;
@@ -60,7 +61,7 @@ export function PresentationSlideThumbnail({
       {variant === 'strip' && <span>{index + 1}</span>}
       {renderPreview ? (
         <SlideCanvas
-          content={content}
+          designContent={content}
           slide={slide}
           interactive={false}
           aspectRatio={aspectRatio}

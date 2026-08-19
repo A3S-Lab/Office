@@ -1,0 +1,87 @@
+suite "office-presentation-large-windowing" {
+    version = 1
+
+    scenario "reach-and-edit-the-final-slide-of-a-1000-slide-deck" {
+        name = "Keep a 1,000-slide presentation bounded and end-reachable"
+        surface = "web"
+        timeout_ms = 120000
+
+        viewport "desktop" {
+            width = 1440
+            height = 1000
+            scale = 1
+        }
+
+        navigate "open-playground" {
+            url = "http://127.0.0.1:4175/?e2e=presentation-large-windowing"
+        }
+
+        expect "playground-ready" {
+            text = "我的文档"
+        }
+
+        upload "open-1000-slide-presentation" {
+            target = css("input[aria-label='打开 Office 或 PDF 文件']")
+            paths = [".a3s-test/performance/fixtures/presentation-slides-1000.pptx"]
+        }
+
+        wait "presentation-window-ready" {
+            visible = css(".work-slide-strip[data-slide-count='1000'][data-slide-windowed='true'][data-slide-window-start='0'][data-slide-window-end='18'] [data-slide-index='0'].active")
+        }
+
+        expect "first-scene-is-rendered" {
+            text = "A3S Office presentation slide 1"
+        }
+
+        focus "focus-first-slide" {
+            target = css("[data-slide-thumbnail][data-slide-index='0']")
+        }
+
+        press "move-to-final-slide" {
+            key = "End"
+        }
+
+        wait "final-window-ready" {
+            visible = css(".work-slide-strip[data-slide-count='1000'][data-slide-windowed='true'][data-slide-window-start='982'][data-slide-window-end='1000'] [data-slide-index='999'].active:focus")
+        }
+
+        expect "final-scene-is-rendered" {
+            text = "A3S Office presentation slide 1000"
+        }
+
+        focus "focus-final-slide-object" {
+            target = css(".work-slide-canvas.interactive [data-slide-element-id]:first-of-type")
+        }
+
+        press "nudge-final-slide-object-once" {
+            key = "ArrowRight"
+        }
+
+        press "nudge-final-slide-object-twice" {
+            key = "ArrowRight"
+        }
+
+        expect "final-object-remains-selected" {
+            visible = css(".work-slide-canvas.interactive [data-slide-element-selected='true']:focus")
+        }
+
+        screenshot "final-bounded-presentation-window" {
+            path = "screenshots/presentation-large-windowing.png"
+        }
+
+        accessibility "final-slide-semantics" {
+            path = "evidence/presentation-large-windowing.json"
+            interactive = true
+        }
+
+        console "browser-console" {
+            path = "diagnostics/presentation-large-windowing-console.json"
+            clear = false
+        }
+
+        page_errors "browser-errors" {
+            path = "diagnostics/presentation-large-windowing-errors.json"
+            clear = false
+        }
+    }
+}

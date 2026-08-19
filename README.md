@@ -155,7 +155,13 @@ The images below are committed visual-regression baselines from the real
   exact PDFium task when a thumbnail leaves the window, and uses instant
   long-distance keyboard jumps so the destination retains focus. The checked
   1,000-page fixture mounts 15 thumbnails and seven main-view pages at
-  readiness. The checked 100,000-block fixtures keep
+  readiness. Presentation decks above 60 slides use independent thumbnail-node
+  and scene windows. The checked 1,000-slide, 9,000-element fixture mounts 18
+  thumbnail buttons and 13 full thumbnail scenes, retains about 10.9 MiB of
+  JavaScript heap, reaches slide 1,000 in 6.1–13.4 ms, and produces no Long
+  Tasks. Design metadata is normalized once per controlled value and each
+  visible thumbnail resolves only its own slide. The checked 100,000-block
+  fixtures keep
   selection, editing, and export positions in the canonical model instead of
   replacing them with a React-only virtual list; rich and collaborative models
   deliberately retain the complete compatibility path. Consecutive controlled
@@ -1416,6 +1422,9 @@ bun run build
 bun run test:e2e:large-pdf:check
 bun run test:e2e:large-pdf
 bun run performance:pdf
+bun run test:e2e:large-presentation:check
+bun run test:e2e:large-presentation
+bun run performance:presentation
 ```
 
 Start the integration Playground with `bun run playground`. The full pull
