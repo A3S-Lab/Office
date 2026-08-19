@@ -7,7 +7,7 @@ suite "office-docs-navigation" {
         timeout_ms = 90000
 
         viewport "desktop-documentation" {
-            width = 1200
+            width = 1440
             height = 900
             scale = 1
         }
