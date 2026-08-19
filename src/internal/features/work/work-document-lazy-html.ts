@@ -1,4 +1,10 @@
 import type { WorkDocumentNode } from './work-types';
+import {
+  combineDocumentHtmlFingerprintSegments,
+  createDocumentHtmlFingerprintSegment,
+  type DocumentHtmlFingerprintSegment,
+  documentHtmlFingerprintForSegment,
+} from './work-document-html-fingerprint';
 
 const SECTION_CLOSE = '</section>';
 const TABLE_BODY_OPEN = '<tbody>';
@@ -22,6 +28,18 @@ export interface DocumentLazyHtmlProjection {
   orderedRanges: DocumentLazyHtmlRange[];
   ranges: ReadonlyMap<string, DocumentLazyHtmlRange>;
 }
+
+interface DocumentLazyHtmlFingerprintState {
+  fingerprint: string;
+  prefix: DocumentHtmlFingerprintSegment;
+  ranges: Map<string, DocumentHtmlFingerprintSegment>;
+  suffix: DocumentHtmlFingerprintSegment;
+}
+
+const projectionFingerprints = new WeakMap<
+  DocumentLazyHtmlProjection,
+  DocumentLazyHtmlFingerprintState
+>();
 
 /**
  * Indexes canonical HTML without copying its chunk strings. This projection is
@@ -72,6 +90,7 @@ export function patchDocumentLazyHtmlProjection(
   for (const id of replacements.keys()) {
     if (!projection.ranges.has(id)) return null;
   }
+  const fingerprintState = documentLazyHtmlFingerprintState(projection);
 
   const parts: string[] = [];
   let cursor = 0;
@@ -79,6 +98,10 @@ export function patchDocumentLazyHtmlProjection(
     const replacement = replacements.get(range.id);
     if (replacement === undefined) continue;
     parts.push(projection.html.slice(cursor, range.from), replacement);
+    fingerprintState.ranges.set(
+      range.id,
+      createDocumentHtmlFingerprintSegment(replacement),
+    );
     cursor = range.to;
   }
   parts.push(projection.html.slice(cursor));
@@ -95,7 +118,26 @@ export function patchDocumentLazyHtmlProjection(
     offset += nextLength - previousLength;
   }
   projection.html = html;
+  fingerprintState.fingerprint = documentHtmlFingerprintForSegment(
+    combineDocumentHtmlFingerprintSegments([
+      fingerprintState.prefix,
+      ...projection.orderedRanges.map((range) => {
+        const segment = fingerprintState.ranges.get(range.id);
+        if (!segment) {
+          throw new Error('The lazy HTML fingerprint segment is missing.');
+        }
+        return segment;
+      }),
+      fingerprintState.suffix,
+    ]),
+  );
   return html;
+}
+
+export function documentLazyHtmlProjectionFingerprint(
+  projection: DocumentLazyHtmlProjection,
+): string | null {
+  return projectionFingerprints.get(projection)?.fingerprint ?? null;
 }
 
 export function documentLazyHtmlChunkFragment(
@@ -128,6 +170,56 @@ function lazyDocumentLeafChunks(root: WorkDocumentNode): WorkDocumentNode[] {
     }
   }
   return chunks;
+}
+
+function documentLazyHtmlFingerprintState(
+  projection: DocumentLazyHtmlProjection,
+): DocumentLazyHtmlFingerprintState {
+  const existing = projectionFingerprints.get(projection);
+  if (existing) return existing;
+  const first = projection.orderedRanges[0];
+  const last = projection.orderedRanges.at(-1);
+  const ranges = new Map<string, DocumentHtmlFingerprintSegment>();
+  for (const range of projection.orderedRanges) {
+    ranges.set(
+      range.id,
+      createDocumentHtmlFingerprintSegment(
+        projection.html,
+        range.from,
+        range.to,
+      ),
+    );
+  }
+  const prefix = createDocumentHtmlFingerprintSegment(
+    projection.html,
+    0,
+    first?.from ?? projection.html.length,
+  );
+  const suffix = createDocumentHtmlFingerprintSegment(
+    projection.html,
+    last?.to ?? projection.html.length,
+    projection.html.length,
+  );
+  const state: DocumentLazyHtmlFingerprintState = {
+    fingerprint: documentHtmlFingerprintForSegment(
+      combineDocumentHtmlFingerprintSegments([
+        prefix,
+        ...projection.orderedRanges.map((range) => {
+          const segment = ranges.get(range.id);
+          if (!segment) {
+            throw new Error('The lazy HTML fingerprint segment is missing.');
+          }
+          return segment;
+        }),
+        suffix,
+      ]),
+    ),
+    prefix,
+    ranges,
+    suffix,
+  };
+  projectionFingerprints.set(projection, state);
+  return state;
 }
 
 function scanSimpleDocumentNodeHtml(

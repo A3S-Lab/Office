@@ -65,7 +65,7 @@ for (const scenario of scenarios) {
       const edits = [];
       for (const marker of [' FIRST-EDIT', ' SECOND-EDIT']) {
         const before = await controlledPublishCount(page);
-        const startedAt = performance.now();
+        await installPageEditTiming(page, before);
         await page.keyboard.insertText(marker);
         await page.waitForFunction(
           (count) =>
@@ -77,20 +77,33 @@ for (const scenario of scenarios) {
           before,
           { timeout: 30_000 },
         );
-        const wallMs = performance.now() - startedAt;
         edits.push(
-          await page.evaluate((elapsed) => {
+          await page.evaluate(() => {
             const element = document.querySelector<HTMLElement>(
               '.work-document-editable .ProseMirror',
             );
+            const timing = (
+              globalThis as typeof globalThis & {
+                __a3sDocumentEditTiming?: {
+                  publishedAt: number | null;
+                  startedAt: number | null;
+                };
+              }
+            ).__a3sDocumentEditTiming;
+            const wallMs =
+              timing?.startedAt !== null &&
+              timing?.startedAt !== undefined &&
+              timing.publishedAt !== null
+                ? timing.publishedAt - timing.startedAt
+                : Number.NaN;
             return {
               mode: element?.dataset.documentControlledPublishMode ?? null,
               publishMs: Number(
                 element?.dataset.documentControlledPublishMs ?? Number.NaN,
               ),
-              wallMs: elapsed,
+              wallMs,
             };
-          }, wallMs),
+          }),
         );
       }
       const finalText = await page
@@ -136,4 +149,39 @@ async function controlledPublishCount(
         )?.dataset.documentControlledPublishCount,
       ) || 0,
   );
+}
+
+async function installPageEditTiming(
+  page: import('@playwright/test').Page,
+  publishCount: number,
+): Promise<void> {
+  await page.evaluate((count) => {
+    const editor = document.querySelector<HTMLElement>(
+      '.work-document-editable .ProseMirror',
+    );
+    if (!editor) throw new Error('The document editor is unavailable.');
+    const timing = { publishedAt: null, startedAt: null } as {
+      publishedAt: number | null;
+      startedAt: number | null;
+    };
+    editor.addEventListener(
+      'beforeinput',
+      () => {
+        timing.startedAt = performance.now();
+      },
+      { capture: true, once: true },
+    );
+    const observer = new MutationObserver(() => {
+      if (Number(editor.dataset.documentControlledPublishCount) <= count) {
+        return;
+      }
+      timing.publishedAt = performance.now();
+      observer.disconnect();
+    });
+    observer.observe(editor, {
+      attributeFilter: ['data-document-controlled-publish-count'],
+      attributes: true,
+    });
+    Object.assign(globalThis, { __a3sDocumentEditTiming: timing });
+  }, publishCount);
 }

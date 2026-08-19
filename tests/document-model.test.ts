@@ -80,6 +80,21 @@ describe('structured document model', () => {
     );
   });
 
+  test('accepts a persisted legacy HTML fingerprint', () => {
+    const html = '<p>Structured content</p>';
+    const model = structuredClone(createWorkDocumentModel(html, root));
+    model.htmlFingerprint = 'p:1ht88x0';
+
+    expect(
+      documentModelForContent({
+        type: 'document',
+        pageSize: 'a4',
+        html,
+        model,
+      }),
+    ).toEqual(model);
+  });
+
   test('keeps the trusted HTML shortcut bound to the exact model snapshot', () => {
     const html = '<p>Structured content</p>';
     const model = createSchemaValidatedWorkDocumentModel(html, root, {

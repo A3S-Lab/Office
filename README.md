@@ -154,7 +154,9 @@ The images below are committed visual-regression baselines from the real
   independently. The checked 100,000-block fixtures keep
   selection, editing, and export positions in the canonical model instead of
   replacing them with a React-only virtual list; rich and collaborative models
-  deliberately retain the complete compatibility path.
+  deliberately retain the complete compatibility path. Consecutive controlled
+  edits hash only changed lazy chunks and combine cached fingerprint segments,
+  while cloned or persisted models still receive complete HTML verification.
 - **AI without UI scraping** — Typed agent ports and host-defined selection
   actions receive structured context and editing commands.
 - **Automation outside the browser** — The native Rust CLI, standard MCP

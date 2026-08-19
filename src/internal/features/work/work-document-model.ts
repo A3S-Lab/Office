@@ -5,9 +5,15 @@ import type {
   WorkDocumentNode,
 } from './work-types';
 import {
+  documentHtmlFingerprint,
+  documentHtmlFingerprintMatches,
+} from './work-document-html-fingerprint';
+import {
   prepareLazyDocumentEditorSource,
   transferLazyDocumentModelState,
 } from './work-document-lazy-model';
+
+export { documentHtmlFingerprint } from './work-document-html-fingerprint';
 
 const DOCUMENT_MODEL_SCHEMA = 'a3s.office.document';
 const DOCUMENT_MODEL_VERSION = 1;
@@ -41,11 +47,23 @@ export function createWorkDocumentModel(
   root: WorkDocumentNode,
   previous?: WorkDocumentModel | null,
 ): WorkDocumentModel {
+  return createWorkDocumentModelWithFingerprint(
+    root,
+    documentHtmlFingerprint(html),
+    previous,
+  );
+}
+
+function createWorkDocumentModelWithFingerprint(
+  root: WorkDocumentNode,
+  htmlFingerprint: string,
+  previous?: WorkDocumentModel | null,
+): WorkDocumentModel {
   const model: WorkDocumentModel = {
     schema: DOCUMENT_MODEL_SCHEMA,
     version: DOCUMENT_MODEL_VERSION,
     revision: nextRevision(previous),
-    htmlFingerprint: documentHtmlFingerprint(html),
+    htmlFingerprint,
     root,
   };
   transferLazyDocumentModelState(previous, model);
@@ -82,8 +100,13 @@ export function createSchemaDerivedWorkDocumentModel(
   html: string,
   root: WorkDocumentNode,
   previous?: WorkDocumentModel | null,
+  htmlFingerprint = documentHtmlFingerprint(html),
 ): WorkDocumentModel {
-  const model = createWorkDocumentModel(html, root, previous);
+  const model = createWorkDocumentModelWithFingerprint(
+    root,
+    htmlFingerprint,
+    previous,
+  );
   schemaValidatedDocumentModels.set(model, {
     html,
     htmlFingerprint: model.htmlFingerprint,
@@ -133,8 +156,9 @@ export function documentModelForHtml(
     candidate.version !== DOCUMENT_MODEL_VERSION ||
     !Number.isSafeInteger(candidate.revision) ||
     Number(candidate.revision) < 1 ||
+    typeof candidate.htmlFingerprint !== 'string' ||
     (!trustedHtmlMatches &&
-      candidate.htmlFingerprint !== documentHtmlFingerprint(html)) ||
+      !documentHtmlFingerprintMatches(html, candidate.htmlFingerprint)) ||
     (validated?.root !== candidate.root && !isDocumentRoot(candidate.root))
   ) {
     return null;
@@ -178,15 +202,6 @@ export function resolveWorkDocumentEditorInput(
     sourceKey: `model:${model.revision}:${model.htmlFingerprint}`,
     revision: model.revision,
   };
-}
-
-export function documentHtmlFingerprint(html: string): string {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < html.length; index += 1) {
-    hash ^= html.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return `${html.length.toString(36)}:${(hash >>> 0).toString(36)}`;
 }
 
 function nextRevision(previous: WorkDocumentModel | null | undefined): number {

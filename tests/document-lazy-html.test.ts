@@ -2,8 +2,10 @@ import { describe, expect, test } from '@rstest/core';
 import {
   createDocumentLazyHtmlProjection,
   documentLazyHtmlChunkFragment,
+  documentLazyHtmlProjectionFingerprint,
   patchDocumentLazyHtmlProjection,
 } from '../src/internal/features/work/work-document-lazy-html';
+import { documentHtmlFingerprint } from '../src/internal/features/work/work-document-model';
 import { windowDocumentModel } from '../src/internal/features/work/work-document-windowing';
 import type { WorkDocumentNode } from '../src/internal/features/work/work-types';
 
@@ -35,6 +37,9 @@ describe('lazy document HTML projection', () => {
     const third = projection.orderedRanges[2];
     expect(projection.html.slice(third?.from, third?.to)).toBe(
       '<p>five</p><p>six</p>',
+    );
+    expect(documentLazyHtmlProjectionFingerprint(projection)).toBe(
+      documentHtmlFingerprint(projection.html),
     );
   });
 

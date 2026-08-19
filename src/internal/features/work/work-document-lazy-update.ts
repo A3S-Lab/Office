@@ -1,6 +1,7 @@
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import {
   documentLazyHtmlChunkFragment,
+  documentLazyHtmlProjectionFingerprint,
   patchDocumentLazyHtmlProjection,
 } from './work-document-lazy-html';
 import {
@@ -14,6 +15,7 @@ import type { WorkDocumentModel, WorkDocumentNode } from './work-types';
 
 export interface MaterializedLazyDocumentUpdate {
   html: string | null;
+  htmlFingerprint: string | null;
   root: WorkDocumentNode;
 }
 
@@ -44,7 +46,7 @@ export function materializeLazyDocumentUpdate(
     )
   ) {
     invalidateDocumentLazyHtmlProjection(model);
-    return { html: null, root };
+    return { html: null, htmlFingerprint: null, root };
   }
 
   try {
@@ -70,10 +72,14 @@ export function materializeLazyDocumentUpdate(
     }
     const html = patchDocumentLazyHtmlProjection(projection, replacements);
     if (html === null) throw new Error('Lazy HTML patch could not be applied.');
-    return { html, root };
+    const htmlFingerprint = documentLazyHtmlProjectionFingerprint(projection);
+    if (!htmlFingerprint) {
+      throw new Error('Lazy HTML fingerprint could not be updated.');
+    }
+    return { html, htmlFingerprint, root };
   } catch {
     invalidateDocumentLazyHtmlProjection(model);
-    return { html: null, root };
+    return { html: null, htmlFingerprint: null, root };
   }
 }
 

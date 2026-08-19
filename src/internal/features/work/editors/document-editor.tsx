@@ -506,6 +506,7 @@ function DocumentEditorSurface({
             )
           : {
               html: null,
+              htmlFingerprint: null,
               root: materializeLazyDocumentEditorRoot(
                 compactRoot,
                 previousModel,
@@ -530,6 +531,7 @@ function DocumentEditorSurface({
         synchronized.html,
         materialized.root,
         previousModel,
+        materialized.htmlFingerprint ?? undefined,
       );
       const next: WorkDocumentContent = {
         ...synchronized,

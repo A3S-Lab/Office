@@ -393,11 +393,16 @@ lazy document are coalesced to one animation-frame publication. The editor
 finds the changed persistent chunk, updates document statistics by subtree
 delta, materializes the complete JSON model from the payload registry, serializes
 only that chunk, and patches its indexed range in the canonical HTML. The host
-still receives complete `html` and `model` values. Formatting, structure, or
-unsupported edits deliberately fall back to complete schema serialization.
-The lazy projection is process-local and parser-authenticated; rich compatibility
-imports, cloned untrusted models, and collaboration bindings retain the complete
-TipTap path.
+still receives complete `html` and `model` values. A composable polynomial
+fingerprint hashes the changed chunk and combines its cached prefix, chunk, and
+suffix segments, so consecutive publications do not rescan the complete HTML
+string. Process-local schema trust admits that precomputed fingerprint only for
+the exact live model snapshot; cloned or persisted models still rescan and
+verify the complete HTML, including fingerprints written by earlier releases.
+Formatting, structure, or unsupported edits deliberately fall back to complete
+schema serialization. The lazy projection is process-local and
+parser-authenticated; rich compatibility imports, cloned untrusted models, and
+collaboration bindings retain the complete TipTap path.
 
 Physical page chrome has a separate React window above 24 pages and mounts only
 the nearby sheets. A WeakMap-backed page-surface registry retains all page
@@ -1400,14 +1405,18 @@ runner latency rather than product work.
 
 The controlled-edit benchmark sends one browser text-insertion event at the
 exact final paragraph or cell, waits for the complete host publication, then
-does it again against the new controlled revision. `Wall latency` includes the
-input transaction, React and pagination scheduling, and publication. `Publish
-CPU` measures only construction of the complete `html` and `model` values.
+does it again against the new controlled revision. A page-local `beforeinput`
+listener starts `Wall latency`, and a `MutationObserver` stops it when the
+publication counter changes. This excludes Playwright input transport and
+polling backoff while retaining the input transaction, React and pagination
+scheduling, and publication. `Publish CPU` measures only construction of the
+complete `html` and `model` values. Document values below are the median and
+range of five fresh browser processes.
 
 | Fixture | First edit wall / publish CPU | Second edit wall / publish CPU | Publication path |
 | --- | ---: | ---: | --- |
-| 100,000 text paragraphs | 84.0 ms (83.2–84.1) / 14.6 ms (14.3–15.0) | 162.2 ms (85.5–171.9) / 16.0 ms (14.6–16.4) | `lazy-chunk` in all six publications |
-| 100,000 table rows × 3 columns | 181.4 ms (176.5–188.0) / 39.6 ms (39.5–42.8) | 240.5 ms (234.6–244.5) / 40.8 ms (40.0–42.4) | `lazy-chunk` in all six publications |
+| 100,000 text paragraphs | 70.3 ms (69.0–115.4) / 21.8 ms (20.0–54.7) | 53.9 ms (22.5–56.4) / 10.0 ms (9.4–16.8) | `lazy-chunk` in all ten publications |
+| 100,000 table rows × 3 columns | 102.3 ms (93.8–121.0) / 57.8 ms (53.5–70.1) | 85.1 ms (78.2–93.3) / 41.2 ms (36.9–45.7) | `lazy-chunk` in all ten publications |
 | 100,000 × 10 spreadsheet cells | 52.5 ms (49.6–56.4) / 2.5 ms (2.5–2.6) | 45.9 ms (45.9–47.0) / 2.3 ms (2.2–2.3) | Incremental 3-operation projection of one changed cell; 0 Long Tasks |
 
 Every run reached the exact final paragraph or row, both consecutive edit
@@ -1417,6 +1426,13 @@ about 92 percent during profiling. Cached statistics removed the previous
 233–246 ms scroll task, while early non-paragraph rejection, binary page
 lookup, and measured-prefix reuse removed document-sized work from tail edits.
 
+The earlier document wall figures used a Node-side clock around Playwright
+input and polling. They therefore measured runner scheduling as product work
+and are superseded by the page-local figures above. Against the same page-local
+five-run baseline, cached segment fingerprints reduced the median second text
+edit from 101.4 to 53.9 ms and the second table edit from 170.8 to 85.1 ms;
+their publication CPU fell from 56.0 to 10.0 ms and from 123.2 to 41.2 ms.
+
 The remaining cold-open boundary is the 100,000-row Worker's approximately
 222 ms content scan plus main-thread construction and retention of the
 canonical model. The live ProseMirror tree and strict OOXML inspection are no
@@ -1424,10 +1440,10 @@ longer document-sized main-thread constructors. A WASM parser is justified
 only if it consumes the transferred bytes directly and emits the same columnar
 protocol without adding a second complete copy or JSON serialization step.
 During editing, controlled ownership intentionally requires a complete HTML
-string; the indexed chunk patch avoids complete semantic serialization, but
-allocating and fingerprinting that host value remains a measurable lower bound.
-A future optional patch callback may remove that copy only if the complete
-`onChange` contract remains available.
+string; the indexed chunk patch and segment fingerprint avoid complete
+semantic serialization and repeat hashing, but allocating that host value
+remains a measurable lower bound. A future optional patch callback may remove
+that copy only if the complete `onChange` contract remains available.
 
 The million-cell XLSX path now retains about 38.41 MiB after collection and has
 neither import nor continuous-scroll Long Tasks in any run. The remaining
